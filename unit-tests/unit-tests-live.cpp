@@ -2751,7 +2751,7 @@ struct device_profiles
     bool sync;
 };
 
-void validate(std::vector<frameset> frames, device_profiles requsets)
+void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::vector<double>> timestamps, device_profiles requsets)
 {
     REQUIRE(frames.size() > 0);
 
@@ -2764,25 +2764,24 @@ void validate(std::vector<frameset> frames, device_profiles requsets)
     for(auto i=0; i<frames.size(); i++)
     {
         auto frame = frames[i];
-
+        auto ts = timestamps[i];
         if(frame.size() == 0)
             continue;
 
-        std::vector<double> timestamps;
+        
         std::vector<profile> stream_arrived;
 
         for(auto f: frame)
         {
-            auto image = f.as<rs2::video_frame>();
+            auto image = f.as<rs2::video_stream_profile>();
 
-            stream_arrived.push_back({image.get_profile().stream_type(), image.get_profile().format(), image.get_width(), image.get_height()});
-            REQUIRE(image.get_profile().fps());
-            timestamps.push_back(f.get_timestamp());
+            stream_arrived.push_back({image.stream_type(), image.format(), image.width(), image.height()});
+            REQUIRE(image.fps());
         }
+       
+        std::sort(ts.begin(), ts.end());
 
-        std::sort(timestamps.begin(), timestamps.end());
-
-        if(timestamps[timestamps.size()-1] - timestamps[0] > gap/2)
+        if(ts[ts.size()-1] - ts[0] > gap/2)
         {
             continue;
         }
@@ -2850,7 +2849,7 @@ std::map<std::string, device_profiles> get_pipeline_default_configurations()
 
 
 
-TEST_CASE("Pipeline start", "[live]") {
+TEST_CASE("Pipeline wait_for_frames", "[live]") {
 
     auto dev_requsets = get_pipeline_default_configurations();
 
@@ -2860,31 +2859,42 @@ TEST_CASE("Pipeline start", "[live]") {
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
-        auto dev = list[0];
-        disable_sensitive_options_for(dev);
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        REQUIRE_NOTHROW(dev = pipe.get_device());
 
+        disable_sensitive_options_for(dev);
         std::string PID;
         REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
-
         REQUIRE(dev_requsets[PID].streams.size()>0);
 
-        rs2::pipeline pipe(ctx);
         REQUIRE_NOTHROW(pipe.start());
 
-        std::vector<frameset> frames;
+        std::vector<std::vector<stream_profile>> frames;
+        std::vector<std::vector<double>> timestamps;
 
-        for(auto i = 0; i<10; i++)
+        for(auto i = 0; i<30; i++)
             REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
 
 
-        while(frames.size()<8)
-            REQUIRE_NOTHROW(frames.push_back(pipe.wait_for_frames(10000)));
-
+        while (frames.size() < 100)
+        {
+            frameset frame;
+            REQUIRE_NOTHROW(frame = pipe.wait_for_frames(10000));
+            std::vector<stream_profile> frames_set;
+            std::vector<double> ts;
+            for (auto f : frame)
+            {
+                frames_set.push_back( f.get_profile());
+                ts.push_back(f.get_timestamp());
+            }
+            frames.push_back(frames_set);
+            timestamps.push_back(ts);
+        }
+            
 
         REQUIRE_NOTHROW(pipe.stop());
-        validate(frames, dev_requsets[PID]);
-
-
+        validate(frames, timestamps, dev_requsets[PID]);
     }
 }
 
@@ -2910,33 +2920,35 @@ TEST_CASE("Pipeline poll", "[live]") {
         
         REQUIRE_NOTHROW(pipe.start());
 
-        std::vector<frameset> frames;
+        std::vector<std::vector<stream_profile>> frames;
+        std::vector<std::vector<double>> timestamps;
 
-        frame f;
-        auto frame_num = 0;
-        while (frame_num < 30)
+        for (auto i = 0; i<30; i++)
+            REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
+
+
+        while (frames.size() < 100)
         {
-            auto res = true;
-            REQUIRE_NOTHROW(res = pipe.poll_for_frame(&f));
-            if (res)
-                frame_num++;
-        }
-            
-
-
-        while (frames.size() < 8)
-        {
-            auto res = true;
-            REQUIRE_NOTHROW(res = pipe.poll_for_frame(&f));
-            if (res)
+            frame f;
+            if (pipe.poll_for_frame(&f))
             {
-                frames.push_back(frameset(f));
+                REQUIRE(f.is<composite_frame>());
+                frameset frame(f);
+                std::vector<stream_profile> frames_set;
+                std::vector<double> ts;
+                for (auto f : frame)
+                {
+                    frames_set.push_back(f.get_profile());
+                    ts.push_back(f.get_timestamp());
+                }
+                frames.push_back(frames_set);
+                timestamps.push_back(ts);
             }
-        }
            
+        }
 
         REQUIRE_NOTHROW(pipe.stop());
-        validate(frames, dev_requsets[PID]);
+        validate(frames, timestamps, dev_requsets[PID]);
 
 
     }
@@ -2955,28 +2967,40 @@ TEST_CASE("Pipeline start with callback", "[live]") {
 
         auto list = ctx.query_devices();
         REQUIRE(list.size());
-        auto dev = list[0];
-        disable_sensitive_options_for(dev);
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        REQUIRE_NOTHROW(dev = pipe.get_device());
 
+        disable_sensitive_options_for(dev);
         std::string PID;
         REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
 
         REQUIRE(dev_requsets[PID].streams.size()>0);
 
-        rs2::pipeline pipe(ctx);
 
-        std::vector<frameset> frames;
-
+        std::vector<std::vector<stream_profile>> frames;
+        std::vector<std::vector<double>> timestamps;
 
         auto frames_num = 0;
 
         REQUIRE_NOTHROW(pipe.start([&](frame f)
         {
-            if(frames_num++ >10)
+            if(frames_num++ >30)
             {
                 std::unique_lock<std::mutex> lock(m);
 
-                frames.push_back(frameset(f));
+                std::vector<stream_profile> frame_set;
+                std::vector<double> ts;
+
+                REQUIRE(f.is<composite_frame>());
+                frameset fs(f);
+                for (auto frame : fs)
+                {
+                    frame_set.push_back(frame.get_profile());
+                    ts.push_back(frame.get_timestamp());
+                }
+                frames.push_back(frame_set);
+                timestamps.push_back(ts);
                 cv.notify_all();
             }
 
@@ -2986,10 +3010,10 @@ TEST_CASE("Pipeline start with callback", "[live]") {
 
         {
             std::unique_lock<std::mutex> lock(m);
-            REQUIRE(cv.wait_for(lock, std::chrono::seconds(10000), [&](){return frames.size()>8;}));
+            REQUIRE(cv.wait_for(lock, std::chrono::seconds(10000), [&](){return frames.size()>100;}));
         }
         pipe.stop();
-        validate(frames, dev_requsets[PID]);
+        validate(frames, timestamps, dev_requsets[PID]);
 
 
     }
@@ -3037,7 +3061,11 @@ TEST_CASE("Pipeline enable stream", "[live]") {
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
-        auto dev = list[0];
+       
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        REQUIRE_NOTHROW(dev = pipe.get_device());
+
         disable_sensitive_options_for(dev);
 
         std::string PID;
@@ -3045,26 +3073,37 @@ TEST_CASE("Pipeline enable stream", "[live]") {
 
         REQUIRE(dev_requsets[PID].streams.size()>0);
 
-        rs2::pipeline pipe(ctx);
-
 
         for(auto req: dev_requsets[PID].streams)
             REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, dev_requsets[PID].fps));
 
         REQUIRE_NOTHROW(pipe.start());
 
-        std::vector<frameset> frames;
+        std::vector<std::vector<stream_profile>> frames;
+        std::vector<std::vector<double>> timestamps;
 
-        for(auto i = 0; i<10; i++)
+        for (auto i = 0; i<30; i++)
             REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
 
 
-        while(frames.size()<8)
-            REQUIRE_NOTHROW(frames.push_back(pipe.wait_for_frames(10000)));
+        while (frames.size() < 100)
+        {
+            frameset frame;
+            REQUIRE_NOTHROW(frame = pipe.wait_for_frames(10000));
+            std::vector<stream_profile> frames_set;
+            std::vector<double> ts;
+            for (auto f : frame)
+            {
+                frames_set.push_back(f.get_profile());
+                ts.push_back(f.get_timestamp());
+            }
+            frames.push_back(frames_set);
+            timestamps.push_back(ts);
+        }
 
 
         REQUIRE_NOTHROW(pipe.stop());
-        validate(frames, dev_requsets[PID]);
+        validate(frames, timestamps, dev_requsets[PID]);
 
 
     }
@@ -3122,18 +3161,31 @@ TEST_CASE("Pipeline enable stream auto complete", "[live]") {
         REQUIRE_NOTHROW(pipe.start());
 
 
-        std::vector<frameset> frames;
+        std::vector<std::vector<stream_profile>> frames;
+        std::vector<std::vector<double>> timestamps;
 
-        for(auto i = 0; i<60; i++)
-            pipe.wait_for_frames();
+        for (auto i = 0; i<30; i++)
+            REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
 
 
+        while (frames.size() < 100)
+        {
+            frameset frame;
+            REQUIRE_NOTHROW(frame = pipe.wait_for_frames(10000));
+            std::vector<stream_profile> frames_set;
+            std::vector<double> ts;
+            for (auto f : frame)
+            {
+                frames_set.push_back(f.get_profile());
+                ts.push_back(f.get_timestamp());
+            }
+            frames.push_back(frames_set);
+            timestamps.push_back(ts);
+        }
 
-        while(frames.size()<8)
-            REQUIRE_NOTHROW(frames.push_back(pipe.wait_for_frames(10000)));
 
         REQUIRE_NOTHROW(pipe.stop());
-        validate(frames, dev_requsets[PID]);
+        validate(frames, timestamps, dev_requsets[PID]);
     }
 }
 
@@ -3148,15 +3200,17 @@ TEST_CASE("Pipeline disable_all", "[live]") {
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
-        auto dev = list[0];
+
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        REQUIRE_NOTHROW(dev = pipe.get_device());
+
         disable_sensitive_options_for(dev);
 
         std::string PID;
         REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
 
         REQUIRE(not_default_configurations[PID].streams.size()>0);
-
-        rs2::pipeline pipe(ctx);
 
 
         for(auto req: not_default_configurations[PID].streams)
@@ -3166,18 +3220,31 @@ TEST_CASE("Pipeline disable_all", "[live]") {
 
         REQUIRE_NOTHROW(pipe.start());
 
-        std::vector<frameset> frames;
+        std::vector<std::vector<stream_profile>> frames;
+        std::vector<std::vector<double>> timestamps;
 
-        for(auto i = 0; i<10; i++)
+        for(auto i = 0; i<30; i++)
             REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
 
 
-        while(frames.size()<8)
-            REQUIRE_NOTHROW(frames.push_back(pipe.wait_for_frames(10000)));
-
+        while (frames.size() < 100)
+        {
+            frameset frame;
+            REQUIRE_NOTHROW(frame = pipe.wait_for_frames(10000));
+            std::vector<stream_profile> frames_set;
+            std::vector<double> ts;
+            for (auto f : frame)
+            {
+                frames_set.push_back( f.get_profile());
+                ts.push_back(f.get_timestamp());
+            }
+            frames.push_back(frames_set);
+            timestamps.push_back(ts);
+        }
+            
 
         REQUIRE_NOTHROW(pipe.stop());
-        validate(frames, default_configurations[PID]);
+        validate(frames, timestamps, default_configurations[PID]);
     }
 }
 
@@ -3191,15 +3258,17 @@ TEST_CASE("Pipeline disable stream", "[live]") {
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
-        auto dev = list[0];
+
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        REQUIRE_NOTHROW(dev = pipe.get_device());
+
         disable_sensitive_options_for(dev);
 
         std::string PID;
         REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
 
         REQUIRE(configurations[PID].streams.size()>0);
-
-        rs2::pipeline pipe(ctx);
 
 
         for(auto req: configurations[PID].streams)
@@ -3216,17 +3285,31 @@ TEST_CASE("Pipeline disable stream", "[live]") {
 
         REQUIRE_NOTHROW(pipe.start());
 
-        std::vector<frameset> frames;
+        std::vector<std::vector<stream_profile>> frames;
+        std::vector<std::vector<double>> timestamps;
 
-        for(auto i = 0; i<10; i++)
+        for (auto i = 0; i<30; i++)
             REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
 
 
-        while(frames.size()<8)
-            REQUIRE_NOTHROW(frames.push_back(pipe.wait_for_frames(10000)));
+        while (frames.size() < 100)
+        {
+            frameset frame;
+            REQUIRE_NOTHROW(frame = pipe.wait_for_frames(10000));
+            std::vector<stream_profile> frames_set;
+            std::vector<double> ts;
+            for (auto f : frame)
+            {
+                frames_set.push_back(f.get_profile());
+                ts.push_back(f.get_timestamp());
+            }
+            frames.push_back(frames_set);
+            timestamps.push_back(ts);
+        }
+
 
         REQUIRE_NOTHROW(pipe.stop());
-        validate(frames, configurations[PID]);
+        validate(frames, timestamps, configurations[PID]);
     }
 }
 
@@ -3240,13 +3323,20 @@ TEST_CASE("Pipeline with specific device", "[live]") {
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
-        auto dev = list[0];
+        
+        rs2::device dev;
+        REQUIRE_NOTHROW(dev = list[0]);
         disable_sensitive_options_for(dev);
-
         std::string serial, serial1;
         REQUIRE_NOTHROW(serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
-        rs2::pipeline pipe(dev);
+        rs2::pipeline pipe(ctx);
+        REQUIRE_NOTHROW(dev = pipe.get_device());
+
+        disable_sensitive_options_for(dev);
+
+       
+
         REQUIRE_NOTHROW(dev = pipe.get_device());
         REQUIRE_NOTHROW(serial1 = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
@@ -3288,16 +3378,17 @@ TEST_CASE("Pipeline start stop", "[live]") {
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
-        auto dev = list[0];
+
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        REQUIRE_NOTHROW(dev = pipe.get_device());
+
         disable_sensitive_options_for(dev);
 
         std::string PID;
         REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
 
         REQUIRE(configurations[PID].streams.size()>0);
-
-        rs2::pipeline pipe(ctx);
-
 
         for(auto req: configurations[PID].streams)
             REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
