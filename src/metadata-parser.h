@@ -135,7 +135,10 @@ namespace librealsense
 
         rs2_metadata_t get(const frame & frm) const override
         {
-            auto attrib=  static_cast<rs2_metadata_t>((*reinterpret_cast<const St*>((const uint8_t*)frm.additional_data.metadata_blob.data())).*_md_attribute);
+            if (!supports(frm))
+                throw invalid_value_exception("UVC header is not available");
+
+            auto attrib =  static_cast<rs2_metadata_t>((*reinterpret_cast<const St*>((const uint8_t*)frm.additional_data.metadata_blob.data())).*_md_attribute);
             if (_modifyer) attrib = _modifyer(attrib);
             return attrib;
         }
@@ -234,11 +237,15 @@ namespace librealsense
 
         rs2_metadata_t get(const frame & frm) const override
         {
+            if (!supports(frm))
+                throw invalid_value_exception("Metadata is not available");
+
             auto s = reinterpret_cast<const S*>((frm.additional_data.metadata_blob.data()) + _offset);
 
             auto param = static_cast<rs2_metadata_t>((*s).*_md_attribute);
             if (_modifyer)
                 param = _modifyer(param);
+
             return param;
         }
 

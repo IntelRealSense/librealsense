@@ -39,7 +39,6 @@ namespace librealsense
 {
     class device;
     class context;
-    class device_info;
 
     class device_info
     {

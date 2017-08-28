@@ -542,7 +542,7 @@ namespace rs2
         class device_hub
         {
         public:
-            explicit device_hub(const context& ctx)
+            explicit device_hub(context& ctx)
                 : _ctx(ctx)
             {
                 _device_list = _ctx.query_devices();
@@ -559,6 +559,11 @@ namespace rs2
                         _cv.notify_all();
                     }
                 });
+            }
+
+            ~device_hub()
+            {
+                _ctx.stop();
             }
 
             /**
@@ -626,7 +631,7 @@ namespace rs2
             }
 
         private:
-            const context& _ctx;
+            context& _ctx;
             std::mutex _mutex;
             std::condition_variable _cv;
             device_list _device_list;

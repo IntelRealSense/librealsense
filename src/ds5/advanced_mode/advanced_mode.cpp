@@ -19,7 +19,7 @@ namespace librealsense
         _enabled = [this](){
             auto results = send_receive(encode_command(ds::fw_cmd::UAMG));
             assert_no_error(ds::fw_cmd::UAMG, results);
-            return *(reinterpret_cast<uint32_t*>(results.data()) + 1) > 0;
+            return results[4] > 0;
         };
         _depth_sensor.register_option(RS2_OPTION_VISUAL_PRESET,
                                       std::make_shared<advanced_mode_preset_option>(*this,

@@ -100,7 +100,7 @@ namespace rs2
         * \param[in] callback   devices changed callback
         */
         template<class T>
-        void set_devices_changed_callback(T callback) const
+        void set_devices_changed_callback(T callback)
         {
             rs2_error* e = nullptr;
             rs2_set_devices_changed_callback_cpp(_context.get(),
@@ -157,7 +157,14 @@ namespace rs2
             rs2_context_remove_device(_context.get(), file.c_str(), &e);
             rs2::error::handle(e);
         }
-    protected:
+
+        void stop()
+        {
+            rs2_error* e = nullptr;
+            rs2_context_stop(_context.get(), &e);
+            error::handle(e);
+        }
+protected:
         friend class pipeline;
         std::shared_ptr<rs2_context> _context;
     };

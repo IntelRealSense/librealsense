@@ -246,7 +246,7 @@ PYBIND11_PLUGIN(NAME) {
                 &rs2::context::get_extrinsics, "from"_a, "to"_a)
            .def("get_extrinsics", (rs2_extrinsics (rs2::context::*)(const rs2::stream_profile&, const rs2::stream_profile&) const)
                 &rs2::context::get_extrinsics, "from"_a, "to"_a)
-           .def("set_devices_changed_callback", [](const rs2::context& self, std::function<void(rs2::event_information)> &callback)
+           .def("set_devices_changed_callback", [](rs2::context& self, std::function<void(rs2::event_information)> &callback)
                 {
                     self.set_devices_changed_callback(callback);
                 }, "Register devices changed callback.", "callback"_a)

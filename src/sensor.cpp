@@ -32,6 +32,17 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_NAME, name);
     }
 
+    const std::string& sensor_base::get_info(rs2_camera_info info) const
+    {
+        if (info_container::supports_info(info)) return info_container::get_info(info);
+        else return _owner->get_info(info);
+    }
+
+    bool sensor_base::supports_info(rs2_camera_info info) const
+    {
+        return info_container::supports_info(info) || _owner->supports_info(info);
+    }
+
     void sensor_base::register_notifications_callback(notifications_callback_ptr callback)
     {
         _notifications_proccessor->set_callback(std::move(callback));
