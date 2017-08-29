@@ -227,6 +227,30 @@ namespace rs2
         frame_queue _results;
     };
 
+    class align
+    {
+    public:
+        frameset wait_for_frames()
+        {
+            return composite_frame(_queue.wait_for_frame());
+        }
+
+        void operator()(frame f) const
+        {
+            _block(std::move(f));
+        }
+    private:
+        friend class context;
+
+        align(processing_block block) : _block(block), _queue(1)
+        {
+            _block.start(_queue);
+        }
+
+        processing_block _block;
+        frame_queue _queue;
+    };
+
     class colorizer
     {
     public:

@@ -133,6 +133,17 @@ namespace rs2
             return pointcloud(processing_block{ block });
         }
 
+        align create_align(rs2_stream align_to) const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_processing_block> block(
+                rs2_create_align(_context.get(), align_to, &e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return align(processing_block{ block });
+        }
+
         /**
          * Creates a device from a RealSense file
          *

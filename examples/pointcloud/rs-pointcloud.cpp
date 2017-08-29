@@ -115,7 +115,8 @@ void draw_pointcloud(window& app, state& app_state, rs2::points& points)
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     float width = app.width(), height = app.height();
-    glClearColor(52.0f / 255, 72.f / 255, 94.0f / 255, 1);
+    
+    glClearColor(153.f/ 255, 153.f / 255, 153.f / 255, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glMatrixMode(GL_PROJECTION);
