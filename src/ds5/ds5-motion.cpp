@@ -63,6 +63,7 @@ namespace librealsense
 
         stream_profiles init_stream_profiles() override
         {
+            context::extrinsics_lock lock(_owner->_fisheye_stream->get_context());
             auto results = hid_sensor::init_stream_profiles();
 
             for (auto p : results)
@@ -104,8 +105,9 @@ namespace librealsense
 
         stream_profiles init_stream_profiles() override
         {
-            auto results = uvc_sensor::init_stream_profiles();
+            context::extrinsics_lock lock(_owner->_fisheye_stream->get_context());
 
+            auto results = uvc_sensor::init_stream_profiles();
             for (auto p : results)
             {
                 // Register stream types

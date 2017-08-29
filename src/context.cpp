@@ -47,6 +47,7 @@ namespace librealsense
         : _devices_changed_callback(nullptr , [](rs2_devices_changed_callback*){})
     {
         _stream_id = 0;
+        _locks_count = 0;
 
         LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
 
@@ -167,6 +168,7 @@ namespace librealsense
         {
             auto results = uvc_sensor::init_stream_profiles();
 
+            context::extrinsics_lock lock(_default_stream->get_context());
             for (auto p : results)
             {
                 // Register stream types
@@ -440,6 +442,8 @@ namespace librealsense
 
     void context::cleanup_extrinsics()
     {
+        if (_locks_count.load()) return;
+
         auto counter = 0;
         auto dead_counter = 0;
         for (auto&& kvp : _streams)

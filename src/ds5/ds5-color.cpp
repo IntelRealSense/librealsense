@@ -113,6 +113,7 @@ namespace librealsense
 
     stream_profiles ds5_color_sensor::init_stream_profiles()
     {
+        context::extrinsics_lock lock(_owner->_color_stream->get_context());
         auto results = uvc_sensor::init_stream_profiles();
 
         for (auto p : results)

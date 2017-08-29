@@ -131,6 +131,21 @@ namespace librealsense
         void register_extrinsics(const stream_interface& from, const stream_interface& to, std::weak_ptr<lazy<rs2_extrinsics>> extr);
         bool try_fetch_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics* extr);
 
+        struct extrinsics_lock
+        {
+            extrinsics_lock(context& owner) 
+                : _owner(owner) 
+            { 
+                _owner.cleanup_extrinsics();
+                _owner._locks_count.fetch_add(1); 
+            }
+            ~extrinsics_lock() { 
+                _owner._locks_count.fetch_sub(1); 
+            }
+
+            context& _owner;
+        };
+
     private:
         void on_device_changed(platform::backend_device_group old, platform::backend_device_group curr, const std::map<std::string, std::shared_ptr<device_info>>& old_playback_devices, const std::map<std::string, std::shared_ptr<device_info>>& new_playback_devices);
 
@@ -151,6 +166,7 @@ namespace librealsense
         std::mutex _streams_mutex;
 
         std::shared_ptr<lazy<rs2_extrinsics>> _id;
+        std::atomic<int> _locks_count;
     };
 
     // Helper functions for device list manipulation:
