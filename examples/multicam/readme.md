@@ -6,12 +6,14 @@ The multicam sample demonstrates the ability to use the SDK for streaming and re
 
 ## Expected Output
 
-The application should open a window that is split to a number of view ports (as the number of connected cameras).
+The application should open a window that is split to a number of view ports (at least one per camera).
 Each part of the split window should display a single stream from a different camera, and at the top left should appear the name of the stream. 
 
 In the following example we've used two Intel® RealSense™ Depth Cameras pointing at different locations.
 
 <p align="center"><img src="example_screenshot.gif" alt="screenshot gif"/></p>
+
+> Note: The above animation was cropped to display only the depth streams.
 
 ## Code Overview 
 
@@ -21,33 +23,19 @@ As with any SDK application we include the Intel RealSense Cross Platform API:
 #include <librealsense2/rs.hpp>     // Include RealSense Cross Platform API
 ```
 
-In this example we will also use two auxiliary APIs:
+In this example we will also use the auxiliary library of `example.hpp`:
 
 ```cpp
-#include <librealsense2/rsutil.hpp> // Include Config utility class
 #include "example.hpp"              // Include short list of convenience functions for rendering
 ```
 
 `examples.hpp` lets us easily open a new window and prepare textures for rendering.
 
-`librealsense2/rsutil.hpp` contains common utilities that assist with device configuration, and with devices connections and disconnections.
-
-We define some additional objects to help manage the state of the application:
+We define an additional class to help manage the state of the application and the connected devices:
 ```cpp
-// Structs for managing connected devices
-struct dev_data { rs2::device dev; texture tex; rs2::frame_queue queue; };
-struct state { std::mutex m; std::map<std::string, dev_data> frames; rs2::colorizer depth_to_frame; };
+class device_container{ ... }
 ```
-
-And declare two helper functions to handle the multiple devices:
-
-```cpp
-// Helper functions
-void add_device(state& app_state, rs2::device& dev);
-void remove_devices(state& app_state, const rs2::event_information& info);
-```
-We will step into these functions later in this overview.
-
+We will elaborate on `device_container` later in this overview.
 
 The first object we use is a `window`, that will be used to display the images from all the cameras.
 
@@ -58,100 +46,46 @@ window app(1280, 960, "CPP Multi-Camera Example");
 
 The `window` class resides in `example.hpp` and lets us easily open a new window and prepare textures for rendering.
 
-Declare a `state` object:
+Next, we declare a `device_container ` object:
 ```cpp
-// Construct an object to help track connected cameras
-state app_state;
+device_container connected_devices;
 ```
+This object encapsulates the connected cameras. It is used to manage the state of the program, and all of operations related to the cameras and rendering of frames.
 
-This object encapsulates the connected cameras and is used to manage the state of the program.
-
-Next, we declare a `rs2::context`.
+The last variable we declare is `rs2::context`.
 
 ```cpp
-// Create librealsense context for managing devices
-context ctx;
+rs2::context ctx;    // Create librealsense context for managing devices
 ```
 `context` encapsulates all of the devices and sensors, and provides some additional functionalities.
-
-In this example we will ask the `context` to notify us on device changes (connection and disconnections).
+In this example we will ask the `context` to notify us on device changes (connections and disconnections).
  
 ```cpp
 // Register callback for tracking which devices are currently connected
-ctx.set_devices_changed_callback([&app_state](event_information& info){
-    remove_devices(app_state, info);
-
+ctx.set_devices_changed_callback([&](rs2::event_information& info)
+{
+    connected_devices.remove_devices(info);
     for (auto&& dev : info.get_new_devices())
-        add_device(app_state, dev);
+    {
+        connected_devices.enable_device(dev);
+    }
 });
 ```
-Using `set_devices_changed_callback` we can register any callable object that accepts `event_information&` as its paramter.
+Using `set_devices_changed_callback` we can register any callable object that accepts `event_information&` as its parameter.
 `event_information` contains a list of devices that were disconnected, and the list of the currently connected devices.
-In this case, once the `context` notifies us about a change, we update the program's `state` to reflect the current connected devices.
+In this case, once the `context` notifies us about a change, we update `connected_devices` about the removed, and order it to start streaming from new devices.
 
 After we registered to get notification from the `context` we query it for all connected devices, and add each one:
 ```cpp
 // Initial population of the device list
 for (auto&& dev : ctx.query_devices()) // Query the list of connected RealSense devices
-    add_device(app_state, dev);
-```
-
-`add_device` adds the device to the list of devices in use, configures it and starts it.
-To do that, we declare a `Config` object that will help with device configuration:
-
-```cpp
-// Helper function for adding new devices to the application
-void add_device(state& app_state, rs2::device& dev)
 {
-    // Create a config object to help configure how the device will stream
-    rs2::util::config c;
-
-```
-
-Using the `Config`, we check if the device supports the depth stream, and if not, we choose the color stream by default.
-
-```cpp
-    // Select depth if possible, default to color otherwise
-    if (c.can_enable_stream(dev, RS2_STREAM_DEPTH, rs2::preset::best_quality))
-        c.enable_stream(RS2_STREAM_DEPTH, rs2::preset::best_quality);
-    else
-        c.enable_stream(RS2_STREAM_COLOR, rs2::preset::best_quality);
-```
-
-In order to start streaming from a device, we first need to `open` it and only later `start` it:
-
-```cpp
-    // Open the device for streaming
-        auto s = c.open(dev);
-```
-
-Update the `state` to hold this new device, and create a `frame_queue` inplace.
-We use the device's serial number as the unique identifier of the device:
-```cpp
-    // Register device in app state
-    std::string sn(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-    std::lock_guard<std::mutex> lock(app_state.m);
-    app_state.frames.emplace(sn, dev_data{ dev, texture(), rs2::frame_queue(1) });
-```
-
-`frame_queue` is a container of frames that implements a queue. It is initialized with a capacity of `1`, meaning that 
-only a single (the latest) frame is kept inside the queue. We use this queue as a "double buffer", to allow the application to handle frames without blocking the arrival of newer frames.
- 
-The last thing to do is start the device:
-
-```cpp
-    // Start streaming. The callback processes depth frames and then stores them for displaying
-    s.start([&app_state, sn](rs2::frame f) {
-        std::lock_guard<std::mutex> lock(app_state.m);
-        app_state.frames[sn].queue(app_state.depth_to_frame(f));
-    });
+    connected_devices.enable_device(dev);
 }
 ```
+`enable_device` adds the device to the internal list of devices in use, and starts it.  Each device is wrapped with a `rs2::pipeline` to easily configure and start streaming from it. 
 
-When calling `start` we can register any callable object that accepts a `frame` as its paramter.
-In this case we register a lambda expression that upon frame arrival, simply puts the frame in the queue.
-
-(Back to main...)
+The `pipeline` holds a queue of the latest frames, and allows polling from this queue. We will use it later on.
 
 After adding the device, we begin our main loop of the application.
 In this loop we will display all of the streams from all the devices.
@@ -159,34 +93,128 @@ In this loop we will display all of the streams from all the devices.
 ```cpp
 while (app) // Application still alive?
 {
-    // This app uses the device list asyncronously, so we need to lock it
-    std::lock_guard<std::mutex> lock(app_state.m);
 ```
 
-Every iteration we calculate the width, height and position of every view port (which displays a single stream):
+Every iteration we first try to poll all available frames from all device:
 
 ```cpp
-    // Calculate the size of each stream given stream count and window size
-    int c = std::ceil(std::sqrt(app_state.frames.size()));
-    int r = std::ceil(app_state.frames.size() / static_cast<float>(c));
-    float w = app.width()/c;
-    float h = app.height()/r;
+   connected_devices.poll_frames();
 ```
-
-Then, we take a single frame from each stream, and render it to the screen (in its correct location):
+Diving into `device_container::poll_frames` :
 ```cpp
-    int stream_no = 0;
-    for (auto&& kvp : app_state.frames)
+void poll_frames()
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    // Go over all device
+    for (auto&& view : _devices)
     {
-        auto&& device = kvp.second;
-        // If we've gotten a new image from the device, upload that
-        frame f;
-        if (device.queue.poll_for_frame(&f))
-            device.tex.upload(f);
+        // Ask each pipeline if there are new frames available
+        rs2::frame f;
+        if (view.second.pipe.poll_for_frame(&f))
+        {
+```
 
-        // Display the latest frame in the right position on screen
-        device.tex.show({ w*(stream_no%c), h*(stream_no / c), w, h });
-        ++stream_no;
+In the above code, we go over all devices, which are actually `view_port`s.
+`view_port` is a helper struct which encapsulates a pipeline, its latest polled frames, and 2 other utilities that allow converting depth stream to color (`colorizer`), and render frames to the window (`texture`).
+For each pipeline, we try to poll for frames. 
+
+```cpp
+            if (auto frameset = f.as<rs2::composite_frame>())
+            {
+                for (int i = 0; i < frameset.size(); i++)
+                {
+                    rs2::frame new_frame = frameset[i];
+                    int stream_id = new_frame.get_profile().unique_id();
+                    view.second.frames_per_stream[stream_id] = view.second.colorize_frame(new_frame); //update view port with the new stream
+                }
+            }
+        }
+    }
+}
+```
+A `rs2::frame` is "extendable" to a `composite_frame`, which holds more than a single type of frame.
+In the above code, we expect the pipeline to return composite frames, and we store each frame instead of the previously polled frame.
+The stored frames will be used next to count the number of active streams and for rendering to screen.
+ 
+Back to main...
+
+After polling for frames, we count the number of active streams and display an appropriate message to the user:
+```cpp
+    auto total_number_of_streams = connected_devices.stream_count();
+    if (total_number_of_streams == 0)
+    {
+        draw_text(std::max(0.f, (app.width() / 2) - no_cammera_message.length() * 3), app.height() / 2, no_cammera_message.c_str());
+        continue;
+    }
+    if (connected_devices.device_count() == 1)
+    {
+        draw_text(0, 10, "Please connect another camera");
+    }
+```
+According to the number of streams we calculate the alignment of the view ports in the window:
+
+```cpp
+    int cols = std::ceil(std::sqrt(total_number_of_streams));
+    int rows = std::ceil(total_number_of_streams / static_cast<float>(cols));
+
+    float view_width = (app.width() / cols);
+    float view_height = (app.height() / rows);
+```
+
+And finally call `render_textures`:
+```cpp
+    connected_devices.render_textures(cols, rows, view_width, view_height);
+```
+
+
+In `device_container::render_textures` we go over all the stored frames:
+
+```cpp
+void render_textures(int cols, int rows, float view_width, float view_height)
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    int stream_no = 0;
+    for (auto&& view : _devices)
+    {
+        // For each device get its frames
+        for (auto&& id_to_frame : view.second.frames_per_stream)
+        {
+```
+
+If a new frame was stored, we upload it to the graphics buffer:
+
+```cpp
+            // If the frame is available
+            if (id_to_frame.second)
+            {
+                view.second.tex.upload(id_to_frame.second);
+            }
+```
+
+Next, we calculate the correct location of the current stream:
+```cpp
+            rect frame_location{ view_width * (stream_no % cols), view_height * (stream_no / cols), view_width, view_height };
+```            
+
+And finally, since this example shows multi-**camera** streaming, we verify that the stream is of video frames. 
+Note that the library supports streaming of video, motion information, and other.
+
+As with the `composite_frame` that we've seen earlier, a `frame` can also be a  `rs2::video_frame` which represents a camera image and have additional properties such as width and height.
+```cpp
+            if (rs2::video_frame vid_frame = id_to_frame.second.as<rs2::video_frame>())
+            {
+```
+We use the width and height of the frame to scale it into the view port:
+```cpp
+               rect adjuested = frame_location.adjust_ratio({ static_cast<float>(vid_frame.get_width())
+                                                             , static_cast<float>(vid_frame.get_height()) });
+```
+And finally, call `show` with the position of the stream, to render it to screen.
+```cpp
+                view.second.tex.show(adjuested);
+                stream_no++;
+            }
+        }
     }
 }
 ```
