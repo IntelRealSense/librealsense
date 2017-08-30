@@ -12,7 +12,7 @@ librealsense shall be built on Windows using [CMake](https://cmake.org/download/
 Don't forget to check `BUILD_EXAMPLES` if you wish to use librealsense samples.
 
 ## Windows 8.1:
-When working on Windows 8.1, make sure you have [KB3075872](https://support.microsoft.com/en-us/kb/3075872) and [KB2919355](https://support.microsoft.com/en-us/kb/2919355) installed. These patches are addressing issues with 8.1 video drivers, resolved in Windows 10.
+When working on Windows 8.1, make sure you have [KB3075872](https://support.microsoft.com/en-us/kb/3075872) and [KB2919355](https://support.microsoft.com/en-us/kb/2919355) installed. These patches are addressing issues specific to 8.1 video drivers, that were later resolved in Windows 10.
 
 ## Enabling metadata on Windows
 Metadata attributes is an advanced capability provided by librealsense.
@@ -21,13 +21,12 @@ Follow the instructions to enable metadata generation:
 
 Prerequisites:
 - Windows 10 with administrator login.
-- WinSDK ver 10 (10.0.15063)
+- WinSDK ver 10 (10.0.15063) or later.
 
 #### Installation:
 - Verify OS version:
  - Run `winver` command from desktop/terminal - "Version 1607" or later is expected.  
  ![winver](./img/winver_Win10.png)
-
 
 - Install WinSDK ver10:
  - Navigate to "Control Panel" -> "Programs and Features"
@@ -36,6 +35,16 @@ Prerequisites:
  ![winsdk](./img/WinSDK_10.0.10586.png)
 
 - Windows OS requires a dedicated registry entry to be present for each unique video device in order to provide metadata support:
+  - Launch Windows Powershell and navigate to the script directory
+  - `PS > .\realsense_metadata_win10.ps1 <operation:optional>`
+    The supported operations are
+    - `-op install` adds registry keys for connected Intel Realsense devices
+    - `-op install_all` adds keys for all RealSense devices logged in the registry
+    - `-op remove` removes registry keys for connected Intel Realsense devices
+    - `-op remove_all` removes the keys for all RealSense devices logged in the registry
+    Running the script without arguments will is similar to `-op install` operation  
+
+In case the script cannot be executed due to permissions, or other Host-related issue please follow the instructions to  update the registry manually:
   - Connect Intel® RealSense™ device to the host
   - Navigate to "Control Panel" -> "Device Manager"
   - Browse for Intel® RealSense™ devices
@@ -44,15 +53,18 @@ Prerequisites:
 
     ![win_dev_master_interface](./img/win_device_interface.png)
     ![win_dev_master_interface](./img/win_device_sibling_interfaces.png)
-- Modify Windows Registry:
-  - For each interface (Steps 2 and 3) perform
-    - Using Registry Editing tool such as "regedit" navigate to	`HKLM\SYSTEM\CurrentControlSet\Control\DeviceClasses\{e5323777-f976-4f5b-9b55-b94699c46e44}` branch (Step 1)
+
+
+- Modifying the Windows Registry:
+  - For each interface found (Steps 2 and 3) perform
+    - Using Registry Editing tool such as "regedit" navigate to	`HKLM\SYSTEM\CurrentControlSet\Control\DeviceClasses\{e5323777-f976-4f5b-9b55-b94699c46e44}` branch.
     - Browse into the subdirectory with the name identical to the `Device instance path` obtained from the previous step
-    - Expand the entry into `#GLOBAL` -> `Device Parameters` (Step 2)
-    - Add `DWORD 32bit` value named `MetadataBufferSizeInKB0` with value 4 (Step 3)  
+      - Expand the entry into `#GLOBAL` -> `Device Parameters`
+      - Add `DWORD 32bit` value named `MetadataBufferSizeInKB0` with value 5.
+      - Add an additional `DWORD 32bit` value named `MetadataBufferSizeInKB1` with value 5 for RS400 device zero interface `##?##USB#VID_8086&PID... **MI_00**..`
       ![win_md_reg_key](./img/win_md_reg_key.png)  
 
-    - Repeat the last two steps for   
+    - Repeat the previous step for   
       `HKLM\SYSTEM\CurrentControlSet\Control\DeviceClasses\{65E8773D-8F56-11D0-A3B9-00A0C9223196}` branch
 - Repeat the procedure for all the additional RealSense devices (e.g. `Intel® RealSense™ Camera SR300 RGB`)
 

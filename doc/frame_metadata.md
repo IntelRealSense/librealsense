@@ -101,7 +101,7 @@ In order for `librealsense2` to get access for device-generated attributes the f
 The patches were also successfully ported to Yocto-based distribution and made available for Yocto Reference Kit based on Poky 2.1.2 with kernel version 4.4.26.
 
 ***Windows OS*** - Metadata extraction is supported by Microsoft starting with Windows10. Check [Windows installation  guide](./installation_windows.md) for details.  
-**Note** Extracting metadata attributes is currently available for all UVC stream except for Infrared.
+
 
 ## Metadata attributes in RS400 Devices
 The device firmware implements a custom metadata payload compatible with [Microsoft Extensions for UVC ](https://docs.microsoft.com/en-us/windows-hardware/drivers/stream/uvc-extensions-1-5) spec, and emits metadata attributes in the frame payload header.
