@@ -26,6 +26,32 @@ using namespace pybind11::literals;
 
 PYBIND11_PLUGIN(NAME) {
     py::module m(SNAME, "Library for accessing Intel RealSenseTM cameras");
+
+    class BufData {
+    public:
+        void *_ptr = nullptr;         // Pointer to the underlying storage
+        size_t _itemsize = 0;         // Size of individual items in bytes
+        std::string _format;          // For homogeneous buffers, this should be set to format_descriptor<T>::format()
+        size_t _ndim = 0;             // Number of dimensions
+        std::vector<size_t> _shape;   // Shape of the tensor (1 entry per dimension)
+        std::vector<size_t> _strides; // Number of entries between adjacent entries (for each per dimension)
+    public:
+        BufData(void *ptr, size_t itemsize, const std::string& format, size_t ndim, const std::vector<size_t> &shape, const std::vector<size_t> &strides)
+            : _ptr(ptr), _itemsize(itemsize), _format(format), _ndim(ndim), _shape(shape), _strides(strides) {}
+        BufData(void *ptr, size_t itemsize, const std::string &format, size_t size)
+            : BufData(ptr, itemsize, format, 1, std::vector<size_t> { size }, std::vector<size_t> { itemsize }) { }
+    };
+
+    py::class_<BufData> BufData_py(m, "BufData", py::buffer_protocol());
+    BufData_py.def_buffer([](BufData& self)
+    { return py::buffer_info(
+        self._ptr,
+        self._itemsize,
+        self._format,
+        self._ndim,
+        self._shape,
+        self._strides); }
+	);
     
     py::enum_<rs2_stream> stream(m, "stream");
     stream.value("any", RS2_STREAM_ANY)
@@ -238,11 +264,20 @@ PYBIND11_PLUGIN(NAME) {
               "queried", "frame_metadata"_a)
          .def("get_frame_number", &rs2::frame::get_frame_number,
               /*py::return_value_policy::copy, */"Retrieve frame number (from frame handle)")
-         .def("get_data", [](const rs2::frame& f) /*-> py::list*/ {
-                auto *data = static_cast<const uint8_t*>(f.get_data());
-                long size = f.get_width()*f.get_height()*f.get_bytes_per_pixel();
-                return /*py::cast*/(std::vector<uint8_t>(data, data + size));
-            }, /*py::return_value_policy::take_ownership, */"retrieve data from frame handle")
+         //.def("get_data", [](const rs2::frame& f) /*-> py::list*/ {
+                //auto *data = static_cast<const uint8_t*>(f.get_data());
+                //long size = f.get_width()*f.get_height()*f.get_bytes_per_pixel();
+                //return /*py::cast*/(std::vector<uint8_t>(data, data + size));
+            //}, /*py::return_value_policy::take_ownership, */"retrieve data from frame handle")
+
+
+         .def("get_data", [](const rs2::frame& f) ->  BufData
+              {
+                      return BufData(const_cast<void*>(f.get_data()), 1, std::string("@B"), 2,
+                                             { static_cast<size_t>(f.get_height()), static_cast<size_t>(f.get_stride_in_bytes()) },
+                                             { static_cast<size_t>(f.get_stride_in_bytes()), 1 });
+              }, "retrieve data from the frame handle.", py::keep_alive<0, 1>())
+
          .def("get_width", &rs2::frame::get_width, "Returns image width in "
               "pixels")
          .def("get_height", &rs2::frame::get_height, "Returns image height in "
