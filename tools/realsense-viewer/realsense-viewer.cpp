@@ -16,11 +16,8 @@
 
 #include <noc_file_dialog.h>
 
-#pragma comment(lib, "opengl32.lib")
-
 using namespace rs2;
 using namespace rs400;
-
 
 struct user_data
 {
