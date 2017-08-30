@@ -27,6 +27,7 @@ namespace librealsense
         const uint16_t RS430_MM_PID     = 0x0ad5; // AWGT
         const uint16_t RS430_MM_RGB_PID = 0x0b01; // AWGCT
         const uint16_t RS435_RGB_PID    = 0x0b07; // AWGC
+        const uint16_t RS460_PID       = 0x0b03; // DS5U
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -50,7 +51,8 @@ namespace librealsense
             ds::RS430_PID,
             ds::RS430_MM_PID,
             ds::RS430_MM_RGB_PID,
-            ds::RS435_RGB_PID
+            ds::RS435_RGB_PID,
+            ds::RS460_PID
         };
 
         static const std::map<std::uint16_t, std::string> rs400_sku_names = {
@@ -65,6 +67,7 @@ namespace librealsense
             { RS430_MM_PID, "Intel RealSense 430 with Tracking Module"},
             { RS430_MM_PID, "Intel RealSense 430 with Tracking Module and RGB Module"},
             { RS435_RGB_PID,"Intel RealSense 435"},
+            { RS460_PID,    "Intel RealSense 460" },
         };
 
         // DS5 fisheye XU identifiers
