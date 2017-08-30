@@ -1,0 +1,10 @@
+# Doc - test doc
+
+Intel® RealSense™ Linux Installation comprises the following phases:
+1. Verification of 3rd Party Dependencies  
+2. Updating Ubuntu, Linux OS
+3. Installing Intel® RealSense™ Packages  
+4. Preparing Video4Linux Backend
+5. Troubleshooting Installation Errors
+
+**Note:** Due to the USB 3.0 translation layer between native hardware and a virtual machine, the *librealsense* team does not recommend nor support installation in a VM.
