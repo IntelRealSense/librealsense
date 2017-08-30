@@ -421,11 +421,27 @@ int main(int, char**) try
         ImGui::PushStyleColor(ImGuiCol_Border, black);
 
         ImGui::SetCursorPosX(w - panel_width - panel_y * 3.f);
-        ImGui::PushStyleColor(ImGuiCol_Text, (data.scale_factor < 1.5) ? grey : white);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, is_3d_view ? grey : white);
-        if (ImGui::Button((data.scale_factor < 1.5) ? u8"\uf00e" : u8"\uf010", { panel_y,panel_y }))
+        if (data.scale_factor < 1.5)
         {
-            data.scale_factor = (data.scale_factor < 1.5) ? 2.2f : 1.f;
+            ImGui::PushStyleColor(ImGuiCol_Text, grey);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
+            if (ImGui::Button(u8"\uf00e", { panel_y,panel_y }))
+            {
+                data.scale_factor = 2.2f;
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Enable UI Scaling mode, this will increase the size of UI elements for high resolution displays");
+        }
+        else
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, white);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+            if (ImGui::Button(u8"\uf010", { panel_y,panel_y }))
+            {
+                data.scale_factor = 1.f;
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Disable UI Scaling");
         }
         ImGui::PopStyleColor(2);
         ImGui::SameLine();

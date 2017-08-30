@@ -69,52 +69,42 @@ catch (const std::exception & e)
     std::cerr << e.what() << std::endl;
 }
 
-// Registers the state variable and callbacks with glfw to allow mouse control of the pointcloud
+// Registers the state variable and callbacks to allow mouse control of the pointcloud
 void register_glfw_callbacks(window& app, state& app_state)
 {
-    glfwSetWindowUserPointer(app, &app_state);
-    glfwSetMouseButtonCallback(app, [](GLFWwindow * win, int button, int action, int mods)
+    app.on_left_mouse = [&](bool pressed)
     {
-        auto s = (state *)glfwGetWindowUserPointer(win);
-        if (button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
-    });
+        app_state.ml = pressed;
+    };
 
-    glfwSetScrollCallback(app, [](GLFWwindow * win, double xoffset, double yoffset)
+    app.on_mouse_scroll = [&](double xoffset, double yoffset)
     {
-        auto s = (state *)glfwGetWindowUserPointer(win);
-        s->offset_x += static_cast<float>(xoffset);
-        s->offset_y += static_cast<float>(yoffset);
-    });
+        app_state.offset_x += static_cast<float>(xoffset);
+        app_state.offset_y += static_cast<float>(yoffset);
+    };
 
-    glfwSetCursorPosCallback(app, [](GLFWwindow * win, double x, double y)
+    app.on_mouse_move = [&](double x, double y)
     {
-        auto s = (state *)glfwGetWindowUserPointer(win);
-        if (s->ml)
+        if (app_state.ml)
         {
-            s->yaw -= (x - s->last_x);
-            s->yaw = std::max(s->yaw, -120.0);
-            s->yaw = std::min(s->yaw, +120.0);
-            s->pitch += (y - s->last_y);
-            s->pitch = std::max(s->pitch, -80.0);
-            s->pitch = std::min(s->pitch, +80.0);
+            app_state.yaw -= (x - app_state.last_x);
+            app_state.yaw = std::max(app_state.yaw, -120.0);
+            app_state.yaw = std::min(app_state.yaw, +120.0);
+            app_state.pitch += (y - app_state.last_y);
+            app_state.pitch = std::max(app_state.pitch, -80.0);
+            app_state.pitch = std::min(app_state.pitch, +80.0);
         }
-        s->last_x = x;
-        s->last_y = y;
-    });
+        app_state.last_x = x;
+        app_state.last_y = y;
+    };
 
-    glfwSetKeyCallback(app, [](GLFWwindow * win, int key, int scancode, int action, int mods)
+    app.on_key_release = [&](int key)
     {
-        auto s = (state *)glfwGetWindowUserPointer(win);
-
-        bool bext = false, bint = false, bloc = false;
-        if (0 == action) //on key release
+        if (key == 32) // Escape
         {
-            if (key == GLFW_KEY_SPACE)
-            {
-                s->yaw = s->pitch = 0; s->offset_x = s->offset_y = 0.0;
-            }
+            app_state.yaw = app_state.pitch = 0; app_state.offset_x = app_state.offset_y = 0.0;
         }
-    });
+    };
 }
 
 // Handles all the OpenGL calls needed to display the point cloud

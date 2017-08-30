@@ -95,6 +95,7 @@ namespace librealsense
         }
         stream_profiles init_stream_profiles() override
         {
+            context::extrinsics_lock lock(_owner->_depth_stream->get_context());
             auto results = uvc_sensor::init_stream_profiles();
 
             for (auto p : results)
