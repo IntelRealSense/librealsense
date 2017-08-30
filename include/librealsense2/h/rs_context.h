@@ -47,6 +47,14 @@ rs2_time_t rs2_get_context_time(const rs2_context* context, rs2_error** error);
 void rs2_set_devices_changed_callback_cpp(rs2_context* context, rs2_devices_changed_callback* callback, rs2_error** error);
 
 /**
+* stop raising events when the devices connected to the computer change.
+* additionally, block the calling thread until all in-flight callbacks return.
+* \param context     Object representing librealsense session
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_context_stop(rs2_context* context, rs2_error** error);
+
+/**
 * set callback to get devices changed events
 * these events will be raised by the context whenever new RealSense device is connected or existing device gets disconnected
 * \param context     Object representing librealsense session

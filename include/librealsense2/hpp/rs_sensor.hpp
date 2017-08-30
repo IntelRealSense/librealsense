@@ -518,6 +518,16 @@ namespace rs2
         }
     };
 
+    inline bool operator==(const sensor& lhs, const sensor& rhs)
+    {
+        if (!(lhs.supports(RS2_CAMERA_INFO_NAME) && lhs.supports(RS2_CAMERA_INFO_SERIAL_NUMBER)
+            && rhs.supports(RS2_CAMERA_INFO_NAME) && rhs.supports(RS2_CAMERA_INFO_SERIAL_NUMBER)))
+            return false;
+
+        return std::string(lhs.get_info(RS2_CAMERA_INFO_NAME)) == rhs.get_info(RS2_CAMERA_INFO_NAME)
+            && std::string(lhs.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == rhs.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+    }
+
     class roi_sensor : public sensor
     {
     public:

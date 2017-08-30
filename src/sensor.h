@@ -71,6 +71,10 @@ namespace librealsense
             _pixel_formats.push_back(pf);
         }
 
+        // Make sensor inherit its owning device info by default
+        const std::string& get_info(rs2_camera_info info) const override;
+        bool supports_info(rs2_camera_info info) const override;
+
     protected:
         bool try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const;
 

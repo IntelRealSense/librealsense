@@ -229,6 +229,7 @@ namespace librealsense
                                                 auto c = get_calibration();
                                                 return (c.Rmax / 1000 / 0xFFFF);
                                             })));
+
     }
     void sr300_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot)
     {

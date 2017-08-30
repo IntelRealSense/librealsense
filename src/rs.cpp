@@ -598,6 +598,13 @@ void rs2_set_devices_changed_callback(const rs2_context* context, rs2_devices_ch
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, context, callback, user)
 
+void rs2_context_stop(rs2_context* context, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(context);
+    context->ctx->stop();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, context)
+
 void rs2_start_cpp(const rs2_sensor* sensor, rs2_frame_callback* callback, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(sensor);

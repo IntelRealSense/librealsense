@@ -819,8 +819,9 @@ namespace librealsense
         class device_watcher
         {
         public:
-           virtual void start(device_changed_callback callback) = 0;
-           virtual void stop() = 0;
+            virtual void start(device_changed_callback callback) = 0;
+            virtual void stop() = 0;
+            virtual ~device_watcher() {};
         };
     }
 }
