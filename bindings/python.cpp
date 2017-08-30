@@ -264,20 +264,12 @@ PYBIND11_PLUGIN(NAME) {
               "queried", "frame_metadata"_a)
          .def("get_frame_number", &rs2::frame::get_frame_number,
               /*py::return_value_policy::copy, */"Retrieve frame number (from frame handle)")
-         //.def("get_data", [](const rs2::frame& f) /*-> py::list*/ {
-                //auto *data = static_cast<const uint8_t*>(f.get_data());
-                //long size = f.get_width()*f.get_height()*f.get_bytes_per_pixel();
-                //return /*py::cast*/(std::vector<uint8_t>(data, data + size));
-            //}, /*py::return_value_policy::take_ownership, */"retrieve data from frame handle")
-
-
          .def("get_data", [](const rs2::frame& f) ->  BufData
               {
                       return BufData(const_cast<void*>(f.get_data()), 1, std::string("@B"), 2,
                                              { static_cast<size_t>(f.get_height()), static_cast<size_t>(f.get_stride_in_bytes()) },
                                              { static_cast<size_t>(f.get_stride_in_bytes()), 1 });
               }, "retrieve data from the frame handle.", py::keep_alive<0, 1>())
-
          .def("get_width", &rs2::frame::get_width, "Returns image width in "
               "pixels")
          .def("get_height", &rs2::frame::get_height, "Returns image height in "
