@@ -18,7 +18,7 @@ In addition, the *Cmake* build environment requires *pkg-config*
 **Important:** Several scripts below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. Infrequently, *apt-get* mirrors or repositories may also timeout.  
 For *librealsense* users behind an enterprise firewall, configuring the system-wide Ubuntu proxy generally resolves most timeout issues.
 
-**Note:** Linux build configuration is currently configured to use the **V4L2 Backend** by default. See *Video4Linux(V4L2) Backend Preparation* below.
+**Note:** Linux build configuration is currently configured to use the **V4L2 Backend** by default. See [Video4Linux(V4L2)](#video4linux-v4l2-backend-preparation) below.
 
 ## Update Ubuntu to the latest stable version
 Update Ubuntu distribution, including getting the latest stable kernel  
