@@ -54,5 +54,5 @@ try:
                     line += " .:nhBXWW"[c/25]
                 coverage = [0]*64
                 print(line)
-
+```
 A longer example can be found [here](./python-tutorial-1-depth.py)
