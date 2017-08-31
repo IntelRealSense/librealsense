@@ -200,6 +200,8 @@ public:
         glfwTerminate();
     }
 
+    operator GLFWwindow*() { return win; }
+
 private:
     GLFWwindow* win;
     int _width, _height;

@@ -6371,31 +6371,16 @@ bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v
     ImGuiWindow* window = GetCurrentWindow();
     const ImGuiStyle& style = g.Style;
 
+    const bool is_non_linear = fabsf(power - 1.0f) > 0.0001f;
+    const bool is_horizontal = (flags & ImGuiSliderFlags_Vertical) == 0;
+
+
     if (!render_bg)
     {
         // Draw frame
         RenderFrame(frame_bb.Min, frame_bb.Max, GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
     }
-    else
-    {
-        auto bb = frame_bb;
-        auto slider_height = bb.Max.y - bb.Min.y;
-        bb.Min.y = bb.Min.y + (slider_height / 3);
-        bb.Max.y = bb.Max.y - (slider_height / 3);
-        if (bb.Max.y - bb.Min.y < 1.0f)
-        {
-            bb.Min.y -= 0.5;
-            bb.Max.y += 0.5;
-        }
-        // Draw frame
-        RenderFrame(bb.Min, bb.Max, GetColorU32(ImGuiCol_FrameBg), false, 10.0f);
-        float grab_padding = 2.0f;
-        const ImVec2 fill_br = ImVec2(ImLerp(bb.Min.x, bb.Max.x - grab_padding, *v / 100), bb.Max.y);
-        RenderFrame(bb.Min, fill_br, ImGui::ColorConvertFloat4ToU32({ 0, 112.f / 255, 197.f / 255, 1 }), false, 10.0f);
-    }
 
-    const bool is_non_linear = fabsf(power - 1.0f) > 0.0001f;
-    const bool is_horizontal = (flags & ImGuiSliderFlags_Vertical) == 0;
 
     const float grab_padding = 2.0f;
     const float slider_sz = is_horizontal ? (frame_bb.GetWidth() - grab_padding * 2.0f) : (frame_bb.GetHeight() - grab_padding * 2.0f);
@@ -6511,10 +6496,51 @@ bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v
 
     if(render_bg)
     {
+        auto bb = frame_bb;
+        ImRect fill_br = frame_bb;
+        auto slider_height = bb.Max.y - bb.Min.y;
+        auto slider_width = bb.Max.x - bb.Min.x;
+        ImVec2 graber_size = {};
         float width = (grab_bb.Max.x - grab_bb.Min.x);
         float height = (grab_bb.Max.y - grab_bb.Min.y);
-
-        window->DrawList->AddCircleFilled({ grab_bb.Max.x - (width / 2.0f) , grab_bb.Max.y - (height / 2.0f) }, height / 2.5f, GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab), 16);
+        float radius = 1.0;
+        if (is_horizontal)
+        {
+            bb.Min.y = bb.Min.y + (slider_height / 3);
+            bb.Max.y = bb.Max.y - (slider_height / 3);
+            if (bb.Max.y - bb.Min.y < 1.0f)
+            {
+                bb.Min.y -= 0.5;
+                bb.Max.y += 0.5;
+            }
+            float grab_padding = 2.0f;
+            //Horizontal fills from left to right
+            fill_br.Min = bb.Min;
+            fill_br.Max = ImVec2(ImLerp(bb.Min.x, bb.Max.x - grab_padding, *v / 100), bb.Max.y);
+            graber_size = { grab_bb.Max.x - (width / 2.0f) , grab_bb.Max.y - (height / 2.0f) };
+            radius = height / 2.5f;
+        }
+        else
+        {
+            bb.Min.x = bb.Min.x + (slider_width / 3);
+            bb.Max.x = bb.Max.x - (slider_width / 3);
+            if (bb.Max.x - bb.Min.x < 1.0f)
+            {
+                bb.Min.x -= 0.5;
+                bb.Max.x += 0.5;
+            }
+            float grab_padding = 2.0f;
+            //Vertical fills from down upwards
+            fill_br.Min = bb.Min;
+            fill_br.Min.y = grab_bb.Min.y;
+            fill_br.Max = bb.Max;
+            graber_size = { grab_bb.Max.x - (width / 2.0f) , grab_bb.Max.y - (height / 2.0f) };
+            radius = width;// / 2.5;
+        }
+        // Draw frame
+        RenderFrame(bb.Min, bb.Max, GetColorU32(ImGuiCol_FrameBg), false, 10.0f);
+        RenderFrame(fill_br.Min, fill_br.Max, ImGui::ColorConvertFloat4ToU32({ 0, 112.f / 255, 197.f / 255, 1 }), false, 10.0f);
+        window->DrawList->AddCircleFilled(graber_size, radius, GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab), 16);
     }
     else
     {
@@ -6598,7 +6624,7 @@ bool ImGui::SliderFloat(const char* label, float* v, float v_min, float v_max, c
     return value_changed;
 }
 
-bool ImGui::VSliderFloat(const char* label, const ImVec2& size, float* v, float v_min, float v_max, const char* display_format, float power)
+bool ImGui::VSliderFloat(const char* label, const ImVec2& size, float* v, float v_min, float v_max, const char* display_format, float power, bool render_bg)
 {
     ImGuiWindow* window = GetCurrentWindow();
     if (window->SkipItems)
@@ -6631,7 +6657,7 @@ bool ImGui::VSliderFloat(const char* label, const ImVec2& size, float* v, float 
     }
 
     // Actual slider behavior + render grab
-    bool value_changed = SliderBehavior(frame_bb, id, v, v_min, v_max, power, decimal_precision, ImGuiSliderFlags_Vertical);
+    bool value_changed = SliderBehavior(frame_bb, id, v, v_min, v_max, power, decimal_precision, ImGuiSliderFlags_Vertical, render_bg);
 
     // Display value using user-provided display format so user can add prefix/suffix/decorations to the value.
     // For the vertical slider we allow centered text to overlap the frame padding

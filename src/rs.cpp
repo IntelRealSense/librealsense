@@ -1544,6 +1544,16 @@ rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error)
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx)
 
+rs2_processing_block* rs2_create_align(rs2_context* ctx, rs2_stream align_to, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(ctx);
+    VALIDATE_ENUM(align_to);
+
+    auto block = std::make_shared<librealsense::align>(ctx->ctx->get_time_service(), align_to);
+    return new rs2_processing_block{ block };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, align_to)
+
 rs2_processing_block* rs2_create_colorizer(rs2_error** error)
 {
     auto block = std::make_shared<librealsense::colorizer>();
