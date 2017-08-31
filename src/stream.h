@@ -63,9 +63,6 @@ namespace librealsense
         uint32_t get_framerate() const override;
         void set_framerate(uint32_t val) override;
 
-        bool is_recommended() const override;
-        void make_recommended() override;
-
         bool is_default() const override;
         void make_default() override;
 
@@ -99,7 +96,6 @@ namespace librealsense
         rs2_stream _type = RS2_STREAM_ANY;
         rs2_format _format = RS2_FORMAT_ANY;
         uint32_t _framerate = 0;
-        bool _is_recommended = false;
         bool _is_default = false;
         rs2_stream_profile _c_wrapper;
         rs2_stream_profile* _c_ptr = nullptr;

@@ -15,7 +15,7 @@ namespace librealsense
     class device_hub
     {
     public:
-        explicit device_hub(context& ctx, int vid = 0);
+        explicit device_hub(std::shared_ptr<librealsense::context> ctx, int vid = 0);
 
         /**
          * If any device is connected return it, otherwise wait until next RealSense device connects.
@@ -28,10 +28,14 @@ namespace librealsense
         */
         bool is_connected(const device_interface& dev);
 
+        ~device_hub()
+        {
+            _ctx->stop();
+        }
 
     private:
         std::shared_ptr<device_interface> create_device(std::string serial = "");
-        context& _ctx;
+        std::shared_ptr<librealsense::context> _ctx;
         std::mutex _mutex;
         std::condition_variable _cv;
         std::vector<std::shared_ptr<device_info>> _device_list;

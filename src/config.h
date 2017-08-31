@@ -16,15 +16,16 @@
 
 namespace librealsense
 {
-    enum config_preset
-    {
-        best_quality,
-        largest_image,
-        highest_framerate,
-    };
 
     namespace util
     {
+        enum config_preset
+        {
+            best_quality,
+            largest_image,
+            highest_framerate,
+        };
+
         class config
         {
         public:
@@ -168,6 +169,15 @@ namespace librealsense
                 if (a.width == 0 || a.height == 0) return true;
                 return false;
             }
+            std::map<index_type, request_type> get_requests()
+            {
+                return _requests;
+            }
+
+            std::map<index_type, config_preset> get_presets()
+            {
+                return _presets;
+            }
 
             class multistream
             {
@@ -201,34 +211,24 @@ namespace librealsense
                         dev->close();
                 }
 
-//                rs2_intrinsics get_intrinsics(rs2_stream stream, int index = 0) try
-//                {
-//                    auto sp = dynamic_cast<video_stream_profile_interface*>(_profiles.at({ stream, index }).get());
-//                    //TODO: validate sp
-//                    return sp->get_intrinsics();
-//                }
-//                catch (std::out_of_range)
-//                {
-//                    throw std::runtime_error(std::string("config doesnt have intrinsics for ") + rs2_stream_to_string(stream));
-//                }
 
-//                rs2_extrinsics get_extrinsics(rs2_stream from, rs2_stream to) const try
-//                {
-//                    return _profiles.at({ from, 0 })->get_extrinsics_to(_profiles.at({ to, 0 }).get());
-//                }
-//                catch (std::out_of_range)
-//                {
-//                    throw std::runtime_error(std::string("config doesnt have extrinsics for ") + rs2_stream_to_string(from) + "->" + rs2_stream_to_string(to));
-//                }
+               /* rs2_extrinsics get_extrinsics(rs2_stream from, rs2_stream to) const try
+                {
+                    return _profiles.at({ from, 0 })->get_extrinsics_to(_profiles.at({ to, 0 }).get());
+                }
+                catch (std::out_of_range)
+                {
+                    throw std::runtime_error(std::string("config doesnt have extrinsics for ") + rs2_stream_to_string(from) + "->" + rs2_stream_to_string(to));
+                }
 
-//                rs2_extrinsics get_extrinsics(index_type from, index_type to) const try
-//                {
-//                    return _profiles.at(from)->get_extrinsics_to(_profiles.at(to));
-//                }
-//                catch (std::out_of_range)
-//                {
-//                    throw std::runtime_error(std::string("config doesnt have extrinsics for ") + rs2_stream_to_string(from) + "->" + rs2_stream_to_string(to));
-//                }
+                rs2_extrinsics get_extrinsics(index_type from, index_type to) const try
+                {
+                    return _profiles.at(from)->get_extrinsics_to(_profiles.at(to));
+                }
+                catch (std::out_of_range)
+                {
+                    throw std::runtime_error(std::string("config doesnt have extrinsics for ") + rs2_stream_to_string(from) + "->" + rs2_stream_to_string(to));
+                }*/
 
                 std::map<index_type, std::shared_ptr<stream_profile_interface>> get_profiles() const
                 {
@@ -314,7 +314,7 @@ namespace librealsense
                     dev->close();
             }
 
-            template <typename... Args>
+         /*   template <typename... Args>
             bool can_enable_stream(device_interface* dev, rs2_stream stream, Args... args) {
                 config c(*this);
                 c.enable_stream(stream, args...);
@@ -322,8 +322,8 @@ namespace librealsense
                     if (kvp.second->get_stream_type() == stream)
                         return true;
                 return false;
-            }
-
+            }*/
+          
            bool can_enable_stream(device_interface* dev, rs2_stream stream, int index, int width, int height, rs2_format format, int fps)
            {
                config c(*this);
@@ -385,7 +385,7 @@ namespace librealsense
 
                 return multistream(std::move(devices), std::move(stream_to_profile), std::move(stream_to_dev));
             }
-
+        
         private:
             static bool sort_highest_framerate(const std::shared_ptr<stream_profile_interface> lhs, const std::shared_ptr<stream_profile_interface> rhs) {
                 return lhs->get_framerate() < rhs->get_framerate();

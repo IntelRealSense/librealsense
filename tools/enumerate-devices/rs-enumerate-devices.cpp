@@ -5,7 +5,6 @@
 #include <iostream>
 #include <iomanip>
 #include <map>
-#include <librealsense2/rsutil.hpp>
 
 #include "tclap/CmdLine.h"
 

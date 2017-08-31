@@ -53,9 +53,6 @@ namespace librealsense
         virtual uint32_t get_framerate() const = 0;
         virtual void set_framerate(uint32_t val) = 0;
 
-        virtual bool is_recommended() const = 0;
-        virtual void make_recommended() = 0;
-
         virtual bool is_default() const = 0;
         virtual void make_default() = 0;
 

@@ -2,7 +2,6 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp>
-#include <librealsense2/rsutil.hpp>
 #include <chrono>
 #include <thread>
 #include <iostream>
@@ -13,6 +12,7 @@
 #include <set>
 #include <cctype>
 #include <thread>
+
 using namespace std;
 using namespace TCLAP;
 using namespace rs2;
@@ -87,18 +87,14 @@ void parse_configuration(const vector<string> row, rs2_stream& type, int& width,
     format  = parse_format(row[FORMAT]);
 }
 
-util::config configure_stream(bool is_file_set, bool& is_valid, string fn = "")
+void configure_stream(pipeline& pipe, bool is_file_set, bool& is_valid, string fn = "")
 {
-    util::config config;
-
     if (!is_file_set)
     {
-        config.enable_all(preset::best_quality);
         cout << " Warning - No .csv configure file was passed, All streams are enabled by default.\n";
         cout << " To configure stream from a .csv file, specify file full path.\n";
         cout << " Verify stream requests are in the next format -\n";
         cout << " [Stream Type] [Width] [Height] [FPS] [Format]\n";
-        return config;
     }
 
     ifstream file(fn);
@@ -125,9 +121,8 @@ util::config configure_stream(bool is_file_set, bool& is_valid, string fn = "")
 
         // correctness check
         parse_configuration(row, stream_type, width, height, format, fps);
-        config.enable_stream(stream_type, width, height, format, fps);
+        pipe.enable_stream(stream_type, 0, width, height, format, fps);
     }
-    return config;
 }
 
 void save_data_to_file(list<frame_data> buffer[], string filename = ".\\frames_data.csv")
@@ -180,15 +175,14 @@ int main(int argc, char** argv)
 
     std::condition_variable cv;
 
-    context ctx;
-    util::device_hub hub(ctx);
 
     while(!succeed)
     {
         try
         {
-            auto dev = hub.wait_for_device();
+            pipeline pipe;
 
+            auto dev = pipe.get_device();
 
             bool need_to_reset = false;
 
@@ -211,13 +205,13 @@ int main(int argc, char** argv)
             bool is_valid_config;
             auto is_file_set = config_file.isSet();
 
-            auto config = is_file_set ? configure_stream(true, is_valid_config, config_file.getValue()) : configure_stream(false, is_valid_config);
-            auto camera = config.open(dev);
+            is_file_set ? configure_stream(pipe, true, is_valid_config, config_file.getValue()) : configure_stream(pipe, false, is_valid_config);
+            
 
             std::list<frame_data> buffer[NUM_OF_STREAMS];
             auto start_time = chrono::high_resolution_clock::now();
 
-            camera.start([&buffer, &start_time, &cv, &max_frames_number](frame f)
+            pipe.start([&buffer, &start_time, &cv, &max_frames_number](frame f)
             {
                 auto arrival_time = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start_time);
 
@@ -236,12 +230,12 @@ int main(int argc, char** argv)
 
             const auto ready = [&]()
             {
-                if(!hub.is_connected(dev) || need_to_reset)
+                if(need_to_reset)
                     return true;
 
-                for(auto&& profile : camera.get_profiles())
+                for(auto&& profile : pipe.get_selection())
                 {
-                    if(buffer[(int) profile.second.stream_type()].size() < max_frames_number)
+                    if(buffer[(int) profile.stream_type()].size() < max_frames_number)
                         return false;
                 }
                 succeed = true;
@@ -256,15 +250,15 @@ int main(int argc, char** argv)
                 if(need_to_reset)
                 {
                     succeed = false;
-                    camera.stop();
+                    pipe.stop();
                     dev.hardware_reset();
                     need_to_reset = false;
                 }
-                if(!succeed &&(need_to_reset || !hub.is_connected(dev)))
+                if(!succeed && need_to_reset)
                     continue;
             }
 
-            camera.stop();
+            pipe.stop();
             if (filename.isSet())
                 save_data_to_file(buffer, filename.getValue());
             else

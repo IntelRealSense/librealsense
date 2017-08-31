@@ -47,14 +47,6 @@ rs2_time_t rs2_get_context_time(const rs2_context* context, rs2_error** error);
 void rs2_set_devices_changed_callback_cpp(rs2_context* context, rs2_devices_changed_callback* callback, rs2_error** error);
 
 /**
-* stop raising events when the devices connected to the computer change.
-* additionally, block the calling thread until all in-flight callbacks return.
-* \param context     Object representing librealsense session
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-void rs2_context_stop(rs2_context* context, rs2_error** error);
-
-/**
 * set callback to get devices changed events
 * these events will be raised by the context whenever new RealSense device is connected or existing device gets disconnected
 * \param context     Object representing librealsense session
@@ -87,6 +79,41 @@ void rs2_context_remove_device(rs2_context* ctx, const char* file, rs2_error** e
 * \return            the list of devices, should be released by rs2_delete_device_list
 */
 rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error);
+
+/**
+* \brief Creates RealSense device_hub .
+* \param[in] context The context for the device hub
+* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return            Device hub object
+*/
+rs2_device_hub* rs2_create_device_hub(const rs2_context* context, rs2_error** error);
+
+/**
+* \brief Frees the relevant device hub object.
+* \param[in] device hub Object that is no longer needed
+* \param context     Object representing librealsense session
+*/
+void rs2_delete_device_hub(const rs2_device_hub* hub);
+
+/**
+* If any device is connected return it, otherwise wait until next RealSense device connects.
+* Calling this method multiple times will cycle through connected devices
+* \param[in] context The context to creat the device
+* \param[in] hub The device hub object
+* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return            device object
+*/
+rs2_device* rs2_device_hub_wait_for_device(rs2_context* ctx, const rs2_device_hub* hub, rs2_error** error);
+
+/**
+* Checks if device is still connected
+* \param[in] hub The device hub object
+* \param[in] device The device
+* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return            1 if the device is connected, 0 otherwise 
+*/
+int rs2_device_hub_is_device_connected(const rs2_device_hub* hub, const rs2_device* device, rs2_error** error);
+
 
 #ifdef __cplusplus
 }

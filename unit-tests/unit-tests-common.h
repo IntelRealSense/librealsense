@@ -6,7 +6,7 @@
 
 #include "catch/catch.hpp"
 #include "../include/librealsense2/rs.hpp"
-#include "../include/librealsense2/rsutil.hpp"
+#include "../include/librealsense2/hpp/rs_context.hpp"
 #include "../include/librealsense2/hpp/rs_internal.hpp"
 #include <limits> // For std::numeric_limits
 #include <cmath> // For std::sqrt

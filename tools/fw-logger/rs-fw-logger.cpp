@@ -2,7 +2,6 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp>
-#include <librealsense2/rsutil.hpp>
 #include <fstream>
 #include <thread>
 #include "tclap/CmdLine.h"
@@ -73,7 +72,7 @@ int main(int argc, char* argv[])
 
 
     context ctx;
-    util::device_hub hub(ctx);
+    device_hub hub(ctx);
 
     while (true) {
 

@@ -4,7 +4,7 @@
 #include <librealsense2/rs.hpp>
 
 #include "pipeline.h"
-
+#include "stream.h"
 
 namespace librealsense
 {
@@ -25,10 +25,10 @@ namespace librealsense
     };
 
 
-    pipeline::pipeline(context& ctx, std::shared_ptr<device_interface> dev)
-        :_hub(ctx, VID), _dev(dev)
+    pipeline::pipeline(std::shared_ptr<librealsense::context> ctx, std::shared_ptr<device_interface> dev)
+        :_ctx(ctx), _hub(ctx, VID), _dev(dev)
     {
-        if(!dev)
+        if (!dev)
             _dev = _hub.wait_for_device();
 
         _dev->get_device_data();
@@ -40,7 +40,10 @@ namespace librealsense
         return _dev;
     }
 
-
+    std::shared_ptr<librealsense::context> pipeline::get_context()
+    {
+        return _ctx;
+    }
     void pipeline::start(frame_callback_ptr callback)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
@@ -50,40 +53,45 @@ namespace librealsense
         };
 
         frame_callback_ptr syncer_callback =
-        {new internal_frame_callback<decltype(to_syncer)>(to_syncer),
-         [](rs2_frame_callback* p) { p->release(); }};
+        { new internal_frame_callback<decltype(to_syncer)>(to_syncer),
+         [](rs2_frame_callback* p) { p->release(); } };
 
 
         _syncer.set_output_callback(callback);
 
-
-        if(_profiles.size() >0)
+        if (_config.get_requests().size() == 0 && _config.get_requests().size() == 0)
         {
-            _multistream = _config.open(_dev.get());
-            _multistream.start(syncer_callback);
-        }
-        else
-        {
+            stream_profiles default_profiles;
             for (unsigned int i = 0; i < _dev->get_sensors_count(); i++)
             {
                 auto&& sensor = _dev->get_sensor(i);
-                stream_profiles default_profiles;
+
                 auto profiles = sensor.get_stream_profiles();
 
-                for(auto p: profiles)
+                for (auto p : profiles)
                 {
-                    if(p->is_default())
+                    if (p->is_default())
                     {
                         default_profiles.push_back(p);
                     }
                 }
-                sensor.open(default_profiles);
 
-                sensor.start(syncer_callback);
                 _sensors.push_back(&sensor);
+            }
 
+            for (auto prof : default_profiles)
+            {
+
+                auto p = dynamic_cast<video_stream_profile*>(prof.get());
+                if (!p)
+                {
+                    throw std::runtime_error(to_string() << "stream_profile is not video_stream_profile");
+                }
+                enable(p->get_stream_type(), p->get_stream_index(), p->get_width(), p->get_height(), p->get_format(), p->get_framerate());
             }
         }
+        _multistream = _config.open(_dev.get());
+        _multistream.start(syncer_callback);
     }
 
     void pipeline::start()
@@ -94,45 +102,37 @@ namespace librealsense
         };
 
         frame_callback_ptr user_callback =
-        {new internal_frame_callback<decltype(to_user)>(to_user),
-         [](rs2_frame_callback* p) { p->release(); }};
+        { new internal_frame_callback<decltype(to_user)>(to_user),
+         [](rs2_frame_callback* p) { p->release(); } };
 
         start(user_callback);
     }
 
 
-
     void pipeline::enable(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t framerate)
     {
-        _config.enable_stream(stream, index, width,height,format, framerate);
-        _profiles.push_back({stream, index, width, height, framerate, format});
+        _config.enable_stream(stream, index, width, height, format, framerate);
+    }
+
+    bool pipeline::can_enable(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t framerate)
+    {
+        return _config.can_enable_stream(_dev.get(), stream, index, width, height, format, framerate);
     }
 
     void pipeline::disable_stream(rs2_stream stream)
     {
         _config.disable_stream(stream);
-
-        _profiles.erase(std::find_if(_profiles.begin(), _profiles.end(), [&](stream_profile profile)
-        {
-            return profile.stream == stream;
-        }));
     }
 
     void pipeline::disable_all()
     {
-       _config.disable_all();
-       _profiles.clear();
+        _config.disable_all();
     }
 
 
 
     void pipeline::stop()
     {
-        for (auto sensor : _sensors)
-        {
-            sensor->stop();
-            sensor->close();
-        }
         _multistream.stop();
         _multistream.close();
     }
@@ -140,14 +140,14 @@ namespace librealsense
     frame_holder pipeline::wait_for_frames(unsigned int timeout_ms)
     {
         frame_holder f;
-        if(_queue.dequeue(&f, timeout_ms))
+        if (_queue.dequeue(&f, timeout_ms))
         {
-             return f;
+            return f;
         }
 
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
-            if(!_hub.is_connected(*_dev))
+            if (!_hub.is_connected(*_dev))
             {
                 _dev = _hub.wait_for_device(timeout_ms, _dev.get());
                 _sensors.clear();
@@ -158,7 +158,7 @@ namespace librealsense
             }
             else
             {
-                throw std::runtime_error(to_string() <<"Frame didn't arrived within "<< timeout_ms);
+                throw std::runtime_error(to_string() << "Frame didn't arrived within " << timeout_ms);
             }
         }
     }
@@ -172,11 +172,28 @@ namespace librealsense
         return false;
     }
 
+
+    bool pipeline::get_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics* extrinsics) const
+    {
+        return _ctx->try_fetch_extrinsics(from, to, extrinsics);
+    }
+
+    stream_profiles pipeline::get_selection() const
+    {
+        stream_profiles res;
+        auto profs = _multistream.get_profiles();
+        for (auto p : profs)
+        {
+            res.push_back(p.second);
+        }
+        return res;
+    }
+
     pipeline::~pipeline()
-    {     
+    {
         try
         {
-           stop();
+            stop();
         }
         catch (...) {}
     }
