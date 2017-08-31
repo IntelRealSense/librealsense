@@ -885,9 +885,10 @@ namespace librealsense
 
         set_depth_auto_exposure(p.depth_auto_exposure);
         if (p.depth_auto_exposure.was_set && p.depth_auto_exposure.auto_exposure == 0)
+        {
+            set_depth_gain(p.depth_gain);
             set_depth_exposure(p.depth_exposure);
-
-        set_depth_gain(p.depth_gain);
+        }
 
         set_color_auto_exposure(p.color_auto_exposure);
         if (p.color_auto_exposure.was_set && p.color_auto_exposure.auto_exposure == 0)
