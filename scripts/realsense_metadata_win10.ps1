@@ -64,8 +64,6 @@ $MultiPinDevices =
     "USB\VID_8086&PID_0B00&MI_00",# RS400+MM(PSRT)
     "USB\VID_8086&PID_0AD1&MI_00" # RS400(PSR)
 
-
-
 #Inhibit system warnings and erros, such as permissions or missing values
 $ErrorActionPreference = "silentlycontinue"
 
@@ -103,41 +101,44 @@ foreach ($subtree in $SearchTrees)
         "remove"      { $Items =  $Items | Where { $ConnectedDev -contains $_.DeviceInstance }; $remove_keys = 1 }
         "install_all" { }
         "remove_all"  { $remove_keys = 1 }
-        default       { "Unrecognized argument" + $op; Exit    }
+        default       { "Aborting: unrecognized argument "" + $op + "" provided.`nPossible values are:";
+                        "`t`t -op [install/install_all/remove/remove_all].`nRefer to the installation manual for details"; Sleep 2; Exit }
     }
 
     foreach  ($item in $Items)
     {
-        $val = 0,0
+        
         $fullPath = $item.PSPath+'\#global\Device Parameters'
-
-        $val[0] = Get-ItemPropertyValue -Path $fullPath -Name MetadataBufferSizeInKB0
-        $val[1] = Get-ItemPropertyValue -Path $fullPath -Name MetadataBufferSizeInKB1
-
 
         if ($remove_keys -ge 1)
         {
             "Remove keys for device: " + $item.DeviceInstance.ToString()
+            # Non-present value will be ignored as for script execution policy
             Remove-ItemProperty -path $fullPath -name MetadataBufferSizeInKB0
             Remove-ItemProperty -path $fullPath -name MetadataBufferSizeInKB1
         }
         else
         {
+            $val = 0,0
+            $val[0] = Get-ItemPropertyValue -Path $fullPath -Name MetadataBufferSizeInKB0
+            $val[1] = Get-ItemPropertyValue -Path $fullPath -Name MetadataBufferSizeInKB1
+
             if ($val[0] -eq 0)
             {
-                "Metadata-required key MetadataBufferSizeInKB0 is missing for " +  $item.DeviceInstance.ToString() + ", adding now"
+                "Device " +  $item.DeviceInstance.ToString() + ": adding metadata key"
                 Set-ItemProperty -path $fullPath -name MetadataBufferSizeInKB0 -value 5
-
-                #convert "USB\VID_8086&PID_0B07&MI_03\6&269496df&0&0003" into "USB\VID_8086&PID_0B07&MI_03"
-                if (($MultiPinDevices -contains $item.DeviceInstance.Substring(0,27)) -and ($val[1] -eq 0))
-                {
-                    "Adding extra key MetadataBufferSizeInKB1 - multipin interface"
-                    Set-ItemProperty -path $fullPath -name MetadataBufferSizeInKB1 -value 5
-                }
             }
             else
             {
-                "the key already exists for " +  $item.DeviceInstance.ToString()
+                "Device " +  $item.DeviceInstance.ToString() + ": skiping - metadata key already exists"
+            }
+
+            #convert "USB\VID_8086&PID_0B07&MI_03\6&269496df&0&0003" into "USB\VID_8086&PID_0B07&MI_03"
+            if (($MultiPinDevices -contains $item.DeviceInstance.Substring(0,27)) -and ($val[1] -eq 0))
+            {
+                # Multi-pin interface requires an additional key
+                "Device " +  $item.DeviceInstance.ToString() +": adding extra key for multipin interface"
+                Set-ItemProperty -path $fullPath -name MetadataBufferSizeInKB1 -value 5
             }
         }
     }

@@ -34,17 +34,30 @@ Prerequisites:
  - Check that SDK version 10.0.10586 or later is present, install if needed:
  ![winsdk](./img/WinSDK_10.0.10586.png)
 
-- Windows OS requires a dedicated registry entry to be present for each unique video device in order to provide metadata support:
-  - Launch Windows Powershell and navigate to the script directory
-  - `PS > .\realsense_metadata_win10.ps1 <operation:optional>`
-    The supported operations are
+ ##### Update Registry:
+  - Windows OS requires a dedicated registry entry to be present for each unique video device in order to provide metadata.  
+
+  ###### Use automation script:
+  - Launch Windows `Powershell` tool as *_Admin_* and navigate to the script directory
+  - Run the following:  
+    `PS > .\realsense_metadata_win10.ps1 <optional:operation>`  
+    The supported parameters are
     - `-op install` adds registry keys for connected Intel Realsense devices
     - `-op install_all` adds keys for all RealSense devices logged in the registry
     - `-op remove` removes registry keys for connected Intel Realsense devices
     - `-op remove_all` removes the keys for all RealSense devices logged in the registry
-    Running the script without arguments will is similar to `-op install` operation  
+    Running the script without arguments will is similar to `-op install` operation.  
 
-In case the script cannot be executed due to permissions, or other Host-related issue please follow the instructions to  update the registry manually:
+  -  If you receive `... cannot be
+loaded because running scripts is disabled on this system` message, run:
+
+    `PS > Set-ExecutionPolicy RemoteSigned` , answer `Y` and then rerun the script
+
+    **Important** - The registry keys are device-unique. Therefore, __*the script must be executed each time a new RealSense device is attached*__ to the PC.
+
+
+  ###### Modifying the registry manually
+  In case the script cannot be executed due to permissions, or other Host-related issue please follow the instructions to  update the registry manually:
   - Connect Intel® RealSense™ device to the host
   - Navigate to "Control Panel" -> "Device Manager"
   - Browse for Intel® RealSense™ devices
