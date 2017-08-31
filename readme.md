@@ -24,7 +24,7 @@ Developer kits containing the necessary hardware to use this library are availab
 #### Step 1: Download and Install
 After installing the Intel RealSense SDK (on [Linux](./doc/distribution_linux.md) \ Windows \ OSX), and connecting the depth camera, you are ready to start writing your first application.
 
-> In case of any issue during initial setup, or later, please first see our [FAQ & Troubleshooting](./doc) section.
+> In case of any issue during initial setup, or later, please first see our [FAQ & Troubleshooting](https://github.com/IntelRealSense/librealsense/wiki/Troubleshooting-Q%26A) section.
 > If you can't find an answer there, try searching our [Closed GitHub Issues](https://github.com/IntelRealSense/librealsense/issues?utf8=%E2%9C%93&q=is%3Aclosed) page,  [Community](https://communities.intel.com/community/tech/realsense) and [Support](https://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) sites.
 > If none of the above helped, [open a new issue](https://github.com/IntelRealSense/librealsense/issues/new).
 
