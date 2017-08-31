@@ -343,6 +343,13 @@ namespace rs2
 
             return out_rect;
         }
+
+        bool intersects(const rect& other) const
+        {
+            return other.contains({ x, y }) || other.contains({ x + w, y }) ||
+                other.contains({ x, y + h }) || other.contains({ x + w, y + h }) ||
+                contains({ other.x, other.y });
+        }
     };
 
     //////////////////////////////
