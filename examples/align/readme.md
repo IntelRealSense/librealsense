@@ -18,7 +18,3 @@ The window should have the following elements:
 - On the left side of the window is a verticl silder for controlling the depth clipping distance.
 - A color image with grayed out background
 - A corresponding (colorized) depth image.
-
-In the following example we've used an Intel® RealSense™ Depth Cameras looking at a 4 legged table with a calibration target on top of it.
-
-<p align="center"><img src="example_screenshot.png" alt="screenshot gif"/></p>
