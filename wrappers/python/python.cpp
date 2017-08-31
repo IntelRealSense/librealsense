@@ -511,7 +511,6 @@ PYBIND11_PLUGIN(NAME) {
                   .def(BIND_DOWNCAST(stream_profile, stream_profile))
                   .def(BIND_DOWNCAST(stream_profile, video_stream_profile))
                   .def("stream_name", &rs2::stream_profile::stream_name)
-                  .def("is_recommended", &rs2::stream_profile::is_recommended)
                   .def("size", &rs2::stream_profile::size)
                   .def("__nonzero__", &rs2::stream_profile::operator bool)
                   .def("get_extrinsics_to", &rs2::stream_profile::get_extrinsics_to, "to"_a)

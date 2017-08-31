@@ -89,16 +89,6 @@ namespace librealsense
         _framerate = val;
     }
 
-    bool stream_profile_base::is_recommended() const
-    {
-        return _is_recommended;
-    }
-
-    void stream_profile_base::make_recommended()
-    {
-        _is_recommended = true;
-    }
-
     bool stream_profile_base::is_default() const
     {
         return _is_default;

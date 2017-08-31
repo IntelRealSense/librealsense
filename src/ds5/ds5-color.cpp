@@ -57,15 +57,30 @@ namespace librealsense
         color_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
         color_ep->register_pu(RS2_OPTION_BRIGHTNESS);
         color_ep->register_pu(RS2_OPTION_CONTRAST);
-        color_ep->register_pu(RS2_OPTION_EXPOSURE);
         color_ep->register_pu(RS2_OPTION_GAIN);
         color_ep->register_pu(RS2_OPTION_GAMMA);
         color_ep->register_pu(RS2_OPTION_HUE);
         color_ep->register_pu(RS2_OPTION_SATURATION);
         color_ep->register_pu(RS2_OPTION_SHARPNESS);
-        color_ep->register_pu(RS2_OPTION_WHITE_BALANCE);
-        color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
-        color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+
+        auto white_balance_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_WHITE_BALANCE);
+        auto auto_white_balance_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+        color_ep->register_option(RS2_OPTION_WHITE_BALANCE, white_balance_option);
+        color_ep->register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, auto_white_balance_option);
+        color_ep->register_option(RS2_OPTION_WHITE_BALANCE,
+            std::make_shared<auto_disabling_control>(
+                white_balance_option,
+                auto_white_balance_option));
+
+        auto exposure_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_EXPOSURE);
+        auto auto_exposure_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+        color_ep->register_option(RS2_OPTION_EXPOSURE, exposure_option);
+        color_ep->register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, auto_exposure_option);
+        color_ep->register_option(RS2_OPTION_EXPOSURE,
+            std::make_shared<auto_disabling_control>(
+                exposure_option,
+                auto_exposure_option));
+
         color_ep->register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
             std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
                 std::map<float, std::string>{ { 0.f, "Disabled"},

@@ -116,7 +116,6 @@ EXPORTS
     rs2_get_api_version
     rs2_set_devices_changed_callback_cpp
     rs2_set_devices_changed_callback
-    rs2_context_stop
     rs2_device_list_contains
     rs2_create_device_from_sensor
     rs2_get_depth_scale
@@ -132,7 +131,7 @@ EXPORTS
     rs2_get_video_stream_intrinsics
 
     rs2_get_stream_profile_size
-    rs2_is_stream_profile_recommended
+    rs2_is_stream_profile_default
 
     rs2_delete_stream_profile
     rs2_clone_stream_profile
@@ -200,9 +199,11 @@ EXPORTS
     rs2_playback_device_get_current_status
     rs2_playback_device_set_playback_speed
 
+    rs2_create_align
     rs2_create_pipeline
     rs2_create_pipeline_with_device
     rs2_pipeline_get_device
+    rs2_pipeline_get_context
     rs2_start_pipeline_with_callback
     rs2_start_pipeline_with_callback_cpp
     rs2_start_pipeline
@@ -212,4 +213,13 @@ EXPORTS
     rs2_disable_all_streams_pipeline
     rs2_pipeline_wait_for_frames
     rs2_pipeline_poll_for_frames
+    rs2_pipeline_get_extrinsics
+    rs2_pipeline_get_selection
+    rs2_pipeline_get_stream_type_selection
+    rs2_can_enable_stream_pipeline
     rs2_delete_pipeline
+
+    rs2_create_device_hub
+    rs2_device_hub_is_device_connected
+    rs2_device_hub_wait_for_device
+    rs2_delete_device_hub

@@ -18,7 +18,7 @@
 #include "colorizer.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"
-
+#include "../include/librealsense2/h/rs_types.h"
 #include "pipeline.h"
 
 ////////////////////////
@@ -43,11 +43,20 @@ struct rs2_context
     std::shared_ptr<librealsense::context> ctx;
 };
 
+struct rs2_device_hub
+{
+    std::shared_ptr<librealsense::device_hub> hub;
+};
+
 struct rs2_pipeline
 {
     std::shared_ptr<librealsense::pipeline> pipe;
 };
 
+//struct rs2_intrinsics
+//{
+//    std::shared_ptr<librealsense::rs2_intrinsics> intrinsics;
+//};
 //struct rs2_record_device
 //{
 //    std::shared_ptr<librealsense::record_device> record_device;
@@ -172,6 +181,36 @@ void rs2_delete_context(rs2_context* context) try
     delete context;
 }
 NOEXCEPT_RETURN(, context)
+
+rs2_device_hub* rs2_create_device_hub(const rs2_context* context, rs2_error** error) try
+{
+    return new rs2_device_hub{ std::make_shared<librealsense::device_hub>(context->ctx) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context)
+
+void rs2_delete_device_hub(const rs2_device_hub* hub) try
+{
+    VALIDATE_NOT_NULL(hub);
+    delete hub;
+}
+NOEXCEPT_RETURN(, hub)
+
+rs2_device* rs2_device_hub_wait_for_device(rs2_context* ctx, const rs2_device_hub* hub, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(hub);
+    VALIDATE_NOT_NULL(ctx);
+    return new rs2_device{ ctx->ctx, /*TODO: how does this affect the new device*/ nullptr, hub->hub->wait_for_device() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, hub, ctx)
+
+int rs2_device_hub_is_device_connected(const rs2_device_hub* hub, const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(hub);
+    VALIDATE_NOT_NULL(device);
+    auto res = hub->hub->is_connected(*device->device);
+    return res ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, hub, device)
 
 rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error) try
 {
@@ -353,10 +392,10 @@ int rs2_get_stream_profile_size(const rs2_stream_profile* profile, rs2_error** e
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, profile)
 
-int rs2_is_stream_profile_recommended(const rs2_stream_profile* profile, rs2_error** error) try
+int rs2_is_stream_profile_default(const rs2_stream_profile* profile, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(profile);
-    return profile->profile->is_recommended() ? 1 : 0;
+    return profile->profile->is_default() ? 1 : 0;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, profile)
 
@@ -597,13 +636,6 @@ void rs2_set_devices_changed_callback(const rs2_context* context, rs2_devices_ch
     context->ctx->set_devices_changed_callback(std::move(cb));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, context, callback, user)
-
-void rs2_context_stop(rs2_context* context, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(context);
-    context->ctx->stop();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, context)
 
 void rs2_start_cpp(const rs2_sensor* sensor, rs2_frame_callback* callback, rs2_error** error) try
 {
@@ -1301,7 +1333,7 @@ rs2_pipeline* rs2_create_pipeline(rs2_context* ctx, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(ctx);
 
-    auto pipe = std::make_shared<librealsense::pipeline>(*ctx->ctx);
+    auto pipe = std::make_shared<librealsense::pipeline>(ctx->ctx);
 
     return new rs2_pipeline{ pipe };
 }
@@ -1311,7 +1343,7 @@ rs2_pipeline* rs2_create_pipeline_with_device(rs2_context* ctx, const rs2_device
 {
     VALIDATE_NOT_NULL(ctx);
 
-    auto pipe = std::make_shared<librealsense::pipeline>(*ctx->ctx, dev->device);
+    auto pipe = std::make_shared<librealsense::pipeline>(ctx->ctx, dev->device);
 
     return new rs2_pipeline{ pipe };
 }
@@ -1374,6 +1406,14 @@ void rs2_enable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, int index
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
+int rs2_can_enable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, int index, int width, int height, rs2_format format, int framerate, rs2_error ** error)try
+{
+    VALIDATE_NOT_NULL(pipe);
+
+    return pipe->pipe->can_enable(stream, index, width, height, format, framerate);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, pipe)
+
 void rs2_disable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
@@ -1417,6 +1457,44 @@ int rs2_pipeline_poll_for_frames(rs2_pipeline * pipe, rs2_frame** output_frame, 
     return false;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, pipe, output_frame)
+
+int rs2_pipeline_get_extrinsics(rs2_pipeline * pipe, const rs2_stream_profile* from, const rs2_stream_profile* to, rs2_extrinsics* extrinsics, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+    VALIDATE_NOT_NULL(extrinsics);
+
+    return pipe->pipe->get_extrinsics(*from->profile, *to->profile, extrinsics) ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, pipe, extrinsics)
+
+rs2_stream_profile_list* rs2_pipeline_get_selection(rs2_pipeline * pipe, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+    return new rs2_stream_profile_list{ pipe->pipe->get_selection() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)
+
+const rs2_stream_profile* rs2_pipeline_get_stream_type_selection(const rs2_stream_profile_list* list, rs2_stream stream, int index, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(list);
+   
+    for (auto prof : list->list)
+    {
+        if(prof->get_stream_type() == stream && prof ->get_stream_index() == index)
+            return prof->get_c_wrapper();
+    }
+
+    throw librealsense::invalid_value_exception(librealsense::to_string() << "stream " << stream << " is not contained in list!");
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
+
+
+rs2_context* rs2_pipeline_get_context(rs2_pipeline * pipe, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+    return new rs2_context{ pipe->pipe->get_context() };
+}
+NOEXCEPT_RETURN(nullptr, pipe)
 
 void rs2_delete_pipeline(rs2_pipeline* pipe) try
 {
@@ -1543,6 +1621,16 @@ rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error)
     return new rs2_processing_block { block };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx)
+
+rs2_processing_block* rs2_create_align(rs2_context* ctx, rs2_stream align_to, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(ctx);
+    VALIDATE_ENUM(align_to);
+
+    auto block = std::make_shared<librealsense::align>(ctx->ctx->get_time_service(), align_to);
+    return new rs2_processing_block{ block };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, align_to)
 
 rs2_processing_block* rs2_create_colorizer(rs2_error** error)
 {
