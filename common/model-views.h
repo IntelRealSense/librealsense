@@ -198,7 +198,7 @@ namespace rs2
         }
 
         sensor s;
-        device dev;
+        device& dev;
 
         std::map<int, option_model> options_metadata;
         std::vector<std::string> resolutions;
@@ -299,13 +299,13 @@ namespace rs2
     {
     public:
         void reset();
-        explicit device_model(device& dev, std::string& error_message);
+        explicit device_model(device& dev, std::string& error_message, viewer_model& viewer);
         void draw_device_details(device& dev, context& ctx);
         void start_recording(const std::string& path, std::string& error_message);
         void stop_recording();
         void pause_record();
         void resume_record();
-        int draw_playback_panel(ImFont* font);
+        int draw_playback_panel(ImFont* font, viewer_model& view);
         void draw_advanced_mode_tab(device& dev, std::vector<std::string>& restarting_info);
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
@@ -317,13 +317,18 @@ namespace rs2
         bool is_recording = false;
         int seek_pos = 0;
         int playback_speed_index = 2;
+        bool _playback_repeat = true;
+        bool _should_replay = false;
         bool show_device_info = false;
 
         std::vector<std::pair<std::string, std::string>> infos;
     private:
         int draw_seek_bar();
-        int draw_playback_controls(ImFont* font);
+        int draw_playback_controls(ImFont* font, viewer_model& view);
         advanced_mode_control amc;
+        std::string pretty_time(std::chrono::nanoseconds duration);
+        
+        void play_defaults(viewer_model& view);
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
@@ -473,6 +478,7 @@ namespace rs2
         void show_no_device_overlay(ImFont* font, int min_x, int min_y);
 
         void show_paused_icon(ImFont* font, int x, int y, int id);
+        void show_recording_icon(ImFont* font_18, int x, int y, int id, float alpha_delta);
 
         void popup_if_error(ImFont* font, std::string& error_message);
 
@@ -497,6 +503,7 @@ namespace rs2
         bool is_output_collapsed = false;
     private:
         std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
+        void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, const ImVec4& color);
 
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;

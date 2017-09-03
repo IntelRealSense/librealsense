@@ -25,8 +25,8 @@ namespace librealsense
         ros_reader(const std::string& file, const std::shared_ptr<context>& ctx) :
             m_total_duration(0),
             m_file_path(file),
-            m_frame_source(ctx->get_time_service()),
-            m_context(ctx)
+            m_context(ctx),
+            m_metadata_parser_map(create_metadata_parser_map())
         {
             reset(); //Note: calling a virtual function inside c'tor, safe while base function is pure virtual
             m_total_duration = get_file_duration();
@@ -116,9 +116,8 @@ namespace librealsense
             }
 
             m_samples_view = nullptr;
-            m_frame_source.reset();
-            m_metadata_parser_map = create_metadata_parser_map();
-            m_frame_source.init(m_metadata_parser_map);
+            m_frame_source = std::make_shared<frame_source>(m_context->get_time_service());
+            m_frame_source->init(m_metadata_parser_map);
             m_device_description = read_device_description();
         }
 
@@ -264,7 +263,7 @@ namespace librealsense
                 }
             }
             additional_data.metadata_size = total_md_size;
-            frame_interface* frame = m_frame_source.alloc_frame((stream_id.stream_type == RS2_STREAM_DEPTH) ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME,
+            frame_interface* frame = m_frame_source->alloc_frame((stream_id.stream_type == RS2_STREAM_DEPTH) ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME,
                                                                 msg->data.size(), additional_data, true);
             if (frame == nullptr)
             {
@@ -512,7 +511,7 @@ namespace librealsense
         device_snapshot                         m_device_description;
         nanoseconds                             m_total_duration;
         std::string                             m_file_path;
-        librealsense::frame_source              m_frame_source;
+        std::shared_ptr<frame_source>           m_frame_source;
         rosbag::Bag                             m_file;
         std::unique_ptr<rosbag::View>           m_samples_view;
         rosbag::View::iterator                  m_samples_itrator;

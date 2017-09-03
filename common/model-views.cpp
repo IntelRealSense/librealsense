@@ -6,6 +6,7 @@
 #include <librealsense2/rs_advanced_mode.hpp>
 
 #include <regex>
+#include <thread>
 
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -1696,34 +1697,37 @@ namespace rs2
 
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons, 0 });
 
-        if (dev->is_paused())
+        if (!dev->dev.is<playback>())
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            label = to_string() << u8"\uf04b" << "##Resume " << profile.unique_id();
-            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            if (dev->is_paused())
             {
-                dev->resume();
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                label = to_string() << u8"\uf04b" << "##Resume " << profile.unique_id();
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    dev->resume();
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Resume sensor");
+                }
+                ImGui::PopStyleColor(2);
             }
-            if (ImGui::IsItemHovered())
+            else
             {
-                ImGui::SetTooltip("Resume sensor");
+                label = to_string() << u8"\uf04c" << "##Pause " << profile.unique_id();
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    dev->pause();
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Pause sensor");
+                }
             }
-            ImGui::PopStyleColor(2);
+            ImGui::SameLine();
         }
-        else
-        {
-            label = to_string() << u8"\uf04c" << "##Pause " << profile.unique_id();
-            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
-            {
-                dev->pause();
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Pause sensor");
-            }
-        }
-        ImGui::SameLine();
 
         label = to_string() << u8"\uf030" << "##Snapshot " << profile.unique_id();
         if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
@@ -2081,7 +2085,7 @@ namespace rs2
         return std::make_pair(s.str(), serial);        // push name and sn to list
     }
 
-    device_model::device_model(device& dev, std::string& error_message)
+    device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer)
         : dev(dev)
     {
         for (auto&& sub : dev.query_sensors())
@@ -2092,21 +2096,9 @@ namespace rs2
         auto name = get_device_name(dev);
         id = to_string() << name.first << ", " << name.second;
 
-        if (dev.is<playback>()) //TODO: remove this and make sub->streaming a function that queries the sensor
+        if (dev.is<playback>())
         {
-            dev.as<playback>().set_status_changed_callback([this](rs2_playback_status status)
-            {
-                if (status == RS2_PLAYBACK_STATUS_STOPPED)
-                {
-                    for (auto sub : subdevices)
-                    {
-                        if (sub->streaming)
-                        {
-                            sub->stop();
-                        }
-                    }
-                }
-            });
+            play_defaults(viewer);
         }
 
         // Initialize static camera info:
@@ -2130,7 +2122,22 @@ namespace rs2
             }
         }
     }
+    void device_model::play_defaults(viewer_model& viewer)
+    {
+        for (auto&& sub : subdevices)
+        {
+            if (!sub->streaming)
+            {
+                auto profiles = sub->get_selected_profiles();
+                sub->play(profiles);
 
+                for (auto&& profile : profiles)
+                {
+                    viewer.streams[profile.unique_id()].dev = sub;
+                }
+            }
+        }
+    }
     void device_model::draw_device_details(device& dev, context& ctx)
     {
         for (auto i = 0; i < RS2_CAMERA_INFO_COUNT; i++)
@@ -2324,8 +2331,7 @@ namespace rs2
         ImGui::PopStyleVar(2);
         ImGui::PopFont();
     }
-
-    void viewer_model::show_paused_icon(ImFont* font_18, int x, int y, int id)
+    void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, const ImVec4& text_color)
     {
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -2336,18 +2342,25 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
         ImGui::SetNextWindowPos({ (float)x, (float)y });
         ImGui::SetNextWindowSize({ 32.f, 32.f });
-        std::string label = to_string() << "paused_icon" << id;
+        std::string label = to_string() << label_str << id;
         ImGui::Begin(label.c_str(), nullptr, flags);
 
-        ImGui::PushStyleColor(ImGuiCol_Text, white);
-        ImGui::Text(u8"\uf04c");
+        ImGui::PushStyleColor(ImGuiCol_Text, text_color);
+        ImGui::Text(text);
         ImGui::PopStyleColor();
 
         ImGui::End();
         ImGui::PopStyleColor();
         ImGui::PopFont();
     }
-
+    void viewer_model::show_paused_icon(ImFont* font_18, int x, int y, int id)
+    {
+        show_icon(font_18, "paused_icon", u8"\uf04c", x, y, id, white);
+    }
+    void viewer_model::show_recording_icon(ImFont* font_18, int x, int y, int id, float alpha_delta)
+    {
+        show_icon(font_18, "recording_icon", u8"\uf111", x, y, id, from_rgba(255, 46, 54, alpha_delta * 255));
+    }
     void async_pointclound_mapper::render_loop()
     {
         while (keep_calculating_pointcloud)
@@ -2639,7 +2652,7 @@ namespace rs2
             std::vector<std::shared_ptr<subdevice_model>> record_sensors;
             for (auto&& sub : _recorder->query_sensors())
             {
-                auto model = std::make_shared<subdevice_model>(dev, sub, error_message);
+                auto model = std::make_shared<subdevice_model>(*_recorder, sub, error_message);
                 record_sensors.push_back(model);
             }
             live_subdevices = subdevices;
@@ -2690,24 +2703,21 @@ namespace rs2
         _recorder->resume();
     }
 
-    int device_model::draw_playback_controls(ImFont* font)
+    int device_model::draw_playback_controls(ImFont* font, viewer_model& viewer)
     {
         auto p = dev.as<playback>();
         rs2_playback_status current_playback_status = p.current_status();
 
         ImGui::PushFont(font);
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 20,0 });
-        //const int button_space = 150;
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 10,0 });
         const float button_dim = 30.f;
-        bool buttons_disabled = current_playback_status == RS2_PLAYBACK_STATUS_STOPPED;
-        const bool supports_playback_stop = false; //TODO: Change once we support these features
         const bool supports_playback_step = false;
 
 
         //////////////////// Step Backwards Button ////////////////////
         std::string label = to_string() << u8"\uf048" << "##Step Backwards " << id;
 
-        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, (!supports_playback_step || buttons_disabled) ? ImGuiButtonFlags_Disabled : 0))
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, supports_playback_step ? 0 : ImGuiButtonFlags_Disabled))
         {
             //p.skip_frames(1);
         }
@@ -2715,7 +2725,7 @@ namespace rs2
 
         if (ImGui::IsItemHovered())
         {
-            std::string tooltip = to_string() << "Step Backwards" << (buttons_disabled || supports_playback_step ? "" : "(Not available)");
+            std::string tooltip = to_string() << "Step Backwards" << (supports_playback_step ? "" : "(Not available)");
             ImGui::SetTooltip("%s", tooltip.c_str());
         }
         ImGui::SameLine();
@@ -2725,13 +2735,16 @@ namespace rs2
         //////////////////// Stop Button ////////////////////
         label = to_string() << u8"\uf04d" << "##Stop Playback " << id;
 
-        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, (!supports_playback_stop || buttons_disabled) ? ImGuiButtonFlags_Disabled : 0))
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }))
         {
-            //p.stop();
+            bool prev = _playback_repeat;
+            _playback_repeat = false;
+            p.stop();
+            _playback_repeat = prev;
         }
         if (ImGui::IsItemHovered())
         {
-            std::string tooltip = to_string() << "Stop Playback" << (buttons_disabled || supports_playback_stop ? "" : "(Not available)");
+            std::string tooltip = to_string() << "Stop Playback";
             ImGui::SetTooltip("%s", tooltip.c_str());
         }
         ImGui::SameLine();
@@ -2740,24 +2753,42 @@ namespace rs2
 
 
         //////////////////// Pause/Play Button ////////////////////
-        if (current_playback_status == RS2_PLAYBACK_STATUS_PAUSED)
+        if (current_playback_status == RS2_PLAYBACK_STATUS_PAUSED || current_playback_status == RS2_PLAYBACK_STATUS_STOPPED)
         {
-            label = to_string() << u8"\uf04b" << "##Resume Playback " << id;
-            if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
+            label = to_string() << u8"\uf04b" << "##Play " << id;
+            if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }))
             {
-                p.resume();
+                if (current_playback_status == RS2_PLAYBACK_STATUS_STOPPED)
+                {
+                    play_defaults(viewer);
+                }
+                else
+                {
+                    p.resume();
+                    for (auto&& s : subdevices)
+                    {
+                        if (s->streaming)
+                            s->resume();
+                    }
+                }
+          
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Resume Playback");
+                ImGui::SetTooltip(current_playback_status == RS2_PLAYBACK_STATUS_PAUSED ? "Resume Playback" : "Start Playback");
             }
         }
         else
         {
             label = to_string() << u8"\uf04c" << "##Pause Playback " << id;
-            if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
+            if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }))
             {
                 p.pause();
+                for (auto&& s : subdevices)
+                {
+                    if (s->streaming)
+                        s->pause();
+                }
             }
             if (ImGui::IsItemHovered())
             {
@@ -2773,17 +2804,46 @@ namespace rs2
 
         //////////////////// Step Forward Button ////////////////////
         label = to_string() << u8"\uf051" << "##Step Forward " << id;
-        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, (!supports_playback_step || buttons_disabled) ? ImGuiButtonFlags_Disabled : 0))
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, supports_playback_step ? 0 : ImGuiButtonFlags_Disabled))
         {
             //p.skip_frames(-1);
         }
         if (ImGui::IsItemHovered())
         {
-            std::string tooltip = to_string() << "Step Forward" << (buttons_disabled || supports_playback_step ? "" : "(Not available)");
+            std::string tooltip = to_string() << "Step Forward" << (supports_playback_step ? "" : "(Not available)");
             ImGui::SetTooltip("%s", tooltip.c_str());
         }
         ImGui::SameLine();
         //////////////////// Step Forward Button ////////////////////
+
+
+
+
+        /////////////////// Repeat Button /////////////////////
+        if (_playback_repeat)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue); 
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+        }
+        else
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, white);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        }
+        label = to_string() << u8"\uf0e2" << "##Repeat " << id;
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }))
+        {
+            _playback_repeat = !_playback_repeat;
+        }
+        if (ImGui::IsItemHovered())
+        {
+            std::string tooltip = to_string() << (_playback_repeat ? "Disable " : "Enable ") << "Repeat ";
+            ImGui::SetTooltip("%s", tooltip.c_str());
+        }
+        ImGui::PopStyleColor(2);
+
+        ImGui::SameLine();
+        /////////////////// Repeat Button /////////////////////
 
 
         ImGui::PopStyleVar();
@@ -2792,6 +2852,10 @@ namespace rs2
         auto pos = ImGui::GetCursorPos();
         ImGui::SetCursorPos({ 200.0f, pos.y + 3 });
         ImGui::PushItemWidth(100);
+
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+
         label = to_string() << "## " << id;
         if(ImGui::Combo(label.c_str(), &playback_speed_index, "Speed: x0.25\0Speed: x0.5\0Speed: x1\0Speed: x1.5\0Speed: x2\0\0"))
         {
@@ -2808,14 +2872,38 @@ namespace rs2
             }
             p.set_playback_speed(speed);
         }
+
+        ImGui::PopStyleColor(2);
+
         //////////////////// Speed combo box ////////////////////
         ImGui::PopFont();
 
         return 35;
     }
 
+    std::string device_model::pretty_time(std::chrono::nanoseconds duration)
+    {
+        using namespace std::chrono;
+        auto hhh = duration_cast<hours>(duration);
+        duration -= hhh;
+        auto mm = duration_cast<minutes>(duration);
+        duration -= mm;
+        auto ss = duration_cast<seconds>(duration);
+        duration -= ss;
+        auto ms = duration_cast<milliseconds>(duration);
+
+        std::ostringstream stream;
+        stream << std::setfill('0') << std::setw(hhh.count() >= 10 ? 2 : 1) << hhh.count() << ':' <<
+            std::setfill('0') << std::setw(2) << mm.count() << ':' <<
+            std::setfill('0') << std::setw(2) << ss.count();// << '.' <<
+            //std::setfill('0') << std::setw(3) << ms.count();
+        return stream.str();
+    }
+
     int device_model::draw_seek_bar()
     {
+        auto pos = ImGui::GetCursorPos();
+
         auto p = dev.as<playback>();
         rs2_playback_status current_playback_status = p.current_status();
         int64_t playback_total_duration = p.get_duration().count();
@@ -2827,12 +2915,10 @@ namespace rs2
         {
             seek_pos = 0;
         }
-        int prev_seek_progress = seek_pos;
 
         ImGui::PushItemWidth(290.f);
         std::string label1 = "## " + id;
-        ImGui::SeekSlider(label1.c_str(), &seek_pos);
-        if (prev_seek_progress != seek_pos)
+        if (ImGui::SeekSlider(label1.c_str(), &seek_pos, ""))
         {
             //Seek was dragged
             auto duration_db = std::chrono::duration_cast<std::chrono::duration<double, std::nano>>(p.get_duration());
@@ -2841,24 +2927,33 @@ namespace rs2
             p.seek(std::chrono::duration_cast<std::chrono::nanoseconds>(seek_time));
         }
 
-        return 25;
+        ImGui::SetCursorPos({ pos.x, pos.y + 17 });
+        std::string time_elapsed = pretty_time(std::chrono::nanoseconds(progress));
+        std::string duration_str = pretty_time(std::chrono::nanoseconds(playback_total_duration));
+        ImGui::Text("%s", time_elapsed.c_str());
+        ImGui::SameLine();
+        pos = ImGui::GetCursorPos();
+        ImGui::SetCursorPos({ pos.x + 195, pos.y });
+        ImGui::Text("%s", duration_str.c_str());
+        
+        return 50;
     }
 
-    int device_model::draw_playback_panel(ImFont* font)
+    int device_model::draw_playback_panel(ImFont* font, viewer_model& view)
     {
         ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
 
 
         auto pos = ImGui::GetCursorPos();
-        auto controls_height = draw_playback_controls(font);
+        auto controls_height = draw_playback_controls(font, view);
         ImGui::SetCursorPos({ pos.x + 8, pos.y + controls_height });
         auto seek_bar_height = draw_seek_bar();
-        ImGui::PopStyleColor(6);
+
+        ImGui::PopStyleColor(5);
         return controls_height + seek_bar_height;
 
     }

@@ -153,6 +153,17 @@ namespace rs2
             error::handle(e);
             return sts;
         }
+
+        /**
+        * Stops the playback, effectively stopping all streaming playback sensors, and resetting the playback.
+        *
+        */
+        void stop()
+        {
+            rs2_error* e = nullptr;
+            rs2_playback_device_stop(_dev.get(), &e);
+            error::handle(e);
+        }
     protected:
         friend context;
         explicit playback(std::shared_ptr<rs2_device> dev) : device(dev)

@@ -101,7 +101,7 @@ const char *noc_file_dialog_open(int flags,
             NULL,
             action,
             "_Cancel", GTK_RESPONSE_CANCEL,
-            "_Open", GTK_RESPONSE_ACCEPT,
+            flags & NOC_FILE_DIALOG_SAVE ? "_Save" : "_Open", GTK_RESPONSE_ACCEPT,
             NULL );
     chooser = GTK_FILE_CHOOSER(dialog);
     if (flags & NOC_FILE_DIALOG_OVERWRITE_CONFIRMATION)

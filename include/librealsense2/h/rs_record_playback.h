@@ -159,6 +159,14 @@ rs2_playback_status rs2_playback_device_get_current_status(const rs2_device* dev
  */
 void rs2_playback_device_set_playback_speed(const rs2_device* device, float speed, rs2_error** error);
 
+/**
+* Stops the playback
+* Calling stop() will stop all streaming playbakc sensors and will reset the playback (returning to beginning of file)
+* \param[in] device A playback device
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_playback_device_stop(const rs2_device* device, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif
