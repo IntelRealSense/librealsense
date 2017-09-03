@@ -196,12 +196,12 @@ namespace librealsense
     class RegexTopicQuery
     {
     public:
-        RegexTopicQuery(std::string const& regexp) : _exp(regexp)
+        RegexTopicQuery(std::string const& regexp, bool negate = false) : _exp(regexp), _negate(negate)
         {}
 
         bool operator()(rosbag::ConnectionInfo const* info) const
         {
-            return std::regex_search(info->topic, _exp);
+			return _negate ^ std::regex_search(info->topic, _exp);
         }
 
         static std::string data_msg_types()
@@ -218,6 +218,7 @@ namespace librealsense
 
     private:
         std::regex _exp;
+		bool _negate;
     };
 
     class SensorInfoQuery : public RegexTopicQuery
