@@ -28,7 +28,7 @@ namespace librealsense
 
         const char* get_description() const override
         {
-            return "Max number of frames you can hold at a given time. Increasing this number will reduce frame drops but increase lattency, and vice versa";
+            return "Max number of frames you can hold at a given time. Increasing this number will reduce frame drops but increase latency, and vice versa";
         }
     private:
         std::atomic<uint32_t>* _ptr;

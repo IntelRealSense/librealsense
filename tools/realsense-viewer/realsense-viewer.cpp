@@ -945,6 +945,21 @@ int main(int, char**) try
                             else
                             {
                                 ImGui::TextDisabled(u8"  \uf204\noff   ");
+                                if (std::any_of(sub->stream_enabled.begin(), sub->stream_enabled.end(), [](std::pair<int, bool> const& s) { return s.second; }))
+                                {
+                                    if (ImGui::IsItemHovered())
+                                    {
+                                        ImGui::SetTooltip("Selected configuration (FPS, Resolution) is not supported");
+                                    }
+                                }
+                                else
+                                {
+                                    if (ImGui::IsItemHovered())
+                                    {
+                                        ImGui::SetTooltip("No stream selected");
+                                    }
+                                }
+
                             }
                         }
                         else

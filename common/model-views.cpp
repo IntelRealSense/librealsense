@@ -105,7 +105,8 @@ namespace rs2
         const char *ret;
         ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL);
         if (!ret) return; // user cancelled dialog. Don't save image.
-        const std::string fname(ret);
+        std::string fname(ret);
+        if (!ends_with(to_lower(fname), ".ply")) fname += ".ply";
 
         std::thread([&ns, points, texture, fname]() {
             std::string texfname(fname);
@@ -335,11 +336,17 @@ namespace rs2
             if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE && dev->auto_exposure_enabled && dev->streaming)
             {
                 ImGui::SameLine(0, 10);
-
+                std::string button_label = label;
+                auto index = label.find_last_of('#');
+                if (index != std::string::npos)
+                {
+                    button_label = label.substr(index+1);
+                }
+               
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1.f,1.f,1.f,1.f });
                 if (!dev->roi_checked)
                 {
-                    std::string caption = to_string() << "Set ROI##" << label;
+                    std::string caption = to_string() << "Set ROI##" << button_label;
                     if (ImGui::Button(caption.c_str(), { 55, 0 }))
                     {
                         dev->roi_checked = true;
@@ -347,7 +354,7 @@ namespace rs2
                 }
                 else
                 {
-                    std::string caption = to_string() << "Cancel##" << label;
+                    std::string caption = to_string() << "Cancel##" << button_label;
                     if (ImGui::Button(caption.c_str(), { 55, 0 }))
                     {
                         dev->roi_checked = false;
@@ -2456,8 +2463,8 @@ namespace rs2
         ImGui::SetNextWindowSize({ 250.f, 50.f });
         ImGui::Begin("nostreaming_popup", nullptr, flags);
 
-        ImGui::PushStyleColor(ImGuiCol_Text, sensor_header_light_blue);
-        ImGui::Text("Connect RealSense Camera\nor Add Source");
+        ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0x70,0x8f, 0xa8, 0xff));
+        ImGui::Text("Connect a RealSense Camera\nor Add Source");
         ImGui::PopStyleColor();
 
         ImGui::End();
