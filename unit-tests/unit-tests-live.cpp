@@ -344,7 +344,7 @@ TEST_CASE("Sync different fps", "[live]") {
                 CAPTURE(num1);
                 CAPTURE(sensors_profiles[&sensors[j]]);
                 CAPTURE(num2);
-                REQUIRE((float)num1 / (float)num2 <= 4 * (float)fps[i] / (float)fps[j]);
+                REQUIRE((float)num1 / (float)num2 <= 5 * (float)fps[i] / (float)fps[j]);
             }
         }
     }
