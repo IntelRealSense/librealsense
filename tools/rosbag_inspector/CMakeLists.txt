@@ -1,33 +1,22 @@
-#  minimum required cmake version: 3.1.0
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 2.8.3)
 
-project(RealsenseTools)
+project(RealsenseToolsRosbagInspector)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-# View the makefile commands during build
-#set(CMAKE_VERBOSE_MAKEFILE on)
-
-# This parameter is meant for disabling graphical examples when building for
-# save-to-disk targets.
-option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples." ON)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
 if(COMPILER_SUPPORTS_CXX11)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
-
 if(BUILD_GRAPHICAL_EXAMPLES)
-    find_package(OpenGL)
-    if(NOT OPENGL_FOUND)
-        message(FATAL_ERROR "\n\n OpenGL package is missing!\n\n")
-    endif()
-
+    find_package(OpenGL REQUIRED)
     set(DEPENDENCIES realsense2 ${OPENGL_LIBRARIES})
 
     if(WIN32)
@@ -63,10 +52,28 @@ else()
     endif()
 endif()
 
-add_subdirectory(terminal)
-add_subdirectory(fw-logger)
-add_subdirectory(enumerate-devices)
-add_subdirectory(realsense-viewer)
-add_subdirectory(data-collect)
-add_subdirectory(depth-quality)
-add_subdirectory(rosbag_inspector)
+# terminal
+add_executable(rs-rosbag-inspector rs-rosbag-inspector.cpp)
+if(WIN32)
+    target_link_libraries(rs-rosbag-inspector ${DEPENDENCIES})
+else()
+    target_link_libraries(rs-rosbag-inspector -lpthread ${DEPENDENCIES})
+endif()
+
+include_directories(rs-rosbag-inspector 
+				    ../../common 
+					../../third-party)
+
+set_target_properties (
+	rs-rosbag-inspector 
+	PROPERTIES
+    FOLDER Tools
+)
+
+install(
+    TARGETS
+    rs-rosbag-inspector
+    RUNTIME DESTINATION
+    ${CMAKE_INSTALL_PREFIX}/bin
+)
+
