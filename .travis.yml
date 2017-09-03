@@ -43,5 +43,5 @@ script:
       make;
       sudo make install;
       wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc4;
-      live-test from $(pwd)/awgc4;
+      live-test from awgc4;
     fi
