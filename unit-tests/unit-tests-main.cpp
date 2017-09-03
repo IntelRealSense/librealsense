@@ -4,6 +4,7 @@
 
 int main(int argc, char* const argv[])
 {
+    
     command_line_params::instance(argc, argv);
 
     std::vector<char*> new_argvs;
@@ -24,7 +25,7 @@ int main(int argc, char* const argv[])
 
     if(!command_line_params::instance()._found_any_section)
     {
-        std::cout<<"didn't run any test\n";
+        std::cout << "Didn't run any tests!\n";
         return -1;
     }
     return result;
