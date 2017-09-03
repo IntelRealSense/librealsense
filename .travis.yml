@@ -42,4 +42,6 @@ script:
       cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_PYTHON_BINDINGS=bool:true;
       make;
       sudo make install;
+      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc4;
+      live-test from $(pwd)/awgc4;
     fi
