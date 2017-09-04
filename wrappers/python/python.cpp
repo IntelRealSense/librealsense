@@ -562,7 +562,7 @@ PYBIND11_PLUGIN(NAME) {
 
     py::class_<rs2::sensor> sensor(m, "sensor");
     sensor.def("open", (void (rs2::sensor::*)(const rs2::stream_profile&) const) &rs2::sensor::open,
-               "Open subdevice for exclusive access, by commiting to a configuration", "profile"_a)
+               "Open subdevice for exclusive access, by committing to a configuration", "profile"_a)
           .def("supports", (bool (rs2::sensor::*)(rs2_camera_info) const) &rs2::device::supports,
                "Check if speific camera info is supported.", "info")
           .def("get_info", &rs2::sensor::get_info, "Retrieve camera specific information, "

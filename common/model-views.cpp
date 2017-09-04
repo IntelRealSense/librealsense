@@ -1931,7 +1931,7 @@ namespace rs2
                 ImGui::Text("%s", label.c_str());
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Hardware Timestamp unavailable! This is often an indication of inproperly applied Kernel patch.\nPlease refer to installation.md for mode information");
+                    ImGui::SetTooltip("Hardware Timestamp unavailable! This is often an indication of improperly applied Kernel patch.\nPlease refer to installation.md for mode information");
                 }
                 ImGui::PopStyleColor();
             }
