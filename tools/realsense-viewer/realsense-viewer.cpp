@@ -1131,6 +1131,6 @@ int CALLBACK WinMain(
     _In_ int       nCmdShow
 
 ) {
-    main(0, nullptr);
+    return main(0, nullptr);
 }
 #endif

@@ -349,7 +349,8 @@ if(WIN32)
 
     source_group("Source Files\\Recorder" FILES
         third-party/sqlite/sqlite3.c
-    src/mock/sql.cpp
+        src/mock/sql.cpp
+        src/mock/recorder.cpp
         )
 
     source_group("Source Files\\API" FILES

@@ -1,6 +1,7 @@
 #define CATCH_CONFIG_RUNNER
 #include "catch/catch.hpp"
 #include "unit-tests-common.h"
+#include <iostream>
 
 int main(int argc, char* const argv[])
 {
@@ -8,6 +9,15 @@ int main(int argc, char* const argv[])
     command_line_params::instance(argc, argv);
 
     std::vector<char*> new_argvs;
+    
+    std::cout << "Running tests with the following parameters: ";
+    for (auto i = 0; i < argc; i++)
+    {
+        std::string param(argv[i]);
+        std::cout << param << " ";
+    }
+    std::cout << std::endl;
+    
     for (auto i = 0; i < argc; i++)
     {
         std::string param(argv[i]);
@@ -18,6 +28,16 @@ int main(int argc, char* const argv[])
         else
         {
             i++;
+            if (i < argc)
+            {
+                auto filename = argv[i];
+                std::ifstream f(filename);
+                if (!f.good())
+                {
+                    std::cout << "Could not load " << filename << "!"  << std::endl;
+                    return EXIT_FAILURE;
+                }
+            }
         }
     }
 
@@ -26,7 +46,7 @@ int main(int argc, char* const argv[])
     if(!command_line_params::instance()._found_any_section)
     {
         std::cout << "Didn't run any tests!\n";
-        return -1;
+        return EXIT_FAILURE;
     }
     return result;
 }
