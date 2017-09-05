@@ -2,7 +2,7 @@
 
 **Intel® RealSense™ SDK 2.0** provides tools and binaries for the Windows platform using [GitHub Releases](https://github.com/IntelRealSense/librealsense/releases)
 
-> To build from source, please follow the steps described [here](./installation_windows.md.md)
+> To build from source, please follow the steps described [here](./installation_windows.md)
 
 After plugging the camera into a USB3 port, you should be able to see the newly connected device in the Device Manager: 
 ![Windows Device Manager: Imaging Devices](./img/win_deploy_device_manager.PNG)
