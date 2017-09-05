@@ -39,9 +39,10 @@ script:
       uname -a;
       mkdir build;
       cd build;
-      cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_PYTHON_BINDINGS=bool:true;
-      make;
+      cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_PYTHON_BINDINGS:BOOL=true;
+      make -J;
       sudo make install;
+      export LRS_LOG_LEVEL="DEBUG";
       wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc4;
-      live-test from $(pwd)/awgc4;
+      ./unit-tests/live-test from awgc4 -d yes;
     fi

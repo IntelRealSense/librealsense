@@ -1176,17 +1176,16 @@ namespace librealsense
             _backend(backend_ref),_active_object([this](dispatcher::cancellable_timer cancellable_timer)
         {
             polling(cancellable_timer);
-        }),
-        _devices_data(  _backend->query_uvc_devices(),
-                        _backend->query_usb_devices(),
-                        _backend->query_hid_devices())
+        }), _devices_data()
         {
         }
+
         ~polling_device_watcher()
         {
             stop();
         }
-        void  polling(dispatcher::cancellable_timer cancellable_timer)
+
+        void polling(dispatcher::cancellable_timer cancellable_timer)
         {
             if(cancellable_timer.try_sleep(100))
             {
@@ -1201,7 +1200,6 @@ namespace librealsense
                     {
                         _callback(_devices_data, curr);
                         _devices_data = curr;
-
                     }
                 }
             }
@@ -1211,6 +1209,10 @@ namespace librealsense
         {
             stop();
             _callback = std::move(callback);
+            _devices_data = {   _backend->query_uvc_devices(),
+                                _backend->query_usb_devices(),
+                                _backend->query_hid_devices() };
+
             _active_object.start();
         }
 
