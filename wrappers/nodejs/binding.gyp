@@ -45,7 +45,7 @@
               }
             },
             "libraries": [
-              "<(module_root_dir)/../../build/Release/realsense2.lib",
+              "<(module_root_dir)/../../build/Debug/realsense2.lib",
             ],
           }
         ],
@@ -81,7 +81,7 @@
             [
               {
                 'destination': '<(module_root_dir)/build/Release',
-                'files': ['<(module_root_dir)/../../build/Release/realsense2.dll']
+                'files': ['<(module_root_dir)/../../build/Debug/realsense2.dll']
               }
             ]
         }]
