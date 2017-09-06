@@ -1,0 +1,8 @@
+doc/*
+!doc/jsdoc-template
+node_modules/
+!package-lock.json
+!package.json
+build
+*.png
+*.csv
