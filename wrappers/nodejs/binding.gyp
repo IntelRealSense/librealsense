@@ -53,7 +53,10 @@
           "OS!=\"win\"",
           {
             "libraries": [
-              "-lrealsense2",
+              "<(module_root_dir)/../../build/librealsense2.so",
+            ],
+            'ldflags': [
+              '-Wl,-rpath,\$$ORIGIN/../../../../build',
             ],
             "cflags+": [
               "-std=c++11"
