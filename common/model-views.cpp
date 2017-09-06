@@ -1833,6 +1833,9 @@ namespace rs2
             }
             else if (viewer.fullscreen)
             {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+
                 label = to_string() << u8"\uf2d2" << "##Restore " << profile.unique_id();
 
                 if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
@@ -1844,6 +1847,7 @@ namespace rs2
                     ImGui::SetTooltip("Restore tile view");
                 }
 
+                ImGui::PopStyleColor(2);
                 ImGui::SameLine();
             }
         }
