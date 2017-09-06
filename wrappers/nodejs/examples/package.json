@@ -1,0 +1,10 @@
+{
+  "name": "node-librealsense2-examples",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "node-glfw-2": "git+https://github.com/kenny-y/node-glfw.git"
+  }
+}

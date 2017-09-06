@@ -1,0 +1,24 @@
+{
+  "name": "node_librealsense",
+  "version": "2.7.7",
+  "description": "Node.js addon for Intel® RealSense™ SDK 2.0",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha",
+    "doc": "node scripts/generate-doc.js",
+    "postinstall": "node scripts/generate-doc.js"
+  },
+  "author": "Kenny Yuan <kaining.yuan@intel.com>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "assert": "^1.4.1",
+    "bindings": "^1.2.1",
+    "fs-compare": "0.0.4",
+    "jsdoc": "^3.5.2",
+    "nan": "^2.6.2",
+    "pngjs": "^3.3.0"
+  }
+}
