@@ -596,6 +596,7 @@ option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
+option(BUILD_NODEJS_BINDINGS "Build Node.js bindings" OFF)
 
 # This parameter is meant for disabling graphical examples when building for
 # save-to-disk targets.
@@ -620,6 +621,10 @@ endif()
 
 if (BUILD_PYTHON_BINDINGS)
   add_subdirectory(wrappers/python)
+endif()
+
+if (BUILD_NODEJS_BINDINGS)
+  add_subdirectory(wrappers/nodejs)
 endif()
 
 # Check for unreferenced files
