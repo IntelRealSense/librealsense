@@ -269,12 +269,22 @@ namespace rs2
                 H *= scale;
             }
 
-            return{ x + (w - W) / 2, y + (h - H) / 2, W, H };
+            return{ x + floor(w - W) / 2, y + floor(h - H) / 2, W, H };
         }
 
         rect scale(float factor) const
         {
             return { x, y, w * factor, h * factor };
+        }
+
+        rect grow(int pixels) const
+        {
+            return { x - pixels, y - pixels, w + pixels*2, h + pixels*2 };
+        }
+
+        rect grow(int dx, int dy) const
+        {
+            return { x - dx, y - dy, w + dx*2, h + dy*2 };
         }
 
         rect shrink_by(float2 pixels) const

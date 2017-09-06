@@ -29,12 +29,27 @@ void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
 
     static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // will not be copied by AddFont* so keep in scope.
 
-                                                                 // Load 18px size fonts
+        // Load 14px size fonts
     {
         ImFontConfig config_words;
         config_words.OversampleV = OVERSAMPLE;
         config_words.OversampleH = OVERSAMPLE;
-        font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 20.f, &config_words);
+        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 16.f);
+
+        ImFontConfig config_glyphs;
+        config_glyphs.MergeMode = true;
+        config_glyphs.OversampleV = OVERSAMPLE;
+        config_glyphs.OversampleH = OVERSAMPLE;
+        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
+            font_awesome_compressed_size, 14.f, &config_glyphs, icons_ranges);
+    }
+
+    // Load 18px size fonts
+    {
+        ImFontConfig config_words;
+        config_words.OversampleV = OVERSAMPLE;
+        config_words.OversampleH = OVERSAMPLE;
+        font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 21.f, &config_words);
 
         ImFontConfig config_glyphs;
         config_glyphs.MergeMode = true;
@@ -42,21 +57,6 @@ void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
         config_glyphs.OversampleH = OVERSAMPLE;
         font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
             font_awesome_compressed_size, 20.f, &config_glyphs, icons_ranges);
-    }
-
-    // Load 14px size fonts
-    {
-        ImFontConfig config_words;
-        config_words.OversampleV = OVERSAMPLE;
-        config_words.OversampleH = OVERSAMPLE;
-        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 15.f);
-
-        ImFontConfig config_glyphs;
-        config_glyphs.MergeMode = true;
-        config_glyphs.OversampleV = OVERSAMPLE;
-        config_glyphs.OversampleH = OVERSAMPLE;
-        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
-            font_awesome_compressed_size, 16.f, &config_glyphs, icons_ranges);
     }
 
     style.WindowRounding = 0.0f;
@@ -706,7 +706,7 @@ namespace rs2
         //ImGui::Columns(2, label.c_str(), false);
         //ImGui::SetColumnOffset(1, 135);
         auto col0 = ImGui::GetCursorPosX();
-        auto col1 = 135.f;
+        auto col1 = 145.f;
 
         // Draw combo-box with all resolution options for this device
         auto res_chars = get_string_pointers(resolutions);
@@ -1139,7 +1139,7 @@ namespace rs2
         texture->upload(f);
     }
 
-    void stream_model::outline_rect(const rect& r)
+    void outline_rect(const rect& r)
     {
         glPushAttrib(GL_ENABLE_BIT);
 
@@ -1148,6 +1148,27 @@ namespace rs2
         glEnable(GL_LINE_STIPPLE);
 
         glBegin(GL_LINE_STRIP);
+        glVertex2i(r.x, r.y);
+        glVertex2i(r.x, r.y + r.h);
+        glVertex2i(r.x + r.w, r.y + r.h);
+        glVertex2i(r.x + r.w, r.y);
+        glVertex2i(r.x, r.y);
+        glEnd();
+
+        glPopAttrib();
+    }
+
+     void draw_rect(const rect& r)
+    {
+        glPushAttrib(GL_ENABLE_BIT);
+
+        glLineWidth(1);
+
+        glBegin(GL_LINE_STRIP);
+        glVertex2i(r.x, r.y);
+        glVertex2i(r.x, r.y + r.h);
+        glVertex2i(r.x + r.w, r.y + r.h);
+        glVertex2i(r.x + r.w, r.y);
         glVertex2i(r.x, r.y);
         glVertex2i(r.x, r.y + r.h);
         glVertex2i(r.x + r.w, r.y + r.h);
@@ -2015,8 +2036,8 @@ namespace rs2
                 zoom_val -= wheel_step;
         }
 
-        static const uint32_t middle_button = 2;
-        auto is_middle_clicked = ImGui::GetIO().MouseDown[middle_button];
+        auto is_middle_clicked = ImGui::GetIO().MouseDown[0] || 
+                                 ImGui::GetIO().MouseDown[2];
 
         if (!_mid_click && is_middle_clicked)
             _middle_pos = g.cursor;

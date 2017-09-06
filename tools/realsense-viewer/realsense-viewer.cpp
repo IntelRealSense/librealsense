@@ -250,8 +250,8 @@ int main(int, char**) try
         w = w / data.scale_factor;
         h = h / data.scale_factor;
 
-        const float panel_width = 320.f;
-        const float panel_y = 44.f;
+        const float panel_width = 340.f;
+        const float panel_y = 50.f;
         const float default_log_h = 80.f;
 
         auto output_height = (viewer_model.is_output_collapsed ? default_log_h : 20);
@@ -433,9 +433,10 @@ int main(int, char**) try
         ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
         ImGui::Begin("Toolbar Panel", nullptr, flags);
 
+        ImGui::PushFont(font_18);
         ImGui::PushStyleColor(ImGuiCol_Border, black);
 
-        ImGui::SetCursorPosX(w - panel_width - panel_y * 3.f);
+        /*ImGui::SetCursorPosX(w - panel_width - panel_y * 3.f);
         if (data.scale_factor < 1.5)
         {
             ImGui::PushStyleColor(ImGuiCol_Text, grey);
@@ -459,23 +460,31 @@ int main(int, char**) try
                 ImGui::SetTooltip("Disable UI Scaling");
         }
         ImGui::PopStyleColor(2);
-        ImGui::SameLine();
+        ImGui::SameLine();*/
 
         ImGui::SetCursorPosX(w - panel_width - panel_y * 2);
-        ImGui::PushStyleColor(ImGuiCol_Text, is_3d_view ? grey : white);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, is_3d_view ? grey : white);
+        ImGui::PushStyleColor(ImGuiCol_Text, is_3d_view ? light_grey : light_blue);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, is_3d_view ? light_grey : light_blue);
         if (ImGui::Button("2D", { panel_y,panel_y })) is_3d_view = false;
         ImGui::PopStyleColor(2);
         ImGui::SameLine();
+
+        
+
         ImGui::SetCursorPosX(w - panel_width - panel_y * 1);
-        ImGui::PushStyleColor(ImGuiCol_Text, !is_3d_view ? grey : white);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, !is_3d_view ? grey : white);
+        auto pos1 = ImGui::GetCursorScreenPos();
+
+        ImGui::PushStyleColor(ImGuiCol_Text, !is_3d_view ? light_grey : light_blue);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, !is_3d_view ? light_grey : light_blue);
         if (ImGui::Button("3D", { panel_y,panel_y }))
         {
             is_3d_view = true;
             viewer_model.update_3d_camera(viewer_rect, mouse, true);
         }
         ImGui::PopStyleColor(3);
+
+        ImGui::GetWindowDrawList()->AddLine({pos1.x, pos1.y + 10 }, { pos1.x,pos1.y + panel_y - 10 }, ImColor(light_grey));
+
 
         ImGui::SameLine();
         ImGui::SetCursorPosX(w - panel_width - panel_y);
@@ -504,6 +513,7 @@ int main(int, char**) try
         //ImGui::PopFont();
         ImGui::PopStyleVar();
         ImGui::PopStyleColor(4);
+        ImGui::PopFont();
 
         ImGui::End();
         ImGui::PopStyleColor();
@@ -542,7 +552,7 @@ int main(int, char**) try
 
                 pos = ImGui::GetCursorPos();
                 ImGui::PushStyleColor(ImGuiCol_Button, sensor_header_light_blue);
-                ImGui::SetCursorPos({ 8, pos.y + 14 });
+                ImGui::SetCursorPos({ 8, pos.y + 17 });
                 if (dev_model.is_recording)
                 {
                     ImGui::PushStyleColor(ImGuiCol_Text, redish);
@@ -571,7 +581,7 @@ int main(int, char**) try
                 ImGui::Text("%s", label.c_str());
 
                 ImGui::Columns(1);
-                ImGui::SetCursorPos({ panel_width - 50, pos.y + 5 + (header_h - panel_y) / 2 });
+                ImGui::SetCursorPos({ panel_width - 50, pos.y + 8 + (header_h - panel_y) / 2 });
 
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
                 ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
@@ -1065,7 +1075,7 @@ int main(int, char**) try
                 auto stream = kvp.first;
                 auto&& stream_mv = viewer_model.streams[stream];
                 auto&& stream_size = stream_mv.size;
-                auto stream_rect = view_rect.adjust_ratio(stream_size);
+                auto stream_rect = view_rect.adjust_ratio(stream_size).grow(-3);
 
                 stream_mv.show_frame(stream_rect, mouse, error_message);
 
@@ -1077,6 +1087,12 @@ int main(int, char**) try
 
                 stream_mv.show_stream_header(font_14, stream_rect, viewer_model);
                 stream_mv.show_stream_footer(stream_rect, mouse);
+
+                glColor3f(header_window_bg.x, header_window_bg.y, header_window_bg.z);
+                stream_rect.y -= 32;
+                stream_rect.h += 33;
+                stream_rect.w += 1;
+                draw_rect(stream_rect);
             }
 
             // Metadata overlay windows shall be drawn after textures to preserve z-buffer functionality

@@ -248,12 +248,14 @@ namespace rs2
         return j == suffix.rend();
     }
 
+    void outline_rect(const rect& r);
+    void draw_rect(const rect& r);
+
     class stream_model
     {
     public:
         stream_model();
         void upload_frame(frame&& f);
-        void outline_rect(const rect& r);
         float get_stream_alpha();
         bool is_stream_visible();
         void update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message);
