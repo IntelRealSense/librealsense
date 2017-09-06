@@ -1173,7 +1173,7 @@ namespace rs2
 
     bool stream_model::is_stream_visible()
     {
-        if (dev && dev->is_paused())
+        if (dev && (dev->is_paused() || dev->dev.is<playback>()))
         {
             last_frame = std::chrono::high_resolution_clock::now();
             return true;
@@ -1697,37 +1697,43 @@ namespace rs2
 
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons, 0 });
 
-        if (!dev->dev.is<playback>())
+        auto p = dev->dev.as<playback>();
+        if (dev->is_paused())
         {
-            if (dev->is_paused())
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            label = to_string() << u8"\uf04b" << "##Resume " << profile.unique_id();
+            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
             {
-                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-                label = to_string() << u8"\uf04b" << "##Resume " << profile.unique_id();
-                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                if (p)
                 {
-                    dev->resume();
+                    p.resume();
                 }
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Resume sensor");
-                }
-                ImGui::PopStyleColor(2);
+                dev->resume();
             }
-            else
+            if (ImGui::IsItemHovered())
             {
-                label = to_string() << u8"\uf04c" << "##Pause " << profile.unique_id();
-                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
-                {
-                    dev->pause();
-                }
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Pause sensor");
-                }
+                ImGui::SetTooltip("Resume sensor");
             }
-            ImGui::SameLine();
+            ImGui::PopStyleColor(2);
         }
+        else
+        {
+            label = to_string() << u8"\uf04c" << "##Pause " << profile.unique_id();
+            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            {
+                if (p)
+                {
+                    p.pause();
+                }
+                dev->pause();
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Pause sensor");
+            }
+        }
+        ImGui::SameLine();
 
         label = to_string() << u8"\uf030" << "##Snapshot " << profile.unique_id();
         if (ImGui::Button(label.c_str(), { 24, top_bar_height }))

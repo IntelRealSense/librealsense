@@ -430,7 +430,7 @@ int main(int, char**) try
         ImGui::SetNextWindowSize({ w - panel_width, panel_y });
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(0x2d, 0x37, 0x40, 0xff));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
         ImGui::Begin("Toolbar Panel", nullptr, flags);
 
         ImGui::PushStyleColor(ImGuiCol_Border, black);
@@ -517,7 +517,7 @@ int main(int, char**) try
         ImGui::SetNextWindowPos({ 0, panel_y });
         ImGui::SetNextWindowSize({ panel_width, h - panel_y });
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(0x1b, 0x21, 0x25, 0xff));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, sensor_bg);
 
         // *********************
         // Creating window menus
@@ -575,7 +575,7 @@ int main(int, char**) try
 
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
                 ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
-                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
+                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
 
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
