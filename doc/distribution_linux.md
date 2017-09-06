@@ -1,6 +1,10 @@
 # Linux Distribution
 
-For Linux, RealSense™ Cross-Platform SDK provides installation packages in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Debian OS and its derivatives.  
+**Intel® RealSense™ SDK 2.0** provides installation packages in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Debian OS and its derivatives.  
+
+> To build from source, please follow the steps described [here](./installation.md)
+
+
 
 ## Installing the packages:
 - Add Intel server  to the list of repositories :  
