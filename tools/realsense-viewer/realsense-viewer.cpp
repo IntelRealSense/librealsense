@@ -575,7 +575,7 @@ int main(int, char**) try
 
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
                 ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
-                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
+                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
 
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
@@ -772,7 +772,7 @@ int main(int, char**) try
                 auto sensor_top_y = ImGui::GetCursorPosY();
                 ImGui::SetContentRegionWidth(windows_width - 36);
 
-                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0x1b, 0x21, 0x25, 0xff));
+                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
                 ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
                 ImGui::PushFont(font_14);
 
