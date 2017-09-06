@@ -1,0 +1,29 @@
+{
+  "extends": "google",
+  "parserOptions": {
+    "ecmaVersion": 6
+  },
+  "plugins": [
+    "header"
+  ],
+  "rules": {
+    "header/header": [2, "tools/header.js"],
+    "max-len": ["error",
+      // Following Google Javascript 100 char line limit
+      100,
+      // Use 2-space as tab width
+      2,
+      { "ignoreUrls": true }
+    ],
+    // Prefer to use single quotes
+    "quotes": ["error", "single"],
+    // Disable JSDoc
+    "require-jsdoc": ["error", {
+      "require": {
+        "FunctionDeclaration": false,
+        "MethodDefinition": false,
+        "ClassDeclaration": false
+      }
+    }]
+  }
+}
