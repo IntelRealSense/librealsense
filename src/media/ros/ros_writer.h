@@ -109,9 +109,22 @@ namespace librealsense
             image.header.frame_id = TODO_CORRECT_ME;
             auto image_topic = ros_topic::image_data_topic(stream_id);
             write_message(image_topic, timestamp, image);
-
-            write_image_metadata(stream_id, timestamp, vid_frame);
-            write_extrinsics(stream_id, frame);
+            try
+            {
+                write_image_metadata(stream_id, timestamp, vid_frame);
+            }
+            catch (std::exception const& e)
+            {
+                LOG_WARNING("Failed to write image metadata for " << stream_id.device_index << "/" << stream_id.sensor_index << "/" << stream_id.stream_type << "/" << stream_id.stream_index << " ts: " << timestamp.count() << ". Exception: " << e.what());
+            }
+            try
+            {
+                write_extrinsics(stream_id, frame);
+            }
+            catch (std::exception const& e)
+            {
+                LOG_WARNING("Failed to write stream extrinsics for " << stream_id.device_index << "/" << stream_id.sensor_index << "/" << stream_id.stream_type << "/" << stream_id.stream_index << " ts: " << timestamp.count() << ". Exception: " << e.what());
+            }
         }
 
         void write_extrinsics(const stream_identifier& stream_id, const frame_holder& frame)

@@ -180,9 +180,8 @@ int main(int, char**) try
 
                         if (dev)
                         {
-                            auto model = device_model(dev, error_message);
-                            device_models.push_back(model);
-                            viewer_model.not_model.add_log(to_string() << model.dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
+                            device_models.emplace_back(dev, error_message, viewer_model);
+                            viewer_model.not_model.add_log(to_string() << device_models.rbegin()->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
                         }
                     }
 
@@ -311,8 +310,7 @@ int main(int, char**) try
                     try
                     {
                         auto dev = list[i];
-                        auto model = device_model(dev, error_message);
-                        device_models.push_back(model);
+                        device_models.emplace_back(dev, error_message, viewer_model);
                     }
                     catch (const error& e)
                     {
@@ -353,9 +351,7 @@ int main(int, char**) try
                     try
                     {
                         auto dev = ctx.load_device(ret);
-                        auto model = device_model(dev, error_message);
-                        device_models.push_back(model);
-
+                        device_models.emplace_back(dev, error_message, viewer_model);
                         if (auto p = dev.as<playback>())
                         {
                             auto filename = p.file_name();
@@ -371,9 +367,31 @@ int main(int, char**) try
                                     });
                                     if (it != device_models.end())
                                     {
-                                        for (auto&& sub : it->subdevices)
+                                        auto subs = it->subdevices;
+                                        if (it->_playback_repeat)
                                         {
-                                            sub->stop();
+                                            //Calling from different since playback callback is from reading thread
+                                            std::thread{ [subs]()
+                                            {
+                                                for (auto&& sub : subs)
+                                                {
+                                                    if (sub->streaming)
+                                                    {
+                                                        auto profiles = sub->get_selected_profiles();
+                                                        sub->play(profiles);
+                                                    }
+                                                }
+                                            } }.detach();
+                                        }
+                                        else
+                                        {
+                                            for (auto&& sub : subs)
+                                            {
+                                                if (sub->streaming)
+                                                {
+                                                    sub->stop();
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -531,6 +549,11 @@ int main(int, char**) try
                     label = to_string() << u8"\uf111";
                     ImGui::Text("%s", label.c_str());
                     ImGui::PopStyleColor();
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Recording");
+                    }
+                        
                 }
                 else if (dev_model.dev.is<playback>())
                 {
@@ -699,7 +722,7 @@ int main(int, char**) try
 
                     auto playback_panel_pos = ImVec2{ 0, pos.y + panel_y + 18 };
                     ImGui::SetCursorPos(playback_panel_pos);
-                    playback_panel_pos.y = dev_model.draw_playback_panel(font_14);
+                    playback_panel_pos.y = dev_model.draw_playback_panel(font_14, viewer_model);
                     playback_control_panel_height += playback_panel_pos.y;
                 }
 
@@ -969,7 +992,6 @@ int main(int, char**) try
                     }
                 }
             }
-
         }
         else
         {
@@ -1019,6 +1041,11 @@ int main(int, char**) try
             static_cast<int>(ImGui::GetIO().DisplaySize.y * data.scale_factor));
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
+        
+        static float alpha_delta = 0;
+        static float alpha_delta_step = 0;
+        alpha_delta_step = alpha_delta <= 0 ? 0.04 : alpha_delta > 1 ? -0.04 : alpha_delta_step;
+        alpha_delta += alpha_delta_step;
 
         if (!is_3d_view)
         {
@@ -1044,6 +1071,9 @@ int main(int, char**) try
 
                 if (stream_mv.dev->is_paused())
                     viewer_model.show_paused_icon(font_18, stream_rect.x + 5, stream_rect.y + 5, stream_mv.profile.unique_id());
+
+                if (stream_mv.dev->dev.is<recorder>())
+                    viewer_model.show_recording_icon(font_18, stream_rect.x + 5 + 20, stream_rect.y + 5, stream_mv.profile.unique_id(), alpha_delta);
 
                 stream_mv.show_stream_header(font_14, stream_rect, viewer_model);
                 stream_mv.show_stream_footer(stream_rect, mouse);
@@ -1076,6 +1106,11 @@ int main(int, char**) try
                 for (auto&& s : viewer_model.streams)
                 {
                     if (s.second.dev) s.second.dev->resume();
+                    if (s.second.dev->dev.is<playback>())
+                    {
+                        auto p = s.second.dev->dev.as<playback>();
+                        p.resume();
+                    }
                 }
             }
             else
@@ -1083,6 +1118,11 @@ int main(int, char**) try
                 for (auto&& s : viewer_model.streams)
                 {
                     if (s.second.dev) s.second.dev->pause();
+                    if (s.second.dev->dev.is<playback>())
+                    {
+                        auto p = s.second.dev->dev.as<playback>();
+                        p.pause();
+                    }
                 }
             }
             paused = !paused;

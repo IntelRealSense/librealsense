@@ -1275,6 +1275,14 @@ void rs2_playback_device_set_playback_speed(const rs2_device* device, float spee
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
+void rs2_playback_device_stop(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    return playback->stop();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
 rs2_device* rs2_create_record_device(const rs2_device* device, const char* file, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);

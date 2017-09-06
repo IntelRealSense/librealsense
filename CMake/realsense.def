@@ -198,6 +198,7 @@ EXPORTS
     rs2_playback_device_set_status_changed_callback
     rs2_playback_device_get_current_status
     rs2_playback_device_set_playback_speed
+	rs2_playback_device_stop
 
     rs2_create_align
     rs2_create_pipeline

@@ -6550,9 +6550,9 @@ bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v
     return value_changed;
 }
 
-bool ImGui::SeekSlider(const char* label, int* v)
+bool ImGui::SeekSlider(const char* label, int* v, const char* display_format)
 {
-    return SliderInt(label, v, 0, 100, "%.0f%%",true);
+    return SliderInt(label, v, 0, 100, display_format,true);
 }
 
 // Use power!=1.0 for logarithmic sliders.
