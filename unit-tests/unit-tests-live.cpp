@@ -231,7 +231,7 @@ std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int w
     return profiles;
 }
 
-TEST_CASE("Sync different fps", "[live]") {
+TEST_CASE("Sync different fps", "[live][!mayfail]") {
 
     const double DELTA = 20;
     rs2::context ctx;
@@ -1530,6 +1530,9 @@ TEST_CASE("Multiple devices", "[live][multicam]")
     }
 }
 
+// On Windows 10 RS2 there is an anusual behaviour failingt this test:
+// When trying to enable the second instance of Source Reader, instead of failing, the Media Foundation allows it
+// and sends an HR to the first Source Reader instead (something about the application being preempted)
 TEST_CASE("Multiple applications", "[live][multicam][!mayfail]")
 {
     rs2::context ctx1;
