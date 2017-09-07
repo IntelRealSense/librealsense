@@ -189,16 +189,8 @@ namespace librealsense
         lazy<ds5_color_sensor*> _color_sensor;
         lazy<bool> _enabled;
 
-        enum res_type{
-            small_resolution,
-            vga_resolution,
-            full_resolution
-        };
-
         static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
         static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
-
-        res_type get_res_type(uint32_t width, uint32_t height);
 
         preset get_all() const;
         void set_all(const preset& p);

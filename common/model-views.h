@@ -198,7 +198,7 @@ namespace rs2
         }
 
         sensor s;
-        device& dev;
+        device dev;
 
         std::map<int, option_model> options_metadata;
         std::vector<std::string> resolutions;
