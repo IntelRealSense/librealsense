@@ -340,7 +340,7 @@ PYBIND11_PLUGIN(NAME) {
               {
                   if (auto vf = self.as<rs2::video_frame>())
                       return BufData(const_cast<void*>(vf.get_data()), 1, std::string("@B"), 2,
-                                             { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_stride_in_bytes()) },
+                                             { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()) },
                                              { static_cast<size_t>(vf.get_stride_in_bytes()), 1 });
                   else
                       return BufData(const_cast<void*>(self.get_data()), 1, std::string("@B"), 0); },
