@@ -168,6 +168,7 @@ PYBIND11_PLUGIN(NAME) {
           .value("motion_module_temperature", RS2_OPTION_MOTION_MODULE_TEMPERATURE)
           .value("depth_units", RS2_OPTION_DEPTH_UNITS)
           .value("enable_motion_correction", RS2_OPTION_ENABLE_MOTION_CORRECTION)
+          .value("auto_exposure_priority", RS2_OPTION_AUTO_EXPOSURE_PRIORITY)
           .value("count", RS2_OPTION_COUNT);
     
     py::enum_<rs2_distortion> distortion(m, "distortion");

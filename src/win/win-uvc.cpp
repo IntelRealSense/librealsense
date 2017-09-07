@@ -469,7 +469,12 @@ namespace rsimpl2
             { RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE,     KSPROPERTY_VIDEOPROCAMP_WHITEBALANCE, true },
             { RS2_OPTION_BACKLIGHT_COMPENSATION,        KSPROPERTY_VIDEOPROCAMP_BACKLIGHT_COMPENSATION },
             { RS2_OPTION_GAIN,                          KSPROPERTY_VIDEOPROCAMP_GAIN },
-            { RS2_OPTION_POWER_LINE_FREQUENCY,          KSPROPERTY_VIDEOPROCAMP_POWERLINE_FREQUENCY }
+            { RS2_OPTION_POWER_LINE_FREQUENCY,          KSPROPERTY_VIDEOPROCAMP_POWERLINE_FREQUENCY},
+        };
+
+        // Camera Terminal controls will be handled with  PU option transport and handling mechanism
+        static const pu_control ct_controls[] = {
+            { RS2_OPTION_AUTO_EXPOSURE_PRIORITY,        KSPROPERTY_CAMERACONTROL_AUTO_EXPOSURE_PRIORITY },
         };
 
         bool wmf_uvc_device::get_pu(rs2_option opt, int32_t& value) const
@@ -502,6 +507,23 @@ namespace rsimpl2
                     return true;
                 }
             }
+
+            for (auto & ct : ct_controls)
+            {
+                if (opt == ct.option)
+                {
+                    if (!_camera_control.p) throw std::runtime_error("No camera_control!");
+                    auto hr = _camera_control->Get(ct.property, &val, &flags);
+                    if (hr == DEVICE_NOT_READY_ERROR)
+                        return false;
+
+                    value = val;
+
+                    CHECK_HR(hr);
+                    return true;
+                }
+            }
+
             throw std::runtime_error(to_string() << "Unsupported control - " << opt);
         }
 
@@ -584,6 +606,48 @@ namespace rsimpl2
                     return true;
                 }
             }
+
+            for (auto & ct : ct_controls)
+            {
+                if (opt == ct.option)
+                {
+                    if (ct.enable_auto)
+                    {
+                        if (value)
+                        {
+                            auto hr = _camera_control->Set(ct.property, 0, CameraControl_Flags_Auto);
+                            if (hr == DEVICE_NOT_READY_ERROR)
+                                return false;
+
+                            CHECK_HR(hr);
+                        }
+                        else
+                        {
+                            long min, max, step, def, caps;
+                            auto hr = _camera_control->GetRange(ct.property, &min, &max, &step, &def, &caps);
+                            if (hr == DEVICE_NOT_READY_ERROR)
+                                return false;
+
+                            CHECK_HR(hr);
+
+                            hr = _camera_control->Set(ct.property, def, CameraControl_Flags_Manual);
+                            if (hr == DEVICE_NOT_READY_ERROR)
+                                return false;
+
+                            CHECK_HR(hr);
+                        }
+                    }
+                    else
+                    {
+                        auto hr = _camera_control->Set(ct.property, value, CameraControl_Flags_Manual);
+                        if (hr == DEVICE_NOT_READY_ERROR)
+                            return false;
+
+                        CHECK_HR(hr);
+                    }
+                    return true;
+                }
+            }
             throw std::runtime_error(to_string() << "Unsupported control - " << opt);
         }
 
@@ -610,6 +674,16 @@ namespace rsimpl2
                 {
                     if (!_video_proc.p) throw std::runtime_error("No video proc!");
                     CHECK_HR(_video_proc->GetRange(pu.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                    control_range result(minVal, maxVal, steppingDelta, defVal);
+                    return result;
+                }
+            }
+            for (auto & ct : ct_controls)
+            {
+                if (opt == ct.option)
+                {
+                    if (!_camera_control.p) throw std::runtime_error("No camera_control!");
+                    CHECK_HR(_camera_control->GetRange(ct.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                     control_range result(minVal, maxVal, steppingDelta, defVal);
                     return result;
                 }

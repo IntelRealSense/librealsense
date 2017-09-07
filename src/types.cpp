@@ -156,6 +156,7 @@ namespace rsimpl2
         CASE(MOTION_MODULE_TEMPERATURE)
         CASE(DEPTH_UNITS)
         CASE(ENABLE_MOTION_CORRECTION)
+        CASE(AUTO_EXPOSURE_PRIORITY)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
