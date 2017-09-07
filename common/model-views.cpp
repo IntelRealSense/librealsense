@@ -333,7 +333,7 @@ namespace rs2
 
             }
 
-            if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE && dev->auto_exposure_enabled && dev->streaming)
+            if (!read_only && opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE && dev->auto_exposure_enabled && dev->streaming)
             {
                 ImGui::SameLine(0, 10);
                 std::string button_label = label;
@@ -1201,11 +1201,12 @@ namespace rs2
 
     bool stream_model::is_stream_visible()
     {
-        if (dev && (dev->is_paused() || dev->dev.is<playback>()))
-        {
-            last_frame = std::chrono::high_resolution_clock::now();
-            return true;
-        }
+        if (dev && 
+            (dev->is_paused() || (dev->streaming && dev->dev.is<playback>())))
+            {
+                last_frame = std::chrono::high_resolution_clock::now();
+                return true;
+            }
 
         using namespace std::chrono;
         auto now = high_resolution_clock::now();
@@ -1726,7 +1727,7 @@ namespace rs2
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons, 0 });
 
         auto p = dev->dev.as<playback>();
-        if (dev->is_paused())
+        if (dev->is_paused() ||  (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
         {
             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
@@ -2134,11 +2135,6 @@ namespace rs2
         auto name = get_device_name(dev);
         id = to_string() << name.first << ", " << name.second;
 
-        if (dev.is<playback>())
-        {
-            play_defaults(viewer);
-        }
-
         // Initialize static camera info:
         for (auto i = 0; i < RS2_CAMERA_INFO_COUNT; i++)
         {
@@ -2159,6 +2155,18 @@ namespace rs2
                                   std::string("???") });
             }
         }
+
+        if (dev.is<playback>())
+        {
+            for (auto&& sub : subdevices)
+            {
+                for (auto&& p : sub->profiles)
+                {
+                    sub->stream_enabled[p.unique_id()] = true;
+                }
+            }
+            play_defaults(viewer);
+        }
     }
     void device_model::play_defaults(viewer_model& viewer)
     {
@@ -2166,7 +2174,19 @@ namespace rs2
         {
             if (!sub->streaming)
             {
-                auto profiles = sub->get_selected_profiles();
+                std::vector<rs2::stream_profile> profiles;
+                try
+                {
+                    profiles = sub->get_selected_profiles();
+                }
+                catch (...) 
+                {
+                    continue;
+                }
+                
+                if (profiles.empty()) 
+                    continue;
+
                 sub->play(profiles);
 
                 for (auto&& profile : profiles)
@@ -2384,7 +2404,7 @@ namespace rs2
         ImGui::Begin(label.c_str(), nullptr, flags);
 
         ImGui::PushStyleColor(ImGuiCol_Text, text_color);
-        ImGui::Text(text);
+        ImGui::Text("%s", text);
         ImGui::PopStyleColor();
 
         ImGui::End();
@@ -2953,8 +2973,8 @@ namespace rs2
         {
             seek_pos = 0;
         }
-
-        ImGui::PushItemWidth(290.f);
+        float seek_bar_width = 290.0f;
+        ImGui::PushItemWidth(seek_bar_width);
         std::string label1 = "## " + id;
         if (ImGui::SeekSlider(label1.c_str(), &seek_pos, ""))
         {
@@ -2966,12 +2986,14 @@ namespace rs2
         }
 
         ImGui::SetCursorPos({ pos.x, pos.y + 17 });
+        
         std::string time_elapsed = pretty_time(std::chrono::nanoseconds(progress));
         std::string duration_str = pretty_time(std::chrono::nanoseconds(playback_total_duration));
         ImGui::Text("%s", time_elapsed.c_str());
         ImGui::SameLine();
-        pos = ImGui::GetCursorPos();
-        ImGui::SetCursorPos({ pos.x + 195, pos.y });
+        float pos_y = ImGui::GetCursorPosY();
+        
+        ImGui::SetCursorPos({ pos.x + seek_bar_width - 41 , pos_y });
         ImGui::Text("%s", duration_str.c_str());
         
         return 50;
