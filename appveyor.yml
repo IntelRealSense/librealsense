@@ -1,0 +1,37 @@
+version: 2.1.{build}
+branches:
+  only:
+  - development
+skip_tags: true
+image: Visual Studio 2015
+clone_folder: c:\projects\librealsense
+init:
+- cmd: 
+before_build:
+- cmd: >-
+    mkdir build
+
+    cd build
+
+    cmake .. -DBUILD_EXAMPLES=true -DBUILD_PYTHON_BINDINGS=true
+build:
+  project: ./build/Realsense.sln
+  verbosity: minimal
+test_script:
+- ps: >-
+    $url = "http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc4"
+
+    $output = "C:/projects/librealsense/build/Debug/awgc4"
+
+    Invoke-WebRequest -Uri $url -OutFile $output
+
+
+    & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from C:/projects/librealsense/build/Debug/awgc4 -d yes
+
+    if ($LASTEXITCODE -ne 0)
+
+    {
+
+    throw "Tests failed!"
+
+    }
