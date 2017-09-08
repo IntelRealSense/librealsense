@@ -1,5 +1,6 @@
-/* License: Apache 2.0. See LICENSE file in root directory.
-   Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+// Copyright (c) 2017 Intel Corporation. All rights reserved.
+// Use of this source code is governed by an Apache 2.0 license
+// that can be found in the LICENSE file.
 
 'use strict';
 
@@ -7,6 +8,10 @@ const RS2 = require('bindings')('node_librealsense');
 const EventEmitter = require('events');
 const PNG = require('pngjs').PNG;
 const fs = require('fs');
+
+// TODO(tingshao): resolve the potential disabled eslint errors
+/* eslint-disable max-len, prefer-rest-params, valid-jsdoc, no-unused-vars, camelcase */
+
 /**
  * A RealSense camera
  */
@@ -72,36 +77,37 @@ class Device {
     if (arguments.length === 0) {
       let result = {};
       if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_NAME)) {
-        result['name'] = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_NAME);
+        result.name = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_NAME);
       }
       if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_SERIAL_NUMBER)) {
-        result['serialNumber'] = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_SERIAL_NUMBER);
+        result.serialNumber = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_SERIAL_NUMBER);
       }
       if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_FIRMWARE_VERSION)) {
-        result['firmwareVersion'] = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_FIRMWARE_VERSION);
+        result.firmwareVersion = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_FIRMWARE_VERSION);
       }
       if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_LOCATION)) {
-        result['location'] = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_LOCATION);
+        result.location = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_LOCATION);
       }
       if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_DEBUG_OP_CODE)) {
-        result['debugOpCode'] = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_DEBUG_OP_CODE);
+        result.debugOpCode = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_DEBUG_OP_CODE);
       }
       if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_ADVANCED_MODE)) {
-        result['advancedMode'] = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_ADVANCED_MODE);
+        result.advancedMode = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_ADVANCED_MODE);
       }
       if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_PRODUCT_ID)) {
-        result['productId'] = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_PRODUCT_ID);
+        result.productId = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_PRODUCT_ID);
       }
       if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_CAMERA_LOCKED)) {
-        result['cameraLocked'] = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_CAMERA_LOCKED);
+        result.cameraLocked = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_CAMERA_LOCKED);
       }
       return result;
     } else {
       let info = checkStringNumber(arguments[0],
-        constants.camera_info.CAMERA_INFO_NAME, constants.camera_info.CAMERA_INFO_COUNT,
-        cameraInfo2Int,
-        'Device.getCameraInfo(info) expects a number or string as the 1st argument',
-        'Device.getCameraInfo(info) expects a valid value as the 1st argument');
+          constants.camera_info.CAMERA_INFO_NAME,
+          constants.camera_info.CAMERA_INFO_COUNT,
+          cameraInfo2Int,
+          'Device.getCameraInfo(info) expects a number or string as the 1st argument',
+          'Device.getCameraInfo(info) expects a valid value as the 1st argument');
       return this.cxxDev.getCameraInfo(info);
     }
   }
@@ -126,10 +132,10 @@ class Device {
     }
 
     let i = checkStringNumber(arguments[0],
-      constants.camera_info.CAMERA_INFO_NAME, constants.camera_info.CAMERA_INFO_COUNT,
-      cameraInfo2Int,
-      'Device.supportsCameraInfo(info) expects a number or string as the 1st argument',
-      'Device.supportsCameraInfo(info) expects a valid value as the 1st argument');
+        constants.camera_info.CAMERA_INFO_NAME, constants.camera_info.CAMERA_INFO_COUNT,
+        cameraInfo2Int,
+        'Device.supportsCameraInfo(info) expects a number or string as the 1st argument',
+        'Device.supportsCameraInfo(info) expects a valid value as the 1st argument');
     return this.cxxDev.supportsCameraInfo(i);
   }
 
@@ -149,7 +155,7 @@ class Device {
     this.cxxDev = undefined;
     this._events = undefined;
   }
-};
+}
 
 /**
  * Class represents a stream configuration
@@ -244,7 +250,7 @@ class StreamProfile {
     this.cxxProfile.destroy();
     this.cxxProfile = undefined;
   }
-};
+}
 
 class VideoStreamProfile extends StreamProfile {
   /**
@@ -253,7 +259,7 @@ class VideoStreamProfile extends StreamProfile {
   constructor(cxxProfile) {
     super(cxxProfile);
 
-    // TODO: determine right width and height value
+    // TODO(tinshao): determine right width and height value
     this.widthValue = this.cxxProfile.width();
     this.heightValue = this.cxxProfile.height();
   }
@@ -340,7 +346,7 @@ class Sensor {
   * this object after the operation.
   * @return {undefined} No return value
   */
-  destroy(){
+  destroy() {
     this.events_ = null;
     this.cxxSensor.destroy();
     this.cxxSensor = undefined;
@@ -384,23 +390,23 @@ class Sensor {
       } else if (arguments[0] instanceof Syncer) {
         this.cxxSensor.startWithSyncer(arguments[0].cxxSyncer, false, 0);
       } else {
-        this.cxxSensor.frameCallback = function (frame) {
+        this.cxxSensor.frameCallback = function(frame) {
           callback(frame);
         };
         this.cxxSensor.startWithCallback('frameCallback', false, 0);
       }
     } else if (arguments.length >= 2) {
       let stream = checkStringNumber(arguments[1],
-        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-        stream2Int,
-        'Sensor.start() expects a number or string as the 2nd argument',
-        'Sensor.start() expects a valid value as the 2nd argument');
+          constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+          stream2Int,
+          'Sensor.start() expects a number or string as the 2nd argument',
+          'Sensor.start() expects a valid value as the 2nd argument');
       if (arguments[1] instanceof FrameQueue) {
         this.cxxSensor.startWithFrameQueue(arguments[1].cxxQueue, true, stream);
       } else if (arguments[1] instanceof Syncer) {
         this.cxxSensor.startWithSyncer(arguments[1].cxxSyncer, true, stream);
       } else {
-        this.cxxSensor.frameCallback = function (frame) {
+        this.cxxSensor.frameCallback = function(frame) {
           callback(frame);
         };
         this.cxxSensor.startWithCallback('frameCallback', true, stream);
@@ -424,10 +430,10 @@ class Sensor {
       this.cxxSensor.stop(true, 0);
     } else {
       let s = checkStringNumber(arguments[0],
-        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-        stream2Int,
-        'Sensor.stop(stream) expects a number or string as the 1st argument',
-        'Sensor.stop(stream) expects a valid value as the 1st argument');
+          constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+          stream2Int,
+          'Sensor.stop(stream) expects a number or string as the 1st argument',
+          'Sensor.stop(stream) expects a valid value as the 1st argument');
       this.cxxSensor.stop(false, s);
     }
   }
@@ -439,10 +445,10 @@ class Sensor {
   */
   isOptionReadOnly(option) {
     let o = checkStringNumber(arguments[0],
-      constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-      option2Int,
-      'Sensor.isOptionReadOnly(option) expects a number or string as the 1st argument',
-      'Sensor.isOptionReadOnly(option) expects a valid value as the 1st argument');
+        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
+        option2Int,
+        'Sensor.isOptionReadOnly(option) expects a number or string as the 1st argument',
+        'Sensor.isOptionReadOnly(option) expects a valid value as the 1st argument');
     return this.cxxSensor.isOptionReadonly(o);
   }
 
@@ -487,14 +493,15 @@ class Sensor {
    * @return {undefined} No return value
    */
   setNotificationsCallback(callback) {
-    if (!callback)
-      return;
+    if (!callback) {
+return;
+}
     this.events_.on('notification', (info) => {
       callback(info);
     });
     let inst = this;
     if (!this.cxxSensor.notificationCallback) {
-      this.cxxSensor.notificationCallback = function (info) {
+      this.cxxSensor.notificationCallback = function(info) {
         inst.events_.emit('notification', info);
       };
       this.cxxSensor.setNotificationCallback('notificationCallback');
@@ -509,10 +516,10 @@ class Sensor {
    */
   getOption(option) {
     let o = checkStringNumber(arguments[0],
-      constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-      option2Int,
-      'Sensor.getOption(option) expects a number or string as the 1st argument',
-      'Sensor.getOption(option) expects a valid value as the 1st argument');
+        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
+        option2Int,
+        'Sensor.getOption(option) expects a number or string as the 1st argument',
+        'Sensor.getOption(option) expects a valid value as the 1st argument');
     return this.cxxSensor.getOption(o);
   }
 
@@ -539,10 +546,10 @@ class Sensor {
    */
   getOptionRange(option) {
     let o = checkStringNumber(arguments[0],
-      constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-      option2Int,
-      'Sensor.getOptionRange(option) expects a number or string as the 1st argument',
-      'Sensor.getOptionRange(option) expects a valid value as the 1st argument');
+        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
+        option2Int,
+        'Sensor.getOptionRange(option) expects a number or string as the 1st argument',
+        'Sensor.getOptionRange(option) expects a valid value as the 1st argument');
     return this.cxxSensor.getOptionRange(o);
   }
 
@@ -555,10 +562,10 @@ class Sensor {
    */
   setOption(option, value) {
     let o = checkStringNumber(arguments[0],
-      constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-      option2Int,
-      'Sensor.getOptionRange(option) expects a number or string as the 1st argument',
-      'Sensor.getOptionRange(option) expects a valid value as the 1st argument');
+        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
+        option2Int,
+        'Sensor.getOptionRange(option) expects a number or string as the 1st argument',
+        'Sensor.getOptionRange(option) expects a valid value as the 1st argument');
     this.cxxSensor.setOption(o, value);
   }
 
@@ -570,10 +577,10 @@ class Sensor {
    */
   supportsOption(option) {
     let o = checkStringNumber(arguments[0],
-      constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-      option2Int,
-      'Sensor.supportsOption(option) expects a number or string as the 1st argument',
-      'Sensor.supportsOption(option) expects a valid value as the 1st argument');
+        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
+        option2Int,
+        'Sensor.supportsOption(option) expects a number or string as the 1st argument',
+        'Sensor.supportsOption(option) expects a valid value as the 1st argument');
     return this.cxxSensor.supportsOption(o);
   }
 
@@ -585,10 +592,10 @@ class Sensor {
    */
   getOptionDescription(option) {
     let o = checkStringNumber(arguments[0],
-      constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-      option2Int,
-      'Sensor.supportsOption(option) expects a number or string as the 1st argument',
-      'Sensor.supportsOption(option) expects a valid value as the 1st argument');
+        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
+        option2Int,
+        'Sensor.supportsOption(option) expects a number or string as the 1st argument',
+        'Sensor.supportsOption(option) expects a valid value as the 1st argument');
     return this.cxxSensor.getOptionDescription(o);
   }
 
@@ -600,10 +607,10 @@ class Sensor {
    */
   getOptionValueDescription(option, value) {
     let o = checkStringNumber(arguments[0],
-      constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-      option2Int,
-      'Sensor.supportsOption(option) expects a number or string as the 1st argument',
-      'Sensor.supportsOption(option) expects a valid value as the 1st argument');
+        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
+        option2Int,
+        'Sensor.supportsOption(option) expects a number or string as the 1st argument',
+        'Sensor.supportsOption(option) expects a valid value as the 1st argument');
     return this.cxxSensor.getOptionValueDescription(o, value);
   }
 
@@ -643,13 +650,13 @@ class Sensor {
    */
   getMotionIntrinsics(stream) {
     let s = checkStringNumber(stream,
-      constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-      stream2Int,
-      'Sensor.getMotionIntrinsics() expects a number or string to specify the stream',
-      'Sensor.getMotionIntrinsics() expects a valid value to specify the stream');
+        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+        stream2Int,
+        'Sensor.getMotionIntrinsics() expects a number or string to specify the stream',
+        'Sensor.getMotionIntrinsics() expects a valid value to specify the stream');
     return this.cxxSensor.getMotionIntrinsics(s);
   }
-};
+}
 
 /**
  * Sensor for managing region of interest.
@@ -657,8 +664,9 @@ class Sensor {
 class ROISensor extends Sensor {
   /**
    * Construct a ROISensor object, representing a RealSense camera subdevice
+   *
    */
-  constructor(sensor) {
+   constructor(sensor) {
     super(sensor);
   }
 
@@ -700,7 +708,10 @@ class ROISensor extends Sensor {
    * @param {Float32} maxY - see {@link RegionOfInterestObject} for details.
    */
   setRegionOfInterest(region) {
-    let minX, minY, maxX, maxY;
+    let minX;
+    let minY;
+    let maxX;
+    let maxY;
     if (arguments.length === 1 && typeof region === 'object') {
       minX = region.minX;
       minY = region.minY;
@@ -716,8 +727,7 @@ class ROISensor extends Sensor {
       throw new TypeError('setRegionOfInterest(region) expects a RegionOfInterestObject as argument');
     }
   }
-
-};
+}
 
 /**
  * Depth sensor
@@ -732,13 +742,13 @@ class DepthSensor extends Sensor {
 
   /**
    * Retrieves mapping between the units of the depth image and meters.
-   * 
+   *
    * @return {Float} depth in meters corresponding to a depth value of 1
    */
   get depthScale() {
 
   }
-};
+}
 
 const internal = {
   ctx: [],
@@ -763,7 +773,7 @@ const internal = {
     });
     // Dropping reference to invalid context(s)
     this.ctx = newArray;
-  }
+  },
 };
 
 /**
@@ -801,10 +811,10 @@ class Context {
    * The JavaScript Context object(s) will not be garbage-collected without call(s) to this function
    */
   destroy() {
-    // TODO: check if any devices are not stopped
+    // TODO(tingshao): check if any devices are not stopped
     this.devices = null;
     this.cxxCtx.destroy();
-    // TODO: destroy all other resources, e.g. devices
+    // TODO(tingshao): destroy all other resources, e.g. devices
     this.cxxCtx = undefined;
 
     internal.cleanupContext();
@@ -826,7 +836,7 @@ class Context {
     const num = this.cxxCtx.getDeviceCount();
     if (num) {
       let array = new Array(num);
-      for (let i = 0 ; i < num ; ++ i) {
+      for (let i = 0; i < num; ++ i) {
         array[i] = new Device(this.cxxCtx.getDevice(i));
         this.devices[i] = array[i];
       }
@@ -848,7 +858,7 @@ class Context {
         sensors.forEach((sensor) => {
           array.push(sensor);
         });
-      })
+      });
       return array;
     }
     return undefined;
@@ -888,14 +898,14 @@ class Context {
    * @param {devicesChangedCallback} callback - devices changed callback
    */
   setDevicesChangedCallback(callback) {
-    if (!callback)
-      return;
+    if (!callback) return;
+
     this._events.on('device-changed', (removed, added) => {
       callback(removed, added);
     });
     let inst = this;
     if (!this.cxxCtx.deviceChangedCallback) {
-      this.cxxCtx.deviceChangedCallback = function (added, removed) {
+      this.cxxCtx.deviceChangedCallback = function(added, removed) {
         inst._events.emit('device-changed', added, removed);
       };
       this.cxxCtx.setDevicesChangedCallback('deviceChangedCallback');
@@ -981,15 +991,14 @@ class RecordDevice extends Device {
   constructor(file, cxxDevice) {
     super(cxxDevice);
     this.file = file;
-  };
-
+  }
 }
 
 class PlaybackDevice extends Device {
   constructor(file, cxxDevice) {
     super(cxxDevice);
     this.file = file;
-  };
+  }
 }
 
 class ProcessingBlock {
@@ -1000,11 +1009,11 @@ class ProcessingBlock {
   start() {
 
   }
-};
+}
 
 class SyncerProcessingBlock extends ProcessingBlock {
 
-};
+}
 
 /**
  * Pointcloud accepts depth frames and outputs Points frames
@@ -1023,8 +1032,7 @@ class Pointcloud {
   calculate(depthFrame) {
     if (depthFrame) {
       let cxxFrame = this.cxxPointcloud.calculate(depthFrame.cxxFrame);
-      if (cxxFrame)
-        return new Points(cxxFrame);
+      if (cxxFrame) return new Points(cxxFrame);
     }
     return undefined;
   }
@@ -1035,10 +1043,11 @@ class Pointcloud {
    * @return {undefined}
    */
   mapTo(mappedFrame) {
-    if (mappedFrame)
+    if (mappedFrame) {
       this.cxxPointcloud.mapTo(mappedFrame.cxxFrame);
-    else
+    } else {
       throw new TypeError('Pointcloud.mapTo expects a valid argument');
+    }
   }
 
   /**
@@ -1048,7 +1057,7 @@ class Pointcloud {
     this.cxxPointcloud.destroy();
     this.cxxPointcloud = undefined;
   }
-};
+}
 
 /**
  * The Colorizer can be used to quickly visualize the depth data by tranform data into RGB8 format
@@ -1076,12 +1085,12 @@ class Colorizer {
   colorize(depthFrame) {
     if (depthFrame) {
       let cxxFrame = this.cxxColorizer.colorize(depthFrame.cxxFrame);
-      if (cxxFrame)
-        return new VideoFrame(cxxFrame);
+      if (cxxFrame) return new VideoFrame(cxxFrame);
     }
     return undefined;
   }
 }
+
 /**
  * A queue used to store frames
  */
@@ -1091,8 +1100,9 @@ class FrameQueue {
    * @param {Integer} capacity - how many frames can be stored in the newly created queue
    */
   constructor(capacity) {
-    if (capacity <= 0)
+    if (capacity <= 0) {
       throw new TypeError('new FrameQueue(capacity) expects a positive argument');
+    }
     this.cxxQueue = new RS2.RSFrameQueue();
     this.cxxQueue.create(capacity);
   }
@@ -1121,10 +1131,7 @@ class FrameQueue {
    */
   pollForFrame() {
     let frame = this.cxxQueue.pollForFrame();
-    if (frame)
-      return new Frame(frame);
-    else
-      return undefined;
+    return frame ? new Frame(frame) : undefined;
   }
 
   /**
@@ -1132,13 +1139,13 @@ class FrameQueue {
    * @return {undefined}
    */
   enqueueFrame(frame) {
-    cxxQueue.enqueueFrame(frame.cxxFrame);
+    this.cxxQueue.enqueueFrame(frame.cxxFrame);
     frame.cxxFrame = null;
   }
 }
 
 /**
- * This class resprents a picture frame 
+ * This class resprents a picture frame
  *
  * @property {Boolean} isValid - True if the frame is valid, otherwise false.
  * @property {Uint16Array|Uint8Array} data - A typed array representing the data.
@@ -1160,10 +1167,8 @@ class Frame {
   constructor(cxxFrame) {
     this.cxxFrame = cxxFrame;
     let cxxProfile = this.cxxFrame.getStreamProfile();
-    if (cxxProfile.isVideoProfile)
-      this.streamProfile = new VideoStreamProfile(cxxProfile);
-    else
-      this.streamProfile = new StreamProfile(cxxProfile);
+    this.streamProfile = cxxProfile.isVideoProfile ?
+        new VideoStreamProfile(cxxProfile) : new StreamProfile(cxxProfile);
   }
 
   /**
@@ -1197,17 +1202,11 @@ class Frame {
   }
 
   get width() {
-    if(this.streamProfile.width)
-      return this.streamProfile.width;
-    else
-      return this.cxxFrame.getWidth();
+    return this.streamProfile.width ? this.streamProfile.width : this.cxxFrame.getWidth();
   }
 
   get height() {
-    if(this.streamProfile.height)
-      return this.streamProfile.height;
-    else
-      return this.cxxFrame.getHeight();
+    return this.streamProfile.height ? this.streamProfile.height : this.cxxFrame.getHeight();
   }
 
   /**
@@ -1215,9 +1214,7 @@ class Frame {
    * @return {Boolean}
    */
   get isValid() {
-    if (this.cxxFrame)
-      return true;
-    return false;
+    return this.cxxFrame ? true : false;
   }
 
   /**
@@ -1245,15 +1242,12 @@ class Frame {
    */
   frameMetadata(metadata) {
     let m = checkStringNumber(metadata,
-      constants.frame_metadata.FRAME_METADATA_FRAME_COUNTER, constants.frame_metadata.FRAME_METADATA_COUNT,
-      frameMetadata2Int,
-      'Frame.frameMetadata(metadata) expects a number or string as the 1st argument',
-      'Frame.frameMetadata(metadata) expects a valid value as the 1st argument');
+        constants.frame_metadata.FRAME_METADATA_FRAME_COUNTER, constants.frame_metadata.FRAME_METADATA_COUNT,
+        frameMetadata2Int,
+        'Frame.frameMetadata(metadata) expects a number or string as the 1st argument',
+        'Frame.frameMetadata(metadata) expects a valid value as the 1st argument');
     let array = new Uint8Array(8);
-    if(this.cxxFrame.getFrameMetadata(m, array))
-      return array;
-    else
-      return undefined;
+    return this.cxxFrame.getFrameMetadata(m, array) ? array : undefined;
   }
 
   /**
@@ -1263,10 +1257,10 @@ class Frame {
    */
   supportsFrameMetadata(metadata) {
     let m = checkStringNumber(metadata,
-      constants.frame_metadata.FRAME_METADATA_FRAME_COUNTER, constants.frame_metadata.FRAME_METADATA_COUNT,
-      frameMetadata2Int,
-      'Frame.supportsFrameMetadata(metadata) expects a number or string as the 1st argument',
-      'Frame.supportsFrameMetadata(metadata) expects a valid value as the 1st argument');
+        constants.frame_metadata.FRAME_METADATA_FRAME_COUNTER, constants.frame_metadata.FRAME_METADATA_COUNT,
+        frameMetadata2Int,
+        'Frame.supportsFrameMetadata(metadata) expects a number or string as the 1st argument',
+        'Frame.supportsFrameMetadata(metadata) expects a valid value as the 1st argument');
     return this.cxxFrame.supportsFrameMetadata(m);
   }
 
@@ -1285,8 +1279,10 @@ class Frame {
    */
   get data() {
     const arrayBuffer = this.cxxFrame.getData();
-    if (arrayBuffer) {
-      switch (this.format) {
+
+    if (!arrayBuffer) return undefined;
+
+    switch (this.format) {
       case constants.format.FORMAT_Z16:
       case constants.format.FORMAT_DISPARITY16:
       case constants.format.FORMAT_Y16:
@@ -1308,9 +1304,7 @@ class Frame {
       case constants.format.FORMAT_XYZ32F:
       case constants.format.FORMAT_MOTION_XYZ32F:
         return new Uint32Array(arrayBuffer.buffer);
-      }
     }
-    return undefined;
   }
 
   /**
@@ -1328,17 +1322,17 @@ class Frame {
    * @see [Frame.dataByteLength]{@link Frame#dataByteLength} to determine the buffer size
    */
   getData(buffer) {
-    if (arguments.length === 0) {
-      return this.data;
-    } else if (typeof buffer === 'object') {
+    if (arguments.length === 0) return this.data;
+
+    if (typeof buffer === 'object') {
       const arrayBuffer = this.cxxFrame.getData();
       const sourceBuffer = Buffer.from(arrayBuffer);
 
       sourceBuffer.copy(buffer);
       return buffer;
-    } else {
-      throw new TypeError('Frame.getData() expects zero or one Buffer object as the argument');
     }
+
+    throw new TypeError('Frame.getData() expects zero or one Buffer object as the argument');
   }
 
   /**
@@ -1404,7 +1398,7 @@ class VideoFrame extends Frame {
   get bytesPerPixel() {
     return this.cxxFrame.getBitsPerPixel()/8;
   }
-};
+}
 
 /**
  * Class used to get 3D vertices and texture coordinates
@@ -1420,10 +1414,11 @@ class Points extends Frame {
    * @return {Float32Array}
    */
   getVertices() {
-    if (this.cxxFrame.canGetPoints())
+    if (this.cxxFrame.canGetPoints()) {
       return this.cxxFrame.getVertices();
-    else
-      throw new TypeError('Can\'t get vertices due to invalid frame type');
+    }
+
+    throw new TypeError('Can\'t get vertices due to invalid frame type');
   }
 
   /**
@@ -1433,10 +1428,11 @@ class Points extends Frame {
    * @return {Int32Array}
    */
   getTextureCoordinates() {
-    if (this.cxxFrame.canGetPoints())
+    if (this.cxxFrame.canGetPoints()) {
       return this.cxxFrame.getTextureCoordinates();
-    else
-      throw new TypeError('Can\'t get coordinates due to invalid frame type');
+     }
+
+    throw new TypeError('Can\'t get coordinates due to invalid frame type');
   }
 
   /**
@@ -1445,16 +1441,17 @@ class Points extends Frame {
    * @return {Integer}
    */
   get size() {
-    if (this.cxxFrame.canGetPoints())
+    if (this.cxxFrame.canGetPoints()) {
       return this.cxxFrame.getPointsCount();
-    else
-      throw new TypeError('Can\'t get size due to invalid frame type');
+    }
+
+    throw new TypeError('Can\'t get size due to invalid frame type');
   }
-};
+}
 
 class CompositeFrame extends Frame {
 
-};
+}
 
 /**
  * This class represents depth stream
@@ -1472,11 +1469,11 @@ class DepthFrame extends VideoFrame {
    */
   getDistance(x, y) {
   }
-};
+}
 
 class FrameSource {
 
-};
+}
 
 /**
  * Class containing a set of frames
@@ -1526,15 +1523,18 @@ class FrameSet {
    */
   at(index) {
     let cxxFrame = this.cxxFrameSet.at(index);
-    if (cxxFrame) {
-      if (cxxFrame.isDepthFrame())
-        return new DepthFrame(cxxFrame);
-      else if (cxxFrame.isVideoFrame())
-        return new VideoFrame(cxxFrame);
-      else
-        return new Frame(cxxFrame);
+
+    if (!cxxFrame) return undefined;
+
+    if (cxxFrame.isDepthFrame()) {
+      return new DepthFrame(cxxFrame);
     }
-    return undefined;
+
+    if (cxxFrame.isVideoFrame()) {
+      return new VideoFrame(cxxFrame);
+    }
+
+    return new Frame(cxxFrame);
   }
 
   /**
@@ -1545,20 +1545,23 @@ class FrameSet {
    */
   getFrame(stream) {
     let s = checkStringNumber(stream,
-      constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-      stream2Int,
-      'getFrame expects the argument to be string or integer',
-      'getFrame\'s argument value is invalid');
+        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+        stream2Int,
+        'getFrame expects the argument to be string or integer',
+        'getFrame\'s argument value is invalid');
     let cxxFrame = this.cxxFrameSet.getFrame(s);
-    if (cxxFrame) {
-      if (cxxFrame.isDepthFrame())
+
+    if (!cxxFrame) return undefined;
+
+    if (cxxFrame.isDepthFrame()) {
         return new DepthFrame(cxxFrame);
-      else if (cxxFrame.isVideoFrame())
-        return new VideoFrame(cxxFrame);
-      else
-        return new Frame(cxxFrame);
     }
-    return undefined;
+
+    if (cxxFrame.isVideoFrame()) {
+      return new VideoFrame(cxxFrame);
+    }
+
+    return new Frame(cxxFrame);
   }
 
   /**
@@ -1585,11 +1588,12 @@ class FrameSet {
  */
 class Pipeline {
   constructor(context) {
-    if (arguments.length > 1)
+    if (arguments.length > 1) {
       throw new TypeError('new Pipeline() can only accept at most 1 argument');
-    let cxxDev = undefined;
+    }
+    let cxxDev;
     let ownCtx = true;
-    let ctx = undefined;
+    let ctx;
 
     if (arguments.length === 1) {
       if (arguments[0] instanceof Context) {
@@ -1599,9 +1603,11 @@ class Pipeline {
         cxxDev = arguments[0].cxxDev;
       }
     }
+
     if (ownCtx === true) {
       this.ctx = new Context();
     }
+
     this.cxxPipeline = new RS2.RSPipeline();
     this.cxxPipeline.create(this.ctx.cxxCtx, cxxDev);
   }
@@ -1614,8 +1620,9 @@ class Pipeline {
   destroy() {
     this.cxxPipeline.destroy();
     this.cxxPipeline = undefined;
-    if (this.ownCtx)
+    if (this.ownCtx) {
       this.ctx.destroy();
+    }
     this.ctx = undefined;
   }
 
@@ -1644,11 +1651,9 @@ class Pipeline {
   waitForFrames(timeout) {
     const timeoutValue = timeout || 5000;
     const cxxFrameSet = this.cxxPipeline.waitForFrames(timeoutValue);
-    if (cxxFrameSet)
-      return new FrameSet(cxxFrameSet);
-    return undefined;
+    return cxxFrameSet ? new FrameSet(cxxFrameSet) : undefined;
   }
-};
+}
 
 /**
  * Syncer class, which is used to group synchronized frames into coherent frame-sets.
@@ -1665,8 +1670,8 @@ class Syncer {
    */
   waitForFrames(timeout) {
     const frames = this.cxxSyncer.waitForFrames(timeout);
-    if (!frames)
-      return undefined;
+    if (!frames) return undefined;
+
     let result = [];
     frames.forEach((f) => {
       result.push(new Frame(f));
@@ -1680,8 +1685,7 @@ class Syncer {
    */
   pollForFrames() {
     const frames = this.cxxSyncer.pollForFrames();
-    if (!frames)
-      return undefined;
+    if (!frames) return undefined;
     let result = [];
     frames.forEach((f) => {
       result.push(new Frame(f));
@@ -1697,7 +1701,7 @@ class Syncer {
     this.cxxSyncer.enqueueFrame(frame.cxxFrame);
     frame.cxxFrame = null;
   }
-};
+}
 
 const util = {};
 
@@ -1815,15 +1819,16 @@ util.Streams = class Streams {
    */
   getIntrinsics(stream) {
     let s = checkStringNumber(stream,
-      constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-      stream2Int,
-      'getIntrinsics expects the argument to be string or integer',
-      'getIntrinsics\'s argument value is invalid');
+        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+        stream2Int,
+        'getIntrinsics expects the argument to be string or integer',
+        'getIntrinsics\'s argument value is invalid');
     let devIndex = this.streamToDevIndexMap[s];
     let device = this.devicesArray[devIndex];
-    for (let i=0; i < this.streamProfiles.length; i++) {
-      if (this.streamProfiles[i].stream === s)
+    for (let i = 0; i < this.streamProfiles.length; i++) {
+      if (this.streamProfiles[i].stream === s) {
         return device.getStreamIntrinsics(this.streamProfiles[i]);
+      }
     }
     return undefined;
   }
@@ -1834,15 +1839,15 @@ util.Streams = class Streams {
    */
   getExtrinsics(fromStream, toStream) {
     let sfrom = checkStringNumber(fromStream,
-      constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-      stream2Int,
-      'getExtrinsics expects the fromStream argument to be string or integer',
-      'getExtrinsics\'s fromStream argument value is invalid');
+        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+        stream2Int,
+        'getExtrinsics expects the fromStream argument to be string or integer',
+        'getExtrinsics\'s fromStream argument value is invalid');
     let sto = checkStringNumber(toStream,
-      constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-      stream2Int,
-      'getExtrinsics expects the toStream argument to be string or integer',
-      'getExtrinsics\'s toStream argument value is invalid');
+        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+        stream2Int,
+        'getExtrinsics expects the toStream argument to be string or integer',
+        'getExtrinsics\'s toStream argument value is invalid');
     let fromDevIndex = this.streamToDevIndexMap[sfrom];
     let fromDevice = this.devicesArray[fromDevIndex];
     let toDevIndex = this.streamToDevIndexMap[sto];
@@ -1887,27 +1892,38 @@ const preset_preference = {
 util.preset_preference = preset_preference;
 
 Object.defineProperty(util, '__stack', {
-  get: function(){
-    var orig = Error.prepareStackTrace;
-    Error.prepareStackTrace = function(_, stack){ return stack; };
-    var err = new Error;
-    Error.captureStackTrace(err, arguments.callee);
-    var stack = err.stack;
+  get: function() {
+    let orig = Error.prepareStackTrace;
+    Error.prepareStackTrace = function(_, stack) {
+   return stack;
+  };
+    let err = new Error();
+    // TODO(kenny-y): fix the jshint error
+    /* jshint ignore:start */
+    Error.captureStackTrace(err, arguments.callee); // eslint-disable-line
+    /* jshint ignore:end */
+    let stack = err.stack;
     Error.prepareStackTrace = orig;
     return stack;
-  }
+  },
 });
 
 Object.defineProperty(util, '__line', {
-  get: function(){
+  get: function() {
+    // TODO(kenny-y): fix the jshint error
+    /* jshint ignore:start */
     return __stack[1].getLineNumber();
-  }
+    /* jshint ignore:end */
+  },
 });
 
 Object.defineProperty(util, '__file', {
-  get: function(){
+  get: function() {
+    // TODO(kenny-y): fix the jshint error
+    /* jshint ignore:start */
     return __stack[1].getFileName().split('/').slice(-1)[0];
-  }
+    /* jshint ignore:end */
+  },
 });
 
 function isString(s) {
@@ -1951,30 +1967,34 @@ function range(start, end, step) {
 }
 
 function checkStreamProfileObject(profile) {
-  if (typeof profile !== 'object')
+  if (typeof profile !== 'object') {
     throw new TypeError('The stream profile object is not an valid object');
+  }
   let stream = checkStringNumber(profile.stream,
     constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
     stream2Int,
     'StreamProfileObject expects a property \'stream\' to be string or integer',
     'StreamProfileObject\'s \'stream\' property value is invalid');
-  if(!isNumber(profile.width))
+  if (!isNumber(profile.width)) {
     throw new TypeError('StreamProfileObject expects a property \'width\' to be an integer');
-  if(!isNumber(profile.height))
+  }
+  if (!isNumber(profile.height)) {
     throw new TypeError('StreamProfileObject expects a property \'height\' to be an integer');
-  if(!isNumber(profile.fps))
+  }
+  if (!isNumber(profile.fps)) {
     throw new TypeError('StreamProfileObject expects a property \'fps\' to be an integer');
+  }
   let format = checkStringNumber(profile.format,
-    constants.format.FORMAT_ANY, constants.format.FORMAT_COUNT,
-    format2Int,
-    'StreamProfileObject expects a property \'format\' to be string or integer',
-    'StreamProfileObject\'s \'format\' property value is invalid');
+      constants.format.FORMAT_ANY, constants.format.FORMAT_COUNT,
+      format2Int,
+      'StreamProfileObject expects a property \'format\' to be string or integer',
+      'StreamProfileObject\'s \'format\' property value is invalid');
   return {
     stream: stream,
     width: profile.width,
     height: profile.height,
     fps: profile.fps,
-    format: format
+    format: format,
   };
 }
 
@@ -2021,16 +2041,16 @@ util.CameraConfig = class CameraConfig {
       this.requests[profile.stream] = profile;
     } else if (arguments.length == 2) {
       let s = checkStringNumber(arguments[0],
-        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-        stream2Int,
-        'CameraConfig.enableStream(stream, presetPreference) expects a number or string as the 1st argument',
-        'CameraConfig.enableStream(stream, presetPreference) expects a valid value as the 1st argument');
+          constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+          stream2Int,
+          'CameraConfig.enableStream(stream, presetPreference) expects a number or string as the 1st argument',
+          'CameraConfig.enableStream(stream, presetPreference) expects a valid value as the 1st argument');
 
       let p = checkStringNumber(arguments[1],
-        preset_preference.PRESET_BEGIN, preset_preference.PRESET_END,
-        CameraConfig.convertPresetPreferenceString,
-        'CameraConfig.enableStream(stream, presetPreference) expects a number or string as the 2nd argument',
-        'CameraConfig.enableStream(stream, presetPreference) expects a valid value as the 2nd argument');
+          preset_preference.PRESET_BEGIN, preset_preference.PRESET_END,
+          CameraConfig.convertPresetPreferenceString,
+          'CameraConfig.enableStream(stream, presetPreference) expects a number or string as the 2nd argument',
+          'CameraConfig.enableStream(stream, presetPreference) expects a valid value as the 2nd argument');
 
       if (s in this.requests) {
         delete this.requests[s];
@@ -2042,7 +2062,7 @@ util.CameraConfig = class CameraConfig {
         width: arguments[1],
         height: arguments[2],
         fps: arguments[3],
-        format: arguments[4]
+        format: arguments[4],
       };
       this.enableStream(profile);
     } else {
@@ -2061,10 +2081,10 @@ util.CameraConfig = class CameraConfig {
     }
 
     let s = checkStringNumber(arguments[0],
-      constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-      stream2Int,
-      'CameraConfig.disableStream(stream) expects a number or string as the 1st argument',
-      'CameraConfig.disableStream(stream) expects a valid value as the 1st argument');
+        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+        stream2Int,
+        'CameraConfig.disableStream(stream) expects a number or string as the 1st argument',
+        'CameraConfig.disableStream(stream) expects a valid value as the 1st argument');
 
     delete this.requests[s];
     delete this.presets[s];
@@ -2078,10 +2098,10 @@ util.CameraConfig = class CameraConfig {
    */
   enableAllStreams(presetPreference) {
     let p = checkStringNumber(arguments[0],
-      preset_preference.PRESET_BEGIN, preset_preference.PRESET_END,
-      CameraConfig.convertPresetPreferenceString,
-      'CameraConfig.enableAllStreams(presetPreference) expects a number or string as the 1st argument',
-      'CameraConfig.enableAllStreams(presetPreference) expects a valid value as the 1st argument');
+        preset_preference.PRESET_BEGIN, preset_preference.PRESET_END,
+        CameraConfig.convertPresetPreferenceString,
+        'CameraConfig.enableAllStreams(presetPreference) expects a number or string as the 1st argument',
+        'CameraConfig.enableAllStreams(presetPreference) expects a valid value as the 1st argument');
     range(stream.STREAM_DEPTH, stream.STREAM_COUNT).forEach((s) => {
       this.enableStream(s, p);
     });
@@ -2098,7 +2118,7 @@ util.CameraConfig = class CameraConfig {
 
   static canEnableProfileOnSpecificDevice(device, profile) {
     let profiles = device.getStreamProfiles();
-    for (let i=0; i<profiles.length; i++) {
+    for (let i = 0; i < profiles.length; i++) {
       if (profiles[i].stream === profile.stream &&
           profiles[i].width === profile.width &&
           profiles[i].height === profile.height &&
@@ -2137,15 +2157,16 @@ util.CameraConfig = class CameraConfig {
         width: arguments[2],
         height: arguments[3],
         fps: arguments[4],
-        format: arguments[5]
+        format: arguments[5],
       });
     } else {
       throw new TypeError('CameraConfig.canEnableStream expects 2 or 6 arguments');
     }
     let devs = device.getAdjacentDevices();
     for (let dev of devs) {
-      if (CameraConfig.canEnableProfileOnSpecificDevice(dev, p))
+      if (CameraConfig.canEnableProfileOnSpecificDevice(dev, p)) {
         return true;
+      }
     }
     return false;
   }
@@ -2161,53 +2182,63 @@ util.CameraConfig = class CameraConfig {
   static getSuitableProfileForPreset(device, stream, presetPreference) {
     let profiles = device.getStreamProfiles(stream);
     let pre = checkStringNumber(presetPreference,
-      preset_preference.PRESET_BEGIN, preset_preference.PRESET_END,
-      CameraConfig.convertPresetPreferen3rString,
-      'CameraConfig.getSuitableProf3reForPreset(device, stream, presetPreference) expects a number or string as the 3rd argument',
-      'CameraConfig.getSuitableProfileForPreset(device, stream, presetPreference) expects a valid value as the 3rd argument');
+        preset_preference.PRESET_BEGIN, preset_preference.PRESET_END,
+        CameraConfig.convertPresetPreferen3rString,
+        'CameraConfig.getSuitableProf3reForPreset(device, stream, presetPreference) expects a number or string as the 3rd argument',
+        'CameraConfig.getSuitableProfileForPreset(device, stream, presetPreference) expects a valid value as the 3rd argument');
 
     if (pre === preset_preference.BEST_QUALITY) {
       profiles.sort((p1, p2) => {
         // TODO: remove this hardcoded condition for 640, 480 when native realsense lib updated.
         if (p1.width == 640 ) {
-          if (p2.width != 640)
+          if (p2.width != 640) {
             return 1;
+          }
         }
         if (p2.width == 640 ) {
-          if (p1.width != 640)
+          if (p1.width != 640) {
             return -1;
+          }
         }
         if (p1.height == 480) {
-          if (p2.height != 480)
+          if (p2.height != 480) {
             return 1;
+          }
         }
         if (p2.height == 480) {
-          if (p1.height != 480)
+          if (p1.height != 480) {
             return -1;
+          }
         }
         if (p1.fps === 30) {
-          if (p2.fps != 30)
+          if (p2.fps != 30) {
             return 1;
+          }
         }
         if (p2.fps === 30) {
-          if (p1.fps != 30)
+          if (p1.fps != 30) {
             return -1;
+          }
         }
         if (p1.format === constants.format.FORMAT_Y8) {
-          if (p2.format != constants.format.FORMAT_Y8)
-            return 1;
+          if (p2.format != constants.format.FORMAT_Y8) {
+           return 1;
+          }
         }
         if (p2.format === constants.format.FORMAT_Y8) {
-          if (p1.format != constants.format.FORMAT_Y8)
+          if (p1.format != constants.format.FORMAT_Y8) {
             return -1;
+          }
         }
         if (p1.format === constants.format.FORMAT_RGB8) {
-          if (p2.format != constants.format.FORMAT_RGB8)
-            return 1;
+          if (p2.format != constants.format.FORMAT_RGB8) {
+           return 1;
+          }
         }
         if (p2.format === constants.format.FORMAT_RGB8) {
-          if (p1.format != constants.format.FORMAT_RGB8)
-            return -1;
+          if (p1.format != constants.format.FORMAT_RGB8) {
+           return -1;
+          }
         }
         return p1.format - p2.format;
         // The below logic will be enabled if rsutil2.hpp's sort_best_quality is updated
@@ -2250,9 +2281,10 @@ util.CameraConfig = class CameraConfig {
    */
   open(device) {
     // TODO: carry out the config stors in this.presets & this.requests
-    if (!device instanceof Device) {
+    if (!(device instanceof Device)) {
       throw new TypeError('CameraConfig.open(device) expects a Device as 1st argument');
     }
+
     this.device = device;
     let devices = device.getAdjacentDevices();
     let profilesArray = [];
@@ -2260,14 +2292,15 @@ util.CameraConfig = class CameraConfig {
     let streamToDevIndexMap = {};
     let devIndexToProfileIndexArrayMap = {};
 
-    for (let r in this.requests) {
+    for (let r in this.requests) { // eslint-disable-line
       let profile = this.requests[r];
       for (let index=0; index < devices.length; index++) {
         if (CameraConfig.canEnableProfileOnSpecificDevice(devices[index], profile)) {
           profilesArray.push(profile);
           streamToDevIndexMap[profile.stream] = index;
-          if(!devIndexToProfileIndexArrayMap[index])
+          if (!devIndexToProfileIndexArrayMap[index]) {
             devIndexToProfileIndexArrayMap[index] = [];
+          }
           devIndexToProfileIndexArrayMap[index].push(profileIndex);
           profileIndex++;
           break;
@@ -2275,14 +2308,15 @@ util.CameraConfig = class CameraConfig {
       }
     }
 
-    for (let i in this.presets) {
+    for (let i in this.presets) { // eslint-disable-line
       for (let index=0; index < devices.length; index++ ) {
-        let profile = CameraConfig.getSuitableProfileForPreset(devices[index], parseInt(i), this.presets[i])
+        let profile = CameraConfig.getSuitableProfileForPreset(devices[index], parseInt(i), this.presets[i]);
         if (profile) {
           profilesArray.push(profile);
           streamToDevIndexMap[profile.stream] = index;
-          if(!devIndexToProfileIndexArrayMap[index])
+          if (!devIndexToProfileIndexArrayMap[index]) {
             devIndexToProfileIndexArrayMap[index] = [];
+          }
           devIndexToProfileIndexArrayMap[index].push(profileIndex);
           profileIndex++;
           break;
@@ -2290,13 +2324,13 @@ util.CameraConfig = class CameraConfig {
       }
     }
     // actually open all profiles
-    for (let index in devIndexToProfileIndexArrayMap) {
+    for (let index in devIndexToProfileIndexArrayMap) { // eslint-disable-line
       let device = devices[parseInt(index)];
       let profileIndexes = devIndexToProfileIndexArrayMap[index];
       let profilesToOpen = [];
-      profileIndexes.forEach((index) => {
-        profilesToOpen.push(profilesArray[index]);
-      });
+      for (let i = 0; i < profileIndexes.length; i++) {
+        profilesToOpen.push(profilesArray[i]);
+      }
       device.open(profilesToOpen);
     }
     return new util.Streams(devices, profilesArray, streamToDevIndexMap, devIndexToProfileIndexArrayMap);
@@ -2329,22 +2363,19 @@ util.CameraConfig = class CameraConfig {
   static convertPresetPreferenceString(str) {
     switch (str.toLowerCase()) {
       case 'best-quality':
-      return util.preset_preference.BEST_QUALITY;
-      break;
+        return util.preset_preference.BEST_QUALITY;
       case 'largest-image':
-      return util.preset_preference.BEST_QUALITY;
-      break;
+        return util.preset_preference.BEST_QUALITY;
       case 'highest-framerate':
-      return util.preset_preference.HIGHEST_FRAMERATE;
-      break;
+        return util.preset_preference.HIGHEST_FRAMERATE;
     }
     return -1;
   }
 };
 
 function equalsToEither(arg, strConst, numConst) {
-  return (typeof arg === 'string' && arg === strConst)
-    || (typeof arg === 'number' && arg === numConst);
+  return (typeof arg === 'string' && arg === strConst) ||
+         (typeof arg === 'number' && arg === numConst);
 }
 
 /**
@@ -2356,8 +2387,9 @@ function equalsToEither(arg, strConst, numConst) {
 util.projectPointToPixel = function(intrinsics, pointCoordinate) {
   if (equalsToEither(intrinsics.model,
       distortion.distortion_inverse_brown_conrady,
-      distortion.DISTORTION_INVERSE_BROWN_CONRADY))
-    throw TypeError('projectPointToPixel cannot project to an inverse-distorted image');
+      distortion.DISTORTION_INVERSE_BROWN_CONRADY)) {
+    throw new TypeError('projectPointToPixel cannot project to an inverse-distorted image');
+  }
 
   let x = pointCoordinate.x / pointCoordinate.z;
   let y = pointCoordinate.y / pointCoordinate.z;
@@ -2365,12 +2397,12 @@ util.projectPointToPixel = function(intrinsics, pointCoordinate) {
   if (equalsToEither(intrinsics.model,
       distortion.distortion_modified_brown_conrady,
       distortion.DISTORTION_MODIFIED_BROWN_CONRADY)) {
-    const r2  = x*x + y*y;
-    const f = 1 + intrinsics.coeffs[0]*r2 + intrinsics.coeffs[1]*r2*r2 + intrinsics.coeffs[4]*r2*r2*r2;
+    const r2 = x * x + y * y;
+    const f = 1 + intrinsics.coeffs[0] * r2 + intrinsics.coeffs[1] * r2 * r2 + intrinsics.coeffs[4] * r2 * r2 * r2;
     x *= f;
     y *= f;
-    const dx = x + 2*intrinsics.coeffs[2]*x*y + intrinsics.coeffs[3]*(r2 + 2*x*x);
-    const dy = y + 2*intrinsics.coeffs[3]*x*y + intrinsics.coeffs[2]*(r2 + 2*y*y);
+    const dx = x + 2 * intrinsics.coeffs[2] * x * y + intrinsics.coeffs[3] * (r2 + 2 * x * x);
+    const dy = y + 2 * intrinsics.coeffs[3] * x * y + intrinsics.coeffs[2] * (r2 + 2 * y * y);
     x = dx;
     y = dy;
   }
@@ -2378,13 +2410,13 @@ util.projectPointToPixel = function(intrinsics, pointCoordinate) {
   if (equalsToEither(intrinsics.model,
       distortion.distortion_ftheta,
       distortion.DISTORTION_FTHETA)) {
-    const r = Math.sqrt(x*x + y*y);
-    const rd = (1.0 / intrinsics.coeffs[0] * Math.atan(2 * r* Math.tan(intrinsics.coeffs[0] / 2.0)));
+    const r = Math.sqrt(x * x + y * y);
+    const rd = (1.0 / intrinsics.coeffs[0] * Math.atan(2 * r * Math.tan(intrinsics.coeffs[0] / 2.0)));
     x *= rd / r;
     y *= rd / r;
   }
   return {x: x * intrinsics.fx + intrinsics.ppx, y: y * intrinsics.fy + intrinsics.ppy};
-}
+};
 
 /**
  * Given pixel coordinates and depth in an image with no distortion or inverse distortion coefficients, compute the corresponding point in 3D space relative to the same camera
@@ -2393,16 +2425,18 @@ util.projectPointToPixel = function(intrinsics, pointCoordinate) {
  * @param {Number} depth - The depth value of the point
  * @return {Object} like {x: 0, y:0, z:0}.
  */
-util.deprojectPixelToPoint = function (intrinsics, pixelCoordinate, depth) {
+util.deprojectPixelToPoint = function(intrinsics, pixelCoordinate, depth) {
   if (equalsToEither(intrinsics.model,
       distortion.distortion_modified_brown_conrady,
-      distortion.DISTORTION_MODIFIED_BROWN_CONRADY))
+      distortion.DISTORTION_MODIFIED_BROWN_CONRADY)) {
     throw new TypeError('deprojectPixelToPoint cannot deproject from a forward-distorted image');
+  }
 
   if (equalsToEither(intrinsics.model,
       distortion.distortion_ftheta,
-      distortion.DISTORTION_FTHETA))
+      distortion.DISTORTION_FTHETA)) {
     throw new TypeError('deprojectPixelToPoint cannot deproject to an ftheta image');
+  }
 
   let x = (pixelCoordinate.x - intrinsics.ppx) / intrinsics.fx;
   let y = (pixelCoordinate.y - intrinsics.ppy) / intrinsics.fy;
@@ -2410,16 +2444,16 @@ util.deprojectPixelToPoint = function (intrinsics, pixelCoordinate, depth) {
   if (equalsToEither(intrinsics.model,
       distortion.distortion_inverse_brown_conrady,
       distortion.DISTORTION_INVERSE_BROWN_CONRADY)) {
-    const r2  = x*x + y*y;
-    const f = 1 + intrinsics.coeffs[0]*r2 + intrinsics.coeffs[1]*r2*r2 + intrinsics.coeffs[4]*r2*r2*r2;
-    const ux = x*f + 2*intrinsics.coeffs[2]*x*y + intrinsics.coeffs[3]*(r2 + 2*x*x);
-    const uy = y*f + 2*intrinsics.coeffs[3]*x*y + intrinsics.coeffs[2]*(r2 + 2*y*y);
+    const r2 = x * x + y * y;
+    const f = 1 + intrinsics.coeffs[0] * r2 + intrinsics.coeffs[1] * r2 * r2 + intrinsics.coeffs[4] * r2 * r2 * r2;
+    const ux = x * f + 2 * intrinsics.coeffs[2] * x * y + intrinsics.coeffs[3] * (r2 + 2 * x * x);
+    const uy = y * f + 2 * intrinsics.coeffs[3] * x * y + intrinsics.coeffs[2] * (r2 + 2 * y * y);
     x = ux;
     y = uy;
   }
 
-  return {x:depth * x, y: depth * y, z: depth};
-}
+  return {x: depth * x, y: depth * y, z: depth};
+};
 
 /**
  * Transform 3D coordinates relative to one sensor to 3D coordinates relative to another viewpoint
@@ -2428,11 +2462,20 @@ util.deprojectPixelToPoint = function (intrinsics, pixelCoordinate, depth) {
  * @return {Object} The tranformed 3D coordinate, like {x:0, y:0, z:0}.
  */
 util.transformPointToPoint = function(extrinsics, pointCoordinate) {
-  const x = extrinsics.rotation[0] * pointCoordinate.x + extrinsics.rotation[3] * pointCoordinate.y + extrinsics.rotation[6] * pointCoordinate.z + extrinsics.translation[0];
-  const y = extrinsics.rotation[1] * pointCoordinate.x + extrinsics.rotation[4] * pointCoordinate.y + extrinsics.rotation[7] * pointCoordinate.z + extrinsics.translation[1];
-  const z = extrinsics.rotation[2] * pointCoordinate.x + extrinsics.rotation[5] * pointCoordinate.y + extrinsics.rotation[8] * pointCoordinate.z + extrinsics.translation[2];
+  const x = extrinsics.rotation[0] * pointCoordinate.x +
+            extrinsics.rotation[3] * pointCoordinate.y +
+            extrinsics.rotation[6] * pointCoordinate.z +
+            extrinsics.translation[0];
+  const y = extrinsics.rotation[1] * pointCoordinate.x +
+            extrinsics.rotation[4] * pointCoordinate.y +
+            extrinsics.rotation[7] * pointCoordinate.z +
+            extrinsics.translation[1];
+  const z = extrinsics.rotation[2] * pointCoordinate.x +
+            extrinsics.rotation[5] * pointCoordinate.y +
+            extrinsics.rotation[8] * pointCoordinate.z +
+            extrinsics.translation[2];
   return {x: x, y: y, z: z};
-}
+};
 
 /**
  * Save the frame to a file asynchronously
@@ -2457,8 +2500,8 @@ util.writeFrameToFileAsync = function(path, frame, fileFormat) {
     });
   } else {
     throw new TypeError('util.writeFrameToFileAsync expects a string as the 3rd argument and only \'png\' is supported now.');
-    }
-}
+  }
+};
 
 /**
  * Save the frame to a file synchronously
@@ -2482,7 +2525,7 @@ util.writeFrameToFile = function(path, frame, fileFormat) {
   } else {
     throw new TypeError('util.writeFrameToFile expects a string as the 3rd argument and only \'png\' is supported now.');
   }
-}
+};
 
 /**
  * Get all the frame metadata representation as a string
@@ -2491,10 +2534,10 @@ util.writeFrameToFile = function(path, frame, fileFormat) {
  * @return {String} the string representation of all supported frame metadata.
  */
 function frameMetadataContent(frame) {
-  const content = 'Stream,' + stream.streamToString(frame.profile.streamType)+'\nMetadata Attribute,Value\n';
-  for (let i=0; i<frame_metadata.FRAME_METADATA_COUNT; i++) {
+  let content = 'Stream,' + stream.streamToString(frame.profile.streamType)+'\nMetadata Attribute,Value\n';
+  for (let i = 0; i < frame_metadata.FRAME_METADATA_COUNT; i++) {
     if (frame.supportsFrameMetadata(i)) {
-      content += (frame_metadata.frameMetadataToString(i) + ',' + frame.frameMetadata(i) + '\n');
+      content += frame_metadata.frameMetadataToString(i) + ',' + frame.frameMetadata(i) + '\n';
     }
   }
   return content;
@@ -2518,7 +2561,7 @@ util.writeFrameMetadataToFileAsync = function(path, frame) {
       }
     });
   });
-}
+};
 
 /**
  * Save the frame metadata string representation to a file asynchronously
@@ -2532,7 +2575,7 @@ util.writeFrameMetadataToFile = function(path, frame) {
   const fd = fs.openSync(path, 'w');
   fs.writeSync(fd, content);
   fs.closeSync(fd);
-}
+};
 
 /**
  * Enum for format values.
@@ -2679,15 +2722,15 @@ const format = {
    * @param {Integer} format the format type
    * @return {String}
    */
-  formatToString: function (format) {
+  formatToString: function(format) {
     if (arguments.length !== 1) {
       throw new TypeError('format.formatToString(format) expects 1 argument');
     } else {
       let i = checkStringNumber(arguments[0],
-        this.FORMAT_ANY, this.FORMAT_COUNT,
-        format2Int,
-        'format.formatToString(format) expects a number or string as the 1st argument',
-        'format.formatToString(format) expects a valid value as the 1st argument');
+          this.FORMAT_ANY, this.FORMAT_COUNT,
+          format2Int,
+          'format.formatToString(format) expects a number or string as the 1st argument',
+          'format.formatToString(format) expects a valid value as the 1st argument');
       switch (i) {
         case this.FORMAT_ANY:
           return this.format_any;
@@ -2727,7 +2770,7 @@ const format = {
           return this.format_gpio_raw;
       }
     }
-  }
+  },
 };
 
 
@@ -2806,15 +2849,15 @@ const stream = {
      * @param {Integer} stream the stream type
      * @return {String}
      */
-    streamToString: function (stream) {
+    streamToString: function(stream) {
       if (arguments.length !== 1) {
         throw new TypeError('stream.streamToString(stream) expects 1 argument');
       } else {
         let i = checkStringNumber(arguments[0],
-          this.STREAM_ANY, this.STREAM_COUNT,
-          stream2Int,
-          'stream.streamToString(stream) expects a number or string as the 1st argument',
-          'stream.streamToString(stream) expects a valid value as the 1st argument');
+            this.STREAM_ANY, this.STREAM_COUNT,
+            stream2Int,
+            'stream.streamToString(stream) expects a number or string as the 1st argument',
+            'stream.streamToString(stream) expects a valid value as the 1st argument');
         switch (i) {
           case this.STREAM_ANY:
             return this.stream_any;
@@ -2834,7 +2877,7 @@ const stream = {
             return this.stream_gpio;
         }
       }
-    }
+    },
 };
 
 /**
@@ -2860,7 +2903,7 @@ const recording_mode = {
    * Frames will be encoded using a proprietary lossy encoding, aiming at x5 compression at some CPU expense.<br>Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
-  COMPRESSED: RS2.RS2_RECORDING_MODE_COMPRESSED,   
+  COMPRESSED: RS2.RS2_RECORDING_MODE_COMPRESSED,
   /**
    * Frames will not be compressed, but rather stored as-is. This gives best quality and low CPU overhead, but you might run out of memory.<br>Equivalent to its lowercase counterpart.
    * @type {Integer}
@@ -3104,15 +3147,15 @@ const option = {
    * @param {Integer} option the option type
    * @return {String}
    */
-  optionToString: function (option) {
+  optionToString: function(option) {
     if (arguments.length !== 1) {
       throw new TypeError('option.optionToString(option) expects 1 argument');
     } else {
       let i = checkStringNumber(arguments[0],
-        this.OPTION_BACKLIGHT_COMPENSATION, this.OPTION_COUNT,
-        option2Int,
-        'option.optionToString(option) expects a number or string as the 1st argument',
-        'option.optionToString(option) expects a valid value as the 1st argument');
+          this.OPTION_BACKLIGHT_COMPENSATION, this.OPTION_COUNT,
+          option2Int,
+          'option.optionToString(option) expects a number or string as the 1st argument',
+          'option.optionToString(option) expects a valid value as the 1st argument');
       switch (i) {
         case this.OPTION_BACKLIGHT_COMPENSATION:
           return this.option_backlight_compensation;
@@ -3176,7 +3219,7 @@ const option = {
           return this.option_enable_motion_correction;
       }
     }
-  }
+  },
 };
 
 /**
@@ -3260,10 +3303,10 @@ const camera_info = {
       throw new TypeError('camera_info.cameraInfoToString(info) expects 1 argument');
     } else {
       let i = checkStringNumber(arguments[0],
-        this.CAMERA_INFO_NAME, this.CAMERA_INFO_COUNT,
-        cameraInfo2Int,
-        'camera_info.cameraInfoToString(info) expects a number or string as the 1st argument',
-        'camera_info.cameraInfoToString(info) expects a valid value as the 1st argument');
+          this.CAMERA_INFO_NAME, this.CAMERA_INFO_COUNT,
+          cameraInfo2Int,
+          'camera_info.cameraInfoToString(info) expects a number or string as the 1st argument',
+          'camera_info.cameraInfoToString(info) expects a valid value as the 1st argument');
       switch (i) {
         case this.CAMERA_INFO_NAME:
           return this.camera_info_name;
@@ -3283,7 +3326,7 @@ const camera_info = {
           return this.camera_info_camera_locked;
       }
     }
-  }
+  },
 };
 
 /**
@@ -3294,66 +3337,66 @@ const camera_info = {
  */
 const frame_metadata = {
     /** String literal of <code>'frame-counter'</code>. <br>A sequential index managed per-stream. Integer value <br>Equivalent to its uppercase counterpart*/
-    frame_metadata_frame_counter : "frame-counter",
+    frame_metadata_frame_counter: 'frame-counter',
     /** String literal of <code>'frame-timestamp'</code>. <br>Timestamp set by device clock when data readout and transmit commence. usec <br>Equivalent to its uppercase counterpart*/
-    frame_metadata_frame_timestamp : "frame-timestamp",
+    frame_metadata_frame_timestamp: 'frame-timestamp',
     /** String literal of <code>'sensor-timestamp'</code>. <br>Timestamp of the middle of sensor's exposure calculated by device. usec <br>Equivalent to its uppercase counterpart*/
-    frame_metadata_sensor_timestamp : "sensor-timestamp",
+    frame_metadata_sensor_timestamp: 'sensor-timestamp',
     /** String literal of <code>'actual-exposure'</code>. <br>Sensor's exposure width. When Auto Exposure (AE) is on the value is controlled by firmware. usec <br>Equivalent to its uppercase counterpart*/
-    frame_metadata_actual_exposure : "actual-exposure",
+    frame_metadata_actual_exposure: 'actual-exposure',
     /** String literal of <code>'gain-level'</code>. <br>A relative value increasing which will increase the Sensor's gain factor. When AE is set On, the value is controlled by firmware. Integer value <br>Equivalent to its uppercase counterpart*/
-    frame_metadata_gain_level : "gain-level",
+    frame_metadata_gain_level: 'gain-level',
     /** String literal of <code>'auto-exposure'</code>. <br>Auto Exposure Mode indicator. Zero corresponds to AE switched off.  <br>Equivalent to its uppercase counterpart*/
-    frame_metadata_auto_exposure : "auto-exposure",
+    frame_metadata_auto_exposure: 'auto-exposure',
     /** String literal of <code>'white-balance'</code>. <br>White Balance setting as a color temperature. Kelvin degrees <br>Equivalent to its uppercase counterpart*/
-    frame_metadata_white_balance : "white-balance",
+    frame_metadata_white_balance: 'white-balance',
     /** String literal of <code>'time-of-arrival'</code>. <br>Time of arrival in system clock  <br>Equivalent to its uppercase counterpart*/
-    frame_metadata_time_of_arrival : "time-of-arrival",
+    frame_metadata_time_of_arrival: 'time-of-arrival',
     /**
      * A sequential index managed per-stream. Integer value <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    FRAME_METADATA_FRAME_COUNTER : RS2.RS2_FRAME_METADATA_FRAME_COUNTER,
+    FRAME_METADATA_FRAME_COUNTER: RS2.RS2_FRAME_METADATA_FRAME_COUNTER,
     /**
      * Timestamp set by device clock when data readout and transmit commence. usec <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    FRAME_METADATA_FRAME_TIMESTAMP : RS2.RS2_FRAME_METADATA_FRAME_TIMESTAMP,
+    FRAME_METADATA_FRAME_TIMESTAMP: RS2.RS2_FRAME_METADATA_FRAME_TIMESTAMP,
     /**
      * Timestamp of the middle of sensor's exposure calculated by device. usec <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    FRAME_METADATA_SENSOR_TIMESTAMP : RS2.RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
+    FRAME_METADATA_SENSOR_TIMESTAMP: RS2.RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
     /**
      * Sensor's exposure width. When Auto Exposure (AE) is on the value is controlled by firmware. usec <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    FRAME_METADATA_ACTUAL_EXPOSURE : RS2.RS2_FRAME_METADATA_ACTUAL_EXPOSURE,
+    FRAME_METADATA_ACTUAL_EXPOSURE: RS2.RS2_FRAME_METADATA_ACTUAL_EXPOSURE,
     /**
      * A relative value increasing which will increase the Sensor's gain factor. When AE is set On, the value is controlled by firmware. Integer value <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    FRAME_METADATA_GAIN_LEVEL : RS2.RS2_FRAME_METADATA_GAIN_LEVEL,
+    FRAME_METADATA_GAIN_LEVEL: RS2.RS2_FRAME_METADATA_GAIN_LEVEL,
     /**
      * Auto Exposure Mode indicator. Zero corresponds to AE switched off.  <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    FRAME_METADATA_AUTO_EXPOSURE : RS2.RS2_FRAME_METADATA_AUTO_EXPOSURE,
+    FRAME_METADATA_AUTO_EXPOSURE: RS2.RS2_FRAME_METADATA_AUTO_EXPOSURE,
     /**
      * White Balance setting as a color temperature. Kelvin degrees <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    FRAME_METADATA_WHITE_BALANCE : RS2.RS2_FRAME_METADATA_WHITE_BALANCE,
+    FRAME_METADATA_WHITE_BALANCE: RS2.RS2_FRAME_METADATA_WHITE_BALANCE,
     /**
      * Time of arrival in system clock  <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    FRAME_METADATA_TIME_OF_ARRIVAL : RS2.RS2_FRAME_METADATA_TIME_OF_ARRIVAL,
+    FRAME_METADATA_TIME_OF_ARRIVAL: RS2.RS2_FRAME_METADATA_TIME_OF_ARRIVAL,
     /**
      * Number of enumeration values. Not a valid input: intended to be used in for-loops.
      * @type {Integer}
      */
-    FRAME_METADATA_COUNT : RS2.RS2_FRAME_METADATA_COUNT,
+    FRAME_METADATA_COUNT: RS2.RS2_FRAME_METADATA_COUNT,
 
     /**
      * Get the string representation out of the integer frame metadata type
@@ -3365,10 +3408,10 @@ const frame_metadata = {
         throw new TypeError('frame_metadata.frameMetadataToString() expects 1 argument');
       } else {
         let i = checkStringNumber(arguments[0],
-          this.FRAME_METADATA_FRAME_COUNTER, this.FRAME_METADATA_COUNT,
-          frameMetadata2Int,
-          'frame_metadata.frameMetadataToString() expects a number or string as the 1st argument',
-          'frame_metadata.frameMetadataToString() expects a valid value as the 1st argument');
+            this.FRAME_METADATA_FRAME_COUNTER, this.FRAME_METADATA_COUNT,
+            frameMetadata2Int,
+            'frame_metadata.frameMetadataToString() expects a number or string as the 1st argument',
+            'frame_metadata.frameMetadataToString() expects a valid value as the 1st argument');
         switch (i) {
           case this.FRAME_METADATA_FRAME_COUNTER:
             return this.frame_metadata_frame_counter;
@@ -3388,7 +3431,7 @@ const frame_metadata = {
             return this.frame_metadata_time_of_arrival;
         }
       }
-    }
+    },
   };
 
 /**
@@ -3396,44 +3439,43 @@ const frame_metadata = {
  * @readonly
  * @enum {String}
  */
-const distortion =
-{
+const distortion = {
     /** String literal of <code>'none'</code>. <br>Rectilinear images. No distortion compensation required. <br> Equivalent to its uppercase counterpart. */
-    distortion_none : "none",
+    distortion_none: 'none',
     /** String literal of <code>'modified-brown-conrady'</code>. <br>Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points <br> Equivalent to its uppercase counterpart. */
-    distortion_modified_brown_conrady : "modified-brown-conrady",
+    distortion_modified_brown_conrady: 'modified-brown-conrady',
     /** String literal of <code>'inverse-brown-conrady'</code>. <br>Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it <br> Equivalent to its uppercase counterpart. */
-    distortion_inverse_brown_conrady : "inverse-brown-conrady",
+    distortion_inverse_brown_conrady: 'inverse-brown-conrady',
     /** String literal of <code>'ftheta'</code>. <br>F-Theta fish-eye distortion model <br> Equivalent to its uppercase counterpart. */
-    distortion_ftheta : "ftheta",
+    distortion_ftheta: 'ftheta',
     /** String literal of <code>'brown-conrady'</code>. <br>Unmodified Brown-Conrady distortion model <br> Equivalent to its uppercase counterpart. */
-    distortion_brown_conrady : "brown-conrady",
+    distortion_brown_conrady: 'brown-conrady',
 
     /** Rectilinear images. No distortion compensation required. <br>Equivalent to its lowercase counterpart
      * @type {Integer}
      */
-    DISTORTION_NONE : RS2.RS2_DISTORTION_NONE,
+    DISTORTION_NONE: RS2.RS2_DISTORTION_NONE,
     /** Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points <br>Equivalent to its lowercase counterpart
      * @type {Integer}
      */
-    DISTORTION_MODIFIED_BROWN_CONRADY : RS2.RS2_DISTORTION_MODIFIED_BROWN_CONRADY,
+    DISTORTION_MODIFIED_BROWN_CONRADY: RS2.RS2_DISTORTION_MODIFIED_BROWN_CONRADY,
     /** Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it <br>Equivalent to its lowercase counterpart
      * @type {Integer}
      */
-    DISTORTION_INVERSE_BROWN_CONRADY : RS2.RS2_DISTORTION_INVERSE_BROWN_CONRADY,
+    DISTORTION_INVERSE_BROWN_CONRADY: RS2.RS2_DISTORTION_INVERSE_BROWN_CONRADY,
     /** F-Theta fish-eye distortion model <br>Equivalent to its lowercase counterpart
      * @type {Integer}
      */
-    DISTORTION_FTHETA : RS2.RS2_DISTORTION_FTHETA,
+    DISTORTION_FTHETA: RS2.RS2_DISTORTION_FTHETA,
     /** Unmodified Brown-Conrady distortion model <br>Equivalent to its lowercase counterpart
      * @type {Integer}
      */
-    DISTORTION_BROWN_CONRADY : RS2.RS2_DISTORTION_BROWN_CONRADY,
+    DISTORTION_BROWN_CONRADY: RS2.RS2_DISTORTION_BROWN_CONRADY,
     /**
      * Number of enumeration values. Not a valid input: intended to be used in for-loops.
      * @type {Integer}
      */
-    DISTORTION_COUNT : RS2.RS2_DISTORTION_COUNT,
+    DISTORTION_COUNT: RS2.RS2_DISTORTION_COUNT,
 
     /**
      * Get the string representation out of the integer distortion type
@@ -3445,10 +3487,10 @@ const distortion =
         throw new TypeError('distortion.distortionToString() expects 1 argument');
       } else {
         let i = checkStringNumber(arguments[0],
-          this.DISTORTION_NONE, this.DISTORTION_COUNT,
-          distortion2Int,
-          'distortion.distortionToString() expects a number or string as the 1st argument',
-          'distortion.distortionToString() expects a valid value as the 1st argument');
+            this.DISTORTION_NONE, this.DISTORTION_COUNT,
+            distortion2Int,
+            'distortion.distortionToString() expects a number or string as the 1st argument',
+            'distortion.distortionToString() expects a valid value as the 1st argument');
         switch (i) {
           case this.DISTORTION_NONE:
             return this.distortion_none;
@@ -3462,58 +3504,58 @@ const distortion =
             return this.distortion_brown_conrady;
         }
       }
-    }
+    },
 };
 
 /**
- * Enum for notification severity 
+ * Enum for notification severity
  * @readonly
  * @enum {String}
  */
 const log_severity = {
     /** String literal of <code>'debug'</code>. <br>Detailed information about ordinary operations. <br>Equivalent to its uppercase counterpart.*/
-    log_severity_debug : "debug",
+    log_severity_debug: 'debug',
     /** String literal of <code>'info'</code>. <br>Terse information about ordinary operations. <br>Equivalent to its uppercase counterpart.*/
-    log_severity_info : "info",
+    log_severity_info: 'info',
     /** String literal of <code>'warn'</code>. <br>Indication of possible failure. <br>Equivalent to its uppercase counterpart.*/
-    log_severity_warn : "warn",
+    log_severity_warn: 'warn',
     /** String literal of <code>'error'</code>. <br>Indication of definite failure. <br>Equivalent to its uppercase counterpart.*/
-    log_severity_error : "error",
+    log_severity_error: 'error',
     /** String literal of <code>'fatal'</code>. <br>Indication of unrecoverable failure. <br>Equivalent to its uppercase counterpart.*/
-    log_severity_fatal : "fatal",
+    log_severity_fatal: 'fatal',
     /** String literal of <code>'none'</code>. <br>No logging will occur. <br>Equivalent to its uppercase counterpart.*/
-    log_severity_none : "none",
+    log_severity_none: 'none',
 
     /**
      * Detailed information about ordinary operations. <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    LOG_SEVERITY_DEBUG : RS2.RS2_LOG_SEVERITY_DEBUG,
+    LOG_SEVERITY_DEBUG: RS2.RS2_LOG_SEVERITY_DEBUG,
     /**
      * Terse information about ordinary operations. <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    LOG_SEVERITY_INFO : RS2.RS2_LOG_SEVERITY_INFO,
+    LOG_SEVERITY_INFO: RS2.RS2_LOG_SEVERITY_INFO,
     /**
      * Indication of possible failure. <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    LOG_SEVERITY_WARN : RS2.RS2_LOG_SEVERITY_WARN,
+    LOG_SEVERITY_WARN: RS2.RS2_LOG_SEVERITY_WARN,
     /**
      * Indication of definite failure. <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    LOG_SEVERITY_ERROR : RS2.RS2_LOG_SEVERITY_ERROR,
+    LOG_SEVERITY_ERROR: RS2.RS2_LOG_SEVERITY_ERROR,
     /**
      * Indication of unrecoverable failure. <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    LOG_SEVERITY_FATAL : RS2.RS2_LOG_SEVERITY_FATAL,
+    LOG_SEVERITY_FATAL: RS2.RS2_LOG_SEVERITY_FATAL,
     /**
      * No logging will occur. <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    LOG_SEVERITY_NONE : RS2.RS2_LOG_SEVERITY_NONE,
+    LOG_SEVERITY_NONE: RS2.RS2_LOG_SEVERITY_NONE,
 };
 
 /**
@@ -3523,34 +3565,34 @@ const log_severity = {
  */
 const notification_category = {
     /** String literal of <code>'frames-timeout'</code>. <br>Frames didn't arrived within 5 seconds <br>Equivalent to its uppercase counterpart.*/
-    notification_category_frames_timeout : "frames-timeout",
+    notification_category_frames_timeout: 'frames-timeout',
     /** String literal of <code>'frame-corrupted'</code>. <br>Received partial/incomplete frame <br>Equivalent to its uppercase counterpart.*/
-    notification_category_frame_corrupted : "frame-corrupted",
+    notification_category_frame_corrupted: 'frame-corrupted',
     /** String literal of <code>'hardware-error'</code>. <br>Error reported from the device <br>Equivalent to its uppercase counterpart.*/
-    notification_category_hardware_error : "hardware-error",
+    notification_category_hardware_error: 'hardware-error',
     /** String literal of <code>'unknown-error'</code>. <br>Received unknown error from the device <br>Equivalent to its uppercase counterpart.*/
-    notification_category_unknown_error : "unknown-error",
+    notification_category_unknown_error: 'unknown-error',
 
     /**
      * Frames didn't arrived within 5 seconds <br>Equivalent to its lowercase counterpart
      * @type {Integer}
      */
-    NOTIFICATION_CATEGORY_FRAMES_TIMEOUT : RS2.RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT,
+    NOTIFICATION_CATEGORY_FRAMES_TIMEOUT: RS2.RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT,
     /**
      * Received partial/incomplete frame <br>Equivalent to its lowercase counterpart
      * @type {Integer}
      */
-    NOTIFICATION_CATEGORY_FRAME_CORRUPTED : RS2.RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED,
+    NOTIFICATION_CATEGORY_FRAME_CORRUPTED: RS2.RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED,
     /**
      * Error reported from the device <br>Equivalent to its lowercase counterpart
      * @type {Integer}
      */
-    NOTIFICATION_CATEGORY_HARDWARE_ERROR : RS2.RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
+    NOTIFICATION_CATEGORY_HARDWARE_ERROR: RS2.RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
     /**
      * Received unknown error from the device <br>Equivalent to its lowercase counterpart
      * @type {Integer}
      */
-    NOTIFICATION_CATEGORY_UNKNOWN_ERROR : RS2.RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR,
+    NOTIFICATION_CATEGORY_UNKNOWN_ERROR: RS2.RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR,
 };
 
 /**
@@ -3560,25 +3602,25 @@ const notification_category = {
  */
 const timestamp_domain = {
     /** String literal of <code>'hardware-clock'</code>. <br>Frame timestamp was measured in relation to the camera clock <br>Equivalent to its uppercase counterpart.*/
-    timestamp_domain_hardware_clock : "hardware-clock",
+    timestamp_domain_hardware_clock: 'hardware-clock',
     /** String literal of <code>'system-time'</code>. <br>Frame timestamp was measured in relation to the OS system clock <br>Equivalent to its uppercase counterpart.*/
-    timestamp_domain_system_time : "system-time",
+    timestamp_domain_system_time: 'system-time',
 
     /**
      * Frame timestamp was measured in relation to the camera clock <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    TIMESTAMP_DOMAIN_HARDWARE_CLOCK : RS2.RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK,
+    TIMESTAMP_DOMAIN_HARDWARE_CLOCK: RS2.RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK,
     /**
      * Frame timestamp was measured in relation to the OS system clock <br>Equivalent to its lowercase counterpart.
      * @type {Integer}
      */
-    TIMESTAMP_DOMAIN_SYSTEM_TIME : RS2.RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME,
+    TIMESTAMP_DOMAIN_SYSTEM_TIME: RS2.RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME,
     /**
      * Number of enumeration values. Not a valid input: intended to be used in for-loops.
      * @type {Integer}
      */
-    TIMESTAMP_DOMAIN_COUNT : RS2.RS2_TIMESTAMP_DOMAIN_COUNT
+    TIMESTAMP_DOMAIN_COUNT: RS2.RS2_TIMESTAMP_DOMAIN_COUNT,
 };
 
 /**
@@ -3678,17 +3720,39 @@ function str2Int(str, category) {
   return RS2[name];
 }
 
-function stream2Int(str) { return str2Int(str, 'stream'); }
-function format2Int(str) { return str2Int(str, 'format'); }
-function option2Int(str) { return str2Int(str, 'option'); }
-function cameraInfo2Int(str) { return str2Int(str, 'camera_info'); }
-function recordingMode2Int(str) { return str2Int(str, 'recording_mode'); }
-function timestampDomain2Int(str) { return str2Int(str, 'timestamp_domain'); }
-function NotificationCategory2Int(str) { return str2Int(str, 'notification_category'); }
-function logSeverity2Int(str) { return str2Int(str, 'log_severity'); }
-function distortion2Int(str) { return str2Int(str, 'distortion'); }
-function frameMetadata2Int(str) { return str2Int(str, 'frame_metadata'); }
-function visualPreset2Int(str) { return str2Int(str, 'visual_preset'); }
+function stream2Int(str) {
+ return str2Int(str, 'stream');
+}
+function format2Int(str) {
+ return str2Int(str, 'format');
+}
+function option2Int(str) {
+ return str2Int(str, 'option');
+}
+function cameraInfo2Int(str) {
+ return str2Int(str, 'camera_info');
+}
+function recordingMode2Int(str) {
+ return str2Int(str, 'recording_mode');
+}
+function timestampDomain2Int(str) {
+ return str2Int(str, 'timestamp_domain');
+}
+function NotificationCategory2Int(str) {
+ return str2Int(str, 'notification_category');
+}
+function logSeverity2Int(str) {
+ return str2Int(str, 'log_severity');
+}
+function distortion2Int(str) {
+ return str2Int(str, 'distortion');
+}
+function frameMetadata2Int(str) {
+ return str2Int(str, 'frame_metadata');
+}
+function visualPreset2Int(str) {
+ return str2Int(str, 'visual_preset');
+}
 
 const constants = {
   stream: stream,

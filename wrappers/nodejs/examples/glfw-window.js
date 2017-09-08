@@ -1,12 +1,17 @@
-/* License: Apache 2.0. See LICENSE file in root directory.
-   Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+// Copyright (c) 2017 Intel Corporation. All rights reserved.
+// Use of this source code is governed by an Apache 2.0 license
+// that can be found in the LICENSE file.
 
 'use strict';
 
 const glfw = require('node-glfw-2');
 
+// TODO(kenny-y): resolve the potential disabled eslint errors
+/* eslint-disable new-cap */
+
 class GLFWWindow {
-  constructor(width = 1280, height = 720, title) {
+  // TODO(kenny-y): Check disabled jshint errors
+  constructor(width = 1280, height = 720, title) { // jshint ignore:line
     this.width_ = width;
     this.height_ = height;
 

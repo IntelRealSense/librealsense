@@ -45,7 +45,7 @@
               }
             },
             "libraries": [
-              "<(module_root_dir)/../../build/Release/realsense2.lib",
+              "<(module_root_dir)/../../build/Debug/realsense2.lib",
             ],
           }
         ],
@@ -53,7 +53,10 @@
           "OS!=\"win\"",
           {
             "libraries": [
-              "-lrealsense2",
+              "<(module_root_dir)/../../build/librealsense2.so",
+            ],
+            'ldflags': [
+              '-Wl,-rpath,\$$ORIGIN/../../../../build',
             ],
             "cflags+": [
               "-std=c++11"
@@ -78,7 +81,7 @@
             [
               {
                 'destination': '<(module_root_dir)/build/Release',
-                'files': ['<(module_root_dir)/../../build/Release/realsense2.dll']
+                'files': ['<(module_root_dir)/../../build/Debug/realsense2.dll']
               }
             ]
         }]
