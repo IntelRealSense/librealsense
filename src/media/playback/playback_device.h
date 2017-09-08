@@ -48,6 +48,7 @@ namespace librealsense
         uint64_t get_duration() const;
         void pause();
         void resume();
+        void stop();
         void set_real_time(bool real_time);
         bool is_real_time() const;
         const std::string& get_file_name() const;
@@ -60,7 +61,7 @@ namespace librealsense
         void update_time_base(device_serializer::nanoseconds base_timestamp);
         device_serializer::nanoseconds calc_sleep_time(device_serializer::nanoseconds  timestamp) const;
         void start();
-        void stop();
+        void stop_internal();
         void try_looping();
         template <typename T> void do_loop(T op);
         std::map<uint32_t, std::shared_ptr<playback_sensor>> create_playback_sensors(const device_serializer::device_snapshot& device_description);
@@ -68,6 +69,8 @@ namespace librealsense
         rs2_extrinsics calc_extrinsic(const rs2_extrinsics& from, const rs2_extrinsics& to);
         void catch_up();
         void register_device_info(const std::shared_ptr<info_interface>& shared);
+        void register_extrinsics(const device_serializer::device_snapshot& device_description);
+
     private:
         lazy<std::shared_ptr<dispatcher>> m_read_thread;
         std::shared_ptr<device_serializer::reader> m_reader;

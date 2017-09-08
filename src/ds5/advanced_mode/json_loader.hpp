@@ -140,6 +140,17 @@ namespace librealsense
         }
     };
 
+    struct json_ignored_field : json_field
+    {
+        void load(const std::string& str) override
+        {}
+
+        std::string save() const override
+        {
+            return "";
+        }
+    };
+
     template<class T, class S>
     struct json_string_struct_field : json_field
     {
@@ -212,6 +223,11 @@ namespace librealsense
         f->field = field;
         f->strct = &strct;
         return f;
+    }
+
+    std::shared_ptr<json_field> make_ignored_field()
+    {
+        return std::make_shared<json_ignored_field>();
     }
 
     template<class T, class S>
@@ -368,6 +384,12 @@ namespace librealsense
             { "param-censusenablereg-vdiameter", make_field(p.census, &STCensusRadius::vDiameter) },
             { "param-censususize", make_field(p.census, &STCensusRadius::uDiameter) },
             { "param-censusvsize", make_field(p.census, &STCensusRadius::vDiameter) },
+
+            // Ignored fields
+            { "param-regionspatialthresholdu", make_ignored_field() },
+            { "param-regionspatialthresholdv", make_ignored_field() },
+            { "result:", make_ignored_field() },
+            { "result", make_ignored_field() },
         };
 
         static const std::map<std::string, float> auto_control_values{ { "False", 0.f }, { "True", 1.f } };
@@ -410,7 +432,9 @@ namespace librealsense
         json j;
         for (auto&& f : fields)
         {
-            j[f.first.c_str()] = f.second->save();
+            auto str = f.second->save();
+            if (!str.empty()) // Ignored fields return empty string
+                j[f.first.c_str()] = str;
         }
 
         auto str = j.dump(4);

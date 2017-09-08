@@ -6,6 +6,7 @@
 #include <librealsense2/rs_advanced_mode.hpp>
 
 #include <regex>
+#include <thread>
 
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -28,12 +29,27 @@ void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
 
     static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // will not be copied by AddFont* so keep in scope.
 
-                                                                 // Load 18px size fonts
+        // Load 14px size fonts
     {
         ImFontConfig config_words;
         config_words.OversampleV = OVERSAMPLE;
         config_words.OversampleH = OVERSAMPLE;
-        font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 20.f, &config_words);
+        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 16.f);
+
+        ImFontConfig config_glyphs;
+        config_glyphs.MergeMode = true;
+        config_glyphs.OversampleV = OVERSAMPLE;
+        config_glyphs.OversampleH = OVERSAMPLE;
+        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
+            font_awesome_compressed_size, 14.f, &config_glyphs, icons_ranges);
+    }
+
+    // Load 18px size fonts
+    {
+        ImFontConfig config_words;
+        config_words.OversampleV = OVERSAMPLE;
+        config_words.OversampleH = OVERSAMPLE;
+        font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 21.f, &config_words);
 
         ImFontConfig config_glyphs;
         config_glyphs.MergeMode = true;
@@ -41,21 +57,6 @@ void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
         config_glyphs.OversampleH = OVERSAMPLE;
         font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
             font_awesome_compressed_size, 20.f, &config_glyphs, icons_ranges);
-    }
-
-    // Load 14px size fonts
-    {
-        ImFontConfig config_words;
-        config_words.OversampleV = OVERSAMPLE;
-        config_words.OversampleH = OVERSAMPLE;
-        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 15.f);
-
-        ImFontConfig config_glyphs;
-        config_glyphs.MergeMode = true;
-        config_glyphs.OversampleV = OVERSAMPLE;
-        config_glyphs.OversampleH = OVERSAMPLE;
-        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
-            font_awesome_compressed_size, 16.f, &config_glyphs, icons_ranges);
     }
 
     style.WindowRounding = 0.0f;
@@ -104,7 +105,8 @@ namespace rs2
         const char *ret;
         ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL);
         if (!ret) return; // user cancelled dialog. Don't save image.
-        const std::string fname(ret);
+        std::string fname(ret);
+        if (!ends_with(to_lower(fname), ".ply")) fname += ".ply";
 
         std::thread([&ns, points, texture, fname]() {
             std::string texfname(fname);
@@ -331,14 +333,20 @@ namespace rs2
 
             }
 
-            if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE && dev->auto_exposure_enabled && dev->streaming)
+            if (!read_only && opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE && dev->auto_exposure_enabled && dev->streaming)
             {
                 ImGui::SameLine(0, 10);
-
+                std::string button_label = label;
+                auto index = label.find_last_of('#');
+                if (index != std::string::npos)
+                {
+                    button_label = label.substr(index+1);
+                }
+               
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1.f,1.f,1.f,1.f });
                 if (!dev->roi_checked)
                 {
-                    std::string caption = to_string() << "Set ROI##" << label;
+                    std::string caption = to_string() << "Set ROI##" << button_label;
                     if (ImGui::Button(caption.c_str(), { 55, 0 }))
                     {
                         dev->roi_checked = true;
@@ -346,7 +354,7 @@ namespace rs2
                 }
                 else
                 {
-                    std::string caption = to_string() << "Cancel##" << label;
+                    std::string caption = to_string() << "Cancel##" << button_label;
                     if (ImGui::Button(caption.c_str(), { 55, 0 }))
                     {
                         dev->roi_checked = false;
@@ -705,7 +713,7 @@ namespace rs2
         //ImGui::Columns(2, label.c_str(), false);
         //ImGui::SetColumnOffset(1, 135);
         auto col0 = ImGui::GetCursorPosX();
-        auto col1 = 135.f;
+        auto col1 = 145.f;
 
         // Draw combo-box with all resolution options for this device
         auto res_chars = get_string_pointers(resolutions);
@@ -1138,7 +1146,7 @@ namespace rs2
         texture->upload(f);
     }
 
-    void stream_model::outline_rect(const rect& r)
+    void outline_rect(const rect& r)
     {
         glPushAttrib(GL_ENABLE_BIT);
 
@@ -1147,6 +1155,27 @@ namespace rs2
         glEnable(GL_LINE_STIPPLE);
 
         glBegin(GL_LINE_STRIP);
+        glVertex2i(r.x, r.y);
+        glVertex2i(r.x, r.y + r.h);
+        glVertex2i(r.x + r.w, r.y + r.h);
+        glVertex2i(r.x + r.w, r.y);
+        glVertex2i(r.x, r.y);
+        glEnd();
+
+        glPopAttrib();
+    }
+
+     void draw_rect(const rect& r)
+    {
+        glPushAttrib(GL_ENABLE_BIT);
+
+        glLineWidth(1);
+
+        glBegin(GL_LINE_STRIP);
+        glVertex2i(r.x, r.y);
+        glVertex2i(r.x, r.y + r.h);
+        glVertex2i(r.x + r.w, r.y + r.h);
+        glVertex2i(r.x + r.w, r.y);
         glVertex2i(r.x, r.y);
         glVertex2i(r.x, r.y + r.h);
         glVertex2i(r.x + r.w, r.y + r.h);
@@ -1172,11 +1201,12 @@ namespace rs2
 
     bool stream_model::is_stream_visible()
     {
-        if (dev && dev->is_paused())
-        {
-            last_frame = std::chrono::high_resolution_clock::now();
-            return true;
-        }
+        if (dev && 
+            (dev->is_paused() || (dev->streaming && dev->dev.is<playback>())))
+            {
+                last_frame = std::chrono::high_resolution_clock::now();
+                return true;
+            }
 
         using namespace std::chrono;
         auto now = high_resolution_clock::now();
@@ -1696,13 +1726,18 @@ namespace rs2
 
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons, 0 });
 
-        if (dev->is_paused())
+        auto p = dev->dev.as<playback>();
+        if (dev->is_paused() ||  (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
         {
             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
             label = to_string() << u8"\uf04b" << "##Resume " << profile.unique_id();
             if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
             {
+                if (p)
+                {
+                    p.resume();
+                }
                 dev->resume();
             }
             if (ImGui::IsItemHovered())
@@ -1716,6 +1751,10 @@ namespace rs2
             label = to_string() << u8"\uf04c" << "##Pause " << profile.unique_id();
             if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
             {
+                if (p)
+                {
+                    p.pause();
+                }
                 dev->pause();
             }
             if (ImGui::IsItemHovered())
@@ -1802,6 +1841,9 @@ namespace rs2
             }
             else if (viewer.fullscreen)
             {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+
                 label = to_string() << u8"\uf2d2" << "##Restore " << profile.unique_id();
 
                 if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
@@ -1813,6 +1855,7 @@ namespace rs2
                     ImGui::SetTooltip("Restore tile view");
                 }
 
+                ImGui::PopStyleColor(2);
                 ImGui::SameLine();
             }
         }
@@ -2005,8 +2048,8 @@ namespace rs2
                 zoom_val -= wheel_step;
         }
 
-        static const uint32_t middle_button = 2;
-        auto is_middle_clicked = ImGui::GetIO().MouseDown[middle_button];
+        auto is_middle_clicked = ImGui::GetIO().MouseDown[0] || 
+                                 ImGui::GetIO().MouseDown[2];
 
         if (!_mid_click && is_middle_clicked)
             _middle_pos = g.cursor;
@@ -2081,7 +2124,7 @@ namespace rs2
         return std::make_pair(s.str(), serial);        // push name and sn to list
     }
 
-    device_model::device_model(device& dev, std::string& error_message)
+    device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer)
         : dev(dev)
     {
         for (auto&& sub : dev.query_sensors())
@@ -2091,23 +2134,6 @@ namespace rs2
         }
         auto name = get_device_name(dev);
         id = to_string() << name.first << ", " << name.second;
-
-        if (dev.is<playback>()) //TODO: remove this and make sub->streaming a function that queries the sensor
-        {
-            dev.as<playback>().set_status_changed_callback([this](rs2_playback_status status)
-            {
-                if (status == RS2_PLAYBACK_STATUS_STOPPED)
-                {
-                    for (auto sub : subdevices)
-                    {
-                        if (sub->streaming)
-                        {
-                            sub->stop();
-                        }
-                    }
-                }
-            });
-        }
 
         // Initialize static camera info:
         for (auto i = 0; i < RS2_CAMERA_INFO_COUNT; i++)
@@ -2129,8 +2155,47 @@ namespace rs2
                                   std::string("???") });
             }
         }
-    }
 
+        if (dev.is<playback>())
+        {
+            for (auto&& sub : subdevices)
+            {
+                for (auto&& p : sub->profiles)
+                {
+                    sub->stream_enabled[p.unique_id()] = true;
+                }
+            }
+            play_defaults(viewer);
+        }
+    }
+    void device_model::play_defaults(viewer_model& viewer)
+    {
+        for (auto&& sub : subdevices)
+        {
+            if (!sub->streaming)
+            {
+                std::vector<rs2::stream_profile> profiles;
+                try
+                {
+                    profiles = sub->get_selected_profiles();
+                }
+                catch (...) 
+                {
+                    continue;
+                }
+                
+                if (profiles.empty()) 
+                    continue;
+
+                sub->play(profiles);
+
+                for (auto&& profile : profiles)
+                {
+                    viewer.streams[profile.unique_id()].dev = sub;
+                }
+            }
+        }
+    }
     void device_model::draw_device_details(device& dev, context& ctx)
     {
         for (auto i = 0; i < RS2_CAMERA_INFO_COUNT; i++)
@@ -2324,8 +2389,7 @@ namespace rs2
         ImGui::PopStyleVar(2);
         ImGui::PopFont();
     }
-
-    void viewer_model::show_paused_icon(ImFont* font_18, int x, int y, int id)
+    void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, const ImVec4& text_color)
     {
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -2336,18 +2400,25 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
         ImGui::SetNextWindowPos({ (float)x, (float)y });
         ImGui::SetNextWindowSize({ 32.f, 32.f });
-        std::string label = to_string() << "paused_icon" << id;
+        std::string label = to_string() << label_str << id;
         ImGui::Begin(label.c_str(), nullptr, flags);
 
-        ImGui::PushStyleColor(ImGuiCol_Text, white);
-        ImGui::Text(u8"\uf04c");
+        ImGui::PushStyleColor(ImGuiCol_Text, text_color);
+        ImGui::Text("%s", text);
         ImGui::PopStyleColor();
 
         ImGui::End();
         ImGui::PopStyleColor();
         ImGui::PopFont();
     }
-
+    void viewer_model::show_paused_icon(ImFont* font_18, int x, int y, int id)
+    {
+        show_icon(font_18, "paused_icon", u8"\uf04c", x, y, id, white);
+    }
+    void viewer_model::show_recording_icon(ImFont* font_18, int x, int y, int id, float alpha_delta)
+    {
+        show_icon(font_18, "recording_icon", u8"\uf111", x, y, id, from_rgba(255, 46, 54, alpha_delta * 255));
+    }
     void async_pointclound_mapper::render_loop()
     {
         while (keep_calculating_pointcloud)
@@ -2412,8 +2483,8 @@ namespace rs2
         ImGui::SetNextWindowSize({ 250.f, 50.f });
         ImGui::Begin("nostreaming_popup", nullptr, flags);
 
-        ImGui::PushStyleColor(ImGuiCol_Text, sensor_header_light_blue);
-        ImGui::Text("Connect RealSense Camera\nor Add Source");
+        ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0x70,0x8f, 0xa8, 0xff));
+        ImGui::Text("Connect a RealSense Camera\nor Add Source");
         ImGui::PopStyleColor();
 
         ImGui::End();
@@ -2639,7 +2710,7 @@ namespace rs2
             std::vector<std::shared_ptr<subdevice_model>> record_sensors;
             for (auto&& sub : _recorder->query_sensors())
             {
-                auto model = std::make_shared<subdevice_model>(dev, sub, error_message);
+                auto model = std::make_shared<subdevice_model>(*_recorder, sub, error_message);
                 record_sensors.push_back(model);
             }
             live_subdevices = subdevices;
@@ -2690,24 +2761,21 @@ namespace rs2
         _recorder->resume();
     }
 
-    int device_model::draw_playback_controls(ImFont* font)
+    int device_model::draw_playback_controls(ImFont* font, viewer_model& viewer)
     {
         auto p = dev.as<playback>();
         rs2_playback_status current_playback_status = p.current_status();
 
         ImGui::PushFont(font);
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 20,0 });
-        //const int button_space = 150;
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 10,0 });
         const float button_dim = 30.f;
-        bool buttons_disabled = current_playback_status == RS2_PLAYBACK_STATUS_STOPPED;
-        const bool supports_playback_stop = false; //TODO: Change once we support these features
         const bool supports_playback_step = false;
 
 
         //////////////////// Step Backwards Button ////////////////////
         std::string label = to_string() << u8"\uf048" << "##Step Backwards " << id;
 
-        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, (!supports_playback_step || buttons_disabled) ? ImGuiButtonFlags_Disabled : 0))
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, supports_playback_step ? 0 : ImGuiButtonFlags_Disabled))
         {
             //p.skip_frames(1);
         }
@@ -2715,7 +2783,7 @@ namespace rs2
 
         if (ImGui::IsItemHovered())
         {
-            std::string tooltip = to_string() << "Step Backwards" << (buttons_disabled || supports_playback_step ? "" : "(Not available)");
+            std::string tooltip = to_string() << "Step Backwards" << (supports_playback_step ? "" : "(Not available)");
             ImGui::SetTooltip("%s", tooltip.c_str());
         }
         ImGui::SameLine();
@@ -2725,13 +2793,16 @@ namespace rs2
         //////////////////// Stop Button ////////////////////
         label = to_string() << u8"\uf04d" << "##Stop Playback " << id;
 
-        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, (!supports_playback_stop || buttons_disabled) ? ImGuiButtonFlags_Disabled : 0))
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }))
         {
-            //p.stop();
+            bool prev = _playback_repeat;
+            _playback_repeat = false;
+            p.stop();
+            _playback_repeat = prev;
         }
         if (ImGui::IsItemHovered())
         {
-            std::string tooltip = to_string() << "Stop Playback" << (buttons_disabled || supports_playback_stop ? "" : "(Not available)");
+            std::string tooltip = to_string() << "Stop Playback";
             ImGui::SetTooltip("%s", tooltip.c_str());
         }
         ImGui::SameLine();
@@ -2740,24 +2811,42 @@ namespace rs2
 
 
         //////////////////// Pause/Play Button ////////////////////
-        if (current_playback_status == RS2_PLAYBACK_STATUS_PAUSED)
+        if (current_playback_status == RS2_PLAYBACK_STATUS_PAUSED || current_playback_status == RS2_PLAYBACK_STATUS_STOPPED)
         {
-            label = to_string() << u8"\uf04b" << "##Resume Playback " << id;
-            if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
+            label = to_string() << u8"\uf04b" << "##Play " << id;
+            if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }))
             {
-                p.resume();
+                if (current_playback_status == RS2_PLAYBACK_STATUS_STOPPED)
+                {
+                    play_defaults(viewer);
+                }
+                else
+                {
+                    p.resume();
+                    for (auto&& s : subdevices)
+                    {
+                        if (s->streaming)
+                            s->resume();
+                    }
+                }
+          
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Resume Playback");
+                ImGui::SetTooltip(current_playback_status == RS2_PLAYBACK_STATUS_PAUSED ? "Resume Playback" : "Start Playback");
             }
         }
         else
         {
             label = to_string() << u8"\uf04c" << "##Pause Playback " << id;
-            if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
+            if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }))
             {
                 p.pause();
+                for (auto&& s : subdevices)
+                {
+                    if (s->streaming)
+                        s->pause();
+                }
             }
             if (ImGui::IsItemHovered())
             {
@@ -2773,17 +2862,46 @@ namespace rs2
 
         //////////////////// Step Forward Button ////////////////////
         label = to_string() << u8"\uf051" << "##Step Forward " << id;
-        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, (!supports_playback_step || buttons_disabled) ? ImGuiButtonFlags_Disabled : 0))
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, supports_playback_step ? 0 : ImGuiButtonFlags_Disabled))
         {
             //p.skip_frames(-1);
         }
         if (ImGui::IsItemHovered())
         {
-            std::string tooltip = to_string() << "Step Forward" << (buttons_disabled || supports_playback_step ? "" : "(Not available)");
+            std::string tooltip = to_string() << "Step Forward" << (supports_playback_step ? "" : "(Not available)");
             ImGui::SetTooltip("%s", tooltip.c_str());
         }
         ImGui::SameLine();
         //////////////////// Step Forward Button ////////////////////
+
+
+
+
+        /////////////////// Repeat Button /////////////////////
+        if (_playback_repeat)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue); 
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+        }
+        else
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, white);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        }
+        label = to_string() << u8"\uf0e2" << "##Repeat " << id;
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }))
+        {
+            _playback_repeat = !_playback_repeat;
+        }
+        if (ImGui::IsItemHovered())
+        {
+            std::string tooltip = to_string() << (_playback_repeat ? "Disable " : "Enable ") << "Repeat ";
+            ImGui::SetTooltip("%s", tooltip.c_str());
+        }
+        ImGui::PopStyleColor(2);
+
+        ImGui::SameLine();
+        /////////////////// Repeat Button /////////////////////
 
 
         ImGui::PopStyleVar();
@@ -2792,6 +2910,10 @@ namespace rs2
         auto pos = ImGui::GetCursorPos();
         ImGui::SetCursorPos({ 200.0f, pos.y + 3 });
         ImGui::PushItemWidth(100);
+
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+
         label = to_string() << "## " << id;
         if(ImGui::Combo(label.c_str(), &playback_speed_index, "Speed: x0.25\0Speed: x0.5\0Speed: x1\0Speed: x1.5\0Speed: x2\0\0"))
         {
@@ -2808,14 +2930,38 @@ namespace rs2
             }
             p.set_playback_speed(speed);
         }
+
+        ImGui::PopStyleColor(2);
+
         //////////////////// Speed combo box ////////////////////
         ImGui::PopFont();
 
         return 35;
     }
 
+    std::string device_model::pretty_time(std::chrono::nanoseconds duration)
+    {
+        using namespace std::chrono;
+        auto hhh = duration_cast<hours>(duration);
+        duration -= hhh;
+        auto mm = duration_cast<minutes>(duration);
+        duration -= mm;
+        auto ss = duration_cast<seconds>(duration);
+        duration -= ss;
+        auto ms = duration_cast<milliseconds>(duration);
+
+        std::ostringstream stream;
+        stream << std::setfill('0') << std::setw(hhh.count() >= 10 ? 2 : 1) << hhh.count() << ':' <<
+            std::setfill('0') << std::setw(2) << mm.count() << ':' <<
+            std::setfill('0') << std::setw(2) << ss.count();// << '.' <<
+            //std::setfill('0') << std::setw(3) << ms.count();
+        return stream.str();
+    }
+
     int device_model::draw_seek_bar()
     {
+        auto pos = ImGui::GetCursorPos();
+
         auto p = dev.as<playback>();
         rs2_playback_status current_playback_status = p.current_status();
         int64_t playback_total_duration = p.get_duration().count();
@@ -2827,12 +2973,10 @@ namespace rs2
         {
             seek_pos = 0;
         }
-        int prev_seek_progress = seek_pos;
-
-        ImGui::PushItemWidth(290.f);
+        float seek_bar_width = 290.0f;
+        ImGui::PushItemWidth(seek_bar_width);
         std::string label1 = "## " + id;
-        ImGui::SeekSlider(label1.c_str(), &seek_pos);
-        if (prev_seek_progress != seek_pos)
+        if (ImGui::SeekSlider(label1.c_str(), &seek_pos, ""))
         {
             //Seek was dragged
             auto duration_db = std::chrono::duration_cast<std::chrono::duration<double, std::nano>>(p.get_duration());
@@ -2841,24 +2985,35 @@ namespace rs2
             p.seek(std::chrono::duration_cast<std::chrono::nanoseconds>(seek_time));
         }
 
-        return 25;
+        ImGui::SetCursorPos({ pos.x, pos.y + 17 });
+        
+        std::string time_elapsed = pretty_time(std::chrono::nanoseconds(progress));
+        std::string duration_str = pretty_time(std::chrono::nanoseconds(playback_total_duration));
+        ImGui::Text("%s", time_elapsed.c_str());
+        ImGui::SameLine();
+        float pos_y = ImGui::GetCursorPosY();
+        
+        ImGui::SetCursorPos({ pos.x + seek_bar_width - 41 , pos_y });
+        ImGui::Text("%s", duration_str.c_str());
+        
+        return 50;
     }
 
-    int device_model::draw_playback_panel(ImFont* font)
+    int device_model::draw_playback_panel(ImFont* font, viewer_model& view)
     {
         ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
 
 
         auto pos = ImGui::GetCursorPos();
-        auto controls_height = draw_playback_controls(font);
+        auto controls_height = draw_playback_controls(font, view);
         ImGui::SetCursorPos({ pos.x + 8, pos.y + controls_height });
         auto seek_bar_height = draw_seek_bar();
-        ImGui::PopStyleColor(6);
+
+        ImGui::PopStyleColor(5);
         return controls_height + seek_bar_height;
 
     }

@@ -3,7 +3,6 @@
 
 #include "core/advanced_mode.h"
 #include "ds5/ds5-active.h"
-#include "stream.h"
 #include "ds5/ds5-rolling-shutter.h"
 #include "json_loader.hpp"
 #include "ds5/ds5-color.h"
@@ -16,18 +15,18 @@ namespace librealsense
           _depth_sensor(depth_sensor),
           _color_sensor(nullptr)
     {
-        _enabled = [this](){
+        _enabled = [this]() {
             auto results = send_receive(encode_command(ds::fw_cmd::UAMG));
             assert_no_error(ds::fw_cmd::UAMG, results);
             return results[4] > 0;
         };
         _depth_sensor.register_option(RS2_OPTION_VISUAL_PRESET,
-                                      std::make_shared<advanced_mode_preset_option>(*this,
-                                                                                    _depth_sensor,
-                                                                                    option_range{0,
-                                                                                                 RS2_RS400_VISUAL_PRESET_COUNT - 1,
-                                                                                                 1,
-                                                                                                 RS2_RS400_VISUAL_PRESET_CUSTOM}));
+            std::make_shared<advanced_mode_preset_option>(*this,
+                                                          _depth_sensor,
+                                                          option_range{ 0,
+                                                                        RS2_RS400_VISUAL_PRESET_COUNT - 1,
+                                                                        1,
+                                                                        RS2_RS400_VISUAL_PRESET_CUSTOM }));
         _color_sensor = [this]() {
             auto& dev = _depth_sensor.get_device();
             for (size_t i = 0; i < dev.get_sensors_count(); ++i)
@@ -52,18 +51,6 @@ namespace librealsense
         send_receive(encode_command(ds::fw_cmd::HWRST));
     }
 
-    ds5_advanced_mode_base::res_type ds5_advanced_mode_base::get_res_type(uint32_t width, uint32_t height)
-    {
-        if (width == 640 && height == 480)
-            return res_type::vga_resolution;
-        else if (width < 640 && height < 480)
-            return res_type::small_resolution;
-        else if (width > 640 && height > 480)
-            return res_type::full_resolution;
-
-        throw invalid_value_exception(to_string() << "Invalid resolution! " << width << "x" << height);
-    }
-
     void ds5_advanced_mode_base::apply_preset(const std::vector<platform::stream_profile>& configuration,
                                               rs2_rs400_visual_preset preset)
     {
@@ -72,314 +59,62 @@ namespace librealsense
         auto rolling_shutter_cam = dynamic_cast<const ds5_rolling_shutter*>(&_depth_sensor.get_device());
         auto active_cam = dynamic_cast<const ds5_active*>(&_depth_sensor.get_device());
 
-        enum cam_type{
-            passive,
-            active,
-            awg
-        };
-
-        cam_type cam;
-        if (active_cam && rolling_shutter_cam)
-            cam = cam_type::active;
-        else if (rolling_shutter_cam)
-            cam = cam_type::passive;
-        else if (!rolling_shutter_cam)
-            cam = cam_type::awg;
-        else
-            throw("apply_preset(...) failed! Unknown camera type.");
 
         auto res = get_res_type(configuration.front().width, configuration.front().height);
 
-        switch (preset) {
-        case RS2_RS400_VISUAL_PRESET_INDOOR:
-            if (cam == cam_type::passive) // Passive
-            {
-                switch (res)
-                {
-                case small_resolution:
-                    specific_ds5_passive_small_indoor_passive(p);
-                    break;
-                case vga_resolution:
-                    specific_ds5_passive_vga_indoor_passive(p);
-                    break;
-                case full_resolution:
-                    specific_ds5_passive_full_indoor_passive(p);
-                    break;
-                default:
-                    throw invalid_value_exception("apply_preset(...) Failed! RS400/RS400_MM doesn't support INDOOR preset with current streaming resolution!");
-                }
-            }
-            else if (cam == cam_type::active) // Active
-            {
-                switch (res)
-                {
-                case small_resolution:
-                    specific_ds5_active_small_indoor(p);
-                    break;
-                case vga_resolution:
-                    specific_ds5_active_vga_indoor(p);
-                    break;
-                case full_resolution:
-                    specific_ds5_active_full_indoor(p);
-                    break;
-                default:
-                    throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support INDOOR preset with current streaming resolution!");
-                }
-            }
-            else if (cam == cam_type::awg) // AWG
-            {
-                switch (res)
-                {
-                case small_resolution:
-                    specific_ds5_awg_small_indoor(p);
-                    break;
-                case vga_resolution:
-                    specific_ds5_awg_vga_indoor(p);
-                    break;
-                case full_resolution:
-                    specific_ds5_awg_full_indoor(p);
-                    break;
-                default:
-                    throw invalid_value_exception("apply_preset(...) Failed! RS430_MM doesn't support INDOOR preset with current streaming resolution!");
-                }
-            }
-            else
-            {
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_INDOOR) Failed! Invalid SKU!");
-            }
-            break;
-        case RS2_RS400_VISUAL_PRESET_OUTDOOR:
-            if (cam == cam_type::passive) // Passive
-            {
-                switch (res)
-                {
-                case small_resolution:
-                    specific_ds5_passive_small_outdoor_passive(p);
-                    break;
-                case vga_resolution:
-                    specific_ds5_passive_vga_outdoor_passive(p);
-                    break;
-                case full_resolution:
-                    specific_ds5_passive_full_outdoor_passive(p);
-                    break;
-                default:
-                    throw invalid_value_exception("apply_preset(...) Failed! RS400/RS400_MM doesn't support OUTDOOR preset with current streaming resolution!");
-                }
-            }
-            else if (cam == cam_type::active) // Active
-            {
-                switch (res)
-                {
-                case small_resolution:
-                    specific_ds5_active_small_outdoor(p);
-                    break;
-                case vga_resolution:
-                    specific_ds5_active_vga_outdoor(p);
-                    break;
-                case full_resolution:
-                    specific_ds5_active_full_outdoor(p);
-                    break;
-                default:
-                    throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support OUTDOOR preset with current streaming resolution!");
-                }
-            }
-            else if (cam == cam_type::awg) // AWG
-            {
-                switch (res)
-                {
-                case small_resolution:
-                    specific_ds5_awg_small_outdoor(p);
-                    break;
-                case vga_resolution:
-                    specific_ds5_awg_vga_outdoor(p);
-                    break;
-                case full_resolution:
-                    specific_ds5_awg_full_outdoor(p);
-                    break;
-                default:
-                    throw invalid_value_exception("apply_preset(...) Failed! RS430_MM doesn't support OUTDOOR preset with current streaming resolution!");
-                }
-            }
-            else
-            {
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_OUTDOOR) Failed! Invalid SKU!");
-            }
-            break;
+        switch (preset)
+        {
         case RS2_RS400_VISUAL_PRESET_HAND:
-            if (cam == cam_type::passive) // Passive
-                switch (res)
-                {
-                case small_resolution:
-                    specific_ds5_passive_small_hand_gesture(p);
-                    break;
-                case vga_resolution:
-                    specific_ds5_passive_vga_hand_gesture(p);
-                    break;
-                case full_resolution:
-                    specific_ds5_passive_full_hand_gesture(p);
-                    break;
-                default:
-                    throw invalid_value_exception("apply_preset(...) Failed! RS400/RS400_MM doesn't support HAND preset with current streaming resolution!");
-                }
-            else if (cam == cam_type::active) // Active
-            {
-                switch (res)
-                {
-                case small_resolution:
-                    specific_ds5_active_small_hand_gesture(p);
-                    break;
-                case vga_resolution:
-                    specific_ds5_active_vga_hand_gesture(p);
-                    break;
-                case full_resolution:
-                    specific_ds5_active_full_hand_gesture(p);
-                    break;
-                default:
-                    throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support HAND preset with current streaming resolution!");
-                }
-            }
-            else if (cam == cam_type::awg) // AWG
-            {
-                switch (res)
-                {
-                case small_resolution:
-                    specific_ds5_awg_small_hand_gesture(p);
-                    break;
-                case vga_resolution:
-                    specific_ds5_awg_vga_hand_gesture(p);
-                    break;
-                case full_resolution:
-                    specific_ds5_awg_full_hand_gesture(p);
-                    break;
-                default:
-                    throw invalid_value_exception("apply_preset(...) Failed! RS430_MM doesn't support HAND preset with current streaming resolution!");
-                }
-            }
-            else
-            {
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_HAND) Failed! Invalid SKU!");
-            }
+            hand_gesture(p);
             break;
         case RS2_RS400_VISUAL_PRESET_SHORT_RANGE:
-            if (cam == cam_type::passive) // Passive
+            short_range(p);
+            break;
+        case RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY:
+            switch (res)
             {
-                switch (res)
-                {
-                case small_resolution:
-                    specific_ds5_passive_small_face(p);
-                    break;
-                case vga_resolution:
-                    specific_ds5_passive_vga_face(p);
-                    break;
-                case full_resolution:
-                    specific_ds5_passive_full_face(p);
-
-                    break;
-                default:
-                    throw invalid_value_exception("apply_preset(...) Failed! RS400/RS400_MM doesn't support SHORT_RANGE preset with current streaming resolution!");
-                }
-            }
-            else if (cam == cam_type::active) // Active
-            {
-                switch (res)
-                {
-                case small_resolution:
-                    specific_ds5_active_small_face(p);
-                    break;
-                case vga_resolution:
-                    specific_ds5_active_vga_face(p);
-                    break;
-                case full_resolution:
-                    specific_ds5_active_full_face(p);
-                    break;
-                default:
-                    throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support SHORT_RANGE preset with current streaming resolution!");
-                }
-            }
-            else if (cam == cam_type::awg) // AWG
-            {
-                switch (res)
-                {
-                case small_resolution:
-                    specific_ds5_awg_small_face(p);
-                    break;
-                case vga_resolution:
-                    specific_ds5_awg_vga_face(p);
-                    break;
-                case full_resolution:
-                    specific_ds5_awg_full_face(p);
-                    break;
-                default:
-                    throw invalid_value_exception("apply_preset(...) Failed! RS430_MM doesn't support SHORT_RANGE preset with current streaming resolution!");
-                }
-            }
-            else
-            {
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_SHORT_RANGE) Failed! Invalid SKU!");
+            case low_resolution:
+                low_res_high_accuracy(p);
+                break;
+            case medium_resolution:
+                mid_res_high_accuracy(p);
+                break;
+            case high_resolution:
+                high_res_high_accuracy(p);
+                break;
             }
             break;
-        case RS2_RS400_VISUAL_PRESET_BOX:
-            if (cam == cam_type::passive) // Passive
+        case RS2_RS400_VISUAL_PRESET_HIGH_DENSITY:
+            switch (res)
             {
-                switch (res)
-                {
-                case small_resolution:
-                    specific_ds5_passive_small_box(p);
-                    break;
-                case vga_resolution:
-                    specific_ds5_passive_vga_box(p);
-                    break;
-                case full_resolution:
-                    specific_ds5_passive_full_box(p);
-
-                    break;
-                default:
-                    throw invalid_value_exception("apply_preset(...) Failed! RS400/RS400_MM doesn't support BOX preset with current streaming resolution!");
-                }
+            case low_resolution:
+                low_res_high_density(p);
+                break;
+            case medium_resolution:
+                mid_res_high_density(p);
+                break;
+            case high_resolution:
+                high_res_high_density(p);
+                break;
             }
-            else if (cam == cam_type::active) // Active
+            break;
+        case RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY:
+            switch (res)
             {
-                switch (res)
-                {
-                case small_resolution:
-                    specific_ds5_active_small_box(p);
-                    break;
-                case vga_resolution:
-                    specific_ds5_active_vga_box(p);
-                    break;
-                case full_resolution:
-                    specific_ds5_active_full_box(p);
-                    break;
-                default:
-                    throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support BOX preset with current streaming resolution!");
-                }
-            }
-            else if (cam == cam_type::awg) // AWG
-            {
-                switch (res)
-                {
-                case small_resolution:
-                    specific_ds5_awg_small_box(p);
-                    break;
-                case vga_resolution:
-                    specific_ds5_awg_vga_box(p);
-                    break;
-                case full_resolution:
-                    specific_ds5_awg_full_box(p);
-                    break;
-                default:
-                    throw invalid_value_exception("apply_preset(...) Failed! RS430_MM doesn't support BOX preset with current streaming resolution!");
-                }
-            }
-            else
-            {
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_BOX) Failed! Invalid SKU!");
+            case low_resolution:
+                low_res_mid_density(p);
+                break;
+            case medium_resolution:
+                mid_res_mid_density(p);
+                break;
+            case high_resolution:
+                high_res_mid_density(p);
+                break;
             }
             break;
         default:
             throw invalid_value_exception(to_string() << "Invalid preset! " << preset);
         }
-
         set_all(p);
     }
 
@@ -939,7 +674,7 @@ namespace librealsense
         std::vector<uint8_t> result;
         result.resize(results.size() - sizeof(uint32_t));
         std::copy(results.data() + sizeof(uint32_t),
-                  results.data() + results.size(), result.data());
+            results.data() + results.size(), result.data());
         return result;
     }
 
@@ -984,13 +719,13 @@ namespace librealsense
     }
 
     advanced_mode_preset_option::advanced_mode_preset_option(ds5_advanced_mode_base& advanced,
-                                                             uvc_sensor& ep, const option_range& opt_range)
+        uvc_sensor& ep, const option_range& opt_range)
         : option_base(opt_range),
-          _ep(ep),
-          _advanced(advanced),
-          _last_preset(RS2_RS400_VISUAL_PRESET_CUSTOM)
+        _ep(ep),
+        _advanced(advanced),
+        _last_preset(RS2_RS400_VISUAL_PRESET_CUSTOM)
     {
-        _ep.register_on_open([this](std::vector<platform::stream_profile> configurations){
+        _ep.register_on_open([this](std::vector<platform::stream_profile> configurations) {
             std::lock_guard<std::mutex> lock(_mtx);
             if (_last_preset != RS2_RS400_VISUAL_PRESET_CUSTOM)
                 _advanced.apply_preset(configurations, _last_preset);
@@ -1042,10 +777,10 @@ namespace librealsense
 
     const char* advanced_mode_preset_option::get_value_description(float val) const
     {
-        try{
+        try {
             return rs2_rs400_visual_preset_to_string(to_preset(val));
         }
-        catch(std::out_of_range)
+        catch (std::out_of_range)
         {
             throw invalid_value_exception(to_string() << "advanced_mode_preset: get_value_description(...) failed! Description of value " << val << " is not found.");
         }

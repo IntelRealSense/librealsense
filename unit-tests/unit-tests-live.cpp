@@ -231,7 +231,7 @@ std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int w
     return profiles;
 }
 
-TEST_CASE("Sync different fps", "[live]") {
+TEST_CASE("Sync different fps", "[live][!mayfail]") {
 
     const double DELTA = 20;
     rs2::context ctx;
@@ -735,23 +735,11 @@ TEST_CASE("Toggle Advanced Mode", "[live][AdvMd]") {
     }
 }
 
-TEST_CASE("Advanced Mode presets", "[live][AdvMd]") {
-    static std::map<res_type, std::vector<rs2_rs400_visual_preset>> presets =
-    { {small_resolution, {{RS2_RS400_VISUAL_PRESET_INDOOR},
-                            {RS2_RS400_VISUAL_PRESET_OUTDOOR},
-                            {RS2_RS400_VISUAL_PRESET_HAND},
-                            {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
-                            {RS2_RS400_VISUAL_PRESET_BOX}}} };
-    //     {vga_resolution,   {{RS2_RS400_VISUAL_PRESET_INDOOR},
-    //                         {RS2_RS400_VISUAL_PRESET_OUTDOOR},
-    //                         {RS2_RS400_VISUAL_PRESET_HAND},
-    //                         {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
-    //                         {RS2_RS400_VISUAL_PRESET_BOX}}},
-    //     {full_resolution,  {{RS2_RS400_VISUAL_PRESET_INDOOR},
-    //                         {RS2_RS400_VISUAL_PRESET_OUTDOOR},
-    //                         {RS2_RS400_VISUAL_PRESET_HAND},
-    //                         {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
-    //                         {RS2_RS400_VISUAL_PRESET_BOX}}}};
+TEST_CASE("Advanced Mode presets", "[live][AdvMd]")
+{
+    static const std::vector<res_type> resolutions = { low_resolution,
+                                                       medium_resolution,
+                                                       high_resolution };
 
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -797,14 +785,15 @@ TEST_CASE("Advanced Mode presets", "[live][AdvMd]") {
             }
 
 
-            for (auto& presets_by_res : presets)
+            for (auto& res : resolutions)
             {
-                std::vector<rs2::stream_profile> sp = { get_profile_by_resolution_type(presets_sensor, presets_by_res.first) };
+                std::vector<rs2::stream_profile> sp = {get_profile_by_resolution_type(presets_sensor, res)};
                 presets_sensor.open(sp);
                 presets_sensor.start([](rs2::frame) {});
-                for (auto& preset : presets_by_res.second)
+                for (auto i = 0; i < RS2_RS400_VISUAL_PRESET_COUNT; ++i)
                 {
-                    CAPTURE(presets_by_res.first);
+                    auto preset = (rs2_rs400_visual_preset)i;
+                    CAPTURE(res);
                     CAPTURE(preset);
                     REQUIRE_NOTHROW(presets_sensor.set_option(RS2_OPTION_VISUAL_PRESET, (float)preset));
                     float ret_preset;
@@ -1541,6 +1530,9 @@ TEST_CASE("Multiple devices", "[live][multicam]")
     }
 }
 
+// On Windows 10 RS2 there is an anusual behaviour failingt this test:
+// When trying to enable the second instance of Source Reader, instead of failing, the Media Foundation allows it
+// and sends an HR to the first Source Reader instead (something about the application being preempted)
 TEST_CASE("Multiple applications", "[live][multicam][!mayfail]")
 {
     rs2::context ctx1;
@@ -2388,7 +2380,7 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
             // Test 2 (No 200 fps depth)
            { { { RS2_STREAM_DEPTH   ,   0,   0, 200, RS2_FORMAT_ANY, 0 } },   // given
              { } },                                                      // expected
-            // Test 3 (Can request 200 fps IR)
+            // Test 3 (Can request 60 fps IR)
            { { { RS2_STREAM_INFRARED,   0,   0, 60, RS2_FORMAT_ANY, 1 } },   // given
              { { RS2_STREAM_INFRARED,   0,   0, 60, RS2_FORMAT_ANY, 1 } } }, // expected
             // Test 4 (requesting IR@200fps + depth fails
