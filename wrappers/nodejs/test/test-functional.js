@@ -1,8 +1,10 @@
-/* License: Apache 2.0. See LICENSE file in root directory.
-   Copyright(c) 2015 Intel Corporation. All Rights Reserved. */
+// Copyright (c) 2017 Intel Corporation. All rights reserved.
+// Use of this source code is governed by an Apache 2.0 license
+// that can be found in the LICENSE file.
 
 'use strict';
 
+/* global describe, it, before, after */
 const assert = require('assert');
 const rs2 = require('../index.js');
 
@@ -11,16 +13,17 @@ describe('Pipeline tests', function() {
     const pipe = new rs2.Pipeline();
     pipe.start();
     const frames = pipe.waitForFrames();
-    assert.equal(frames.size>0, true);
+    assert.equal(frames.size > 0, true);
     pipe.stop();
     pipe.destroy();
   });
+
   it('Pipeline with context', () => {
     const ctx = new rs2.Context();
     const pipe = new rs2.Pipeline(ctx);
     pipe.start();
     const frames = pipe.waitForFrames();
-    assert.equal(frames.size>0, true);
+    assert.equal(frames.size > 0, true);
     pipe.stop();
     pipe.destroy();
   });
@@ -29,6 +32,7 @@ describe('Pipeline tests', function() {
 describe('Frameset test', function() {
   let pipe;
   let frameset;
+
   before(function() {
     pipe = new rs2.Pipeline();
     pipe.start();
@@ -40,25 +44,29 @@ describe('Frameset test', function() {
     pipe.stop();
     pipe.destroy();
   });
+
   it('depthFrame test', () => {
-    if(frameset.depthFrame) {
+    if (frameset.depthFrame) {
       assert.equal(frameset.depthFrame instanceof rs2.DepthFrame, true);
       frameset.depthFrame.destroy();
     }
   });
+
   it('colorFrame test', () => {
-    if(frameset.colorFrame) {
+    if (frameset.colorFrame) {
       assert.equal(frameset.colorFrame instanceof rs2.VideoFrame, true);
       frameset.colorFrame.destroy();
     }
   });
+
   it('at test', () => {
-    for(let i=0; i<frameset.size; i++) {
+    for (let i=0; i<frameset.size; i++) {
       let frame = frameset.at(i);
       assert.equal(frame instanceof rs2.Frame, true);
       frame.destroy();
     }
   });
+
   it('getFrame test', () => {
     let color = frameset.getFrame(rs2.stream.STREAM_COLOR);
     let depth = frameset.getFrame(rs2.stream.STREAM_DEPTH);
@@ -74,10 +82,11 @@ describe('Frameset test', function() {
 });
 
 describe('Frame test', function() {
-  let pipe = undefined;
-  let frameset = undefined;
-  let color = undefined;
-  let depth = undefined;
+  let pipe;
+  let frameset;
+  let color;
+  let depth;
+
   before(function() {
     pipe = new rs2.Pipeline();
     pipe.start();
@@ -87,10 +96,8 @@ describe('Frame test', function() {
   });
 
   after(function() {
-    if (color)
-      color.destroy();
-    if (depth)
-      depth.destroy();
+    if (color) color.destroy();
+    if (depth) depth.destroy();
     frameset.destroy();
     pipe.stop();
     pipe.destroy();
@@ -99,8 +106,9 @@ describe('Frame test', function() {
     color = undefined;
     depth = undefined;
   });
+
   it('format/stream/width/height/frameNumber/timestamp/isValid test', () => {
-    if(depth) {
+    if (depth) {
       assert.equal(depth.format, rs2.format.FORMAT_Z16);
       assert.equal(depth.streamType, rs2.format.STREAM_DEPTH);
       assert.equal(depth.isValid, true);
@@ -109,7 +117,7 @@ describe('Frame test', function() {
       assert.equal(depth.width > 0, true);
       assert.equal(depth.height > 0, true);
     }
-    if(color) {
+    if (color) {
       assert.equal(color.format, rs2.format.FORMAT_RGB8);
       assert.equal(color.streamType, rs2.format.STREAM_COLOR);
       assert.equal(color.isValid, true);
@@ -119,6 +127,7 @@ describe('Frame test', function() {
       assert.equal(color.height > 0, true);
     }
   });
+
   it('frame metadata test', () => {
     for (let i=0; i<rs2.frame_metadata.FRAME_METADATA_COUNT; i++) {
       if (depth && depth.supportsFrameMetadata(i)) {
@@ -129,6 +138,7 @@ describe('Frame test', function() {
       }
     }
   });
+
   it('frame data test', () => {
     if (depth) {
       assert.equal(depth.data.length*2, depth.dataByteLength);
@@ -137,6 +147,7 @@ describe('Frame test', function() {
       assert.equal(color.data.length, color.dataByteLength);
     }
   });
+
   it('strideInBytes test', () => {
     if (depth) {
       assert.equal(depth.strideInBytes, depth.width*2);
@@ -145,6 +156,7 @@ describe('Frame test', function() {
       assert.equal(color.strideInBytes, color.width*3);
     }
   });
+
   it('getData test', () => {
     if (depth) {
       const buf1 = new Buffer(depth.dataByteLength);
@@ -164,11 +176,12 @@ describe('Frame test', function() {
 });
 
 describe('Colorizer test', function() {
-  let pipe = undefined;
-  let frameset = undefined;
-  let color = undefined;
-  let depth = undefined;
-  let colorizer = undefined;
+  let pipe;
+  let frameset;
+  let color;
+  let depth;
+  let colorizer;
+
   before(function() {
     pipe = new rs2.Pipeline();
     pipe.start();
@@ -179,10 +192,8 @@ describe('Colorizer test', function() {
   });
 
   after(function() {
-    if (color)
-      color.destroy();
-    if (depth)
-      depth.destroy();
+    if (color) color.destroy();
+    if (depth) depth.destroy();
     frameset.destroy();
     pipe.stop();
     pipe.destroy();
@@ -193,8 +204,9 @@ describe('Colorizer test', function() {
     depth = undefined;
     colorizer = undefined;
   });
+
   it('colorize test', () => {
-    if(depth) {
+    if (depth) {
       const depthRGB = colorizer.colorize(depth);
       assert.equal(depthRGB.height, depth.height);
       assert.equal(depthRGB.width, depth.width);
@@ -205,19 +217,20 @@ describe('Colorizer test', function() {
 
 
 describe('Pointcloud and Points test', function() {
-  let pipe = undefined;
-  let frameset = undefined;
-  let color = undefined;
-  let depth = undefined;
-  let pc = undefined;
-  let ctx = undefined;
+  let pipe;
+  let frameset;
+  let color;
+  let depth;
+  let pc;
+  let ctx;
+
   before(function() {
     ctx = new rs2.Context();
     pc = ctx.createPointcloud();
     pipe = new rs2.Pipeline(ctx);
     pipe.start();
     frameset = pipe.waitForFrames();
-    while(frameset.size != 2) {
+    while (frameset.size != 2) {
       frameset.destroy();
       frameset = pipe.waitForFrames();
     }
@@ -226,10 +239,8 @@ describe('Pointcloud and Points test', function() {
   });
 
   after(function() {
-    if (color)
-      color.destroy();
-    if (depth)
-      depth.destroy();
+    if (color) color.destroy();
+    if (depth) depth.destroy();
     frameset.destroy();
     pipe.stop();
     pipe.destroy();
@@ -242,6 +253,7 @@ describe('Pointcloud and Points test', function() {
     color = undefined;
     depth = undefined;
   });
+
   it('map and calculate test', () => {
     assert.equal(pc instanceof rs2.Pointcloud, true);
 
@@ -262,13 +274,16 @@ describe('Pointcloud and Points test', function() {
 });
 
 describe('Context tests', function() {
-  let ctx = undefined;
+  let ctx;
+
   before(() => {
     ctx = new rs2.Context();
   });
+
   after(() => {
     ctx.destroy();
   });
+
   it('Query devices', () => {
     const devs = ctx.queryDevices();
 
@@ -278,6 +293,7 @@ describe('Context tests', function() {
       dev.destroy();
     });
   });
+
   it('Query sensors', () => {
     const sensors = ctx.querySensors();
 
@@ -291,30 +307,34 @@ describe('Context tests', function() {
 });
 
 describe('Sensor tests', function() {
-  let ctx = undefined;
-  let sensors = undefined;
+  let ctx;
+  let sensors;
+
   before(() => {
     ctx = new rs2.Context();
     sensors = ctx.querySensors();
   });
+
   after(() => {
     ctx.destroy();
     sensors.forEach((sensor) => {
       sensor.destroy();
-    })
+    });
     ctx = undefined;
     sensors = undefined;
   });
+
   it('Stream profiles', () => {
     const profiles0 = sensors[0].getStreamProfiles();
     const profiles1 = sensors[1].getStreamProfiles();
 
-    assert.equal(profiles1.length>0, true);
-    assert.equal(profiles0.length>0, true);
+    assert.equal(profiles1.length > 0, true);
+    assert.equal(profiles0.length > 0, true);
     profiles0.forEach((p) => {
       assert.equal(p instanceof rs2.StreamProfile, true);
       assert.equal(p instanceof rs2.StreamProfile, true);
-      assert.equal(p.streamType >= rs2.stream.STREAM_DEPTH && p.streamType < rs2.stream.STREAM_COUNT, true);
+      assert.equal(p.streamType >= rs2.stream.STREAM_DEPTH &&
+                   p.streamType < rs2.stream.STREAM_COUNT, true);
       assert.equal(p.format >= rs2.format.FORMAT_Z16 && p.format < rs2.format.FORMAT_COUNT, true);
       assert.equal(p.fps>0, true);
       assert.equal(typeof p.uniqueID, 'number');
@@ -326,8 +346,8 @@ describe('Sensor tests', function() {
       assert.equal(p instanceof rs2.StreamProfile, true);
     });
   });
+
   it.skip('Open and start', () => {
-    this.timeout(5000);
     return new Promise((resolve, reject) => {
       const profiles0 = sensors[0].getStreamProfiles();
       sensors[0].open(profiles0[1]);

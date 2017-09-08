@@ -1,11 +1,14 @@
-/* License: Apache 2.0. See LICENSE file in root directory.
-   Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+// Copyright (c) 2017 Intel Corporation. All rights reserved.
+// Use of this source code is governed by an Apache 2.0 license
+// that can be found in the LICENSE file.
+
+'use strict';
 
 const {exec} = require('child_process');
 const {chdir} = require('process');
 const fsCompare = require('fs-compare');
 
-chdir('doc')
+chdir('doc');
 
 fsCompare.ctime('../index.js', './index.html', function(err, diff) {
   if (err) {
@@ -22,14 +25,12 @@ fsCompare.ctime('../index.js', './index.html', function(err, diff) {
 });
 
 function genDoc() {
-  const child = exec('jsdoc ../index.js -t ./jsdoc-template -d .', (error, stdout, stderr) => {
+  exec('jsdoc ../index.js -t ./jsdoc-template -d .', (error, stdout, stderr) => {
     if (error) {
       throw error;
     }
 
-    if (stdout)
-      process.stdout.write(stdout);
-    if (stderr)
-      process.stderr.write(stderr);
+    if (stdout) process.stdout.write(stdout);
+    if (stderr) process.stderr.write(stderr);
   });
 }

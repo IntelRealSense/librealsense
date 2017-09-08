@@ -1,19 +1,32 @@
+# Copyright (c) 2017 Intel Corporation. All rights reserved.
+# Use of this source code is governed by a Apache License
+# Version 2.0 license that can be found in the LICENSE file.
 version: 2.1.{build}
 branches:
   only:
   - development
 skip_tags: true
+environment:
+  nodejs_version: "6"
 image: Visual Studio 2015
 clone_folder: c:\projects\librealsense
 init:
 - cmd: 
+install:
+- ps: Install-Product node $env:nodejs_version
+- cmd: >-
+    cd c:\projects\librealsense\.. && git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git 
+
+    set OLDPATH=%PATH% && set PATH=%PATH%;c:\projects\depot_tools
+
+    cd c:\projects\librealsense\wrappers\nodejs\tools && npm install
+
+    cd c:\projects\librealsense\wrappers\nodejs && node .\tools\linter.js && set PATH=%OLDPATH% && set OLDPATH=
 before_build:
 - cmd: >-
-    mkdir build
+    cd c:\projects\librealsense && mkdir build && cd build
 
-    cd build
-
-    cmake .. -DBUILD_EXAMPLES=true -DBUILD_PYTHON_BINDINGS=true
+    cmake .. -DBUILD_EXAMPLES=true -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS:BOOL=true
 build:
   project: ./build/Realsense.sln
   verbosity: minimal
@@ -35,3 +48,5 @@ test_script:
     throw "Tests failed!"
 
     }
+
+    # TODO(halton): Add unit test for Node.js binding
