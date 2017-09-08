@@ -32,8 +32,10 @@ namespace rsimpl
         stream_args(out, names, rest...);
     }
 
+    int rs_exception_count;
     static void translate_exception(const char * name, std::string args, rs_error ** error)
     {
+        rs_exception_count++;
         try { throw; }
         catch (const std::exception & e) { if (error) *error = new rs_error {e.what(), name, move(args)}; } // todo - Handle case where THIS code throws
         catch (...) { if (error) *error = new rs_error {"unknown error", name, move(args)}; } // todo - Handle case where THIS code throws

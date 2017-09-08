@@ -525,10 +525,12 @@ void LIBUSB_CALL _uvc_stream_callback(struct libusb_transfer *transfer) {
         pktbuf = libusb_get_iso_packet_buffer_simple(transfer, packet_id);
 
         _uvc_process_payload(strmh, pktbuf, pkt->actual_length);
-
       }
     }
-    break;
+    if(strmh->running)
+    {
+      break;
+    }
   case LIBUSB_TRANSFER_CANCELLED: 
   case LIBUSB_TRANSFER_ERROR:
   case LIBUSB_TRANSFER_NO_DEVICE: {
@@ -1070,14 +1072,13 @@ uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh) {
     for(i=0; i < strmh->num_transfer_bufs; i++) {
         if(strmh->transfers[i] != NULL) {
             int res = libusb_cancel_transfer(strmh->transfers[i]);
-            if(res < 0) {
+            if((res < 0) && (res != LIBUSB_ERROR_NOT_FOUND)) {
                 free(strmh->transfers[i]->buffer);
                 libusb_free_transfer(strmh->transfers[i]);
                 strmh->transfers[i] = NULL;
             }
         }
     }
-
 
     /* Wait for transfers to complete/cancel */
     do {
