@@ -378,6 +378,7 @@ else()
     include(CMakePackageConfigHelpers)
     configure_package_config_file(CMake/realsense2Config.cmake.in realsense2Config.cmake
                                   INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+                                  INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
                                   PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
 
     install(EXPORT realsense2Targets FILE realsense2Targets.cmake NAMESPACE realsense2::
