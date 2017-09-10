@@ -60,8 +60,8 @@ namespace librealsense
     class md_attribute_parser : public md_attribute_parser_base
     {
     public:
-        md_attribute_parser(Attribute S::* attribute_name, Flag flag, unsigned long long offset) :
-            _md_attribute(attribute_name), _md_flag(flag), _offset(offset) {};
+        md_attribute_parser(Attribute S::* attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod) :
+            _md_attribute(attribute_name), _md_flag(flag), _offset(offset), _modifyer(mod) {};
 
         rs2_metadata_type get(const frame & frm) const override
         {
@@ -70,7 +70,9 @@ namespace librealsense
             if (!is_attribute_valid(s))
                 throw invalid_value_exception("metadata not available");
 
-            return static_cast<rs2_metadata_type>((*s).*_md_attribute);
+            auto attrib = static_cast<rs2_metadata_type>((*s).*_md_attribute);
+            if (_modifyer) attrib = _modifyer(attrib);
+            return attrib;
         }
 
         // Verifies that the parameter is both supported and available
@@ -114,14 +116,15 @@ namespace librealsense
         Attribute S::*      _md_attribute;  // Pointer to the attribute within struct that holds the relevant data
         Flag                _md_flag;       // Bit that indicates whether the particluar attribute is actiive
         unsigned long long  _offset;        // Inner struct offset with regard to the most outer one
+        attrib_modifyer     _modifyer;      // Post-processing on received attribute
     };
 
     /**\brief A helper function to create a specialized attribute parser.
      *  Return it as a pointer to a base-class*/
     template<class S, class Attribute, typename Flag>
-    std::shared_ptr<md_attribute_parser_base> make_attribute_parser(Attribute S::* attribute, Flag flag, unsigned long long offset)
+    std::shared_ptr<md_attribute_parser_base> make_attribute_parser(Attribute S::* attribute, Flag flag, unsigned long long offset, attrib_modifyer mod = nullptr)
     {
-        std::shared_ptr<md_attribute_parser<S, Attribute, Flag>> parser(new md_attribute_parser<S, Attribute, Flag>(attribute,flag, offset));
+        std::shared_ptr<md_attribute_parser<S, Attribute, Flag>> parser(new md_attribute_parser<S, Attribute, Flag>(attribute, flag, offset, mod));
         return parser;
     }
 
