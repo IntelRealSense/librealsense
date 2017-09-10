@@ -56,3 +56,12 @@ try:
                 print(line)
 ```
 A longer example can be found [here](./python-tutorial-1-depth.py)
+
+### NumPy Integration
+Librealsense frames support the buffer protocol. A numpy array can be constructed using this protocol with no data marshalling overhead:
+```python
+import numpy as np
+depth = frames.get_depth_frame()
+depth_data = depth.as_frame().get_data()
+np_image = np.asanyarray(depth_data)
+```
