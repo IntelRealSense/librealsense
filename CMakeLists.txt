@@ -73,12 +73,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
 include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c11" COMPILER_SUPPORTS_C11)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_C11)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
-endif()
 if(COMPILER_SUPPORTS_CXX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 elseif(COMPILER_SUPPORTS_CXX0X)
@@ -558,7 +554,6 @@ target_include_directories(realsense2 PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_S
                                             $<INSTALL_INTERFACE:include>
                                      PRIVATE ${LIBUSB1_INCLUDE_DIRS})
 
-
 if(${ROS_BUILD_TYPE})
     install(TARGETS realsense2
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -589,7 +584,6 @@ else()
             DESTINATION ${CMAKECONFIG_INSTALL_DIR})
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/realsense2Config.cmake"
             DESTINATION ${CMAKECONFIG_INSTALL_DIR})
-    install(CODE "execute_process(COMMAND ldconfig)")
 endif()
 
 option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
@@ -657,4 +651,8 @@ foreach(arg ${librealsense_PKG_LIBS})
 endforeach()
 # Set library pkgconfig file for facilitating 3rd party integration
 configure_file(config/librealsense.pc.in config/realsense2.pc @ONLY)
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/config/realsense2.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/config/realsense2.pc"     DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+# Update system cache with newly installed binaries/libraries
+if(UNIX)
+    install(CODE "execute_process(COMMAND ldconfig)")
+endif()
