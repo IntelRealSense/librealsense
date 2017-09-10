@@ -233,7 +233,7 @@ int main(int argc, char** argv)
                 if(need_to_reset)
                     return true;
 
-                for(auto&& profile : pipe.get_selection())
+                for(auto&& profile : pipe.get_active_streams())
                 {
                     if(buffer[(int) profile.stream_type()].size() < max_frames_number)
                         return false;

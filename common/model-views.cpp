@@ -1137,8 +1137,8 @@ namespace rs2
         // populate frame metadata attributes
         for (auto i=0; i< RS2_FRAME_METADATA_COUNT; i++)
         {
-            if (f.supports_frame_metadata((rs2_frame_metadata)i))
-                frame_md.md_attributes[i] = std::make_pair(true,f.get_frame_metadata((rs2_frame_metadata)i));
+            if (f.supports_frame_metadata((rs2_frame_metadata_value)i))
+                frame_md.md_attributes[i] = std::make_pair(true,f.get_frame_metadata((rs2_frame_metadata_value)i));
             else
                 frame_md.md_attributes[i].first = false;
         }
@@ -1931,7 +1931,7 @@ namespace rs2
                 ImGui::Text("%s", label.c_str());
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Hardware Timestamp unavailable! This is often an indication of improperly applied Kernel patch.\nPlease refer to installation.md for mode information");
+                    ImGui::SetTooltip("Hardware Timestamp unavailable! This is often an indication of inproperly applied Kernel patch.\nPlease refer to installation.md for mode information");
                 }
                 ImGui::PopStyleColor();
             }
@@ -2084,7 +2084,7 @@ namespace rs2
         {
             if (frame_md.md_attributes[i].first)
             {
-                label = to_string() << rs2_frame_metadata_to_string((rs2_frame_metadata)i) << " = " << frame_md.md_attributes[i].second;
+                label = to_string() << rs2_frame_metadata_to_string((rs2_frame_metadata_value)i) << " = " << frame_md.md_attributes[i].second;
                 ImGui::Text("%s", label.c_str());
             }
         }
@@ -3028,7 +3028,7 @@ namespace rs2
             // When camera is being reset, either because of "hardware reset"
             // or because of switch into advanced mode,
             // we don't want to capture the info that is about to change
-            if ((info == RS2_CAMERA_INFO_LOCATION ||
+            if ((info == RS2_CAMERA_INFO_PHYSICAL_PORT ||
                 info == RS2_CAMERA_INFO_ADVANCED_MODE)
                 && !include_location) continue;
 

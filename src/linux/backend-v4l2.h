@@ -54,7 +54,7 @@ namespace librealsense
 
             named_mutex(const named_mutex&) = delete;
 
-            void lock() { acquire(); }
+            void lock() { aquire(); }
             void unlock() { release(); }
 
             bool try_lock();
@@ -62,7 +62,7 @@ namespace librealsense
             ~named_mutex();
 
         private:
-            void acquire();
+            void aquire();
 
             void release();
 

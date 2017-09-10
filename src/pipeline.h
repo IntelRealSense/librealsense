@@ -12,23 +12,21 @@ namespace librealsense
     class pipeline
     {
     public:
-        pipeline(std::shared_ptr<librealsense::context> ctx, std::shared_ptr<device_interface> dev = nullptr);
+        pipeline(std::shared_ptr<librealsense::context> ctx);
         std::shared_ptr<device_interface> get_device();
-        std::shared_ptr<librealsense::context> get_context();
         void start(frame_callback_ptr callback);
         void start();
         void stop();
+        void open();
+        void enable(std::string device_serial);
         void enable(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t framerate);
-        bool can_enable(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t framerate);
         void disable_stream(rs2_stream stream);
         void disable_all();
 
         frame_holder wait_for_frames(unsigned int timeout_ms = 5000);
         bool poll_for_frames(frame_holder* frame);
 
-        bool get_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics* extrinsics) const;
-        stream_profiles get_selection() const;
-         
+        stream_profiles get_active_streams() const;
 
         ~pipeline();
 
@@ -43,6 +41,9 @@ namespace librealsense
         std::vector<sensor_interface*> _sensors;
         util::config _config;
         util::config::multistream _multistream;
+        bool _commited = false;
+        bool _streaming = false;
+        bool _async_mode = true;
     };
 
 }

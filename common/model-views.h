@@ -94,7 +94,7 @@ namespace rs2
 
     struct frame_metadata
     {
-        std::array<std::pair<bool,rs2_metadata_t>,RS2_FRAME_METADATA_COUNT> md_attributes{};
+        std::array<std::pair<bool,rs2_metadata_type>,RS2_FRAME_METADATA_COUNT> md_attributes{};
     };
 
     struct notification_model;

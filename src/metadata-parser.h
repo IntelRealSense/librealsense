@@ -28,7 +28,7 @@ namespace librealsense
     class md_attribute_parser_base
     {
     public:
-        virtual rs2_metadata_t get(const frame& frm) const = 0;
+        virtual rs2_metadata_type get(const frame& frm) const = 0;
         virtual bool supports(const frame& frm) const = 0;
 
         virtual ~md_attribute_parser_base() = default;
@@ -36,14 +36,14 @@ namespace librealsense
 
     /**\brief Post-processing adjustment of the metadata attribute
      *  e.g change auto_exposure enum to boolean, change units from nano->ms,etc'*/
-    typedef std::function<rs2_metadata_t(const rs2_metadata_t& param)> attrib_modifyer;
+    typedef std::function<rs2_metadata_type(const rs2_metadata_type& param)> attrib_modifyer;
 
     class md_time_of_arrival_parser : public md_attribute_parser_base
     {
     public:
-        rs2_metadata_t get(const frame& frm) const override
+        rs2_metadata_type get(const frame& frm) const override
         {
-            return (rs2_metadata_t)frm.get_frame_system_time();
+            return (rs2_metadata_type)frm.get_frame_system_time();
         }
 
         bool supports(const frame& frm) const override
@@ -63,14 +63,14 @@ namespace librealsense
         md_attribute_parser(Attribute S::* attribute_name, Flag flag, unsigned long long offset) :
             _md_attribute(attribute_name), _md_flag(flag), _offset(offset) {};
 
-        rs2_metadata_t get(const frame & frm) const override
+        rs2_metadata_type get(const frame & frm) const override
         {
             auto s = reinterpret_cast<const S*>(((const uint8_t*)frm.additional_data.metadata_blob.data()) + _offset);
 
             if (!is_attribute_valid(s))
                 throw invalid_value_exception("metadata not available");
 
-            return static_cast<rs2_metadata_t>((*s).*_md_attribute);
+            return static_cast<rs2_metadata_type>((*s).*_md_attribute);
         }
 
         // Verifies that the parameter is both supported and available
@@ -133,12 +133,12 @@ namespace librealsense
         md_uvc_header_parser(Attribute St::* attribute_name, attrib_modifyer mod) :
             _md_attribute(attribute_name), _modifyer(mod){};
 
-        rs2_metadata_t get(const frame & frm) const override
+        rs2_metadata_type get(const frame & frm) const override
         {
             if (!supports(frm))
                 throw invalid_value_exception("UVC header is not available");
 
-            auto attrib =  static_cast<rs2_metadata_t>((*reinterpret_cast<const St*>((const uint8_t*)frm.additional_data.metadata_blob.data())).*_md_attribute);
+            auto attrib =  static_cast<rs2_metadata_type>((*reinterpret_cast<const St*>((const uint8_t*)frm.additional_data.metadata_blob.data())).*_md_attribute);
             if (_modifyer) attrib = _modifyer(attrib);
             return attrib;
         }
@@ -170,9 +170,9 @@ namespace librealsense
         md_additional_parser(Attribute St::* attribute_name) :
             _md_attribute(attribute_name) {};
 
-        rs2_metadata_t get(const frame & frm) const override
+        rs2_metadata_type get(const frame & frm) const override
         {
-            return static_cast<rs2_metadata_t>(frm.additional_data.*_md_attribute);
+            return static_cast<rs2_metadata_type>(frm.additional_data.*_md_attribute);
         }
 
         bool supports(const frame & frm) const override
@@ -208,7 +208,7 @@ namespace librealsense
 
         // The sensor's timestamp is defined as the middle of exposure time. Sensor_ts= Frame_ts - (Actual_Exposure/2)
         // For RS4xx the metadata payload holds only the (Actual_Exposure/2) offset, and the actual value needs to be calculated
-        rs2_metadata_t get(const frame & frm) const override
+        rs2_metadata_type get(const frame & frm) const override
         {
             return _frame_ts_parser->get(frm) - _sensor_ts_parser->get(frm);
         };
@@ -235,14 +235,14 @@ namespace librealsense
         md_sr300_attribute_parser(Attribute S::* attribute_name, unsigned long long offset, attrib_modifyer mod) :
             _md_attribute(attribute_name), _offset(offset), _modifyer(mod){};
 
-        rs2_metadata_t get(const frame & frm) const override
+        rs2_metadata_type get(const frame & frm) const override
         {
             if (!supports(frm))
                 throw invalid_value_exception("Metadata is not available");
 
             auto s = reinterpret_cast<const S*>((frm.additional_data.metadata_blob.data()) + _offset);
 
-            auto param = static_cast<rs2_metadata_t>((*s).*_md_attribute);
+            auto param = static_cast<rs2_metadata_type>((*s).*_md_attribute);
             if (_modifyer)
                 param = _modifyer(param);
 

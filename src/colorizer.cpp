@@ -113,7 +113,7 @@ namespace librealsense
                 source.frame_ready(ret);
             };
 
-            if (auto composite = f.as<rs2::composite_frame>()) composite.foreach(process_frame);
+            if (auto composite = f.as<rs2::frameset>()) composite.foreach(process_frame);
             else process_frame(f);
         };
 

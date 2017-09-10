@@ -132,11 +132,11 @@ namespace librealsense
             }
         }
 
-        void named_mutex::acquire()
+        void named_mutex::aquire()
         {
             auto ret = lockf(_fildes, F_LOCK, 0);
             if (ret != 0)
-                throw linux_backend_exception(to_string() << "Acquire failed");
+                throw linux_backend_exception(to_string() << "Aquire failed");
         }
 
         void named_mutex::release()

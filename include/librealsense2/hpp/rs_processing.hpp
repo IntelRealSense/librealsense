@@ -199,7 +199,7 @@ namespace rs2
         */
         frameset wait_for_frames(unsigned int timeout_ms = 5000) const
         {
-            return composite_frame(_results.wait_for_frame(timeout_ms));
+            return frameset(_results.wait_for_frame(timeout_ms));
         }
 
         /**
@@ -232,7 +232,7 @@ namespace rs2
     public:
         frameset wait_for_frames()
         {
-            return composite_frame(_queue.wait_for_frame());
+            return frameset(_queue.wait_for_frame());
         }
 
         void operator()(frame f) const

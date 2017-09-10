@@ -290,7 +290,7 @@ namespace librealsense
         CASE(NAME)
         CASE(SERIAL_NUMBER)
         CASE(FIRMWARE_VERSION)
-        CASE(LOCATION)
+        CASE(PHYSICAL_PORT)
         CASE(DEBUG_OP_CODE)
         CASE(ADVANCED_MODE)
         CASE(PRODUCT_ID)
@@ -300,7 +300,7 @@ namespace librealsense
         #undef CASE
     }
 
-    const char* get_string(rs2_frame_metadata value)
+    const char* get_string(rs2_frame_metadata_value value)
     {
 #define CASE(X) STRCASE(FRAME_METADATA, X)
         switch (value)

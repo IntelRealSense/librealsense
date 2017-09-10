@@ -58,7 +58,7 @@ namespace rs2
         }
 
         /**
-        * \return            the time at specific time point, in live and redord contextes it will return the system time and in playback contextes it will return the recorded time
+        * \return            the time at specific time point, in live and record contextes it will return the system time and in playback contextes it will return the recorded time
         */
         double get_time()
         {

@@ -73,14 +73,14 @@ PYBIND11_PLUGIN(NAME) {
     camera_info.value("name", RS2_CAMERA_INFO_NAME)
                .value("serial_number", RS2_CAMERA_INFO_SERIAL_NUMBER)
                .value("firmware_version", RS2_CAMERA_INFO_FIRMWARE_VERSION)
-               .value("location", RS2_CAMERA_INFO_LOCATION)
+               .value("location", RS2_CAMERA_INFO_PHYSICAL_PORT)
                .value("debug_op_code", RS2_CAMERA_INFO_DEBUG_OP_CODE)
                .value("advanced_mode", RS2_CAMERA_INFO_ADVANCED_MODE)
                .value("product_id", RS2_CAMERA_INFO_PRODUCT_ID)
                .value("camera_locked", RS2_CAMERA_INFO_CAMERA_LOCKED)
                .value("count", RS2_CAMERA_INFO_COUNT);
 
-    py::enum_<rs2_frame_metadata> frame_metadata(m, "frame_metadata");
+    py::enum_<rs2_frame_metadata_value> frame_metadata(m, "frame_metadata");
     frame_metadata.value("frame counter", RS2_FRAME_METADATA_FRAME_COUNTER)
                   .value("frame_timestamp", RS2_FRAME_METADATA_FRAME_TIMESTAMP)
                   .value("sensor_timestamp", RS2_FRAME_METADATA_SENSOR_TIMESTAMP)
@@ -348,7 +348,7 @@ PYBIND11_PLUGIN(NAME) {
          .def("get_profile", &rs2::frame::get_profile)
          .def(BIND_DOWNCAST(frame, frame))
          .def(BIND_DOWNCAST(frame, points))
-         .def(BIND_DOWNCAST(frame, composite_frame))
+         .def(BIND_DOWNCAST(frame, frameset))
          .def(BIND_DOWNCAST(frame, video_frame))
          .def(BIND_DOWNCAST(frame, depth_frame));
 
@@ -394,16 +394,24 @@ PYBIND11_PLUGIN(NAME) {
                }, py::keep_alive<0, 1>())
           .def("size", &rs2::points::size);
 
-    py::class_<rs2::composite_frame, rs2::frame> composite_frame(m, "composite_frame");
-    composite_frame.def(py::init<rs2::frame>())
-                   .def("first_or_default", &rs2::composite_frame::first_or_default, "s"_a)
-                   .def("first", &rs2::composite_frame::first, "s"_a)
-                   .def("size", &rs2::composite_frame::size)
-                   .def("foreach", [](const rs2::composite_frame& self, std::function<void(rs2::frame)> callable)
+    py::class_<rs2::frameset, rs2::frame> frameset(m, "composite_frame");
+    frameset.def(py::init<rs2::frame>())
+                   .def("first_or_default", &rs2::frameset::first_or_default, "s"_a)
+                   .def("first", &rs2::frameset::first, "s"_a)
+                   .def("size", &rs2::frameset::size)
+                   .def("foreach", [](const rs2::frameset& self, std::function<void(rs2::frame)> callable)
                         {
                             self.foreach(callable);
                         })
-                   .def("__getitem__", &rs2::composite_frame::operator[]);
+                   .def("__getitem__", &rs2::frameset::operator[])
+                   .def("get_depth_frame", &rs2::frameset::get_depth_frame)
+                   .def("get_color_frame", &rs2::frameset::get_color_frame)
+                   .def("__iter__", [](rs2::frameset& self)
+                    {
+                        return py::make_iterator(self.begin(), self.end());
+                    }, py::keep_alive<0, 1>())
+                   .def("size", &rs2::frameset::size)
+                   .def("__getitem__", &rs2::frameset::operator[]);
 
     py::class_<rs2::frame_source> frame_source(m, "frame_source");
     frame_source.def("allocate_video_frame", &rs2::frame_source::allocate_video_frame,
@@ -417,19 +425,8 @@ PYBIND11_PLUGIN(NAME) {
     depth_frame.def(py::init<rs2::frame>())
                .def("get_distance", &rs2::depth_frame::get_distance, "x"_a, "y"_a);
 
-    py::class_<rs2::frameset> frameset(m, "frameset");
-    frameset.def(py::init<>())
-            .def(py::init<rs2::composite_frame>())
-            .def("size", &rs2::frameset::size)
-            .def("get", &rs2::frameset::get, "s"_a)
-            .def("get_depth_frame", &rs2::frameset::get_depth_frame)
-            .def("get_color_frame", &rs2::frameset::get_color_frame)
-            .def("__getitem__", &rs2::frameset::operator[])
-            .def("at", &rs2::frameset::at)
-            .def("__iter__", [](rs2::frameset& self)
-                 {
-                     return py::make_iterator(self.begin(), self.end());
-                 }, py::keep_alive<0, 1>());
+
+
 
     /* rs2_processing.hpp */
     // Not binding frame_processor_callback, templated
@@ -562,7 +559,7 @@ PYBIND11_PLUGIN(NAME) {
 
     py::class_<rs2::sensor> sensor(m, "sensor");
     sensor.def("open", (void (rs2::sensor::*)(const rs2::stream_profile&) const) &rs2::sensor::open,
-               "Open subdevice for exclusive access, by committing to a configuration", "profile"_a)
+               "Open subdevice for exclusive access, by commiting to a configuration", "profile"_a)
           .def("supports", (bool (rs2::sensor::*)(rs2_camera_info) const) &rs2::device::supports,
                "Check if speific camera info is supported.", "info")
           .def("get_info", &rs2::sensor::get_info, "Retrieve camera specific information, "
@@ -611,7 +608,6 @@ PYBIND11_PLUGIN(NAME) {
     /* rs2_pipeline.hpp */
     py::class_<rs2::pipeline> pipeline(m, "pipeline");
     pipeline.def(py::init<rs2::context>(), "ctx"_a = rs2::context())
-            .def(py::init<rs2::device>(), "dev"_a)
             .def("get_device", &rs2::pipeline::get_device)
             .def("start", (void (rs2::pipeline::*)()const) &rs2::pipeline::start)
             .def("start", [](rs2::pipeline& self, std::function<void(rs2::frame)>& callback)
@@ -623,7 +619,14 @@ PYBIND11_PLUGIN(NAME) {
                  "width"_a, "height"_a, "format"_a, "framerate"_a)
             .def("disable_stream", &rs2::pipeline::disable_stream, "stream"_a)
             .def("disable_all", &rs2::pipeline::disable_all)
-            .def("wait_for_frames", &rs2::pipeline::wait_for_frames, "timeout_ms"_a = 5000);
+            .def("wait_for_frames", &rs2::pipeline::wait_for_frames, "timeout_ms"_a = 5000)
+            .def("poll_for_frames", &rs2::pipeline::poll_for_frames, "frameset*"_a)
+            .def("enable_device",  &rs2::pipeline::enable_device,  "std::string"_a)
+            .def("get_active_streams", (rs2::stream_profile (rs2::pipeline::*)(const rs2_stream, const int) const)
+                 &rs2::pipeline::get_active_streams, "stream"_a, "index"_a = 0)
+            .def("get_active_streams", (std::vector<rs2::stream_profile> (rs2::pipeline::*)() const)
+                 &rs2::pipeline::get_active_streams)
+            .def("open", &rs2::pipeline::open);
 
     /* rs2.hpp */
     m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);

@@ -668,7 +668,7 @@ void rs2_stop(const rs2_sensor* sensor, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor)
 
-int rs2_supports_frame_metadata(const rs2_frame* frame, rs2_frame_metadata frame_metadata, rs2_error** error) try
+int rs2_supports_frame_metadata(const rs2_frame* frame, rs2_frame_metadata_value frame_metadata, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(frame);
     VALIDATE_ENUM(frame_metadata);
@@ -676,7 +676,7 @@ int rs2_supports_frame_metadata(const rs2_frame* frame, rs2_frame_metadata frame
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame, frame_metadata)
 
-rs2_metadata_t rs2_get_frame_metadata(const rs2_frame* frame, rs2_frame_metadata frame_metadata, rs2_error** error) try
+rs2_metadata_type rs2_get_frame_metadata(const rs2_frame* frame, rs2_frame_metadata_value frame_metadata, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(frame);
     VALIDATE_ENUM(frame_metadata);
@@ -1070,7 +1070,7 @@ const char* rs2_distortion_to_string(rs2_distortion distortion) { return libreal
 const char* rs2_option_to_string(rs2_option option) { return librealsense::get_string(option); }
 const char* rs2_camera_info_to_string(rs2_camera_info info) { return librealsense::get_string(info); }
 
-const char* rs2_frame_metadata_to_string(rs2_frame_metadata metadata) { return librealsense::get_string(metadata); }
+const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata) { return librealsense::get_string(metadata); }
 const char* rs2_timestamp_domain_to_string(rs2_timestamp_domain info){ return librealsense::get_string(info); }
 
 const char* rs2_notification_category_to_string(rs2_notification_category category) { return librealsense::get_string(category); }
@@ -1347,16 +1347,6 @@ rs2_pipeline* rs2_create_pipeline(rs2_context* ctx, rs2_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx)
 
-rs2_pipeline* rs2_create_pipeline_with_device(rs2_context* ctx, const rs2_device* dev, rs2_error ** error) try
-{
-    VALIDATE_NOT_NULL(ctx);
-
-    auto pipe = std::make_shared<librealsense::pipeline>(ctx->ctx, dev->device);
-
-    return new rs2_pipeline{ pipe };
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, dev)
-
 rs2_device* rs2_pipeline_get_device(rs2_context* ctx, rs2_pipeline* pipe, rs2_error ** error)try
 {
     VALIDATE_NOT_NULL(pipe);
@@ -1378,6 +1368,14 @@ void rs2_start_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
     VALIDATE_NOT_NULL(pipe);
 
     pipe->pipe->start();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
+
+void rs2_open_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+
+    pipe->pipe->open();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
@@ -1406,7 +1404,7 @@ void rs2_stop_pipeline(rs2_pipeline* pipe, rs2_error ** error)
     pipe->pipe->stop();
 }
 
-void rs2_enable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, int index, int width, int height, rs2_format format, int framerate, rs2_error ** error) try
+void rs2_enable_pipeline_stream(rs2_pipeline* pipe, rs2_stream stream, int index, int width, int height, rs2_format format, int framerate, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
 
@@ -1414,13 +1412,13 @@ void rs2_enable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, int index
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
-int rs2_can_enable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, int index, int width, int height, rs2_format format, int framerate, rs2_error ** error)try
+void rs2_enable_pipeline_device(rs2_pipeline* pipe, const char* serial, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
 
-    return pipe->pipe->can_enable(stream, index, width, height, format, framerate);
+    pipe->pipe->enable(serial);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, pipe)
+HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
 void rs2_disable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, rs2_error ** error) try
 {
@@ -1466,19 +1464,10 @@ int rs2_pipeline_poll_for_frames(rs2_pipeline * pipe, rs2_frame** output_frame, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, pipe, output_frame)
 
-int rs2_pipeline_get_extrinsics(rs2_pipeline * pipe, const rs2_stream_profile* from, const rs2_stream_profile* to, rs2_extrinsics* extrinsics, rs2_error ** error) try
+rs2_stream_profile_list* rs2_pipeline_get_active_streams(rs2_pipeline * pipe, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(pipe);
-    VALIDATE_NOT_NULL(extrinsics);
-
-    return pipe->pipe->get_extrinsics(*from->profile, *to->profile, extrinsics) ? 1 : 0;
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, pipe, extrinsics)
-
-rs2_stream_profile_list* rs2_pipeline_get_selection(rs2_pipeline * pipe, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(pipe);
-    return new rs2_stream_profile_list{ pipe->pipe->get_selection() };
+    return new rs2_stream_profile_list{ pipe->pipe->get_active_streams() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)
 
@@ -1495,14 +1484,6 @@ const rs2_stream_profile* rs2_pipeline_get_stream_type_selection(const rs2_strea
     throw librealsense::invalid_value_exception(librealsense::to_string() << "stream " << stream << " is not contained in list!");
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
-
-
-rs2_context* rs2_pipeline_get_context(rs2_pipeline * pipe, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(pipe);
-    return new rs2_context{ pipe->pipe->get_context() };
-}
-NOEXCEPT_RETURN(nullptr, pipe)
 
 void rs2_delete_pipeline(rs2_pipeline* pipe) try
 {

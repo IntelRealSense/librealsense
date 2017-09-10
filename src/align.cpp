@@ -364,7 +364,7 @@ namespace librealsense
                 get_source().frame_ready(std::move(res));
             };
 
-            if (auto composite = f.as<rs2::composite_frame>())
+            if (auto composite = f.as<rs2::frameset>())
             {
                 auto depth = composite.first_or_default(RS2_STREAM_DEPTH);
                 if (depth)
@@ -637,7 +637,7 @@ namespace librealsense
                 //source.frame_ready(other);
             };
 
-            if (auto composite = f.as<rs2::composite_frame>())
+            if (auto composite = f.as<rs2::frameset>())
             {
                 auto depth = composite.first_or_default(RS2_STREAM_DEPTH);
                 auto other = composite.first_or_default(_other_stream_type);
