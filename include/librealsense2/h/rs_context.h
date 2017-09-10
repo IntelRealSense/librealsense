@@ -1,9 +1,8 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-/** \file rs2_context.h
-* \brief
-* Exposes RealSense context functionality for C compilers
+/** \file rs_context.h
+* \brief Exposes RealSense context functionality for C compilers
 */
 
 
