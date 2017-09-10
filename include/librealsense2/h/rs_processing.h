@@ -109,7 +109,7 @@ int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_err
 * \param[in] frame frame handle to enqueue (this operation passed ownership to the queue)
 * \param[in] queue the frame queue data structure
 */
-void rs2_enqueue_frame(const rs2_frame* frame, void* queue);
+void rs2_enqueue_frame(rs2_frame* frame, void* queue);
 
 /**
 * Creates Align processing block. 

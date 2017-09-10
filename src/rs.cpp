@@ -615,6 +615,16 @@ void rs2_start(const rs2_sensor* sensor, rs2_frame_callback_ptr on_frame, void* 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, on_frame, user)
 
+void rs2_start_queue(const rs2_sensor* sensor, rs2_frame_queue* queue, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(queue);
+    librealsense::frame_callback_ptr callback(
+        new librealsense::frame_callback(rs2_enqueue_frame, queue));
+    sensor->sensor->start(move(callback));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, queue)
+
 void rs2_set_notifications_callback(const rs2_sensor* sensor, rs2_notification_callback_ptr on_notification, void* user, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(sensor);
@@ -874,7 +884,7 @@ int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, queue, output_frame)
 
-void rs2_enqueue_frame(const rs2_frame* frame, void* queue) try
+void rs2_enqueue_frame(rs2_frame* frame, void* queue) try
 {
     VALIDATE_NOT_NULL(frame);
     VALIDATE_NOT_NULL(queue);

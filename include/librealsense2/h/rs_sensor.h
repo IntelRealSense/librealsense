@@ -214,6 +214,15 @@ void rs2_start(const rs2_sensor* sensor, rs2_frame_callback_ptr on_frame, void* 
 void rs2_start_cpp(const rs2_sensor* sensor, rs2_frame_callback* callback, rs2_error** error);
 
 /**
+* start streaming from specified configured sensor of specific stream to frame queue
+* \param[in] sensor  RealSense Sensor
+* \param[in] stream  specific stream type to start
+* \param[in] queue   frame-queue to store new frames into
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_start_queue(const rs2_sensor* sensor, rs2_frame_queue* queue, rs2_error** error);
+
+/**
 * stops streaming from specified configured device
 * \param[in] sensor  RealSense sensor
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
