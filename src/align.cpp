@@ -161,6 +161,12 @@ namespace librealsense
         vf->set_sensor(original->get_sensor());
         res->set_stream(stream);
 
+        if (frame_type == RS2_EXTENSION_DEPTH_FRAME)
+        {
+            original->acquire();
+            (dynamic_cast<depth_frame*>(res))->set_original(original);
+        }
+
         return res;
     }
 
@@ -317,8 +323,8 @@ namespace librealsense
                 auto pframe = (points*)(res.frame);
 
                 auto depth_data = (const uint16_t*)depth.get_data();
-                auto original_depth = ((depth_frame*)depth.get())->get_original_depth();
-                if (original_depth) depth_data = (const uint16_t*)original_depth->get_frame_data();
+                //auto original_depth = ((depth_frame*)depth.get())->get_original_depth();
+                //if (original_depth) depth_data = (const uint16_t*)original_depth->get_frame_data();
 
                 auto points = depth_to_points((uint8_t*)pframe->get_vertices(), *_depth_intrinsics_ptr, depth_data, *_depth_units_ptr);
 

@@ -562,10 +562,7 @@ namespace rs2
             // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
             if (!texture)
                 glGenTextures(1, &texture);
-
-            if (frame.is<depth_frame>())
-                frame = colorize(frame);
-
+             
             int width = 0;
             int height = 0;
             int stride = 0;
@@ -590,7 +587,12 @@ namespace rs2
                 throw std::runtime_error("not a valid format");
             case RS2_FORMAT_Z16:
             case RS2_FORMAT_DISPARITY16:
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+                if (frame.is<depth_frame>())
+                {
+                    data = colorize(frame).get_data();
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                }
+                else glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
                 break;
             case RS2_FORMAT_XYZ32F:
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);

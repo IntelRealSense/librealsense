@@ -247,7 +247,17 @@ namespace librealsense
 
         float get_units() const { return query_units(this->get_sensor()); }
 
-        const frame_interface* get_original_depth() const { return _original.frame; }
+        const frame_interface* get_original_depth() const
+        {
+            auto res = _original.frame;
+            auto df = dynamic_cast<depth_frame*>(res);
+            if (df)
+            {
+                auto prev = df->get_original_depth();
+                if (prev) return prev;
+            }
+            return res;
+        }
 
         void set_original(frame_holder h)
         {
