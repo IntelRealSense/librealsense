@@ -369,12 +369,12 @@ PYBIND11_PLUGIN(NAME) {
               dev.start(s, queue);
           }, "Start passing frames of a specific stream into user provided callback.", "stream"_a, "queue"_a)
           .def("stop", [](const rs2::device& dev){
-              // releases the python GIL while close is running to prevent callback deadlock
+              // releases the python GIL while stop is running to prevent callback deadlock
               py::gil_scoped_release release;
               dev.stop();
           }, "Stop streaming.")
           .def("stop", [](const rs2::device& dev, rs2_stream s){
-              // releases the python GIL while close is running to prevent callback deadlock
+              // releases the python GIL while stop is running to prevent callback deadlock
               py::gil_scoped_release release;
               dev.stop(s);
           }, "Stop streaming of a specific stream.")
