@@ -128,12 +128,45 @@ private:
 class window
 {
 public:
+    std::function<void(bool)>           on_left_mouse   = [](bool) {};
+    std::function<void(double, double)> on_mouse_scroll = [](double, double) {};
+    std::function<void(double, double)> on_mouse_move   = [](double, double) {};
+    std::function<void(int)>            on_key_release  = [](int) {};
+
     window(int width, int height, const char* title)
         : _width(width), _height(height)
     {
         glfwInit();
         win = glfwCreateWindow(width, height, title, nullptr, nullptr);
         glfwMakeContextCurrent(win);
+
+        glfwSetWindowUserPointer(win, this);
+        glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int mods)
+        {
+            auto s = (window*)glfwGetWindowUserPointer(win);
+            if (button == 0) s->on_left_mouse(action == GLFW_PRESS);
+        });
+
+        glfwSetScrollCallback(win, [](GLFWwindow * win, double xoffset, double yoffset)
+        {
+            auto s = (window*)glfwGetWindowUserPointer(win);
+            s->on_mouse_scroll(xoffset, yoffset);
+        });
+
+        glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y)
+        {
+            auto s = (window*)glfwGetWindowUserPointer(win);
+            s->on_mouse_move(x, y);
+        });
+
+        glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods)
+        {
+            auto s = (window*)glfwGetWindowUserPointer(win);
+            if (0 == action) // on key release
+            {
+                s->on_key_release(key);
+            }
+        });
     }
 
     float width() const { return float(_width); }
@@ -168,6 +201,7 @@ public:
     }
 
     operator GLFWwindow*() { return win; }
+
 private:
     GLFWwindow* win;
     int _width, _height;

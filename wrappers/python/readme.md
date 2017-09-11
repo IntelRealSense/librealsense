@@ -25,24 +25,43 @@
 
 ## Examples
 ```python
-import time
+# First import the library
 import pyrealsense2 as rs
 
-def callback(frame):
-    print "got frame #", frame.get_frame_number()
+try:
+    # Create a context object. This object owns the handles to all connected realsense devices
+    pipeline = rs.pipeline()
+    pipeline.start()
 
-ctx = rs.context()
-devs = ctx.query_devices()
-dev = devs[0]
+    while True:
+        # This call waits until a new coherent set of frames is available on a device
+        # Calls to get_frame_data(...) and get_frame_timestamp(...) on a device will return stable values until wait_for_frames(...) is called
+        frames = pipeline.wait_for_frames()
+        depth = frames.get_depth_frame()
+        if not depth: continue
 
-profile = rs.stream_profile(rs.stream.depth, 640, 480, 30, rs.format.z16)
-dev.open(profile)
-dev.start(callback)
-
-time.sleep(5) # Callback is running
-
-dev.stop()
-dev.close()
+        # Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and approximating the coverage of pixels within one meter
+        coverage = [0]*64
+        for y in xrange(480):
+            for x in xrange(640):
+                dist = depth.get_distance(x, y)
+                if 0 < dist and dist < 1:
+                    coverage[x/10] += 1
+            
+            if y%20 is 19:
+                line = ""
+                for c in coverage:
+                    line += " .:nhBXWW"[c/25]
+                coverage = [0]*64
+                print(line)
 ```
+A longer example can be found [here](./python-tutorial-1-depth.py)
 
-A longer example can be found [here](../examples/python-tutorial-1-depth.py)
+### NumPy Integration
+Librealsense frames support the buffer protocol. A numpy array can be constructed using this protocol with no data marshalling overhead:
+```python
+import numpy as np
+depth = frames.get_depth_frame()
+depth_data = depth.as_frame().get_data()
+np_image = np.asanyarray(depth_data)
+```

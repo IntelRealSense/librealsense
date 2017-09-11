@@ -40,9 +40,9 @@ rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error);
 */
 rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error);
 
-/** 
+/**
 * This method creates new custom processing block. This lets the users pass frames between module boundaries for processing
-* This is an infrastructure function aimed at middleware developers, and also used by provided blocks such as sync, colorizer, etc.. 
+* This is an infrastructure function aimed at middleware developers, and also used by provided blocks such as sync, colorizer, etc..
 * \param ctx        RealSense context to query global parameters such as time
 * \param proc       Processing function to be applied to every frame entering the block
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -110,6 +110,12 @@ int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_err
 * \param[in] queue the frame queue data structure
 */
 void rs2_enqueue_frame(const rs2_frame* frame, void* queue);
+
+/**
+* Creates Align processing block. 
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_align(rs2_context* ctx, rs2_stream align_to, rs2_error** error);
 
 #ifdef __cplusplus
 }

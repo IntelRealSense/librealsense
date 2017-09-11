@@ -118,6 +118,7 @@ typedef struct rs2_processing_block rs2_processing_block;
 typedef struct rs2_frame_processor_callback rs2_frame_processor_callback;
 typedef struct rs2_playback_status_changed_callback rs2_playback_status_changed_callback;
 typedef struct rs2_context rs2_context;
+typedef struct rs2_device_hub rs2_device_hub;
 typedef struct rs2_sensor_list rs2_sensor_list;
 typedef struct rs2_sensor rs2_sensor;
 typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;

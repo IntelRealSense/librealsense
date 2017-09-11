@@ -316,7 +316,7 @@ rs2_stream_profile* rs2_clone_stream_profile(const rs2_stream_profile* mode, rs2
 
 /**
 * Delete stream profile allocated by rs2_clone_stream_profile
-* Should not be called on stream profiles returned by the device 
+* Should not be called on stream profiles returned by the device
 * \param[in] mode        input stream profile
 */
 void rs2_delete_stream_profile(rs2_stream_profile* mode);
@@ -354,7 +354,7 @@ int rs2_get_stream_profile_size(const rs2_stream_profile* profile, rs2_error** e
 * \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return                non-zero if selected profile is recommended for the sensor
 */
-int rs2_is_stream_profile_recommended(const rs2_stream_profile* profile, rs2_error** error);
+int rs2_is_stream_profile_default(const rs2_stream_profile* profile, rs2_error** error);
 
 /**
 * get the number of supported stream profiles

@@ -26,7 +26,7 @@ namespace rs2
                 rs2_delete_context);
             error::handle(e);
         }
-
+       
         /**
         * create a static snapshot of all connected devices at the time of the call
         * \return            the list of devices connected devices at the time of the call
@@ -100,7 +100,7 @@ namespace rs2
         * \param[in] callback   devices changed callback
         */
         template<class T>
-        void set_devices_changed_callback(T callback) const
+        void set_devices_changed_callback(T callback)
         {
             rs2_error* e = nullptr;
             rs2_set_devices_changed_callback_cpp(_context.get(),
@@ -133,6 +133,17 @@ namespace rs2
             return pointcloud(processing_block{ block });
         }
 
+        align create_align(rs2_stream align_to) const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_processing_block> block(
+                rs2_create_align(_context.get(), align_to, &e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return align(processing_block{ block });
+        }
+
         /**
          * Creates a device from a RealSense file
          *
@@ -157,9 +168,66 @@ namespace rs2
             rs2_context_remove_device(_context.get(), file.c_str(), &e);
             rs2::error::handle(e);
         }
-    protected:
+
+protected:
         friend class pipeline;
+        friend class device_hub;
+
+        context(std::shared_ptr<rs2_context> ctx)
+            : _context(ctx)
+        {}
         std::shared_ptr<rs2_context> _context;
     };
+
+    /**
+    * device_hub class - encapsulate the handling of connect and disconnect events
+    */
+    class device_hub
+    {
+    public:
+        explicit device_hub(context ctx)
+            : _ctx(std::move(ctx))
+        {
+            rs2_error* e = nullptr;
+            _device_hub = std::shared_ptr<rs2_device_hub>(
+                rs2_create_device_hub(_ctx._context.get(), &e),
+                rs2_delete_device_hub);
+            error::handle(e);
+        }
+
+        /**
+        * If any device is connected return it, otherwise wait until next RealSense device connects.
+        * Calling this method multiple times will cycle through connected devices
+        */
+        device wait_for_device() const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_device> dev(
+                rs2_device_hub_wait_for_device(_ctx._context.get(), _device_hub.get(), &e),
+                rs2_delete_device);
+
+            error::handle(e);
+
+            return device(dev);
+          
+        }
+
+        /**
+        * Checks if device is still connected
+        */
+        bool is_connected(const device& dev) const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_device_hub_is_device_connected(_device_hub.get(), dev._dev.get(), &e);
+            error::handle(e);
+
+            return res > 0 ? true : false;
+            
+        }
+    private:
+        context _ctx;
+        std::shared_ptr<rs2_device_hub> _device_hub;
+    };
+
 }
 #endif // LIBREALSENSE_RS2_CONTEXT_HPP

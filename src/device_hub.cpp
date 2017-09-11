@@ -8,7 +8,7 @@
 
 namespace librealsense
 {
-    
+
     typedef rs2::devices_changed_callback<std::function<void(rs2::event_information& info)>> hub_devices_changed_callback;
 
     std::vector<std::shared_ptr<device_info>> filter_by_vid(std::vector<std::shared_ptr<device_info>> devices , int vid)
@@ -29,16 +29,16 @@ namespace librealsense
         return result;
     }
 
-    device_hub::device_hub(context& ctx, int vid)
+    device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int vid)
         : _ctx(ctx), _vid(vid)
     {
-        _device_list = filter_by_vid(_ctx.query_devices(), _vid);
+        _device_list = filter_by_vid(_ctx->query_devices(), _vid);
 
         auto cb = new hub_devices_changed_callback([&](rs2::event_information& info)
                    {
                         std::unique_lock<std::mutex> lock(_mutex);
 
-                        _device_list = filter_by_vid(_ctx.query_devices(), _vid);
+                        _device_list = filter_by_vid(_ctx->query_devices(), _vid);
 
                         // Current device will point to the first available device
                         _camera_index = 0;
@@ -48,7 +48,7 @@ namespace librealsense
                         }
                     });
 
-        _ctx.set_devices_changed_callback({cb,  [](rs2_devices_changed_callback* p) { p->release(); }});
+        _ctx->set_devices_changed_callback({cb,  [](rs2_devices_changed_callback* p) { p->release(); }});
     }
 
     std::shared_ptr<device_interface> device_hub::create_device(std::string serial)
@@ -135,7 +135,7 @@ namespace librealsense
     * Checks if device is still connected
     */
     bool device_hub::is_connected(const device_interface& dev)
-    { 
+    {
         try
         {
             std::unique_lock<std::mutex> lock(_mutex);

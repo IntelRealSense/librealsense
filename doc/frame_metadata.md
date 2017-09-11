@@ -20,7 +20,7 @@ When a new device is recognized by `librealsense2` the internal resources for it
 Note that each metadata attribute requires an explicit parser, and querying an unregistered attribute will result in an appropriate exception raised by the library.  
 With the metadata handlers in place, the inbound frames for the specific endpoint can be queried for the requested attributes.  
 
-The metadata registration flow is summarized in the following diagram*:    
+The metadata registration flow is summarized in the following diagram*:  
 >**Note** the diagrams present the high-level design. The actual implementation may differ.  
 
 ![register for metadata](./metadata/metadata_registration_flow.bmp)
@@ -34,7 +34,6 @@ Metadata attributes propagation from the library to the user code is described i
 ![metadata acquisition](./metadata/metadata_acquisition_flow.bmp)
 
 ## Metadata Query API
-
 `librealsense2` introduces two functions into its public API to query metadata attributes:
 ```cpp
 /**
@@ -62,7 +61,7 @@ verifies that the hardware and software-applied preconditions for metadata parsi
 ```
 will invoke the metadata parser to read the actual value from metadata payload. In case the attribute's origin is other than the payload, such as Auto-Exposure for Fisheye stream, then its value will be calculated internally by librealsense2.  
 
-# API Utilization
+# Librealsense2 API for Metadata
 The envisaged mode of querying metadata attribute is `check-then-query`
 ```cpp
   rs2_metadata_t val = 0;
@@ -91,31 +90,24 @@ AUTO_EXPOSURE|1
 
 ​![Demo Presenting metadata attributes](./metadata/metadata-cpp-config-ui.png)
 
-
-
 # Metadata Support for Intel® RealSense™ devices
 In order for `librealsense2` to get access for device-generated attributes the following system preconditions shall be met:
 - OS shall support metadata provision - for Linux the specific kernel patches shall be applied.  
 - Device firmware shall declare and implement metadata attributes payload.
 
 ## OS support
-Linux OS -  the standard Linux UVC driver does not provide metadata support.
-`librealsense2` package includes metadata patch for `uvcvideo` kernel object. The patches are intended to be deployed with Ubuntu 14 and Ubuntu 16.01 LTS with kernel version 4.4.0-xx., and are applied as part of Linux backend installation . See [Linux installation-guide](./installation.md) for more details.
+***Linux OS*** -  the standard Linux UVC driver does not provide metadata support.
+`librealsense2` package includes metadata patch for `uvcvideo` kernel object. The patches are intended to be deployed with Ubuntu 14, 16.01/02 LTS with kernel versions 4.4, 4.8 and 4.10, and are applied as part of Linux backend installation . See [Linux installation-guide](./installation.md) for more details.
 The patches were also successfully ported to Yocto-based distribution and made available for Yocto Reference Kit based on Poky 2.1.2 with kernel version 4.4.26.
 
-Windows OS - the metadata is enabled if following requirements are met (see [installation manual](./installation_windows.md) for details):
-- Windows10 RedStone1 or later.
-- WinSDK 10.0586 is installed
-- Dedicated registry keys are present for each camera device.
+***Windows OS*** - Metadata extraction is supported by Microsoft starting with Windows10. Check [Windows installation  guide](./installation_windows.md) for details.  
 
-**Note** Windows10 has a known bug with providing metadata for multi-pin device - the metadata is available for the first pin only. In case of RS4XX device, the metadata for the Depth stream will be provided ,but not for the Infrared1/2 streams.
 
-## Metadata attributes in RS4xx Devices
-Support for metadata attributes for Depth, Infrared and Fisheye streams is provided with firmware version 5.5.0 or later.  
+## Metadata attributes in RS400 Devices
 The device firmware implements a custom metadata payload compatible with [Microsoft Extensions for UVC ](https://docs.microsoft.com/en-us/windows-hardware/drivers/stream/uvc-extensions-1-5) spec, and emits metadata attributes in the frame payload header.
 
 The custom payload comprise of several data chunks ("C" structs) with multiple attributes each. The chunks are categorized as  `calibration/configuration/capture/status`.  
-The chunks are further arranged into sets. For instance, given attributes chunks named `a,b,c,d,e,f,g`, the possible sets could be `{a,b,c,d}`, `{a,f,g,d}`,`{d,e,f,g}`.  The design requires ,though, that the *essential frame attributes, such as Frame Number and Timestamp shall be included in all configured sets*, to allow a consistent track of the frames arrived.  
+During streaming the chunks are arranged into ordered sets. For instance, given attributes chunks named `a,b,c,d,e,f,g`, the possible sets could be `{a,b,c,d}`, `{a,f,g,d}`,`{d,e,f,g}`.  The design requires ,though, that the *essential frame attributes, such as Frame Number and Timestamp shall be included in all configured sets*, to allow a consistent track of the frames arrived.  
 
 During the regular operation course the firmware internal state machine decides which attributes set to generate for the current frame. For instance, the first frames will be dispatched with `configuration/calibration` payloads, while the rest will carry the `capture` attributes.  
 From the user's perspective it means that a properly registered metadata attribute may still not be available for some frames, as metadata generation is governed by firmware design.

@@ -82,6 +82,19 @@ void rs2_stop_pipeline(rs2_pipeline* pipe, rs2_error ** error);
 void rs2_enable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, int index, int width, int height, rs2_format format, int framerate, rs2_error ** error);
 
 /**
+* return if a configuration is supported
+* \param[in] stream    stream type
+* \param[in] index     stream index
+* \param[in] width     width
+* \param[in] height    height
+* \param[in] format    stream format
+* \param[in] framerate    stream framerate
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return if the configuration is supported
+*/
+int rs2_can_enable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, int index, int width, int height, rs2_format format, int framerate, rs2_error ** error);
+
+/**
 *  remove a configuration from the pipeline
 * \param[in] stream    stream type
 */
@@ -108,6 +121,64 @@ rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, unsigned int timeout
 * \return true if new frame was stored to output_frame
 */
 int rs2_pipeline_poll_for_frames(rs2_pipeline* pipe, rs2_frame** output_frame, rs2_error ** error);
+
+/**
+* return the extrinsics from origin stream profile to target stream profile
+* \param[in] pipe the pipeline
+* \param[in] from          origin stream profile
+* \param[in] to            target stream profile
+* \param[out] extrin       extrinsics from origin to target
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+int rs2_pipeline_get_extrinsics(rs2_pipeline * pipe, const rs2_stream_profile* from , const rs2_stream_profile* to, rs2_extrinsics* extrinsics, rs2_error ** error);
+
+/**
+* return the selected profiles of the pipeline
+* \param[in] pipe the pipeline
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return       list of stream profiles
+*/
+rs2_stream_profile_list* rs2_pipeline_get_selection(rs2_pipeline * pipe, rs2_error** error);
+
+/**
+* return the selected profile's count of the pipeline 
+* \param[in] list the selected profiles list of the pipeline
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return       list of stream profiles
+*/
+int rs2_pipeline_get_selection_count(const rs2_stream_profile_list* list, rs2_error** error);
+
+/**
+* return the specific profile from the selected profiles of the pipeline
+* \param[in] list the selected profiles list
+* \param[in] index the required stream index
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return       the request stream profile
+*/
+const rs2_stream_profile* rs2_pipeline_get_stream_selection(const rs2_stream_profile_list* list, int index, rs2_error** error);
+
+/**
+* Return the specific profile from the selected profiles of the pipeline
+* \param[in] list the selected profiles list
+* \param[in] stream the required stream
+* \param[in] stream the required stream index
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return       the request stream profile
+*/
+const rs2_stream_profile* rs2_pipeline_get_stream_type_selection(const rs2_stream_profile_list* list, rs2_stream stream, int index, rs2_error** error);
+
+/**
+* Retrieved the context used by the pipeline
+* \param[in] pipe the pipeline
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return the context used by the pipeline
+*/
+rs2_context* rs2_pipeline_get_context(rs2_pipeline * pipe, rs2_error** error);
+/**
+* delete stream profiles list
+* \param[in] list        the list of supported profiles returned by rs2_get_supported_profiles
+*/
+void rs2_pipeline_delete_selection(rs2_stream_profile_list* list);
 
 /**
 * delete pipeline

@@ -63,6 +63,7 @@ namespace librealsense
 
         stream_profiles init_stream_profiles() override
         {
+            context::extrinsics_lock lock(_owner->_fisheye_stream->get_context());
             auto results = hid_sensor::init_stream_profiles();
 
             for (auto p : results)
@@ -104,8 +105,9 @@ namespace librealsense
 
         stream_profiles init_stream_profiles() override
         {
-            auto results = uvc_sensor::init_stream_profiles();
+            context::extrinsics_lock lock(_owner->_fisheye_stream->get_context());
 
+            auto results = uvc_sensor::init_stream_profiles();
             for (auto p : results)
             {
                 // Register stream types
@@ -113,8 +115,6 @@ namespace librealsense
                     assign_stream(_owner->_fisheye_stream, p);
 
                 auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
-                if (video->get_width() == 640 && video->get_height() == 480)
-                    video->make_recommended();
 
                 if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_RAW8 && video->get_framerate() == 30)
                     video->make_default();

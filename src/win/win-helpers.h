@@ -2,6 +2,10 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include <string>
 #include <vector>
 

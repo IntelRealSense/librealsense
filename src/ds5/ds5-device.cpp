@@ -74,7 +74,7 @@ namespace librealsense
     class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_sensor
     {
     public:
-        explicit ds5_depth_sensor(ds5_device* owner, 
+        explicit ds5_depth_sensor(ds5_device* owner,
             std::shared_ptr<platform::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader)
 
@@ -95,6 +95,7 @@ namespace librealsense
         }
         stream_profiles init_stream_profiles() override
         {
+            context::extrinsics_lock lock(_owner->_depth_stream->get_context());
             auto results = uvc_sensor::init_stream_profiles();
 
             for (auto p : results)
@@ -188,7 +189,7 @@ namespace librealsense
                            const platform::backend_device_group& group)
         : device(ctx, group),
           _depth_stream(new stream(ctx, RS2_STREAM_DEPTH)),
-          _left_ir_stream(new stream(ctx, RS2_STREAM_INFRARED, 1)), 
+          _left_ir_stream(new stream(ctx, RS2_STREAM_INFRARED, 1)),
           _right_ir_stream(new stream(ctx, RS2_STREAM_INFRARED, 2)),
           _depth_device_idx(add_sensor(create_depth_device(ctx, group.uvc_devices)))
     {
@@ -213,7 +214,7 @@ namespace librealsense
 
         // Define Left-Right extrinsics calculation (lazy)
         _left_right_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
-        {            
+        {
             rs2_extrinsics ext = identity_matrix();
             auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
             ext.translation[0] = -0.001f * table->baseline;
@@ -388,11 +389,6 @@ namespace librealsense
 
     std::shared_ptr<matcher> ds5_device::create_matcher(const frame_holder& frame) const
     {
-        if(!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
-        {
-            return device::create_matcher(frame);
-        }
-
         std::vector<std::shared_ptr<matcher>> matchers;
 
         std::set<rs2_stream> streams = { RS2_STREAM_DEPTH, RS2_STREAM_INFRARED };
@@ -402,7 +398,13 @@ namespace librealsense
                 matchers.push_back(device::create_matcher(frame));
         }
 
-        return std::make_shared<frame_number_composite_matcher>(matchers);
-
+        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return std::make_shared<frame_number_composite_matcher>(matchers);
+        }
+        else
+        {
+            return std::make_shared<timestamp_composite_matcher>(matchers);
+        }
     }
 }

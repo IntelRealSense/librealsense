@@ -5,7 +5,6 @@
 #include <iostream>
 #include <iomanip>
 #include <map>
-#include <librealsense2/rsutil.hpp>
 
 #include "tclap/CmdLine.h"
 
@@ -164,7 +163,7 @@ int main(int argc, char** argv) try
                 cout << setw(55) << " Supported modes:" << setw(10) << "stream" << setw(10)
                      << " resolution" << setw(6) << " fps" << setw(10) << " format" << endl;
                 // Show which streams are supported by this device
-                for (auto&& profile : sensor.get_stream_profiles()) 
+                for (auto&& profile : sensor.get_stream_profiles())
                 {
                     if (auto video = profile.as<video_stream_profile>())
                     {

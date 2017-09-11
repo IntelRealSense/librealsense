@@ -9,10 +9,6 @@
 #ifndef LIBREALSENSE_TYPES_H
 #define LIBREALSENSE_TYPES_H
 
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-
 #include "../include/librealsense2/hpp/rs_types.hpp"
 
 #include <stdint.h>
@@ -325,7 +321,7 @@ namespace librealsense
                 if(str == get_string(v)) { res = v; return true; }   \
             }                                                        \
             return false;                                            \
-        }     
+        }
 
     RS2_ENUM_HELPERS(rs2_stream, STREAM)
     RS2_ENUM_HELPERS(rs2_format, FORMAT)
@@ -367,10 +363,10 @@ namespace librealsense
     inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return{ inv, inv * a.position * -1 }; }
     inline pose to_pose(const rs2_extrinsics& a)
     {
-        pose r;
+        pose r{};
         for (int i = 0; i < 3; i++) r.position[i] = a.translation[i];
-        for (int j = 0; j < 3; j++) 
-            for (int i = 0; i < 3; i++) 
+        for (int j = 0; j < 3; j++)
+            for (int i = 0; i < 3; i++)
                 r.orientation(i, j) = a.rotation[j * 3 + i];
         return r;
     }
@@ -378,17 +374,17 @@ namespace librealsense
     {
         rs2_extrinsics r;
         for (int i = 0; i < 3; i++) r.translation[i] = a.position[i];
-        for (int j = 0; j < 3; j++) 
-            for (int i = 0; i < 3; i++) 
+        for (int j = 0; j < 3; j++)
+            for (int i = 0; i < 3; i++)
                 r.rotation[j * 3 + i] = a.orientation(i, j);
         return r;
     }
-    inline rs2_extrinsics identity_matrix() { 
+    inline rs2_extrinsics identity_matrix() {
         rs2_extrinsics r;
         // Do it the silly way to avoid infite warnings about the dangers of memset
         for (int i = 0; i < 3; i++) r.translation[i] = 0.f;
-        for (int j = 0; j < 3; j++) 
-            for (int i = 0; i < 3; i++) 
+        for (int j = 0; j < 3; j++)
+            for (int i = 0; i < 3; i++)
                 r.rotation[j * 3 + i] = (i == j) ? 1.f : 0.f;
         return r;
     }
@@ -647,7 +643,7 @@ namespace librealsense
         arithmetic_wraparound() :
             last_input(std::numeric_limits<T>::lowest()), accumulated(0) {
             static_assert(
-                (std::is_arithmetic<T>::value) && 
+                (std::is_arithmetic<T>::value) &&
                 (std::is_arithmetic<S>::value) &&
                 (std::numeric_limits<T>::max() < std::numeric_limits<S>::max()) &&
                 (std::numeric_limits<T>::lowest() >= std::numeric_limits<S>::lowest())
@@ -1180,17 +1176,16 @@ namespace librealsense
             _backend(backend_ref),_active_object([this](dispatcher::cancellable_timer cancellable_timer)
         {
             polling(cancellable_timer);
-        }),
-        _devices_data(  _backend->query_uvc_devices(),
-                        _backend->query_usb_devices(),
-                        _backend->query_hid_devices())
+        }), _devices_data()
         {
         }
-       ~ polling_device_watcher()
+
+        ~polling_device_watcher()
         {
             stop();
         }
-        void  polling(dispatcher::cancellable_timer cancellable_timer)
+
+        void polling(dispatcher::cancellable_timer cancellable_timer)
         {
             if(cancellable_timer.try_sleep(100))
             {
@@ -1205,7 +1200,6 @@ namespace librealsense
                     {
                         _callback(_devices_data, curr);
                         _devices_data = curr;
-
                     }
                 }
             }
@@ -1215,6 +1209,10 @@ namespace librealsense
         {
             stop();
             _callback = std::move(callback);
+            _devices_data = {   _backend->query_uvc_devices(),
+                                _backend->query_usb_devices(),
+                                _backend->query_hid_devices() };
+
             _active_object.start();
         }
 
@@ -1399,6 +1397,11 @@ namespace std {
     };
 }
 
+template<class T>
+bool contains(const T& first, const T& second)
+{
+    return first == second;
+}
 
 template<class T>
 std::vector<std::shared_ptr<T>> subtract_sets(const std::vector<std::shared_ptr<T>>& first, const std::vector<std::shared_ptr<T>>& second)
@@ -1406,7 +1409,9 @@ std::vector<std::shared_ptr<T>> subtract_sets(const std::vector<std::shared_ptr<
     std::vector<std::shared_ptr<T>> results;
     std::for_each(first.begin(), first.end(), [&](std::shared_ptr<T> data)
     {
-        if (std::find_if(second.begin(), second.end(), [&](std::shared_ptr<T> new_dev) {return *new_dev == *data; }) == second.end())
+        if (std::find_if(second.begin(), second.end(), [&](std::shared_ptr<T> new_dev) {
+            return contains(data, new_dev);
+        }) == second.end())
         {
             results.push_back(data);
         }
@@ -1414,5 +1419,20 @@ std::vector<std::shared_ptr<T>> subtract_sets(const std::vector<std::shared_ptr<
     return results;
 }
 
+    enum res_type {
+        low_resolution,
+        medium_resolution,
+        high_resolution
+    };
+
+    inline res_type get_res_type(uint32_t width, uint32_t height)
+    {
+        if (width == 640)
+            return res_type::medium_resolution;
+        else if (width < 640)
+            return res_type::low_resolution;
+
+        return res_type::high_resolution;
+    }
 
 #endif

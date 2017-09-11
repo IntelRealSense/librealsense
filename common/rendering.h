@@ -269,12 +269,22 @@ namespace rs2
                 H *= scale;
             }
 
-            return{ x + (w - W) / 2, y + (h - H) / 2, W, H };
+            return{ x + floor(w - W) / 2, y + floor(h - H) / 2, W, H };
         }
 
         rect scale(float factor) const
         {
             return { x, y, w * factor, h * factor };
+        }
+
+        rect grow(int pixels) const
+        {
+            return { x - pixels, y - pixels, w + pixels*2, h + pixels*2 };
+        }
+
+        rect grow(int dx, int dy) const
+        {
+            return { x - dx, y - dy, w + dx*2, h + dy*2 };
         }
 
         rect shrink_by(float2 pixels) const
@@ -342,6 +352,13 @@ namespace rs2
             }
 
             return out_rect;
+        }
+
+        bool intersects(const rect& other) const
+        {
+            return other.contains({ x, y }) || other.contains({ x + w, y }) ||
+                other.contains({ x, y + h }) || other.contains({ x + w, y + h }) ||
+                contains({ other.x, other.y });
         }
     };
 
@@ -531,9 +548,9 @@ namespace rs2
         colorizer colorize;
 
     public:
-        rs2::frame get_last_frame() const { 
+        rs2::frame get_last_frame() const {
             last_queue.poll_for_frame(&last);
-            return last; 
+            return last;
         }
 
         texture_buffer() : last_queue(1), texture(), colorize() {}
@@ -567,8 +584,6 @@ namespace rs2
             glBindTexture(GL_TEXTURE_2D, texture);
             stride = stride == 0 ? width : stride;
             //glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
-            rs2:video_frame f(nullptr);
-            const uint8_t* ptr;
             switch (format)
             {
             case RS2_FORMAT_ANY:

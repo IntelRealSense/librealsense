@@ -63,12 +63,9 @@ namespace librealsense
         uint32_t get_framerate() const override;
         void set_framerate(uint32_t val) override;
 
-        bool is_recommended() const override;
-        void make_recommended() override;
-        
         bool is_default() const override;
         void make_default() override;
-        
+
         int get_unique_id() const override { return _uid; }
         void set_unique_id(int uid) override
         {
@@ -99,7 +96,6 @@ namespace librealsense
         rs2_stream _type = RS2_STREAM_ANY;
         rs2_format _format = RS2_FORMAT_ANY;
         uint32_t _framerate = 0;
-        bool _is_recommended = false;
         bool _is_default = false;
         rs2_stream_profile _c_wrapper;
         rs2_stream_profile* _c_ptr = nullptr;
@@ -109,7 +105,7 @@ namespace librealsense
     {
     public:
         explicit video_stream_profile(std::shared_ptr<context> ctx, platform::stream_profile sp)
-            : stream_profile_base(ctx, std::move(sp)), 
+            : stream_profile_base(ctx, std::move(sp)),
               _calc_intrinsics([]() -> rs2_intrinsics { throw not_implemented_exception("No intrinsics are available for this stream profile!"); }),
               _width(0), _height(0)
         {
@@ -117,11 +113,11 @@ namespace librealsense
 
         rs2_intrinsics get_intrinsics() const override { return _calc_intrinsics(); }
         void set_intrinsics(std::function<rs2_intrinsics()> calc) override { _calc_intrinsics = calc; }
-        
+
         uint32_t get_width() const override { return _width; }
         uint32_t get_height() const override { return _height; }
-        void set_dims(uint32_t width, uint32_t height) override 
-        { 
+        void set_dims(uint32_t width, uint32_t height) override
+        {
             _width = width;
             _height = height;
         }

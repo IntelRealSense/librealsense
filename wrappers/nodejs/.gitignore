@@ -1,0 +1,12 @@
+# Ignore files
+build
+doc/*
+node_modules/
+*.png
+*.csv
+
+# Uningore files
+!.eslintrc.json
+!doc/jsdoc-template
+!package-lock.json
+!package.json

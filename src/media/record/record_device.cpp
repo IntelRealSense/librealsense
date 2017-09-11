@@ -132,7 +132,7 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
     auto capture_time = get_capture_time();
     //TODO: remove usage of shared pointer when frame_holder is copyable
     auto frame_holder_ptr = std::make_shared<frame_holder>();
-    *frame_holder_ptr = std::move(frame);   
+    *frame_holder_ptr = std::move(frame);
     (*m_write_thread)->invoke([this, frame_holder_ptr, sensor_index, capture_time/*, data_size*/, on_error](dispatcher::cancellable_timer t) {
         if (m_is_recording == false)
         {
@@ -244,22 +244,22 @@ snapshot_collection librealsense::record_device::get_extensions_snapshots(T* ext
         switch (ext)
         {
             case RS2_EXTENSION_UNKNOWN         : break;
-//TODO: uncomment            case RS2_EXTENSION_DEBUG           : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_DEBUG          >::type>(extendable, snapshots); 
-            case RS2_EXTENSION_INFO            : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_INFO           >::type>(extendable, snapshots); 
-//TODO: uncomment            case RS2_EXTENSION_MOTION          : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_MOTION         >::type>(extendable, snapshots); 
-//TODO: uncomment            case RS2_EXTENSION_OPTIONS         : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_OPTIONS        >::type>(extendable, snapshots); 
-//TODO: uncomment            case RS2_EXTENSION_VIDEO           : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_VIDEO          >::type>(extendable, snapshots); 
-//TODO: uncomment            case RS2_EXTENSION_ROI             : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_ROI            >::type>(extendable, snapshots); 
-//TODO: uncomment            case RS2_EXTENSION_DEPTH_SENSOR    : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_DEPTH_SENSOR   >::type>(extendable, snapshots); 
+//TODO: uncomment            case RS2_EXTENSION_DEBUG           : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_DEBUG          >::type>(extendable, snapshots);
+            case RS2_EXTENSION_INFO            : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_INFO           >::type>(extendable, snapshots);
+//TODO: uncomment            case RS2_EXTENSION_MOTION          : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_MOTION         >::type>(extendable, snapshots);
+//TODO: uncomment            case RS2_EXTENSION_OPTIONS         : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_OPTIONS        >::type>(extendable, snapshots);
+//TODO: uncomment            case RS2_EXTENSION_VIDEO           : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_VIDEO          >::type>(extendable, snapshots);
+//TODO: uncomment            case RS2_EXTENSION_ROI             : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_ROI            >::type>(extendable, snapshots);
+//TODO: uncomment            case RS2_EXTENSION_DEPTH_SENSOR    : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_DEPTH_SENSOR   >::type>(extendable, snapshots);
             case RS2_EXTENSION_VIDEO_FRAME     : break;
             case RS2_EXTENSION_MOTION_FRAME    : break;
             case RS2_EXTENSION_COMPOSITE_FRAME : break;
             case RS2_EXTENSION_POINTS          : break;
-//TODO: uncomment            case RS2_EXTENSION_ADVANCED_MODE   : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_ADVANCED_MODE  >::type>(extendable, snapshots); 
+//TODO: uncomment            case RS2_EXTENSION_ADVANCED_MODE   : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_ADVANCED_MODE  >::type>(extendable, snapshots);
             case RS2_EXTENSION_RECORD          : break;
             case RS2_EXTENSION_PLAYBACK        : break;
             case RS2_EXTENSION_COUNT           : break;
-            default: 
+            default:
                 LOG_WARNING("Extensions type is unhandled: " << static_cast<int>(ext));
         }
     }

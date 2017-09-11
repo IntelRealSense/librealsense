@@ -558,8 +558,8 @@ namespace librealsense
 
         inline bool capture_valid() const
         {
-            return ((header.length > platform::uvc_header_size) && 
-                (payload.header.md_size == md_capture_timing_size) && 
+            return ((header.length > platform::uvc_header_size) &&
+                (payload.header.md_size == md_capture_timing_size) &&
                 (payload.header.md_type_id == md_type::META_DATA_INTEL_CAPTURE_TIMING_ID));
         }
     };

@@ -169,7 +169,7 @@ int writeEOS(roslz4_stream *str) {
 // If error, LZ4 return code
 int bufferToOutput(roslz4_stream *str) {
   stream_state *state = str->state;
-  uint32_t uncomp_size = state->buffer_offset;
+  int uncomp_size = state->buffer_offset;
   if (state->buffer_offset == 0) {
     return 0; // No data to flush
   } else if (str->output_left - 4 < uncomp_size) {
@@ -183,8 +183,8 @@ int bufferToOutput(roslz4_stream *str) {
   // Shrink output by 1 to detect if data is not compressible
   uint32_t comp_size = LZ4_compress_default(state->buffer,
                                             str->output_next + 4,
-                                            (int) state->buffer_offset,
-                                            (int) uncomp_size - 1);
+                                            state->buffer_offset,
+                                            uncomp_size - 1);
   uint32_t wrote;
   if (comp_size > 0) {
     DEBUG("bufferToOutput() Compressed to %i bytes\n", comp_size);
@@ -474,7 +474,7 @@ int decompressBlock(roslz4_stream *str) {
   }
 
   if (state->block_uncompressed) {
-    if (str->output_left >= state->block_size) {
+    if ((int)str->output_left >= state->block_size) {
       memcpy(str->output_next, state->buffer, state->block_size);
       int ret = XXH32_update(state->xxh32_state, str->output_next,
                              state->block_size);

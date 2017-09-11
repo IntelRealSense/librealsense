@@ -23,7 +23,7 @@ include_directories(rs-save-to-disk ../../common ../../third-party ../../third-p
 set_target_properties (rs-save-to-disk PROPERTIES
     FOLDER "Examples"
 )
-    
+
 install(
     TARGETS
 

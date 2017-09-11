@@ -54,7 +54,7 @@ namespace rs2
             return ss.str();
         }
 
-        bool is_recommended() const { return _recommended; }
+        bool is_default() const { return _default; }
         std::size_t size() const { return _size; }
 
         operator bool() const { return _profile != nullptr; }
@@ -73,6 +73,7 @@ namespace rs2
     protected:
         friend class sensor;
         friend class frame;
+        friend class pipeline;
 
         explicit stream_profile(const rs2_stream_profile* profile) : _profile(profile)
         {
@@ -80,7 +81,7 @@ namespace rs2
             rs2_get_stream_profile_data(_profile, &_type, &_format, &_index, &_uid, &_framerate, &e);
             error::handle(e);
 
-            _recommended = rs2_is_stream_profile_recommended(_profile, &e);
+            _default = !!(rs2_is_stream_profile_default(_profile, &e));
             error::handle(e);
 
             _size = rs2_get_stream_profile_size(_profile, &e);
@@ -96,7 +97,7 @@ namespace rs2
         rs2_format _format = RS2_FORMAT_ANY;
         rs2_stream _type = RS2_STREAM_ANY;
 
-        bool _recommended = false;
+        bool _default = false;
         size_t _size = 0;
     };
 
@@ -517,6 +518,16 @@ namespace rs2
         {
         }
     };
+
+    inline bool operator==(const sensor& lhs, const sensor& rhs)
+    {
+        if (!(lhs.supports(RS2_CAMERA_INFO_NAME) && lhs.supports(RS2_CAMERA_INFO_SERIAL_NUMBER)
+            && rhs.supports(RS2_CAMERA_INFO_NAME) && rhs.supports(RS2_CAMERA_INFO_SERIAL_NUMBER)))
+            return false;
+
+        return std::string(lhs.get_info(RS2_CAMERA_INFO_NAME)) == rhs.get_info(RS2_CAMERA_INFO_NAME)
+            && std::string(lhs.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == rhs.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+    }
 
     class roi_sensor : public sensor
     {

@@ -10,7 +10,7 @@
 #include <mutex>                    // std::mutex, std::lock_guard
 #include <cmath>                    // std::ceil
 
-const std::string no_cammera_message = "No camera connected, please connect 1 or more";
+const std::string no_camera_message = "No camera connected, please connect 1 or more";
 const std::string platform_camera_name = "Platform Camera";
 
 class device_container
@@ -170,7 +170,7 @@ int main(int argc, char * argv[]) try
         auto total_number_of_streams = connected_devices.stream_count();
         if (total_number_of_streams == 0)
         {
-            draw_text(std::max(0.f, (app.width() / 2) - no_cammera_message.length() * 3), app.height() / 2, no_cammera_message.c_str());
+            draw_text(std::max(0.f, (app.width() / 2) - no_camera_message.length() * 3), app.height() / 2, no_camera_message.c_str());
             continue;
         }
         if (connected_devices.device_count() == 1)

@@ -1471,27 +1471,34 @@ namespace librealsense
                             vector<uint8_t> frame_blob;
                             vector<uint8_t> metadata_blob;
 
-                            if (c_ptr->param3 == 0) // frame was not saved
+                            if (c_ptr)
                             {
-                                frame_blob = vector<uint8_t>(c_ptr->param4, 0);
-                            }
-                            else if (c_ptr->param3 == 1)// frame was saved
-                            {
-                                frame_blob = _rec->load_blob(c_ptr->param2);
+                                if (c_ptr->param3 == 0) // frame was not saved
+                                {
+                                    frame_blob = vector<uint8_t>(c_ptr->param4, 0);
+                                }
+                                else if (c_ptr->param3 == 1)// frame was saved
+                                {
+                                    frame_blob = _rec->load_blob(c_ptr->param2);
+                                }
+                                else
+                                {
+                                    frame_blob = _compression.decode(_rec->load_blob(c_ptr->param2));
+                                }
+
+                                metadata_blob = _rec->load_blob(c_ptr->param5);
+                                frame_object fo{ frame_blob.size(),
+                                    static_cast<uint8_t>(metadata_blob.size()), // Metadata is limited to 0xff bytes by design
+                                    frame_blob.data(),metadata_blob.data() };
+
+                                pair.second(p, fo, []() {});
+
+                                break;
                             }
                             else
                             {
-                                frame_blob = _compression.decode(_rec->load_blob(c_ptr->param2));
+                                LOG_WARNING("Could not Cycle frames!");
                             }
-
-                            metadata_blob = _rec->load_blob(c_ptr->param5);
-                            frame_object fo{ frame_blob.size(),
-                                        static_cast<uint8_t>(metadata_blob.size()), // Metadata is limited to 0xff bytes by design
-                                        frame_blob.data(),metadata_blob.data() };
-
-                            pair.second(p, fo, []() {});
-
-                            break;
                         }
                     }
                 }

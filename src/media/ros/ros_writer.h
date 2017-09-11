@@ -31,7 +31,7 @@ namespace librealsense
             m_bag.setCompression(rosbag::CompressionType::LZ4);
             write_file_version();
         }
-        
+
         void write_device_description(const librealsense::device_snapshot& device_description) override
         {
             for (auto&& device_extension_snapshot : device_description.get_device_extensions_snapshots().get_snapshots())
@@ -74,7 +74,7 @@ namespace librealsense
         {
             write_extension_snapshot(device_index, -1, timestamp, type, snapshot);
         }
-        
+
         void write_snapshot(const sensor_identifier& sensor_id, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot > snapshot) override
         {
             write_extension_snapshot(sensor_id.device_index, sensor_id.sensor_index, timestamp, type, snapshot);
@@ -109,9 +109,22 @@ namespace librealsense
             image.header.frame_id = TODO_CORRECT_ME;
             auto image_topic = ros_topic::image_data_topic(stream_id);
             write_message(image_topic, timestamp, image);
-            
-            write_image_metadata(stream_id, timestamp, vid_frame);
-            write_extrinsics(stream_id, frame);
+            try
+            {
+                write_image_metadata(stream_id, timestamp, vid_frame);
+            }
+            catch (std::exception const& e)
+            {
+                LOG_WARNING("Failed to write image metadata for " << stream_id.device_index << "/" << stream_id.sensor_index << "/" << stream_id.stream_type << "/" << stream_id.stream_index << " ts: " << timestamp.count() << ". Exception: " << e.what());
+            }
+            try
+            {
+                write_extrinsics(stream_id, frame);
+            }
+            catch (std::exception const& e)
+            {
+                LOG_WARNING("Failed to write stream extrinsics for " << stream_id.device_index << "/" << stream_id.sensor_index << "/" << stream_id.stream_type << "/" << stream_id.stream_index << " ts: " << timestamp.count() << ". Exception: " << e.what());
+            }
         }
 
         void write_extrinsics(const stream_identifier& stream_id, const frame_holder& frame)
@@ -160,7 +173,7 @@ namespace librealsense
         void write_streaming_info(nanoseconds timestamp, const sensor_identifier& sensor_id, std::shared_ptr<video_stream_profile_interface> profile)
         {
             realsense_msgs::StreamInfo stream_info_msg;
-            stream_info_msg.is_recommended = profile->is_recommended();
+            stream_info_msg.is_recommended = profile->is_default();
             convert(profile->get_format(), stream_info_msg.encoding);
             stream_info_msg.fps = profile->get_framerate();
             write_message(ros_topic::stream_info_topic({ sensor_id.device_index, sensor_id.sensor_index, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) }), timestamp, stream_info_msg);
@@ -185,13 +198,13 @@ namespace librealsense
             camera_info_msg.distortion_model = rs2_distortion_to_string(intrinsics.model);
             write_message(ros_topic::video_stream_info_topic({ sensor_id.device_index, sensor_id.sensor_index, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) }), timestamp, camera_info_msg);
         }
-        
+
         void write_extension_snapshot(uint32_t device_id, const nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
         {
             const auto ignored = 0u;
             write_extension_snapshot(device_id, ignored, timestamp, type, snapshot, true);
         }
-        
+
         void write_extension_snapshot(uint32_t device_id, uint32_t sensor_id, const nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
         {
             write_extension_snapshot(device_id, sensor_id, timestamp, type, snapshot, false);
@@ -248,7 +261,7 @@ namespace librealsense
                 if (info_snapshot->supports_info(camera_info))
                 {
                     diagnostic_msgs::KeyValue msg;
-                    msg.key = rs2_camera_info_to_string(camera_info); 
+                    msg.key = rs2_camera_info_to_string(camera_info);
                     msg.value = info_snapshot->get_info(camera_info);
                     write_message(topic, timestamp, msg);
                 }

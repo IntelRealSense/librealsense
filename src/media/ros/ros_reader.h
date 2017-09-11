@@ -18,15 +18,15 @@
 namespace librealsense
 {
     using namespace device_serializer;
-    
+
     class ros_reader: public device_serializer::reader
     {
     public:
         ros_reader(const std::string& file, const std::shared_ptr<context>& ctx) :
             m_total_duration(0),
             m_file_path(file),
-            m_frame_source(ctx->get_time_service()),
-            m_context(ctx)
+            m_context(ctx),
+            m_metadata_parser_map(create_metadata_parser_map())
         {
             reset(); //Note: calling a virtual function inside c'tor, safe while base function is pure virtual
             m_total_duration = get_file_duration();
@@ -50,7 +50,7 @@ namespace librealsense
                     frame = read_image_from_message(next_frame_msg);
                     return status::status_no_error;
                 }
-                
+
                 if (next_frame_msg.isType<sensor_msgs::Imu>())
                 {
                     //stream_id = ros_topic::get_stream_identifier(next_frame_msg.getTopic());
@@ -73,14 +73,14 @@ namespace librealsense
             auto seek_time_as_rostime = ros::Time(seek_time_as_secs.count());
 
             m_samples_view.reset(new rosbag::View(m_file, FalseQuery()));
-            //Using cached topics here and not querying them (before reseting) since a previous call to seek 
+            //Using cached topics here and not querying them (before reseting) since a previous call to seek
             // could have changed the view and some streams that should be streaming were dropped.
             //E.g:  Recording Depth+Color, stopping Depth, starting IR, stopping IR and Color. Play IR+Depth: will play only depth, then only IR, then we seek to a point only IR was streaming, and then to 0.
             for (auto topic : m_enabled_streams_topics)
             {
                 m_samples_view->addQuery(m_file, rosbag::TopicQuery(topic), seek_time_as_rostime);
             }
-            m_samples_itrator = m_samples_view->begin();           
+            m_samples_itrator = m_samples_view->begin();
         }
 
         nanoseconds query_duration() const override
@@ -114,11 +114,10 @@ namespace librealsense
             {
                 throw std::runtime_error("unsupported file version");
             }
-            
+
             m_samples_view = nullptr;
-            m_frame_source.reset();
-            m_metadata_parser_map = create_metadata_parser_map();
-            m_frame_source.init(m_metadata_parser_map);
+            m_frame_source = std::make_shared<frame_source>(m_context->get_time_service());
+            m_frame_source->init(m_metadata_parser_map);
             m_device_description = read_device_description();
         }
 
@@ -264,7 +263,7 @@ namespace librealsense
                 }
             }
             additional_data.metadata_size = total_md_size;
-            frame_interface* frame = m_frame_source.alloc_frame((stream_id.stream_type == RS2_STREAM_DEPTH) ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME,
+            frame_interface* frame = m_frame_source->alloc_frame((stream_id.stream_type == RS2_STREAM_DEPTH) ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME,
                                                                 msg->data.size(), additional_data, true);
             if (frame == nullptr)
             {
@@ -274,7 +273,7 @@ namespace librealsense
             video_frame->assign(msg->width, msg->height, msg->step, msg->step / msg->width * 8);
             rs2_format stream_format;
             convert(msg->encoding, stream_format);
-            //attaching a temp stream to the frame. Playback sensor should assign the real stream 
+            //attaching a temp stream to the frame. Playback sensor should assign the real stream
             frame->set_stream(std::make_shared<video_stream_profile>(m_context, platform::stream_profile{}));
             frame->get_stream()->set_format(stream_format);
             frame->get_stream()->set_stream_index(stream_id.stream_index);
@@ -356,7 +355,7 @@ namespace librealsense
                 }
                 sensor_descriptions.emplace_back(sensor_index, sensor_extensions, sensor_options, streams_snapshots);
             }
-            
+
             return device_snapshot(device_extensions, sensor_descriptions, extrinsics_map);
         }
 
@@ -415,7 +414,7 @@ namespace librealsense
                 {
                     continue;
                 }
-                
+
                 auto stream_info_msg = infos_view.instantiate<realsense_msgs::StreamInfo>();
                 if (stream_info_msg == nullptr)
                 {
@@ -471,7 +470,7 @@ namespace librealsense
                 {
                     throw io_exception(to_string() << "Every StreamInfo is expected to have a complementary video/imu message, but none was found");
                 }
-                
+
             }
             return streams;
         }
@@ -512,7 +511,7 @@ namespace librealsense
         device_snapshot                         m_device_description;
         nanoseconds                             m_total_duration;
         std::string                             m_file_path;
-        librealsense::frame_source              m_frame_source;
+        std::shared_ptr<frame_source>           m_frame_source;
         rosbag::Bag                             m_file;
         std::unique_ptr<rosbag::View>           m_samples_view;
         rosbag::View::iterator                  m_samples_itrator;

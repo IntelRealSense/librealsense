@@ -30,7 +30,7 @@ namespace librealsense
             if (!_is_locked) return;
             _mutex.unlock();
             _is_locked = false;
-            
+
         }
 
         ~sync_lock()
@@ -38,13 +38,13 @@ namespace librealsense
             if (_is_locked)
             {
                 _mutex.unlock();
-                
+
             }
         }
-        
+
     private:
         bool _is_locked = true;
-        
+
         std::mutex& _mutex;
     };
     //sync_lock::ref = 0;
@@ -115,7 +115,7 @@ namespace librealsense
         std::map<matcher*, single_consumer_queue<frame_holder>> _frames_queue;
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;
         std::map<matcher*, double> _next_expected;
-
+        std::map<matcher*, rs2_timestamp_domain> _next_expected_domain;
     };
 
     class frame_number_composite_matcher : public composite_matcher

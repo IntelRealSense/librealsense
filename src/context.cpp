@@ -38,6 +38,37 @@ constexpr std::array<char const, N1+N2-1> concat(char const (&a1)[N1], char cons
 // The string is used to retrieve the version embedded into .so file on Linux
 constexpr auto rs2_api_version = concat("VERSION: ",RS2_API_VERSION_STR);
 
+template<>
+bool contains(const std::shared_ptr<librealsense::device_info>& first,
+              const std::shared_ptr<librealsense::device_info>& second)
+{
+    auto first_data = first->get_device_data();
+    auto second_data = second->get_device_data();
+
+    for (auto&& uvc : first_data.uvc_devices)
+    {
+        if (std::find(second_data.uvc_devices.begin(),
+            second_data.uvc_devices.end(), uvc) ==
+            second_data.uvc_devices.end())
+            return false;
+    }
+    for (auto&& usb : first_data.usb_devices)
+    {
+        if (std::find(second_data.usb_devices.begin(),
+            second_data.usb_devices.end(), usb) ==
+            second_data.usb_devices.end())
+            return false;
+    }
+    for (auto&& hid : first_data.hid_devices)
+    {
+        if (std::find(second_data.hid_devices.begin(),
+            second_data.hid_devices.end(), hid) ==
+            second_data.hid_devices.end())
+            return false;
+    }
+    return true;
+}
+
 namespace librealsense
 {
     context::context(backend_type type,
@@ -47,6 +78,7 @@ namespace librealsense
         : _devices_changed_callback(nullptr , [](rs2_devices_changed_callback*){})
     {
         _stream_id = 0;
+        _locks_count = 0;
 
         LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
 
@@ -75,7 +107,7 @@ namespace librealsense
        });
     }
 
-    
+
     class recovery_info : public device_info
     {
     public:
@@ -167,6 +199,7 @@ namespace librealsense
         {
             auto results = uvc_sensor::init_stream_profiles();
 
+            context::extrinsics_lock lock(_default_stream->get_context());
             for (auto p : results)
             {
                 // Register stream types
@@ -325,7 +358,7 @@ namespace librealsense
                                     platform::backend_device_group curr,
                                     const std::map<std::string, std::shared_ptr<device_info>>& old_playback_devices,
                                     const std::map<std::string, std::shared_ptr<device_info>>& new_playback_devices)
-  {
+    {
         auto old_list = create_devices(old, old_playback_devices);
         auto new_list = create_devices(curr, new_playback_devices);
 
@@ -440,6 +473,8 @@ namespace librealsense
 
     void context::cleanup_extrinsics()
     {
+        if (_locks_count.load()) return;
+
         auto counter = 0;
         auto dead_counter = 0;
         for (auto&& kvp : _streams)

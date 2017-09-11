@@ -2,7 +2,6 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp>
-#include <librealsense2/rsutil.hpp>
 #include <iostream>
 #include <fstream>
 
@@ -162,7 +161,7 @@ int main(int argc, char** argv)
     log_to_file(RS2_LOG_SEVERITY_WARN, "librealsense.log");
     // Obtain a list of devices currently present on the system
     context ctx;
-    util::device_hub hub(ctx);
+    device_hub hub(ctx);
 
     auto xml_full_file_path = xml_arg.getValue();
     map<string, xml_parser_function> format_type_to_lambda;

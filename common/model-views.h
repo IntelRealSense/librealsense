@@ -50,11 +50,11 @@ static const ImVec4 scrollbar_bg = from_rgba(14, 17, 20, 255);
 static const ImVec4 scrollbar_grab = from_rgba(54, 66, 67, 255);
 static const ImVec4 grey{ 0.5f,0.5f,0.5f,1.f };
 static const ImVec4 dark_grey = from_rgba(30, 30, 30, 255);
-static const ImVec4 sensor_header_light_blue = from_rgba(0x3e, 0x4d, 0x59, 0xff);
-static const ImVec4 sensor_bg = from_rgba(0x1b, 0x21, 0x25, 0xff);
+static const ImVec4 sensor_header_light_blue = from_rgba(80, 99, 115, 0xff);
+static const ImVec4 sensor_bg = from_rgba(36, 44, 51, 0xff);
 static const ImVec4 redish = from_rgba(255, 46, 54, 255);
-static const ImVec4 button_color = from_rgba(0x2d, 0x37, 0x40, 0xff);
-static const ImVec4 header_window_bg = from_rgba(0x1b, 0x21, 0x25, 0xff);
+static const ImVec4 button_color = from_rgba(62, 77, 89, 0xff);
+static const ImVec4 header_window_bg = from_rgba(36, 44, 54, 0xff);
 static const ImVec4 header_color = from_rgba(62, 77, 89, 255);
 static const ImVec4 title_color = from_rgba(27, 33, 38, 255);
 static const ImVec4 device_info_color = from_rgba(33, 40, 46, 255);
@@ -77,7 +77,7 @@ namespace rs2
            const std::pair<T, std::string>& rhs) {
             return lhs.first < rhs.first;
         });
-        
+
         for (size_t i = 0; i < vec.size(); i++)
         {
             vec[i] = pairs[i].first;
@@ -171,7 +171,7 @@ namespace rs2
         bool draw_option(rs2_option opt, bool update_read_only_options,
                          std::string& error_message, notifications_model& model);
 
-       
+
         bool is_paused() const;
         void pause();
         void resume();
@@ -243,17 +243,19 @@ namespace rs2
     inline bool ends_with(const std::string& s, const std::string& suffix)
     {
         auto i = s.rbegin(), j = suffix.rbegin();
-        for (; i != s.rend() && j != suffix.rend() && *i == *j; 
+        for (; i != s.rend() && j != suffix.rend() && *i == *j;
             i++, j++);
         return j == suffix.rend();
     }
+
+    void outline_rect(const rect& r);
+    void draw_rect(const rect& r);
 
     class stream_model
     {
     public:
         stream_model();
         void upload_frame(frame&& f);
-        void outline_rect(const rect& r);
         float get_stream_alpha();
         bool is_stream_visible();
         void update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message);
@@ -263,7 +265,7 @@ namespace rs2
 
         void show_stream_footer(rect stream_rect, mouse_info& mouse);
         void show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer);
-        
+
         rect layout;
         std::unique_ptr<texture_buffer> texture;
         float2 size;
@@ -288,7 +290,7 @@ namespace rs2
         rect _normalized_zoom{0, 0, 1, 1};
         int color_map_idx = 1;
         bool show_stream_details = false;
-        
+
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);
@@ -299,17 +301,17 @@ namespace rs2
     {
     public:
         void reset();
-        explicit device_model(device& dev, std::string& error_message);
+        explicit device_model(device& dev, std::string& error_message, viewer_model& viewer);
         void draw_device_details(device& dev, context& ctx);
         void start_recording(const std::string& path, std::string& error_message);
         void stop_recording();
         void pause_record();
         void resume_record();
-        int draw_playback_panel(ImFont* font);
+        int draw_playback_panel(ImFont* font, viewer_model& view);
         void draw_advanced_mode_tab(device& dev, std::vector<std::string>& restarting_info);
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
-        
+
         bool metadata_supported = false;
         bool get_curr_advanced_controls = true;
         device dev;
@@ -317,13 +319,18 @@ namespace rs2
         bool is_recording = false;
         int seek_pos = 0;
         int playback_speed_index = 2;
+        bool _playback_repeat = true;
+        bool _should_replay = false;
         bool show_device_info = false;
 
         std::vector<std::pair<std::string, std::string>> infos;
     private:
         int draw_seek_bar();
-        int draw_playback_controls(ImFont* font);
+        int draw_playback_controls(ImFont* font, viewer_model& view);
         advanced_mode_control amc;
+        std::string pretty_time(std::chrono::nanoseconds duration);
+        
+        void play_defaults(viewer_model& view);
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
@@ -369,11 +376,11 @@ namespace rs2
         void add_notification(const notification_data& n);
         void draw(ImFont* font, int w, int h);
 
-        std::string get_log() 
+        std::string get_log()
         {
             std::string result;
             std::lock_guard<std::mutex> lock(m);
-            for (auto&& l : log) std::copy(l.begin(), l.end(), std::back_inserter(result)); 
+            for (auto&& l : log) std::copy(l.begin(), l.end(), std::back_inserter(result));
             return result;
         }
 
@@ -400,7 +407,7 @@ namespace rs2
     class async_pointclound_mapper
     {
     public:
-        async_pointclound_mapper(pointcloud pc) 
+        async_pointclound_mapper(pointcloud pc)
             : pc(pc), keep_calculating_pointcloud(true),
               resulting_3d_models(1), depth_frames_to_render(1),
               t([this]() {render_loop(); })
@@ -411,7 +418,7 @@ namespace rs2
 
         void update_texture(frame f) { pc.map_to(f); }
 
-        void stop() 
+        void stop()
         {
             if (keep_calculating_pointcloud)
             {
@@ -473,6 +480,7 @@ namespace rs2
         void show_no_device_overlay(ImFont* font, int min_x, int min_y);
 
         void show_paused_icon(ImFont* font, int x, int y, int id);
+        void show_recording_icon(ImFont* font_18, int x, int y, int id, float alpha_delta);
 
         void popup_if_error(ImFont* font, std::string& error_message);
 
@@ -497,6 +505,7 @@ namespace rs2
         bool is_output_collapsed = false;
     private:
         std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
+        void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, const ImVec4& color);
 
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;

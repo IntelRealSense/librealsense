@@ -15,7 +15,7 @@ namespace librealsense
 {
     class playback_sensor : public sensor_interface,
         public extendable_interface,
-        public info_container,    
+        public info_container,
         public options_container,
         public std::enable_shared_from_this<playback_sensor>
     {
@@ -48,7 +48,7 @@ namespace librealsense
 
         frame_callback_ptr m_user_callback;
         librealsense::notifications_callback_ptr m_user_notification_callback;
-		using stream_unique_id = int;
+        using stream_unique_id = int;
         std::map<stream_unique_id, std::shared_ptr<dispatcher>> m_dispatchers;
         std::atomic<bool> m_is_started;
         device_serializer::sensor_snapshot m_sensor_description;
