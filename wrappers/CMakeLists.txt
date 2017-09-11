@@ -25,3 +25,7 @@ set(DEPENDENCIES realsense2)
 if(BUILD_PYTHON_BINDINGS)
     add_subdirectory(python)
 endif()
+
+if(BUILD_NODEJS_BINDINGS)
+    add_subdirectory(nodejs)
+endif()

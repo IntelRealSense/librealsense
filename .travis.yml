@@ -7,42 +7,60 @@ sudo: required
 dist: xenial
 
 before_install:
+  # Install nodejs via nvm
+  - wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
+  - source ~/.bashrc
+  - nvm install 6 && nvm use 6
+  - npm install -g node-gyp
+
+  # Remove duplicated python 2.x, otherwise node-gyp will complain and stop
+  - pyenv uninstall -f 2.7.13
+
+  # Run linter
+  - git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+  - export OLDPATH=$PATH && export PATH=$PATH:$(pwd)/depot_tools;
+  - cd wrappers/nodejs/tools && npm install && cd ..
+  - node ./tools/linter.js
+  - export PATH=$OLDPATH && unset OLDPATH && cd ../../
+
+  # Get logical CPU number
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      export CPU_NUM=`grep -c ^processor /proc/cpuinfo`;
+    elif [ "$TRAVIS_OS_NAME" == "osx" ]; then
+      export CPU_NUM=`sysctl -n hw.logicalcpu_max`;
+    fi
+
+  # Install linux required packages
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
-      wget https://github.com/glfw/glfw/releases/download/3.1.1/glfw-3.1.1.zip;
       sudo apt-get update;
-      sudo apt-get-repository ppa:ubuntu-toolchain-r/test;
-      sudo apt-get update;
+      sudo apt-get install -qq build-essential xorg-dev libglu1-mesa-dev libglew-dev libglm-dev;
+      sudo apt-get install -qq libusb-1.0-0-dev;
+      sudo apt-get install -qq libgtk-3-dev;
+      sudo apt-get install -qq python python-dev;
       sudo apt-get install gcc-5 g++-5;
       sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5;
     fi
 
 install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      sudo apt-get install -qq build-essential xorg-dev libglu1-mesa-dev libglew-dev libglm-dev;
-      sudo apt-get install -qq cmake;
-      sudo apt-get install -qq libusb-1.0-0-dev ;
-      sudo apt-get install -qq libgtk-3-dev ;
-      sudo apt-get install python python-dev ;
+  # Install nodejs via nvm
+  - wget https://github.com/glfw/glfw/releases/download/3.1.1/glfw-3.1.1.zip
+  - unzip glfw-3.1.1.zip && cd glfw-3.1.1
+  - cmake -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON
+  - make -j $CPU_NUM
+  - sudo make install && cd ..
 
-      cmake --version;
-
-      unzip glfw-3.1.1.zip;
-      cd glfw-3.1.1;
-      sudo cmake -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON;
-      sudo make;
-      sudo make install;
-      cd ..;
-    fi
 script:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      uname -a;
-      mkdir build;
-      cd build;
-      cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_PYTHON_BINDINGS:BOOL=true;
-      make -J;
-      sudo make install;
-      export LRS_LOG_LEVEL="DEBUG";
-      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc4;
-      ./unit-tests/live-test from awgc4 -d yes;
-    fi
+  # Exit immediately if a command exits with a non-zero status
+  - set -e
+  # Build librealsense
+  - pyenv local 3.6.1
+  - mkdir build && cd build
+  - cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_PYTHON_BINDINGS:BOOL=true -DBUILD_NODEJS_BINDINGS:BOOL=true
+  - make -j $CPU_NUM
+  - sudo "PATH=$PATH" make install
+
+  # Run test
+  - export LRS_LOG_LEVEL="DEBUG"
+  - wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc4
+  - ./unit-tests/live-test from awgc4 -d yes

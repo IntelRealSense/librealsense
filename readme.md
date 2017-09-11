@@ -16,7 +16,7 @@ The library also offers synthetic streams (pointcloud, depth aligned to color an
 
 The library aims to provide an easy to use API and tools for computer vision professionals, game developers and other **Intel® RealSense™** technology enthusiasts.
 
-We provide a C, C++, and [Python](./wrappers/python) API.
+We provide a C, C++, [Python](./wrappers/python) and [Node.js](./wrappers/nodejs) API.
 Developer kits containing the necessary hardware to use this library are available for purchase at [click.intel.com](http://click.intel.com/realsense.html).
 
 ## Quick Start
