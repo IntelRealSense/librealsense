@@ -357,4 +357,49 @@ describe('Sensor tests', function() {
       });
     });
   });
+  it('Get depth scale', () => {
+    for (let i = 0; i < sensors.length; i++) {
+      if (sensors[i] instanceof rs2.DepthSensor) {
+        assert.equal(typeof sensors[i].depthScale === 'number', true);
+      }
+    }
+  });
+});
+
+describe('Align tests', function() {
+  let ctx;
+  let align;
+  let pipe;
+
+  before(() => {
+    ctx = new rs2.Context();
+    align = ctx.createAlign(rs2.stream.STREAM_COLOR);
+    pipe = new rs2.Pipeline();
+  });
+
+  after(() => {
+    pipe.stop();
+    pipe.destroy();
+    align.destroy();
+    ctx.destroy();
+    ctx = undefined;
+    align = undefined;
+    pipe = undefined;
+  });
+
+  it('WaitForFrames', () => {
+    pipe.start(align);
+    const frameset = align.waitForFrames();
+    if (!frameset) {
+      return;
+    }
+    const color = frameset.colorFrame;
+    const depth = frameset.depthFrame;
+    if (color) {
+      assert.equal(color instanceof rs2.VideoFrame, true);
+    }
+    if (depth) {
+      assert.equal(depth instanceof rs2.DepthFrame, true);
+    }
+  });
 });
