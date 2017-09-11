@@ -3,6 +3,8 @@
 # ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 
+project(librealsense2)
+
 macro(info msg)
     message(STATUS "Info: ${msg}")
 endmacro()
@@ -36,36 +38,6 @@ assign_version_property(MINOR)
 assign_version_property(PATCH)
 set(REALSENSE_VERSION_STRING ${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}.${REALSENSE_VERSION_PATCH})
 infoValue(REALSENSE_VERSION_STRING)
-
-# In a ROS Build Environment CMAKE_PREFIX_PATH is also an environment variable
-# Checking for this special case and ensuring it contains a ROS path
-IF(DEFINED ENV{CMAKE_PREFIX_PATH})
-  IF($ENV{CMAKE_PREFIX_PATH} MATCHES "/opt/ros")
-    set(ROS_BUILD_TYPE TRUE)
-  ENDIF()
-ENDIF()
-
-IF (${ROS_BUILD_TYPE})
-  message(STATUS "Building in a ROS environment")
-  project(librealsense2)
-
-  #################################
-  # catkin specific configuration #
-  #################################
-  find_package(catkin REQUIRED)
-  # The catkin_package macro generates cmake config files for your package
-  # Declare things to be passed to dependent projects
-  # INCLUDE_DIRS: uncomment this if you package contains header files
-  # LIBRARIES: libraries you create in this project that dependent projects also need
-  # CATKIN_DEPENDS: catkin_packages dependent projects also need
-  # DEPENDS: system dependencies of this project that dependent projects also need
-  catkin_package(
-    INCLUDE_DIRS include
-    LIBRARIES realsense2
-  )
-ELSE()
-  project(Realsense)
-ENDIF()
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -554,38 +526,30 @@ target_include_directories(realsense2 PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_S
                                             $<INSTALL_INTERFACE:include>
                                      PRIVATE ${LIBUSB1_INCLUDE_DIRS})
 
-if(${ROS_BUILD_TYPE})
-    install(TARGETS realsense2
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    )
+set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/realsense2")
 
-    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense2/
-        DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
-else()
-    set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/realsense2")
+install(TARGETS realsense2
+EXPORT realsense2Targets
+RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
 
-    install(TARGETS realsense2
-        EXPORT realsense2Targets
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    )
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense2 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense2 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
-    include(CMakePackageConfigHelpers)
-    configure_package_config_file(CMake/realsense2Config.cmake.in realsense2Config.cmake
-                                  INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+include(CMakePackageConfigHelpers)
+configure_package_config_file(CMake/realsense2Config.cmake.in realsense2Config.cmake
+                          INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
                                   INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
-                                  PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
+                          PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
 
-    install(EXPORT realsense2Targets FILE realsense2Targets.cmake NAMESPACE realsense2::
-            DESTINATION ${CMAKECONFIG_INSTALL_DIR})
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/realsense2Config.cmake"
-            DESTINATION ${CMAKECONFIG_INSTALL_DIR})
-endif()
+install(EXPORT realsense2Targets FILE realsense2Targets.cmake NAMESPACE realsense2::
+    DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/realsense2Config.cmake"
+    DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+
+
+install(CODE "execute_process(COMMAND ldconfig)")
 
 option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
