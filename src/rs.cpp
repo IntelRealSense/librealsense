@@ -294,17 +294,17 @@ void rs2_delete_sensor_list(rs2_sensor_list* list) try
 }
 NOEXCEPT_RETURN(, list)
 
-rs2_device* rs2_create_device(const rs2_device_list* list, int index, rs2_error** error) try
+rs2_device* rs2_create_device(const rs2_device_list* info_list, int index, rs2_error** error) try
 {
-    VALIDATE_NOT_NULL(list);
-    VALIDATE_RANGE(index, 0, (int)list->list.size() - 1);
+    VALIDATE_NOT_NULL(info_list);
+    VALIDATE_RANGE(index, 0, (int)info_list->list.size() - 1);
 
-    return new rs2_device{ list->ctx,
-                          list->list[index].info,
-                          list->list[index].info->create_device()
+    return new rs2_device{ info_list->ctx,
+                          info_list->list[index].info,
+                          info_list->list[index].info->create_device()
     };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, info_list, index)
 
 void rs2_delete_device(rs2_device* device) try
 {
@@ -724,23 +724,23 @@ HANDLE_EXCEPTIONS_AND_RETURN(RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, notificati
 
 
 
-int rs2_device_list_contains(const rs2_device_list* removed, const rs2_device* dev, rs2_error** error)try
+int rs2_device_list_contains(const rs2_device_list* info_list, const rs2_device* device, rs2_error** error)try
 {
-    VALIDATE_NOT_NULL(removed);
-    VALIDATE_NOT_NULL(dev);
+    VALIDATE_NOT_NULL(info_list);
+    VALIDATE_NOT_NULL(device);
 
-    for (auto rem : removed->list)
+    for (auto info : info_list->list)
     {
         // TODO: This is incapable of detecting playback devices
         // Need to extend, if playback, compare filename or something
-        if (dev->info && dev->info->get_device_data() == rem.info->get_device_data())
+        if (device->info && device->info->get_device_data() == info.info->get_device_data())
         {
             return 1;
         }
     }
     return 0;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(false, removed, dev)
+HANDLE_EXCEPTIONS_AND_RETURN(false, info_list, device)
 
 rs2_time_t rs2_get_frame_timestamp(const rs2_frame* frame_ref, rs2_error** error) try
 {
@@ -1122,11 +1122,11 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, extension_type)
 
-int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension_type, rs2_error** error) try
+int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(dev);
-    VALIDATE_ENUM(extension_type);
-    switch (extension_type)
+    VALIDATE_ENUM(extension);
+    switch (extension)
     {
         case RS2_EXTENSION_DEBUG         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::debug_interface)             != nullptr;
         case RS2_EXTENSION_INFO          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::info_interface)              != nullptr;
@@ -1142,7 +1142,7 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension_t
             return 0;
     }
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, dev, extension_type)
+HANDLE_EXCEPTIONS_AND_RETURN(0, dev, extension)
 
 
 int rs2_is_frame_extendable_to(const rs2_frame* f, rs2_extension extension_type, rs2_error** error) try
