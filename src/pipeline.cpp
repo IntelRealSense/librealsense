@@ -126,7 +126,7 @@ namespace librealsense
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         if (_commited)
         {
-            throw std::runtime_error(to_string() << "enable() failed. pipeline already conifigured");
+            throw std::runtime_error(to_string() << "enable() failed. pipeline already configured");
         }
 
         _dev = _hub.wait_for_device(5000, device_serial);
@@ -137,7 +137,7 @@ namespace librealsense
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         if (_commited)
         {
-            throw std::runtime_error(to_string() << "enable() failed. pipeline already conifigured");
+            throw std::runtime_error(to_string() << "enable() failed. pipeline already configured");
         }
         _config.enable_stream(stream, index, width, height, format, framerate);
     }
