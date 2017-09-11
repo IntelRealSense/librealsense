@@ -56,3 +56,28 @@ Open `wrappers/nodejs/doc/index.html` for full reference document. If it isn't t
 cd wrappers/nodejs
 node scripts/generate-doc.js
 ```
+
+# 4. Contribution
+## Coding style guideline
+We're following [Chromium coding style](https://chromium.googlesource.com/chromium/src/+/master/styleguide/styleguide.md) for different languages: [C++](https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md), [Python](https://google.github.io/styleguide/pyguide.html) and [JavaScript](https://google.github.io/styleguide/javascriptguide.xml).
+
+### Run linter
+ 1. Install [depot_tools](https://www.chromium.org/developers/how-tos/install-depot-tools) and added to `PATH` env.
+ 1. Install Required npm modules, `cd src/tools && npm install`.
+ 1. Run `./tools/linter.js` before submitting your code.
+
+## Commit message guideline
+We use same [Chromium commit log guideline](https://www.chromium.org/developers/contributing-code) and [Github closing isses via commit messages](https://help.github.com/articles/closing-issues-via-commit-messages/). Use the following form:
+
+```
+Summary of change.
+
+Longer description of change addressing as appropriate: why the change is made,
+context if it is part of many changes, description of previous behavior and
+newly introduced differences, etc.
+
+Long lines should be wrapped to 80 columns for easier log message viewing in
+terminals.
+
+Fixes #123456
+```
