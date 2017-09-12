@@ -1183,7 +1183,7 @@ class RSSensor : public Nan::ObjectWrap {
     Nan::SetPrototypeMethod(tpl, "getOptionRange", GetOptionRange);
     Nan::SetPrototypeMethod(tpl, "isOptionReadonly", IsOptionReadonly);
     Nan::SetPrototypeMethod(tpl, "getOptionDescription", GetOptionDescription);
-    Nan::SetPrototypeMethod(tpl, "GetOptionValueDescription",
+    Nan::SetPrototypeMethod(tpl, "getOptionValueDescription",
         GetOptionValueDescription);
     // Nan::SetPrototypeMethod(tpl, "createSyncer", CreateSyncer);
     Nan::SetPrototypeMethod(tpl, "getMotionIntrinsics", GetMotionIntrinsics);
@@ -1292,8 +1292,10 @@ class RSSensor : public Nan::ObjectWrap {
     if (me) {
       auto desc = rs2_get_option_value_description(me->sensor,
           static_cast<rs2_option>(option), val, &me->error);
-      info.GetReturnValue().Set(Nan::New(desc).ToLocalChecked());
-      return;
+      if (desc) {
+        info.GetReturnValue().Set(Nan::New(desc).ToLocalChecked());
+        return;
+      }
     }
     info.GetReturnValue().Set(Nan::Undefined());
   }
@@ -1388,7 +1390,8 @@ class RSSensor : public Nan::ObjectWrap {
   static NAN_METHOD(StartWithCallback) {
     auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
     if (me) {
-       me->frame_callback_name = info[0]->ToString();
+       v8::String::Utf8Value str(info[0]);
+       me->frame_callback_name = std::string(*str);
       rs2_start_cpp(me->sensor, new FrameCallbackForProc(me), &me->error);
     }
     info.GetReturnValue().Set(Nan::Undefined());
@@ -1581,7 +1584,7 @@ class RSSensor : public Nan::ObjectWrap {
   rs2_sensor* sensor;
   rs2_error* error;
   rs2_stream_profile_list* profile_list;
-  v8::Local<v8::String> frame_callback_name;
+  std::string frame_callback_name;
   // v8::Local<v8::String> notification_callback_name;
   friend class RSContext;
   friend class DevicesChangedCallbackInfo;
@@ -1761,9 +1764,9 @@ Nan::Persistent<v8::Function> RSDevice::constructor;
 
 void FrameCallbackInfo::Run() {
   Nan::HandleScope scope;
-
   v8::Local<v8::Value> args[1] = {RSFrame::NewInstance(frame_)};
-  Nan::MakeCallback(sensor_->handle(), sensor_->frame_callback_name, 1, args);
+  Nan::MakeCallback(sensor_->handle(), sensor_->frame_callback_name.c_str(), 1,
+      args);
 }
 
 void NotificationCallbackInfo::Run() {

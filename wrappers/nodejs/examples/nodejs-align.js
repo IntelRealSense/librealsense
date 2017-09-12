@@ -85,7 +85,14 @@ while (!win.shouldWindowClose()) {
   let colorFrame = frameset.colorFrame;
   let alignedDepthFrame = frameset.depthFrame;
 
-  if (!alignedDepthFrame || !colorFrame) continue;
+  if (!alignedDepthFrame || !colorFrame) {
+    if (alignedDepthFrame) alignedDepthFrame.destroy();
+
+    if (colorFrame) colorFrame.destroy();
+
+    frameset.destroy();
+    continue;
+  }
 
   removeBackground(colorFrame, alignedDepthFrame, depthScale,
       depthClippingDistance);
@@ -107,16 +114,17 @@ while (!win.shouldWindowClose()) {
   pipStream.y = alteredColorFrameRect.y + alteredColorFrameRect.h -
       pipStream.h - (Math.max(w, h) / 25);
 
-  renderer.upload(colorizer.colorize(alignedDepthFrame));
+  let colorizedDepth = colorizer.colorize(alignedDepthFrame);
+  renderer.upload(colorizedDepth);
   renderer.show(pipStream);
 
-  if (alignedDepthFrame) alignedDepthFrame.destroy();
-
-  if (colorFrame) colorFrame.destroy();
-
+  alignedDepthFrame.destroy();
+  colorFrame.destroy();
+  colorizedDepth.destroy();
   frameset.destroy();
   win.endPaint();
 }
+pipe.stop();
 pipe.destroy();
 align.destroy();
 win.destroy();
