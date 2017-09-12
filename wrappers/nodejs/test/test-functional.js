@@ -16,6 +16,7 @@ describe('Pipeline tests', function() {
     assert.equal(frames.size > 0, true);
     pipe.stop();
     pipe.destroy();
+    frames.destroy();
   });
 
   it('Pipeline with context', () => {
@@ -26,6 +27,7 @@ describe('Pipeline tests', function() {
     assert.equal(frames.size > 0, true);
     pipe.stop();
     pipe.destroy();
+    frames.destroy();
   });
 });
 
@@ -46,16 +48,18 @@ describe('Frameset test', function() {
   });
 
   it('depthFrame test', () => {
-    if (frameset.depthFrame) {
-      assert.equal(frameset.depthFrame instanceof rs2.DepthFrame, true);
-      frameset.depthFrame.destroy();
+    let depth = frameset.depthFrame;
+    if (depth) {
+      assert.equal(depth instanceof rs2.DepthFrame, true);
+      depth.destroy();
     }
   });
 
   it('colorFrame test', () => {
-    if (frameset.colorFrame) {
-      assert.equal(frameset.colorFrame instanceof rs2.VideoFrame, true);
-      frameset.colorFrame.destroy();
+    let color = frameset.colorFrame;
+    if (color) {
+      assert.equal(color instanceof rs2.VideoFrame, true);
+      color.destroy();
     }
   });
 
@@ -211,6 +215,7 @@ describe('Colorizer test', function() {
       assert.equal(depthRGB.height, depth.height);
       assert.equal(depthRGB.width, depth.width);
       assert.equal(depthRGB.format, rs2.format.FORMAT_RGB8);
+      depthRGB.destroy();
     }
   });
 });
@@ -347,12 +352,15 @@ describe('Sensor tests', function() {
     });
   });
 
-  it.skip('Open and start', () => {
+  it('Open and start', () => {
     return new Promise((resolve, reject) => {
       const profiles0 = sensors[0].getStreamProfiles();
-      sensors[0].open(profiles0[1]);
+      sensors[0].open(profiles0[0]);
       sensors[0].start((frame) => {
         assert.equal(frame instanceof rs2.Frame, true);
+        frame.destroy();
+        sensors[0].stop();
+        sensors[0].close();
         resolve();
       });
     });
@@ -363,6 +371,44 @@ describe('Sensor tests', function() {
         assert.equal(typeof sensors[i].depthScale === 'number', true);
       }
     }
+  });
+  it('getOptionDescription', () => {
+    sensors.forEach((s) => {
+      for (let i = rs2.option.OPTION_BACKLIGHT_COMPENSATION; i < rs2.option.OPTION_COUNT; i++) {
+        let des = s.getOptionDescription(i);
+        assert.equal((des === undefined) || (typeof des === 'string'), true);
+      }
+    });
+  });
+  it('getOption', () => {
+    sensors.forEach((s) => {
+      for (let i = rs2.option.OPTION_BACKLIGHT_COMPENSATION; i < rs2.option.OPTION_COUNT; i++) {
+        let value = s.getOption(i);
+        assert.equal((value === undefined) || (typeof value === 'number'), true);
+      }
+    });
+  });
+  it('getOptionValueDescription', () => {
+    sensors.forEach((s) => {
+      for (let i = rs2.option.OPTION_BACKLIGHT_COMPENSATION; i < rs2.option.OPTION_COUNT; i++) {
+        let des = s.getOptionValueDescription(i, 1);
+        assert.equal((des === undefined) || (typeof des === 'string'), true);
+      }
+    });
+  });
+  it('setOption', () => {
+    sensors.forEach((s) => {
+      for (let i = rs2.option.OPTION_BACKLIGHT_COMPENSATION; i < rs2.option.OPTION_COUNT; i++) {
+        if (s.supportsOption(i) && !s.isOptionReadOnly(i)) {
+          let range = s.getOptionRange(i);
+          for (let j = range.minvalue; j <= range.maxValue; j += range.step) {
+            s.setOption(i, j);
+            let val = s.getOption(i);
+            assert.equal(val, j);
+          }
+        }
+      }
+    });
   });
 });
 
@@ -397,9 +443,12 @@ describe('Align tests', function() {
     const depth = frameset.depthFrame;
     if (color) {
       assert.equal(color instanceof rs2.VideoFrame, true);
+      color.destroy();
     }
     if (depth) {
       assert.equal(depth instanceof rs2.DepthFrame, true);
+      depth.destroy();
     }
+    frameset.destroy();
   });
 });

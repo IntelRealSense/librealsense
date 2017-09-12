@@ -49,5 +49,8 @@ while (! win.shouldWindowClose()) {
 
   frameset.destroy();
 }
+pc.destroy();
+pipe.stop();
+pipe.destroy();
 win.destroy();
 rs2.cleanup();
