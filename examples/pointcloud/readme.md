@@ -74,17 +74,20 @@ Using helper functions on the `frameset` object we check for new depth and color
 auto frames = pipe.wait_for_frames();
 if (auto color = frames.get_color_frame())
 {
-    // Tell pointcloud object to map to this color frame
-    pc.map_to(color);
+            // Tell pointcloud object to map to this color frame
+            if(color)
+                pc.map_to(color);
 
-    // Upload the color frame to OpenGL
-    app_state.tex.upload(color);
-}
-if (auto depth = frames.get_depth_frame())
-{
-    // If we got a depth frame, generate the pointcloud and texture mappings
-    points = pc.calculate(depth);
-}
+            // Upload the color frame to OpenGL
+            if (color)
+                app_state.tex.upload(color);
+        }
+        if (rs2::frame depth = frames.get_depth_frame())
+        {
+            // If we got a depth frame, generate the pointcloud and texture mappings
+            if(depth)
+                points = pc.calculate(depth);
+        }
 ```
 
 Finally we call `draw_pointcloud` to draw the pointcloud.

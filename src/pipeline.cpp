@@ -108,7 +108,6 @@ namespace librealsense
     void pipeline::start()
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
-        _async_mode = false;
         auto to_user = [&](frame_holder fref)
         {
             _queue.enqueue(std::move(fref));
@@ -190,10 +189,6 @@ namespace librealsense
     frame_holder pipeline::wait_for_frames(unsigned int timeout_ms)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
-        if (_async_mode)
-        {
-            throw std::runtime_error(to_string() << "Invalid function usage");
-        }
 
         frame_holder f;
         if (_queue.dequeue(&f, timeout_ms))
@@ -222,10 +217,6 @@ namespace librealsense
     bool pipeline::poll_for_frames(frame_holder* frame)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
-        if (_async_mode)
-        {
-            throw std::runtime_error(to_string() << "Working in async mode (callback)");
-        }
 
         if (_queue.try_dequeue(frame))
         {
@@ -233,6 +224,7 @@ namespace librealsense
         }
         return false;
     }
+
 
 
     stream_profiles pipeline::get_active_streams() const

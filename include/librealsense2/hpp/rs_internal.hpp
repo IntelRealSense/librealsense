@@ -50,5 +50,22 @@ namespace rs2
 
         mock_context() = delete;
     };
+
+    namespace internal
+    {
+        /**
+        * \return            the time at specific time point, in live and redord contextes it will return the system time and in playback contextes it will return the recorded time
+        */
+        inline double get_time()
+        {
+            rs2_error* e = nullptr;
+            auto time = rs2_get_time( &e);
+
+            error::handle(e);
+
+            return time;
+        }
+    }
+
 }
 #endif // LIBREALSENSE_RS2_INTERNAL_HPP

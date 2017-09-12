@@ -3,6 +3,7 @@
 
 #include "source.h"
 #include "option.h"
+#include "environment.h"
 
 namespace librealsense
 {
@@ -39,10 +40,10 @@ namespace librealsense
         return std::make_shared<frame_queue_size>(&_max_publish_list_size, option_range{ 0, 32, 1, 16 });
     }
 
-    frame_source::frame_source(std::shared_ptr<platform::time_service> ts)
+    frame_source::frame_source()
             : _callback(nullptr, [](rs2_frame_callback*) {}),
               _max_publish_list_size(16),
-              _ts(ts)
+              _ts(environment::get_instance().get_time_service())
     {}
 
     void frame_source::init(std::shared_ptr<metadata_parser_map> metadata_parsers)

@@ -498,7 +498,7 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
         for (auto i = 0; i < 5; i++)
         {
             // Test sequence
-            REQUIRE_NOTHROW(pipe.start([](rs2::frame fref) {}));
+            REQUIRE_NOTHROW(pipe.start());
             REQUIRE_NOTHROW(dev = pipe.get_device());
             disable_sensitive_options_for(dev);
 
@@ -525,9 +525,14 @@ TEST_CASE("No extrinsic transformation between a stream and itself", "[live]")
         // For each device
         for (auto&& dev : list)
         {
+            std::vector<rs2::stream_profile> profs;
+            REQUIRE_NOTHROW(profs = dev.get_stream_profiles());
+            REQUIRE(profs.size()>0);
+
             rs2_extrinsics extrin;
             try {
-                extrin = ctx.get_extrinsics(dev, dev);
+                auto prof = profs[0];
+                extrin = prof.get_extrinsics_to(prof);
             }
             catch (error &e) {
                 // if device isn't calibrated, get_extrinsics must error out (according to old comment. Might not be true under new API)
@@ -557,6 +562,7 @@ TEST_CASE("Extrinsic transformation between two streams is a rigid transform", "
         {
             auto dev = list[i];
             auto adj_devices = ctx.get_sensor_parent(dev).query_sensors();
+
             //REQUIRE(dev != nullptr);
 
             // For every pair of streams
@@ -564,11 +570,18 @@ TEST_CASE("Extrinsic transformation between two streams is a rigid transform", "
             {
                 for (int k = j + 1; k < adj_devices.size(); ++k)
                 {
+                    std::vector<rs2::stream_profile> profs_a, profs_b;
+                    REQUIRE_NOTHROW(profs_a = adj_devices[j].get_stream_profiles());
+                    REQUIRE(profs_a.size()>0);
+
+                    REQUIRE_NOTHROW(profs_b = adj_devices[k].get_stream_profiles());
+                    REQUIRE(profs_b.size()>0);
+
                     // Extrinsics from A to B should have an orthonormal 3x3 rotation matrix and a translation vector of magnitude less than 10cm
                     rs2_extrinsics a_to_b;
 
                     try {
-                        a_to_b = ctx.get_extrinsics(adj_devices[j], adj_devices[k]);
+                        a_to_b = profs_a[0].get_extrinsics_to(profs_b[0]);
                     }
                     catch (error &e) {
                         WARN(e.what());
@@ -580,7 +593,7 @@ TEST_CASE("Extrinsic transformation between two streams is a rigid transform", "
 
                     // Extrinsics from B to A should be the inverse of extrinsics from A to B
                     rs2_extrinsics b_to_a;
-                    REQUIRE_NOTHROW(b_to_a = ctx.get_extrinsics(adj_devices[k], adj_devices[j]));
+                    REQUIRE_NOTHROW(b_to_a = profs_b[0].get_extrinsics_to(profs_a[0]));
 
                     require_transposed(a_to_b.rotation, b_to_a.rotation);
                     REQUIRE(b_to_a.rotation[0] * a_to_b.translation[0] + b_to_a.rotation[3] * a_to_b.translation[1] + b_to_a.rotation[6] * a_to_b.translation[2] == Approx(-b_to_a.translation[0]));
@@ -614,13 +627,23 @@ TEST_CASE("Extrinsic transformations are transitive", "[live]")
                 {
                     for (auto c = 0; c < adj_devices.size(); ++c)
                     {
+                        std::vector<rs2::stream_profile> profs_a, profs_b, profs_c ;
+                        REQUIRE_NOTHROW(profs_a = adj_devices[a].get_stream_profiles());
+                        REQUIRE(profs_a.size()>0);
+
+                        REQUIRE_NOTHROW(profs_b = adj_devices[b].get_stream_profiles());
+                        REQUIRE(profs_b.size()>0);
+
+                        REQUIRE_NOTHROW(profs_c = adj_devices[c].get_stream_profiles());
+                        REQUIRE(profs_c.size()>0);
+
                         // Require that the composition of a_to_b and b_to_c is equal to a_to_c
                         rs2_extrinsics a_to_b, b_to_c, a_to_c;
 
                         try {
-                            a_to_b = ctx.get_extrinsics(adj_devices[a], adj_devices[b]);
-                            b_to_c = ctx.get_extrinsics(adj_devices[b], adj_devices[c]);
-                            a_to_c = ctx.get_extrinsics(adj_devices[a], adj_devices[c]);
+                            a_to_b = profs_a[0].get_extrinsics_to(profs_b[0]);
+                            b_to_c = profs_b[0].get_extrinsics_to(profs_c[0]);
+                            a_to_c = profs_a[0].get_extrinsics_to(profs_c[0]);
                         }
                         catch (error &e)
                         {
@@ -2741,70 +2764,6 @@ TEST_CASE("Pipeline poll", "[live]") {
     }
 }
 
-TEST_CASE("Pipeline start with callback", "[live]") {
-
-    auto dev_requsets = get_pipeline_default_configurations();
-
-    rs2::context ctx;
-
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
-    {
-        std::condition_variable cv;
-        std::mutex m;
-
-        auto list = ctx.query_devices();
-        REQUIRE(list.size());
-        rs2::device dev;
-        rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = list[0]);
-
-        disable_sensitive_options_for(dev);
-        std::string PID;
-        REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
-
-        REQUIRE(dev_requsets[PID].streams.size() > 0);
-
-
-        std::vector<std::vector<stream_profile>> frames;
-        std::vector<std::vector<double>> timestamps;
-
-        auto frames_num = 0;
-
-        REQUIRE_NOTHROW(pipe.start([&](frame f)
-        {
-            if (frames_num++ > 30)
-            {
-                std::unique_lock<std::mutex> lock(m);
-
-                std::vector<stream_profile> frame_set;
-                std::vector<double> ts;
-
-                REQUIRE(f.is<frameset>());
-                auto fs = f.as<frameset>();
-                for (auto frame : fs)
-                {
-                    frame_set.push_back(frame.get_profile());
-                    ts.push_back(frame.get_timestamp());
-                }
-                frames.push_back(frame_set);
-                timestamps.push_back(ts);
-                cv.notify_all();
-            }
-
-        }));
-
-
-
-        {
-            std::unique_lock<std::mutex> lock(m);
-            REQUIRE(cv.wait_for(lock, std::chrono::seconds(10000), [&]() {return frames.size() > 100; }));
-        }
-        pipe.stop();
-        validate(frames, timestamps, dev_requsets[PID]);
-
-
-    }
-}
 
 std::map<std::string, device_profiles> get_custom_configurations()
 {
@@ -3327,53 +3286,7 @@ TEST_CASE("Pipeline get selection", "[live]") {
 
     }
 }
-TEST_CASE("Pipeline get extrinsics", "[live]") {
 
-    rs2::context ctx;
-    rs2_extrinsics referance = { { 1 , 0 , 0 , 0 , 1 , 0 , 0 , 0 , 1 } ,{ 0 , 0 , 0 } };
-    auto configurations = get_configurations_for_extrinsics();
-
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
-    {
-        auto list = ctx.query_devices();
-        REQUIRE(list.size());
-
-        rs2::device dev;
-        rs2::pipeline pipe(ctx);
-       
-        REQUIRE_NOTHROW(dev = list[0]);
-
-        disable_sensitive_options_for(dev);
-        std::string PID;
-        REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
-
-        REQUIRE(configurations[PID].streams.size() > 0);
-
-        for (auto req : configurations[PID].streams)
-            REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
-
-        REQUIRE_NOTHROW(pipe.start());
-        REQUIRE_NOTHROW(dev = pipe.get_device());
-
-        disable_sensitive_options_for(dev);
-       
-        auto depth = pipe.get_active_streams(RS2_STREAM_DEPTH);
-        auto color = pipe.get_active_streams(RS2_STREAM_COLOR);
-        auto ir1 = pipe.get_active_streams(RS2_STREAM_INFRARED, 1);
-        //auto ir2 = pipe.get_selection(RS2_STREAM_INFRARED, 2);
-
-        auto from_ctx = ctx.get_extrinsics(depth, color);
-        auto from_pipe = ctx.get_extrinsics(depth, color);
-        REQUIRE(compare(from_ctx, from_pipe));
-        REQUIRE(compare(from_ctx, referance, 0.1));
-
-        auto ir_ext = ctx.get_extrinsics(ir1, color);
-        //auto ir1_to_ir2_ext = pipe.get_extrinsics(ir1, ir2);
-
-        REQUIRE(compare(ir_ext, referance, 0.1));
-        // REQUIRE(compare(ir1_to_ir2_ext, referance, 0.1));
-    }
-}
 TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
     //Require at least one device to be plugged in
     rs2::context ctx;
@@ -3429,7 +3342,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
                     {
                         if (first)
                         {
-                            start = ctx.get_time();
+                            start = internal::get_time();
                         }
                         first = false;
 
@@ -3479,7 +3392,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
                 REQUIRE_NOTHROW(subdevice.stop());
                 REQUIRE_NOTHROW(subdevice.close());
 
-                auto end = ctx.get_time();
+                auto end = internal::get_time();
                 lock.unlock();
 
                 auto seconds = (end - start)*msec_to_sec;

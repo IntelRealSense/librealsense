@@ -54,16 +54,23 @@ namespace rs2
         }
 
 
-
         processing_block(std::shared_ptr<rs2_processing_block> block)
-            : _block(block)
+         : _block(block)
         {
         }
 
-    private:
-        friend class context;
-        friend class syncer_processing_block;
+        template<class S>
+        processing_block(S processing_function)
+        {
+           rs2_error* e = nullptr;
+            _block =  std::shared_ptr<rs2_processing_block>(
+                        rs2_create_processing_block(new frame_processor_callback<S>(processing_function),&e),
+                        rs2_delete_processing_block);
 
+            error::handle(e);
+        }
+
+    private:
         std::shared_ptr<rs2_processing_block> _block;
     };
 
@@ -162,25 +169,34 @@ namespace rs2
     class pointcloud
     {
     public:
+        pointcloud() :  _queue(1)
+        {
+            rs2_error* e = nullptr;
+
+            _block = std::make_shared<processing_block>(
+                                std::shared_ptr<rs2_processing_block>(
+                                                    rs2_create_pointcloud(&e),
+                                                    rs2_delete_processing_block));
+
+            error::handle(e);
+
+            _block->start(_queue);
+        }
+
         points calculate(frame depth)
         {
-            _block.invoke(std::move(depth));
+            _block->invoke(std::move(depth));
             return _queue.wait_for_frame();
         }
 
         void map_to(frame mapped)
         {
-            _block.invoke(std::move(mapped));
+            _block->invoke(std::move(mapped));
         }
     private:
         friend class context;
 
-        pointcloud(processing_block block) : _block(block), _queue(1)
-        {
-            _block.start(_queue);
-        }
-
-        processing_block _block;
+        std::shared_ptr<processing_block> _block;
         frame_queue _queue;
     };
 
@@ -230,24 +246,34 @@ namespace rs2
     class align
     {
     public:
-        frameset wait_for_frames()
+        align(rs2_stream align_to) :_queue(1)
         {
-            return frameset(_queue.wait_for_frame());
+            rs2_error* e = nullptr;
+            _block = std::make_shared<processing_block>(
+            std::shared_ptr<rs2_processing_block>(
+                rs2_create_align(align_to, &e),
+                rs2_delete_processing_block));
+            error::handle(e);
+
+            _block->start(_queue);
+        }
+
+        frameset proccess(frameset frame)
+        {
+            (*_block)(frame.get());
+            rs2::frame f;
+            _queue.poll_for_frame(&f);
+            return frameset(f);
         }
 
         void operator()(frame f) const
         {
-            _block(std::move(f));
+            (*_block)(std::move(f));
         }
     private:
         friend class context;
 
-        align(processing_block block) : _block(block), _queue(1)
-        {
-            _block.start(_queue);
-        }
-
-        processing_block _block;
+        std::shared_ptr<processing_block> _block;
         frame_queue _queue;
     };
 

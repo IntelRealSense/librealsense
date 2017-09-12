@@ -20,7 +20,7 @@
 #include "stream.h"
 #include "../include/librealsense2/h/rs_types.h"
 #include "pipeline.h"
-
+#include "environment.h"
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -233,13 +233,6 @@ rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error
     return new rs2_device_list{ context->ctx, results };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context)
-
-rs2_time_t rs2_get_context_time(const rs2_context* context, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(context);
-    return context->ctx->get_time();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, context)
 
 rs2_sensor_list* rs2_query_sensors(const rs2_device* device, rs2_error** error) try
 {
@@ -910,7 +903,7 @@ void rs2_get_extrinsics(const rs2_stream_profile* from,
     VALIDATE_NOT_NULL(to);
     VALIDATE_NOT_NULL(extrin);
 
-    if (!from->profile->get_context().try_fetch_extrinsics(*from->profile, *to->profile, extrin))
+    if (!environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics(*from->profile, *to->profile, extrin))
     {
         throw not_implemented_exception("Requested extrinsics are not available!");
     }
@@ -1504,16 +1497,14 @@ void rs2_delete_pipeline(rs2_pipeline* pipe) try
 NOEXCEPT_RETURN(, pipe)
 
 
-rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_frame_processor_callback* proc, rs2_error** error) try
+rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* proc, rs2_error** error) try
 {
-    VALIDATE_NOT_NULL(ctx);
-
-    auto block = std::make_shared<librealsense::processing_block>(ctx->ctx->get_time_service());
+    auto block = std::make_shared<librealsense::processing_block>();
     block->set_processing_callback({ proc, [](rs2_frame_processor_callback* p) { p->release(); } });
 
     return new rs2_processing_block { block };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, proc)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, proc)
 
 rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error)
 {
@@ -1611,25 +1602,22 @@ int rs2_get_frame_points_count(const rs2_frame* frame, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
 
-rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error) try
+rs2_processing_block* rs2_create_pointcloud(rs2_error** error) try
 {
-    VALIDATE_NOT_NULL(ctx);
-
-    auto block = std::make_shared<librealsense::pointcloud>(ctx->ctx->get_time_service());
+    auto block = std::make_shared<librealsense::pointcloud>();
 
     return new rs2_processing_block { block };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, 0)
 
-rs2_processing_block* rs2_create_align(rs2_context* ctx, rs2_stream align_to, rs2_error** error) try
+rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error) try
 {
-    VALIDATE_NOT_NULL(ctx);
     VALIDATE_ENUM(align_to);
 
-    auto block = std::make_shared<librealsense::align>(ctx->ctx->get_time_service(), align_to);
+    auto block = std::make_shared<librealsense::align>(align_to);
     return new rs2_processing_block{ block };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, align_to)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, align_to)
 
 rs2_processing_block* rs2_create_colorizer(rs2_error** error)
 {
@@ -1660,3 +1648,9 @@ float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2
     return df->get_distance(x, y);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref, x, y)
+
+rs2_time_t rs2_get_time(rs2_error** error) try
+{
+    return environment::get_instance().get_time_service()->get_time();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0,0)

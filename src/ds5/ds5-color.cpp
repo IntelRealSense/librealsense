@@ -16,19 +16,20 @@
 #include "ds5-private.h"
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
+#include "environment.h"
 
 namespace librealsense
 {
     ds5_color::ds5_color(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
         : ds5_device(ctx, group), device(ctx, group),
-          _color_stream(new stream(ctx, RS2_STREAM_COLOR))
+          _color_stream(new stream(RS2_STREAM_COLOR))
     {
         using namespace ds;
 
         _color_calib_table_raw = [this]() { return get_raw_calibration_table(rgb_calibration_id); };
         _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(get_color_stream_extrinsic(*_color_calib_table_raw)); });
-        ctx->register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
         auto color_devs_info = filter_by_mi(group.uvc_devices, 3); // TODO check
@@ -131,7 +132,7 @@ namespace librealsense
 
     stream_profiles ds5_color_sensor::init_stream_profiles()
     {
-        context::extrinsics_lock lock(_owner->_color_stream->get_context());
+        auto lock = environment::get_instance().get_extrinsics_graph().lock();
         auto results = uvc_sensor::init_stream_profiles();
 
         for (auto p : results)

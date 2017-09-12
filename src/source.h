@@ -15,7 +15,7 @@ namespace librealsense
     class frame_source
     {
     public:
-        frame_source(std::shared_ptr<platform::time_service> ts);
+        frame_source();
 
         void init(std::shared_ptr<metadata_parser_map> metadata_parsers);
 

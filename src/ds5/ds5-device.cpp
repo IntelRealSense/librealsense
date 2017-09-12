@@ -17,6 +17,7 @@
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
 #include "stream.h"
+#include "environment.h"
 
 namespace librealsense
 {
@@ -95,7 +96,8 @@ namespace librealsense
         }
         stream_profiles init_stream_profiles() override
         {
-            context::extrinsics_lock lock(_owner->_depth_stream->get_context());
+            auto lock = environment::get_instance().get_extrinsics_graph().lock();
+
             auto results = uvc_sensor::init_stream_profiles();
 
             for (auto p : results)
@@ -188,9 +190,9 @@ namespace librealsense
     ds5_device::ds5_device(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
         : device(ctx, group),
-          _depth_stream(new stream(ctx, RS2_STREAM_DEPTH)),
-          _left_ir_stream(new stream(ctx, RS2_STREAM_INFRARED, 1)),
-          _right_ir_stream(new stream(ctx, RS2_STREAM_INFRARED, 2)),
+          _depth_stream(new stream(RS2_STREAM_DEPTH)),
+          _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
+          _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
           _depth_device_idx(add_sensor(create_depth_device(ctx, group.uvc_devices)))
     {
         using namespace ds;
@@ -221,8 +223,8 @@ namespace librealsense
             return ext;
         });
 
-        ctx->register_same_extrinsics(*_depth_stream, *_left_ir_stream);
-        ctx->register_extrinsics(*_depth_stream, *_right_ir_stream, _left_right_extrinsics);
+        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_left_ir_stream);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_right_ir_stream, _left_right_extrinsics);
         
         register_stream_to_extrinsic_group(*_depth_stream, 0);
         register_stream_to_extrinsic_group(*_left_ir_stream, 0);

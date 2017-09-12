@@ -15,7 +15,7 @@
 #include "metadata-parser.h"
 #include "image.h"
 #include <cstddef>
-
+#include "environment.h"
 #include "core/debug.h"
 #include "stream.h"
 
@@ -211,7 +211,8 @@ namespace librealsense
 
             stream_profiles init_stream_profiles() override
             {
-                context::extrinsics_lock lock(_owner->_color_stream->get_context());
+                auto lock = environment::get_instance().get_extrinsics_graph().lock();
+
                 auto results = uvc_sensor::init_stream_profiles();
 
                 for (auto p : results)
@@ -258,7 +259,8 @@ namespace librealsense
 
             stream_profiles init_stream_profiles() override
             {
-                context::extrinsics_lock lock(_owner->_depth_stream->get_context());
+                 auto lock = environment::get_instance().get_extrinsics_graph().lock();
+
                 auto results = uvc_sensor::init_stream_profiles();
 
                 for (auto p : results)

@@ -27,13 +27,13 @@ int main(int argc, char * argv[]) try
     rs2::context ctx;
     // Using the context to create a rs2::align object. 
     // rs2::align allows you to perform aliment of depth frames to others
-    rs2::align align = ctx.create_align(RS2_STREAM_COLOR);
+    rs2::align align(RS2_STREAM_COLOR);
     
     // Create a pipeline to easily configure and start the camera
     rs2::pipeline pipe;
     
     // By passing align to Pipeline::start, frames will be passed to align's handler
-    pipe.start(align);
+    pipe.start();
     
     // Each depth camera might have different units for depth pixels, so we get it here
     float depth_scale;
@@ -45,27 +45,32 @@ int main(int argc, char * argv[]) try
 
     // Define a variable for controlling the distance to clip
     float depth_clipping_distance = 1.f;
-    
+
     while (app) // Application still alive?
     {
         // Using the align object, we block the application until a frameset is available
-        rs2::frameset frameset = align.wait_for_frames();
+        rs2::frameset frameset;
+
+        while (!frameset.get_color_frame() || !frameset.get_depth_frame())
+        {
+            frameset = pipe.wait_for_frames();
+        }
+
+        auto proccessed = align.proccess(frameset);
 
         // Trying to get both color and aligned depth frames
-        rs2::video_frame color_frame = frameset.get_color_frame();
-        rs2::depth_frame aligned_depth_frame = frameset.get_depth_frame();
+        rs2::video_frame color_frame = proccessed.get_color_frame();
+        rs2::depth_frame aligned_depth_frame = proccessed.get_depth_frame();
 
         //If one of them is unavailable, continue iteration
         if (!aligned_depth_frame || !color_frame)
         {
             continue;
         }
-
         // Passing both frames to remove_background so it will "strip" the background
         // NOTE: in this example, we alter the buffer of the color frame, instead of copying it and altering the copy
         //       This behavior is not recommended in real application since the color frame could be used elsewhere
         remove_background(color_frame, aligned_depth_frame, depth_scale, depth_clipping_distance);
-
 
         // Taking dimensions of the window for rendering purposes
         float w = static_cast<float>(app.width());
@@ -94,6 +99,7 @@ int main(int argc, char * argv[]) try
         ImGui_ImplGlfw_NewFrame(1);
         render_slider({ 5.f, 0, w, h }, depth_clipping_distance);
         ImGui::Render();
+
     }
     return EXIT_SUCCESS;
 }

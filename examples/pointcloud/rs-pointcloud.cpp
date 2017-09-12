@@ -27,7 +27,7 @@ int main(int argc, char * argv[]) try
     register_glfw_callbacks(app, app_state);
 
     // Declare pointcloud object, for calculating pointclouds and texture mappings
-    rs2::pointcloud pc = rs2::context().create_pointcloud();
+    rs2::pointcloud pc;
     // We want the points object to be persistent so we can display the last cloud when a frame drops
     rs2::points points;
 
@@ -43,15 +43,18 @@ int main(int argc, char * argv[]) try
         if (rs2::frame color = frames.get_color_frame())
         {
             // Tell pointcloud object to map to this color frame
-            pc.map_to(color);
+            if(color)
+                pc.map_to(color);
 
             // Upload the color frame to OpenGL
-            app_state.tex.upload(color);
+            if (color)
+                app_state.tex.upload(color);
         }
         if (rs2::frame depth = frames.get_depth_frame())
         {
             // If we got a depth frame, generate the pointcloud and texture mappings
-            points = pc.calculate(depth);
+            if(depth)
+                points = pc.calculate(depth);
         }
 
         // Draw the pointcloud
