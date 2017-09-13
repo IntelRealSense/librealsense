@@ -29,14 +29,6 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error);
 void rs2_delete_context(rs2_context* context);
 
 /**
-* return the time at specific time point
-* \param context     Object representing librealsense session
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the time at specific time point, in live and record mode it will return the system time and in playback mode it will return the recorded time
-*/
-rs2_time_t rs2_get_context_time(const rs2_context* context, rs2_error** error);
-
-/**
 * set callback to get devices changed events
 * these events will be raised by the context whenever new RealSense device is connected or existing device gets disconnected
 * \param context     Object representing librealsense session

@@ -23,8 +23,7 @@ namespace librealsense
     };
 
     syncer_proccess_unit::syncer_proccess_unit()
-        : processing_block(nullptr),
-          _matcher({})
+        : _matcher({})
     {
         _matcher.set_callback([this](frame_holder f, syncronization_environment env)
         {

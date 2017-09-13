@@ -211,22 +211,22 @@ int main(int argc, char** argv)
             std::list<frame_data> buffer[NUM_OF_STREAMS];
             auto start_time = chrono::high_resolution_clock::now();
 
-            pipe.start([&buffer, &start_time, &cv, &max_frames_number](frame f)
-            {
-                auto arrival_time = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start_time);
+            auto f = pipe.wait_for_frames();
 
-                frame_data data;
-                data.frame_number = f.get_frame_number();
-                data.stream_type = f.get_profile().stream_type();
-                data.ts = f.get_timestamp();
-                data.domain = f.get_frame_timestamp_domain();
-                data.arrival_time = arrival_time.count();
+            auto arrival_time = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start_time);
 
-                if (buffer[(int)data.stream_type].size() < max_frames_number)
-                    buffer[(int)data.stream_type].push_back(data);
-                else
-                    cv.notify_one();
-            });
+            frame_data data;
+            data.frame_number = f.get_frame_number();
+            data.stream_type = f.get_profile().stream_type();
+            data.ts = f.get_timestamp();
+            data.domain = f.get_frame_timestamp_domain();
+            data.arrival_time = arrival_time.count();
+
+            if (buffer[(int)data.stream_type].size() < max_frames_number)
+                buffer[(int)data.stream_type].push_back(data);
+            else
+                cv.notify_one();
+
 
             const auto ready = [&]()
             {

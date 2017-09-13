@@ -54,7 +54,7 @@ script:
   # Exit immediately if a command exits with a non-zero status
   - set -e
   # Build librealsense
-  - pyenv local 3.6.1
+  - pyenv local 3.5.3
   - mkdir build && cd build
   - cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_PYTHON_BINDINGS:BOOL=true -DBUILD_NODEJS_BINDINGS:BOOL=true
   - make -j $CPU_NUM

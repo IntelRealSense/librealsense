@@ -55,18 +55,6 @@ namespace rs2
             error::handle(e);
         }
 
-        /**
-        * Start passing frames into user provided callback
-        * \param[in] callback   Stream callback, can be any callable object accepting rs2::frame
-        */
-        template<class T>
-        void start(T callback) const
-        {
-            rs2_error* e = nullptr;
-            rs2_start_pipeline_with_callback_cpp(_pipeline.get(), new frame_callback<T>(std::move(callback)), &e);
-            error::handle(e);
-        }
-
         void open()const
         {
             rs2_error* e = nullptr;

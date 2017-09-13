@@ -5,6 +5,7 @@
 
 #include "context.h"
 #include "colorizer.h"
+#include "environment.h"
 
 namespace librealsense
 {
@@ -17,7 +18,7 @@ namespace librealsense
         }};
 
     colorizer::colorizer()
-        : processing_block(nullptr), _min(0.f), _max(16.f), _equalize(true), _map(jet), _stream()
+        :_min(0.f), _max(16.f), _equalize(true), _map(jet), _stream()
     {
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
@@ -28,8 +29,7 @@ namespace librealsense
                     if (!_stream)
                     {
                         _stream = std::make_shared<rs2::stream_profile>(f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_RGB8));
-                        auto&& ctx = _stream->get()->profile->get_context();
-                        ctx.register_same_extrinsics(*_stream->get()->profile, *f.get_profile().get()->profile);
+                        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_stream->get()->profile, *f.get_profile().get()->profile);
                     }
                 }
 

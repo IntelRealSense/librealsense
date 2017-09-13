@@ -38,7 +38,7 @@ rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error);
 * In addition, given non-depth frame, the block will align texture coordinate to the non-depth stream
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error);
+rs2_processing_block* rs2_create_pointcloud(rs2_error** error);
 
 /**
 * This method creates new custom processing block. This lets the users pass frames between module boundaries for processing
@@ -48,7 +48,7 @@ rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error)
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return           new processing block, to be released by rs2_delete_processing_block
 */
-rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_frame_processor_callback* proc, rs2_error** error);
+rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* proc, rs2_error** error);
 
 /**
 * This method is used to direct the output from the processing block to some callback or sink object
@@ -115,7 +115,7 @@ void rs2_enqueue_frame(rs2_frame* frame, void* queue);
 * Creates Align processing block. 
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-rs2_processing_block* rs2_create_align(rs2_context* ctx, rs2_stream align_to, rs2_error** error);
+rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error);
 
 #ifdef __cplusplus
 }
