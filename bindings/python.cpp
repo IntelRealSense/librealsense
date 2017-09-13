@@ -267,9 +267,23 @@ PYBIND11_PLUGIN(NAME) {
               /*py::return_value_policy::copy, */"Retrieve frame number (from frame handle)")
          .def("get_data", [](const rs2::frame& f) ->  BufData
               {
-                      return BufData(const_cast<void*>(f.get_data()), 1, std::string("@B"), 2,
-                                             { static_cast<size_t>(f.get_height()), static_cast<size_t>(f.get_stride_in_bytes()) },
-                                             { static_cast<size_t>(f.get_stride_in_bytes()), 1 });
+                      std::map<size_t,std::string> bytes_per_pixel_to_format = {{1, std::string("@B")}, {2, std::string("@H")}, {3, std::string("@I")}, {4, std::string("@I")}};
+                      switch (f.get_format()) {
+                        case RS2_FORMAT_RGB8: case RS2_FORMAT_BGR8:
+                          return BufData(const_cast<void*>(f.get_data()), 1, bytes_per_pixel_to_format[1], 3,
+                                         { static_cast<size_t>(f.get_height()), static_cast<size_t>(f.get_width()), 3 },
+                                         { static_cast<size_t>(f.get_stride_in_bytes()), static_cast<size_t>(f.get_bytes_per_pixel()), 1 });
+                          break;
+                        case RS2_FORMAT_RGBA8: case RS2_FORMAT_BGRA8:
+                          return BufData(const_cast<void*>(f.get_data()), 1, bytes_per_pixel_to_format[1], 3,
+                                         { static_cast<size_t>(f.get_height()), static_cast<size_t>(f.get_width()), 4 },
+                                         { static_cast<size_t>(f.get_stride_in_bytes()), static_cast<size_t>(f.get_bytes_per_pixel()), 1 });
+                          break;
+                        default:
+                          return BufData(const_cast<void*>(f.get_data()), static_cast<size_t>(f.get_bytes_per_pixel()), bytes_per_pixel_to_format[f.get_bytes_per_pixel()], 2,
+                                         { static_cast<size_t>(f.get_height()), static_cast<size_t>(f.get_width()) },
+                                         { static_cast<size_t>(f.get_stride_in_bytes()), static_cast<size_t>(f.get_bytes_per_pixel()) });
+                      }
               }, "retrieve data from the frame handle.", py::keep_alive<0, 1>())
          .def("get_width", &rs2::frame::get_width, "Returns image width in "
               "pixels")
@@ -369,8 +383,16 @@ PYBIND11_PLUGIN(NAME) {
           .def("start", [](const rs2::device& dev, rs2_stream s, rs2::frame_queue& queue) {
               dev.start(s, queue);
           }, "Start passing frames of a specific stream into user provided callback.", "stream"_a, "queue"_a)
-          .def("stop", (void (rs2::device::*)(void) const) &rs2::device::stop, "Stop streaming.")
-          .def("stop", (void (rs2::device::*)(rs2_stream) const) &rs2::device::stop, "Stop streaming of a specific stream.")
+          .def("stop", [](const rs2::device& dev){
+              // releases the python GIL while stop is running to prevent callback deadlock
+              py::gil_scoped_release release;
+              dev.stop();
+          }, "Stop streaming.")
+          .def("stop", [](const rs2::device& dev, rs2_stream s){
+              // releases the python GIL while stop is running to prevent callback deadlock
+              py::gil_scoped_release release;
+              dev.stop(s);
+          }, "Stop streaming of a specific stream.")
           .def("is_option_read_only", &rs2::device::is_option_read_only, "Check if a"
                "particular option is read only.", "option"_a)
           .def("set_notifications_callback", [](const rs2::device& dev, std::function<void(rs2::notification)> callback){
