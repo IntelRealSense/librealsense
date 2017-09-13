@@ -63,6 +63,7 @@ const char* librealsense::uvc_pu_option::get_description() const
     case RS2_OPTION_ENABLE_AUTO_EXPOSURE: return "Enable / disable auto-exposure";
     case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return "Enable / disable auto-white-balance";
     case RS2_OPTION_POWER_LINE_FREQUENCY: return "Power Line Frequency";
+    case RS2_OPTION_AUTO_EXPOSURE_PRIORITY: return "Limit exposure time when auto-exposure is ON to preserve constant fps rate";
     default: return rs2_option_to_string(_id);
     }
 }

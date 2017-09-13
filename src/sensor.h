@@ -52,7 +52,7 @@ namespace librealsense
 
         virtual ~sensor_base() { _source.flush(); }
 
-        void register_metadata(rs2_frame_metadata metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const;
+        void register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const;
 
         void register_on_open(on_open callback)
         {

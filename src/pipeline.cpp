@@ -25,39 +25,26 @@ namespace librealsense
     };
 
 
-    pipeline::pipeline(std::shared_ptr<librealsense::context> ctx, std::shared_ptr<device_interface> dev)
-        :_ctx(ctx), _hub(ctx, VID), _dev(dev)
-    {
-        if (!dev)
-            _dev = _hub.wait_for_device();
-
-        _dev->get_device_data();
-    }
+    pipeline::pipeline(std::shared_ptr<librealsense::context> ctx)
+        :_ctx(ctx), _hub(ctx, VID)
+    {}
 
     std::shared_ptr<device_interface> pipeline::get_device()
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
+        if (!_commited)
+        {
+            throw std::runtime_error(to_string() << "get_device() failed. device is not available before commiting all requests");
+        } 
         return _dev;
     }
 
-    std::shared_ptr<librealsense::context> pipeline::get_context()
-    {
-        return _ctx;
-    }
-    void pipeline::start(frame_callback_ptr callback)
+    void pipeline::open()
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
-        auto to_syncer = [&](frame_holder fref)
-        {
-            _syncer.invoke(std::move(fref));
-        };
-
-        frame_callback_ptr syncer_callback =
-        { new internal_frame_callback<decltype(to_syncer)>(to_syncer),
-         [](rs2_frame_callback* p) { p->release(); } };
-
-
-        _syncer.set_output_callback(callback);
+        
+        if (!_dev)
+            _dev = _hub.wait_for_device();
 
         if (_config.get_requests().size() == 0 && _config.get_requests().size() == 0)
         {
@@ -90,12 +77,37 @@ namespace librealsense
                 enable(p->get_stream_type(), p->get_stream_index(), p->get_width(), p->get_height(), p->get_format(), p->get_framerate());
             }
         }
+        
+        _commited = true;
+    }
+
+    void pipeline::start(frame_callback_ptr callback)
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+        if (!_commited)
+        {
+            open();
+        }
+        auto to_syncer = [&](frame_holder fref)
+        {
+            _syncer.invoke(std::move(fref));
+        };
+
+        frame_callback_ptr syncer_callback =
+        { new internal_frame_callback<decltype(to_syncer)>(to_syncer),
+         [](rs2_frame_callback* p) { p->release(); } };
+
+
+        _syncer.set_output_callback(callback);
+
         _multistream = _config.open(_dev.get());
         _multistream.start(syncer_callback);
+        _streaming = true;
     }
 
     void pipeline::start()
     {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
         auto to_user = [&](frame_holder fref)
         {
             _queue.enqueue(std::move(fref));
@@ -108,24 +120,52 @@ namespace librealsense
         start(user_callback);
     }
 
+    void pipeline::enable(std::string device_serial)
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+        if (_commited)
+        {
+            throw std::runtime_error(to_string() << "enable() failed. pipeline already configured");
+        }
+
+        _dev = _hub.wait_for_device(5000, device_serial);
+    }
 
     void pipeline::enable(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t framerate)
     {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+        if (_commited)
+        {
+            throw std::runtime_error(to_string() << "enable() failed. pipeline already configured");
+        }
         _config.enable_stream(stream, index, width, height, format, framerate);
-    }
-
-    bool pipeline::can_enable(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t framerate)
-    {
-        return _config.can_enable_stream(_dev.get(), stream, index, width, height, format, framerate);
     }
 
     void pipeline::disable_stream(rs2_stream stream)
     {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+
+        if (_streaming)
+        {
+            _multistream.stop();
+            _multistream.close();
+        }
+
+        _commited = false;
+        _streaming = false;
         _config.disable_stream(stream);
     }
 
     void pipeline::disable_all()
     {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+        if (_streaming)
+        {
+            _multistream.stop();
+            _multistream.close();
+        }
+        _commited = false;
+        _streaming = false;
         _config.disable_all();
     }
 
@@ -133,12 +173,23 @@ namespace librealsense
 
     void pipeline::stop()
     {
-        _multistream.stop();
-        _multistream.close();
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+       
+        if (_streaming)
+        {
+            _multistream.stop();
+            _multistream.close();
+        }
+        _streaming = false;
+        
     }
+
+   
 
     frame_holder pipeline::wait_for_frames(unsigned int timeout_ms)
     {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+
         frame_holder f;
         if (_queue.dequeue(&f, timeout_ms))
         {
@@ -149,7 +200,7 @@ namespace librealsense
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             if (!_hub.is_connected(*_dev))
             {
-                _dev = _hub.wait_for_device(timeout_ms, _dev.get());
+                _dev = _hub.wait_for_device(timeout_ms/*, _dev.get()*/);
                 _sensors.clear();
                 _queue.clear();
                 _queue.start();
@@ -165,6 +216,8 @@ namespace librealsense
 
     bool pipeline::poll_for_frames(frame_holder* frame)
     {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+
         if (_queue.try_dequeue(frame))
         {
             return true;
@@ -173,12 +226,8 @@ namespace librealsense
     }
 
 
-    bool pipeline::get_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics* extrinsics) const
-    {
-        return _ctx->try_fetch_extrinsics(from, to, extrinsics);
-    }
 
-    stream_profiles pipeline::get_selection() const
+    stream_profiles pipeline::get_active_streams() const
     {
         stream_profiles res;
         auto profs = _multistream.get_profiles();
@@ -188,7 +237,6 @@ namespace librealsense
         }
         return res;
     }
-
     pipeline::~pipeline()
     {
         try

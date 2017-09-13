@@ -17,6 +17,7 @@
 #include "ds5-motion.h"
 #include "core/motion.h"
 #include "stream.h"
+#include "environment.h"
 
 namespace librealsense
 {
@@ -63,7 +64,7 @@ namespace librealsense
 
         stream_profiles init_stream_profiles() override
         {
-            context::extrinsics_lock lock(_owner->_fisheye_stream->get_context());
+            auto lock = environment::get_instance().get_extrinsics_graph().lock();
             auto results = hid_sensor::init_stream_profiles();
 
             for (auto p : results)
@@ -105,7 +106,7 @@ namespace librealsense
 
         stream_profiles init_stream_profiles() override
         {
-            context::extrinsics_lock lock(_owner->_fisheye_stream->get_context());
+            auto lock = environment::get_instance().get_extrinsics_graph().lock();
 
             auto results = uvc_sensor::init_stream_profiles();
             for (auto p : results)
@@ -259,14 +260,14 @@ namespace librealsense
     ds5_motion::ds5_motion(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
         : device(ctx, group), ds5_device(ctx, group),
-          _fisheye_stream(new stream(ctx, RS2_STREAM_FISHEYE)),
-          _accel_stream(new stream(ctx, RS2_STREAM_ACCEL)),
-          _gyro_stream(new stream(ctx, RS2_STREAM_GYRO))
+          _fisheye_stream(new stream(RS2_STREAM_FISHEYE)),
+          _accel_stream(new stream(RS2_STREAM_ACCEL)),
+          _gyro_stream(new stream(RS2_STREAM_GYRO))
     {
         using namespace ds;
 
         for (auto i = 0; i < 4; i++)
-            _gpio_streams[i] = std::make_shared<stream>(ctx, RS2_STREAM_GPIO, i+1);
+            _gpio_streams[i] = std::make_shared<stream>(RS2_STREAM_GPIO, i+1);
 
         auto&& backend = ctx->get_backend();
 
@@ -286,7 +287,7 @@ namespace librealsense
         if (fisheye_infos.size() != 1)
             throw invalid_value_exception("RS450 model is expected to include a single fish-eye device!");
 
-        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(ctx->get_time_service()));
+        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(environment::get_instance().get_time_service()));
 
         auto fisheye_ep = std::make_shared<ds5_fisheye_sensor>(this, backend.create_uvc_device(fisheye_infos.front()),
                                                     std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
@@ -335,11 +336,11 @@ namespace librealsense
                 offsetof(md_fisheye_mode, fisheye_mode) +
                 offsetof(md_fisheye_normal_mode, intel_configuration);
 
-        fisheye_ep->register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_HW_TYPE,   make_attribute_parser(&md_configuration::hw_type,    md_configuration_attributes::hw_type_attribute, md_prop_offset));
-        fisheye_ep->register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_SKU_ID,    make_attribute_parser(&md_configuration::sku_id,     md_configuration_attributes::sku_id_attribute, md_prop_offset));
-        fisheye_ep->register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_FORMAT,    make_attribute_parser(&md_configuration::format,     md_configuration_attributes::format_attribute, md_prop_offset));
-        fisheye_ep->register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_WIDTH,     make_attribute_parser(&md_configuration::width,      md_configuration_attributes::width_attribute, md_prop_offset));
-        fisheye_ep->register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_HEIGHT,    make_attribute_parser(&md_configuration::height,     md_configuration_attributes::height_attribute, md_prop_offset));
+        fisheye_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HW_TYPE,   make_attribute_parser(&md_configuration::hw_type,    md_configuration_attributes::hw_type_attribute, md_prop_offset));
+        fisheye_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_SKU_ID,    make_attribute_parser(&md_configuration::sku_id,     md_configuration_attributes::sku_id_attribute, md_prop_offset));
+        fisheye_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_FORMAT,    make_attribute_parser(&md_configuration::format,     md_configuration_attributes::format_attribute, md_prop_offset));
+        fisheye_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_WIDTH,     make_attribute_parser(&md_configuration::width,      md_configuration_attributes::width_attribute, md_prop_offset));
+        fisheye_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HEIGHT,    make_attribute_parser(&md_configuration::height,     md_configuration_attributes::height_attribute, md_prop_offset));
 
         // attributes of md_fisheye_control
         md_prop_offset = offsetof(metadata_raw, mode) +
@@ -371,18 +372,18 @@ namespace librealsense
             return from_pose(ex);
         });
 
-        ctx->register_extrinsics(*_depth_stream, *_fisheye_stream, _depth_to_fisheye);
-        ctx->register_extrinsics(*_fisheye_stream, *_accel_stream, _fisheye_to_imu);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_fisheye_stream, _depth_to_fisheye);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_fisheye_stream, *_accel_stream, _fisheye_to_imu);
 
         register_stream_to_extrinsic_group(*_fisheye_stream, 0);
         register_stream_to_extrinsic_group(*_accel_stream, 0);
 
         // Make sure all MM streams are positioned with the same extrinsics
-        ctx->register_same_extrinsics(*_accel_stream, *_gyro_stream);
+        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
         register_stream_to_extrinsic_group(*_gyro_stream, 0);
         for (auto i = 0; i < 4; i++)
         {
-            ctx->register_same_extrinsics(*_accel_stream, *_gpio_streams[i]);
+            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gpio_streams[i]);
             register_stream_to_extrinsic_group(*_gpio_streams[i], 0);
         }
 

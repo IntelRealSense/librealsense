@@ -20,7 +20,7 @@
 #include "stream.h"
 #include "../include/librealsense2/h/rs_types.h"
 #include "pipeline.h"
-
+#include "environment.h"
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -234,13 +234,6 @@ rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context)
 
-rs2_time_t rs2_get_context_time(const rs2_context* context, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(context);
-    return context->ctx->get_time();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, context)
-
 rs2_sensor_list* rs2_query_sensors(const rs2_device* device, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -294,17 +287,17 @@ void rs2_delete_sensor_list(rs2_sensor_list* list) try
 }
 NOEXCEPT_RETURN(, list)
 
-rs2_device* rs2_create_device(const rs2_device_list* list, int index, rs2_error** error) try
+rs2_device* rs2_create_device(const rs2_device_list* info_list, int index, rs2_error** error) try
 {
-    VALIDATE_NOT_NULL(list);
-    VALIDATE_RANGE(index, 0, (int)list->list.size() - 1);
+    VALIDATE_NOT_NULL(info_list);
+    VALIDATE_RANGE(index, 0, (int)info_list->list.size() - 1);
 
-    return new rs2_device{ list->ctx,
-                          list->list[index].info,
-                          list->list[index].info->create_device()
+    return new rs2_device{ info_list->ctx,
+                          info_list->list[index].info,
+                          info_list->list[index].info->create_device()
     };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, info_list, index)
 
 void rs2_delete_device(rs2_device* device) try
 {
@@ -615,6 +608,16 @@ void rs2_start(const rs2_sensor* sensor, rs2_frame_callback_ptr on_frame, void* 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, on_frame, user)
 
+void rs2_start_queue(const rs2_sensor* sensor, rs2_frame_queue* queue, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(queue);
+    librealsense::frame_callback_ptr callback(
+        new librealsense::frame_callback(rs2_enqueue_frame, queue));
+    sensor->sensor->start(move(callback));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, queue)
+
 void rs2_set_notifications_callback(const rs2_sensor* sensor, rs2_notification_callback_ptr on_notification, void* user, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(sensor);
@@ -668,7 +671,7 @@ void rs2_stop(const rs2_sensor* sensor, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor)
 
-int rs2_supports_frame_metadata(const rs2_frame* frame, rs2_frame_metadata frame_metadata, rs2_error** error) try
+int rs2_supports_frame_metadata(const rs2_frame* frame, rs2_frame_metadata_value frame_metadata, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(frame);
     VALIDATE_ENUM(frame_metadata);
@@ -676,7 +679,7 @@ int rs2_supports_frame_metadata(const rs2_frame* frame, rs2_frame_metadata frame
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame, frame_metadata)
 
-rs2_metadata_t rs2_get_frame_metadata(const rs2_frame* frame, rs2_frame_metadata frame_metadata, rs2_error** error) try
+rs2_metadata_type rs2_get_frame_metadata(const rs2_frame* frame, rs2_frame_metadata_value frame_metadata, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(frame);
     VALIDATE_ENUM(frame_metadata);
@@ -714,23 +717,23 @@ HANDLE_EXCEPTIONS_AND_RETURN(RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, notificati
 
 
 
-int rs2_device_list_contains(const rs2_device_list* removed, const rs2_device* dev, rs2_error** error)try
+int rs2_device_list_contains(const rs2_device_list* info_list, const rs2_device* device, rs2_error** error)try
 {
-    VALIDATE_NOT_NULL(removed);
-    VALIDATE_NOT_NULL(dev);
+    VALIDATE_NOT_NULL(info_list);
+    VALIDATE_NOT_NULL(device);
 
-    for (auto rem : removed->list)
+    for (auto info : info_list->list)
     {
         // TODO: This is incapable of detecting playback devices
         // Need to extend, if playback, compare filename or something
-        if (dev->info && dev->info->get_device_data() == rem.info->get_device_data())
+        if (device->info && device->info->get_device_data() == info.info->get_device_data())
         {
             return 1;
         }
     }
     return 0;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(false, removed, dev)
+HANDLE_EXCEPTIONS_AND_RETURN(false, info_list, device)
 
 rs2_time_t rs2_get_frame_timestamp(const rs2_frame* frame_ref, rs2_error** error) try
 {
@@ -874,7 +877,7 @@ int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, queue, output_frame)
 
-void rs2_enqueue_frame(const rs2_frame* frame, void* queue) try
+void rs2_enqueue_frame(rs2_frame* frame, void* queue) try
 {
     VALIDATE_NOT_NULL(frame);
     VALIDATE_NOT_NULL(queue);
@@ -900,7 +903,7 @@ void rs2_get_extrinsics(const rs2_stream_profile* from,
     VALIDATE_NOT_NULL(to);
     VALIDATE_NOT_NULL(extrin);
 
-    if (!from->profile->get_context().try_fetch_extrinsics(*from->profile, *to->profile, extrin))
+    if (!environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics(*from->profile, *to->profile, extrin))
     {
         throw not_implemented_exception("Requested extrinsics are not available!");
     }
@@ -1070,7 +1073,7 @@ const char* rs2_distortion_to_string(rs2_distortion distortion) { return libreal
 const char* rs2_option_to_string(rs2_option option) { return librealsense::get_string(option); }
 const char* rs2_camera_info_to_string(rs2_camera_info info) { return librealsense::get_string(info); }
 
-const char* rs2_frame_metadata_to_string(rs2_frame_metadata metadata) { return librealsense::get_string(metadata); }
+const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata) { return librealsense::get_string(metadata); }
 const char* rs2_timestamp_domain_to_string(rs2_timestamp_domain info){ return librealsense::get_string(info); }
 
 const char* rs2_notification_category_to_string(rs2_notification_category category) { return librealsense::get_string(category); }
@@ -1112,11 +1115,11 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, extension_type)
 
-int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension_type, rs2_error** error) try
+int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(dev);
-    VALIDATE_ENUM(extension_type);
-    switch (extension_type)
+    VALIDATE_ENUM(extension);
+    switch (extension)
     {
         case RS2_EXTENSION_DEBUG         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::debug_interface)             != nullptr;
         case RS2_EXTENSION_INFO          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::info_interface)              != nullptr;
@@ -1132,7 +1135,7 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension_t
             return 0;
     }
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, dev, extension_type)
+HANDLE_EXCEPTIONS_AND_RETURN(0, dev, extension)
 
 
 int rs2_is_frame_extendable_to(const rs2_frame* f, rs2_extension extension_type, rs2_error** error) try
@@ -1347,16 +1350,6 @@ rs2_pipeline* rs2_create_pipeline(rs2_context* ctx, rs2_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx)
 
-rs2_pipeline* rs2_create_pipeline_with_device(rs2_context* ctx, const rs2_device* dev, rs2_error ** error) try
-{
-    VALIDATE_NOT_NULL(ctx);
-
-    auto pipe = std::make_shared<librealsense::pipeline>(ctx->ctx, dev->device);
-
-    return new rs2_pipeline{ pipe };
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, dev)
-
 rs2_device* rs2_pipeline_get_device(rs2_context* ctx, rs2_pipeline* pipe, rs2_error ** error)try
 {
     VALIDATE_NOT_NULL(pipe);
@@ -1378,6 +1371,14 @@ void rs2_start_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
     VALIDATE_NOT_NULL(pipe);
 
     pipe->pipe->start();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
+
+void rs2_open_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+
+    pipe->pipe->open();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
@@ -1406,7 +1407,7 @@ void rs2_stop_pipeline(rs2_pipeline* pipe, rs2_error ** error)
     pipe->pipe->stop();
 }
 
-void rs2_enable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, int index, int width, int height, rs2_format format, int framerate, rs2_error ** error) try
+void rs2_enable_pipeline_stream(rs2_pipeline* pipe, rs2_stream stream, int index, int width, int height, rs2_format format, int framerate, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
 
@@ -1414,13 +1415,13 @@ void rs2_enable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, int index
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
-int rs2_can_enable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, int index, int width, int height, rs2_format format, int framerate, rs2_error ** error)try
+void rs2_enable_pipeline_device(rs2_pipeline* pipe, const char* serial, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
 
-    return pipe->pipe->can_enable(stream, index, width, height, format, framerate);
+    pipe->pipe->enable(serial);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, pipe)
+HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
 void rs2_disable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, rs2_error ** error) try
 {
@@ -1466,19 +1467,10 @@ int rs2_pipeline_poll_for_frames(rs2_pipeline * pipe, rs2_frame** output_frame, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, pipe, output_frame)
 
-int rs2_pipeline_get_extrinsics(rs2_pipeline * pipe, const rs2_stream_profile* from, const rs2_stream_profile* to, rs2_extrinsics* extrinsics, rs2_error ** error) try
+rs2_stream_profile_list* rs2_pipeline_get_active_streams(rs2_pipeline * pipe, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(pipe);
-    VALIDATE_NOT_NULL(extrinsics);
-
-    return pipe->pipe->get_extrinsics(*from->profile, *to->profile, extrinsics) ? 1 : 0;
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, pipe, extrinsics)
-
-rs2_stream_profile_list* rs2_pipeline_get_selection(rs2_pipeline * pipe, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(pipe);
-    return new rs2_stream_profile_list{ pipe->pipe->get_selection() };
+    return new rs2_stream_profile_list{ pipe->pipe->get_active_streams() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)
 
@@ -1496,14 +1488,6 @@ const rs2_stream_profile* rs2_pipeline_get_stream_type_selection(const rs2_strea
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
 
-
-rs2_context* rs2_pipeline_get_context(rs2_pipeline * pipe, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(pipe);
-    return new rs2_context{ pipe->pipe->get_context() };
-}
-NOEXCEPT_RETURN(nullptr, pipe)
-
 void rs2_delete_pipeline(rs2_pipeline* pipe) try
 {
     VALIDATE_NOT_NULL(pipe);
@@ -1513,16 +1497,14 @@ void rs2_delete_pipeline(rs2_pipeline* pipe) try
 NOEXCEPT_RETURN(, pipe)
 
 
-rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_frame_processor_callback* proc, rs2_error** error) try
+rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* proc, rs2_error** error) try
 {
-    VALIDATE_NOT_NULL(ctx);
-
-    auto block = std::make_shared<librealsense::processing_block>(ctx->ctx->get_time_service());
+    auto block = std::make_shared<librealsense::processing_block>();
     block->set_processing_callback({ proc, [](rs2_frame_processor_callback* p) { p->release(); } });
 
     return new rs2_processing_block { block };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, proc)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, proc)
 
 rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error)
 {
@@ -1620,25 +1602,22 @@ int rs2_get_frame_points_count(const rs2_frame* frame, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
 
-rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error) try
+rs2_processing_block* rs2_create_pointcloud(rs2_error** error) try
 {
-    VALIDATE_NOT_NULL(ctx);
-
-    auto block = std::make_shared<librealsense::pointcloud>(ctx->ctx->get_time_service());
+    auto block = std::make_shared<librealsense::pointcloud>();
 
     return new rs2_processing_block { block };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, 0)
 
-rs2_processing_block* rs2_create_align(rs2_context* ctx, rs2_stream align_to, rs2_error** error) try
+rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error) try
 {
-    VALIDATE_NOT_NULL(ctx);
     VALIDATE_ENUM(align_to);
 
-    auto block = std::make_shared<librealsense::align>(ctx->ctx->get_time_service(), align_to);
+    auto block = std::make_shared<librealsense::align>(align_to);
     return new rs2_processing_block{ block };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, align_to)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, align_to)
 
 rs2_processing_block* rs2_create_colorizer(rs2_error** error)
 {
@@ -1669,3 +1648,9 @@ float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2
     return df->get_distance(x, y);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref, x, y)
+
+rs2_time_t rs2_get_time(rs2_error** error) try
+{
+    return environment::get_instance().get_time_service()->get_time();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0,0)

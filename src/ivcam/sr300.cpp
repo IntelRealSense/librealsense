@@ -183,9 +183,9 @@ namespace librealsense
             : device(ctx, group), _depth_device_idx(add_sensor(create_depth_device(ctx, depth))),
               _color_device_idx(add_sensor(create_color_device(ctx, color))),
               _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(ctx->get_backend().create_usb_device(hwm_device), get_depth_sensor()))),
-              _depth_stream(new stream(ctx, RS2_STREAM_DEPTH)),
-              _ir_stream(new stream(ctx, RS2_STREAM_INFRARED)),
-              _color_stream(new stream(ctx, RS2_STREAM_COLOR))
+              _depth_stream(new stream(RS2_STREAM_DEPTH)),
+              _ir_stream(new stream(RS2_STREAM_INFRARED)),
+              _color_stream(new stream(RS2_STREAM_COLOR))
     {
         using namespace ivcam;
         static auto device_name = "Intel RealSense SR300";
@@ -199,7 +199,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_NAME,             device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER,    serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, fw_version);
-        register_info(RS2_CAMERA_INFO_LOCATION,         depth.device_path);
+        register_info(RS2_CAMERA_INFO_PHYSICAL_PORT,         depth.device_path);
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE,    std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID,       pid_hex_str);
 
@@ -216,8 +216,8 @@ namespace librealsense
             return from_pose(depth_to_color);
         });
 
-        ctx->register_same_extrinsics(*_depth_stream, *_ir_stream);
-        ctx->register_extrinsics(*_depth_stream, *_color_stream, _depth_to_color_extrinsics);
+        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_ir_stream);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_color_stream, _depth_to_color_extrinsics);
         
         register_stream_to_extrinsic_group(*_depth_stream, 0);
         register_stream_to_extrinsic_group(*_ir_stream, 0);

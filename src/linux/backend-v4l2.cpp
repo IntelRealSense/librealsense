@@ -787,10 +787,16 @@ namespace librealsense
                         }
                         else
                         {
-                            frame_object fo{ buffer->get_length_frame_only(),
-                                        has_metadata() ? MAX_META_DATA_SIZE : uint8_t(0),
-                                        buffer->get_frame_start(),
-                                        has_metadata() ? buffer->get_frame_start() + buffer->get_length_frame_only() : nullptr };
+                            void* md_start = nullptr;
+                            uint8_t md_size = 0;
+                            if (has_metadata())
+                            {
+                                md_start = buffer->get_frame_start() + buffer->get_length_frame_only();
+                                md_size = (*(uint8_t*)md_start);
+                            }
+
+                            frame_object fo{ buffer->get_length_frame_only(), md_size,
+                                buffer->get_frame_start(), md_start };
 
                              if (buf.bytesused > 0)
                              {
@@ -1166,6 +1172,7 @@ namespace librealsense
             case RS2_OPTION_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
             case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
             case RS2_OPTION_POWER_LINE_FREQUENCY : return V4L2_CID_POWER_LINE_FREQUENCY;
+            case RS2_OPTION_AUTO_EXPOSURE_PRIORITY: return V4L2_CID_EXPOSURE_AUTO_PRIORITY;
             default: throw linux_backend_exception(to_string() << "no v4l2 cid for option " << option);
             }
         }

@@ -44,7 +44,7 @@ struct frame_additional_data
 
 namespace librealsense
 {
-    typedef std::map<rs2_frame_metadata, std::shared_ptr<md_attribute_parser_base>> metadata_parser_map;
+    typedef std::map<rs2_frame_metadata_value, std::shared_ptr<md_attribute_parser_base>> metadata_parser_map;
 
     // Define a movable but explicitly noncopyable buffer type to hold our frame data
     class frame : public frame_interface
@@ -75,8 +75,8 @@ namespace librealsense
         }
 
         virtual ~frame() { on_release.reset(); }
-        rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const override;
-        bool supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const override;
+        rs2_metadata_type get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const override;
+        bool supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const override;
         const byte* get_frame_data() const override;
         rs2_time_t get_frame_timestamp() const override;
         rs2_timestamp_domain get_frame_timestamp_domain() const override;
@@ -155,11 +155,11 @@ namespace librealsense
         size_t get_embedded_frames_count() const { return data.size() / sizeof(rs2_frame*); }
 
         // In the next section we make the composite frame "look and feel" like the first of its children
-        rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const override
+        rs2_metadata_type get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const override
         {
             return first()->get_frame_metadata(frame_metadata);
         }
-        bool supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const override
+        bool supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const override
         {
             return first()->supports_frame_metadata(frame_metadata);
         }
@@ -247,7 +247,17 @@ namespace librealsense
 
         float get_units() const { return query_units(this->get_sensor()); }
 
-        const frame_interface* get_original_depth() const { return _original.frame; }
+        const frame_interface* get_original_depth() const
+        {
+            auto res = _original.frame;
+            auto df = dynamic_cast<depth_frame*>(res);
+            if (df)
+            {
+                auto prev = df->get_original_depth();
+                if (prev) return prev;
+            }
+            return res;
+        }
 
         void set_original(frame_holder h)
         {

@@ -183,7 +183,7 @@ void playback_sensor::register_sensor_streams(const stream_profiles& profiles)
 {
     for (auto profile : profiles)
     {
-        profile->set_unique_id(m_parent_device.get_context()->generate_stream_id());
+        profile->set_unique_id(environment::get_instance().generate_stream_id());
         m_available_profiles.push_back(profile);
         m_streams[std::make_pair(profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()))] = profile;
     }
