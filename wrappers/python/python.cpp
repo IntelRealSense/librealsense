@@ -239,20 +239,12 @@ PYBIND11_PLUGIN(NAME) {
                 " snapshot of all connected devices a the time of the call.")
            .def("query_all_sensors", &rs2::context::query_all_sensors, "Generate a flat list of "
                 "all available sensors from all RealSense devices.")
-           .def("get_time", &rs2::context::get_time, "The time at specific time point. In live "
-                "and recording contexts it will return the system time, and in playback contexts "
-                "it will return the recorded time.")
            .def("get_sensor_parent", &rs2::context::get_sensor_parent, "s"_a)
-           .def("get_extrinsics", (rs2_extrinsics (rs2::context::*)(const rs2::sensor&, const rs2::sensor&) const)
-                &rs2::context::get_extrinsics, "from"_a, "to"_a)
-           .def("get_extrinsics", (rs2_extrinsics (rs2::context::*)(const rs2::stream_profile&, const rs2::stream_profile&) const)
-                &rs2::context::get_extrinsics, "from"_a, "to"_a)
            .def("set_devices_changed_callback", [](rs2::context& self, std::function<void(rs2::event_information)> &callback)
                 {
                     self.set_devices_changed_callback(callback);
                 }, "Register devices changed callback.", "callback"_a)
            // not binding create_processing_block, not in Python API.
-           .def("create_pointcloud", &rs2::context::create_pointcloud)
            .def("load_device", &rs2::context::load_device, "Creates a devices from a RealSense file.\n"
                 "On successful load, the device will be appended to the context and a devices_changed event triggered."
                 "filename"_a)
@@ -611,10 +603,6 @@ PYBIND11_PLUGIN(NAME) {
     pipeline.def(py::init<rs2::context>(), "ctx"_a = rs2::context())
             .def("get_device", &rs2::pipeline::get_device)
             .def("start", (void (rs2::pipeline::*)()const) &rs2::pipeline::start)
-            .def("start", [](rs2::pipeline& self, std::function<void(rs2::frame)>& callback)
-                 {
-                     self.start(callback);
-                 }, "callback"_a)
             .def("stop", &rs2::pipeline::stop)
             .def("enable_stream" , &rs2::pipeline::enable_stream, "stream"_a, "index"_a,
                  "width"_a, "height"_a, "format"_a, "framerate"_a)

@@ -66,6 +66,7 @@ endif()
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
 set(REALSENSE_CPP
+    src/environment.cpp
     src/device_hub.cpp
     src/pipeline.cpp
     src/archive.cpp
@@ -166,6 +167,7 @@ set(REALSENSE_HPP
     src/core/extension.h
     src/core/processing.h
 
+    src/environment.h
     src/device_hub.h
     src/pipeline.h
     src/config.h

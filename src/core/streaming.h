@@ -32,7 +32,6 @@ namespace librealsense
     {
     public:
         virtual ~stream_interface() = default;
-        virtual context& get_context() const = 0;
 
         virtual int get_stream_index() const = 0;
         virtual void set_stream_index(int index) = 0;

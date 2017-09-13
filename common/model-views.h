@@ -407,8 +407,8 @@ namespace rs2
     class async_pointclound_mapper
     {
     public:
-        async_pointclound_mapper(pointcloud pc)
-            : pc(pc), keep_calculating_pointcloud(true),
+        async_pointclound_mapper()
+            : keep_calculating_pointcloud(true),
               resulting_3d_models(1), depth_frames_to_render(1),
               t([this]() {render_loop(); })
         {
@@ -463,8 +463,7 @@ namespace rs2
     public:
         void reset_camera(float3 pos = { 0.0f, 0.0f, -1.5f });
 
-        viewer_model(context ctx)
-            : pc(ctx.create_pointcloud())
+        viewer_model()
         {
             reset_camera();
             rs2_error* e = nullptr;

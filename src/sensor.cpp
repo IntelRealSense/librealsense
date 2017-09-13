@@ -10,7 +10,7 @@
 #include <array>
 #include <set>
 #include <unordered_set>
-
+#include "environment.h"
 
 namespace librealsense
 {
@@ -20,8 +20,7 @@ namespace librealsense
           _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
           _on_before_frame_callback(nullptr),
           _metadata_parsers(std::make_shared<metadata_parser_map>()),
-        _on_open(nullptr),
-          _source(dev->get_context()->get_time_service()),
+          _on_open(nullptr),
           _owner(dev),
           _profiles([this]() { return this->init_stream_profiles(); })
     {
@@ -70,7 +69,7 @@ namespace librealsense
 
     void sensor_base::assign_stream(const std::shared_ptr<stream_interface>& stream, std::shared_ptr<stream_profile_interface>& target) const
     {
-        _owner->get_context()->register_same_extrinsics(*stream, *target);
+        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*stream, *target);
         target->set_unique_id(stream->get_unique_id());
     }
 
@@ -218,7 +217,7 @@ namespace librealsense
                 {
                     for (auto&& output : unpacker.outputs)
                     {
-                        auto profile = std::make_shared<video_stream_profile>(_owner->get_context(), p);
+                        auto profile = std::make_shared<video_stream_profile>(p);
                         profile->set_dims(p.width, p.height);
                         profile->set_stream_type(output.first.type);
                         profile->set_stream_index(output.first.index);
@@ -317,7 +316,7 @@ namespace librealsense
                 _device->probe_and_commit(mode.profile, !mode.requires_processing(),
                 [this, mode, timestamp_reader, requests](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
-                    auto system_time = _owner->get_context()->get_time();
+                    auto system_time = environment::get_instance().get_time_service()->get_time();
 
                     if (!this->is_streaming())
                     {
@@ -654,7 +653,7 @@ namespace librealsense
             {
                 auto p = elem.second;
                 platform::stream_profile sp{ 1, 1, p.fps, stream_to_fourcc(p.stream) };
-                auto profile = std::make_shared<stream_profile_base>(_owner->get_context(), sp);
+                auto profile = std::make_shared<stream_profile_base>(sp);
                 profile->set_stream_type(p.stream);
                 profile->set_format(p.format);
                 profile->set_framerate(p.fps);
@@ -751,7 +750,7 @@ namespace librealsense
 
         _hid_device->start_capture([this](const platform::sensor_data& sensor_data)
         {
-            auto system_time = _owner->get_context()->get_time();
+            auto system_time = environment::get_instance().get_time_service()->get_time();
             auto timestamp_reader = _hid_iio_timestamp_reader.get();
 
             // TODO:

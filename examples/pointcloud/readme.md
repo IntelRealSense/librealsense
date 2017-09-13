@@ -72,18 +72,18 @@ Using helper functions on the `frameset` object we check for new depth and color
 ```cpp
 // Wait for the next set of frames from the camera
 auto frames = pipe.wait_for_frames();
-if (auto color = frames.get_color_frame())
+if (rs2::frame depth = frames.get_depth_frame())
+{
+    // If we got a depth frame, generate the pointcloud and texture mappings
+    points = pc.calculate(depth);
+}
+if (rs2::frame color = frames.get_color_frame())
 {
     // Tell pointcloud object to map to this color frame
     pc.map_to(color);
 
     // Upload the color frame to OpenGL
     app_state.tex.upload(color);
-}
-if (auto depth = frames.get_depth_frame())
-{
-    // If we got a depth frame, generate the pointcloud and texture mappings
-    points = pc.calculate(depth);
 }
 ```
 

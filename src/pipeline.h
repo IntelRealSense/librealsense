@@ -42,8 +42,7 @@ namespace librealsense
         util::config _config;
         util::config::multistream _multistream;
         bool _commited = false;
-        bool _streaming = false;
-        bool _async_mode = true;
+        bool _streaming = false; 
     };
 
 }

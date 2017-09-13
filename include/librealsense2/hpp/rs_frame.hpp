@@ -359,7 +359,6 @@ namespace rs2
         depth_frame get_depth_frame() const
         {
             auto f = first_or_default(RS2_STREAM_DEPTH);
-            if (!f || !f.is<depth_frame>()) throw error("Frame of requested stream type was not found!");
             return f.as<depth_frame>();
         }
 
@@ -373,7 +372,6 @@ namespace rs2
                 if (ir && ir.get_profile().format() == RS2_FORMAT_RGB8)
                     f = ir;
             }
-            if (!f) throw error("Frame of requested stream type was not found!");
             return f;
         }
         size_t size() const

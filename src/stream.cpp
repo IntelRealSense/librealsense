@@ -5,15 +5,10 @@
 
 namespace librealsense
 {
-    stream::stream(std::shared_ptr<context> ctx, rs2_stream stream_type, int index)
-        : _ctx(ctx), _index(index), _type(stream_type)
+    stream::stream(rs2_stream stream_type, int index)
+        : _index(index), _type(stream_type)
     {
-        _uid = ctx->generate_stream_id();
-    }
-
-    context& stream::get_context() const
-    {
-        return *_ctx;
+        _uid = environment::get_instance().generate_stream_id();
     }
 
     int stream::get_stream_index() const
@@ -36,17 +31,12 @@ namespace librealsense
         _type = stream;
     }
 
-    stream_profile_base::stream_profile_base(std::shared_ptr<context> ctx, platform::stream_profile sp)
-        : backend_stream_profile(std::move(sp)), _ctx(ctx)
+    stream_profile_base::stream_profile_base(platform::stream_profile sp)
+        : backend_stream_profile(std::move(sp))
     {
         _c_ptr = &_c_wrapper;
         _c_wrapper.profile = this;
         _c_wrapper.clone = nullptr;
-    }
-
-    context& stream_profile_base::get_context() const
-    {
-        return *_ctx;
     }
 
     int stream_profile_base::get_stream_index() const
@@ -106,8 +96,8 @@ namespace librealsense
 
     std::shared_ptr<stream_profile_interface> stream_profile_base::clone() const
     {
-        auto res = std::make_shared<stream_profile_base>(_ctx, get_backend_profile());
-        res->set_unique_id(_ctx->generate_stream_id());
+        auto res = std::make_shared<stream_profile_base>(get_backend_profile());
+        res->set_unique_id(environment::get_instance().generate_stream_id());
         return res;
     }
 

@@ -6,6 +6,7 @@
 #include "core/motion.h"
 #include "stream.h"
 #include "media/ros/ros_reader.h"
+#include "environment.h"
 
 using namespace device_serializer;
 
@@ -573,7 +574,7 @@ void playback_device::register_extrinsics(const device_serializer::device_snapsh
             });
             m_extrinsics_map[p1->get_unique_id()] = e1.second;
             m_extrinsics_map[p2->get_unique_id()] = e2.second;
-            m_context->register_extrinsics(*p1, *p2, extrinsic_fetcher);
+            environment::get_instance().get_extrinsics_graph().register_extrinsics(*p1, *p2, extrinsic_fetcher);
             m_extrinsics_fetchers.push_back(extrinsic_fetcher);  //Caching the lazy<rs2_extrinsics> since context holds weak_ptr
         }
     }

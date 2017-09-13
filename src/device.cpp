@@ -4,6 +4,7 @@
 #include "device.h"
 #include "image.h"
 #include "stream.h"
+#include "environment.h"
 
 using namespace librealsense;
 #include <functional>
@@ -76,7 +77,7 @@ std::pair<uint32_t, rs2_extrinsics> librealsense::device::get_extrinsics(const s
     auto pair = _extrinsics.at(stream_index);
     auto pin_stream = pair.second;
     rs2_extrinsics ext{};
-    if (_context->try_fetch_extrinsics(*pin_stream, stream, &ext) == false)
+    if (environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics(*pin_stream, stream, &ext) == false)
     {
         throw std::runtime_error(to_string() << "Failed to fetch extrinsics between pin stream (" << pin_stream->get_unique_id() << ") to given stream (" << stream.get_unique_id() << ")");
     }
