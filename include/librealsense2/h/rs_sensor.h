@@ -24,7 +24,7 @@ typedef enum rs2_camera_info {
     RS2_CAMERA_INFO_NAME                           , /**< Friendly name */
     RS2_CAMERA_INFO_SERIAL_NUMBER                  , /**< Device serial number */
     RS2_CAMERA_INFO_FIRMWARE_VERSION               , /**< Primary firmware version */
-    RS2_CAMERA_INFO_PHYSICAL_PORT                       , /**< Unique identifier of the port the device is connected to (platform specific) */
+    RS2_CAMERA_INFO_PHYSICAL_PORT                  , /**< Unique identifier of the port the device is connected to (platform specific) */
     RS2_CAMERA_INFO_DEBUG_OP_CODE                  , /**< If device supports firmware logging, this is the command to send to get logs from firmware */
     RS2_CAMERA_INFO_ADVANCED_MODE                  , /**< True iff the device is in advanced mode */
     RS2_CAMERA_INFO_PRODUCT_ID                     , /**< Product ID as reported in the USB descriptor */

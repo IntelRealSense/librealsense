@@ -1089,15 +1089,19 @@ TEST_CASE("Streaming modes sanity check", "[live]")
         {
             disable_sensitive_options_for(dev);
 
+            std::string PID;
+            REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
+
             // make sure they provide at least one streaming mode
             std::vector<rs2::stream_profile> stream_profiles;
             REQUIRE_NOTHROW(stream_profiles = dev.get_stream_profiles());
             REQUIRE(stream_profiles.size() > 0);
 
-            // for each stream profile provided:
-            for (auto profile : stream_profiles) {
-                SECTION("check stream profile settings are sane")
-                {
+            SECTION("check stream profile settings are sane")
+            {
+                // for each stream profile provided:
+                for (auto profile : stream_profiles) {
+
                     // require that the settings are sane
                     REQUIRE(profile.format() > RS2_FORMAT_ANY);
                     REQUIRE(profile.format() < RS2_FORMAT_COUNT);
@@ -1121,25 +1125,40 @@ TEST_CASE("Streaming modes sanity check", "[live]")
                     REQUIRE_NOTHROW(dev.stop());
                     REQUIRE_NOTHROW(dev.close());
                 }
-                SECTION("check stream intrinsics are sane") {
+            }
+            SECTION("check stream intrinsics are sane")
+            {
+                for (auto profile : stream_profiles)
+                {
                     if (auto video = profile.as<video_stream_profile>())
                     {
                         rs2_intrinsics intrin;
-                        REQUIRE_NOTHROW(intrin = video.get_intrinsics());
+                        CAPTURE(video.format());
+                        CAPTURE(video.width());
+                        CAPTURE(video.height());
 
-                        // Intrinsic width/height must match width/height of streaming mode we requested
-                        REQUIRE(intrin.width == video.width());
-                        REQUIRE(intrin.height == video.height());
+                        if ((PID == "0AA5") || (RS2_FORMAT_Y16 != video.format())) // Y16 format intrinsics are available for SR300 only
+                        {
+                            REQUIRE_NOTHROW(intrin = video.get_intrinsics());
 
-                        // Principal point must be within center 20% of image
-                        REQUIRE(intrin.ppx > video.width() * 0.4f);
-                        REQUIRE(intrin.ppx < video.width() * 0.6f);
-                        REQUIRE(intrin.ppy > video.height() * 0.4f);
-                        REQUIRE(intrin.ppy < video.height() * 0.6f);
+                            // Intrinsic width/height must match width/height of streaming mode we requested
+                            REQUIRE(intrin.width == video.width());
+                            REQUIRE(intrin.height == video.height());
 
-                        // Focal length must be nonnegative (todo - Refine requirements based on known expected FOV)
-                        REQUIRE(intrin.fx > 0.0f);
-                        REQUIRE(intrin.fy > 0.0f);
+                            // Principal point must be within center 20% of image
+                            REQUIRE(intrin.ppx > video.width() * 0.4f);
+                            REQUIRE(intrin.ppx < video.width() * 0.6f);
+                            REQUIRE(intrin.ppy > video.height() * 0.4f);
+                            REQUIRE(intrin.ppy < video.height() * 0.6f);
+
+                            // Focal length must be non-negative (todo - Refine requirements based on known expected FOV)
+                            REQUIRE(intrin.fx > 0.0f);
+                            REQUIRE(intrin.fy > 0.0f);
+                        }
+                        else
+                        {
+                            REQUIRE_THROWS(intrin = video.get_intrinsics());
+                        }
                     }
                 }
             }
