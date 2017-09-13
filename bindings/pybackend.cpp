@@ -92,7 +92,27 @@ PYBIND11_PLUGIN(NAME) {
         .value("sharpness", RS2_OPTION_SHARPNESS)
         .value("white_balance", RS2_OPTION_WHITE_BALANCE)
         .value("enable_auto_exposure", RS2_OPTION_ENABLE_AUTO_EXPOSURE)
-        .value("enable_auto_white_balance", RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+        .value("enable_auto_white_balance", RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
+        .value("visual_preset", RS2_OPTION_VISUAL_PRESET)
+        .value("laser_power", RS2_OPTION_LASER_POWER)
+        .value("accuracy", RS2_OPTION_ACCURACY)
+        .value("motion_range", RS2_OPTION_MOTION_RANGE)
+        .value("filter_option", RS2_OPTION_FILTER_OPTION)
+        .value("confidence_threshold", RS2_OPTION_CONFIDENCE_THRESHOLD)
+        .value("emitter_enabled", RS2_OPTION_EMITTER_ENABLED)
+        .value("frames_queue_size", RS2_OPTION_FRAMES_QUEUE_SIZE)
+        .value("total_frame_drops", RS2_OPTION_TOTAL_FRAME_DROPS)
+        .value("auto_exposure_mode", RS2_OPTION_AUTO_EXPOSURE_MODE)
+        .value("power_line_frequency", RS2_OPTION_POWER_LINE_FREQUENCY)
+        .value("asic_temperature", RS2_OPTION_ASIC_TEMPERATURE)
+        .value("error_polling_enabled", RS2_OPTION_ERROR_POLLING_ENABLED)
+        .value("projector_temperature", RS2_OPTION_PROJECTOR_TEMPERATURE)
+        .value("output_trigger_enabled", RS2_OPTION_OUTPUT_TRIGGER_ENABLED)
+        .value("motion_module_temperature", RS2_OPTION_MOTION_MODULE_TEMPERATURE)
+        .value("depth_units", RS2_OPTION_DEPTH_UNITS)
+        .value("enable_motion_correction", RS2_OPTION_ENABLE_MOTION_CORRECTION)
+        .value("auto_exposure_priority", RS2_OPTION_AUTO_EXPOSURE_PRIORITY)
+        .value("count", RS2_OPTION_COUNT);
 
 
     py::enum_<uvc::power_state> power_state(m, "power_state");
