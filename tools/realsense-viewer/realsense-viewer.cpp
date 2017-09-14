@@ -209,6 +209,7 @@ rect get_window_rect(GLFWwindow* window)
     glfwGetWindowSize(window, &width, &height);
     int xpos, ypos;
     glfwGetWindowPos(window, &xpos, &ypos);
+    
     return { (float)xpos, (float)ypos, 
              (float)width, (float)height };
 }
@@ -219,6 +220,7 @@ rect get_monitor_rect(GLFWmonitor* monitor)
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
     int xpos, ypos;
     glfwGetMonitorPos(monitor, &xpos, &ypos);
+    
     return{ (float)xpos, (float)ypos, 
             (float)mode->width, (float)mode->height };
 }
@@ -246,14 +248,18 @@ int pick_scale_factor(GLFWwindow* window)
         }
     }
 
-    int widthMM, heightMM;
+    int widthMM = 0;
+    int heightMM = 0;
     glfwGetMonitorPhysicalSize(best, &widthMM, &heightMM);
+    
+    // This indicates that the monitor dimentions are unknown
+    if (widthMM * heightMM == 0) return 1.f;
     
     // The actual calculation is somewhat arbitrary, but we are going for
     // about 1cm buttons, regardless of resultion
     // We discourage fractional scale factors
     float how_many_pixels_in_mm = 
-        get_monitor_rect(best).area() / (widthMM * heightMM + 1);
+        get_monitor_rect(best).area() / (widthMM * heightMM);
     float scale = sqrt(how_many_pixels_in_mm) / 5.f;
     if (scale < 1.f) return 1.f;
     return floor(scale);
