@@ -13,6 +13,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <chrono>
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <map>
@@ -216,6 +217,28 @@ namespace rs2
                         unnormalizeT(h, 0.f, unnormalize_to.h)};
         }
 
+        // Calculate the intersection between two rects
+        // If the intersection is empty, a rect with width and height zero will be returned
+        rect intersection(const rect& other) const
+        {
+            auto x1 = std::max(x, other.x);
+            auto y1 = std::max(y, other.y);
+            auto x2 = std::min(x + w, other.x + other.w);
+            auto y2 = std::min(y + h, other.y + other.h);
+
+            return{
+                x1, y1, 
+                std::max(x2 - x1, 0.f), 
+                std::max(y2 - y1, 0.f)
+            };
+        }
+
+        // Calculate the area of the rect
+        float area() const
+        {
+            return w * h;
+        }
+
         rect cut_by(const rect& r) const
         {
             auto x1 = x;
@@ -269,7 +292,9 @@ namespace rs2
                 H *= scale;
             }
 
-            return{ x + floor(w - W) / 2, y + floor(h - H) / 2, W, H };
+            return{ floor(x + floor(w - W) / 2), 
+                    floor(y + floor(h - H) / 2), 
+                    W, H };
         }
 
         rect scale(float factor) const
@@ -539,6 +564,26 @@ namespace rs2
         }
     } */
 
+    // Helper class to keep track of time
+    class timer
+    {
+    public:
+        timer()
+        {
+            _start = std::chrono::high_resolution_clock::now();
+        }
+        
+        // Get elapsed milliseconds since timer creation
+        float elapsed_ms() const
+        {
+            auto duration = std::chrono::high_resolution_clock::now() - _start;
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+            return ms;
+        }
+    
+    private:
+        std::chrono::high_resolution_clock::time_point _start;
+    };
 
     class texture_buffer
     {
@@ -556,6 +601,21 @@ namespace rs2
         texture_buffer() : last_queue(1), texture(), colorize() {}
 
         GLuint get_gl_handle() const { return texture; }
+        
+        // Simplified version of upload that lets us load basic RGBA textures
+        // This is used for the splash screen
+        void upload_image(int w, int h, void* data)
+        {
+            if (!texture)
+                glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
 
         void upload(rs2::frame frame)
         {
