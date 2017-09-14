@@ -53,10 +53,6 @@ namespace librealsense
         }
 
         auto md = (librealsense::metadata_intel_basic*)(fo.metadata);
-        if(!md)
-        {
-            std::cout<<"!!!!!!md\n";
-        }
         if(_has_metadata[pin_index] && md)
         {
             return (double)(md->header.timestamp)*TIMESTAMP_USEC_TO_MSEC;
