@@ -253,7 +253,7 @@ int pick_scale_factor(GLFWwindow* window)
     // about 1cm buttons, regardless of resultion
     // We discourage fractional scale factors
     float how_many_pixels_in_mm = 
-        get_monitor_rect(best).area() / (widthMM * heightMM);
+        get_monitor_rect(best).area() / (widthMM * heightMM + 1);
     float scale = sqrt(how_many_pixels_in_mm) / 5.f;
     if (scale < 1.f) return 1.f;
     return floor(scale);
@@ -428,7 +428,7 @@ int main(int argv, const char** argc) try
             glLoadIdentity();
             glOrtho(0, w, h, 0, -1, +1);
             
-            if (splash_timer.elapsed_ms() < 500) // Fade-in the logo
+            if (splash_timer.elapsed_ms() < 500.f) // Fade-in the logo
                 splash_tex.show({0.f,0.f,(float)w,(float)h}, smoothstep(splash_timer.elapsed_ms(), 70.f, 500.f));
             else // ... and fade out
                 splash_tex.show({0.f,0.f,(float)w,(float)h}, 1.f - smoothstep(splash_timer.elapsed_ms(), 900.f, 1000.f));

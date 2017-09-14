@@ -2500,6 +2500,8 @@ namespace rs2
     )
     {
         std::map<int, rect> results;
+        if (factor == 0) return results; 
+
         // Calc the number of rows
         auto complement = ceil((float)active_streams.size() / factor);
 
@@ -2518,7 +2520,7 @@ namespace rs2
                     cell_width, cell_height - top_bar_height };
                 // Generate box to display the stream in
                 results[stream_index[*it]] = rxy.adjust_ratio((*it)->size);
-                it++;
+                ++it;
             }
         }
 
