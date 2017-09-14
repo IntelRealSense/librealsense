@@ -16,6 +16,11 @@
 
 #include <noc_file_dialog.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
+#include "res/int-rs-splash.hpp"
+
 using namespace rs2;
 using namespace rs400;
 
@@ -95,6 +100,97 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
     if (!was_added)
     {
         try { ctx.unload_device(file); } catch (...){ }
+    }
+}
+
+void refresh_devices(std::mutex& m,
+                     context& ctx,
+                     bool& refresh_device_list, 
+                     device_list& list,
+                     std::vector<std::pair<std::string, std::string>>& device_names,
+                     std::vector<device_model>& device_models,
+                     viewer_model& viewer_model,
+                     std::vector<device>& devs,
+                     std::string& error_message)
+{
+    std::lock_guard<std::mutex> lock(m);
+
+    if (refresh_device_list)
+    {
+        refresh_device_list = false;
+
+        try
+        {
+            auto prev_size = list.size();
+            list = ctx.query_devices();
+
+            device_names = get_devices_names(list);
+
+            if (device_models.size() == 0 && list.size() > 0 && prev_size == 0)
+            {
+                auto dev = [&](){
+                    for (size_t i = 0; i < list.size(); i++)
+                    {
+                        if (list[i].supports(RS2_CAMERA_INFO_NAME) &&
+                            std::string(list[i].get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera")
+                            return list[i];
+                    }
+                    return device();
+                }();
+
+                if (dev)
+                {
+                    device_models.emplace_back(dev, error_message, viewer_model);
+                    viewer_model.not_model.add_log(to_string() << device_models.rbegin()->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
+                }
+            }
+
+            devs.clear();
+            for (auto&& sub : list)
+            {
+                devs.push_back(sub);
+                for (auto&& s : sub.query_sensors())
+                {
+                    s.set_notifications_callback([&](const notification& n)
+                    {
+                        viewer_model.not_model.add_notification({ n.get_description(), n.get_timestamp(), n.get_severity(), n.get_category() });
+                    });
+                }
+            }
+
+
+            device_model* device_to_remove = nullptr;
+            while(true)
+            {
+                for (auto&& dev_model : device_models)
+                {
+                    bool still_around = false;
+                    for (auto&& dev : devs)
+                        if (get_device_name(dev_model.dev) == get_device_name(dev))
+                            still_around = true;
+                    if (!still_around) {
+                        for (auto&& s : dev_model.subdevices)
+                            s->streaming = false;
+                        device_to_remove = &dev_model;
+                    }
+                }
+                if (device_to_remove)
+                {
+                    device_models.erase(std::find_if(begin(device_models), end(device_models),
+                        [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(device_to_remove->dev); }));
+                    device_to_remove = nullptr;
+                }
+                else break;
+            }
+        }
+        catch (const error& e)
+        {
+            error_message = error_to_string(e);
+        }
+        catch (const std::exception& e)
+        {
+            error_message = e.what();
+        }
     }
 }
 
@@ -234,91 +330,53 @@ int main(int argv, const char** argc) try
         }
     }
 
+
+    int x, y, comp;
+    auto r = stbi_load_from_memory(splash, splash_size, &x, &y, &comp, false);
+    texture_buffer splash_tex;
+    splash_tex.upload_image(x, y, r);
+    std::atomic<bool> ready;
+    ready = false;
+    timer splash_timer;
+    
+    std::thread first_load([&](){
+        refresh_devices(m, ctx, refresh_device_list, list, device_names, device_models, viewer_model, devs, error_message);
+        ready = true;
+    });
+    first_load.detach();
+
     // Closing the window
     while (!glfwWindowShouldClose(window))
     {
+        glfwPollEvents();
+        int w, h;
+        glfwGetWindowSize(window, &w, &h);
+    
+        if (!ready || splash_timer.ms() < 1050)
         {
-            std::lock_guard<std::mutex> lock(m);
+            glPushMatrix();
+            glViewport(0.f, 0.f, w, h);
+            glClearColor(0.036f, 0.044f, 0.051f,1.f);
+            glClear(GL_COLOR_BUFFER_BIT);
 
-            if (refresh_device_list)
-            {
-                refresh_device_list = false;
-
-                try
-                {
-                    auto prev_size = list.size();
-                    list = ctx.query_devices();
-
-                    device_names = get_devices_names(list);
-
-                    if (device_models.size() == 0 && list.size() > 0 && prev_size == 0)
-                    {
-                        auto dev = [&](){
-                            for (size_t i = 0; i < list.size(); i++)
-                            {
-                                if (list[i].supports(RS2_CAMERA_INFO_NAME) &&
-                                    std::string(list[i].get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera")
-                                    return list[i];
-                            }
-                            return device();
-                        }();
-
-                        if (dev)
-                        {
-                            device_models.emplace_back(dev, error_message, viewer_model);
-                            viewer_model.not_model.add_log(to_string() << device_models.rbegin()->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
-                        }
-                    }
-
-                    devs.clear();
-                    for (auto&& sub : list)
-                    {
-                        devs.push_back(sub);
-                        for (auto&& s : sub.query_sensors())
-                        {
-                            s.set_notifications_callback([&](const notification& n)
-                            {
-                                viewer_model.not_model.add_notification({ n.get_description(), n.get_timestamp(), n.get_severity(), n.get_category() });
-                            });
-                        }
-                    }
-
-
-                    device_to_remove = nullptr;
-                    while(true)
-                    {
-                        for (auto&& dev_model : device_models)
-                        {
-                            bool still_around = false;
-                            for (auto&& dev : devs)
-                                if (get_device_name(dev_model.dev) == get_device_name(dev))
-                                    still_around = true;
-                            if (!still_around) {
-                                for (auto&& s : dev_model.subdevices)
-                                    s->streaming = false;
-                                device_to_remove = &dev_model;
-                            }
-                        }
-                        if (device_to_remove)
-                        {
-                            device_models.erase(std::find_if(begin(device_models), end(device_models),
-                                [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(device_to_remove->dev); }));
-                            device_to_remove = nullptr;
-                        }
-                        else break;
-                    }
-                }
-                catch (const error& e)
-                {
-                    error_message = error_to_string(e);
-                }
-                catch (const std::exception& e)
-                {
-                    error_message = e.what();
-                }
-            }
+            glLoadIdentity();
+            glOrtho(0, w, h, 0, -1, +1);
+            
+            if (splash_timer.ms() < 500)
+                splash_tex.show({0,0,w,h}, smoothstep(splash_timer.ms(), 70, 500));
+            else
+                splash_tex.show({0,0,w,h}, 1 - smoothstep(splash_timer.ms(), 900, 1000));
+        
+            glfwSwapBuffers(window);
+            glPopMatrix();
+            
+            // Yeild the CPU
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            continue;
         }
-
+        
+        refresh_devices(m, ctx, refresh_device_list, list, device_names, device_models, viewer_model, devs, error_message);
+       
         bool update_read_only_options = false;
         auto now = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration<double, std::milli>(now - last_time_point).count();
@@ -329,9 +387,6 @@ int main(int argv, const char** argc) try
             last_time_point = now;
         }
 
-        glfwPollEvents();
-        int w, h;
-        glfwGetWindowSize(window, &w, &h);
         w = w / data.scale_factor;
         h = h / data.scale_factor;
 
@@ -1152,6 +1207,7 @@ int main(int argv, const char** argc) try
                 if (viewer_model.streams[kvp.first].metadata_displayed)
                     viewer_model.streams[kvp.first].show_metadata(mouse);
             }
+           
         }
         else
         {
@@ -1200,6 +1256,8 @@ int main(int argv, const char** argc) try
         viewer_model.popup_if_error(font_14, error_message);
 
         ImGui::Render();
+
+        
         glfwSwapBuffers(window);
         mouse.mouse_wheel = 0;
 

@@ -13,6 +13,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <chrono>
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <map>
@@ -539,6 +540,25 @@ namespace rs2
         }
     } */
 
+    class timer
+    {
+    public:
+        timer()
+        {
+            _start = std::chrono::high_resolution_clock::now();
+        }
+        
+        float ms() const
+        {
+            auto duration = std::chrono::high_resolution_clock::now() - _start;
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+            return ms;
+        }
+    
+    private:
+        std::chrono::high_resolution_clock::time_point _start;
+        
+    };
 
     class texture_buffer
     {
@@ -556,6 +576,19 @@ namespace rs2
         texture_buffer() : last_queue(1), texture(), colorize() {}
 
         GLuint get_gl_handle() const { return texture; }
+        
+        void upload_image(int w, int h, void* data)
+        {
+            if (!texture)
+                glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
 
         void upload(rs2::frame frame)
         {
