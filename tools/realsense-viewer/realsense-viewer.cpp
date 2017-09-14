@@ -1160,7 +1160,7 @@ int main(int argv, const char** argc) try
             glLoadIdentity();
             glOrtho(0, w, h, 0, -1, +1);
 
-            auto layout = viewer_model.calc_layout(panel_width, panel_y, w - panel_width, h - panel_y - output_height);
+            auto layout = viewer_model.calc_layout({ panel_width, panel_y, w - panel_width, h - panel_y - output_height });
 
             if (layout.size() == 0 && device_models.size() > 0)
             {
@@ -1196,7 +1196,7 @@ int main(int argv, const char** argc) try
 
                 glColor3f(header_window_bg.x, header_window_bg.y, header_window_bg.z);
                 stream_rect.y -= 32;
-                stream_rect.h += 33;
+                stream_rect.h += 32;
                 stream_rect.w += 1;
                 draw_rect(stream_rect);
             }

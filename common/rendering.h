@@ -270,7 +270,9 @@ namespace rs2
                 H *= scale;
             }
 
-            return{ x + floor(w - W) / 2, y + floor(h - H) / 2, W, H };
+            return{ floor(x + floor(w - W) / 2), 
+                    floor(y + floor(h - H) / 2), 
+                    W, H };
         }
 
         rect scale(float factor) const
