@@ -42,7 +42,7 @@ namespace librealsense
     class processing_block : public processing_block_interface
     {
     public:
-        processing_block(std::shared_ptr<platform::time_service> ts);
+        processing_block();
 
         void set_processing_callback(frame_processor_callback_ptr callback) override;
         void set_output_callback(frame_callback_ptr callback) override;
@@ -62,7 +62,7 @@ namespace librealsense
     class pointcloud : public processing_block
     {
     public:
-        pointcloud(std::shared_ptr<platform::time_service> ts);
+        pointcloud();
 
     private:
         std::mutex              _mutex;
@@ -84,7 +84,7 @@ namespace librealsense
     class align : public processing_block
     {
     public:
-        align(std::shared_ptr<platform::time_service> ts, rs2_stream stream);
+        align(rs2_stream stream);
 
     private:
         std::mutex              _mutex;

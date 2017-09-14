@@ -70,7 +70,7 @@ namespace rs2
         * \param[in] frame_metadata  the frame_metadata whose value should be retrieved
         * \return            the value of the frame_metadata
         */
-        rs2_metadata_t get_frame_metadata(rs2_frame_metadata frame_metadata) const
+        rs2_metadata_type get_frame_metadata(rs2_frame_metadata_value frame_metadata) const
         {
             rs2_error* e = nullptr;
             auto r = rs2_get_frame_metadata(frame_ref, frame_metadata, &e);
@@ -82,7 +82,7 @@ namespace rs2
         * \param[in] frame_metadata  the frame_metadata to check for support
         * \return            true if the frame_metadata can be queried
         */
-        bool supports_frame_metadata(rs2_frame_metadata frame_metadata) const
+        bool supports_frame_metadata(rs2_frame_metadata_value frame_metadata) const
         {
             rs2_error* e = nullptr;
             auto r = rs2_supports_frame_metadata(frame_ref, frame_metadata, &e);
@@ -292,10 +292,33 @@ namespace rs2
         size_t _size;
     };
 
-    class composite_frame : public frame
+    class depth_frame : public video_frame
     {
     public:
-        composite_frame(const frame& f)
+        depth_frame(const frame& f)
+            : video_frame(f)
+        {
+            rs2_error* e = nullptr;
+            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_DEPTH_FRAME, &e) == 0 && !e))
+            {
+                reset();
+            }
+            error::handle(e);
+        }
+
+        float get_distance(int x, int y) const
+        {
+            rs2_error * e = nullptr;
+            auto r = rs2_depth_frame_get_distance(get(), x, y, &e);
+            error::handle(e);
+            return r;
+        }
+    };
+    class frameset : public frame
+    {
+    public:
+        frameset():_size(0) {};
+        frameset(const frame& f)
             : frame(f), _size(0)
         {
             rs2_error* e = nullptr;
@@ -331,7 +354,26 @@ namespace rs2
             if (!f) throw error("Frame of requested stream type was not found!");
             return f;
         }
+       
 
+        depth_frame get_depth_frame() const
+        {
+            auto f = first_or_default(RS2_STREAM_DEPTH);
+            return f.as<depth_frame>();
+        }
+
+        video_frame get_color_frame()
+        {
+            auto f = first_or_default(RS2_STREAM_COLOR);
+
+            if (!f)
+            {
+                auto ir = first_or_default(RS2_STREAM_INFRARED);
+                if (ir && ir.get_profile().format() == RS2_FORMAT_RGB8)
+                    f = ir;
+            }
+            return f;
+        }
         size_t size() const
         {
             return _size;
@@ -364,6 +406,22 @@ namespace rs2
             throw error("Requested index is out of range!");
         }
 
+        class iterator
+        {
+        public:
+            iterator(frameset* owner, size_t index = 0) : _owner(owner), _index(index) {}
+            iterator& operator++() { ++_index; return *this; }
+            bool operator==(const iterator& other) const { return _index == other._index; }
+            bool operator!=(const iterator& other) const { return !(*this == other); }
+
+            frame operator*() { return (*_owner)[_index]; }
+        private:
+            size_t _index = 0;
+            frameset* _owner;
+        };
+
+        iterator begin() { return iterator(this); }
+        iterator end() { return iterator(this, size()); }
     private:
         size_t _size;
     };
@@ -418,102 +476,9 @@ namespace rs2
 
     };
 
-    class depth_frame : public video_frame
-    {
-    public:
-        depth_frame(const frame& f)
-            : video_frame(f)
-        {
-            rs2_error* e = nullptr;
-            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_DEPTH_FRAME, &e) == 0 && !e))
-            {
-                reset();
-            }
-            error::handle(e);
-        }
+   
 
-        float get_distance(int x, int y) const
-        {
-            rs2_error * e = nullptr;
-            auto r = rs2_depth_frame_get_distance(get(), x, y, &e);
-            error::handle(e);
-            return r;
-        }
-    };
-
-    class frameset
-    {
-    public:
-        frameset() : _frame(nullptr) { }
-        frameset(composite_frame f) : _frame(std::move(f)) {}
-
-        size_t size() const
-        {
-            if (!_frame) return 0;
-
-            auto comp = _frame.as<composite_frame>();
-            if (comp)
-            {
-                return comp.size();
-            }
-            return 0;
-        }
-
-        frame get(rs2_stream s) const
-        {
-            for (size_t i = 0; i < size(); i++)
-            {
-                if (at(i).get_profile().stream_type() == s) return at(i);
-            }
-            return{};
-        }
-
-        depth_frame get_depth_frame() const
-        {
-            return get(RS2_STREAM_DEPTH);
-        }
-
-        video_frame get_color_frame()
-        {
-            auto res = get(RS2_STREAM_COLOR);
-            if (!res)
-            {
-                auto ir = get(RS2_STREAM_INFRARED);
-                if (ir && ir.get_profile().format() == RS2_FORMAT_RGB8)
-                    res = ir;
-            }
-            return res;
-        }
-
-        frame operator[](size_t index) const
-        {
-            return at(index);
-        }
-
-        frame at(size_t index) const
-        {
-            return _frame[index];
-        }
-
-        class iterator
-        {
-        public:
-            iterator(frameset* owner, size_t index = 0) : _owner(owner), _index(index) {}
-            iterator& operator++() { ++_index; return *this; }
-            bool operator==(const iterator& other) const { return _index == other._index; }
-            bool operator!=(const iterator& other) const { return !(*this == other); }
-
-            frame operator*(){return _owner->at(_index);}
-        private:
-            size_t _index = 0;
-            frameset* _owner;
-        };
-
-        iterator begin(){return iterator(this);}
-        iterator end(){return iterator(this, size());}
-    private:
-        composite_frame _frame;
-    };
+   
 
 }
 #endif // LIBREALSENSE_RS2_FRAME_HPP

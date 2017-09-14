@@ -257,7 +257,7 @@ struct test_duration {
 
 struct frame_metadata
 {
-    std::array<std::pair<bool, rs2_metadata_t>, RS2_FRAME_METADATA_COUNT> md_attributes{};
+    std::array<std::pair<bool, rs2_metadata_type>, RS2_FRAME_METADATA_COUNT> md_attributes{};
 };
 
 

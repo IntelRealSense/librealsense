@@ -114,58 +114,33 @@ namespace librealsense
         ~context();
         std::vector<std::shared_ptr<device_info>> query_devices() const;
         const platform::backend& get_backend() const { return *_backend; }
-        double get_time() const;
-
-        std::shared_ptr<platform::time_service> get_time_service() const { return _ts; }
 
         void set_devices_changed_callback(devices_changed_callback_ptr callback);
 
         std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices, const std::map<std::string, std::shared_ptr<device_info>>& playback_devices) const;
 
-        int generate_stream_id() { return _stream_id.fetch_add(1); }
+
 
         std::shared_ptr<device_interface> add_device(const std::string& file);
         void remove_device(const std::string& file);
-        void register_same_extrinsics(const stream_interface& from, const stream_interface& to);
-        void register_extrinsics(const stream_interface& from, const stream_interface& to, std::weak_ptr<lazy<rs2_extrinsics>> extr);
-        bool try_fetch_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics* extr);
-
-        struct extrinsics_lock
-        {
-            extrinsics_lock(context& owner) 
-                : _owner(owner) 
-            { 
-                _owner.cleanup_extrinsics();
-                _owner._locks_count.fetch_add(1); 
-            }
-            ~extrinsics_lock() { 
-                _owner._locks_count.fetch_sub(1); 
-            }
-
-            context& _owner;
-        };
 
     private:
         void on_device_changed(platform::backend_device_group old, platform::backend_device_group curr, const std::map<std::string, std::shared_ptr<device_info>>& old_playback_devices, const std::map<std::string, std::shared_ptr<device_info>>& new_playback_devices);
 
         int find_stream_profile(const stream_interface& p);
         std::shared_ptr<lazy<rs2_extrinsics>> fetch_edge(int from, int to);
-        bool try_fetch_extrinsics(int from, int to, std::set<int>& visited, rs2_extrinsics* extr);
-        void cleanup_extrinsics();
 
         std::shared_ptr<platform::backend> _backend;
-        std::shared_ptr<platform::time_service> _ts;
+
         std::shared_ptr<platform::device_watcher> _device_watcher;
         std::map<std::string, std::shared_ptr<device_info>> _playback_devices;
         devices_changed_callback_ptr _devices_changed_callback;
 
-        std::atomic<int> _stream_id;
+
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
         std::map<int, std::map<int, std::weak_ptr<lazy<rs2_extrinsics>>>> _extrinsics;
         std::mutex _streams_mutex;
 
-        std::shared_ptr<lazy<rs2_extrinsics>> _id;
-        std::atomic<int> _locks_count;
     };
 
     // Helper functions for device list manipulation:

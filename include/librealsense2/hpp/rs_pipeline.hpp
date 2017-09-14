@@ -25,15 +25,6 @@ namespace rs2
             error::handle(e);
         }
 
-        pipeline(device dev)
-            : _ctx(context()), _dev(dev)
-        {
-            rs2_error* e = nullptr;
-            _pipeline = std::shared_ptr<rs2_pipeline>(
-                rs2_create_pipeline_with_device(_ctx._context.get(), _dev.get().get(), &e),
-                rs2_delete_pipeline);
-            error::handle(e);
-        }
 
         /**
         * Retrieved the device used by the pipeline
@@ -55,22 +46,6 @@ namespace rs2
         }
 
         /**
-        * Retrieved the context used by the pipeline
-        * \return the device used by the pipeline
-        */
-        context get_context() const
-        {
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_context> ctx(
-                rs2_pipeline_get_context(_pipeline.get(), &e),
-                rs2_delete_context);
-
-            error::handle(e);
-
-            return context{ ctx };
-        }
-
-        /**
         * Start streaming with default configuration or configuration commited by enable_stream
         */
         void start() const
@@ -80,15 +55,10 @@ namespace rs2
             error::handle(e);
         }
 
-        /**
-        * Start passing frames into user provided callback
-        * \param[in] callback   Stream callback, can be any callable object accepting rs2::frame
-        */
-        template<class T>
-        void start(T callback) const
+        void open()const
         {
             rs2_error* e = nullptr;
-            rs2_start_pipeline_with_callback_cpp(_pipeline.get(), new frame_callback<T>(std::move(callback)), &e);
+            rs2_open_pipeline(_pipeline.get(), &e);
             error::handle(e);
         }
 
@@ -103,24 +73,6 @@ namespace rs2
         }
 
         /**
-        * return if a configuration is supported
-        * \param[in] stream    stream type
-        * \param[in] index     stream index
-        * \param[in] width     width
-        * \param[in] height    height
-        * \param[in] format    stream format
-        * \param[in] framerate    stream framerate
-        * \return if the configuration is supported
-        */
-        bool can_enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int framerate) const
-        {
-            rs2_error* e = nullptr;
-            auto res = rs2_can_enable_stream_pipeline(_pipeline.get(), stream, index, width, height, format, framerate, &e);
-            error::handle(e);
-
-            return res > 0 ? true : false;
-        }
-        /**
         * committing a configuration to the pipeline
         * \param[in] stream    stream type
         * \param[in] index     stream index
@@ -132,10 +84,24 @@ namespace rs2
         void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int framerate) const
         {
             rs2_error* e = nullptr;
-            rs2_enable_stream_pipeline(_pipeline.get(), stream, index, width, height, format, framerate, &e);
+            rs2_enable_pipeline_stream(_pipeline.get(), stream, index, width, height, format, framerate, &e);
             error::handle(e);
         }
-
+        /**
+        * committing a configuration to the pipeline
+        * \param[in] stream    stream type
+        * \param[in] index     stream index
+        * \param[in] width     width
+        * \param[in] height    height
+        * \param[in] format    stream format
+        * \param[in] framerate    stream framerate
+        */
+        void enable_device(std::string serial) const
+        {
+            rs2_error* e = nullptr;
+            rs2_enable_pipeline_device(_pipeline.get(), serial.c_str(), &e);
+            error::handle(e);
+        }
         /**
         *  remove a configuration from the pipeline
         * \param[in] stream    stream type
@@ -172,48 +138,35 @@ namespace rs2
             return frameset(f);
         }
 
+       
+
         /**
         * poll if a new frame is available and dequeue if it is
         * \param[out] f - frame handle
         * \return true if new frame was stored to f
         */
-        bool poll_for_frame(frame* f) const
+        bool poll_for_frames(frameset* f) const
         {
             rs2_error* e = nullptr;
             rs2_frame* frame_ref = nullptr;
             auto res = rs2_pipeline_poll_for_frames(_pipeline.get(), &frame_ref, &e);
             error::handle(e);
-            if (res) *f = { frame_ref };
-            return res > 0;
-        }
 
-        /**
-        * return the extrinsics from origin stream profile to target stream profile
-        * \param[in] from          origin stream profile
-        * \param[in] to            target stream profile
-        * \return       extrinsics from origin to target
-        */
-        rs2_extrinsics  get_extrinsics(const stream_profile& from, const stream_profile& to) const
-        {
-            rs2_extrinsics result;
-            rs2_error* e = nullptr;
-            rs2_frame* frame_ref = nullptr;
-            auto res = rs2_pipeline_get_extrinsics(_pipeline.get(), from.get(), to.get(), &result, &e);
-            error::handle(e);
-            return result;
+            if (res) *f = frameset(frame(frame_ref));
+            return res > 0;
         }
 
         /**
         * return the selected profiles of the pipeline
         * \return       list of stream profiles
         */
-        std::vector<stream_profile> get_selection() const
+        std::vector<stream_profile> get_active_streams() const
         {
             std::vector<stream_profile> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_stream_profile_list> list(
-                rs2_pipeline_get_selection(_pipeline.get(), &e),
+                rs2_pipeline_get_active_streams(_pipeline.get(), &e),
                 rs2_delete_stream_profiles_list);
             error::handle(e);
 
@@ -235,11 +188,11 @@ namespace rs2
         * \param[in] stream the specific stream
         * \param[in] index the specific stream index
         */
-        stream_profile get_selection(rs2_stream stream, int index = 0) const
+        stream_profile get_active_streams(const rs2_stream stream, const int index = 0) const
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_stream_profile_list> list(
-                rs2_pipeline_get_selection(_pipeline.get(), &e),
+                rs2_pipeline_get_active_streams(_pipeline.get(), &e),
                 rs2_delete_stream_profiles_list);
             error::handle(e);
 

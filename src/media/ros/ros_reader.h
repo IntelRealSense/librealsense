@@ -91,9 +91,9 @@ namespace librealsense
         static std::shared_ptr<metadata_parser_map> create_metadata_parser_map()
         {
             auto md_parser_map = std::make_shared<metadata_parser_map>();
-            for (int i = 0; i < static_cast<int>(rs2_frame_metadata::RS2_FRAME_METADATA_COUNT); ++i)
+            for (int i = 0; i < static_cast<int>(rs2_frame_metadata_value::RS2_FRAME_METADATA_COUNT); ++i)
             {
-                auto frame_md_type = static_cast<rs2_frame_metadata>(i);
+                auto frame_md_type = static_cast<rs2_frame_metadata_value>(i);
                 md_parser_map->insert(std::make_pair(frame_md_type, std::make_shared<md_constant_parser>(frame_md_type)));
             }
             return md_parser_map;
@@ -116,7 +116,7 @@ namespace librealsense
             }
 
             m_samples_view = nullptr;
-            m_frame_source = std::make_shared<frame_source>(m_context->get_time_service());
+            m_frame_source = std::make_shared<frame_source>();
             m_frame_source->init(m_metadata_parser_map);
             m_device_description = read_device_description();
         }
@@ -239,7 +239,7 @@ namespace librealsense
                 }
                 else
                 {
-                    rs2_frame_metadata type;
+                    rs2_frame_metadata_value type;
                     try
                     {
                         convert(key_val_msg->key, type);
@@ -249,9 +249,9 @@ namespace librealsense
                         LOG_ERROR(e.what());
                         continue;
                     }
-                    auto size_of_enum = sizeof(rs2_frame_metadata);
-                    rs2_metadata_t md = static_cast<rs2_metadata_t>(std::stoll(key_val_msg->value));
-                    auto size_of_data = sizeof(rs2_metadata_t);
+                    auto size_of_enum = sizeof(rs2_frame_metadata_value);
+                    rs2_metadata_type md = static_cast<rs2_metadata_type>(std::stoll(key_val_msg->value));
+                    auto size_of_data = sizeof(rs2_metadata_type);
                     if (total_md_size + size_of_enum + size_of_data > 255)
                     {
                         continue;; //stop adding metadata to frame
@@ -274,7 +274,7 @@ namespace librealsense
             rs2_format stream_format;
             convert(msg->encoding, stream_format);
             //attaching a temp stream to the frame. Playback sensor should assign the real stream
-            frame->set_stream(std::make_shared<video_stream_profile>(m_context, platform::stream_profile{}));
+            frame->set_stream(std::make_shared<video_stream_profile>(platform::stream_profile{}));
             frame->get_stream()->set_format(stream_format);
             frame->get_stream()->set_stream_index(stream_id.stream_index);
             frame->get_stream()->set_stream_type(stream_id.stream_type);
@@ -438,7 +438,7 @@ namespace librealsense
                         throw io_exception(to_string() << "Expected sensor_msgs::CameraInfo message but got " << video_stream_msg_ptr.getDataType() << "(Topic: " << video_stream_msg_ptr.getTopic() << ")");
                     }
 
-                    auto profile = std::make_shared<video_stream_profile>(m_context, platform::stream_profile{ video_stream_msg->width ,video_stream_msg->height, fps, static_cast<uint32_t>(format) });
+                    auto profile = std::make_shared<video_stream_profile>(platform::stream_profile{ video_stream_msg->width ,video_stream_msg->height, fps, static_cast<uint32_t>(format) });
                     rs2_intrinsics intrinsics{};
                     intrinsics.height = video_stream_msg->height;
                     intrinsics.width = video_stream_msg->width;

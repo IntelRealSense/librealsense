@@ -280,7 +280,7 @@ frame_interface* frame::publish(std::shared_ptr<archive_interface> new_owner)
     return owner->publish_frame(this);
 }
 
-rs2_metadata_t frame::get_frame_metadata(const rs2_frame_metadata& frame_metadata) const
+rs2_metadata_type frame::get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
 {
     auto md_parsers = owner->get_md_parsers();
 
@@ -298,7 +298,7 @@ rs2_metadata_t frame::get_frame_metadata(const rs2_frame_metadata& frame_metadat
     return it->second->get(*this);
 }
 
-bool frame::supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const
+bool frame::supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
 {
     auto md_parsers = owner->get_md_parsers();
 

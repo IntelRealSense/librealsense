@@ -18,6 +18,7 @@
 #include "types.h"
 #include "context.h"
 #include "stream.h"
+#include "environment.h"
 
 template<unsigned... Is> struct seq{};
 template<unsigned N, unsigned... Is>
@@ -77,9 +78,6 @@ namespace librealsense
                      rs2_recording_mode mode)
         : _devices_changed_callback(nullptr , [](rs2_devices_changed_callback*){})
     {
-        _stream_id = 0;
-        _locks_count = 0;
-
         LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
 
         switch(type)
@@ -97,14 +95,9 @@ namespace librealsense
         default: throw invalid_value_exception(to_string() << "Undefined backend type " << static_cast<int>(type));
         }
 
-       _ts = _backend->create_time_service();
+       environment::get_instance().set_time_service(_backend->create_time_service());
 
        _device_watcher = _backend->create_device_watcher();
-
-       _id = std::make_shared<lazy<rs2_extrinsics>>([]()
-       {
-           return identity_matrix();
-       });
     }
 
 
@@ -191,20 +184,21 @@ namespace librealsense
             std::shared_ptr<platform::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader)
             : uvc_sensor("RGB Camera", uvc_device, move(timestamp_reader), owner),
-              _default_stream(new stream(ctx, RS2_STREAM_COLOR))
+              _default_stream(new stream(RS2_STREAM_COLOR))
         {
         }
 
         stream_profiles init_stream_profiles() override
         {
+            auto lock = environment::get_instance().get_extrinsics_graph().lock();
+
             auto results = uvc_sensor::init_stream_profiles();
 
-            context::extrinsics_lock lock(_default_stream->get_context());
             for (auto p : results)
             {
                 // Register stream types
                 assign_stream(_default_stream, p);
-                _default_stream->get_context().register_same_extrinsics(*_default_stream, *p);
+                environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_default_stream, *p);
             }
 
             return results;
@@ -230,7 +224,7 @@ namespace librealsense
                 devs.push_back(ctx->get_backend().create_uvc_device(info));
             auto color_ep = std::make_shared<platform_camera_sensor>(ctx, this,
                                                                      std::make_shared<platform::multi_pins_uvc_device>(devs),
-                                                                     std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ctx->get_time_service())));
+                                                                     std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(environment::get_instance().get_time_service())));
             add_sensor(color_ep);
 
             register_info(RS2_CAMERA_INFO_NAME, "Platform Camera");
@@ -238,7 +232,7 @@ namespace librealsense
             std::transform(pid_str.begin(), pid_str.end(), pid_str.begin(), ::toupper);
 
             register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, uvc_infos.front().unique_id);
-            register_info(RS2_CAMERA_INFO_LOCATION, uvc_infos.front().device_path);
+            register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, uvc_infos.front().device_path);
             register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_str);
 
             color_ep->register_pixel_format(pf_yuy2);
@@ -312,48 +306,6 @@ namespace librealsense
     }
 
 
-    void context::register_same_extrinsics(const stream_interface& from, const stream_interface& to)
-    {
-        register_extrinsics(from, to, _id);
-    }
-
-    void context::register_extrinsics(const stream_interface& from, const stream_interface& to, std::weak_ptr<lazy<rs2_extrinsics>> extr)
-    {
-        std::lock_guard<std::mutex> lock(_streams_mutex);
-
-        // First, trim any dead stream, to make sure we are not keep gaining memory
-        cleanup_extrinsics();
-
-        // Second, register new extrinsics
-        auto from_idx = find_stream_profile(from);
-        // If this is a new index, add it to the map preemptively,
-        // This way find on to will be able to return another new index
-        if (_extrinsics.find(from_idx) == _extrinsics.end())
-            _extrinsics.insert({from_idx, {}});
-
-        auto to_idx = find_stream_profile(to);
-
-        _extrinsics[from_idx][to_idx] = extr;
-        _extrinsics[to_idx][from_idx] = std::shared_ptr<lazy<rs2_extrinsics>>(nullptr);
-    }
-
-    bool context::try_fetch_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics* extr)
-    {
-        std::lock_guard<std::mutex> lock(_streams_mutex);
-        cleanup_extrinsics();
-        auto from_idx = find_stream_profile(from);
-        auto to_idx = find_stream_profile(to);
-
-        if (from_idx == to_idx)
-        {
-            *extr = identity_matrix();
-            return true;
-        }
-
-        std::set<int> visited;
-        return try_fetch_extrinsics(from_idx, to_idx, visited, extr);
-    }
-
     void context::on_device_changed(platform::backend_device_group old,
                                     platform::backend_device_group curr,
                                     const std::map<std::string, std::shared_ptr<device_info>>& old_playback_devices,
@@ -390,121 +342,6 @@ namespace librealsense
         }
     }
 
-    int context::find_stream_profile(const stream_interface& p)
-    {
-        auto sp = p.shared_from_this();
-        auto max = 0;
-        for (auto&& kvp : _streams)
-        {
-            max = std::max(max, kvp.first);
-            if (kvp.second.lock().get() == sp.get())
-                return kvp.first;
-        }
-        _streams[max + 1] = sp;
-        return max + 1;
-    }
-
-    std::shared_ptr<lazy<rs2_extrinsics>> context::fetch_edge(int from, int to)
-    {
-        auto it = _extrinsics.find(from);
-        if (it != _extrinsics.end())
-        {
-            auto it2 = it->second.find(to);
-            if (it2 != it->second.end())
-            {
-                return it2->second.lock();
-            }
-        }
-
-        return nullptr;
-    }
-
-    bool context::try_fetch_extrinsics(int from, int to, std::set<int>& visited, rs2_extrinsics* extr)
-    {
-        if (visited.count(from)) return false;
-
-        auto it = _extrinsics.find(from);
-        if (it != _extrinsics.end())
-        {
-            auto back_edge = fetch_edge(to, from);
-            auto fwd_edge = fetch_edge(from, to);
-
-            // Make sure both parts of the edge are still available
-            if (fwd_edge.get() || back_edge.get())
-            {
-                if (fwd_edge.get())
-                    *extr = fwd_edge->operator*(); // Evaluate the expression
-                else
-                    *extr = inverse(back_edge->operator*());
-
-                return true;
-            }
-            else
-            {
-                visited.insert(from);
-                for (auto&& kvp : it->second)
-                {
-                    auto new_from = kvp.first;
-                    auto way = kvp.second;
-
-                    // Lock down the edge in both directions to ensure we can evaluate the extrinsics
-                    back_edge = fetch_edge(new_from, from);
-                    fwd_edge = fetch_edge(from, new_from);
-
-                    if ((back_edge.get() || fwd_edge.get()) &&
-                        try_fetch_extrinsics(new_from, to, visited, extr))
-                    {
-                        const auto local = [&]() {
-                            if (fwd_edge.get())
-                                return fwd_edge->operator*(); // Evaluate the expression
-                            else
-                                return inverse(back_edge->operator*());
-                        }();
-
-                        auto pose = to_pose(local) * to_pose(*extr);
-                        *extr = from_pose(pose);
-                        return true;
-                    }
-                }
-            }
-        } // If there are no extrinsics from from, there are none to it, so it is completely isolated
-        return false;
-    }
-
-    void context::cleanup_extrinsics()
-    {
-        if (_locks_count.load()) return;
-
-        auto counter = 0;
-        auto dead_counter = 0;
-        for (auto&& kvp : _streams)
-        {
-            if (!kvp.second.lock())
-            {
-                auto dead_id = kvp.first;
-                for (auto&& edge : _extrinsics[dead_id])
-                {
-                    if(edge.first == dead_id)
-                    {
-                        continue;
-                    }
-                    // First, delete any extrinsics going into the stream
-                    _extrinsics[edge.first].erase(dead_id);
-                    counter += 2;
-                }
-                // Then delete all extrinsics going out of this stream
-                _extrinsics.erase(dead_id);
-                dead_counter++;
-            }
-        }
-        if (dead_counter)
-        LOG_INFO("Found " << dead_counter << " unreachable streams, " << counter << " extrinsics deleted");
-    }
-
-    double context::get_time() const
-    {
-        return _ts->get_time();
-    }
 
     void context::set_devices_changed_callback(devices_changed_callback_ptr callback)
     {

@@ -5,11 +5,11 @@
 
 int main(int argc, char* const argv[])
 {
-    
+
     command_line_params::instance(argc, argv);
 
     std::vector<char*> new_argvs;
-    
+
     std::cout << "Running tests with the following parameters: ";
     for (auto i = 0; i < argc; i++)
     {
@@ -17,7 +17,7 @@ int main(int argc, char* const argv[])
         std::cout << param << " ";
     }
     std::cout << std::endl;
-    
+
     for (auto i = 0; i < argc; i++)
     {
         std::string param(argv[i]);
@@ -28,7 +28,7 @@ int main(int argc, char* const argv[])
         else
         {
             i++;
-            if (i < argc)
+            if (i < argc && param == "from")
             {
                 auto filename = argv[i];
                 std::ifstream f(filename);

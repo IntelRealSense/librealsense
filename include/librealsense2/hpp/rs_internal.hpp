@@ -18,7 +18,7 @@ namespace rs2
         */
         recording_context(const std::string& filename,
                           const std::string& section = "",
-                          rs2_recording_mode mode = RS2_RECORDING_MODE_BEST_QUALITY)
+                          rs2_recording_mode mode = RS2_RECORDING_MODE_BLANK_FRAMES)
         {
             rs2_error* e = nullptr;
             _context = std::shared_ptr<rs2_context>(
@@ -50,5 +50,22 @@ namespace rs2
 
         mock_context() = delete;
     };
+
+    namespace internal
+    {
+        /**
+        * \return            the time at specific time point, in live and redord contextes it will return the system time and in playback contextes it will return the recorded time
+        */
+        inline double get_time()
+        {
+            rs2_error* e = nullptr;
+            auto time = rs2_get_time( &e);
+
+            error::handle(e);
+
+            return time;
+        }
+    }
+
 }
 #endif // LIBREALSENSE_RS2_INTERNAL_HPP

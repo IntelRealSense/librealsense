@@ -23,8 +23,7 @@ namespace librealsense
     };
 
     syncer_proccess_unit::syncer_proccess_unit()
-        : processing_block(nullptr),
-          _matcher({})
+        : _matcher({})
     {
         _matcher.set_callback([this](frame_holder f, syncronization_environment env)
         {
@@ -112,57 +111,53 @@ namespace librealsense
         }
     }
 
-
-    const device_interface* get_device_from_frame(const frame_holder& f)
-    {
-        if (auto s = f.frame->get_sensor())
-        {
-            return &s->get_device();
-        }
-        else
-        {
-            return nullptr;
-        }
-    }
-
     std::shared_ptr<matcher> composite_matcher::find_matcher(const frame_holder& frame)
     {
         std::shared_ptr<matcher> matcher;
         auto stream_id = frame.frame->get_stream()->get_unique_id();
         auto stream_type = frame.frame->get_stream()->get_stream_type();
 
-        auto dev = get_device_from_frame(frame);
-        if(dev)
+        auto sensor = frame.frame->get_sensor();
+
+        auto dev_exist = false;
+
+        if(sensor)
         {
-            matcher = _matchers[stream_id];
-            if (!matcher)
+            auto dev = sensor->get_device().shared_from_this();
+
+            if(dev)
             {
-                matcher = dev->create_matcher(frame);
-
-                matcher->set_callback([&](frame_holder f, syncronization_environment env)
+                dev_exist = true;
+                matcher = _matchers[stream_id];
+                if (!matcher)
                 {
-                    sync(std::move(f), env);
-                });
+                    matcher = dev->create_matcher(frame);
 
-                for (auto stream : matcher->get_streams())
-                {
-                    if(_matchers[stream])
+                    matcher->set_callback([&](frame_holder f, syncronization_environment env)
                     {
-                        _frames_queue.erase(_matchers[stream].get());
-                    }
-                    _matchers[stream] = matcher;
-                    _streams.push_back(stream);
+                        sync(std::move(f), env);
+                    });
 
-                }
-                for (auto stream : matcher->get_streams_types())
-                {
-                    _streams_type.push_back(stream);
+                    for (auto stream : matcher->get_streams())
+                    {
+                        if(_matchers[stream])
+                        {
+                            _frames_queue.erase(_matchers[stream].get());
+                        }
+                        _matchers[stream] = matcher;
+                        _streams.push_back(stream);
+
+                    }
+                    for (auto stream : matcher->get_streams_types())
+                    {
+                        _streams_type.push_back(stream);
+                    }
+
                 }
 
             }
-
         }
-        else
+        if(!dev_exist)
         {
             matcher = _matchers[stream_id];
             // We don't know what device this frame came from, so just store it under device NULL with ID matcher
@@ -183,6 +178,7 @@ namespace librealsense
                 });
             }
         }
+
         return matcher;
     }
 

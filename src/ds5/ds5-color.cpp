@@ -16,19 +16,20 @@
 #include "ds5-private.h"
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
+#include "environment.h"
 
 namespace librealsense
 {
     ds5_color::ds5_color(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
         : ds5_device(ctx, group), device(ctx, group),
-          _color_stream(new stream(ctx, RS2_STREAM_COLOR))
+          _color_stream(new stream(RS2_STREAM_COLOR))
     {
         using namespace ds;
 
         _color_calib_table_raw = [this]() { return get_raw_calibration_table(rgb_calibration_id); };
         _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(get_color_stream_extrinsic(*_color_calib_table_raw)); });
-        ctx->register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
         auto color_devs_info = filter_by_mi(group.uvc_devices, 3); // TODO check
@@ -88,6 +89,8 @@ namespace librealsense
                 { 2.f, "60Hz" },
                 { 3.f, "Auto" }, }));
 
+        color_ep->register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
+
         color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
 
         // attributes of md_capture_timing
@@ -113,7 +116,8 @@ namespace librealsense
 
         color_ep->register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL, make_attribute_parser(&md_rgb_control::gain, md_rgb_control_attributes::gain_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_attribute_parser(&md_rgb_control::manual_exp, md_rgb_control_attributes::manual_exp_attribute, md_prop_offset));
-        color_ep->register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_attribute_parser(&md_rgb_control::ae_mode, md_rgb_control_attributes::ae_mode_attribute, md_prop_offset));
+        color_ep->register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_attribute_parser(&md_rgb_control::ae_mode, md_rgb_control_attributes::ae_mode_attribute, md_prop_offset,
+            [](rs2_metadata_type param) { return (param != 1); }));
 
         return color_ep;
     }
@@ -128,7 +132,7 @@ namespace librealsense
 
     stream_profiles ds5_color_sensor::init_stream_profiles()
     {
-        context::extrinsics_lock lock(_owner->_color_stream->get_context());
+        auto lock = environment::get_instance().get_extrinsics_graph().lock();
         auto results = uvc_sensor::init_stream_profiles();
 
         for (auto p : results)
@@ -146,7 +150,7 @@ namespace librealsense
                 return get_intrinsics(profile);
             });
 
-            if (video->get_width() == 1920 && video->get_height() == 1080 && video->get_format() == RS2_FORMAT_RGB8 && video->get_framerate() == 15)
+            if (video->get_width() == 1280 && video->get_height() == 720 && video->get_format() == RS2_FORMAT_RGB8 && video->get_framerate() == 30)
                 video->make_default();
         }
 

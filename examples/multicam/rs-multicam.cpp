@@ -42,8 +42,8 @@ public:
             return;
         }
         // Create a pipeline from the given device
-        rs2::pipeline p(dev);
-
+        rs2::pipeline p;
+        p.enable_device(serial_number);
         // Hold it internally
         _devices.emplace(serial_number, view_port{ {},{},{}, p });
 
@@ -93,17 +93,14 @@ public:
         for (auto&& view : _devices)
         {
             // Ask each pipeline if there are new frames available
-            rs2::frame f;
-            if (view.second.pipe.poll_for_frame(&f))
+            rs2::frameset frameset;
+            if (view.second.pipe.poll_for_frames(&frameset))
             {
-                if (auto frameset = f.as<rs2::composite_frame>())
+                for (int i = 0; i < frameset.size(); i++)
                 {
-                    for (int i = 0; i < frameset.size(); i++)
-                    {
-                        rs2::frame new_frame = frameset[i];
-                        int stream_id = new_frame.get_profile().unique_id();
-                        view.second.frames_per_stream[stream_id] = view.second.colorize_frame(new_frame); //update view port with the new stream
-                    }
+                    rs2::frame new_frame = frameset[i];
+                    int stream_id = new_frame.get_profile().unique_id();
+                    view.second.frames_per_stream[stream_id] = view.second.colorize_frame(new_frame); //update view port with the new stream
                 }
             }
         }

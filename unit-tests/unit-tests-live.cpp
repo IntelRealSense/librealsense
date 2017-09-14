@@ -27,7 +27,8 @@ void disable_sensitive_options_for(sensor& sen)
 
     if (sen.supports(RS2_OPTION_EXPOSURE))
     {
-        auto range = sen.get_option_range(RS2_OPTION_EXPOSURE); // TODO: fails sometimes with "Element Not Found!"
+        option_range range;
+        REQUIRE_NOTHROW(range = sen.get_option_range(RS2_OPTION_EXPOSURE)); // TODO: fails sometimes with "Element Not Found!"
         REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_EXPOSURE, range.def));
     }
 }
@@ -53,6 +54,26 @@ bool wait_for_reset(std::function<bool(void)> func, std::shared_ptr<device> dev)
     }
     return func();
 }
+
+
+struct stream_request
+{
+    rs2_stream stream;
+    rs2_format format;
+    int width;
+    int height;
+    int fps;
+    int index;
+
+    bool operator==(const video_stream_profile& other) const
+    {
+        return stream == other.stream_type() &&
+             format == other.format() &&
+            width == other.width() &&
+            height == other.height() &&
+            index == other.stream_index();
+    }
+};
 
 struct profile
 {
@@ -81,119 +102,22 @@ struct profile
     }
 
 };
-std::vector<profile> configure_all_supported_streams(rs2::device& dev, pipeline pipe, int width = 640, int height = 480, int fps = 30)
+struct device_profiles
 {
-    std::vector<profile> profiles;
-
-    if (pipe.can_enable_stream(RS2_STREAM_DEPTH, 0, width, height, RS2_FORMAT_Z16, fps))
-    {
-        pipe.enable_stream(RS2_STREAM_DEPTH, 0, width, height, RS2_FORMAT_Z16, fps);
-        profiles.push_back({ RS2_STREAM_DEPTH, RS2_FORMAT_Z16, width, height , 0 });
-    }
-
-    if (pipe.can_enable_stream(RS2_STREAM_COLOR, 0, width, height, RS2_FORMAT_RGB8, fps))
-    {
-        pipe.enable_stream(RS2_STREAM_COLOR, 0, width, height, RS2_FORMAT_RGB8, fps);
-        profiles.push_back({ RS2_STREAM_COLOR , RS2_FORMAT_RGB8, width, height, 0 });
-    }
-
-    if (pipe.can_enable_stream(RS2_STREAM_INFRARED, 1, width, height, RS2_FORMAT_Y8, fps))
-    {
-        pipe.enable_stream(RS2_STREAM_INFRARED, 1, width, height, RS2_FORMAT_Y8, fps);
-        profiles.push_back({ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, width, height, 1 });
-    }
-
-    if (pipe.can_enable_stream(RS2_STREAM_INFRARED, 2, width, height, RS2_FORMAT_Y8, fps))
-    {
-        pipe.enable_stream(RS2_STREAM_INFRARED, 2, width, height, RS2_FORMAT_Y8, fps);
-        profiles.push_back({ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, width, height, 2 });
-    }
-
-    if (pipe.can_enable_stream(RS2_STREAM_FISHEYE, 0, width, height, RS2_FORMAT_RAW8, fps))
-    {
-        pipe.enable_stream(RS2_STREAM_FISHEYE, 0, width, height, RS2_FORMAT_RAW8, fps);
-        profiles.push_back({ RS2_STREAM_FISHEYE, RS2_FORMAT_RAW8,  width, height,0 });
-    }
-
-
-    //    if (config.can_enable_stream(dev, RS2_STREAM_GYRO, 0, 0, RS2_FORMAT_MOTION_XYZ32F, 0))
-    //    {
-    //        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_GYRO,  1, 1, RS2_FORMAT_MOTION_XYZ32F, 1000));
-    //        profiles.push_back({RS2_STREAM_GYRO, 0,  0, 0, RS2_FORMAT_MOTION_XYZ32F, 0});
-    //    }
-    //    if (config.can_enable_stream(dev, RS2_STREAM_ACCEL,  0, 0, RS2_FORMAT_MOTION_XYZ32F, 0))
-    //    {
-    //        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_ACCEL, 1, 1, RS2_FORMAT_MOTION_XYZ32F, 1000));
-    //        profiles.push_back({RS2_STREAM_ACCEL, 0,  0, 0, RS2_FORMAT_MOTION_XYZ32F, 0});
-    //    }
-    return profiles;
-}
-
-TEST_CASE("Sync sanity", "[live]") {
-
-    const double DELTA = 20;
-    rs2::context ctx;
-
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
-    {
-        auto list = ctx.query_devices();
-        auto dev = list[0];
-
-        disable_sensitive_options_for(dev);
-
-        pipeline pipe(ctx);
-        auto profiles = configure_all_supported_streams(dev, pipe);
-
-        pipe.start();
-
-        std::vector<std::vector<double>> all_timestamps;
-
-        for (auto i = 0; i < 200; i++)
-        {
-            auto frames = pipe.wait_for_frames(5000);
-            REQUIRE(frames.size() > 0);
-
-
-            std::vector<double> timestamps;
-            for (auto&& f : frames)
-            {
-                timestamps.push_back(f.get_timestamp());
-            }
-            all_timestamps.push_back(timestamps);
-
-        }
-        for (auto i = 0; i < 30; i++)
-        {
-            auto frames = pipe.wait_for_frames(500);
-        }
-        auto num_of_partial_sync_sets = 0;
-        for (auto set_timestamps : all_timestamps)
-        {
-            if (set_timestamps.size() < profiles.size())
-                num_of_partial_sync_sets++;
-
-            if (set_timestamps.size() <= 1)
-                continue;
-
-            std::sort(set_timestamps.begin(), set_timestamps.end());
-            REQUIRE(set_timestamps[set_timestamps.size() - 1] - set_timestamps[0] <= DELTA);
-        }
-
-        REQUIRE((float)num_of_partial_sync_sets / (float)all_timestamps.size() < 0.90);
-    }
-}
-
-
+    std::vector<profile> streams;
+    int fps;
+    bool sync;
+};
 
 std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int width = 640, int height = 480, int fps = 60)
 {
     std::vector<profile> all_profiles =
     {
-        {RS2_STREAM_DEPTH, RS2_FORMAT_Z16, width, height, 0 },
-        {RS2_STREAM_COLOR, RS2_FORMAT_RGB8, width, height, 0 },
-        {RS2_STREAM_INFRARED, RS2_FORMAT_Y8, width, height, 1 },
-        {RS2_STREAM_INFRARED, RS2_FORMAT_Y8, width, height, 2},
-        {RS2_STREAM_FISHEYE, RS2_FORMAT_RAW8, width, height, 0 },
+        { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, width, height, 0 },
+        { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, width, height, 0 },
+        { RS2_STREAM_INFRARED, RS2_FORMAT_Y8, width, height, 1 },
+        { RS2_STREAM_INFRARED, RS2_FORMAT_Y8, width, height, 2 },
+        { RS2_STREAM_FISHEYE, RS2_FORMAT_RAW8, width, height, 0 },
         //        {RS2_STREAM_GYRO, 0, 0, 0, RS2_FORMAT_MOTION_XYZ32F, 0},
         //        {RS2_STREAM_ACCEL, 0,  0, 0, RS2_FORMAT_MOTION_XYZ32F, 0}
     };
@@ -229,6 +153,82 @@ std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int w
     if (modes.size() > 0)
         REQUIRE_NOTHROW(sensor.open(modes));
     return profiles;
+}
+
+std::pair<std::vector<sensor>, std::vector<profile>> configure_all_supported_streams(rs2::device& dev, int width = 640, int height = 480, int fps = 30)
+{
+    std::vector<profile > profiles;
+    std::vector<sensor > sensors;
+    auto sens = dev.query_sensors();
+    for (auto s : sens)
+    {
+        auto res = configure_all_supported_streams(s, width, height, fps);
+        profiles.insert(profiles.end(), res.begin(), res.end());
+        if (res.size() > 0)
+        {
+            sensors.push_back(s);
+        }
+    }
+           
+    return{ sensors, profiles };
+}
+
+TEST_CASE("Sync sanity", "[live]") {
+
+    const double DELTA = 20;
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+
+        auto dev = list[0];
+        disable_sensitive_options_for(dev);
+
+       
+        rs2::syncer sync;
+        auto profiles = configure_all_supported_streams(dev);
+      
+        for (auto s : dev.query_sensors())
+        {
+            s.start(sync);
+        }
+
+        std::vector<std::vector<double>> all_timestamps;
+
+        for (auto i = 0; i < 200; i++)
+        {
+            auto frames = sync.wait_for_frames(5000);
+            REQUIRE(frames.size() > 0);
+
+
+            std::vector<double> timestamps;
+            for (auto&& f : frames)
+            {
+                timestamps.push_back(f.get_timestamp());
+            }
+            all_timestamps.push_back(timestamps);
+
+        }
+        for (auto i = 0; i < 30; i++)
+        {
+            auto frames = sync.wait_for_frames(500);
+        }
+        auto num_of_partial_sync_sets = 0;
+        for (auto set_timestamps : all_timestamps)
+        {
+            if (set_timestamps.size() < profiles.second.size())
+                num_of_partial_sync_sets++;
+
+            if (set_timestamps.size() <= 1)
+                continue;
+
+            std::sort(set_timestamps.begin(), set_timestamps.end());
+            REQUIRE(set_timestamps[set_timestamps.size() - 1] - set_timestamps[0] <= DELTA);
+        }
+
+        REQUIRE((float)num_of_partial_sync_sets / (float)all_timestamps.size() < 0.90);
+    }
 }
 
 TEST_CASE("Sync different fps", "[live][!mayfail]") {
@@ -281,6 +281,7 @@ TEST_CASE("Sync different fps", "[live][!mayfail]") {
             if (profs.size() > 0)
                 sensors[i].start(syncer);
         }
+
         for (auto i = 0; i < sensors.size(); i++)
         {
             for (auto j = 0; j < sensors.size(); j++)
@@ -308,10 +309,7 @@ TEST_CASE("Sync different fps", "[live][!mayfail]") {
             }
             frames_arrived.push_back(streams_arrived);
         }
-        for (auto i = 0; i < 30; i++)
-        {
-            auto frames = syncer.wait_for_frames(5000);
-        }
+
         std::vector<int> streams_groups_arrrived(streams_groups.size(), 0);
 
         for (auto streams : frames_arrived)
@@ -346,9 +344,11 @@ TEST_CASE("Sync different fps", "[live][!mayfail]") {
                 CAPTURE(num2);
                 REQUIRE((float)num1 / (float)num2 <= 5 * (float)fps[i] / (float)fps[j]);
             }
+
         }
     }
 }
+
 
 bool get_mode(rs2::device& dev, stream_profile* profile, int mode_index = 0)
 {
@@ -374,12 +374,12 @@ TEST_CASE("Sync start stop", "[live]") {
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-
         auto list = ctx.query_devices();
         REQUIRE(list.size() > 0);
-        pipeline pipe(ctx);
-        auto dev = pipe.get_device();
+        auto dev = list[0];
         disable_sensitive_options_for(dev);
+
+        syncer sync;
 
         rs2::stream_profile mode;
         auto mode_index = 0;
@@ -391,23 +391,24 @@ TEST_CASE("Sync start stop", "[live]") {
         } while (mode.fps() != 60);
 
         auto video = mode.as<rs2::video_stream_profile>();
-        configure_all_supported_streams(dev, pipe, video.width(), video.height(), mode.fps());
+        auto res = configure_all_supported_streams(dev, video.width(), video.height(), mode.fps());
 
-
-        pipe.start();
+        for (auto s : res.first)
+        {
+            REQUIRE_NOTHROW(s.start(sync));
+        }
+        
 
         rs2::frameset frames;
         for (auto i = 0; i < 30; i++)
         {
-            frames = pipe.wait_for_frames(10000);
+            frames = sync.wait_for_frames(10000);
             REQUIRE(frames.size() > 0);
         }
 
-        pipe.stop();
-        pipe.disable_all();
-        frame old_frames;
+        frameset old_frames;
 
-        while (pipe.poll_for_frame(&old_frames));
+        while (sync.poll_for_frames(&old_frames));
 
         stream_profile other_mode;
         mode_index = 0;
@@ -422,13 +423,20 @@ TEST_CASE("Sync start stop", "[live]") {
             REQUIRE(other_video);
         }
 
+        for (auto s : res.first)
+        {
+            REQUIRE_NOTHROW(s.stop());
+            REQUIRE_NOTHROW(s.close());
+        }
+        res = configure_all_supported_streams(dev, other_video.width(), other_video.height(), other_mode.fps());
 
-        auto streams = configure_all_supported_streams(dev, pipe, other_video.width(), other_video.height(), other_mode.fps());
-
-        pipe.start();
+        for (auto s : res.first)
+        {
+            REQUIRE_NOTHROW(s.start(sync));
+        }
 
         for (auto i = 0; i < 10; i++)
-            frames = pipe.wait_for_frames(10000);
+            frames = sync.wait_for_frames(10000);
 
         REQUIRE(frames.size() > 0);
         auto f = frames[0];
@@ -438,10 +446,7 @@ TEST_CASE("Sync start stop", "[live]") {
         REQUIRE(image.get_width() == other_video.width());
 
         REQUIRE(image.get_height() == other_video.height());
-
-        pipe.stop();
     }
-
 }
 TEST_CASE("Device metadata enumerates correctly", "[live]")
 {
@@ -485,16 +490,15 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
 
         pipeline pipe(ctx);
         device dev;
-        REQUIRE_NOTHROW(dev = pipe.get_device());
-
-        disable_sensitive_options_for(dev);
-
         // Configure all supported streams to run at 30 frames per second
 
         for (auto i = 0; i < 5; i++)
         {
             // Test sequence
-            REQUIRE_NOTHROW(pipe.start([](rs2::frame fref) {}));
+            REQUIRE_NOTHROW(pipe.start());
+            REQUIRE_NOTHROW(dev = pipe.get_device());
+            disable_sensitive_options_for(dev);
+
             REQUIRE_NOTHROW(pipe.stop());
         }
     }
@@ -518,9 +522,14 @@ TEST_CASE("No extrinsic transformation between a stream and itself", "[live]")
         // For each device
         for (auto&& dev : list)
         {
+            std::vector<rs2::stream_profile> profs;
+            REQUIRE_NOTHROW(profs = dev.get_stream_profiles());
+            REQUIRE(profs.size()>0);
+
             rs2_extrinsics extrin;
             try {
-                extrin = ctx.get_extrinsics(dev, dev);
+                auto prof = profs[0];
+                extrin = prof.get_extrinsics_to(prof);
             }
             catch (error &e) {
                 // if device isn't calibrated, get_extrinsics must error out (according to old comment. Might not be true under new API)
@@ -550,6 +559,7 @@ TEST_CASE("Extrinsic transformation between two streams is a rigid transform", "
         {
             auto dev = list[i];
             auto adj_devices = ctx.get_sensor_parent(dev).query_sensors();
+
             //REQUIRE(dev != nullptr);
 
             // For every pair of streams
@@ -557,11 +567,18 @@ TEST_CASE("Extrinsic transformation between two streams is a rigid transform", "
             {
                 for (int k = j + 1; k < adj_devices.size(); ++k)
                 {
+                    std::vector<rs2::stream_profile> profs_a, profs_b;
+                    REQUIRE_NOTHROW(profs_a = adj_devices[j].get_stream_profiles());
+                    REQUIRE(profs_a.size()>0);
+
+                    REQUIRE_NOTHROW(profs_b = adj_devices[k].get_stream_profiles());
+                    REQUIRE(profs_b.size()>0);
+
                     // Extrinsics from A to B should have an orthonormal 3x3 rotation matrix and a translation vector of magnitude less than 10cm
                     rs2_extrinsics a_to_b;
 
                     try {
-                        a_to_b = ctx.get_extrinsics(adj_devices[j], adj_devices[k]);
+                        a_to_b = profs_a[0].get_extrinsics_to(profs_b[0]);
                     }
                     catch (error &e) {
                         WARN(e.what());
@@ -573,7 +590,7 @@ TEST_CASE("Extrinsic transformation between two streams is a rigid transform", "
 
                     // Extrinsics from B to A should be the inverse of extrinsics from A to B
                     rs2_extrinsics b_to_a;
-                    REQUIRE_NOTHROW(b_to_a = ctx.get_extrinsics(adj_devices[k], adj_devices[j]));
+                    REQUIRE_NOTHROW(b_to_a = profs_b[0].get_extrinsics_to(profs_a[0]));
 
                     require_transposed(a_to_b.rotation, b_to_a.rotation);
                     REQUIRE(b_to_a.rotation[0] * a_to_b.translation[0] + b_to_a.rotation[3] * a_to_b.translation[1] + b_to_a.rotation[6] * a_to_b.translation[2] == Approx(-b_to_a.translation[0]));
@@ -607,13 +624,23 @@ TEST_CASE("Extrinsic transformations are transitive", "[live]")
                 {
                     for (auto c = 0; c < adj_devices.size(); ++c)
                     {
+                        std::vector<rs2::stream_profile> profs_a, profs_b, profs_c ;
+                        REQUIRE_NOTHROW(profs_a = adj_devices[a].get_stream_profiles());
+                        REQUIRE(profs_a.size()>0);
+
+                        REQUIRE_NOTHROW(profs_b = adj_devices[b].get_stream_profiles());
+                        REQUIRE(profs_b.size()>0);
+
+                        REQUIRE_NOTHROW(profs_c = adj_devices[c].get_stream_profiles());
+                        REQUIRE(profs_c.size()>0);
+
                         // Require that the composition of a_to_b and b_to_c is equal to a_to_c
                         rs2_extrinsics a_to_b, b_to_c, a_to_c;
 
                         try {
-                            a_to_b = ctx.get_extrinsics(adj_devices[a], adj_devices[b]);
-                            b_to_c = ctx.get_extrinsics(adj_devices[b], adj_devices[c]);
-                            a_to_c = ctx.get_extrinsics(adj_devices[a], adj_devices[c]);
+                            a_to_b = profs_a[0].get_extrinsics_to(profs_b[0]);
+                            b_to_c = profs_b[0].get_extrinsics_to(profs_c[0]);
+                            a_to_c = profs_a[0].get_extrinsics_to(profs_c[0]);
                         }
                         catch (error &e)
                         {
@@ -734,6 +761,7 @@ TEST_CASE("Toggle Advanced Mode", "[live][AdvMd]") {
         }
     }
 }
+
 
 TEST_CASE("Advanced Mode presets", "[live][AdvMd]")
 {
@@ -1081,15 +1109,19 @@ TEST_CASE("Streaming modes sanity check", "[live]")
         {
             disable_sensitive_options_for(dev);
 
+            std::string PID;
+            REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
+
             // make sure they provide at least one streaming mode
             std::vector<rs2::stream_profile> stream_profiles;
             REQUIRE_NOTHROW(stream_profiles = dev.get_stream_profiles());
             REQUIRE(stream_profiles.size() > 0);
 
-            // for each stream profile provided:
-            for (auto profile : stream_profiles) {
-                SECTION("check stream profile settings are sane")
-                {
+            SECTION("check stream profile settings are sane")
+            {
+                // for each stream profile provided:
+                for (auto profile : stream_profiles) {
+
                     // require that the settings are sane
                     REQUIRE(profile.format() > RS2_FORMAT_ANY);
                     REQUIRE(profile.format() < RS2_FORMAT_COUNT);
@@ -1113,25 +1145,40 @@ TEST_CASE("Streaming modes sanity check", "[live]")
                     REQUIRE_NOTHROW(dev.stop());
                     REQUIRE_NOTHROW(dev.close());
                 }
-                SECTION("check stream intrinsics are sane") {
+            }
+            SECTION("check stream intrinsics are sane")
+            {
+                for (auto profile : stream_profiles)
+                {
                     if (auto video = profile.as<video_stream_profile>())
                     {
                         rs2_intrinsics intrin;
-                        REQUIRE_NOTHROW(intrin = video.get_intrinsics());
+                        CAPTURE(video.format());
+                        CAPTURE(video.width());
+                        CAPTURE(video.height());
 
-                        // Intrinsic width/height must match width/height of streaming mode we requested
-                        REQUIRE(intrin.width == video.width());
-                        REQUIRE(intrin.height == video.height());
+                        if ((PID == "0AA5") || (RS2_FORMAT_Y16 != video.format())) // Y16 format intrinsics are available for SR300 only
+                        {
+                            REQUIRE_NOTHROW(intrin = video.get_intrinsics());
 
-                        // Principal point must be within center 20% of image
-                        REQUIRE(intrin.ppx > video.width() * 0.4f);
-                        REQUIRE(intrin.ppx < video.width() * 0.6f);
-                        REQUIRE(intrin.ppy > video.height() * 0.4f);
-                        REQUIRE(intrin.ppy < video.height() * 0.6f);
+                            // Intrinsic width/height must match width/height of streaming mode we requested
+                            REQUIRE(intrin.width == video.width());
+                            REQUIRE(intrin.height == video.height());
 
-                        // Focal length must be nonnegative (todo - Refine requirements based on known expected FOV)
-                        REQUIRE(intrin.fx > 0.0f);
-                        REQUIRE(intrin.fy > 0.0f);
+                            // Principal point must be within center 20% of image
+                            REQUIRE(intrin.ppx > video.width() * 0.4f);
+                            REQUIRE(intrin.ppx < video.width() * 0.6f);
+                            REQUIRE(intrin.ppy > video.height() * 0.4f);
+                            REQUIRE(intrin.ppy < video.height() * 0.6f);
+
+                            // Focal length must be non-negative (todo - Refine requirements based on known expected FOV)
+                            REQUIRE(intrin.fx > 0.0f);
+                            REQUIRE(intrin.fy > 0.0f);
+                        }
+                        else
+                        {
+                            REQUIRE_THROWS(intrin = video.get_intrinsics());
+                        }
                     }
                 }
             }
@@ -1761,7 +1808,7 @@ void triger_error(const rs2::device& dev, int num)
         debug.send_and_receive_raw_data(raw_data);
 }
 
-TEST_CASE("Error handling sanity", "[live]") {
+TEST_CASE("Error handling sanity", "[live][!mayfail]") {
 
     //Require at least one device to be plugged in
     rs2::context ctx;
@@ -1793,7 +1840,7 @@ TEST_CASE("Error handling sanity", "[live]") {
                 if (subdevice.supports(RS2_OPTION_ERROR_POLLING_ENABLED))
                 {
                     disable_sensitive_options_for(subdevice);
-                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 1));
+
                     subdevice.set_notifications_callback([&](rs2::notification n)
                     {
 
@@ -1805,6 +1852,7 @@ TEST_CASE("Error handling sanity", "[live]") {
                     });
 
                     triger_error(ctx.get_sensor_parent(subdevice), i);
+                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 1));
                     std::unique_lock<std::mutex> lock(m);
                     CAPTURE(notification_description);
                     CAPTURE(severity);
@@ -1814,7 +1862,7 @@ TEST_CASE("Error handling sanity", "[live]") {
                             && severity == RS2_LOG_SEVERITY_ERROR;
                     };
                     REQUIRE(cv.wait_for(lock, std::chrono::seconds(10), pred));
-
+                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 0));
 
                 }
             }
@@ -1862,6 +1910,7 @@ TEST_CASE("Auto disabling control behavior", "[live]") {
 
         for (auto && subdevice : list)
         {
+            disable_sensitive_options_for(subdevice);
             auto info = subdevice.get_info(RS2_CAMERA_INFO_NAME);
             CAPTURE(info);
 
@@ -1902,6 +1951,7 @@ TEST_CASE("Auto disabling control behavior", "[live]") {
                 {
                     if (subdevice.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE) && subdevice.supports(RS2_OPTION_WHITE_BALANCE))
                     {
+
                         REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, 1));
                         REQUIRE_NOTHROW(range = subdevice.get_option_range(RS2_OPTION_WHITE_BALANCE));
                         REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_WHITE_BALANCE, range.max));
@@ -1914,6 +1964,7 @@ TEST_CASE("Auto disabling control behavior", "[live]") {
         }
     }
 }
+
 
 std::pair<std::shared_ptr<rs2::device>, std::weak_ptr<rs2::device>> make_device(device_list& list)
 {
@@ -1999,6 +2050,7 @@ TEST_CASE("Disconnect events works", "[live]") {
                 }
 
             }}));
+
         //forcing hardware reset to simulate device disconnection
         do_with_waiting_for_camera_connection(ctx, dev_strong, serial, [&]()
         {
@@ -2011,6 +2063,7 @@ TEST_CASE("Disconnect events works", "[live]") {
 }
 
 TEST_CASE("Connect events works", "[live]") {
+
 
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -2149,7 +2202,6 @@ TEST_CASE("Connect Disconnect events while streaming", "[live]") {
         device_list list;
         REQUIRE_NOTHROW(list = ctx.query_devices());
 
-
         std::string serial;
 
         auto dev = make_device(list);
@@ -2272,7 +2324,6 @@ TEST_CASE("Connect Disconnect events while controls", "[live]")
                         cv.notify_one();
                     }
 
-
                     for (auto d : info.get_new_devices())
                     {
                         if (serial == d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER))
@@ -2282,7 +2333,6 @@ TEST_CASE("Connect Disconnect events while controls", "[live]")
                                 std::unique_lock<std::mutex> lock(m);
 
                                 reset_device(dev_strong, dev_weak, list, d);
-
                                 connected = true;
                                 cv.notify_one();
                                 break;
@@ -2338,16 +2388,8 @@ TEST_CASE("Basic device_hub flow", "[live]") {
             while (hub.is_connected(*dev))
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
-
-
-        REQUIRE_NOTHROW(dev = std::make_shared<rs2::device>(hub.wait_for_device()));
-        disable_sensitive_options_for(*dev);
-
-        for (auto&& s : dev->query_sensors())
-            check_controls_sanity(ctx, s);
     }
 }
-
 
 
 struct stream_format
@@ -2399,6 +2441,7 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
            { { { RS2_STREAM_INFRARED, 640, 480,   0, RS2_FORMAT_ANY, 1 }, { RS2_STREAM_DEPTH   ,   0,   0,   0, RS2_FORMAT_ANY , 0 } },   // given
              { { RS2_STREAM_INFRARED, 640, 480,  10, RS2_FORMAT_ANY, 1 }, { RS2_STREAM_INFRARED, 640, 480,  30, RS2_FORMAT_ANY , 1 },     // expected - options for IR stream
                { RS2_STREAM_DEPTH   , 640, 480,  10, RS2_FORMAT_ANY, 0 }, { RS2_STREAM_DEPTH   , 640, 480,  30, RS2_FORMAT_ANY , 0 } } }  // expected - options for depth stream
+
         };
 
         pipeline pipe(ctx);
@@ -2423,7 +2466,6 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
         }
     }
 }
-
 
 
 
@@ -2523,12 +2565,7 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
 
 
 
-struct device_profiles
-{
-    std::vector<profile> streams;
-    int fps;
-    bool sync;
-};
+
 
 void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::vector<double>> timestamps, device_profiles requsets)
 {
@@ -2596,7 +2633,7 @@ std::map<std::string, device_profiles> get_pipeline_default_configurations()
 
     dev_requsets["0B07"] =
     {
-        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0}, {RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0}},
+        { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } },
         30,
         true
     };
@@ -2604,20 +2641,20 @@ std::map<std::string, device_profiles> get_pipeline_default_configurations()
     dev_requsets["0AA5"] =
     {
 
-        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0}, {RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0}},
+        { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } },
         30,
         true
     };
 
     dev_requsets["0AD4"] =
     {
-        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0}},
+        { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 } },
         30,
         true
     };
     dev_requsets["0AD1"] =
     {
-        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0}, {RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0}},
+        { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } },
         30,
         true
     };
@@ -2635,7 +2672,7 @@ TEST_CASE("Pipeline wait_for_frames", "[live]") {
         REQUIRE(list.size());
         rs2::device dev;
         rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = pipe.get_device());
+        REQUIRE_NOTHROW(dev = list[0]);
 
         disable_sensitive_options_for(dev);
         std::string PID;
@@ -2683,7 +2720,7 @@ TEST_CASE("Pipeline poll", "[live]") {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
         rs2::pipeline pipe(ctx);
-        auto dev = pipe.get_device();
+        auto dev = list[0];
         disable_sensitive_options_for(dev);
 
         std::string PID;
@@ -2703,11 +2740,9 @@ TEST_CASE("Pipeline poll", "[live]") {
 
         while (frames.size() < 100)
         {
-            frame f;
-            if (pipe.poll_for_frame(&f))
+            frameset frame;
+            if (pipe.poll_for_frames(&frame))
             {
-                REQUIRE(f.is<composite_frame>());
-                frameset frame(f);
                 std::vector<stream_profile> frames_set;
                 std::vector<double> ts;
                 for (auto f : frame)
@@ -2728,70 +2763,6 @@ TEST_CASE("Pipeline poll", "[live]") {
     }
 }
 
-TEST_CASE("Pipeline start with callback", "[live]") {
-
-    auto dev_requsets = get_pipeline_default_configurations();
-
-    rs2::context ctx;
-
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
-    {
-        std::condition_variable cv;
-        std::mutex m;
-
-        auto list = ctx.query_devices();
-        REQUIRE(list.size());
-        rs2::device dev;
-        rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = pipe.get_device());
-
-        disable_sensitive_options_for(dev);
-        std::string PID;
-        REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
-
-        REQUIRE(dev_requsets[PID].streams.size() > 0);
-
-
-        std::vector<std::vector<stream_profile>> frames;
-        std::vector<std::vector<double>> timestamps;
-
-        auto frames_num = 0;
-
-        REQUIRE_NOTHROW(pipe.start([&](frame f)
-        {
-            if (frames_num++ > 30)
-            {
-                std::unique_lock<std::mutex> lock(m);
-
-                std::vector<stream_profile> frame_set;
-                std::vector<double> ts;
-
-                REQUIRE(f.is<composite_frame>());
-                frameset fs(f);
-                for (auto frame : fs)
-                {
-                    frame_set.push_back(frame.get_profile());
-                    ts.push_back(frame.get_timestamp());
-                }
-                frames.push_back(frame_set);
-                timestamps.push_back(ts);
-                cv.notify_all();
-            }
-
-        }));
-
-
-
-        {
-            std::unique_lock<std::mutex> lock(m);
-            REQUIRE(cv.wait_for(lock, std::chrono::seconds(10000), [&]() {return frames.size() > 100; }));
-        }
-        pipe.stop();
-        validate(frames, timestamps, dev_requsets[PID]);
-
-
-    }
-}
 
 std::map<std::string, device_profiles> get_custom_configurations()
 {
@@ -2799,27 +2770,27 @@ std::map<std::string, device_profiles> get_custom_configurations()
 
     dev_requsets["0B07"] =
     {
-        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0}, {RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0}},
+        { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } },
         30,
         true
     };
 
     dev_requsets["0AA5"] =
     {
-        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 240, 0}, {RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 240, 1}, {RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0}},
+        { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 240, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 240, 1 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } },
         30,
         true
     };
 
     dev_requsets["0AD4"] =
     {
-        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0}, {RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 480, 1}},
+        { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 480, 1 } },
         30,
         true
     };
     dev_requsets["0AD1"] =
     {
-        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16,  640, 480, 0}, {RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0}},
+        { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16,  640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } },
         30,
         true
     };
@@ -2838,7 +2809,7 @@ TEST_CASE("Pipeline enable stream", "[live]") {
 
         rs2::device dev;
         rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = pipe.get_device());
+        REQUIRE_NOTHROW(dev = list[0]);
 
         disable_sensitive_options_for(dev);
 
@@ -2896,20 +2867,20 @@ TEST_CASE("Pipeline enable stream auto complete", "[live]") {
 
     dev_requsets["0AA5"] =
     {
-        {{RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0}, {RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 0, 0, 1}, {RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0}},
+        { { RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 0, 0, 1 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } },
         30,
         true
     };
 
     dev_requsets["0AD4"] =
     {
-        {{RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0}},
+        { { RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0 } },
         30,
         true
     };
     dev_requsets["0AD1"] =
     {
-        {{RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0}, {RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 0, 0, 0}},
+        { { RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 0, 0, 0 } },
         30,
         true
     };
@@ -2976,7 +2947,7 @@ TEST_CASE("Pipeline disable_all", "[live]") {
 
         rs2::device dev;
         rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = pipe.get_device());
+        REQUIRE_NOTHROW(dev = list[0]);
 
         disable_sensitive_options_for(dev);
 
@@ -3034,7 +3005,7 @@ TEST_CASE("Pipeline disable stream", "[live]") {
 
         rs2::device dev;
         rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = pipe.get_device());
+        REQUIRE_NOTHROW(dev = list[0]);
 
         disable_sensitive_options_for(dev);
 
@@ -3104,6 +3075,9 @@ TEST_CASE("Pipeline with specific device", "[live]") {
         REQUIRE_NOTHROW(serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
         rs2::pipeline pipe(ctx);
+        REQUIRE_NOTHROW(pipe.enable_device(serial));
+        REQUIRE_NOTHROW(pipe.open());
+
         REQUIRE_NOTHROW(dev = pipe.get_device());
 
         disable_sensitive_options_for(dev);
@@ -3154,7 +3128,7 @@ TEST_CASE("Pipeline start stop", "[live]") {
 
         rs2::device dev;
         rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = pipe.get_device());
+        REQUIRE_NOTHROW(dev = list[0]);
 
         disable_sensitive_options_for(dev);
 
@@ -3196,13 +3170,10 @@ TEST_CASE("Pipeline start stop", "[live]") {
                 auto video_profile = profile.as<video_stream_profile>();
 
                 profiles.push_back({ profile.stream_type(),
-                                        profile.format(),
-                                        video_profile.width(),
-                                        video_profile.height(),
-                                        video_profile.stream_index() });
-
-
-
+                    profile.format(),
+                    video_profile.width(),
+                    video_profile.height(),
+                    video_profile.stream_index() });
 
             }
             if (profiles == streams)
@@ -3240,7 +3211,7 @@ std::map<std::string, device_profiles> get_configurations_for_extrinsics()
 
     dev_requsets["0B07"] =
     {
-        { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 480, 1 } , { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } },
+        { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 480, 1 } ,{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } },
         30,
         true
     };
@@ -3277,7 +3248,7 @@ TEST_CASE("Pipeline get selection", "[live]") {
 
         rs2::device dev;
         rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = pipe.get_device());
+        REQUIRE_NOTHROW(dev = list[0]);
 
         disable_sensitive_options_for(dev);
 
@@ -3291,7 +3262,7 @@ TEST_CASE("Pipeline get selection", "[live]") {
 
         REQUIRE_NOTHROW(pipe.start());
         std::vector<stream_profile> profiles;
-        REQUIRE_NOTHROW(profiles = pipe.get_selection());
+        REQUIRE_NOTHROW(profiles = pipe.get_active_streams());
 
         auto streams = configurations[PID].streams;
         std::vector<profile> pipe_streams;
@@ -3314,52 +3285,8 @@ TEST_CASE("Pipeline get selection", "[live]") {
 
     }
 }
-TEST_CASE("Pipeline get extrinsics", "[live]") {
 
-    rs2::context ctx;
-    rs2_extrinsics referance = { {1 , 0 , 0 , 0 , 1 , 0 , 0 , 0 , 1 } ,{ 0 , 0 , 0 } };
-    auto configurations = get_configurations_for_extrinsics();
-
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
-    {
-        auto list = ctx.query_devices();
-        REQUIRE(list.size());
-
-        rs2::device dev;
-        rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = pipe.get_device());
-
-        disable_sensitive_options_for(dev);
-
-        std::string PID;
-        REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
-
-        REQUIRE(configurations[PID].streams.size() > 0);
-
-        for (auto req : configurations[PID].streams)
-            REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
-
-        REQUIRE_NOTHROW(pipe.start());
-
-        auto ctx = pipe.get_context();
-        auto depth = pipe.get_selection(RS2_STREAM_DEPTH);
-        auto color = pipe.get_selection(RS2_STREAM_COLOR);
-        auto ir1 = pipe.get_selection(RS2_STREAM_INFRARED, 1);
-        //auto ir2 = pipe.get_selection(RS2_STREAM_INFRARED, 2);
-
-        auto from_ctx = ctx.get_extrinsics(depth, color);
-        auto from_pipe = pipe.get_extrinsics(depth, color);
-        REQUIRE(compare(from_ctx, from_pipe));
-        REQUIRE(compare(from_ctx, referance, 0.1));
-
-        auto ir_ext = pipe.get_extrinsics(ir1, color);
-        //auto ir1_to_ir2_ext = pipe.get_extrinsics(ir1, ir2);
-
-        REQUIRE(compare(ir_ext, referance, 0.1));
-        // REQUIRE(compare(ir1_to_ir2_ext, referance, 0.1));
-    }
-}
-TEST_CASE("Per-frame metadata sanity check", "[live]") {
+TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
     //Require at least one device to be plugged in
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -3410,11 +3337,12 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
 
                 REQUIRE_NOTHROW(subdevice.start([&](rs2::frame f)
                 {
+
                     if ((frames >= frames_before_start_measure) && (frames_additional_data.size() < frames_for_fps_measure))
                     {
                         if (first)
                         {
-                            start = ctx.get_time();
+                            start = internal::get_time();
                         }
                         first = false;
 
@@ -3425,20 +3353,21 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
                             f.get_profile().format() };
 
                         // Store frame metadata attributes, verify API behavior correctness
-                        for (auto i = 0; i < rs2_frame_metadata::RS2_FRAME_METADATA_COUNT; i++)
+                        for (auto i = 0; i < rs2_frame_metadata_value::RS2_FRAME_METADATA_COUNT; i++)
                         {
                             CAPTURE(i);
                             bool supported = false;
-                            REQUIRE_NOTHROW(supported = f.supports_frame_metadata((rs2_frame_metadata)i));
+                            REQUIRE_NOTHROW(supported = f.supports_frame_metadata((rs2_frame_metadata_value)i));
                             if (supported)
                             {
-                                rs2_metadata_t val{};
-                                REQUIRE_NOTHROW(val = f.get_frame_metadata((rs2_frame_metadata)i));
+                                rs2_metadata_type val{};
+                                REQUIRE_NOTHROW(val = f.get_frame_metadata((rs2_frame_metadata_value)i));
                                 data.frame_md.md_attributes[i] = std::make_pair(true, val);
                             }
                             else
                             {
-                                REQUIRE_THROWS(f.get_frame_metadata((rs2_frame_metadata)i));
+
+                                REQUIRE_THROWS(f.get_frame_metadata((rs2_frame_metadata_value)i));
                                 data.frame_md.md_attributes[i].first = false;
                             }
                         }
@@ -3463,7 +3392,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
                 REQUIRE_NOTHROW(subdevice.stop());
                 REQUIRE_NOTHROW(subdevice.close());
 
-                auto end = ctx.get_time();
+                auto end = internal::get_time();
                 lock.unlock();
 
                 auto seconds = (end - start)*msec_to_sec;
@@ -3549,5 +3478,48 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
                 REQUIRE_NOTHROW(subdevice.close());
             }
         }
+    }
+}
+
+TEST_CASE("Pipeline enable open start flow", "[live]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        REQUIRE_NOTHROW(dev = list[0]);
+
+        disable_sensitive_options_for(dev);
+        REQUIRE_THROWS(pipe.get_device());
+        REQUIRE_NOTHROW(pipe.open());
+        REQUIRE_NOTHROW(pipe.open());
+        REQUIRE_NOTHROW(dev = pipe.get_device());
+        
+        REQUIRE_THROWS(pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_ANY, 0));
+        REQUIRE_NOTHROW(pipe.start());
+
+        std::vector<device_profiles> frames;
+
+        for (auto i = 0; i < 10; i++)
+            REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
+
+
+        REQUIRE_NOTHROW(pipe.stop());
+        REQUIRE_NOTHROW(pipe.start());
+
+        for (auto i = 0; i < 20; i++)
+            REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
+
+        REQUIRE_NOTHROW(pipe.disable_all());
+
+        REQUIRE_NOTHROW(pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_ANY, 0));
+        REQUIRE_NOTHROW(pipe.open());
+
+        REQUIRE_NOTHROW(pipe.disable_all());
+        REQUIRE_NOTHROW(pipe.open());
     }
 }

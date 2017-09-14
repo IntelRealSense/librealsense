@@ -15,7 +15,7 @@
 #include "metadata-parser.h"
 #include "image.h"
 #include <cstddef>
-
+#include "environment.h"
 #include "core/debug.h"
 #include "stream.h"
 
@@ -211,7 +211,8 @@ namespace librealsense
 
             stream_profiles init_stream_profiles() override
             {
-                context::extrinsics_lock lock(_owner->_color_stream->get_context());
+                auto lock = environment::get_instance().get_extrinsics_graph().lock();
+
                 auto results = uvc_sensor::init_stream_profiles();
 
                 for (auto p : results)
@@ -258,7 +259,8 @@ namespace librealsense
 
             stream_profiles init_stream_profiles() override
             {
-                context::extrinsics_lock lock(_owner->_depth_stream->get_context());
+                 auto lock = environment::get_instance().get_extrinsics_graph().lock();
+
                 auto results = uvc_sensor::init_stream_profiles();
 
                 for (auto p : results)
@@ -333,11 +335,11 @@ namespace librealsense
 
             auto md_offset = offsetof(metadata_raw, mode);
             color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp,
-                [](rs2_metadata_t param) { return static_cast<rs2_metadata_t>(param * TIMESTAMP_10NSEC_TO_MSEC); }));
+                [](rs2_metadata_type param) { return static_cast<rs2_metadata_type>(param * TIMESTAMP_10NSEC_TO_MSEC); }));
             color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,   make_sr300_attribute_parser(&md_sr300_rgb::frame_counter, md_offset));
             color_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,make_sr300_attribute_parser(&md_sr300_rgb::frame_latency, md_offset));
-            color_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_sr300_attribute_parser(&md_sr300_rgb::actual_exposure, md_offset, [](rs2_metadata_t param) { return param*100; }));
-            color_ep->register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE,   make_sr300_attribute_parser(&md_sr300_rgb::auto_exp_mode, md_offset, [](rs2_metadata_t param) { return (param !=1); }));
+            color_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_sr300_attribute_parser(&md_sr300_rgb::actual_exposure, md_offset, [](rs2_metadata_type param) { return param*100; }));
+            color_ep->register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE,   make_sr300_attribute_parser(&md_sr300_rgb::auto_exp_mode, md_offset, [](rs2_metadata_type param) { return (param !=1); }));
             color_ep->register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL,      make_sr300_attribute_parser(&md_sr300_rgb::gain, md_offset));
             color_ep->register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE,   make_sr300_attribute_parser(&md_sr300_rgb::color_temperature, md_offset));
 
@@ -378,10 +380,10 @@ namespace librealsense
             auto md_offset = offsetof(metadata_raw, mode);
 
             depth_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp,
-                [](rs2_metadata_t param) { return static_cast<rs2_metadata_t>(param * TIMESTAMP_10NSEC_TO_MSEC); }));
+                [](rs2_metadata_type param) { return static_cast<rs2_metadata_type>(param * TIMESTAMP_10NSEC_TO_MSEC); }));
             depth_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,   make_sr300_attribute_parser(&md_sr300_depth::frame_counter, md_offset));
             depth_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_sr300_attribute_parser(&md_sr300_depth::actual_exposure, md_offset,
-                [](rs2_metadata_t param) { return param * 100; }));
+                [](rs2_metadata_type param) { return param * 100; }));
 
             return depth_ep;
         }

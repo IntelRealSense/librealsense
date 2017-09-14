@@ -5,6 +5,7 @@
 
 #include "context.h"
 #include "colorizer.h"
+#include "environment.h"
 
 namespace librealsense
 {
@@ -17,7 +18,7 @@ namespace librealsense
         }};
 
     colorizer::colorizer()
-        : processing_block(nullptr), _min(0.f), _max(16.f), _equalize(true), _map(jet), _stream()
+        :_min(0.f), _max(16.f), _equalize(true), _map(jet), _stream()
     {
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
@@ -28,8 +29,7 @@ namespace librealsense
                     if (!_stream)
                     {
                         _stream = std::make_shared<rs2::stream_profile>(f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_RGB8));
-                        auto&& ctx = _stream->get()->profile->get_context();
-                        ctx.register_same_extrinsics(*_stream->get()->profile, *f.get_profile().get()->profile);
+                        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_stream->get()->profile, *f.get_profile().get()->profile);
                     }
                 }
 
@@ -101,10 +101,6 @@ namespace librealsense
                     auto vf = f.as<rs2::video_frame>();
 
                     ret = source.allocate_video_frame(*_stream, f, 3, vf.get_width(), vf.get_height(), vf.get_width() * 3, RS2_EXTENSION_DEPTH_FRAME);
-                    auto ret_frame = (frame_interface*)ret.get();
-                    auto dpt_frame = (frame_interface*)f.get();
-                    dpt_frame->acquire();
-                    (dynamic_cast<depth_frame*>(ret_frame))->set_original(dpt_frame);
 
                     if (_equalize) make_equalized_histogram(f, ret);
                     else make_value_cropped_frame(f, ret);
@@ -113,7 +109,7 @@ namespace librealsense
                 source.frame_ready(ret);
             };
 
-            if (auto composite = f.as<rs2::composite_frame>()) composite.foreach(process_frame);
+            if (auto composite = f.as<rs2::frameset>()) composite.foreach(process_frame);
             else process_frame(f);
         };
 

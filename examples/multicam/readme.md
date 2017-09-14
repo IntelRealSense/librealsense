@@ -119,21 +119,18 @@ In the above code, we go over all devices, which are actually `view_port`s.
 For each pipeline, we try to poll for frames. 
 
 ```cpp
-            if (auto frameset = f.as<rs2::composite_frame>())
-            {
-                for (int i = 0; i < frameset.size(); i++)
+             for (int i = 0; i < frameset.size(); i++)
                 {
                     rs2::frame new_frame = frameset[i];
                     int stream_id = new_frame.get_profile().unique_id();
                     view.second.frames_per_stream[stream_id] = view.second.colorize_frame(new_frame); //update view port with the new stream
                 }
-            }
         }
     }
 }
 ```
-A `rs2::frame` is "extendable" to a `composite_frame`, which holds more than a single type of frame.
-In the above code, we expect the pipeline to return composite frames, and we store each frame instead of the previously polled frame.
+A frameset is an wrapper to a `composite_frame`, which holds more than a single type of frame.
+In the above code, we store each frame separately instead of the previously polled frame.
 The stored frames will be used next to count the number of active streams and for rendering to screen.
  
 Back to main...

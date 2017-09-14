@@ -55,11 +55,6 @@ namespace librealsense
                                               rs2_rs400_visual_preset preset)
     {
         auto p = get_all();
-
-        auto rolling_shutter_cam = dynamic_cast<const ds5_rolling_shutter*>(&_depth_sensor.get_device());
-        auto active_cam = dynamic_cast<const ds5_active*>(&_depth_sensor.get_device());
-
-
         auto res = get_res_type(configuration.front().width, configuration.front().height);
 
         switch (preset)

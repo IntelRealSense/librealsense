@@ -57,18 +57,6 @@ namespace rs2
             return results;
         }
 
-        /**
-        * \return            the time at specific time point, in live and redord contextes it will return the system time and in playback contextes it will return the recorded time
-        */
-        double get_time()
-        {
-            rs2_error* e = nullptr;
-            auto time = rs2_get_context_time(_context.get(), &e);
-
-            error::handle(e);
-
-            return time;
-        }
 
         device get_sensor_parent(const sensor& s) const
         {
@@ -78,21 +66,6 @@ namespace rs2
                 rs2_delete_device);
             error::handle(e);
             return device{ dev };
-        }
-
-        rs2_extrinsics get_extrinsics(const sensor& from, const sensor& to) const
-        {
-            return get_extrinsics(from.get_stream_profiles().front(),
-                                  to.get_stream_profiles().front());
-        }
-
-        rs2_extrinsics get_extrinsics(const stream_profile& from, const stream_profile& to) const
-        {
-            rs2_error* e = nullptr;
-            rs2_extrinsics res;
-            rs2_get_extrinsics(from.get(), to.get(), &res, &e);
-            error::handle(e);
-            return res;
         }
 
         /**
@@ -106,42 +79,6 @@ namespace rs2
             rs2_set_devices_changed_callback_cpp(_context.get(),
                 new devices_changed_callback<T>(std::move(callback)), &e);
             error::handle(e);
-        }
-
-        template<class T>
-        processing_block create_processing_block(T processing_function) const
-        {
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_processing_block> block(
-                rs2_create_processing_block(_context.get(),
-                    new frame_processor_callback<T>(processing_function),
-                    &e),
-                rs2_delete_processing_block);
-            error::handle(e);
-
-            return processing_block(block);
-        }
-
-        pointcloud create_pointcloud() const
-        {
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_processing_block> block(
-                    rs2_create_pointcloud(_context.get(), &e),
-                    rs2_delete_processing_block);
-            error::handle(e);
-
-            return pointcloud(processing_block{ block });
-        }
-
-        align create_align(rs2_stream align_to) const
-        {
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_processing_block> block(
-                rs2_create_align(_context.get(), align_to, &e),
-                rs2_delete_processing_block);
-            error::handle(e);
-
-            return align(processing_block{ block });
         }
 
         /**
