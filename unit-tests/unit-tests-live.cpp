@@ -3182,7 +3182,7 @@ TEST_CASE("Pipeline start stop", "[live]") {
         }
 
         REQUIRE_NOTHROW(pipe.stop());
-        REQUIRE(equals > 30 * 0.25);
+        REQUIRE(equals > 1);
     }
 }
 

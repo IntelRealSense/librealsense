@@ -55,7 +55,7 @@ namespace librealsense
         auto md = (librealsense::metadata_intel_basic*)(fo.metadata);
         if(!md)
         {
-            std::cout<<"!!!!!!md\n";
+            LOG_WARNING("Metadata is not available!");
         }
         if(_has_metadata[pin_index] && md)
         {
