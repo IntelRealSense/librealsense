@@ -16,10 +16,40 @@ elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
+if(UNIX)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+
+    include_directories(${GTK3_INCLUDE_DIRS})
+    link_directories(${GTK3_LIBRARY_DIRS})
+    add_definitions(${GTK3_CFLAGS_OTHER})
+
+    add_definitions(-DNOC_FILE_DIALOG_GTK)
+elseif(WIN32)
+    add_definitions(-DNOC_FILE_DIALOG_WIN32)
+elseif(APPLE)
+    add_definitions(-DNOC_FILE_DIALOG_OSX)
+endif()
+
 if(BUILD_GRAPHICAL_EXAMPLES)
-    add_executable(rs-depth-quality rs-depth-quality.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp ../../common/rendering.h)
+    set(RS_VIEWER_CPP
+            ./rs-depth-quality.cpp
+            ./depth_quality_states.cpp
+            ./depth_quality_states.h
+            ./window.h
+            ../../common/rendering.h
+            ../../common/model-views.h
+            ../../common/model-views.cpp
+            ../../third-party/imgui/imgui.cpp
+            ../../third-party/imgui/imgui_draw.cpp
+            ../../third-party/imgui/imgui_impl_glfw.cpp
+            ../../third-party/imgui/imgui-fonts-karla.hpp
+            ../../third-party/imgui/imgui-fonts-fontawesome.hpp
+        )
+
+    add_executable(rs-depth-quality ${RS_VIEWER_CPP})
     target_link_libraries(rs-depth-quality ${DEPENDENCIES})
-    include_directories(rs-depth-quality ../../common ../../third-party/tclap/include ../../third-party/imgui)
+    include_directories(rs-depth-quality ../../common  ../../third-party  ../../third-party/imgui  ../../third-party/tclap/include)
     set_target_properties (rs-depth-quality PROPERTIES
         FOLDER "Tools"
     )

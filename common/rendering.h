@@ -572,7 +572,7 @@ namespace rs2
         {
             _start = std::chrono::high_resolution_clock::now();
         }
-        
+
         // Get elapsed milliseconds since timer creation
         float elapsed_ms() const
         {
@@ -580,7 +580,7 @@ namespace rs2
             auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
             return ms;
         }
-    
+
     private:
         std::chrono::high_resolution_clock::time_point _start;
     };
