@@ -194,6 +194,56 @@ void refresh_devices(std::mutex& m,
     }
 }
 
+rect get_window_rect(GLFWwindow* window)
+{
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    int xpos, ypos;
+    glfwGetWindowPos(window, &xpos, &ypos);
+    return { (float)xpos, (float)ypos, 
+             (float)width, (float)height };
+}
+
+rect get_monitor_rect(GLFWmonitor* monitor)
+{
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    int xpos, ypos;
+    glfwGetMonitorPos(monitor, &xpos, &ypos);
+    return{ (float)xpos, (float)ypos, 
+            (float)mode->width, (float)mode->height };
+}
+
+// Select appropriate scale factor based on the display
+// that most of the application is presented on
+int pick_scale_factor(GLFWwindow* window)
+{
+    auto window_rect = get_window_rect(window);
+    int count;
+    GLFWmonitor** monitors = glfwGetMonitors(&count);
+    if (count == 0) return 1.f; // Not sure if possible, but better be safe
+    GLFWmonitor* best = monitors[0];
+    float best_area = 0.f;
+    for (int i = 0; i < count; i++)
+    {
+        auto int_area = window_rect.intersection(
+            get_monitor_rect(monitors[i])).area();
+        if (int_area >= best_area)
+        {
+            best_area = int_area;
+            best = monitors[i];
+        }
+    }
+
+    int widthMM, heightMM;
+    glfwGetMonitorPhysicalSize(best, &widthMM, &heightMM);
+
+    float how_many_pixels_in_mm = 
+        get_monitor_rect(best).area() / (widthMM * heightMM);
+    float scale = sqrt(how_many_pixels_in_mm) / 5.f;
+    if (scale < 1.f) return 1.f;
+    return floor(scale);
+}
+
 int main(int argv, const char** argc) try
 {
     // Init GUI
@@ -330,7 +380,7 @@ int main(int argv, const char** argc) try
         }
     }
 
-
+    // Prepare the splash screen and do some initialization in the background
     int x, y, comp;
     auto r = stbi_load_from_memory(splash, splash_size, &x, &y, &comp, false);
     texture_buffer splash_tex;
@@ -387,6 +437,7 @@ int main(int argv, const char** argc) try
             last_time_point = now;
         }
 
+        data.scale_factor = pick_scale_factor(window);
         w = w / data.scale_factor;
         h = h / data.scale_factor;
 
