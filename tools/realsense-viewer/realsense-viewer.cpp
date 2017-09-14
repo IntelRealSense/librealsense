@@ -296,7 +296,7 @@ int main(int argv, const char** argc) try
     std::vector<device_model> device_models;
     device_model* device_to_remove = nullptr;
 
-    viewer_model viewer_model(ctx);
+    viewer_model viewer_model;
     device_list list;
     bool paused = false;
 

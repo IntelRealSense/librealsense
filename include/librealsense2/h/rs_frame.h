@@ -25,7 +25,7 @@ typedef enum rs2_timestamp_domain
 const char* rs2_timestamp_domain_to_string(rs2_timestamp_domain info);
 
 /** \brief Per-Frame-Metadata are set of read-only properties that might be exposed for each individual frame */
-typedef enum rs2_frame_metadata
+typedef enum rs2_frame_metadata_value
 {
     RS2_FRAME_METADATA_FRAME_COUNTER        , /**< A sequential index managed per-stream. Integer value*/
     RS2_FRAME_METADATA_FRAME_TIMESTAMP      , /**< Timestamp set by device clock when data readout and transmit commence. usec*/
@@ -37,8 +37,8 @@ typedef enum rs2_frame_metadata
     RS2_FRAME_METADATA_WHITE_BALANCE        , /**< White Balance setting as a color temperature. Kelvin degrees*/
     RS2_FRAME_METADATA_TIME_OF_ARRIVAL      , /**< Time of arrival in system clock */
     RS2_FRAME_METADATA_COUNT
-} rs2_frame_metadata;
-const char* rs2_frame_metadata_to_string(rs2_frame_metadata metadata);
+} rs2_frame_metadata_value;
+const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);
 
 /** \brief 3D coordinates with origin at topmost left corner of the lense,
      with positive Z pointing away from the camera, positive X pointing camera right and positive Y pointing camera down */
@@ -60,7 +60,7 @@ typedef struct rs2_pixel
 * \param[in] frame_metadata  the rs2_frame_metadata whose latest frame we are interested in
 * \return            the metadata value
 */
-rs2_metadata_t rs2_get_frame_metadata(const rs2_frame* frame, rs2_frame_metadata frame_metadata, rs2_error** error);
+rs2_metadata_type rs2_get_frame_metadata(const rs2_frame* frame, rs2_frame_metadata_value frame_metadata, rs2_error** error);
 
 /**
 * determine device metadata
@@ -68,7 +68,7 @@ rs2_metadata_t rs2_get_frame_metadata(const rs2_frame* frame, rs2_frame_metadata
 * \param[in] metadata    the metadata to check for support
 * \return                true if device has this metadata
 */
-int rs2_supports_frame_metadata(const rs2_frame* frame, rs2_frame_metadata frame_metadata, rs2_error** error);
+int rs2_supports_frame_metadata(const rs2_frame* frame, rs2_frame_metadata_value frame_metadata, rs2_error** error);
 
 /**
 * retrieve timestamp domain from frame handle. timestamps can only be comparable if they are in common domain

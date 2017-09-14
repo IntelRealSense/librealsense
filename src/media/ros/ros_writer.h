@@ -156,9 +156,9 @@ namespace librealsense
             timestamp_domain.value = to_string() << vid_frame->get_frame_timestamp_domain();
             write_message(metadata_topic, timestamp, timestamp_domain);
 
-            for (int i = 0; i < static_cast<rs2_frame_metadata>(rs2_frame_metadata::RS2_FRAME_METADATA_COUNT); i++)
+            for (int i = 0; i < static_cast<rs2_frame_metadata_value>(rs2_frame_metadata_value::RS2_FRAME_METADATA_COUNT); i++)
             {
-                rs2_frame_metadata type = static_cast<rs2_frame_metadata>(i);
+                rs2_frame_metadata_value type = static_cast<rs2_frame_metadata_value>(i);
                 if (vid_frame->supports_frame_metadata(type))
                 {
                     auto md = vid_frame->get_frame_metadata(type);

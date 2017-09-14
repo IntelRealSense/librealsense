@@ -130,7 +130,7 @@ typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
 typedef void (*rs2_frame_processor_callback_ptr)(rs2_frame**, int, rs2_source*, void*);
 
 typedef double      rs2_time_t;     /**< Timestamp format. units are milliseconds */
-typedef long long   rs2_metadata_t; /**< Metadata attribute type is defined as 64 bit signed integer*/
+typedef long long   rs2_metadata_type; /**< Metadata attribute type is defined as 64 bit signed integer*/
 
 rs2_exception_type rs2_get_librealsense_exception_type(const rs2_error* error);
 const char* rs2_get_failed_function            (const rs2_error* error);

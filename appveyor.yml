@@ -28,7 +28,7 @@ before_build:
 
     cmake .. -DBUILD_EXAMPLES=true -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS:BOOL=true
 build:
-  project: ./build/Realsense.sln
+  project: ./build/librealsense2.sln
   verbosity: minimal
 test_script:
 - ps: >-

@@ -10,7 +10,7 @@
 #include <array>
 #include <set>
 #include <unordered_set>
-#include "environment.h"
+
 
 namespace librealsense
 {
@@ -20,7 +20,8 @@ namespace librealsense
           _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
           _on_before_frame_callback(nullptr),
           _metadata_parsers(std::make_shared<metadata_parser_map>()),
-          _on_open(nullptr),
+        _on_open(nullptr),
+          _source(dev->get_context()->get_time_service()),
           _owner(dev),
           _profiles([this]() { return this->init_stream_profiles(); })
     {
@@ -29,17 +30,6 @@ namespace librealsense
         register_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL, std::make_shared<librealsense::md_time_of_arrival_parser>());
 
         register_info(RS2_CAMERA_INFO_NAME, name);
-    }
-
-    const std::string& sensor_base::get_info(rs2_camera_info info) const
-    {
-        if (info_container::supports_info(info)) return info_container::get_info(info);
-        else return _owner->get_info(info);
-    }
-
-    bool sensor_base::supports_info(rs2_camera_info info) const
-    {
-        return info_container::supports_info(info) || _owner->supports_info(info);
     }
 
     void sensor_base::register_notifications_callback(notifications_callback_ptr callback)
@@ -69,7 +59,7 @@ namespace librealsense
 
     void sensor_base::assign_stream(const std::shared_ptr<stream_interface>& stream, std::shared_ptr<stream_profile_interface>& target) const
     {
-        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*stream, *target);
+        _owner->get_context()->register_same_extrinsics(*stream, *target);
         target->set_unique_id(stream->get_unique_id());
     }
 
@@ -78,10 +68,10 @@ namespace librealsense
         // per requested profile, find all 4ccs that support that request.
         std::map<int, std::set<uint32_t>> legal_fourccs;
         auto profiles = get_stream_profiles();
-        for (auto&& r : requests)
+        for (auto&& r : requests) 
         {
             auto sp = to_profile(r.get());
-            for (auto&& mode : profiles)
+            for (auto&& mode : profiles) 
             {
                 if (auto backend_profile = dynamic_cast<backend_stream_profile*>(mode.get()))
                 {
@@ -217,13 +207,13 @@ namespace librealsense
                 {
                     for (auto&& output : unpacker.outputs)
                     {
-                        auto profile = std::make_shared<video_stream_profile>(p);
+                        auto profile = std::make_shared<video_stream_profile>(_owner->get_context(), p);
                         profile->set_dims(p.width, p.height);
                         profile->set_stream_type(output.first.type);
                         profile->set_stream_index(output.first.index);
                         profile->set_format(output.second);
                         profile->set_framerate(p.fps);
-
+                        
                         results.insert(profile);
                     }
                 }
@@ -262,10 +252,10 @@ namespace librealsense
 
         // Sort the results to make sure that the user will receive predictable deterministic output from the API
         stream_profiles res{ begin(results), end(results) };
-        std::sort(res.begin(), res.end(), [](const std::shared_ptr<stream_profile_interface>& ap,
+        std::sort(res.begin(), res.end(), [](const std::shared_ptr<stream_profile_interface>& ap, 
                                              const std::shared_ptr<stream_profile_interface>& bp)
         {
-            auto a = to_profile(ap.get());
+            auto a = to_profile(ap.get()); 
             auto b = to_profile(bp.get());
 
             auto at = std::make_tuple(a.stream, a.width, a.height, a.fps, a.format);
@@ -316,11 +306,11 @@ namespace librealsense
                 _device->probe_and_commit(mode.profile, !mode.requires_processing(),
                 [this, mode, timestamp_reader, requests](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
-                    auto system_time = environment::get_instance().get_time_service()->get_time();
+                    auto system_time = _owner->get_context()->get_time();
 
                     if (!this->is_streaming())
                     {
-                        LOG_WARNING("Frame received with streaming inactive,"
+                        LOG_WARNING("Frame received with streaming inactive," 
                             << librealsense::get_string(mode.unpacker->outputs.front().first.type)
                             << mode.unpacker->outputs.front().first.index
                                 << ", Arrived," << std::fixed << system_time);
@@ -378,6 +368,7 @@ namespace librealsense
                             video->set_timestamp_domain(timestamp_domain);
                             dest.push_back(const_cast<byte*>(video->get_frame_data()));
                             frame->set_stream(request);
+                            if (stream_to_frame_types(output.first.type) == RS2_EXTENSION_DEPTH_FRAME) dynamic_cast<depth_frame*>(frame.frame)->reset_units();
                             refs.push_back(std::move(frame));
                         }
                         else
@@ -538,7 +529,7 @@ namespace librealsense
 
     void info_container::register_info(rs2_camera_info info, const std::string& val)
     {
-        if (info_container::supports_info(info) && (info_container::get_info(info) != val)) // Append existing infos
+        if (supports_info(info) && (get_info(info) != val)) // Append existing infos
         {
             _camera_info[info] += "\n" + std::move(val);
         }
@@ -591,19 +582,19 @@ namespace librealsense
         }
     }
 
-    void sensor_base::register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const
+    void sensor_base::register_metadata(rs2_frame_metadata metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const
     {
         if (_metadata_parsers.get()->end() != _metadata_parsers.get()->find(metadata))
             throw invalid_value_exception( to_string() << "Metadata attribute parser for " << rs2_frame_metadata_to_string(metadata)
                                            <<  " is already defined");
 
-        _metadata_parsers.get()->insert(std::pair<rs2_frame_metadata_value, std::shared_ptr<md_attribute_parser_base>>(metadata, metadata_parser));
+        _metadata_parsers.get()->insert(std::pair<rs2_frame_metadata, std::shared_ptr<md_attribute_parser_base>>(metadata, metadata_parser));
     }
 
-    hid_sensor::hid_sensor(std::shared_ptr<platform::hid_device> hid_device, std::unique_ptr<frame_timestamp_reader> hid_iio_timestamp_reader,
-        std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader,
-        std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
-        std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
+    hid_sensor::hid_sensor(std::shared_ptr<platform::hid_device> hid_device, std::unique_ptr<frame_timestamp_reader> hid_iio_timestamp_reader, 
+        std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader, 
+        std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream, 
+        std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles, 
         device* dev)
     : sensor_base("Motion Module", dev), _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
       _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
@@ -653,7 +644,7 @@ namespace librealsense
             {
                 auto p = elem.second;
                 platform::stream_profile sp{ 1, 1, p.fps, stream_to_fourcc(p.stream) };
-                auto profile = std::make_shared<stream_profile_base>(sp);
+                auto profile = std::make_shared<stream_profile_base>(_owner->get_context(), sp);
                 profile->set_stream_type(p.stream);
                 profile->set_format(p.format);
                 profile->set_framerate(p.fps);
@@ -681,7 +672,7 @@ namespace librealsense
                 auto it = std::find_if(begin(map.unpacker->outputs), end(map.unpacker->outputs),
                                        [&](const std::pair<stream_descriptor, rs2_format>& pair)
                 {
-                    return pair.first.type == request->get_stream_type() &&
+                    return pair.first.type == request->get_stream_type() && 
                            pair.first.index == request->get_stream_index();
                 });
 
@@ -750,7 +741,7 @@ namespace librealsense
 
         _hid_device->start_capture([this](const platform::sensor_data& sensor_data)
         {
-            auto system_time = environment::get_instance().get_time_service()->get_time();
+            auto system_time = _owner->get_context()->get_time();
             auto timestamp_reader = _hid_iio_timestamp_reader.get();
 
             // TODO:
@@ -843,7 +834,7 @@ namespace librealsense
         _custom_hid_timestamp_reader->reset();
     }
 
-    std::vector<uint8_t> hid_sensor::get_custom_report_data(const std::string& custom_sensor_name,
+    std::vector<uint8_t> hid_sensor::get_custom_report_data(const std::string& custom_sensor_name, 
         const std::string& report_name, platform::custom_sensor_report_field report_field) const
     {
         return _hid_device->get_custom_report_data(custom_sensor_name, report_name, report_field);

@@ -561,10 +561,10 @@ namespace librealsense
 
         call* recording::pick_next_call(int id)
         {
+            lock_guard<recursive_mutex> lock(_mutex);
             const auto idx = (_cycles[id] + 1) % static_cast<int>(calls.size());
             return &calls[idx];
         }
-
 
         call* recording::cycle_calls(call_type t, int id)
         {
@@ -578,7 +578,13 @@ namespace librealsense
 
             for (size_t i = 1; i <= calls.size(); i++)
             {
-                const auto idx = (_cycles[id] + i) % static_cast<int>(calls.size());
+                const auto idx = (_cycles[id] + i);
+                 if (idx >= calls.size())
+                 {
+                     _cycles[id] = _cursors[id];
+                     return nullptr;
+                 }
+
                 if (calls[idx].type == t && calls[idx].entity_id == id)
                 {
                     _cycles[id] = idx;
@@ -1115,6 +1121,7 @@ namespace librealsense
 
         playback_uvc_device::~playback_uvc_device()
         {
+            assert(_alive);
             _alive = false;
             _callback_thread.join();
         }
@@ -1445,70 +1452,86 @@ namespace librealsense
 
 
 
+        stream_profile playback_uvc_device::get_profile(call* frame) const
+        {
+            auto profile_blob = _rec->load_blob(frame->param1);
+
+            stream_profile p;
+            librealsense::copy(&p, profile_blob.data(), sizeof(p));
+
+            return p;
+        }
+
 
         void playback_uvc_device::callback_thread()
         {
-
             while (_alive)
             {
                 auto c_ptr = _rec->pick_next_call(_entity_id);
 
                 if (c_ptr && c_ptr->type == call_type::uvc_frame)
                 {
-                    auto profile_blob = _rec->load_blob(c_ptr->param1);
-
-                    stream_profile p;
-                    librealsense::copy(&p, profile_blob.data(), sizeof(p));
-                    lock_guard<mutex> lock(_callback_mutex);
 
                     for (auto&& pair : _callbacks)
                     {
-
-                        if (p == pair.first)
+                        if(get_profile(c_ptr) == pair.first)
                         {
-
                             auto c_ptr = _rec->cycle_calls(call_type::uvc_frame, _entity_id);
-                            vector<uint8_t> frame_blob;
-                            vector<uint8_t> metadata_blob;
 
                             if (c_ptr)
                             {
-                                if (c_ptr->param3 == 0) // frame was not saved
+                                auto p = get_profile(c_ptr);
+                                if(p == pair.first)
                                 {
-                                    frame_blob = vector<uint8_t>(c_ptr->param4, 0);
-                                }
-                                else if (c_ptr->param3 == 1)// frame was saved
-                                {
-                                    frame_blob = _rec->load_blob(c_ptr->param2);
-                                }
-                                else
-                                {
-                                    frame_blob = _compression.decode(_rec->load_blob(c_ptr->param2));
-                                }
+                                    lock_guard<mutex> lock(_callback_mutex);
 
-                                metadata_blob = _rec->load_blob(c_ptr->param5);
-                                frame_object fo{ frame_blob.size(),
-                                    static_cast<uint8_t>(metadata_blob.size()), // Metadata is limited to 0xff bytes by design
-                                    frame_blob.data(),metadata_blob.data() };
+                                    vector<uint8_t> frame_blob;
+                                    vector<uint8_t> metadata_blob;
 
-                                pair.second(p, fo, []() {});
 
-                                break;
+                                    if (c_ptr->param3 == 0) // frame was not saved
+                                    {
+                                        frame_blob = vector<uint8_t>(c_ptr->param4, 0);
+                                    }
+                                    else if (c_ptr->param3 == 1)// frame was saved
+                                    {
+                                        frame_blob = _rec->load_blob(c_ptr->param2);
+                                    }
+                                    else
+                                    {
+                                        frame_blob = _compression.decode(_rec->load_blob(c_ptr->param2));
+                                    }
+
+                                    metadata_blob = _rec->load_blob(c_ptr->param5);
+                                    frame_object fo{ frame_blob.size(),
+                                                static_cast<uint8_t>(metadata_blob.size()), // Metadata is limited to 0xff bytes by design
+                                                frame_blob.data(),metadata_blob.data() };
+
+
+                                    pair.second(p, fo, []() {});
+
+                                    break;
+                                }
                             }
                             else
                             {
                                 LOG_WARNING("Could not Cycle frames!");
                             }
+
                         }
+
                     }
                 }
                 else
                 {
                     _rec->cycle_calls(call_type::uvc_frame, _entity_id);
                 }
-                this_thread::sleep_for(chrono::milliseconds(1));
+                // work around - Let the other threads of playback uvc devices pull their frames
+                this_thread::yield();
+                //this_thread::sleep_for(std::chrono::milliseconds(1));
             }
         }
+
     }
 }
 

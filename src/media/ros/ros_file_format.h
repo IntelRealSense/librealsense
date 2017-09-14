@@ -73,7 +73,7 @@ namespace librealsense
         }
     }
 
-    inline void convert(const std::string& source, rs2_frame_metadata& target)
+    inline void convert(const std::string& source, rs2_frame_metadata_value& target)
     {
         if (!try_parse(source, target))
         {
@@ -150,10 +150,10 @@ namespace librealsense
     class md_constant_parser : public md_attribute_parser_base
     {
     public:
-        md_constant_parser(rs2_frame_metadata type) : _type(type) {}
-        rs2_metadata_t get(const frame& frm) const override
+        md_constant_parser(rs2_frame_metadata_value type) : _type(type) {}
+        rs2_metadata_type get(const frame& frm) const override
         {
-            rs2_metadata_t v;
+            rs2_metadata_type v;
             if (try_get(frm, v) == false)
             {
                 throw invalid_value_exception("Frame does not support this type of metadata");
@@ -162,29 +162,29 @@ namespace librealsense
         }
         bool supports(const frame& frm) const override
         {
-            rs2_metadata_t v;
+            rs2_metadata_type v;
             return try_get(frm, v);
         }
     private:
-        bool try_get(const frame& frm, rs2_metadata_t& result) const
+        bool try_get(const frame& frm, rs2_metadata_type& result) const
         {
-            auto pair_size = (sizeof(rs2_frame_metadata) + sizeof(rs2_metadata_t));
+            auto pair_size = (sizeof(rs2_frame_metadata_value) + sizeof(rs2_metadata_type));
             const uint8_t* pos = frm.additional_data.metadata_blob.data();
             while (pos <= frm.additional_data.metadata_blob.data() + frm.additional_data.metadata_blob.size())
             {
-                const rs2_frame_metadata* type = reinterpret_cast<const rs2_frame_metadata*>(pos);
-                pos += sizeof(rs2_frame_metadata);
+                const rs2_frame_metadata_value* type = reinterpret_cast<const rs2_frame_metadata_value*>(pos);
+                pos += sizeof(rs2_frame_metadata_value);
                 if (_type == *type)
                 {
-                    const rs2_metadata_t* value = reinterpret_cast<const rs2_metadata_t*>(pos);
+                    const rs2_metadata_type* value = reinterpret_cast<const rs2_metadata_type*>(pos);
                     result = *value;
                     return true;
                 }
-                pos += sizeof(rs2_metadata_t);
+                pos += sizeof(rs2_metadata_type);
             }
             return false;
         }
-        rs2_frame_metadata _type;
+        rs2_frame_metadata_value _type;
     };
 
     class read_only_playback_option : public readonly_option

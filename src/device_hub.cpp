@@ -60,7 +60,7 @@ namespace librealsense
             // _camera_index is the curr device that user want to work with
 
             auto d = _device_list[ (_camera_index + i) % _device_list.size()];
-             auto dev = d->create_device();
+            auto dev = d->create_device();
 
             if(serial.size() > 0 )
             {
@@ -86,15 +86,8 @@ namespace librealsense
      * If any device is connected return it, otherwise wait until next RealSense device connects.
      * Calling this method multiple times will cycle through connected devices
      */
-    std::shared_ptr<device_interface> device_hub::wait_for_device(unsigned int timeout_ms, device_interface* dev)
+    std::shared_ptr<device_interface> device_hub::wait_for_device(unsigned int timeout_ms, std::string serial)
     {
-        std::string serial;
-
-        if(dev)
-        {
-            serial = dev->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
-        }
-
         {
             std::unique_lock<std::mutex> lock(_mutex);
             // check if there is at least one device connected

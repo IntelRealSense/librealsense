@@ -6,15 +6,14 @@
 #include "core/video.h"
 #include "context.h"
 #include "image.h"
+#include "environment.h"
 
 namespace librealsense
 {
     class stream : public stream_interface
     {
     public:
-        stream(std::shared_ptr<context> ctx, rs2_stream stream_type, int index = 0);
-
-        context& get_context() const override;
+        stream(rs2_stream stream_type, int index = 0);
 
         int get_stream_index() const override;
         void set_stream_index(int index) override;
@@ -26,7 +25,6 @@ namespace librealsense
         void set_unique_id(int uid) override { _uid = uid; };
 
     private:
-        std::shared_ptr<context> _ctx;
         int _index = 0;
         int _uid = 0;
         rs2_stream _type = RS2_STREAM_ANY;
@@ -47,9 +45,7 @@ namespace librealsense
     class stream_profile_base : public virtual stream_profile_interface, public backend_stream_profile
     {
     public:
-        stream_profile_base(std::shared_ptr<context> ctx, platform::stream_profile sp);
-
-        context& get_context() const override;
+        stream_profile_base( platform::stream_profile sp);
 
         int get_stream_index() const override;
         void set_stream_index(int index) override;
@@ -90,7 +86,6 @@ namespace librealsense
             throw not_implemented_exception(__FUNCTION__);
         }
     private:
-        std::shared_ptr<context> _ctx;
         int _index = 1;
         int _uid = 0;
         rs2_stream _type = RS2_STREAM_ANY;
@@ -104,8 +99,8 @@ namespace librealsense
     class video_stream_profile : public virtual video_stream_profile_interface, public stream_profile_base, public extension_snapshot
     {
     public:
-        explicit video_stream_profile(std::shared_ptr<context> ctx, platform::stream_profile sp)
-            : stream_profile_base(ctx, std::move(sp)),
+        explicit video_stream_profile(platform::stream_profile sp)
+            : stream_profile_base( std::move(sp)),
               _calc_intrinsics([]() -> rs2_intrinsics { throw not_implemented_exception("No intrinsics are available for this stream profile!"); }),
               _width(0), _height(0)
         {
@@ -124,8 +119,8 @@ namespace librealsense
 
         std::shared_ptr<stream_profile_interface> clone() const override
         {
-            auto res = std::make_shared<video_stream_profile>(get_context().shared_from_this(), platform::stream_profile{});
-            res->set_unique_id(get_context().generate_stream_id());
+            auto res = std::make_shared<video_stream_profile>(platform::stream_profile{});
+            environment::get_instance().generate_stream_id();
             res->set_dims(get_width(), get_height());
             std::function<rs2_intrinsics()> int_func = _calc_intrinsics;
             res->set_intrinsics([int_func]() { return int_func(); });

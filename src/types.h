@@ -328,7 +328,7 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_distortion, DISTORTION)
     RS2_ENUM_HELPERS(rs2_option, OPTION)
     RS2_ENUM_HELPERS(rs2_camera_info, CAMERA_INFO)
-    RS2_ENUM_HELPERS(rs2_frame_metadata, FRAME_METADATA)
+    RS2_ENUM_HELPERS(rs2_frame_metadata_value, FRAME_METADATA)
     RS2_ENUM_HELPERS(rs2_timestamp_domain, TIMESTAMP_DOMAIN)
     RS2_ENUM_HELPERS(rs2_sr300_visual_preset, SR300_VISUAL_PRESET)
     RS2_ENUM_HELPERS(rs2_extension, EXTENSION)

@@ -3,6 +3,8 @@
 # ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 
+project(librealsense2)
+
 macro(info msg)
     message(STATUS "Info: ${msg}")
 endmacro()
@@ -37,48 +39,14 @@ assign_version_property(PATCH)
 set(REALSENSE_VERSION_STRING ${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}.${REALSENSE_VERSION_PATCH})
 infoValue(REALSENSE_VERSION_STRING)
 
-# In a ROS Build Environment CMAKE_PREFIX_PATH is also an environment variable
-# Checking for this special case and ensuring it contains a ROS path
-IF(DEFINED ENV{CMAKE_PREFIX_PATH})
-  IF($ENV{CMAKE_PREFIX_PATH} MATCHES "/opt/ros")
-    set(ROS_BUILD_TYPE TRUE)
-  ENDIF()
-ENDIF()
-
-IF (${ROS_BUILD_TYPE})
-  message(STATUS "Building in a ROS environment")
-  project(librealsense2)
-
-  #################################
-  # catkin specific configuration #
-  #################################
-  find_package(catkin REQUIRED)
-  # The catkin_package macro generates cmake config files for your package
-  # Declare things to be passed to dependent projects
-  # INCLUDE_DIRS: uncomment this if you package contains header files
-  # LIBRARIES: libraries you create in this project that dependent projects also need
-  # CATKIN_DEPENDS: catkin_packages dependent projects also need
-  # DEPENDS: system dependencies of this project that dependent projects also need
-  catkin_package(
-    INCLUDE_DIRS include
-    LIBRARIES realsense2
-  )
-ELSE()
-  project(Realsense)
-ENDIF()
-
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
 include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c11" COMPILER_SUPPORTS_C11)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_C11)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
-endif()
 if(COMPILER_SUPPORTS_CXX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 elseif(COMPILER_SUPPORTS_CXX0X)
@@ -98,6 +66,7 @@ endif()
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
 set(REALSENSE_CPP
+    src/environment.cpp
     src/device_hub.cpp
     src/pipeline.cpp
     src/archive.cpp
@@ -198,6 +167,7 @@ set(REALSENSE_HPP
     src/core/extension.h
     src/core/processing.h
 
+    src/environment.h
     src/device_hub.h
     src/pipeline.h
     src/config.h
@@ -558,39 +528,30 @@ target_include_directories(realsense2 PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_S
                                             $<INSTALL_INTERFACE:include>
                                      PRIVATE ${LIBUSB1_INCLUDE_DIRS})
 
+set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/realsense2")
 
-if(${ROS_BUILD_TYPE})
-    install(TARGETS realsense2
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    )
+install(TARGETS realsense2
+EXPORT realsense2Targets
+RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
 
-    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense2/
-        DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
-else()
-    set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/realsense2")
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense2 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-    install(TARGETS realsense2
-        EXPORT realsense2Targets
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    )
+include(CMakePackageConfigHelpers)
+configure_package_config_file(CMake/realsense2Config.cmake.in realsense2Config.cmake
+                          INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+                                  INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
+                          PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
 
-    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense2 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(EXPORT realsense2Targets FILE realsense2Targets.cmake NAMESPACE realsense2::
+    DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/realsense2Config.cmake"
+    DESTINATION ${CMAKECONFIG_INSTALL_DIR})
 
-    include(CMakePackageConfigHelpers)
-    configure_package_config_file(CMake/realsense2Config.cmake.in realsense2Config.cmake
-                                  INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
-                                  PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
 
-    install(EXPORT realsense2Targets FILE realsense2Targets.cmake NAMESPACE realsense2::
-            DESTINATION ${CMAKECONFIG_INSTALL_DIR})
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/realsense2Config.cmake"
-            DESTINATION ${CMAKECONFIG_INSTALL_DIR})
-    install(CODE "execute_process(COMMAND ldconfig)")
-endif()
+install(CODE "execute_process(COMMAND ldconfig)")
 
 option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
@@ -662,4 +623,8 @@ foreach(arg ${librealsense_PKG_LIBS})
 endforeach()
 # Set library pkgconfig file for facilitating 3rd party integration
 configure_file(config/librealsense.pc.in config/realsense2.pc @ONLY)
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/config/realsense2.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/config/realsense2.pc"     DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+# Update system cache with newly installed binaries/libraries
+if(UNIX)
+    install(CODE "execute_process(COMMAND ldconfig)")
+endif()

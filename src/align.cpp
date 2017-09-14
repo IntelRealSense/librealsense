@@ -8,6 +8,7 @@
 #include "align.h"
 #include "archive.h"
 #include "context.h"
+#include "environment.h"
 
 namespace librealsense
 {
@@ -47,8 +48,8 @@ namespace librealsense
         _source.set_callback(callback);
     }
 
-    processing_block::processing_block(std::shared_ptr<platform::time_service> ts)
-            : _source(ts), _source_wrapper(_source)
+    processing_block::processing_block()
+        : _source_wrapper(_source)
     {
         _source.init(std::make_shared<metadata_parser_map>());
     }
@@ -161,6 +162,12 @@ namespace librealsense
         vf->set_sensor(original->get_sensor());
         res->set_stream(stream);
 
+        if (frame_type == RS2_EXTENSION_DEPTH_FRAME)
+        {
+            original->acquire();
+            (dynamic_cast<depth_frame*>(res))->set_original(original);
+        }
+
         return res;
     }
 
@@ -225,9 +232,8 @@ namespace librealsense
         return res;
     }
 
-    pointcloud::pointcloud(std::shared_ptr<platform::time_service> ts)
-        : processing_block(ts),
-          _depth_intrinsics_ptr(nullptr),
+    pointcloud::pointcloud()
+          :_depth_intrinsics_ptr(nullptr),
           _depth_units_ptr(nullptr),
           _mapped_intrinsics_ptr(nullptr),
           _extrinsics_ptr(nullptr),
@@ -245,7 +251,7 @@ namespace librealsense
                 {
                     _stream = depth_frame->get_stream()->clone();
                     _depth_stream_uid = depth_frame->get_stream()->get_unique_id();
-                    _stream->get_context().register_same_extrinsics(*_stream, *depth_frame->get_stream());
+                    environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_stream, *depth_frame->get_stream());
                     _depth_intrinsics_ptr = nullptr;
                     _depth_units_ptr = nullptr;
                 }
@@ -301,7 +307,7 @@ namespace librealsense
 
                 if (_stream && !_extrinsics_ptr)
                 {
-                    if (other_frame->get_stream()->get_context().try_fetch_extrinsics(
+                    if ( environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics(
                         *_stream, *other_frame->get_stream(), &_extrinsics
                     ))
                     {
@@ -317,8 +323,8 @@ namespace librealsense
                 auto pframe = (points*)(res.frame);
 
                 auto depth_data = (const uint16_t*)depth.get_data();
-                auto original_depth = ((depth_frame*)depth.get())->get_original_depth();
-                if (original_depth) depth_data = (const uint16_t*)original_depth->get_frame_data();
+                //auto original_depth = ((depth_frame*)depth.get())->get_original_depth();
+                //if (original_depth) depth_data = (const uint16_t*)original_depth->get_frame_data();
 
                 auto points = depth_to_points((uint8_t*)pframe->get_vertices(), *_depth_intrinsics_ptr, depth_data, *_depth_units_ptr);
 
@@ -364,7 +370,7 @@ namespace librealsense
                 get_source().frame_ready(std::move(res));
             };
 
-            if (auto composite = f.as<rs2::composite_frame>())
+            if (auto composite = f.as<rs2::frameset>())
             {
                 auto depth = composite.first_or_default(RS2_STREAM_DEPTH);
                 if (depth)
@@ -516,9 +522,8 @@ namespace librealsense
         }
     }
 
-    align::align(std::shared_ptr<platform::time_service> ts, rs2_stream to_stream)
-        : processing_block(ts),
-        _depth_intrinsics_ptr(nullptr),
+    align::align(rs2_stream to_stream)
+       : _depth_intrinsics_ptr(nullptr),
         _depth_units_ptr(nullptr),
         _other_intrinsics_ptr(nullptr),
         _depth_to_other_extrinsics_ptr(nullptr),
@@ -562,7 +567,7 @@ namespace librealsense
                 if (!_depth_stream_profile.get())
                 {
                     _depth_stream_profile = depth_frame->get_stream();
-                    _depth_stream_profile->get_context().register_same_extrinsics(*_depth_stream_profile, *depth_frame->get_stream());
+                     environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream_profile, *depth_frame->get_stream());
                     auto vid_frame = depth.as<rs2::video_frame>();
                     _width = vid_frame.get_width();
                     _height = vid_frame.get_height();
@@ -570,7 +575,7 @@ namespace librealsense
 
                 if (!_depth_to_other_extrinsics_ptr && _depth_stream_profile && _other_stream_profile)
                 {
-                    _depth_stream_profile->get_context().try_fetch_extrinsics(*_depth_stream_profile, *_other_stream_profile, &_depth_to_other_extrinsics);
+                     environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics(*_depth_stream_profile, *_other_stream_profile, &_depth_to_other_extrinsics);
                     _depth_to_other_extrinsics_ptr = &_depth_to_other_extrinsics;
                 }
 
@@ -637,7 +642,7 @@ namespace librealsense
                 //source.frame_ready(other);
             };
 
-            if (auto composite = f.as<rs2::composite_frame>())
+            if (auto composite = f.as<rs2::frameset>())
             {
                 auto depth = composite.first_or_default(RS2_STREAM_DEPTH);
                 auto other = composite.first_or_default(_other_stream_type);

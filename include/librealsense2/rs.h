@@ -73,6 +73,14 @@ void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_
 
 float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2_error** error);
 
+/**
+* return the time at specific time point
+* \param context     Object representing librealsense session
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the time at specific time point, in live and record mode it will return the system time and in playback mode it will return the recorded time
+*/
+rs2_time_t rs2_get_time( rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif
