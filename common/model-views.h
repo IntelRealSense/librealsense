@@ -473,7 +473,7 @@ namespace rs2
         void upload_frame(frame&& f);
         void draw_histogram_options(float depth_scale, const subdevice_model& sensor);
 
-        std::map<int, rect> calc_layout(float x0, float y0, float width, float height);
+        std::map<int, rect> calc_layout(const rect& r);
 
         void show_no_stream_overlay(ImFont* font, int min_x, int min_y, int max_x, int max_y);
         void show_no_device_overlay(ImFont* font, int min_x, int min_y);
