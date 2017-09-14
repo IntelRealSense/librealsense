@@ -363,9 +363,9 @@ int main(int argv, const char** argc) try
             glOrtho(0, w, h, 0, -1, +1);
             
             if (splash_timer.ms() < 500)
-                splash_tex.show({0,0,w,h}, smoothstep(splash_timer.ms(), 70, 500));
+                splash_tex.show({0.f,0.f,(float)w,(float)h}, smoothstep(splash_timer.ms(), 70.f, 500.f));
             else
-                splash_tex.show({0,0,w,h}, 1 - smoothstep(splash_timer.ms(), 900, 1000));
+                splash_tex.show({0.f,0.f,(float)w,(float)h}, 1.f - smoothstep(splash_timer.ms(), 900.f, 1000.f));
         
             glfwSwapBuffers(window);
             glPopMatrix();
