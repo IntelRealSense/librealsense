@@ -13,10 +13,8 @@ before_install:
   - nvm install 6 && nvm use 6
   - npm install -g node-gyp
 
-  # Remove duplicated python 2.x, otherwise node-gyp will complain and stop
-  - python2_keep=`pyenv versions|sed 's/ //g'|grep "^2"|tail -1`
-  - for i in `pyenv versions|sed 's/ //g'|grep "^2"` ; do if [ $i = "$python2_keep" ]; then continue; else pyenv uninstall -f $i; fi; done
-  - pyenv uninstall -f 2.7.13
+  # Remove duplicated python 2.x, only leave python2.7; Otherwise node-gyp will complain and stop
+  - for i in `pyenv versions|sed 's/ //g'|grep "^2"`; do if [ $i = "2.7" ]; then continue; else pyenv uninstall -f $i; fi; done
 
   # Run linter
   - git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
