@@ -309,10 +309,7 @@ TEST_CASE("Sync different fps", "[live][!mayfail]") {
             }
             frames_arrived.push_back(streams_arrived);
         }
-        for (auto i = 0; i < 30; i++)
-        {
-            auto frames = syncer.wait_for_frames(5000);
-        }
+
         std::vector<int> streams_groups_arrrived(streams_groups.size(), 0);
 
         for (auto streams : frames_arrived)
@@ -1811,7 +1808,7 @@ void triger_error(const rs2::device& dev, int num)
         debug.send_and_receive_raw_data(raw_data);
 }
 
-TEST_CASE("Error handling sanity", "[live]") {
+TEST_CASE("Error handling sanity", "[live][!mayfail]") {
 
     //Require at least one device to be plugged in
     rs2::context ctx;
@@ -1843,7 +1840,7 @@ TEST_CASE("Error handling sanity", "[live]") {
                 if (subdevice.supports(RS2_OPTION_ERROR_POLLING_ENABLED))
                 {
                     disable_sensitive_options_for(subdevice);
-                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 1));
+
                     subdevice.set_notifications_callback([&](rs2::notification n)
                     {
 
@@ -1855,6 +1852,7 @@ TEST_CASE("Error handling sanity", "[live]") {
                     });
 
                     triger_error(ctx.get_sensor_parent(subdevice), i);
+                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 1));
                     std::unique_lock<std::mutex> lock(m);
                     CAPTURE(notification_description);
                     CAPTURE(severity);
@@ -1864,7 +1862,7 @@ TEST_CASE("Error handling sanity", "[live]") {
                             && severity == RS2_LOG_SEVERITY_ERROR;
                     };
                     REQUIRE(cv.wait_for(lock, std::chrono::seconds(10), pred));
-
+                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 0));
 
                 }
             }
@@ -1912,6 +1910,7 @@ TEST_CASE("Auto disabling control behavior", "[live]") {
 
         for (auto && subdevice : list)
         {
+            disable_sensitive_options_for(subdevice);
             auto info = subdevice.get_info(RS2_CAMERA_INFO_NAME);
             CAPTURE(info);
 
@@ -2634,7 +2633,7 @@ std::map<std::string, device_profiles> get_pipeline_default_configurations()
 
     dev_requsets["0B07"] =
     {
-        { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } },
+        { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } },
         30,
         true
     };
@@ -3338,6 +3337,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
 
                 REQUIRE_NOTHROW(subdevice.start([&](rs2::frame f)
                 {
+
                     if ((frames >= frames_before_start_measure) && (frames_additional_data.size() < frames_for_fps_measure))
                     {
                         if (first)

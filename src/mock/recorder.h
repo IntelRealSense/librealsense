@@ -527,6 +527,8 @@ namespace librealsense
             ~playback_uvc_device();
 
         private:
+             stream_profile get_profile(call* frame) const;
+
             std::shared_ptr<recording> _rec;
             int _entity_id;
             std::atomic<bool> _alive;

@@ -18,7 +18,7 @@ namespace rs2
         */
         recording_context(const std::string& filename,
                           const std::string& section = "",
-                          rs2_recording_mode mode = RS2_RECORDING_MODE_BEST_QUALITY)
+                          rs2_recording_mode mode = RS2_RECORDING_MODE_BLANK_FRAMES)
         {
             rs2_error* e = nullptr;
             _context = std::shared_ptr<rs2_context>(

@@ -121,7 +121,7 @@ namespace librealsense
 
     class matcher;
 
-    class device_interface : public virtual info_interface
+    class device_interface : public virtual info_interface, public std::enable_shared_from_this<device_interface>
     {
     public:
         virtual sensor_interface& get_sensor(size_t i) = 0;
