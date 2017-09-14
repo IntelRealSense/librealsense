@@ -2492,6 +2492,7 @@ namespace rs2
         ImGui::PopFont();
     }
 
+    // Generate streams layout, creates a grid-like layout with factor amount of columns
     std::map<int, rect> generate_layout(const rect& r,
         int top_bar_height, int factor,
         const std::set<stream_model*>& active_streams,
@@ -2499,7 +2500,7 @@ namespace rs2
     )
     {
         std::map<int, rect> results;
-
+        // Calc the number of rows
         auto complement = ceil((float)active_streams.size() / factor);
 
         auto cell_width = static_cast<float>(r.w / factor);
@@ -2510,10 +2511,12 @@ namespace rs2
         {
             for (auto y = 0; y < complement; y++)
             {
+                // There might be spare boxes at the end (3 streams in 2x2 array for example)
                 if (it == active_streams.end()) break;
 
                 rect rxy = { r.x + x * cell_width, r.y + y * cell_height + top_bar_height,
                     cell_width, cell_height - top_bar_height };
+                // Generate box to display the stream in
                 results[stream_index[*it]] = rxy.adjust_ratio((*it)->size);
                 it++;
             }
@@ -2522,10 +2525,12 @@ namespace rs2
         return results;
     }
 
+    // Return the total display area of the layout
+    // The bigger it is, the more details we can see
     float evaluate_layout(const std::map<int, rect>& l)
     {
         float res = 0.f;
-        for (auto&& kvp : l) res += kvp.second.w * kvp.second.h;
+        for (auto&& kvp : l) res += kvp.second.area();
         return res;
     }
 
@@ -2553,16 +2558,18 @@ namespace rs2
 
         if (fullscreen)
         {
-            results[stream_index[selected_stream]] = { static_cast<float>(r.x), static_cast<float>(r.y + top_bar_height),
-                                                       static_cast<float>(r.w), static_cast<float>(r.h - top_bar_height) };
+            results[stream_index[selected_stream]] = { r.x, r.y + top_bar_height,
+                                                       r.w, r.h - top_bar_height };
         }
         else
         {
+            // Go over all available fx(something) layouts
             for (int f = 1; f <= active_streams.size(); f++)
             {
                 auto l = generate_layout(r, top_bar_height, f, 
                                          active_streams, stream_index);
 
+                // Keep the "best" layout in result
                 if (evaluate_layout(l) > evaluate_layout(results))
                     results = l;
             }

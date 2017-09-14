@@ -1,3 +1,6 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+
 #include <librealsense2/rs.hpp>
 #include "model-views.h"
 
@@ -14,11 +17,13 @@
 
 #include <imgui_internal.h>
 
+// We use NOC file helper function for cross-platform file dialogs
 #include <noc_file_dialog.h>
 
+// We use STB image to load the splash-screen from memory
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-
+// int-rs-splash.hpp contains the PNG image from res/int-rs-splash.png
 #include "res/int-rs-splash.hpp"
 
 using namespace rs2;
@@ -103,6 +108,9 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
     }
 }
 
+// This function is called every frame
+// If between the frames there was an asyncronous connect/disconnect event
+// the function will pick up on this and add the device to the viewer
 void refresh_devices(std::mutex& m,
                      context& ctx,
                      bool& refresh_device_list, 
@@ -194,6 +202,7 @@ void refresh_devices(std::mutex& m,
     }
 }
 
+// Helper function to get window rect from GLFW
 rect get_window_rect(GLFWwindow* window)
 {
     int width, height;
@@ -204,6 +213,7 @@ rect get_window_rect(GLFWwindow* window)
              (float)width, (float)height };
 }
 
+// Helper function to get monitor rect from GLFW
 rect get_monitor_rect(GLFWmonitor* monitor)
 {
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
@@ -221,6 +231,8 @@ int pick_scale_factor(GLFWwindow* window)
     int count;
     GLFWmonitor** monitors = glfwGetMonitors(&count);
     if (count == 0) return 1.f; // Not sure if possible, but better be safe
+
+    // Find the monitor that covers most of the application pixels:
     GLFWmonitor* best = monitors[0];
     float best_area = 0.f;
     for (int i = 0; i < count; i++)
@@ -236,7 +248,10 @@ int pick_scale_factor(GLFWwindow* window)
 
     int widthMM, heightMM;
     glfwGetMonitorPhysicalSize(best, &widthMM, &heightMM);
-
+    
+    // The actual calculation is somewhat arbitrary, but we are going for
+    // about 1cm buttons, regardless of resultion
+    // We discourage fractional scale factors
     float how_many_pixels_in_mm = 
         get_monitor_rect(best).area() / (widthMM * heightMM);
     float scale = sqrt(how_many_pixels_in_mm) / 5.f;
@@ -401,8 +416,9 @@ int main(int argv, const char** argc) try
         glfwPollEvents();
         int w, h;
         glfwGetWindowSize(window, &w, &h);
-    
-        if (!ready || splash_timer.ms() < 1050)
+        
+        // If we are just getting started, render the Splash Screen instead of normal UI
+        if (!ready || splash_timer.elapsed_ms() < 1050)
         {
             glPushMatrix();
             glViewport(0.f, 0.f, w, h);
@@ -412,10 +428,10 @@ int main(int argv, const char** argc) try
             glLoadIdentity();
             glOrtho(0, w, h, 0, -1, +1);
             
-            if (splash_timer.ms() < 500)
-                splash_tex.show({0.f,0.f,(float)w,(float)h}, smoothstep(splash_timer.ms(), 70.f, 500.f));
-            else
-                splash_tex.show({0.f,0.f,(float)w,(float)h}, 1.f - smoothstep(splash_timer.ms(), 900.f, 1000.f));
+            if (splash_timer.elapsed_ms() < 500) // Fade-in the logo
+                splash_tex.show({0.f,0.f,(float)w,(float)h}, smoothstep(splash_timer.elapsed_ms(), 70.f, 500.f));
+            else // ... and fade out
+                splash_tex.show({0.f,0.f,(float)w,(float)h}, 1.f - smoothstep(splash_timer.elapsed_ms(), 900.f, 1000.f));
         
             glfwSwapBuffers(window);
             glPopMatrix();
@@ -437,6 +453,8 @@ int main(int argv, const char** argc) try
             last_time_point = now;
         }
 
+        // Update the scale factor each frame
+        // based on resolution and physical display size
         data.scale_factor = pick_scale_factor(window);
         w = w / data.scale_factor;
         h = h / data.scale_factor;

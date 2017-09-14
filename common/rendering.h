@@ -217,22 +217,23 @@ namespace rs2
                         unnormalizeT(h, 0.f, unnormalize_to.h)};
         }
 
+        // Calculate the intersection between two rects
+        // If the intersection is empty, a rect with width and height zero will be returned
         rect intersection(const rect& other) const
         {
             auto x1 = std::max(x, other.x);
             auto y1 = std::max(y, other.y);
             auto x2 = std::min(x + w, other.x + other.w);
             auto y2 = std::min(y + h, other.y + other.h);
-            x1 = std::min(x1, x2);
-            y1 = std::min(y1, y2);
-            x2 = std::max(x1, x2);
-            y2 = std::max(y1, y2);
 
             return{
-                x1, y1, x2 - x1, y2 - y1
+                x1, y1, 
+                std::max(x2 - x1, 0.f), 
+                std::max(y2 - y1, 0.f)
             };
         }
 
+        // Calculate the area of the rect
         float area() const
         {
             return w * h;
@@ -563,6 +564,7 @@ namespace rs2
         }
     } */
 
+    // Helper class to keep track of time
     class timer
     {
     public:
@@ -571,7 +573,8 @@ namespace rs2
             _start = std::chrono::high_resolution_clock::now();
         }
         
-        float ms() const
+        // Get elapsed milliseconds since timer creation
+        float elapsed_ms() const
         {
             auto duration = std::chrono::high_resolution_clock::now() - _start;
             auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
@@ -580,7 +583,6 @@ namespace rs2
     
     private:
         std::chrono::high_resolution_clock::time_point _start;
-        
     };
 
     class texture_buffer
@@ -600,6 +602,8 @@ namespace rs2
 
         GLuint get_gl_handle() const { return texture; }
         
+        // Simplified version of upload that lets us load basic RGBA textures
+        // This is used for the splash screen
         void upload_image(int w, int h, void* data)
         {
             if (!texture)
