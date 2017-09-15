@@ -483,7 +483,6 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-
         std::vector<sensor> list;
         REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
@@ -494,10 +493,12 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
 
         for (auto i = 0; i < 5; i++)
         {
-            // Test sequence
-            REQUIRE_NOTHROW(pipe.start());
+            REQUIRE_NOTHROW(pipe.open());
             REQUIRE_NOTHROW(dev = pipe.get_device());
             disable_sensitive_options_for(dev);
+
+            // Test sequence
+            REQUIRE_NOTHROW(pipe.start());
 
             REQUIRE_NOTHROW(pipe.stop());
         }
@@ -2359,7 +2360,7 @@ TEST_CASE("Connect Disconnect events while controls", "[live]")
 
 }
 
-TEST_CASE("Basic device_hub flow", "[live]") {
+TEST_CASE("Basic device_hub flow", "[live][!mayfail]") {
 
     rs2::context ctx;
 
@@ -2388,6 +2389,9 @@ TEST_CASE("Basic device_hub flow", "[live]") {
             while (hub.is_connected(*dev))
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
+
+        // Don't exit the test in unknown state
+        REQUIRE_NOTHROW(hub.wait_for_device());
     }
 }
 

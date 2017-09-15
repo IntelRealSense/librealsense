@@ -1465,13 +1465,16 @@ namespace librealsense
 
         void playback_uvc_device::callback_thread()
         {
+            int next_timeout_ms = 0;
+            double prev_frame_ts = 0;
+
             while (_alive)
             {
                 auto c_ptr = _rec->pick_next_call(_entity_id);
 
                 if (c_ptr && c_ptr->type == call_type::uvc_frame)
                 {
-
+                    lock_guard<mutex> lock(_callback_mutex);
                     for (auto&& pair : _callbacks)
                     {
                         if(get_profile(c_ptr) == pair.first)
@@ -1483,11 +1486,17 @@ namespace librealsense
                                 auto p = get_profile(c_ptr);
                                 if(p == pair.first)
                                 {
-                                    lock_guard<mutex> lock(_callback_mutex);
-
                                     vector<uint8_t> frame_blob;
                                     vector<uint8_t> metadata_blob;
 
+                                    if (prev_frame_ts > 0 &&
+                                        c_ptr->timestamp > prev_frame_ts &&
+                                        c_ptr->timestamp - prev_frame_ts <= 300)
+                                    {
+                                        prev_frame_ts = c_ptr->timestamp - prev_frame_ts;
+                                    }
+
+                                    prev_frame_ts = c_ptr->timestamp;
 
                                     if (c_ptr->param3 == 0) // frame was not saved
                                     {
@@ -1527,8 +1536,7 @@ namespace librealsense
                     _rec->cycle_calls(call_type::uvc_frame, _entity_id);
                 }
                 // work around - Let the other threads of playback uvc devices pull their frames
-                this_thread::yield();
-                //this_thread::sleep_for(std::chrono::milliseconds(1));
+                this_thread::sleep_for(std::chrono::milliseconds(next_timeout_ms));
             }
         }
 
