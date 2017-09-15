@@ -260,7 +260,7 @@ namespace rs2
 
         frameset proccess(frameset frame)
         {
-            (*_block)(frame.get());
+            (*_block)(frame);
             rs2::frame f;
             _queue.poll_for_frame(&f);
             return frameset(f);

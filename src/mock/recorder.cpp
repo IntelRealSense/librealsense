@@ -566,7 +566,6 @@ namespace librealsense
             return &calls[idx];
         }
 
-
         call* recording::cycle_calls(call_type t, int id)
         {
 
@@ -580,6 +579,12 @@ namespace librealsense
             for (size_t i = 1; i <= calls.size(); i++)
             {
                 const auto idx = (_cycles[id] + i);
+                 if (idx >= calls.size())
+                 {
+                     _cycles[id] = _cursors[id];
+                     return nullptr;
+                 }
+
                 if (calls[idx].type == t && calls[idx].entity_id == id)
                 {
                     _cycles[id] = idx;
@@ -1116,6 +1121,7 @@ namespace librealsense
 
         playback_uvc_device::~playback_uvc_device()
         {
+            assert(_alive);
             _alive = false;
             _callback_thread.join();
         }
