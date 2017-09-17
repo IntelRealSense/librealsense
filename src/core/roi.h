@@ -25,7 +25,7 @@ namespace librealsense
         virtual ~region_of_interest_method() = default;
     };
 
-    class roi_sensor_interface : public virtual sensor_interface
+    class roi_sensor_interface
     {
     public:
         virtual region_of_interest_method& get_roi_method() const = 0;

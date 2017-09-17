@@ -16,6 +16,58 @@
 
 namespace librealsense
 {
+    class readonly_option : public option
+    {
+    public:
+        readonly_option(rs2_option type) : _type(type) {}
+        bool is_read_only() const override { return true; }
+
+        void set(float) override
+        {
+            throw not_implemented_exception("This option is read-only!");
+        }
+
+        void enable_recording(std::function<void(const option &)> record_action) override
+        {
+            //empty
+        }
+        virtual rs2_option type() const override
+        {
+            return _type;
+        }
+    protected:
+        rs2_option _type;
+    };
+
+    class const_value_option : public readonly_option, public extension_snapshot
+    {
+    public:
+        const_value_option(rs2_option type, std::string desc, float val)
+            : readonly_option(type), _val(lazy<float>([val]() {return val; })), _desc(std::move(desc)) {}
+
+        const_value_option(rs2_option type, std::string desc, lazy<float> val)
+            : readonly_option(type), _val(std::move(val)), _desc(std::move(desc)) {}
+
+        float query() const override { return *_val; }
+        option_range get_range() const override { return { *_val, *_val, 0, *_val }; }
+        bool is_enabled() const override { return true; }
+
+        const char* get_description() const override { return _desc.c_str(); }
+
+        void update(std::shared_ptr<extension_snapshot> ext) override
+        {
+            if (auto opt = As<option>(ext))
+            {
+                auto new_val = opt->query();
+                _val = lazy<float>([new_val]() {return new_val; });
+                _desc = opt->get_description();
+            }
+        }
+    private:
+        lazy<float> _val;
+        std::string _desc;
+    };
+
     class uvc_pu_option : public option
     {
     public:
@@ -48,11 +100,19 @@ namespace librealsense
                 return _description_per_value.at(val).c_str();
             return nullptr;
         }
-
+        void enable_recording(std::function<void(const option &)> record_action) override
+        {
+            _record = record_action;
+        }
+        rs2_option type() const override
+        {
+            return _id;
+        }
     private:
         uvc_sensor& _ep;
         rs2_option _id;
         const std::map<float, std::string> _description_per_value;
+        std::function<void(const option &)> _record = [](const option &) {};
     };
 
     template<typename T>
@@ -67,6 +127,7 @@ namespace librealsense
                     T t = static_cast<T>(value);
                     if (!dev.set_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T)))
                         throw invalid_value_exception(to_string() << "set_xu(id=" << std::to_string(_id) << ") failed!" << " Last Error: " << strerror(errno));
+                    _recording_function(*this);
                 });
         }
 
@@ -103,20 +164,29 @@ namespace librealsense
 
         bool is_enabled() const override { return true; }
 
-        uvc_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description)
-            : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description))
+        uvc_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description, rs2_option type)
+            : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description)), _type(type)
         {}
 
         const char* get_description() const override
         {
             return _desciption.c_str();
         }
-
+        void enable_recording(std::function<void(const option &)> record_action) override
+        {
+            _recording_function = record_action;
+        }
+        rs2_option type() const override
+        {
+            return _type;
+        }
     protected:
         uvc_sensor&       _ep;
         platform::extension_unit _xu;
         uint8_t             _id;
         std::string         _desciption;
+        rs2_option _type;
+        std::function<void(const option&)> _recording_function = [](const option&) {};
     };
 
     inline std::string hexify(unsigned char n)
@@ -146,6 +216,7 @@ namespace librealsense
         void set(float value) override
         {
             _struct_interface->set(_field, value);
+            _recording_function(*this);
         }
         float query() const override
         {
@@ -158,8 +229,8 @@ namespace librealsense
         bool is_enabled() const override { return true; }
 
         explicit struct_field_option(std::shared_ptr<struct_interface<T, R, W>> struct_interface,
-                                     U T::* field, const option_range& range)
-            : _struct_interface(struct_interface), _range(range), _field(field)
+                                     U T::* field, const option_range& range, rs2_option type)
+            : _struct_interface(struct_interface), _range(range), _field(field), _type(type)
         {
         }
 
@@ -168,19 +239,29 @@ namespace librealsense
             return nullptr;
         }
 
+        void enable_recording(std::function<void(const option &)> record_action)
+        {
+            _recording_function = record_action;
+        }
+        rs2_option type() const override
+        {
+            return _type;
+        }
     private:
         std::shared_ptr<struct_interface<T, R, W>> _struct_interface;
         option_range _range;
         U T::* _field;
+        rs2_option _type;
+        std::function<void(const option&)> _recording_function = [](const option&) {};
     };
 
     template<class T, class R, class W, class U>
     std::shared_ptr<struct_field_option<T, R, W, U>> make_field_option(
         std::shared_ptr<struct_interface<T, R, W>> struct_interface,
-        U T::* field, const option_range& range)
+        U T::* field, const option_range& range, rs2_option type)
     {
         return std::make_shared<struct_field_option<T, R, W, U>>
-            (struct_interface, field, range);
+            (struct_interface, field, range, type);
     }
 
     class command_transfer_over_xu : public platform::command_transfer
@@ -204,8 +285,8 @@ namespace librealsense
     class polling_errors_disable : public option
     {
     public:
-        polling_errors_disable(polling_error_handler* handler)
-            : _polling_error_handler(handler), _value(1)
+        polling_errors_disable(polling_error_handler* handler, rs2_option type = RS2_OPTION_ERROR_POLLING_ENABLED)
+            : _polling_error_handler(handler), _value(1), _type(type)
         {}
 
         void set(float value);
@@ -220,10 +301,19 @@ namespace librealsense
         const char* get_description() const;
 
         const char* get_value_description(float value) const;
-
+        void enable_recording(std::function<void(const option &)> record_action)
+        {
+            _recording_function = record_action;
+        }
+        rs2_option type() const override
+        {
+            return _type;
+        }
     private:
         polling_error_handler*          _polling_error_handler;
         float                           _value;
+        rs2_option                      _type;
+        std::function<void(const option&)> _recording_function = [](const option&) {};
     };
 
     /** \brief auto_disabling_control class provided a control
@@ -259,6 +349,7 @@ namespace librealsense
               strong->set(_manual_value);
           }
           _auto_disabling_control->set(value);
+          _recording_function(*this);
        }
 
        float query() const override
@@ -283,53 +374,35 @@ namespace librealsense
 
        explicit auto_disabling_control(std::shared_ptr<option> auto_disabling,
                                        std::shared_ptr<option> auto_exposure,
+                                       rs2_option type,
                                        std::vector<float> move_to_manual_values = {1.f},
                                        float manual_value = 0.f)
 
            : _auto_disabling_control(auto_disabling), _auto_exposure(auto_exposure),
-             _move_to_manual_values(move_to_manual_values), _manual_value(manual_value)
+             _move_to_manual_values(move_to_manual_values), _manual_value(manual_value), _type(type)
        {}
-
+       void enable_recording(std::function<void(const option &)> record_action)
+       {
+           _recording_function = record_action;
+       }
+       rs2_option type() const override
+       {
+           return _type;
+       }
    private:
        std::shared_ptr<option> _auto_disabling_control;
        std::weak_ptr<option>   _auto_exposure;
        std::vector<float>      _move_to_manual_values;
        float                   _manual_value;
-   };
-
-   class readonly_option : public option
-   {
-   public:
-       bool is_read_only() const override { return true; }
-
-       void set(float) override
-       {
-           throw not_implemented_exception("This option is read-only!");
-       }
-   };
-
-   class const_value_option : public readonly_option
-   {
-   public:
-       const_value_option(std::string desc, lazy<float> val)
-            : _val(std::move(val)), _desc(std::move(desc)) {}
-
-       float query() const override { return *_val; }
-       option_range get_range() const override { return { *_val, *_val, 0, *_val }; }
-       bool is_enabled() const override { return true; }
-
-       const char* get_description() const override { return _desc.c_str(); }
-
-   private:
-       lazy<float> _val;
-       std::string _desc;
+       rs2_option              _type;
+       std::function<void(const option&)> _recording_function = [](const option&) {};
    };
 
    class option_base : public option
    {
    public:
-       option_base(const option_range& opt_range)
-           : _opt_range(opt_range)
+       option_base(const option_range& opt_range, rs2_option type)
+           : _opt_range(opt_range), _type(type)
        {}
 
        bool is_valid(float value) const
@@ -348,8 +421,18 @@ namespace librealsense
        {
            return _opt_range;
        }
-
+       virtual void enable_recording(std::function<void(const option&)> recording_action) override
+       {
+           _recording_function = recording_action;
+       }
+       rs2_option type() const override
+       {
+           return _type;
+       }
     protected:
        const option_range _opt_range;
+       rs2_option         _type;
+       std::function<void(const option&)> _recording_function = [](const option&) {};
+
    };
 }

@@ -140,6 +140,15 @@ namespace librealsense
         }
 
         float get_depth_scale() const override { return _depth_units; }
+
+        void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const  override
+        {
+            snapshot = std::make_shared<depth_sensor_snapshot>(get_depth_scale());
+        }
+        void enable_recording(std::function<void(const depth_sensor&)> recording_function) override
+        {
+            //does not change over time
+        }
     private:
         const ds5_device* _owner;
         float _depth_units;
@@ -269,32 +278,36 @@ namespace librealsense
             auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(depth_ep,
                                                                              depth_xu,
                                                                              DS5_EXPOSURE,
-                                                                             "Depth Exposure");
+                                                                             "Depth Exposure",
+                                                                             RS2_OPTION_EXPOSURE); //TODO: Verify this is the correct value
             depth_ep.register_option(RS2_OPTION_EXPOSURE, exposure_option);
 
             auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(depth_ep,
                                                                                  depth_xu,
                                                                                  DS5_ENABLE_AUTO_EXPOSURE,
-                                                                                 "Enable Auto Exposure");
+                                                                                 "Enable Auto Exposure",
+                                                                                 RS2_OPTION_ENABLE_AUTO_EXPOSURE);
             depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
 
             depth_ep.register_option(RS2_OPTION_GAIN,
                                      std::make_shared<auto_disabling_control>(
                                      std::make_shared<uvc_pu_option>(depth_ep, RS2_OPTION_GAIN),
-                                     enable_auto_exposure));
+                                     enable_auto_exposure,
+                                     RS2_OPTION_GAIN));
             depth_ep.register_option(RS2_OPTION_EXPOSURE,
                                      std::make_shared<auto_disabling_control>(
                                      exposure_option,
-                                     enable_auto_exposure));
+                                     enable_auto_exposure,
+                                     RS2_OPTION_EXPOSURE));
         }
 
         if (_fw_version >= firmware_version("5.5.8.0"))
         {
              depth_ep.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
                                       std::make_shared<uvc_xu_option<uint8_t>>(depth_ep, depth_xu, DS5_EXT_TRIGGER,
-                                      "Generate trigger from the camera to external device once per frame"));
-
-             auto error_control = std::unique_ptr<uvc_xu_option<uint8_t>>(new uvc_xu_option<uint8_t>(depth_ep, depth_xu, DS5_ERROR_REPORTING, "Error reporting"));
+                                      "Generate trigger from the camera to external device once per frame", RS2_OPTION_OUTPUT_TRIGGER_ENABLED));
+                                                                                                                                                                //TODO: Verify this is the correct value
+             auto error_control = std::unique_ptr<uvc_xu_option<uint8_t>>(new uvc_xu_option<uint8_t>(depth_ep, depth_xu, DS5_ERROR_REPORTING, "Error reporting", RS2_OPTION_ERROR_POLLING_ENABLED));
 
              _polling_error_handler = std::unique_ptr<polling_error_handler>(
                  new polling_error_handler(1000,
@@ -317,7 +330,7 @@ namespace librealsense
         if (advanced_mode && _fw_version >= firmware_version("5.6.3.0"))
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<depth_scale_option>(*_hw_monitor));
         else
-            depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
+            depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>(RS2_OPTION_DEPTH_UNITS, "Number of meters represented by a single depth unit",
                 lazy<float>([]() { return 0.001f; })));
         // Metadata registration
         depth_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP,    make_uvc_header_parser(&platform::uvc_header::timestamp));
@@ -379,14 +392,13 @@ namespace librealsense
         return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, "Unknown error!" };
     }
 
-    void ds5_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot)
+    void ds5_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
     {
-
+        //TODO: Implement
     }
-    void ds5_device::create_recordable(std::shared_ptr<debug_interface>& recordable,
-                                       std::function<void(std::shared_ptr<extension_snapshot>)> record_action)
+    void ds5_device::enable_recording(std::function<void(const debug_interface&)> record_action)
     {
-
+        //TODO: Implement
     }
 
     std::shared_ptr<matcher> ds5_device::create_matcher(const frame_holder& frame) const

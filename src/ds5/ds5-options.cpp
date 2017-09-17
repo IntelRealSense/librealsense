@@ -28,7 +28,8 @@ namespace librealsense
 
     emitter_option::emitter_option(uvc_sensor& ep)
         : uvc_xu_option(ep, ds::depth_xu, ds::DS5_DEPTH_EMITTER_ENABLED,
-                        "Power of the DS5 projector, 0 meaning projector off, 1 meaning projector on, 2 meaning projector in auto mode")
+                        "Power of the DS5 projector, 0 meaning projector off, 1 meaning projector on, 2 meaning projector in auto mode",
+                        RS2_OPTION_EMITTER_ENABLED)
     {}
 
     float asic_and_projector_temperature_options::query() const
@@ -108,7 +109,7 @@ namespace librealsense
     }
 
     asic_and_projector_temperature_options::asic_and_projector_temperature_options(uvc_sensor& ep, rs2_option opt)
-        : _option(opt), _ep(ep)
+        : readonly_option(opt), _option(opt), _ep(ep)
         {}
 
     float motion_module_temperature_option::query() const
@@ -156,7 +157,7 @@ namespace librealsense
     }
 
     motion_module_temperature_option::motion_module_temperature_option(hid_sensor& ep)
-        : _ep(ep)
+        : readonly_option(RS2_OPTION_MOTION_MODULE_TEMPERATURE), _ep(ep)
     {}
 
     void enable_motion_correction::set(float value)
@@ -165,6 +166,7 @@ namespace librealsense
             throw invalid_value_exception(to_string() << "set(enable_motion_correction) failed! Given value " << value << " is out of range.");
 
         _is_enabled = value > _opt_range.min;
+        _recording_function(*this);
     }
 
     float enable_motion_correction::query() const
@@ -177,7 +179,7 @@ namespace librealsense
                                                        const ds::imu_intrinsics& accel,
                                                        const ds::imu_intrinsics& gyro,
                                                        const option_range& opt_range)
-        : option_base(opt_range), _is_enabled(true), _accel(accel), _gyro(gyro)
+        : option_base(opt_range, RS2_OPTION_ENABLE_MOTION_CORRECTION), _is_enabled(true), _accel(accel), _gyro(gyro)
     {
         mm_ep->register_on_before_frame_callback(
                     [this](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
@@ -223,6 +225,7 @@ namespace librealsense
                 _to_add_frames = false; // auto_exposure moved from enable to disable
             }
         }
+        _recording_function(*this);
     }
 
     float enable_auto_exposure_option::query() const
@@ -234,7 +237,7 @@ namespace librealsense
                                                              std::shared_ptr<auto_exposure_mechanism> auto_exposure,
                                                              std::shared_ptr<auto_exposure_state> auto_exposure_state,
                                                              const option_range& opt_range)
-        : option_base(opt_range),
+        : option_base(opt_range, RS2_OPTION_ENABLE_AUTO_EXPOSURE),
           _auto_exposure_state(auto_exposure_state),
           _to_add_frames((_auto_exposure_state->get_enable_auto_exposure())),
           _auto_exposure(auto_exposure)
@@ -256,7 +259,7 @@ namespace librealsense
                                                          std::shared_ptr<auto_exposure_state> auto_exposure_state,
                                                          const option_range& opt_range,
                                                          const std::map<float, std::string>& description_per_value)
-        : option_base(opt_range),
+        : option_base(opt_range, RS2_OPTION_AUTO_EXPOSURE_MODE),
           _auto_exposure_state(auto_exposure_state),
           _auto_exposure(auto_exposure),
           _description_per_value(description_per_value)
@@ -269,6 +272,7 @@ namespace librealsense
 
         _auto_exposure_state->set_auto_exposure_mode(static_cast<auto_exposure_modes>((int)value));
         _auto_exposure->update_auto_exposure_state(*_auto_exposure_state);
+        _recording_function(*this);
     }
 
     float auto_exposure_mode_option::query() const
@@ -291,7 +295,7 @@ namespace librealsense
                                                                                  std::shared_ptr<auto_exposure_state> auto_exposure_state,
                                                                                  const option_range& opt_range,
                                                                                  const std::map<float, std::string>& description_per_value)
-        : option_base(opt_range),
+        : option_base(opt_range, RS2_OPTION_POWER_LINE_FREQUENCY),
           _auto_exposure_state(auto_exposure_state),
           _auto_exposure(auto_exposure),
           _description_per_value(description_per_value)
@@ -304,6 +308,7 @@ namespace librealsense
 
         _auto_exposure_state->set_auto_exposure_antiflicker_rate(static_cast<uint32_t>(value));
         _auto_exposure->update_auto_exposure_state(*_auto_exposure_state);
+        _recording_function(*this);
     }
 
     float auto_exposure_antiflicker_rate_option::query() const
@@ -360,6 +365,7 @@ namespace librealsense
         cmd.data = std::vector<uint8_t>(ptr, ptr + sizeof(ds::depth_table_control));
 
         _hwm.send(cmd);
+        _record_action(*this);
     }
 
     float depth_scale_option::query() const

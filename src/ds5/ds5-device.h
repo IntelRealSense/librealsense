@@ -30,9 +30,8 @@ namespace librealsense
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
 
         void hardware_reset() override;
-        void create_snapshot(std::shared_ptr<debug_interface>& snapshot) override;
-        void create_recordable(std::shared_ptr<debug_interface>& recordable,
-                               std::function<void(std::shared_ptr<extension_snapshot>)> record_action) override;
+        void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
+        void enable_recording(std::function<void(const debug_interface&)> record_action) override;
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 

@@ -42,6 +42,9 @@ namespace librealsense
         std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
 
     private:
+        template <typename T> void write_device_extension_changes(const T& ext);
+        template <rs2_extension E, typename P> bool extend_to_aux(std::shared_ptr<P> p, void** ext);
+
         void write_header();
         std::chrono::nanoseconds get_capture_time() const;
         void write_data(size_t sensor_index, frame_holder f, std::function<void(std::string const&)> on_error);
