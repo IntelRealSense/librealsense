@@ -14,20 +14,9 @@
 
 namespace librealsense
 {
-    /*
-     * Internal members meaning:
-     *
-     *               m_is_started  |     True     |      False
-     *  m_is_paused                |              |
-     *  ---------------------------|--------------|---------------
-     *      True                   |    Paused    |   Stopped
-     *      False                  |    Playing   |   Stopped
-     *
-     */
-
     class playback_device : public device_interface,
-        public extendable_interface,
-        public info_container
+                            public extendable_interface,
+                            public info_container
     {
     public:
         playback_device(std::shared_ptr<context> context, std::shared_ptr<device_serializer::reader> serializer);
@@ -56,6 +45,7 @@ namespace librealsense
         signal<playback_device, rs2_playback_status> playback_status_changed;
         platform::backend_device_group get_device_data() const override;
         std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
+        static bool try_extend_snapshot(std::shared_ptr<extension_snapshot>& e, rs2_extension extension_type, void** ext);
 
     private:
         void update_time_base(device_serializer::nanoseconds base_timestamp);
@@ -68,8 +58,9 @@ namespace librealsense
         std::shared_ptr<stream_profile_interface> get_stream(const std::map<unsigned, std::shared_ptr<playback_sensor>>& sensors_map, device_serializer::stream_identifier stream_id);
         rs2_extrinsics calc_extrinsic(const rs2_extrinsics& from, const rs2_extrinsics& to);
         void catch_up();
-        void register_device_info(const std::shared_ptr<info_interface>& shared);
+        void register_device_info(const device_serializer::device_snapshot& device_description);
         void register_extrinsics(const device_serializer::device_snapshot& device_description);
+        void update_extensions(const device_serializer::device_snapshot& device_description);
 
     private:
         lazy<std::shared_ptr<dispatcher>> m_read_thread;

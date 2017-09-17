@@ -224,23 +224,20 @@ namespace librealsense
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
         get_depth_sensor().register_option(RS2_OPTION_DEPTH_UNITS,
-                                           std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
+                                           std::make_shared<const_value_option>(RS2_OPTION_DEPTH_UNITS, "Number of meters represented by a single depth unit",
                                             lazy<float>([this]() {
                                                 auto c = get_calibration();
                                                 return (c.Rmax / 1000 / 0xFFFF);
                                             })));
 
     }
-    void sr300_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot)
+    void sr300_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
     {
         //TODO: implement
-        throw std::runtime_error("Not Implemented");
     }
-    void sr300_camera::create_recordable(std::shared_ptr<debug_interface>& recordable,
-        std::function<void(std::shared_ptr<extension_snapshot>)> record_action)
+    void sr300_camera::enable_recording(std::function<void(const debug_interface&)> record_action)
     {
         //TODO: implement
-        throw std::runtime_error("Not Implemented");
     }
 
 

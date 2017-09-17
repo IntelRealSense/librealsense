@@ -17,7 +17,7 @@ namespace librealsense
         float def;
     };
 
-    class option
+    class option : public recordable<option>
     {
     public:
         virtual void set(float value) = 0;
@@ -25,14 +25,17 @@ namespace librealsense
         virtual option_range get_range() const = 0;
         virtual bool is_enabled() const = 0;
         virtual bool is_read_only() const { return false; }
-
+        virtual rs2_option type() const = 0;
         virtual const char* get_description() const = 0;
         virtual const char* get_value_description(float) const { return nullptr; }
+        virtual void create_snapshot(std::shared_ptr<option>& snapshot) const override;
 
         virtual ~option() = default;
     };
 
-    class options_interface
+    MAP_EXTENSION(RS2_EXTENSION_OPTION, librealsense::option);
+
+    class options_interface : public recordable<options_interface>
     {
     public:
         virtual option& get_option(rs2_option id) = 0;
@@ -44,7 +47,7 @@ namespace librealsense
 
     MAP_EXTENSION(RS2_EXTENSION_OPTIONS, librealsense::options_interface);
 
-    class options_container : public virtual options_interface
+    class options_container : public virtual options_interface, public extension_snapshot
     {
     public:
         bool supports_option(rs2_option id) const override
@@ -68,22 +71,37 @@ namespace librealsense
 
         const option& get_option(rs2_option id) const override
         {
-            auto it = _options.find(id);
-            if (it == _options.end())
-            {
-                throw invalid_value_exception(to_string()
-                    << "Device does not support option "
-                    << rs2_option_to_string(id) << "!");
-            }
-            return *it->second;
+            return const_cast<const option&>(const_cast<options_container*>(this)->get_option(id));
         }
 
         void register_option(rs2_option id, std::shared_ptr<option> option)
         {
             _options[id] = option;
+            recording_function(*this);
+        }
+
+        void create_snapshot(std::shared_ptr<options_interface>& snapshot) const override
+        {
+            snapshot = std::make_shared<options_container>(*this);
+        }
+        
+        void enable_recording(std::function<void(const options_interface&)> record_action) override
+        {
+            recording_function = recording_function;
+        }
+        
+        void update(std::shared_ptr<extension_snapshot> ext) override
+        {
+            auto ctr = As<options_container>(ext);
+            if (!ctr) return;
+            for(auto&& opt : ctr->_options)
+            {
+                _options[opt.first] = opt.second;
+            }
         }
 
     private:
         std::map<rs2_option, std::shared_ptr<option>> _options;
+        std::function<void(const options_interface&)> recording_function = [](const options_interface&) {};
     };
 }

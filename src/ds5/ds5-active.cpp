@@ -32,11 +32,13 @@ namespace librealsense
         auto laser_power = std::make_shared<uvc_xu_option<uint16_t>>(depth_ep,
                                                                      depth_xu,
                                                                      DS5_LASER_POWER,
-                                                                     "Manual laser power in mw. applicable only when laser power mode is set to Manual");
+                                                                     "Manual laser power in mw. applicable only when laser power mode is set to Manual",
+                                                                     RS2_OPTION_LASER_POWER);
         depth_ep.register_option(RS2_OPTION_LASER_POWER,
                                  std::make_shared<auto_disabling_control>(
                                  laser_power,
                                  emitter_enabled,
+                                 RS2_OPTION_LASER_POWER,
                                  std::vector<float>{0.f, 2.f}, 1.f));
 
         depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,

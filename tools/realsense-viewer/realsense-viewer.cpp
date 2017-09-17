@@ -266,7 +266,7 @@ int pick_scale_factor(GLFWwindow* window)
 }
 
 int main(int argv, const char** argc) try
-{
+{    
     // Init GUI
     if (!glfwInit()) exit(1);
 
@@ -976,7 +976,7 @@ int main(int argv, const char** argc) try
 
                         for (auto& opt : drawing_order)
                         {
-                            if (sub->draw_option(opt, update_read_only_options, error_message, viewer_model.not_model))
+                            if (sub->draw_option(opt, dev_model.dev.is<playback>() || update_read_only_options, error_message, viewer_model.not_model))
                             {
                                 dev_model.get_curr_advanced_controls = true;
                             }
@@ -990,7 +990,7 @@ int main(int argv, const char** argc) try
                                 auto opt = static_cast<rs2_option>(i);
                                 if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                                 {
-                                    if (sub->draw_option(opt, update_read_only_options, error_message, viewer_model.not_model))
+                                    if (sub->draw_option(opt, dev_model.dev.is<playback>() || update_read_only_options, error_message, viewer_model.not_model))
                                     {
                                         dev_model.get_curr_advanced_controls = true;
                                     }

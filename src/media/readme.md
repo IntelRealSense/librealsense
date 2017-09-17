@@ -135,79 +135,79 @@ The following table depicts the Topics that are supported by RealSense file form
   <tr>
     <td>File Version</td>
     <td>/file_version</td>
-    <td><a href="http://docs.ros.org/api/std_msgs/html/msg/UInt32.html">std_msgs::UInt32</a></td>
-    <td>version of file format<br>A single message for entire file</td>
+    <td><a href="http://docs.ros.org/api/std_msgs/html/msg/UInt32.html">std_msgs/UInt32</a></td>
+    <td>Version of file format.<br>A single message for entire file</td>
   </tr>
   <tr>
     <td>Device Information</td>
     <td>/device_&lt;device_id&gt;/info</td>
-    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
-    <td>device information<br>Many messages to a single topic</td>
+    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue</a></td>
+    <td>Device information.<br>Many messages to a single topic</td>
   </tr>
   <tr>
     <td>Sensor Information</td>
     <td>/device_&lt;device_id&gt;/info</td>
-    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
-    <td>sensor information<br>Many messages to a single topic</td>
+    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue</a></td>
+    <td>Sensor information.<br>Many messages to a single topic</td>
   </tr>
   <tr>
     <td>Stream Information</td>
     <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/info</td>
-    <td><a href="#stream-info">realsense_msg::StreamInfo</a></td>
+    <td><a href="#stream-info">realsense_msg/StreamInfo</a></td>
     <td>generic-stream information<br>A single messages to a single topic</td>
   </tr>
   <tr>
     <td>Video Stream Info</td>
     <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/info/camera_info</td>
-    <td><a href="http://docs.ros.org/api/sensor_msgs/html/msg/CameraInfo.html">sensor_msgs::camera_info</a></td>
-    <td>Image information<br>A single messages to a single topic</td>
+    <td><a href="http://docs.ros.org/api/sensor_msgs/html/msg/CameraInfo.html">sensor_msgs/camera_info</a></td>
+    <td>Image information.<br>A single messages to a single topic</td>
   </tr>
   <tr>
     <td>IMU Intrinsics</td>
     <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/info/imu_intrinsic</td>
-    <td><a href="#motion-intrinsic">realsense_msgs::ImuIntrinsic</a></td>
-    <td>Intrinsic of a motion stream<br>A single messages to a single topic</td>
+    <td><a href="#motion-intrinsic">realsense_msgs/ImuIntrinsic</a></td>
+    <td>Intrinsic of a motion stream.<br>A single messages to a single topic</td>
   </tr>
   <tr>
-    <td>Properties</td>
-    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/property</td>
-    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
-    <td><br>Properties of a sensor<br>Many messages to a single topic<br></td>
+    <td>Options</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/option/&lt;option name&gt;/value<br>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/option/&lt;option name&gt;/description</td>
+    <td><a href="http://docs.ros.org/api/std_msgs/html/msg/Float32.html">std_msgs/Float32</a><br><a href="http://docs.ros.org/api/std_msgs/html/msg/String.html">std_msgs/String</a></td>
+    <td>Options of a sensor.<br>values represent the value of the option and has many messages to a single topic<br>description is a human readable description of the option, with a single messages to a single topic</td>
   </tr>
   <tr>
     <td>Image Data</td>
     <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/image/data</td>
-    <td><a href="http://docs.ros.org/api/sensor_msgs/html/msg/Image.html">sensor_msgs::Image</a></td>
+    <td><a href="http://docs.ros.org/api/sensor_msgs/html/msg/Image.html">sensor_msgs/Image</a></td>
     <td>The data of a single image. A single messages to a single topic</td>
   </tr>
   <tr>
     <td>Image Information</td>
     <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/image/metadata</td>
-    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
+    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue</a></td>
     <td>Additional information of a single image. Many message to a single topic</td>
   </tr>
   <tr>
     <td>IMU Data</td>
     <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/imu/data</td>
-    <td><a href="http://docs.ros.org/api/sensor_msgs/html/msg/Imu.html">sensor_msgs::Imu</a></td>
+    <td><a href="http://docs.ros.org/api/sensor_msgs/html/msg/Imu.html">sensor_msgs/Imu</a></td>
     <td>The data of a single imu frame.<br>A single messages to a single topic</td>
   </tr>
   <tr>
     <td>IMU Information</td>
     <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/imu/metadata</td>
-    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
+    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue</a></td>
     <td>Additional information of a single imu frame. Many message to a single topic</td>
   </tr>
   <tr>
     <td>6DOF Data</td>
     <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/6dof/data</td>
-    <td>realsense_msgs::6DoF (TBD)</td>
+    <td>realsense_msgs/6DoF (TBD)</td>
     <td>Six DOF data</td>
   </tr>
   <tr>
     <td>6DOF Information</td>
     <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/6dof/metadata</td>
-    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
+    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue</a></td>
     <td>Additional information of a single image. Many message to a single topic</td>
   </tr>
   <tr>
@@ -219,19 +219,19 @@ The following table depicts the Topics that are supported by RealSense file form
   <tr>
     <td>Occupancy Map Information</td>
     <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/occupancy_map/metadata</td>
-    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
+    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue</a></td>
     <td>Additional </td>
   </tr>
   <tr>
     <td>Time Stream</td>
     <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/time</td>
-    <td><a href="http://docs.ros.org/jade/api/sensor_msgs/html/msg/TimeReference.html">sensor_msgs::TimeReference</a></td>
+    <td><a href="http://docs.ros.org/jade/api/sensor_msgs/html/msg/TimeReference.html">sensor_msgs/TimeReference</a></td>
     <td></td>
   </tr>
   <tr>
     <td>Log</td>
     <td>/log</td>
-    <td><a href="http://docs.ros.org/jade/api/rosgraph_msgs/html/msg/Log.html">rosgraph_msgs::Log</a></td>
+    <td><a href="http://docs.ros.org/jade/api/rosgraph_msgs/html/msg/Log.html">rosgraph_msgs/Log</a></td>
     <td>Log messages</td>
   </tr>
   <tr>
@@ -243,7 +243,7 @@ The following table depicts the Topics that are supported by RealSense file form
   <tr>
     <td>Additional Info</td>
     <td>/additional_info</td>
-    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
+    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue</a></td>
     <td>Additinal information of any kind. Can be useful for application that require additional metadata on the recorded file (such as program name, version etc...)</td>
   </tr>
 </table>
@@ -284,15 +284,15 @@ The following are the new messages created by the SDK:
   </tr>
   <tr>
     <td>encoding</td>
-    <td>Stream's data format<br>
-    [Supported encodings are listed below](#supported-encoding)</td>
+    <td>Stream's data format. 
+    Supported encodings are listed below</td>
     <td>string</td>
   </tr>
 </table>
 
 ###### Supported Encoding
 
-For video streams, the supported encoding types can be found at <a href="http://docs.ros.org/jade/api/sensor_msgs/html/namespacesensor__msgs_1_1image__encodings.html">ros documentation</a><br>
+For video streams, the supported encoding types can be found at <a href="http://docs.ros.org/jade/api/sensor_msgs/html/namespacesensor__msgs_1_1image__encodings.html">ros documentation</a>. Additional supported encodings are listed under [rs_sensor.h](../../../include/librealsense2/h/rs_sensor.h) as the `rs2_format` enumeration. Note that some of the encodings appear in both locations.
 
 --------------
 
@@ -349,6 +349,26 @@ For video streams, the supported encoding types can be found at <a href="http://
 
 ----------
 
+### Versioning
+
+Each bag file recorded using this SDK should contains a version message.
+Version number is a single integer which indicates the version of topics and messages that were used to record the file.
+The above messages and topics reflect the current version.
+Changes from previous versions will appear at the end of this section.
+
+> Current file version: ***3***
+
+Changes from previous version:
+
+- Removed:
+	- ***Property*** topic
+- Added:
+	- ***Options*** topic
+
+
+
+----------
+
 
 Recording
 ----------
@@ -359,16 +379,38 @@ A record device is like a wrapper around a real device, that delegates actions t
 When a record device is created, a record sensor is created per real sensor of the real device. 
 A record sensor will record newly arriving frames for each of its streams, and changes to extensions' data (snapshots). 
 
+Recording related files are:
+ - [record/record_device.cpp](record/record_device.cpp)
+ - [record/record_device.h](record/record_device.h)
+ - [record/record_sensor.cpp](record/record_sensor.cpp)
+ - [record/record_sensor.h](record/record_sensor.h)
+ - [ros/ros_writer.h](ros/ros_writer.h)
+
+A `librealsense::record_device` is constructed with a "live" device and a `device_serializer::writer`. At the moment the only `device_serializer::writer` we use is a `ros_writer` which writes device information to a rosbag file.
+
+When constructing a `ros_writer` the requested file is created if it does not exist, and then opened for writing. In addition, a single message containing the realsense file format version is written to the file. 
+The `ros_writer` implements the `device_serializer::writer` interface which has only 4 functions:
+ - write_device_description
+	 - Used to record the initial state of the device. This includes writing all of the device's and sensor's extensions. 
+ - write_frame
+	 - Used to record a single frame to file
+ - write_snapshot (2 overloads)
+	 - Used to record a snapshot of an extension to file.
+
+#### Recording device description
+A device description (or device snapshot) is the set of data that is available for any `librealsense::device`. It contains all of the device's extensions snapshots, and a collection of each  of the device's sensors' extensions snapshots. In addition it holds a mapping of extrinsic information for all streams of the device.
+
+A single `librealsense::device_snapshot` instance is enough to understand the a device's topology: Which extensions it supports, how many sensors it has, which extensions each sensor supports, which streams each sensor supports and which streams share calibration information (extrinsic).
+
 #### Recording Frames
-Frame are usually merely a container of raw data. 
-Each frames is stored to file with all of its additional information (such as metadata, timestamp, etc...).
+Each frame in the SDK implements the  `librealsense::frame_interface` interface. This means that frames are polymorphic and represent all types of data that streams provide.
+Frames are recorded to file with all of their additional information (such as metadata, timestamp, etc...), and the time that they arrived from the backend to the sensor.
 
 
 #### Recording Snapshots 
-Upon creation, the record device goes over all of the extensions of the real device and its sensors, and saves snapshots of those extensions to the file. These snapshots will allow the playback device to recreate the topology of the recorded device, and will serve as the initial data of their extensions.
-To allow record sensors to save changes to extensions' data over the life time of the program, when a user asks a record sensor for an extension, a record-able extension would be provided. 
-A record-able version of an extension holds an action to perform whenever the extension's data changes. This action is provided by the record sensor, and will usually be the action of writing the extension's snapshot to file.
-Note: After resuming a paused recordig, the states of the device and its extensions are not updated to their current state. Thus, only changes made after resuming recording will appear in the file when playing it.
+Upon creation, the record device goes over all of the extensions of the real device and its sensors, and saves snapshots of those extensions to the file (This is the data that is passed to `write_device_description(..)`) . These snapshots will allow the playback device to recreate the topology of the recorded device, and will serve as the initial data of their extensions.
+To allow record sensors to save changes to extensions' data over the life time of the program, when a user asks a record sensor for an extension, a record-able extension is provided. 
+A record-able version of an extension holds an action to perform whenever the extension's data changes. This action is provided by the record device (or sensor), and requires extensions to pass a reference of themselves to the device, which will usually create a snapshot from them and record them to file with the time at which they occurred.
 
 ----------
 

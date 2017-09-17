@@ -216,8 +216,8 @@ namespace librealsense
         auto gain_option =  std::make_shared<uvc_pu_option>(*uvc_ep, RS2_OPTION_GAIN);
 
         auto exposure_option =  std::make_shared<uvc_xu_option<uint16_t>>(*uvc_ep,
-                *fisheye_xu,
-                librealsense::ds::FISHEYE_EXPOSURE, "Exposure time of Fisheye camera");
+                *fisheye_xu,                          
+                librealsense::ds::FISHEYE_EXPOSURE, "Exposure time of Fisheye camera", RS2_OPTION_EXPOSURE);
 
         auto ae_state = std::make_shared<auto_exposure_state>();
         auto auto_exposure = std::make_shared<auto_exposure_mechanism>(*gain_option, *exposure_option, *ae_state);
@@ -247,12 +247,14 @@ namespace librealsense
         uvc_ep->register_option(RS2_OPTION_GAIN,
                                     std::make_shared<auto_disabling_control>(
                                     gain_option,
-                                    auto_exposure_option));
+                                    auto_exposure_option, 
+                                    RS2_OPTION_GAIN));
 
         uvc_ep->register_option(RS2_OPTION_EXPOSURE,
                                     std::make_shared<auto_disabling_control>(
                                     exposure_option,
-                                    auto_exposure_option));
+                                    auto_exposure_option,
+                                    RS2_OPTION_EXPOSURE));
 
         return auto_exposure;
     }
@@ -310,7 +312,8 @@ namespace librealsense
                                         std::make_shared<uvc_xu_option<uint16_t>>(*fisheye_ep.get(),
                                                                                   fisheye_xu,
                                                                                   librealsense::ds::FISHEYE_EXPOSURE,
-                                                                                  "Exposure time of Fisheye camera"));
+                                                                                  "Exposure time of Fisheye camera",
+                                                                                   RS2_OPTION_EXPOSURE));
         }
 
         // Metadata registration

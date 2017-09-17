@@ -556,14 +556,28 @@ namespace librealsense
 
         return it->second;
     }
-    void info_container::create_snapshot(std::shared_ptr<info_interface>& snapshot)
+    void info_container::create_snapshot(std::shared_ptr<info_interface>& snapshot) const
     {
-        snapshot = std::make_shared<info_snapshot>(this);
+        snapshot = std::make_shared<info_container>(*this);
     }
-    void info_container::create_recordable(std::shared_ptr<info_interface>& recordable,
-                                           std::function<void(std::shared_ptr<extension_snapshot>)> record_action)
+    void info_container::enable_recording(std::function<void(const info_interface&)> record_action)
     {
-        recordable = std::make_shared<info_container>(*this);
+       //info container is a read only class, nothing to record
+    }
+
+    void info_container::update(std::shared_ptr<extension_snapshot> ext)
+    {
+        if (auto info_api = As<info_interface>(ext))
+        {
+            for (int i = 0; i < RS2_CAMERA_INFO_COUNT; ++i)
+            {
+                rs2_camera_info info = static_cast<rs2_camera_info>(i);
+                if (info_api->supports_info(info))
+                {
+                    register_info(info, info_api->get_info(info));
+                }
+            }
+        }
     }
 
     void uvc_sensor::register_pu(rs2_option id)

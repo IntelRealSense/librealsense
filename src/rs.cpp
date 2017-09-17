@@ -1400,12 +1400,13 @@ void rs2_start_pipeline_with_callback( rs2_pipeline* pipe,  rs2_frame_callback_p
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe, on_frame, user)
 
-void rs2_stop_pipeline(rs2_pipeline* pipe, rs2_error ** error)
+void rs2_stop_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
 
     pipe->pipe->stop();
 }
+HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
 void rs2_enable_pipeline_stream(rs2_pipeline* pipe, rs2_stream stream, int index, int width, int height, rs2_format format, int framerate, rs2_error ** error) try
 {

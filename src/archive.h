@@ -286,7 +286,7 @@ namespace librealsense
                     {
                         //For playback sensors
                         auto extendable = As<librealsense::extendable_interface>(sensor);
-                        if (extendable && extendable->extend_to(TypeToExtensionn<librealsense::depth_sensor>::value, (void**)(&depth_sensor)))
+                        if (extendable && extendable->extend_to(TypeToExtension<librealsense::depth_sensor>::value, (void**)(&depth_sensor)))
                         {
                             return depth_sensor->get_depth_scale();
                         }
