@@ -187,35 +187,6 @@ namespace librealsense
         rs2_frame_metadata_value _type;
     };
 
-    class read_only_playback_option : public readonly_option
-    {
-        float _value;
-        rs2_option _type;
-        std::string _decritpnio;
-    public:
-        read_only_playback_option(rs2_option type, float value) : _value(value), _type(type)
-        {
-            _decritpnio = to_string() << "Read only option of " << rs2_option_to_string(type);
-        }
-        float query() const override
-        {
-            return _value;
-        }
-        option_range get_range() const override
-        {
-            return { _value, _value, 0, _value };
-        }
-
-        bool is_enabled() const override
-        {
-            return true;
-        }
-        const char* get_description() const override
-        {
-            return _decritpnio.c_str();
-        }
-    };
-
     class FalseQuery {
     public:
         bool operator()(rosbag::ConnectionInfo const* info) const { return false; }
@@ -279,6 +250,13 @@ namespace librealsense
         }
     };
 
+    class OptionsQuery : public RegexTopicQuery
+    {
+    public:
+        OptionsQuery() : 
+            RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/option/.*/value)RRR") {}
+    };
+
     class ros_topic
     {
     public:
@@ -308,6 +286,11 @@ namespace librealsense
             return get_id(stream_with_id.substr(0, stream_with_id.find_first_of("_") + 1), get<3>(topic));
         }
 
+        static device_serializer::sensor_identifier get_sensor_identifier(const std::string& topic)
+        {
+            return device_serializer::sensor_identifier{ get_device_index(topic),  get_sensor_index(topic) };
+        }
+
         static device_serializer::stream_identifier get_stream_identifier(const std::string& topic)
         {
             return device_serializer::stream_identifier{ get_device_index(topic),  get_sensor_index(topic),  get_stream_type(topic),  get_stream_index(topic) };
@@ -318,6 +301,10 @@ namespace librealsense
             return std::stoul(get<5>(topic));
         }
 
+        static std::string get_option_name(const std::string& topic)
+        {
+            return get<4>(topic);
+        }
         static std::string file_version_topic()
         {
             return create_from({ "file_version" });
@@ -342,10 +329,25 @@ namespace librealsense
         {
             return create_from({ stream_full_prefix(stream_id), "imu_intrinsic" });
         }
+
+        /*version 2 and down*/
         static std::string property_topic(const device_serializer::sensor_identifier& sensor_id)
         {
             return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "property" });
         }
+
+        /*version 3 and up*/
+        static std::string option_value_topic(const device_serializer::sensor_identifier& sensor_id, rs2_option option_type)
+        {
+            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", rs2_option_to_string(option_type), "value" });
+        }
+
+        /*version 3 and up*/
+        static std::string option_description_topic(const device_serializer::sensor_identifier& sensor_id, rs2_option option_type)
+        {
+            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", rs2_option_to_string(option_type), "description" });
+        }
+
         static std::string image_data_topic(const device_serializer::stream_identifier& stream_id)
         {
             return create_from({ stream_full_prefix(stream_id), "image", "data" });
@@ -429,9 +431,18 @@ namespace librealsense
         }
     };
 
+    /**
+    * Incremental number of the RealSense file format version
+    * Since we maintain backward compatability, changes to topics/messages are reflected by the version
+    */
     constexpr uint32_t get_file_version()
     {
-        return 2;
+        return 3u;
+    }
+
+    constexpr uint32_t get_minimum_supported_file_version()
+    {
+        return 2u;
     }
 
     constexpr uint32_t get_device_index()
@@ -442,5 +453,22 @@ namespace librealsense
     constexpr device_serializer::nanoseconds get_static_file_info_timestamp()
     {
         return device_serializer::nanoseconds::min();
+    }
+
+    inline device_serializer::nanoseconds to_nanoseconds(const ros::Time& t)
+    {
+        if (t == ros::TIME_MIN)
+            return get_static_file_info_timestamp();
+
+        return device_serializer::nanoseconds(t.toNSec());
+    }
+
+    inline ros::Time to_rostime(const device_serializer::nanoseconds& t)
+    {
+        if (t == get_static_file_info_timestamp())
+            return ros::TIME_MIN;
+        
+        auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(t);
+        return ros::Time(secs.count());
     }
 }

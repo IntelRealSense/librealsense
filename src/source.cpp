@@ -11,7 +11,7 @@ namespace librealsense
     {
     public:
         frame_queue_size(std::atomic<uint32_t>* ptr, const option_range& opt_range)
-            : option_base(opt_range),
+            : option_base(opt_range, RS2_OPTION_FRAMES_QUEUE_SIZE),
               _ptr(ptr)
         {}
 
@@ -21,6 +21,7 @@ namespace librealsense
                 throw invalid_value_exception(to_string() << "set(frame_queue_size) failed! Given value " << value << " is out of range.");
 
             *_ptr = static_cast<uint32_t>(value);
+            _recording_function(*this);
         }
 
         float query() const override { return static_cast<float>(_ptr->load()); }

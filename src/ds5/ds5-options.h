@@ -162,8 +162,6 @@ namespace librealsense
     {
     public:
         depth_scale_option(hw_monitor& hwm);
-        //TODO: remove:
-        depth_scale_option() :_hwm(*((hw_monitor*)(nullptr))) {}
         virtual ~depth_scale_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
@@ -174,10 +172,17 @@ namespace librealsense
         {
             return "Number of meters represented by a single depth unit";
         }
-
+        void enable_recording(std::function<void(const option &)> record_action)
+        {
+            _record_action = record_action;
+        }
+        rs2_option type() const override
+        {
+            return RS2_OPTION_DEPTH_UNITS;
+        }
     private:
         ds::depth_table_control get_depth_table(ds::advanced_query_mode mode) const;
-
+        std::function<void(const option &)> _record_action = [](const option&) {};
         lazy<option_range> _range;
         hw_monitor& _hwm;
     };

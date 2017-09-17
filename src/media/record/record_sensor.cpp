@@ -17,10 +17,16 @@ librealsense::record_sensor::record_sensor(const device_interface& device,
     m_is_pause(false),
     m_parent_device(device)
 {
+    LOG_DEBUG("Created record_sensor");
 }
 
 librealsense::record_sensor::~record_sensor()
 {
+    for (auto id : m_recording_options)
+    {
+        auto& option = m_sensor.get_option(id);
+        option.enable_recording([](const librealsense::option& snapshot) {});
+    }
 }
 
 stream_profiles record_sensor::get_stream_profiles() const
@@ -33,7 +39,6 @@ void librealsense::record_sensor::open(const stream_profiles& requests)
     m_sensor.open(requests);
 
     m_is_recording = true;
-    m_curr_configurations = convert_profiles(to_profiles(requests));
     for (auto request : requests)
     {
         std::shared_ptr<stream_profile_interface> snapshot;
@@ -51,22 +56,19 @@ void librealsense::record_sensor::close()
 
 librealsense::option& librealsense::record_sensor::get_option(rs2_option id)
 {
-//    auto option_it = m_recordable_options_cache.find(id);
-//    if(option_it != m_recordable_options_cache.end())
-//    {
-//        return *option_it->second;
-//    }
-//    std::shared_ptr<option> option;
-//    m_sensor.get_option(id).create_recordable(option, [this](std::shared_ptr<extension_snapshot> snapshot) {
-//        record_snapshot(RS2_EXTENSION_OPTION, snapshot);
-//    });
-//    m_recordable_options_cache[id] = option;
-//    return *option;
-    return m_sensor.get_option(id);
+    auto& option = m_sensor.get_option(id);
+    if (m_recording_options.find(id) == m_recording_options.end())
+    {
+        option.enable_recording([this](const librealsense::option& snapshot) {
+            record_snapshot(RS2_EXTENSION_OPTION, snapshot);
+        });
+        m_recording_options.insert(id);
+    }
+    return option;
 }
 const librealsense::option& librealsense::record_sensor::get_option(rs2_option id) const
 {
-    return m_sensor.get_option(id);
+    return const_cast<librealsense::option&>(const_cast<librealsense::record_sensor*>(this)->get_option(id));
 }
 const std::string& librealsense::record_sensor::get_info(rs2_camera_info info) const
 {
@@ -126,43 +128,63 @@ bool librealsense::record_sensor::is_streaming() const
     return m_sensor.is_streaming();
 }
 
+template <rs2_extension E, typename P>
+bool librealsense::record_sensor::extend_to_aux(P* p, void** ext)
+{
+    using EXT_TYPE = typename ExtensionToType<E>::type;
+    auto ptr = As<EXT_TYPE>(p);
+    if (!ptr)
+        return false;
+
+
+    if (auto recordable = As<librealsense::recordable<EXT_TYPE>>(p))
+    {
+        recordable->enable_recording([this](const EXT_TYPE& ext) {
+            record_snapshot(E, ext);
+        });
+    }
+
+    *ext = ptr;
+    return true;
+}
+
+//TODO: Combine device and sensor common code
 bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void** ext)
 {
-    //extend_to is called when the device\sensor above the hour glass are expected to provide some extension interface
-    //In this case we should return a recordable version of that extension
+    /**************************************************************************************
+     A record sensor wraps the live sensor, and should have the same functionalities.
+     To do that, the record sensor implements the extendable_interface and when the user tries to
+     treat the sensor as some extension, this function is called, and we return a pointer to the 
+     live sensor's extension. If that extension is a recordable one, we also enable_recording for it.
+    **************************************************************************************/
+    
     switch (extension_type)
     {
-    case RS2_EXTENSION_DEBUG :
-    {
-        auto ptr = dynamic_cast<debug_interface*>(&m_sensor);
-        if (!ptr)
-        {
-            return false;
-        }
-        std::shared_ptr<debug_interface> api;
-        ptr->create_recordable(api, [this, extension_type](std::shared_ptr<extension_snapshot> e)
-        {
-            record_snapshot(extension_type, e);
-        });
-        //TODO: Ziv, Verify this doesn't result in memory leaks / memory corruptions
-        *ext = api.get();
+    case RS2_EXTENSION_OPTIONS: // [[fallthrough]]
+    case RS2_EXTENSION_INFO:    // [[fallthrough]]
+        *ext = this;
         return true;
-    }
-    case RS2_EXTENSION_INFO : *ext = this; return true;
-    case RS2_EXTENSION_MOTION :break;
-    case RS2_EXTENSION_OPTIONS :*ext = this; return true;
-    case RS2_EXTENSION_VIDEO :break;
-    case RS2_EXTENSION_ROI :break;
-    case RS2_EXTENSION_DEPTH_SENSOR: break;
-    case RS2_EXTENSION_ADVANCED_MODE: break;
-    case RS2_EXTENSION_PLAYBACK: break;
-    case RS2_EXTENSION_RECORD:break;
-    case RS2_EXTENSION_COUNT :
 
+    //case RS2_EXTENSION_DEBUG           : return extend_to_aux<RS2_EXTENSION_DEBUG          >(&m_sensor, ext);
+    //TODO: Add once implements recordable: case RS2_EXTENSION_MOTION          : return extend_to_aux<RS2_EXTENSION_MOTION         >(m_device, ext);
+    //case RS2_EXTENSION_MOTION          : return extend_to_aux<RS2_EXTENSION_MOTION         >(&m_sensor, ext);
+    //case RS2_EXTENSION_VIDEO           : return extend_to_aux<RS2_EXTENSION_VIDEO          >(&m_sensor, ext);
+    //case RS2_EXTENSION_ROI             : return extend_to_aux<RS2_EXTENSION_ROI            >(&m_sensor, ext);
+    case RS2_EXTENSION_DEPTH_SENSOR    : return extend_to_aux<RS2_EXTENSION_DEPTH_SENSOR   >(&m_sensor, ext);
+    //case RS2_EXTENSION_VIDEO_FRAME     : return extend_to_aux<RS2_EXTENSION_VIDEO_FRAME    >(&m_sensor, ext);
+    //case RS2_EXTENSION_MOTION_FRAME    : return extend_to_aux<RS2_EXTENSION_MOTION_FRAME   >(&m_sensor, ext);
+    //case RS2_EXTENSION_COMPOSITE_FRAME : return extend_to_aux<RS2_EXTENSION_COMPOSITE_FRAME>(&m_sensor, ext);
+    //case RS2_EXTENSION_POINTS          : return extend_to_aux<RS2_EXTENSION_POINTS         >(&m_sensor, ext);
+    //case RS2_EXTENSION_DEPTH_FRAME     : return extend_to_aux<RS2_EXTENSION_DEPTH_FRAME    >(&m_sensor, ext);
+    //case RS2_EXTENSION_ADVANCED_MODE   : return extend_to_aux<RS2_EXTENSION_ADVANCED_MODE  >(&m_sensor, ext);
+    //case RS2_EXTENSION_VIDEO_PROFILE   : return extend_to_aux<RS2_EXTENSION_VIDEO_PROFILE  >(&m_sensor, ext);
+    //case RS2_EXTENSION_PLAYBACK        : return extend_to_aux<RS2_EXTENSION_PLAYBACK       >(&m_sensor, ext);
+    //case RS2_EXTENSION_RECORD          : return extend_to_aux<RS2_EXTENSION_PLAYBACK       >(&m_sensor, ext);
+    //case RS2_EXTENSION_OPTION          : return extend_to_aux<RS2_EXTENSION_OPTION         >(&m_sensor, ext);
     default:
-        throw invalid_value_exception(to_string() <<"extension_type " << extension_type << " is not supported");
+        LOG_WARNING("Extensions type is unhandled: " << extension_type);
+        return false;
     }
-    return false;
 }
 
 const device_interface& record_sensor::get_device()
@@ -177,21 +199,24 @@ void record_sensor::raise_user_notification(const std::string& str)
     if(m_user_notification_callback) m_user_notification_callback->on_notification(&rs2_noti);
 }
 
-void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, const std::shared_ptr<extension_snapshot>& snapshot)
+template <typename T>
+void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, const T& ext)
 {
+    std::shared_ptr<T> snapshot;
+    ext.create_snapshot(snapshot);
+    auto ext_snapshot = As<extension_snapshot>(snapshot);
     if(m_is_recording)
-    {    //Send to recording thread
-        m_device_record_snapshot_handler(extension_type, snapshot, [this](const std::string& err)
-        { stop_with_error(err); });
+    {    
+        //Send to recording thread
+        m_device_record_snapshot_handler(extension_type, 
+                                        ext_snapshot, 
+                                        [this](const std::string& err)
+                                        { 
+                                            stop_with_error(err); 
+                                        });
     }
 }
 
-std::vector<platform::stream_profile> record_sensor::convert_profiles(const std::vector<stream_profile>& profiles)
-{
-    std::vector<platform::stream_profile> platform_profiles;
-    //TODO: Implement
-    return platform_profiles;
-}
 void record_sensor::stop_with_error(const std::string& error_msg)
 {
     m_is_recording = false;

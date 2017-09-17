@@ -28,21 +28,11 @@ playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<d
     (*m_read_thread)->start();
 
     //Read header and build device from recorded device snapshot
-    m_device_description = m_reader->query_device_description();
-    auto info_snapshot = m_device_description.get_device_extensions_snapshots().find(RS2_EXTENSION_INFO);
-    if(info_snapshot == nullptr)
-    {
-        throw io_exception("Recorded file does not contain device information");
-    }
-    auto info_api = As<info_interface>(info_snapshot);
-    if (info_api == nullptr)
-    {
-        throw invalid_value_exception("Failed to get info interface from device snapshots");
-    }
-    register_device_info(info_api);
+    m_device_description = m_reader->query_device_description(nanoseconds(0));
+
+    register_device_info(m_device_description);
     //Create playback sensor that simulate the recorded sensors
     m_sensors = create_playback_sensors(m_device_description);
-
     register_extrinsics(m_device_description);
 }
 
@@ -190,36 +180,19 @@ void playback_device::hardware_reset()
 bool playback_device::extend_to(rs2_extension extension_type, void** ext)
 {
     std::shared_ptr<extension_snapshot> e = m_device_description.get_device_extensions_snapshots().find(extension_type);
-    if (e == nullptr)
-    {
-        return false;
-    }
-    switch (extension_type)
-    {
-    case RS2_EXTENSION_UNKNOWN: return false;
-    case RS2_EXTENSION_DEBUG : return try_extend<debug_interface>(e, ext);
-    case RS2_EXTENSION_INFO : return try_extend<info_interface>(e, ext);
-    case RS2_EXTENSION_MOTION : return try_extend<motion_sensor_interface>(e, ext);;
-    case RS2_EXTENSION_OPTIONS : return try_extend<options_interface>(e, ext);;
-    case RS2_EXTENSION_VIDEO : return try_extend<video_sensor_interface>(e, ext);;
-    case RS2_EXTENSION_ROI : return try_extend<roi_sensor_interface>(e, ext);;
-    case RS2_EXTENSION_VIDEO_FRAME : return try_extend<video_frame>(e, ext);
-    //TODO: add: case RS2_EXTENSION_MOTION_FRAME : return try_extend<motion_frame>(e, ext);
-    case RS2_EXTENSION_COUNT :
-        //[[fallthrough]];
-    default:
-        LOG_WARNING("Unsupported extension type: " << extension_type);
-        return false;
-    }
+    return try_extend_snapshot(e, extension_type, ext);
 }
 
 std::shared_ptr<matcher> playback_device::create_matcher(const frame_holder& frame) const
 {
-    return nullptr; //TOOD: WTD?
+    //TOOD: Use future implementation of matcher factory with the device's name (or other unique identifier)
+    LOG_WARNING("Playback device does not provide a matcher");
+    return nullptr;
 }
 
 void playback_device::set_frame_rate(double rate)
 {
+    LOG_INFO("Request to change playback frame rate to: " << rate);
     if(rate < 0)
     {
         throw invalid_value_exception(to_string() << "Failed to set frame rate to " << std::to_string(rate) << ", value is less than 0");
@@ -234,14 +207,21 @@ void playback_device::set_frame_rate(double rate)
 
 void playback_device::seek_to_time(std::chrono::nanoseconds time)
 {
+    LOG_INFO("Request to seek to: " << time.count());
     (*m_read_thread)->invoke([this, time](dispatcher::cancellable_timer t)
     {
         LOG_INFO("Seek to time: " << time.count());
         m_reader->seek_to_time(time);
+        m_device_description = m_reader->query_device_description(time);
+        update_extensions(m_device_description);
         m_prev_timestamp = time; //Updating prev timestamp to make get_position return true indication even when playbakc is paused
         catch_up();
     });
-    (*m_read_thread)->flush();
+    if ((*m_read_thread)->flush() == false)
+    {
+        LOG_ERROR("Error - timeout waiting for seek_to_time, possible deadlock detected");
+        assert(0); //Detect this immediately in debug
+    }
 }
 
 rs2_playback_status playback_device::get_current_status() const
@@ -285,7 +265,11 @@ void playback_device::pause()
        LOG_DEBUG("Notifying RS2_PLAYBACK_STATUS_PAUSED");
        playback_status_changed(RS2_PLAYBACK_STATUS_PAUSED);
     });
-    (*m_read_thread)->flush();
+    if ((*m_read_thread)->flush() == false)
+    {
+        LOG_ERROR("Error - timeout waiting for pause, possible deadlock detected");
+        assert(0); //Detect this immediately in debug
+    }
     LOG_INFO("Playback Paused");
 }
 
@@ -303,7 +287,11 @@ void playback_device::resume()
 
         try_looping();
     });
-    (*m_read_thread)->flush();
+    if ((*m_read_thread)->flush() == false)
+    {
+        LOG_ERROR("Error - timeout waiting for resume, possible deadlock detected");
+        assert(0); //Detect this immediately in debug
+    }
     LOG_INFO("Playback Resumed");
 }
 
@@ -390,7 +378,11 @@ void playback_device::stop()
         LOG_DEBUG("playback stop invoked");
         stop_internal();
     });
-    (*m_read_thread)->flush();
+    if ((*m_read_thread)->flush() == false)
+    {
+        LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
+        assert(0); //Detect this immediately in debug
+    }
     LOG_INFO("Playback stoped");
 
 }
@@ -477,21 +469,14 @@ void playback_device::try_looping()
 
         //Read next data from the serializer, on success: 'obj' will be a valid object that came from
         // sensor number 'sensor_index' with a timestamp equal to 'timestamp'
-        device_serializer::stream_identifier stream_id;
-        device_serializer::nanoseconds timestamp = device_serializer::nanoseconds::max();
-        frame_holder frame;
-        auto retval = m_reader->read_frame(timestamp, stream_id, frame);
-        if (retval == device_serializer::status_file_eof)
+        std::shared_ptr<serialized_data> data = m_reader->read_next_data();
+        if (data->as<serialized_end_of_file>())
         {
             LOG_INFO("End of file reached");
             return false;
         }
-        if(retval != device_serializer::status_no_error || timestamp == std::chrono::nanoseconds::max() || frame == nullptr)
-        {
-            LOG_ERROR("Failed to read next frame. retval: " << retval << ", timestamp = " << timestamp.count());
-            throw librealsense::io_exception("Failed to read frame");
-        }
 
+        auto timestamp = data->get_timestamp();
         m_prev_timestamp = timestamp;
         //Objects with timestamp of 0 are non streams.
         if (m_base_timestamp.count() == 0)
@@ -511,16 +496,26 @@ void playback_device::try_looping()
                 std::this_thread::sleep_for(sleep_time);
             }
         }
-
-        if (stream_id.device_index != get_device_index() || stream_id.sensor_index >= m_sensors.size())
+        if (auto frame = data->as<serialized_frame>())
         {
-            LOG_ERROR("Unexpected sensor index while playing file (Read index = " << stream_id.sensor_index << ")");
-            throw invalid_value_exception(to_string() << "Unexpected sensor index while playing file (Read index = " << stream_id.sensor_index << ")");
+            if (frame->stream_id.device_index != get_device_index() || frame->stream_id.sensor_index >= m_sensors.size())
+            {
+                std::string error_msg = to_string() << "Unexpected sensor index while playing file (Read index = " << frame->stream_id.sensor_index << ")";
+                LOG_ERROR(error_msg);
+                throw invalid_value_exception(error_msg);
+            }
+            LOG_DEBUG("Dispatching frame " << frame->stream_id);
+            //Dispatch frame to the relevant sensor
+            m_sensors[frame->stream_id.sensor_index]->handle_frame(std::move(frame->frame), m_real_time);
+            return true;
         }
-        LOG_DEBUG("Dispatching frame " << stream_id.device_index << "/" << stream_id.sensor_index << "/" << stream_id.stream_type << "/" << stream_id.stream_index);
-        //Dispatch frame to the relevant sensor
-        m_sensors[stream_id.sensor_index]->handle_frame(std::move(frame), m_real_time);
-        return true;
+
+        if (auto option_data = data->as<serialized_option>())
+        {
+            m_sensors[option_data->sensor_id.sensor_index]->update_option(option_data->option);
+            return true;
+        }
+        return false;
     };
     do_loop(read_action);
 }
@@ -540,8 +535,19 @@ void playback_device::catch_up()
     LOG_DEBUG("Catching up");
 }
 
-void playback_device::register_device_info(const std::shared_ptr<info_interface>& info_api)
+void playback_device::register_device_info(const device_serializer::device_snapshot& device_description)
 {
+    auto info_snapshot = device_description.get_device_extensions_snapshots().find(RS2_EXTENSION_INFO);
+    if (info_snapshot == nullptr)
+    {
+        throw io_exception("Recorded file does not contain device information");
+    }
+
+    auto info_api = As<info_interface>(info_snapshot);
+    if (info_api == nullptr)
+    {
+        throw invalid_value_exception("Failed to get info interface from device snapshots");
+    }
     for (int i = 0; i < RS2_CAMERA_INFO_COUNT; ++i)
     {
         rs2_camera_info info = static_cast<rs2_camera_info>(i);
@@ -577,5 +583,39 @@ void playback_device::register_extrinsics(const device_serializer::device_snapsh
             environment::get_instance().get_extrinsics_graph().register_extrinsics(*p1, *p2, extrinsic_fetcher);
             m_extrinsics_fetchers.push_back(extrinsic_fetcher);  //Caching the lazy<rs2_extrinsics> since context holds weak_ptr
         }
+    }
+}
+
+bool playback_device::try_extend_snapshot(std::shared_ptr<extension_snapshot>& e, rs2_extension extension_type, void** ext)
+{
+    if (e == nullptr)
+    {
+        return false;
+    }
+
+    switch (extension_type)
+    {
+    case RS2_EXTENSION_DEBUG:   return try_extend<debug_interface>(e, ext);
+    case RS2_EXTENSION_INFO:    return try_extend<info_interface>(e, ext);
+    case RS2_EXTENSION_MOTION:  return try_extend<motion_sensor_interface>(e, ext);
+    case RS2_EXTENSION_OPTIONS: return try_extend<options_interface>(e, ext);
+    case RS2_EXTENSION_VIDEO:   return try_extend<video_sensor_interface>(e, ext);
+    case RS2_EXTENSION_ROI:     return try_extend<roi_sensor_interface>(e, ext);
+    case RS2_EXTENSION_DEPTH_SENSOR: return try_extend<depth_sensor>(e, ext);
+    case RS2_EXTENSION_UNKNOWN: //[[fallthrough]]
+    case RS2_EXTENSION_COUNT:   //[[fallthrough]]
+    default:
+        LOG_WARNING("Unsupported extension type: " << extension_type);
+    }
+    return false;
+}
+
+void playback_device::update_extensions(const device_serializer::device_snapshot& device_description)
+{
+    //TODO: Need to update all extensions not just options
+    for (auto sensor_snapshot : device_description.get_sensors_snapshots())
+    {
+        auto sensor_index = sensor_snapshot.get_sensor_index();
+        m_sensors[sensor_index]->update(sensor_snapshot);
     }
 }

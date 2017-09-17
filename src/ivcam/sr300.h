@@ -167,6 +167,7 @@ namespace librealsense
 
                 _owner.rs2_apply_ivcam_preset(static_cast<int>(value));
                 last_value = value;
+                _recording_function(*this);
             }
 
             float query() const override { return last_value; }
@@ -186,7 +187,7 @@ namespace librealsense
             }
 
             explicit preset_option(sr300_camera& owner, const option_range& opt_range)
-                : option_base(opt_range),
+                : option_base(opt_range, RS2_OPTION_VISUAL_PRESET),
                   _owner(owner)
             {}
 
@@ -293,6 +294,17 @@ namespace librealsense
             }
 
             float get_depth_scale() const override { return get_option(RS2_OPTION_DEPTH_UNITS).query(); }
+
+            void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const  override
+            {
+                snapshot = std::make_shared<depth_sensor_snapshot>(get_depth_scale());
+            }
+            void enable_recording(std::function<void(const depth_sensor&)> recording_function) override
+            {
+                get_option(RS2_OPTION_DEPTH_UNITS).enable_recording([this, recording_function](const option& o) {
+                    recording_function(*this);
+                });
+            }
         private:
             const sr300_camera* _owner;
         };
@@ -322,7 +334,8 @@ namespace librealsense
             color_ep->register_option(RS2_OPTION_WHITE_BALANCE,
                 std::make_shared<auto_disabling_control>(
                     white_balance_option,
-                    auto_white_balance_option));
+                    auto_white_balance_option, 
+                    RS2_OPTION_WHITE_BALANCE));
 
             auto exposure_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_EXPOSURE);
             auto auto_exposure_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_ENABLE_AUTO_EXPOSURE);
@@ -331,7 +344,8 @@ namespace librealsense
             color_ep->register_option(RS2_OPTION_EXPOSURE,
                 std::make_shared<auto_disabling_control>(
                     exposure_option,
-                    auto_exposure_option));
+                    auto_exposure_option, 
+                    RS2_OPTION_EXPOSURE));
 
             auto md_offset = offsetof(metadata_raw, mode);
             color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp,
@@ -473,9 +487,9 @@ namespace librealsense
                     //set_auto_range(ar_requests[preset]);
             }
         }
-        void create_snapshot(std::shared_ptr<debug_interface>& snapshot) override;
-        void create_recordable(std::shared_ptr<debug_interface>& recordable,
-                               std::function<void(std::shared_ptr<extension_snapshot>)> record_action) override;
+        void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
+        void enable_recording(std::function<void(const debug_interface&)> record_action) override;
+
 
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     private:
@@ -490,7 +504,8 @@ namespace librealsense
                 std::make_shared<uvc_xu_option<T>>(
                     depth,
                     ivcam::depth_xu,
-                    id, std::move(desc)));
+                    id, std::move(desc),
+                    opt));
         }
 
         void register_autorange_options()

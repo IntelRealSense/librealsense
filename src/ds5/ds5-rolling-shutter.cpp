@@ -31,7 +31,8 @@ namespace librealsense
                 std::make_shared<uvc_xu_option<uint8_t>>(get_depth_sensor(),
                                                          depth_xu,
                                                          DS5_ENABLE_AUTO_WHITE_BALANCE,
-                                                         "Enable Auto White Balance"));
+                                                         "Enable Auto White Balance",
+                                                         RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE));
 
             // RS400 rolling-shutter Skus allow to get low-quality color image from the same viewport as the depth
             get_depth_sensor().register_pixel_format(pf_uyvyl);

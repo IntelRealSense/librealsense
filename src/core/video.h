@@ -8,7 +8,7 @@ namespace librealsense
 {
     struct stream_profile;
 
-    class video_sensor_interface : public virtual sensor_interface
+    class video_sensor_interface
     {
     public:
         virtual rs2_intrinsics get_intrinsics(const stream_profile& profile) const = 0;

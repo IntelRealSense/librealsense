@@ -715,7 +715,7 @@ namespace librealsense
 
     advanced_mode_preset_option::advanced_mode_preset_option(ds5_advanced_mode_base& advanced,
         uvc_sensor& ep, const option_range& opt_range)
-        : option_base(opt_range),
+        : option_base(opt_range, RS2_OPTION_VISUAL_PRESET),
         _ep(ep),
         _advanced(advanced),
         _last_preset(RS2_RS400_VISUAL_PRESET_CUSTOM)
@@ -753,6 +753,7 @@ namespace librealsense
         auto configurations = uvc_sensor->get_configuration();
         _advanced.apply_preset(configurations, preset);
         _last_preset = preset;
+        _recording_function(*this);
     }
 
     float advanced_mode_preset_option::query() const

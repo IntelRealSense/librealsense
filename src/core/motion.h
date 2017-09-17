@@ -7,7 +7,7 @@
 
 namespace librealsense
 {
-    class motion_sensor_interface : public virtual sensor_interface
+    class motion_sensor_interface
     {
     public:
         virtual rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) const = 0;
