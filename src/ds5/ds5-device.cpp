@@ -301,9 +301,8 @@ namespace librealsense
                      std::move(error_control),
                      depth_ep.get_notifications_proccessor(),
 
-                     std::unique_ptr<notification_decoder>(new ds5_notification_decoder())));
+            std::unique_ptr<notification_decoder>(new ds5_notification_decoder())));
 
-             //_polling_error_handler->start();
 
              depth_ep.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler.get()));
 
