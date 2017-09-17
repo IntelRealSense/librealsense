@@ -1,7 +1,5 @@
-# ubuntu 12.04 LTS cmake version 2.8.7
-# ubuntu 14.04 LTS cmake version 2.8.12.2
-# ubuntu 16.04 LTS cmake version 3.5.1
-cmake_minimum_required(VERSION 2.8.3)
+#  minimum required cmake version: 3.1.0
+cmake_minimum_required(VERSION 3.1.0)
 
 project(librealsense2)
 
@@ -541,9 +539,9 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense2 DESTINATION ${CMAK
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(CMake/realsense2Config.cmake.in realsense2Config.cmake
-                          INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
-                                  INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
-                          PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
+				INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+				INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
+				PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
 
 install(EXPORT realsense2Targets FILE realsense2Targets.cmake NAMESPACE realsense2::
     DESTINATION ${CMAKECONFIG_INSTALL_DIR})

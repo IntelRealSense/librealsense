@@ -4,7 +4,7 @@
 
 ## 3rd-party dependencies
 
-* **Note:** On Ubuntu 16.04 LTS, make sure you have git and cmake installed: `sudo apt-get install git cmake`
+* **Note:** On Ubuntu 16.04 LTS, make sure you have git and cmake installed: `sudo apt-get install git cmake3`
 
 **Important:** Several scripts below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. Infrequently, apt-get mirrors or repositories may also timeout. For *librealsense* users behind an enterprise firewall, configuring the system-wide Ubuntu proxy generally resolves most timeout issues.
 
@@ -32,10 +32,19 @@
 3. Library Build Process<br />
   *librealsense* employs CMake as a cross-platform build and project management system.
   * On Ubuntu 14.04, update your build toolchain to *gcc-5*:
-    * `sudo apt-get-repository ppa:ubuntu-toolchain-r/test`
+    * `sudo add-apt-repository ppa:ubuntu-toolchain-r/test`
     * `sudo apt-get update`
     * `sudo apt-get install gcc-5 g++-5`
     * `sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5`
+
+When completed, you must change the default gcc. Type in your terminal:
+    * `sudo update-alternatives --config gcc`
+
+You can check the gcc version by typing:
+    * `gcc -v`
+
+If everything went fine you should see gcc 5.0.0.
+
 
   * Navigate to *librealsense* root directory and run `mkdir build && cd build`<br />
   * Run CMake:
