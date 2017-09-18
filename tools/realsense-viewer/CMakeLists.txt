@@ -20,10 +20,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
 
 if(UNIX)
     find_package(PkgConfig REQUIRED)
-    find_package(GTK3)
-    if(NOT GTK3_FOUND)
-        message(FATAL_ERROR "\n\n GTK3 package is missing!\n\n")
-    endif()
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
 
     include_directories(${GTK3_INCLUDE_DIRS})
     link_directories(${GTK3_LIBRARY_DIRS})

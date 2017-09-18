@@ -19,7 +19,7 @@ endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     find_package(OpenGL)
-    if(NOT OpenGL_FOUND)
+    if(NOT OPENGL_FOUND)
         message(FATAL_ERROR "\n\n OpenGL package is missing!\n\n")
     endif()
 
