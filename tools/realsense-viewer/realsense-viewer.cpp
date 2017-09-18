@@ -41,10 +41,12 @@ struct user_data
 
 void add_playback_device(context& ctx, std::vector<device_model>& device_models, std::string& error_message, viewer_model& viewer_model, const std::string& file)
 {
-    bool was_added = true;
+    bool was_loaded = false;
+    bool failed = false;
     try
     {
         auto dev = ctx.load_device(file);
+        was_loaded = true;
         device_models.emplace_back(dev, error_message, viewer_model);
         if (auto p = dev.as<playback>())
         {
@@ -95,14 +97,14 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
     catch (const error& e)
     {
         error_message = to_string() << "Failed to load file " << file << ". Reason: " << error_to_string(e);
-        was_added = false;
+        failed = true;
     }
     catch (const std::exception& e)
     {
         error_message = to_string() << "Failed to load file " << file << ". Reason: " << e.what();
-        was_added = false;
+        failed = true;
     }
-    if (!was_added)
+    if (failed && was_loaded)
     {
         try { ctx.unload_device(file); } catch (...){ }
     }
@@ -345,7 +347,7 @@ int main(int argv, const char** argc) try
             add_playback_device(data->ctx, data->device_models, error_message, *data->model, paths[i]);
             if (!error_message.empty())
             {
-                data->model->not_model.add_notification({ to_string() << "Could not load \"" << paths[i] << "\"",
+                data->model->not_model.add_notification({ error_message,
                     0, RS2_LOG_SEVERITY_ERROR, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
             }
 
