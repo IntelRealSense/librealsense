@@ -38,9 +38,8 @@
     * `sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5`
     * `sudo update-alternatives --set gcc "/usr/bin/gcc-5"`
 
-> You can check the gcc version by typing:
-> * `gcc -v`
-> If everything went fine you should see gcc 5.0.0.
+> * You can check the gcc version by typing: `gcc -v`
+>   * If everything went fine you should see gcc 5.0.0.
 
 
   * Navigate to *librealsense* root directory and run `mkdir build && cd build`<br />
