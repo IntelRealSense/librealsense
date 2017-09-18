@@ -20,7 +20,7 @@ before_install:
   - git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
   - export OLDPATH=$PATH && export PATH=$PATH:$(pwd)/depot_tools;
   - cd wrappers/nodejs/tools && npm install && cd ..
-  # - node ./tools/linter.js
+  - node ./tools/linter.js
   - export PATH=$OLDPATH && unset OLDPATH && cd ../../
 
   # Get logical CPU number
