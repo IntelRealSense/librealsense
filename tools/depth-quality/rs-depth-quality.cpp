@@ -16,8 +16,7 @@
 #include "realsense-ui-advanced-mode.h"
 #include "rendering.h"
 #include "metrics.h"
-#include "window.h"
-
+#include "depth_quality_viewer.h"
 #include "depth_quality_model.h"
 
 using namespace rs2;
@@ -64,69 +63,33 @@ std::vector<std::string> get_device_info(const device& dev, bool include_locatio
 
 int main(int argc, char * argv[])
 {
-    // UI option variables
-    //bool use_rect_fitting = true;
 
-    //context ctx;
-    //device_hub hub(ctx);
-
-    auto finished = false;
-
-    std::map<std::pair<int, int>, std::vector<int>> supported_fps_by_resolution;
-    std::vector<std::string> restarting_device_info;
-
-    //advanced_mode_control amc{};
-    //const auto margin = 15.f;
-
-    mouse_info mouse;
-    dq_logic_model app_model;
-
-    //bool options_invalidated = false;
-    std::string error_message;
-
-    window win(1280, 720, "Depth Quality Tool");
-    //GLFWwindow* win = glfwCreateWindow(1280, 720, "Depth Test Tool", nullptr, nullptr);
-    //glfwMakeContextCurrent(win);
-//    ImGui_ImplGlfw_Init(win, true);
-    // Apply viewer's look&feel
-  //  ImFont *font_18, *font_14;
-//    imgui_easy_theming(font_14, font_18);
-  //  while (!finished)
-  //  {
-        //app_logic.update();
-  //  }
-
-    frame_queue calc_queue(1);
-    frame_queue display_queue(1);
-
-    depth_metrics_model metrics;
-    //device_model      dev_model();
-    stream_model        stream;
+    dq_logic_model app;
 
     rs2::pipeline pipe;
+
+    // Blocks till a valid device is found
     pipe.start();
 
-    while (win)
+    // Select the depth camera to work with
+    app.use_device(pipe.get_device());
+
+    while (app)     // Update internal state and render UI
     {
         try
         {
             frameset frames;
             if (pipe.poll_for_frames(&frames))
             {
+                app.upload(frames);
+
                 rs2::frame depth = frames.get_depth_frame();
                 if (depth)
-                {
-                    calc_queue.enqueue(depth);
-                    display_queue.enqueue(depth);
-                    //stream.upload_frame(std::move(depth));
-                    //stream.show_frame({ 100,100, 300, 300 }, mouse, error_message);
-                }
+                    app.enqueue_for_processing(depth);
             }
 
-            app_model.update();
-            metrics.render();
-            ///dev_model.render()
-            // stream.render();
+            // Yield the CPU
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
 
 
@@ -582,10 +545,6 @@ int main(int argc, char * argv[])
         {
             std::cerr << e.what() << std::endl;
         }
-
-        //ImGui_ImplGlfw_Shutdown();
-        //glfwDestroyWindow(win);
-        //glfwTerminate();
     }
     return EXIT_SUCCESS;
 }

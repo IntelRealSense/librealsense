@@ -1952,7 +1952,7 @@ namespace rs2
         }
     }
 
-    void stream_model::show_stream_footer(rect stream_rect, mouse_info& mouse)
+    void stream_model::show_stream_footer(const rect &stream_rect,const  mouse_info& mouse)
     {
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -2607,6 +2607,66 @@ namespace rs2
             up.x /= -up_len;
             up.y /= -up_len;
             up.z /= -up_len;
+        }
+    }
+
+    void viewer_model::render_2d_view(const rect& view_rect, 
+        double width, double heigth, int output_height,
+        ImFont *font1, ImFont *font2, size_t dev_model_num,
+        const mouse_info &mouse, std::string& error_message)
+    {
+        static float alpha_delta = 0;
+        static float alpha_delta_step = 0;
+        alpha_delta_step = alpha_delta <= 0 ? 0.04 : alpha_delta > 1 ? -0.04 : alpha_delta_step;
+        alpha_delta += alpha_delta_step;
+
+        glLoadIdentity();
+        glOrtho(0, width, heigth, 0, -1, +1);
+
+        auto layout = calc_layout(view_rect);
+
+        if ((layout.size() == 0) && (dev_model_num > 0))
+        {
+            show_no_stream_overlay(font2, view_rect.x, view_rect.y, width, heigth - output_height);
+        }
+
+        for (auto &&kvp : layout)
+        {
+            auto&& view_rect = kvp.second;
+            auto stream = kvp.first;
+            auto&& stream_mv = streams[stream];
+            auto&& stream_size = stream_mv.size;
+            auto stream_rect = view_rect.adjust_ratio(stream_size).grow(-3);
+
+            stream_mv.show_frame(stream_rect, mouse, error_message);
+
+            auto p = stream_mv.dev->dev.as<playback>();
+            float pos = stream_rect.x + 5;
+
+            if (stream_mv.dev->dev.is<recorder>())
+            {
+                show_recording_icon(font2, pos, stream_rect.y + 5, stream_mv.profile.unique_id(), alpha_delta > 0.5 ? 0 : 1);
+                pos += 23;
+            }
+
+            if (stream_mv.dev->is_paused() || (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
+                show_paused_icon(font2, pos, stream_rect.y + 5, stream_mv.profile.unique_id());
+
+            stream_mv.show_stream_header(font1, stream_rect, *this);
+            stream_mv.show_stream_footer(stream_rect, mouse);
+
+            glColor3f(header_window_bg.x, header_window_bg.y, header_window_bg.z);
+            stream_rect.y -= 32;
+            stream_rect.h += 32;
+            stream_rect.w += 1;
+            draw_rect(stream_rect);
+        }
+
+        // Metadata overlay windows shall be drawn after textures to preserve z-buffer functionality
+        for (auto &&kvp : layout)
+        {
+            if (streams[kvp.first].metadata_displayed)
+                streams[kvp.first].show_metadata(mouse);
         }
     }
 

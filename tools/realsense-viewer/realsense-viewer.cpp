@@ -629,8 +629,6 @@ int main(int argv, const char** argc) try
         ImGui::PopStyleColor(2);
         ImGui::SameLine();
 
-        
-
         ImGui::SetCursorPosX(w - panel_width - panel_y * 1);
         auto pos1 = ImGui::GetCursorScreenPos();
 
@@ -1165,7 +1163,7 @@ int main(int argv, const char** argc) try
                     dev_model.stop_recording();
                     for (auto&& sub : dev_model.subdevices)
                     {
-                        //TODO: Fix case where sensor X recorded stream 0, then stoped it and then strated recording stream 1 (need 2 sensors for this to happen)
+                        //TODO: Fix case where sensor X recorded stream 0, then stopped, and then started recording stream 1 (need 2 sensors for this to happen)
                         if (sub->is_selected_combination_supported())
                         {
                             auto profiles = sub->get_selected_profiles();
@@ -1226,65 +1224,11 @@ int main(int argv, const char** argc) try
             static_cast<int>(ImGui::GetIO().DisplaySize.y * data.scale_factor));
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
-        
-        static float alpha_delta = 0;
-        static float alpha_delta_step = 0;
-        alpha_delta_step = alpha_delta <= 0 ? 0.04 : alpha_delta > 1 ? -0.04 : alpha_delta_step;
-        alpha_delta += alpha_delta_step;
 
         if (!is_3d_view)
         {
-            glLoadIdentity();
-            glOrtho(0, w, h, 0, -1, +1);
-
-            auto layout = viewer_model.calc_layout({ panel_width, panel_y, w - panel_width, h - panel_y - output_height });
-
-            if (layout.size() == 0 && device_models.size() > 0)
-            {
-                viewer_model.show_no_stream_overlay(font_18, panel_width, panel_y, w, h - output_height);
-            }
-
-            for (auto &&kvp : layout)
-            {
-                auto&& view_rect = kvp.second;
-                auto stream = kvp.first;
-                auto&& stream_mv = viewer_model.streams[stream];
-                auto&& stream_size = stream_mv.size;
-                auto stream_rect = view_rect.adjust_ratio(stream_size).grow(-3);
-
-                stream_mv.show_frame(stream_rect, mouse, error_message);
-
-                auto p = stream_mv.dev->dev.as<playback>();
-                float pos = stream_rect.x + 5;
-
-                if (stream_mv.dev->dev.is<recorder>())
-                {
-                    viewer_model.show_recording_icon(font_18, pos, stream_rect.y + 5, stream_mv.profile.unique_id(), alpha_delta > 0.5 ? 0 : 1);
-                    pos += 23;
-                }
-
-                if (stream_mv.dev->is_paused() || (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
-                    viewer_model.show_paused_icon(font_18, pos, stream_rect.y + 5, stream_mv.profile.unique_id());
-
-
-
-                stream_mv.show_stream_header(font_14, stream_rect, viewer_model);
-                stream_mv.show_stream_footer(stream_rect, mouse);
-
-                glColor3f(header_window_bg.x, header_window_bg.y, header_window_bg.z);
-                stream_rect.y -= 32;
-                stream_rect.h += 32;
-                stream_rect.w += 1;
-                draw_rect(stream_rect);
-            }
-
-            // Metadata overlay windows shall be drawn after textures to preserve z-buffer functionality
-            for (auto &&kvp : layout)
-            {
-                if (viewer_model.streams[kvp.first].metadata_displayed)
-                    viewer_model.streams[kvp.first].show_metadata(mouse);
-            }
-           
+            viewer_model.render_2d_view(viewer_rect,w,h, output_height, font_14, font_18,
+                device_models.size(), mouse, error_message);
         }
         else
         {

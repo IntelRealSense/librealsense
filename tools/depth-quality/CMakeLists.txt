@@ -36,7 +36,9 @@ if(BUILD_GRAPHICAL_EXAMPLES)
             ./rs-depth-quality.cpp
             ./depth_quality_states.cpp
             ./depth_quality_states.h
-            ./window.h
+            ./depth_quality_viewer.h
+            ./depth_quality_model.h
+            ./depth_quality_model.cpp
             ../../common/rendering.h
             ../../common/model-views.h
             ../../common/model-views.cpp

@@ -263,7 +263,7 @@ namespace rs2
         void show_metadata(const mouse_info& g);
         rect get_normalized_zoom(const rect& stream_rect, const mouse_info& g, bool is_middle_clicked, float zoom_val);
 
-        void show_stream_footer(rect stream_rect, mouse_info& mouse);
+        void show_stream_footer(const rect& stream_rect,const mouse_info& mouse);
         void show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer);
 
         rect layout;
@@ -329,7 +329,7 @@ namespace rs2
         int draw_playback_controls(ImFont* font, viewer_model& view);
         advanced_mode_control amc;
         std::string pretty_time(std::chrono::nanoseconds duration);
-        
+
         void play_defaults(viewer_model& view);
 
         std::shared_ptr<recorder> _recorder;
@@ -491,6 +491,9 @@ namespace rs2
                               mouse_info& mouse, bool force = false);
 
         void render_3d_view(const rect& view_rect, float scale_factor);
+
+        void render_2d_view(const rect& view_rect, double width, double heigth, int output_height,
+            ImFont *font1, ImFont *font2, size_t dev_model_num, const mouse_info &mouse, std::string& error_message);
 
         void gc_streams();
 

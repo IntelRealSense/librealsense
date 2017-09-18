@@ -354,7 +354,6 @@ namespace rs2
             if (!f) throw error("Frame of requested stream type was not found!");
             return f;
         }
-       
 
         depth_frame get_depth_frame() const
         {
