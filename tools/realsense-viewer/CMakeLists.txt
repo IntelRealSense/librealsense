@@ -1,5 +1,5 @@
-# ubuntu 16.04 LTS cmake version 3.5.1
-cmake_minimum_required(VERSION 2.8.3)
+#  minimum required cmake version: 3.1.0
+cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsenseToolsRealSenseViewer)
 
@@ -16,6 +16,8 @@ elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
+if(BUILD_GRAPHICAL_EXAMPLES)
+
 if(UNIX)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
@@ -30,8 +32,6 @@ elseif(WIN32)
 elseif(APPLE)
     add_definitions(-DNOC_FILE_DIALOG_OSX)
 endif()
-
-if(BUILD_GRAPHICAL_EXAMPLES)
 
     set(RS_VIEWER_CPP
             realsense-viewer.cpp

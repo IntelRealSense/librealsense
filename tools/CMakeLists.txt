@@ -1,7 +1,5 @@
-# ubuntu 12.04 LTS cmake version 2.8.7
-# ubuntu 14.04 LTS cmake version 2.8.12.2
-# ubuntu 16.04 LTS cmake version 3.5.1
-cmake_minimum_required(VERSION 2.8.3)
+#  minimum required cmake version: 3.1.0
+cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsenseTools)
 
@@ -25,7 +23,11 @@ endif()
 
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-    find_package(OpenGL REQUIRED)
+    find_package(OpenGL)
+    if(NOT OPENGL_FOUND)
+        message(FATAL_ERROR "\n\n OpenGL package is missing!\n\n")
+    endif()
+
     set(DEPENDENCIES realsense2 ${OPENGL_LIBRARIES})
 
     if(WIN32)

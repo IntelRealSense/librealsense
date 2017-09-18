@@ -1,7 +1,5 @@
-# ubuntu 12.04 LTS cmake version 2.8.7
-# ubuntu 14.04 LTS cmake version 2.8.12.2
-# ubuntu 16.04 LTS cmake version 3.5.1
-cmake_minimum_required(VERSION 2.8.3)
+#  minimum required cmake version: 3.1.0
+cmake_minimum_required(VERSION 3.1.0)
 
 project(librealsense2)
 
@@ -55,8 +53,10 @@ endif()
 
 option(BUILD_WITH_OPENMP "Use OpenMP" ON)
 if(BUILD_WITH_OPENMP)
-    find_package(OpenMP REQUIRED)
-    if(OPENMP_FOUND)
+    find_package(OpenMP)
+    if(NOT OPENMP_FOUND)
+        message(FATAL_ERROR "\n\n OpenMP package is missing!\n\n")
+    else()
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
@@ -449,7 +449,11 @@ if(ANDROID)
     include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})
     link_directories(${LIBUSB1_LIBRARY_DIRS})
 elseif(UNIX)
-    find_package(PkgConfig REQUIRED)
+    find_package(PkgConfig)
+    if(NOT PKG_CONFIG_FOUND)
+        message(FATAL_ERROR "\n\n PkgConfig package is missing!\n\n")
+    endif()
+
     find_package (Threads REQUIRED)
     list(APPEND librealsense_PKG_DEPS "Threads")
 
@@ -541,9 +545,9 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense2 DESTINATION ${CMAK
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(CMake/realsense2Config.cmake.in realsense2Config.cmake
-                          INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
-                                  INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
-                          PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
+				INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+				INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
+				PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
 
 install(EXPORT realsense2Targets FILE realsense2Targets.cmake NAMESPACE realsense2::
     DESTINATION ${CMAKECONFIG_INSTALL_DIR})
