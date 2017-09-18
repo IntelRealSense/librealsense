@@ -4,6 +4,7 @@ doc/*
 node_modules/
 *.png
 *.csv
+dist
 
 # Uningore files
 !.eslintrc.json
