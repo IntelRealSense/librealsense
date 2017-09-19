@@ -1,4 +1,8 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <set>
 #include <map>
@@ -8,105 +12,34 @@
 #include <chrono>
 #include <mutex>
 #include <regex>
+#include <librealsense2/rs.hpp>
 #include "../../third-party/realsense-file/rosbag/rosbag_storage/include/rosbag/bag.h"
 #include "../../third-party/realsense-file/rosbag/rosbag_storage/include/rosbag/view.h"
 #include "../../third-party/realsense-file/rosbag/msgs/sensor_msgs/Imu.h"
 #include "../../third-party/realsense-file/rosbag/msgs/sensor_msgs/Image.h"
 #include "../../third-party/realsense-file/rosbag/msgs/diagnostic_msgs/KeyValue.h"
 #include "../../third-party/realsense-file/rosbag/msgs/std_msgs/UInt32.h"
+#include "../../third-party/realsense-file/rosbag/msgs/std_msgs/String.h"
+#include "../../third-party/realsense-file/rosbag/msgs/std_msgs/Float32.h"
 #include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/StreamInfo.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/ImuIntrinsic.h"
 #include "../../third-party/realsense-file/rosbag/msgs/sensor_msgs/CameraInfo.h"
+#include "../../third-party/realsense-file/rosbag/msgs/sensor_msgs/TimeReference.h"
+#include "../../third-party/realsense-file/rosbag/msgs/geometry_msgs/Transform.h"
+
+//#include "../../src/media/ros/ros_file_format.h"
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
-//#include "../common/rendering.h"
-//#include <imgui.h>
-//#include "imgui_impl_glfw.h"
-#include "../../src/media/ros/ros_file_format.h"
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_internal.h>
+#include <noc_file_dialog.h>
+#include "rendering.h"
 
-#include "../../third-party/stb_easy_font.h"
-#include "std_msgs/String.h"
-#include "realsense_msgs/ImuIntrinsic.h"
-#include "sensor_msgs/TimeReference.h"
 using namespace std::chrono;
 using namespace rosbag;
 using namespace std;
 
-std::ostream& operator<<(std::ostream& os, rosbag::compression::CompressionType c)
-{
-	switch (c)
-	{
-	case CompressionType::Uncompressed: os << "Uncompressed"; break;
-	case CompressionType::BZ2: os << "BZ2"; break;
-	case CompressionType::LZ4: os << "LZ4"; break;
-	default: break;
-	}
-	return os;
-}
-
-inline void draw_text(int x, int y, const char * text)
-{
-    char buffer[60000]; // ~300 chars
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(2, GL_FLOAT, 16, buffer);
-    glDrawArrays(GL_QUADS, 0, 4 * stb_easy_font_print((float)x, (float)(y - 7), (char *)text, nullptr, buffer, sizeof(buffer)));
-    glDisableClientState(GL_VERTEX_ARRAY);
-}
-
-class Window
-{
-public:
-
-    Window(uint32_t width, uint32_t height, std::string title) : _width(width), _height(height)
-    {
-        glfwInit();
-        _window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
-        glfwMakeContextCurrent(_window);
-        glfwSetWindowUserPointer(_window, this);
-        glfwSetDropCallback(_window, [](GLFWwindow* w, int count, const char** paths)
-        {
-            auto dis = reinterpret_cast<Window*>(glfwGetWindowUserPointer(w));
-
-            if (count <= 0)
-                return;
-
-            dis->OnFileDropped(std::vector<std::string>(paths, paths + count));
-        });
-    }
-
-    operator bool()
-    {
-        glPopMatrix();
-        glfwSwapBuffers(_window);
-
-        auto res = !glfwWindowShouldClose(_window);
-
-        glfwPollEvents();
-        glfwGetFramebufferSize(_window, &_width, &_height);
-        
-        // Clear the framebuffer
-        glClear(GL_COLOR_BUFFER_BIT);
-        glViewport(0, 0, _width, _height);
-
-        // Draw the images
-        glPushMatrix();
-        glfwGetWindowSize(_window, &_width, &_height);
-        glOrtho(0, _width, _height, 0, -1, +1);
-
-        return res;
-    }
-
-    ~Window()
-    {
-        glfwDestroyWindow(_window);
-        glfwTerminate();
-    }
-
-    std::function<void(std::vector<std::string>)> OnFileDropped;
-private:
-
-    GLFWwindow* _window;
-    int _width, _height;
-};
 
 std::string pretty_time(nanoseconds d)
 {
@@ -126,145 +59,418 @@ std::string pretty_time(nanoseconds d)
     return stream.str();
 }
 
-std::string print_messages_topics(const std::map<std::string, std::vector<std::string>>& messages)
+
+std::ostream& operator<<(std::ostream& os, rosbag::compression::CompressionType c)
 {
-	std::ostringstream oss;
-	for (auto&& m : messages)
+	switch (c)
 	{
-		oss << std::left << std::setw(50) << m.first
-			<< " " << std::left << std::setw(10) << m.second.size() << std::setw(6) << std::string(" msg") + (m.second.size() > 1 ? "s" : "")
-			<< ": " << m.second.front() << std::endl;
+	case CompressionType::Uncompressed: os << "Uncompressed"; break;
+	case CompressionType::BZ2: os << "BZ2"; break;
+	case CompressionType::LZ4: os << "LZ4"; break;
+	default: break;
 	}
-	return oss.str();
+	return os;
 }
 
-nanoseconds get_duration(const Bag& bag)
+std::ostream& operator<<(std::ostream& os, const rosbag::MessageInstance& m)
 {
-	View entire_bag_view(bag, librealsense::FrameQuery());
-	
-	return nanoseconds((entire_bag_view.getEndTime() - entire_bag_view.getBeginTime()).toNSec());
-}
-
-std::string print_known_msgs(const Bag& bag)
-{
-	std::ostringstream oss;
-	RegexTopicQuery all_non_frame_topics(librealsense::to_string() << R"RRR(/device_\d+/sensor_\d+/.*_\d+)RRR" << "/(" << RegexTopicQuery::data_msg_types() << ")", true);
-	View entire_bag_view(bag, all_non_frame_topics);
-	for (auto&& m : entire_bag_view)
-	{
-		oss << "Topic : " << m.getTopic() << std::endl;
-		oss << "Type  : " << m.getDataType() << std::endl;
-		if (m.isType<std_msgs::UInt32>())
-		{
-			oss << "  Value : " << m.instantiate<std_msgs::UInt32>()->data << std::endl;
-		}
-		if (m.isType<diagnostic_msgs::KeyValue>())
-		{
-			oss << "  Key   : " << m.instantiate<diagnostic_msgs::KeyValue>()->key << std::endl;
-			oss << "  Value : " << m.instantiate<diagnostic_msgs::KeyValue>()->value << std::endl;
-		}
-		if (m.isType<realsense_msgs::StreamInfo>())
-		{
-			oss << "  Encoding       : " << m.instantiate<realsense_msgs::StreamInfo>()->encoding << std::endl;
-			oss << "  FPS            : " << m.instantiate<realsense_msgs::StreamInfo>()->fps << std::endl;
-			oss << "  Is Recommended : " << (m.instantiate<realsense_msgs::StreamInfo>()->is_recommended ? "True" : "False") << std::endl;
-		}
-		if (m.isType<sensor_msgs::CameraInfo>())
-		{
-			oss << "  Width      : " << m.instantiate<sensor_msgs::CameraInfo>()->width << std::endl;
-			oss << "  Height     : " << m.instantiate<sensor_msgs::CameraInfo>()->height << std::endl;
-			oss << "  Intrinsics : " << std::endl;
-			oss << "    Focal Point      : " << m.instantiate<sensor_msgs::CameraInfo>()->K[0] << ", " << m.instantiate<sensor_msgs::CameraInfo>()->K[4] << std::endl;
-			oss << "    Principal Point  : " << m.instantiate<sensor_msgs::CameraInfo>()->K[2] << ", " << m.instantiate<sensor_msgs::CameraInfo>()->K[5] << std::endl;
-			oss << "    Coefficients     : "
-				<< m.instantiate<sensor_msgs::CameraInfo>()->D[0] << ", "
-				<< m.instantiate<sensor_msgs::CameraInfo>()->D[1] << ", "
-				<< m.instantiate<sensor_msgs::CameraInfo>()->D[2] << ", "
-				<< m.instantiate<sensor_msgs::CameraInfo>()->D[3] << ", "
-				<< m.instantiate<sensor_msgs::CameraInfo>()->D[4] << std::endl;
-			oss << "    Distortion Model : " << m.instantiate<sensor_msgs::CameraInfo>()->distortion_model << std::endl;
-
-		}
-		if (m.isType<realsense_msgs::ImuIntrinsic>())
-		{
-
-		}
-		if (m.isType<sensor_msgs::Image>())
-		{
-
-		}
-		if (m.isType<sensor_msgs::Imu>())
-		{
-
-		}
-		if (m.isType<sensor_msgs::TimeReference>())
-		{
-			oss << "  Header        : " << m.instantiate<sensor_msgs::TimeReference>()->header << std::endl;
-			oss << "  Source        : " << m.instantiate<sensor_msgs::TimeReference>()->source << std::endl;
-			oss << "  TimeReference : " << m.instantiate<sensor_msgs::TimeReference>()->time_ref << std::endl;
-		}
-		if (m.isType<geometry_msgs::Transform>())
-		{
-			oss << "  Extrinsics : " << std::endl;
-			oss << "    Rotation    : " << m.instantiate<geometry_msgs::Transform>()->rotation << std::endl;
-			oss << "    Translation : " << m.instantiate<geometry_msgs::Transform>()->translation << std::endl;
-		}
-		oss << std::endl;
-	}
-	return oss.str();
-}
-
-std::string InspectBag(const std::string& f)
-{
-	std::ostringstream oss;
-	Bag bag(f);
-
-    View entire_bag_view(bag);
-
-    std::map<std::string, std::vector<std::string>> messages;
-    for (auto&& m : entire_bag_view)
+    if (m.isType<std_msgs::UInt32>())
     {
-        messages[m.getTopic()].push_back(m.getDataType());
+        os << "Value : " << m.instantiate<std_msgs::UInt32>()->data << std::endl;
     }
-    oss << "========================================================\n";
-    oss << std::left << std::setw(20) << "Path: " << bag.getFileName() << std::endl;
-    oss << std::left << std::setw(20) << "Bag Version: " << bag.getMajorVersion() << "." << bag.getMinorVersion() << std::endl;
-	oss << std::left << std::setw(20) << "Duration: " << pretty_time(get_duration(bag)) << std::endl;
-	oss << std::left << std::setw(20) << "Size: " << 1.0 * bag.getSize() / (1024LL * 1024LL) << " MB" << std::endl;
-	oss << std::left << std::setw(20) << "Compression: " << bag.getCompression() << std::endl;
-
-	oss << "Topics:" << std::endl;
-	oss << print_messages_topics(messages);
-	oss << std::endl;
-	oss << print_known_msgs(bag);
-	oss << std::endl << std::endl << std::endl;
-	return oss.str();
-}
-int main(int argc, const char** argv)
-{
-    Window w(100u, 100u, "ROSBAG Inspector");
-
-    w.OnFileDropped = [](std::vector<std::string> files)
+    if (m.isType<std_msgs::String>())
     {
+        os << "Value : " << m.instantiate<std_msgs::String>()->data << std::endl;
+    }
+    if (m.isType<std_msgs::Float32>())
+    {
+        os << "Value : " << m.instantiate<std_msgs::Float32>()->data << std::endl;
+    }
+    if (m.isType<diagnostic_msgs::KeyValue>())
+    {
+        auto kvp = m.instantiate<diagnostic_msgs::KeyValue>();
+        os << "Key   : " << kvp->key << std::endl;
+        os << "Value : " << kvp->value << std::endl;
+    }
+    if (m.isType<realsense_msgs::StreamInfo>())
+    {
+        auto stream_info = m.instantiate<realsense_msgs::StreamInfo>();
+        os << "Encoding       : " << stream_info->encoding << std::endl;
+        os << "FPS            : " << stream_info->fps << std::endl;
+        os << "Is Recommended : " << (stream_info->is_recommended ? "True" : "False") << std::endl;
+    }
+    if (m.isType<sensor_msgs::CameraInfo>())
+    {
+        auto camera_info = m.instantiate<sensor_msgs::CameraInfo>();
+        os << "Width      : " << camera_info->width << std::endl;
+        os << "Height     : " << camera_info->height << std::endl;
+        os << "Intrinsics : " << std::endl;
+        os << "  Focal Point      : " << camera_info->K[0] << ", " << camera_info->K[4] << std::endl;
+        os << "  Principal Point  : " << camera_info->K[2] << ", " << camera_info->K[5] << std::endl;
+        os << "  Coefficients     : "
+           << camera_info->D[0] << ", "
+           << camera_info->D[1] << ", "
+           << camera_info->D[2] << ", "
+           << camera_info->D[3] << ", "
+           << camera_info->D[4] << std::endl;
+        os << "  Distortion Model : " << camera_info->distortion_model << std::endl;
+
+    }
+    if (m.isType<realsense_msgs::ImuIntrinsic>())
+    {
+        
+    }
+    if (m.isType<sensor_msgs::Image>())
+    {
+        auto image = m.instantiate<sensor_msgs::Image>();
+        os << "Encoding     : " << image->encoding << std::endl;
+        os << "Width        : " << image->width << std::endl;
+        os << "Height       : " << image->height << std::endl;
+        os << "Step         : " << image->step << std::endl;
+        os << "Frame Number : " << image->header.seq << std::endl;
+        os << "Timestamp    : " << pretty_time(nanoseconds(image->header.stamp.toNSec())) << std::endl;
+    }
+    if (m.isType<sensor_msgs::Imu>())
+    {
+        
+    }
+    if (m.isType<sensor_msgs::TimeReference>())
+    {
+        auto tr = m.instantiate<sensor_msgs::TimeReference>();
+        os << "  Header        : " << tr->header << std::endl;
+        os << "  Source        : " << tr->source << std::endl;
+        os << "  TimeReference : " << tr->time_ref << std::endl;
+    }
+    if (m.isType<geometry_msgs::Transform>())
+    {
+        os << "  Extrinsics : " << std::endl;
+        auto tf = m.instantiate<geometry_msgs::Transform>();
+        os << "    Rotation    : " << tf->rotation << std::endl;
+        os << "    Translation : " << tf->translation << std::endl;
+    }
+
+    return os;
+}
+
+struct rosbag_content
+{
+    rosbag_content(const std::string& file)
+    {
+        bag.open(file);
+
+        View entire_bag_view(bag);
+
+        for (auto&& m : entire_bag_view)
+        {
+            topics_to_message_types[m.getTopic()].push_back(m.getDataType());
+        }
+
+        path = bag.getFileName();
+        for (auto rit = path.rbegin(); rit != path.rend(); ++rit)
+        {
+            if (*rit == '\\' || *rit == '/')
+                break;
+            file_name += *rit;
+        }
+        std::reverse(file_name.begin(), file_name.end());
+
+        version = rs2::to_string() << bag.getMajorVersion() << "." << bag.getMinorVersion();
+        file_duration = get_duration(bag);
+        size = 1.0 * bag.getSize() / (1024LL * 1024LL);
+        compression_type = bag.getCompression();
+    }
+
+    rosbag_content(const rosbag_content& other)
+    {
+        bag.open(other.path);
+        cache = other.cache;
+        file_duration = other.file_duration;
+        file_name = other.file_name;
+        path = other.path;
+        version = other.version;
+        size = other.size;
+        compression_type = other.compression_type;
+        topics_to_message_types = other.topics_to_message_types;
+    }
+    rosbag_content(rosbag_content&& other)
+    {
+        other.bag.close();
+        bag.open(other.path);
+        cache = other.cache;
+        file_duration = other.file_duration;
+        file_name = other.file_name;
+        path = other.path;
+        version = other.version;
+        size = other.size;
+        compression_type = other.compression_type;
+        topics_to_message_types = other.topics_to_message_types;
+
+        other.cache.clear();
+        other.file_duration = nanoseconds::zero();
+        other.file_name.clear();
+        other.path.clear();
+        other.version.clear();
+        other.size = 0;
+        other.compression_type = static_cast<rosbag::compression::CompressionType>(0);
+        other.topics_to_message_types.clear();
+    }
+    std::string instanciate_and_cache(const rosbag::MessageInstance& m)
+    {
+        auto key = std::make_tuple(m.getCallerId(), m.getDataType(), m.getMD5Sum(), m.getTopic(), m.getTime());
+        if (cache.find(key) != cache.end())
+        {
+            return cache[key];
+        }
+        std::ostringstream oss;
+        oss << m;
+        cache[key] = oss.str();
+        return oss.str();
+    }
+
+    nanoseconds get_duration(const Bag& bag)
+    {
+        View only_frames(bag, [](rosbag::ConnectionInfo const* info) {
+            std::regex exp(R"RRR(/device_\d+/sensor_\d+/.*_\d+/(image|imu))RRR");
+            return std::regex_search(info->topic, exp);
+        });
+        return nanoseconds((only_frames.getEndTime() - only_frames.getBeginTime()).toNSec());
+    }
+
+    std::map<std::tuple<std::string, std::string, std::string, std::string, ros::Time>, std::string> cache;
+    nanoseconds file_duration;
+    std::string file_name;
+    std::string path;
+    std::string version;
+    double size;
+    rosbag::compression::CompressionType compression_type;
+    std::map<std::string, std::vector<std::string>> topics_to_message_types;
+    Bag bag;
+};
+
+class Files
+{
+public:
+    int size() const
+    {
+        return m_files.size();
+    }
+
+    rosbag_content& operator[](int index)
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        return m_files[index];
+    }
+
+    void AddFiles(std::vector<std::string> const& files)
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+
         for (auto&& file : files)
         {
             try
             {
-				std::string file_info = InspectBag(file);
-				std::cout << file_info << std::endl;
-				std::ofstream results(file + ".info");
-				results << file_info;
+                m_files.emplace_back(file);
             }
             catch (const std::exception& e)
             {
-                std::cout << e.what() << std::endl;
+                last_error_message += e.what();
+                last_error_message += "\n";
             }
         }
-    };
-    while (w)
+    }
+    bool has_errors() const
     {
-        draw_text(0, 10, "Drag bag files here...");
+        return !last_error_message.empty();
+    }
+    std::string get_last_error()
+    {
+        return last_error_message;
+    }
+    void clear_errors()
+    {
+        last_error_message.clear();
+    }
+private:
+    std::mutex mutex;
+    std::vector<rosbag_content> m_files;
+    std::string last_error_message;
+};
+
+
+int main(int argc, const char** argv)
+{
+    Files files;
+
+    if (!glfwInit())
+        return -1;
+    
+    auto window = glfwCreateWindow(1280, 720, "RealSense Rosbag Inspector", nullptr, nullptr);
+    glfwMakeContextCurrent(window);
+    glfwSetWindowUserPointer(window, &files);
+    glfwSetDropCallback(window, [](GLFWwindow* w, int count, const char** paths)
+    {
+        auto files = reinterpret_cast<Files*>(glfwGetWindowUserPointer(w));
+
+        if (count <= 0)
+            return;
+
+        files->AddFiles(std::vector<std::string>(paths, paths + count));
+    });
+
+    ImGui_ImplGlfw_Init(window, true);
+
+    std::map<std::string, int> num_topics_to_show;
+    int w, h;
+    while (!glfwWindowShouldClose(window))
+    {
+        glfwPollEvents();
+        glfwGetWindowSize(window, &w, &h);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        ImGui_ImplGlfw_NewFrame(1);
+
+        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoSavedSettings;
+
+        ImGui::SetNextWindowSize({ 1.0f * w, 1.0f * h}, ImGuiSetCond_FirstUseEver);
+        ImGui::SetNextWindowPos({ 0, 0 });
+        ImGui::Begin("Rosbag Inspector", nullptr, flags);
+        if (ImGui::Button(u8"Load File...", { 150, 0}))
+        {
+            auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ROS-bag\0*.bag\0", NULL, NULL);
+            if (ret)
+            {
+                files.AddFiles({ ret });
+            }
+        }
+
+        static int selected = 0;
+        ImGui::BeginChild("loaded files", ImVec2(150, 0), true);
+        for (int i = 0; i < files.size(); i++)
+        {
+            if (ImGui::Selectable(files[i].file_name.c_str(), selected == i))
+            {
+                selected = i;
+                num_topics_to_show.clear();
+            }
+        }
+        ImGui::EndChild();
+        ImGui::SameLine();
+
+        ImGui::BeginGroup();
+        if (files.size() > 0)
+        {
+            auto& bag = files[selected];
+            ImGui::BeginChild("Bag Content", ImVec2(0, 0), false);
+            std::ostringstream oss;
+
+            ImGui::Text("\t%s", std::string(rs2::to_string() << std::left << std::setw(20) << "Path: " << bag.path).c_str());
+            ImGui::Text("\t%s", std::string(rs2::to_string() << std::left << std::setw(20) << "Bag Version: " << bag.version).c_str());
+            ImGui::Text("\t%s", std::string(rs2::to_string() << std::left << std::setw(20) << "Duration: " << pretty_time(bag.file_duration)).c_str());
+            ImGui::Text("\t%s", std::string(rs2::to_string() << std::left << std::setw(20) << "Size: " << bag.size << " MB").c_str());
+            ImGui::Text("\t%s", std::string(rs2::to_string() << std::left << std::setw(20) << "Compression: " << bag.compression_type).c_str());
+
+            if (ImGui::CollapsingHeader("Topics"))
+            {
+                for (auto&& topic_to_message_type : bag.topics_to_message_types)
+                {
+                    std::string topic = topic_to_message_type.first;
+                    std::vector<std::string> messages_types = topic_to_message_type.second;
+                    std::ostringstream oss;
+                    oss << std::left << std::setw(100) << topic
+                        << " " << std::left << std::setw(10) << messages_types.size() 
+                        << std::setw(6) << std::string(" msg") + (messages_types.size() > 1 ? "s" : "")
+                        << ": " << messages_types.front() << std::endl;
+                    std::string line = oss.str();
+                    auto pos = ImGui::GetCursorPos();
+                    ImGui::SetCursorPos({ pos.x + 20, pos.y });
+                    if (ImGui::CollapsingHeader(line.c_str()))
+                    {
+                        View messages(bag.bag, rosbag::TopicQuery(topic));
+                        int count = 0;
+                        num_topics_to_show[topic] = std::max(num_topics_to_show[topic], 10);
+                        int max = num_topics_to_show[topic];
+                        for (auto&& m : messages)
+                        {
+                            count++;
+                            ImGui::Columns(2, "Message");
+                            ImGui::Separator();
+                            ImGui::Text("Timestamp"); ImGui::NextColumn();
+                            ImGui::Text("Content"); ImGui::NextColumn();
+                            ImGui::Separator();
+                            ImGui::Text(pretty_time(nanoseconds(m.getTime().toNSec())).c_str()); ImGui::NextColumn();
+                            ImGui::Text(bag.instanciate_and_cache(m).c_str());
+                            ImGui::Columns(1);
+                            ImGui::Separator();
+                            if (count >= max)
+                            {
+                                int left = messages.size() - max;
+                                if (left > 0)
+                                {
+                                    ImGui::Text("... %d more messages", left); 
+                                    ImGui::SameLine();
+                                    std::string label = rs2::to_string() << "Show More ##" << topic;
+                                    if (ImGui::Button(label.c_str()))
+                                    {
+                                        num_topics_to_show[topic] += 10;
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            ImGui::EndChild();
+        }
+        ImGui::EndGroup();
+        ImGui::End();
+
+        if (files.has_errors())
+        {
+            ImGui::OpenPopup("Error");
+            if (ImGui::BeginPopupModal("Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                std::string msg = rs2::to_string() << "Error: " << files.get_last_error();
+                ImGui::Text(msg.c_str());
+                ImGui::Separator();
+
+                if (ImGui::Button("OK", ImVec2(120, 0))) 
+                { 
+                    ImGui::CloseCurrentPopup();
+                    files.clear_errors();
+                }
+                ImGui::EndPopup();
+            }
+        }
+
+        int display_w, display_h;
+        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
+        glClearColor(0,0,0,1);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ImGui::Render();
+        glfwSwapBuffers(window);
         std::this_thread::sleep_for(milliseconds(10));
     }
+
+    ImGui_ImplGlfw_Shutdown();
+    glfwTerminate();
     return 0;
 }
+
+#ifdef WIN32
+int CALLBACK WinMain(
+    _In_ HINSTANCE hInstance,
+    _In_ HINSTANCE hPrevInstance,
+    _In_ LPSTR     lpCmdLine,
+    _In_ int       nCmdShow
+
+) {
+    main(0, nullptr);
+}
+#endif

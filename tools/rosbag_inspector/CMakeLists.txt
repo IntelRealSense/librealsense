@@ -1,3 +1,4 @@
+# ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 
 project(RealsenseToolsRosbagInspector)
@@ -15,65 +16,56 @@ elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
+if(UNIX)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+
+    include_directories(${GTK3_INCLUDE_DIRS})
+    link_directories(${GTK3_LIBRARY_DIRS})
+    add_definitions(${GTK3_CFLAGS_OTHER})
+
+    add_definitions(-DNOC_FILE_DIALOG_GTK)
+elseif(WIN32)
+    add_definitions(-DNOC_FILE_DIALOG_WIN32)
+elseif(APPLE)
+    add_definitions(-DNOC_FILE_DIALOG_OSX)
+endif()
+
 if(BUILD_GRAPHICAL_EXAMPLES)
-    find_package(OpenGL REQUIRED)
-    set(DEPENDENCIES realsense2 ${OPENGL_LIBRARIES})
+
+    set(RS_ROSBAG_INSPECTOR_CPP
+            rs-rosbag-inspector.cpp
+            ../../third-party/imgui/imgui.cpp
+            ../../third-party/imgui/imgui_draw.cpp
+            ../../third-party/imgui/imgui_impl_glfw.cpp
+            ../../third-party/imgui/imgui-fonts-karla.hpp
+            ../../third-party/imgui/imgui-fonts-fontawesome.hpp
+            ../../common/rendering.h
+            ../../common/model-views.h
+            ../../common/model-views.cpp
+        )
 
     if(WIN32)
-        list(APPEND DEPENDENCIES glfw3)
+        add_executable(rs-rosbag-inspector WIN32 ${RS_ROSBAG_INSPECTOR_CPP})
+
+        include_directories(rs-rosbag-inspector ../../third-party/imgui ../../common ../../third-party ${CMAKE_CURRENT_SOURCE_DIR}/res/)
     else()
-        # Find glfw header
-        find_path(GLFW_INCLUDE_DIR NAMES GLFW/glfw3.h
-            PATHS /usr/X11R6/include
-                  /usr/include/X11
-                  /opt/graphics/OpenGL/include
-                  /opt/graphics/OpenGL/contrib/libglfw
-                  /usr/local/include
-                  /usr/include/GL
-                  /usr/include
-        )
-        # Find glfw library
-        find_library(GLFW_LIBRARIES NAMES glfw glfw3
-                PATHS /usr/lib64
-                      /usr/lib
-                      /usr/lib/${CMAKE_LIBRARY_ARCHITECTURE}
-                      /usr/local/lib64
-                      /usr/local/lib
-                      /usr/local/lib/${CMAKE_LIBRARY_ARCHITECTURE}
-                      /usr/X11R6/lib
-        )
-        list(APPEND DEPENDENCIES m ${GLFW_LIBRARIES} ${LIBUSB1_LIBRARIES})
-        include_directories(${GLFW_INCLUDE_DIR})
+        add_executable(rs-rosbag-inspector ${RS_ROSBAG_INSPECTOR_CPP})
+        include_directories(rs-rosbag-inspector ../../third-party/imgui ../../common ../../third-party)
     endif()
-else()
-    set(DEPENDENCIES realsense2)
-    if(NOT WIN32)
-        list(APPEND DEPENDENCIES m ${LIBUSB1_LIBRARIES})
-    endif()
+
+    target_link_libraries(rs-rosbag-inspector ${DEPENDENCIES} ${GTK3_LIBRARIES})
+
+    set_target_properties (rs-rosbag-inspector PROPERTIES
+        FOLDER Tools
+    )
+
+    install(
+        TARGETS
+
+        rs-rosbag-inspector
+
+        RUNTIME DESTINATION
+        ${CMAKE_INSTALL_PREFIX}/bin
+    )
 endif()
-
-# terminal
-add_executable(rs-rosbag-inspector rs-rosbag-inspector.cpp)
-if(WIN32)
-    target_link_libraries(rs-rosbag-inspector ${DEPENDENCIES})
-else()
-    target_link_libraries(rs-rosbag-inspector -lpthread ${DEPENDENCIES})
-endif()
-
-include_directories(rs-rosbag-inspector 
-				    ../../common 
-					../../third-party)
-
-set_target_properties (
-	rs-rosbag-inspector 
-	PROPERTIES
-    FOLDER Tools
-)
-
-install(
-    TARGETS
-    rs-rosbag-inspector
-    RUNTIME DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/bin
-)
-
