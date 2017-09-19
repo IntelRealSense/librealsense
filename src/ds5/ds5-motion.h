@@ -19,7 +19,10 @@ namespace librealsense
 
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
 
-        std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(uvc_sensor* uvc_ep, const platform::extension_unit* fisheye_xu);
+        std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(uvc_sensor* uvc_ep,
+                                                                                const platform::extension_unit* fisheye_xu);
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
     private:
         friend class ds5_fisheye_sensor;

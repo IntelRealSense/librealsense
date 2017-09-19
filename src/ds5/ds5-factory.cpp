@@ -34,6 +34,8 @@ namespace librealsense
               ds5_device(ctx, group),
               ds5_rolling_shutter(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     };
 
     // ASR
@@ -48,6 +50,8 @@ namespace librealsense
               ds5_rolling_shutter(ctx, group),
               ds5_active(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     };
 
     // ASRC
@@ -65,6 +69,8 @@ namespace librealsense
               ds5_active(ctx, group),
               ds5_color(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     };
 
     // PWGT
@@ -77,6 +83,8 @@ namespace librealsense
               ds5_device(ctx, group),
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     };
 
     // PWG
@@ -88,6 +96,8 @@ namespace librealsense
             : device(ctx, group),
               ds5_device(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     };
 
     // AWG
@@ -101,6 +111,7 @@ namespace librealsense
               ds5_active(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
 
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     };
 
     // AWGT
@@ -116,6 +127,8 @@ namespace librealsense
               ds5_active(ctx, group),
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     };
 
     // AWGC
@@ -151,6 +164,8 @@ namespace librealsense
               ds5_color(ctx,  group),
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const;
     };
 
     std::shared_ptr<device_interface> ds5_info::create(std::shared_ptr<context> ctx) const
@@ -234,28 +249,61 @@ namespace librealsense
 
         return results;
     }
+
+
+    inline std::shared_ptr<matcher> create_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
+    {
+        return std::make_shared<timestamp_composite_matcher>(matchers);
+    }
+
+    std::shared_ptr<matcher> rs400_device::create_matcher(const frame_holder& frame) const
+    {
+        return create_composite_matcher({ds5_device::create_matcher(frame)});
+    }
+
+    std::shared_ptr<matcher> rs410_device::create_matcher(const frame_holder& frame) const
+    {
+        return create_composite_matcher({ds5_device::create_matcher(frame)});
+    }
+
+    std::shared_ptr<matcher> rs415_device::create_matcher(const frame_holder& frame) const
+    {
+        return create_composite_matcher({ds5_device::create_matcher(frame),
+                                         ds5_color::create_matcher(frame)});
+    }
+
+    std::shared_ptr<matcher> rs420_mm_device::create_matcher(const frame_holder& frame) const
+    {
+        return create_composite_matcher({ds5_device::create_matcher(frame),
+                                         ds5_motion::create_matcher(frame)});
+    }
+
+    std::shared_ptr<matcher> rs420_device::create_matcher(const frame_holder& frame) const
+    {
+        return create_composite_matcher({ds5_device::create_matcher(frame)});
+    }
+
+    std::shared_ptr<matcher> rs430_device::create_matcher(const frame_holder& frame) const
+    {
+        return create_composite_matcher({ds5_device::create_matcher(frame)});
+    }
+
+    std::shared_ptr<matcher> rs430_mm_device::create_matcher(const frame_holder& frame) const
+    {
+        return create_composite_matcher({ds5_device::create_matcher(frame),
+                                         ds5_motion::create_matcher(frame)});
+    }
+
     std::shared_ptr<matcher> rs435_device::create_matcher(const frame_holder& frame) const
     {
-        if(!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
-        {
-            return device::create_matcher(frame);
-        }
+        return create_composite_matcher({ds5_device::create_matcher(frame),
+                                         ds5_color::create_matcher(frame)});
+    }
 
-
-
-        std::vector<std::shared_ptr<matcher>> depth_matchers;
-
-        std::set<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get()};
-
-        for (auto s : streams)
-            depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type()));
-
-        std::vector<std::shared_ptr<matcher>> matchers;
-        matchers.push_back( std::make_shared<frame_number_composite_matcher>(depth_matchers));
-
-        auto color_matcher = std::make_shared<identity_matcher>( _color_stream->get_unique_id(), _color_stream->get_stream_type());
-        matchers.push_back(color_matcher);
-
-        return std::make_shared<timestamp_composite_matcher>(matchers);
+    std::shared_ptr<matcher> rs430_rgb_mm_device::create_matcher(const frame_holder& frame) const
+    {
+        return create_composite_matcher({ds5_device::create_matcher(frame),
+                                         ds5_color::create_matcher(frame),
+                                         ds5_motion::create_matcher(frame)});
     }
 }

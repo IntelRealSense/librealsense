@@ -52,7 +52,6 @@ namespace librealsense
             for (unsigned int i = 0; i < _dev->get_sensors_count(); i++)
             {
                 auto&& sensor = _dev->get_sensor(i);
-
                 auto profiles = sensor.get_stream_profiles();
 
                 for (auto p : profiles)
@@ -66,9 +65,21 @@ namespace librealsense
                 _sensors.push_back(&sensor);
             }
 
+            // Workaround - default profiles that holds color stream shouldn't supposed to provide infrared either
+            if (default_profiles.end() != std::find_if(default_profiles.begin(),
+                                                       default_profiles.end(),
+                                                       [](std::shared_ptr<stream_profile_interface> p)
+                                                       {return p.get()->get_stream_type() == RS2_STREAM_COLOR; }))
+            {
+                auto it = std::find_if(default_profiles.begin(), default_profiles.end(), [](std::shared_ptr<stream_profile_interface> p){return p.get()->get_stream_type() == RS2_STREAM_INFRARED; });
+                if (it != default_profiles.end())
+                {
+                    default_profiles.erase(it);
+                }
+            }
+
             for (auto prof : default_profiles)
             {
-
                 auto p = dynamic_cast<video_stream_profile*>(prof.get());
                 if (!p)
                 {
@@ -77,7 +88,7 @@ namespace librealsense
                 enable(p->get_stream_type(), p->get_stream_index(), p->get_width(), p->get_height(), p->get_format(), p->get_framerate());
             }
         }
-        
+
         _commited = true;
     }
 
