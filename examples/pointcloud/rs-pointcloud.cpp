@@ -113,6 +113,9 @@ void register_glfw_callbacks(window& app, state& app_state)
 // Handles all the OpenGL calls needed to display the point cloud
 void draw_pointcloud(window& app, state& app_state, rs2::points& points)
 {
+    if (!app || !points)
+        return;
+
     // OpenGL commands that prep screen for the pointcloud
     glPopMatrix();
     glPushAttrib(GL_ALL_ATTRIB_BITS);
