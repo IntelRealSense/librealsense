@@ -8,6 +8,7 @@
 #include <regex>
 #include <thread>
 
+#include <imgui_internal.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -18,6 +19,8 @@
 #define ARCBALL_CAMERA_IMPLEMENTATION
 #include <arcball_camera.h>
 
+using namespace rs2;
+using namespace rs400;
 
 void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
 {
@@ -3155,8 +3158,7 @@ namespace rs2
         return device_names;
     }
 
-    void device_model::draw_advanced_mode_tab(device& dev,
-        std::vector<std::string>& restarting_info)
+    void device_model::draw_advanced_mode_tab()
     {
         using namespace rs400;
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.9f, 0.9f, 0.9f, 1 });
@@ -3181,7 +3183,7 @@ namespace rs2
                             //if (yes_no_dialog()) // TODO
                             //{
                             advanced.toggle_advanced_mode(false);
-                            restarting_info = get_device_info(dev, false);
+                            restarting_device_info = get_device_info(dev, false);
                             //}
                         }
                         if (ImGui::IsItemHovered())
@@ -3197,7 +3199,7 @@ namespace rs2
                             //if (yes_no_dialog()) // TODO
                             //{
                             advanced.toggle_advanced_mode(true);
-                            restarting_info = get_device_info(dev, false);
+                            restarting_device_info = get_device_info(dev, false);
                             //}
                         }
                         if (ImGui::IsItemHovered())
@@ -3217,6 +3219,339 @@ namespace rs2
         }
 
         ImGui::PopStyleColor();
+    }
+
+    void device_model::draw_controls(float panel_width, float panel_height,
+        ImFont *font1, ImFont *font2,
+        const mouse_info &mouse,
+        std::string& error_message,
+        device_model* device_to_remove,
+        viewer_model& viewer, float windows_width,
+        bool& anything_started, bool update_read_only_options,
+        std::map<subdevice_model*, float>& model_to_y,
+        std::map<subdevice_model*, float>& model_to_abs_y)
+    {
+        auto header_h = panel_height;
+        if (dev.is<playback>()) header_h += 15;
+
+        ImGui::PushFont(font1);
+        auto pos = ImGui::GetCursorScreenPos();
+        ImGui::GetWindowDrawList()->AddRectFilled(pos, { pos.x + panel_width, pos.y + header_h }, ImColor(sensor_header_light_blue));
+        ImGui::GetWindowDrawList()->AddLine({ pos.x,pos.y }, { pos.x + panel_width,pos.y }, ImColor(black));
+
+        pos = ImGui::GetCursorPos();
+        ImGui::PushStyleColor(ImGuiCol_Button, sensor_header_light_blue);
+        ImGui::SetCursorPos({ 8, pos.y + 17 });
+
+        std::string label{ "" };
+        if (is_recording)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, redish);
+            label = to_string() << u8"\uf111";
+            ImGui::Text("%s", label.c_str());
+            ImGui::PopStyleColor();
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Recording");
+            }
+        }
+        else if (dev.is<playback>())
+        {
+            label = to_string() << u8" \uf008";
+            ImGui::Text("%s", label.c_str());
+        }
+        else
+        {
+            label = to_string() << u8" \uf03d";
+            ImGui::Text("%s", label.c_str());
+        }
+        ImGui::SameLine();
+
+        label = to_string() << dev.get_info(RS2_CAMERA_INFO_NAME);
+        ImGui::Text("%s", label.c_str());
+
+        ImGui::Columns(1);
+        ImGui::SetCursorPos({ panel_width - 50, pos.y + 8 + (header_h - panel_height) / 2 });
+
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+
+        ImGui::PushFont(font2);
+        label = to_string() << "device_menu" << id;
+        std::string settings_button_name = to_string() << u8"\uf0c9##" << id;
+
+        if (ImGui::Button(settings_button_name.c_str(), { 33,35 }))
+            ImGui::OpenPopup(label.c_str());
+        ImGui::PopFont();
+
+        ImGui::PushFont(font1);
+
+        if (ImGui::BeginPopup(label.c_str()))
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
+            if (!show_device_info && ImGui::Selectable("Show Device Details..."))
+            {
+                show_device_info = true;
+            }
+            if (show_device_info && ImGui::Selectable("Hide Device Details..."))
+            {
+                show_device_info = false;
+            }
+            if (!is_recording && !dev.is<playback>())
+            {
+                bool is_device_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& s) { return s->streaming; });
+                if (ImGui::Selectable("Record to File...", false, is_device_streaming ? ImGuiSelectableFlags_Disabled : 0))
+                {
+                    auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "ROS-bag\0*.bag\0", NULL, NULL);
+
+                    if (ret)
+                    {
+                        std::string filename = ret;
+                        if (!ends_with(to_lower(filename), ".bag")) filename += ".bag";
+
+                        start_recording(filename, error_message);
+                    }
+                }
+                if (is_device_streaming)
+                {
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Stop streaming to enable recording");
+                }
+            }
+
+            if (auto adv = dev.as<advanced_mode>())
+            {
+                try
+                {
+                    ImGui::Separator();
+
+                    if (ImGui::Selectable("Load Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                    {
+                        auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+                        if (ret)
+                        {
+                            std::ifstream t(ret);
+                            std::string str((std::istreambuf_iterator<char>(t)),
+                                std::istreambuf_iterator<char>());
+
+                            adv.load_json(str);
+                            get_curr_advanced_controls = true;
+                        }
+                    }
+
+                    if (ImGui::Selectable("Save Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                    {
+                        auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+
+                        if (ret)
+                        {
+                            std::string filename = ret;
+                            if (!ends_with(to_lower(filename), ".json")) filename += ".json";
+
+                            std::ofstream out(filename);
+                            out << adv.serialize_json();
+                            out.close();
+                        }
+                    }
+                }
+                catch (const error& e)
+                {
+                    error_message = error_to_string(e);
+                }
+                catch (const std::exception& e)
+                {
+                    error_message = e.what();
+                }
+            }
+
+            ImGui::Separator();
+
+            if (ImGui::Selectable("Hardware Reset"))
+            {
+                try
+                {
+                    restarting_device_info = get_device_info(dev, false);
+                    dev.hardware_reset();
+                }
+                catch (const error& e)
+                {
+                    error_message = error_to_string(e);
+                }
+                catch (const std::exception& e)
+                {
+                    error_message = e.what();
+                }
+            }
+
+            ImGui::Separator();
+
+            if (ImGui::Selectable("Remove Source"))
+            {
+                for (auto&& sub : subdevices)
+                {
+                    if (sub->streaming)
+                        sub->stop();
+                }
+                device_to_remove = this;
+            }
+
+            ImGui::PopStyleColor();
+            ImGui::EndPopup();
+        }
+        ImGui::PopFont();
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor(4);
+
+        ImGui::SetCursorPos({ 33, pos.y + panel_height - 9 });
+        ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
+
+        int playback_control_panel_height = 0;
+        if (auto p = dev.as<playback>())
+        {
+            auto full_path = p.file_name();
+            auto filename = get_file_name(full_path);
+
+            ImGui::Text("File: \"%s\"", filename.c_str());
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", full_path.c_str());
+
+            auto playback_panel_pos = ImVec2{ 0, pos.y + panel_height + 18 };
+            ImGui::SetCursorPos(playback_panel_pos);
+            playback_panel_pos.y = draw_playback_panel(font1, viewer);
+            playback_control_panel_height += playback_panel_pos.y;
+        }
+
+        ImGui::SetCursorPos({ 0, pos.y + header_h + playback_control_panel_height });
+        pos = ImGui::GetCursorPos();
+
+        int info_control_panel_height = 0;
+        if (show_device_info)
+        {
+            int line_h = 22;
+            info_control_panel_height = infos.size() * line_h + 5;
+
+            const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
+            ImGui::GetWindowDrawList()->AddRectFilled(abs_pos,
+            { abs_pos.x + panel_width, abs_pos.y + info_control_panel_height },
+                ImColor(device_info_color));
+            ImGui::GetWindowDrawList()->AddLine({ abs_pos.x, abs_pos.y - 1 },
+            { abs_pos.x + panel_width, abs_pos.y - 1 },
+                ImColor(black), 1.f);
+
+            for (auto&& pair : infos)
+            {
+                auto rc = ImGui::GetCursorPos();
+                ImGui::SetCursorPos({ rc.x + 12, rc.y + 4 });
+                ImGui::Text("%s:", pair.first.c_str()); ImGui::SameLine();
+
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, device_info_color);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::SetCursorPos({ rc.x + 130, rc.y + 1 });
+                label = to_string() << "##" << id << " " << pair.first;
+                ImGui::InputText(label.c_str(),
+                    (char*)pair.second.data(),
+                    pair.second.size() + 1,
+                    ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+                ImGui::PopStyleColor(3);
+
+                ImGui::SetCursorPos({ rc.x, rc.y + line_h });
+            }
+        }
+
+        ImGui::SetCursorPos({ 0, pos.y + info_control_panel_height });
+        ImGui::PopStyleColor(2);
+        ImGui::PopFont();
+
+        auto sensor_top_y = ImGui::GetCursorPosY();
+        ImGui::SetContentRegionWidth(windows_width - 36);
+
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
+        ImGui::PushFont(font1);
+
+        // Draw menu foreach subdevice with its properties
+        for (auto&& sub : subdevices)
+        {
+            const ImVec2 pos = ImGui::GetCursorPos();
+            const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
+            model_to_y[sub.get()] = pos.y;
+            model_to_abs_y[sub.get()] = abs_pos.y;
+            ImGui::GetWindowDrawList()->AddLine({ abs_pos.x, abs_pos.y - 1 },
+            { abs_pos.x + panel_width, abs_pos.y - 1 },
+                ImColor(black), 1.f);
+
+            label = to_string() << sub->s.get_info(RS2_CAMERA_INFO_NAME) << "##" << id;
+            ImGui::PushStyleColor(ImGuiCol_Header, sensor_header_light_blue);
+
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 10, 10 });
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, { 0, 0 });
+            if (ImGui::TreeNode(label.c_str()))
+            {
+                anything_started = true;
+                ImGui::PopStyleVar();
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
+
+                sub->draw_stream_selection();
+
+                static const std::vector<rs2_option> drawing_order{
+                    RS2_OPTION_VISUAL_PRESET,
+                    RS2_OPTION_EMITTER_ENABLED,
+                    RS2_OPTION_ENABLE_AUTO_EXPOSURE };
+
+                for (auto& opt : drawing_order)
+                {
+                    if (sub->draw_option(opt, update_read_only_options, error_message, viewer.not_model))
+                    {
+                        get_curr_advanced_controls = true;
+                    }
+                }
+
+                label = to_string() << "Controls ##" << sub->s.get_info(RS2_CAMERA_INFO_NAME) << "," << id;;
+                if (ImGui::TreeNode(label.c_str()))
+                {
+                    for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+                    {
+                        auto opt = static_cast<rs2_option>(i);
+                        if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
+                        {
+                            if (sub->draw_option(opt, update_read_only_options, error_message, viewer.not_model))
+                            {
+                                get_curr_advanced_controls = true;
+                            }
+                        }
+                    }
+
+                    if (auto ds = sub->s.as<depth_sensor>())
+                        viewer.draw_histogram_options(ds.get_depth_scale(), *sub);
+
+                    ImGui::TreePop();
+                }
+
+                if (dev.is<advanced_mode>() && sub->s.is<depth_sensor>())
+                    draw_advanced_mode_tab();
+
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+                ImGui::TreePop();
+            }
+
+            ImGui::PopStyleVar();
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor();
+        }
+
+        for (auto&& sub : subdevices)
+        {
+            sub->update(error_message, viewer.not_model);
+        }
+
+        ImGui::PopStyleColor(2);
+        ImGui::PopFont();
     }
 
     std::map<int, rect> viewer_model::get_interpolated_layout(const std::map<int, rect>& l)

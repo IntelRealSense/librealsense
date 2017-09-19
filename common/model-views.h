@@ -308,8 +308,16 @@ namespace rs2
         void pause_record();
         void resume_record();
         int draw_playback_panel(ImFont* font, viewer_model& view);
-        void draw_advanced_mode_tab(device& dev, std::vector<std::string>& restarting_info);
-
+        void draw_advanced_mode_tab();
+        void draw_controls(float panel_width, float panel_height, // evgeni - cleanup unused
+            ImFont *font1, ImFont *font2,
+            const mouse_info &mouse,
+            std::string& error_message,
+            device_model* device_to_remove,
+            viewer_model& viewer, float windows_width,
+            bool& anything_started, bool update_read_only_options,
+            std::map<subdevice_model*, float>& model_to_y,
+            std::map<subdevice_model*, float>& model_to_abs_y);
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
 
         bool metadata_supported = false;
@@ -324,6 +332,7 @@ namespace rs2
         bool show_device_info = false;
 
         std::vector<std::pair<std::string, std::string>> infos;
+        std::vector<std::string> restarting_device_info;
     private:
         int draw_seek_bar();
         int draw_playback_controls(ImFont* font, viewer_model& view);

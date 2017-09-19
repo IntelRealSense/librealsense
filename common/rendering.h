@@ -292,8 +292,8 @@ namespace rs2
                 H *= scale;
             }
 
-            return{ floor(x + floor(w - W) / 2), 
-                    floor(y + floor(h - H) / 2), 
+            return{ float(floor(x + floor(w - W) / 2)),
+                    float(floor(y + floor(h - H) / 2)),
                     W, H };
         }
 

@@ -217,7 +217,7 @@ namespace rs2_depth_quality
                 if (depth_raw)
                 {
                     // units is float
-                    float pixel[2] = { x, y };
+                    float pixel[2] = { float(x), float(y) };
                     float point[3];
                     auto distance = depth_raw * units;
 

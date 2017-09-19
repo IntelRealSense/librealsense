@@ -13,8 +13,12 @@ namespace rs2_depth_quality
     {
     public:
         const static int panel_width = 340;
-        const static int panel_height = 50;
+        const static int panel_height = 40;
         const static int default_log_h = 80;
+        // Flags for pop-up window - no window resize, move or collaps
+        const static auto imgui_flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoSavedSettings;
     };
 
     class dq_viewer_model : public rs2::viewer_model
@@ -25,9 +29,10 @@ namespace rs2_depth_quality
         std::function<void(double, double)> on_mouse_move = [](double, double) {};
         std::function<void(int)>            on_key_release = [](int) {};
 
-        dq_viewer_model(int width, int height, const char* title)
+        dq_viewer_model(int width, int height, const char* title, std::shared_ptr<rs2::device_model> dev_mod)
             : _win(nullptr), _width(width), _height(height), _output_height(0),
-            _font_14(nullptr), _font_18(nullptr), error_message("")
+            _font_14(nullptr), _font_18(nullptr),
+            error_message(""), _dev_model(dev_mod)
         {
             glfwInit();
             _win = glfwCreateWindow(width, height, title, nullptr, nullptr);
@@ -86,7 +91,14 @@ namespace rs2_depth_quality
                 // Render Depth and ROI
                 render_viewports();
 
+                // Render device options
+                render_control_panel();
+
+                // Render calculated metrics
+                render_metrics_panel();
+
                 finalize_frame();
+
             }
             catch (const rs2::error& e)
             {
@@ -96,7 +108,6 @@ namespace rs2_depth_quality
             {
                 error_message = e.what();
             }
-            // Render calculated metrics
             return res;
         }
 
@@ -109,8 +120,6 @@ namespace rs2_depth_quality
         }
 
         operator GLFWwindow*() { return _win; }
-
-    private:
 
         void commence_frame()
         {
@@ -153,8 +162,38 @@ namespace rs2_depth_quality
             this->_mouse, error_message);
         }
 
-        void render_device_panel()
+        void render_control_panel()
         {
+            // Populate device controls
+            auto model_handle = _dev_model.lock();
+            if (model_handle)
+            {
+                // Set window position and size
+                ImGui::SetNextWindowPos({ 0.f, (float)viewer_ui_traits::panel_height });
+                ImGui::SetNextWindowSize({ (float)viewer_ui_traits::panel_width, float(_height - viewer_ui_traits::panel_height) });
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, sensor_bg);
+
+                ImGui::Begin("Control Panel", nullptr, viewer_ui_traits::imgui_flags | ImGuiWindowFlags_AlwaysVerticalScrollbar);
+
+                // Stack to reconfigure. Evgeni
+                rs2::device_model* device_to_remove = nullptr;
+                bool anything_started=false, update_read_only_options=false;    // TODO - use update_read_only_options after initial period
+                std::map<rs2::subdevice_model*, float> model_to_y;
+                std::map<rs2::subdevice_model*, float> model_to_abs_y;
+                auto windows_width = ImGui::GetContentRegionMax().x;
+
+                model_handle->draw_controls(viewer_ui_traits::panel_width, viewer_ui_traits::panel_height,
+                    _font_14, _font_18, _mouse,
+                        error_message, device_to_remove, *this, windows_width,
+                        anything_started, update_read_only_options,
+                        model_to_y, model_to_abs_y);
+
+                ImGui::End();
+
+                ImGui::PopStyleColor();
+                ImGui::PopStyleVar();
+            }
         }
 
         void render_metrics_panel()
@@ -169,13 +208,16 @@ namespace rs2_depth_quality
             _mouse.mouse_wheel = 0;
         }
 
-        GLFWwindow* _win;
-        int _width, _height, _output_height;
-        rs2::rect  _viewer_rect;
+        std::weak_ptr<rs2::device_model> _dev_model;
+    private:
 
-        ImFont *_font_14, *_font_18;
-        rs2::mouse_info  _mouse;
-        std::string error_message;
+        GLFWwindow          *_win;
+        int                 _width, _height, _output_height;
+        rs2::rect           _viewer_rect;
+
+        ImFont              *_font_14, *_font_18;
+        rs2::mouse_info             _mouse;
+        std::string                 error_message;
 
     };
 }

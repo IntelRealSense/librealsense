@@ -34,8 +34,6 @@ endif()
 if(BUILD_GRAPHICAL_EXAMPLES)
     set(RS_VIEWER_CPP
             ./rs-depth-quality.cpp
-            ./depth_quality_states.cpp
-            ./depth_quality_states.h
             ./depth_quality_viewer.h
             ./depth_quality_model.h
             ./depth_quality_model.cpp
@@ -50,10 +48,10 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         )
 
     add_executable(rs-depth-quality ${RS_VIEWER_CPP})
-    target_link_libraries(rs-depth-quality ${DEPENDENCIES})
+    target_link_libraries(rs-depth-quality ${DEPENDENCIES} ${GTK3_LIBRARIES})
     include_directories(rs-depth-quality ../../common  ../../third-party  ../../third-party/imgui  ../../third-party/tclap/include)
     set_target_properties (rs-depth-quality PROPERTIES
-        FOLDER "Tools"
+        FOLDER Tools
     )
 
     install(

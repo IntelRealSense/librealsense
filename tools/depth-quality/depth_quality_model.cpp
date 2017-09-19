@@ -9,22 +9,23 @@ namespace rs2_depth_quality
     {
         if (dq->_device_model.get())
             dq->set_state(e_states::e_execute);
-        std::cout << __FUNCTION__ << std::endl;
+        //std::cout << __FUNCTION__ << std::endl;
     }
 
     void dq_logic_model::configure_cam::update(dq_logic_model *dq)
     {
-        std::cout << __FUNCTION__ << std::endl;
+        //std::cout << __FUNCTION__ << std::endl;
     }
 
     void dq_logic_model::generate_metrics::update(dq_logic_model *dq)
     {
-        std::cout << __FUNCTION__ << std::endl;
+        //std::cout << __FUNCTION__ << std::endl;
     }
 
-    void dq_logic_model::use_device(rs2::device &dev)
+    void dq_logic_model::use_device(rs2::device dev)
     {
-        _device_model = std::unique_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model));
+        _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model));
+        _viewer_model._dev_model = _device_model;
 
         // Connect the device_model to the viewer_model
         for (auto&& sub : _device_model.get()->subdevices)

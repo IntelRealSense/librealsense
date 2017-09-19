@@ -15,7 +15,7 @@ namespace rs2_depth_quality
         dq_logic_model() : _cur_state(nullptr),
             _device_model(nullptr),
             _calc_queue(1),
-            _viewer_model(1280, 720, "Depth Quality Tool")
+            _viewer_model(1280, 720, "Depth Quality Tool", _device_model)
         {
             _states.push_back(new acquire_cam);
             _states.push_back(new configure_cam);
@@ -38,19 +38,13 @@ namespace rs2_depth_quality
             _cur_state->update(this);
 
             // Update rendering subsystem
-            if (!_viewer_model) res = false;
-
-            //Render internal models
-            std::cout << " render GUIS" << std::endl;
-            //app_model.update();
-            //metrics.render();
-            ///dev_model.render()
-            // stream.render();
+            if (!_viewer_model)
+                res = false;
 
             return res;
         }
 
-        void use_device(rs2::device &dev);
+        void use_device(rs2::device dev);
 
         void enqueue_for_processing(rs2::frame &depth_frame)
         {
@@ -64,7 +58,7 @@ namespace rs2_depth_quality
         class app_state
         {
         public:
-            virtual void update(dq_logic_model *dq) abstract;
+            virtual void update(dq_logic_model *dq) = 0;
         };
 
         class acquire_cam : public app_state
@@ -80,7 +74,6 @@ namespace rs2_depth_quality
         class generate_metrics : public app_state
         {
             void update(dq_logic_model *dq);
-            void set_state(e_states state);
         };
 
         void set_state(e_states state) { _cur_state = _states[state]; };
@@ -88,9 +81,8 @@ namespace rs2_depth_quality
         app_state*                  _cur_state;
         std::vector<app_state*>     _states;
 
-        std::unique_ptr<device_model>   _device_model;
+        std::shared_ptr<device_model>   _device_model;
         dq_viewer_model                 _viewer_model;
-        std::vector<stream_model>       _streams_models;
         frame_queue                     _calc_queue;
         std::mutex                      _m;
 

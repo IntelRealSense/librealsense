@@ -68,7 +68,9 @@ int main(int argc, char * argv[])
 
     rs2::pipeline pipe;
 
-    // Blocks till a valid device is found
+    pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
+
+    // Wait till a valid device is found
     pipe.start();
 
     // Select the depth camera to work with
