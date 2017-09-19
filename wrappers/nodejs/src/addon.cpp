@@ -1794,24 +1794,6 @@ class RSPointcloud : public Nan::ObjectWrap {
     exports->Set(Nan::New("RSPointcloud").ToLocalChecked(), tpl->GetFunction());
   }
 
-  static v8::Local<v8::Object> NewInstance(rs2_processing_block* pc) {
-    Nan::EscapableHandleScope scope;
-
-    v8::Local<v8::Function> cons = Nan::New<v8::Function>(constructor);
-    v8::Local<v8::Context> context =
-        v8::Isolate::GetCurrent()->GetCurrentContext();
-
-    v8::Local<v8::Object> instance =
-        cons->NewInstance(context, 0, nullptr).ToLocalChecked();
-
-    auto me = Nan::ObjectWrap::Unwrap<RSPointcloud>(instance);
-    me->pc = pc;
-    auto callback = new FrameCallbackForFrameQueue(me->frame_queue);
-    rs2_start_processing(me->pc, callback, &me->error);
-
-    return scope.Escape(instance);
-  }
-
  private:
   RSPointcloud() {
     error = nullptr;
@@ -1843,6 +1825,7 @@ class RSPointcloud : public Nan::ObjectWrap {
   static void New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     if (info.IsConstructCall()) {
       RSPointcloud* obj = new RSPointcloud();
+      obj->pc = rs2_create_pointcloud(&obj->error);
       obj->Wrap(info.This());
       info.GetReturnValue().Set(info.This());
     }
@@ -1922,6 +1905,7 @@ class RSContext : public Nan::ObjectWrap {
     Nan::SetPrototypeMethod(tpl, "setDeviceChangedCallback",
         SetDeviceChangedCallback);
     Nan::SetPrototypeMethod(tpl, "isDeviceConnected", IsDeviceConnected);
+    // Nan::SetPrototypeMethod(tpl, "createAlign", CreateAlign);
     Nan::SetPrototypeMethod(tpl, "loadDeviceFile", LoadDeviceFile);
 
     constructor.Reset(tpl->GetFunction());
@@ -2306,6 +2290,7 @@ class RSPipeline : public Nan::ObjectWrap {
     tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
     Nan::SetPrototypeMethod(tpl, "destroy", Destroy);
+    Nan::SetPrototypeMethod(tpl, "create", Create);
     Nan::SetPrototypeMethod(tpl, "waitForFrames", WaitForFrames);
     Nan::SetPrototypeMethod(tpl, "startWithAlign", StartWithAlign);
     Nan::SetPrototypeMethod(tpl, "start", Start);
@@ -2362,6 +2347,17 @@ class RSPipeline : public Nan::ObjectWrap {
       obj->Wrap(info.This());
       info.GetReturnValue().Set(info.This());
     }
+  }
+
+  static NAN_METHOD(Create) {
+    auto me = Nan::ObjectWrap::Unwrap<RSPipeline>(info.Holder());
+    auto rsctx = Nan::ObjectWrap::Unwrap<RSContext>(info[0]->ToObject());
+
+    if (me && rsctx) {
+      me->ctx = rsctx->ctx;
+      me->pipeline = rs2_create_pipeline(rsctx->ctx, &me->error);
+    }
+    info.GetReturnValue().Set(Nan::Undefined());
   }
 
   static NAN_METHOD(Start) {
@@ -2607,6 +2603,20 @@ class RSAlign : public Nan::ObjectWrap {
 };
 
 Nan::Persistent<v8::Function> RSAlign::constructor;
+
+// NAN_METHOD(RSContext::CreateAlign) {
+//   auto me = Nan::ObjectWrap::Unwrap<RSContext>(info.Holder());
+//   if (me) {
+//     auto stream = static_cast<rs2_stream>(info[0]->IntegerValue());
+//     auto align = rs2_create_align(me->ctx, stream, &me->error);
+//     if (align) {
+//       auto jsobj = RSAlign::NewInstance(align);
+//       info.GetReturnValue().Set(jsobj);
+//       return;
+//     }
+//   }
+//   info.GetReturnValue().Set(Nan::Undefined());
+// }
 
 NAN_METHOD(RSPipeline::StartWithAlign) {
   auto me = Nan::ObjectWrap::Unwrap<RSPipeline>(info.Holder());

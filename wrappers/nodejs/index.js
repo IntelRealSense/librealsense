@@ -1096,8 +1096,8 @@ class SyncerProcessingBlock extends ProcessingBlock {
  * stream
  */
 class Pointcloud {
-  constructor(cxxPointcloud) {
-    this.cxxPointcloud = cxxPointcloud;
+  constructor() {
+    this.cxxPointcloud = new RS2.RSPointcloud();
   }
 
   /**
@@ -1690,21 +1690,14 @@ class FrameSet {
 
 /**
  * This class provides a simple way to retrieve frame data
- * There are 2 acceptable syntax:
- *
- * <pre><code>
- *  1. new Pipeline(context)
- *  2. new Pipeline(device)
- * </code></pre>
- * @param {Context} context the context used by the pipeline
- * @param {Device} device the device used by the pipeline
+ * @param {Context} [context] - the {@link Context} that is being used by the pipeline
  */
 class Pipeline {
   constructor(context) {
     if (arguments.length > 1) {
       throw new TypeError('new Pipeline() can only accept at most 1 argument');
     }
-    let cxxDev;
+
     let ownCtx = true;
     let ctx;
 
@@ -1712,8 +1705,8 @@ class Pipeline {
       if (arguments[0] instanceof Context) {
         ownCtx = false;
         this.ctx = arguments[0];
-      } else if (arguments[0] instanceof Device) {
-        cxxDev = arguments[0].cxxDev;
+      } else {
+        throw new TypeError('new Pipeline() expects a Context argument');
       }
     }
 
@@ -1722,7 +1715,7 @@ class Pipeline {
     }
 
     this.cxxPipeline = new RS2.RSPipeline();
-    this.cxxPipeline.create(this.ctx.cxxCtx, cxxDev);
+    this.cxxPipeline.create(this.ctx.cxxCtx);
     this.started = false;
   }
 
@@ -1755,18 +1748,6 @@ class Pipeline {
   }
 
   /**
-   * Retrieve the context used by the pipeline
-   *
-   * @return {Context|undefined} see {@link Context}
-   */
-  getContext() {
-    const ctx = this.cxxPipeline.getContext();
-    if (ctx) return new Context(ctx);
-
-    return undefined;
-  }
-
-  /**
    * Start streaming
    * There are 2 acceptable syntax
    *
@@ -1778,7 +1759,7 @@ class Pipeline {
    * enable_stream. Syntax 2 starts passing frames into Align object.
    * Start passing frames into user provided callback
    *
-   * @param {Align} align the Align object to receive the frame
+   * @param {Align} [align] - the {@link Align} object to receive the frame
    * @return {undefined}
    */
   start() {
