@@ -983,15 +983,6 @@ class Context {
   }
 
   /**
-   * Create a Pointcloud object
-   *
-   * @return {Pointcloud} see {@link Pointcloud}
-   */
-  createPointcloud() {
-    return new Pointcloud(this.cxxCtx.createPointcloud());
-  }
-
-  /**
    * Create a Align object
    *
    * @param {String|Integer} stream the target stream to align depth stream to

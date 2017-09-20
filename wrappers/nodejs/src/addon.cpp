@@ -1826,6 +1826,9 @@ class RSPointcloud : public Nan::ObjectWrap {
     if (info.IsConstructCall()) {
       RSPointcloud* obj = new RSPointcloud();
       obj->pc = rs2_create_pointcloud(&obj->error);
+      auto callback = new FrameCallbackForFrameQueue(obj->frame_queue);
+      rs2_start_processing(obj->pc, callback, &obj->error);
+
       obj->Wrap(info.This());
       info.GetReturnValue().Set(info.This());
     }
