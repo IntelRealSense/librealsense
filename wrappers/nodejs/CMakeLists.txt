@@ -6,15 +6,11 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsenseNodeJSWrappers)
 
-add_custom_command(
-    OUTPUT always_rebuild
-    COMMAND cmake -E echo
-)
-
+# Compile realsense addon
 add_custom_command(
     OUTPUT ${PROJECT_SOURCE_DIR}/build/Release/node_librealsense.node
     COMMAND npm install
-    DEPENDS realsense2 always_rebuild
+    DEPENDS realsense2 index.js binding.gyp package.json src/addon.cpp
     WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
 )
 add_custom_target(
@@ -22,16 +18,6 @@ add_custom_target(
 	DEPENDS ${PROJECT_SOURCE_DIR}/build/Release/node_librealsense.node
 )
 
-add_custom_command(
-    OUTPUT ${PROJECT_SOURCE_DIR}/examples/node_modules/node-glfw-2
-    COMMAND npm install
-    DEPENDS BUILD_NODE_ADDON always_rebuild
-    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples"
-)
+add_custom_target(RealsenseNodeJSWrappers DEPENDS RealsenseNodeJSExamples)
 
-add_custom_target(
-    BUILD_NODE_EXAMPLES ALL
-	DEPENDS ${PROJECT_SOURCE_DIR}/examples/node_modules/node-glfw-2
-)
-
-add_custom_target(RealsenseNodeJSWrappers DEPENDS BUILD_NODE_EXAMPLES)
+add_subdirectory(examples)
