@@ -2,26 +2,24 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/hpp/rs_sensor.hpp>
-#include <librealsense2/rsutil.h>
+//#include <librealsense2/rsutil.h>
 #include <librealsense2/rs.hpp>
 #include <sstream>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <cmath>
 #include <thread>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
-#include "model-views.h"        // imgui_theming
 #include "realsense-ui-advanced-mode.h"
-#include "rendering.h"
-#include "metrics.h"
+#include "model-views.h"
+#include "depth_metrics.h"
 #include "depth_quality_viewer.h"
 #include "depth_quality_model.h"
 
 using namespace rs2;
 using namespace rs400;
-using namespace rs2_depth_quality;
+using namespace rs2::depth_profiler;
 
 std::string error_message{ "" };
 color_map my_map({ { 255, 255, 255 },{ 0, 0, 0 } });
@@ -64,11 +62,13 @@ std::vector<std::string> get_device_info(const device& dev, bool include_locatio
 int main(int argc, char * argv[])
 {
 
-    dq_logic_model app;
+    depth_profiler_model app;
 
     rs2::pipeline pipe;
 
     pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
+    //pipe.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, 30);
+    //pipe.enable_stream(RS2_STREAM_COLOR, 0, 0, 0, RS2_FORMAT_RGB8, 30);
 
     // Wait till a valid device is found
     pipe.start();
@@ -548,5 +548,7 @@ int main(int argc, char * argv[])
             std::cerr << e.what() << std::endl;
         }
     }
+
+    pipe.stop();
     return EXIT_SUCCESS;
 }

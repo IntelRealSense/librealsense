@@ -1,13 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "model-views.h"
-
-#include <librealsense2/rs_advanced_mode.hpp>
-
 #include <regex>
 #include <thread>
 
+
+#include <librealsense2/rs_advanced_mode.hpp>
+
+
+#include "model-views.h"
 #include <imgui_internal.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -945,8 +946,6 @@ namespace rs2
                 else
                     fps = fps_values_per_stream[stream][selected_fps_id[stream]];
 
-
-
                 error_message << "\n{" << stream_display_names[stream] << ","
                     << width << "x" << height << " at " << fps << "Hz, "
                     << rs2_format_to_string(format) << "} ";
@@ -1158,11 +1157,11 @@ namespace rs2
         glEnable(GL_LINE_STIPPLE);
 
         glBegin(GL_LINE_STRIP);
-        glVertex2i(r.x, r.y);
-        glVertex2i(r.x, r.y + r.h);
-        glVertex2i(r.x + r.w, r.y + r.h);
-        glVertex2i(r.x + r.w, r.y);
-        glVertex2i(r.x, r.y);
+        glVertex2f(r.x, r.y);
+        glVertex2f(r.x, r.y + r.h);
+        glVertex2f(r.x + r.w, r.y + r.h);
+        glVertex2f(r.x + r.w, r.y);
+        glVertex2f(r.x, r.y);
         glEnd();
 
         glPopAttrib();
@@ -2702,10 +2701,10 @@ namespace rs2
 
         for (int i = 0; i <= 6; i++)
         {
-            glVertex3f(i - 3, 1, 0);
-            glVertex3f(i - 3, 1, 6);
-            glVertex3f(-3, 1, i);
-            glVertex3f(3, 1, i);
+            glVertex3i(i - 3, 1, 0);
+            glVertex3i(i - 3, 1, 6);
+            glVertex3i(-3, 1, i);
+            glVertex3i(3, 1, i);
         }
         glEnd();
 
@@ -3422,7 +3421,7 @@ namespace rs2
             auto playback_panel_pos = ImVec2{ 0, pos.y + panel_height + 18 };
             ImGui::SetCursorPos(playback_panel_pos);
             playback_panel_pos.y = draw_playback_panel(font1, viewer);
-            playback_control_panel_height += playback_panel_pos.y;
+            playback_control_panel_height += (int)playback_panel_pos.y;
         }
 
         ImGui::SetCursorPos({ 0, pos.y + header_h + playback_control_panel_height });
@@ -3432,7 +3431,7 @@ namespace rs2
         if (show_device_info)
         {
             int line_h = 22;
-            info_control_panel_height = infos.size() * line_h + 5;
+            info_control_panel_height = (int)infos.size() * line_h + 5;
 
             const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
             ImGui::GetWindowDrawList()->AddRectFilled(abs_pos,
@@ -3668,7 +3667,7 @@ namespace rs2
 
         auto lines = static_cast<int>(std::count(message.begin(), message.end(), '\n') + 1);
         ImGui::SetNextWindowPos({ float(w - 330), float(y) });
-        height = float(lines * 30 + 20);
+        height = lines * 30 + 20;
         ImGui::SetNextWindowSize({ float(315), float(height) });
         std::string label = to_string() << "Hardware Notification #" << index;
         ImGui::Begin(label.c_str(), nullptr, flags);

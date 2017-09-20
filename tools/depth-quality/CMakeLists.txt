@@ -37,6 +37,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
             ./depth_quality_viewer.h
             ./depth_quality_model.h
             ./depth_quality_model.cpp
+            ./depth_metrics.h
             ../../common/rendering.h
             ../../common/model-views.h
             ../../common/model-views.cpp
