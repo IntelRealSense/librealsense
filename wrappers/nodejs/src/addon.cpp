@@ -1934,7 +1934,6 @@ class RSContext : public Nan::ObjectWrap {
   }
 
  private:
-
   RSContext() {
     error = nullptr;
     ctx = nullptr;

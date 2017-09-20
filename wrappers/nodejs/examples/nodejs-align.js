@@ -82,7 +82,6 @@ win.setKeyCallback((key, scancode, action, modes) => {
 });
 
 while (!win.shouldWindowClose()) {
-
   const frameset = align.waitForFrames();
   if (!frameset) continue;
 
