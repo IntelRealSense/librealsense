@@ -1908,7 +1908,6 @@ class RSContext : public Nan::ObjectWrap {
     Nan::SetPrototypeMethod(tpl, "setDeviceChangedCallback",
         SetDeviceChangedCallback);
     Nan::SetPrototypeMethod(tpl, "isDeviceConnected", IsDeviceConnected);
-    // Nan::SetPrototypeMethod(tpl, "createAlign", CreateAlign);
     Nan::SetPrototypeMethod(tpl, "loadDeviceFile", LoadDeviceFile);
 
     constructor.Reset(tpl->GetFunction());
@@ -1935,7 +1934,7 @@ class RSContext : public Nan::ObjectWrap {
   }
 
  private:
-  static NAN_METHOD(CreateAlign);
+
   RSContext() {
     error = nullptr;
     ctx = nullptr;
@@ -1945,7 +1944,9 @@ class RSContext : public Nan::ObjectWrap {
   ~RSContext() {
     DestroyMe();
   }
+
   void RegisterDevicesChangedCallbackMethod();
+
   void DestroyMe() {
     if (error) rs2_free_error(error);
     error = nullptr;
@@ -2532,23 +2533,6 @@ class RSAlign : public Nan::ObjectWrap {
     exports->Set(Nan::New("RSAlign").ToLocalChecked(), tpl->GetFunction());
   }
 
-  static v8::Local<v8::Object> NewInstance(rs2_processing_block* align_ptr) {
-    Nan::EscapableHandleScope scope;
-
-    v8::Local<v8::Function> cons = Nan::New<v8::Function>(constructor);
-    v8::Local<v8::Context> context =
-        v8::Isolate::GetCurrent()->GetCurrentContext();
-
-    v8::Local<v8::Object> instance =
-        cons->NewInstance(context, 0, nullptr).ToLocalChecked();
-    auto me = Nan::ObjectWrap::Unwrap<RSAlign>(instance);
-    me->align = align_ptr;
-    me->frame_queue = rs2_create_frame_queue(1, &me->error);
-    auto callback = new FrameCallbackForFrameQueue(me->frame_queue);
-    rs2_start_processing(me->align, callback, &me->error);
-    return scope.Escape(instance);
-  }
-
  private:
   RSAlign() {
     error = nullptr;
@@ -2580,6 +2564,13 @@ class RSAlign : public Nan::ObjectWrap {
     if (!info.IsConstructCall()) return;
 
     RSAlign* obj = new RSAlign();
+
+    auto stream = static_cast<rs2_stream>(info[0]->IntegerValue());
+    obj->align = rs2_create_align(stream, &obj->error);;
+    obj->frame_queue = rs2_create_frame_queue(1, &obj->error);
+    auto callback = new FrameCallbackForFrameQueue(obj->frame_queue);
+    rs2_start_processing(obj->align, callback, &obj->error);
+
     obj->Wrap(info.This());
     info.GetReturnValue().Set(info.This());
   }
@@ -2606,20 +2597,6 @@ class RSAlign : public Nan::ObjectWrap {
 };
 
 Nan::Persistent<v8::Function> RSAlign::constructor;
-
-// NAN_METHOD(RSContext::CreateAlign) {
-//   auto me = Nan::ObjectWrap::Unwrap<RSContext>(info.Holder());
-//   if (me) {
-//     auto stream = static_cast<rs2_stream>(info[0]->IntegerValue());
-//     auto align = rs2_create_align(me->ctx, stream, &me->error);
-//     if (align) {
-//       auto jsobj = RSAlign::NewInstance(align);
-//       info.GetReturnValue().Set(jsobj);
-//       return;
-//     }
-//   }
-//   info.GetReturnValue().Set(Nan::Undefined());
-// }
 
 NAN_METHOD(RSPipeline::StartWithAlign) {
   auto me = Nan::ObjectWrap::Unwrap<RSPipeline>(info.Holder());
