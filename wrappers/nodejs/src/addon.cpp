@@ -1794,24 +1794,6 @@ class RSPointcloud : public Nan::ObjectWrap {
     exports->Set(Nan::New("RSPointcloud").ToLocalChecked(), tpl->GetFunction());
   }
 
-  static v8::Local<v8::Object> NewInstance(rs2_processing_block* pc) {
-    Nan::EscapableHandleScope scope;
-
-    v8::Local<v8::Function> cons = Nan::New<v8::Function>(constructor);
-    v8::Local<v8::Context> context =
-        v8::Isolate::GetCurrent()->GetCurrentContext();
-
-    v8::Local<v8::Object> instance =
-        cons->NewInstance(context, 0, nullptr).ToLocalChecked();
-
-    auto me = Nan::ObjectWrap::Unwrap<RSPointcloud>(instance);
-    me->pc = pc;
-    auto callback = new FrameCallbackForFrameQueue(me->frame_queue);
-    rs2_start_processing(me->pc, callback, &me->error);
-
-    return scope.Escape(instance);
-  }
-
  private:
   RSPointcloud() {
     error = nullptr;
@@ -1843,6 +1825,10 @@ class RSPointcloud : public Nan::ObjectWrap {
   static void New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     if (info.IsConstructCall()) {
       RSPointcloud* obj = new RSPointcloud();
+      obj->pc = rs2_create_pointcloud(&obj->error);
+      auto callback = new FrameCallbackForFrameQueue(obj->frame_queue);
+      rs2_start_processing(obj->pc, callback, &obj->error);
+
       obj->Wrap(info.This());
       info.GetReturnValue().Set(info.This());
     }
@@ -1948,7 +1934,6 @@ class RSContext : public Nan::ObjectWrap {
   }
 
  private:
-  static NAN_METHOD(CreateAlign);
   RSContext() {
     error = nullptr;
     ctx = nullptr;
@@ -1958,7 +1943,9 @@ class RSContext : public Nan::ObjectWrap {
   ~RSContext() {
     DestroyMe();
   }
+
   void RegisterDevicesChangedCallbackMethod();
+
   void DestroyMe() {
     if (error) rs2_free_error(error);
     error = nullptr;
@@ -2306,6 +2293,7 @@ class RSPipeline : public Nan::ObjectWrap {
     tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
     Nan::SetPrototypeMethod(tpl, "destroy", Destroy);
+    Nan::SetPrototypeMethod(tpl, "create", Create);
     Nan::SetPrototypeMethod(tpl, "waitForFrames", WaitForFrames);
     Nan::SetPrototypeMethod(tpl, "startWithAlign", StartWithAlign);
     Nan::SetPrototypeMethod(tpl, "start", Start);
@@ -2362,6 +2350,17 @@ class RSPipeline : public Nan::ObjectWrap {
       obj->Wrap(info.This());
       info.GetReturnValue().Set(info.This());
     }
+  }
+
+  static NAN_METHOD(Create) {
+    auto me = Nan::ObjectWrap::Unwrap<RSPipeline>(info.Holder());
+    auto rsctx = Nan::ObjectWrap::Unwrap<RSContext>(info[0]->ToObject());
+
+    if (me && rsctx) {
+      me->ctx = rsctx->ctx;
+      me->pipeline = rs2_create_pipeline(rsctx->ctx, &me->error);
+    }
+    info.GetReturnValue().Set(Nan::Undefined());
   }
 
   static NAN_METHOD(Start) {
@@ -2533,23 +2532,6 @@ class RSAlign : public Nan::ObjectWrap {
     exports->Set(Nan::New("RSAlign").ToLocalChecked(), tpl->GetFunction());
   }
 
-  static v8::Local<v8::Object> NewInstance(rs2_processing_block* align_ptr) {
-    Nan::EscapableHandleScope scope;
-
-    v8::Local<v8::Function> cons = Nan::New<v8::Function>(constructor);
-    v8::Local<v8::Context> context =
-        v8::Isolate::GetCurrent()->GetCurrentContext();
-
-    v8::Local<v8::Object> instance =
-        cons->NewInstance(context, 0, nullptr).ToLocalChecked();
-    auto me = Nan::ObjectWrap::Unwrap<RSAlign>(instance);
-    me->align = align_ptr;
-    me->frame_queue = rs2_create_frame_queue(1, &me->error);
-    auto callback = new FrameCallbackForFrameQueue(me->frame_queue);
-    rs2_start_processing(me->align, callback, &me->error);
-    return scope.Escape(instance);
-  }
-
  private:
   RSAlign() {
     error = nullptr;
@@ -2581,6 +2563,13 @@ class RSAlign : public Nan::ObjectWrap {
     if (!info.IsConstructCall()) return;
 
     RSAlign* obj = new RSAlign();
+
+    auto stream = static_cast<rs2_stream>(info[0]->IntegerValue());
+    obj->align = rs2_create_align(stream, &obj->error);;
+    obj->frame_queue = rs2_create_frame_queue(1, &obj->error);
+    auto callback = new FrameCallbackForFrameQueue(obj->frame_queue);
+    rs2_start_processing(obj->align, callback, &obj->error);
+
     obj->Wrap(info.This());
     info.GetReturnValue().Set(info.This());
   }
