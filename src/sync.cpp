@@ -153,6 +153,8 @@ namespace librealsense
                         _streams_type.push_back(stream);
                     }
 
+                    if (std::find(_streams_type.begin(), _streams_type.end(), stream_type) == _streams_type.end())
+                        LOG_ERROR("Stream matcher not found! stream=" << rs2_stream_to_string(stream_type));
                 }
 
             }
@@ -235,12 +237,10 @@ namespace librealsense
                 }
                 else if (is_smaller_than(*frames_arrived[i], *curr_sync))
                 {
-
                     old_frames = true;
                     synced_frames.clear();
                     synced_frames.push_back(frames_arrived_matchers[i]);
                     curr_sync = frames_arrived[i];
-
                 }
                 else
                 {

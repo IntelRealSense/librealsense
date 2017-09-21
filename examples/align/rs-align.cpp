@@ -23,11 +23,10 @@ int main(int argc, char * argv[]) try
     rs2::colorizer c;                          // Helper to colorize depth images
     texture renderer;                     // Helper for renderig images
 
-    // Create a context
-    rs2::context ctx;
+    const rs2_stream align_to = RS2_STREAM_COLOR;
     // Using the context to create a rs2::align object. 
     // rs2::align allows you to perform aliment of depth frames to others
-    rs2::align align(RS2_STREAM_COLOR);
+    rs2::align align(align_to);
     
     // Create a pipeline to easily configure and start the camera
     rs2::pipeline pipe;
@@ -51,7 +50,7 @@ int main(int argc, char * argv[]) try
         // Using the align object, we block the application until a frameset is available
         rs2::frameset frameset;
 
-        while (!frameset.get_color_frame() || !frameset.get_depth_frame())
+        while (!frameset.first_or_default(RS2_STREAM_DEPTH) || !frameset.first_or_default(align_to))
         {
             frameset = pipe.wait_for_frames();
         }
