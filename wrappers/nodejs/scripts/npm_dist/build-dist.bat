@@ -22,7 +22,7 @@ if errorlevel 1 (
 )
 
 REM Step 2
-msbuild Realsense.sln /p:Configuration=Release /p:Platform=%2 /m:4
+msbuild librealsense2.sln /p:Configuration=Release /p:Platform=%2 /m:4
 if errorlevel 1 (
 	echo 'Failed to build librealsense'
 	exit 2
