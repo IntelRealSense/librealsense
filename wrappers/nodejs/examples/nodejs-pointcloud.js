@@ -29,10 +29,10 @@ function drawPointcloud(win, color, points) {
 
 // Open a GLFW window
 const win = new GLFWWindow(1280, 720, 'Node.js Pointcloud Example');
-const context = new rs2.Context();
-const pc = context.createPointcloud();
-const pipe = new rs2.Pipeline(context);
+const pc = new rs2.Pointcloud();
+const pipe = new rs2.Pipeline();
 pipe.start();
+
 while (! win.shouldWindowClose()) {
   const frameset = pipe.waitForFrames();
   if (!frameset) continue;
@@ -41,16 +41,18 @@ while (! win.shouldWindowClose()) {
   let color = frameset.colorFrame;
   let depth = frameset.depthFrame;
 
-  if (color) pc.mapTo(color);
   if (depth) points = pc.calculate(depth);
+  if (color) pc.mapTo(color);
   if (points) drawPointcloud(win, color, points);
+
   if (depth) depth.destroy();
   if (color) color.destroy();
-
   frameset.destroy();
 }
+
 pc.destroy();
 pipe.stop();
 pipe.destroy();
 win.destroy();
+
 rs2.cleanup();
