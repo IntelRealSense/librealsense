@@ -1,4 +1,4 @@
-# Intel® RealSense™ Cross Platform API
+# Intel® RealSense™ SDK 2.0
 
 Platform | Build Status |
 -------- | ------------ |
