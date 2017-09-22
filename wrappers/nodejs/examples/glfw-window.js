@@ -4,7 +4,7 @@
 
 'use strict';
 
-const glfw = require('node-glfw-2');
+const glfw = require('node-glfw-3');
 const rs2 = require('../index.js');
 
 /* eslint-disable new-cap */
