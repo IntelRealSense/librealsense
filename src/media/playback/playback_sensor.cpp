@@ -12,11 +12,14 @@
 std::string profile_to_string(std::shared_ptr<stream_profile_interface> s)
 {
     std::ostringstream os;
-    os << s->get_unique_id() << ", " <<
-        s->get_format() << ", " <<
-        s->get_stream_type() << "_" <<
-        s->get_stream_index() << " @ " <<
-        s->get_framerate();
+    if (s != nullptr)
+    {
+        os << s->get_unique_id() << ", " <<
+            s->get_format() << ", " <<
+            s->get_stream_type() << "_" <<
+            s->get_stream_index() << " @ " <<
+            s->get_framerate();
+    }
     return os.str();
 }
 

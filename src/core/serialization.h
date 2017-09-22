@@ -57,7 +57,7 @@ namespace librealsense
                 max
             };
         public:
-            explicit serialized_data(device_serializer::nanoseconds timestamp = device_serializer::nanoseconds::max()) : 
+            explicit serialized_data(const device_serializer::nanoseconds& timestamp = device_serializer::nanoseconds::max()) : 
                 _timestamp(timestamp) 
             {
             }

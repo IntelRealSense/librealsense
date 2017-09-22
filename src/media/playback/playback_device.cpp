@@ -506,13 +506,13 @@ void playback_device::try_looping()
             }
             LOG_DEBUG("Dispatching frame " << frame->stream_id);
             //Dispatch frame to the relevant sensor
-            m_sensors[frame->stream_id.sensor_index]->handle_frame(std::move(frame->frame), m_real_time);
+            m_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time);
             return true;
         }
 
         if (auto option_data = data->as<serialized_option>())
         {
-            m_sensors[option_data->sensor_id.sensor_index]->update_option(option_data->option);
+            m_sensors.at(option_data->sensor_id.sensor_index)->update_option(option_data->option);
             return true;
         }
         return false;
@@ -540,7 +540,8 @@ void playback_device::register_device_info(const device_serializer::device_snaps
     auto info_snapshot = device_description.get_device_extensions_snapshots().find(RS2_EXTENSION_INFO);
     if (info_snapshot == nullptr)
     {
-        throw io_exception("Recorded file does not contain device information");
+        LOG_WARNING("Recorded file does not contain device informatiom");
+        return;
     }
 
     auto info_api = As<info_interface>(info_snapshot);
@@ -616,6 +617,6 @@ void playback_device::update_extensions(const device_serializer::device_snapshot
     for (auto sensor_snapshot : device_description.get_sensors_snapshots())
     {
         auto sensor_index = sensor_snapshot.get_sensor_index();
-        m_sensors[sensor_index]->update(sensor_snapshot);
+        m_sensors.at(sensor_index)->update(sensor_snapshot);
     }
 }
