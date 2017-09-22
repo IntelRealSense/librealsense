@@ -1,26 +1,20 @@
 #pragma once
 #include <vector>
 #include <thread>
-#include "depth_quality_viewer.h"
 #include "depth_metrics.h"
-
-using namespace rs2;
+#include "depth_quality_viewer.h"
 
 namespace rs2
 {
     namespace depth_profiler
     {
-        class depth_profiler_model;
-
         class metrics_model
         {
         public:
-            metrics_model(frame_queue* _input_queue, std::mutex &m, depth_profiler_viewer* viewer);
+            metrics_model(frame_queue* _input_queue, std::mutex &m/*, depth_profiler_viewer* viewer*/);
             ~metrics_model();
 
-            void render_metrics() const;
-
-            void visualize(snapshot_metrics stats, int w, int h, bool plane) const;
+            void render();
 
             void update_stream_attributes(const rs2_intrinsics &intrinsic, const float& scale_units)
             {
@@ -33,19 +27,25 @@ namespace rs2
             }
 
         private:
+            metrics_model(const metrics_model&);
 
-            //analyze_depth_image
-            void produce_metrics();
+            void visualize(snapshot_metrics stats, int w, int h, bool plane) const;
 
-            frame_queue*        _frame_queue;
-            depth_profiler_viewer*    _viewer_model;
-            std::thread         _worker_thread;
+            frame_queue*            _frame_queue;
+            std::thread             _worker_thread;
 
             rs2_intrinsics      _depth_intrinsic;
             float               _depth_scale_units;
             region_of_interest  _roi;
             snapshot_metrics    _latest_metrics;
             bool                _active;
+
+            PlotMetric      avg_plot;
+            PlotMetric      std_plot;
+            PlotMetric      fill_plot;
+            PlotMetric      dist_plot;
+            PlotMetric      angle_plot;
+            PlotMetric      out_plot;
         };
 
         class depth_profiler_model : public rs2::viewer_model
@@ -54,15 +54,13 @@ namespace rs2
             enum e_states { e_acquire, e_configure, e_profile, e_state_max };
 
             depth_profiler_model() : _cur_state(nullptr),
-                _device_model(nullptr),
                 _calc_queue(1),
-                _viewer_model(1280, 720, "RealSense Depth Quality Tool", _device_model),
-                _metrics_model(&_calc_queue,_m,&_viewer_model)
+                _device_model(nullptr), _metrics_model(&_calc_queue, _m),
+                _viewer_model(1280, 720, "RealSense Depth Quality Tool", _device_model, &_metrics_model)
             {
                 _states.push_back(new acquire_cam);
                 _states.push_back(new configure_cam);
                 _states.push_back(new profile_metrics);
-
                 _cur_state = _states[e_acquire];
             }
 
@@ -126,8 +124,8 @@ namespace rs2
             frame_queue                     _calc_queue;
             std::mutex                      _m;
             std::shared_ptr<device_model>   _device_model;
-            depth_profiler_viewer                 _viewer_model;
             metrics_model                   _metrics_model;
+            depth_profiler_viewer           _viewer_model;
 
             std::string                     _error_message;
             mouse_info                      _mouse;

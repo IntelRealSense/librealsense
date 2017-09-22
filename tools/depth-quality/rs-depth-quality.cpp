@@ -13,8 +13,8 @@
 #include <imgui_impl_glfw.h>
 #include "realsense-ui-advanced-mode.h"
 #include "model-views.h"
-#include "depth_metrics.h"
 #include "depth_quality_viewer.h"
+#include "depth_metrics.h"
 #include "depth_quality_model.h"
 
 using namespace rs2;

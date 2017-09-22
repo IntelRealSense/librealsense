@@ -3,7 +3,6 @@
 #include <mutex>
 #include <imgui.h>
 #include <librealsense2/rsutil.h>
-//#include "rendering.h"
 
 // FW Declaration
 namespace rs2
@@ -244,7 +243,7 @@ namespace rs2
             plane p = plane_from_points(roi_pixels);
 
             if (p == plane{ 0, 0, 0, 0 }) {
-                // std::cout << "The points in RoI don't span a plane." << std::endl;
+                 std::cout << "The points in RoI don't span a plane." << std::endl;
                 return result;
             }
 
@@ -256,22 +255,22 @@ namespace rs2
             return result;
         }
 
-        class depth_metrics_model
-        {
-            // Data display plots
-            /*PlotMetric avg_plot("AVG", 0, 10, { 180, 50 }, " (mm)");
-            PlotMetric std_plot("STD", 0, 10, { 180, 50 }, " (mm)");
-            PlotMetric fill_plot("FILL", 0, 100, { 180, 50 }, "%");
-            PlotMetric dist_plot("DIST", 0, 5, { 180, 50 }, " (m)");
-            PlotMetric angle_plot("ANGLE", 0, 180, { 180, 50 }, " (deg)");
-            PlotMetric out_plot("OUTLIERS", 0, 100, { 180, 50 }, "%");
-    */
-        public:
-            void render() const
-            {
+            //class depth_metrics_model
+            //{
+            //    // Data display plots
+            //    PlotMetric avg_plot("AVG", 0, 10, { 180, 50 }, " (mm)");
+            //    PlotMetric std_plot("STD", 0, 10, { 180, 50 }, " (mm)");
+            //    PlotMetric fill_plot("FILL", 0, 100, { 180, 50 }, "%");
+            //    PlotMetric dist_plot("DIST", 0, 5, { 180, 50 }, " (m)");
+            //    PlotMetric angle_plot("ANGLE", 0, 180, { 180, 50 }, " (deg)");
+            //    PlotMetric out_plot("OUTLIERS", 0, 100, { 180, 50 }, "%");
 
-            }
-        };
+            //public:
+            //    void render() const
+            //    {
+
+            //    }
+            //};
 
     }
 }

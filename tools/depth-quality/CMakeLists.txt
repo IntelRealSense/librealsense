@@ -35,6 +35,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     set(RS_VIEWER_CPP
             ./rs-depth-quality.cpp
             ./depth_quality_viewer.h
+            ./depth_quality_viewer.cpp
             ./depth_quality_model.h
             ./depth_quality_model.cpp
             ./depth_metrics.h

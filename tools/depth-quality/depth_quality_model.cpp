@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include "depth_quality_viewer.h"
 #include "depth_quality_model.h"
 
 using namespace std;
@@ -38,7 +39,7 @@ namespace rs2
             //auto roi = app._viewer_model.streams[0].dev->roi_rect; 
             //app._metrics_model.update_frame_attributes({ (int)roi.x, (int)roi.y, (int)(roi.x+roi.w), (int)(roi.y + roi.h)});
             auto res = app._viewer_model.streams[0].size;
-            region_of_interest roi{ res.x / 3, res.y / 3, res.x * 2 / 3, res.y * 2 / 3 };
+            region_of_interest roi{ int(res.x / 3), int(res.y / 3), int(res.x * 2 / 3), int(res.y * 2 / 3) };
             app._metrics_model.update_frame_attributes(roi);
         }
 
@@ -66,10 +67,15 @@ namespace rs2
                 _viewer_model.upload_frame(frameset[i]);
         }
 
-
-        metrics_model::metrics_model(frame_queue* _input_queue, std::mutex &m, depth_profiler_viewer* viewer) :
-            _frame_queue(_input_queue), _viewer_model(viewer),
-            _depth_scale_units(0.f), _active(true)
+        metrics_model::metrics_model(frame_queue* _input_queue, std::mutex &m) :
+            _frame_queue(_input_queue),
+            _depth_scale_units(0.f), _active(true),
+            avg_plot("AVG", 0, 10, { 180, 50 }, " (mm)"),
+            std_plot("STD", 0, 10, { 180, 50 }, " (mm)"),
+            fill_plot("FILL", 0, 100, { 180, 50 }, "%"),
+            dist_plot("DIST", 0, 5, { 180, 50 }, " (m)"),
+            angle_plot("ANGLE", 0, 180, { 180, 50 }, " (deg)"),
+            out_plot("OUTLIERS", 0, 100, { 180, 50 }, "%")
         {
             _worker_thread = std::thread([&]() {
 
@@ -123,9 +129,24 @@ namespace rs2
             catch (...) {}
         }
 
-        void metrics_model::render_metrics() const
+        void metrics_model::render()
         {
-            std::cout << __FUNCTION__  << std::endl;
+            metrics data = true/*use_rect_fitting*/ ? _latest_metrics.plane : _latest_metrics.depth; // Evgeni
+
+            avg_plot.add_value(data.avg_dist);
+            std_plot.add_value(data.std_dev);
+            fill_plot.add_value(_latest_metrics.non_null_pct);
+            dist_plot.add_value(data.distance);
+            angle_plot.add_value(data.angle);
+            out_plot.add_value(data.outlier_pct);
+
+            avg_plot.plot();
+            std_plot.plot();
+            fill_plot.plot();
+            dist_plot.plot();
+            angle_plot.plot();
+            out_plot.plot();
+
         }
 
         void metrics_model::visualize(snapshot_metrics stats, int w, int h, bool plane) const
