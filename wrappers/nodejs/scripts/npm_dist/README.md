@@ -47,6 +47,12 @@ sudo apt install -y libusb-1.0-0-dev pkg-config libgtk-3-dev libglfw3-dev cmake
 
 Please refer to [Linux installation doc](https://github.com/IntelRealSense/librealsense/blob/development/doc/installation.md) or [Windows installation doc](https://github.com/IntelRealSense/librealsense/blob/development/doc/installation_windows.md) for full document of C++ librealsense build environment setup.
 
+### Setup Necessary Global NPM Packages ###
+
+```
+npm install -g jsdoc
+```
+
 ## 2. Instal node-librealsense Module ##
 
 ```
@@ -59,7 +65,7 @@ It will take a while to build C++ librealsense library, and then the Node.js add
 When it's installed, you can run examples to see if it works fine. Plug your Intel® RealSense™ camera and do the following:
 
 ```
-cd node-librealsense/wrappers/nodejs/examples
+cd node-librealsense/examples
 npm install
 node nodejs-capture.js
 ```
