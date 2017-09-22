@@ -148,7 +148,6 @@ bool librealsense::record_sensor::extend_to_aux(P* p, void** ext)
     return true;
 }
 
-//TODO: Combine device and sensor common code
 bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void** ext)
 {
     /**************************************************************************************

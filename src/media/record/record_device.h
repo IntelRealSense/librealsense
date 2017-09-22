@@ -23,7 +23,7 @@ namespace librealsense
         record_device(std::shared_ptr<device_interface> device, std::shared_ptr<device_serializer::writer> serializer);
         virtual ~record_device();
 
-        std::shared_ptr<context> get_context() const override { return nullptr; } //TODO: Add context
+        std::shared_ptr<context> get_context() const override;
 
         sensor_interface& get_sensor(size_t i) override;
         size_t get_sensors_count() const override;

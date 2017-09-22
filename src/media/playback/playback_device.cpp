@@ -140,7 +140,7 @@ playback_device::~playback_device()
         for (auto&& sensor : m_active_sensors)
         {
             if (sensor.second != nullptr)
-                sensor.second->stop(); //TODO: make sure this works with new dispatcher
+                sensor.second->stop();
         }
     });
     if((*m_read_thread)->flush() == false)

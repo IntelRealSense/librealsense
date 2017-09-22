@@ -59,6 +59,11 @@ namespace librealsense
 
         option& get_option(rs2_option id) override
         {
+            return const_cast<option&>(const_cast<const options_container*>(this)->get_option(id));
+        }
+
+        const option& get_option(rs2_option id) const override
+        {
             auto it = _options.find(id);
             if (it == _options.end())
             {
@@ -67,11 +72,6 @@ namespace librealsense
                     << rs2_option_to_string(id) << "!");
             }
             return *it->second;
-        }
-
-        const option& get_option(rs2_option id) const override
-        {
-            return const_cast<const option&>(const_cast<options_container*>(this)->get_option(id));
         }
 
         void register_option(rs2_option id, std::shared_ptr<option> option)

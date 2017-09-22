@@ -62,6 +62,11 @@ librealsense::record_device::~record_device()
     (*m_write_thread)->stop();
 }
 
+std::shared_ptr<context> librealsense::record_device::get_context() const
+{ 
+    return m_device->get_context(); 
+}
+
 librealsense::sensor_interface& librealsense::record_device::get_sensor(size_t i)
 {
     return *(m_sensors.at(i));

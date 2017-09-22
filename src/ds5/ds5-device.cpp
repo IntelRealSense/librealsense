@@ -279,7 +279,7 @@ namespace librealsense
                                                                              depth_xu,
                                                                              DS5_EXPOSURE,
                                                                              "Depth Exposure",
-                                                                             RS2_OPTION_EXPOSURE); //TODO: Verify this is the correct value
+                                                                             RS2_OPTION_EXPOSURE);
             depth_ep.register_option(RS2_OPTION_EXPOSURE, exposure_option);
 
             auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(depth_ep,
@@ -306,7 +306,7 @@ namespace librealsense
              depth_ep.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
                                       std::make_shared<uvc_xu_option<uint8_t>>(depth_ep, depth_xu, DS5_EXT_TRIGGER,
                                       "Generate trigger from the camera to external device once per frame", RS2_OPTION_OUTPUT_TRIGGER_ENABLED));
-                                                                                                                                                                //TODO: Verify this is the correct value
+
              auto error_control = std::unique_ptr<uvc_xu_option<uint8_t>>(new uvc_xu_option<uint8_t>(depth_ep, depth_xu, DS5_ERROR_REPORTING, "Error reporting", RS2_OPTION_ERROR_POLLING_ENABLED));
 
              _polling_error_handler = std::unique_ptr<polling_error_handler>(
