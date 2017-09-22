@@ -1,7 +1,7 @@
-# Sample Code for Intel® RealSense™ Depth cameras
+# Sample Code for Intel® RealSense™ cameras
 **Code Examples to start prototyping quickly:** These simple examples demonstrate how to easily use the SDK to include code snippets that access the camera into your applications.  
 
-For mode advanced usages you might also want to review the list of [Tools](../tools) we provide. 
+For mode advanced usages please review the list of [Tools](../tools) we provide. 
 
 For a detailed explanations and API documentation see our [Documentation](../doc) section 
  
