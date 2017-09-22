@@ -8,7 +8,7 @@
 
 void option::create_snapshot(std::shared_ptr<option>& snapshot) const
 {
-    snapshot = std::make_shared<const_value_option>(type(), get_description(), query());
+    snapshot = std::make_shared<const_value_option>(get_description(), query());
 }
 
 void librealsense::uvc_pu_option::set(float value)

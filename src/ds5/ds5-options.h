@@ -176,10 +176,6 @@ namespace librealsense
         {
             _record_action = record_action;
         }
-        rs2_option type() const override
-        {
-            return RS2_OPTION_DEPTH_UNITS;
-        }
     private:
         ds::depth_table_control get_depth_table(ds::advanced_query_mode mode) const;
         std::function<void(const option &)> _record_action = [](const option&) {};

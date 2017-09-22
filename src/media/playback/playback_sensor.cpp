@@ -170,9 +170,9 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
         }
     }
 }
-void playback_sensor::update_option(std::shared_ptr<option> option)
+void playback_sensor::update_option(rs2_option id, std::shared_ptr<option> option)
 {
-    register_option(option->type(), option);
+    register_option(id, option);
 }
 void playback_sensor::flush_pending_frames()
 {
@@ -242,7 +242,7 @@ void playback_sensor::register_sensor_options(const device_serializer::sensor_sn
             {
                 auto&& option = options_api->get_option(option_id);
                 float value = option.query();
-                register_option(option_id, std::make_shared<const_value_option>(option.type(), option.get_description(), option.query()));
+                register_option(option_id, std::make_shared<const_value_option>(option.get_description(), option.query()));
                 LOG_DEBUG("Registered " << rs2_option_to_string(option_id) << " for sensor " << m_sensor_id << " with value: " << option.query());
             }
         }

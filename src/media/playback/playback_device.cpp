@@ -512,7 +512,7 @@ void playback_device::try_looping()
 
         if (auto option_data = data->as<serialized_option>())
         {
-            m_sensors.at(option_data->sensor_id.sensor_index)->update_option(option_data->option);
+            m_sensors.at(option_data->sensor_id.sensor_index)->update_option(option_data->option_id, option_data->option);
             return true;
         }
         return false;

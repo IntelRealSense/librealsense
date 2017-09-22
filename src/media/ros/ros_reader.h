@@ -72,7 +72,7 @@ namespace librealsense
                     auto timestamp = to_nanoseconds(next_msg.getTime());
                     auto sensor_id = ros_topic::get_sensor_identifier(next_msg.getTopic());
                     auto option = create_option(m_file, next_msg);
-                    return std::make_shared<serialized_option>(timestamp, sensor_id, option);
+                    return std::make_shared<serialized_option>(timestamp, sensor_id, option.first, option.second);
                 }
             }
 
@@ -548,18 +548,18 @@ namespace librealsense
         }
         
         /*Until Version 2 (including)*/
-        static std::shared_ptr<librealsense::option> create_property(const rosbag::MessageInstance& property_message_instance)
+        static std::pair<rs2_option, std::shared_ptr<librealsense::option>> create_property(const rosbag::MessageInstance& property_message_instance)
         {
             auto property_msg = instantiate_msg<diagnostic_msgs::KeyValue>(property_message_instance);
             rs2_option id;
             convert(property_msg->key, id);
             float value = std::stof(property_msg->value);
             std::string description = to_string() << "Read only option of " << id;
-            return std::make_shared<const_value_option>(id, description, value);
+            return std::make_pair(id, std::make_shared<const_value_option>(description, value));
         }
 
         /*Starting version 3*/
-        static std::shared_ptr<librealsense::option> create_option(const rosbag::Bag& file, const rosbag::MessageInstance& value_message_instance)
+        static std::pair<rs2_option, std::shared_ptr<librealsense::option>> create_option(const rosbag::Bag& file, const rosbag::MessageInstance& value_message_instance)
         {
             auto option_value_msg = instantiate_msg<std_msgs::Float32>(value_message_instance);
             std::string option_name = ros_topic::get_option_name(value_message_instance.getTopic());
@@ -568,7 +568,7 @@ namespace librealsense
             convert(option_name, id);
             float value = option_value_msg->data;
             std::string description = read_option_description(file, ros_topic::option_description_topic(sensor_id, id));
-            return std::make_shared<const_value_option>(id, description, value);
+            return std::make_pair(id, std::make_shared<const_value_option>(description, value));
         }
 
         static std::shared_ptr<options_container> read_sensor_options(const rosbag::Bag& file, device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, uint32_t file_version)
@@ -579,8 +579,8 @@ namespace librealsense
                 rosbag::View sensor_options_view(file, rosbag::TopicQuery(ros_topic::property_topic(sensor_id)));
                 for (auto message_instance : sensor_options_view)
                 {
-                    auto option = create_property(message_instance);
-                    options->register_option(option->type(), option);
+                    auto id_option = create_property(message_instance);
+                    options->register_option(id_option.first, id_option.second);
                 }
             }
             else
@@ -602,7 +602,8 @@ namespace librealsense
                         last_item = it++;
                     }
                     auto option = create_option(file, *last_item);
-                    options->register_option(option->type(), option);
+                    assert(id == option.first);
+                    options->register_option(option.first, option.second);
                 }
             }
             return options;

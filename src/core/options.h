@@ -25,7 +25,6 @@ namespace librealsense
         virtual option_range get_range() const = 0;
         virtual bool is_enabled() const = 0;
         virtual bool is_read_only() const { return false; }
-        virtual rs2_option type() const = 0;
         virtual const char* get_description() const = 0;
         virtual const char* get_value_description(float) const { return nullptr; }
         virtual void create_snapshot(std::shared_ptr<option>& snapshot) const override;
@@ -33,7 +32,6 @@ namespace librealsense
         virtual ~option() = default;
     };
 
-    MAP_EXTENSION(RS2_EXTENSION_OPTION, librealsense::option);
 
     class options_interface : public recordable<options_interface>
     {

@@ -224,7 +224,7 @@ namespace librealsense
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
         get_depth_sensor().register_option(RS2_OPTION_DEPTH_UNITS,
-                                           std::make_shared<const_value_option>(RS2_OPTION_DEPTH_UNITS, "Number of meters represented by a single depth unit",
+                                           std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                                             lazy<float>([this]() {
                                                 auto c = get_calibration();
                                                 return (c.Rmax / 1000 / 0xFFFF);

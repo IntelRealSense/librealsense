@@ -278,36 +278,32 @@ namespace librealsense
             auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(depth_ep,
                                                                              depth_xu,
                                                                              DS5_EXPOSURE,
-                                                                             "Depth Exposure",
-                                                                             RS2_OPTION_EXPOSURE);
+                                                                             "Depth Exposure");
             depth_ep.register_option(RS2_OPTION_EXPOSURE, exposure_option);
 
             auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(depth_ep,
                                                                                  depth_xu,
                                                                                  DS5_ENABLE_AUTO_EXPOSURE,
-                                                                                 "Enable Auto Exposure",
-                                                                                 RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+                                                                                 "Enable Auto Exposure");
             depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
 
             depth_ep.register_option(RS2_OPTION_GAIN,
                                      std::make_shared<auto_disabling_control>(
                                      std::make_shared<uvc_pu_option>(depth_ep, RS2_OPTION_GAIN),
-                                     enable_auto_exposure,
-                                     RS2_OPTION_GAIN));
+                                     enable_auto_exposure));
             depth_ep.register_option(RS2_OPTION_EXPOSURE,
                                      std::make_shared<auto_disabling_control>(
                                      exposure_option,
-                                     enable_auto_exposure,
-                                     RS2_OPTION_EXPOSURE));
+                                     enable_auto_exposure));
         }
 
         if (_fw_version >= firmware_version("5.5.8.0"))
         {
              depth_ep.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
                                       std::make_shared<uvc_xu_option<uint8_t>>(depth_ep, depth_xu, DS5_EXT_TRIGGER,
-                                      "Generate trigger from the camera to external device once per frame", RS2_OPTION_OUTPUT_TRIGGER_ENABLED));
+                                      "Generate trigger from the camera to external device once per frame"));
 
-             auto error_control = std::unique_ptr<uvc_xu_option<uint8_t>>(new uvc_xu_option<uint8_t>(depth_ep, depth_xu, DS5_ERROR_REPORTING, "Error reporting", RS2_OPTION_ERROR_POLLING_ENABLED));
+             auto error_control = std::unique_ptr<uvc_xu_option<uint8_t>>(new uvc_xu_option<uint8_t>(depth_ep, depth_xu, DS5_ERROR_REPORTING, "Error reporting"));
 
              _polling_error_handler = std::unique_ptr<polling_error_handler>(
                  new polling_error_handler(1000,
@@ -330,7 +326,7 @@ namespace librealsense
         if (advanced_mode && _fw_version >= firmware_version("5.6.3.0"))
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<depth_scale_option>(*_hw_monitor));
         else
-            depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>(RS2_OPTION_DEPTH_UNITS, "Number of meters represented by a single depth unit",
+            depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                 lazy<float>([]() { return 0.001f; })));
         // Metadata registration
         depth_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP,    make_uvc_header_parser(&platform::uvc_header::timestamp));

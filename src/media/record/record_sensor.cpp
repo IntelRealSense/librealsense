@@ -59,8 +59,12 @@ librealsense::option& librealsense::record_sensor::get_option(rs2_option id)
     auto& option = m_sensor.get_option(id);
     if (m_recording_options.find(id) == m_recording_options.end())
     {
-        option.enable_recording([this](const librealsense::option& snapshot) {
-            record_snapshot(RS2_EXTENSION_OPTION, snapshot);
+        option.enable_recording([this, id](const librealsense::option& option) {
+            options_container options;
+            std::shared_ptr<librealsense::option> option_snapshot;
+            option.create_snapshot(option_snapshot);
+            options.register_option(id, option_snapshot);
+            record_snapshot<options_interface>(RS2_EXTENSION_OPTIONS, options);
         });
         m_recording_options.insert(id);
     }
@@ -179,7 +183,6 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
     //case RS2_EXTENSION_VIDEO_PROFILE   : return extend_to_aux<RS2_EXTENSION_VIDEO_PROFILE  >(&m_sensor, ext);
     //case RS2_EXTENSION_PLAYBACK        : return extend_to_aux<RS2_EXTENSION_PLAYBACK       >(&m_sensor, ext);
     //case RS2_EXTENSION_RECORD          : return extend_to_aux<RS2_EXTENSION_PLAYBACK       >(&m_sensor, ext);
-    //case RS2_EXTENSION_OPTION          : return extend_to_aux<RS2_EXTENSION_OPTION         >(&m_sensor, ext);
     default:
         LOG_WARNING("Extensions type is unhandled: " << extension_type);
         return false;

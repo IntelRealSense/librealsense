@@ -39,7 +39,7 @@ namespace librealsense
         bool extend_to(rs2_extension extension_type, void** ext) override;
         const device_interface& get_device() override;
         void handle_frame(frame_holder frame, bool is_real_time);
-        void update_option(std::shared_ptr<option> option);
+        void update_option(rs2_option id, std::shared_ptr<option> option);
         void stop(bool invoke_required);
         void flush_pending_frames();
         void update(const device_serializer::sensor_snapshot& sensor_snapshot);

@@ -11,7 +11,7 @@ namespace librealsense
     {
     public:
         frame_queue_size(std::atomic<uint32_t>* ptr, const option_range& opt_range)
-            : option_base(opt_range, RS2_OPTION_FRAMES_QUEUE_SIZE),
+            : option_base(opt_range),
               _ptr(ptr)
         {}
 

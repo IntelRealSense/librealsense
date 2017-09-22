@@ -341,7 +341,6 @@ bool librealsense::record_device::extend_to(rs2_extension extension_type, void**
     //case RS2_EXTENSION_ADVANCED_MODE   : return extend_to_aux<RS2_EXTENSION_ADVANCED_MODE  >(m_device, ext);
     //case RS2_EXTENSION_VIDEO_PROFILE   : return extend_to_aux<RS2_EXTENSION_VIDEO_PROFILE  >(m_device, ext);
     //case RS2_EXTENSION_PLAYBACK        : return extend_to_aux<RS2_EXTENSION_PLAYBACK       >(m_device, ext);
-    case RS2_EXTENSION_OPTION          : return extend_to_aux<RS2_EXTENSION_OPTION         >(m_device, ext);
     default:
         LOG_WARNING("Extensions type is unhandled: " << extension_type);
         return false;

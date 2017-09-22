@@ -246,12 +246,12 @@ namespace librealsense
             case RS2_EXTENSION_DEBUG:
             case RS2_EXTENSION_MOTION:
                 break;
-            case RS2_EXTENSION_OPTION:
-            {
-                auto option = SnapshotAs<RS2_EXTENSION_OPTION>(snapshot);
-                write_sensor_option({ device_id, sensor_id }, timestamp, *option);
-                break;
-            }
+            //case RS2_EXTENSION_OPTION:
+            //{
+            //    auto option = SnapshotAs<RS2_EXTENSION_OPTION>(snapshot);
+            //    write_sensor_option({ device_id, sensor_id }, timestamp, *option);
+            //    break;
+            //}
             case RS2_EXTENSION_OPTIONS:
             {
                 auto options = SnapshotAs<RS2_EXTENSION_OPTIONS>(snapshot);
@@ -293,9 +293,8 @@ namespace librealsense
             }
         }
         
-        void write_sensor_option(device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, const librealsense::option& option)
+        void write_sensor_option(device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, rs2_option type, const librealsense::option& option)
         {
-            rs2_option type = option.type();
             float value = option.query();
             const char* str = option.get_description();
             std::string description = str ? std::string(str) : (to_string() << "Read only option of " << type);
@@ -325,7 +324,7 @@ namespace librealsense
                 {
                     if (options->supports_option(option_id))
                     {
-                        write_sensor_option(sensor_id, timestamp, options->get_option(option_id));
+                        write_sensor_option(sensor_id, timestamp, option_id, options->get_option(option_id));
                     }
                 }
                 catch (std::exception& e)

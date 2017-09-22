@@ -71,8 +71,7 @@ namespace librealsense
         color_ep->register_option(RS2_OPTION_WHITE_BALANCE,
             std::make_shared<auto_disabling_control>(
                 white_balance_option,
-                auto_white_balance_option,
-                RS2_OPTION_WHITE_BALANCE));
+                auto_white_balance_option));
 
         auto exposure_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_EXPOSURE);
         auto auto_exposure_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_ENABLE_AUTO_EXPOSURE);
@@ -81,8 +80,7 @@ namespace librealsense
         color_ep->register_option(RS2_OPTION_EXPOSURE,
             std::make_shared<auto_disabling_control>(
                 exposure_option,
-                auto_exposure_option,
-                RS2_OPTION_EXPOSURE));
+                auto_exposure_option));
 
         color_ep->register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
             std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
