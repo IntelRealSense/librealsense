@@ -1,12 +1,10 @@
 #pragma once
 #include <vector>
 #include <thread>
-#include "depth_metrics.h"
-#include "depth_quality_viewer.h"
 
 namespace rs2
 {
-    namespace depth_profiler
+    namespace depth_quality
     {
         class metrics_model
         {
@@ -48,43 +46,18 @@ namespace rs2
             PlotMetric      out_plot;
         };
 
-        class depth_profiler_model : public rs2::viewer_model
+        class tool_model
         {
         public:
-            enum e_states { e_acquire, e_configure, e_profile, e_state_max };
-
-            depth_profiler_model() : _cur_state(nullptr),
+            tool_model() :
                 _calc_queue(1),
-                _device_model(nullptr), _metrics_model(&_calc_queue, _m),
+                _device_model(nullptr), 
+                _metrics_model(&_calc_queue, _m),
                 _viewer_model(1280, 720, "RealSense Depth Quality Tool", _device_model, &_metrics_model)
             {
-                _states.push_back(new acquire_cam);
-                _states.push_back(new configure_cam);
-                _states.push_back(new profile_metrics);
-                _cur_state = _states[e_acquire];
             }
 
-            ~depth_profiler_model()
-            {
-                _cur_state = nullptr;
-                _states.clear();
-            }
-
-            operator bool()
-            {
-                auto res = true;
-
-                // Update logic models
-                _cur_state->update(*this);
-
-                // Update rendering subsystem
-                if (!_viewer_model)
-                    res = false;
-
-                return res;
-            }
-
-            void use_device(rs2::device dev);
+            void update_configuration(const rs2::pipeline& pipe);
 
             void enqueue_for_processing(rs2::frame &depth_frame)
             {
@@ -94,38 +67,11 @@ namespace rs2
             void upload(rs2::frameset &frameset);
 
         private:
-
-            class app_state
-            {
-            public:
-                virtual void update(depth_profiler_model& app_model) = 0;
-            };
-
-            class acquire_cam : public app_state
-            {
-                void update(depth_profiler_model& app_model);
-            };
-
-            class configure_cam : public app_state
-            {
-                void update(depth_profiler_model& app_model);
-            };
-
-            class profile_metrics : public app_state
-            {
-                void update(depth_profiler_model& app_model);
-            };
-
-            void set_state(e_states state) { _cur_state = _states[state]; };
-
-            app_state*                  _cur_state;
-            std::vector<app_state*>     _states;
-
             frame_queue                     _calc_queue;
             std::mutex                      _m;
             std::shared_ptr<device_model>   _device_model;
             metrics_model                   _metrics_model;
-            depth_profiler_viewer           _viewer_model;
+            tool_window           _viewer_model;
 
             std::string                     _error_message;
             mouse_info                      _mouse;

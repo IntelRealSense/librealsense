@@ -4,9 +4,7 @@
 #include <regex>
 #include <thread>
 
-
 #include <librealsense2/rs_advanced_mode.hpp>
-
 
 #include "model-views.h"
 #include <imgui_internal.h>
@@ -20,79 +18,164 @@
 #define ARCBALL_CAMERA_IMPLEMENTATION
 #include <arcball_camera.h>
 
-using namespace rs2;
 using namespace rs400;
 
-void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
+ImVec4 flip(const ImVec4& c)
 {
-    ImGuiStyle& style = ImGui::GetStyle();
-
-    ImGuiIO& io = ImGui::GetIO();
-
-    const auto OVERSAMPLE = 1;
-
-    static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // will not be copied by AddFont* so keep in scope.
-
-        // Load 14px size fonts
-    {
-        ImFontConfig config_words;
-        config_words.OversampleV = OVERSAMPLE;
-        config_words.OversampleH = OVERSAMPLE;
-        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 16.f);
-
-        ImFontConfig config_glyphs;
-        config_glyphs.MergeMode = true;
-        config_glyphs.OversampleV = OVERSAMPLE;
-        config_glyphs.OversampleH = OVERSAMPLE;
-        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
-            font_awesome_compressed_size, 14.f, &config_glyphs, icons_ranges);
-    }
-
-    // Load 18px size fonts
-    {
-        ImFontConfig config_words;
-        config_words.OversampleV = OVERSAMPLE;
-        config_words.OversampleH = OVERSAMPLE;
-        font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 21.f, &config_words);
-
-        ImFontConfig config_glyphs;
-        config_glyphs.MergeMode = true;
-        config_glyphs.OversampleV = OVERSAMPLE;
-        config_glyphs.OversampleH = OVERSAMPLE;
-        font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
-            font_awesome_compressed_size, 20.f, &config_glyphs, icons_ranges);
-    }
-
-    style.WindowRounding = 0.0f;
-    style.ScrollbarRounding = 0.0f;
-
-    style.Colors[ImGuiCol_WindowBg] = dark_window_background;
-    style.Colors[ImGuiCol_Border] = black;
-    style.Colors[ImGuiCol_BorderShadow] = transparent;
-    style.Colors[ImGuiCol_FrameBg] = dark_window_background;
-    style.Colors[ImGuiCol_ScrollbarBg] = scrollbar_bg;
-    style.Colors[ImGuiCol_ScrollbarGrab] = scrollbar_grab;
-    style.Colors[ImGuiCol_ScrollbarGrabHovered] = scrollbar_grab + 0.1f;
-    style.Colors[ImGuiCol_ScrollbarGrabActive] = scrollbar_grab + (-0.1f);
-    style.Colors[ImGuiCol_ComboBg] = dark_window_background;
-    style.Colors[ImGuiCol_CheckMark] = regular_blue;
-    style.Colors[ImGuiCol_SliderGrab] = regular_blue;
-    style.Colors[ImGuiCol_SliderGrabActive] = regular_blue;
-    style.Colors[ImGuiCol_Button] = button_color;
-    style.Colors[ImGuiCol_ButtonHovered] = button_color + 0.1f;
-    style.Colors[ImGuiCol_ButtonActive] = button_color + (-0.1f);
-    style.Colors[ImGuiCol_Header] = header_color;
-    style.Colors[ImGuiCol_HeaderActive] = header_color + (-0.1f);
-    style.Colors[ImGuiCol_HeaderHovered] = header_color + 0.1f;
-    style.Colors[ImGuiCol_TitleBg] = title_color;
-    style.Colors[ImGuiCol_TitleBgCollapsed] = title_color;
-    style.Colors[ImGuiCol_TitleBgActive] = header_color;
+    return{ c.y, c.x, c.z, c.w };
 }
 
+ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color)
+{
+    auto res = ImVec4(r / (float)255, g / (float)255, b / (float)255, a / (float)255);
+#ifdef FLIP_COLOR_SCHEME
+    if (!consistent_color) return flip(res);
+#endif
+    return res;
+}
+
+ImVec4 operator+(const ImVec4& c, float v)
+{
+    return ImVec4(
+        std::max(0.f, std::min(1.f, c.x + v)),
+        std::max(0.f, std::min(1.f, c.y + v)),
+        std::max(0.f, std::min(1.f, c.z + v)),
+        std::max(0.f, std::min(1.f, c.w))
+    );
+}
 
 
 namespace rs2
 {
+    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
+    {
+        ImGuiStyle& style = ImGui::GetStyle();
+
+        ImGuiIO& io = ImGui::GetIO();
+
+        const auto OVERSAMPLE = 1;
+
+        static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // will not be copied by AddFont* so keep in scope.
+
+                                                                     // Load 14px size fonts
+        {
+            ImFontConfig config_words;
+            config_words.OversampleV = OVERSAMPLE;
+            config_words.OversampleH = OVERSAMPLE;
+            font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 16.f);
+
+            ImFontConfig config_glyphs;
+            config_glyphs.MergeMode = true;
+            config_glyphs.OversampleV = OVERSAMPLE;
+            config_glyphs.OversampleH = OVERSAMPLE;
+            font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
+                font_awesome_compressed_size, 14.f, &config_glyphs, icons_ranges);
+        }
+
+        // Load 18px size fonts
+        {
+            ImFontConfig config_words;
+            config_words.OversampleV = OVERSAMPLE;
+            config_words.OversampleH = OVERSAMPLE;
+            font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 21.f, &config_words);
+
+            ImFontConfig config_glyphs;
+            config_glyphs.MergeMode = true;
+            config_glyphs.OversampleV = OVERSAMPLE;
+            config_glyphs.OversampleH = OVERSAMPLE;
+            font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
+                font_awesome_compressed_size, 20.f, &config_glyphs, icons_ranges);
+        }
+
+        style.WindowRounding = 0.0f;
+        style.ScrollbarRounding = 0.0f;
+
+        style.Colors[ImGuiCol_WindowBg] = dark_window_background;
+        style.Colors[ImGuiCol_Border] = black;
+        style.Colors[ImGuiCol_BorderShadow] = transparent;
+        style.Colors[ImGuiCol_FrameBg] = dark_window_background;
+        style.Colors[ImGuiCol_ScrollbarBg] = scrollbar_bg;
+        style.Colors[ImGuiCol_ScrollbarGrab] = scrollbar_grab;
+        style.Colors[ImGuiCol_ScrollbarGrabHovered] = scrollbar_grab + 0.1f;
+        style.Colors[ImGuiCol_ScrollbarGrabActive] = scrollbar_grab + (-0.1f);
+        style.Colors[ImGuiCol_ComboBg] = dark_window_background;
+        style.Colors[ImGuiCol_CheckMark] = regular_blue;
+        style.Colors[ImGuiCol_SliderGrab] = regular_blue;
+        style.Colors[ImGuiCol_SliderGrabActive] = regular_blue;
+        style.Colors[ImGuiCol_Button] = button_color;
+        style.Colors[ImGuiCol_ButtonHovered] = button_color + 0.1f;
+        style.Colors[ImGuiCol_ButtonActive] = button_color + (-0.1f);
+        style.Colors[ImGuiCol_Header] = header_color;
+        style.Colors[ImGuiCol_HeaderActive] = header_color + (-0.1f);
+        style.Colors[ImGuiCol_HeaderHovered] = header_color + 0.1f;
+        style.Colors[ImGuiCol_TitleBg] = title_color;
+        style.Colors[ImGuiCol_TitleBgCollapsed] = title_color;
+        style.Colors[ImGuiCol_TitleBgActive] = header_color;
+    }
+
+    // Helper function to get window rect from GLFW
+    rect get_window_rect(GLFWwindow* window)
+    {
+        int width, height;
+        glfwGetWindowSize(window, &width, &height);
+        int xpos, ypos;
+        glfwGetWindowPos(window, &xpos, &ypos);
+
+        return{ (float)xpos, (float)ypos,
+            (float)width, (float)height };
+    }
+
+    // Helper function to get monitor rect from GLFW
+    rect get_monitor_rect(GLFWmonitor* monitor)
+    {
+        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+        int xpos, ypos;
+        glfwGetMonitorPos(monitor, &xpos, &ypos);
+
+        return{ (float)xpos, (float)ypos,
+            (float)mode->width, (float)mode->height };
+    }
+
+    // Select appropriate scale factor based on the display
+    // that most of the application is presented on
+    int pick_scale_factor(GLFWwindow* window)
+    {
+        auto window_rect = get_window_rect(window);
+        int count;
+        GLFWmonitor** monitors = glfwGetMonitors(&count);
+        if (count == 0) return 1.f; // Not sure if possible, but better be safe
+
+                                    // Find the monitor that covers most of the application pixels:
+        GLFWmonitor* best = monitors[0];
+        float best_area = 0.f;
+        for (int i = 0; i < count; i++)
+        {
+            auto int_area = window_rect.intersection(
+                get_monitor_rect(monitors[i])).area();
+            if (int_area >= best_area)
+            {
+                best_area = int_area;
+                best = monitors[i];
+            }
+        }
+
+        int widthMM = 0;
+        int heightMM = 0;
+        glfwGetMonitorPhysicalSize(best, &widthMM, &heightMM);
+
+        // This indicates that the monitor dimentions are unknown
+        if (widthMM * heightMM == 0) return 1.f;
+
+        // The actual calculation is somewhat arbitrary, but we are going for
+        // about 1cm buttons, regardless of resultion
+        // We discourage fractional scale factors
+        float how_many_pixels_in_mm =
+            get_monitor_rect(best).area() / (widthMM * heightMM);
+        float scale = sqrt(how_many_pixels_in_mm) / 5.f;
+        if (scale < 1.f) return 1.f;
+        return floor(scale);
+    }
+
     std::tuple<uint8_t, uint8_t, uint8_t> get_texcolor(video_frame texture, texture_coordinate texcoords)
     {
         const int w = texture.get_width(), h = texture.get_height();
@@ -3224,7 +3307,7 @@ namespace rs2
         ImFont *font1, ImFont *font2,
         const mouse_info &mouse,
         std::string& error_message,
-        device_model* device_to_remove,
+        device_model*& device_to_remove,
         viewer_model& viewer, float windows_width,
         bool& anything_started, bool update_read_only_options,
         std::map<subdevice_model*, float>& model_to_y,

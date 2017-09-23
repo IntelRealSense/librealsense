@@ -570,19 +570,53 @@ namespace rs2
     public:
         timer()
         {
-            _start = std::chrono::high_resolution_clock::now();
+            _start = std::chrono::steady_clock::now();
         }
 
         // Get elapsed milliseconds since timer creation
         float elapsed_ms() const
         {
-            auto duration = std::chrono::high_resolution_clock::now() - _start;
+            auto duration = elapsed();
             auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
             return ms;
         }
 
+        std::chrono::steady_clock::duration elapsed() const
+        {
+            return std::chrono::steady_clock::now() - _start;
+        }
+
+        std::chrono::steady_clock::time_point now() const
+        {
+            return std::chrono::steady_clock::now();
+        }
     private:
-        std::chrono::high_resolution_clock::time_point _start;
+        std::chrono::steady_clock::time_point _start;
+    };
+
+    class periodic_timer
+    {
+    public:
+        periodic_timer(std::chrono::steady_clock::duration delta)
+            : _delta(delta) 
+        {
+            _last = _time.now();
+        }
+
+        operator bool() const
+        {
+            if (_time.now() - _last > _delta)
+            {
+                _last = _time.now();
+                return true;
+            }
+            return false;
+        }
+
+    private:
+        timer _time;
+        mutable std::chrono::steady_clock::time_point _last;
+        std::chrono::steady_clock::duration _delta;
     };
 
     class texture_buffer

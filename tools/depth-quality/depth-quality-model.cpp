@@ -7,7 +7,7 @@ using namespace std;
 
 namespace rs2
 {
-    namespace depth_profiler
+    namespace depth_quality
     {
         void depth_profiler_model::acquire_cam::update(depth_profiler_model& app)
         {
@@ -43,15 +43,16 @@ namespace rs2
             app._metrics_model.update_frame_attributes(roi);
         }
 
-        void depth_profiler_model::use_device(rs2::device dev)
+        void depth_profiler_model::update_configuration(const rs2::pipeline& pipe)
         {
+            auto dev = pipe.get_device();
             _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model));
             _viewer_model._dev_model = _device_model;
 
             // Connect the device_model to the viewer_model
             for (auto&& sub : _device_model.get()->subdevices)
             {
-                auto profiles = sub->get_selected_profiles();
+                auto profiles = pipe.get_active_streams();
                 sub->streaming = true;      // The streaming activated externally to the device_model
                 for (auto&& profile : profiles)
                 {
@@ -82,39 +83,40 @@ namespace rs2
                 while (_active)
                 {
                     rs2::frame depth_frame;
-                    try { depth_frame = _frame_queue->wait_for_frame(10); }
-                    catch (...) { continue; }
-
-                    if (depth_frame)
+                    if (!_frame_queue->poll_for_frame(&depth_frame))
                     {
-                        auto stream_type = depth_frame.get_profile().stream_type();
+                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                        continue;
+                    }
 
-                        if (RS2_STREAM_DEPTH == stream_type)
+
+                    auto stream_type = depth_frame.get_profile().stream_type();
+
+                    if (RS2_STREAM_DEPTH == stream_type)
+                    {
+                        float su = 0;
+                        rs2_intrinsics intrin;
+                        region_of_interest roi;
                         {
-                            float su = 0;
-                            rs2_intrinsics intrin;
-                            region_of_interest roi;
-                            {
-                                std::lock_guard<std::mutex> lock(m);
-                                su = _depth_scale_units;
-                                intrin = _depth_intrinsic;
-                                roi = _roi;
-                            }
-
-                            auto metrics = analyze_depth_image(depth_frame, su, &intrin, _roi);
-
-                            {
-                                std::lock_guard<std::mutex> lock(m);
-                                _latest_metrics = metrics;
-                            }
-                            cout << "Depth Average distance is : " << _latest_metrics.depth.avg_dist << endl;
-                            cout << "Standard_deviation is : " << _latest_metrics.depth.std_dev << endl;
-                            cout << "Fillrate is : " << _latest_metrics.non_null_pct << endl;
+                            std::lock_guard<std::mutex> lock(m);
+                            su = _depth_scale_units;
+                            intrin = _depth_intrinsic;
+                            roi = _roi;
                         }
-                        else
+
+                        auto metrics = analyze_depth_image(depth_frame, su, &intrin, _roi);
+
                         {
-                            std::cout << __FUNCTION__ << " : unexpected frame type received - " << rs2_stream_to_string(stream_type) << std::endl;
+                            std::lock_guard<std::mutex> lock(m);
+                            _latest_metrics = metrics;
                         }
+                        cout << "Depth Average distance is : " << _latest_metrics.depth.avg_dist << endl;
+                        cout << "Standard_deviation is : " << _latest_metrics.depth.std_dev << endl;
+                        cout << "Fillrate is : " << _latest_metrics.non_null_pct << endl;
+                    }
+                    else
+                    {
+                        std::cout << __FUNCTION__ << " : unexpected frame type received - " << rs2_stream_to_string(stream_type) << std::endl;
                     }
                 }
             });
@@ -124,9 +126,9 @@ namespace rs2
         {
             _active = false;
             _worker_thread.join();
-            // Evgeni flush queue hack - not-empty frame_queue delete fails on continuation
-            try { _frame_queue->wait_for_frame(10); }
-            catch (...) {}
+
+            rs2::frame f;
+            while (_frame_queue->poll_for_frame(&f));
         }
 
         void metrics_model::render()

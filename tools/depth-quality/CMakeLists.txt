@@ -32,14 +32,14 @@ elseif(APPLE)
 endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-    set(RS_VIEWER_CPP
+    set(RS_QUALITY_TOOL_CPP
             ./rs-depth-quality.cpp
-            ./depth_quality_viewer.h
-            ./depth_quality_viewer.cpp
-            ./depth_quality_model.h
-            ./depth_quality_model.cpp
-            ./depth_metrics.h
+            ./depth-quality-model.h
+            ./depth-quality-model.cpp
+            ./depth-metrics.h
             ../../common/rendering.h
+            ../../common/ux-window.h
+            ../../common/ux-window.cpp
             ../../common/model-views.h
             ../../common/model-views.cpp
             ../../third-party/imgui/imgui.cpp
@@ -49,9 +49,38 @@ if(BUILD_GRAPHICAL_EXAMPLES)
             ../../third-party/imgui/imgui-fonts-fontawesome.hpp
         )
 
-    add_executable(rs-depth-quality ${RS_VIEWER_CPP})
+    if(WIN32)
+        add_executable(rs-depth-quality WIN32 ${RS_QUALITY_TOOL_CPP}
+                ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
+                ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc)
+
+        source_group("Resources" FILES
+                ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
+                ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc)
+
+        source_group("3rd Party" FILES
+            ../../third-party/imgui/imgui.cpp
+            ../../third-party/imgui/imgui_draw.cpp
+            ../../third-party/imgui/imgui_impl_glfw.cpp
+            ../../third-party/imgui/imgui-fonts-karla.hpp
+            ../../third-party/imgui/imgui-fonts-fontawesome.hpp)
+
+        include_directories(rs-depth-quality ../../common  ../../third-party  
+                                             ../../third-party/imgui  
+                                             ../../third-party/tclap/include
+                                             ${CMAKE_CURRENT_SOURCE_DIR}/res/)
+    
+    else()
+        add_executable(rs-depth-quality ${RS_QUALITY_TOOL_CPP})
+
+        include_directories(rs-depth-quality ../../common  ../../third-party  
+                                             ../../third-party/imgui  
+                                             ../../third-party/tclap/include)
+    endif()
+
+    add_definitions(-DFLIP_COLOR_SCHEME)
+
     target_link_libraries(rs-depth-quality ${DEPENDENCIES} ${GTK3_LIBRARIES})
-    include_directories(rs-depth-quality ../../common  ../../third-party  ../../third-party/imgui  ../../third-party/tclap/include)
     set_target_properties (rs-depth-quality PROPERTIES
         FOLDER Tools
     )

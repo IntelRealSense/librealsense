@@ -13,7 +13,7 @@ namespace rs2
 
 namespace rs2
 {
-    namespace depth_profiler
+    namespace depth_quality
     {
         struct metrics
         {
