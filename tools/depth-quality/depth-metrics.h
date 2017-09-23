@@ -3,13 +3,8 @@
 #include <mutex>
 #include <imgui.h>
 #include <librealsense2/rsutil.h>
-
-// FW Declaration
-namespace rs2
-{
-    struct region_of_interest;
-    struct float3;
-}
+#include <librealsense2/rs.hpp>
+#include "rendering.h"
 
 namespace rs2
 {
@@ -22,7 +17,6 @@ namespace rs2
             double fit;
             double distance;
             double angle;
-            std::vector<rs2::float3> outliers;
             double outlier_pct;
         };
 
@@ -33,20 +27,12 @@ namespace rs2
 
             rs2::region_of_interest roi;
 
-            metrics plane;
+            metrics planar;
             metrics depth;
+            plane p;
 
             double non_null_pct;
         };
-
-        struct plane
-        {
-            double a;
-            double b;
-            double c;
-            double d;
-        };
-        inline bool operator==(const plane& lhs, const plane& rhs) { return lhs.a == rhs.a && lhs.b == rhs.b && lhs.c == rhs.c && lhs.d == rhs.d; }
 
         inline plane plane_from_point_and_normal(const rs2::float3& point, const rs2::float3& normal)
         {
@@ -135,9 +121,10 @@ namespace rs2
 
             result.angle = std::acos(std::abs(p.c)) / M_PI * 180;
 
-            for (auto point : points) if (std::abs(std::abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d) * 1000 - result.avg_dist) > result.std_dev * std_devs) result.outliers.push_back(point);
+            std::vector<float3> outliers;
+            for (auto point : points) if (std::abs(std::abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d) * 1000 - result.avg_dist) > result.std_dev * std_devs) outliers.push_back(point);
 
-            result.outlier_pct = result.outliers.size() / float(distances.size()) * 100;
+            result.outlier_pct = outliers.size() / float(distances.size()) * 100;
 
             return result;
         }
@@ -168,35 +155,6 @@ namespace rs2
 
             return result;
         }
-
-
-        class PlotMetric
-        {
-        private:
-            /*int size;*/
-            int idx;
-            float vals[100];
-            float min, max;
-            std::string id, label, tail;
-            ImVec2 size;
-
-        public:
-            PlotMetric(const std::string& name, float min, float max, ImVec2 size, const std::string& tail) : idx(0), vals(), min(min), max(max), id("##" + name), label(name + " = "), tail(tail), size(size) {}
-            ~PlotMetric() {}
-
-            void add_value(float val)
-            {
-                vals[idx] = val;
-                idx = (idx + 1) % 100;
-            }
-            void plot()
-            {
-                std::stringstream ss;
-                ss << label << vals[(100 + idx - 1) % 100] << tail;
-                ImGui::PlotLines(id.c_str(), vals, 100, idx, ss.str().c_str(), min, max, size);
-            }
-        };
-
 
         inline snapshot_metrics analyze_depth_image(const rs2::video_frame& frame, float units, const rs2_intrinsics * intrin, rs2::region_of_interest roi)
         {
@@ -243,12 +201,13 @@ namespace rs2
             plane p = plane_from_points(roi_pixels);
 
             if (p == plane{ 0, 0, 0, 0 }) {
-                 std::cout << "The points in RoI don't span a plane." << std::endl;
+                //std::cout << "The points in RoI don't span a plane." << std::endl;
                 return result;
             }
 
-            result.plane = calculate_plane_metrics(roi_pixels, p);
+            result.planar = calculate_plane_metrics(roi_pixels, p);
             result.depth = calculate_depth_metrics(roi_pixels);
+            result.p = p;
 
             result.non_null_pct = roi_pixels.size() / double((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * 100;
 

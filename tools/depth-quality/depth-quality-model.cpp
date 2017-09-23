@@ -1,7 +1,5 @@
-#include <iostream>
-#include <string>
-#include "depth_quality_viewer.h"
-#include "depth_quality_model.h"
+#include "depth-quality-model.h"
+#include "model-views.h"
 
 using namespace std;
 
@@ -9,14 +7,8 @@ namespace rs2
 {
     namespace depth_quality
     {
-        void depth_profiler_model::acquire_cam::update(depth_profiler_model& app)
-        {
-            if (app._device_model.get())
-                app.set_state(e_states::e_configure);
-        }
-
-        // A transient state required to acquire and distribute depth stream specifics among relevant parties
-        void depth_profiler_model::configure_cam::update(depth_profiler_model& app)
+        //// A transient state required to acquire and distribute depth stream specifics among relevant parties
+        /*void depth_profiler_model::configure_cam::update(depth_profiler_model& app)
         {
             auto dev = app._device_model.get()->dev;
             auto depth_scale_units = dev.first<depth_sensor>().get_depth_scale();
@@ -27,63 +19,271 @@ namespace rs2
                 std::lock_guard<std::mutex> lock(app._m);
                 app._metrics_model.update_stream_attributes(depth_intrinsic, depth_scale_units);
             }
+        }*/
 
-            app.set_state(e_states::e_profile);
+        //void depth_profiler_model::profile_metrics::update(depth_profiler_model& app)
+        //{
+        //    // Update active ROI for computation
+        //    std::lock_guard<std::mutex> lock(app._m);
+        //    // Evgeni - get actual ROI selection from stream_model
+        //    //auto roi = app._viewer_model.streams[0].dev->roi_rect; 
+        //    //app._metrics_model.update_frame_attributes({ (int)roi.x, (int)roi.y, (int)(roi.x+roi.w), (int)(roi.y + roi.h)});
+        //    auto res = app._viewer_model.streams[0].size;
+        //    region_of_interest roi{ int(res.x / 3), int(res.y / 3), int(res.x * 2 / 3), int(res.y * 2 / 3) };
+        //    app._metrics_model.update_frame_attributes(roi);
+        //}
+
+        tool_model::tool_model()
+            : _update_readonly_options_timer(std::chrono::seconds(6))
+        {
+            _viewer_model.is_3d_view = true;
+            _viewer_model.allow_3d_source_change = false;
+            _viewer_model.allow_stream_close = false;
+            //_viewer_model.draw_plane = true;
         }
 
-        void depth_profiler_model::profile_metrics::update(depth_profiler_model& app)
+        void tool_model::start()
         {
-            // Update active ROI for computation
-            std::lock_guard<std::mutex> lock(app._m);
-            // Evgeni - get actual ROI selection from stream_model
-            //auto roi = app._viewer_model.streams[0].dev->roi_rect; 
-            //app._metrics_model.update_frame_attributes({ (int)roi.x, (int)roi.y, (int)(roi.x+roi.w), (int)(roi.y + roi.h)});
-            auto res = app._viewer_model.streams[0].size;
-            region_of_interest roi{ int(res.x / 3), int(res.y / 3), int(res.x * 2 / 3), int(res.y * 2 / 3) };
-            app._metrics_model.update_frame_attributes(roi);
+            _pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
+            _pipe.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, 30);
+
+            // Wait till a valid device is found
+            _pipe.start();
+
+            update_configuration();
         }
 
-        void depth_profiler_model::update_configuration(const rs2::pipeline& pipe)
+        void tool_model::render(ux_window& win)
         {
-            auto dev = pipe.get_device();
+            win.begin_viewport();
+
+            rect viewer_rect = { _viewer_model.panel_width,
+                _viewer_model.panel_y, win.width() -
+                _viewer_model.panel_width,
+                win.height() - _viewer_model.panel_y };
+
+            if (_first_frame)
+            {
+                _viewer_model.update_3d_camera(viewer_rect, win.get_mouse(), true);
+                _first_frame = false;
+            }
+
+            _viewer_model.show_top_bar(win, viewer_rect);
+            _viewer_model.active_plane = _metrics.get_plane();
+            _viewer_model.draw_viewport(viewer_rect, win, 1, _error_message);
+
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
+            ImGui::SetNextWindowPos({ 0, 0 });
+            ImGui::SetNextWindowSize({ _viewer_model.panel_width, _viewer_model.panel_y });
+            ImGui::Begin("Add Device Panel", nullptr, viewer_ui_traits::imgui_flags);
+            ImGui::End();
+            ImGui::PopStyleColor();
+
+            // Set window position and size
+            ImGui::SetNextWindowPos({ 0, _viewer_model.panel_y });
+            ImGui::SetNextWindowSize({ _viewer_model.panel_width, win.height() - _viewer_model.panel_y });
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, sensor_bg);
+
+            // *********************
+            // Creating window menus
+            // *********************
+            ImGui::Begin("Control Panel", nullptr, viewer_ui_traits::imgui_flags | ImGuiWindowFlags_AlwaysVerticalScrollbar);
+            ImGui::SetContentRegionWidth(_viewer_model.panel_width - 26);
+
+            if (_device_model.get())
+            {
+                device_model* device_to_remove = nullptr;
+                std::map<subdevice_model*, float> model_to_y;
+                std::map<subdevice_model*, float> model_to_abs_y;
+                auto windows_width = ImGui::GetContentRegionMax().x;
+
+                _device_model->draw_controls(_viewer_model.panel_width, _viewer_model.panel_y,
+                    win.get_font(), win.get_large_font(), win.get_mouse(),
+                    _error_message, device_to_remove, _viewer_model, windows_width,
+                    _update_readonly_options_timer,
+                    model_to_y, model_to_abs_y);
+
+
+                if (_depth_sensor_model.get())
+                {
+                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
+                    ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
+                    ImGui::PushFont(win.get_font());
+
+                    ImGui::PushStyleColor(ImGuiCol_Header, sensor_header_light_blue);
+                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 10, 10 });
+                    ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, { 0, 0 });
+
+                    if (ImGui::TreeNodeEx("Configuration", ImGuiTreeNodeFlags_DefaultOpen))
+                    {
+                        ImGui::PopStyleVar();
+                        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
+
+                        if (_depth_sensor_model->draw_stream_selection())
+                        {
+                            if (_depth_sensor_model->is_selected_combination_supported())
+                            {
+                                auto config = _depth_sensor_model->get_selected_profiles().front().as<video_stream_profile>();
+
+                                _pipe.stop();
+                                _pipe.disable_all();
+
+                                _pipe.enable_stream(RS2_STREAM_DEPTH, 0, config.width(), config.height(), RS2_FORMAT_Z16, config.fps());
+                                _pipe.enable_stream(RS2_STREAM_INFRARED, 1, config.width(), config.height(), RS2_FORMAT_Y8, config.fps());
+
+                                // Wait till a valid device is found
+                                _pipe.start();
+
+                                update_configuration();
+                            }
+                            else
+                            {
+                                _error_message = "Selected configuration is not supported!";
+                            }
+                        }
+
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+                        ImGui::TreePop();
+                    }
+
+                    ImGui::PopStyleVar();
+                    ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, { 0, 0 });
+
+                    if (ImGui::TreeNodeEx("Metrics", ImGuiTreeNodeFlags_DefaultOpen))
+                    {
+                        ImGui::PopStyleVar();
+                        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
+
+                        _metrics.render(win);
+
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+                        ImGui::TreePop();
+                    }
+
+                    ImGui::PopStyleVar();
+                    ImGui::PopStyleVar();
+                    ImGui::PopFont();
+                    ImGui::PopStyleColor(3);
+                }
+
+
+            }
+
+            ImGui::End();
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor();
+
+            frameset f;
+            if (_pipe.poll_for_frames(&f))
+            {
+                for (auto&& frame : f)
+                {
+                    if (frame.is<depth_frame>() && !_viewer_model.paused)
+                    {
+                        _metrics.begin_process_frame(frame);
+                    }
+                    _viewer_model.upload_frame(std::move(frame));
+                }
+            }
+
+            _viewer_model.gc_streams();
+            _viewer_model.popup_if_error(win.get_font(), _error_message);
+        }
+
+        void tool_model::update_configuration()
+        {
+            auto dev = _pipe.get_device();
             _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model));
-            _viewer_model._dev_model = _device_model;
+            _device_model->allow_remove = false;
+            _device_model->show_depth_only = true;
+            _device_model->show_stream_selection = false;
+            _depth_sensor_model = std::shared_ptr<rs2::subdevice_model>(
+                new subdevice_model(dev, dev.first<depth_sensor>(), _error_message));
+            _depth_sensor_model->draw_streams_selector = false;
+            _depth_sensor_model->draw_fps_selector = false;
 
             // Connect the device_model to the viewer_model
             for (auto&& sub : _device_model.get()->subdevices)
             {
-                auto profiles = pipe.get_active_streams();
+                if (!sub->s.is<depth_sensor>()) continue;
+                auto profiles = _pipe.get_active_streams();
                 sub->streaming = true;      // The streaming activated externally to the device_model
                 for (auto&& profile : profiles)
                 {
                     _viewer_model.streams[profile.unique_id()].dev = sub;
+
+                    if (profile.stream_type() == RS2_STREAM_DEPTH)
+                    {
+                        auto depth_profile = profile.as<video_stream_profile>();
+                        _metrics.update_stream_attributes(depth_profile.get_intrinsics(),
+                                                          sub->s.as<depth_sensor>().get_depth_scale());
+
+                        _metrics.update_frame_attributes({ depth_profile.width() / 3, depth_profile.height() / 3,
+                                                           2 * (depth_profile.width() / 3), 2 * (depth_profile.height() / 3) });
+                    }
                 }
             }
         }
 
-        void depth_profiler_model::upload(rs2::frameset &frameset)
-        {
-            // Upload new frames for rendering
-            for (size_t i = 0; i < frameset.size(); i++)
-                _viewer_model.upload_frame(frameset[i]);
-        }
+        //void depth_profiler_model::upload(rs2::frameset &frameset)
+        //{
+        //    // Upload new frames for rendering
+        //    for (size_t i = 0; i < frameset.size(); i++)
+        //        _viewer_model.upload_frame(frameset[i]);
+        //}
 
-        metrics_model::metrics_model(frame_queue* _input_queue, std::mutex &m) :
-            _frame_queue(_input_queue),
+        metrics_model::metrics_model() :
+            _frame_queue(1),
             _depth_scale_units(0.f), _active(true),
-            avg_plot("AVG", 0, 10, { 180, 50 }, " (mm)"),
-            std_plot("STD", 0, 10, { 180, 50 }, " (mm)"),
-            fill_plot("FILL", 0, 100, { 180, 50 }, "%"),
-            dist_plot("DIST", 0, 5, { 180, 50 }, " (m)"),
-            angle_plot("ANGLE", 0, 180, { 180, 50 }, " (deg)"),
-            out_plot("OUTLIERS", 0, 100, { 180, 50 }, "%")
+            _avg_plot("AVG", 0, 10, { 270, 50 }, " (mm)"),
+            _std_plot("STD", 0, 10, { 270, 50 }, " (mm)"),
+            _fill_plot("FILL", 0, 100, { 270, 50 }, "%"),
+            _dist_plot("DIST", 0, 5, { 270, 50 }, " (m)"),
+            _angle_plot("ANGLE", 0, 180, { 270, 50 }, " (deg)"),
+            _out_plot("OUTLIERS", 0, 100, { 270, 50 }, "%%")
         {
-            _worker_thread = std::thread([&]() {
+            _avg_plot.ranges[metric_plot::GREEN_RANGE] = { 0.f, 1.f };
+            _avg_plot.ranges[metric_plot::YELLOW_RANGE] = { 0.f, 7.f };
+            _avg_plot.ranges[metric_plot::RED_RANGE] = { 0.f, 10000.f };
 
+            _avg_plot.description = "Average Distance from Plane Fit\nThis metric approximates a plane within\nthe ROI and calculates the average\ndistance of points in the ROI\nfrom that plane, in mm";
+
+            _std_plot.ranges[metric_plot::GREEN_RANGE] = { 0.f, 1.f };
+            _std_plot.ranges[metric_plot::YELLOW_RANGE] = { 0.f, 7.f };
+            _std_plot.ranges[metric_plot::RED_RANGE] = { 0.f, 10000.f };
+
+            _std_plot.description = "Standard Deviation from Plane Fit\nThis metric approximates a plane within\nthe ROI and calculates the\nstandard deviation of distances\nof points in the ROI from that plane";
+
+            _fill_plot.ranges[metric_plot::GREEN_RANGE] = { 90.f, 100.f };
+            _fill_plot.ranges[metric_plot::YELLOW_RANGE] = { 50.f, 100.f };
+            _fill_plot.ranges[metric_plot::RED_RANGE] = { 0.f, 100.f };
+
+            _fill_plot.description = "Fill Rate\nPercentage of pixels with valid depth values\nout of all pixels within the ROI";
+
+            _dist_plot.ranges[metric_plot::GREEN_RANGE] = { 0.f, 2.f };
+            _dist_plot.ranges[metric_plot::YELLOW_RANGE] = { 0.f, 3.f };
+            _dist_plot.ranges[metric_plot::RED_RANGE] = { 0.f, 7.f };
+
+            _dist_plot.description = "Approximate Distance\nWhen facing a flat wall at right angle\nthis metric estimates the distance\nin meters to that wall";
+
+            _angle_plot.ranges[metric_plot::GREEN_RANGE] = { -5.f, 5.f };
+            _angle_plot.ranges[metric_plot::YELLOW_RANGE] = { -10.f, 10.f };
+            _angle_plot.ranges[metric_plot::RED_RANGE] = { -100.f, 100.f };
+
+            _angle_plot.description = "Wall Angle\nWhen facing a flat wall this metric\nestimates the angle to the wall.";
+
+            _out_plot.ranges[metric_plot::GREEN_RANGE] = { 0.f, 5.f };
+            _out_plot.ranges[metric_plot::YELLOW_RANGE] = { 0.f, 20.f };
+            _out_plot.ranges[metric_plot::RED_RANGE] = { 0.f, 100.f };
+
+            _out_plot.description = "Outliers Percentage\nMeasures the percentage of pixels\nthat do not fit in with\nthe gaussian distribution";
+
+            _worker_thread = std::thread([this]() {
                 while (_active)
                 {
                     rs2::frame depth_frame;
-                    if (!_frame_queue->poll_for_frame(&depth_frame))
+                    if (!_frame_queue.poll_for_frame(&depth_frame))
                     {
                         std::this_thread::sleep_for(std::chrono::milliseconds(10));
                         continue;
@@ -98,7 +298,7 @@ namespace rs2
                         rs2_intrinsics intrin;
                         region_of_interest roi;
                         {
-                            std::lock_guard<std::mutex> lock(m);
+                            std::lock_guard<std::mutex> lock(_m);
                             su = _depth_scale_units;
                             intrin = _depth_intrinsic;
                             roi = _roi;
@@ -107,7 +307,7 @@ namespace rs2
                         auto metrics = analyze_depth_image(depth_frame, su, &intrin, _roi);
 
                         {
-                            std::lock_guard<std::mutex> lock(m);
+                            std::lock_guard<std::mutex> lock(_m);
                             _latest_metrics = metrics;
                         }
                         cout << "Depth Average distance is : " << _latest_metrics.depth.avg_dist << endl;
@@ -128,51 +328,77 @@ namespace rs2
             _worker_thread.join();
 
             rs2::frame f;
-            while (_frame_queue->poll_for_frame(&f));
+            while (_frame_queue.poll_for_frame(&f));
         }
 
-        void metrics_model::render()
+        void metric_plot::render(ux_window& win)
         {
-            metrics data = true/*use_rect_fitting*/ ? _latest_metrics.plane : _latest_metrics.depth; // Evgeni
+            std::stringstream ss;
+            auto val = vals[(100 + idx - 1) % 100];
+            ss << label << val << tail;
 
-            avg_plot.add_value(data.avg_dist);
-            std_plot.add_value(data.std_dev);
-            fill_plot.add_value(_latest_metrics.non_null_pct);
-            dist_plot.add_value(data.distance);
-            angle_plot.add_value(data.angle);
-            out_plot.add_value(data.outlier_pct);
+            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
 
-            avg_plot.plot();
-            std_plot.plot();
-            fill_plot.plot();
-            dist_plot.plot();
-            angle_plot.plot();
-            out_plot.plot();
+            auto range = get_range(val);
+            if (range == GREEN_RANGE)
+                ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0x20, 0xe0, 0x20, 0xff, true));
+            else if (range == YELLOW_RANGE)
+                ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xf0, 0xf0, 0, 0xff));
+            else if (range == RED_RANGE)
+                ImGui::PushStyleColor(ImGuiCol_Text, redish);
+            else
+                ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
 
+            ImGui::PushFont(win.get_font());
+
+            ImGui::PushStyleColor(ImGuiCol_Header, sensor_header_light_blue);
+
+            if (ImGui::TreeNode(label.c_str(), ss.str().c_str()))
+            {
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, device_info_color);
+                ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
+                std::string did = to_string() << id << "-desc";
+                auto desc_size = size;
+                auto lines = std::count(description.begin(), description.end(), '\n') + 1;
+                desc_size.y = lines * 20;
+                ImGui::InputTextMultiline(did.c_str(), const_cast<char*>(description.c_str()),
+                    description.size() + 1, desc_size, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+                ImGui::PopStyleColor(3);
+
+                ImGui::PlotLines(id.c_str(), vals, 100, idx, ss.str().c_str(), min, max, size);
+                ImGui::TreePop();
+            }
+
+            ImGui::PopFont();
+            ImGui::PopStyleColor(3);
         }
 
-        void metrics_model::visualize(snapshot_metrics stats, int w, int h, bool plane) const
+        void metrics_model::render(ux_window& win)
         {
-            float x_scale = w / float(stats.width);
-            float y_scale = h / float(stats.height);
-            //ImGui::PushStyleColor(ImGuiCol_WindowBg, );
-            //ImGui::SetNextWindowPos({ float(area.x), float(area.y) });
-            //ImGui::SetNextWindowSize({ float(area.size), float(area.size) });
+            std::lock_guard<std::mutex> lock(_m);
+            metrics data = _latest_metrics.planar;
 
-            ImGui::GetWindowDrawList()->AddRectFilled({ float(stats.roi.min_x)*x_scale, float(stats.roi.min_y)*y_scale }, { float(stats.roi.max_x)*x_scale, float(stats.roi.max_y)*y_scale },
-                ImGui::ColorConvertFloat4ToU32(ImVec4(0.f + ((plane) ? stats.plane.fit : stats.depth.fit), 1.f - ((plane) ? stats.plane.fit : stats.depth.fit), 0, 0.25f)), 5.f, 15.f);
+            _avg_plot.add_value(data.avg_dist);
+            _std_plot.add_value(data.std_dev);
+            _fill_plot.add_value(_latest_metrics.non_null_pct);
+            _dist_plot.add_value(data.distance);
+            _angle_plot.add_value(data.angle);
+            _out_plot.add_value(data.outlier_pct);
 
-            //std::stringstream ss; ss << stats.roi.min_x << ", " << stats.roi.min_y;
-            //auto s = ss.str();
-            /*ImGui::Begin(s.c_str(), nullptr,
-            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);*/
+            _avg_plot.render(win);
+            _std_plot.render(win);
+            _fill_plot.render(win);
+            _dist_plot.render(win);
+            _angle_plot.render(win);
+            _out_plot.render(win);
 
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+            if (ImGui::Button("Save Report", { 290, 25 }))
+            {
 
-            /*if (ImGui::IsItemHovered())
-            ImGui::SetTooltip(s.c_str());*/
-
-            //ImGui::End();
-            //ImGui::PopStyleColor();
+            }
+            ImGui::PopStyleColor();
         }
     }
 }

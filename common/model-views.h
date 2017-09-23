@@ -5,6 +5,7 @@
 #include <librealsense2/rs.hpp>
 
 #include "rendering.h"
+#include "ux-window.h"
 #include "parser.hpp"
 
 #define GLFW_INCLUDE_GLU
@@ -155,7 +156,7 @@ namespace rs2
     public:
         subdevice_model(device& dev, sensor& s, std::string& error_message);
         bool is_there_common_fps() ;
-        void draw_stream_selection();
+        bool draw_stream_selection();
         bool is_selected_combination_supported();
         std::vector<stream_profile> get_selected_profiles();
         void stop();
@@ -232,6 +233,9 @@ namespace rs2
         bool roi_checked = false;
 
         std::atomic<bool> _pause;
+
+        bool draw_streams_selector = true;
+        bool draw_fps_selector = true;
     };
 
     class viewer_model;
@@ -311,7 +315,7 @@ namespace rs2
             std::string& error_message,
             device_model*& device_to_remove,
             viewer_model& viewer, float windows_width,
-            bool& anything_started, bool update_read_only_options,
+            bool update_read_only_options,
             std::map<subdevice_model*, float>& model_to_y,
             std::map<subdevice_model*, float>& model_to_abs_y);
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
@@ -326,6 +330,10 @@ namespace rs2
         bool _playback_repeat = true;
         bool _should_replay = false;
         bool show_device_info = false;
+
+        bool allow_remove = true;
+        bool show_depth_only = false;
+        bool show_stream_selection = true;
 
         std::vector<std::pair<std::string, std::string>> infos;
         std::vector<std::string> restarting_device_info;
@@ -466,7 +474,13 @@ namespace rs2
     class viewer_model
     {
     public:
-        void reset_camera(float3 pos = { 0.0f, 0.0f, -1.5f });
+        void reset_camera(float3 pos = { 0.0f, 0.0f, -1.0f });
+
+        const float panel_width = 340.f;
+        const float panel_y = 50.f;
+        const float default_log_h = 80.f;
+
+        float get_output_height() const { return (is_output_collapsed ? default_log_h : 20); }
 
         viewer_model()
         {
@@ -495,6 +509,8 @@ namespace rs2
         void update_3d_camera(const rect& viewer_rect,
                               mouse_info& mouse, bool force = false);
 
+        void show_top_bar(ux_window& window, const rect& viewer_rect);
+
         void render_3d_view(const rect& view_rect, float scale_factor);
 
         void render_2d_view(const rect& view_rect, double width, double heigth, int output_height,
@@ -510,6 +526,15 @@ namespace rs2
 
         notifications_model not_model;
         bool is_output_collapsed = false;
+        bool is_3d_view = false;
+        bool paused = false;
+
+        void draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
+
+        bool allow_3d_source_change = true;
+        bool allow_stream_close = true;
+        plane active_plane{ 0, 0, 0, 0 };
+        bool draw_plane = false;
     private:
         std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
         void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, const ImVec4& color);

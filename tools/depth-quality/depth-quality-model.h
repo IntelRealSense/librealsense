@@ -1,4 +1,11 @@
 #pragma once
+
+#include <librealsense2/rs.hpp>
+
+#include "depth-metrics.h"
+#include "model-views.h"
+#include "ux-window.h"
+
 #include <vector>
 #include <thread>
 
@@ -6,75 +13,123 @@ namespace rs2
 {
     namespace depth_quality
     {
+        class metric_plot
+        {
+        private:
+            /*int size;*/
+            int idx;
+            float vals[100];
+            float min, max;
+            std::string id, label, tail;
+            ImVec2 size;
+        public:
+            enum range
+            {
+                GREEN_RANGE,
+                YELLOW_RANGE,
+                RED_RANGE,
+                MAX_RANGE
+            };
+
+            float2 ranges[MAX_RANGE];
+            std::string description;
+
+            range get_range(float val) const
+            {
+                for (int i = 0; i < MAX_RANGE; i++)
+                {
+                    if (ranges[i].x < val && val <= ranges[i].y)
+                        return (range)i;
+                }
+                return MAX_RANGE;
+            }
+
+            metric_plot(const std::string& name, float min, float max, ImVec2 size, const std::string& tail) 
+                : idx(0), vals(), min(min), max(max), id("##" + name), label(name + " = "), tail(tail), size(size) 
+            {
+                description = "";
+                for (int i = 0; i < MAX_RANGE; i++) ranges[i] = { 0.f, 0.f };
+            }
+            ~metric_plot() {}
+
+            void add_value(float val)
+            {
+                vals[idx] = val;
+                idx = (idx + 1) % 100;
+            }
+            void render(ux_window& win);
+        };
+
         class metrics_model
         {
         public:
-            metrics_model(frame_queue* _input_queue, std::mutex &m/*, depth_profiler_viewer* viewer*/);
+            metrics_model();
             ~metrics_model();
 
-            void render();
+            void render(ux_window& win);
+
+            plane get_plane() 
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                return _latest_metrics.p;
+            }
 
             void update_stream_attributes(const rs2_intrinsics &intrinsic, const float& scale_units)
             {
-                _depth_intrinsic = intrinsic; _depth_scale_units = scale_units;
+                std::lock_guard<std::mutex> lock(_m);
+                _depth_intrinsic = intrinsic; 
+                _depth_scale_units = scale_units;
             };
 
             void update_frame_attributes(const region_of_interest& roi)
             {
+                std::lock_guard<std::mutex> lock(_m);
                 _roi = roi;
             }
+
+            void begin_process_frame(rs2::frame f) { _frame_queue.enqueue(std::move(f)); }
 
         private:
             metrics_model(const metrics_model&);
 
-            void visualize(snapshot_metrics stats, int w, int h, bool plane) const;
-
-            frame_queue*            _frame_queue;
+            frame_queue             _frame_queue;
             std::thread             _worker_thread;
 
-            rs2_intrinsics      _depth_intrinsic;
-            float               _depth_scale_units;
-            region_of_interest  _roi;
-            snapshot_metrics    _latest_metrics;
-            bool                _active;
+            rs2_intrinsics          _depth_intrinsic;
+            float                   _depth_scale_units;
+            region_of_interest      _roi;
+            snapshot_metrics        _latest_metrics;
+            bool                    _active;
 
-            PlotMetric      avg_plot;
-            PlotMetric      std_plot;
-            PlotMetric      fill_plot;
-            PlotMetric      dist_plot;
-            PlotMetric      angle_plot;
-            PlotMetric      out_plot;
+            metric_plot              _avg_plot;
+            metric_plot              _std_plot;
+            metric_plot              _fill_plot;
+            metric_plot              _dist_plot;
+            metric_plot              _angle_plot;
+            metric_plot              _out_plot;
+            std::mutex               _m;
         };
 
         class tool_model
         {
         public:
-            tool_model() :
-                _calc_queue(1),
-                _device_model(nullptr), 
-                _metrics_model(&_calc_queue, _m),
-                _viewer_model(1280, 720, "RealSense Depth Quality Tool", _device_model, &_metrics_model)
-            {
-            }
+            tool_model();
 
-            void update_configuration(const rs2::pipeline& pipe);
+            void start();
 
-            void enqueue_for_processing(rs2::frame &depth_frame)
-            {
-                _calc_queue.enqueue(depth_frame);
-            }
+            void render(ux_window& win);
 
-            void upload(rs2::frameset &frameset);
+            void update_configuration();
 
         private:
-            frame_queue                     _calc_queue;
-            std::mutex                      _m;
+            pipeline                        _pipe;
             std::shared_ptr<device_model>   _device_model;
-            metrics_model                   _metrics_model;
-            tool_window           _viewer_model;
-
+            viewer_model                    _viewer_model;
+            std::shared_ptr<subdevice_model> _depth_sensor_model;
             std::string                     _error_message;
-            mouse_info                      _mouse;
+            bool                            _first_frame = true;
+            periodic_timer                  _update_readonly_options_timer;
+            metrics_model                   _metrics;
         };
 
     }

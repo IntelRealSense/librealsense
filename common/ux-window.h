@@ -1,11 +1,12 @@
 #pragma once
 
-#ifndef GLFW_INCLUDE_GLU
 #define GLFW_INCLUDE_GLU
-#endif // !GLFW_INCLUDE_GLU
 
 #include <GLFW/glfw3.h>
-#include <model-views.h>
+#include "imgui.h"
+#include <string>
+#include <functional>
+#include "rendering.h"
 
 namespace rs2
 {
@@ -68,5 +69,6 @@ namespace rs2
         std::atomic<bool>       _app_ready;
         texture_buffer          _splash_tex;
         timer                   _splash_timer;
+        std::string             _title_str;
     };
 }

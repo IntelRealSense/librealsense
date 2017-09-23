@@ -1,5 +1,6 @@
 #include "ux-window.h"
 
+#include "model-views.h"
 
 // We use STB image to load the splash-screen from memory
 #define STB_IMAGE_IMPLEMENTATION
@@ -16,7 +17,7 @@ namespace rs2
         if (!glfwInit()) exit(1);
 
         rs2_error* e = nullptr;
-        std::string title_str = to_string() << title << " v" << api_version_to_string(rs2_get_api_version(&e));
+        _title_str = to_string() << title << " v" << api_version_to_string(rs2_get_api_version(&e));
 
         auto primary = glfwGetPrimaryMonitor();
         const auto mode = glfwGetVideoMode(primary);
@@ -24,7 +25,7 @@ namespace rs2
         // Create GUI Windows
         _width = int(mode->width * 0.7f);
         _height = int(mode->height * 0.7f);
-        _win = glfwCreateWindow(_width, _height, title_str.c_str(), nullptr, nullptr);
+        _win = glfwCreateWindow(_width, _height, _title_str.c_str(), nullptr, nullptr);
         glfwMakeContextCurrent(_win);
         ImGui_ImplGlfw_Init(_win, true);
 
@@ -94,8 +95,11 @@ namespace rs2
         }
 
         // If we are just getting started, render the Splash Screen instead of normal UI
-        while (!_app_ready || _splash_timer.elapsed_ms() < 1500)
+        while (res && (!_app_ready || _splash_timer.elapsed_ms() < 1500))
         {
+            res = !glfwWindowShouldClose(_win);
+            glfwPollEvents();
+
             glPushMatrix();
             glViewport(0.f, 0.f, _width, _height);
             glClearColor(0.036f, 0.044f, 0.051f, 1.f);
@@ -105,8 +109,13 @@ namespace rs2
             glOrtho(0, _width, _height, 0, -1, +1);
 
             // Fade-in the logo
-            auto opacity = smoothstep(_splash_timer.elapsed_ms(), 100.f, 1500.f);
+            auto opacity = smoothstep(_splash_timer.elapsed_ms(), 100.f, 2000.f);
             _splash_tex.show({ 0.f,0.f,(float)_width,(float)_height }, opacity);
+
+            std::string loading_str = to_string() << "Loading " << _title_str << "...";
+            auto loading_text_width = stb_easy_font_width((char*)loading_str.c_str());
+            if (sin(_splash_timer.elapsed_ms() / 150.f) > -0.2f)
+                draw_text(_width - loading_text_width - 20, _height - 20, loading_str.c_str());
 
             glfwSwapBuffers(_win);
             glPopMatrix();

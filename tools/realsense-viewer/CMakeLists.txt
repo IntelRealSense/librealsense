@@ -51,7 +51,8 @@ endif()
     if(WIN32)
         add_executable(realsense-viewer WIN32
                 ${RS_VIEWER_CPP} ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
-                ${RS_VIEWER_CPP} ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc)
+                ${RS_VIEWER_CPP} ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
+                ../../common/windows-app-bootstrap.cpp)
 
         source_group("3rd Party" FILES
             ../../third-party/imgui/imgui.cpp

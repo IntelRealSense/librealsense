@@ -52,7 +52,8 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     if(WIN32)
         add_executable(rs-depth-quality WIN32 ${RS_QUALITY_TOOL_CPP}
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
-                ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc)
+                ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
+                ../../common/windows-app-bootstrap.cpp)
 
         source_group("Resources" FILES
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
@@ -77,8 +78,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
                                              ../../third-party/imgui  
                                              ../../third-party/tclap/include)
     endif()
-
-    add_definitions(-DFLIP_COLOR_SCHEME)
 
     target_link_libraries(rs-depth-quality ${DEPENDENCIES} ${GTK3_LIBRARIES})
     set_target_properties (rs-depth-quality PROPERTIES

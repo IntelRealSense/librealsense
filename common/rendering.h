@@ -2,6 +2,9 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
+
+#include <librealsense2/rs.hpp>
+
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 
@@ -17,6 +20,7 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <map>
+#include <mutex>
 
 #ifdef _MSC_VER
 #ifndef GL_CLAMP_TO_BORDER
@@ -100,6 +104,15 @@ namespace rs2
         return b * t + a * (1 - t);
     }
 
+    struct plane
+    {
+        double a;
+        double b;
+        double c;
+        double d;
+    };
+    inline bool operator==(const plane& lhs, const plane& rhs) { return lhs.a == rhs.a && lhs.b == rhs.b && lhs.c == rhs.c && lhs.d == rhs.d; }
+
     struct float3
     {
         float x, y, z;
@@ -167,6 +180,16 @@ namespace rs2
         int mouse_wheel = 0;
         float ui_wheel = 0.f;
     };
+
+    inline float3 eval(const plane& p, const float2& xy)
+    {
+        float3 p1 = { 0, 0, -p.d / p.c };
+        float3 p2 = { -p.d / p.a, 0, 0 };
+        float3 p3 = { 0, -p.d / p.b, 0 };
+        float3 v1 = p2 - p1;
+        float3 v2 = p3 - p1;
+        return p1 + v1 * xy.x + v2 * xy.y;
+    }
 
     template<typename T>
     T normalizeT(const T& in_val, const T& min, const T& max)

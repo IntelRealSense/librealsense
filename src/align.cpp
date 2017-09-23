@@ -237,8 +237,7 @@ namespace librealsense
           _depth_units_ptr(nullptr),
           _mapped_intrinsics_ptr(nullptr),
           _extrinsics_ptr(nullptr),
-          _mapped(nullptr),
-          _depth_stream_uid(0)
+          _mapped(nullptr)
     {
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
@@ -247,10 +246,10 @@ namespace librealsense
                 auto depth_frame = (frame_interface*)depth.get();
                 std::lock_guard<std::mutex> lock(_mutex);
 
-                if (!_stream.get() || _depth_stream_uid != depth_frame->get_stream()->get_unique_id())
+                if (!_stream.get() || _depth_stream != depth_frame->get_stream().get())
                 {
                     _stream = depth_frame->get_stream()->clone();
-                    _depth_stream_uid = depth_frame->get_stream()->get_unique_id();
+                    _depth_stream = depth_frame->get_stream().get();
                     environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_stream, *depth_frame->get_stream());
                     _depth_intrinsics_ptr = nullptr;
                     _depth_units_ptr = nullptr;
@@ -375,6 +374,7 @@ namespace librealsense
                 auto depth = composite.first_or_default(RS2_STREAM_DEPTH);
                 if (depth)
                 {
+                    auto id = depth.get_profile().unique_id();
                     inspect_depth_frame(depth);
                     process_depth_frame(depth);
                 }
@@ -387,6 +387,7 @@ namespace librealsense
             {
                 if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
                 {
+                    auto id = f.get_profile().unique_id();
                     inspect_depth_frame(f);
                     process_depth_frame(f);
                 }

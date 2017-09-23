@@ -197,9 +197,6 @@ int main(int argv, const char** argc) try
     context ctx;
     auto refresh_device_list = true;
 
-    bool is_3d_view = false;
-    bool anything_started = false;
-
     std::vector<std::pair<std::string, std::string>> device_names;
 
     std::string error_message{ "" };
@@ -210,7 +207,6 @@ int main(int argv, const char** argc) try
 
     viewer_model viewer_model;
     device_list list;
-    bool paused = false;
 
     std::vector<device> devs;
     std::mutex m;
@@ -289,13 +285,12 @@ int main(int argv, const char** argc) try
        
         bool update_read_only_options = update_readonly_options_timer;
 
-        const float panel_width = 340.f;
-        const float panel_y = 50.f;
-        const float default_log_h = 80.f;
+        auto output_height = viewer_model.get_output_height();
 
-        auto output_height = (viewer_model.is_output_collapsed ? default_log_h : 20);
-
-        rect viewer_rect = { panel_width, panel_y, window.width() - panel_width, window.height() - panel_y - output_height };
+        rect viewer_rect = { viewer_model.panel_width, 
+                             viewer_model.panel_y, window.width() - 
+                             viewer_model.panel_width, 
+                             window.height() - viewer_model.panel_y - output_height };
 
         // Flags for pop-up window - no window resize, move or collaps
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
@@ -303,7 +298,7 @@ int main(int argv, const char** argc) try
             ImGuiWindowFlags_NoSavedSettings;
 
         ImGui::SetNextWindowPos({ 0, 0 });
-        ImGui::SetNextWindowSize({ panel_width, panel_y });
+        ImGui::SetNextWindowSize({ viewer_model.panel_width, viewer_model.panel_y });
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("Add Device Panel", nullptr, flags);
@@ -313,9 +308,9 @@ int main(int argv, const char** argc) try
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(255, 255, 255, 255));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
-        ImGui::SetNextWindowPos({ 0, panel_y });
+        ImGui::SetNextWindowPos({ 0, viewer_model.panel_y });
 
-        if (ImGui::Button(u8"Add Source\t\t\t\t\t\t\t\t\t\t\t\t\uf0d7", { panel_width - 1, panel_y }))
+        if (ImGui::Button(u8"Add Source\t\t\t\t\t\t\t\t\t\t\t\t\uf0d7", { viewer_model.panel_width - 1, viewer_model.panel_y }))
             ImGui::OpenPopup("select");
 
         auto new_devices_count = device_names.size() + 1;
@@ -324,7 +319,7 @@ int main(int argv, const char** argc) try
                 new_devices_count--;
 
         ImGui::PushFont(window.get_font());
-        ImGui::SetNextWindowSize({ panel_width, 20.f * new_devices_count + 8 });
+        ImGui::SetNextWindowSize({ viewer_model.panel_width, 20.f * new_devices_count + 8 });
         if (ImGui::BeginPopup("select"))
         {
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
@@ -400,104 +395,15 @@ int main(int argv, const char** argc) try
         ImGui::PopStyleVar();
 
 
-        ImGui::SetNextWindowPos({ panel_width, 0 });
-        ImGui::SetNextWindowSize({ window.width() - panel_width, panel_y });
+        viewer_model.show_top_bar(window, viewer_rect);
 
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
-        ImGui::Begin("Toolbar Panel", nullptr, flags);
-
-        ImGui::PushFont(window.get_large_font());
-        ImGui::PushStyleColor(ImGuiCol_Border, black);
-
-        /*ImGui::SetCursorPosX(w - panel_width - panel_y * 3.f);
-        if (data.scale_factor < 1.5)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, grey);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
-            if (ImGui::Button(u8"\uf00e", { panel_y,panel_y }))
-            {
-                data.scale_factor = 2.2f;
-            }
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Enable UI Scaling mode, this will increase the size of UI elements for high resolution displays");
-        }
-        else
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, white);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-            if (ImGui::Button(u8"\uf010", { panel_y,panel_y }))
-            {
-                data.scale_factor = 1.f;
-            }
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Disable UI Scaling");
-        }
-        ImGui::PopStyleColor(2);
-        ImGui::SameLine();*/
-
-        ImGui::SetCursorPosX(window.width() - panel_width - panel_y * 2);
-        ImGui::PushStyleColor(ImGuiCol_Text, is_3d_view ? light_grey : light_blue);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, is_3d_view ? light_grey : light_blue);
-        if (ImGui::Button("2D", { panel_y,panel_y })) is_3d_view = false;
-        ImGui::PopStyleColor(2);
-        ImGui::SameLine();
-
-        ImGui::SetCursorPosX(window.width() - panel_width - panel_y * 1);
-        auto pos1 = ImGui::GetCursorScreenPos();
-
-        ImGui::PushStyleColor(ImGuiCol_Text, !is_3d_view ? light_grey : light_blue);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, !is_3d_view ? light_grey : light_blue);
-        if (ImGui::Button("3D", { panel_y,panel_y }))
-        {
-            is_3d_view = true;
-            viewer_model.update_3d_camera(viewer_rect, window.get_mouse(), true);
-        }
-        ImGui::PopStyleColor(3);
-
-        ImGui::GetWindowDrawList()->AddLine({pos1.x, pos1.y + 10 }, { pos1.x,pos1.y + panel_y - 10 }, ImColor(light_grey));
-
-
-        ImGui::SameLine();
-        ImGui::SetCursorPosX(window.width() - panel_width - panel_y);
-
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-        ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
-        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
-
-        //if (ImGui::Button(u8"\uf013\uf0d7", { panel_y,panel_y }))
-        //    ImGui::OpenPopup("global_menu");
-
-        //ImGui::PushFont(font_14);
-        //if (ImGui::BeginPopup("global_menu"))
-        //{
-        //    ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
-        //    if (ImGui::Selectable("About RealSense Viewer"))
-        //    {
-        //    }
-
-        //    ImGui::PopStyleColor();
-        //    ImGui::EndPopup();
-        //}
-        //ImGui::PopFont();
-        ImGui::PopStyleVar();
-        ImGui::PopStyleColor(4);
-        ImGui::PopFont();
-
-        ImGui::End();
-        ImGui::PopStyleColor();
-        ImGui::PopStyleVar();
-
-        viewer_model.show_event_log(window.get_font(), panel_width,
-            window.height() - (viewer_model.is_output_collapsed ? default_log_h : 20),
-            window.width() - panel_width, default_log_h);
+        viewer_model.show_event_log(window.get_font(), viewer_model.panel_width,
+            window.height() - (viewer_model.is_output_collapsed ? viewer_model.default_log_h : 20),
+            window.width() - viewer_model.panel_width, viewer_model.default_log_h);
 
         // Set window position and size
-        ImGui::SetNextWindowPos({ 0, panel_y });
-        ImGui::SetNextWindowSize({ panel_width, window.width() - panel_y });
+        ImGui::SetNextWindowPos({ 0, viewer_model.panel_y });
+        ImGui::SetNextWindowSize({ viewer_model.panel_width, window.height() - viewer_model.panel_y });
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::PushStyleColor(ImGuiCol_WindowBg, sensor_bg);
 
@@ -514,10 +420,10 @@ int main(int argv, const char** argc) try
 
             for (auto&& dev_model : device_models)
             {
-                dev_model.draw_controls(panel_width, panel_y, 
+                dev_model.draw_controls(viewer_model.panel_width, viewer_model.panel_y,
                     window.get_font(), window.get_large_font(), window.get_mouse(),
                     error_message, device_to_remove, viewer_model, windows_width,
-                    anything_started, update_read_only_options,
+                    update_read_only_options,
                     model_to_y, model_to_abs_y);
             }
 
@@ -537,9 +443,9 @@ int main(int argv, const char** argc) try
 
             auto pos = ImGui::GetCursorScreenPos();
             auto h = ImGui::GetWindowHeight();
-            if (h > pos.y - panel_y)
+            if (h > pos.y - viewer_model.panel_y)
             {
-                ImGui::GetWindowDrawList()->AddLine({ pos.x,pos.y }, { pos.x + panel_width,pos.y }, ImColor(from_rgba(0, 0, 0, 0xff)));
+                ImGui::GetWindowDrawList()->AddLine({ pos.x,pos.y }, { pos.x + viewer_model.panel_width,pos.y }, ImColor(from_rgba(0, 0, 0, 0xff)));
                 ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + ImGui::GetContentRegionAvail().y));
                 ImGui::GetWindowDrawList()->AddRectFilled(bb.GetTL(), bb.GetBR(), ImColor(dark_window_background));
             }
@@ -551,19 +457,10 @@ int main(int argv, const char** argc) try
                 {
                     try
                     {
-                        static float t = 0.f;
-                        t += 0.03f; // TODO: change to something more elegant
-
                         ImGui::SetCursorPos({ windows_width - 35, model_to_y[sub.get()] + 3 });
                         ImGui::PushFont(window.get_font());
-                        if (sub.get() == dev_model.subdevices.begin()->get() && !dev_model.dev.is<playback>() && !anything_started)
-                        {
-                            ImGui::PushStyleColor(ImGuiCol_Button, from_rgba(0x1b + abs(sin(t)) * 40, 0x21 + abs(sin(t)) * 20, 0x25 + abs(sin(t)) * 30, 0xff));
-                        }
-                        else
-                        {
-                            ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
-                        }
+
+                        ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
                         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
                         ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
 
@@ -578,8 +475,6 @@ int main(int argv, const char** argc) try
                             {
                                 if (ImGui::Button(label.c_str(), { 30,30 }))
                                 {
-                                    anything_started = true;
-
                                     auto profiles = sub->get_selected_profiles();
                                     sub->play(profiles);
 
@@ -591,7 +486,6 @@ int main(int argv, const char** argc) try
                                 if (ImGui::IsItemHovered())
                                 {
                                     ImGui::SetTooltip("Start streaming data from this sensor");
-                                    anything_started = true;
                                 }
                             }
                             else
@@ -676,7 +570,7 @@ int main(int argv, const char** argc) try
             ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + ImGui::GetContentRegionAvail().y));
             ImGui::GetWindowDrawList()->AddRectFilled(bb.GetTL(), bb.GetBR(), ImColor(dark_window_background));
 
-            viewer_model.show_no_device_overlay(window.get_large_font(), 50, panel_y + 50);
+            viewer_model.show_no_device_overlay(window.get_large_font(), 50, viewer_model.panel_y + 50);
         }
 
         ImGui::End();
@@ -714,59 +608,7 @@ int main(int argv, const char** argc) try
 
         window.begin_viewport();
 
-        if (!is_3d_view)
-        {
-            viewer_model.render_2d_view(viewer_rect, window.width(), window.height(),
-                output_height, window.get_font(), window.get_large_font(),
-                device_models.size(), window.get_mouse(), error_message);
-        }
-        else
-        {
-            if (paused)
-                viewer_model.show_paused_icon(window.get_large_font(), panel_width + 15, panel_y + 15 + 32, 0);
-
-            viewer_model.show_3dviewer_header(window.get_font(), viewer_rect, paused);
-
-            viewer_model.update_3d_camera(viewer_rect, window.get_mouse());
-
-            viewer_model.render_3d_view(viewer_rect, window.get_scale_factor());
-
-        }
-
-        if (ImGui::IsKeyPressed(' '))
-        {
-            if (paused)
-            {
-                for (auto&& s : viewer_model.streams)
-                {
-                    if (s.second.dev)
-                    {
-                        s.second.dev->resume();
-                        if (s.second.dev->dev.is<playback>())
-                        {
-                            auto p = s.second.dev->dev.as<playback>();
-                            p.resume();
-                        }
-                    }
-                }
-            }
-            else
-            {
-                for (auto&& s : viewer_model.streams)
-                {
-                    if (s.second.dev)
-                    {
-                        s.second.dev->pause();
-                        if (s.second.dev->dev.is<playback>())
-                        {
-                            auto p = s.second.dev->dev.as<playback>();
-                            p.pause();
-                        }
-                    }
-                }
-            }
-            paused = !paused;
-        }
+        viewer_model.draw_viewport(viewer_rect, window, device_models.size(), error_message);
 
         viewer_model.not_model.draw(window.get_font(), window.width(), window.height());
 
@@ -784,10 +626,6 @@ int main(int argv, const char** argc) try
                 sub->stop();
         }
 
-    // Cleanup
-    ImGui_ImplGlfw_Shutdown();
-    glfwTerminate();
-
     return EXIT_SUCCESS;
 }
 catch (const error & e)
@@ -800,31 +638,3 @@ catch (const std::exception& e)
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
 }
-#ifdef WIN32
-int CALLBACK WinMain(
-    _In_ HINSTANCE hInstance,
-    _In_ HINSTANCE hPrevInstance,
-    _In_ LPSTR     lpCmdLine,
-    _In_ int       nCmdShow
-
-)
-{
-    int argCount;
-
-    std::shared_ptr<LPWSTR> szArgList(CommandLineToArgvW(GetCommandLine(), &argCount), LocalFree);
-    if (szArgList == NULL) return main(0, nullptr);
-
-    std::vector<std::string> args;
-    for (int i = 0; i < argCount; i++)
-    {
-        std::wstring ws = szArgList.get()[i];
-        std::string s(ws.begin(), ws.end());
-        args.push_back(s);
-    }
-
-    std::vector<const char*> argc;
-    std::transform(args.begin(), args.end(), std::back_inserter(argc), [](const std::string& s) { return s.c_str(); });
-
-    return main(argc.size(), argc.data());
-}
-#endif
