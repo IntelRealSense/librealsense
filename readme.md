@@ -17,16 +17,16 @@ The library also offers synthetic streams (pointcloud, depth aligned to color an
 The library aims to provide an easy to use API and tools for computer vision professionals, game developers and other **Intel® RealSense™** technology enthusiasts.
 
 We provide a C, C++, [Python](./wrappers/python) and [Node.js](./wrappers/nodejs) API.
-Developer kits containing the necessary hardware to use this library are available for purchase at [click.intel.com](http://click.intel.com/realsense.html).
+Developer kits containing the necessary hardware to use this library are available for purchase at [realsense.intel.com/buy](realsense.intel.com/buy).
 
 ## Quick Start
 
 #### Step 1: Download and Install
 After installing the Intel RealSense SDK (on [Linux](./doc/distribution_linux.md) \ [Windows](./doc/distribution_windows.md) \ OSX), and connecting the depth camera, you are ready to start writing your first application.
 
-> In case of any issue during initial setup, or later, please first see our [FAQ & Troubleshooting](https://github.com/IntelRealSense/librealsense/wiki/Troubleshooting-Q%26A) section.
-> If you can't find an answer there, try searching our [Closed GitHub Issues](https://github.com/IntelRealSense/librealsense/issues?utf8=%E2%9C%93&q=is%3Aclosed) page,  [Community](https://communities.intel.com/community/tech/realsense) and [Support](https://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) sites.
-> If none of the above helped, [open a new issue](https://github.com/IntelRealSense/librealsense/issues/new).
+> **Support & Issues**: If you need product support (e.g. ask a question about / are having problems with the device), please check the [FAQ & Troubleshooting](https://github.com/IntelRealSense/librealsense/wiki/Troubleshooting-Q%26A) section.
+> If not covered there, please search our [Closed GitHub Issues](https://github.com/IntelRealSense/librealsense/issues?utf8=%E2%9C%93&q=is%3Aclosed) page,  [Community](https://communities.intel.com/community/tech/realsense) and [Support](https://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) sites.
+> f you still cannot find an answer to your question, please [open a new issue](https://github.com/IntelRealSense/librealsense/issues/new).
 
 #### Step 2: Ready to Hack!
 
