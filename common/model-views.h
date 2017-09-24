@@ -45,6 +45,7 @@ static const ImVec4 header_window_bg = from_rgba(36, 44, 54, 0xff);
 static const ImVec4 header_color = from_rgba(62, 77, 89, 255);
 static const ImVec4 title_color = from_rgba(27, 33, 38, 255);
 static const ImVec4 device_info_color = from_rgba(33, 40, 46, 255);
+static const ImVec4 yellow = from_rgba(229, 195, 101, 255, true);
 
 namespace rs2
 {
@@ -236,6 +237,9 @@ namespace rs2
 
         bool draw_streams_selector = true;
         bool draw_fps_selector = true;
+
+        region_of_interest algo_roi;
+        bool show_algo_roi = false;
     };
 
     class viewer_model;
@@ -249,7 +253,7 @@ namespace rs2
     }
 
     void outline_rect(const rect& r);
-    void draw_rect(const rect& r);
+    void draw_rect(const rect& r, int line_width = 1);
 
     class stream_model
     {
@@ -533,7 +537,8 @@ namespace rs2
 
         bool allow_3d_source_change = true;
         bool allow_stream_close = true;
-        plane active_plane{ 0, 0, 0, 0 };
+        
+        std::array<float3, 4> roi_rect;
         bool draw_plane = false;
     private:
         std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);

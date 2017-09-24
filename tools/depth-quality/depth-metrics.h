@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <mutex>
+#include <array>
 #include <imgui.h>
 #include <librealsense2/rsutil.h>
 #include <librealsense2/rs.hpp>
@@ -30,6 +31,7 @@ namespace rs2
             metrics planar;
             metrics depth;
             plane p;
+            std::array<float3, 4> plane_corners;
 
             double non_null_pct;
         };
@@ -129,6 +131,32 @@ namespace rs2
             return result;
         }
 
+        inline double evaluate_pixel(const plane& p, const rs2_intrinsics* intrin, int x, int y, double distance, float3& output)
+        {
+            float pixel[2] = { float(x), float(y) };
+            rs2_deproject_pixel_to_point(&output.x, intrin, pixel, distance);
+            return evaluate_plane(p, output);
+        }
+
+        inline float3 approximate_intersection(const plane& p, const rs2_intrinsics* intrin, int x, int y, double min, double max)
+        {
+            float3 point;
+            auto far = evaluate_pixel(p, intrin, x, y, max, point);
+            if (abs(max - min) < 1e-3) return point;
+            auto near = evaluate_pixel(p, intrin, x, y, min, point);
+            if (far*near > 0) return{ 0, 0, 0 };
+
+            auto avg = (max + min) / 2;
+            auto mid = evaluate_pixel(p, intrin, x, y, avg, point);
+            if (mid*near < 0) return approximate_intersection(p, intrin, x, y, min, avg);
+            return approximate_intersection(p, intrin, x, y, avg, max);
+        }
+
+        inline float3 approximate_intersection(const plane& p, const rs2_intrinsics* intrin, int x, int y)
+        {
+            return approximate_intersection(p, intrin, x, y, 0, 100000);
+        }
+
         inline metrics calculate_depth_metrics(const std::vector<rs2::float3>& points)
         {
             metrics result;
@@ -208,6 +236,10 @@ namespace rs2
             result.planar = calculate_plane_metrics(roi_pixels, p);
             result.depth = calculate_depth_metrics(roi_pixels);
             result.p = p;
+            result.plane_corners[0] = approximate_intersection(p, intrin, roi.min_x, roi.min_y);
+            result.plane_corners[1] = approximate_intersection(p, intrin, roi.max_x, roi.min_y);
+            result.plane_corners[2] = approximate_intersection(p, intrin, roi.max_x, roi.max_y);
+            result.plane_corners[3] = approximate_intersection(p, intrin, roi.min_x, roi.max_y);
 
             result.non_null_pct = roi_pixels.size() / double((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * 100;
 

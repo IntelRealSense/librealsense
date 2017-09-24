@@ -1266,11 +1266,11 @@ namespace rs2
         glPopAttrib();
     }
 
-    void draw_rect(const rect& r)
+    void draw_rect(const rect& r, int line_width)
     {
         glPushAttrib(GL_ENABLE_BIT);
 
-        glLineWidth(1);
+        glLineWidth(line_width);
 
         glBegin(GL_LINE_STRIP);
         glVertex2i(r.x, r.y);
@@ -2164,6 +2164,26 @@ namespace rs2
             g, is_middle_clicked,
             zoom_val);
         texture->show(stream_rect, get_stream_alpha(), _normalized_zoom);
+
+        if (dev && dev->show_algo_roi)
+        {
+            rect r{ dev->algo_roi.min_x, dev->algo_roi.min_y,
+                    dev->algo_roi.max_x - dev->algo_roi.min_x,
+                    dev->algo_roi.max_y - dev->algo_roi.min_y };
+
+            r = r.normalize(_normalized_zoom.unnormalize(get_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
+
+            glColor3f(yellow.x, yellow.y, yellow.z);
+            draw_rect(r, 2);
+
+            std::string message = "Metrics Region of Interest";
+            auto msg_width = stb_easy_font_width((char*)message.c_str());
+            if (msg_width < r.w)
+                draw_text(r.x + r.w / 2 - msg_width / 2, r.y + 10, message.c_str());
+
+            glColor3f(1.f, 1.f, 1.f);
+        }
+
         update_ae_roi_rect(stream_rect, g, error_message);
         texture->show_preview(stream_rect, _normalized_zoom);
 
@@ -2814,23 +2834,21 @@ namespace rs2
 
         if (draw_plane)
         {
-            glLineWidth(1);
+            glLineWidth(2);
             glBegin(GL_LINES);
-            glColor4f(0.9f, 0.6f, 0.2f, 1.f);
-            for (float i = 0; i <= 6; i+=0.1)
+            glColor4f(yellow.x, yellow.y, yellow.z, 1.f);
+
+            auto rects = subdivide(roi_rect);
+            for (auto&& r : rects)
             {
-                auto p1 = eval(active_plane, { i - 3, -3 });
-                auto p2 = eval(active_plane, { i - 3, 3 });
-
-                glVertex3i(p1.x, p1.y, p1.z);
-                glVertex3i(p2.x, p2.y, p2.z);
-
-                p1 = eval(active_plane, { -3, i - 3 });
-                p2 = eval(active_plane, { 3, i - 3 });
-
-                glVertex3i(p1.x, p1.y, p1.z);
-                glVertex3i(p2.x, p2.y, p2.z);
+                for (int i = 0; i < 4; i++)
+                {
+                    auto j = (i + 1) % 4;
+                    glVertex3f(r[i].x, r[i].y, r[i].z);
+                    glVertex3f(r[j].x, r[j].y, r[j].z);
+                }
             }
+
             glEnd();
         }
 

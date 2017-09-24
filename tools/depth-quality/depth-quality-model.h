@@ -68,10 +68,10 @@ namespace rs2
 
             void render(ux_window& win);
 
-            plane get_plane() 
+            std::array<float3, 4> get_plane()
             {
                 std::lock_guard<std::mutex> lock(_m);
-                return _latest_metrics.p;
+                return _latest_metrics.plane_corners;
             }
 
             void update_stream_attributes(const rs2_intrinsics &intrinsic, const float& scale_units)
@@ -85,6 +85,12 @@ namespace rs2
             {
                 std::lock_guard<std::mutex> lock(_m);
                 _roi = roi;
+            }
+
+            region_of_interest get_roi()
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                return _roi;
             }
 
             void begin_process_frame(rs2::frame f) { _frame_queue.enqueue(std::move(f)); }
@@ -130,6 +136,9 @@ namespace rs2
             bool                            _first_frame = true;
             periodic_timer                  _update_readonly_options_timer;
             metrics_model                   _metrics;
+
+            float                           _roi_percent = 0.33f;
+            int                             _roi_combo_index = 1;
         };
 
     }
