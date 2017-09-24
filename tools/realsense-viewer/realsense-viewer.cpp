@@ -370,8 +370,7 @@ int main(int argv, const char** argc) try
             if (ImGui::Selectable("Load Recorded Sequence", false, ImGuiSelectableFlags_SpanAllColumns))
             {
                 const char *ret;
-                ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN,
-                    "ROS-bag\0*.bag\0", NULL, NULL);
+                ret = file_dialog_open(open_file,"ROS-bag\0*.bag\0", NULL, NULL);
                 if (ret)
                 {
                     add_playback_device(ctx, device_models, error_message, viewer_model, ret);

@@ -17,11 +17,10 @@ namespace rs2
         {
         private:
             const static int SIZE = 200;
-            int idx;
-            float vals[SIZE];
-            float min, max;
-            std::string id, label, tail;
-            ImVec2 size;
+            int _idx;
+            float _vals[SIZE];
+            std::string _id, _label, _tail;
+            ImVec2 _size;
             timer model_timer;
 
         public:
@@ -46,8 +45,8 @@ namespace rs2
                 return MAX_RANGE;
             }
 
-            metric_plot(const std::string& name, float min, float max, ImVec2 size, const std::string& tail) 
-                : idx(0), vals(), min(min), max(max), id("##" + name), label(name + " = "), tail(tail), size(size) 
+            metric_plot(const std::string& name, float min, float max, ImVec2 size, const std::string& tail)
+                : _idx(0), _vals(), _min(min), _max(max), _id("##" + name), _label(name + " = "), _tail(tail), _size(size)
             {
                 description = "";
                 for (int i = 0; i < MAX_RANGE; i++) ranges[i] = { 0.f, 0.f };
@@ -58,8 +57,8 @@ namespace rs2
 
             void add_value(float val)
             {
-                vals[idx] = val;
-                idx = (idx + 1) % SIZE;
+                _vals[_idx] = val;
+                _idx = (_idx + 1) % SIZE;
             }
             void render(ux_window& win);
         };
@@ -99,6 +98,7 @@ namespace rs2
 
             void begin_process_frame(rs2::frame f) { _frame_queue.enqueue(std::move(f)); }
 
+            void serialize_to_csv(const std::string& filename) const;
         private:
             metrics_model(const metrics_model&);
 
@@ -111,13 +111,13 @@ namespace rs2
             snapshot_metrics        _latest_metrics;
             bool                    _active;
 
-            metric_plot              _avg_plot;
-            metric_plot              _std_plot;
-            metric_plot              _fill_plot;
-            metric_plot              _dist_plot;
-            metric_plot              _angle_plot;
-            metric_plot              _out_plot;
-            std::mutex               _m;
+            metric_plot             _avg_plot;
+            metric_plot             _std_plot;
+            metric_plot             _fill_plot;
+            metric_plot             _dist_plot;
+            metric_plot             _angle_plot;
+            metric_plot             _out_plot;
+            std::mutex              _m;
         };
 
         class tool_model
@@ -131,6 +131,8 @@ namespace rs2
 
             void update_configuration();
 
+            void snapshot_metrics();
+
         private:
             pipeline                        _pipe;
             std::shared_ptr<device_model>   _device_model;
@@ -143,7 +145,9 @@ namespace rs2
 
             float                           _roi_percent = 0.33f;
             int                             _roi_combo_index = 1;
-        };
 
+            float                           _roi_percent = 0.33f;
+            int                             _roi_combo_index = 1;
+        };
     }
 }

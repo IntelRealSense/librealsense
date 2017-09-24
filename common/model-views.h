@@ -546,12 +546,13 @@ namespace rs2
         
         std::array<float3, 4> roi_rect;
         bool draw_plane = false;
-    private:
-        std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
-        void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, const ImVec4& color);
 
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;
+
+    private:
+        std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
+        void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, const ImVec4& color);
 
         streams_layout _layout;
         streams_layout _old_layout;
@@ -566,6 +567,20 @@ namespace rs2
         GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
     };
 
-    void export_to_ply(notifications_model& ns, points points, video_frame texture);
-}
+    void export_to_ply(const std::string& file_name, notifications_model& ns, points points, video_frame texture);
 
+    // Wrapper for cross-platform dialog control
+    enum file_dialog_mode {
+        open_file       = (1 << 0),
+        save_file       = (1 << 1),
+        open_dir        = (1 << 2),
+        override_file   = (1 << 3)
+    };
+
+    const char* file_dialog_open(file_dialog_mode flags, const char* filters, const char* default_path, const char* default_name);
+
+    // Encapsulate helper function to resolve linking
+    int save_to_png(const char* filename,
+        size_t pixel_width, size_t pixels_height, size_t bytes_per_pixel,
+        const void* raster_data, size_t stride_bytes);
+}
