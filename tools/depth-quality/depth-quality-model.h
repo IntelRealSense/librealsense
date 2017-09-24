@@ -16,12 +16,14 @@ namespace rs2
         class metric_plot
         {
         private:
-            /*int size;*/
+            const static int SIZE = 200;
             int idx;
-            float vals[100];
+            float vals[SIZE];
             float min, max;
             std::string id, label, tail;
             ImVec2 size;
+            timer model_timer;
+
         public:
             enum range
             {
@@ -52,10 +54,12 @@ namespace rs2
             }
             ~metric_plot() {}
 
+            bool has_trend(bool positive);
+
             void add_value(float val)
             {
                 vals[idx] = val;
-                idx = (idx + 1) % 100;
+                idx = (idx + 1) % SIZE;
             }
             void render(ux_window& win);
         };

@@ -46,6 +46,12 @@ static const ImVec4 header_color = from_rgba(62, 77, 89, 255);
 static const ImVec4 title_color = from_rgba(27, 33, 38, 255);
 static const ImVec4 device_info_color = from_rgba(33, 40, 46, 255);
 static const ImVec4 yellow = from_rgba(229, 195, 101, 255, true);
+static const ImVec4 green = from_rgba(0x20, 0xe0, 0x20, 0xff, true);
+
+inline ImVec4 blend(const ImVec4& c, float a)
+{
+    return{ c.x, c.y, c.z, a * c.w };
+}
 
 namespace rs2
 {

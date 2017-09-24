@@ -260,6 +260,31 @@ namespace rs2
             }
         }
 
+        bool metric_plot::has_trend(bool positive)
+        {
+            const auto window_size = 110;
+            const auto curr_window = 10;
+            auto best = ranges[GREEN_RANGE].x;
+            if (ranges[RED_RANGE].x < ranges[GREEN_RANGE].x)
+                best = ranges[GREEN_RANGE].y;
+
+            auto min_val = 0.f;
+            for (int i = 0; i < curr_window; i++)
+            {
+                auto val = abs(best - vals[(SIZE + idx - i) % SIZE]);
+                min_val += val / curr_window;
+            }
+
+            auto improved = 0;
+            for (int i = curr_window; i <= window_size; i++)
+            {
+                auto val = abs(best - vals[(SIZE + idx - i) % SIZE]);
+                if (positive && min_val < val * 0.8) improved++;
+                if (!positive && min_val * 0.8 > val) improved++;
+            }
+            return improved > window_size * 0.4;
+        }
+
         //void depth_profiler_model::upload(rs2::frameset &frameset)
         //{
         //    // Upload new frames for rendering
@@ -279,13 +304,13 @@ namespace rs2
         {
             _avg_plot.ranges[metric_plot::GREEN_RANGE] = { 0.f, 1.f };
             _avg_plot.ranges[metric_plot::YELLOW_RANGE] = { 0.f, 7.f };
-            _avg_plot.ranges[metric_plot::RED_RANGE] = { 0.f, 10000.f };
+            _avg_plot.ranges[metric_plot::RED_RANGE] = { 0.f, 1000.f };
 
             _avg_plot.description = "Average Distance from Plane Fit\nThis metric approximates a plane within\nthe ROI and calculates the average\ndistance of points in the ROI\nfrom that plane, in mm";
 
             _std_plot.ranges[metric_plot::GREEN_RANGE] = { 0.f, 1.f };
             _std_plot.ranges[metric_plot::YELLOW_RANGE] = { 0.f, 7.f };
-            _std_plot.ranges[metric_plot::RED_RANGE] = { 0.f, 10000.f };
+            _std_plot.ranges[metric_plot::RED_RANGE] = { 0.f, 1000.f };
 
             _std_plot.description = "Standard Deviation from Plane Fit\nThis metric approximates a plane within\nthe ROI and calculates the\nstandard deviation of distances\nof points in the ROI from that plane";
 
@@ -372,14 +397,14 @@ namespace rs2
         void metric_plot::render(ux_window& win)
         {
             std::stringstream ss;
-            auto val = vals[(100 + idx - 1) % 100];
+            auto val = vals[(SIZE + idx - 1) % SIZE];
             ss << label << val << tail;
 
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
 
             auto range = get_range(val);
             if (range == GREEN_RANGE)
-                ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0x20, 0xe0, 0x20, 0xff, true));
+                ImGui::PushStyleColor(ImGuiCol_Text, green);
             else if (range == YELLOW_RANGE)
                 ImGui::PushStyleColor(ImGuiCol_Text, yellow);
             else if (range == RED_RANGE)
@@ -390,6 +415,50 @@ namespace rs2
             ImGui::PushFont(win.get_font());
 
             ImGui::PushStyleColor(ImGuiCol_Header, sensor_header_light_blue);
+
+            const auto left_x = 295;
+            const auto indicator_flicker_rate = 150;
+            if (has_trend(true))
+            {
+                auto color = blend(green, abs(sin(model_timer.elapsed_ms() / indicator_flicker_rate)));
+                ImGui::PushStyleColor(ImGuiCol_Text, color);
+                auto col0 = ImGui::GetCursorPos();
+                ImGui::SetCursorPosX(left_x);
+                ImGui::PushFont(win.get_large_font());
+                ImGui::Text(u8"\uf102");
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("This metric shows positive trend");
+                }
+                ImGui::PopFont();
+                ImGui::SameLine(); ImGui::SetCursorPos(col0);
+                ImGui::PopStyleColor();
+            }
+            else if (has_trend(false))
+            {
+                auto color = blend(redish, abs(sin(model_timer.elapsed_ms() / indicator_flicker_rate)));
+                ImGui::PushStyleColor(ImGuiCol_Text, color);
+                auto col0 = ImGui::GetCursorPos();
+                ImGui::SetCursorPosX(left_x);
+                ImGui::PushFont(win.get_large_font());
+                ImGui::Text(u8"\uf103");
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("This metric shows negative trend");
+                }
+                ImGui::PopFont();
+                ImGui::SameLine(); ImGui::SetCursorPos(col0);
+                ImGui::PopStyleColor();
+            }
+            else
+            {
+                auto col0 = ImGui::GetCursorPos();
+                ImGui::SetCursorPosX(left_x);
+                ImGui::PushFont(win.get_large_font());
+                ImGui::Text(" ");
+                ImGui::PopFont();
+                ImGui::SameLine(); ImGui::SetCursorPos(col0);
+            }
 
             if (ImGui::TreeNode(label.c_str(), ss.str().c_str()))
             {
