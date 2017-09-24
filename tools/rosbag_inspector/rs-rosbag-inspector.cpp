@@ -12,7 +12,7 @@
 #include <chrono>
 #include <mutex>
 #include <regex>
-#include <librealsense2/rs.hpp>
+
 #include "../../third-party/realsense-file/rosbag/rosbag_storage/include/rosbag/bag.h"
 #include "../../third-party/realsense-file/rosbag/rosbag_storage/include/rosbag/view.h"
 #include "../../third-party/realsense-file/rosbag/msgs/sensor_msgs/Imu.h"
@@ -27,29 +27,29 @@
 #include "../../third-party/realsense-file/rosbag/msgs/sensor_msgs/TimeReference.h"
 #include "../../third-party/realsense-file/rosbag/msgs/geometry_msgs/Transform.h"
 
-//#include "../../src/media/ros/ros_file_format.h"
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_internal.h>
 #include <noc_file_dialog.h>
-#include "rendering.h"
 
-using namespace std::chrono;
-using namespace rosbag;
-using namespace std;
-
-
-std::string pretty_time(nanoseconds d)
+struct to_string
 {
-    auto hhh = duration_cast<hours>(d);
+    std::ostringstream ss;
+    template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
+    operator std::string() const { return ss.str(); }
+};
+
+std::string pretty_time(std::chrono::nanoseconds d)
+{
+    auto hhh = std::chrono::duration_cast<std::chrono::hours>(d);
     d -= hhh;
-    auto mm = duration_cast<minutes>(d);
+    auto mm = std::chrono::duration_cast<std::chrono::minutes>(d);
     d -= mm;
-    auto ss = duration_cast<seconds>(d);
+    auto ss = std::chrono::duration_cast<std::chrono::seconds>(d);
     d -= ss;
-    auto ms = duration_cast<milliseconds>(d);
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(d);
 
     std::ostringstream stream;
     stream << std::setfill('0') << std::setw(3) << hhh.count() << ':' <<
@@ -64,9 +64,9 @@ std::ostream& operator<<(std::ostream& os, rosbag::compression::CompressionType 
 {
 	switch (c)
 	{
-	case CompressionType::Uncompressed: os << "Uncompressed"; break;
-	case CompressionType::BZ2: os << "BZ2"; break;
-	case CompressionType::LZ4: os << "LZ4"; break;
+    case rosbag::CompressionType::Uncompressed: os << "Uncompressed"; break;
+	case rosbag::CompressionType::BZ2: os << "BZ2"; break;
+	case rosbag::CompressionType::LZ4: os << "LZ4"; break;
 	default: break;
 	}
 	return os;
@@ -128,7 +128,7 @@ std::ostream& operator<<(std::ostream& os, const rosbag::MessageInstance& m)
         os << "Height       : " << image->height << std::endl;
         os << "Step         : " << image->step << std::endl;
         os << "Frame Number : " << image->header.seq << std::endl;
-        os << "Timestamp    : " << pretty_time(nanoseconds(image->header.stamp.toNSec())) << std::endl;
+        os << "Timestamp    : " << pretty_time(std::chrono::nanoseconds(image->header.stamp.toNSec())) << std::endl;
     }
     if (m.isType<sensor_msgs::Imu>())
     {
@@ -158,7 +158,7 @@ struct rosbag_content
     {
         bag.open(file);
 
-        View entire_bag_view(bag);
+        rosbag::View entire_bag_view(bag);
 
         for (auto&& m : entire_bag_view)
         {
@@ -174,7 +174,7 @@ struct rosbag_content
         }
         std::reverse(file_name.begin(), file_name.end());
 
-        version = rs2::to_string() << bag.getMajorVersion() << "." << bag.getMinorVersion();
+        version = to_string() << bag.getMajorVersion() << "." << bag.getMinorVersion();
         file_duration = get_duration(bag);
         size = 1.0 * bag.getSize() / (1024LL * 1024LL);
         compression_type = bag.getCompression();
@@ -206,7 +206,7 @@ struct rosbag_content
         topics_to_message_types = other.topics_to_message_types;
 
         other.cache.clear();
-        other.file_duration = nanoseconds::zero();
+        other.file_duration = std::chrono::nanoseconds::zero();
         other.file_name.clear();
         other.path.clear();
         other.version.clear();
@@ -227,24 +227,24 @@ struct rosbag_content
         return oss.str();
     }
 
-    nanoseconds get_duration(const Bag& bag)
+    std::chrono::nanoseconds get_duration(const rosbag::Bag& bag)
     {
-        View only_frames(bag, [](rosbag::ConnectionInfo const* info) {
+        rosbag::View only_frames(bag, [](rosbag::ConnectionInfo const* info) {
             std::regex exp(R"RRR(/device_\d+/sensor_\d+/.*_\d+/(image|imu))RRR");
             return std::regex_search(info->topic, exp);
         });
-        return nanoseconds((only_frames.getEndTime() - only_frames.getBeginTime()).toNSec());
+        return std::chrono::nanoseconds((only_frames.getEndTime() - only_frames.getBeginTime()).toNSec());
     }
 
     std::map<std::tuple<std::string, std::string, std::string, std::string, ros::Time>, std::string> cache;
-    nanoseconds file_duration;
+    std::chrono::nanoseconds file_duration;
     std::string file_name;
     std::string path;
     std::string version;
     double size;
     rosbag::compression::CompressionType compression_type;
     std::map<std::string, std::vector<std::string>> topics_to_message_types;
-    Bag bag;
+    rosbag::Bag bag;
 };
 
 class Files
@@ -269,6 +269,10 @@ public:
         {
             try
             {
+                if (std::find_if(m_files.begin(), m_files.end(), [file](const rosbag_content& r) { return r.path == file; }) != m_files.end())
+                {
+                    throw std::runtime_error(to_string() << "File \"" << file << "\" already loaded");
+                }
                 m_files.emplace_back(file);
             }
             catch (const std::exception& e)
@@ -319,6 +323,12 @@ int main(int argc, const char** argv)
 
     ImGui_ImplGlfw_Init(window, true);
 
+    glfwSetScrollCallback(window, [](GLFWwindow * w, double xoffset, double yoffset)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        io.MouseWheel += yoffset;
+    });
+
     std::map<std::string, int> num_topics_to_show;
     int w, h;
     while (!glfwWindowShouldClose(window))
@@ -329,125 +339,145 @@ int main(int argc, const char** argv)
         glLoadIdentity();
         ImGui_ImplGlfw_NewFrame(1);
 
+        ImGuiStyle& style = ImGui::GetStyle();
+        style.Colors[ImGuiCol_Header] = ImVec4(0.00f, 0.3f, 1.00f, 1.00f);
+        style.Colors[ImGuiCol_Button] = ImVec4(0.22f, 0.47f, 0.67f, 1.00f);
+
+        style.FramePadding.x = 10;
+        style.FramePadding.y = 5;
+        bool open = true;
+        bool* p_open = &open;
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
             ImGuiWindowFlags_NoSavedSettings;
-
-        ImGui::SetNextWindowSize({ 1.0f * w, 1.0f * h}, ImGuiSetCond_FirstUseEver);
-        ImGui::SetNextWindowPos({ 0, 0 });
-        ImGui::Begin("Rosbag Inspector", nullptr, flags);
-        if (ImGui::Button(u8"Load File...", { 150, 0}))
+        ImGui::SetNextWindowSize({ float(w), float(h) }, flags | ImGuiSetCond_FirstUseEver);
+        if (ImGui::Begin("Rosbag Inspector", p_open, flags | ImGuiWindowFlags_MenuBar))
         {
-            auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ROS-bag\0*.bag\0", NULL, NULL);
-            if (ret)
+            if (ImGui::BeginMenuBar())
             {
-                files.AddFiles({ ret });
-            }
-        }
-
-        static int selected = 0;
-        ImGui::BeginChild("loaded files", ImVec2(150, 0), true);
-        for (int i = 0; i < files.size(); i++)
-        {
-            if (ImGui::Selectable(files[i].file_name.c_str(), selected == i))
-            {
-                selected = i;
-                num_topics_to_show.clear();
-            }
-        }
-        ImGui::EndChild();
-        ImGui::SameLine();
-
-        ImGui::BeginGroup();
-        if (files.size() > 0)
-        {
-            auto& bag = files[selected];
-            ImGui::BeginChild("Bag Content", ImVec2(0, 0), false);
-            std::ostringstream oss;
-
-            ImGui::Text("\t%s", std::string(rs2::to_string() << std::left << std::setw(20) << "Path: " << bag.path).c_str());
-            ImGui::Text("\t%s", std::string(rs2::to_string() << std::left << std::setw(20) << "Bag Version: " << bag.version).c_str());
-            ImGui::Text("\t%s", std::string(rs2::to_string() << std::left << std::setw(20) << "Duration: " << pretty_time(bag.file_duration)).c_str());
-            ImGui::Text("\t%s", std::string(rs2::to_string() << std::left << std::setw(20) << "Size: " << bag.size << " MB").c_str());
-            ImGui::Text("\t%s", std::string(rs2::to_string() << std::left << std::setw(20) << "Compression: " << bag.compression_type).c_str());
-
-            if (ImGui::CollapsingHeader("Topics"))
-            {
-                for (auto&& topic_to_message_type : bag.topics_to_message_types)
+                if (ImGui::BeginMenu("File"))
                 {
-                    std::string topic = topic_to_message_type.first;
-                    std::vector<std::string> messages_types = topic_to_message_type.second;
-                    std::ostringstream oss;
-                    oss << std::left << std::setw(100) << topic
-                        << " " << std::left << std::setw(10) << messages_types.size() 
-                        << std::setw(6) << std::string(" msg") + (messages_types.size() > 1 ? "s" : "")
-                        << ": " << messages_types.front() << std::endl;
-                    std::string line = oss.str();
-                    auto pos = ImGui::GetCursorPos();
-                    ImGui::SetCursorPos({ pos.x + 20, pos.y });
-                    if (ImGui::CollapsingHeader(line.c_str()))
+                    if (ImGui::MenuItem("Load File..."))
                     {
-                        View messages(bag.bag, rosbag::TopicQuery(topic));
-                        int count = 0;
-                        num_topics_to_show[topic] = std::max(num_topics_to_show[topic], 10);
-                        int max = num_topics_to_show[topic];
-                        for (auto&& m : messages)
+                        auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ROS-bag\0*.bag\0", NULL, NULL);
+                        if (ret)
                         {
-                            count++;
-                            ImGui::Columns(2, "Message");
-                            ImGui::Separator();
-                            ImGui::Text("Timestamp"); ImGui::NextColumn();
-                            ImGui::Text("Content"); ImGui::NextColumn();
-                            ImGui::Separator();
-                            ImGui::Text(pretty_time(nanoseconds(m.getTime().toNSec())).c_str()); ImGui::NextColumn();
-                            ImGui::Text(bag.instanciate_and_cache(m).c_str());
-                            ImGui::Columns(1);
-                            ImGui::Separator();
-                            if (count >= max)
+                            files.AddFiles({ ret });
+                        }
+                    }
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenuBar();
+            }
+
+            ImGui::BeginChild("Loaded Files", ImVec2(150, 0), true, flags);
+
+            static int selected = 0;
+            ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(25.0f / 255, 151.0f / 255, 198.0f / 255, 1.00f));
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(37.0f / 255, 40.0f / 255, 48.0f / 255, 1.00f));
+            for (int i = 0; i < files.size(); i++)
+            {
+                if (ImGui::Selectable(files[i].file_name.c_str(), selected == i))
+                {
+                    selected = i;
+                    num_topics_to_show.clear();
+                }
+            }
+            ImGui::PopStyleColor(2);
+            ImGui::EndChild();
+            ImGui::SameLine();
+            if (files.size() > 0)
+            {
+                ImGui::BeginChild("Bag Content", ImVec2(0, 0), false, flags);
+
+                auto& bag = files[selected];
+                std::ostringstream oss;
+
+                ImGui::Text("\t%s", std::string(to_string() << std::left << std::setw(20) << "Path: " << bag.path).c_str());
+                ImGui::Text("\t%s", std::string(to_string() << std::left << std::setw(20) << "Bag Version: " << bag.version).c_str());
+                ImGui::Text("\t%s", std::string(to_string() << std::left << std::setw(20) << "Duration: " << pretty_time(bag.file_duration)).c_str());
+                ImGui::Text("\t%s", std::string(to_string() << std::left << std::setw(20) << "Size: " << bag.size << " MB").c_str());
+                ImGui::Text("\t%s", std::string(to_string() << std::left << std::setw(20) << "Compression: " << bag.compression_type).c_str());
+
+                if (ImGui::CollapsingHeader("Topics"))
+                {
+                    for (auto&& topic_to_message_type : bag.topics_to_message_types)
+                    {
+                        std::string topic = topic_to_message_type.first;
+                        std::vector<std::string> messages_types = topic_to_message_type.second;
+                        std::ostringstream oss;
+                        oss << std::left << std::setw(100) << topic
+                            << " " << std::left << std::setw(10) << messages_types.size()
+                            << std::setw(6) << std::string(" msg") + (messages_types.size() > 1 ? "s" : "")
+                            << ": " << messages_types.front() << std::endl;
+                        std::string line = oss.str();
+                        auto pos = ImGui::GetCursorPos();
+                        ImGui::SetCursorPos({ pos.x + 20, pos.y });
+                        if (ImGui::CollapsingHeader(line.c_str()))
+                        {
+                            rosbag::View messages(bag.bag, rosbag::TopicQuery(topic));
+                            int count = 0;
+                            num_topics_to_show[topic] = std::max(num_topics_to_show[topic], 10);
+                            int max = num_topics_to_show[topic];
+                            auto win_pos = ImGui::GetWindowPos();
+                            ImGui::SetWindowPos({ win_pos.x + 20, win_pos.y });
+                            for (auto&& m : messages)
                             {
-                                int left = messages.size() - max;
-                                if (left > 0)
+                                count++;
+                                ImGui::Columns(2, "Message", true);
+                                ImGui::Separator();
+                                ImGui::Text("Timestamp"); ImGui::NextColumn();
+                                ImGui::Text("Content"); ImGui::NextColumn();
+                                ImGui::Separator();
+                                ImGui::Text(pretty_time(std::chrono::nanoseconds(m.getTime().toNSec())).c_str()); ImGui::NextColumn();
+                                ImGui::Text(bag.instanciate_and_cache(m).c_str());
+                                ImGui::Columns(1);
+                                ImGui::Separator();
+                                if (count >= max)
                                 {
-                                    ImGui::Text("... %d more messages", left); 
-                                    ImGui::SameLine();
-                                    std::string label = rs2::to_string() << "Show More ##" << topic;
-                                    if (ImGui::Button(label.c_str()))
+                                    int left = messages.size() - max;
+                                    if (left > 0)
                                     {
-                                        num_topics_to_show[topic] += 10;
-                                    }
-                                    else
-                                    {
-                                        break;
+                                        ImGui::Text("... %d more messages", left);
+                                        ImGui::SameLine();
+                                        std::string label = to_string() << "Show More ##" << topic;
+                                        if (ImGui::Button(label.c_str()))
+                                        {
+                                            num_topics_to_show[topic] += 10;
+                                        }
+                                        else
+                                        {
+                                            break;
+                                        }
                                     }
                                 }
                             }
+                            ImGui::SetWindowPos(win_pos);
                         }
                     }
                 }
+                ImGui::EndChild();
             }
-            ImGui::EndChild();
-        }
-        ImGui::EndGroup();
-        ImGui::End();
 
-        if (files.has_errors())
-        {
-            ImGui::OpenPopup("Error");
-            if (ImGui::BeginPopupModal("Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+            if (files.has_errors())
             {
-                std::string msg = rs2::to_string() << "Error: " << files.get_last_error();
-                ImGui::Text(msg.c_str());
-                ImGui::Separator();
+                ImGui::OpenPopup("Error");
+                if (ImGui::BeginPopupModal("Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+                {
+                    std::string msg = to_string() << "Error: " << files.get_last_error();
+                    ImGui::Text(msg.c_str());
+                    ImGui::Separator();
 
-                if (ImGui::Button("OK", ImVec2(120, 0))) 
-                { 
-                    ImGui::CloseCurrentPopup();
-                    files.clear_errors();
+                    if (ImGui::Button("OK", ImVec2(120, 0)))
+                    {
+                        ImGui::CloseCurrentPopup();
+                        files.clear_errors();
+                    }
+                    ImGui::EndPopup();
                 }
-                ImGui::EndPopup();
             }
         }
-
+        ImGui::End();
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
@@ -455,7 +485,7 @@ int main(int argc, const char** argv)
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui::Render();
         glfwSwapBuffers(window);
-        std::this_thread::sleep_for(milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
     ImGui_ImplGlfw_Shutdown();
