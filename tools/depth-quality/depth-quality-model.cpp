@@ -7,12 +7,12 @@ namespace rs2
     namespace depth_quality
     {
         tool_model::tool_model()
-            : _update_readonly_options_timer(std::chrono::seconds(6))
+            : _update_readonly_options_timer(std::chrono::seconds(6)), _roi_percent(0.33f)
         {
             _viewer_model.is_3d_view = true;
             _viewer_model.allow_3d_source_change = false;
             _viewer_model.allow_stream_close = false;
-            //_viewer_model.draw_plane = true;
+            _viewer_model.draw_plane = true;
         }
 
         void tool_model::start()
@@ -42,7 +42,7 @@ namespace rs2
             }
 
             _viewer_model.show_top_bar(win, viewer_rect);
-            _viewer_model.active_plane = _metrics.get_plane();
+            _viewer_model.roi_rect = _metrics.get_plane();
             _viewer_model.draw_viewport(viewer_rect, win, 1, _error_message);
 
             ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
@@ -116,6 +116,28 @@ namespace rs2
                             }
                         }
 
+                        auto col0 = ImGui::GetCursorPosX();
+                        auto col1 = 145.f;
+
+                        ImGui::Text("Region of Interest:");
+                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
+
+                        ImGui::PushItemWidth(-1);
+                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
+
+                        static std::vector<std::string> items{ "66%", "33%", "11%" };
+                        if (draw_combo_box("##ROI Percent", items, _roi_combo_index))
+                        {
+                            if (_roi_combo_index == 0) _roi_percent = 0.66f;
+                            else if (_roi_combo_index == 1) _roi_percent = 0.33f;
+                            else if (_roi_combo_index == 2) _roi_percent = 0.11f;
+                            update_configuration();
+                        }
+
+                        ImGui::PopStyleColor();
+                        ImGui::PopItemWidth();
+                        ImGui::SetCursorPosX(col0);
+
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                         ImGui::TreePop();
                     }
@@ -170,6 +192,10 @@ namespace rs2
 
         void tool_model::update_configuration()
         {
+            auto old_res = -1;
+            if (_depth_sensor_model)
+                old_res = _depth_sensor_model->selected_res_id;
+
             auto dev = _pipe.get_device();
             _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model));
             _device_model->allow_remove = false;
@@ -179,11 +205,15 @@ namespace rs2
                 new subdevice_model(dev, dev.first<depth_sensor>(), _error_message));
             _depth_sensor_model->draw_streams_selector = false;
             _depth_sensor_model->draw_fps_selector = false;
+            
+            if (old_res != -1) _depth_sensor_model->selected_res_id = old_res;
 
             // Connect the device_model to the viewer_model
             for (auto&& sub : _device_model.get()->subdevices)
             {
                 if (!sub->s.is<depth_sensor>()) continue;
+
+                sub->show_algo_roi = true;
                 auto profiles = _pipe.get_active_streams();
                 sub->streaming = true;      // The streaming activated externally to the device_model
                 for (auto&& profile : profiles)
@@ -196,10 +226,14 @@ namespace rs2
                         _metrics.update_stream_attributes(depth_profile.get_intrinsics(),
                                                           sub->s.as<depth_sensor>().get_depth_scale());
 
-                        _metrics.update_frame_attributes({ depth_profile.width() / 3, depth_profile.height() / 3,
-                                                           2 * (depth_profile.width() / 3), 2 * (depth_profile.height() / 3) });
+                        _metrics.update_frame_attributes({ int(depth_profile.width() * (0.5f - 0.5f*_roi_percent)), 
+                                                           int(depth_profile.height() * (0.5f - 0.5f*_roi_percent)),
+                                                           int(depth_profile.width() * (0.5f + 0.5f*_roi_percent)),
+                                                           int(depth_profile.height() * (0.5f + 0.5f*_roi_percent)) });
                     }
                 }
+
+                sub->algo_roi = _metrics.get_roi();
             }
         }
 
@@ -262,12 +296,12 @@ namespace rs2
         metrics_model::metrics_model() :
             _frame_queue(1),
             _depth_scale_units(0.f), _active(true),
-            _avg_plot("AVG", 0, 10, { 270, 50 }, " (mm)"),
-            _std_plot("STD", 0, 10, { 270, 50 }, " (mm)"),
-            _fill_plot("FILL", 0, 100, { 270, 50 }, "%"),
-            _dist_plot("DIST", 0, 5, { 270, 50 }, " (m)"),
-            _angle_plot("ANGLE", 0, 180, { 270, 50 }, " (deg)"),
-            _out_plot("OUTLIERS", 0, 100, { 270, 50 }, "%%")
+            _avg_plot("Average Error", 0, 10, { 270, 50 }, " (mm)"),
+            _std_plot("std(Error)", 0, 10, { 270, 50 }, " (mm)"),
+            _fill_plot("Fill-Rate", 0, 100, { 270, 50 }, "%%"),
+            _dist_plot("Distance", 0, 5, { 270, 50 }, " (m)"),
+            _angle_plot("Angle", 0, 180, { 270, 50 }, " (deg)"),
+            _out_plot("Outliers", 0, 100, { 270, 50 }, "%%")
         {
             _avg_plot.ranges[metric_plot::GREEN_RANGE] = { 0.f, 1.f };
             _avg_plot.ranges[metric_plot::YELLOW_RANGE] = { 0.f, 7.f };
@@ -344,6 +378,10 @@ namespace rs2
                     {
                         std::cout << __FUNCTION__ << " : unexpected frame type received - " << rs2_stream_to_string(stream_type) << std::endl;
                     }
+
+                    // Artificially slow down the calculation, so even on small ROIs / resolutions
+                    // the output is updated within reasonable interval (keeping it human readable)
+                    std::this_thread::sleep_for(std::chrono::milliseconds(80));
                 }
             });
         }
@@ -369,7 +407,7 @@ namespace rs2
             if (range == GREEN_RANGE)
                 ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0x20, 0xe0, 0x20, 0xff, true));
             else if (range == YELLOW_RANGE)
-                ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xf0, 0xf0, 0, 0xff));
+                ImGui::PushStyleColor(ImGuiCol_Text, yellow);
             else if (range == RED_RANGE)
                 ImGui::PushStyleColor(ImGuiCol_Text, redish);
             else

@@ -16,6 +16,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <array>
 #include <chrono>
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -38,9 +39,9 @@ namespace rs2
     public:
         fps_calc()
             : _counter(0),
-              _delta(0),
-              _last_timestamp(0),
-              _num_of_frames(0)
+            _delta(0),
+            _last_timestamp(0),
+            _num_of_frames(0)
         {}
 
         fps_calc(const fps_calc& other)
@@ -74,7 +75,7 @@ namespace rs2
             if (_delta == 0)
                 return 0;
 
-            return (static_cast<double>(_numerator) * _num_of_frames)/_delta;
+            return (static_cast<double>(_numerator) * _num_of_frames) / _delta;
         }
 
     private:
@@ -125,6 +126,11 @@ namespace rs2
         }
     };
 
+    inline double evaluate_plane(const plane& plane, const float3& point)
+    {
+        return plane.a * point.x + plane.b * point.y + plane.c * point.z + plane.d;
+    }
+
     inline float3 operator*(const float3& a, float t)
     {
         return { a.x * t, a.y * t, a.z * t };
@@ -162,6 +168,33 @@ namespace rs2
         }
     };
 
+    inline float3 lerp(const std::array<float3, 4>& rect, const float2& p)
+    {
+        auto v1 = lerp(rect[0], rect[1], p.x);
+        auto v2 = lerp(rect[3], rect[2], p.x);
+        return lerp(v1, v2, p.y);
+    }
+
+    inline std::vector<std::array<float3, 4>> subdivide(const std::array<float3, 4>& rect, int parts = 4)
+    {
+        std::vector<std::array<float3, 4>> res;
+        res.reserve(parts*parts);
+        for (float i = 0.f; i < parts; i++)
+        {
+            for (float j = 0.f; j < parts; j++)
+            {
+                std::array<float3, 4> r;
+                r[0] = lerp(rect, { i / parts, j / parts });
+                r[1] = lerp(rect, { i / parts, (j + 1) / parts });
+                r[2] = lerp(rect, { (i + 1) / parts, (j + 1) / parts });
+                r[3] = lerp(rect, { (i + 1) / parts, j / parts });
+                res.push_back(r);
+            }
+        }
+        return res;
+    }
+
+
     inline float2 operator-(float2 a, float2 b)
     {
         return { a.x - b.x, a.y - b.y };
@@ -180,16 +213,6 @@ namespace rs2
         int mouse_wheel = 0;
         float ui_wheel = 0.f;
     };
-
-    inline float3 eval(const plane& p, const float2& xy)
-    {
-        float3 p1 = { 0, 0, -p.d / p.c };
-        float3 p2 = { -p.d / p.a, 0, 0 };
-        float3 p3 = { 0, -p.d / p.b, 0 };
-        float3 v1 = p2 - p1;
-        float3 v2 = p3 - p1;
-        return p1 + v1 * xy.x + v2 * xy.y;
-    }
 
     template<typename T>
     T normalizeT(const T& in_val, const T& min, const T& max)
