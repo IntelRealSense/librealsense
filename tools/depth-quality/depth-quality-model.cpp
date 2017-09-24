@@ -204,12 +204,13 @@ namespace rs2
                 old_res = _depth_sensor_model->selected_res_id;
 
             auto dev = _pipe.get_device();
+            auto dpt_sensor = dev.first<depth_sensor>();
             _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model));
             _device_model->allow_remove = false;
             _device_model->show_depth_only = true;
             _device_model->show_stream_selection = false;
             _depth_sensor_model = std::shared_ptr<rs2::subdevice_model>(
-                new subdevice_model(dev, dev.first<depth_sensor>(), _error_message));
+                new subdevice_model(dev, dpt_sensor, _error_message));
             _depth_sensor_model->draw_streams_selector = false;
             _depth_sensor_model->draw_fps_selector = false;
             
@@ -495,7 +496,7 @@ namespace rs2
                 ImGui::SameLine(); ImGui::SetCursorPos(col0);
             }
 
-            if (ImGui::TreeNode(_label.c_str(), ss.str().c_str()))
+            if (ImGui::TreeNode(_label.c_str(), "%s", ss.str().c_str()))
             {
                 ImGui::PushStyleColor(ImGuiCol_FrameBg, device_info_color);
                 ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -546,8 +547,17 @@ namespace rs2
 
             csv.open(filename);
 
-            //TODO Evgeni
-            csv << "TODO - populate data";
+            // Create header line
+            csv << "avg_distance_m,std_deviation,fill_rate_%,distance,angle_deg,outliers_%" << std::endl;
+            for (size_t i = 0; i < metric_plot::SIZE; i++)
+            {
+                csv << _avg_plot._vals[i] << ","
+                    << _std_plot._vals[i] << ","
+                    << _fill_plot._vals[i] << ","
+                    << _dist_plot._vals[i] << ","
+                    << _angle_plot._vals[i] << ","
+                    << _out_plot._vals[i] << std::endl;
+            }
 
             csv.close();
         }

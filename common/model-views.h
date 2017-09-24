@@ -319,7 +319,7 @@ namespace rs2
         void resume_record();
         int draw_playback_panel(ImFont* font, viewer_model& view);
         void draw_advanced_mode_tab();
-        void draw_controls(float panel_width, float panel_height, // evgeni - cleanup unused
+        void draw_controls(float panel_width, float panel_height,
             ImFont *font1, ImFont *font2,
             const mouse_info &mouse,
             std::string& error_message,

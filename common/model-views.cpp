@@ -2185,9 +2185,9 @@ namespace rs2
 
         if (dev && dev->show_algo_roi)
         {
-            rect r{ dev->algo_roi.min_x, dev->algo_roi.min_y,
-                    dev->algo_roi.max_x - dev->algo_roi.min_x,
-                    dev->algo_roi.max_y - dev->algo_roi.min_y };
+            rect r{ float(dev->algo_roi.min_x), float(dev->algo_roi.min_y),
+                    float(dev->algo_roi.max_x - dev->algo_roi.min_x),
+                    float(dev->algo_roi.max_y - dev->algo_roi.min_y) };
 
             r = r.normalize(_normalized_zoom.unnormalize(get_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
 

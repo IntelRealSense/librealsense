@@ -48,7 +48,7 @@ namespace rs2
             rs2::float3 sum = { 0,0,0 };
             for (auto point : points) sum = sum + point;
 
-            rs2::float3 centroid = sum / points.size();
+            rs2::float3 centroid = sum / float(points.size());
 
             double xx = 0, xy = 0, xz = 0, yy = 0, yz = 0, zz = 0;
             for (auto point : points) {
@@ -108,18 +108,18 @@ namespace rs2
 
             double total_distance = 0;
             for (auto itr = begin; itr < end; ++itr) total_distance += *itr;
-            result.avg_dist = total_distance / (distances.size() - 2 * n_outliers);
+            result.avg_dist = static_cast<float>(total_distance / (distances.size() - 2 * n_outliers));
 
             double total_sq_diffs = 0;
             for (auto itr = begin; itr < end; ++itr)
             {
                 total_sq_diffs += std::pow(*itr - result.avg_dist, 2);
             }
-            result.std_dev = std::sqrt(total_sq_diffs / points.size());
+            result.std_dev = static_cast<float>(std::sqrt(total_sq_diffs / points.size()));
 
             result.fit = result.std_dev / 10;
 
-            result.distance = -p.d;
+            result.distance = float(-p.d);
 
             result.angle = std::acos(std::abs(p.c)) / M_PI * 180;
 
@@ -142,7 +142,7 @@ namespace rs2
         {
             float3 point;
             auto far = evaluate_pixel(p, intrin, x, y, max, point);
-            if (abs(max - min) < 1e-3) return point;
+            if (fabs(max - min) < 1e-3) return point;
             auto near = evaluate_pixel(p, intrin, x, y, min, point);
             if (far*near > 0) return{ 0, 0, 0 };
 
@@ -245,23 +245,5 @@ namespace rs2
 
             return result;
         }
-
-            //class depth_metrics_model
-            //{
-            //    // Data display plots
-            //    PlotMetric avg_plot("AVG", 0, 10, { 180, 50 }, " (mm)");
-            //    PlotMetric std_plot("STD", 0, 10, { 180, 50 }, " (mm)");
-            //    PlotMetric fill_plot("FILL", 0, 100, { 180, 50 }, "%");
-            //    PlotMetric dist_plot("DIST", 0, 5, { 180, 50 }, " (m)");
-            //    PlotMetric angle_plot("ANGLE", 0, 180, { 180, 50 }, " (deg)");
-            //    PlotMetric out_plot("OUTLIERS", 0, 100, { 180, 50 }, "%");
-
-            //public:
-            //    void render() const
-            //    {
-
-            //    }
-            //};
-
     }
 }

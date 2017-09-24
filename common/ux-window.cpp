@@ -29,7 +29,7 @@ namespace rs2
         glfwMakeContextCurrent(_win);
         ImGui_ImplGlfw_Init(_win, true);
 
-        // Load fonts to be used with the ImGui - TODO RAII
+        // Load fonts to be used with the ImGui - TODO move to RAII
         imgui_easy_theming(_font_14, _font_18);
 
         // Register for UI-controller events

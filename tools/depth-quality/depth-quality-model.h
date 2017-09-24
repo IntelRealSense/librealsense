@@ -13,6 +13,8 @@ namespace rs2
 {
     namespace depth_quality
     {
+        class metrics_model;
+
         class metric_plot
         {
         private:
@@ -24,6 +26,7 @@ namespace rs2
             ImVec2 _size;
             timer model_timer;
 
+            friend class metrics_model;
         public:
             enum range
             {
@@ -47,9 +50,9 @@ namespace rs2
             }
 
             metric_plot(const std::string& name, float min, float max, ImVec2 size, const std::string& tail)
-                : _idx(0), _vals(), _min(min), _max(max), _id("##" + name), _label(name + " = "), _tail(tail), _size(size)
+                : _idx(0), _vals(), _min(min), _max(max), _id("##" + name), _label(name + " = "),
+                _tail(tail), _size(size), description("")
             {
-                description = "";
                 for (int i = 0; i < MAX_RANGE; i++) ranges[i] = { 0.f, 0.f };
             }
             ~metric_plot() {}
