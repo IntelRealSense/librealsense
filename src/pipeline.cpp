@@ -39,12 +39,10 @@ namespace librealsense
         return _dev;
     }
 
-    void pipeline::open()
+    void pipeline::commit_config()
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         
-        if (!_dev)
-            _dev = _hub.wait_for_device();
 
         if (_config.get_requests().size() == 0 && _config.get_requests().size() == 0)
         {
@@ -61,8 +59,6 @@ namespace librealsense
                         default_profiles.push_back(p);
                     }
                 }
-
-                _sensors.push_back(&sensor);
             }
 
             // Workaround - default profiles that holds color stream shouldn't supposed to provide infrared either
@@ -89,36 +85,32 @@ namespace librealsense
             }
         }
 
+        if (!_dev)
+        {
+            auto list = _ctx->query_devices();
+
+            for (auto dev : list)
+            {
+
+                _multistream = _config.resolve(_dev.get());
+            }
+        }
+           
+
+        
         _commited = true;
     }
 
-    void pipeline::start(frame_callback_ptr callback)
-    {
-        std::lock_guard<std::recursive_mutex> lock(_mtx);
-        if (!_commited)
-        {
-            open();
-        }
-        auto to_syncer = [&](frame_holder fref)
-        {
-            _syncer.invoke(std::move(fref));
-        };
-
-        frame_callback_ptr syncer_callback =
-        { new internal_frame_callback<decltype(to_syncer)>(to_syncer),
-         [](rs2_frame_callback* p) { p->release(); } };
-
-
-        _syncer.set_output_callback(callback);
-
-        _multistream = _config.open(_dev.get());
-        _multistream.start(syncer_callback);
-        _streaming = true;
-    }
 
     void pipeline::start()
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
+
+        if (!_commited)
+        {
+            commit_config();
+        }
+
         auto to_user = [&](frame_holder fref)
         {
             _queue.enqueue(std::move(fref));
@@ -128,7 +120,22 @@ namespace librealsense
         { new internal_frame_callback<decltype(to_user)>(to_user),
          [](rs2_frame_callback* p) { p->release(); } };
 
-        start(user_callback);
+        auto to_syncer = [&](frame_holder fref)
+        {
+            _syncer.invoke(std::move(fref));
+        };
+
+        frame_callback_ptr syncer_callback =
+        { new internal_frame_callback<decltype(to_syncer)>(to_syncer),
+            [](rs2_frame_callback* p) { p->release(); } };
+
+
+        _syncer.set_output_callback(user_callback);
+
+        _multistream.open();
+        _multistream.start(syncer_callback);
+
+        _streaming = true;
     }
 
     void pipeline::enable(std::string device_serial)
@@ -152,31 +159,15 @@ namespace librealsense
         _config.enable_stream(stream, index, width, height, format, framerate);
     }
 
-    void pipeline::disable_stream(rs2_stream stream)
-    {
-        std::lock_guard<std::recursive_mutex> lock(_mtx);
-
-        if (_streaming)
-        {
-            _multistream.stop();
-            _multistream.close();
-        }
-
-        _commited = false;
-        _streaming = false;
-        _config.disable_stream(stream);
-    }
-
-    void pipeline::disable_all()
+    void pipeline::reset_config()
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         if (_streaming)
         {
-            _multistream.stop();
-            _multistream.close();
+            throw std::runtime_error(to_string() << "reset_config() failed. pipeline is streaming");
         }
+        
         _commited = false;
-        _streaming = false;
         _config.disable_all();
     }
 
@@ -212,7 +203,6 @@ namespace librealsense
             if (!_hub.is_connected(*_dev))
             {
                 _dev = _hub.wait_for_device(timeout_ms/*, _dev.get()*/);
-                _sensors.clear();
                 _queue.clear();
                 _queue.start();
                 start();
@@ -255,5 +245,28 @@ namespace librealsense
             stop();
         }
         catch (...) {}
+    }
+
+    pipeline::resolver::resolver(std::shared_ptr<librealsense::context> ctx)
+        :_ctx(ctx), _hub(ctx){}
+
+    std::pair<std::shared_ptr<device_interface>, util::config::multistream> pipeline::resolver::resolve()
+    {
+        if (_device_serial.size() > 0)
+        {
+            auto dev = _hub.wait_for_device(5000, _device_serial);
+            auto config = _config.resolve(dev.get());
+            return{ dev , config };
+        }
+        
+        for (auto dev : _ctx->query_devices())
+        {
+            try
+            {
+                auto config = _config.resolve(dev->create_device().get());
+                return{ dev , config };
+            }
+
+        }
     }
 }

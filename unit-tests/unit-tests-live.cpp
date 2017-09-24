@@ -483,6 +483,7 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
+
         std::vector<sensor> list;
         REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
@@ -493,12 +494,11 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
 
         for (auto i = 0; i < 5; i++)
         {
-            REQUIRE_NOTHROW(pipe.open());
-            REQUIRE_NOTHROW(dev = pipe.get_device());
-            disable_sensitive_options_for(dev);
-
             // Test sequence
             REQUIRE_NOTHROW(pipe.start());
+            REQUIRE_NOTHROW(dev = pipe.get_device());
+            pipe.enable_stream(RS2_STREAM_DEPTH, 640, 480);
+            disable_sensitive_options_for(dev);
 
             REQUIRE_NOTHROW(pipe.stop());
         }
@@ -2360,7 +2360,7 @@ TEST_CASE("Connect Disconnect events while controls", "[live]")
 
 }
 
-TEST_CASE("Basic device_hub flow", "[live][!mayfail]") {
+TEST_CASE("Basic device_hub flow", "[live]") {
 
     rs2::context ctx;
 
@@ -2389,9 +2389,6 @@ TEST_CASE("Basic device_hub flow", "[live][!mayfail]") {
             while (hub.is_connected(*dev))
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
-
-        // Don't exit the test in unknown state
-        REQUIRE_NOTHROW(hub.wait_for_device());
     }
 }
 
@@ -2451,7 +2448,7 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
         pipeline pipe(ctx);
         for (int i = 0; i < tests.size(); ++i)
         {
-            pipe.disable_all();
+            REQUIRE_NOTHROW(pipe.reset_config());
             for (auto & profile : tests[i].given) {
                 REQUIRE_NOTHROW(pipe.enable_stream(profile.stream_type, profile.index, profile.width, profile.height, profile.format, profile.fps));
             }
@@ -2937,7 +2934,7 @@ TEST_CASE("Pipeline enable stream auto complete", "[live]") {
     }
 }
 
-TEST_CASE("Pipeline disable_all", "[live]") {
+TEST_CASE("Pipeline reset config", "[live]") {
 
     auto not_default_configurations = get_custom_configurations();
     auto default_configurations = get_pipeline_default_configurations();
@@ -2964,7 +2961,7 @@ TEST_CASE("Pipeline disable_all", "[live]") {
         for (auto req : not_default_configurations[PID].streams)
             REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, not_default_configurations[PID].fps));
 
-        REQUIRE_NOTHROW(pipe.disable_all());
+        REQUIRE_NOTHROW(pipe.reset_config());
 
         REQUIRE_NOTHROW(pipe.start());
 
@@ -2996,71 +2993,6 @@ TEST_CASE("Pipeline disable_all", "[live]") {
     }
 }
 
-TEST_CASE("Pipeline disable stream", "[live]") {
-
-    auto configurations = get_custom_configurations();
-
-    rs2::context ctx;
-
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
-    {
-        auto list = ctx.query_devices();
-        REQUIRE(list.size());
-
-        rs2::device dev;
-        rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = list[0]);
-
-        disable_sensitive_options_for(dev);
-
-        std::string PID;
-        REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
-
-        REQUIRE(configurations[PID].streams.size() > 0);
-
-
-        for (auto req : configurations[PID].streams)
-            REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
-
-
-        auto stream_to_be_removed = configurations[PID].streams[configurations[PID].streams.size() - 1].stream;
-        REQUIRE_NOTHROW(pipe.disable_stream(stream_to_be_removed));
-
-
-        auto& streams = configurations[PID].streams;
-        streams.erase(streams.end() - 1);
-
-
-        REQUIRE_NOTHROW(pipe.start());
-
-        std::vector<std::vector<stream_profile>> frames;
-        std::vector<std::vector<double>> timestamps;
-
-        for (auto i = 0; i < 30; i++)
-            REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
-
-
-        while (frames.size() < 100)
-        {
-            frameset frame;
-            REQUIRE_NOTHROW(frame = pipe.wait_for_frames(10000));
-            std::vector<stream_profile> frames_set;
-            std::vector<double> ts;
-            for (auto f : frame)
-            {
-                frames_set.push_back(f.get_profile());
-                ts.push_back(f.get_timestamp());
-            }
-            frames.push_back(frames_set);
-            timestamps.push_back(ts);
-        }
-
-
-        REQUIRE_NOTHROW(pipe.stop());
-        validate(frames, timestamps, configurations[PID]);
-    }
-}
-
 TEST_CASE("Pipeline with specific device", "[live]") {
 
     auto configurations = get_custom_configurations();
@@ -3080,7 +3012,7 @@ TEST_CASE("Pipeline with specific device", "[live]") {
 
         rs2::pipeline pipe(ctx);
         REQUIRE_NOTHROW(pipe.enable_device(serial));
-        REQUIRE_NOTHROW(pipe.open());
+        REQUIRE_NOTHROW(pipe.commit_config());
 
         REQUIRE_NOTHROW(dev = pipe.get_device());
 
@@ -3186,7 +3118,7 @@ TEST_CASE("Pipeline start stop", "[live]") {
         }
 
         REQUIRE_NOTHROW(pipe.stop());
-        REQUIRE(equals > 1);
+        REQUIRE(equals > 30 * 0.25);
     }
 }
 
@@ -3499,8 +3431,8 @@ TEST_CASE("Pipeline enable open start flow", "[live]") {
 
         disable_sensitive_options_for(dev);
         REQUIRE_THROWS(pipe.get_device());
-        REQUIRE_NOTHROW(pipe.open());
-        REQUIRE_NOTHROW(pipe.open());
+        REQUIRE_NOTHROW(pipe.commit_config());
+        REQUIRE_NOTHROW(pipe.commit_config());
         REQUIRE_NOTHROW(dev = pipe.get_device());
         
         REQUIRE_THROWS(pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_ANY, 0));
@@ -3518,12 +3450,11 @@ TEST_CASE("Pipeline enable open start flow", "[live]") {
         for (auto i = 0; i < 20; i++)
             REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
 
-        REQUIRE_NOTHROW(pipe.disable_all());
+        REQUIRE_NOTHROW(pipe.stop());
 
         REQUIRE_NOTHROW(pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_ANY, 0));
-        REQUIRE_NOTHROW(pipe.open());
+        REQUIRE_NOTHROW(pipe.start());
 
-        REQUIRE_NOTHROW(pipe.disable_all());
-        REQUIRE_NOTHROW(pipe.open());
+        REQUIRE_NOTHROW(pipe.reset_config());
     }
 }

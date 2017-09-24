@@ -26,39 +26,14 @@ namespace rs2
         }
 
 
-        /**
-        * Retrieved the device used by the pipeline
-        * \param[in] ctx   context
-        * \param[in] pipe  pipeline
-        * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-        * \return the device used by the pipeline
-        */
-        device get_device() const
-        {
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_device> dev(
-                rs2_pipeline_get_device(_ctx._context.get(), _pipeline.get(), &e),
-                rs2_delete_device);
-
-            error::handle(e);
-
-            return device(dev);
-        }
 
         /**
-        * Start streaming with default configuration or configuration commited by enable_stream
+        * Start streaming with default configuration or configuration submitted by enable_stream
         */
         void start() const
         {
             rs2_error* e = nullptr;
             rs2_start_pipeline(_pipeline.get(), &e);
-            error::handle(e);
-        }
-
-        void open()const
-        {
-            rs2_error* e = nullptr;
-            rs2_open_pipeline(_pipeline.get(), &e);
             error::handle(e);
         }
 
@@ -73,7 +48,7 @@ namespace rs2
         }
 
         /**
-        * committing a configuration to the pipeline
+        * submitting a configuration request to the pipeline
         * \param[in] stream    stream type
         * \param[in] index     stream index
         * \param[in] width     width
@@ -81,12 +56,24 @@ namespace rs2
         * \param[in] format    stream format
         * \param[in] framerate    stream framerate
         */
-        void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int framerate) const
+        void enable_stream(rs2_stream stream, int index = 0)  const
+        {
+            enable_stream(stream, index, 0, 0);
+        }
+
+        void enable_stream(rs2_stream stream, int width, int height) const
+        {
+            enable_stream(stream, 0, width, height);
+        }
+
+        void enable_stream(rs2_stream stream, int index , int width , int height, rs2_format format = RS2_FORMAT_ANY, int framerate = 0) const
         {
             rs2_error* e = nullptr;
             rs2_enable_pipeline_stream(_pipeline.get(), stream, index, width, height, format, framerate, &e);
             error::handle(e);
         }
+
+   
         /**
         * committing a configuration to the pipeline
         * \param[in] stream    stream type
@@ -102,25 +89,25 @@ namespace rs2
             rs2_enable_pipeline_device(_pipeline.get(), serial.c_str(), &e);
             error::handle(e);
         }
+
         /**
-        *  remove a configuration from the pipeline
-        * \param[in] stream    stream type
+        *  reset the committed a configuration
         */
-        void disable_stream(rs2_stream stream) const
+        void reset_config() const
         {
             rs2_error* e = nullptr;
-            rs2_disable_stream_pipeline(_pipeline.get(), stream, &e);
+            rs2_reset_config_streams_pipeline(_pipeline.get(), &e);
             error::handle(e);
         }
 
+
         /**
-        *  remove all streams from the pipeline
-        * \param[in] stream    stream type
+        * Commit to stream configurations and device
         */
-        void disable_all() const
+        void commit_config()const
         {
             rs2_error* e = nullptr;
-            rs2_disable_all_streams_pipeline(_pipeline.get(), &e);
+            rs2_open_pipeline(_pipeline.get(), &e);
             error::handle(e);
         }
 
@@ -154,6 +141,26 @@ namespace rs2
 
             if (res) *f = frameset(frame(frame_ref));
             return res > 0;
+        }
+
+
+        /**
+        * Retrieved the device used by the pipeline
+        * \param[in] ctx   context
+        * \param[in] pipe  pipeline
+        * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        * \return the device used by the pipeline
+        */
+        device get_device() const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_device> dev(
+                rs2_pipeline_get_device(_ctx._context.get(), _pipeline.get(), &e),
+                rs2_delete_device);
+
+            error::handle(e);
+
+            return device(dev);
         }
 
         /**

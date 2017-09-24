@@ -1358,14 +1358,6 @@ rs2_device* rs2_pipeline_get_device(rs2_context* ctx, rs2_pipeline* pipe, rs2_er
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)
 
-void rs2_start_pipeline_with_callback(rs2_pipeline* pipe, rs2_frame_callback* callback, rs2_error ** error) try
-{
-    VALIDATE_NOT_NULL(pipe);
-
-    pipe->pipe->start({ callback, [](rs2_frame_callback* p) { p->release(); } });
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
-
 void rs2_start_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
@@ -1378,27 +1370,9 @@ void rs2_open_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
 
-    pipe->pipe->open();
+    pipe->pipe->commit_config();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
-
-void rs2_start_pipeline_with_callback_cpp( rs2_pipeline* pipe, rs2_frame_callback* callback, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(pipe);
-    VALIDATE_NOT_NULL(callback);
-    pipe->pipe->start({ callback, [](rs2_frame_callback* p) { p->release(); } });
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, pipe, callback)
-
-void rs2_start_pipeline_with_callback( rs2_pipeline* pipe,  rs2_frame_callback_ptr on_frame, void* user, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(pipe);
-    VALIDATE_NOT_NULL(on_frame);
-    librealsense::frame_callback_ptr callback(
-        new librealsense::frame_callback(on_frame, user));
-    pipe->pipe->start(move(callback));
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, pipe, on_frame, user)
 
 void rs2_stop_pipeline(rs2_pipeline* pipe, rs2_error ** error)
 {
@@ -1423,19 +1397,11 @@ void rs2_enable_pipeline_device(rs2_pipeline* pipe, const char* serial, rs2_erro
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
-void rs2_disable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, rs2_error ** error) try
+void rs2_reset_config_streams_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
 
-    pipe->pipe->disable_stream(stream);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
-
-void rs2_disable_all_streams_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
-{
-    VALIDATE_NOT_NULL(pipe);
-
-    pipe->pipe->disable_all();
+    pipe->pipe->reset_config();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
