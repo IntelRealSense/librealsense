@@ -1,38 +1,11 @@
 #include "depth-quality-model.h"
+#include <librealsense2/rs_advanced_mode.hpp>
 #include "model-views.h"
-
-using namespace std;
 
 namespace rs2
 {
     namespace depth_quality
     {
-        //// A transient state required to acquire and distribute depth stream specifics among relevant parties
-        /*void depth_profiler_model::configure_cam::update(depth_profiler_model& app)
-        {
-            auto dev = app._device_model.get()->dev;
-            auto depth_scale_units = dev.first<depth_sensor>().get_depth_scale();
-            auto profiles = app._device_model.get()->subdevices.front()->get_selected_profiles();
-            auto depth_intrinsic = profiles.front().as<video_stream_profile>().get_intrinsics();
-
-            {
-                std::lock_guard<std::mutex> lock(app._m);
-                app._metrics_model.update_stream_attributes(depth_intrinsic, depth_scale_units);
-            }
-        }*/
-
-        //void depth_profiler_model::profile_metrics::update(depth_profiler_model& app)
-        //{
-        //    // Update active ROI for computation
-        //    std::lock_guard<std::mutex> lock(app._m);
-        //    // Evgeni - get actual ROI selection from stream_model
-        //    //auto roi = app._viewer_model.streams[0].dev->roi_rect; 
-        //    //app._metrics_model.update_frame_attributes({ (int)roi.x, (int)roi.y, (int)(roi.x+roi.w), (int)(roi.y + roi.h)});
-        //    auto res = app._viewer_model.streams[0].size;
-        //    region_of_interest roi{ int(res.x / 3), int(res.y / 3), int(res.x * 2 / 3), int(res.y * 2 / 3) };
-        //    app._metrics_model.update_frame_attributes(roi);
-        //}
-
         tool_model::tool_model()
             : _update_readonly_options_timer(std::chrono::seconds(6))
         {
@@ -166,8 +139,12 @@ namespace rs2
                     ImGui::PopFont();
                     ImGui::PopStyleColor(3);
                 }
+            }
 
-
+            ImGui::Dummy({ 20,25 }); ImGui::SameLine();
+            if (ImGui::Button("Snapshot Metrics", { 140, 25 }))
+            {
+                snapshot_metrics();
             }
 
             ImGui::End();
@@ -226,12 +203,61 @@ namespace rs2
             }
         }
 
-        //void depth_profiler_model::upload(rs2::frameset &frameset)
-        //{
-        //    // Upload new frames for rendering
-        //    for (size_t i = 0; i < frameset.size(); i++)
-        //        _viewer_model.upload_frame(frameset[i]);
-        //}
+        void tool_model::snapshot_metrics()
+        {
+            if (auto ret = file_dialog_open(save_file, NULL, NULL, NULL))
+            {
+                std::string filename_base(ret);
+
+                // Save depth/ir images
+                for (auto const &stream : _viewer_model.streams)
+                {
+                    if (auto frame = stream.second.texture->get_last_frame().as<video_frame>())
+                    {
+                        // Use the colorizer to get an rgb image for the depth stream
+                        if (frame.is<rs2::depth_frame>())
+                        {
+                            rs2::colorizer color_map;
+                            frame = color_map(frame);
+                        }
+
+                        std::string stream_desc = rs2_stream_to_string(frame.get_profile().stream_type());
+                        std::string filename = filename_base + "_" + stream_desc + ".png";
+                        save_to_png(filename.data(), frame.get_width(), frame.get_height(), frame.get_bytes_per_pixel(), frame.get_data(), frame.get_width() * frame.get_bytes_per_pixel());
+
+                        _viewer_model.not_model.add_notification({ to_string() << stream_desc << " snapshot was saved to " << filename,
+                            0, RS2_LOG_SEVERITY_INFO,
+                            RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                    }
+                }
+
+                // Export 3d view in PLY format
+                frame ply_texture;
+                if (_viewer_model.selected_tex_source_uid >= 0)
+                {
+                    ply_texture = _viewer_model.streams[_viewer_model.selected_tex_source_uid].texture->get_last_frame();
+                    if (ply_texture)
+                        _viewer_model.pc.update_texture(ply_texture);
+                }
+                export_to_ply(filename_base + "_3d_mesh.ply", _viewer_model.not_model, _viewer_model.pc.get_points(), ply_texture);
+
+                // Save Metrics
+                _metrics.serialize_to_csv(filename_base + "_depth_metrics.csv");
+
+                // Save camera configuration - supported when camera is in advanced mode only
+                if (_device_model.get())
+                {
+                    if (auto adv = _device_model->dev.as<rs400::advanced_mode>())
+                    {
+                        std::string filename = filename_base + "_configuration.json";
+                        std::ofstream out(filename);
+                        out << adv.serialize_json();
+                        out.close();
+                    }
+                }
+
+            }
+        }
 
         metrics_model::metrics_model() :
             _frame_queue(1),
@@ -310,9 +336,9 @@ namespace rs2
                             std::lock_guard<std::mutex> lock(_m);
                             _latest_metrics = metrics;
                         }
-                        cout << "Depth Average distance is : " << _latest_metrics.depth.avg_dist << endl;
+                        /*cout << "Depth Average distance is : " << _latest_metrics.depth.avg_dist << endl;
                         cout << "Standard_deviation is : " << _latest_metrics.depth.std_dev << endl;
-                        cout << "Fillrate is : " << _latest_metrics.non_null_pct << endl;
+                        cout << "Fillrate is : " << _latest_metrics.non_null_pct << endl;*/
                     }
                     else
                     {
@@ -334,8 +360,8 @@ namespace rs2
         void metric_plot::render(ux_window& win)
         {
             std::stringstream ss;
-            auto val = vals[(100 + idx - 1) % 100];
-            ss << label << val << tail;
+            auto val = _vals[(100 + _idx - 1) % 100];
+            ss << _label << val << _tail;
 
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
 
@@ -353,20 +379,20 @@ namespace rs2
 
             ImGui::PushStyleColor(ImGuiCol_Header, sensor_header_light_blue);
 
-            if (ImGui::TreeNode(label.c_str(), ss.str().c_str()))
+            if (ImGui::TreeNode(_label.c_str(), ss.str().c_str()))
             {
                 ImGui::PushStyleColor(ImGuiCol_FrameBg, device_info_color);
                 ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-                std::string did = to_string() << id << "-desc";
-                auto desc_size = size;
+                std::string did = to_string() << _id << "-desc";
+                auto desc_size = _size;
                 auto lines = std::count(description.begin(), description.end(), '\n') + 1;
                 desc_size.y = lines * 20;
                 ImGui::InputTextMultiline(did.c_str(), const_cast<char*>(description.c_str()),
                     description.size() + 1, desc_size, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopStyleColor(3);
 
-                ImGui::PlotLines(id.c_str(), vals, 100, idx, ss.str().c_str(), min, max, size);
+                ImGui::PlotLines(_id.c_str(), _vals, 100, _idx, ss.str().c_str(), _min, _max, _size);
                 ImGui::TreePop();
             }
 
@@ -376,8 +402,11 @@ namespace rs2
 
         void metrics_model::render(ux_window& win)
         {
-            std::lock_guard<std::mutex> lock(_m);
-            metrics data = _latest_metrics.planar;
+            metrics data;
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                data = _latest_metrics.planar;
+            }
 
             _avg_plot.add_value(data.avg_dist);
             _std_plot.add_value(data.std_dev);
@@ -392,13 +421,19 @@ namespace rs2
             _dist_plot.render(win);
             _angle_plot.render(win);
             _out_plot.render(win);
+        }
 
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-            if (ImGui::Button("Save Report", { 290, 25 }))
-            {
+        void metrics_model::serialize_to_csv(const std::string& filename) const
+        {
+            // RAII
+            std::ofstream csv;
 
-            }
-            ImGui::PopStyleColor();
+            csv.open(filename);
+
+            //TODO Evgeni
+            csv << "TODO - populate data";
+
+            csv.close();
         }
     }
 }

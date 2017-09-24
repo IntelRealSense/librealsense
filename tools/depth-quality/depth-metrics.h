@@ -12,12 +12,12 @@ namespace rs2
     {
         struct metrics
         {
-            double avg_dist;
-            double std_dev;
-            double fit;
-            double distance;
-            double angle;
-            double outlier_pct;
+            float avg_dist;
+            float std_dev;
+            float fit;
+            float distance;
+            float angle;
+            float outlier_pct;
         };
 
         struct snapshot_metrics

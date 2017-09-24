@@ -3,12 +3,19 @@
 
 #include <regex>
 #include <thread>
+#include <algorithm>
 
 #include <librealsense2/rs_advanced_mode.hpp>
 
 #include "model-views.h"
 
 #include <imgui_internal.h>
+
+#ifdef _MSC_VER
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#endif
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -144,7 +151,7 @@ namespace rs2
         auto window_rect = get_window_rect(window);
         int count;
         GLFWmonitor** monitors = glfwGetMonitors(&count);
-        if (count == 0) return 1.f; // Not sure if possible, but better be safe
+        if (count == 0) return 1; // Not sure if possible, but better be safe
 
                                     // Find the monitor that covers most of the application pixels:
         GLFWmonitor* best = monitors[0];
@@ -165,7 +172,7 @@ namespace rs2
         glfwGetMonitorPhysicalSize(best, &widthMM, &heightMM);
 
         // This indicates that the monitor dimentions are unknown
-        if (widthMM * heightMM == 0) return 1.f;
+        if (widthMM * heightMM == 0) return 1;
 
         // The actual calculation is somewhat arbitrary, but we are going for
         // about 1cm buttons, regardless of resultion
@@ -173,8 +180,8 @@ namespace rs2
         float how_many_pixels_in_mm =
             get_monitor_rect(best).area() / (widthMM * heightMM);
         float scale = sqrt(how_many_pixels_in_mm) / 5.f;
-        if (scale < 1.f) return 1.f;
-        return floor(scale);
+        if (scale < 1.f) return 1;
+        return (int)(floor(scale));
     }
 
     std::tuple<uint8_t, uint8_t, uint8_t> get_texcolor(video_frame texture, texture_coordinate texcoords)
@@ -188,13 +195,8 @@ namespace rs2
             texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
     }
 
-    void export_to_ply(notifications_model& ns, points points, video_frame texture)
+    void export_to_ply(const std::string& fname, notifications_model& ns, points points, video_frame texture)
     {
-        const char *ret;
-        ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL);
-        if (!ret) return; // user cancelled dialog. Don't save image.
-        std::string fname(ret);
-        if (!ends_with(to_lower(fname), ".ply")) fname += ".ply";
 
         std::thread([&ns, points, texture, fname]() {
             std::string texfname(fname);
@@ -273,6 +275,17 @@ namespace rs2
         }).detach();
     }
 
+    const char* file_dialog_open(file_dialog_mode flags, const char* filters, const char* default_path, const char* default_name)
+    {
+        return noc_file_dialog_open(flags, filters, default_path, default_name);
+    }
+
+    int save_to_png(const char* filename,
+        size_t pixel_width, size_t pixels_height, size_t bytes_per_pixel,
+        const void* raster_data, size_t stride_bytes)
+    {
+        return stbi_write_png(filename, pixel_width, pixels_height, bytes_per_pixel, raster_data, stride_bytes);
+    }
 
     std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec)
     {
@@ -1689,7 +1702,12 @@ namespace rs2
 
         if (ImGui::Button(u8"\uf0c7", { 30, top_bar_height }))
         {
-            export_to_ply(not_model, model, tex);
+            if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
+            {
+                std::string fname(ret);
+                if (!ends_with(to_lower(fname), ".ply")) fname += ".ply";
+                export_to_ply(fname.c_str(), not_model, model, tex);
+            }
         }
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Export 3D model to PLY format");
@@ -1868,7 +1886,7 @@ namespace rs2
         label = to_string() << u8"\uf030" << "##Snapshot " << profile.unique_id();
         if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
         {
-            auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "Portable Network Graphics (PNG)\0*.png\0", NULL, NULL);
+            auto ret = file_dialog_open(save_file, "Portable Network Graphics (PNG)\0*.png\0", NULL, NULL);
 
             if (ret)
             {
@@ -1878,7 +1896,7 @@ namespace rs2
                 auto frame = texture->get_last_frame().as<video_frame>();
                 if (frame)
                 {
-                    stbi_write_png(filename.data(), frame.get_width(), frame.get_height(), frame.get_bytes_per_pixel(), frame.get_data(), frame.get_width() * frame.get_bytes_per_pixel());
+                    save_to_png(filename.data(), frame.get_width(), frame.get_height(), frame.get_bytes_per_pixel(), frame.get_data(), frame.get_width() * frame.get_bytes_per_pixel());
 
                     viewer.not_model.add_notification({ to_string() << "Snapshot was saved to " << filename,
                         0, RS2_LOG_SEVERITY_INFO,
@@ -3503,7 +3521,7 @@ namespace rs2
                 bool is_device_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& s) { return s->streaming; });
                 if (ImGui::Selectable("Record to File...", false, is_device_streaming ? ImGuiSelectableFlags_Disabled : 0))
                 {
-                    auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "ROS-bag\0*.bag\0", NULL, NULL);
+                    auto ret = file_dialog_open(save_file, "ROS-bag\0*.bag\0", NULL, NULL);
 
                     if (ret)
                     {
@@ -3528,7 +3546,7 @@ namespace rs2
 
                     if (ImGui::Selectable("Load Settings", false, ImGuiSelectableFlags_SpanAllColumns))
                     {
-                        auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+                        auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
                         if (ret)
                         {
                             std::ifstream t(ret);
@@ -3542,7 +3560,7 @@ namespace rs2
 
                     if (ImGui::Selectable("Save Settings", false, ImGuiSelectableFlags_SpanAllColumns))
                     {
-                        auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+                        auto ret = file_dialog_open(save_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
 
                         if (ret)
                         {
