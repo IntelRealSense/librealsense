@@ -163,11 +163,18 @@ namespace rs2
                 }
             }
 
+            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
             ImGui::Dummy({ 20,25 }); ImGui::SameLine();
-            if (ImGui::Button("Snapshot Metrics", { 140, 25 }))
+            if (ImGui::Button(u8"\uf0c7 Snapshot Metrics", { 140, 25 }))
             {
                 snapshot_metrics();
             }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Save Metrics snapshot. This will create:\nPNG image with the depth frame\nPLY 3D model with the point cloud\nJSON file with camera settings you can load later\nand a CSV with metrics recent values");
+            }
+            ImGui::PopStyleColor(2);
 
             ImGui::End();
             ImGui::PopStyleVar();
@@ -248,14 +255,14 @@ namespace rs2
             auto min_val = 0.f;
             for (int i = 0; i < curr_window; i++)
             {
-                auto val = abs(best - vals[(SIZE + idx - i) % SIZE]);
+                auto val = abs(best - _vals[(SIZE + _idx - i) % SIZE]);
                 min_val += val / curr_window;
             }
 
             auto improved = 0;
             for (int i = curr_window; i <= window_size; i++)
             {
-                auto val = abs(best - vals[(SIZE + idx - i) % SIZE]);
+                auto val = abs(best - _vals[(SIZE + _idx - i) % SIZE]);
                 if (positive && min_val < val * 0.8) improved++;
                 if (!positive && min_val * 0.8 > val) improved++;
             }

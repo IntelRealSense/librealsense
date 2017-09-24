@@ -19,6 +19,7 @@ namespace rs2
             const static int SIZE = 200;
             int _idx;
             float _vals[SIZE];
+            float _min, _max;
             std::string _id, _label, _tail;
             ImVec2 _size;
             timer model_timer;
@@ -142,9 +143,6 @@ namespace rs2
             bool                            _first_frame = true;
             periodic_timer                  _update_readonly_options_timer;
             metrics_model                   _metrics;
-
-            float                           _roi_percent = 0.33f;
-            int                             _roi_combo_index = 1;
 
             float                           _roi_percent = 0.33f;
             int                             _roi_combo_index = 1;
