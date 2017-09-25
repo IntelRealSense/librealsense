@@ -18,10 +18,20 @@ namespace rs2
         void tool_model::start()
         {
             _pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
-            _pipe.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, 30);
+            _pipe.enable_stream(RS2_STREAM_INFRARED, 0, 0, 0, RS2_FORMAT_RGB8, 30);
 
             // Wait till a valid device is found
-            _pipe.start();
+            try {
+                _pipe.start();
+            }
+            catch (...)
+            {
+                // Switch to infrared luminocity as a secondary in case synthetic chroma is not supported
+                _pipe.disable_all();
+                _pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
+                _pipe.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, 30);
+                _pipe.start();
+            }
 
             update_configuration();
         }
