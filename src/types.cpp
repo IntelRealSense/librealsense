@@ -150,11 +150,11 @@ namespace librealsense
         #define CASE(X) STRCASE(EXTENSION, X)
         switch (value)
         {
+            CASE(UNKNOWN)
             CASE(DEBUG)
             CASE(INFO)
             CASE(MOTION)
             CASE(OPTIONS)
-            CASE(UNKNOWN)
             CASE(VIDEO)
             CASE(ROI)
             CASE(DEPTH_SENSOR)
@@ -162,7 +162,11 @@ namespace librealsense
             CASE(MOTION_FRAME)
             CASE(COMPOSITE_FRAME)
             CASE(POINTS)
+            CASE(DEPTH_FRAME)
             CASE(ADVANCED_MODE)
+            CASE(RECORD)
+            CASE(VIDEO_PROFILE)
+            CASE(PLAYBACK)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
