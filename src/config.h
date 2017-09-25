@@ -186,11 +186,20 @@ namespace librealsense
 
                 explicit multistream(std::vector<sensor_interface*> results,
                                      std::map<index_type, std::shared_ptr<stream_profile_interface>> profiles,
-                                     std::map<index_type, sensor_interface*> devices)
-                    : _profiles(std::move(profiles)),
-                      _devices(std::move(devices)),
-                      _results(std::move(results))
+                                     std::map<int, stream_profiles> dev_to_profiles)
+                        :   _profiles(std::move(profiles)),
+                            _dev_to_profiles(std::move(dev_to_profiles)),
+                            _results(std::move(results))
                 {}
+
+
+                void open()
+                {
+                    for (auto && kvp : _dev_to_profiles) {
+                        auto&& sub = _results[kvp.first];
+                        sub->open(kvp.second);
+                    }
+                }
 
                 template<class T>
                 void start(T callback)
@@ -210,26 +219,6 @@ namespace librealsense
                     for (auto&& dev : _results)
                         dev->close();
                 }
-
-
-               /* rs2_extrinsics get_extrinsics(rs2_stream from, rs2_stream to) const try
-                {
-                    return _profiles.at({ from, 0 })->get_extrinsics_to(_profiles.at({ to, 0 }).get());
-                }
-                catch (std::out_of_range)
-                {
-                    throw std::runtime_error(std::string("config doesnt have extrinsics for ") + rs2_stream_to_string(from) + "->" + rs2_stream_to_string(to));
-                }
-
-                rs2_extrinsics get_extrinsics(index_type from, index_type to) const try
-                {
-                    return _profiles.at(from)->get_extrinsics_to(_profiles.at(to));
-                }
-                catch (std::out_of_range)
-                {
-                    throw std::runtime_error(std::string("config doesnt have extrinsics for ") + rs2_stream_to_string(from) + "->" + rs2_stream_to_string(to));
-                }*/
-
                 std::map<index_type, std::shared_ptr<stream_profile_interface>> get_profiles() const
                 {
                     return _profiles;
@@ -240,6 +229,7 @@ namespace librealsense
                 std::map<index_type, std::shared_ptr<stream_profile_interface>> _profiles;
                 std::map<index_type, sensor_interface*> _devices;
                 std::vector<sensor_interface*> _results;
+                std::map<int, stream_profiles> _dev_to_profiles;
             };
 
             config() : require_all(true) {}
@@ -337,7 +327,7 @@ namespace librealsense
                return false;
 
            }
-            multistream open(device_interface* dev)
+            multistream resolve(device_interface* dev)
             {
                  auto mapping = map_streams(dev);
 
@@ -358,7 +348,6 @@ namespace librealsense
 
                 // Unpack the data returned by assign
                 std::map<int, stream_profiles> dev_to_profiles;
-                std::vector<sensor_interface*> devices;
                 std::map<index_type, sensor_interface*> stream_to_dev;
                 std::map<index_type, std::shared_ptr<stream_profile_interface>> stream_to_profile;
 
@@ -376,14 +365,7 @@ namespace librealsense
                 }
 
                 // TODO: make sure it works
-
-                for (auto && kvp : dev_to_profiles) {
-                    auto sub = sensors[kvp.first];
-                    devices.push_back(sub);
-                    sub->open(kvp.second);
-                }
-
-                return multistream(std::move(devices), std::move(stream_to_profile), std::move(stream_to_dev));
+                return multistream(std::move(sensors), std::move(stream_to_profile), std::move(dev_to_profiles));
             }
         
         private:

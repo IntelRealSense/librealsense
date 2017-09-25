@@ -204,19 +204,16 @@ EXPORTS
     rs2_create_align
     rs2_create_pipeline
     rs2_pipeline_get_device
-    rs2_start_pipeline_with_callback
-    rs2_start_pipeline_with_callback_cpp
     rs2_start_pipeline
-    rs2_open_pipeline
     rs2_stop_pipeline
     rs2_enable_pipeline_stream
     rs2_enable_pipeline_device
-    rs2_disable_stream_pipeline
-    rs2_disable_all_streams_pipeline
     rs2_pipeline_wait_for_frames
     rs2_pipeline_poll_for_frames
     rs2_pipeline_get_active_streams
     rs2_pipeline_get_stream_type_selection
+    rs2_reset_config_pipeline
+    rs2_commit_config_pipeline
     rs2_delete_pipeline
 
     rs2_create_device_hub
