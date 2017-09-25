@@ -704,12 +704,12 @@ namespace rs2
         {
             std::lock_guard<std::mutex> lock(_m);
             _measurements.erase(std::remove_if(_measurements.begin(), _measurements.end(),
-                [this](auto pair) {
+                [this](std::pair<clock::time_point, bool> pair) {
                 return (clock::now() - pair.first) > _window;
             }),
                 _measurements.end());
             auto trues = std::count_if(_measurements.begin(), _measurements.end(),
-                [this](auto pair) {
+                [this](std::pair<clock::time_point, bool> pair) {
                 return pair.second;
             });
             return trues * 2 > _measurements.size(); // At least 50% of observations agree

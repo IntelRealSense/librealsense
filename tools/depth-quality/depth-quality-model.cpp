@@ -1,3 +1,4 @@
+#include <iomanip>
 #include "depth-quality-model.h"
 #include <librealsense2/rs_advanced_mode.hpp>
 #include "model-views.h"
@@ -375,11 +376,11 @@ namespace rs2
             _frame_queue(1),
             _depth_scale_units(0.f), _active(true),
             _avg_plot("Average Error", 0, 10, { 270, 50 }, " (mm)"),
-            _std_plot("std(Error)", 0, 10, { 270, 50 }, " (mm)"),
-            _fill_plot("Fill-Rate", 0, 100, { 270, 50 }, "%"),
+            _std_plot("STD (Error)", 0, 10, { 270, 50 }, " (mm)"),
+            _fill_plot("Fill-Rate", 0, 100, { 270, 50 }, " %"),
             _dist_plot("Distance", 0, 5, { 270, 50 }, " (m)"),
             _angle_plot("Angle", 0, 180, { 270, 50 }, " (deg)"),
-            _out_plot("Outliers", 0, 100, { 270, 50 }, "%")
+            _out_plot("Outliers", 0, 100, { 270, 50 }, " %")
         {
             _avg_plot.ranges[metric_plot::GREEN_RANGE] = { 0.f, 1.f };
             _avg_plot.ranges[metric_plot::YELLOW_RANGE] = { 0.f, 7.f };
@@ -477,7 +478,7 @@ namespace rs2
         {
             std::stringstream ss;
             auto val = _vals[(SIZE + _idx - 1) % SIZE];
-            ss << _label << val << _tail;
+            ss << _label << std::setprecision(2) << std::fixed  << std::setw(6) << val << _tail;
 
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
 
