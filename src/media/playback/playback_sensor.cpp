@@ -9,6 +9,20 @@
 #include "ds5/ds5-options.h"
 #include "media/ros/ros_reader.h"
 
+std::string profile_to_string(std::shared_ptr<stream_profile_interface> s)
+{
+    std::ostringstream os;
+    if (s != nullptr)
+    {
+        os << s->get_unique_id() << ", " <<
+            s->get_format() << ", " <<
+            s->get_stream_type() << "_" <<
+            s->get_stream_index() << " @ " <<
+            s->get_framerate();
+    }
+    return os.str();
+}
+
 playback_sensor::playback_sensor(const device_interface& parent_device, const device_serializer::sensor_snapshot& sensor_description):
     m_user_notification_callback(nullptr, [](rs2_notifications_callback* n) {}),
     m_is_started(false),
@@ -18,7 +32,8 @@ playback_sensor::playback_sensor(const device_interface& parent_device, const de
 {
     register_sensor_streams(m_sensor_description.get_stream_profiles());
     register_sensor_infos(m_sensor_description);
-    register_sensor_options(m_sensor_description.get_options());
+    register_sensor_options(m_sensor_description);
+    LOG_DEBUG("Created Playback Sensor " << m_sensor_id);
 }
 playback_sensor::~playback_sensor()
 {
@@ -33,6 +48,7 @@ void playback_sensor::open(const stream_profiles& requests)
 {
     //Playback can only play the streams that were recorded. 
     //Go over the requested profiles and see if they are available
+    LOG_DEBUG("Open Sensor " << m_sensor_id);
 
     for (auto&& r : requests)
     {
@@ -40,7 +56,7 @@ void playback_sensor::open(const stream_profiles& requests)
             std::end(m_available_profiles),
             [r](const std::shared_ptr<stream_profile_interface>& s) { return r->get_unique_id() == s->get_unique_id(); }) == std::end(m_available_profiles))
         {
-            throw std::runtime_error("Failed to open sensor, requested profile is not available");
+            throw std::runtime_error(to_string() << "Failed to open sensor, requested profile: " << profile_to_string(r) << " is not available");
         }
     }
     std::vector<device_serializer::stream_identifier> opened_streams;
@@ -58,6 +74,7 @@ void playback_sensor::open(const stream_profiles& requests)
 
 void playback_sensor::close()
 {
+    LOG_DEBUG("Close sensor " << m_sensor_id);
     std::vector<device_serializer::stream_identifier> closed_streams;
     for (auto dispatcher : m_dispatchers)
     {
@@ -76,11 +93,13 @@ void playback_sensor::close()
 
 void playback_sensor::register_notifications_callback(notifications_callback_ptr callback)
 {
+    LOG_DEBUG("register_notifications_callback for sensor " << m_sensor_id);
     m_user_notification_callback = std::move(callback);
 }
 
 void playback_sensor::start(frame_callback_ptr callback)
 {
+    LOG_DEBUG("Start sensor " << m_sensor_id);
     if (m_is_started == false)
     {
         started(m_sensor_id, callback);
@@ -90,6 +109,8 @@ void playback_sensor::start(frame_callback_ptr callback)
 }
 void playback_sensor::stop(bool invoke_required)
 {
+    LOG_DEBUG("Stop sensor " << m_sensor_id);
+
     if (m_is_started == true)
     {
         stopped(m_sensor_id, invoke_required);
@@ -108,29 +129,7 @@ bool playback_sensor::is_streaming() const
 bool playback_sensor::extend_to(rs2_extension extension_type, void** ext)
 {
     std::shared_ptr<extension_snapshot> e = m_sensor_description.get_sensor_extensions_snapshots().find(extension_type);
-    if(e == nullptr)
-    {
-        return false;
-    }
-    switch (extension_type)
-    {
-    case RS2_EXTENSION_UNKNOWN: return false;
-    case RS2_EXTENSION_DEBUG : return try_extend<debug_interface>(e, ext);
-    case RS2_EXTENSION_INFO : return try_extend<info_interface>(e, ext);
-    case RS2_EXTENSION_MOTION : return try_extend<motion_sensor_interface>(e, ext);;
-    case RS2_EXTENSION_OPTIONS : return try_extend<options_interface>(e, ext);;
-    case RS2_EXTENSION_VIDEO : return try_extend<video_sensor_interface>(e, ext);;
-    case RS2_EXTENSION_ROI : return try_extend<roi_sensor_interface>(e, ext);;
-    case RS2_EXTENSION_VIDEO_FRAME : return try_extend<video_frame>(e, ext);
- //TODO: RS2_EXTENSION_MOTION_FRAME : return try_extend<motion_frame>(e, ext);
-    case RS2_EXTENSION_DEPTH_SENSOR:  return try_extend<depth_sensor>(e, ext);
-    case RS2_EXTENSION_COUNT :
-        //[[fallthrough]];
-    default:
-        LOG_WARNING("Unsupported extension type: " << extension_type);
-        assert(0);
-        return false;
-    }
+    return playback_device::try_extend_snapshot(e, extension_type, ext);
 }
 
 const device_interface& playback_sensor::get_device()
@@ -171,6 +170,10 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
         }
     }
 }
+void playback_sensor::update_option(rs2_option id, std::shared_ptr<option> option)
+{
+    register_option(id, option);
+}
 void playback_sensor::flush_pending_frames()
 {
     for (auto&& dispatcher : m_dispatchers)
@@ -186,6 +189,7 @@ void playback_sensor::register_sensor_streams(const stream_profiles& profiles)
         profile->set_unique_id(environment::get_instance().generate_stream_id());
         m_available_profiles.push_back(profile);
         m_streams[std::make_pair(profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()))] = profile;
+        LOG_DEBUG("Added new stream: " << profile_to_string(profile));
     }
 }
 
@@ -194,27 +198,62 @@ void playback_sensor::register_sensor_infos(const device_serializer::sensor_snap
     auto info_snapshot = sensor_snapshot.get_sensor_extensions_snapshots().find(RS2_EXTENSION_INFO);
     if (info_snapshot == nullptr)
     {
-        throw io_exception("Recorded file does not contain sensor information");
+        LOG_WARNING("Recorded file does not contain sensor information");
+        return;
     }
     auto info_api = As<info_interface>(info_snapshot);
     if (info_api == nullptr)
     {
         throw invalid_value_exception("Failed to get info interface from sensor snapshots");
     }
+
     for (int i = 0; i < RS2_CAMERA_INFO_COUNT; ++i)
     {
         rs2_camera_info info = static_cast<rs2_camera_info>(i);
         if (info_api->supports_info(info))
         {
-            register_info(info, info_api->get_info(info));
+            const std::string& str = info_api->get_info(info);
+            register_info(info, str);
+            LOG_DEBUG("Registered " << info << " for sensor " << m_sensor_id << " with value: " << str);
         }
     }
 }
 
-void playback_sensor::register_sensor_options(const std::map<rs2_option, float>& options)
+void playback_sensor::register_sensor_options(const device_serializer::sensor_snapshot& sensor_snapshot)
 {
-    for (auto option : options)
+    auto options_snapshot = sensor_snapshot.get_sensor_extensions_snapshots().find(RS2_EXTENSION_OPTIONS);
+    if (options_snapshot == nullptr)
     {
-        register_option(option.first, std::make_shared<read_only_playback_option>(option.first, option.second));
+        LOG_WARNING("Recorded file does not contain sensor options");
+        return;
     }
+    auto options_api = As<options_interface>(options_snapshot);
+    if (options_api == nullptr)
+    {
+        throw invalid_value_exception("Failed to get options interface from sensor snapshots");
+    }
+
+    for (int i = 0; i < static_cast<int>(RS2_OPTION_COUNT); i++)
+    {
+        auto option_id = static_cast<rs2_option>(i);
+        try
+        {
+            if (options_api->supports_option(option_id))
+            {
+                auto&& option = options_api->get_option(option_id);
+                float value = option.query();
+                register_option(option_id, std::make_shared<const_value_option>(option.get_description(), option.query()));
+                LOG_DEBUG("Registered " << rs2_option_to_string(option_id) << " for sensor " << m_sensor_id << " with value: " << option.query());
+            }
+        }
+        catch (std::exception& e)
+        {
+            LOG_WARNING("Failed to register option " << option_id << ". Exception: " << e.what());
+        }
+    }
+}
+
+void playback_sensor::update(const device_serializer::sensor_snapshot& sensor_snapshot)
+{
+    register_sensor_options(sensor_snapshot);
 }

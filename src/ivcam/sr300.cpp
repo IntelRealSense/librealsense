@@ -231,16 +231,13 @@ namespace librealsense
                                             })));
 
     }
-    void sr300_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot)
+    void sr300_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
     {
         //TODO: implement
-        throw std::runtime_error("Not Implemented");
     }
-    void sr300_camera::create_recordable(std::shared_ptr<debug_interface>& recordable,
-        std::function<void(std::shared_ptr<extension_snapshot>)> record_action)
+    void sr300_camera::enable_recording(std::function<void(const debug_interface&)> record_action)
     {
         //TODO: implement
-        throw std::runtime_error("Not Implemented");
     }
 
 

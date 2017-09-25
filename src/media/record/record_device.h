@@ -23,7 +23,7 @@ namespace librealsense
         record_device(std::shared_ptr<device_interface> device, std::shared_ptr<device_serializer::writer> serializer);
         virtual ~record_device();
 
-        std::shared_ptr<context> get_context() const override { return nullptr; } //TODO: Add context
+        std::shared_ptr<context> get_context() const override;
 
         sensor_interface& get_sensor(size_t i) override;
         size_t get_sensors_count() const override;
@@ -42,10 +42,13 @@ namespace librealsense
         std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
 
     private:
+        template <typename T> void write_device_extension_changes(const T& ext);
+        template <rs2_extension E, typename P> bool extend_to_aux(std::shared_ptr<P> p, void** ext);
+
         void write_header();
         std::chrono::nanoseconds get_capture_time() const;
         void write_data(size_t sensor_index, frame_holder f, std::function<void(std::string const&)> on_error);
-        void write_extension_snapshot(size_t sensor_index, rs2_extension ext, const std::shared_ptr<extension_snapshot>& snapshot, std::function<void(std::string const&)> on_error);
+        void write_sensor_extension_snapshot(size_t sensor_index, rs2_extension ext, const std::shared_ptr<extension_snapshot>& snapshot, std::function<void(std::string const&)> on_error);
         std::vector<std::shared_ptr<record_sensor>> create_record_sensors(std::shared_ptr<device_interface> m_device);
         template <typename T> device_serializer::snapshot_collection get_extensions_snapshots(T* extendable);
         template <typename T, typename Ext> void try_add_snapshot(T* extendable, device_serializer::snapshot_collection& snapshots);

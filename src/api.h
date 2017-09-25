@@ -71,12 +71,14 @@ namespace librealsense
             if (ext == nullptr) return nullptr;                                                 \
             else                                                                                \
             {                                                                                   \
-                if(!ext->extend_to(TypeToExtensionn<T>::value, (void**)&p))                      \
+                if(!ext->extend_to(TypeToExtension<T>::value, (void**)&p))                      \
                     return nullptr;                                                             \
+                return p;                                                                       \
             }                                                                                   \
         }                                                                                       \
         return p;                                                                               \
     })()
+
     #define VALIDATE_INTERFACE(X,T)                                                             \
         ([&]() -> T* {                                                                          \
             T* p = VALIDATE_INTERFACE_NO_THROW(X,T);                                            \

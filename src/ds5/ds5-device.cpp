@@ -140,6 +140,15 @@ namespace librealsense
         }
 
         float get_depth_scale() const override { return _depth_units; }
+
+        void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const  override
+        {
+            snapshot = std::make_shared<depth_sensor_snapshot>(get_depth_scale());
+        }
+        void enable_recording(std::function<void(const depth_sensor&)> recording_function) override
+        {
+            //does not change over time
+        }
     private:
         const ds5_device* _owner;
         float _depth_units;
@@ -378,14 +387,13 @@ namespace librealsense
         return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, "Unknown error!" };
     }
 
-    void ds5_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot)
+    void ds5_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
     {
-
+        //TODO: Implement
     }
-    void ds5_device::create_recordable(std::shared_ptr<debug_interface>& recordable,
-                                       std::function<void(std::shared_ptr<extension_snapshot>)> record_action)
+    void ds5_device::enable_recording(std::function<void(const debug_interface&)> record_action)
     {
-
+        //TODO: Implement
     }
 
     std::shared_ptr<matcher> ds5_device::create_matcher(const frame_holder& frame) const

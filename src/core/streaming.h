@@ -144,7 +144,7 @@ namespace librealsense
 
     };
 
-    class depth_sensor
+    class depth_sensor : public recordable<depth_sensor>
     {
     public:
         virtual float get_depth_scale() const = 0;
@@ -164,12 +164,18 @@ namespace librealsense
 
         void update(std::shared_ptr<extension_snapshot> ext) override
         {
-            auto p = As<depth_sensor>(ext);
-            if (p == nullptr)
+            if (auto api = As<depth_sensor>(ext))
             {
-                return;
+                m_depth_units = api->get_depth_scale();
             }
-            m_depth_units = p->get_depth_scale();
+        }
+        void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const  override
+        {
+            snapshot = std::make_shared<depth_sensor_snapshot>(*this);
+        }
+        void enable_recording(std::function<void(const depth_sensor&)> recording_function) override
+        {
+            //empty
         }
     private:
         float m_depth_units;

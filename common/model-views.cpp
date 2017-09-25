@@ -346,7 +346,20 @@ namespace rs2
                         if (read_only)
                         {
                             ImVec2 vec{ 0, 14 };
-                            ImGui::ProgressBar(value / 100.f, vec, std::to_string((int)value).c_str());
+                            std::string text = (value == (int)value) ? std::to_string((int)value) : std::to_string(value);
+                            if (range.min != range.max)
+                            {
+                                ImGui::ProgressBar((value / (range.max - range.min)), vec, text.c_str());
+                            }
+                            else //constant value options
+                            {
+                                auto c = ImGui::ColorConvertU32ToFloat4(ImGui::GetColorU32(ImGuiCol_FrameBg));
+                                ImGui::PushStyleColor(ImGuiCol_FrameBgActive, c);
+                                ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, c);
+                                float dummy = (int)value;
+                                ImGui::DragFloat(id.c_str(), &dummy, 1, 0, 0, text.c_str());
+                                ImGui::PopStyleColor(2);
+                            }
                         }
                         else if (is_all_integers())
                         {
@@ -3749,7 +3762,7 @@ namespace rs2
 
                 for (auto& opt : drawing_order)
                 {
-                    if (sub->draw_option(opt, update_read_only_options, error_message, viewer.not_model))
+                    if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
                     {
                         get_curr_advanced_controls = true;
                     }
@@ -3763,7 +3776,7 @@ namespace rs2
                         auto opt = static_cast<rs2_option>(i);
                         if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                         {
-                            if (sub->draw_option(opt, update_read_only_options, error_message, viewer.not_model))
+                            if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
                             {
                                 get_curr_advanced_controls = true;
                             }

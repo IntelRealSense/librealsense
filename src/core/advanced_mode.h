@@ -53,7 +53,7 @@ namespace librealsense
     MAP_ADVANCED_MODE(STCensusRadius, etCencusRadius9);
 
 
-    class ds5_advanced_mode_interface : public virtual device_interface
+    class ds5_advanced_mode_interface
     {
     public:
         virtual bool is_enabled() const = 0;

@@ -165,6 +165,7 @@ namespace librealsense
             throw invalid_value_exception(to_string() << "set(enable_motion_correction) failed! Given value " << value << " is out of range.");
 
         _is_enabled = value > _opt_range.min;
+        _recording_function(*this);
     }
 
     float enable_motion_correction::query() const
@@ -223,6 +224,7 @@ namespace librealsense
                 _to_add_frames = false; // auto_exposure moved from enable to disable
             }
         }
+        _recording_function(*this);
     }
 
     float enable_auto_exposure_option::query() const
@@ -269,6 +271,7 @@ namespace librealsense
 
         _auto_exposure_state->set_auto_exposure_mode(static_cast<auto_exposure_modes>((int)value));
         _auto_exposure->update_auto_exposure_state(*_auto_exposure_state);
+        _recording_function(*this);
     }
 
     float auto_exposure_mode_option::query() const
@@ -304,6 +307,7 @@ namespace librealsense
 
         _auto_exposure_state->set_auto_exposure_antiflicker_rate(static_cast<uint32_t>(value));
         _auto_exposure->update_auto_exposure_state(*_auto_exposure_state);
+        _recording_function(*this);
     }
 
     float auto_exposure_antiflicker_rate_option::query() const
@@ -360,6 +364,7 @@ namespace librealsense
         cmd.data = std::vector<uint8_t>(ptr, ptr + sizeof(ds::depth_table_control));
 
         _hwm.send(cmd);
+        _record_action(*this);
     }
 
     float depth_scale_option::query() const

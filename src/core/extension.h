@@ -8,11 +8,11 @@
 
 /*! Preprocessor Macro to define mapping between rs2_extension and their respective interface (and vice versa) */
 #define MAP_EXTENSION(E, T)                                      \
-    template<> struct ExtensionsToTypes<E> {                     \
+    template<> struct ExtensionToType<E> {                       \
         using type = T;                                          \
         static constexpr const char* to_string() { return #T; }; \
     };                                                           \
-    template<> struct TypeToExtensionn<T> {                      \
+    template<> struct TypeToExtension<T> {                       \
         static constexpr rs2_extension value = E;                \
         static constexpr const char* to_string() { return #T; }; \
     }
@@ -37,23 +37,6 @@ namespace librealsense
         virtual ~extension_snapshot() = default;
     };
 
-    template <typename T>
-    class extension_snapshot_base : public extension_snapshot
-    {
-    public:
-        void update(std::shared_ptr<extension_snapshot> ext) override
-        {
-            auto api = dynamic_cast<T*>(ext.get());
-            if(api == nullptr)
-            {
-                throw std::runtime_error(typeid(T).name());
-            }
-            update_self(api);
-        }
-    protected:
-        virtual void update_self(T* info_api) = 0;
-    };
-
     /**
      * Deriving classes are expected to return an extension_snapshot
      * We need this since Sensors will derive from multiple extensions and C++ does not allow function overloads by return type
@@ -63,8 +46,18 @@ namespace librealsense
     class recordable
     {
     public:
-        virtual void create_snapshot(std::shared_ptr<T>& snapshot) = 0;
-        virtual void create_recordable(std::shared_ptr<T>& recordable, std::function<void(std::shared_ptr<extension_snapshot>)> record_action) = 0;
+        /**
+        * Create a snapshot of the deriving extension.
+        * A snapshot of T is a reflection of the state and memory of T at the time of the call
+        */
+        virtual void create_snapshot(std::shared_ptr<T>& snapshot) const = 0;
+        
+        /**
+        * Instruct the derived class to begin notifying on changes
+        * Derived class should call the recording_function with a reference of themselves
+        */
+        virtual void enable_recording(std::function<void(const T&)> recording_function) = 0;
+        
         virtual ~recordable() = default;
 
     };
@@ -115,6 +108,6 @@ namespace librealsense
         return As<T>(ptr) != nullptr;
     }
     //Creating Helper functions to map rs2_extension enums to actual interface
-    template<rs2_extension> struct ExtensionsToTypes;
-    template<typename T> struct TypeToExtensionn;
+    template<rs2_extension> struct ExtensionToType;
+    template<typename T> struct TypeToExtension;
 }

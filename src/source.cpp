@@ -21,6 +21,7 @@ namespace librealsense
                 throw invalid_value_exception(to_string() << "set(frame_queue_size) failed! Given value " << value << " is out of range.");
 
             *_ptr = static_cast<uint32_t>(value);
+            _recording_function(*this);
         }
 
         float query() const override { return static_cast<float>(_ptr->load()); }

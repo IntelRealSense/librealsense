@@ -110,5 +110,15 @@ namespace librealsense
     {
         _c_ptr = wrapper;
     }
+    void stream_profile_base::create_snapshot(std::shared_ptr<stream_profile_interface>& snapshot) const
+    {
+        auto ptr = std::const_pointer_cast<stream_interface>(shared_from_this());
+        snapshot = std::dynamic_pointer_cast<stream_profile_interface>(ptr);
+    }
+    void stream_profile_base::enable_recording(std::function<void(const stream_profile_interface&)> record_action)
+    {
+        //TODO: implement or remove inheritance from recordable<T>
+        throw not_implemented_exception(__FUNCTION__);
+    }
 }
 

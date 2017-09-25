@@ -167,6 +167,7 @@ namespace librealsense
 
                 _owner.rs2_apply_ivcam_preset(static_cast<int>(value));
                 last_value = value;
+                _recording_function(*this);
             }
 
             float query() const override { return last_value; }
@@ -293,6 +294,17 @@ namespace librealsense
             }
 
             float get_depth_scale() const override { return get_option(RS2_OPTION_DEPTH_UNITS).query(); }
+
+            void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const  override
+            {
+                snapshot = std::make_shared<depth_sensor_snapshot>(get_depth_scale());
+            }
+            void enable_recording(std::function<void(const depth_sensor&)> recording_function) override
+            {
+                get_option(RS2_OPTION_DEPTH_UNITS).enable_recording([this, recording_function](const option& o) {
+                    recording_function(*this);
+                });
+            }
         private:
             const sr300_camera* _owner;
         };
@@ -473,9 +485,9 @@ namespace librealsense
                     //set_auto_range(ar_requests[preset]);
             }
         }
-        void create_snapshot(std::shared_ptr<debug_interface>& snapshot) override;
-        void create_recordable(std::shared_ptr<debug_interface>& recordable,
-                               std::function<void(std::shared_ptr<extension_snapshot>)> record_action) override;
+        void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
+        void enable_recording(std::function<void(const debug_interface&)> record_action) override;
+
 
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     private:

@@ -216,7 +216,7 @@ namespace librealsense
         auto gain_option =  std::make_shared<uvc_pu_option>(*uvc_ep, RS2_OPTION_GAIN);
 
         auto exposure_option =  std::make_shared<uvc_xu_option<uint16_t>>(*uvc_ep,
-                *fisheye_xu,
+                *fisheye_xu,                          
                 librealsense::ds::FISHEYE_EXPOSURE, "Exposure time of Fisheye camera");
 
         auto ae_state = std::make_shared<auto_exposure_state>();

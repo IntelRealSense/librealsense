@@ -12,6 +12,8 @@
 #include "stream.h"
 #include "rosbag/bag.h"
 #include "std_msgs/UInt32.h"
+#include "std_msgs/Float32.h"
+#include "std_msgs/String.h"
 #include "diagnostic_msgs/KeyValue.h"
 #include "sensor_msgs/Image.h"
 #include "realsense_msgs/StreamInfo.h"
@@ -25,7 +27,7 @@ namespace librealsense
     class ros_writer: public writer
     {
     public:
-        explicit ros_writer(const std::string& file)
+        explicit ros_writer(const std::string& file) : m_file_path(file)
         {
             m_bag.open(file, rosbag::BagMode::Write);
             m_bag.setCompression(rosbag::CompressionType::LZ4);
@@ -45,11 +47,10 @@ namespace librealsense
                 {
                     write_extension_snapshot(get_device_index(), sensors_snapshot.get_sensor_index(), get_static_file_info_timestamp(), sensor_extension_snapshot.first, sensor_extension_snapshot.second);
                 }
-                write_sensor_options(ros_topic::property_topic({ get_device_index(),  sensors_snapshot.get_sensor_index() }), get_static_file_info_timestamp(), sensors_snapshot.get_options());
             }
         }
 
-        void write_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame) override
+        void write_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame) 
         {
             if (Is<video_frame>(frame.frame))
             {
@@ -70,14 +71,19 @@ namespace librealsense
             }*/
         }
 
-        void write_snapshot(uint32_t device_index, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot > snapshot) override
+        void write_snapshot(uint32_t device_index, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot>& snapshot) override
         {
             write_extension_snapshot(device_index, -1, timestamp, type, snapshot);
         }
 
-        void write_snapshot(const sensor_identifier& sensor_id, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot > snapshot) override
+        void write_snapshot(const sensor_identifier& sensor_id, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot>& snapshot) override
         {
             write_extension_snapshot(sensor_id.device_index, sensor_id.sensor_index, timestamp, type, snapshot);
+        }
+
+        const std::string& get_file_name() const
+        {
+            return m_file_path;
         }
 
     private:
@@ -210,17 +216,23 @@ namespace librealsense
             write_extension_snapshot(device_id, sensor_id, timestamp, type, snapshot, false);
         }
 
+        template <rs2_extension E>
+        std::shared_ptr<typename ExtensionToType<E>::type> SnapshotAs(std::shared_ptr<librealsense::extension_snapshot> snapshot)
+        {
+            auto as_type = As<typename ExtensionToType<E>::type>(snapshot);
+            if (as_type == nullptr)
+            {
+                throw invalid_value_exception(to_string() << "Failed to cast snapshot to \"" << E << "\" (as \"" << ExtensionToType<E>::to_string() << "\")");
+            }
+            return as_type;
+        }
         void write_extension_snapshot(uint32_t device_id, uint32_t sensor_id, const nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot, bool is_device)
         {
             switch (type)
             {
             case RS2_EXTENSION_INFO:
             {
-                auto info = As<info_interface>(snapshot);
-                if (info == nullptr)
-                {
-                    throw invalid_value_exception(to_string() << "Failed to cast snapshot with given type \"" << type << "\" to \"" << TypeToExtensionn<info_interface>::to_string() << "\"");
-                }
+                auto info = SnapshotAs<RS2_EXTENSION_INFO>(snapshot);
                 if (is_device)
                 {
                     write_vendor_info(ros_topic::device_info_topic(device_id), timestamp, info);
@@ -233,23 +245,36 @@ namespace librealsense
             }
             case RS2_EXTENSION_DEBUG:
             case RS2_EXTENSION_MOTION:
+                break;
+            //case RS2_EXTENSION_OPTION:
+            //{
+            //    auto option = SnapshotAs<RS2_EXTENSION_OPTION>(snapshot);
+            //    write_sensor_option({ device_id, sensor_id }, timestamp, *option);
+            //    break;
+            //}
             case RS2_EXTENSION_OPTIONS:
+            {
+                auto options = SnapshotAs<RS2_EXTENSION_OPTIONS>(snapshot);
+                write_sensor_options({ device_id, sensor_id }, timestamp, options);
+                break;
+            }
             case RS2_EXTENSION_VIDEO:
             case RS2_EXTENSION_ROI:
                 break;
+            case RS2_EXTENSION_DEPTH_SENSOR:
+            {
+                auto dpt = SnapshotAs<RS2_EXTENSION_DEPTH_SENSOR>(snapshot);
+                //write_depth_sensor(ros_topic::property_topic({ device_id, sensor_id }), timestamp, dpt);
+                break;
+            }
             case RS2_EXTENSION_VIDEO_PROFILE:
             {
-                auto profile = As<video_stream_profile_interface>(snapshot);
-                if (profile == nullptr)
-                {
-                    throw invalid_value_exception(to_string() << "Failed to cast snapshot with given type \"" << type << "\" to \"" << TypeToExtensionn<info_interface>::to_string() << "\"");
-                }
+                auto profile = SnapshotAs<RS2_EXTENSION_VIDEO_PROFILE>(snapshot);
                 write_streaming_info(timestamp, { device_id, sensor_id }, profile);
                 break;
             }
             default:
                 throw invalid_value_exception(to_string() << "Failed to Write Extension Snapshot: Unsupported extension \"" << type << "\"");
-
             }
         }
 
@@ -267,15 +292,45 @@ namespace librealsense
                 }
             }
         }
-
-        void write_sensor_options(const std::string& topic, const nanoseconds& timestamp, const std::map<enum rs2_option, float>& options)
+        
+        void write_sensor_option(device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, rs2_option type, const librealsense::option& option)
         {
-            for (auto key_val : options)
+            float value = option.query();
+            const char* str = option.get_description();
+            std::string description = str ? std::string(str) : (to_string() << "Read only option of " << type);
+
+            //One message for value
+            std_msgs::Float32 option_msg;
+            option_msg.data = value;
+            write_message(ros_topic::option_value_topic(sensor_id, type), timestamp, option_msg);
+
+            //Another message for description, should be written once per topic
+
+            if (m_written_options_descriptions[sensor_id.sensor_index].find(type) == m_written_options_descriptions[sensor_id.sensor_index].end())
             {
-                diagnostic_msgs::KeyValue option_msg;
-                option_msg.key = rs2_option_to_string(key_val.first);
-                option_msg.value = std::to_string(key_val.second);
-                write_message(topic, timestamp, option_msg);
+                std_msgs::String option_msg_desc;
+                option_msg_desc.data = description;
+                write_message(ros_topic::option_description_topic(sensor_id, type), get_static_file_info_timestamp(), option_msg_desc);
+                m_written_options_descriptions[sensor_id.sensor_index].insert(type);
+            }
+        }
+
+        void write_sensor_options(device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, std::shared_ptr<options_interface> options)
+        {
+            for (int i = 0; i < static_cast<int>(RS2_OPTION_COUNT); i++)
+            {
+                auto option_id = static_cast<rs2_option>(i);
+                try
+                {
+                    if (options->supports_option(option_id))
+                    {
+                        write_sensor_option(sensor_id, timestamp, option_id, options->get_option(option_id));
+                    }
+                }
+                catch (std::exception& e)
+                {
+                    LOG_WARNING("Failed to get or write option " << option_id << " for sensor " << sensor_id.sensor_index << ". Exception: " << e.what());
+                }
             }
         }
         template <typename T>
@@ -283,15 +338,8 @@ namespace librealsense
         {
             try
             {
-                if (time == get_static_file_info_timestamp())
-                {
-                    m_bag.write(topic, ros::TIME_MIN, msg);
-                }
-                else
-                {
-                    auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(time);
-                    m_bag.write(topic, ros::Time(secs.count()), msg);
-                }
+                m_bag.write(topic, to_rostime(time), msg);
+                LOG_DEBUG("Recorded: \"" << topic << "\" . TS: " << time.count());
             }
             catch (rosbag::BagIOException& e)
             {
@@ -304,8 +352,10 @@ namespace librealsense
             int num = 1;
             return (*reinterpret_cast<char*>(&num) == 1) ? 0 : 1; //Little Endian: (char)0x0001 => 0x01, Big Endian: (char)0x0001 => 0x00,
         }
+
         std::map<stream_identifier, geometry_msgs::Transform> m_extrinsics_msgs;
         std::string m_file_path;
         rosbag::Bag m_bag;
+        std::map<uint32_t, std::set<rs2_option>> m_written_options_descriptions;
     };
 }

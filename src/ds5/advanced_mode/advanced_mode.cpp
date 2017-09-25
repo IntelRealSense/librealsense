@@ -753,6 +753,7 @@ namespace librealsense
         auto configurations = uvc_sensor->get_configuration();
         _advanced.apply_preset(configurations, preset);
         _last_preset = preset;
+        _recording_function(*this);
     }
 
     float advanced_mode_preset_option::query() const
