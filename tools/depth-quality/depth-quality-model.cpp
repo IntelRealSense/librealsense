@@ -7,7 +7,8 @@ namespace rs2
     namespace depth_quality
     {
         tool_model::tool_model()
-            : _update_readonly_options_timer(std::chrono::seconds(6)), _roi_percent(0.33f)
+            : _update_readonly_options_timer(std::chrono::seconds(6)), _roi_percent(0.33f),
+              _roi_located(std::chrono::seconds(4))
         {
             _viewer_model.is_3d_view = true;
             _viewer_model.allow_3d_source_change = false;
@@ -34,6 +35,36 @@ namespace rs2
             }
 
             update_configuration();
+        }
+
+        void tool_model::draw_instructions(ux_window& win, const rect& viewer_rect)
+        {
+            _roi_located.add_value(is_valid(_metrics.get_plane()));
+            if (!_roi_located.eval())
+            {
+                auto flags = ImGuiWindowFlags_NoResize |
+                    ImGuiWindowFlags_NoMove |
+                    ImGuiWindowFlags_NoCollapse |
+                    ImGuiWindowFlags_NoTitleBar;
+
+                ImGui::PushStyleColor(ImGuiCol_Text, yellow);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, blend(sensor_bg, 0.8));
+                ImGui::SetNextWindowPos({ viewer_rect.w / 2 + viewer_rect.x - 225.f, viewer_rect.h / 2 + viewer_rect.y - 38.f });
+
+                ImGui::SetNextWindowSize({ 450.f, 76.f });
+                ImGui::Begin("Rect not detected window", nullptr, flags);
+
+                ImGui::PushFont(win.get_large_font());
+                ImGui::Text(u8"\n   \uf1b2  Please point the camera to a flat Wall / Surface!");
+                ImGui::PopFont();
+
+                ImGui::End();
+                ImGui::PopStyleColor(3);
+                ImGui::PopStyleVar(2);
+            }
         }
 
         void tool_model::render(ux_window& win)
@@ -176,7 +207,7 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
             ImGui::Dummy({ 20,25 }); ImGui::SameLine();
-            if (ImGui::Button(u8"\uf0c7 Snapshot Metrics", { 140, 25 }))
+            if (ImGui::Button(u8"\uf0c7 Save Report", { 140, 25 }))
             {
                 snapshot_metrics();
             }
@@ -203,6 +234,8 @@ namespace rs2
                 }
             }
 
+            draw_instructions(win, viewer_rect);
+            
             _viewer_model.gc_streams();
             _viewer_model.popup_if_error(win.get_font(), _error_message);
         }
@@ -266,14 +299,14 @@ namespace rs2
             auto min_val = 0.f;
             for (int i = 0; i < curr_window; i++)
             {
-                auto val = abs(best - _vals[(SIZE + _idx - i) % SIZE]);
+                auto val = fabs(best - _vals[(SIZE + _idx - i) % SIZE]);
                 min_val += val / curr_window;
             }
 
             auto improved = 0;
             for (int i = curr_window; i <= window_size; i++)
             {
-                auto val = abs(best - _vals[(SIZE + _idx - i) % SIZE]);
+                auto val = fabs(best - _vals[(SIZE + _idx - i) % SIZE]);
                 if (positive && min_val < val * 0.8) improved++;
                 if (!positive && min_val * 0.8 > val) improved++;
             }
@@ -343,10 +376,10 @@ namespace rs2
             _depth_scale_units(0.f), _active(true),
             _avg_plot("Average Error", 0, 10, { 270, 50 }, " (mm)"),
             _std_plot("std(Error)", 0, 10, { 270, 50 }, " (mm)"),
-            _fill_plot("Fill-Rate", 0, 100, { 270, 50 }, "%%"),
+            _fill_plot("Fill-Rate", 0, 100, { 270, 50 }, "%"),
             _dist_plot("Distance", 0, 5, { 270, 50 }, " (m)"),
             _angle_plot("Angle", 0, 180, { 270, 50 }, " (deg)"),
-            _out_plot("Outliers", 0, 100, { 270, 50 }, "%%")
+            _out_plot("Outliers", 0, 100, { 270, 50 }, "%")
         {
             _avg_plot.ranges[metric_plot::GREEN_RANGE] = { 0.f, 1.f };
             _avg_plot.ranges[metric_plot::YELLOW_RANGE] = { 0.f, 7.f };
@@ -463,10 +496,15 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_Header, sensor_header_light_blue);
 
             const auto left_x = 295;
-            const auto indicator_flicker_rate = 150;
-            if (has_trend(true))
+            const auto indicator_flicker_rate = 200;
+            auto alpha_value = abs(sin(_model_timer.elapsed_ms() / indicator_flicker_rate));
+
+            _trending_up.add_value(has_trend(true));
+            _trending_down.add_value(has_trend(false));
+
+            if (_trending_up.eval())
             {
-                auto color = blend(green, abs(sin(model_timer.elapsed_ms() / indicator_flicker_rate)));
+                auto color = blend(green, alpha_value);
                 ImGui::PushStyleColor(ImGuiCol_Text, color);
                 auto col0 = ImGui::GetCursorPos();
                 ImGui::SetCursorPosX(left_x);
@@ -480,9 +518,9 @@ namespace rs2
                 ImGui::SameLine(); ImGui::SetCursorPos(col0);
                 ImGui::PopStyleColor();
             }
-            else if (has_trend(false))
+            else if (_trending_down.eval())
             {
-                auto color = blend(redish, abs(sin(model_timer.elapsed_ms() / indicator_flicker_rate)));
+                auto color = blend(redish, alpha_value);
                 ImGui::PushStyleColor(ImGuiCol_Text, color);
                 auto col0 = ImGui::GetCursorPos();
                 ImGui::SetCursorPosX(left_x);

@@ -24,7 +24,10 @@ namespace rs2
             float _min, _max;
             std::string _id, _label, _tail;
             ImVec2 _size;
-            timer model_timer;
+
+            timer _model_timer;
+            temporal_event _trending_up;
+            temporal_event _trending_down;
 
             friend class metrics_model;
         public:
@@ -51,7 +54,9 @@ namespace rs2
 
             metric_plot(const std::string& name, float min, float max, ImVec2 size, const std::string& tail)
                 : _idx(0), _vals(), _min(min), _max(max), _id("##" + name), _label(name + " = "),
-                _tail(tail), _size(size), description("")
+                  _tail(tail), _size(size), description(""), 
+                  _trending_up(std::chrono::milliseconds(700)),
+                  _trending_down(std::chrono::milliseconds(700))
             {
                 for (int i = 0; i < MAX_RANGE; i++) ranges[i] = { 0.f, 0.f };
             }
@@ -137,6 +142,8 @@ namespace rs2
 
             void snapshot_metrics();
 
+            void draw_instructions(ux_window& win, const rect& viewer_rect);
+
         private:
             pipeline                        _pipe;
             std::shared_ptr<device_model>   _device_model;
@@ -149,6 +156,7 @@ namespace rs2
 
             float                           _roi_percent = 0.33f;
             int                             _roi_combo_index = 1;
+            temporal_event                  _roi_located;
         };
     }
 }

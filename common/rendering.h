@@ -175,15 +175,17 @@ namespace rs2
         return lerp(v1, v2, p.y);
     }
 
-    inline std::vector<std::array<float3, 4>> subdivide(const std::array<float3, 4>& rect, int parts = 4)
+    using plane_3d = std::array<float3, 4>;
+
+    inline std::vector<plane_3d> subdivide(const plane_3d& rect, int parts = 4)
     {
-        std::vector<std::array<float3, 4>> res;
+        std::vector<plane_3d> res;
         res.reserve(parts*parts);
         for (float i = 0.f; i < parts; i++)
         {
             for (float j = 0.f; j < parts; j++)
             {
-                std::array<float3, 4> r;
+                plane_3d r;
                 r[0] = lerp(rect, { i / parts, j / parts });
                 r[1] = lerp(rect, { i / parts, (j + 1) / parts });
                 r[2] = lerp(rect, { (i + 1) / parts, (j + 1) / parts });
@@ -194,6 +196,26 @@ namespace rs2
         return res;
     }
 
+    inline float operator*(const float3& a, const float3& b)
+    {
+        return a.x*b.x + a.y*b.y + a.z*b.z;
+    }
+
+    inline bool is_valid(const plane_3d& p)
+    {
+        std::vector<float> angles;
+        angles.reserve(4);
+        for (int i = 0; i < p.size(); i++)
+        {
+            auto p1 = p[i];
+            auto p2 = p[(i+1) % p.size()];
+            if ((p2 - p1).length() < 1e-3) return false;
+
+            angles.push_back(acos((p1 * p2) / sqrt(p1.length() * p2.length())));
+        }
+        return std::all_of(angles.begin(), angles.end(), [](float f) { return f > 0; }) ||
+               std::all_of(angles.begin(), angles.end(), [](float f) { return f < 0; });
+    }
 
     inline float2 operator-(float2 a, float2 b)
     {
@@ -610,6 +632,8 @@ namespace rs2
         }
     } */
 
+    using clock = std::chrono::steady_clock;
+
     // Helper class to keep track of time
     class timer
     {
@@ -627,23 +651,23 @@ namespace rs2
             return ms;
         }
 
-        std::chrono::steady_clock::duration elapsed() const
+        clock::duration elapsed() const
         {
-            return std::chrono::steady_clock::now() - _start;
+            return clock::now() - _start;
         }
 
-        std::chrono::steady_clock::time_point now() const
+        clock::time_point now() const
         {
-            return std::chrono::steady_clock::now();
+            return clock::now();
         }
     private:
-        std::chrono::steady_clock::time_point _start;
+        clock::time_point _start;
     };
 
     class periodic_timer
     {
     public:
-        periodic_timer(std::chrono::steady_clock::duration delta)
+        periodic_timer(clock::duration delta)
             : _delta(delta) 
         {
             _last = _time.now();
@@ -661,8 +685,40 @@ namespace rs2
 
     private:
         timer _time;
-        mutable std::chrono::steady_clock::time_point _last;
-        std::chrono::steady_clock::duration _delta;
+        mutable clock::time_point _last;
+        clock::duration _delta;
+    };
+
+    class temporal_event
+    {
+    public:
+        temporal_event(clock::duration window) : _window(window) {}
+
+        void add_value(bool val)
+        {
+            std::lock_guard<std::mutex> lock(_m);
+            _measurements.push_back(std::make_pair(clock::now(), val));
+        }
+
+        bool eval()
+        {
+            std::lock_guard<std::mutex> lock(_m);
+            _measurements.erase(std::remove_if(_measurements.begin(), _measurements.end(),
+                [this](auto pair) {
+                return (clock::now() - pair.first) > _window;
+            }),
+                _measurements.end());
+            auto trues = std::count_if(_measurements.begin(), _measurements.end(),
+                [this](auto pair) {
+                return pair.second;
+            });
+            return trues * 2 > _measurements.size(); // At least 50% of observations agree
+        }
+
+    private:
+        std::mutex _m;
+        clock::duration _window;
+        std::vector<std::pair<clock::time_point, bool>> _measurements;
     };
 
     class texture_buffer

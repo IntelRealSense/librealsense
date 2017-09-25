@@ -2854,16 +2854,20 @@ namespace rs2
         {
             glLineWidth(2);
             glBegin(GL_LINES);
-            glColor4f(yellow.x, yellow.y, yellow.z, 1.f);
 
-            auto rects = subdivide(roi_rect);
-            for (auto&& r : rects)
+            if (is_valid(roi_rect))
             {
-                for (int i = 0; i < 4; i++)
+                glColor4f(yellow.x, yellow.y, yellow.z, 1.f);
+
+                auto rects = subdivide(roi_rect);
+                for (auto&& r : rects)
                 {
-                    auto j = (i + 1) % 4;
-                    glVertex3f(r[i].x, r[i].y, r[i].z);
-                    glVertex3f(r[j].x, r[j].y, r[j].z);
+                    for (int i = 0; i < 4; i++)
+                    {
+                        auto j = (i + 1) % 4;
+                        glVertex3f(r[i].x, r[i].y, r[i].z);
+                        glVertex3f(r[j].x, r[j].y, r[j].z);
+                    }
                 }
             }
 
