@@ -310,9 +310,8 @@ namespace librealsense
                      std::move(error_control),
                      depth_ep.get_notifications_proccessor(),
 
-                     std::unique_ptr<notification_decoder>(new ds5_notification_decoder())));
+            std::unique_ptr<notification_decoder>(new ds5_notification_decoder())));
 
-             //_polling_error_handler->start();
 
              depth_ep.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler.get()));
 
@@ -399,22 +398,17 @@ namespace librealsense
 
     std::shared_ptr<matcher> ds5_device::create_matcher(const frame_holder& frame) const
     {
-        std::vector<std::shared_ptr<matcher>> matchers;
-
-        std::set<rs2_stream> streams = { RS2_STREAM_DEPTH, RS2_STREAM_INFRARED };
-        if (streams.find(frame.frame->get_stream()->get_stream_type()) != streams.end())
+        if(!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
         {
-            for (auto s : streams)
-                matchers.push_back(device::create_matcher(frame));
+            return device::create_matcher(frame);
         }
 
-        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
-        {
-            return std::make_shared<frame_number_composite_matcher>(matchers);
-        }
-        else
-        {
-            return std::make_shared<timestamp_composite_matcher>(matchers);
-        }
+        std::set<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get()};
+        std::vector<std::shared_ptr<matcher>> depth_matchers;
+
+        for (auto& s : streams)
+            depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type()));
+
+        return std::make_shared<frame_number_composite_matcher>(depth_matchers);
     }
 }

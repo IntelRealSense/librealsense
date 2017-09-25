@@ -1,24 +1,36 @@
 {
-  "name": "node_librealsense",
-  "version": "2.7.7",
-  "description": "Node.js addon for Intel® RealSense™ SDK 2.0",
+  "name": "node-librealsense",
+  "version": "0.279.2",
+  "description": "Node.js API for Intel® RealSense™ SDK 2.0",
   "main": "index.js",
   "directories": {
     "test": "test"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IntelRealSense/librealsense.git"
+  },
+  "keywords": [
+    "realsense",
+    "camera",
+    "depth camera"
+  ],
   "scripts": {
     "test": "mocha",
     "doc": "node scripts/generate-doc.js",
+    "install": "node-gyp rebuild",
     "postinstall": "node scripts/generate-doc.js"
   },
   "author": "Kenny Yuan <kaining.yuan@intel.com>",
   "license": "Apache-2.0",
   "dependencies": {
-    "assert": "^1.4.1",
     "bindings": "^1.2.1",
-    "fs-compare": "0.0.4",
-    "jsdoc": "^3.5.2",
-    "nan": "^2.6.2",
+    "jsonfile": "^3.0.1",
     "pngjs": "^3.3.0"
+  },
+  "devDependencies": {
+    "fs-compare": "0.0.4",
+    "jsdoc": "^3.5.5",
+    "nan": "^2.7.0"
   }
 }

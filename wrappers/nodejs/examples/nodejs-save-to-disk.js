@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // Copyright (c) 2017 Intel Corporation. All rights reserved.
 // Use of this source code is governed by an Apache 2.0 license
 // that can be found in the LICENSE file.
@@ -21,7 +23,9 @@ for (let i = 0; i < frameset.size; i++) {
   let frame = frameset.at(i);
   if (frame instanceof rs2.VideoFrame) {
     if (frame instanceof rs2.DepthFrame) {
-      frame = colorizer.colorize(frame);
+      let newFrame = colorizer.colorize(frame);
+      frame.destroy();
+      frame = newFrame;
     }
     let pngFile = 'rs-save-to-disk-output-' +
                   rs2.stream.streamToString(frame.profile.streamType) + '.png';
@@ -33,6 +37,7 @@ for (let i = 0; i < frameset.size; i++) {
   }
   frame.destroy();
 }
-
+pipeline.stop();
+pipeline.destroy();
 frameset.destroy();
 rs2.cleanup();

@@ -9,7 +9,7 @@
   "author": "Halton Huo <halton.huo@intel.com>",
   "license": "Apache 2.0",
   "dependencies": {
-    "eslint": "^4.6.1",
+    "eslint": "4.6.1",
     "eslint-config-google": "^0.9.1",
     "eslint-config-standard": "^10.2.1",
     "eslint-plugin-header": "^1.1.0",

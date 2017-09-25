@@ -1,5 +1,5 @@
-# ubuntu 16.04 LTS cmake version 3.5.1
-cmake_minimum_required(VERSION 2.8.3)
+#  minimum required cmake version: 3.1.0
+cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsenseToolsRealSenseViewer)
 
@@ -16,6 +16,8 @@ elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
+if(BUILD_GRAPHICAL_EXAMPLES)
+
 if(UNIX)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
@@ -31,8 +33,6 @@ elseif(APPLE)
     add_definitions(-DNOC_FILE_DIALOG_OSX)
 endif()
 
-if(BUILD_GRAPHICAL_EXAMPLES)
-
     set(RS_VIEWER_CPP
             realsense-viewer.cpp
             ../../third-party/imgui/imgui.cpp
@@ -43,13 +43,23 @@ if(BUILD_GRAPHICAL_EXAMPLES)
             ../../common/rendering.h
             ../../common/model-views.h
             ../../common/model-views.cpp
+            ../../common/ux-window.h
+            ../../common/ux-window.cpp
         )
 
     # config-ui
     if(WIN32)
         add_executable(realsense-viewer WIN32
                 ${RS_VIEWER_CPP} ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
-                ${RS_VIEWER_CPP} ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc)
+                ${RS_VIEWER_CPP} ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
+                ../../common/windows-app-bootstrap.cpp)
+
+        source_group("3rd Party" FILES
+            ../../third-party/imgui/imgui.cpp
+            ../../third-party/imgui/imgui_draw.cpp
+            ../../third-party/imgui/imgui_impl_glfw.cpp
+            ../../third-party/imgui/imgui-fonts-karla.hpp
+            ../../third-party/imgui/imgui-fonts-fontawesome.hpp)
 
         source_group("Resources" FILES
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h

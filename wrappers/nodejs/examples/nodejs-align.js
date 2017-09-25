@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // Copyright (c) 2017 Intel Corporation. All rights reserved.
 // Use of this source code is governed by an Apache 2.0 license
 // that can be found in the LICENSE file.
@@ -46,46 +48,56 @@ function removeBackground(otherFrame, depthFrame, depthScale, clippingDist) {
 
 // Open a GLFW window
 const win = new GLFWWindow(1280, 720, 'Node.js Align Example');
+
 const colorizer = new rs2.Colorizer();
 const renderer = new Texture();
-const ctx = new rs2.Context();
-const align = ctx.createAlign(rs2.stream.STREAM_COLOR);
+const align = new rs2.Align(rs2.stream.STREAM_COLOR);
 const pipe = new rs2.Pipeline();
 pipe.start(align);
+
 const depthScale = tryGetDepthScale(pipe);
 if (depthScale === undefined) {
   console.error('Device does not have a depth sensor');
   process.exit(1);
 }
+
 let depthClippingDistance = 1.0;
 console.log('Press Up/Down to change the depth clipping distance.');
+
 win.setKeyCallback((key, scancode, action, modes) => {
   if (action != 0) return;
 
   if (key === 265) {
-    // UP
+    // Pressed: Up arrow key
     depthClippingDistance += 0.1;
     if (depthClippingDistance > 6.0) {
       depthClippingDistance = 6.0;
     }
   } else if (key === 264) {
-    // Down
+    // Pressed: Down arrow key
     depthClippingDistance -= 0.1;
     if (depthClippingDistance < 0) {
       depthClippingDistance = 0;
     }
   }
-  console.log('Depth clipping distance:', depthClippingDistance);
+  console.log('Depth clipping distance:', depthClippingDistance.toFixed(3));
 });
+
 while (!win.shouldWindowClose()) {
-  win.beginPaint();
   const frameset = align.waitForFrames();
   if (!frameset) continue;
 
   let colorFrame = frameset.colorFrame;
   let alignedDepthFrame = frameset.depthFrame;
 
-  if (!alignedDepthFrame || !colorFrame) continue;
+  if (!alignedDepthFrame || !colorFrame) {
+    if (alignedDepthFrame) alignedDepthFrame.destroy();
+
+    if (colorFrame) colorFrame.destroy();
+
+    frameset.destroy();
+    continue;
+  }
 
   removeBackground(colorFrame, alignedDepthFrame, depthScale,
       depthClippingDistance);
@@ -107,17 +119,22 @@ while (!win.shouldWindowClose()) {
   pipStream.y = alteredColorFrameRect.y + alteredColorFrameRect.h -
       pipStream.h - (Math.max(w, h) / 25);
 
-  renderer.upload(colorizer.colorize(alignedDepthFrame));
+  let colorizedDepth = colorizer.colorize(alignedDepthFrame);
+
+  win.beginPaint();
+  renderer.upload(colorizedDepth);
   renderer.show(pipStream);
-
-  if (alignedDepthFrame) alignedDepthFrame.destroy();
-
-  if (colorFrame) colorFrame.destroy();
-
-  frameset.destroy();
   win.endPaint();
+
+  alignedDepthFrame.destroy();
+  colorFrame.destroy();
+  colorizedDepth.destroy();
+  frameset.destroy();
 }
+
+pipe.stop();
 pipe.destroy();
 align.destroy();
+
 win.destroy();
 rs2.cleanup();

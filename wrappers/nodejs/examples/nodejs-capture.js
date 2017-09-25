@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // Copyright (c) 2017 Intel Corporation. All rights reserved.
 // Use of this source code is governed by an Apache 2.0 license
 // that can be found in the LICENSE file.
@@ -43,6 +45,7 @@ while (! win.shouldWindowClose()) {
 
   frameset.destroy();
 }
-
+pipeline.stop();
+pipeline.destroy();
 win.destroy();
 rs2.cleanup();

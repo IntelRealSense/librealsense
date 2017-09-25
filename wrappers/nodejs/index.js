@@ -340,15 +340,24 @@ class Sensor {
    * stream profiles
    */
   open(streamProfile) {
-    if (arguments.length === 1) {
-      if (Array.isArray(streamProfile) && streamProfile.length>0) {
-        this.cxxSensor.openMultipleStream(streamProfile);
-      } else {
-        this.cxxSensor.openStream(streamProfile.cxxProfile);
-      }
-    } else {
+    if (arguments.length != 1) {
       throw new TypeError(
           'Sensor.open() expects a streamProfile object or an array of streamProfile objects');
+    }
+    if (Array.isArray(streamProfile) && streamProfile.length > 0) {
+      for (let i = 0; i < streamProfile.length; i++) {
+        if (!(streamProfile[i] instanceof StreamProfile)) {
+          throw new TypeError(
+              'Sensor.open() expects a streamProfile object or an array of streamProfile objects'); // eslint-disable-line
+        }
+      }
+      this.cxxSensor.openMultipleStream(streamProfile);
+    } else {
+      if (!(streamProfile instanceof StreamProfile)) {
+        throw new TypeError(
+            'Sensor.open() expects a streamProfile object or an array of streamProfile objects'); // eslint-disable-line
+      }
+      this.cxxSensor.openStream(streamProfile.cxxProfile);
     }
   }
 
@@ -410,7 +419,13 @@ class Sensor {
         this.cxxSensor.startWithSyncer(arguments[0].cxxSyncer, false, 0);
       } else {
         this.cxxSensor.frameCallback = function(frame) {
-          callback(frame);
+          if (frame.isDepthFrame()) {
+            callback(new DepthFrame(frame));
+          } else if (frame.isVideoFrame()) {
+            callback(new VideoFrame(frame));
+          } else {
+            callback(new Frame(frame));
+          }
         };
         this.cxxSensor.startWithCallback('frameCallback', false, 0);
       }
@@ -460,7 +475,7 @@ class Sensor {
   /**
   * Check if particular option is read-only
   * @param {String|Number} option The option to be checked
-  * @return {Boolean} true if option is read-only
+  * @return {Boolean|undefined} true if option is read-only and undefined if not supported
   */
   isOptionReadOnly(option) {
     let o = checkStringNumber(arguments[0],
@@ -468,6 +483,8 @@ class Sensor {
         option2Int,
         'Sensor.isOptionReadOnly(option) expects a number or string as the 1st argument',
         'Sensor.isOptionReadOnly(option) expects a valid value as the 1st argument');
+    if (!this.cxxSensor.supportsOption(o)) return undefined;
+
     return this.cxxSensor.isOptionReadonly(o);
   }
 
@@ -540,6 +557,8 @@ class Sensor {
         option2Int,
         'Sensor.getOption(option) expects a number or string as the 1st argument',
         'Sensor.getOption(option) expects a valid value as the 1st argument');
+    if (!this.cxxSensor.supportsOption(o)) return undefined;
+
     return this.cxxSensor.getOption(o);
   }
 
@@ -572,6 +591,8 @@ class Sensor {
         option2Int,
         'Sensor.getOptionRange(option) expects a number or string as the 1st argument',
         'Sensor.getOptionRange(option) expects a valid value as the 1st argument');
+    if (!this.cxxSensor.supportsOption(o)) return undefined;
+
     return this.cxxSensor.getOptionRange(o);
   }
 
@@ -589,6 +610,8 @@ class Sensor {
         option2Int,
         'Sensor.getOptionRange(option) expects a number or string as the 1st argument',
         'Sensor.getOptionRange(option) expects a valid value as the 1st argument');
+    if (!this.cxxSensor.supportsOption(o) || this.cxxSensor.isOptionReadonly(o)) return undefined;
+
     this.cxxSensor.setOption(o, value);
   }
 
@@ -622,6 +645,8 @@ class Sensor {
         option2Int,
         'Sensor.supportsOption(option) expects a number or string as the 1st argument',
         'Sensor.supportsOption(option) expects a valid value as the 1st argument');
+    if (!this.cxxSensor.supportsOption(o)) return undefined;
+
     return this.cxxSensor.getOptionDescription(o);
   }
 
@@ -639,6 +664,8 @@ class Sensor {
         option2Int,
         'Sensor.supportsOption(option) expects a number or string as the 1st argument',
         'Sensor.supportsOption(option) expects a valid value as the 1st argument');
+    if (!this.cxxSensor.supportsOption(o)) return undefined;
+
     return this.cxxSensor.getOptionValueDescription(o, value);
   }
 
@@ -956,30 +983,6 @@ class Context {
   }
 
   /**
-   * Create a Pointcloud object
-   *
-   * @return {Pointcloud} see {@link Pointcloud}
-   */
-  createPointcloud() {
-    return new Pointcloud(this.cxxCtx.createPointcloud());
-  }
-
-  /**
-   * Create a Align object
-   *
-   * @param {String|Integer} stream the target stream to align depth stream to
-   * @return {Align} see {@link Align}
-   */
-  createAlign(stream) {
-    let s = checkStringNumber(stream,
-        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-        stream2Int,
-        'Context.createAlign expects the argument to be string or integer',
-        'Context.createAlign\'s argument value is invalid');
-    return new Align(this.cxxCtx.createAlign(s));
-  }
-
-  /**
    * Create a PlaybackDevice to playback recored data file.
    *
    * @param {String} file - the file path
@@ -1069,8 +1072,8 @@ class SyncerProcessingBlock extends ProcessingBlock {
  * stream
  */
 class Pointcloud {
-  constructor(cxxPointcloud) {
-    this.cxxPointcloud = cxxPointcloud;
+  constructor() {
+    this.cxxPointcloud = new RS2.RSPointcloud();
   }
 
   /**
@@ -1144,8 +1147,14 @@ class Colorizer {
  * The Align allows to perform aliment of depth frames to other frames
  */
 class Align {
-  constructor(cxxAlign) {
-    this.cxxAlign = cxxAlign;
+  constructor(stream) {
+    let s = checkStringNumber(stream,
+            constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+            stream2Int,
+            'Align constructor expects a string or an integer argument',
+            'Align constructor\'s argument value is invalid');
+
+    this.cxxAlign = new RS2.RSAlign(s);
   }
 
   /**
@@ -1663,21 +1672,14 @@ class FrameSet {
 
 /**
  * This class provides a simple way to retrieve frame data
- * There are 2 acceptable syntax:
- *
- * <pre><code>
- *  1. new Pipeline(context)
- *  2. new Pipeline(device)
- * </code></pre>
- * @param {Context} context the context used by the pipeline
- * @param {Device} device the device used by the pipeline
+ * @param {Context} [context] - the {@link Context} that is being used by the pipeline
  */
 class Pipeline {
   constructor(context) {
     if (arguments.length > 1) {
       throw new TypeError('new Pipeline() can only accept at most 1 argument');
     }
-    let cxxDev;
+
     let ownCtx = true;
     let ctx;
 
@@ -1685,8 +1687,8 @@ class Pipeline {
       if (arguments[0] instanceof Context) {
         ownCtx = false;
         this.ctx = arguments[0];
-      } else if (arguments[0] instanceof Device) {
-        cxxDev = arguments[0].cxxDev;
+      } else {
+        throw new TypeError('new Pipeline() expects a Context argument');
       }
     }
 
@@ -1695,7 +1697,8 @@ class Pipeline {
     }
 
     this.cxxPipeline = new RS2.RSPipeline();
-    this.cxxPipeline.create(this.ctx.cxxCtx, cxxDev);
+    this.cxxPipeline.create(this.ctx.cxxCtx);
+    this.started = false;
   }
 
  /**
@@ -1704,6 +1707,8 @@ class Pipeline {
   * @return {undefined}
   */
   destroy() {
+    if (this.started === true) this.stop();
+
     this.cxxPipeline.destroy();
     this.cxxPipeline = undefined;
     if (this.ownCtx) {
@@ -1725,18 +1730,6 @@ class Pipeline {
   }
 
   /**
-   * Retrieve the context used by the pipeline
-   *
-   * @return {Context|undefined} see {@link Context}
-   */
-  getContext() {
-    const ctx = this.cxxPipeline.getContext();
-    if (ctx) return new Context(ctx);
-
-    return undefined;
-  }
-
-  /**
    * Start streaming
    * There are 2 acceptable syntax
    *
@@ -1748,10 +1741,12 @@ class Pipeline {
    * enable_stream. Syntax 2 starts passing frames into Align object.
    * Start passing frames into user provided callback
    *
-   * @param {Align} align the Align object to receive the frame
+   * @param {Align} [align] - the {@link Align} object to receive the frame
    * @return {undefined}
    */
   start() {
+    if (this.started === true) return undefined;
+
     if (arguments.length === 0) {
       this.cxxPipeline.start();
     } else {
@@ -1760,6 +1755,7 @@ class Pipeline {
       }
       this.cxxPipeline.startWithAlign(arguments[0].cxxAlign);
     }
+    this.started = true;
     return undefined;
   }
 
@@ -1769,7 +1765,10 @@ class Pipeline {
    * @return {undefined}
    */
   stop() {
+    if (this.started === false) return undefined;
+
     this.cxxPipeline.stop();
+    this.started = false;
   }
 
   /**
@@ -3180,13 +3179,13 @@ const recording_mode = {
  * Enum for option values.
  * @readonly
  * @enum {String}
- * @see [Device.isOptionReadOnly()]{@link Device#isOptionReadOnly}
- * @see [Device.getOption()]{@link Device#getOption}
- * @see [Device.getOptionRange()]{@link Device#getOptionRange}
- * @see [Device.setOption()]{@link Device#setOption}
- * @see [Device.supportsOption()]{@link Device#supportsOption}
- * @see [Device.getOptionDescription()]{@link Device#getOptionDescription}
- * @see [Device.getOptionValueDescription()]{@link Device#getOptionValueDescription}
+ * @see [Sensor.isOptionReadOnly()]{@link Sensor#isOptionReadOnly}
+ * @see [Sensor.getOption()]{@link Sensor#getOption}
+ * @see [Sensor.getOptionRange()]{@link Sensor#getOptionRange}
+ * @see [Sensor.setOption()]{@link Sensor#setOption}
+ * @see [Sensor.supportsOption()]{@link Sensor#supportsOption}
+ * @see [Sensor.getOptionDescription()]{@link Sensor#getOptionDescription}
+ * @see [Sensor.getOptionValueDescription()]{@link Sensor#getOptionValueDescription}
  */
 
 const option = {

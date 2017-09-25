@@ -4,14 +4,13 @@
 
 'use strict';
 
-const glfw = require('node-glfw-2');
+const glfw = require('node-glfw-3');
 const rs2 = require('../index.js');
-// TODO(kenny-y): resolve the potential disabled eslint errors
-/* eslint-disable new-cap */
 
+/* eslint-disable new-cap */
 class GLFWWindow {
   // TODO(kenny-y): Check disabled jshint errors
-  constructor(width = 1280, height = 720, title) { // jshint ignore:line
+  constructor(width = 1280, height = 720, title = 'GLFW Window') {
     this.width_ = width;
     this.height_ = height;
 

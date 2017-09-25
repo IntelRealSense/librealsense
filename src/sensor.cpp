@@ -44,6 +44,11 @@ namespace librealsense
 
     void sensor_base::register_notifications_callback(notifications_callback_ptr callback)
     {
+        if (supports_option(RS2_OPTION_ERROR_POLLING_ENABLED))
+        {
+            auto& opt = get_option(RS2_OPTION_ERROR_POLLING_ENABLED);
+            opt.set(1.0f);
+        }
         _notifications_proccessor->set_callback(std::move(callback));
     }
 

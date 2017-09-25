@@ -10,7 +10,6 @@ const rs2 = require('../index.js');
 
 let ctx;
 let dev;
-
 describe('Pipeline test', function() {
   before(function() {
     ctx = new rs2.Context();
@@ -23,46 +22,46 @@ describe('Pipeline test', function() {
     rs2.cleanup();
   });
 
-  // TODO(tinghao): re-enable when exception throw is implemented.
-  it.skip('Testing constructor - 0 option', () => {
+  it('Testing constructor - 0 option', () => {
     assert.doesNotThrow(() => {
       new rs2.Pipeline();
     });
   });
 
-  it.skip('Testing constructor - 2 options', () => {
+  it('Testing constructor - 2 options', () => {
     assert.throws(() => {
       new rs2.Pipeline(1, 2);
     });
   });
 
-  it.skip('Testing constructor - 1 invalid option', () => {
+  it('Testing constructor - 1 invalid option', () => {
     assert.throws(() => {
       new rs2.Pipeline(1);
     });
   });
 
-  it.skip('Testing constructor - 1 context option', () => {
+  it('Testing constructor - 1 context option', () => {
     assert.doesNotThrow(() => {
       new rs2.Pipeline(ctx);
     });
   });
 
-  it.skip('Testing constructor - 1 device option', () => {
+  it('Testing constructor - 1 device option', () => {
     assert.doesNotThrow(() => {
       new rs2.Pipeline(dev);
     });
   });
 
-  // TODO(yunfei): re-enable after fix logic.
-  it.skip('Testing method destroy', () => {
+  it('Testing method destroy', () => {
     let pipeline;
     assert.doesNotThrow(() => {
       pipeline = new rs2.Pipeline();
       pipeline.start();
       pipeline.destroy();
     });
-    assert.equal(pipeline, undefined);
+    setTimeout(() => {
+      assert.equal(pipeline, undefined);
+    }, 100);
   });
 
   it('Testing method start', () => {
@@ -78,6 +77,18 @@ describe('Pipeline test', function() {
     });
   });
 
+  it('Testing method stop', () => {
+    let pipeline;
+    pipeline = new rs2.Pipeline();
+    pipeline.start();
+    assert.notEqual(pipeline, undefined);
+    assert.doesNotThrow(() => {
+      pipeline.start();
+      pipeline.stop();
+      pipeline.destroy();
+    });
+  });
+
   it('Testing method waitForFrames', () => {
     let pipeline;
     let frameSet;
@@ -85,6 +96,7 @@ describe('Pipeline test', function() {
       pipeline = new rs2.Pipeline();
       pipeline.start();
       frameSet = pipeline.waitForFrames();
+      frameSet.destroy();
     });
     let endTest = false;
     let n = 0;
@@ -92,12 +104,12 @@ describe('Pipeline test', function() {
       frameSet = pipeline.waitForFrames();
       n++;
       console.log(`retring left ...${10 - n} times`);
-      if (frameSet !== undefined &&
-          frameSet.colorFrame !== undefined &&
-          frameSet.depthFrame !== undefined) {
+      if (frameSet !== undefined && frameSet.colorFrame !== undefined &&
+        frameSet.depthFrame !== undefined) {
         assert(frameSet.depthFrame instanceof rs2.VideoFrame);
         assert(frameSet.colorFrame instanceof rs2.VideoFrame);
         endTest = true;
+        frameSet.destroy();
       }
       if (n >= 10) {
         assert(false, 'could not get colorFrame or depthFrame, try to reset camera');
