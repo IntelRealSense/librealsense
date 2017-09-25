@@ -100,6 +100,8 @@ namespace rs2
             res = !glfwWindowShouldClose(_win);
             glfwPollEvents();
 
+            begin_frame();
+
             glPushMatrix();
             glViewport(0.f, 0.f, _width, _height);
             glClearColor(0.036f, 0.044f, 0.051f, 1.f);
@@ -112,12 +114,50 @@ namespace rs2
             auto opacity = smoothstep(_splash_timer.elapsed_ms(), 100.f, 2000.f);
             _splash_tex.show({ 0.f,0.f,(float)_width,(float)_height }, opacity);
 
-            std::string loading_str = to_string() << "Loading " << _title_str << "...";
-            auto loading_text_width = stb_easy_font_width((char*)loading_str.c_str());
-            if (sin(_splash_timer.elapsed_ms() / 150.f) > -0.2f)
-                draw_text(_width - loading_text_width - 20, _height - 20, loading_str.c_str());
+            static bool missing_device = false;
+            static int hourglass_index = 0;
+            std::string hourglass = u8"\uf250";
+            static periodic_timer every_200ms(std::chrono::milliseconds(200));
+            if (every_200ms)
+            {
+                missing_device = rs2::context().query_devices().size() == 0;
+                hourglass_index = (hourglass_index + 1) % 5;
+            }
+            hourglass[2] += hourglass_index;
+                
+            bool blink = sin(_splash_timer.elapsed_ms() / 150.f) > -0.3f;
+            
+            auto flags = ImGuiWindowFlags_NoResize |
+                ImGuiWindowFlags_NoMove |
+                ImGuiWindowFlags_NoCollapse |
+                ImGuiWindowFlags_NoTitleBar;
 
-            glfwSwapBuffers(_win);
+            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
+            ImGui::SetNextWindowPos({ (float)_width/2 - 150, (float)_height/2 + 70 });
+            ImGui::PushFont(_font_18);
+            ImGui::SetNextWindowSize({ (float)_width, (float)_height });
+            ImGui::Begin("Splash Screen Banner", nullptr, flags);
+
+            if (missing_device || blink)
+            {
+                ImGui::Text("%s   Loading %s...", hourglass.c_str(), _title_str.c_str());
+            }
+            if (missing_device && blink)
+            {
+                ImGui::Text(u8"\uf287 Please connect Intel RealSense device!");
+            }
+            ImGui::End();
+            ImGui::PopFont();
+            ImGui::PopStyleColor(3);
+            ImGui::PopStyleVar(2);
+
+            end_frame();
+
+            //glfwSwapBuffers(_win);
             glPopMatrix();
 
             // Yeild the CPU
