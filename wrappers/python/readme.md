@@ -65,3 +65,4 @@ depth = frames.get_depth_frame()
 depth_data = depth.as_frame().get_data()
 np_image = np.asanyarray(depth_data)
 ```
+A simple viewer example with NumPy and OpenCV can be found [here](./opencv_viewer_example.py)
