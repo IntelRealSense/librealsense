@@ -181,7 +181,7 @@ int main(int argc, char** argv) try
         pipe.open();
 
         auto dev = pipe.get_device();
-        std::atomic_bool need_to_reset = false;
+        std::atomic_bool need_to_reset(false);
         for (auto sub : dev.query_sensors())
         {
             sub.set_notifications_callback([&](const notification& n)
