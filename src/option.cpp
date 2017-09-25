@@ -127,7 +127,7 @@ float librealsense::polling_errors_disable::query() const
 
 librealsense::option_range librealsense::polling_errors_disable::get_range() const
 {
-    return option_range{0, 1, 1, 1};
+    return option_range{0, 1, 1, 0};
 }
 
 bool librealsense::polling_errors_disable::is_enabled() const

@@ -156,10 +156,10 @@ void refresh_devices(std::mutex& m,
             }
 
             devs.clear();
-            for (auto&& sub : list)
+            for (auto&& sub : device_models)
             {
-                devs.push_back(sub);
-                for (auto&& s : sub.query_sensors())
+                devs.push_back(sub.dev);
+                for (auto&& s : sub.dev.query_sensors())
                 {
                     s.set_notifications_callback([&](const notification& n)
                     {
