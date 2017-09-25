@@ -5,6 +5,7 @@
 #include <librealsense2/rs.hpp>
 
 #include "rendering.h"
+#include "ux-window.h"
 #include "parser.hpp"
 
 #define GLFW_INCLUDE_GLU
@@ -21,50 +22,53 @@
 
 #include "realsense-ui-advanced-mode.h"
 
+ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
+ImVec4 operator+(const ImVec4& c, float v);
 
-inline ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
-{
-    return ImVec4(r / (float)255, g / (float)255, b / (float)255, a / (float)255);
-}
-
-inline ImVec4 operator+(const ImVec4& c, float v)
-{
-    return ImVec4(
-        std::max(0.f, std::min(1.f, c.x + v)),
-        std::max(0.f, std::min(1.f, c.y + v)),
-        std::max(0.f, std::min(1.f, c.z + v)),
-        std::max(0.f, std::min(1.f, c.w))
-    );
-}
-
-
-static const ImVec4 light_blue = from_rgba(0, 174, 239, 255); // Light blue color for selected elements such as play button glyph when paused
-static const ImVec4 regular_blue = from_rgba(0, 115, 200, 255); // Checkbox mark, slider grabber
-static const ImVec4 light_grey = from_rgba(0xc3, 0xd5, 0xe5, 0xff); // Text
+static const ImVec4 light_blue = from_rgba(0, 174, 239, 255, true); // Light blue color for selected elements such as play button glyph when paused
+static const ImVec4 regular_blue = from_rgba(0, 115, 200, 255, true); // Checkbox mark, slider grabber
+static const ImVec4 light_grey = from_rgba(0xc3, 0xd5, 0xe5, 0xff, true); // Text
 static const ImVec4 dark_window_background = from_rgba(9, 11, 13, 255);
-static const ImVec4 almost_white_bg = from_rgba(230, 230, 230, 255);
-static const ImVec4 black = from_rgba(0, 0, 0, 255);
-static const ImVec4 transparent = from_rgba(0, 0, 0, 0);
-static const ImVec4 white = from_rgba(0xff, 0xff, 0xff, 0xff);
+static const ImVec4 almost_white_bg = from_rgba(230, 230, 230, 255, true);
+static const ImVec4 black = from_rgba(0, 0, 0, 255, true);
+static const ImVec4 transparent = from_rgba(0, 0, 0, 0, true);
+static const ImVec4 white = from_rgba(0xff, 0xff, 0xff, 0xff, true);
 static const ImVec4 scrollbar_bg = from_rgba(14, 17, 20, 255);
 static const ImVec4 scrollbar_grab = from_rgba(54, 66, 67, 255);
 static const ImVec4 grey{ 0.5f,0.5f,0.5f,1.f };
 static const ImVec4 dark_grey = from_rgba(30, 30, 30, 255);
 static const ImVec4 sensor_header_light_blue = from_rgba(80, 99, 115, 0xff);
 static const ImVec4 sensor_bg = from_rgba(36, 44, 51, 0xff);
-static const ImVec4 redish = from_rgba(255, 46, 54, 255);
+static const ImVec4 redish = from_rgba(255, 46, 54, 255, true);
 static const ImVec4 button_color = from_rgba(62, 77, 89, 0xff);
 static const ImVec4 header_window_bg = from_rgba(36, 44, 54, 0xff);
 static const ImVec4 header_color = from_rgba(62, 77, 89, 255);
 static const ImVec4 title_color = from_rgba(27, 33, 38, 255);
 static const ImVec4 device_info_color = from_rgba(33, 40, 46, 255);
+static const ImVec4 yellow = from_rgba(229, 195, 101, 255, true);
+static const ImVec4 green = from_rgba(0x20, 0xe0, 0x20, 0xff, true);
 
-void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18);
+inline ImVec4 blend(const ImVec4& c, float a)
+{
+    return{ c.x, c.y, c.z, a * c.w };
+}
 
 namespace rs2
 {
     class subdevice_model;
     struct notifications_model;
+
+    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18);
+
+    // Helper function to get window rect from GLFW
+    rect get_window_rect(GLFWwindow* window);
+
+    // Helper function to get monitor rect from GLFW
+    rect get_monitor_rect(GLFWmonitor* monitor);
+
+    // Select appropriate scale factor based on the display
+    // that most of the application is presented on
+    int pick_scale_factor(GLFWwindow* window);
 
     template<class T>
     void sort_together(std::vector<T>& vec, std::vector<std::string>& names)
@@ -159,7 +163,7 @@ namespace rs2
     public:
         subdevice_model(device& dev, sensor& s, std::string& error_message);
         bool is_there_common_fps() ;
-        void draw_stream_selection();
+        bool draw_stream_selection();
         bool is_selected_combination_supported();
         std::vector<stream_profile> get_selected_profiles();
         void stop();
@@ -236,6 +240,12 @@ namespace rs2
         bool roi_checked = false;
 
         std::atomic<bool> _pause;
+
+        bool draw_streams_selector = true;
+        bool draw_fps_selector = true;
+
+        region_of_interest algo_roi;
+        bool show_algo_roi = false;
     };
 
     class viewer_model;
@@ -249,7 +259,7 @@ namespace rs2
     }
 
     void outline_rect(const rect& r);
-    void draw_rect(const rect& r);
+    void draw_rect(const rect& r, int line_width = 1);
 
     class stream_model
     {
@@ -263,7 +273,7 @@ namespace rs2
         void show_metadata(const mouse_info& g);
         rect get_normalized_zoom(const rect& stream_rect, const mouse_info& g, bool is_middle_clicked, float zoom_val);
 
-        void show_stream_footer(rect stream_rect, mouse_info& mouse);
+        void show_stream_footer(const rect& stream_rect,const mouse_info& mouse);
         void show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer);
 
         rect layout;
@@ -308,8 +318,16 @@ namespace rs2
         void pause_record();
         void resume_record();
         int draw_playback_panel(ImFont* font, viewer_model& view);
-        void draw_advanced_mode_tab(device& dev, std::vector<std::string>& restarting_info);
-
+        void draw_advanced_mode_tab();
+        void draw_controls(float panel_width, float panel_height,
+            ImFont *font1, ImFont *font2,
+            const mouse_info &mouse,
+            std::string& error_message,
+            device_model*& device_to_remove,
+            viewer_model& viewer, float windows_width,
+            bool update_read_only_options,
+            std::map<subdevice_model*, float>& model_to_y,
+            std::map<subdevice_model*, float>& model_to_abs_y);
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
 
         bool metadata_supported = false;
@@ -323,13 +341,18 @@ namespace rs2
         bool _should_replay = false;
         bool show_device_info = false;
 
+        bool allow_remove = true;
+        bool show_depth_only = false;
+        bool show_stream_selection = true;
+
         std::vector<std::pair<std::string, std::string>> infos;
+        std::vector<std::string> restarting_device_info;
     private:
         int draw_seek_bar();
         int draw_playback_controls(ImFont* font, viewer_model& view);
         advanced_mode_control amc;
         std::string pretty_time(std::chrono::nanoseconds duration);
-        
+
         void play_defaults(viewer_model& view);
 
         std::shared_ptr<recorder> _recorder;
@@ -461,7 +484,13 @@ namespace rs2
     class viewer_model
     {
     public:
-        void reset_camera(float3 pos = { 0.0f, 0.0f, -1.5f });
+        void reset_camera(float3 pos = { 0.0f, 0.0f, -1.0f });
+
+        const float panel_width = 340.f;
+        const float panel_y = 50.f;
+        const float default_log_h = 80.f;
+
+        float get_output_height() const { return (is_output_collapsed ? default_log_h : 20); }
 
         viewer_model()
         {
@@ -490,7 +519,12 @@ namespace rs2
         void update_3d_camera(const rect& viewer_rect,
                               mouse_info& mouse, bool force = false);
 
+        void show_top_bar(ux_window& window, const rect& viewer_rect);
+
         void render_3d_view(const rect& view_rect, float scale_factor);
+
+        void render_2d_view(const rect& view_rect, double width, double heigth, int output_height,
+            ImFont *font1, ImFont *font2, size_t dev_model_num, const mouse_info &mouse, std::string& error_message);
 
         void gc_streams();
 
@@ -502,12 +536,23 @@ namespace rs2
 
         notifications_model not_model;
         bool is_output_collapsed = false;
-    private:
-        std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
-        void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, const ImVec4& color);
+        bool is_3d_view = false;
+        bool paused = false;
+
+        void draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
+
+        bool allow_3d_source_change = true;
+        bool allow_stream_close = true;
+        
+        std::array<float3, 4> roi_rect;
+        bool draw_plane = false;
 
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;
+
+    private:
+        std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
+        void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, const ImVec4& color);
 
         streams_layout _layout;
         streams_layout _old_layout;
@@ -522,6 +567,20 @@ namespace rs2
         GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
     };
 
-    void export_to_ply(notifications_model& ns, points points, video_frame texture);
-}
+    void export_to_ply(const std::string& file_name, notifications_model& ns, points points, video_frame texture);
 
+    // Wrapper for cross-platform dialog control
+    enum file_dialog_mode {
+        open_file       = (1 << 0),
+        save_file       = (1 << 1),
+        open_dir        = (1 << 2),
+        override_file   = (1 << 3)
+    };
+
+    const char* file_dialog_open(file_dialog_mode flags, const char* filters, const char* default_path, const char* default_name);
+
+    // Encapsulate helper function to resolve linking
+    int save_to_png(const char* filename,
+        size_t pixel_width, size_t pixels_height, size_t bytes_per_pixel,
+        const void* raster_data, size_t stride_bytes);
+}

@@ -37,7 +37,7 @@ namespace rs400
             rs2_is_enabled(_dev.get(), &enabled, &e);
             rs2::error::handle(e);
 
-            return enabled;
+            return !!enabled;
         }
 
         void set_depth_control(STDepthControlGroup& group)
