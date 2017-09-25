@@ -1366,7 +1366,7 @@ void rs2_start_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
-void rs2_open_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
+void rs2_commit_config_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
 
@@ -1397,7 +1397,7 @@ void rs2_enable_pipeline_device(rs2_pipeline* pipe, const char* serial, rs2_erro
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
-void rs2_reset_config_streams_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
+void rs2_reset_config_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
 

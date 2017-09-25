@@ -96,7 +96,7 @@ namespace rs2
         void reset_config() const
         {
             rs2_error* e = nullptr;
-            rs2_reset_config_streams_pipeline(_pipeline.get(), &e);
+            rs2_reset_config_pipeline(_pipeline.get(), &e);
             error::handle(e);
         }
 
@@ -107,7 +107,7 @@ namespace rs2
         void commit_config()const
         {
             rs2_error* e = nullptr;
-            rs2_open_pipeline(_pipeline.get(), &e);
+            rs2_commit_config_pipeline(_pipeline.get(), &e);
             error::handle(e);
         }
 

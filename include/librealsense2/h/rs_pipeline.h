@@ -39,7 +39,7 @@ rs2_device* rs2_pipeline_get_device(rs2_context* ctx, rs2_pipeline* pipe, rs2_er
 */
 void rs2_start_pipeline(rs2_pipeline* pipe, rs2_error ** error);
 
-void rs2_open_pipeline(rs2_pipeline* pipe, rs2_error ** error);
+void rs2_commit_config_pipeline(rs2_pipeline* pipe, rs2_error ** error);
 
 /**
 * stop streaming will not change the pipeline configuration
@@ -64,7 +64,7 @@ void rs2_enable_pipeline_device(rs2_pipeline* pipe, const char* serial, rs2_erro
 /**
 *  remove all configurations from the pipeline
 */
-void rs2_reset_config_streams_pipeline(rs2_pipeline* pipe, rs2_error ** error);
+void rs2_reset_config_pipeline(rs2_pipeline* pipe, rs2_error ** error);
 
 /**
 * wait until new frame becomes available
