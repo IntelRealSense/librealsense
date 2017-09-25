@@ -113,7 +113,7 @@ void register_glfw_callbacks(window& app, state& app_state)
 // Handles all the OpenGL calls needed to display the point cloud
 void draw_pointcloud(window& app, state& app_state, rs2::points& points)
 {
-    if (!static_cast<GLFWwindow*>(app) || !points)
+    if (!points)
         return;
 
     // OpenGL commands that prep screen for the pointcloud
