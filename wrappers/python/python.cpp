@@ -331,11 +331,25 @@ PYBIND11_PLUGIN(NAME) {
          .def("get_frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
          .def("get_data", [](const rs2::frame& self) ->  BufData
               {
-                  if (auto vf = self.as<rs2::video_frame>())
-                      return BufData(const_cast<void*>(vf.get_data()), 1, std::string("@B"), 2,
-                                             { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()) },
-                                             { static_cast<size_t>(vf.get_stride_in_bytes()), 1 });
-                  else
+                  if (auto vf = self.as<rs2::video_frame>()) {
+                      std::map<size_t,std::string> bytes_per_pixel_to_format = {{1, std::string("@B")}, {2, std::string("@H")}, {3, std::string("@I")}, {4, std::string("@I")}};
+                      switch (vf.get_profile().format()) {
+                        case RS2_FORMAT_RGB8: case RS2_FORMAT_BGR8:
+                          return BufData(const_cast<void*>(vf.get_data()), 1, bytes_per_pixel_to_format[1], 3,
+                                         { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()), 3 },
+                                         { static_cast<size_t>(vf.get_stride_in_bytes()), static_cast<size_t>(vf.get_bytes_per_pixel()), 1 });
+                          break;
+                        case RS2_FORMAT_RGBA8: case RS2_FORMAT_BGRA8:
+                          return BufData(const_cast<void*>(vf.get_data()), 1, bytes_per_pixel_to_format[1], 3,
+                                         { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()), 4 },
+                                         { static_cast<size_t>(vf.get_stride_in_bytes()), static_cast<size_t>(vf.get_bytes_per_pixel()), 1 });
+                          break;
+                        default:
+                          return BufData(const_cast<void*>(vf.get_data()), static_cast<size_t>(vf.get_bytes_per_pixel()), bytes_per_pixel_to_format[vf.get_bytes_per_pixel()], 2,
+                                         { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()) },
+                                         { static_cast<size_t>(vf.get_stride_in_bytes()), static_cast<size_t>(vf.get_bytes_per_pixel()) });
+                      }
+                  } else
                       return BufData(const_cast<void*>(self.get_data()), 1, std::string("@B"), 0); },
               "retrieve data from the frame handle.", py::keep_alive<0, 1>())
          .def("get_profile", &rs2::frame::get_profile)
