@@ -9,6 +9,38 @@
 
 namespace librealsense
 {
+    struct configuration
+    {
+        configuration(std::shared_ptr<device_interface> dev,
+            util::config::multistream multistream,
+            std::shared_ptr<device_hub> hub)
+            :_dev(dev), _multistream(multistream), _hub(hub) {}
+
+        bool device_disconnected();
+        std::shared_ptr<device_interface> _dev;
+        util::config::multistream _multistream;
+        std::shared_ptr<device_hub> _hub;
+    };
+
+    class resolver
+    {
+    public:
+        resolver(std::shared_ptr<librealsense::context> ctx);
+        std::shared_ptr<configuration> resolve(unsigned int timeout_ms = std::numeric_limits<uint64_t>::max());
+        void enable(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t framerate);
+        void enable(std::string device_serial);
+
+    private:
+
+        void set_default_configuration(device_interface* dev);
+
+        util::config _config;
+        bool _default_configuration = false;
+        std::string _device_serial;
+        std::shared_ptr<device_hub> _hub;
+        std::shared_ptr<librealsense::context> _ctx;
+    };
+
     class pipeline
     {
     public:
@@ -19,6 +51,7 @@ namespace librealsense
 
         void enable(std::string device_serial);
         void enable(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t framerate);
+
         void commit_config();
         void reset_config();
 
@@ -31,30 +64,17 @@ namespace librealsense
         ~pipeline();
 
      private:
+         void reconfig(unsigned int timeout_ms = std::numeric_limits<uint64_t>::max());
 
-        class resolver
-        {
-        public:
-            resolver(std::shared_ptr<librealsense::context> ctx);
-            std::pair<std::shared_ptr<device_interface>, util::config::multistream> resolve();
-            void enable(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t framerate);
-            void enable(std::string device_serial);
+         mutable std::recursive_mutex _mtx;
 
-        private:
-            util::config _config;
-            std::string _device_serial;
-            device_hub _hub;
-            std::shared_ptr<librealsense::context> _ctx;
-        };
+        std::shared_ptr<resolver> _resolver;
+        std::shared_ptr<configuration> _configuration;
 
-        std::shared_ptr<librealsense::context> _ctx;
-        std::recursive_mutex _mtx;
-        std::shared_ptr<device_interface> _dev;
-        
         syncer_proccess_unit _syncer;
         single_consumer_queue<frame_holder> _queue;
 
-      
+        std::shared_ptr<librealsense::context> _ctx;
 
         bool _commited = false;
         bool _streaming = false; 

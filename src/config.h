@@ -348,7 +348,6 @@ namespace librealsense
 
                 // Unpack the data returned by assign
                 std::map<int, stream_profiles> dev_to_profiles;
-                std::vector<sensor_interface*> devices;
                 std::map<index_type, sensor_interface*> stream_to_dev;
                 std::map<index_type, std::shared_ptr<stream_profile_interface>> stream_to_profile;
 
@@ -366,7 +365,7 @@ namespace librealsense
                 }
 
                 // TODO: make sure it works
-                return multistream(std::move(devices), std::move(stream_to_profile), std::move(dev_to_profiles));
+                return multistream(std::move(sensors), std::move(stream_to_profile), std::move(dev_to_profiles));
             }
         
         private:
