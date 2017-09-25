@@ -45,6 +45,7 @@
               }
             },
             "libraries": [
+              # TODO: Identify builddir and buildtype
               "<(module_root_dir)/../../build/Debug/realsense2.lib",
             ],
           }
@@ -53,10 +54,15 @@
           "OS!=\"win\"",
           {
             "libraries": [
-              "<(module_root_dir)/../../build/librealsense2.so",
+              "-lrealsense2"
             ],
             'ldflags': [
+              # rpath for build from source
               '-Wl,-rpath,\$$ORIGIN/../../../../build',
+              '-L<(module_root_dir)/../../build',
+              # rpatch for build debian package
+              '-Wl,-rpath,\$$ORIGIN/../../../../obj-x86_64-linux-gnu',
+              '-L<(module_root_dir)/../../obj-x86_64-linux-gnu'
             ],
             "cflags+": [
               "-std=c++11"
