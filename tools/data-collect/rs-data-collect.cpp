@@ -170,7 +170,9 @@ int main(int argc, char** argv) try
     if (max_frames.isSet())
         max_frames_number = max_frames.getValue();
 
-    while (true)
+    bool succeed = false;
+
+    while (!succeed)
     {
         pipeline pipe;
         if (config_file.isSet())
@@ -243,7 +245,7 @@ int main(int argc, char** argv) try
         {
             save_data_to_file(buffer, output_file);
             pipe.stop();
-            break;
+            succeed = true;
         }
     }
     return EXIT_SUCCESS;
