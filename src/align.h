@@ -78,7 +78,7 @@ namespace librealsense
         rs2_extrinsics          _extrinsics;
 
         std::shared_ptr<stream_profile_interface> _stream, _mapped;
-        int                     _depth_stream_uid;
+        stream_profile_interface* _depth_stream = nullptr;
     };
 
     class align : public processing_block

@@ -39,9 +39,9 @@ template<class T, class S>
 inline void slider_float(const char* id, T* val, S T::* field, bool& to_set)
 {
     ImGui::Text("%s", id);
-    float temp = val->*field;
-    float min = (val + 1)->*field;
-    float max = (val + 2)->*field;
+    float temp = float(val->*field);
+    float min = float((val + 1)->*field);
+    float max = float((val + 2)->*field);
 
     std::string slider_id = rs2::to_string() << "##" << id;
 

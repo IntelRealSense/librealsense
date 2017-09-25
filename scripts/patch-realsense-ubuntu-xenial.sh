@@ -95,8 +95,8 @@ sudo cp $KBASE/Module.symvers .
 echo -e "\e[32mCompiling uvc module\e[0m"
 sudo make -j -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
 echo -e "\e[32mCompiling accelerometer and gyro modules\e[0m"
-make -j -C $KBASE M=$KBASE/drivers/iio/accel modules
-make -j -C $KBASE M=$KBASE/drivers/iio/gyro modules
+sudo make -j -C $KBASE M=$KBASE/drivers/iio/accel modules
+sudo make -j -C $KBASE M=$KBASE/drivers/iio/gyro modules
 echo -e "\e[32mCompiling v4l2-core modules\e[0m"
 sudo make -j -C $KBASE M=$KBASE/drivers/media/v4l2-core modules
 
