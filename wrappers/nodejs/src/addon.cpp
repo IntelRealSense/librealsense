@@ -2296,7 +2296,7 @@ class RSPipeline : public Nan::ObjectWrap {
     Nan::SetPrototypeMethod(tpl, "create", Create);
     Nan::SetPrototypeMethod(tpl, "waitForFrames", WaitForFrames);
     Nan::SetPrototypeMethod(tpl, "startWithAlign", StartWithAlign);
-    Nan::SetPrototypeMethod(tpl, "start", Start);
+    Nan::SetPrototypeMethod(tpl, "commit", Commit);
     Nan::SetPrototypeMethod(tpl, "stop", Stop);
     Nan::SetPrototypeMethod(tpl, "getDevice", GetDevice);
 
@@ -2363,10 +2363,10 @@ class RSPipeline : public Nan::ObjectWrap {
     info.GetReturnValue().Set(Nan::Undefined());
   }
 
-  static NAN_METHOD(Start) {
+  static NAN_METHOD(Commit) {
     auto me = Nan::ObjectWrap::Unwrap<RSPipeline>(info.Holder());
     if (me && me->pipeline) {
-      rs2_start_pipeline(me->pipeline, &me->error);
+      rs2_commit_config_pipeline(me->pipeline, &me->error);
     }
     info.GetReturnValue().Set(Nan::Undefined());
   }
@@ -2597,15 +2597,6 @@ class RSAlign : public Nan::ObjectWrap {
 
 Nan::Persistent<v8::Function> RSAlign::constructor;
 
-NAN_METHOD(RSPipeline::StartWithAlign) {
-  auto me = Nan::ObjectWrap::Unwrap<RSPipeline>(info.Holder());
-  auto align = Nan::ObjectWrap::Unwrap<RSAlign>(info[0]->ToObject());
-  if (me && align && me->pipeline) {
-    rs2_start_pipeline_with_callback_cpp(me->pipeline,
-        new FrameCallbackForProcessingBlock(align->align), &me->error);
-  }
-  info.GetReturnValue().Set(Nan::Undefined());
-}
 
 
 ///////////////////////////////////////////////////////////////////////////////

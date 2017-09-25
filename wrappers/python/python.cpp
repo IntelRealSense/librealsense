@@ -604,18 +604,21 @@ PYBIND11_PLUGIN(NAME) {
             .def("get_device", &rs2::pipeline::get_device)
             .def("start", (void (rs2::pipeline::*)()const) &rs2::pipeline::start)
             .def("stop", &rs2::pipeline::stop)
-            .def("enable_stream" , &rs2::pipeline::enable_stream, "stream"_a, "index"_a,
-                 "width"_a, "height"_a, "format"_a, "framerate"_a)
-            .def("disable_stream", &rs2::pipeline::disable_stream, "stream"_a)
-            .def("disable_all", &rs2::pipeline::disable_all)
+            .def("enable_stream" ,(void (rs2::pipeline::*)(rs2_stream stream, int index , int width , int height, rs2_format format, int framerate) const)
+                 &rs2::pipeline::enable_stream, "stream"_a, "index"_a,
+                 "width"_a, "height"_a, "format"_a = RS2_FORMAT_ANY, "framerate"_a = 0)
+            .def("enable_stream" , (void (rs2::pipeline::*)(rs2_stream stream, int index) const)&rs2::pipeline::enable_stream, "stream"_a, "index"_a = 0)
+            .def("enable_stream" , (void (rs2::pipeline::*)(rs2_stream stream, int width, int height) const)&rs2::pipeline::enable_stream, "stream"_a,  "width"_a, "height"_a)
+            .def("reset_config", &rs2::pipeline::reset_config)
+            .def("reset_config", &rs2::pipeline::commit_config)
             .def("wait_for_frames", &rs2::pipeline::wait_for_frames, "timeout_ms"_a = 5000)
             .def("poll_for_frames", &rs2::pipeline::poll_for_frames, "frameset*"_a)
             .def("enable_device",  &rs2::pipeline::enable_device,  "std::string"_a)
             .def("get_active_streams", (rs2::stream_profile (rs2::pipeline::*)(const rs2_stream, const int) const)
                  &rs2::pipeline::get_active_streams, "stream"_a, "index"_a = 0)
             .def("get_active_streams", (std::vector<rs2::stream_profile> (rs2::pipeline::*)() const)
-                 &rs2::pipeline::get_active_streams)
-            .def("open", &rs2::pipeline::open);
+                 &rs2::pipeline::get_active_streams);
+
 
     /* rs2.hpp */
     m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);
