@@ -208,7 +208,8 @@ int main(int argc, char** argv) try
                     return false;
                 }
             }
-            else
+
+            if (!timeout.isSet() || max_frames.isSet())
             {
                 for (auto&& profile : pipe.get_active_streams())
                 {
@@ -216,6 +217,7 @@ int main(int argc, char** argv) try
                         return false;
                 }
             }
+
             return true;
         };
 
