@@ -1,4 +1,3 @@
-import sys; sys.path.append(r'/home/administrator/librealsense-public-fork/build/wrappers/python')
 import pyrealsense2 as rs
 import numpy as np
 import cv2
