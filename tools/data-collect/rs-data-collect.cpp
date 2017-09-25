@@ -200,25 +200,30 @@ int main(int argc, char** argv) try
         auto start_time = chrono::high_resolution_clock::now();
         const auto ready = [&]()
         {
+            //If not switch is set, we're ready after max_frames_number frames.
+            //If both switches are set, we're ready when the first of the two conditions is true
+            //Otherwise, ready according to given switch
+
+            bool timed_out = false;
             if (timeout.isSet())
             {
                 auto timeout_sec = std::chrono::seconds(timeout.getValue());
-                if (chrono::high_resolution_clock::now() - start_time < timeout_sec)
-                {
-                    return false;
-                }
+                timed_out = (chrono::high_resolution_clock::now() - start_time >= timeout_sec);
             }
 
-            if (!timeout.isSet() || max_frames.isSet())
+            bool collected_enough_frames = true;
+            for (auto&& profile : pipe.get_active_streams())
             {
-                for (auto&& profile : pipe.get_active_streams())
+                if (buffer[(int)profile.stream_type()].size() < max_frames_number)
                 {
-                    if (buffer[(int)profile.stream_type()].size() < max_frames_number)
-                        return false;
+                    collected_enough_frames = false;
                 }
             }
 
-            return true;
+            if (timeout.isSet() && !max_frames.isSet()) 
+                return timed_out;
+
+            return timed_out || collected_enough_frames;
         };
 
         while (!ready())
