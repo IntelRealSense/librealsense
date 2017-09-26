@@ -66,16 +66,16 @@ if(BUILD_GRAPHICAL_EXAMPLES)
             ../../third-party/imgui/imgui-fonts-karla.hpp
             ../../third-party/imgui/imgui-fonts-fontawesome.hpp)
 
-        include_directories(rs-depth-quality ../../common  ../../third-party  
-                                             ../../third-party/imgui  
+        include_directories(rs-depth-quality ../../common  ../../third-party
+                                             ../../third-party/imgui
                                              ../../third-party/tclap/include
                                              ${CMAKE_CURRENT_SOURCE_DIR}/res/)
-    
+
     else()
         add_executable(rs-depth-quality ${RS_QUALITY_TOOL_CPP})
 
-        include_directories(rs-depth-quality ../../common  ../../third-party  
-                                             ../../third-party/imgui  
+        include_directories(rs-depth-quality ../../common  ../../third-party
+                                             ../../third-party/imgui
                                              ../../third-party/tclap/include)
     endif()
 

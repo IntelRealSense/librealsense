@@ -51,13 +51,13 @@ namespace librealsense
         * A snapshot of T is a reflection of the state and memory of T at the time of the call
         */
         virtual void create_snapshot(std::shared_ptr<T>& snapshot) const = 0;
-        
+
         /**
         * Instruct the derived class to begin notifying on changes
         * Derived class should call the recording_function with a reference of themselves
         */
         virtual void enable_recording(std::function<void(const T&)> recording_function) = 0;
-        
+
         virtual ~recordable() = default;
 
     };
