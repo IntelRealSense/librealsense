@@ -345,9 +345,12 @@ namespace librealsense
 
                 if (map_texture)
                 {
-                    for (int y = 0; y < vid_frame.get_height(); ++y)
+                    auto height = vid_frame.get_height();
+                    auto width = vid_frame.get_width();
+
+                    for (int y = 0; y < height; ++y)
                     {
-                        for (int x = 0; x < vid_frame.get_width(); ++x)
+                        for (int x = 0; x < width; ++x)
                         {
                             if (points->z)
                             {

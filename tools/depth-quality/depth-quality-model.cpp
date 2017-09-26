@@ -119,7 +119,6 @@ namespace rs2
                     _update_readonly_options_timer,
                     model_to_y, model_to_abs_y);
 
-
                 if (_depth_sensor_model.get())
                 {
                     ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);

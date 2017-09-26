@@ -160,7 +160,7 @@ namespace rs2
             //glfwSwapBuffers(_win);
             glPopMatrix();
 
-            // Yeild the CPU
+            // Yield the CPU
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
 
