@@ -8,7 +8,7 @@ RealSense Viewer is the flagship tool providing access to most camera functional
 The tool offers:
 * Streaming from multiple RealSense devices at the same time
 * Exploring pointcloud data in realtime or by exporting to file
-* Recording RealSense data as well as playback of recorded files
+* Recording RealSense data as well as playback of recorded files (Please refer to [Record and Playback](https://github.com/IntelRealSense/librealsense/tree/development/src/media) for further information)
 * Access to most camera specific controls, including 3D-generation ASIC registers when available
 
 ## Implementation Notes
