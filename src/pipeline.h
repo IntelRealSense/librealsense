@@ -43,6 +43,7 @@ namespace librealsense
         util::config::multistream _multistream;
         bool _commited = false;
         bool _streaming = false; 
+        std::string _device_serial;
     };
 
 }

@@ -11,7 +11,10 @@ int main(int argc, const char * argv[]) try
     rs2::depth_quality::tool_model model;
     rs2::ux_window window("Depth Quality Tool");
 
-    window.on_load = [&]() { model.start(); };
+    window.on_load = [&]()
+    {
+        model.start(window);
+    };
 
     while(window)
     {
