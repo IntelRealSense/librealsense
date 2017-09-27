@@ -201,22 +201,28 @@ EXPORTS
 	rs2_playback_device_stop
 
     rs2_create_align
-    rs2_create_pipeline
-    rs2_pipeline_get_device
-    rs2_start_pipeline_with_callback
-    rs2_start_pipeline_with_callback_cpp
-    rs2_start_pipeline
-    rs2_open_pipeline
-    rs2_stop_pipeline
-    rs2_enable_pipeline_stream
-    rs2_enable_pipeline_device
-    rs2_disable_stream_pipeline
-    rs2_disable_all_streams_pipeline
-    rs2_pipeline_wait_for_frames
-    rs2_pipeline_poll_for_frames
-    rs2_pipeline_get_active_streams
-    rs2_pipeline_get_stream_type_selection
-    rs2_delete_pipeline
+
+	rs2_create_pipeline
+	rs2_pipeline_stop
+	rs2_pipeline_wait_for_frames
+	rs2_pipeline_poll_for_frames
+	rs2_delete_pipeline
+	rs2_pipeline_start
+	rs2_pipeline_start_with_record
+	rs2_pipeline_get_active_profile
+	rs2_pipeline_profile_get_device
+	rs2_pipeline_profile_get_active_streams
+	rs2_delete_pipeline_profile
+	rs2_create_configurator
+	rs2_delete_configurator
+	rs2_configurator_enable_stream
+	rs2_configurator_enable_all_stream
+	rs2_configurator_enable_device
+	rs2_configurator_enable_device_from_file
+	rs2_configurator_disable_stream
+	rs2_configurator_disable_all_streams
+	rs2_configurator_resolve
+	rs2_config_can_resolve
 
     rs2_create_device_hub
     rs2_device_hub_is_device_connected

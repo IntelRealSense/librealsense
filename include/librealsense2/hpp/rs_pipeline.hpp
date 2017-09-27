@@ -8,9 +8,63 @@
 #include "rs_frame.hpp"
 #include "rs_context.hpp"
 
-
 namespace rs2
 {
+    class pipeline_profile
+    {
+    public:
+        std::vector<stream_profile> get_active_streams() const
+        {
+            std::vector<stream_profile> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_stream_profile_list> list(
+                rs2_pipeline_profile_get_active_streams(_pipeline_profile.get(), &e),
+                rs2_delete_stream_profiles_list);
+            error::handle(e);
+
+            auto size = rs2_get_stream_profiles_count(list.get(), &e);
+            error::handle(e);
+
+            for (auto i = 0; i < size; i++)
+            {
+                stream_profile profile(rs2_get_stream_profile(list.get(), i, &e));
+                error::handle(e);
+                results.push_back(profile);
+            }
+
+            return results;
+        }
+
+        device get_device() const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_device> dev(
+                rs2_pipeline_profile_get_device(_pipeline_profile.get(), &e),
+                rs2_delete_device);
+
+            error::handle(e);
+
+            return device(dev);
+        }
+
+        std::shared_ptr<rs2_pipeline_profile> get() const
+        {
+            return _pipeline_profile;
+        }
+
+    private:
+        pipeline_profile(std::shared_ptr<rs2_pipeline_profile> profile = nullptr) :
+            _pipeline_profile(profile)
+        {
+
+        }
+        std::shared_ptr<rs2_pipeline_profile> _pipeline_profile;
+        friend class configurator;
+        friend class pipeline;
+    };
+
+    class configurator;
     class pipeline
     {
     public:
@@ -25,102 +79,43 @@ namespace rs2
             error::handle(e);
         }
 
+        //TBD: 
+        //void add_cv_module(computer_vision_module& cv_module)
+        //{
+        //    rs2_error* e = nullptr;
+        //    rs2_pipeline_add_cv_module(_pipeline.get(), cv_module.get(), &e);
+        //    error::handle(e);
+        //}
 
-        /**
-        * Retrieved the device used by the pipeline
-        * \param[in] ctx   context
-        * \param[in] pipe  pipeline
-        * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-        * \return the device used by the pipeline
-        */
-        device get_device() const
+        pipeline_profile start(std::shared_ptr<rs2_configurator> config = nullptr) 
         {
             rs2_error* e = nullptr;
-            std::shared_ptr<rs2_device> dev(
-                rs2_pipeline_get_device(_ctx._context.get(), _pipeline.get(), &e),
-                rs2_delete_device);
+            auto p = std::shared_ptr<rs2_pipeline_profile>(
+                rs2_pipeline_start(_pipeline.get(), config.get(), &e),
+                rs2_delete_pipeline_profile);
 
             error::handle(e);
-
-            return device(dev);
+            return pipeline_profile(p);
         }
 
-        /**
-        * Start streaming with default configuration or configuration commited by enable_stream
-        */
-        void start() const
+        pipeline_profile start(const std::string& record_to_filename, std::shared_ptr<rs2_configurator> config = nullptr)
         {
             rs2_error* e = nullptr;
-            rs2_start_pipeline(_pipeline.get(), &e);
-            error::handle(e);
-        }
+            auto p = std::shared_ptr<rs2_pipeline_profile>(
+                rs2_pipeline_start_with_record(_pipeline.get(), config.get(), record_to_filename.c_str(), &e),
+                rs2_delete_pipeline_profile);
 
-        void open()const
-        {
-            rs2_error* e = nullptr;
-            rs2_open_pipeline(_pipeline.get(), &e);
             error::handle(e);
+            return pipeline_profile(p);
         }
 
         /**
         * Stop streaming
         */
-        void stop() const
+        void stop() 
         {
             rs2_error* e = nullptr;
-            rs2_stop_pipeline(_pipeline.get(), &e);
-            error::handle(e);
-        }
-
-        /**
-        * committing a configuration to the pipeline
-        * \param[in] stream    stream type
-        * \param[in] index     stream index
-        * \param[in] width     width
-        * \param[in] height    height
-        * \param[in] format    stream format
-        * \param[in] framerate    stream framerate
-        */
-        void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int framerate) const
-        {
-            rs2_error* e = nullptr;
-            rs2_enable_pipeline_stream(_pipeline.get(), stream, index, width, height, format, framerate, &e);
-            error::handle(e);
-        }
-        /**
-        * committing a configuration to the pipeline
-        * \param[in] stream    stream type
-        * \param[in] index     stream index
-        * \param[in] width     width
-        * \param[in] height    height
-        * \param[in] format    stream format
-        * \param[in] framerate    stream framerate
-        */
-        void enable_device(std::string serial) const
-        {
-            rs2_error* e = nullptr;
-            rs2_enable_pipeline_device(_pipeline.get(), serial.c_str(), &e);
-            error::handle(e);
-        }
-        /**
-        *  remove a configuration from the pipeline
-        * \param[in] stream    stream type
-        */
-        void disable_stream(rs2_stream stream) const
-        {
-            rs2_error* e = nullptr;
-            rs2_disable_stream_pipeline(_pipeline.get(), stream, &e);
-            error::handle(e);
-        }
-
-        /**
-        *  remove all streams from the pipeline
-        * \param[in] stream    stream type
-        */
-        void disable_all() const
-        {
-            rs2_error* e = nullptr;
-            rs2_disable_all_streams_pipeline(_pipeline.get(), &e);
+            rs2_pipeline_stop(_pipeline.get(), &e);
             error::handle(e);
         }
 
@@ -138,8 +133,6 @@ namespace rs2
             return frameset(f);
         }
 
-       
-
         /**
         * poll if a new frame is available and dequeue if it is
         * \param[out] f - frame handle
@@ -156,56 +149,115 @@ namespace rs2
             return res > 0;
         }
 
-        /**
-        * return the selected profiles of the pipeline
-        * \return       list of stream profiles
-        */
-        std::vector<stream_profile> get_active_streams() const
-        {
-            std::vector<stream_profile> results;
-
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_stream_profile_list> list(
-                rs2_pipeline_get_active_streams(_pipeline.get(), &e),
-                rs2_delete_stream_profiles_list);
-            error::handle(e);
-
-            auto size = rs2_get_stream_profiles_count(list.get(), &e);
-            error::handle(e);
-
-            for (auto i = 0; i < size; i++)
-            {
-                stream_profile profile(rs2_get_stream_profile(list.get(), i, &e));
-                error::handle(e);
-                results.push_back(profile);
-            }
-
-            return results;
-        }
-
-        /**
-        * return the specific profile from the selected profiles of the pipeline
-        * \param[in] stream the specific stream
-        * \param[in] index the specific stream index
-        */
-        stream_profile get_active_streams(const rs2_stream stream, const int index = 0) const
+        pipeline_profile get_active_profile() const
         {
             rs2_error* e = nullptr;
-            std::shared_ptr<rs2_stream_profile_list> list(
-                rs2_pipeline_get_active_streams(_pipeline.get(), &e),
-                rs2_delete_stream_profiles_list);
-            error::handle(e);
+            auto p = std::shared_ptr<rs2_pipeline_profile>(
+                rs2_pipeline_get_active_profile(_pipeline.get(), &e),
+                rs2_delete_pipeline_profile);
 
-            stream_profile profile(rs2_pipeline_get_stream_type_selection(list.get(), stream, index, &e));
             error::handle(e);
-
-            return profile;
+            return pipeline_profile(p);
         }
 
+        std::shared_ptr<rs2_pipeline> get() const
+        {
+            return _pipeline;
+        }
     private:
         context _ctx;
         device _dev;
         std::shared_ptr<rs2_pipeline> _pipeline;
+    };
+
+    class configurator
+    {
+    public:
+        configurator()
+        {
+            rs2_error* e = nullptr;
+            _config = std::shared_ptr<rs2_configurator>(
+                rs2_create_configurator(&e),
+                rs2_delete_configurator);
+            error::handle(e);
+        }
+
+        void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int framerate)
+        {
+            rs2_error* e = nullptr;
+            rs2_configurator_enable_stream(_config.get(), stream, index, width, height, format, framerate, &e);
+            error::handle(e);
+        }
+
+        void enable_all_streams()
+        {
+            rs2_error* e = nullptr;
+            rs2_configurator_enable_all_stream(_config.get(), &e);
+            error::handle(e);
+        }
+
+        void enable_device(const std::string& serial)
+        {
+            rs2_error* e = nullptr;
+            rs2_configurator_enable_device(_config.get(), serial.c_str(), &e);
+            error::handle(e);
+        }
+
+        void enable_device_from_file(const std::string& file_name)
+        {
+            rs2_error* e = nullptr;
+            rs2_configurator_enable_device_from_file(_config.get(), file_name.c_str(), &e);
+            error::handle(e);
+        }
+
+        void disable_stream(rs2_stream stream)
+        {
+            rs2_error* e = nullptr;
+            rs2_configurator_disable_stream(_config.get(), stream, &e);
+            error::handle(e);
+        }
+
+        void disable_all_streams()
+        {
+            rs2_error* e = nullptr;
+            rs2_configurator_disable_all_streams(_config.get(), &e);
+            error::handle(e);
+        }
+
+        pipeline_profile resolve(const pipeline& p) const
+        {
+            rs2_error* e = nullptr;
+            auto profile = std::shared_ptr<rs2_pipeline_profile>(
+                rs2_configurator_resolve(_config.get(), p.get().get(), &e),
+                rs2_delete_pipeline_profile);
+
+            error::handle(e);
+            return pipeline_profile(profile);
+        }
+
+        bool can_resolve(const pipeline& p) const
+        {
+            rs2_error* e = nullptr;
+            int res = rs2_config_can_resolve(_config.get(), p.get().get(), &e);
+            error::handle(e);
+            return res == 0 ? false : true;
+        }
+
+        std::shared_ptr<rs2_configurator> get() const
+        {
+            return _config;
+        }
+
+        operator std::shared_ptr<rs2_configurator>() const
+        {
+            return _config;
+        }
+    private:
+        configurator(std::shared_ptr<rs2_configurator> config) : _config(config)
+        {
+        }
+        std::shared_ptr<rs2_configurator> _config;
+
     };
 }
 #endif // LIBREALSENSE_RS2_PROCESSING_HPP

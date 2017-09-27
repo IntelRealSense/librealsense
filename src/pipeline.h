@@ -9,14 +9,28 @@
 
 namespace librealsense
 {
+    class pipeline_profile
+    {
+    public:
+        std::shared_ptr<device_interface> get_device();
+        stream_profiles get_active_streams() const;
+    };
+
+    class configurator;
     class pipeline
     {
     public:
         pipeline(std::shared_ptr<librealsense::context> ctx);
+
+        std::shared_ptr<pipeline_profile> start(std::shared_ptr<configurator> conf);
+        std::shared_ptr<pipeline_profile> start_with_record(std::shared_ptr<configurator> conf, const std::string& file);
+        void stop();
+        std::shared_ptr<pipeline_profile> get_active_profile() const;
+
         std::shared_ptr<device_interface> get_device();
         void start(frame_callback_ptr callback);
         void start();
-        void stop();
+        
         void open();
         void enable(std::string device_serial);
         void enable(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t framerate);
@@ -44,6 +58,20 @@ namespace librealsense
         bool _commited = false;
         bool _streaming = false; 
         std::string _device_serial;
+    };
+
+
+    class configurator
+    {
+    public:
+        void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int framerate);
+        void enable_all_stream();
+        void enable_device(const std::string& serial);
+        void enable_device_from_file(const std::string& file);
+        void disable_stream(rs2_stream stream);
+        void disable_all_streams();
+        std::shared_ptr<pipeline_profile> resolve(std::shared_ptr<pipeline> pipe) const;
+        bool can_resolve(std::shared_ptr<pipeline> pipe) const;
     };
 
 }

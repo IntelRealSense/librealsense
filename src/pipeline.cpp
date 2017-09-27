@@ -24,10 +24,129 @@ namespace librealsense
         void release() override { delete this; }
     };
 
+    void configurator::enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int framerate)
+    {
+        throw not_implemented_exception(__FUNCTION__);
+    }
+
+    void configurator::enable_all_stream()
+    {
+        throw not_implemented_exception(__FUNCTION__);
+    }
+
+    void configurator::enable_device(const std::string& serial)
+    {
+        throw not_implemented_exception(__FUNCTION__);
+    }
+
+    void configurator::enable_device_from_file(const std::string& file)
+    {
+        throw not_implemented_exception(__FUNCTION__);
+    }
+
+    void configurator::disable_stream(rs2_stream stream)
+    {
+        throw not_implemented_exception(__FUNCTION__);
+    }
+
+    void configurator::disable_all_streams()
+    {
+        throw not_implemented_exception(__FUNCTION__);
+    }
+
+    std::shared_ptr<pipeline_profile> configurator::resolve(std::shared_ptr<pipeline> pipe) const
+    {
+        throw not_implemented_exception(__FUNCTION__);
+    }
+
+    bool configurator::can_resolve(std::shared_ptr<pipeline> pipe) const
+    {
+        throw not_implemented_exception(__FUNCTION__);
+    }
+
 
     pipeline::pipeline(std::shared_ptr<librealsense::context> ctx)
         :_ctx(ctx), _hub(ctx, VID)
     {}
+
+    std::shared_ptr<pipeline_profile> pipeline::start(std::shared_ptr<configurator> conf)
+    {
+        throw not_implemented_exception(__FUNCTION__);
+    }
+
+    std::shared_ptr<pipeline_profile> pipeline::start_with_record(std::shared_ptr<configurator> conf, const std::string& file)
+    {
+        throw not_implemented_exception(__FUNCTION__);
+    }
+
+    std::shared_ptr<pipeline_profile> pipeline::get_active_profile() const
+    {
+        return nullptr;
+    }
+
+    void pipeline::stop()
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+
+        if (_streaming)
+        {
+            _multistream.stop();
+            _multistream.close();
+        }
+        _streaming = false;
+
+    }
+
+    frame_holder pipeline::wait_for_frames(unsigned int timeout_ms)
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+
+        frame_holder f;
+        if (_queue.dequeue(&f, timeout_ms))
+        {
+            return f;
+        }
+
+        {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
+            if (!_hub.is_connected(*_dev))
+            {
+                _dev = _hub.wait_for_device(timeout_ms/*, _dev.get()*/);
+                _sensors.clear();
+                _queue.clear();
+                _queue.start();
+                start();
+                return frame_holder();
+            }
+            else
+            {
+                throw std::runtime_error(to_string() << "Frame didn't arrived within " << timeout_ms);
+            }
+        }
+    }
+
+    bool pipeline::poll_for_frames(frame_holder* frame)
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+
+        if (_queue.try_dequeue(frame))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    pipeline::~pipeline()
+    {
+        try
+        {
+            stop();
+        }
+        catch (...) {}
+    }
+    
+
+
 
     std::shared_ptr<device_interface> pipeline::get_device()
     {
@@ -201,61 +320,6 @@ namespace librealsense
         _streaming = false;
         _config.disable_all();
     }
-
-    void pipeline::stop()
-    {
-        std::lock_guard<std::recursive_mutex> lock(_mtx);
-
-        if (_streaming)
-        {
-            _multistream.stop();
-            _multistream.close();
-        }
-        _streaming = false;
-
-        _syncer.reset();
-        _queue.reset();
-    }
-
-    frame_holder pipeline::wait_for_frames(unsigned int timeout_ms)
-    {
-        std::lock_guard<std::recursive_mutex> lock(_mtx);
-
-        frame_holder f;
-        if (_queue.get() && (_queue->dequeue(&f, timeout_ms)))
-        {
-            return f;
-        }
-
-        {
-            std::lock_guard<std::recursive_mutex> lock(_mtx);
-            if (!_hub.is_connected(*_dev))
-            {
-                _dev = _hub.wait_for_device(timeout_ms/*, _dev.get()*/);
-                _sensors.clear();
-                start();
-                return frame_holder();
-            }
-            else
-            {
-                throw std::runtime_error(to_string() << "Frame didn't arrived within " << timeout_ms);
-            }
-        }
-    }
-
-    bool pipeline::poll_for_frames(frame_holder* frame)
-    {
-        std::lock_guard<std::recursive_mutex> lock(_mtx);
-
-        if (_queue.get() && _queue->try_dequeue(frame))
-        {
-            return true;
-        }
-        return false;
-    }
-
-
-
     stream_profiles pipeline::get_active_streams() const
     {
         stream_profiles res;
@@ -266,15 +330,15 @@ namespace librealsense
         }
         return res;
     }
-    pipeline::~pipeline()
+
+    std::shared_ptr<device_interface> pipeline_profile::get_device()
     {
-        try
-        {
-            // TODO: W/O to prevent dead-lock when pipeline waits for device at open(...) function
-            //       and at the same time pipeline object is getting destroyed and trying to stop streaming
-            if (_streaming)
-                stop();
-        }
-        catch (...) {}
+        throw not_implemented_exception(__FUNCTION__);
     }
+
+    stream_profiles pipeline_profile::get_active_streams() const
+    {
+        throw not_implemented_exception(__FUNCTION__);
+    }
+
 }
