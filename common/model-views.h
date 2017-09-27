@@ -158,6 +158,15 @@ namespace rs2
         std::mutex _lookup_mutex;
     };
 
+    // Preserve user selections in UI
+    struct subdevice_ui_selection
+    {
+        int selected_res_id = 0;
+        int selected_shared_fps_id = 0;
+        std::map<int, int> selected_fps_id;
+        std::map<int, int> selected_format_id;
+    };
+
     class subdevice_model
     {
     public:
@@ -175,10 +184,12 @@ namespace rs2
         bool draw_option(rs2_option opt, bool update_read_only_options,
                          std::string& error_message, notifications_model& model);
 
-
         bool is_paused() const;
         void pause();
         void resume();
+
+        void restore_ui_selection() { ui = last_valid_ui; }
+        void store_ui_selection() { last_valid_ui = ui; }
 
         template<typename T>
         bool get_default_selection_index(const std::vector<T>& values, const T & def, int* index)
@@ -212,10 +223,8 @@ namespace rs2
         std::map<int, bool> stream_enabled;
         std::map<int, std::string> stream_display_names;
 
-        int selected_res_id = 0;
-        std::map<int, int> selected_fps_id;
-        int selected_shared_fps_id = 0;
-        std::map<int, int> selected_format_id;
+        subdevice_ui_selection ui;
+        subdevice_ui_selection last_valid_ui;
 
         std::vector<std::pair<int, int>> res_values;
         std::map<int, std::vector<int>> fps_values_per_stream;
@@ -543,7 +552,7 @@ namespace rs2
 
         bool allow_3d_source_change = true;
         bool allow_stream_close = true;
-        
+
         std::array<float3, 4> roi_rect;
         bool draw_plane = false;
 

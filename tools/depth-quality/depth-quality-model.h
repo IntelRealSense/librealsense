@@ -54,7 +54,7 @@ namespace rs2
 
             metric_plot(const std::string& name, float min, float max, ImVec2 size, const std::string& tail)
                 : _idx(0), _vals(), _min(min), _max(max), _id("##" + name), _label(name + " = "),
-                  _tail(tail), _size(size), description(""), 
+                  _tail(tail), _size(size), description(""),
                   _trending_up(std::chrono::milliseconds(700)),
                   _trending_down(std::chrono::milliseconds(700))
             {
@@ -89,7 +89,7 @@ namespace rs2
             void update_stream_attributes(const rs2_intrinsics &intrinsic, const float& scale_units)
             {
                 std::lock_guard<std::mutex> lock(_m);
-                _depth_intrinsic = intrinsic; 
+                _depth_intrinsic = intrinsic;
                 _depth_scale_units = scale_units;
             };
 
@@ -149,10 +149,10 @@ namespace rs2
             std::shared_ptr<device_model>   _device_model;
             viewer_model                    _viewer_model;
             std::shared_ptr<subdevice_model> _depth_sensor_model;
+            std::shared_ptr<metrics_model>   _metrics_model;
             std::string                     _error_message;
             bool                            _first_frame = true;
             periodic_timer                  _update_readonly_options_timer;
-            metrics_model                   _metrics;
 
             float                           _roi_percent = 0.33f;
             int                             _roi_combo_index = 1;

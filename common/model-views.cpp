@@ -613,8 +613,7 @@ namespace rs2
     }
 
     subdevice_model::subdevice_model(device& dev, sensor& s, std::string& error_message)
-        : s(s), dev(dev), streaming(false),
-        selected_shared_fps_id(0), _pause(false)
+        : s(s), dev(dev), ui(), last_valid_ui(), streaming(false), _pause(false)
     {
         try
         {
@@ -739,7 +738,7 @@ namespace rs2
                 {
                     if (get_default_selection_index(fps_array.second, 30, &selection_index))
                     {
-                        selected_fps_id[fps_array.first] = selection_index;
+                        ui.selected_fps_id[fps_array.first] = selection_index;
                         break;
                     }
                 }
@@ -747,7 +746,7 @@ namespace rs2
             else
             {
                 if (get_default_selection_index(shared_fps_values, 30, &selection_index))
-                    selected_shared_fps_id = selection_index;
+                    ui.selected_shared_fps_id = selection_index;
             }
 
             for (auto format_array : format_values)
@@ -759,16 +758,17 @@ namespace rs2
                 {
                     if (get_default_selection_index(format_array.second, format, &selection_index))
                     {
-                        selected_format_id[format_array.first] = selection_index;
+                        ui.selected_format_id[format_array.first] = selection_index;
                         break;
                     }
                 }
             }
 
             get_default_selection_index(res_values, std::make_pair(0, 0), &selection_index);
-            selected_res_id = selection_index;
+            ui.selected_res_id = selection_index;
 
-            while (selected_res_id >= 0 && !is_selected_combination_supported()) selected_res_id--;
+            while (ui.selected_res_id >= 0 && !is_selected_combination_supported()) ui.selected_res_id--;
+            last_valid_ui = ui;
         }
         catch (const error& e)
         {
@@ -841,14 +841,14 @@ namespace rs2
             << s.get_info(RS2_CAMERA_INFO_NAME) << " resolution";
         if (streaming)
         {
-            ImGui::Text("%s", res_chars[selected_res_id]);
+            ImGui::Text("%s", res_chars[ui.selected_res_id]);
             streaming_tooltip();
         }
         else
         {
             ImGui::PushItemWidth(-1);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-            if (ImGui::Combo(label.c_str(), &selected_res_id, res_chars.data(),
+            if (ImGui::Combo(label.c_str(), &ui.selected_res_id, res_chars.data(),
                 static_cast<int>(res_chars.size())))
             {
                 res = true;
@@ -873,14 +873,14 @@ namespace rs2
 
                 if (streaming)
                 {
-                    ImGui::Text("%s", fps_chars[selected_shared_fps_id]);
+                    ImGui::Text("%s", fps_chars[ui.selected_shared_fps_id]);
                     streaming_tooltip();
                 }
                 else
                 {
                     ImGui::PushItemWidth(-1);
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                    if (ImGui::Combo(label.c_str(), &selected_shared_fps_id, fps_chars.data(),
+                    if (ImGui::Combo(label.c_str(), &ui.selected_shared_fps_id, fps_chars.data(),
                         static_cast<int>(fps_chars.size())))
                     {
                         res = true;
@@ -898,8 +898,6 @@ namespace rs2
             if (!streaming)
             {
                 ImGui::Text("Available Streams:");
-                //            ImGui::NextColumn();
-                //            ImGui::NextColumn();
             }
 
             // Draw combo-box with all format options for current device
@@ -944,14 +942,14 @@ namespace rs2
 
                     if (streaming)
                     {
-                        ImGui::Text("%s", formats_chars[selected_format_id[f.first]]);
+                        ImGui::Text("%s", formats_chars[ui.selected_format_id[f.first]]);
                         streaming_tooltip();
                     }
                     else
                     {
                         ImGui::PushItemWidth(-1);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                        ImGui::Combo(label.c_str(), &selected_format_id[f.first], formats_chars.data(),
+                        ImGui::Combo(label.c_str(), &ui.selected_format_id[f.first], formats_chars.data(),
                             static_cast<int>(formats_chars.size()));
                         ImGui::PopStyleColor();
                         ImGui::PopItemWidth();
@@ -972,14 +970,14 @@ namespace rs2
 
                         if (streaming)
                         {
-                            ImGui::Text("%s", fps_chars[selected_fps_id[f.first]]);
+                            ImGui::Text("%s", fps_chars[ui.selected_fps_id[f.first]]);
                             streaming_tooltip();
                         }
                         else
                         {
                             ImGui::PushItemWidth(-1);
                             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                            ImGui::Combo(label.c_str(), &selected_fps_id[f.first], fps_chars.data(),
+                            ImGui::Combo(label.c_str(), &ui.selected_fps_id[f.first], fps_chars.data(),
                                 static_cast<int>(fps_chars.size()));
                             ImGui::PopStyleColor();
                             ImGui::PopItemWidth();
@@ -1014,16 +1012,16 @@ namespace rs2
             auto stream = f.first;
             if (stream_enabled[stream] && res_values.size() > 0)
             {
-                auto width = res_values[selected_res_id].first;
-                auto height = res_values[selected_res_id].second;
+                auto width = res_values[ui.selected_res_id].first;
+                auto height = res_values[ui.selected_res_id].second;
 
                 auto fps = 0;
                 if (show_single_fps_list)
-                    fps = shared_fps_values[selected_shared_fps_id];
+                    fps = shared_fps_values[ui.selected_shared_fps_id];
                 else
-                    fps = fps_values_per_stream[stream][selected_fps_id[stream]];
+                    fps = fps_values_per_stream[stream][ui.selected_fps_id[stream]];
 
-                auto format = format_values[stream][selected_format_id[stream]];
+                auto format = format_values[stream][ui.selected_format_id[stream]];
 
                 for (auto&& p : profiles)
                 {
@@ -1046,6 +1044,7 @@ namespace rs2
                 }
             }
         }
+
         return results.size() > 0;
     }
 
@@ -1061,15 +1060,15 @@ namespace rs2
             auto stream = f.first;
             if (stream_enabled[stream])
             {
-                auto width = res_values[selected_res_id].first;
-                auto height = res_values[selected_res_id].second;
-                auto format = format_values[stream][selected_format_id[stream]];
+                auto width = res_values[ui.selected_res_id].first;
+                auto height = res_values[ui.selected_res_id].second;
+                auto format = format_values[stream][ui.selected_format_id[stream]];
 
                 auto fps = 0;
                 if (show_single_fps_list)
-                    fps = shared_fps_values[selected_shared_fps_id];
+                    fps = shared_fps_values[ui.selected_shared_fps_id];
                 else
-                    fps = fps_values_per_stream[stream][selected_fps_id[stream]];
+                    fps = fps_values_per_stream[stream][ui.selected_fps_id[stream]];
 
                 error_message << "\n{" << stream_display_names[stream] << ","
                     << width << "x" << height << " at " << fps << "Hz, "
@@ -1299,15 +1298,15 @@ namespace rs2
         glLineWidth(line_width);
 
         glBegin(GL_LINE_STRIP);
-        glVertex2i(r.x, r.y);
-        glVertex2i(r.x, r.y + r.h);
-        glVertex2i(r.x + r.w, r.y + r.h);
-        glVertex2i(r.x + r.w, r.y);
-        glVertex2i(r.x, r.y);
-        glVertex2i(r.x, r.y + r.h);
-        glVertex2i(r.x + r.w, r.y + r.h);
-        glVertex2i(r.x + r.w, r.y);
-        glVertex2i(r.x, r.y);
+        glVertex2f(r.x, r.y);
+        glVertex2f(r.x, r.y + r.h);
+        glVertex2f(r.x + r.w, r.y + r.h);
+        glVertex2f(r.x + r.w, r.y);
+        glVertex2f(r.x, r.y);
+        glVertex2f(r.x, r.y + r.h);
+        glVertex2f(r.x + r.w, r.y + r.h);
+        glVertex2f(r.x + r.w, r.y);
+        glVertex2f(r.x, r.y);
         glEnd();
 
         glPopAttrib();
@@ -3064,12 +3063,12 @@ namespace rs2
             subdevices.swap(record_sensors);
             for (int i = 0; i < live_subdevices.size(); i++)
             {
-                subdevices[i]->selected_res_id = live_subdevices[i]->selected_res_id;
-                subdevices[i]->selected_shared_fps_id = live_subdevices[i]->selected_shared_fps_id;
-                subdevices[i]->selected_format_id = live_subdevices[i]->selected_format_id;
+                subdevices[i]->ui.selected_res_id = live_subdevices[i]->ui.selected_res_id;
+                subdevices[i]->ui.selected_shared_fps_id = live_subdevices[i]->ui.selected_shared_fps_id;
+                subdevices[i]->ui.selected_format_id = live_subdevices[i]->ui.selected_format_id;
                 subdevices[i]->show_single_fps_list = live_subdevices[i]->show_single_fps_list;
                 subdevices[i]->fpses_per_stream = live_subdevices[i]->fpses_per_stream;
-                subdevices[i]->selected_fps_id = live_subdevices[i]->selected_fps_id;
+                subdevices[i]->ui.selected_fps_id = live_subdevices[i]->ui.selected_fps_id;
                 subdevices[i]->stream_enabled = live_subdevices[i]->stream_enabled;
                 subdevices[i]->fps_values_per_stream = live_subdevices[i]->fps_values_per_stream;
                 subdevices[i]->format_values = live_subdevices[i]->format_values;

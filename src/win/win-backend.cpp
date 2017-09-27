@@ -197,7 +197,7 @@ namespace librealsense
 
                 while (!_data._stopped)
                 {
-                    if (GetMessage(&msg, _data.hWnd, 0, 0))
+                    if (PeekMessage(&msg, _data.hWnd, 0, 0, PM_REMOVE))
                     {
                             TranslateMessage(&msg);
                             DispatchMessage(&msg);
