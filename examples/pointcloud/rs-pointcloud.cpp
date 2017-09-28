@@ -41,6 +41,10 @@ int main(int argc, char * argv[]) try
         // Wait for the next set of frames from the camera
         auto frames = pipe.wait_for_frames();
 
+        while (!frames.get_depth_frame() || !frames.get_color_frame())
+        {
+            frames = pipe.wait_for_frames();
+        }
         if (rs2::frame depth = frames.get_depth_frame())
         {
             // If we got a depth frame, generate the pointcloud and texture mappings
