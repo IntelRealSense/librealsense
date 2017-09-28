@@ -62,7 +62,7 @@ It will take a while to build C++ librealsense library, and then the Node.js add
 
 ## 3. Run Examples ##
 
-When it's installed, you can run examples to see if it works fine. Plug your Intel® RealSense™ camera and do the following:
+When it's installed, you can run examples to see if it works fine. Plug in your Intel® RealSense™ camera and do the following:
 
 ```
 cd node-librealsense/examples
