@@ -48,11 +48,6 @@ namespace rs2
             return device(dev);
         }
 
-        std::shared_ptr<rs2_pipeline_profile> get() const
-        {
-            return _pipeline_profile;
-        }
-
     private:
         pipeline_profile(std::shared_ptr<rs2_pipeline_profile> profile = nullptr) :
             _pipeline_profile(profile)
@@ -160,14 +155,11 @@ namespace rs2
             return pipeline_profile(p);
         }
 
-        std::shared_ptr<rs2_pipeline> get() const
-        {
-            return _pipeline;
-        }
     private:
         context _ctx;
         device _dev;
         std::shared_ptr<rs2_pipeline> _pipeline;
+        friend class configurator;
     };
 
     class configurator
@@ -228,7 +220,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             auto profile = std::shared_ptr<rs2_pipeline_profile>(
-                rs2_configurator_resolve(_config.get(), p.get().get(), &e),
+                rs2_configurator_resolve(_config.get(), p._pipeline.get(), &e),
                 rs2_delete_pipeline_profile);
 
             error::handle(e);
@@ -238,14 +230,9 @@ namespace rs2
         bool can_resolve(const pipeline& p) const
         {
             rs2_error* e = nullptr;
-            int res = rs2_config_can_resolve(_config.get(), p.get().get(), &e);
+            int res = rs2_config_can_resolve(_config.get(), p._pipeline.get(), &e);
             error::handle(e);
             return res == 0 ? false : true;
-        }
-
-        std::shared_ptr<rs2_configurator> get() const
-        {
-            return _config;
         }
 
         operator std::shared_ptr<rs2_configurator>() const

@@ -14,7 +14,7 @@
 
 void render_slider(rect location, float& clipping_dist);
 void remove_background(rs2::video_frame& color, const rs2::depth_frame& depth_frame, float depth_scale, float clipping_dist);
-bool try_get_depth_scale(rs2::pipeline& p, float& scale);
+bool try_get_depth_scale(rs2::device dev, float& scale);
 int main(int argc, char * argv[]) try
 {
     // Create and initialize GUI related objects
@@ -30,13 +30,15 @@ int main(int argc, char * argv[]) try
 
     // Create a pipeline to easily configure and start the camera
     rs2::pipeline pipe;
-
-    // By passing align to Pipeline::start, frames will be passed to align's handler
-    pipe.start();
+    //Calling pipeline's start() without any additional parameters will start the first device
+    // with its default streams.
+    //The start function returns the pipeline profile which the pipeline used to start the device
+    rs2::pipeline_profile profile = pipe.start();
 
     // Each depth camera might have different units for depth pixels, so we get it here
     float depth_scale;
-    if (!try_get_depth_scale(pipe, depth_scale))
+    //Using the pipeline's profile, we can retrieve the device that the pipeline uses
+    if (!try_get_depth_scale(profile.get_device(), depth_scale))
     {
         std::cerr << "Device does not have a depth sensor" << std::endl;
         return EXIT_FAILURE;
@@ -113,11 +115,8 @@ catch (const std::exception & e)
     return EXIT_FAILURE;
 }
 
-bool try_get_depth_scale(rs2::pipeline& p, float& scale)
+bool try_get_depth_scale(rs2::device dev, float& scale)
 {
-    // Get the underlying device from the pipeline
-    rs2::device dev = p.get_device();
-
     // Go over the device's sensors
     for (rs2::sensor& sensor : dev.query_sensors())
     {

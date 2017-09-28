@@ -1398,10 +1398,9 @@ NOEXCEPT_RETURN(, pipe)
 rs2_pipeline_profile* rs2_pipeline_start(rs2_pipeline* pipe, rs2_configurator* config, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
-    VALIDATE_NOT_NULL(config);
     if (config == nullptr)
     {
-        config = new rs2_configurator{};
+        return new rs2_pipeline_profile{ pipe->pipe->start(std::make_shared<configurator>()) };
     }
     return new rs2_pipeline_profile{ pipe->pipe->start(config->config) };
 }
@@ -1414,7 +1413,7 @@ rs2_pipeline_profile* rs2_pipeline_start_with_record(rs2_pipeline* pipe, rs2_con
     VALIDATE_NOT_NULL(file);
     if (config == nullptr)
     {
-        config = new rs2_configurator{};
+        return new rs2_pipeline_profile{ pipe->pipe->start_with_record(std::make_shared<configurator>(), file) };
     }
     return new rs2_pipeline_profile{ pipe->pipe->start_with_record(config->config, file) };
 }
