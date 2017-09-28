@@ -44,7 +44,7 @@ namespace rs2
                 {
                     window.add_on_load_message("Toggling device to Advanced Mode...");
                     advanced_mode.toggle_advanced_mode(true);
-                    std::this_thread::sleep_for(std::chrono::seconds(3));
+                    std::this_thread::sleep_for(std::chrono::seconds(4)); // TODO: wait for connect event
                 }
             }
 

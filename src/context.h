@@ -115,7 +115,9 @@ namespace librealsense
         std::vector<std::shared_ptr<device_info>> query_devices() const;
         const platform::backend& get_backend() const { return *_backend; }
 
+        uint64_t register_internal_device_callback(devices_changed_callback_ptr callback);
         void set_devices_changed_callback(devices_changed_callback_ptr callback);
+        void unregister_internal_device_callback(uint64_t cb_id);
 
         std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices, const std::map<std::string, std::shared_ptr<device_info>>& playback_devices) const;
 
@@ -134,13 +136,13 @@ namespace librealsense
 
         std::shared_ptr<platform::device_watcher> _device_watcher;
         std::map<std::string, std::shared_ptr<device_info>> _playback_devices;
+        std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
+
+
         devices_changed_callback_ptr _devices_changed_callback;
-
-
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
         std::map<int, std::map<int, std::weak_ptr<lazy<rs2_extrinsics>>>> _extrinsics;
-        std::mutex _streams_mutex;
-
+        std::mutex _streams_mutex, _devices_changed_callbacks_mtx;
     };
 
     // Helper functions for device list manipulation:

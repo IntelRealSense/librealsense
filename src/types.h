@@ -289,6 +289,19 @@ namespace librealsense
         mutable std::unique_ptr<T> _ptr;
     };
 
+    class unique_id
+    {
+    public:
+        static uint64_t generate_id()
+        {
+            static std::atomic<uint64_t> id(0);
+            return ++id;
+        }
+
+        unique_id(const unique_id&) = delete;
+        unique_id& operator=(const unique_id&) = delete;
+    };
+
     template<typename T, int sz>
     int arr_size(T(&)[sz])
     {
@@ -739,8 +752,25 @@ namespace librealsense
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
     typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback_ptr;
     typedef std::unique_ptr<rs2_notifications_callback, void(*)(rs2_notifications_callback*)> notifications_callback_ptr;
-    typedef std::unique_ptr<rs2_devices_changed_callback, void(*)(rs2_devices_changed_callback*)> devices_changed_callback_ptr;
+    typedef std::shared_ptr<rs2_devices_changed_callback> devices_changed_callback_ptr;
 
+    using internal_callback = std::function<void(rs2_device_list* removed, rs2_device_list* added)>;
+    class devices_changed_callback_internal : public rs2_devices_changed_callback
+    {
+        internal_callback _callback;
+
+    public:
+        explicit devices_changed_callback_internal(internal_callback callback)
+            : _callback(callback)
+        {}
+
+        void on_devices_changed(rs2_device_list* removed, rs2_device_list* added) override
+        {
+            _callback(removed , added);
+        }
+
+        void release() override { delete this; }
+    };
 
 
     struct notification

@@ -146,15 +146,14 @@ public:
 
     dispatcher(unsigned int cap)
         : _queue(cap),
-        _was_stopped(true),
-        _was_flushed(false),
-        _is_alive(true)
+          _was_stopped(true),
+          _was_flushed(false),
+          _is_alive(true)
     {
         _thread = std::thread([&]()
         {
             while (_is_alive)
             {
-
                 std::function<void(cancellable_timer)> item;
 
                 if (_queue.dequeue(&item))

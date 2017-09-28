@@ -167,13 +167,23 @@ namespace rs2
 
             ImGui::Text("%s   Loading %s%s", hourglass.c_str(), _title_str.c_str(), points[(index)%points.size()]);
 
-            if (blink)
             {
-                ImGui::Text(message.c_str());
                 std::lock_guard<std::mutex> lock(_on_load_message_mtx);
-                for (auto& msg : _on_load_message)
+                if (_on_load_message.empty() && blink)
                 {
-                    ImGui::Text(msg.c_str());
+                    ImGui::Text(message.c_str());
+                }
+                else if (!_on_load_message.empty())
+                {
+                    ImGui::Text(message.c_str());
+                    for (auto& msg : _on_load_message)
+                    {
+                        auto is_last_msg = (msg == _on_load_message.back());
+                        if (is_last_msg && blink)
+                            ImGui::Text(msg.c_str());
+                        else if (!is_last_msg)
+                            ImGui::Text(msg.c_str());
+                    }
                 }
             }
 

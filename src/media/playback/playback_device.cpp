@@ -316,6 +316,11 @@ std::pair<uint32_t, rs2_extrinsics> playback_device::get_extrinsics(const stream
     return m_extrinsics_map.at(stream.get_unique_id());
 }
 
+bool playback_device::is_valid() const
+{
+    return true;
+}
+
 void playback_device::update_time_base(device_serializer::nanoseconds base_timestamp)
 {
     m_base_sys_time = std::chrono::high_resolution_clock::now();
