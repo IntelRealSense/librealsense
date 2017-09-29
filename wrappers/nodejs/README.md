@@ -62,8 +62,12 @@ make  # Will build both C++ library & Node.js binding.
 ```
 
 
-Note: when doing "Build with CMake" on Windows, `node-gyp` module of 'npm install' command requires both `.NET Framework 4.7 development tools` & `.NET Framework 4-4.6 development tools` to be installed along with `Visual Studio 2017` (if you're using it).
+Note: when doing "Build with CMake" on Windows, `node-gyp` module of 'npm install' command requires one or many of the following Visual Studio 2017 components (if you're using it):
+ - `.NET Framework 4.7 development tools`
+ - `.NET Framework 4.6.2 development tools`
+ - `.NET Framework 4-4.6 development tools`
 
+If it still doens't work, try pass an environment variable to `node-gyp`: `set GYP_MSVS_VERSION=2015`
 
 # 2. Run Examples
 
