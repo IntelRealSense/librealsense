@@ -1,6 +1,6 @@
 {
   "name": "node-librealsense",
-  "version": "0.279.2",
+  "version": "0.279.3",
   "description": "Node.js API for Intel® RealSense™ SDK 2.0",
   "main": "index.js",
   "directories": {

@@ -6,13 +6,22 @@ This is the Node.js wrapper for the C++ `librealsense2` for Intel® RealSense™
 ## 1.1. Install Build Prerequisites
 
 ### Install Node.js
-Install [`Node.js`](https://nodejs.org/en/download/)
+Install [`Node.js`](https://nodejs.org/en/download/).
+
+After `Node.js` is installed, run the following command to install required modules.
+
+```
+npm install -g jsdoc     # Required for document generation
+npm install -g node-gyp  # This is optional
+```
 
 You will probably need to setup [proxy of npm](https://docs.npmjs.com/misc/config#proxy) or [https proxy of npm](https://docs.npmjs.com/misc/config#https-proxy), if you don't have direct internet connection.
 
 ### Setup Build Environment
 
-#### Setup Windows 10 Build Environment
+Environment is ready if you're using Ubuntu 16.04.
+
+If you're using Windows 10, please do the following steps:
 
  1. Install Python 2.7.xx, make sure "`Add python.exe to Path`" is checked during the installation.
 
@@ -24,24 +33,45 @@ Note#1: The npm module `windows-build-tools` also works for `npm install` Node.j
 
 Note#2: for Node.js GLFW module, add `msbuild` to system PATH, e.g "`C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\Bin`"
 
-#### Setup Ubuntu Linux 16.04 Build Environment
+Note#3: When running `Node.js` 6.x, you might need to [upgrade npm-bundled `node-gyp`](https://github.com/nodejs/node-gyp/wiki/Updating-npm%27s-bundled-node-gyp) to support Visual Studio 2017 (if you're using it)
 
-TODO:
-
-## 1.2. Build Native C++ librealsense2 ##
+## 1.2. Build Native C++ `librealsense` ##
 
 Please refer to [Linux installation doc](../../doc/installation.md) or [Windows installation doc](../../doc/installation_windows.md) to build native C++ librealsense2.
 
 ## 1.3. Build Node.js Module/Addon ##
+
+There are two options to do it: "manually bulid" or "build with CMake".
+The former one is for `Node.js` language binding developers who frequently change module/addon source code; the latter one is for all-in-one build scenarios.
+
+### Manually Build
+
+After C++ `librealsense` library is Built, run the following commands:
 
 ```
 cd wrappers/nodejs
 npm install
 ```
 
+### Build with CMake
+
+Before building C++ `librealsense` library, enable the following option when calling `cmake`.
+```
+cmake -DBUILD_NODEJS_BINDINGS=1 <other options...>
+make  # Will build both C++ library & Node.js binding.
+```
+
+
+Note: when doing "Build with CMake" on Windows, `node-gyp` module of 'npm install' command requires one or many of the following Visual Studio 2017 components (if you're using it):
+ - `.NET Framework 4.7 development tools`
+ - `.NET Framework 4.6.2 development tools`
+ - `.NET Framework 4-4.6 development tools`
+
+If it still doens't work, try pass an environment variable to `node-gyp`: `set GYP_MSVS_VERSION=2015`
+
 # 2. Run Examples
 
-When Node.js wrapper is built, you can run examples to see if it works. Plug your Intel® RealSense™ camera and run the following commands
+When Node.js wrapper is built, you can run examples to see if it works. Plug in your Intel® RealSense™ camera and run the following commands
 
 ```
 cd wrappers/nodejs/examples
