@@ -124,9 +124,9 @@ namespace rs2
                 hourglass_index = (hourglass_index + 1) % 5;
             }
             hourglass[2] += hourglass_index;
-                
+
             bool blink = sin(_splash_timer.elapsed_ms() / 150.f) > -0.3f;
-            
+
             auto flags = ImGuiWindowFlags_NoResize |
                 ImGuiWindowFlags_NoMove |
                 ImGuiWindowFlags_NoCollapse |
@@ -160,7 +160,7 @@ namespace rs2
             //glfwSwapBuffers(_win);
             glPopMatrix();
 
-            // Yeild the CPU
+            // Yield the CPU
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
 

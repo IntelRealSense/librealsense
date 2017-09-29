@@ -40,7 +40,7 @@ namespace rs2
 
         void tool_model::draw_instructions(ux_window& win, const rect& viewer_rect)
         {
-            _roi_located.add_value(is_valid(_metrics.get_plane()));
+            _roi_located.add_value(_metrics_model.get() && is_valid(_metrics_model->get_plane()));
             if (!_roi_located.eval())
             {
                 auto flags = ImGuiWindowFlags_NoResize |
@@ -52,7 +52,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
-                ImGui::PushStyleColor(ImGuiCol_WindowBg, blend(sensor_bg, 0.8));
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, blend(sensor_bg, 0.8f));
                 ImGui::SetNextWindowPos({ viewer_rect.w / 2 + viewer_rect.x - 225.f, viewer_rect.h / 2 + viewer_rect.y - 38.f });
 
                 ImGui::SetNextWindowSize({ 450.f, 76.f });
@@ -84,7 +84,8 @@ namespace rs2
             }
 
             _viewer_model.show_top_bar(win, viewer_rect);
-            _viewer_model.roi_rect = _metrics.get_plane();
+            if (_metrics_model.get())
+                _viewer_model.roi_rect = _metrics_model->get_plane();
             _viewer_model.draw_viewport(viewer_rect, win, 1, _error_message);
 
             ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
@@ -119,7 +120,6 @@ namespace rs2
                     _update_readonly_options_timer,
                     model_to_y, model_to_abs_y);
 
-
                 if (_depth_sensor_model.get())
                 {
                     ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
@@ -139,22 +139,41 @@ namespace rs2
                         {
                             if (_depth_sensor_model->is_selected_combination_supported())
                             {
-                                auto config = _depth_sensor_model->get_selected_profiles().front().as<video_stream_profile>();
+                                // Preserve streams and ui selections
+                                auto primary = _depth_sensor_model->get_selected_profiles().front().as<video_stream_profile>();
+                                auto secondary = _pipe.get_active_streams().back().as<video_stream_profile>();
+                                _depth_sensor_model->store_ui_selection();
 
                                 _pipe.stop();
+
+                                if (_metrics_model)
+                                    _metrics_model = nullptr;
+
                                 _pipe.disable_all();
 
-                                _pipe.enable_stream(RS2_STREAM_DEPTH, 0, config.width(), config.height(), RS2_FORMAT_Z16, config.fps());
-                                _pipe.enable_stream(RS2_STREAM_INFRARED, 1, config.width(), config.height(), RS2_FORMAT_Y8, config.fps());
+                                _pipe.enable_stream(primary.stream_type(), primary.stream_index(),
+                                                    primary.width(), primary.height(), primary.format(), primary.fps());
+                                _pipe.enable_stream(secondary.stream_type(), secondary.stream_index(),
+                                                    primary.width(), primary.height(), secondary.format(), primary.fps());
 
-                                // Wait till a valid device is found
-                                _pipe.start();
+                                // Wait till a valid device is found and responsive
+                                bool success = false;
+                                do
+                                {
+                                    try // Retries are needed to cope with HW stability issues
+                                    {
+                                        _pipe.start();
+                                        success = true;
+                                    }
+                                    catch (...){}
+                                } while (!success);
 
                                 update_configuration();
                             }
                             else
                             {
                                 _error_message = "Selected configuration is not supported!";
+                                _depth_sensor_model->restore_ui_selection();
                             }
                         }
 
@@ -187,15 +206,18 @@ namespace rs2
                     ImGui::PopStyleVar();
                     ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, { 0, 0 });
 
-                    if (ImGui::TreeNodeEx("Metrics", ImGuiTreeNodeFlags_DefaultOpen))
+                    if (_metrics_model.get())
                     {
-                        ImGui::PopStyleVar();
-                        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
+                        if (ImGui::TreeNodeEx("Metrics", ImGuiTreeNodeFlags_DefaultOpen))
+                        {
+                            ImGui::PopStyleVar();
+                            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
 
-                        _metrics.render(win);
+                            _metrics_model->render(win);
 
-                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-                        ImGui::TreePop();
+                            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+                            ImGui::TreePop();
+                        }
                     }
 
                     ImGui::PopStyleVar();
@@ -229,23 +251,30 @@ namespace rs2
                 {
                     if (frame.is<depth_frame>() && !_viewer_model.paused)
                     {
-                        _metrics.begin_process_frame(frame);
+                        if (_metrics_model.get())
+                            _metrics_model->begin_process_frame(frame);
                     }
                     _viewer_model.upload_frame(std::move(frame));
                 }
             }
 
             draw_instructions(win, viewer_rect);
-            
+
             _viewer_model.gc_streams();
             _viewer_model.popup_if_error(win.get_font(), _error_message);
         }
 
         void tool_model::update_configuration()
         {
-            auto old_res = -1;
+            // Capture the old configuration before reconfiguring the stream
+            bool save = false;
+            subdevice_ui_selection prev_ui;
+
             if (_depth_sensor_model)
-                old_res = _depth_sensor_model->selected_res_id;
+            {
+                prev_ui = _depth_sensor_model->last_valid_ui;
+                save = true;
+            }
 
             auto dev = _pipe.get_device();
             auto dpt_sensor = dev.first<depth_sensor>();
@@ -256,9 +285,15 @@ namespace rs2
             _depth_sensor_model = std::shared_ptr<rs2::subdevice_model>(
                 new subdevice_model(dev, dpt_sensor, _error_message));
             _depth_sensor_model->draw_streams_selector = false;
-            _depth_sensor_model->draw_fps_selector = false;
-            
-            if (old_res != -1) _depth_sensor_model->selected_res_id = old_res;
+            _depth_sensor_model->draw_fps_selector = true;
+
+            _metrics_model = std::shared_ptr<metrics_model>(new metrics_model());
+
+            // Restore GUI controls to the selected configuration
+            if (save)
+            {
+                _depth_sensor_model->ui = _depth_sensor_model->last_valid_ui = prev_ui;
+            }
 
             // Connect the device_model to the viewer_model
             for (auto&& sub : _device_model.get()->subdevices)
@@ -275,21 +310,21 @@ namespace rs2
                     if (profile.stream_type() == RS2_STREAM_DEPTH)
                     {
                         auto depth_profile = profile.as<video_stream_profile>();
-                        _metrics.update_stream_attributes(depth_profile.get_intrinsics(),
+                        _metrics_model->update_stream_attributes(depth_profile.get_intrinsics(),
                                                           sub->s.as<depth_sensor>().get_depth_scale());
 
-                        _metrics.update_frame_attributes({ int(depth_profile.width() * (0.5f - 0.5f*_roi_percent)), 
+                        _metrics_model->update_frame_attributes({ int(depth_profile.width() * (0.5f - 0.5f*_roi_percent)),
                                                            int(depth_profile.height() * (0.5f - 0.5f*_roi_percent)),
                                                            int(depth_profile.width() * (0.5f + 0.5f*_roi_percent)),
                                                            int(depth_profile.height() * (0.5f + 0.5f*_roi_percent)) });
                     }
                 }
 
-                sub->algo_roi = _metrics.get_roi();
+                sub->algo_roi = _metrics_model->get_roi();
             }
         }
 
-	bool metric_plot::has_trend(bool positive)
+    bool metric_plot::has_trend(bool positive)
         {
             const auto window_size = 110;
             const auto curr_window = 10;
@@ -314,7 +349,7 @@ namespace rs2
             return improved > window_size * 0.4;
         }
 
-        
+
         void tool_model::snapshot_metrics()
         {
             if (auto ret = file_dialog_open(save_file, NULL, NULL, NULL))
@@ -354,7 +389,8 @@ namespace rs2
                 export_to_ply(filename_base + "_3d_mesh.ply", _viewer_model.not_model, _viewer_model.pc.get_points(), ply_texture);
 
                 // Save Metrics
-                _metrics.serialize_to_csv(filename_base + "_depth_metrics.csv");
+                if (_metrics_model.get())
+                    _metrics_model->serialize_to_csv(filename_base + "_depth_metrics.csv");
 
                 // Save camera configuration - supported when camera is in advanced mode only
                 if (_device_model.get())
@@ -367,7 +403,6 @@ namespace rs2
                         out.close();
                     }
                 }
-
             }
         }
 
@@ -428,7 +463,6 @@ namespace rs2
                         continue;
                     }
 
-
                     auto stream_type = depth_frame.get_profile().stream_type();
 
                     if (RS2_STREAM_DEPTH == stream_type)
@@ -455,7 +489,7 @@ namespace rs2
                     }
                     else
                     {
-                        std::cout << __FUNCTION__ << " : unexpected frame type received - " << rs2_stream_to_string(stream_type) << std::endl;
+                        //std::cout <<  "Metrics processor: unexpected frame type received - " << rs2_stream_to_string(stream_type);
                     }
 
                     // Artificially slow down the calculation, so even on small ROIs / resolutions
@@ -496,9 +530,9 @@ namespace rs2
 
             ImGui::PushStyleColor(ImGuiCol_Header, sensor_header_light_blue);
 
-            const auto left_x = 295;
+            const auto left_x = 295.f;
             const auto indicator_flicker_rate = 200;
-            auto alpha_value = abs(sin(_model_timer.elapsed_ms() / indicator_flicker_rate));
+            auto alpha_value = static_cast<float>(fabs(sin(_model_timer.elapsed_ms() / indicator_flicker_rate)));
 
             _trending_up.add_value(has_trend(true));
             _trending_down.add_value(has_trend(false));
@@ -553,7 +587,7 @@ namespace rs2
                 std::string did = to_string() << _id << "-desc";
                 auto desc_size = _size;
                 auto lines = std::count(description.begin(), description.end(), '\n') + 1;
-                desc_size.y = lines * 20;
+                desc_size.y = lines * 20.f;
                 ImGui::InputTextMultiline(did.c_str(), const_cast<char*>(description.c_str()),
                     description.size() + 1, desc_size, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopStyleColor(3);

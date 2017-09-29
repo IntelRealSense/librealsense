@@ -4,7 +4,6 @@
 #include <librealsense2/rs.hpp>
 #include "depth-quality-model.h"
 #include "ux-window.h"
-#include <iostream>
 
 int main(int argc, const char * argv[]) try
 {

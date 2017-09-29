@@ -33,7 +33,7 @@ namespace rs2
             plane p;
             std::array<float3, 4> plane_corners;
 
-            double non_null_pct;
+            float non_null_pct;
         };
 
         inline plane plane_from_point_and_normal(const rs2::float3& point, const rs2::float3& normal)
@@ -121,7 +121,7 @@ namespace rs2
 
             result.distance = float(-p.d);
 
-            result.angle = std::acos(std::abs(p.c)) / M_PI * 180;
+            result.angle = static_cast<float>(std::acos(std::abs(p.c)) / M_PI * 180.);
 
             std::vector<float3> outliers;
             for (auto point : points) if (std::abs(std::abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d) * 1000 - result.avg_dist) > result.std_dev * std_devs) outliers.push_back(point);
@@ -131,14 +131,14 @@ namespace rs2
             return result;
         }
 
-        inline double evaluate_pixel(const plane& p, const rs2_intrinsics* intrin, int x, int y, double distance, float3& output)
+        inline double evaluate_pixel(const plane& p, const rs2_intrinsics* intrin, int x, int y, float distance, float3& output)
         {
             float pixel[2] = { float(x), float(y) };
             rs2_deproject_pixel_to_point(&output.x, intrin, pixel, distance);
             return evaluate_plane(p, output);
         }
 
-        inline float3 approximate_intersection(const plane& p, const rs2_intrinsics* intrin, int x, int y, double min, double max)
+        inline float3 approximate_intersection(const plane& p, const rs2_intrinsics* intrin, int x, int y, float min, float max)
         {
             float3 point;
             auto far = evaluate_pixel(p, intrin, x, y, max, point);
@@ -154,7 +154,7 @@ namespace rs2
 
         inline float3 approximate_intersection(const plane& p, const rs2_intrinsics* intrin, int x, int y)
         {
-            return approximate_intersection(p, intrin, x, y, 0, 100000);
+            return approximate_intersection(p, intrin, x, y, 0.f, 1000.f);
         }
 
         inline metrics calculate_depth_metrics(const std::vector<rs2::float3>& points)
@@ -166,14 +166,14 @@ namespace rs2
             {
                 total_distance += point.z * 1000;
             }
-            result.avg_dist = total_distance / points.size();
+            result.avg_dist = float(total_distance / points.size());
 
             double total_sq_diffs = 0;
             for (auto point : points)
             {
                 total_sq_diffs += std::pow(abs(point.z * 1000 - result.avg_dist), 2);
             }
-            result.std_dev = std::sqrt(total_sq_diffs / points.size());
+            result.std_dev = static_cast<float>(std::sqrt(total_sq_diffs / points.size()));
 
             result.fit = result.std_dev / 10;
 
@@ -200,7 +200,6 @@ namespace rs2
             for (int y = roi.min_y; y < roi.max_y; ++y)
                 for (int x = roi.min_x; x < roi.max_x; ++x)
                 {
-                    //std::cout << "Accessing index " << (y*w + x) << std::endl;
                     auto depth_raw = pixels[y*w + x];
 
                     if (depth_raw)
@@ -221,15 +220,13 @@ namespace rs2
                     }
                 }
 
-            if (roi_pixels.size() < 3) {
-                // std::cout << "Not enough pixels in RoI to fit a plane." << std::endl;
+            if (roi_pixels.size() < 3) { // Not enough pixels in RoI to fit a plane
                 return result;
             }
 
             plane p = plane_from_points(roi_pixels);
 
-            if (p == plane{ 0, 0, 0, 0 }) {
-                //std::cout << "The points in RoI don't span a plane." << std::endl;
+            if (p == plane{ 0, 0, 0, 0 }) { // The points in RoI don't span a plane
                 return result;
             }
 
@@ -241,7 +238,7 @@ namespace rs2
             result.plane_corners[2] = approximate_intersection(p, intrin, roi.max_x, roi.max_y);
             result.plane_corners[3] = approximate_intersection(p, intrin, roi.min_x, roi.max_y);
 
-            result.non_null_pct = roi_pixels.size() / double((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * 100;
+            result.non_null_pct = roi_pixels.size() / float((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * 100;
 
             return result;
         }

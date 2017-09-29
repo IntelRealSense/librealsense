@@ -82,12 +82,12 @@ namespace librealsense
         {
             snapshot = std::make_shared<options_container>(*this);
         }
-        
+
         void enable_recording(std::function<void(const options_interface&)> record_action) override
         {
             _recording_function = record_action;
         }
-        
+
         void update(std::shared_ptr<extension_snapshot> ext) override
         {
             auto ctr = As<options_container>(ext);

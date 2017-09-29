@@ -295,8 +295,8 @@ namespace rs2
             auto y2 = std::min(y + h, other.y + other.h);
 
             return{
-                x1, y1, 
-                std::max(x2 - x1, 0.f), 
+                x1, y1,
+                std::max(x2 - x1, 0.f),
                 std::max(y2 - y1, 0.f)
             };
         }
@@ -644,11 +644,9 @@ namespace rs2
         }
 
         // Get elapsed milliseconds since timer creation
-        float elapsed_ms() const
+        double elapsed_ms() const
         {
-            auto duration = elapsed();
-            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-            return ms;
+            return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(elapsed()).count();
         }
 
         clock::duration elapsed() const
@@ -668,7 +666,7 @@ namespace rs2
     {
     public:
         periodic_timer(clock::duration delta)
-            : _delta(delta) 
+            : _delta(delta)
         {
             _last = _time.now();
         }
@@ -712,7 +710,7 @@ namespace rs2
                 [this](std::pair<clock::time_point, bool> pair) {
                 return pair.second;
             });
-            return trues * 2 > _measurements.size(); // At least 50% of observations agree
+            return size_t(trues * 2) > _measurements.size(); // At least 50% of observations agree
         }
 
     private:
@@ -737,7 +735,7 @@ namespace rs2
         texture_buffer() : last_queue(1), texture(), colorize() {}
 
         GLuint get_gl_handle() const { return texture; }
-        
+
         // Simplified version of upload that lets us load basic RGBA textures
         // This is used for the splash screen
         void upload_image(int w, int h, void* data)
@@ -758,7 +756,7 @@ namespace rs2
             // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
             if (!texture)
                 glGenTextures(1, &texture);
-             
+
             int width = 0;
             int height = 0;
             int stride = 0;
