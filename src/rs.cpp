@@ -53,29 +53,15 @@ struct rs2_pipeline
     std::shared_ptr<librealsense::pipeline> pipe;
 };
 
-struct rs2_configurator
+struct rs2_config
 {
-    std::shared_ptr<librealsense::configurator> config;
+    std::shared_ptr<librealsense::pipeline_config> config;
 };
 
 struct rs2_pipeline_profile
 {
     std::shared_ptr<librealsense::pipeline_profile> profile;
 };
-
-//struct rs2_intrinsics
-//{
-//    std::shared_ptr<librealsense::rs2_intrinsics> intrinsics;
-//};
-//struct rs2_record_device
-//{
-//    std::shared_ptr<librealsense::record_device> record_device;
-//};
-
-//struct rs2_syncer
-//{
-//    std::shared_ptr<librealsense::sync_interface> syncer;
-//};
 
 struct rs2_frame_queue
 {
@@ -1395,25 +1381,25 @@ void rs2_delete_pipeline(rs2_pipeline* pipe) try
 }
 NOEXCEPT_RETURN(, pipe)
 
-rs2_pipeline_profile* rs2_pipeline_start(rs2_pipeline* pipe, rs2_configurator* config, rs2_error ** error) try
+rs2_pipeline_profile* rs2_pipeline_start(rs2_pipeline* pipe, rs2_config* config, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
     if (config == nullptr)
     {
-        return new rs2_pipeline_profile{ pipe->pipe->start(std::make_shared<configurator>()) };
+        return new rs2_pipeline_profile{ pipe->pipe->start(std::make_shared<pipeline_config>()) };
     }
     return new rs2_pipeline_profile{ pipe->pipe->start(config->config) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe, config)
 
 
-rs2_pipeline_profile* rs2_pipeline_start_with_record(rs2_pipeline* pipe, rs2_configurator* config, const char* file, rs2_error ** error) try
+rs2_pipeline_profile* rs2_pipeline_start_with_record(rs2_pipeline* pipe, rs2_config* config, const char* file, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
     VALIDATE_NOT_NULL(file);
     if (config == nullptr)
     {
-        return new rs2_pipeline_profile{ pipe->pipe->start_with_record(std::make_shared<configurator>(), file) };
+        return new rs2_pipeline_profile{ pipe->pipe->start_with_record(std::make_shared<pipeline_config>(), file) };
     }
     return new rs2_pipeline_profile{ pipe->pipe->start_with_record(config->config, file) };
 }
@@ -1453,14 +1439,14 @@ void rs2_delete_pipeline_profile(rs2_pipeline_profile* profile) try
 }
 NOEXCEPT_RETURN(, profile)
 
-//configurator
-rs2_configurator* rs2_create_configurator(rs2_error ** error) try
+//config
+rs2_config* rs2_create_config(rs2_error** error) try
 {
-    return new rs2_configurator();
+    return new rs2_config();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, 0)
 
-void rs2_delete_configurator(rs2_configurator* config) try
+void rs2_delete_config(rs2_config* config) try
 {
     VALIDATE_NOT_NULL(config);
 
@@ -1468,21 +1454,28 @@ void rs2_delete_configurator(rs2_configurator* config) try
 }
 NOEXCEPT_RETURN(, config)
 
-void rs2_configurator_enable_stream(rs2_configurator* config, rs2_stream stream, int index, int width, int height, rs2_format format, int framerate, rs2_error ** error) try
+void rs2_config_enable_stream(rs2_config* config,
+                              rs2_stream stream,
+                              int index,
+                              int width,
+                              int height,
+                              rs2_format format,
+                              int framerate,
+                              rs2_error** error) try
 {
     VALIDATE_NOT_NULL(config);
     config->config->enable_stream(stream, index, width, height, format, framerate);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, config, stream, index, width, height, format, framerate)
 
-void rs2_configurator_enable_all_stream(rs2_configurator* config, rs2_error ** error) try
+void rs2_config_enable_all_stream(rs2_config* config, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(config);
     config->config->enable_all_stream();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, config)
 
-void rs2_configurator_enable_device(rs2_configurator* config, const char* serial, rs2_error ** error) try
+void rs2_config_enable_device(rs2_config* config, const char* serial, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(config);
     VALIDATE_NOT_NULL(serial);
@@ -1492,7 +1485,7 @@ void rs2_configurator_enable_device(rs2_configurator* config, const char* serial
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, config, serial)
 
-void rs2_configurator_enable_device_from_file(rs2_configurator* config, const char* file, rs2_error ** error) try
+void rs2_config_enable_device_from_file(rs2_config* config, const char* file, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(config);
     VALIDATE_NOT_NULL(file);
@@ -1501,21 +1494,21 @@ void rs2_configurator_enable_device_from_file(rs2_configurator* config, const ch
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, config, file)
 
-void rs2_configurator_disable_stream(rs2_configurator* config, rs2_stream stream, rs2_error ** error) try
+void rs2_config_disable_stream(rs2_config* config, rs2_stream stream, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(config);
     config->config->disable_stream(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, config, stream)
 
-void rs2_configurator_disable_all_streams(rs2_configurator* config, rs2_error ** error) try
+void rs2_config_disable_all_streams(rs2_config* config, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(config);
     config->config->disable_all_streams();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, config)
 
-rs2_pipeline_profile* rs2_configurator_resolve(rs2_configurator* config, rs2_pipeline* pipe, rs2_error ** error) try
+rs2_pipeline_profile* rs2_config_resolve(rs2_config* config, rs2_pipeline* pipe, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(config);
     VALIDATE_NOT_NULL(pipe);
@@ -1523,7 +1516,7 @@ rs2_pipeline_profile* rs2_configurator_resolve(rs2_configurator* config, rs2_pip
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, config, pipe)
 
-int rs2_config_can_resolve(rs2_configurator* config, rs2_pipeline* pipe, rs2_error ** error) try
+int rs2_config_can_resolve(rs2_config* config, rs2_pipeline* pipe, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(config);
     VALIDATE_NOT_NULL(pipe);

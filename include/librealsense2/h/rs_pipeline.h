@@ -59,8 +59,8 @@ void rs2_delete_pipeline(rs2_pipeline* pipe);
 //TODO: Document all below:
 
 //pipeline
-rs2_pipeline_profile* rs2_pipeline_start(rs2_pipeline* pipe, rs2_configurator* config, rs2_error ** error);
-rs2_pipeline_profile* rs2_pipeline_start_with_record(rs2_pipeline* pipe, rs2_configurator* config, const char* file, rs2_error ** error);
+rs2_pipeline_profile* rs2_pipeline_start(rs2_pipeline* pipe, rs2_config* config, rs2_error ** error);
+rs2_pipeline_profile* rs2_pipeline_start_with_record(rs2_pipeline* pipe, rs2_config* config, const char* file, rs2_error ** error);
 rs2_pipeline_profile* rs2_pipeline_get_active_profile(rs2_pipeline* pipe, rs2_error ** error);
 
 //pipeline_profile
@@ -68,17 +68,24 @@ rs2_device* rs2_pipeline_profile_get_device(rs2_pipeline_profile* profile, rs2_e
 rs2_stream_profile_list* rs2_pipeline_profile_get_active_streams(rs2_pipeline_profile* profile, rs2_error** error);
 void rs2_delete_pipeline_profile(rs2_pipeline_profile* profile);
 
-//configurator
-rs2_configurator* rs2_create_configurator(rs2_error ** error);
-void rs2_delete_configurator(rs2_configurator* config);
-void rs2_configurator_enable_stream(rs2_configurator* config, rs2_stream stream, int index, int width, int height, rs2_format format, int framerate, rs2_error ** error);
-void rs2_configurator_enable_all_stream(rs2_configurator* config, rs2_error ** error);
-void rs2_configurator_enable_device(rs2_configurator* config, const char* serial, rs2_error ** error);
-void rs2_configurator_enable_device_from_file(rs2_configurator* config, const char* file, rs2_error ** error);
-void rs2_configurator_disable_stream(rs2_configurator* config, rs2_stream stream, rs2_error ** error);
-void rs2_configurator_disable_all_streams(rs2_configurator* config, rs2_error ** error);
-rs2_pipeline_profile* rs2_configurator_resolve(rs2_configurator* config, rs2_pipeline* pipe, rs2_error ** error);
-int rs2_config_can_resolve(rs2_configurator* config, rs2_pipeline* pipe, rs2_error ** error);
+//config
+rs2_config* rs2_create_config(rs2_error** error);
+void rs2_delete_config(rs2_config* config);
+void rs2_config_enable_stream(rs2_config* config,
+                              rs2_stream stream,
+                              int index,
+                              int width,
+                              int height,
+                              rs2_format format,
+                              int framerate,
+                              rs2_error** error);
+void rs2_config_enable_all_stream(rs2_config* config, rs2_error ** error);
+void rs2_config_enable_device(rs2_config* config, const char* serial, rs2_error ** error);
+void rs2_config_enable_device_from_file(rs2_config* config, const char* file, rs2_error ** error);
+void rs2_config_disable_stream(rs2_config* config, rs2_stream stream, rs2_error ** error);
+void rs2_config_disable_all_streams(rs2_config* config, rs2_error ** error);
+rs2_pipeline_profile* rs2_config_resolve(rs2_config* config, rs2_pipeline* pipe, rs2_error ** error);
+int rs2_config_can_resolve(rs2_config* config, rs2_pipeline* pipe, rs2_error ** error);
 
 #ifdef __cplusplus
 }

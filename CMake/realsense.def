@@ -213,15 +213,15 @@ EXPORTS
 	rs2_pipeline_profile_get_device
 	rs2_pipeline_profile_get_active_streams
 	rs2_delete_pipeline_profile
-	rs2_create_configurator
-	rs2_delete_configurator
-	rs2_configurator_enable_stream
-	rs2_configurator_enable_all_stream
-	rs2_configurator_enable_device
-	rs2_configurator_enable_device_from_file
-	rs2_configurator_disable_stream
-	rs2_configurator_disable_all_streams
-	rs2_configurator_resolve
+	rs2_create_config
+	rs2_delete_config
+	rs2_config_enable_stream
+	rs2_config_enable_all_stream
+	rs2_config_enable_device
+	rs2_config_enable_device_from_file
+	rs2_config_disable_stream
+	rs2_config_disable_all_streams
+	rs2_config_resolve
 	rs2_config_can_resolve
 
     rs2_create_device_hub

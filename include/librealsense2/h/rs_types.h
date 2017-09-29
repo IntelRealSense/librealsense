@@ -107,7 +107,7 @@ typedef struct rs2_frame rs2_frame;
 typedef struct rs2_frame_queue rs2_frame_queue;
 typedef struct rs2_pipeline rs2_pipeline;
 typedef struct rs2_pipeline_profile rs2_pipeline_profile;
-typedef struct rs2_configurator rs2_configurator;
+typedef struct rs2_config rs2_config;
 typedef struct rs2_device_list rs2_device_list;
 typedef struct rs2_stream_profile_list rs2_stream_profile_list;
 typedef struct rs2_stream_profile rs2_stream_profile;

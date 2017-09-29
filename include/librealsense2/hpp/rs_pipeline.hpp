@@ -55,11 +55,11 @@ namespace rs2
 
         }
         std::shared_ptr<rs2_pipeline_profile> _pipeline_profile;
-        friend class configurator;
+        friend class config;
         friend class pipeline;
     };
 
-    class configurator;
+    class config;
     class pipeline
     {
     public:
@@ -82,7 +82,7 @@ namespace rs2
         //    error::handle(e);
         //}
 
-        pipeline_profile start(std::shared_ptr<rs2_configurator> config = nullptr) 
+        pipeline_profile start(std::shared_ptr<rs2_config> config = nullptr)
         {
             rs2_error* e = nullptr;
             auto p = std::shared_ptr<rs2_pipeline_profile>(
@@ -93,7 +93,7 @@ namespace rs2
             return pipeline_profile(p);
         }
 
-        pipeline_profile start(const std::string& record_to_filename, std::shared_ptr<rs2_configurator> config = nullptr)
+        pipeline_profile start(const std::string& record_to_filename, std::shared_ptr<rs2_config> config = nullptr)
         {
             rs2_error* e = nullptr;
             auto p = std::shared_ptr<rs2_pipeline_profile>(
@@ -157,62 +157,61 @@ namespace rs2
 
     private:
         context _ctx;
-        device _dev;
         std::shared_ptr<rs2_pipeline> _pipeline;
-        friend class configurator;
+        friend class config;
     };
 
-    class configurator
+    class config
     {
     public:
-        configurator()
+        config()
         {
             rs2_error* e = nullptr;
-            _config = std::shared_ptr<rs2_configurator>(
-                rs2_create_configurator(&e),
-                rs2_delete_configurator);
+            _config = std::shared_ptr<rs2_config>(
+                rs2_create_config(&e),
+                rs2_delete_config);
             error::handle(e);
         }
 
         void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int framerate)
         {
             rs2_error* e = nullptr;
-            rs2_configurator_enable_stream(_config.get(), stream, index, width, height, format, framerate, &e);
+            rs2_config_enable_stream(_config.get(), stream, index, width, height, format, framerate, &e);
             error::handle(e);
         }
 
         void enable_all_streams()
         {
             rs2_error* e = nullptr;
-            rs2_configurator_enable_all_stream(_config.get(), &e);
+            rs2_config_enable_all_stream(_config.get(), &e);
             error::handle(e);
         }
 
         void enable_device(const std::string& serial)
         {
             rs2_error* e = nullptr;
-            rs2_configurator_enable_device(_config.get(), serial.c_str(), &e);
+            rs2_config_enable_device(_config.get(), serial.c_str(), &e);
             error::handle(e);
         }
 
         void enable_device_from_file(const std::string& file_name)
         {
             rs2_error* e = nullptr;
-            rs2_configurator_enable_device_from_file(_config.get(), file_name.c_str(), &e);
+            rs2_config_enable_device_from_file(_config.get(), file_name.c_str(), &e);
             error::handle(e);
         }
 
         void disable_stream(rs2_stream stream)
         {
             rs2_error* e = nullptr;
-            rs2_configurator_disable_stream(_config.get(), stream, &e);
+            rs2_config_disable_stream(_config.get(), stream, &e);
             error::handle(e);
         }
 
         void disable_all_streams()
         {
             rs2_error* e = nullptr;
-            rs2_configurator_disable_all_streams(_config.get(), &e);
+            rs2_config_disable_all_streams(_config.get(), &e);
             error::handle(e);
         }
 
@@ -220,7 +219,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             auto profile = std::shared_ptr<rs2_pipeline_profile>(
-                rs2_configurator_resolve(_config.get(), p._pipeline.get(), &e),
+                rs2_config_resolve(_config.get(), p._pipeline.get(), &e),
                 rs2_delete_pipeline_profile);
 
             error::handle(e);
@@ -232,18 +231,18 @@ namespace rs2
             rs2_error* e = nullptr;
             int res = rs2_config_can_resolve(_config.get(), p._pipeline.get(), &e);
             error::handle(e);
-            return res == 0 ? false : true;
+            return res != 0;
         }
 
-        operator std::shared_ptr<rs2_configurator>() const
+        operator std::shared_ptr<rs2_config>() const
         {
             return _config;
         }
     private:
-        configurator(std::shared_ptr<rs2_configurator> config) : _config(config)
+        config(std::shared_ptr<rs2_config> config) : _config(config)
         {
         }
-        std::shared_ptr<rs2_configurator> _config;
+        std::shared_ptr<rs2_config> _config;
 
     };
 }

@@ -24,15 +24,15 @@ namespace librealsense
         std::string _to_file;
     };
 
-    class configurator;
+    class pipeline_config;
     class pipeline : public std::enable_shared_from_this<pipeline>
     {
     public:
         //Top level API
-        pipeline(std::shared_ptr<librealsense::context> ctx);
+        explicit pipeline(std::shared_ptr<librealsense::context> ctx);
         ~pipeline();
-        std::shared_ptr<pipeline_profile> start(std::shared_ptr<configurator> conf);
-        std::shared_ptr<pipeline_profile> start_with_record(std::shared_ptr<configurator> conf, const std::string& file);
+        std::shared_ptr<pipeline_profile> start(std::shared_ptr<pipeline_config> conf);
+        std::shared_ptr<pipeline_profile> start_with_record(std::shared_ptr<pipeline_config> conf, const std::string& file);
         void stop();
         std::shared_ptr<pipeline_profile> get_active_profile() const;
         frame_holder wait_for_frames(unsigned int timeout_ms = 5000);
@@ -44,7 +44,7 @@ namespace librealsense
 
 
      private:
-         void unsafe_start(std::shared_ptr<configurator> conf);
+         void unsafe_start(std::shared_ptr<pipeline_config> conf);
 
         std::shared_ptr<librealsense::context> _ctx;
         std::mutex _mtx;
@@ -53,11 +53,12 @@ namespace librealsense
         frame_callback_ptr _callback;
         std::unique_ptr<syncer_proccess_unit> _syncer;
         std::unique_ptr<single_consumer_queue<frame_holder>> _queue;
-        std::shared_ptr<configurator> _prev_conf;
+
+        std::shared_ptr<pipeline_config> _prev_conf;
     };
 
 
-    class configurator
+    class pipeline_config
     {
     public:
         void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int framerate);

@@ -11,35 +11,35 @@ namespace librealsense
 {
     /*
 
-      ______   ______   .__   __.  _______  __    _______  __    __  .______           ___   .___________.  ______   .______      
-     /      | /  __  \  |  \ |  | |   ____||  |  /  _____||  |  |  | |   _  \         /   \  |           | /  __  \  |   _  \     
-    |  ,----'|  |  |  | |   \|  | |  |__   |  | |  |  __  |  |  |  | |  |_)  |       /  ^  \ `---|  |----`|  |  |  | |  |_)  |    
-    |  |     |  |  |  | |  . `  | |   __|  |  | |  | |_ | |  |  |  | |      /       /  /_\  \    |  |     |  |  |  | |      /     
-    |  `----.|  `--'  | |  |\   | |  |     |  | |  |__| | |  `--'  | |  |\  \----. /  _____  \   |  |     |  `--'  | |  |\  \----.
-     \______| \______/  |__| \__| |__|     |__|  \______|  \______/  | _| `._____|/__/     \__\  |__|      \______/  | _| `._____|
+      ______   ______   .__   __.  _______  __    _______
+     /      | /  __  \  |  \ |  | |   ____||  |  /  _____|
+    |  ,----'|  |  |  | |   \|  | |  |__   |  | |  |  __
+    |  |     |  |  |  | |  . `  | |   __|  |  | |  | |_ |
+    |  `----.|  `--'  | |  |\   | |  |     |  | |  |__| |
+     \______| \______/  |__| \__| |__|     |__|  \______|
 
     */
 
-    void configurator::enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int fps)
+    void pipeline_config::enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int fps)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         _stream_requests[{stream, index}] = { stream, index, width, height, format, fps };
     }
 
-    void configurator::enable_all_stream()
+    void pipeline_config::enable_all_stream()
     {
         std::lock_guard<std::mutex> lock(_mtx);
         _stream_requests.clear();
         _enable_all_streams = true;
     }
 
-    void configurator::enable_device(const std::string& serial)
+    void pipeline_config::enable_device(const std::string& serial)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         _device_request.serial = serial;
     }
 
-    void configurator::enable_device_from_file(const std::string& file)
+    void pipeline_config::enable_device_from_file(const std::string& file)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         if (!_device_request.record_output.empty())
@@ -49,7 +49,7 @@ namespace librealsense
         _device_request.filename = file;
     }
 
-    void configurator::enable_record_to_file(const std::string& file)
+    void pipeline_config::enable_record_to_file(const std::string& file)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         if (!_device_request.filename.empty())
@@ -59,7 +59,7 @@ namespace librealsense
         _device_request.record_output = file;
     }
 
-    void configurator::disable_stream(rs2_stream stream)
+    void pipeline_config::disable_stream(rs2_stream stream)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         auto itr = std::begin(_stream_requests);
@@ -76,14 +76,14 @@ namespace librealsense
         }
     }
 
-    void configurator::disable_all_streams()
+    void pipeline_config::disable_all_streams()
     {
         std::lock_guard<std::mutex> lock(_mtx);
         _stream_requests.clear();
         _enable_all_streams = false;
     }
 
-    std::shared_ptr<pipeline_profile> configurator::resolve(std::shared_ptr<pipeline> pipe)
+    std::shared_ptr<pipeline_profile> pipeline_config::resolve(std::shared_ptr<pipeline> pipe)
     {
         std::lock_guard<std::mutex> lock(_mtx);
 
@@ -155,11 +155,11 @@ namespace librealsense
         }
     }
 
-    bool configurator::can_resolve(std::shared_ptr<pipeline> pipe)
+    bool pipeline_config::can_resolve(std::shared_ptr<pipeline> pipe)
     {
         throw not_implemented_exception(__FUNCTION__);
     }
-    std::shared_ptr<device_interface> configurator::get_first_or_default_device(std::shared_ptr<pipeline> pipe)
+    std::shared_ptr<device_interface> pipeline_config::get_first_or_default_device(std::shared_ptr<pipeline> pipe)
     {
         try
         {
@@ -171,7 +171,7 @@ namespace librealsense
         }
     }
     //TODO: add timeout parameter?
-    std::shared_ptr<device_interface> configurator::resolve_device_requests(std::shared_ptr<pipeline> pipe)
+    std::shared_ptr<device_interface> pipeline_config::resolve_device_requests(std::shared_ptr<pipeline> pipe)
     {
         const auto timeout_ms = std::chrono::milliseconds(5000).count();
 
@@ -220,7 +220,7 @@ namespace librealsense
         return nullptr;
     }
 
-    stream_profiles configurator::get_default_configuration(std::shared_ptr<device_interface> dev)
+    stream_profiles pipeline_config::get_default_configuration(std::shared_ptr<device_interface> dev)
     {
         stream_profiles default_profiles;
 
@@ -294,7 +294,7 @@ namespace librealsense
         catch (...) {}
     }
 
-    std::shared_ptr<pipeline_profile> pipeline::start(std::shared_ptr<configurator> conf)
+    std::shared_ptr<pipeline_profile> pipeline::start(std::shared_ptr<pipeline_config> conf)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         if (_active_profile)
@@ -305,7 +305,7 @@ namespace librealsense
         return get_active_profile();
     }
 
-    std::shared_ptr<pipeline_profile> pipeline::start_with_record(std::shared_ptr<configurator> conf, const std::string& file)
+    std::shared_ptr<pipeline_profile> pipeline::start_with_record(std::shared_ptr<pipeline_config> conf, const std::string& file)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         if (_active_profile)
@@ -322,7 +322,7 @@ namespace librealsense
         return _active_profile;
     }
 
-    void pipeline::unsafe_start(std::shared_ptr<configurator> conf)
+    void pipeline::unsafe_start(std::shared_ptr<pipeline_config> conf)
     {
         auto syncer = std::unique_ptr<syncer_proccess_unit>(new syncer_proccess_unit());
         auto queue = std::unique_ptr<single_consumer_queue<frame_holder>>(new single_consumer_queue<frame_holder>());
@@ -354,20 +354,18 @@ namespace librealsense
         const int NUM_TIMES_TO_RETRY = 3;
         for (int i = 1; i <= NUM_TIMES_TO_RETRY; i++)
         {
-            profile = conf->resolve(shared_from_this());
             try
             {
+                profile = conf->resolve(shared_from_this());
                 profile->_multistream.open();
                 profile->_multistream.start(syncer_callback);
+                break;
             }
             catch (...)
             {
                 if (i == NUM_TIMES_TO_RETRY)
-                    throw std::runtime_error("Failed to start device too many time");
-
-                //TODO: reconfig()?
+                    throw;
             }
-            break;
         }
 
         //On successfull start, update members:
@@ -445,24 +443,14 @@ namespace librealsense
 
 
     /*
-    
-        .______    __  .______    _______  __       __  .__   __.  _______        
-        |   _  \  |  | |   _  \  |   ____||  |     |  | |  \ |  | |   ____|       
-        |  |_)  | |  | |  |_)  | |  |__   |  |     |  | |   \|  | |  |__          
-        |   ___/  |  | |   ___/  |   __|  |  |     |  | |  . `  | |   __|         
-        |  |      |  | |  |      |  |____ |  `----.|  | |  |\   | |  |____        
-        | _|      |__| | _|      |_______||_______||__| |__| \__| |_______|______ 
-                                                                          |______|
-
-        .______   .______        ______    _______  __   __       _______ 
+        .______   .______        ______    _______  __   __       _______
         |   _  \  |   _  \      /  __  \  |   ____||  | |  |     |   ____|
-        |  |_)  | |  |_)  |    |  |  |  | |  |__   |  | |  |     |  |__   
-        |   ___/  |      /     |  |  |  | |   __|  |  | |  |     |   __|  
-        |  |      |  |\  \----.|  `--'  | |  |     |  | |  `----.|  |____ 
+        |  |_)  | |  |_)  |    |  |  |  | |  |__   |  | |  |     |  |__
+        |   ___/  |      /     |  |  |  | |   __|  |  | |  |     |   __|
+        |  |      |  |\  \----.|  `--'  | |  |     |  | |  `----.|  |____
         | _|      | _| `._____| \______/  |__|     |__| |_______||_______|
-                                                                  
-
     */
+
     pipeline_profile::pipeline_profile(std::shared_ptr<device_interface> dev, 
                                        util::config::multistream multistream, 
                                        const std::string& to_file) :
@@ -479,7 +467,7 @@ namespace librealsense
 
     std::shared_ptr<device_interface> pipeline_profile::get_device()
     {
-        //pipeline_profile can be retrieved from a configurator and pipeline::start()
+        //pipeline_profile can be retrieved from a pipeline_config and pipeline::start()
         //either way, it is created by the pipeline
         
         //TODO: handle case where device has disconnected and reconnected
@@ -495,15 +483,10 @@ namespace librealsense
     {
         auto profiles_per_sensor = _multistream.get_profiles_per_sensor();
         stream_profiles profiles;
+        for (auto&& kvp : profiles_per_sensor)
+            for (auto&& p : kvp.second)
+                profiles.push_back(p);
 
-        //std::transform(std::begin(profiles_per_sensor),
-        //    std::end(profiles_per_sensor),
-        //    std::back_inserter(profiles), 
-        //    [](const std::pair<int, stream_profiles>& kvp)
-        //    {
-        //        return kvp.second;
-        //    }
-        //);
         return profiles;
     }
 }
