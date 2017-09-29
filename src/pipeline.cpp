@@ -23,14 +23,13 @@ namespace librealsense
     void configurator::enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int fps)
     {
         std::lock_guard<std::mutex> lock(_mtx);
-        //TODO: Should we throw in case the request will result in an invalid resolution?
-        //_stream_requests[{stream, index}] = { stream, index, width, height, format, fps };
+        _stream_requests[{stream, index}] = { stream, index, width, height, format, fps };
     }
 
     void configurator::enable_all_stream()
     {
         std::lock_guard<std::mutex> lock(_mtx);
-        //_stream_requests.clear();
+        _stream_requests.clear();
         _enable_all_streams = true;
     }
 
@@ -63,19 +62,24 @@ namespace librealsense
     void configurator::disable_stream(rs2_stream stream)
     {
         std::lock_guard<std::mutex> lock(_mtx);
-        //std::remove_if(std::begin(_stream_requests), 
-        //    std::end(_stream_requests), 
-        //    [stream](const std::pair<std::pair<rs2_stream, int>, util::config::request_type>& r)
-        //    {
-        //        return r.first.first == stream;
-        //    }
-        //);
+        auto itr = std::begin(_stream_requests);
+        while (itr != std::end(_stream_requests)) 
+        {
+            if (itr->first.first == stream)
+            {
+                itr = _stream_requests.erase(itr);
+            }
+            else 
+            {
+                ++itr;
+            }
+        }
     }
 
     void configurator::disable_all_streams()
     {
         std::lock_guard<std::mutex> lock(_mtx);
-        //_stream_requests.clear();
+        _stream_requests.clear();
         _enable_all_streams = false;
     }
 
@@ -104,7 +108,7 @@ namespace librealsense
             util::config config;
 
             //If the user did not request anything, give it the default
-            if (true/* _stream_requests.empty()*/)
+            if (_stream_requests.empty())
             {
                 if (!requested_device)
                 {
@@ -127,12 +131,12 @@ namespace librealsense
             }
             else
             {
-                //User enabled some stream, enable only them                
-                /*for(auto&& req : _stream_requests)
+                //User enabled some stream, enable only them   
+                for(auto&& req : _stream_requests)
                 {
                     auto r = req.second;
                     config.enable_stream(r.stream, r.stream_index, r.width, r.height, r.format, r.fps);
-                }*/
+                }
 
                 for (auto dev_info : pipe->get_context()->query_devices())
                 {
@@ -491,6 +495,7 @@ namespace librealsense
     {
         auto profiles_per_sensor = _multistream.get_profiles_per_sensor();
         stream_profiles profiles;
+
         //std::transform(std::begin(profiles_per_sensor),
         //    std::end(profiles_per_sensor),
         //    std::back_inserter(profiles), 

@@ -520,7 +520,7 @@ namespace librealsense
                             {
                                 if (match(p.get(), t))
                                 {
-                                    out.emplace(i, p);
+                                    out.emplace((int)i, p);
                                     break;
                                 }
                             }

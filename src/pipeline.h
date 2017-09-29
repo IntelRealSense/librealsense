@@ -71,17 +71,20 @@ namespace librealsense
 
         //Non top level API
         void enable_record_to_file(const std::string& file);
+
     private:
-        std::shared_ptr<device_interface> resolve_device_requests(std::shared_ptr<pipeline> pipe);
-        stream_profiles get_default_configuration(std::shared_ptr<device_interface> dev);
-        std::shared_ptr<device_interface> get_first_or_default_device(std::shared_ptr<pipeline> pipe);
         struct device_request
         {
             std::string serial;
             std::string filename;
             std::string record_output;
-        } _device_request;
+        };
 
+        std::shared_ptr<device_interface> resolve_device_requests(std::shared_ptr<pipeline> pipe);
+        stream_profiles get_default_configuration(std::shared_ptr<device_interface> dev);
+        std::shared_ptr<device_interface> get_first_or_default_device(std::shared_ptr<pipeline> pipe);
+        device_request _device_request;
+        std::map<std::pair<rs2_stream, int>, util::config::request_type> _stream_requests;
         std::mutex _mtx;
         bool _enable_all_streams = false;
     };
