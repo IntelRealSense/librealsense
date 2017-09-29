@@ -358,16 +358,21 @@ namespace librealsense
                 std::map<index_type, sensor_interface*> stream_to_dev;
                 std::map<index_type, std::shared_ptr<stream_profile_interface>> stream_to_profile;
 
+                std::map<int, sensor_interface*> sensors_map;
                 std::vector<sensor_interface*> sensors;
                 for(auto i = 0; i< dev->get_sensors_count(); i++)
                 {
-                    sensors.push_back(&dev->get_sensor(i));
+                    if (mapping.find(i) != mapping.end())
+                    {
+                        sensors_map[i] = &dev->get_sensor(i);
+                        sensors.push_back(&dev->get_sensor(i));
+                    }
                 }
 
                 for (auto && kvp : mapping) {
                     dev_to_profiles[kvp.first].push_back(kvp.second);
                     index_type idx{ kvp.second->get_stream_type(), kvp.second->get_stream_index() };
-                    stream_to_dev.emplace(idx, sensors[kvp.first]);
+                    stream_to_dev.emplace(idx, sensors_map.at(kvp.first));
                     stream_to_profile[idx] = kvp.second;
                 }
 

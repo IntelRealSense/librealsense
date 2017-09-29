@@ -45,7 +45,7 @@ namespace librealsense
 
      private:
          void unsafe_start(std::shared_ptr<pipeline_config> conf);
-
+         void unsafe_stop();
         std::shared_ptr<librealsense::context> _ctx;
         std::mutex _mtx;
         device_hub _hub;

@@ -289,7 +289,7 @@ namespace librealsense
     {
         try
         {
-            stop();
+            unsafe_stop();
         }
         catch (...) {}
     }
@@ -357,15 +357,18 @@ namespace librealsense
             try
             {
                 profile = conf->resolve(shared_from_this());
-                profile->_multistream.open();
-                profile->_multistream.start(syncer_callback);
-                break;
             }
             catch (...)
             {
                 if (i == NUM_TIMES_TO_RETRY)
                     throw;
+
+                continue;
             }
+
+            profile->_multistream.open();
+            profile->_multistream.start(syncer_callback);
+            break;
         }
 
         //On successfull start, update members:
@@ -380,13 +383,20 @@ namespace librealsense
         {
             throw librealsense::wrong_api_call_sequence_exception("stop() cannnot be called before start()");
         }
-        _active_profile->_multistream.stop();
-        _active_profile->_multistream.close();
+        unsafe_stop();
+    }
+
+    void pipeline::unsafe_stop()
+    {
+        if (_active_profile)
+        {
+            _active_profile->_multistream.stop();
+            _active_profile->_multistream.close();
+        }
         _syncer.reset();
         _queue.reset();
         _active_profile.reset();
     }
-
     frame_holder pipeline::wait_for_frames(unsigned int timeout_ms)
     {
         std::lock_guard<std::mutex> lock(_mtx);
