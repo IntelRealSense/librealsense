@@ -146,6 +146,23 @@ namespace librealsense
         std::mutex _streams_mutex, _devices_changed_callbacks_mtx;
     };
 
+    class readonly_device_info : public device_info
+    {
+    public:
+        readonly_device_info(std::shared_ptr<device_interface> dev) : device_info(dev->get_context()), _dev(dev) {}
+        std::shared_ptr<device_interface> create(std::shared_ptr<context> /*backend*/) const override
+        {
+            return _dev;
+        }
+
+        platform::backend_device_group get_device_data() const override
+        {
+            return _dev->get_device_data();
+        }
+    private:
+        std::shared_ptr<device_interface> _dev;
+    };
+
     // Helper functions for device list manipulation:
     std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list);
     std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> group_devices_and_hids_by_unique_id(

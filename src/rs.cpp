@@ -195,7 +195,8 @@ rs2_device* rs2_device_hub_wait_for_device(rs2_context* ctx, const rs2_device_hu
 {
     VALIDATE_NOT_NULL(hub);
     VALIDATE_NOT_NULL(ctx);
-    return new rs2_device{ ctx->ctx, /*TODO: how does this affect the new device*/ nullptr, hub->hub->wait_for_device() };
+    auto dev = hub->hub->wait_for_device();
+    return new rs2_device{ ctx->ctx, std::make_shared<readonly_device_info>(dev), dev };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, hub, ctx)
 
@@ -1418,8 +1419,8 @@ rs2_device* rs2_pipeline_profile_get_device(rs2_pipeline_profile* profile, rs2_e
     VALIDATE_NOT_NULL(profile);
 
     auto dev = profile->profile->get_device();
-    
-    return new rs2_device{ dev->get_context(), nullptr, dev };
+    auto dev_info = std::make_shared<librealsense::readonly_device_info>(dev);
+    return new rs2_device{ dev->get_context(), dev_info , dev };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, profile)
 
@@ -1442,7 +1443,7 @@ NOEXCEPT_RETURN(, profile)
 //config
 rs2_config* rs2_create_config(rs2_error** error) try
 {
-    return new rs2_config();
+    return new rs2_config{ std::make_shared<librealsense::pipeline_config>() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, 0)
 
