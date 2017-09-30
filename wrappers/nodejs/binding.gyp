@@ -1,6 +1,10 @@
 {
   'variables': {
     'build_arch': '<!(node -p "process.arch")',
+    'variables': {
+      'vs_configuration%': "Debug",
+    },
+    'win_realsense_dir': '<(module_root_dir)/../../build/<(vs_configuration)',
   },
   "targets": [
     {
@@ -45,8 +49,7 @@
               }
             },
             "libraries": [
-              # TODO: Identify builddir and buildtype
-              "<(module_root_dir)/../../build/Debug/realsense2.lib",
+              "<(win_realsense_dir)/realsense2.lib",
             ],
           }
         ],
@@ -87,7 +90,7 @@
             [
               {
                 'destination': '<(module_root_dir)/build/Release',
-                'files': ['<(module_root_dir)/../../build/Debug/realsense2.dll']
+                'files': ['<(win_realsense_dir)/realsense2.dll']
               }
             ]
         }]
