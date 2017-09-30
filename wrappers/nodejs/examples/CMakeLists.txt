@@ -20,10 +20,10 @@ elseif(UNIX AND NOT APPLE)
 endif()
 
 # Get CPU architecture
-INCLUDE(cmake/TargetArch.cmake)
-target_architecture(ARCH)
+execute_process(COMMAND node -p "process.arch" OUTPUT_VARIABLE ARCH)
+string(REPLACE "\n" "" ARCH ${ARCH})
 string(REPLACE "x86_64" "x64" ARCH ${ARCH})
-string(REPLACE "i386" "x86" ARCH ${ARCH})
+string(REPLACE "ia32" "x86" ARCH ${ARCH})
 
 set(PKG_STR node${NODE_VERSOIN}-${OS}-${ARCH})
 
