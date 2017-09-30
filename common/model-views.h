@@ -40,6 +40,7 @@ static const ImVec4 dark_grey = from_rgba(30, 30, 30, 255);
 static const ImVec4 sensor_header_light_blue = from_rgba(80, 99, 115, 0xff);
 static const ImVec4 sensor_bg = from_rgba(36, 44, 51, 0xff);
 static const ImVec4 redish = from_rgba(255, 46, 54, 255, true);
+static const ImVec4 dark_red = from_rgba(200, 46, 54, 255, true);
 static const ImVec4 button_color = from_rgba(62, 77, 89, 0xff);
 static const ImVec4 header_window_bg = from_rgba(36, 44, 54, 0xff);
 static const ImVec4 header_color = from_rgba(62, 77, 89, 255);
@@ -282,6 +283,8 @@ namespace rs2
         void show_metadata(const mouse_info& g);
         rect get_normalized_zoom(const rect& stream_rect, const mouse_info& g, bool is_middle_clicked, float zoom_val);
 
+        bool is_stream_alive();
+
         void show_stream_footer(const rect& stream_rect,const mouse_info& mouse);
         void show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer);
 
@@ -292,9 +295,9 @@ namespace rs2
 
         stream_profile profile;
         std::chrono::high_resolution_clock::time_point last_frame;
-        double              timestamp;
-        unsigned long long  frame_number;
-        rs2_timestamp_domain timestamp_domain;
+        double              timestamp = 0.0;
+        unsigned long long  frame_number = 0;
+        rs2_timestamp_domain timestamp_domain = RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
         fps_calc            fps;
         rect                roi_display_rect{};
         frame_metadata      frame_md;
@@ -563,7 +566,8 @@ namespace rs2
 
     private:
         std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
-        void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, const ImVec4& color);
+        void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, 
+                       int id, const ImVec4& color, const std::string& tooltip = "");
 
         streams_layout _layout;
         streams_layout _old_layout;

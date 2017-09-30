@@ -1315,21 +1315,26 @@ namespace rs2
 
     float stream_model::get_stream_alpha()
     {
-        if (dev && dev->is_paused()) return 1.f;
-
-        using namespace std::chrono;
-        auto now = high_resolution_clock::now();
-        auto diff = now - last_frame;
-        auto ms = duration_cast<milliseconds>(diff).count();
-        auto t = smoothstep(static_cast<float>(ms),
-            _min_timeout, _min_timeout + _frame_timeout);
-        return 1.0f - t;
+        return 1.f;
     }
 
     bool stream_model::is_stream_visible()
     {
         if (dev &&
-            (dev->is_paused() || (dev->streaming && dev->dev.is<playback>())))
+            (dev->is_paused() || 
+             (dev->streaming && dev->dev.is<playback>()) ||
+             (dev->streaming /*&& texture->get_last_frame()*/ )))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    bool stream_model::is_stream_alive()
+    {
+        if (dev &&
+            (dev->is_paused() ||
+            (dev->streaming && dev->dev.is<playback>())))
         {
             last_frame = std::chrono::high_resolution_clock::now();
             return true;
@@ -2347,6 +2352,14 @@ namespace rs2
                 for (auto&& profile : profiles)
                 {
                     viewer.streams[profile.unique_id()].dev = sub;
+                    viewer.streams[profile.unique_id()].profile = profile;
+
+                    if (auto vd = profile.as<video_stream_profile>())
+                    {
+                        viewer.streams[profile.unique_id()].size = {
+                            static_cast<float>(vd.width()),
+                            static_cast<float>(vd.height()) };
+                    };
                 }
             }
         }
@@ -2544,7 +2557,8 @@ namespace rs2
         ImGui::PopStyleVar(2);
         ImGui::PopFont();
     }
-    void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, const ImVec4& text_color)
+    void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, 
+                                 const ImVec4& text_color, const std::string& tooltip)
     {
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -2554,13 +2568,15 @@ namespace rs2
         ImGui::PushFont(font_18);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
         ImGui::SetNextWindowPos({ (float)x, (float)y });
-        ImGui::SetNextWindowSize({ 32.f, 32.f });
+        ImGui::SetNextWindowSize({ 320.f, 32.f });
         std::string label = to_string() << label_str << id;
         ImGui::Begin(label.c_str(), nullptr, flags);
 
         ImGui::PushStyleColor(ImGuiCol_Text, text_color);
         ImGui::Text("%s", text);
         ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered() && tooltip != "")
+            ImGui::SetTooltip(tooltip.c_str());
 
         ImGui::End();
         ImGui::PopStyleColor();
@@ -2770,10 +2786,10 @@ namespace rs2
         ImFont *font1, ImFont *font2, size_t dev_model_num,
         const mouse_info &mouse, std::string& error_message)
     {
-        static float alpha_delta = 0;
-        static float alpha_delta_step = 0;
-        alpha_delta_step = alpha_delta <= 0 ? 0.04 : alpha_delta > 1 ? -0.04 : alpha_delta_step;
-        alpha_delta += alpha_delta_step;
+        static periodic_timer every_sec(std::chrono::seconds(1));
+        static bool icon_visible = false;
+        if (every_sec) icon_visible = !icon_visible;
+        float alpha = icon_visible ? 1.f : 0.2f;
 
         glLoadIdentity();
         glOrtho(0, width, heigth, 0, -1, +1);
@@ -2800,8 +2816,18 @@ namespace rs2
 
             if (stream_mv.dev->dev.is<recorder>())
             {
-                show_recording_icon(font2, pos, stream_rect.y + 5, stream_mv.profile.unique_id(), alpha_delta > 0.5 ? 0 : 1);
+                show_recording_icon(font2, pos, stream_rect.y + 5, stream_mv.profile.unique_id(), alpha);
                 pos += 23;
+            }
+
+            if (!stream_mv.is_stream_alive())
+            {
+                show_icon(font2, "warning_icon", u8"\uf071  FPS Alert!  \uf071",
+                          stream_rect.center().x - 70, 
+                          stream_rect.center().y - 25, 
+                          stream_mv.profile.unique_id(), 
+                          blend(dark_red, alpha),
+                          "Did not receive frames from the platform within a reasonable time window!");
             }
 
             if (stream_mv.dev->is_paused() || (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
