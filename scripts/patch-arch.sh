@@ -42,14 +42,15 @@ echo "RealSense patch..."
 
 # Apply our RealSense specific patch
 patch -p1 < ../../realsense-camera-formats_arch.patch
+#patch -p1 < ../../0002-LR200-ZR300-and-SR300-Pixel-Formats.patch
 
 # Prepare to compile modules
 
 ## Get the config
-# zcat /proc/config.gz > .config  ## Not the good one ?
+zcat /proc/config.gz > .config  ## Not the good one ? # PIETRKO
 
-cp /usr/lib/modules/`uname -r`/build/.config .
-cp /usr/lib/modules/`uname -r`/build/Module.symvers .
+#cp /usr/lib/modules/`uname -r`/build/.config .  # PIETRKO
+#cp /usr/lib/modules/`uname -r`/build/Module.symvers . #PIETRKO
 
 echo "Prepare the build"
 
@@ -60,7 +61,7 @@ echo "Beginning compilation of uvc..."
 #make modules
 KBASE=`pwd`
 cd drivers/media/usb/uvc
-cp $KBASE/Module.symvers .
+#cp $KBASE/Module.symvers . # PIETRKO
 make -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
 
 # Copy to sane location
