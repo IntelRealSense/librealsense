@@ -91,7 +91,8 @@ namespace librealsense
 
         std::vector<stream_profile> resolved_profiles;
 
-        if (_enable_all_streams)
+        //if the user requested all streams, or if the requested device is from file and the user did not request any stream
+        if (_enable_all_streams || (!_device_request.filename.empty() && _stream_requests.empty()))
         {
             if (!requested_device)
             {
@@ -100,8 +101,7 @@ namespace librealsense
 
             util::config config;
             config.enable_all(util::best_quality);
-            auto multistream = config.resolve(requested_device.get());
-            return std::make_shared<pipeline_profile>(requested_device, multistream, _device_request.record_output);
+            return std::make_shared<pipeline_profile>(requested_device, config, _device_request.record_output);
         }
         else
         {
@@ -126,8 +126,7 @@ namespace librealsense
                     config.enable_stream(p->get_stream_type(), p->get_stream_index(), p->get_width(), p->get_height(), p->get_format(), p->get_framerate());
                 }
 
-                auto multistream = config.resolve(requested_device.get());
-                return std::make_shared<pipeline_profile>(requested_device, multistream, _device_request.record_output);
+                return std::make_shared<pipeline_profile>(requested_device, config, _device_request.record_output);
             }
             else
             {
@@ -143,8 +142,7 @@ namespace librealsense
                     try
                     {
                         auto dev = dev_info->create_device();
-                        auto multistream = config.resolve(dev.get());
-                        return std::make_shared<pipeline_profile>(dev, multistream, _device_request.record_output);
+                        return std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
                     }
                     catch (...) {}
                 }
@@ -157,7 +155,20 @@ namespace librealsense
 
     bool pipeline_config::can_resolve(std::shared_ptr<pipeline> pipe)
     {
-        throw not_implemented_exception(__FUNCTION__);
+        try
+        {
+            resolve(pipe);
+        }
+        catch (const std::exception& e)
+        {
+            LOG_DEBUG("Config can not be resolved. " << e.what());
+            return false;
+        }
+        catch (...)
+        {
+            return false;
+        }
+        return true;
     }
     std::shared_ptr<device_interface> pipeline_config::get_first_or_default_device(std::shared_ptr<pipeline> pipe)
     {
@@ -182,6 +193,7 @@ namespace librealsense
             try
             {
                 dev = pipe->get_context()->add_device(_device_request.filename);
+                //TODO: who should remove the playback device from context 
             }
             catch(const std::exception& e)
             {
@@ -414,7 +426,7 @@ namespace librealsense
         if (!_hub.is_connected(*_active_profile->get_device()))
         {
             //_dev = _hub.wait_for_device(timeout_ms/*, _dev.get()*/);
-            //TODO: shouw we use active_profile to start with a new config?
+            //TODO: handle start() from here with playback devices (dont reload file to context)
             unsafe_start(_prev_conf);
             return frame_holder();
         }
@@ -462,9 +474,9 @@ namespace librealsense
     */
 
     pipeline_profile::pipeline_profile(std::shared_ptr<device_interface> dev, 
-                                       util::config::multistream multistream, 
+                                       util::config config,
                                        const std::string& to_file) :
-        _dev(dev), _multistream(multistream), _to_file(to_file)
+        _dev(dev), _to_file(to_file)
     {
         if (!to_file.empty())
         {
@@ -473,6 +485,7 @@ namespace librealsense
 
             _dev = std::make_shared<record_device>(dev, std::make_shared<ros_writer>(to_file));
         }
+        _multistream = config.resolve(_dev.get());
     }
 
     std::shared_ptr<device_interface> pipeline_profile::get_device()

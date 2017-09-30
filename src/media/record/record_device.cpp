@@ -387,7 +387,10 @@ void librealsense::record_device::resume_recording()
         LOG_INFO("Record resumed");
     });
 }
-
+platform::backend_device_group record_device::get_device_data() const
+{
+    return m_device->get_device_data();
+}
 std::shared_ptr<matcher> record_device::create_matcher(const frame_holder& frame) const
 {
     return m_device->create_matcher(frame);

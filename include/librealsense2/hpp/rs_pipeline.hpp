@@ -13,6 +13,7 @@ namespace rs2
     class pipeline_profile
     {
     public:
+        pipeline_profile() : _pipeline_profile(nullptr) {}
         std::vector<stream_profile> get_active_streams() const
         {
             std::vector<stream_profile> results;
@@ -48,8 +49,13 @@ namespace rs2
             return device(dev);
         }
 
+        operator bool() const
+        {
+            return _pipeline_profile != nullptr;
+        }
+
     private:
-        pipeline_profile(std::shared_ptr<rs2_pipeline_profile> profile = nullptr) :
+        pipeline_profile(std::shared_ptr<rs2_pipeline_profile> profile) :
             _pipeline_profile(profile)
         {
 

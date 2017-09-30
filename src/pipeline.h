@@ -15,7 +15,7 @@ namespace librealsense
     class pipeline_profile
     {
     public:
-        pipeline_profile(std::shared_ptr<device_interface> dev, util::config::multistream multistream, const std::string& file);
+        pipeline_profile(std::shared_ptr<device_interface> dev, util::config config, const std::string& file = "");
         std::shared_ptr<device_interface> get_device();
         stream_profiles get_active_streams() const;
         util::config::multistream _multistream;
