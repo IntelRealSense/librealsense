@@ -125,7 +125,6 @@ namespace rs2
             metric_plot             _fill_plot;
             metric_plot             _dist_plot;
             metric_plot             _angle_plot;
-            metric_plot             _out_plot;
             std::mutex              _m;
         };
 

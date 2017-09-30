@@ -414,8 +414,7 @@ namespace rs2
             _std_plot("STD (Error)", 0, 10, { 270, 50 }, " (mm)"),
             _fill_plot("Fill-Rate", 0, 100, { 270, 50 }, " %"),
             _dist_plot("Distance", 0, 5, { 270, 50 }, " (m)"),
-            _angle_plot("Angle", 0, 180, { 270, 50 }, " (deg)"),
-            _out_plot("Outliers", 0, 100, { 270, 50 }, " %")
+            _angle_plot("Angle", 0, 180, { 270, 50 }, " (deg)")
         {
             _avg_plot.ranges[metric_plot::GREEN_RANGE] = { 0.f, 1.f };
             _avg_plot.ranges[metric_plot::YELLOW_RANGE] = { 0.f, 7.f };
@@ -446,12 +445,6 @@ namespace rs2
             _angle_plot.ranges[metric_plot::RED_RANGE] = { -100.f, 100.f };
 
             _angle_plot.description = "Wall Angle\nWhen facing a flat wall this metric\nestimates the angle to the wall.";
-
-            _out_plot.ranges[metric_plot::GREEN_RANGE] = { 0.f, 5.f };
-            _out_plot.ranges[metric_plot::YELLOW_RANGE] = { 0.f, 20.f };
-            _out_plot.ranges[metric_plot::RED_RANGE] = { 0.f, 100.f };
-
-            _out_plot.description = "Outliers Percentage\nMeasures the percentage of pixels\nthat do not fit in with\nthe gaussian distribution";
 
             _worker_thread = std::thread([this]() {
                 while (_active)
@@ -512,7 +505,7 @@ namespace rs2
         {
             std::stringstream ss;
             auto val = _vals[(SIZE + _idx - 1) % SIZE];
-            ss << _label << std::setprecision(2) << std::fixed  << std::setw(6) << val << _tail;
+            ss << _label << std::setprecision(2) << std::fixed  << std::setw(3) << val << _tail;
 
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
 
@@ -593,6 +586,11 @@ namespace rs2
                 ImGui::PopStyleColor(3);
 
                 ImGui::PlotLines(_id.c_str(), _vals, 100, _idx, ss.str().c_str(), _min, _max, _size);
+
+                ImGui::PushStyleColor(ImGuiCol_Text, green);
+                ImGui::Text("[%.2f - %.2f] Pass", ranges[0].x, ranges[0].y);
+                ImGui::PopStyleColor();
+
                 ImGui::TreePop();
             }
 
@@ -613,14 +611,12 @@ namespace rs2
             _fill_plot.add_value(_latest_metrics.non_null_pct);
             _dist_plot.add_value(data.distance);
             _angle_plot.add_value(data.angle);
-            _out_plot.add_value(data.outlier_pct);
 
             _avg_plot.render(win);
             _std_plot.render(win);
             _fill_plot.render(win);
             _dist_plot.render(win);
             _angle_plot.render(win);
-            _out_plot.render(win);
         }
 
         void metrics_model::serialize_to_csv(const std::string& filename) const
@@ -631,15 +627,14 @@ namespace rs2
             csv.open(filename);
 
             // Create header line
-            csv << "avg_distance_m,std_deviation,fill_rate_%,distance,angle_deg,outliers_%" << std::endl;
+            csv << "avg_distance_m,std_deviation,fill_rate_%,distance,angle_deg" << std::endl;
             for (size_t i = 0; i < metric_plot::SIZE; i++)
             {
                 csv << _avg_plot._vals[i] << ","
                     << _std_plot._vals[i] << ","
                     << _fill_plot._vals[i] << ","
                     << _dist_plot._vals[i] << ","
-                    << _angle_plot._vals[i] << ","
-                    << _out_plot._vals[i] << std::endl;
+                    << _angle_plot._vals[i] << std::endl;
             }
 
             csv.close();

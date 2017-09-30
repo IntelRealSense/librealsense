@@ -18,7 +18,6 @@ namespace rs2
             float fit;
             float distance;
             float angle;
-            float outlier_pct;
         };
 
         struct snapshot_metrics
@@ -125,8 +124,6 @@ namespace rs2
 
             std::vector<float3> outliers;
             for (auto point : points) if (std::abs(std::abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d) * 1000 - result.avg_dist) > result.std_dev * std_devs) outliers.push_back(point);
-
-            result.outlier_pct = outliers.size() / float(distances.size()) * 100;
 
             return result;
         }
