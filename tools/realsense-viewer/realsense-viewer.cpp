@@ -477,15 +477,7 @@ int main(int argv, const char** argc) try
 
                                     for (auto&& profile : profiles)
                                     {
-                                        viewer_model.streams[profile.unique_id()].dev = sub;
-                                        viewer_model.streams[profile.unique_id()].profile = profile;
-
-                                        if (auto vd = profile.as<video_stream_profile>())
-                                        {
-                                            viewer_model.streams[profile.unique_id()].size = { 
-                                                static_cast<float>(vd.width()), 
-                                                static_cast<float>(vd.height()) };
-                                        };
+                                        viewer_model.streams[profile.unique_id()].begin_stream(sub, profile);
                                     }
                                 }
                                 if (ImGui::IsItemHovered())

@@ -98,6 +98,7 @@ namespace librealsense
     {
         auto res = std::make_shared<stream_profile_base>(get_backend_profile());
         res->set_unique_id(environment::get_instance().generate_stream_id());
+        res->set_framerate(get_framerate());
         return res;
     }
 

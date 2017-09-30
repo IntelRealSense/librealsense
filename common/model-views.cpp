@@ -1240,7 +1240,8 @@ namespace rs2
     }
 
     stream_model::stream_model()
-        : texture(std::unique_ptr<texture_buffer>(new texture_buffer()))
+        : texture(std::unique_ptr<texture_buffer>(new texture_buffer())),
+          _stream_not_alive(std::chrono::milliseconds(1500))
     {}
 
     void stream_model::upload_frame(frame&& f)
@@ -1344,7 +1345,23 @@ namespace rs2
         auto now = high_resolution_clock::now();
         auto diff = now - last_frame;
         auto ms = duration_cast<milliseconds>(diff).count();
-        return ms <= _frame_timeout + _min_timeout;
+        _stream_not_alive.add_value(ms > _frame_timeout + _min_timeout);
+        return !_stream_not_alive.eval();
+    }
+
+    void stream_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p)
+    {
+        dev = d;
+        profile = p;
+        profile = p;
+
+        if (auto vd = p.as<video_stream_profile>())
+        {
+            size = {
+                static_cast<float>(vd.width()),
+                static_cast<float>(vd.height()) };
+        };
+        _stream_not_alive.reset();
     }
 
     void stream_model::update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message)
@@ -1505,7 +1522,7 @@ namespace rs2
         auto model = pc.get_points();
 
         const auto top_bar_height = 32.f;
-        const auto num_of_buttons = 3;
+        const auto num_of_buttons = 4;
 
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -1718,7 +1735,7 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if (ImGui::Button(u8"\uf0c7", { 30, top_bar_height }))
+        if (ImGui::Button(u8"\uf0c7", { 24, top_bar_height }))
         {
             if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
             {
@@ -1732,12 +1749,36 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if (ImGui::Button(u8"\uf021", { 30, top_bar_height }))
+        if (ImGui::Button(u8"\uf021", { 24, top_bar_height }))
         {
             reset_camera();
         }
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Reset View");
+
+        ImGui::SameLine();
+
+        if (syncronize)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            if (ImGui::Button(u8"\uf09c", { 24, top_bar_height }))
+            {
+                syncronize = false;
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Disable syncronization between the pointcloud and the texture");
+            ImGui::PopStyleColor(2);
+        }
+        else
+        {
+            if (ImGui::Button(u8"\uf023", { 24, top_bar_height }))
+            {
+                syncronize = true;
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Keep the pointcloud and the texture sycronized");
+        }
 
         ImGui::End();
         ImGui::PopStyleColor(6);
@@ -2351,15 +2392,7 @@ namespace rs2
 
                 for (auto&& profile : profiles)
                 {
-                    viewer.streams[profile.unique_id()].dev = sub;
-                    viewer.streams[profile.unique_id()].profile = profile;
-
-                    if (auto vd = profile.as<video_stream_profile>())
-                    {
-                        viewer.streams[profile.unique_id()].size = {
-                            static_cast<float>(vd.width()),
-                            static_cast<float>(vd.height()) };
-                    };
+                    viewer.streams[profile.unique_id()].begin_stream(sub, profile);
                 }
             }
         }
@@ -2915,8 +2948,34 @@ namespace rs2
 
         glColor4f(1.f, 1.f, 1.f, 1.f);
 
+        if (syncronize)
+        {
+            auto tex = streams[selected_tex_source_uid].texture->get_last_frame();
+            if (tex) s(tex);
+        }
+
         if (auto points = pc.get_points())
         {
+            if (syncronize)
+            {
+                s(points);
+                rs2::frameset fs;
+                if (s.poll_for_frames(&fs))
+                    if (fs && fs.size() > 1)
+                    {
+                        for (auto&& f : fs)
+                        {
+                            if (f.is<rs2::points>()) last_points = f;
+                            else last_texture = f;
+                        }
+                    }
+            }
+            else
+            {
+                last_texture = streams[selected_tex_source_uid].texture->get_last_frame();
+                last_points = points;
+            }
+
             if (draw_frustrum)
             {
                 glLineWidth(1.f);
@@ -2954,36 +3013,40 @@ namespace rs2
                 glColor4f(1.f, 1.f, 1.f, 1.f);
             }
 
-            glPointSize((float)viewer_rect.w / points.get_profile().as<video_stream_profile>().width());
-
-            if (selected_tex_source_uid >= 0)
+            if (last_points && last_texture)
             {
-                auto tex = streams[selected_tex_source_uid].texture->get_gl_handle();
-                glBindTexture(GL_TEXTURE_2D, tex);
-                glEnable(GL_TEXTURE_2D);
+                texture.upload(last_texture);
 
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
-            }
+                glPointSize((float)viewer_rect.w / points.get_profile().as<video_stream_profile>().width());
 
-            //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
-
-            glBegin(GL_POINTS);
-
-            auto vertices = points.get_vertices();
-            auto tex_coords = points.get_texture_coordinates();
-
-            for (int i = 0; i < points.size(); i++)
-            {
-                if (vertices[i].z)
+                if (selected_tex_source_uid >= 0)
                 {
-                    glVertex3fv(vertices[i]);
-                    glTexCoord2fv(tex_coords[i]);
+                    auto tex = texture.get_gl_handle();
+                    glBindTexture(GL_TEXTURE_2D, tex);
+                    glEnable(GL_TEXTURE_2D);
+
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
                 }
 
-            }
+                //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
 
-            glEnd();
+                glBegin(GL_POINTS);
+
+                auto vertices = last_points.get_vertices();
+                auto tex_coords = last_points.get_texture_coordinates();
+
+                for (int i = 0; i < last_points.size(); i++)
+                {
+                    if (vertices[i].z)
+                    {
+                        glVertex3fv(vertices[i]);
+                        glTexCoord2fv(tex_coords[i]);
+                    }
+
+                }
+                glEnd();
+            }
         }
 
         glDisable(GL_DEPTH_TEST);

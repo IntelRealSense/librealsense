@@ -288,6 +288,7 @@ namespace rs2
         void show_stream_footer(const rect& stream_rect,const mouse_info& mouse);
         void show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer);
 
+        void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p);
         rect layout;
         std::unique_ptr<texture_buffer> texture;
         float2 size;
@@ -312,7 +313,7 @@ namespace rs2
         rect _normalized_zoom{0, 0, 1, 1};
         int color_map_idx = 1;
         bool show_stream_details = false;
-
+        temporal_event _stream_not_alive;
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);
@@ -560,6 +561,7 @@ namespace rs2
         bool draw_plane = false;
 
         bool draw_frustrum = true;
+        bool syncronize = false;
 
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;
@@ -580,6 +582,11 @@ namespace rs2
         float view[16];
         bool texture_wrapping_on = true;
         GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
+
+        rs2::points last_points;
+        rs2::frame last_texture;
+        texture_buffer texture;
+        rs2::syncer s;
     };
 
     void export_to_ply(const std::string& file_name, notifications_model& ns, points points, video_frame texture);
