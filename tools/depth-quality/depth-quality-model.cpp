@@ -8,7 +8,7 @@ namespace rs2
     namespace depth_quality
     {
         tool_model::tool_model()
-            : _update_readonly_options_timer(std::chrono::seconds(6)), _roi_percent(0.33f),
+            : _update_readonly_options_timer(std::chrono::seconds(6)), _roi_percent(0.4f),
               _roi_located(std::chrono::seconds(4))
         {
             _viewer_model.is_3d_view = true;
@@ -186,11 +186,11 @@ namespace rs2
                         ImGui::PushItemWidth(-1);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
 
-                        static std::vector<std::string> items{ "66%", "33%", "11%" };
+                        static std::vector<std::string> items{ "66%", "40%", "11%" };
                         if (draw_combo_box("##ROI Percent", items, _roi_combo_index))
                         {
                             if (_roi_combo_index == 0) _roi_percent = 0.66f;
-                            else if (_roi_combo_index == 1) _roi_percent = 0.33f;
+                            else if (_roi_combo_index == 1) _roi_percent = 0.4f;
                             else if (_roi_combo_index == 2) _roi_percent = 0.11f;
                             update_configuration();
                         }
