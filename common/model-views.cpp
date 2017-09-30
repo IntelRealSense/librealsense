@@ -6,6 +6,7 @@
 #include <algorithm>
 
 #include <librealsense2/rs_advanced_mode.hpp>
+#include <librealsense2/rsutil.h>
 
 #include "model-views.h"
 
@@ -2890,6 +2891,43 @@ namespace rs2
 
         if (auto points = pc.get_points())
         {
+            if (draw_frustrum)
+            {
+                glLineWidth(1.f);
+                glBegin(GL_LINES);
+
+                auto intrin = points.get_profile().as<video_stream_profile>().get_intrinsics();
+
+                glColor4f(sensor_bg.x, sensor_bg.y, sensor_bg.z, 0.5f);
+
+                for (float d = 1; d < 6; d+=2)
+                {
+                    auto get_point = [&](float x, float y) -> float3
+                    {
+                        float point[3];
+                        float pixel[2]{ x, y };
+                        rs2_deproject_pixel_to_point(point, &intrin, pixel, d);
+                        glVertex3f(0.f, 0.f, 0.f);
+                        glVertex3fv(point);
+                        return{ point[0], point[1], point[2] };
+                    };
+
+                    auto top_left = get_point(0, 0);
+                    auto top_right = get_point(intrin.width, 0);
+                    auto bottom_right = get_point(intrin.width, intrin.height);
+                    auto bottom_left = get_point(0, intrin.height);
+
+                    glVertex3fv(&top_left.x); glVertex3fv(&top_right.x);
+                    glVertex3fv(&top_right.x); glVertex3fv(&bottom_right.x);
+                    glVertex3fv(&bottom_right.x); glVertex3fv(&bottom_left.x);
+                    glVertex3fv(&bottom_left.x); glVertex3fv(&top_left.x);
+                }
+
+                glEnd();
+
+                glColor4f(1.f, 1.f, 1.f, 1.f);
+            }
+
             glPointSize((float)viewer_rect.w / points.get_profile().as<video_stream_profile>().width());
 
             if (selected_tex_source_uid >= 0)

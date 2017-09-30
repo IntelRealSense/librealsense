@@ -556,6 +556,8 @@ namespace rs2
         std::array<float3, 4> roi_rect;
         bool draw_plane = false;
 
+        bool draw_frustrum = true;
+
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;
 
