@@ -80,14 +80,29 @@ extern "C" {
     void rs2_delete_pipeline(rs2_pipeline* pipe);
 
     /**
-    * Start the pipeline streaming.
+    * Start the pipeline streaming with its default configuration.
     * The pipeline streaming loop captures samples from the device, and delivers them to the attached computer vision modules
     * and processing blocks, according to each module requirements and threading model.
     * During the loop execution, the application can access the camera streams by calling \c wait_for_frames() or \c poll_for_frames().
     * The streaming loop runs until the pipeline is stopped.
     * Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.
-    * The pipeline selects and activates the device upon start, according to application selected configuration or a default configuration.
-    * If a rs2::config is provided to the method, the pipeline tries to activate the config \c resolve() result. If the application
+    *
+    * \param[in] pipe    a pointer to an instance of the pipeline
+    * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return             The actual pipeline device and streams profile, which was successfully configured to the streaming device.
+    */
+    rs2_pipeline_profile* rs2_pipeline_start(rs2_pipeline* pipe, rs2_error ** error);
+
+
+    /**
+    * Start the pipeline streaming according to the configuraion.
+    * The pipeline streaming loop captures samples from the device, and delivers them to the attached computer vision modules
+    * and processing blocks, according to each module requirements and threading model.
+    * During the loop execution, the application can access the camera streams by calling \c wait_for_frames() or \c poll_for_frames().
+    * The streaming loop runs until the pipeline is stopped.
+    * Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.
+    * The pipeline selects and activates the device upon start, according to configuration or a default configuration.
+    * When the rs2::config is provided to the method, the pipeline tries to activate the config \c resolve() result. If the application
     * requests are conflicting with pipeline computer vision modules or no matching device is available on the platform, the method fails.
     * Available configurations and devices may change between config \c resolve() call and pipeline start, in case devices are connected
     * or disconnected, or another application acquires ownership of a device.
@@ -97,20 +112,7 @@ extern "C" {
     * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return             The actual pipeline device and streams profile, which was successfully configured to the streaming device.
     */
-    rs2_pipeline_profile* rs2_pipeline_start(rs2_pipeline* pipe, rs2_config* config, rs2_error ** error);
-
-    /**
-    * Start the pipeline streaming and record the session to a file.
-    * The method behaves the same as the non recording \c start() method, and creates a file with the caller's filename, which
-    * records the pipeline streaming device state and streams data.
-    *
-    * \param[in] pipe    a pointer to an instance of the pipeline
-    * \param[in] config               A rs2::config with requested filters on the pipeline configuration. By default no filters are applied.
-    * \param[in] record_to_filename   The output file for the device recording.
-    * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-    * \return                         The actual pipeline device and streams profile, which was successfully configured to the streaming device.
-    */
-    rs2_pipeline_profile* rs2_pipeline_start_with_record(rs2_pipeline* pipe, rs2_config* config, const char* file, rs2_error ** error);
+    rs2_pipeline_profile* rs2_pipeline_start_with_config(rs2_pipeline* pipe, rs2_config* config, rs2_error ** error);
 
     /**
     * Return the active device and streams profiles, used by the pipeline.
@@ -146,7 +148,7 @@ extern "C" {
     * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return   list of stream profiles
     */
-    rs2_stream_profile_list* rs2_pipeline_profile_get_active_streams(rs2_pipeline_profile* profile, rs2_error** error);
+    rs2_stream_profile_list* rs2_pipeline_profile_get_streams(rs2_pipeline_profile* profile, rs2_error** error);
 
     /**
     * Deletes an instance of a pipeline profile
@@ -189,11 +191,11 @@ extern "C" {
     *
     * \param[in] config    A pointer to an instance of a config
     * \param[in] stream    Stream type to be enabled
-    * \param[in] index     Stream index, used for multiple streams of the same type. 0 selects the default.
-    * \param[in] width     Stream image width - for images streams
-    * \param[in] height    Stream image height - for images streams
-    * \param[in] format    Stream data format - pixel format for images streams, of data type for other streams
-    * \param[in] framerate Stream frames per second
+    * \param[in] index     Stream index, used for multiple streams of the same type. -1 indicates any.
+    * \param[in] width     Stream image width - for images streams. 0 indicates any.
+    * \param[in] height    Stream image height - for images streams. 0 indicates any.
+    * \param[in] format    Stream data format - pixel format for images streams, of data type for other streams. RS2_FORMAT_ANY indicates any.
+    * \param[in] framerate Stream frames per second. 0 indicates any.
     * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     */
     void rs2_config_enable_stream(rs2_config* config,
@@ -232,13 +234,25 @@ extern "C" {
     * Select a recorded device from a file, to be used by the pipeline through playback.
     * The device available streams are as recorded to the file, and \c resolve() considers only this device and configuration
     * as available.
+    * This request cannot be used if enable_record_to_file() is called for the current config, and vise versa
     *
     * \param[in] config    A pointer to an instance of a config
     * \param[in] file_name  The playback file of the device
     * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     */
     void rs2_config_enable_device_from_file(rs2_config* config, const char* file, rs2_error ** error);
+    
+    /**
+    * Requires that the resolved device would be recorded to file
+    * This request cannot be used if enable_device_from_file() is called for the current config, and vise versa
+    *
+    * \param[in] config    A pointer to an instance of a config
+    * \param[in] file_name  The desired file for the output record
+    * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    */
+    void rs2_config_enable_record_to_file(rs2_config* config, const char* file, rs2_error ** error);
 
+    
     /**
     * Disable a device stream explicitly, to remove any requests on this stream profile.
     * The stream can still be enabled due to pipeline computer vision module request. This call removes any filter on the

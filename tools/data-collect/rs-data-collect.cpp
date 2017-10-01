@@ -212,7 +212,7 @@ int main(int argc, char** argv) try
             }
 
             bool collected_enough_frames = true;
-            for (auto&& profile : pipe.get_active_profile().get_active_streams())
+            for (auto&& profile : pipe.get_active_profile().get_streams())
             {
                 if (buffer[(int)profile.stream_type()].size() < max_frames_number)
                 {

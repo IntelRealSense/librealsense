@@ -26,13 +26,13 @@ namespace rs2
         * \return   Vector of stream profiles
         */
 
-        std::vector<stream_profile> get_active_streams() const
+        std::vector<stream_profile> get_streams() const
         {
             std::vector<stream_profile> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_stream_profile_list> list(
-                rs2_pipeline_profile_get_active_streams(_pipeline_profile.get(), &e),
+                rs2_pipeline_profile_get_streams(_pipeline_profile.get(), &e),
                 rs2_delete_stream_profiles_list);
             error::handle(e);
 
@@ -93,7 +93,197 @@ namespace rs2
         friend class pipeline;
     };
 
-    class config;
+    class pipeline;
+
+    /**
+    * The config allows pipeline users to request filters for the pipeline streams and device selection and configuration.
+    * This is an optional step in pipeline creation, as the pipeline resolves its streaming device internally.
+    * Config provides its users a way to set the filters and test if there is no conflict with the pipeline requirements
+    * from the device. It also allows the user to find a matching device for the config filters and the pipeline, in order to
+    * select a device explicitly, and modify its controls before streaming starts.
+    */
+    class config
+    {
+    public:
+        config()
+        {
+            rs2_error* e = nullptr;
+            _config = std::shared_ptr<rs2_config>(
+                rs2_create_config(&e),
+                rs2_delete_config);
+            error::handle(e);
+        }
+
+        /**
+        * Enable a device stream explicitly, with selected stream parameters.
+        * The method allows the application to request a stream with specific configuration. If no stream is explicitly enabled, the pipeline
+        * configures the device and its streams according to the attached computer vision modules and processing blocks requirements, or
+        * default configuration for the first available device.
+        * The application can configure any of the input stream parameters according to its requirement, or set to 0 for don't care value.
+        * The config accumulates the application calls for enable configuration methods, until the configuration is applied. Multiple enable
+        * stream calls for the same stream with conflicting parameters override each other, and the last call is maintained.
+        * Upon calling \c resolve(), the config checks for conflicts between the application configuration requests and the attached computer
+        * vision modules and processing blocks requirements, and fails if conflicts are found. Before \c resolve() is called, no conflict
+        * check is done.
+        *
+        * \param[in] stream    Stream type to be enabled
+        * \param[in] index     Stream index, used for multiple streams of the same type. -1 indicates any.
+        * \param[in] width     Stream image width - for images streams. 0 indicates any.
+        * \param[in] height    Stream image height - for images streams. 0 indicates any.
+        * \param[in] format    Stream data format - pixel format for images streams, of data type for other streams. RS2_FORMAT_ANY indicates any.
+        * \param[in] framerate Stream frames per second. 0 indicates any.
+        */
+        void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format = RS2_FORMAT_ANY, int framerate = 0)
+        {
+            rs2_error* e = nullptr;
+            rs2_config_enable_stream(_config.get(), stream, index, width, height, format, framerate, &e);
+            error::handle(e);
+        }
+        void enable_stream(rs2_stream stream, int index = -1)
+        {
+            enable_stream(stream, index, 0, 0, RS2_FORMAT_ANY, 0);
+        }
+        void enable_stream(rs2_stream stream, int width, int height)
+        {
+            enable_stream(stream, -1, width, height, RS2_FORMAT_ANY, 0);
+        }
+
+        /**
+        * Enable all device streams explicitly.
+        * The conditions and behavior of this method are similar to those of \c enable_stream().
+        * This filter enables all raw streams of the selected device. The device is either selected explicitly by the application,
+        * or by the pipeline requirements or default. The list of streams is device dependent.
+        */
+        void enable_all_streams()
+        {
+            rs2_error* e = nullptr;
+            rs2_config_enable_all_stream(_config.get(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Select a specific device explicitly by its serial number, to be used by the pipeline.
+        * The conditions and behavior of this method are similar to those of \c enable_stream().
+        * This method is required if the application needs to set device or sensor settings prior to pipeline streaming, to enforce
+        * the pipeline to use the configured device.
+        *
+        * \param[in] Serial device serial number, as returned by RS2_CAMERA_INFO_SERIAL_NUMBER
+        */
+        void enable_device(const std::string& serial)
+        {
+            rs2_error* e = nullptr;
+            rs2_config_enable_device(_config.get(), serial.c_str(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Select a recorded device from a file, to be used by the pipeline through playback.
+        * The device available streams are as recorded to the file, and \c resolve() considers only this device and configuration
+        * as available.
+        * This request cannot be used if enable_record_to_file() is called for the current config, and vise versa
+        *
+        * \param[in] file_name  The playback file of the device
+        */
+        void enable_device_from_file(const std::string& file_name)
+        {
+            rs2_error* e = nullptr;
+            rs2_config_enable_device_from_file(_config.get(), file_name.c_str(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Requires that the resolved device would be recorded to file
+        * This request cannot be used if enable_device_from_file() is called for the current config, and vise versa
+        * as available.
+        *
+        * \param[in] file_name  The desired file for the output record
+        */
+        void enable_record_to_file(const std::string& file_name)
+        {
+            rs2_error* e = nullptr;
+            rs2_config_enable_record_to_file(_config.get(), file_name.c_str(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Disable a device stream explicitly, to remove any requests on this stream profile.
+        * The stream can still be enabled due to pipeline computer vision module request. This call removes any filter on the
+        * stream configuration.
+        *
+        * \param[in] stream    Stream type, for which the filters are cleared
+        */
+        void disable_stream(rs2_stream stream)
+        {
+            rs2_error* e = nullptr;
+            rs2_config_disable_stream(_config.get(), stream, &e);
+            error::handle(e);
+        }
+
+        /**
+        * Disable all device stream explicitly, to remove any requests on the streams profiles.
+        * The streams can still be enabled due to pipeline computer vision module request. This call removes any filter on the
+        * streams configuration.
+        */
+        void disable_all_streams()
+        {
+            rs2_error* e = nullptr;
+            rs2_config_disable_all_streams(_config.get(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Resolve the configuration filters, to find a matching device and streams profiles.
+        * The method resolves the user configuration filters for the device and streams, and combines them with the requirements of
+        * the computer vision modules and processing blocks attached to the pipeline. If there are no conflicts of requests, it looks
+        * for an available device, which can satisfy all requests, and selects the first matching streams configuration. In the absence
+        * of any request, the rs2::config selects the first available device and the first color and depth streams configuration.
+        * The pipeline profile selection during \c start() follows the same method. Thus, the selected profile is the same, if no
+        * change occurs to the available devices occurs.
+        * Resolving the pipeline configuration provides the application access to the pipeline selected device for advanced control.
+        * The returned configuration is not applied to the device, so the application doesn't own the device sensors. However, the
+        * application can call \c enable_device(), to enforce the device returned by this method is selected by pipeline \c start(),
+        * and configure the device and sensors options or extensions before streaming starts.
+        *
+        * \param[in] p  The pipeline for which the selected filters are applied
+        * \return       A matching device and streams profile, which satisfies the filters and pipeline requests.
+        */
+        pipeline_profile resolve(std::shared_ptr<rs2_pipeline> p) const
+        {
+            rs2_error* e = nullptr;
+            auto profile = std::shared_ptr<rs2_pipeline_profile>(
+                rs2_config_resolve(_config.get(), p.get(), &e),
+                rs2_delete_pipeline_profile);
+
+            error::handle(e);
+            return pipeline_profile(profile);
+        }
+
+        /**
+        * Check if the config can resolve the configuration filters, to find a matching device and streams profiles.
+        * The resolution conditions are as described in \c resolve().
+        *
+        * \param[in] p  The pipeline for which the selected filters are applied
+        * \return       True if a valid profile selection exists, false if no selection can be found under the config filters and the available devices.
+        */
+        bool can_resolve(std::shared_ptr<rs2_pipeline> p) const
+        {
+            rs2_error* e = nullptr;
+            int res = rs2_config_can_resolve(_config.get(), p.get(), &e);
+            error::handle(e);
+            return res != 0;
+        }
+
+        std::shared_ptr<rs2_config> get() const
+        {
+            return _config;
+        }
+    private:
+        config(std::shared_ptr<rs2_config> config) : _config(config)
+        {
+        }
+        std::shared_ptr<rs2_config> _config;
+
+    };
 
     /**
     * The pipeline simplifies the user interaction with the device and computer vision processing modules.
@@ -123,23 +313,36 @@ namespace rs2
             error::handle(e);
         }
 
-        //TBD: 
-        //void add_cv_module(computer_vision_module& cv_module)
-        //{
-        //    rs2_error* e = nullptr;
-        //    rs2_pipeline_add_cv_module(_pipeline.get(), cv_module.get(), &e);
-        //    error::handle(e);
-        //}
-
         /**
-        * Start the pipeline streaming.
+        * Start the pipeline streaming with its default configuration.
         * The pipeline streaming loop captures samples from the device, and delivers them to the attached computer vision modules
         * and processing blocks, according to each module requirements and threading model.
         * During the loop execution, the application can access the camera streams by calling \c wait_for_frames() or \c poll_for_frames().
         * The streaming loop runs until the pipeline is stopped.
         * Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.
-        * The pipeline selects and activates the device upon start, according to application selected configuration or a default configuration.
-        * If a rs2::config is provided to the method, the pipeline tries to activate the config \c resolve() result. If the application
+        *
+        * \return             The actual pipeline device and streams profile, which was successfully configured to the streaming device.
+        */
+        pipeline_profile start()
+        {
+            rs2_error* e = nullptr;
+            auto p = std::shared_ptr<rs2_pipeline_profile>(
+                rs2_pipeline_start(_pipeline.get(), &e),
+                rs2_delete_pipeline_profile);
+
+            error::handle(e);
+            return pipeline_profile(p);
+        }
+
+        /**
+        * Start the pipeline streaming according to the configuraion.
+        * The pipeline streaming loop captures samples from the device, and delivers them to the attached computer vision modules
+        * and processing blocks, according to each module requirements and threading model.
+        * During the loop execution, the application can access the camera streams by calling \c wait_for_frames() or \c poll_for_frames().
+        * The streaming loop runs until the pipeline is stopped.
+        * Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.
+        * The pipeline selects and activates the device upon start, according to configuration or a default configuration.
+        * When the rs2::config is provided to the method, the pipeline tries to activate the config \c resolve() result. If the application
         * requests are conflicting with pipeline computer vision modules or no matching device is available on the platform, the method fails.
         * Available configurations and devices may change between config \c resolve() call and pipeline start, in case devices are connected
         * or disconnected, or another application acquires ownership of a device.
@@ -147,36 +350,17 @@ namespace rs2
         * \param[in] config   A rs2::config with requested filters on the pipeline configuration. By default no filters are applied.
         * \return             The actual pipeline device and streams profile, which was successfully configured to the streaming device.
         */
-        pipeline_profile start(std::shared_ptr<rs2_config> config = nullptr)
+        pipeline_profile start(const config& config)
         {
             rs2_error* e = nullptr;
             auto p = std::shared_ptr<rs2_pipeline_profile>(
-                rs2_pipeline_start(_pipeline.get(), config.get(), &e),
+                rs2_pipeline_start_with_config(_pipeline.get(), config.get().get(), &e),
                 rs2_delete_pipeline_profile);
 
             error::handle(e);
             return pipeline_profile(p);
         }
 
-        /**
-        * Start the pipeline streaming and record the session to a file.
-        * The method behaves the same as the non recording \c start() method, and creates a file with the caller's filename, which
-        * records the pipeline streaming device state and streams data.
-        *
-        * \param[in] config               A rs2::config with requested filters on the pipeline configuration. By default no filters are applied.
-        * \param[in] record_to_filename   The output file for the device recording.
-        * \return                         The actual pipeline device and streams profile, which was successfully configured to the streaming device.
-        */
-        pipeline_profile start(const std::string& record_to_filename, std::shared_ptr<rs2_config> config = nullptr)
-        {
-            rs2_error* e = nullptr;
-            auto p = std::shared_ptr<rs2_pipeline_profile>(
-                rs2_pipeline_start_with_record(_pipeline.get(), config.get(), record_to_filename.c_str(), &e),
-                rs2_delete_pipeline_profile);
-
-            error::handle(e);
-            return pipeline_profile(p);
-        }
 
         /**
         * Stop the pipeline streaming.
@@ -259,185 +443,15 @@ namespace rs2
             return pipeline_profile(p);
         }
 
+        operator std::shared_ptr<rs2_pipeline>() const
+        {
+            return _pipeline;
+        }
+
     private:
         context _ctx;
         std::shared_ptr<rs2_pipeline> _pipeline;
         friend class config;
-    };
-
-    /**
-    * The config allows pipeline users to request filters for the pipeline streams and device selection and configuration.
-    * This is an optional step in pipeline creation, as the pipeline resolves its streaming device internally.
-    * Config provides its users a way to set the filters and test if there is no conflict with the pipeline requirements
-    * from the device. It also allows the user to find a matching device for the config filters and the pipeline, in order to
-    * select a device explicitly, and modify its controls before streaming starts.
-    */
-    class config
-    {
-    public:
-        config()
-        {
-            rs2_error* e = nullptr;
-            _config = std::shared_ptr<rs2_config>(
-                rs2_create_config(&e),
-                rs2_delete_config);
-            error::handle(e);
-        }
-
-        /**
-        * Enable a device stream explicitly, with selected stream parameters.
-        * The method allows the application to request a stream with specific configuration. If no stream is explicitly enabled, the pipeline
-        * configures the device and its streams according to the attached computer vision modules and processing blocks requirements, or
-        * default configuration for the first available device.
-        * The application can configure any of the input stream parameters according to its requirement, or set to 0 for don't care value.
-        * The config accumulates the application calls for enable configuration methods, until the configuration is applied. Multiple enable
-        * stream calls for the same stream with conflicting parameters override each other, and the last call is maintained.
-        * Upon calling \c resolve(), the config checks for conflicts between the application configuration requests and the attached computer
-        * vision modules and processing blocks requirements, and fails if conflicts are found. Before \c resolve() is called, no conflict
-        * check is done.
-        *
-        * \param[in] stream    Stream type to be enabled
-        * \param[in] index     Stream index, used for multiple streams of the same type. 0 selects the default.
-        * \param[in] width     Stream image width - for images streams
-        * \param[in] height    Stream image height - for images streams
-        * \param[in] format    Stream data format - pixel format for images streams, of data type for other streams
-        * \param[in] framerate Stream frames per second
-        */
-        void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format = RS2_FORMAT_ANY, int framerate = 0)
-        {
-            rs2_error* e = nullptr;
-            rs2_config_enable_stream(_config.get(), stream, index, width, height, format, framerate, &e);
-            error::handle(e);
-        }
-        void enable_stream(rs2_stream stream, int index = 0)
-        {
-            enable_stream(stream, index, 0, 0, RS2_FORMAT_ANY, 0);
-        }
-        void enable_stream(rs2_stream stream, int width, int height)
-        {
-            enable_stream(stream, 0, width, height, RS2_FORMAT_ANY, 0);
-        }
-
-        /**
-        * Enable all device streams explicitly.
-        * The conditions and behavior of this method are similar to those of \c enable_stream().
-        * This filter enables all raw streams of the selected device. The device is either selected explicitly by the application,
-        * or by the pipeline requirements or default. The list of streams is device dependent.
-        */
-        void enable_all_streams()
-        {
-            rs2_error* e = nullptr;
-            rs2_config_enable_all_stream(_config.get(), &e);
-            error::handle(e);
-        }
-
-        /**
-        * Select a specific device explicitly by its serial number, to be used by the pipeline.
-        * The conditions and behavior of this method are similar to those of \c enable_stream().
-        * This method is required if the application needs to set device or sensor settings prior to pipeline streaming, to enforce
-        * the pipeline to use the configured device.
-        *
-        * \param[in] Serial device serial number, as returned by RS2_CAMERA_INFO_SERIAL_NUMBER
-        */
-        void enable_device(const std::string& serial)
-        {
-            rs2_error* e = nullptr;
-            rs2_config_enable_device(_config.get(), serial.c_str(), &e);
-            error::handle(e);
-        }
-
-        /**
-        * Select a recorded device from a file, to be used by the pipeline through playback.
-        * The device available streams are as recorded to the file, and \c resolve() considers only this device and configuration
-        * as available.
-        *
-        * \param[in] file_name  The playback file of the device
-        */
-        void enable_device_from_file(const std::string& file_name)
-        {
-            rs2_error* e = nullptr;
-            rs2_config_enable_device_from_file(_config.get(), file_name.c_str(), &e);
-            error::handle(e);
-        }
-
-        /**
-        * Disable a device stream explicitly, to remove any requests on this stream profile.
-        * The stream can still be enabled due to pipeline computer vision module request. This call removes any filter on the
-        * stream configuration.
-        *
-        * \param[in] stream    Stream type, for which the filters are cleared
-        */
-        void disable_stream(rs2_stream stream)
-        {
-            rs2_error* e = nullptr;
-            rs2_config_disable_stream(_config.get(), stream, &e);
-            error::handle(e);
-        }
-
-        /**
-        * Disable all device stream explicitly, to remove any requests on the streams profiles.
-        * The streams can still be enabled due to pipeline computer vision module request. This call removes any filter on the
-        * streams configuration.
-        */
-        void disable_all_streams()
-        {
-            rs2_error* e = nullptr;
-            rs2_config_disable_all_streams(_config.get(), &e);
-            error::handle(e);
-        }
-
-        /**
-        * Resolve the configuration filters, to find a matching device and streams profiles.
-        * The method resolves the user configuration filters for the device and streams, and combines them with the requirements of
-        * the computer vision modules and processing blocks attached to the pipeline. If there are no conflicts of requests, it looks
-        * for an available device, which can satisfy all requests, and selects the first matching streams configuration. In the absence
-        * of any request, the rs2::config selects the first available device and the first color and depth streams configuration.
-        * The pipeline profile selection during \c start() follows the same method. Thus, the selected profile is the same, if no
-        * change occurs to the available devices occurs.
-        * Resolving the pipeline configuration provides the application access to the pipeline selected device for advanced control.
-        * The returned configuration is not applied to the device, so the application doesn't own the device sensors. However, the
-        * application can call \c enable_device(), to enforce the device returned by this method is selected by pipeline \c start(),
-        * and configure the device and sensors options or extensions before streaming starts.
-        *
-        * \param[in] p  The pipeline for which the selected filters are applied
-        * \return       A matching device and streams profile, which satisfies the filters and pipeline requests.
-        */
-        pipeline_profile resolve(const pipeline& p) const
-        {
-            rs2_error* e = nullptr;
-            auto profile = std::shared_ptr<rs2_pipeline_profile>(
-                rs2_config_resolve(_config.get(), p._pipeline.get(), &e),
-                rs2_delete_pipeline_profile);
-
-            error::handle(e);
-            return pipeline_profile(profile);
-        }
-
-        /**
-        * Check if the config can resolve the configuration filters, to find a matching device and streams profiles.
-        * The resolution conditions are as described in \c resolve().
-        *
-        * \param[in] p  The pipeline for which the selected filters are applied
-        * \return       True if a valid profile selection exists, false if no selection can be found under the config filters and the available devices.
-        */
-        bool can_resolve(const pipeline& p) const
-        {
-            rs2_error* e = nullptr;
-            int res = rs2_config_can_resolve(_config.get(), p._pipeline.get(), &e);
-            error::handle(e);
-            return res != 0;
-        }
-
-        operator std::shared_ptr<rs2_config>() const
-        {
-            return _config;
-        }
-    private:
-        config(std::shared_ptr<rs2_config> config) : _config(config)
-        {
-        }
-        std::shared_ptr<rs2_config> _config;
-
     };
 }
 #endif // LIBREALSENSE_RS2_PROCESSING_HPP

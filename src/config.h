@@ -48,12 +48,6 @@ namespace librealsense
                     return std::make_pair(stream, index) <
                         std::make_pair(other.stream, other.index);
                 }
-
-                bool operator==(const index_type& other) const
-                {
-                    return std::make_pair(stream, index) ==
-                        std::make_pair(other.stream, other.index);
-                }
             };
 
             template<class Stream_Profile>
@@ -61,6 +55,8 @@ namespace librealsense
             {
                 if (a.stream_type() != RS2_STREAM_ANY && b.stream_type() != RS2_STREAM_ANY && (a.stream_type() != b.stream_type()))
                     return false;
+                 if (a.stream_index() != -1 && b.stream_index() != -1 && (a.stream_index() != b.stream_index()))
+                     return false;
                 if (a.format() != RS2_FORMAT_ANY && b.format() != RS2_FORMAT_ANY && (a.format() != b.format()))
                     return false;
                 if (a.fps() != 0 && b.fps() != 0 && (a.fps() != b.fps()))
@@ -86,8 +82,7 @@ namespace librealsense
             {
                 if (a->get_stream_type() != RS2_STREAM_ANY && b.stream != RS2_STREAM_ANY && (a->get_stream_type() != b.stream))
                     return false;
-                //TODO: stream index invalid value should be "-1"
-                if (a->get_stream_index() != 0 && b.stream_index != 0 && (a->get_stream_index() != b.stream_index))
+                if (a->get_stream_index() != -1 && b.stream_index != -1 && (a->get_stream_index() != b.stream_index))
                     return false;
                 if (a->get_format() != RS2_FORMAT_ANY && b.format != RS2_FORMAT_ANY && (a->get_format() != b.format))
                     return false;
@@ -156,7 +151,7 @@ namespace librealsense
 
             static bool has_wildcards(stream_profile_interface* a)
             {
-                if (a->get_framerate() == 0 || a->get_stream_type() == RS2_STREAM_ANY || a->get_format() == RS2_FORMAT_ANY) return true;
+                if (a->get_framerate() == 0 || a->get_stream_type() == RS2_STREAM_ANY || a->get_stream_index() == -1 || a->get_format() == RS2_FORMAT_ANY) return true;
                 if (auto vid_a = dynamic_cast<video_stream_profile_interface*>(a))
                 {
                     if (vid_a->get_width() == 0 || vid_a->get_height() == 0) return true;
@@ -241,12 +236,6 @@ namespace librealsense
 
             config() : require_all(true) {}
 
-            void enable_stream(rs2_stream stream, int width, int height, rs2_format format, int fps)
-            {
-                _presets.erase({ stream, 0 });
-                _requests[{stream, 0}] = request_type{ stream, 0, width, height, format, fps };
-                require_all = true;
-            }
 
             void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int fps)
             {
@@ -278,8 +267,8 @@ namespace librealsense
             }
             void enable_stream(rs2_stream stream, config_preset preset)
             {
-                _requests.erase({ stream, 0 });
-                _presets[{ stream, 0 }] = preset;
+                _requests.erase({ stream, -1 });
+                _presets[{ stream, -1 }] = preset;
                 require_all = true;
             }
 
@@ -294,7 +283,7 @@ namespace librealsense
             {
                 for (int i = RS2_STREAM_DEPTH; i < RS2_STREAM_COUNT; i++)
                 {
-                    enable_stream(static_cast<rs2_stream>(i), 0, p);
+                    enable_stream(static_cast<rs2_stream>(i), -1, p);
                 }
                 require_all = false;
             }
@@ -340,17 +329,39 @@ namespace librealsense
 
                 // If required, make sure we've succeeded at opening
                 // all the requested streams
-                if (require_all) {
+                if (require_all) 
+                {
                     std::set<index_type> all_streams;
                     for (auto && kvp : mapping)
                         all_streams.insert({ kvp.second->get_stream_type(), kvp.second->get_stream_index() });
 
+                    auto match_stream = [](const index_type& a, const index_type& b) -> bool
+                    {
+                        if (a.stream != RS2_STREAM_ANY && b.stream != RS2_STREAM_ANY && (a.stream != b.stream))
+                            return false;
+                        if (a.index != -1 && b.index != -1 && (a.index != b.index))
+                            return false;
+
+                        return true;
+                    };
                     for (auto && kvp : _presets)
-                        if (!all_streams.count(kvp.first))
+                    {
+                        auto it = std::find_if(std::begin(all_streams), std::end(all_streams), [&](const index_type& i)
+                        {
+                            return match_stream(kvp.first, i);
+                        });
+                        if (it == std::end(all_streams))
                             throw std::runtime_error("Config couldn't configure all streams");
+                    }
                     for (auto && kvp : _requests)
-                        if (!all_streams.count(kvp.first))
+                    {
+                        auto it = std::find_if(std::begin(all_streams), std::end(all_streams), [&](const index_type& i)
+                        {
+                            return match_stream(kvp.first, i);
+                        });
+                        if (it == std::end(all_streams))
                             throw std::runtime_error("Config couldn't configure all streams");
+                    }
                 }
 
                 // Unpack the data returned by assign
@@ -504,7 +515,7 @@ namespace librealsense
                                 }
                             }
 
-                            return { RS2_STREAM_ANY, 0, 0, 0, RS2_FORMAT_ANY, 0 };
+                            return { RS2_STREAM_ANY, -1, 0, 0, RS2_FORMAT_ANY, 0 };
                         }();
 
                         // RS2_STREAM_COUNT signals subdevice can't handle this stream

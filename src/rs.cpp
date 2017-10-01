@@ -1382,29 +1382,20 @@ void rs2_delete_pipeline(rs2_pipeline* pipe) try
 }
 NOEXCEPT_RETURN(, pipe)
 
-rs2_pipeline_profile* rs2_pipeline_start(rs2_pipeline* pipe, rs2_config* config, rs2_error ** error) try
+rs2_pipeline_profile* rs2_pipeline_start(rs2_pipeline* pipe, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
-    if (config == nullptr)
-    {
-        return new rs2_pipeline_profile{ pipe->pipe->start(std::make_shared<pipeline_config>()) };
-    }
+    return new rs2_pipeline_profile{ pipe->pipe->start(std::make_shared<pipeline_config>()) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)
+
+rs2_pipeline_profile* rs2_pipeline_start_with_config(rs2_pipeline* pipe, rs2_config* config, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+    VALIDATE_NOT_NULL(config);
     return new rs2_pipeline_profile{ pipe->pipe->start(config->config) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe, config)
-
-
-rs2_pipeline_profile* rs2_pipeline_start_with_record(rs2_pipeline* pipe, rs2_config* config, const char* file, rs2_error ** error) try
-{
-    VALIDATE_NOT_NULL(pipe);
-    VALIDATE_NOT_NULL(file);
-    if (config == nullptr)
-    {
-        return new rs2_pipeline_profile{ pipe->pipe->start_with_record(std::make_shared<pipeline_config>(), file) };
-    }
-    return new rs2_pipeline_profile{ pipe->pipe->start_with_record(config->config, file) };
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe, config, file)
 
 rs2_pipeline_profile* rs2_pipeline_get_active_profile(rs2_pipeline* pipe, rs2_error ** error) try
 {
@@ -1425,7 +1416,7 @@ rs2_device* rs2_pipeline_profile_get_device(rs2_pipeline_profile* profile, rs2_e
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, profile)
 
 
-rs2_stream_profile_list* rs2_pipeline_profile_get_active_streams(rs2_pipeline_profile* profile, rs2_error** error) try
+rs2_stream_profile_list* rs2_pipeline_profile_get_streams(rs2_pipeline_profile* profile, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(profile);
     return new rs2_stream_profile_list{ profile->profile->get_active_streams() };
@@ -1492,6 +1483,16 @@ void rs2_config_enable_device_from_file(rs2_config* config, const char* file, rs
     VALIDATE_NOT_NULL(file);
 
     config->config->enable_device_from_file(file);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, config, file)
+
+
+void rs2_config_enable_record_to_file(rs2_config* config, const char* file, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(config);
+    VALIDATE_NOT_NULL(file);
+
+    config->config->enable_record_to_file(file);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, config, file)
 

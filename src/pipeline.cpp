@@ -19,16 +19,21 @@ namespace librealsense
      \______| \______/  |__| \__| |__|     |__|  \______|
 
     */
-
+    pipeline_config::pipeline_config() 
+    {
+        //empty
+    }
     void pipeline_config::enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int fps)
     {
         std::lock_guard<std::mutex> lock(_mtx);
+        _resolved_profile.reset();
         _stream_requests[{stream, index}] = { stream, index, width, height, format, fps };
     }
 
     void pipeline_config::enable_all_stream()
     {
         std::lock_guard<std::mutex> lock(_mtx);
+        _resolved_profile.reset();
         _stream_requests.clear();
         _enable_all_streams = true;
     }
@@ -36,6 +41,7 @@ namespace librealsense
     void pipeline_config::enable_device(const std::string& serial)
     {
         std::lock_guard<std::mutex> lock(_mtx);
+        _resolved_profile.reset();
         _device_request.serial = serial;
     }
 
@@ -46,6 +52,7 @@ namespace librealsense
         {
             throw std::runtime_error("Configuring both device from file, and record to file is unsupported");
         }
+        _resolved_profile.reset();
         _device_request.filename = file;
     }
 
@@ -56,8 +63,16 @@ namespace librealsense
         {
             throw std::runtime_error("Configuring both device from file, and record to file is unsupported");
         }
+        _resolved_profile.reset();
         _device_request.record_output = file;
     }
+
+    std::shared_ptr<pipeline_profile> pipeline_config::get_cached_resolved_profile()
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        return _resolved_profile;
+    }
+
 
     void pipeline_config::disable_stream(rs2_stream stream)
     {
@@ -74,6 +89,7 @@ namespace librealsense
                 ++itr;
             }
         }
+        _resolved_profile.reset();
     }
 
     void pipeline_config::disable_all_streams()
@@ -81,12 +97,13 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_mtx);
         _stream_requests.clear();
         _enable_all_streams = false;
+        _resolved_profile.reset();
     }
 
     std::shared_ptr<pipeline_profile> pipeline_config::resolve(std::shared_ptr<pipeline> pipe)
     {
         std::lock_guard<std::mutex> lock(_mtx);
-
+        _resolved_profile.reset();
         auto requested_device = resolve_device_requests(pipe);
 
         std::vector<stream_profile> resolved_profiles;
@@ -101,7 +118,8 @@ namespace librealsense
 
             util::config config;
             config.enable_all(util::best_quality);
-            return std::make_shared<pipeline_profile>(requested_device, config, _device_request.record_output);
+            _resolved_profile = std::make_shared<pipeline_profile>(requested_device, config, _device_request.record_output);
+            return _resolved_profile;
         }
         else
         {
@@ -121,12 +139,14 @@ namespace librealsense
                     auto p = dynamic_cast<video_stream_profile*>(prof.get());
                     if (!p)
                     {
-                        throw std::runtime_error(to_string() << "stream_profile is not video_stream_profile");
+                        LOG_ERROR("prof is not video_stream_profile");
+                        throw std::logic_error("Failed to resolve request. internal error");
                     }
                     config.enable_stream(p->get_stream_type(), p->get_stream_index(), p->get_width(), p->get_height(), p->get_format(), p->get_framerate());
                 }
 
-                return std::make_shared<pipeline_profile>(requested_device, config, _device_request.record_output);
+                _resolved_profile = std::make_shared<pipeline_profile>(requested_device, config, _device_request.record_output);
+                return _resolved_profile;
             }
             else
             {
@@ -142,15 +162,17 @@ namespace librealsense
                     try
                     {
                         auto dev = dev_info->create_device();
-                        return std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
+                        _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
+                        return _resolved_profile;
                     }
                     catch (...) {}
                 }
 
-                throw std::runtime_error("Config couldn't configure pipeline");
-
+                throw std::runtime_error("Failed to resolve request. No device found that satisfies all requirements");
             }
         }
+
+        assert(0); //Unreachable code
     }
 
     bool pipeline_config::can_resolve(std::shared_ptr<pipeline> pipe)
@@ -158,6 +180,7 @@ namespace librealsense
         try
         {
             resolve(pipe);
+            _resolved_profile.reset();
         }
         catch (const std::exception& e)
         {
@@ -169,6 +192,23 @@ namespace librealsense
             return false;
         }
         return true;
+    }
+    std::shared_ptr<device_interface> pipeline_config::get_or_add_playback_device(std::shared_ptr<pipeline> pipe, const std::string& file)
+    {
+        //Check if the file is already loaded to context, and if so return that device
+        for (auto&& d : pipe->get_context()->query_devices())
+        {
+            auto playback_devs = d->get_device_data().playback_devices;
+            for (auto&& p : playback_devs)
+            {
+                if (p.file_path == file)
+                {
+                    return d->create_device();
+                }
+            }
+        }
+        
+        return pipe->get_context()->add_device(file);
     }
     std::shared_ptr<device_interface> pipeline_config::get_first_or_default_device(std::shared_ptr<pipeline> pipe)
     {
@@ -192,8 +232,7 @@ namespace librealsense
             std::shared_ptr<device_interface> dev;
             try
             {
-                dev = pipe->get_context()->add_device(_device_request.filename);
-                //TODO: who should remove the playback device from context 
+                dev = get_or_add_playback_device(pipe, _device_request.filename);
             }
             catch(const std::exception& e)
             {
@@ -368,7 +407,10 @@ namespace librealsense
         {
             try
             {
-                profile = conf->resolve(shared_from_this());
+                //first try to get the previously resolved profile (if exists)
+                profile = conf->get_cached_resolved_profile();
+                if(i > 1 || !profile)
+                    profile = conf->resolve(shared_from_this());
             }
             catch (...)
             {
@@ -385,7 +427,7 @@ namespace librealsense
 
         //On successfull start, update members:
         _active_profile = profile;
-        _prev_conf = conf;
+        _prev_conf = std::make_shared<pipeline_config>(*conf);
     }
 
     void pipeline::stop()
@@ -408,6 +450,7 @@ namespace librealsense
         _syncer.reset();
         _queue.reset();
         _active_profile.reset();
+        _prev_conf.reset();
     }
     frame_holder pipeline::wait_for_frames(unsigned int timeout_ms)
     {
