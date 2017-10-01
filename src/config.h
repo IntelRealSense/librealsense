@@ -50,6 +50,18 @@ namespace librealsense
                 }
             };
 
+
+
+            static bool match_stream(const index_type& a, const index_type& b)
+            {
+                if (a.stream != RS2_STREAM_ANY && b.stream != RS2_STREAM_ANY && (a.stream != b.stream))
+                    return false;
+                if (a.index != -1 && b.index != -1 && (a.index != b.index))
+                    return false;
+
+                return true;
+            }
+
             template<class Stream_Profile>
             static bool match(const Stream_Profile& a, const Stream_Profile& b)
             {
@@ -323,6 +335,7 @@ namespace librealsense
                return false;
 
            }
+
             multistream resolve(device_interface* dev)
             {
                  auto mapping = map_streams(dev);
@@ -335,15 +348,7 @@ namespace librealsense
                     for (auto && kvp : mapping)
                         all_streams.insert({ kvp.second->get_stream_type(), kvp.second->get_stream_index() });
 
-                    auto match_stream = [](const index_type& a, const index_type& b) -> bool
-                    {
-                        if (a.stream != RS2_STREAM_ANY && b.stream != RS2_STREAM_ANY && (a.stream != b.stream))
-                            return false;
-                        if (a.index != -1 && b.index != -1 && (a.index != b.index))
-                            return false;
-
-                        return true;
-                    };
+                    
                     for (auto && kvp : _presets)
                     {
                         auto it = std::find_if(std::begin(all_streams), std::end(all_streams), [&](const index_type& i)
@@ -510,7 +515,9 @@ namespace librealsense
 
                             for (auto itr: profiles)
                             {
-                                if (itr->get_stream_type() == kvp.first.stream && itr->get_stream_index() == kvp.first.index) {
+                                auto stream = index_type{ itr->get_stream_type() ,itr->get_stream_index() };
+                                if (match_stream(stream, kvp.first))
+                                {
                                     return to_request(itr.get());
                                 }
                             }

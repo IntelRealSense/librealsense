@@ -419,7 +419,7 @@ namespace librealsense
 
                 continue;
             }
-
+            assert(profile->_multistream.get_profiles().size() > 0);
             profile->_multistream.open();
             profile->_multistream.start(syncer_callback);
             break;
