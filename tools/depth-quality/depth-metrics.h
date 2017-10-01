@@ -11,16 +11,6 @@ namespace rs2
 {
     namespace depth_quality
     {
-        struct metrics
-        {
-            float avg_dist;
-            float std_dev;
-            float fit;
-            float distance;
-            float angle;
-            float outlier_pct;
-        };
-
         struct snapshot_metrics
         {
             int width;
@@ -28,13 +18,13 @@ namespace rs2
 
             rs2::region_of_interest roi;
 
-            metrics planar;
-            metrics depth;
             plane p;
             std::array<float3, 4> plane_corners;
-
-            float non_null_pct;
         };
+
+        using callback_type = std::function<void(
+            const std::vector<rs2::float3>& points, 
+            plane p, rs2::region_of_interest roi)>;
 
         inline plane plane_from_point_and_normal(const rs2::float3& point, const rs2::float3& normal)
         {
@@ -91,46 +81,6 @@ namespace rs2
             return plane_from_point_and_normal(centroid, dir.normalize());
         }
 
-        inline metrics calculate_plane_metrics(const std::vector<rs2::float3>& points, plane p, float outlier_crop = 2.5, float std_devs = 2)
-        {
-            metrics result;
-
-            std::vector<double> distances;
-            distances.reserve(points.size());
-            for (auto point : points)
-            {
-                distances.push_back(std::abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d) * 1000);
-            }
-
-            std::sort(distances.begin(), distances.end());
-            int n_outliers = int(distances.size() * (outlier_crop / 100));
-            auto begin = distances.begin() + n_outliers, end = distances.end() - n_outliers;
-
-            double total_distance = 0;
-            for (auto itr = begin; itr < end; ++itr) total_distance += *itr;
-            result.avg_dist = static_cast<float>(total_distance / (distances.size() - 2 * n_outliers));
-
-            double total_sq_diffs = 0;
-            for (auto itr = begin; itr < end; ++itr)
-            {
-                total_sq_diffs += std::pow(*itr - result.avg_dist, 2);
-            }
-            result.std_dev = static_cast<float>(std::sqrt(total_sq_diffs / points.size()));
-
-            result.fit = result.std_dev / 10;
-
-            result.distance = float(-p.d);
-
-            result.angle = static_cast<float>(std::acos(std::abs(p.c)) / M_PI * 180.);
-
-            std::vector<float3> outliers;
-            for (auto point : points) if (std::abs(std::abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d) * 1000 - result.avg_dist) > result.std_dev * std_devs) outliers.push_back(point);
-
-            result.outlier_pct = outliers.size() / float(distances.size()) * 100;
-
-            return result;
-        }
-
         inline double evaluate_pixel(const plane& p, const rs2_intrinsics* intrin, int x, int y, float distance, float3& output)
         {
             float pixel[2] = { float(x), float(y) };
@@ -157,40 +107,17 @@ namespace rs2
             return approximate_intersection(p, intrin, x, y, 0.f, 1000.f);
         }
 
-        inline metrics calculate_depth_metrics(const std::vector<rs2::float3>& points)
-        {
-            metrics result;
-
-            double total_distance = 0;
-            for (auto point : points)
-            {
-                total_distance += point.z * 1000;
-            }
-            result.avg_dist = float(total_distance / points.size());
-
-            double total_sq_diffs = 0;
-            for (auto point : points)
-            {
-                total_sq_diffs += std::pow(abs(point.z * 1000 - result.avg_dist), 2);
-            }
-            result.std_dev = static_cast<float>(std::sqrt(total_sq_diffs / points.size()));
-
-            result.fit = result.std_dev / 10;
-
-            result.distance = points[0].z;
-
-            result.angle = 0;
-
-            return result;
-        }
-
-        inline snapshot_metrics analyze_depth_image(const rs2::video_frame& frame, float units, const rs2_intrinsics * intrin, rs2::region_of_interest roi)
+        inline snapshot_metrics analyze_depth_image(
+            const rs2::video_frame& frame, 
+            float units, const rs2_intrinsics * intrin, 
+            rs2::region_of_interest roi,
+            callback_type callback)
         {
             auto pixels = (const uint16_t*)frame.get_data();
             const auto w = frame.get_width();
             const auto h = frame.get_height();
 
-            snapshot_metrics result{ w, h, roi,{ 0, 0, 0 },{ 0, 0, 0 }, 0 };
+            snapshot_metrics result{ w, h, roi, {} };
 
             std::mutex m;
 
@@ -211,9 +138,6 @@ namespace rs2
 
                         rs2_deproject_pixel_to_point(point, intrin, pixel, distance);
 
-                        // float check_pixel[2] = { 0.f, 0.f };
-                        // rs2_project_point_to_pixel(check_pixel, intrin, point);
-                        // for sanity, assert check_pixel == pixel
 
                         std::lock_guard<std::mutex> lock(m);
                         roi_pixels.push_back({ point[0], point[1], point[2] });
@@ -230,15 +154,12 @@ namespace rs2
                 return result;
             }
 
-            result.planar = calculate_plane_metrics(roi_pixels, p);
-            result.depth = calculate_depth_metrics(roi_pixels);
+            callback(roi_pixels, p, roi);
             result.p = p;
             result.plane_corners[0] = approximate_intersection(p, intrin, roi.min_x, roi.min_y);
             result.plane_corners[1] = approximate_intersection(p, intrin, roi.max_x, roi.min_y);
             result.plane_corners[2] = approximate_intersection(p, intrin, roi.max_x, roi.max_y);
             result.plane_corners[3] = approximate_intersection(p, intrin, roi.min_x, roi.max_y);
-
-            result.non_null_pct = roi_pixels.size() / float((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * 100;
 
             return result;
         }

@@ -117,6 +117,7 @@ namespace librealsense
             res->set_dims(get_width(), get_height());
             std::function<rs2_intrinsics()> int_func = _calc_intrinsics;
             res->set_intrinsics([int_func]() { return int_func(); });
+            res->set_framerate(get_framerate());
             return res;
         }
 

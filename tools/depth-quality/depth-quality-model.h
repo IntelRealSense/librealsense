@@ -15,21 +15,8 @@ namespace rs2
     {
         class metrics_model;
 
-        class metric_plot
+        class metric_plot : public std::enable_shared_from_this<metric_plot>
         {
-        private:
-            const static int SIZE = 200;
-            int _idx;
-            float _vals[SIZE];
-            float _min, _max;
-            std::string _id, _label, _tail;
-            ImVec2 _size;
-
-            timer _model_timer;
-            temporal_event _trending_up;
-            temporal_event _trending_down;
-
-            friend class metrics_model;
         public:
             enum range
             {
@@ -39,8 +26,12 @@ namespace rs2
                 MAX_RANGE
             };
 
-            float2 ranges[MAX_RANGE];
-            std::string description;
+            std::shared_ptr<metric_plot> set(range r, float from, float to)
+            {
+                ranges[r].x = from;
+                ranges[r].y = to;
+                return shared_from_this();
+            }
 
             range get_range(float val) const
             {
@@ -52,9 +43,11 @@ namespace rs2
                 return MAX_RANGE;
             }
 
-            metric_plot(const std::string& name, float min, float max, ImVec2 size, const std::string& tail)
-                : _idx(0), _vals(), _min(min), _max(max), _id("##" + name), _label(name + " = "),
-                  _tail(tail), _size(size), description(""),
+            metric_plot(const std::string& name, float min, float max, 
+                        const std::string& units, const std::string& description)
+                : _idx(0), _vals(), _min(min), _max(max), _id("##" + name), 
+                  _label(name + " = "), _name(name),
+                  _units(units), _description(description),
                   _trending_up(std::chrono::milliseconds(700)),
                   _trending_down(std::chrono::milliseconds(700))
             {
@@ -62,14 +55,32 @@ namespace rs2
             }
             ~metric_plot() {}
 
-            bool has_trend(bool positive);
-
             void add_value(float val)
             {
+                std::lock_guard<std::mutex> lock(_m);
                 _vals[_idx] = val;
                 _idx = (_idx + 1) % SIZE;
             }
             void render(ux_window& win);
+
+        private:
+            bool has_trend(bool positive);
+
+            std::mutex _m;
+            const static int SIZE = 200;
+            int _idx;
+            float _vals[SIZE];
+            float _min, _max;
+            std::string _id, _label, _units, _name, _description;
+            ImVec2 _size;
+
+            timer _model_timer;
+            temporal_event _trending_up;
+            temporal_event _trending_down;
+
+            float2 ranges[MAX_RANGE];
+
+            friend class metrics_model; // For CSV export
         };
 
         class metrics_model
@@ -108,6 +119,15 @@ namespace rs2
             void begin_process_frame(rs2::frame f) { _frame_queue.enqueue(std::move(f)); }
 
             void serialize_to_csv(const std::string& filename) const;
+
+            void add_metric(std::shared_ptr<metric_plot> metric) { _plots.push_back(metric); }
+
+            callback_type callback;
+
+            void reset() {
+                rs2::frame f;
+                while (_frame_queue.poll_for_frame(&f));
+            }
         private:
             metrics_model(const metrics_model&);
 
@@ -120,12 +140,7 @@ namespace rs2
             snapshot_metrics        _latest_metrics;
             bool                    _active;
 
-            metric_plot             _avg_plot;
-            metric_plot             _std_plot;
-            metric_plot             _fill_plot;
-            metric_plot             _dist_plot;
-            metric_plot             _angle_plot;
-            metric_plot             _out_plot;
+            std::vector<std::shared_ptr<metric_plot>> _plots;
             std::mutex              _m;
         };
 
@@ -144,12 +159,19 @@ namespace rs2
 
             void draw_instructions(ux_window& win, const rect& viewer_rect);
 
+            std::shared_ptr<metric_plot> make_metric(
+                const std::string& name, float min, float max,
+                const std::string& units,
+                const std::string& description);
+
+            void on_frame(callback_type callback) { _metrics_model.callback = callback; }
+
         private:
             pipeline                        _pipe;
             std::shared_ptr<device_model>   _device_model;
             viewer_model                    _viewer_model;
             std::shared_ptr<subdevice_model> _depth_sensor_model;
-            std::shared_ptr<metrics_model>   _metrics_model;
+            metrics_model                   _metrics_model;
             std::string                     _error_message;
             bool                            _first_frame = true;
             periodic_timer                  _update_readonly_options_timer;

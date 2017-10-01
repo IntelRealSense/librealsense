@@ -40,6 +40,7 @@ static const ImVec4 dark_grey = from_rgba(30, 30, 30, 255);
 static const ImVec4 sensor_header_light_blue = from_rgba(80, 99, 115, 0xff);
 static const ImVec4 sensor_bg = from_rgba(36, 44, 51, 0xff);
 static const ImVec4 redish = from_rgba(255, 46, 54, 255, true);
+static const ImVec4 dark_red = from_rgba(200, 46, 54, 255, true);
 static const ImVec4 button_color = from_rgba(62, 77, 89, 0xff);
 static const ImVec4 header_window_bg = from_rgba(36, 44, 54, 0xff);
 static const ImVec4 header_color = from_rgba(62, 77, 89, 255);
@@ -282,9 +283,12 @@ namespace rs2
         void show_metadata(const mouse_info& g);
         rect get_normalized_zoom(const rect& stream_rect, const mouse_info& g, bool is_middle_clicked, float zoom_val);
 
+        bool is_stream_alive();
+
         void show_stream_footer(const rect& stream_rect,const mouse_info& mouse);
         void show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer);
 
+        void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p);
         rect layout;
         std::unique_ptr<texture_buffer> texture;
         float2 size;
@@ -292,9 +296,9 @@ namespace rs2
 
         stream_profile profile;
         std::chrono::high_resolution_clock::time_point last_frame;
-        double              timestamp;
-        unsigned long long  frame_number;
-        rs2_timestamp_domain timestamp_domain;
+        double              timestamp = 0.0;
+        unsigned long long  frame_number = 0;
+        rs2_timestamp_domain timestamp_domain = RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
         fps_calc            fps;
         rect                roi_display_rect{};
         frame_metadata      frame_md;
@@ -309,7 +313,7 @@ namespace rs2
         rect _normalized_zoom{0, 0, 1, 1};
         int color_map_idx = 1;
         bool show_stream_details = false;
-
+        temporal_event _stream_not_alive;
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);
@@ -556,12 +560,16 @@ namespace rs2
         std::array<float3, 4> roi_rect;
         bool draw_plane = false;
 
+        bool draw_frustrum = true;
+        bool syncronize = false;
+
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;
 
     private:
         std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
-        void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, const ImVec4& color);
+        void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, 
+                       int id, const ImVec4& color, const std::string& tooltip = "");
 
         streams_layout _layout;
         streams_layout _old_layout;
@@ -574,6 +582,11 @@ namespace rs2
         float view[16];
         bool texture_wrapping_on = true;
         GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
+
+        rs2::points last_points;
+        rs2::frame last_texture;
+        texture_buffer texture;
+        rs2::syncer s;
     };
 
     void export_to_ply(const std::string& file_name, notifications_model& ns, points points, video_frame texture);

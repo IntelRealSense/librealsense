@@ -8,7 +8,7 @@ namespace rs2
     namespace depth_quality
     {
         tool_model::tool_model()
-            : _update_readonly_options_timer(std::chrono::seconds(6)), _roi_percent(0.33f),
+            : _update_readonly_options_timer(std::chrono::seconds(6)), _roi_percent(0.4f),
               _roi_located(std::chrono::seconds(4))
         {
             _viewer_model.is_3d_view = true;
@@ -40,7 +40,7 @@ namespace rs2
 
         void tool_model::draw_instructions(ux_window& win, const rect& viewer_rect)
         {
-            _roi_located.add_value(_metrics_model.get() && is_valid(_metrics_model->get_plane()));
+            _roi_located.add_value(is_valid(_metrics_model.get_plane()));
             if (!_roi_located.eval())
             {
                 auto flags = ImGuiWindowFlags_NoResize |
@@ -84,8 +84,7 @@ namespace rs2
             }
 
             _viewer_model.show_top_bar(win, viewer_rect);
-            if (_metrics_model.get())
-                _viewer_model.roi_rect = _metrics_model->get_plane();
+            _viewer_model.roi_rect = _metrics_model.get_plane();
             _viewer_model.draw_viewport(viewer_rect, win, 1, _error_message);
 
             ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
@@ -146,9 +145,6 @@ namespace rs2
 
                                 _pipe.stop();
 
-                                if (_metrics_model)
-                                    _metrics_model = nullptr;
-
                                 _pipe.disable_all();
 
                                 _pipe.enable_stream(primary.stream_type(), primary.stream_index(),
@@ -186,11 +182,11 @@ namespace rs2
                         ImGui::PushItemWidth(-1);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
 
-                        static std::vector<std::string> items{ "66%", "33%", "11%" };
+                        static std::vector<std::string> items{ "66%", "40%", "11%" };
                         if (draw_combo_box("##ROI Percent", items, _roi_combo_index))
                         {
                             if (_roi_combo_index == 0) _roi_percent = 0.66f;
-                            else if (_roi_combo_index == 1) _roi_percent = 0.33f;
+                            else if (_roi_combo_index == 1) _roi_percent = 0.4f;
                             else if (_roi_combo_index == 2) _roi_percent = 0.11f;
                             update_configuration();
                         }
@@ -206,18 +202,15 @@ namespace rs2
                     ImGui::PopStyleVar();
                     ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, { 0, 0 });
 
-                    if (_metrics_model.get())
+                    if (ImGui::TreeNodeEx("Metrics", ImGuiTreeNodeFlags_DefaultOpen))
                     {
-                        if (ImGui::TreeNodeEx("Metrics", ImGuiTreeNodeFlags_DefaultOpen))
-                        {
-                            ImGui::PopStyleVar();
-                            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
+                        ImGui::PopStyleVar();
+                        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
 
-                            _metrics_model->render(win);
+                        _metrics_model.render(win);
 
-                            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-                            ImGui::TreePop();
-                        }
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+                        ImGui::TreePop();
                     }
 
                     ImGui::PopStyleVar();
@@ -251,8 +244,7 @@ namespace rs2
                 {
                     if (frame.is<depth_frame>() && !_viewer_model.paused)
                     {
-                        if (_metrics_model.get())
-                            _metrics_model->begin_process_frame(frame);
+                        _metrics_model.begin_process_frame(frame);
                     }
                     _viewer_model.upload_frame(std::move(frame));
                 }
@@ -287,7 +279,7 @@ namespace rs2
             _depth_sensor_model->draw_streams_selector = false;
             _depth_sensor_model->draw_fps_selector = true;
 
-            _metrics_model = std::shared_ptr<metrics_model>(new metrics_model());
+            _metrics_model.reset();
 
             // Restore GUI controls to the selected configuration
             if (save)
@@ -310,21 +302,21 @@ namespace rs2
                     if (profile.stream_type() == RS2_STREAM_DEPTH)
                     {
                         auto depth_profile = profile.as<video_stream_profile>();
-                        _metrics_model->update_stream_attributes(depth_profile.get_intrinsics(),
+                        _metrics_model.update_stream_attributes(depth_profile.get_intrinsics(),
                                                           sub->s.as<depth_sensor>().get_depth_scale());
 
-                        _metrics_model->update_frame_attributes({ int(depth_profile.width() * (0.5f - 0.5f*_roi_percent)),
+                        _metrics_model.update_frame_attributes({ int(depth_profile.width() * (0.5f - 0.5f*_roi_percent)),
                                                            int(depth_profile.height() * (0.5f - 0.5f*_roi_percent)),
                                                            int(depth_profile.width() * (0.5f + 0.5f*_roi_percent)),
                                                            int(depth_profile.height() * (0.5f + 0.5f*_roi_percent)) });
                     }
                 }
 
-                sub->algo_roi = _metrics_model->get_roi();
+                sub->algo_roi = _metrics_model.get_roi();
             }
         }
 
-    bool metric_plot::has_trend(bool positive)
+        bool metric_plot::has_trend(bool positive)
         {
             const auto window_size = 110;
             const auto curr_window = 10;
@@ -389,8 +381,7 @@ namespace rs2
                 export_to_ply(filename_base + "_3d_mesh.ply", _viewer_model.not_model, _viewer_model.pc.get_points(), ply_texture);
 
                 // Save Metrics
-                if (_metrics_model.get())
-                    _metrics_model->serialize_to_csv(filename_base + "_depth_metrics.csv");
+                _metrics_model.serialize_to_csv(filename_base + "_depth_metrics.csv");
 
                 // Save camera configuration - supported when camera is in advanced mode only
                 if (_device_model.get())
@@ -406,53 +397,10 @@ namespace rs2
             }
         }
 
-
         metrics_model::metrics_model() :
             _frame_queue(1),
-            _depth_scale_units(0.f), _active(true),
-            _avg_plot("Average Error", 0, 10, { 270, 50 }, " (mm)"),
-            _std_plot("STD (Error)", 0, 10, { 270, 50 }, " (mm)"),
-            _fill_plot("Fill-Rate", 0, 100, { 270, 50 }, " %"),
-            _dist_plot("Distance", 0, 5, { 270, 50 }, " (m)"),
-            _angle_plot("Angle", 0, 180, { 270, 50 }, " (deg)"),
-            _out_plot("Outliers", 0, 100, { 270, 50 }, " %")
+            _depth_scale_units(0.f), _active(true)
         {
-            _avg_plot.ranges[metric_plot::GREEN_RANGE] = { 0.f, 1.f };
-            _avg_plot.ranges[metric_plot::YELLOW_RANGE] = { 0.f, 7.f };
-            _avg_plot.ranges[metric_plot::RED_RANGE] = { 0.f, 1000.f };
-
-            _avg_plot.description = "Average Distance from Plane Fit\nThis metric approximates a plane within\nthe ROI and calculates the average\ndistance of points in the ROI\nfrom that plane, in mm";
-
-            _std_plot.ranges[metric_plot::GREEN_RANGE] = { 0.f, 1.f };
-            _std_plot.ranges[metric_plot::YELLOW_RANGE] = { 0.f, 7.f };
-            _std_plot.ranges[metric_plot::RED_RANGE] = { 0.f, 1000.f };
-
-            _std_plot.description = "Standard Deviation from Plane Fit\nThis metric approximates a plane within\nthe ROI and calculates the\nstandard deviation of distances\nof points in the ROI from that plane";
-
-            _fill_plot.ranges[metric_plot::GREEN_RANGE] = { 90.f, 100.f };
-            _fill_plot.ranges[metric_plot::YELLOW_RANGE] = { 50.f, 100.f };
-            _fill_plot.ranges[metric_plot::RED_RANGE] = { 0.f, 100.f };
-
-            _fill_plot.description = "Fill Rate\nPercentage of pixels with valid depth values\nout of all pixels within the ROI";
-
-            _dist_plot.ranges[metric_plot::GREEN_RANGE] = { 0.f, 2.f };
-            _dist_plot.ranges[metric_plot::YELLOW_RANGE] = { 0.f, 3.f };
-            _dist_plot.ranges[metric_plot::RED_RANGE] = { 0.f, 7.f };
-
-            _dist_plot.description = "Approximate Distance\nWhen facing a flat wall at right angle\nthis metric estimates the distance\nin meters to that wall";
-
-            _angle_plot.ranges[metric_plot::GREEN_RANGE] = { -5.f, 5.f };
-            _angle_plot.ranges[metric_plot::YELLOW_RANGE] = { -10.f, 10.f };
-            _angle_plot.ranges[metric_plot::RED_RANGE] = { -100.f, 100.f };
-
-            _angle_plot.description = "Wall Angle\nWhen facing a flat wall this metric\nestimates the angle to the wall.";
-
-            _out_plot.ranges[metric_plot::GREEN_RANGE] = { 0.f, 5.f };
-            _out_plot.ranges[metric_plot::YELLOW_RANGE] = { 0.f, 20.f };
-            _out_plot.ranges[metric_plot::RED_RANGE] = { 0.f, 100.f };
-
-            _out_plot.description = "Outliers Percentage\nMeasures the percentage of pixels\nthat do not fit in with\nthe gaussian distribution";
-
             _worker_thread = std::thread([this]() {
                 while (_active)
                 {
@@ -477,19 +425,12 @@ namespace rs2
                             roi = _roi;
                         }
 
-                        auto metrics = analyze_depth_image(depth_frame, su, &intrin, _roi);
+                        auto metrics = analyze_depth_image(depth_frame, su, &intrin, _roi, callback);
 
                         {
                             std::lock_guard<std::mutex> lock(_m);
                             _latest_metrics = metrics;
                         }
-                        /*cout << "Depth Average distance is : " << _latest_metrics.depth.avg_dist << endl;
-                        cout << "Standard_deviation is : " << _latest_metrics.depth.std_dev << endl;
-                        cout << "Fillrate is : " << _latest_metrics.non_null_pct << endl;*/
-                    }
-                    else
-                    {
-                        //std::cout <<  "Metrics processor: unexpected frame type received - " << rs2_stream_to_string(stream_type);
                     }
 
                     // Artificially slow down the calculation, so even on small ROIs / resolutions
@@ -503,16 +444,25 @@ namespace rs2
         {
             _active = false;
             _worker_thread.join();
+            reset();
+        }
 
-            rs2::frame f;
-            while (_frame_queue.poll_for_frame(&f));
+        std::shared_ptr<metric_plot> tool_model::make_metric(
+            const std::string& name, float min, float max,
+            const std::string& units,
+            const std::string& description)
+        {
+            auto res = std::make_shared<metric_plot>(name, min, max, units, description);
+            _metrics_model.add_metric(res);
+            return res;
         }
 
         void metric_plot::render(ux_window& win)
         {
+            std::lock_guard<std::mutex> lock(_m);
             std::stringstream ss;
             auto val = _vals[(SIZE + _idx - 1) % SIZE];
-            ss << _label << std::setprecision(2) << std::fixed  << std::setw(6) << val << _tail;
+            ss << _label << std::setprecision(2) << std::fixed  << std::setw(3) << val << " " << _units;
 
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
 
@@ -585,14 +535,19 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
                 std::string did = to_string() << _id << "-desc";
-                auto desc_size = _size;
-                auto lines = std::count(description.begin(), description.end(), '\n') + 1;
+                ImVec2 desc_size = { 270, 50 };
+                auto lines = std::count(_description.begin(), _description.end(), '\n') + 1;
                 desc_size.y = lines * 20.f;
-                ImGui::InputTextMultiline(did.c_str(), const_cast<char*>(description.c_str()),
-                    description.size() + 1, desc_size, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+                ImGui::InputTextMultiline(did.c_str(), const_cast<char*>(_description.c_str()),
+                    _description.size() + 1, desc_size, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopStyleColor(3);
 
-                ImGui::PlotLines(_id.c_str(), _vals, 100, _idx, ss.str().c_str(), _min, _max, _size);
+                ImGui::PlotLines(_id.c_str(), _vals, 100, _idx, ss.str().c_str(), _min, _max, { 270, 50 });
+
+                ImGui::PushStyleColor(ImGuiCol_Text, green);
+                ImGui::Text("[%.2f - %.2f] Pass", ranges[0].x, ranges[0].y);
+                ImGui::PopStyleColor();
+
                 ImGui::TreePop();
             }
 
@@ -602,25 +557,10 @@ namespace rs2
 
         void metrics_model::render(ux_window& win)
         {
-            metrics data;
+            for (auto&& plot : _plots)
             {
-                std::lock_guard<std::mutex> lock(_m);
-                data = _latest_metrics.planar;
+                plot->render(win);
             }
-
-            _avg_plot.add_value(data.avg_dist);
-            _std_plot.add_value(data.std_dev);
-            _fill_plot.add_value(_latest_metrics.non_null_pct);
-            _dist_plot.add_value(data.distance);
-            _angle_plot.add_value(data.angle);
-            _out_plot.add_value(data.outlier_pct);
-
-            _avg_plot.render(win);
-            _std_plot.render(win);
-            _fill_plot.render(win);
-            _dist_plot.render(win);
-            _angle_plot.render(win);
-            _out_plot.render(win);
         }
 
         void metrics_model::serialize_to_csv(const std::string& filename) const
@@ -631,15 +571,18 @@ namespace rs2
             csv.open(filename);
 
             // Create header line
-            csv << "avg_distance_m,std_deviation,fill_rate_%,distance,angle_deg,outliers_%" << std::endl;
+            for (auto&& plot : _plots)
+            {
+                csv << plot->_name << ",";
+            }
+            csv << std::endl;
             for (size_t i = 0; i < metric_plot::SIZE; i++)
             {
-                csv << _avg_plot._vals[i] << ","
-                    << _std_plot._vals[i] << ","
-                    << _fill_plot._vals[i] << ","
-                    << _dist_plot._vals[i] << ","
-                    << _angle_plot._vals[i] << ","
-                    << _out_plot._vals[i] << std::endl;
+                for (auto&& plot : _plots)
+                {
+                    csv << plot->_vals[(plot->_idx + i) % metric_plot::SIZE] << ",";
+                }
+                csv << std::endl;
             }
 
             csv.close();

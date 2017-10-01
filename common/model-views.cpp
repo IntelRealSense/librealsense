@@ -6,6 +6,7 @@
 #include <algorithm>
 
 #include <librealsense2/rs_advanced_mode.hpp>
+#include <librealsense2/rsutil.h>
 
 #include "model-views.h"
 
@@ -1239,7 +1240,8 @@ namespace rs2
     }
 
     stream_model::stream_model()
-        : texture(std::unique_ptr<texture_buffer>(new texture_buffer()))
+        : texture(std::unique_ptr<texture_buffer>(new texture_buffer())),
+          _stream_not_alive(std::chrono::milliseconds(1500))
     {}
 
     void stream_model::upload_frame(frame&& f)
@@ -1314,21 +1316,26 @@ namespace rs2
 
     float stream_model::get_stream_alpha()
     {
-        if (dev && dev->is_paused()) return 1.f;
-
-        using namespace std::chrono;
-        auto now = high_resolution_clock::now();
-        auto diff = now - last_frame;
-        auto ms = duration_cast<milliseconds>(diff).count();
-        auto t = smoothstep(static_cast<float>(ms),
-            _min_timeout, _min_timeout + _frame_timeout);
-        return 1.0f - t;
+        return 1.f;
     }
 
     bool stream_model::is_stream_visible()
     {
         if (dev &&
-            (dev->is_paused() || (dev->streaming && dev->dev.is<playback>())))
+            (dev->is_paused() || 
+             (dev->streaming && dev->dev.is<playback>()) ||
+             (dev->streaming /*&& texture->get_last_frame()*/ )))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    bool stream_model::is_stream_alive()
+    {
+        if (dev &&
+            (dev->is_paused() ||
+            (dev->streaming && dev->dev.is<playback>())))
         {
             last_frame = std::chrono::high_resolution_clock::now();
             return true;
@@ -1338,7 +1345,23 @@ namespace rs2
         auto now = high_resolution_clock::now();
         auto diff = now - last_frame;
         auto ms = duration_cast<milliseconds>(diff).count();
-        return ms <= _frame_timeout + _min_timeout;
+        _stream_not_alive.add_value(ms > _frame_timeout + _min_timeout);
+        return !_stream_not_alive.eval();
+    }
+
+    void stream_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p)
+    {
+        dev = d;
+        profile = p;
+        profile = p;
+
+        if (auto vd = p.as<video_stream_profile>())
+        {
+            size = {
+                static_cast<float>(vd.width()),
+                static_cast<float>(vd.height()) };
+        };
+        _stream_not_alive.reset();
     }
 
     void stream_model::update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message)
@@ -1499,7 +1522,7 @@ namespace rs2
         auto model = pc.get_points();
 
         const auto top_bar_height = 32.f;
-        const auto num_of_buttons = 3;
+        const auto num_of_buttons = 4;
 
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -1712,7 +1735,7 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if (ImGui::Button(u8"\uf0c7", { 30, top_bar_height }))
+        if (ImGui::Button(u8"\uf0c7", { 24, top_bar_height }))
         {
             if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
             {
@@ -1726,12 +1749,36 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if (ImGui::Button(u8"\uf021", { 30, top_bar_height }))
+        if (ImGui::Button(u8"\uf021", { 24, top_bar_height }))
         {
             reset_camera();
         }
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Reset View");
+
+        ImGui::SameLine();
+
+        if (syncronize)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            if (ImGui::Button(u8"\uf09c", { 24, top_bar_height }))
+            {
+                syncronize = false;
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Disable syncronization between the pointcloud and the texture");
+            ImGui::PopStyleColor(2);
+        }
+        else
+        {
+            if (ImGui::Button(u8"\uf023", { 24, top_bar_height }))
+            {
+                syncronize = true;
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Keep the pointcloud and the texture sycronized");
+        }
 
         ImGui::End();
         ImGui::PopStyleColor(6);
@@ -2345,7 +2392,7 @@ namespace rs2
 
                 for (auto&& profile : profiles)
                 {
-                    viewer.streams[profile.unique_id()].dev = sub;
+                    viewer.streams[profile.unique_id()].begin_stream(sub, profile);
                 }
             }
         }
@@ -2543,7 +2590,8 @@ namespace rs2
         ImGui::PopStyleVar(2);
         ImGui::PopFont();
     }
-    void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, const ImVec4& text_color)
+    void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, 
+                                 const ImVec4& text_color, const std::string& tooltip)
     {
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -2553,13 +2601,15 @@ namespace rs2
         ImGui::PushFont(font_18);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
         ImGui::SetNextWindowPos({ (float)x, (float)y });
-        ImGui::SetNextWindowSize({ 32.f, 32.f });
+        ImGui::SetNextWindowSize({ 320.f, 32.f });
         std::string label = to_string() << label_str << id;
         ImGui::Begin(label.c_str(), nullptr, flags);
 
         ImGui::PushStyleColor(ImGuiCol_Text, text_color);
         ImGui::Text("%s", text);
         ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered() && tooltip != "")
+            ImGui::SetTooltip(tooltip.c_str());
 
         ImGui::End();
         ImGui::PopStyleColor();
@@ -2769,10 +2819,10 @@ namespace rs2
         ImFont *font1, ImFont *font2, size_t dev_model_num,
         const mouse_info &mouse, std::string& error_message)
     {
-        static float alpha_delta = 0;
-        static float alpha_delta_step = 0;
-        alpha_delta_step = alpha_delta <= 0 ? 0.04 : alpha_delta > 1 ? -0.04 : alpha_delta_step;
-        alpha_delta += alpha_delta_step;
+        static periodic_timer every_sec(std::chrono::seconds(1));
+        static bool icon_visible = false;
+        if (every_sec) icon_visible = !icon_visible;
+        float alpha = icon_visible ? 1.f : 0.2f;
 
         glLoadIdentity();
         glOrtho(0, width, heigth, 0, -1, +1);
@@ -2799,8 +2849,18 @@ namespace rs2
 
             if (stream_mv.dev->dev.is<recorder>())
             {
-                show_recording_icon(font2, pos, stream_rect.y + 5, stream_mv.profile.unique_id(), alpha_delta > 0.5 ? 0 : 1);
+                show_recording_icon(font2, pos, stream_rect.y + 5, stream_mv.profile.unique_id(), alpha);
                 pos += 23;
+            }
+
+            if (!stream_mv.is_stream_alive())
+            {
+                show_icon(font2, "warning_icon", u8"\uf071  FPS Alert!  \uf071",
+                          stream_rect.center().x - 70, 
+                          stream_rect.center().y - 25, 
+                          stream_mv.profile.unique_id(), 
+                          blend(dark_red, alpha),
+                          "Did not receive frames from the platform within a reasonable time window!");
             }
 
             if (stream_mv.dev->is_paused() || (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
@@ -2888,38 +2948,105 @@ namespace rs2
 
         glColor4f(1.f, 1.f, 1.f, 1.f);
 
+        if (syncronize)
+        {
+            auto tex = streams[selected_tex_source_uid].texture->get_last_frame();
+            if (tex) s(tex);
+        }
+
         if (auto points = pc.get_points())
         {
-            glPointSize((float)viewer_rect.w / points.get_profile().as<video_stream_profile>().width());
-
-            if (selected_tex_source_uid >= 0)
+            if (syncronize)
             {
-                auto tex = streams[selected_tex_source_uid].texture->get_gl_handle();
-                glBindTexture(GL_TEXTURE_2D, tex);
-                glEnable(GL_TEXTURE_2D);
-
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
+                s(points);
+                rs2::frameset fs;
+                if (s.poll_for_frames(&fs))
+                    if (fs && fs.size() > 1)
+                    {
+                        for (auto&& f : fs)
+                        {
+                            if (f.is<rs2::points>()) last_points = f;
+                            else last_texture = f;
+                        }
+                    }
+            }
+            else
+            {
+                last_texture = streams[selected_tex_source_uid].texture->get_last_frame();
+                last_points = points;
             }
 
-            //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
-
-            glBegin(GL_POINTS);
-
-            auto vertices = points.get_vertices();
-            auto tex_coords = points.get_texture_coordinates();
-
-            for (int i = 0; i < points.size(); i++)
+            if (draw_frustrum)
             {
-                if (vertices[i].z)
+                glLineWidth(1.f);
+                glBegin(GL_LINES);
+
+                auto intrin = points.get_profile().as<video_stream_profile>().get_intrinsics();
+
+                glColor4f(sensor_bg.x, sensor_bg.y, sensor_bg.z, 0.5f);
+
+                for (float d = 1; d < 6; d+=2)
                 {
-                    glVertex3fv(vertices[i]);
-                    glTexCoord2fv(tex_coords[i]);
+                    auto get_point = [&](float x, float y) -> float3
+                    {
+                        float point[3];
+                        float pixel[2]{ x, y };
+                        rs2_deproject_pixel_to_point(point, &intrin, pixel, d);
+                        glVertex3f(0.f, 0.f, 0.f);
+                        glVertex3fv(point);
+                        return{ point[0], point[1], point[2] };
+                    };
+
+                    auto top_left = get_point(0, 0);
+                    auto top_right = get_point(intrin.width, 0);
+                    auto bottom_right = get_point(intrin.width, intrin.height);
+                    auto bottom_left = get_point(0, intrin.height);
+
+                    glVertex3fv(&top_left.x); glVertex3fv(&top_right.x);
+                    glVertex3fv(&top_right.x); glVertex3fv(&bottom_right.x);
+                    glVertex3fv(&bottom_right.x); glVertex3fv(&bottom_left.x);
+                    glVertex3fv(&bottom_left.x); glVertex3fv(&top_left.x);
                 }
 
+                glEnd();
+
+                glColor4f(1.f, 1.f, 1.f, 1.f);
             }
 
-            glEnd();
+            if (last_points && last_texture)
+            {
+                texture.upload(last_texture);
+
+                glPointSize((float)viewer_rect.w / points.get_profile().as<video_stream_profile>().width());
+
+                if (selected_tex_source_uid >= 0)
+                {
+                    auto tex = texture.get_gl_handle();
+                    glBindTexture(GL_TEXTURE_2D, tex);
+                    glEnable(GL_TEXTURE_2D);
+
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
+                }
+
+                //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+
+                glBegin(GL_POINTS);
+
+                auto vertices = last_points.get_vertices();
+                auto tex_coords = last_points.get_texture_coordinates();
+
+                for (int i = 0; i < last_points.size(); i++)
+                {
+                    if (vertices[i].z)
+                    {
+                        glVertex3fv(vertices[i]);
+                        glTexCoord2fv(tex_coords[i]);
+                    }
+
+                }
+                glEnd();
+            }
         }
 
         glDisable(GL_DEPTH_TEST);
