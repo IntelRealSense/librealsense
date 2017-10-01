@@ -60,9 +60,27 @@ namespace librealsense
             // _camera_index is the curr device that user want to work with
 
             auto d = _device_list[ (_camera_index + i) % _device_list.size()];
-            auto dev = d->create_device();
 
-            if(serial.size() > 0 )
+            std::shared_ptr<device_interface> dev;
+            try
+            {
+                dev = d->create_device();
+            }
+            catch (...)
+            {
+                _device_list = _ctx->query_devices();
+                if (_device_list.size() > 0)
+                {
+                    d = _device_list[0];
+                    dev = d->create_device();
+                    _camera_index = 0;
+                    return dev;
+                }
+                else
+                    return nullptr;
+            }
+
+            if(serial.size() > 0)
             {
                 auto new_serial = dev->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
 
@@ -108,6 +126,9 @@ namespace librealsense
 
         if(!_cv.wait_for(lock, std::chrono::milliseconds(timeout_ms), [&]()
         {
+            if(_stop)
+                return true;
+
             res = nullptr;
             if(_device_list.size()>0)
             {
