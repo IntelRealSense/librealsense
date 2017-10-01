@@ -97,11 +97,12 @@ namespace rs2
                 return _latest_metrics.plane_corners;
             }
 
-            void update_stream_attributes(const rs2_intrinsics &intrinsic, const float& scale_units)
+            void update_stream_attributes(const rs2_intrinsics &intrinsic, float scale_units, float baseline)
             {
                 std::lock_guard<std::mutex> lock(_m);
                 _depth_intrinsic = intrinsic;
                 _depth_scale_units = scale_units;
+                _stereo_baseline_mm = baseline;
             };
 
             void update_frame_attributes(const region_of_interest& roi)
@@ -136,6 +137,7 @@ namespace rs2
 
             rs2_intrinsics          _depth_intrinsic;
             float                   _depth_scale_units;
+            float                   _stereo_baseline_mm;
             region_of_interest      _roi;
             snapshot_metrics        _latest_metrics;
             bool                    _active;

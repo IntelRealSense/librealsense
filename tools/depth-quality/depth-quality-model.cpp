@@ -182,12 +182,12 @@ namespace rs2
                         ImGui::PushItemWidth(-1);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
 
-                        static std::vector<std::string> items{ "66%", "40%", "11%" };
+                        static std::vector<std::string> items{ "80%", "40%", "20%" };
                         if (draw_combo_box("##ROI Percent", items, _roi_combo_index))
                         {
-                            if (_roi_combo_index == 0) _roi_percent = 0.66f;
+                            if (_roi_combo_index == 0) _roi_percent = 0.8f;
                             else if (_roi_combo_index == 1) _roi_percent = 0.4f;
-                            else if (_roi_combo_index == 2) _roi_percent = 0.11f;
+                            else if (_roi_combo_index == 2) _roi_percent = 0.2f;
                             update_configuration();
                         }
 
@@ -279,6 +279,26 @@ namespace rs2
             _depth_sensor_model->draw_streams_selector = false;
             _depth_sensor_model->draw_fps_selector = true;
 
+            // Retrieve stereo baseline for supported devices
+            auto baseline_mm = -1.f;
+            auto profiles = dpt_sensor.get_stream_profiles();
+            auto right_sensor = std::find_if(profiles.begin(), profiles.end(), [](rs2::stream_profile& p)
+            { return (p.stream_index() == 2) && (p.stream_type() == RS2_STREAM_INFRARED); });
+
+            if (right_sensor != profiles.end())
+            {
+                auto left_sensor = std::find_if(profiles.begin(), profiles.end(), [](rs2::stream_profile& p)
+                                    { return (p.stream_index() == 0) && (p.stream_type() == RS2_STREAM_DEPTH); });
+                try
+                {
+                    auto extrin = (*left_sensor).get_extrinsics_to(*right_sensor);
+                    baseline_mm = fabs(extrin.translation[0])*1000;  // baseline in mm
+                }
+                catch (...) {
+                    _error_message = "Extrinsic parameters are not available";
+                }
+            }
+
             _metrics_model.reset();
 
             // Restore GUI controls to the selected configuration
@@ -303,7 +323,7 @@ namespace rs2
                     {
                         auto depth_profile = profile.as<video_stream_profile>();
                         _metrics_model.update_stream_attributes(depth_profile.get_intrinsics(),
-                                                          sub->s.as<depth_sensor>().get_depth_scale());
+                                                          sub->s.as<depth_sensor>().get_depth_scale(), baseline_mm);
 
                         _metrics_model.update_frame_attributes({ int(depth_profile.width() * (0.5f - 0.5f*_roi_percent)),
                                                            int(depth_profile.height() * (0.5f - 0.5f*_roi_percent)),
@@ -415,17 +435,18 @@ namespace rs2
 
                     if (RS2_STREAM_DEPTH == stream_type)
                     {
-                        float su = 0;
+                        float su = 0, baseline = -1.f;
                         rs2_intrinsics intrin;
                         region_of_interest roi;
                         {
                             std::lock_guard<std::mutex> lock(_m);
                             su = _depth_scale_units;
+                            baseline = _stereo_baseline_mm;
                             intrin = _depth_intrinsic;
                             roi = _roi;
                         }
 
-                        auto metrics = analyze_depth_image(depth_frame, su, &intrin, _roi, callback);
+                        auto metrics = analyze_depth_image(depth_frame, su, baseline, &intrin, roi, callback);
 
                         {
                             std::lock_guard<std::mutex> lock(_m);
@@ -462,6 +483,7 @@ namespace rs2
             std::lock_guard<std::mutex> lock(_m);
             std::stringstream ss;
             auto val = _vals[(SIZE + _idx - 1) % SIZE];
+
             ss << _label << std::setprecision(2) << std::fixed  << std::setw(3) << val << " " << _units;
 
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
