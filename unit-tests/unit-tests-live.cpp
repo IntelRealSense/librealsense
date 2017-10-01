@@ -493,12 +493,16 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
 
         for (auto i = 0; i < 5; i++)
         {
-            REQUIRE_NOTHROW(pipe.open());
-            REQUIRE_NOTHROW(dev = pipe.get_device());
+            rs2::config cfg;
+            rs2::pipeline_profile profile;
+            REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+            REQUIRE(profile);
+            REQUIRE_NOTHROW(dev = profile.get_device());
+            REQUIRE(dev);
             disable_sensitive_options_for(dev);
 
             // Test sequence
-            REQUIRE_NOTHROW(pipe.start());
+            REQUIRE_NOTHROW(pipe.start(cfg));
 
             REQUIRE_NOTHROW(pipe.stop());
         }
@@ -2424,22 +2428,22 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
            { { { RS2_STREAM_INFRARED,   0,   0,   0, RS2_FORMAT_ANY, 1 } },   // given
              { { RS2_STREAM_INFRARED,   0,   0,   0, RS2_FORMAT_Y8 , 1 } } }, // expected
             // Test 2 (No 200 fps depth)
-           { { { RS2_STREAM_DEPTH   ,   0,   0, 200, RS2_FORMAT_ANY, 0 } },   // given
+           { { { RS2_STREAM_DEPTH   ,   0,   0, 200, RS2_FORMAT_ANY, -1 } },   // given
              { } },                                                      // expected
             // Test 3 (Can request 60 fps IR)
            { { { RS2_STREAM_INFRARED,   0,   0, 60, RS2_FORMAT_ANY, 1 } },   // given
              { { RS2_STREAM_INFRARED,   0,   0, 60, RS2_FORMAT_ANY, 1 } } }, // expected
             // Test 4 (requesting IR@200fps + depth fails
-           { { { RS2_STREAM_INFRARED,   0,   0, 200, RS2_FORMAT_ANY, 1 }, { RS2_STREAM_DEPTH   ,   0,   0,   0, RS2_FORMAT_ANY, 0 } },   // given
+           { { { RS2_STREAM_INFRARED,   0,   0, 200, RS2_FORMAT_ANY, 1 }, { RS2_STREAM_DEPTH   ,   0,   0,   0, RS2_FORMAT_ANY, -1 } },   // given
              { } },                                                                                                            // expected
             // Test 5 (Can't do 640x480@110fps a)
-           { { { RS2_STREAM_INFRARED, 640, 480, 110, RS2_FORMAT_ANY, 1 } },   // given
+           { { { RS2_STREAM_INFRARED, 640, 480, 110, RS2_FORMAT_ANY, -1 } },   // given
              { } },                                                      // expected
             // Test 6 (Can't do 640x480@110fps b)
-           { { { RS2_STREAM_DEPTH   , 640, 480,   0, RS2_FORMAT_ANY, 0 }, { RS2_STREAM_INFRARED,   0,   0, 110, RS2_FORMAT_ANY, 1 } },   // given
+           { { { RS2_STREAM_DEPTH   , 640, 480,   0, RS2_FORMAT_ANY, -1 }, { RS2_STREAM_INFRARED,   0,   0, 110, RS2_FORMAT_ANY, 1 } },   // given
              { } },                                                                                                            // expected
             // Test 7 (Pull extra details from second stream a)
-           { { { RS2_STREAM_DEPTH   , 640, 480,   0, RS2_FORMAT_ANY, 0 }, { RS2_STREAM_INFRARED,   0,   0,  30, RS2_FORMAT_ANY, 1 } },   // given
+           { { { RS2_STREAM_DEPTH   , 640, 480,   0, RS2_FORMAT_ANY, -1 }, { RS2_STREAM_INFRARED,   0,   0,  30, RS2_FORMAT_ANY, 1 } },   // given
              { { RS2_STREAM_DEPTH   , 640, 480,  30, RS2_FORMAT_ANY, 0 }, { RS2_STREAM_INFRARED, 640, 480,  30, RS2_FORMAT_ANY, 1 } } }, // expected
             // Test 8 (Pull extra details from second stream b) [IR also supports 200, could fail if that gets selected]
            { { { RS2_STREAM_INFRARED, 640, 480,   0, RS2_FORMAT_ANY, 1 }, { RS2_STREAM_DEPTH   ,   0,   0,   0, RS2_FORMAT_ANY , 0 } },   // given
@@ -2449,22 +2453,24 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
         };
 
         pipeline pipe(ctx);
+        rs2::config cfg;
         for (int i = 0; i < tests.size(); ++i)
         {
-            pipe.disable_all();
+            cfg.disable_all_streams();
             for (auto & profile : tests[i].given) {
-                REQUIRE_NOTHROW(pipe.enable_stream(profile.stream_type, profile.index, profile.width, profile.height, profile.format, profile.fps));
+                REQUIRE_NOTHROW(cfg.enable_stream(profile.stream_type, profile.index, profile.width, profile.height, profile.format, profile.fps));
             }
 
             CAPTURE(i);
             if (tests[i].expected.size() == 0) {
-                REQUIRE_THROWS_AS(pipe.start(), std::runtime_error);
+                REQUIRE_THROWS_AS(pipe.start(cfg), std::runtime_error);
             }
             else
             {
-                REQUIRE_NOTHROW(pipe.start());
+                rs2::pipeline_profile pipe_profile;
+                REQUIRE_NOTHROW(pipe_profile = pipe.start(cfg));
                 //REQUIRE()s are in here
-
+                REQUIRE(pipe_profile);
                 REQUIRE_NOTHROW(pipe.stop());
             }
         }
@@ -2672,18 +2678,20 @@ TEST_CASE("Pipeline wait_for_frames", "[live]") {
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        auto list = ctx.query_devices();
-        REQUIRE(list.size());
         rs2::device dev;
         rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = list[0]);
-
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
         disable_sensitive_options_for(dev);
         std::string PID;
         REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
         REQUIRE(dev_requsets[PID].streams.size() > 0);
 
-        REQUIRE_NOTHROW(pipe.start());
+        REQUIRE_NOTHROW(pipe.start(cfg));
 
         std::vector<std::vector<stream_profile>> frames;
         std::vector<std::vector<double>> timestamps;
@@ -2723,17 +2731,20 @@ TEST_CASE("Pipeline poll", "[live]") {
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
+        rs2::device dev;
         rs2::pipeline pipe(ctx);
-        auto dev = list[0];
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
         disable_sensitive_options_for(dev);
-
         std::string PID;
         REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
-
         REQUIRE(dev_requsets[PID].streams.size() > 0);
 
-
-        REQUIRE_NOTHROW(pipe.start());
+        REQUIRE_NOTHROW(pipe.start(cfg));
 
         std::vector<std::vector<stream_profile>> frames;
         std::vector<std::vector<double>> timestamps;
@@ -2813,21 +2824,24 @@ TEST_CASE("Pipeline enable stream", "[live]") {
 
         rs2::device dev;
         rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = list[0]);
-
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
         disable_sensitive_options_for(dev);
-
         std::string PID;
         REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
 
         REQUIRE(dev_requsets[PID].streams.size() > 0);
 
-
         for (auto req : dev_requsets[PID].streams)
-            REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, dev_requsets[PID].fps));
+            REQUIRE_NOTHROW(cfg.enable_stream(req.stream, req.index, req.width, req.height, req.format, dev_requsets[PID].fps));
 
-        REQUIRE_NOTHROW(pipe.start());
-
+        REQUIRE_NOTHROW(profile = pipe.start(cfg));
+        REQUIRE(profile);
+        REQUIRE(std::string(profile.get_device().get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
         std::vector<std::vector<stream_profile>> frames;
         std::vector<std::vector<double>> timestamps;
 
@@ -2894,19 +2908,28 @@ TEST_CASE("Pipeline enable stream auto complete", "[live]") {
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
-        auto dev = list[0];
-        disable_sensitive_options_for(dev);
 
-        std::string PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
+        disable_sensitive_options_for(dev);
+        std::string PID;
+        REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
 
         REQUIRE(dev_requsets[PID].streams.size() > 0);
 
-        rs2::pipeline pipe(ctx);
-
         for (auto req : dev_requsets[PID].streams)
-            REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, dev_requsets[PID].fps));
+            REQUIRE_NOTHROW(cfg.enable_stream(req.stream, req.index, req.width, req.height, req.format, dev_requsets[PID].fps));
 
-        REQUIRE_NOTHROW(pipe.start());
+        REQUIRE_NOTHROW(profile = pipe.start(cfg));
+        REQUIRE(profile);
+        REQUIRE(profile.get_device());
+        REQUIRE(std::string(profile.get_device().get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
 
         std::vector<std::vector<stream_profile>> frames;
@@ -2951,22 +2974,29 @@ TEST_CASE("Pipeline disable_all", "[live]") {
 
         rs2::device dev;
         rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = list[0]);
-
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
         disable_sensitive_options_for(dev);
-
         std::string PID;
         REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
+
 
         REQUIRE(not_default_configurations[PID].streams.size() > 0);
 
 
         for (auto req : not_default_configurations[PID].streams)
-            REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, not_default_configurations[PID].fps));
+            REQUIRE_NOTHROW(cfg.enable_stream(req.stream, req.index, req.width, req.height, req.format, not_default_configurations[PID].fps));
 
-        REQUIRE_NOTHROW(pipe.disable_all());
+        REQUIRE_NOTHROW(cfg.disable_all_streams());
 
-        REQUIRE_NOTHROW(pipe.start());
+        REQUIRE_NOTHROW(profile = pipe.start(cfg));
+        REQUIRE(profile);
+        REQUIRE(std::string(profile.get_device().get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+
 
         std::vector<std::vector<stream_profile>> frames;
         std::vector<std::vector<double>> timestamps;
@@ -3009,10 +3039,13 @@ TEST_CASE("Pipeline disable stream", "[live]") {
 
         rs2::device dev;
         rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = list[0]);
-
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
         disable_sensitive_options_for(dev);
-
         std::string PID;
         REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
 
@@ -3020,18 +3053,20 @@ TEST_CASE("Pipeline disable stream", "[live]") {
 
 
         for (auto req : configurations[PID].streams)
-            REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
+            REQUIRE_NOTHROW(cfg.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
 
 
         auto stream_to_be_removed = configurations[PID].streams[configurations[PID].streams.size() - 1].stream;
-        REQUIRE_NOTHROW(pipe.disable_stream(stream_to_be_removed));
+        REQUIRE_NOTHROW(cfg.disable_stream(stream_to_be_removed));
 
 
         auto& streams = configurations[PID].streams;
         streams.erase(streams.end() - 1);
 
 
-        REQUIRE_NOTHROW(pipe.start());
+        REQUIRE_NOTHROW(profile = pipe.start(cfg));
+        REQUIRE(profile);
+        REQUIRE(std::string(profile.get_device().get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
         std::vector<std::vector<stream_profile>> frames;
         std::vector<std::vector<double>> timestamps;
@@ -3075,26 +3110,31 @@ TEST_CASE("Pipeline with specific device", "[live]") {
         rs2::device dev;
         REQUIRE_NOTHROW(dev = list[0]);
         disable_sensitive_options_for(dev);
-        std::string serial, serial1;
+        std::string serial, serial1, serial2;
         REQUIRE_NOTHROW(serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
         rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(pipe.enable_device(serial));
-        REQUIRE_NOTHROW(pipe.open());
-
-        REQUIRE_NOTHROW(dev = pipe.get_device());
-
+        rs2::config cfg;
+        REQUIRE_NOTHROW(cfg.enable_device(serial));
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
         disable_sensitive_options_for(dev);
-
-
-
-        REQUIRE_NOTHROW(dev = pipe.get_device());
         REQUIRE_NOTHROW(serial1 = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-
-
         CAPTURE(serial);
         CAPTURE(serial1);
         REQUIRE(serial1 == serial);
+
+        REQUIRE_NOTHROW(profile = pipe.start(cfg));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE_NOTHROW(serial2 = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        CAPTURE(serial);
+        CAPTURE(serial2);
+        REQUIRE(serial2 == serial);
+        REQUIRE_NOTHROW(pipe.stop());
 
     }
 }
@@ -3132,21 +3172,24 @@ TEST_CASE("Pipeline start stop", "[live]") {
 
         rs2::device dev;
         rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = list[0]);
-
+        rs2::config cfg;
+        rs2::pipeline_profile pipe_profile;
+        REQUIRE_NOTHROW(pipe_profile = cfg.resolve(pipe));
+        REQUIRE(pipe_profile);
+        REQUIRE_NOTHROW(dev = pipe_profile.get_device());
+        REQUIRE(dev);
         disable_sensitive_options_for(dev);
-
         std::string PID;
         REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
 
         REQUIRE(configurations[PID].streams.size() > 0);
 
         for (auto req : configurations[PID].streams)
-            REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
+            REQUIRE_NOTHROW(cfg.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
 
         auto& streams = configurations[PID].streams;
 
-        REQUIRE_NOTHROW(pipe.start());
+        REQUIRE_NOTHROW(pipe.start(cfg));
 
         std::vector<device_profiles> frames;
 
@@ -3155,7 +3198,7 @@ TEST_CASE("Pipeline start stop", "[live]") {
 
 
         REQUIRE_NOTHROW(pipe.stop());
-        REQUIRE_NOTHROW(pipe.start());
+        REQUIRE_NOTHROW(pipe.start(cfg));
 
         for (auto i = 0; i < 20; i++)
             REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
@@ -3252,21 +3295,26 @@ TEST_CASE("Pipeline get selection", "[live]") {
 
         rs2::device dev;
         rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = list[0]);
-
+        rs2::config cfg;
+        rs2::pipeline_profile pipe_profile;
+        REQUIRE_NOTHROW(pipe_profile = cfg.resolve(pipe));
+        REQUIRE(pipe_profile);
+        REQUIRE_NOTHROW(dev = pipe_profile.get_device());
+        REQUIRE(dev);
         disable_sensitive_options_for(dev);
-
         std::string PID;
         REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
 
         REQUIRE(configurations[PID].streams.size() > 0);
 
         for (auto req : configurations[PID].streams)
-            REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
+            REQUIRE_NOTHROW(cfg.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
 
-        REQUIRE_NOTHROW(pipe.start());
+        REQUIRE_NOTHROW(pipe.start(cfg));
         std::vector<stream_profile> profiles;
-        REQUIRE_NOTHROW(profiles = pipe.get_active_streams());
+        REQUIRE_NOTHROW(pipe_profile = pipe.get_active_profile());
+        REQUIRE(pipe_profile);
+        REQUIRE_NOTHROW(profiles = pipe_profile.get_streams());
 
         auto streams = configurations[PID].streams;
         std::vector<profile> pipe_streams;
@@ -3493,7 +3541,7 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
     }
 }
 
-TEST_CASE("Pipeline enable open start flow", "[live]") {
+TEST_CASE("Pipeline config enable resolve start flow", "[live]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -3503,16 +3551,25 @@ TEST_CASE("Pipeline enable open start flow", "[live]") {
 
         rs2::device dev;
         rs2::pipeline pipe(ctx);
-        REQUIRE_NOTHROW(dev = list[0]);
-
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
         disable_sensitive_options_for(dev);
-        REQUIRE_THROWS(pipe.get_device());
-        REQUIRE_NOTHROW(pipe.open());
-        REQUIRE_NOTHROW(pipe.open());
-        REQUIRE_NOTHROW(dev = pipe.get_device());
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
 
-        REQUIRE_THROWS(pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_ANY, 0));
-        REQUIRE_NOTHROW(pipe.start());
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
+
+        REQUIRE_NOTHROW(cfg.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_ANY, 0));
+        REQUIRE_NOTHROW(pipe.start(cfg));
 
         std::vector<device_profiles> frames;
 
@@ -3521,17 +3578,23 @@ TEST_CASE("Pipeline enable open start flow", "[live]") {
 
 
         REQUIRE_NOTHROW(pipe.stop());
-        REQUIRE_NOTHROW(pipe.start());
+        REQUIRE_NOTHROW(pipe.start(cfg));
 
         for (auto i = 0; i < 20; i++)
             REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
 
-        REQUIRE_NOTHROW(pipe.disable_all());
+        REQUIRE_NOTHROW(cfg.disable_all_streams());
 
-        REQUIRE_NOTHROW(pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_ANY, 0));
-        REQUIRE_NOTHROW(pipe.open());
+        REQUIRE_NOTHROW(cfg.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_ANY, 0));
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
 
-        REQUIRE_NOTHROW(pipe.disable_all());
-        REQUIRE_NOTHROW(pipe.open());
+        REQUIRE_NOTHROW(cfg.disable_all_streams());
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
     }
 }
