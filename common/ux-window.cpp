@@ -160,12 +160,7 @@ namespace rs2
             ImGui::SetNextWindowSize({ (float)_width, (float)_height });
             ImGui::Begin("Splash Screen Banner", nullptr, flags);
 
-            static uint64_t index = 0;
-            static std::vector<const char*> points{ "", ".", "..", "...", "...." };
-            if (do_200ms)
-                ++index;
-
-            ImGui::Text("%s   Loading %s%s", hourglass.c_str(), _title_str.c_str(), points[(index)%points.size()]);
+            ImGui::Text("%s   Loading %s...", hourglass.c_str(), _title_str.c_str());
 
             {
                 std::lock_guard<std::mutex> lock(_on_load_message_mtx);
@@ -197,7 +192,7 @@ namespace rs2
             //glfwSwapBuffers(_win);
             glPopMatrix();
 
-            // Yeild the CPU
+            // Yield the CPU
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
 

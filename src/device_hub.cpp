@@ -8,7 +8,6 @@
 
 namespace librealsense
 {
-
     typedef rs2::devices_changed_callback<std::function<void(rs2::event_information& info)>> hub_devices_changed_callback;
 
     std::vector<std::shared_ptr<device_info>> filter_by_vid(std::vector<std::shared_ptr<device_info>> devices , int vid)

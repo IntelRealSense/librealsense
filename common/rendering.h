@@ -211,6 +211,9 @@ namespace rs2
             auto p2 = p[(i+1) % p.size()];
             if ((p2 - p1).length() < 1e-3) return false;
 
+            p1 = p1.normalize();
+            p2 = p2.normalize();
+
             angles.push_back(acos((p1 * p2) / sqrt(p1.length() * p2.length())));
         }
         return std::all_of(angles.begin(), angles.end(), [](float f) { return f > 0; }) ||
@@ -295,8 +298,8 @@ namespace rs2
             auto y2 = std::min(y + h, other.y + other.h);
 
             return{
-                x1, y1, 
-                std::max(x2 - x1, 0.f), 
+                x1, y1,
+                std::max(x2 - x1, 0.f),
                 std::max(y2 - y1, 0.f)
             };
         }
@@ -643,12 +646,12 @@ namespace rs2
             _start = std::chrono::steady_clock::now();
         }
 
+        void reset() { _start = std::chrono::steady_clock::now(); }
+
         // Get elapsed milliseconds since timer creation
-        float elapsed_ms() const
+        double elapsed_ms() const
         {
-            auto duration = elapsed();
-            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-            return ms;
+            return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(elapsed()).count();
         }
 
         clock::duration elapsed() const
@@ -668,7 +671,7 @@ namespace rs2
     {
     public:
         periodic_timer(clock::duration delta)
-            : _delta(delta) 
+            : _delta(delta)
         {
             _last = _time.now();
         }
@@ -689,6 +692,11 @@ namespace rs2
         clock::duration _delta;
     };
 
+    // Temporal event is a very simple time filter
+    // that allows a concensus based on a set of measurements in time
+    // You set the window, and add measurements, and the class offers 
+    // the most agreed upon opinion within the set time window
+    // It is useful to remove noise from UX elements
     class temporal_event
     {
     public:
@@ -703,6 +711,9 @@ namespace rs2
         bool eval()
         {
             std::lock_guard<std::mutex> lock(_m);
+
+            if (_t.elapsed() < _window) return false; // Ensure no false alarms in the warm-up time
+
             _measurements.erase(std::remove_if(_measurements.begin(), _measurements.end(),
                 [this](std::pair<clock::time_point, bool> pair) {
                 return (clock::now() - pair.first) > _window;
@@ -712,13 +723,21 @@ namespace rs2
                 [this](std::pair<clock::time_point, bool> pair) {
                 return pair.second;
             });
-            return trues * 2 > _measurements.size(); // At least 50% of observations agree
+            return size_t(trues * 2) > _measurements.size(); // At least 50% of observations agree
+        }
+
+        void reset()
+        {
+            std::lock_guard<std::mutex> lock(_m);
+            _t.reset();
+            _measurements.clear();
         }
 
     private:
         std::mutex _m;
         clock::duration _window;
         std::vector<std::pair<clock::time_point, bool>> _measurements;
+        timer _t;
     };
 
     class texture_buffer
@@ -737,7 +756,7 @@ namespace rs2
         texture_buffer() : last_queue(1), texture(), colorize() {}
 
         GLuint get_gl_handle() const { return texture; }
-        
+
         // Simplified version of upload that lets us load basic RGBA textures
         // This is used for the splash screen
         void upload_image(int w, int h, void* data)
@@ -758,7 +777,7 @@ namespace rs2
             // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
             if (!texture)
                 glGenTextures(1, &texture);
-             
+
             int width = 0;
             int height = 0;
             int stride = 0;

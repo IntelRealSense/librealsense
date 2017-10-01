@@ -36,8 +36,8 @@ namespace librealsense
         std::shared_ptr<device_interface> _dev;
         device_hub _hub;
         frame_callback_ptr _callback;
-        syncer_proccess_unit _syncer;
-        single_consumer_queue<frame_holder> _queue;
+        std::unique_ptr<syncer_proccess_unit> _syncer;
+        std::unique_ptr<single_consumer_queue<frame_holder>> _queue;
         std::vector<sensor_interface*> _sensors;
         util::config _config;
         util::config::multistream _multistream;

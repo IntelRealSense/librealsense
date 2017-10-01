@@ -6,6 +6,7 @@
 #include <algorithm>
 
 #include <librealsense2/rs_advanced_mode.hpp>
+#include <librealsense2/rsutil.h>
 
 #include "model-views.h"
 
@@ -613,8 +614,7 @@ namespace rs2
     }
 
     subdevice_model::subdevice_model(device& dev, sensor& s, std::string& error_message)
-        : s(s), dev(dev), streaming(false),
-        selected_shared_fps_id(0), _pause(false)
+        : s(s), dev(dev), ui(), last_valid_ui(), streaming(false), _pause(false)
     {
         try
         {
@@ -739,7 +739,7 @@ namespace rs2
                 {
                     if (get_default_selection_index(fps_array.second, 30, &selection_index))
                     {
-                        selected_fps_id[fps_array.first] = selection_index;
+                        ui.selected_fps_id[fps_array.first] = selection_index;
                         break;
                     }
                 }
@@ -747,7 +747,7 @@ namespace rs2
             else
             {
                 if (get_default_selection_index(shared_fps_values, 30, &selection_index))
-                    selected_shared_fps_id = selection_index;
+                    ui.selected_shared_fps_id = selection_index;
             }
 
             for (auto format_array : format_values)
@@ -759,16 +759,17 @@ namespace rs2
                 {
                     if (get_default_selection_index(format_array.second, format, &selection_index))
                     {
-                        selected_format_id[format_array.first] = selection_index;
+                        ui.selected_format_id[format_array.first] = selection_index;
                         break;
                     }
                 }
             }
 
             get_default_selection_index(res_values, std::make_pair(0, 0), &selection_index);
-            selected_res_id = selection_index;
+            ui.selected_res_id = selection_index;
 
-            while (selected_res_id >= 0 && !is_selected_combination_supported()) selected_res_id--;
+            while (ui.selected_res_id >= 0 && !is_selected_combination_supported()) ui.selected_res_id--;
+            last_valid_ui = ui;
         }
         catch (const error& e)
         {
@@ -841,14 +842,14 @@ namespace rs2
             << s.get_info(RS2_CAMERA_INFO_NAME) << " resolution";
         if (streaming)
         {
-            ImGui::Text("%s", res_chars[selected_res_id]);
+            ImGui::Text("%s", res_chars[ui.selected_res_id]);
             streaming_tooltip();
         }
         else
         {
             ImGui::PushItemWidth(-1);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-            if (ImGui::Combo(label.c_str(), &selected_res_id, res_chars.data(),
+            if (ImGui::Combo(label.c_str(), &ui.selected_res_id, res_chars.data(),
                 static_cast<int>(res_chars.size())))
             {
                 res = true;
@@ -873,14 +874,14 @@ namespace rs2
 
                 if (streaming)
                 {
-                    ImGui::Text("%s", fps_chars[selected_shared_fps_id]);
+                    ImGui::Text("%s", fps_chars[ui.selected_shared_fps_id]);
                     streaming_tooltip();
                 }
                 else
                 {
                     ImGui::PushItemWidth(-1);
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                    if (ImGui::Combo(label.c_str(), &selected_shared_fps_id, fps_chars.data(),
+                    if (ImGui::Combo(label.c_str(), &ui.selected_shared_fps_id, fps_chars.data(),
                         static_cast<int>(fps_chars.size())))
                     {
                         res = true;
@@ -898,8 +899,6 @@ namespace rs2
             if (!streaming)
             {
                 ImGui::Text("Available Streams:");
-                //            ImGui::NextColumn();
-                //            ImGui::NextColumn();
             }
 
             // Draw combo-box with all format options for current device
@@ -944,14 +943,14 @@ namespace rs2
 
                     if (streaming)
                     {
-                        ImGui::Text("%s", formats_chars[selected_format_id[f.first]]);
+                        ImGui::Text("%s", formats_chars[ui.selected_format_id[f.first]]);
                         streaming_tooltip();
                     }
                     else
                     {
                         ImGui::PushItemWidth(-1);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                        ImGui::Combo(label.c_str(), &selected_format_id[f.first], formats_chars.data(),
+                        ImGui::Combo(label.c_str(), &ui.selected_format_id[f.first], formats_chars.data(),
                             static_cast<int>(formats_chars.size()));
                         ImGui::PopStyleColor();
                         ImGui::PopItemWidth();
@@ -972,14 +971,14 @@ namespace rs2
 
                         if (streaming)
                         {
-                            ImGui::Text("%s", fps_chars[selected_fps_id[f.first]]);
+                            ImGui::Text("%s", fps_chars[ui.selected_fps_id[f.first]]);
                             streaming_tooltip();
                         }
                         else
                         {
                             ImGui::PushItemWidth(-1);
                             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                            ImGui::Combo(label.c_str(), &selected_fps_id[f.first], fps_chars.data(),
+                            ImGui::Combo(label.c_str(), &ui.selected_fps_id[f.first], fps_chars.data(),
                                 static_cast<int>(fps_chars.size()));
                             ImGui::PopStyleColor();
                             ImGui::PopItemWidth();
@@ -1014,16 +1013,16 @@ namespace rs2
             auto stream = f.first;
             if (stream_enabled[stream] && res_values.size() > 0)
             {
-                auto width = res_values[selected_res_id].first;
-                auto height = res_values[selected_res_id].second;
+                auto width = res_values[ui.selected_res_id].first;
+                auto height = res_values[ui.selected_res_id].second;
 
                 auto fps = 0;
                 if (show_single_fps_list)
-                    fps = shared_fps_values[selected_shared_fps_id];
+                    fps = shared_fps_values[ui.selected_shared_fps_id];
                 else
-                    fps = fps_values_per_stream[stream][selected_fps_id[stream]];
+                    fps = fps_values_per_stream[stream][ui.selected_fps_id[stream]];
 
-                auto format = format_values[stream][selected_format_id[stream]];
+                auto format = format_values[stream][ui.selected_format_id[stream]];
 
                 for (auto&& p : profiles)
                 {
@@ -1046,6 +1045,7 @@ namespace rs2
                 }
             }
         }
+
         return results.size() > 0;
     }
 
@@ -1061,15 +1061,15 @@ namespace rs2
             auto stream = f.first;
             if (stream_enabled[stream])
             {
-                auto width = res_values[selected_res_id].first;
-                auto height = res_values[selected_res_id].second;
-                auto format = format_values[stream][selected_format_id[stream]];
+                auto width = res_values[ui.selected_res_id].first;
+                auto height = res_values[ui.selected_res_id].second;
+                auto format = format_values[stream][ui.selected_format_id[stream]];
 
                 auto fps = 0;
                 if (show_single_fps_list)
-                    fps = shared_fps_values[selected_shared_fps_id];
+                    fps = shared_fps_values[ui.selected_shared_fps_id];
                 else
-                    fps = fps_values_per_stream[stream][selected_fps_id[stream]];
+                    fps = fps_values_per_stream[stream][ui.selected_fps_id[stream]];
 
                 error_message << "\n{" << stream_display_names[stream] << ","
                     << width << "x" << height << " at " << fps << "Hz, "
@@ -1240,7 +1240,8 @@ namespace rs2
     }
 
     stream_model::stream_model()
-        : texture(std::unique_ptr<texture_buffer>(new texture_buffer()))
+        : texture(std::unique_ptr<texture_buffer>(new texture_buffer())),
+          _stream_not_alive(std::chrono::milliseconds(1500))
     {}
 
     void stream_model::upload_frame(frame&& f)
@@ -1299,15 +1300,15 @@ namespace rs2
         glLineWidth(line_width);
 
         glBegin(GL_LINE_STRIP);
-        glVertex2i(r.x, r.y);
-        glVertex2i(r.x, r.y + r.h);
-        glVertex2i(r.x + r.w, r.y + r.h);
-        glVertex2i(r.x + r.w, r.y);
-        glVertex2i(r.x, r.y);
-        glVertex2i(r.x, r.y + r.h);
-        glVertex2i(r.x + r.w, r.y + r.h);
-        glVertex2i(r.x + r.w, r.y);
-        glVertex2i(r.x, r.y);
+        glVertex2f(r.x, r.y);
+        glVertex2f(r.x, r.y + r.h);
+        glVertex2f(r.x + r.w, r.y + r.h);
+        glVertex2f(r.x + r.w, r.y);
+        glVertex2f(r.x, r.y);
+        glVertex2f(r.x, r.y + r.h);
+        glVertex2f(r.x + r.w, r.y + r.h);
+        glVertex2f(r.x + r.w, r.y);
+        glVertex2f(r.x, r.y);
         glEnd();
 
         glPopAttrib();
@@ -1315,21 +1316,26 @@ namespace rs2
 
     float stream_model::get_stream_alpha()
     {
-        if (dev && dev->is_paused()) return 1.f;
-
-        using namespace std::chrono;
-        auto now = high_resolution_clock::now();
-        auto diff = now - last_frame;
-        auto ms = duration_cast<milliseconds>(diff).count();
-        auto t = smoothstep(static_cast<float>(ms),
-            _min_timeout, _min_timeout + _frame_timeout);
-        return 1.0f - t;
+        return 1.f;
     }
 
     bool stream_model::is_stream_visible()
     {
         if (dev &&
-            (dev->is_paused() || (dev->streaming && dev->dev.is<playback>())))
+            (dev->is_paused() || 
+             (dev->streaming && dev->dev.is<playback>()) ||
+             (dev->streaming /*&& texture->get_last_frame()*/ )))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    bool stream_model::is_stream_alive()
+    {
+        if (dev &&
+            (dev->is_paused() ||
+            (dev->streaming && dev->dev.is<playback>())))
         {
             last_frame = std::chrono::high_resolution_clock::now();
             return true;
@@ -1339,7 +1345,23 @@ namespace rs2
         auto now = high_resolution_clock::now();
         auto diff = now - last_frame;
         auto ms = duration_cast<milliseconds>(diff).count();
-        return ms <= _frame_timeout + _min_timeout;
+        _stream_not_alive.add_value(ms > _frame_timeout + _min_timeout);
+        return !_stream_not_alive.eval();
+    }
+
+    void stream_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p)
+    {
+        dev = d;
+        profile = p;
+        profile = p;
+
+        if (auto vd = p.as<video_stream_profile>())
+        {
+            size = {
+                static_cast<float>(vd.width()),
+                static_cast<float>(vd.height()) };
+        };
+        _stream_not_alive.reset();
     }
 
     void stream_model::update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message)
@@ -1500,7 +1522,7 @@ namespace rs2
         auto model = pc.get_points();
 
         const auto top_bar_height = 32.f;
-        const auto num_of_buttons = 3;
+        const auto num_of_buttons = 4;
 
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -1713,7 +1735,7 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if (ImGui::Button(u8"\uf0c7", { 30, top_bar_height }))
+        if (ImGui::Button(u8"\uf0c7", { 24, top_bar_height }))
         {
             if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
             {
@@ -1727,12 +1749,36 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if (ImGui::Button(u8"\uf021", { 30, top_bar_height }))
+        if (ImGui::Button(u8"\uf021", { 24, top_bar_height }))
         {
             reset_camera();
         }
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Reset View");
+
+        ImGui::SameLine();
+
+        if (syncronize)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            if (ImGui::Button(u8"\uf09c", { 24, top_bar_height }))
+            {
+                syncronize = false;
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Disable syncronization between the pointcloud and the texture");
+            ImGui::PopStyleColor(2);
+        }
+        else
+        {
+            if (ImGui::Button(u8"\uf023", { 24, top_bar_height }))
+            {
+                syncronize = true;
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Keep the pointcloud and the texture sycronized");
+        }
 
         ImGui::End();
         ImGui::PopStyleColor(6);
@@ -2346,7 +2392,7 @@ namespace rs2
 
                 for (auto&& profile : profiles)
                 {
-                    viewer.streams[profile.unique_id()].dev = sub;
+                    viewer.streams[profile.unique_id()].begin_stream(sub, profile);
                 }
             }
         }
@@ -2544,7 +2590,8 @@ namespace rs2
         ImGui::PopStyleVar(2);
         ImGui::PopFont();
     }
-    void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, const ImVec4& text_color)
+    void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, 
+                                 const ImVec4& text_color, const std::string& tooltip)
     {
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -2554,13 +2601,15 @@ namespace rs2
         ImGui::PushFont(font_18);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
         ImGui::SetNextWindowPos({ (float)x, (float)y });
-        ImGui::SetNextWindowSize({ 32.f, 32.f });
+        ImGui::SetNextWindowSize({ 320.f, 32.f });
         std::string label = to_string() << label_str << id;
         ImGui::Begin(label.c_str(), nullptr, flags);
 
         ImGui::PushStyleColor(ImGuiCol_Text, text_color);
         ImGui::Text("%s", text);
         ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered() && tooltip != "")
+            ImGui::SetTooltip(tooltip.c_str());
 
         ImGui::End();
         ImGui::PopStyleColor();
@@ -2770,10 +2819,10 @@ namespace rs2
         ImFont *font1, ImFont *font2, size_t dev_model_num,
         const mouse_info &mouse, std::string& error_message)
     {
-        static float alpha_delta = 0;
-        static float alpha_delta_step = 0;
-        alpha_delta_step = alpha_delta <= 0 ? 0.04 : alpha_delta > 1 ? -0.04 : alpha_delta_step;
-        alpha_delta += alpha_delta_step;
+        static periodic_timer every_sec(std::chrono::seconds(1));
+        static bool icon_visible = false;
+        if (every_sec) icon_visible = !icon_visible;
+        float alpha = icon_visible ? 1.f : 0.2f;
 
         glLoadIdentity();
         glOrtho(0, width, heigth, 0, -1, +1);
@@ -2800,8 +2849,18 @@ namespace rs2
 
             if (stream_mv.dev->dev.is<recorder>())
             {
-                show_recording_icon(font2, pos, stream_rect.y + 5, stream_mv.profile.unique_id(), alpha_delta > 0.5 ? 0 : 1);
+                show_recording_icon(font2, pos, stream_rect.y + 5, stream_mv.profile.unique_id(), alpha);
                 pos += 23;
+            }
+
+            if (!stream_mv.is_stream_alive())
+            {
+                show_icon(font2, "warning_icon", u8"\uf071  FPS Alert!  \uf071",
+                          stream_rect.center().x - 70, 
+                          stream_rect.center().y - 25, 
+                          stream_mv.profile.unique_id(), 
+                          blend(dark_red, alpha),
+                          "Did not receive frames from the platform within a reasonable time window!");
             }
 
             if (stream_mv.dev->is_paused() || (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
@@ -2889,38 +2948,105 @@ namespace rs2
 
         glColor4f(1.f, 1.f, 1.f, 1.f);
 
+        if (syncronize)
+        {
+            auto tex = streams[selected_tex_source_uid].texture->get_last_frame();
+            if (tex) s(tex);
+        }
+
         if (auto points = pc.get_points())
         {
-            glPointSize((float)viewer_rect.w / points.get_profile().as<video_stream_profile>().width());
-
-            if (selected_tex_source_uid >= 0)
+            if (syncronize)
             {
-                auto tex = streams[selected_tex_source_uid].texture->get_gl_handle();
-                glBindTexture(GL_TEXTURE_2D, tex);
-                glEnable(GL_TEXTURE_2D);
-
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
+                s(points);
+                rs2::frameset fs;
+                if (s.poll_for_frames(&fs))
+                    if (fs && fs.size() > 1)
+                    {
+                        for (auto&& f : fs)
+                        {
+                            if (f.is<rs2::points>()) last_points = f;
+                            else last_texture = f;
+                        }
+                    }
+            }
+            else
+            {
+                last_texture = streams[selected_tex_source_uid].texture->get_last_frame();
+                last_points = points;
             }
 
-            //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
-
-            glBegin(GL_POINTS);
-
-            auto vertices = points.get_vertices();
-            auto tex_coords = points.get_texture_coordinates();
-
-            for (int i = 0; i < points.size(); i++)
+            if (draw_frustrum)
             {
-                if (vertices[i].z)
+                glLineWidth(1.f);
+                glBegin(GL_LINES);
+
+                auto intrin = points.get_profile().as<video_stream_profile>().get_intrinsics();
+
+                glColor4f(sensor_bg.x, sensor_bg.y, sensor_bg.z, 0.5f);
+
+                for (float d = 1; d < 6; d+=2)
                 {
-                    glVertex3fv(vertices[i]);
-                    glTexCoord2fv(tex_coords[i]);
+                    auto get_point = [&](float x, float y) -> float3
+                    {
+                        float point[3];
+                        float pixel[2]{ x, y };
+                        rs2_deproject_pixel_to_point(point, &intrin, pixel, d);
+                        glVertex3f(0.f, 0.f, 0.f);
+                        glVertex3fv(point);
+                        return{ point[0], point[1], point[2] };
+                    };
+
+                    auto top_left = get_point(0, 0);
+                    auto top_right = get_point(intrin.width, 0);
+                    auto bottom_right = get_point(intrin.width, intrin.height);
+                    auto bottom_left = get_point(0, intrin.height);
+
+                    glVertex3fv(&top_left.x); glVertex3fv(&top_right.x);
+                    glVertex3fv(&top_right.x); glVertex3fv(&bottom_right.x);
+                    glVertex3fv(&bottom_right.x); glVertex3fv(&bottom_left.x);
+                    glVertex3fv(&bottom_left.x); glVertex3fv(&top_left.x);
                 }
 
+                glEnd();
+
+                glColor4f(1.f, 1.f, 1.f, 1.f);
             }
 
-            glEnd();
+            if (last_points && last_texture)
+            {
+                texture.upload(last_texture);
+
+                glPointSize((float)viewer_rect.w / points.get_profile().as<video_stream_profile>().width());
+
+                if (selected_tex_source_uid >= 0)
+                {
+                    auto tex = texture.get_gl_handle();
+                    glBindTexture(GL_TEXTURE_2D, tex);
+                    glEnable(GL_TEXTURE_2D);
+
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
+                }
+
+                //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+
+                glBegin(GL_POINTS);
+
+                auto vertices = last_points.get_vertices();
+                auto tex_coords = last_points.get_texture_coordinates();
+
+                for (int i = 0; i < last_points.size(); i++)
+                {
+                    if (vertices[i].z)
+                    {
+                        glVertex3fv(vertices[i]);
+                        glTexCoord2fv(tex_coords[i]);
+                    }
+
+                }
+                glEnd();
+            }
         }
 
         glDisable(GL_DEPTH_TEST);
@@ -3064,12 +3190,12 @@ namespace rs2
             subdevices.swap(record_sensors);
             for (int i = 0; i < live_subdevices.size(); i++)
             {
-                subdevices[i]->selected_res_id = live_subdevices[i]->selected_res_id;
-                subdevices[i]->selected_shared_fps_id = live_subdevices[i]->selected_shared_fps_id;
-                subdevices[i]->selected_format_id = live_subdevices[i]->selected_format_id;
+                subdevices[i]->ui.selected_res_id = live_subdevices[i]->ui.selected_res_id;
+                subdevices[i]->ui.selected_shared_fps_id = live_subdevices[i]->ui.selected_shared_fps_id;
+                subdevices[i]->ui.selected_format_id = live_subdevices[i]->ui.selected_format_id;
                 subdevices[i]->show_single_fps_list = live_subdevices[i]->show_single_fps_list;
                 subdevices[i]->fpses_per_stream = live_subdevices[i]->fpses_per_stream;
-                subdevices[i]->selected_fps_id = live_subdevices[i]->selected_fps_id;
+                subdevices[i]->ui.selected_fps_id = live_subdevices[i]->ui.selected_fps_id;
                 subdevices[i]->stream_enabled = live_subdevices[i]->stream_enabled;
                 subdevices[i]->fps_values_per_stream = live_subdevices[i]->fps_values_per_stream;
                 subdevices[i]->format_values = live_subdevices[i]->format_values;

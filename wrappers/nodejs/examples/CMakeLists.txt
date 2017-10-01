@@ -8,11 +8,11 @@ project(RealsenseNodeJSExamples)
 
 set(NODE_VERSOIN 6)
 
-set(TOOL_PATH "node_modules/.bin/")
+set(TOOL_PATH "./node_modules/.bin/")
 # Get OS
 if(WIN32)
   set(OS win)
-  set(TOOL_PATH "node_modules\\.bin\\")
+  set(TOOL_PATH ".\\node_modules\\.bin\\")
 elseif(APPLE)
   set(OS macos)
 elseif(UNIX AND NOT APPLE)
@@ -20,44 +20,60 @@ elseif(UNIX AND NOT APPLE)
 endif()
 
 # Get CPU architecture
-INCLUDE(cmake/TargetArch.cmake)
-target_architecture(ARCH)
+execute_process(COMMAND node -p "process.arch" OUTPUT_VARIABLE ARCH)
+string(REPLACE "\n" "" ARCH ${ARCH})
 string(REPLACE "x86_64" "x64" ARCH ${ARCH})
-string(REPLACE "i386" "x86" ARCH ${ARCH})
+string(REPLACE "ia32" "x86" ARCH ${ARCH})
 
 set(PKG_STR node${NODE_VERSOIN}-${OS}-${ARCH})
 
-file(GLOB all_js_files "*.js")
-# Compile examples
 add_custom_command(
   OUTPUT ${PROJECT_SOURCE_DIR}/node_modules/node-glfw-3/build/Release/glfw.node
   COMMAND npm install
-  COMMAND ${TOOL_PATH}pkg-fetch node${NODE_VERSOIN} ${OS} ${ARCH}
-  DEPENDS BUILD_NODE_ADDON package.json ${all_js_files}
+  DEPENDS BUILD_NODE_ADDON package.json
   WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+  COMMENT "Build node-glfw-3"
 )
 
 add_custom_target(
   BUILD_NODE_EXAMPLES ALL
-	DEPENDS ${PROJECT_SOURCE_DIR}/node_modules/node-glfw-3/build/Release/glfw.node
+  DEPENDS ${PROJECT_SOURCE_DIR}/node_modules/node-glfw-3/build/Release/glfw.node
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pkg-fetch.success
+  COMMAND ${TOOL_PATH}pkg-fetch node${NODE_VERSOIN} ${OS} ${ARCH} && touch ${CMAKE_CURRENT_BINARY_DIR}/pkg-fetch.success
+  DEPENDS BUILD_NODE_ADDON
+  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+  COMMENT "${TOOL_PATH}pkg-fetch node${NODE_VERSOIN} ${OS} ${ARCH}"
 )
 
 # Dist examples
 file(GLOB nodejs_examples "nodejs-*.js")
 foreach(example ${nodejs_examples})
-  # Generate output file name
   get_filename_component(outfileName ${example} NAME_WE)
-  set(outfile "${CMAKE_CURRENT_BINARY_DIR}/${outfileName}")
 
-  # Package
-  add_custom_command(OUTPUT "${outfile}"
-      COMMAND ${TOOL_PATH}pkg ${example} --targets=${PKG_STR} --out-path=${CMAKE_CURRENT_BINARY_DIR}
-      DEPENDS BUILD_NODE_EXAMPLES ${example}
-      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-  )
-
-  set(packagedExamples ${packagedExamples} "${outfile}")
-ENDFOREACH(example)
+  if(WIN32)
+    set(outfile "${CMAKE_CURRENT_BINARY_DIR}/${outfileName}.exe")
+    # Add "| echo" to ignore the pkg warnins on msbuild, otherwise the build stops.
+    add_custom_command(OUTPUT "${outfile}"
+        COMMAND ${TOOL_PATH}pkg ${example} --targets=${PKG_STR} --out-path=${CMAKE_CURRENT_BINARY_DIR} | echo
+        DEPENDS BUILD_NODE_EXAMPLES ${example} ${CMAKE_CURRENT_BINARY_DIR}/pkg-fetch.success
+        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+        COMMENT "Compile ${example} into ${outfile}"
+    )
+    set(packagedExamples ${packagedExamples} "${outfile}")
+  else()
+    set(outfile "${CMAKE_CURRENT_BINARY_DIR}/${outfileName}")
+    add_custom_command(OUTPUT "${outfile}"
+        COMMAND ${TOOL_PATH}pkg ${example} --targets=${PKG_STR} --out-path=${CMAKE_CURRENT_BINARY_DIR}
+        DEPENDS BUILD_NODE_EXAMPLES ${example} ${CMAKE_CURRENT_BINARY_DIR}/pkg-fetch.success
+        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+        COMMENT "Compile ${example} into ${outfile}"
+    )
+    set(packagedExamples ${packagedExamples} "${outfile}")
+  endif(WIN32)
+endforeach(example)
 
 add_custom_target(
   DIST_NODE_EXAMPLES ALL

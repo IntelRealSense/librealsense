@@ -48,8 +48,8 @@ namespace librealsense
                 _dev = _hub.wait_for_device(5000, _device_serial);
 
             _sensors.clear();
-            _queue.clear();
-            _queue.start();
+            _queue->clear();
+            _queue->start();
             if (_streaming)
                 start();
         }
@@ -60,7 +60,7 @@ namespace librealsense
     void pipeline::open()
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
-        
+
         if (!_dev)
             _dev = _hub.wait_for_device();
 
@@ -113,21 +113,24 @@ namespace librealsense
     void pipeline::start(frame_callback_ptr callback)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
+
+        _syncer = std::unique_ptr<syncer_proccess_unit>(new syncer_proccess_unit());
+        _queue = std::unique_ptr<single_consumer_queue<frame_holder>>(new single_consumer_queue<frame_holder>());
+
         if (!_commited)
         {
             open();
         }
         auto to_syncer = [&](frame_holder fref)
         {
-            _syncer.invoke(std::move(fref));
+            _syncer->invoke(std::move(fref));
         };
 
         frame_callback_ptr syncer_callback =
         { new internal_frame_callback<decltype(to_syncer)>(to_syncer),
          [](rs2_frame_callback* p) { p->release(); } };
 
-
-        _syncer.set_output_callback(callback);
+        _syncer->set_output_callback(callback);
 
         _multistream = _config.open(_dev.get());
         _multistream.start(syncer_callback);
@@ -139,7 +142,7 @@ namespace librealsense
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         auto to_user = [&](frame_holder fref)
         {
-            _queue.enqueue(std::move(fref));
+            _queue->enqueue(std::move(fref));
         };
 
         frame_callback_ptr user_callback =
@@ -199,29 +202,27 @@ namespace librealsense
         _config.disable_all();
     }
 
-
-
     void pipeline::stop()
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
-       
+
         if (_streaming)
         {
             _multistream.stop();
             _multistream.close();
         }
         _streaming = false;
-        
-    }
 
-   
+        _syncer.reset();
+        _queue.reset();
+    }
 
     frame_holder pipeline::wait_for_frames(unsigned int timeout_ms)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
         frame_holder f;
-        if (_queue.dequeue(&f, timeout_ms))
+        if (_queue.get() && (_queue->dequeue(&f, timeout_ms)))
         {
             return f;
         }
@@ -232,8 +233,6 @@ namespace librealsense
             {
                 _dev = _hub.wait_for_device(timeout_ms/*, _dev.get()*/);
                 _sensors.clear();
-                _queue.clear();
-                _queue.start();
                 start();
                 return frame_holder();
             }
@@ -248,7 +247,7 @@ namespace librealsense
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
-        if (_queue.try_dequeue(frame))
+        if (_queue.get() && _queue->try_dequeue(frame))
         {
             return true;
         }

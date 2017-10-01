@@ -36,5 +36,5 @@ int CALLBACK WinMain(
     std::vector<const char*> argc;
     std::transform(args.begin(), args.end(), std::back_inserter(argc), [](const std::string& s) { return s.c_str(); });
 
-    return main(argc.size(), argc.data());
+    return main(static_cast<int>(argc.size()), argc.data());
 }
