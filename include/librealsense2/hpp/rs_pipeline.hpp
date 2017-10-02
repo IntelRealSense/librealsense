@@ -123,8 +123,7 @@ namespace rs2
         * The application can configure any of the input stream parameters according to its requirement, or set to 0 for don't 
         * care value.
         * The config accumulates the application calls for enable configuration methods, until the configuration is applied. 
-        * Multiple enable stream calls for the same stream with conflicting parameters override each other, and the last call is
-        * maintained.
+        * Multiple enable stream calls for the same stream override each other, and the last call is maintained.
         * Upon calling \c resolve(), the config checks for conflicts between the application configuration requests and the 
         * attached computer vision modules and processing blocks requirements, and fails if conflicts are found. 
         * Before \c resolve() is called, no conflict check is done.

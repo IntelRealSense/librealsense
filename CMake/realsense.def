@@ -198,32 +198,32 @@ EXPORTS
     rs2_playback_device_set_status_changed_callback
     rs2_playback_device_get_current_status
     rs2_playback_device_set_playback_speed
-	rs2_playback_device_stop
+    rs2_playback_device_stop
 
     rs2_create_align
 
-	rs2_create_pipeline
-	rs2_pipeline_stop
-	rs2_pipeline_wait_for_frames
-	rs2_pipeline_poll_for_frames
-	rs2_delete_pipeline
-	rs2_pipeline_start
-	rs2_pipeline_start_with_config
-	rs2_pipeline_get_active_profile
-	rs2_pipeline_profile_get_device
-	rs2_pipeline_profile_get_streams
-	rs2_delete_pipeline_profile
-	rs2_create_config
-	rs2_delete_config
-	rs2_config_enable_stream
-	rs2_config_enable_all_stream
-	rs2_config_enable_device
-	rs2_config_enable_device_from_file
-	rs2_config_enable_record_to_file
-	rs2_config_disable_stream
-	rs2_config_disable_all_streams
-	rs2_config_resolve
-	rs2_config_can_resolve
+    rs2_create_pipeline
+    rs2_pipeline_stop
+    rs2_pipeline_wait_for_frames
+    rs2_pipeline_poll_for_frames
+    rs2_delete_pipeline
+    rs2_pipeline_start
+    rs2_pipeline_start_with_config
+    rs2_pipeline_get_active_profile
+    rs2_pipeline_profile_get_device
+    rs2_pipeline_profile_get_streams
+    rs2_delete_pipeline_profile
+    rs2_create_config
+    rs2_delete_config
+    rs2_config_enable_stream
+    rs2_config_enable_all_stream
+    rs2_config_enable_device
+    rs2_config_enable_device_from_file
+    rs2_config_enable_record_to_file
+    rs2_config_disable_stream
+    rs2_config_disable_all_streams
+    rs2_config_resolve
+    rs2_config_can_resolve
 
     rs2_create_device_hub
     rs2_device_hub_is_device_connected
