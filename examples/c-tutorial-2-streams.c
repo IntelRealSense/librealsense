@@ -71,8 +71,8 @@ int main()
     float depth_units = 1.f;
     if (rs2_supports_option(dev, RS2_OPTION_DEPTH_UNITS, &e) && !e)
     {
-        depth_units = rs2_get_option(dev, RS2_OPTION_DEPTH_UNITS, &e);
-        check_error();
+        /*depth_units = rs2_get_option(dev, RS2_OPTION_DEPTH_UNITS, &e);
+        check_error();*/
     }
 
     /* Open a GLFW window to display our output */

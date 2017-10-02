@@ -34,8 +34,8 @@ int main() try
 
     // Determine depth value corresponding to one meter
     auto depth_units = 1.f;
-    if (dev.supports(RS2_OPTION_DEPTH_UNITS))
-        depth_units = dev.get_option(RS2_OPTION_DEPTH_UNITS);
+    /*if (dev.supports(RS2_OPTION_DEPTH_UNITS))
+        depth_units = dev.get_option(RS2_OPTION_DEPTH_UNITS);*/
     const auto one_meter = static_cast<uint16_t>(1.0 / depth_units);
 
     while(true)

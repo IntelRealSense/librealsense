@@ -101,6 +101,7 @@ set(REALSENSE_CPP
     src/sr300.cpp
     src/types.cpp
     src/backend-v4l2.cpp
+    src/libuvc.cpp
     src/backend-hid.cpp
     src/backend.cpp
     src/verify.c
@@ -119,8 +120,16 @@ set(REALSENSE_CPP
     third_party/sqlite/sqlite3.c
     src/sql.cpp
     src/recorder.cpp
+    src/libuvc/ctrl.c
+    src/libuvc/ctrl-gen.c
+    src/libuvc/device.c
+    src/libuvc/diag.c
+    src/libuvc/frame.c
+    src/libuvc/init.c
+    src/libuvc/misc.c
+    src/libuvc/stream.c
 
-)
+    )
 
 set(REALSENSE_HPP
     include/librealsense/rs2.hpp
@@ -159,6 +168,7 @@ set(REALSENSE_HPP
     third_party/easyloggingpp/src/easylogging++.h
     third_party/sqlite/sqlite3.h
     src/sql.h
+
     src/recorder.h
 )
 
@@ -274,7 +284,7 @@ elseif(UNIX)
     find_package(PkgConfig REQUIRED)
     find_package (Threads REQUIRED)
     list(APPEND librealsense_PKG_DEPS "Threads")
-    
+
     pkg_search_module(LIBUSB1 REQUIRED libusb-1.0)
     if(LIBUSB1_FOUND)
         include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})

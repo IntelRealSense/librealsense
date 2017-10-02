@@ -40,6 +40,7 @@ else()
         add_subdirectory(third_party/glfw)
         list(APPEND DEPENDENCIES glfw3)
     else()
+        list(APPEND DEPENDENCIES uvc)
         # Find glfw header
         find_path(GLFW_INCLUDE_DIR NAMES GLFW/glfw3.h
             PATHS /usr/X11R6/include
