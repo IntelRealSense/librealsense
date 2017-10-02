@@ -15,6 +15,12 @@ namespace rs2
     {
         class metrics_model;
 
+        struct metric_sample
+        {
+            float _val;
+            double _timestamp;
+        };
+
         class metric_plot : public std::enable_shared_from_this<metric_plot>
         {
         public:
@@ -43,9 +49,9 @@ namespace rs2
                 return MAX_RANGE;
             }
 
-            metric_plot(const std::string& name, float min, float max, 
+            metric_plot(const std::string& name, float min, float max,
                         const std::string& units, const std::string& description)
-                : _idx(0), _vals(), _min(min), _max(max), _id("##" + name), 
+                : _idx(0), _first_idx(0),_vals(), _min(min), _max(max), _id("##" + name),
                   _label(name + " = "), _name(name),
                   _units(units), _description(description),
                   _trending_up(std::chrono::milliseconds(700)),
@@ -55,11 +61,14 @@ namespace rs2
             }
             ~metric_plot() {}
 
-            void add_value(float val)
+            void add_value(const metric_sample& val)
             {
                 std::lock_guard<std::mutex> lock(_m);
-                _vals[_idx] = val;
+                _vals[_idx]         = val._val;
+                _timestamps[_idx]   = val._timestamp;
                 _idx = (_idx + 1) % SIZE;
+                if (_first_idx== _idx)
+                    _first_idx = (_first_idx + 1) % SIZE;
             }
             void render(ux_window& win);
 
@@ -67,12 +76,12 @@ namespace rs2
             bool has_trend(bool positive);
 
             std::mutex _m;
-            const static int SIZE = 200;
-            int _idx;
-            float _vals[SIZE];
+            const static size_t SIZE = 200;
+            size_t _idx, _first_idx;
+            std::array<float, SIZE> _vals;
+            std::array<double, SIZE> _timestamps;
             float _min, _max;
             std::string _id, _label, _units, _name, _description;
-            ImVec2 _size;
 
             timer _model_timer;
             temporal_event _trending_up;
@@ -119,7 +128,7 @@ namespace rs2
 
             void begin_process_frame(rs2::frame f) { _frame_queue.enqueue(std::move(f)); }
 
-            void serialize_to_csv(const std::string& filename) const;
+            void serialize_to_csv(const std::string& filename, const std::string& camera_info) const;
 
             void add_metric(std::shared_ptr<metric_plot> metric) { _plots.push_back(metric); }
 
@@ -169,18 +178,21 @@ namespace rs2
             void on_frame(callback_type callback) { _metrics_model.callback = callback; }
 
         private:
-            pipeline                         _pipe;
-            std::shared_ptr<device_model>    _device_model;
-            viewer_model                     _viewer_model;
-            std::shared_ptr<subdevice_model> _depth_sensor_model;
-            metrics_model                    _metrics_model;
-            std::string                      _error_message;
-            bool                             _first_frame = true;
-            periodic_timer                   _update_readonly_options_timer;
 
-            float                            _roi_percent = 0.33f;
-            int                              _roi_combo_index = 1;
-            temporal_event                   _roi_located;
+            std::string capture_description();
+
+            pipeline                        _pipe;
+            std::shared_ptr<device_model>   _device_model;
+            viewer_model                    _viewer_model;
+            std::shared_ptr<subdevice_model> _depth_sensor_model;
+            metrics_model                   _metrics_model;
+            std::string                     _error_message;
+            bool                            _first_frame = true;
+            periodic_timer                  _update_readonly_options_timer;
+
+            float                           _roi_percent = 0.33f;
+            int                             _roi_combo_index = 1;
+            temporal_event                  _roi_located;
         };
     }
 }
