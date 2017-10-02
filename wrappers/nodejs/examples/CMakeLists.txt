@@ -39,6 +39,7 @@ add_custom_target(
   BUILD_NODE_EXAMPLES ALL
   DEPENDS ${PROJECT_SOURCE_DIR}/node_modules/node-glfw-3/build/Release/glfw.node
 )
+set_target_properties(BUILD_NODE_EXAMPLES PROPERTIES FOLDER Wrappers/NodeJS)
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pkg-fetch.success
@@ -79,8 +80,10 @@ add_custom_target(
   DIST_NODE_EXAMPLES ALL
   DEPENDS ${packagedExamples}
 )
+set_target_properties(DIST_NODE_EXAMPLES PROPERTIES FOLDER Wrappers/NodeJS)
 
 add_custom_target(RealsenseNodeJSExamples DEPENDS DIST_NODE_EXAMPLES)
+set_target_properties(RealsenseNodeJSExamples PROPERTIES FOLDER Wrappers/NodeJS)
 
 # Install packaged samples and required files
 install(PROGRAMS ${packagedExamples} DESTINATION ${CMAKE_INSTALL_BINDIR})
