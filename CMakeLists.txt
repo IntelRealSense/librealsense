@@ -86,6 +86,7 @@ set(REALSENSE_CPP
     src/ivcam/sr300.cpp
     src/types.cpp
     src/linux/backend-v4l2.cpp
+    src/libuvc.cpp
     src/linux/backend-hid.cpp
     src/backend.cpp
     src/verify.c
@@ -111,6 +112,14 @@ set(REALSENSE_CPP
     src/ds5/advanced_mode/rs_advanced_mode.cpp
     src/ds5/advanced_mode/presets.cpp
     src/ds5/advanced_mode/advanced_mode.cpp
+    src/libuvc/ctrl.c
+    src/libuvc/ctrl-gen.c
+    src/libuvc/device.c
+    src/libuvc/diag.c
+    src/libuvc/frame.c
+    src/libuvc/init.c
+    src/libuvc/misc.c
+    src/libuvc/stream.c
 
     third-party/easyloggingpp/src/easylogging++.cc
     third-party/sqlite/sqlite3.c
@@ -122,7 +131,7 @@ set(REALSENSE_CPP
     src/media/record/record_sensor.cpp
     src/media/playback/playback_device.cpp
     src/media/playback/playback_sensor.cpp
-)
+    )
 
 set(REALSENSE_HPP
     include/librealsense2/rs.hpp

@@ -21,6 +21,8 @@ set(DEPENDENCIES realsense2)
 if(WIN32)
 else()
     list(APPEND DEPENDENCIES m ${LIBUSB1_LIBRARIES})
+    list(APPEND DEPENDENCIES uvc)
+
 endif()
 
 add_executable(live-test unit-tests-live.cpp unit-tests-main.cpp unit-tests-common.h)
