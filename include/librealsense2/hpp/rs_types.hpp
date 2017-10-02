@@ -154,42 +154,6 @@ namespace rs2
 
     class event_information;
 
-    template<class T>
-    class devices_changed_callback : public rs2_devices_changed_callback
-    {
-        T _callback;
-
-    public:
-        explicit devices_changed_callback(T callback) : _callback(callback) {}
-
-        void on_devices_changed(rs2_device_list* removed, rs2_device_list* added) override
-        {
-            std::shared_ptr<rs2_device_list> old(removed, rs2_delete_device_list);
-            std::shared_ptr<rs2_device_list> news(added, rs2_delete_device_list);
-
-
-            event_information info({device_list(old), device_list(news)});
-            _callback(info);
-        }
-
-        void release() override { delete this; }
-    };
-
-    template<class T>
-    class frame_callback : public rs2_frame_callback
-    {
-        T on_frame_function;
-    public:
-        explicit frame_callback(T on_frame) : on_frame_function(on_frame) {}
-
-        void on_frame(rs2_frame* fref) override
-        {
-            on_frame_function(frame{ fref });
-        }
-
-        void release() override { delete this; }
-    };
-
     struct option_range
     {
         float min;
