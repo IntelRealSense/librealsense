@@ -8,7 +8,14 @@
 #ifndef BOOST_TT_DETAIL_ICE_NOT_HPP_INCLUDED
 #define BOOST_TT_DETAIL_ICE_NOT_HPP_INCLUDED
 
-#include "../config.hpp"
+#include <boost/config.hpp>
+
+//
+// This header is deprecated and no longer used by type_traits:
+//
+#if defined(__GNUC__) || defined(_MSC_VER)
+# pragma message("NOTE: Use of this header (ice_not.hpp) is deprecated")
+#endif
 
 namespace boost {
 namespace type_traits {
