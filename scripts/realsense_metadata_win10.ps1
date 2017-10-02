@@ -53,7 +53,7 @@ $SearchTrees = "$DevConfigRegBase\$guid1", "$DevConfigRegBase\$guid2"
 
 # Multipin devices that need additional key MetadataBufferSizeInKB1
 $MultiPinDevices =
-    "USB\VID_8086&PID_0AD1&MI_00" # D400(PSR)
+    "USB\VID_8086&PID_0AD1&MI_00",# D400(PSR)
     "USB\VID_8086&PID_0AD2&MI_00",# D410(ASR)
     "USB\VID_8086&PID_0AD3&MI_00",# D410+RGB(ASRC)
     "USB\VID_8086&PID_0AD4&MI_00",# D430(AWG)
@@ -63,8 +63,8 @@ $MultiPinDevices =
     "USB\VID_8086&PID_0AFF&MI_00",# D410+MM(ASRT)
     "USB\VID_8086&PID_0B00&MI_00",# D400+MM(PSRT)
     "USB\VID_8086&PID_0B01&MI_00",# D430+RGB+MM(AWGCT)
-    "USB\VID_8086&PID_0B03&MI_00",# D460
-    "USB\VID_8086&PID_0B07&MI_00",# D430+RGB(AWGC)
+    "USB\VID_8086&PID_0B03&MI_00",# D460(DS5U)
+    "USB\VID_8086&PID_0B07&MI_00" # D430+RGB(AWGC)
 
 #Inhibit system warnings and erros, such as permissions or missing values
 $ErrorActionPreference = "silentlycontinue"
