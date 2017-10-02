@@ -126,26 +126,42 @@ namespace rs2
         * vision modules and processing blocks requirements, and fails if conflicts are found. Before \c resolve() is called, no conflict
         * check is done.
         *
-        * \param[in] stream    Stream type to be enabled
-        * \param[in] index     Stream index, used for multiple streams of the same type. -1 indicates any.
-        * \param[in] width     Stream image width - for images streams. 0 indicates any.
-        * \param[in] height    Stream image height - for images streams. 0 indicates any.
-        * \param[in] format    Stream data format - pixel format for images streams, of data type for other streams. RS2_FORMAT_ANY indicates any.
-        * \param[in] framerate Stream frames per second. 0 indicates any.
+        * \param[in] stream_type    Stream type to be enabled
+        * \param[in] stream_index   Stream index, used for multiple streams of the same type. -1 indicates any.
+        * \param[in] width          Stream image width - for images streams. 0 indicates any.
+        * \param[in] height         Stream image height - for images streams. 0 indicates any.
+        * \param[in] format         Stream data format - pixel format for images streams, of data type for other streams. RS2_FORMAT_ANY indicates any.
+        * \param[in] framerate      Stream frames per second. 0 indicates any.
         */
-        void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format = RS2_FORMAT_ANY, int framerate = 0)
+        void enable_stream(rs2_stream stream_type, int stream_index, int width, int height, rs2_format format = RS2_FORMAT_ANY, int framerate = 0)
         {
             rs2_error* e = nullptr;
-            rs2_config_enable_stream(_config.get(), stream, index, width, height, format, framerate, &e);
+            rs2_config_enable_stream(_config.get(), stream_type, stream_index, width, height, format, framerate, &e);
             error::handle(e);
         }
-        void enable_stream(rs2_stream stream, int index = -1)
+
+        //Stream type and possibly also stream index
+        void enable_stream(rs2_stream stream_type, int stream_index = -1)
         {
-            enable_stream(stream, index, 0, 0, RS2_FORMAT_ANY, 0);
+            enable_stream(stream_type, stream_index, 0, 0, RS2_FORMAT_ANY, 0);
         }
-        void enable_stream(rs2_stream stream, int width, int height)
+
+        //Stream type and resolution, and possibly format and frame rate
+        void enable_stream(rs2_stream stream_type, int width, int height, rs2_format format = RS2_FORMAT_ANY, int framerate = 0)
         {
-            enable_stream(stream, -1, width, height, RS2_FORMAT_ANY, 0);
+            enable_stream(stream_type, -1, 0, 0, RS2_FORMAT_ANY, 0);
+        }
+
+        //Stream type and format
+        void enable_stream(rs2_stream stream_type, rs2_format format, int framerate = 0)
+        {
+            enable_stream(stream_type, -1, 0, 0, format, framerate);
+        }
+
+        //Stream type and format
+        void enable_stream(rs2_stream stream_type, int stream_index, rs2_format format, int framerate = 0)
+        {
+            enable_stream(stream_type, stream_index, 0, 0, format, framerate);
         }
 
         /**
