@@ -17,7 +17,9 @@ add_custom_target(
     BUILD_NODE_ADDON ALL
 	DEPENDS ${PROJECT_SOURCE_DIR}/build/Release/node_librealsense.node
 )
+set_target_properties(BUILD_NODE_ADDON PROPERTIES FOLDER Wrappers/NodeJS)
 
 add_custom_target(RealsenseNodeJSWrappers DEPENDS RealsenseNodeJSExamples)
+set_target_properties(RealsenseNodeJSWrappers PROPERTIES FOLDER Wrappers/NodeJS)
 
 add_subdirectory(examples)
