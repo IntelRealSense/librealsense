@@ -86,7 +86,6 @@ set(REALSENSE_CPP
     src/ivcam/sr300.cpp
     src/types.cpp
     src/linux/backend-v4l2.cpp
-    src/libuvc.cpp
     src/linux/backend-hid.cpp
     src/backend.cpp
     src/verify.c
@@ -112,14 +111,6 @@ set(REALSENSE_CPP
     src/ds5/advanced_mode/rs_advanced_mode.cpp
     src/ds5/advanced_mode/presets.cpp
     src/ds5/advanced_mode/advanced_mode.cpp
-    src/libuvc/ctrl.c
-    src/libuvc/ctrl-gen.c
-    src/libuvc/device.c
-    src/libuvc/diag.c
-    src/libuvc/frame.c
-    src/libuvc/init.c
-    src/libuvc/misc.c
-    src/libuvc/stream.c
 
     third-party/easyloggingpp/src/easylogging++.cc
     third-party/sqlite/sqlite3.c
@@ -441,6 +432,18 @@ elseif(APPLE)
     set(BACKEND RS2_USE_LIBUVC_BACKEND)
 else()
     set(BACKEND RS2_USE_V4L2_BACKEND)
+	
+	list(APPEND REALSENSE_CPP
+    src/libuvc/ctrl.c
+    src/libuvc/ctrl-gen.c
+    src/libuvc/device.c
+    src/libuvc/diag.c
+    src/libuvc/frame.c
+    src/libuvc/init.c
+    src/libuvc/misc.c
+    src/libuvc/stream.c
+	src/libuvc/libuvc.cpp
+	)
 endif()
 add_definitions(-D${BACKEND} -DUNICODE)
 

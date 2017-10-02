@@ -39,7 +39,7 @@
 #include <sys/signalfd.h>
 #include <signal.h>
 
-#include "libuvc/libuvc.h"
+#include "libuvc.h"
 
 #pragma GCC diagnostic ignored "-Wpedantic"
 #include <libusb.h>
