@@ -28,7 +28,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     if(WIN32)
         list(APPEND DEPENDENCIES glfw3)
     else()
-        list(APPEND DEPENDENCIES uvc)
         # Find glfw header
         find_path(GLFW_INCLUDE_DIR NAMES GLFW/glfw3.h
             PATHS /usr/X11R6/include

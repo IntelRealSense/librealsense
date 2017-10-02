@@ -53,9 +53,9 @@ struct uvc_device_internal {
     libusb_device *usb_dev;
 };
 
-namespace rsimpl2
+namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         static void internal_uvc_callback(uvc_frame_t *frame, void *ptr);
 
@@ -292,7 +292,7 @@ namespace rsimpl2
             }
 
             /* request to set up a streaming profile and its calback */
-            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override
+            void probe_and_commit(stream_profile profile, bool zero_copy, frame_callback callback, int buffers) override
             {
                 uvc_error_t res;
                 uvc_stream_ctrl_t ctrl;
@@ -585,6 +585,11 @@ namespace rsimpl2
             std::shared_ptr<time_service> create_time_service() const override
             {
                 return std::make_shared<os_time_service>();
+            }
+
+            std::shared_ptr<device_watcher> create_device_watcher() const 
+            {
+                return std::make_shared<polling_device_watcher>(this);
             }
         };
 
