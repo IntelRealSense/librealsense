@@ -54,13 +54,10 @@ static inline void rs_deproject_pixel_to_point(float point[3], const struct rs_i
     }
     if(intrin->model == RS_DISTORTION_INVERSE_BROWN_CONRADY)
     {
-        float x2 = x*x;
-        float y2 = y*y;
-        float xy = x * y;
-        float r2  = x2 + y2;
+        float r2  = x * x + y * y;
         float f = 1 + intrin->coeffs[0]*r2 + intrin->coeffs[1]*r2*r2 + intrin->coeffs[4]*r2*r2*r2;
-        float ux = x*f + 2*intrin->coeffs[2]*xy + intrin->coeffs[3]*(r2 + 2*x2);
-        float uy = y*f + 2*intrin->coeffs[3]*xy + intrin->coeffs[2]*(r2 + 2*y2);
+        float ux = x*f + 2*intrin->coeffs[2]*x*y + intrin->coeffs[3]*(r2 + 2*x*x);
+        float uy = y*f + 2*intrin->coeffs[3]*x*y + intrin->coeffs[2]*(r2 + 2*y*y);
         x = ux;
         y = uy;
     }
