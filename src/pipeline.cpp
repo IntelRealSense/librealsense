@@ -466,18 +466,15 @@ namespace librealsense
             return f;
         }
         
-        if (!_hub.is_connected(*_active_profile->get_device()))
+        try
         {
-            //_dev = _hub.wait_for_device(timeout_ms/*, _dev.get()*/);
-            //TODO: handle start() from here with playback devices (dont reload file to context)
             unsafe_start(_prev_conf);
             return frame_holder();
         }
-        else
+        catch(const std::exception& e)
         {
             throw std::runtime_error(to_string() << "Frame didn't arrived within " << timeout_ms);
         }
-        
     }
 
     bool pipeline::poll_for_frames(frame_holder* frame)
