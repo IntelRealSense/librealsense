@@ -477,7 +477,7 @@ int main(int argv, const char** argc) try
 
                                     for (auto&& profile : profiles)
                                     {
-                                        viewer_model.streams[profile.unique_id()].dev = sub;
+                                        viewer_model.streams[profile.unique_id()].begin_stream(sub, profile);
                                     }
                                 }
                                 if (ImGui::IsItemHovered())

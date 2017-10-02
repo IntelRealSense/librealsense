@@ -8,7 +8,6 @@
 #include "rs_record_playback.hpp"
 #include "rs_processing.hpp"
 
-
 namespace rs2
 {
     class event_information
