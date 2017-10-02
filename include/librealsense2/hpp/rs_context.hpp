@@ -8,9 +8,29 @@
 #include "rs_record_playback.hpp"
 #include "rs_processing.hpp"
 
-
 namespace rs2
 {
+    template<class T>
+    class devices_changed_callback : public rs2_devices_changed_callback
+    {
+        T _callback;
+        
+    public:
+        explicit devices_changed_callback(T callback) : _callback(callback) {}
+        
+        void on_devices_changed(rs2_device_list* removed, rs2_device_list* added) override
+        {
+            std::shared_ptr<rs2_device_list> old(removed, rs2_delete_device_list);
+            std::shared_ptr<rs2_device_list> news(added, rs2_delete_device_list);
+            
+            
+            event_information info({device_list(old), device_list(news)});
+            _callback(info);
+        }
+        
+        void release() override { delete this; }
+    };
+    
     /**
     * default librealsense context class
     * includes realsense API version as provided by RS2_API_VERSION macro
