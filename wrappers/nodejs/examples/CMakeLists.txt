@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsenseNodeJSExamples)
 
-set(NODE_VERSOIN 6)
+set(NODE_VERSOIN 8)
 
 set(TOOL_PATH "./node_modules/.bin/")
 # Get OS
