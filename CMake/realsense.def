@@ -131,7 +131,6 @@ EXPORTS
     rs2_get_video_stream_resolution
     rs2_get_video_stream_intrinsics
 
-    rs2_get_stream_profile_size
     rs2_is_stream_profile_default
 
     rs2_delete_stream_profile

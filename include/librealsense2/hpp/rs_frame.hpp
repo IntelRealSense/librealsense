@@ -55,7 +55,6 @@ namespace rs2
         }
         
         bool is_default() const { return _default; }
-        std::size_t size() const { return _size; }
         
         operator bool() const { return _profile != nullptr; }
         
@@ -83,9 +82,6 @@ namespace rs2
             
             _default = !!(rs2_is_stream_profile_default(_profile, &e));
             error::handle(e);
-            
-            _size = rs2_get_stream_profile_size(_profile, &e);
-            error::handle(e);
         }
         
         const rs2_stream_profile* _profile;
@@ -98,7 +94,6 @@ namespace rs2
         rs2_stream _type = RS2_STREAM_ANY;
         
         bool _default = false;
-        size_t _size = 0;
     };
     
     class video_stream_profile : public stream_profile
