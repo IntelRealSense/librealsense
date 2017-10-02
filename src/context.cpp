@@ -46,6 +46,46 @@ static const std::string rs_api_version("VERSION: 1.11.1");
 
 #endif
 
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/usbdevice_fs.h>
+#include <linux/usb/ch9.h>
+#include "ds-device.h"
+
+namespace rsimpl { namespace uvc
+{
+    std::string get_usb_hub_name(const device & device);
+}}
+
+using namespace rsimpl::uvc;
+
+namespace rsimpl {
+    extern int rs_exception_count;
+}
+
+const int USB_PORT_FEAT_POWER   = 8;
+const int USB_HUB_TIMEOUT       = 5000;
+
+static void set_hub_power(const std::string& filename, bool enable, int timeout)
+{
+    int fd = open(filename.c_str(), O_RDWR);
+
+    usbdevfs_ctrltransfer ctrl;
+
+    ctrl.bRequestType = USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_OTHER;
+    ctrl.wValue = USB_PORT_FEAT_POWER;
+    ctrl.wIndex = 1;//portnum;
+    ctrl.wLength = 0;
+    ctrl.timeout = USB_HUB_TIMEOUT;
+    ctrl.data = NULL;
+    ctrl.bRequest = enable ? USB_REQ_SET_FEATURE : USB_REQ_CLEAR_FEATURE;
+
+    ioctl(fd, USBDEVFS_CONTROL, &ctrl);
+
+    usleep( timeout * 1000 );
+}
+
 bool is_compatible(std::shared_ptr<rs_device> device)
 {
     return device->supports(RS_CAPABILITIES_ENUMERATION);
@@ -55,31 +95,61 @@ rs_context_base::rs_context_base()
 {
     context = rsimpl::uvc::create_context();
 
+    try
+    {
+        create_devices();
+    }
+    catch(std::shared_ptr<device> device)
+    {
+        LOG_WARNING("Failed to read camera info - cycling hub power");
+
+        std::string filename = get_usb_hub_name(*device);
+
+        devices.clear();
+
+        set_hub_power(filename, false, 1500);
+        set_hub_power(filename, true, 8500);
+
+        create_devices();
+    }
+}
+
+void rs_context_base::create_devices()
+{
+    devices.clear();
+
     for(auto device : query_devices(context))
     {
-        LOG_INFO("UVC device detected with VID = 0x" << std::hex << get_vendor_id(*device) << " PID = 0x" << get_product_id(*device));
-
-        if (get_vendor_id(*device) != VID_INTEL_CAMERA)
-            continue;
-
-        std::shared_ptr<rs_device> rs_dev;
-
-        switch(get_product_id(*device))
+        try
         {
-            case R200_PRODUCT_ID:  rs_dev = rsimpl::make_r200_device(device); break;
-            case LR200_PRODUCT_ID: rs_dev = rsimpl::make_lr200_device(device); break;
-            case ZR300_PRODUCT_ID: rs_dev = rsimpl::make_zr300_device(device); break;
-            case F200_PRODUCT_ID:  rs_dev = rsimpl::make_f200_device(device); break;
-            case SR300_PRODUCT_ID: rs_dev = rsimpl::make_sr300_device(device); break;
+            LOG_INFO("UVC device detected with VID = 0x" << std::hex << get_vendor_id(*device) << " PID = 0x" << get_product_id(*device));
+
+            if (get_vendor_id(*device) != VID_INTEL_CAMERA)
+                continue;
+
+            std::shared_ptr<rs_device> rs_dev;
+
+            switch(get_product_id(*device))
+            {
+                case R200_PRODUCT_ID:  rs_dev = rsimpl::make_r200_device(device); break;
+                case LR200_PRODUCT_ID: rs_dev = rsimpl::make_lr200_device(device); break;
+                case ZR300_PRODUCT_ID: rs_dev = rsimpl::make_zr300_device(device); break;
+                case F200_PRODUCT_ID:  rs_dev = rsimpl::make_f200_device(device); break;
+                case SR300_PRODUCT_ID: rs_dev = rsimpl::make_sr300_device(device); break;
+            }
+
+            if (rs_dev && is_compatible(rs_dev))
+            {
+                devices.push_back(rs_dev);
+            }
+            else
+            {
+                LOG_ERROR("Device is not supported by librealsense!");
+            }
         }
-
-        if (rs_dev && is_compatible(rs_dev))
+        catch(...)
         {
-            devices.push_back(rs_dev);
-        }
-        else
-        {
-            LOG_ERROR("Device is not supported by librealsense!");
+            throw device;
         }
     }
 }
@@ -112,6 +182,16 @@ void rs_context_base::release_instance()
 rs_context_base::~rs_context_base()
 {
     assert(ref_count == 0);
+
+    if(rsimpl::rs_exception_count)
+    {
+        LOG_WARNING("Exception(s) caught while running - cycling hub power");
+
+	std::string filename = "/dev/bus/usb/002/001";
+
+        set_hub_power(filename, false, 1500);
+        set_hub_power(filename, true, 8500);
+    }
 }
 
 size_t rs_context_base::get_device_count() const

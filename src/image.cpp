@@ -514,6 +514,8 @@ namespace rsimpl
 
     template<class GET_DEPTH, class TRANSFER_PIXEL> void align_images(const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_other, const rs_intrinsics & other_intrin, GET_DEPTH get_depth, TRANSFER_PIXEL transfer_pixel)
     {
+        float inv_fx = 1.0 / depth_intrin.fx;
+        float inv_fy = 1.0 /depth_intrin.fy;
         // Iterate over the pixels of the depth image    
 #pragma omp parallel for schedule(dynamic)
         for(int depth_y = 0; depth_y < depth_intrin.height; ++depth_y)
@@ -526,7 +528,7 @@ namespace rsimpl
                 {
                     // Map the top-left corner of the depth pixel onto the other image
                     float depth_pixel[2] = {depth_x-0.5f, depth_y-0.5f}, depth_point[3], other_point[3], other_pixel[2];
-                    rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
+                    rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth, inv_fx, inv_fy);
                     rs_transform_point_to_point(other_point, &depth_to_other, depth_point);
                     rs_project_point_to_pixel(other_pixel, &other_intrin, other_point);
                     const int other_x0 = static_cast<int>(other_pixel[0] + 0.5f);
@@ -534,7 +536,7 @@ namespace rsimpl
 
                     // Map the bottom-right corner of the depth pixel onto the other image
                     depth_pixel[0] = depth_x+0.5f; depth_pixel[1] = depth_y+0.5f;
-                    rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
+                    rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth, inv_fx, inv_fy);
                     rs_transform_point_to_point(other_point, &depth_to_other, depth_point);
                     rs_project_point_to_pixel(other_pixel, &other_intrin, other_point);
                     const int other_x1 = static_cast<int>(other_pixel[0] + 0.5f);
