@@ -12,9 +12,6 @@ namespace rs2
     class device
     {
     public:
-        using SensorType = sensor;
-        using ProfileType = stream_profile;
-
         /**
         * returns the list of adjacent devices, sharing the same physical parent composite device
         * \return            the list of adjacent devices
@@ -283,57 +280,6 @@ namespace rs2
     private:
         std::shared_ptr<rs2_device_list> _list;
     };
-
-    template<class T>
-    class status_changed_callback : public rs2_playback_status_changed_callback
-    {
-        T on_status_changed_function;
-    public:
-        explicit status_changed_callback(T on_status_changed) : on_status_changed_function(on_status_changed) {}
-
-        void on_playback_status_changed(rs2_playback_status status) override
-        {
-            on_status_changed_function(status);
-        }
-
-        void release() override { delete this; }
-    };
-
-    class event_information
-    {
-    public:
-        event_information(device_list removed, device_list added)
-            :_removed(removed), _added(added){}
-
-        /**
-        * check if specific device was disconnected
-        * \return            true if device disconnected, false if device connected
-        */
-        bool was_removed(const rs2::device& dev) const
-        {
-            rs2_error* e = nullptr;
-
-            if(!dev)
-                return false;
-
-            auto res =  rs2_device_list_contains(_removed.get_list(), dev.get().get(), &e);
-            error::handle(e);
-
-            return res > 0;
-        }
-
-        /**
-        * returns a list of all newly connected devices
-        * \return            the list of all new connected devices
-        */
-        device_list get_new_devices()  const
-        {
-            return _added;
-        }
-
-    private:
-        device_list _removed;
-        device_list _added;
-    };
+   
 }
 #endif // LIBREALSENSE_RS2_DEVICE_HPP

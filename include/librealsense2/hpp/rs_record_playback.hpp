@@ -9,6 +9,21 @@
 
 namespace rs2
 {
+    template<class T>
+    class status_changed_callback : public rs2_playback_status_changed_callback
+    {
+        T on_status_changed_function;
+    public:
+        explicit status_changed_callback(T on_status_changed) : on_status_changed_function(on_status_changed) {}
+
+        void on_playback_status_changed(rs2_playback_status status) override
+        {
+            on_status_changed_function(status);
+        }
+
+        void release() override { delete this; }
+    };
+
     class playback : public device
     {
     public:

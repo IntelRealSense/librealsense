@@ -11,6 +11,64 @@
 
 namespace rs2
 {
+    class event_information
+    {
+    public:
+        event_information(device_list removed, device_list added)
+            :_removed(removed), _added(added) {}
+
+        /**
+        * check if specific device was disconnected
+        * \return            true if device disconnected, false if device connected
+        */
+        bool was_removed(const rs2::device& dev) const
+        {
+            rs2_error* e = nullptr;
+
+            if (!dev)
+                return false;
+
+            auto res = rs2_device_list_contains(_removed.get_list(), dev.get().get(), &e);
+            error::handle(e);
+
+            return res > 0;
+        }
+
+        /**
+        * returns a list of all newly connected devices
+        * \return            the list of all new connected devices
+        */
+        device_list get_new_devices()  const
+        {
+            return _added;
+        }
+
+    private:
+        device_list _removed;
+        device_list _added;
+    };
+
+    template<class T>
+    class devices_changed_callback : public rs2_devices_changed_callback
+    {
+        T _callback;
+
+    public:
+        explicit devices_changed_callback(T callback) : _callback(callback) {}
+
+        void on_devices_changed(rs2_device_list* removed, rs2_device_list* added) override
+        {
+            std::shared_ptr<rs2_device_list> old(removed, rs2_delete_device_list);
+            std::shared_ptr<rs2_device_list> news(added, rs2_delete_device_list);
+
+
+            event_information info({ device_list(old), device_list(news) });
+            _callback(info);
+        }
+
+        void release() override { delete this; }
+    };
+
     /**
     * default librealsense context class
     * includes realsense API version as provided by RS2_API_VERSION macro
