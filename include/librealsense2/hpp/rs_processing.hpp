@@ -125,33 +125,6 @@ namespace rs2
     };
 
 
-    class syncer_processing_block
-    {
-    public:
-        syncer_processing_block()
-        {
-            rs2_error* e = nullptr;
-            _processing_block = std::make_shared<processing_block>(
-                    std::shared_ptr<rs2_processing_block>(
-                                        rs2_create_sync_processing_block(&e),
-                                        rs2_delete_processing_block));
-            error::handle(e);
-
-        }
-        template<class S>
-        void start(S on_frame)
-        {
-            _processing_block->start(on_frame);
-        }
-
-        void operator()(frame f) const
-        {
-            _processing_block->operator()(std::move(f));
-        }
-    private:
-        std::shared_ptr<processing_block> _processing_block;
-    };
-
     class frame_queue
     {
     public:
@@ -256,7 +229,14 @@ namespace rs2
     public:
         syncer()
         {
-            _sync.start(_results);
+            rs2_error* e = nullptr;
+            _processing_block = std::make_shared<processing_block>(
+                std::shared_ptr<rs2_processing_block>(
+                    rs2_create_sync_processing_block(&e),
+                    rs2_delete_processing_block));
+            error::handle(e);
+
+            _processing_block->start(_results);
         }
 
         /**
@@ -287,10 +267,10 @@ namespace rs2
 
         void operator()(frame f) const
         {
-            _sync(std::move(f));
+            _processing_block->operator()(std::move(f));
         }
     private:
-        syncer_processing_block _sync;
+        std::shared_ptr<processing_block> _processing_block;
         frame_queue _results;
     };
 
