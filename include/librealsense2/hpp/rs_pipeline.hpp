@@ -384,7 +384,6 @@ namespace rs2
         * The application can maintain the frames handles to defer processing. However, if the application maintains too long history, the device
         * may lack memory resources to produce new frames, and the following call to this method shall fail to retrieve new frames, until resources
         * are retained.
-        * open: different FPS - where do the extras go???
         *
         * \param[in] timeout_ms   Max time in milliseconds to wait until an exception will be thrown
         * \return                 Set of time synchronized frames, one from each active stream
@@ -408,13 +407,16 @@ namespace rs2
         * The application can maintain the frames handles to defer processing. However, if the application maintains too long history, the device
         * may lack memory resources to produce new frames, and the following calls to this method shall return no new frames, until resources are
         * retained.
-        * open: different FPS - where do the extras go???
         *
         * \param[out] f     Frames set handle
         * \return           True if new set of time synchronized frames was stored to f, false if no new frames set is available
         */
         bool poll_for_frames(frameset* f) const
         {
+            if (!f)
+            {
+                throw std::invalid_argument("null frameset");
+            }
             rs2_error* e = nullptr;
             rs2_frame* frame_ref = nullptr;
             auto res = rs2_pipeline_poll_for_frames(_pipeline.get(), &frame_ref, &e);
