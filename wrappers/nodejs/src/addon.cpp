@@ -371,7 +371,7 @@ class RSStreamProfile : public Nan::ObjectWrap {
       return;
     }
     info.GetReturnValue().Set(Nan::Undefined());
-  }  
+  }
   static NAN_METHOD(IsVideoProfile) {
     auto me = Nan::ObjectWrap::Unwrap<RSStreamProfile>(info.Holder());
     if (me) {
