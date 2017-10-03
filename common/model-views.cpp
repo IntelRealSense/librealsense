@@ -1241,7 +1241,7 @@ namespace rs2
 
     stream_model::stream_model()
         : texture(std::unique_ptr<texture_buffer>(new texture_buffer())),
-          _stream_not_alive(std::chrono::milliseconds(1500))
+        _stream_not_alive(std::chrono::milliseconds(1500))
     {}
 
     void stream_model::upload_frame(frame&& f)
@@ -1322,9 +1322,9 @@ namespace rs2
     bool stream_model::is_stream_visible()
     {
         if (dev &&
-            (dev->is_paused() || 
-             (dev->streaming && dev->dev.is<playback>()) ||
-             (dev->streaming /*&& texture->get_last_frame()*/ )))
+            (dev->is_paused() ||
+            (dev->streaming && dev->dev.is<playback>()) ||
+                (dev->streaming /*&& texture->get_last_frame()*/)))
         {
             return true;
         }
@@ -2590,8 +2590,8 @@ namespace rs2
         ImGui::PopStyleVar(2);
         ImGui::PopFont();
     }
-    void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, 
-                                 const ImVec4& text_color, const std::string& tooltip)
+    void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id,
+        const ImVec4& text_color, const std::string& tooltip)
     {
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -2856,11 +2856,11 @@ namespace rs2
             if (!stream_mv.is_stream_alive())
             {
                 show_icon(font2, "warning_icon", u8"\uf071  FPS Alert!  \uf071",
-                          stream_rect.center().x - 70, 
-                          stream_rect.center().y - 25, 
-                          stream_mv.profile.unique_id(), 
-                          blend(dark_red, alpha),
-                          "Did not receive frames from the platform within a reasonable time window!");
+                    stream_rect.center().x - 70,
+                    stream_rect.center().y - 25,
+                    stream_mv.profile.unique_id(),
+                    blend(dark_red, alpha),
+                    "Did not receive frames from the platform within a reasonable time window!");
             }
 
             if (stream_mv.dev->is_paused() || (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
@@ -2985,7 +2985,7 @@ namespace rs2
 
                 glColor4f(sensor_bg.x, sensor_bg.y, sensor_bg.z, 0.5f);
 
-                for (float d = 1; d < 6; d+=2)
+                for (float d = 1; d < 6; d += 2)
                 {
                     auto get_point = [&](float x, float y) -> float3
                     {
@@ -3532,6 +3532,37 @@ namespace rs2
         return device_names;
     }
 
+    bool yes_no_dialog(const std::string& title, const std::string& do_what, bool& approved)
+    {
+        auto clicked = false;
+        ImGui::OpenPopup(title.c_str());
+        if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            std::string msg = to_string() << "\t\tAre you sure you want to " << do_what << "?\t\t\n";
+            ImGui::Text("\n%s\n", msg.c_str());
+            ImGui::Separator();
+            auto width = ImGui::GetWindowWidth();
+            ImGui::Dummy(ImVec2(width / 4.f, 0));
+            ImGui::SameLine();
+            if (ImGui::Button("Yes", ImVec2(60, 30)))
+            {
+                ImGui::CloseCurrentPopup();
+                approved = true;
+                clicked = true;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("No", ImVec2(60, 30)))
+            {
+                ImGui::CloseCurrentPopup();
+                approved = false;
+                clicked = true;
+            }
+            ImGui::NewLine();
+            ImGui::EndPopup();
+        }
+        return clicked;
+    }
+
     void device_model::draw_advanced_mode_tab()
     {
         using namespace rs400;
@@ -3552,36 +3583,68 @@ namespace rs2
                     auto advanced = dev.as<advanced_mode>();
                     if (advanced.is_enabled())
                     {
+                        static bool show_dialog = false;
+                        static bool disable_approved = true;
                         if (allow_remove)
-                        if (ImGui::Button("Disable Advanced Mode", ImVec2{ 226, 0 }))
                         {
-                            //if (yes_no_dialog()) // TODO
-                            //{
-                            advanced.toggle_advanced_mode(false);
-                            restarting_device_info = get_device_info(dev, false);
-                            //}
+                            if (ImGui::Button("Disable Advanced Mode", ImVec2{ 226, 0 }))
+                            {
+                                show_dialog = true;
+                                disable_approved = false;
+                            }
+
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
+                            }
+
+                            if (show_dialog &&
+                                yes_no_dialog("Advanced Mode", "Disable Advanced Mode", disable_approved))
+                            {
+                                if (disable_approved)
+                                {
+                                    advanced.toggle_advanced_mode(false);
+                                    restarting_device_info = get_device_info(dev, false);
+                                }
+                                show_dialog = false;
+                            }
+
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
+                            }
+                            draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
                         }
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
-                        }
-                        draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
                     }
                     else
                     {
                         if (allow_remove)
-                        if (ImGui::Button("Enable Advanced Mode", ImVec2{ 226, 0 }))
                         {
-                            //if (yes_no_dialog()) // TODO
-                            //{
-                            advanced.toggle_advanced_mode(true);
-                            restarting_device_info = get_device_info(dev, false);
-                            //}
+                            static bool show_dialog = false;
+                            static bool enable_approved = true;
+                            if (ImGui::Button("Enable Advanced Mode", ImVec2{ 226, 0 }))
+                            {
+                                show_dialog = true;
+                                enable_approved = false;
+                            }
+
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
+                            }
+
+                            if (show_dialog &&
+                                yes_no_dialog("Advanced Mode", "Enable Advanced Mode", enable_approved))
+                            {
+                                if (enable_approved)
+                                {
+                                    advanced.toggle_advanced_mode(true);
+                                    restarting_device_info = get_device_info(dev, false);
+                                }
+                                show_dialog = false;
+                            }
                         }
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
-                        }
+
                         ImGui::TextColored(redish, "Device is not in advanced mode!\nTo access advanced functionality\nclick \"Enable Advanced Mode\"");
                     }
                 }

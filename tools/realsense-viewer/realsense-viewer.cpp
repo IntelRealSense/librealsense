@@ -160,7 +160,7 @@ void refresh_devices(std::mutex& m,
                 for (auto&& dev_model : device_models)
                 {
                     bool still_around = false;
-                    for (auto&& dev : devs)
+                    for (auto&& dev : list)
                         if (get_device_name(dev_model.dev) == get_device_name(dev))
                             still_around = true;
                     if (!still_around) {
