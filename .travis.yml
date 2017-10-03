@@ -36,6 +36,12 @@ before_install:
       export CPU_NUM=`sysctl -n hw.logicalcpu_max`;
     fi
     
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      brew uninstall xctool;
+      brew install xctool --HEAD;
+      brew install homebrew/versions/glfw3;
+      brew install libusb;
+    fi
 
   # Install linux required packages
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
@@ -72,4 +78,9 @@ script:
       export LRS_LOG_LEVEL="DEBUG";
       wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc4;
       ./unit-tests/live-test from awgc4 -d yes;
+    fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      mkdir build && cd build;
+      cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -G Xcode;
+      xctool -workspace librealsense2.xcodeproj -scheme realsense2 ONLY_ACTIVE_ARCH=NO;
     fi
