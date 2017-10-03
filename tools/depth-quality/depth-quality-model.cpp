@@ -195,12 +195,12 @@ namespace rs2
                         ImGui::PushItemWidth(-1);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
 
-                        static std::vector<std::string> items{ "66%", "40%", "11%" };
+                        static std::vector<std::string> items{ "80%", "40%", "20%" };
                         if (draw_combo_box("##ROI Percent", items, _roi_combo_index))
                         {
-                            if (_roi_combo_index == 0) _roi_percent = 0.66f;
+                            if (_roi_combo_index == 0) _roi_percent = 0.8f;
                             else if (_roi_combo_index == 1) _roi_percent = 0.4f;
-                            else if (_roi_combo_index == 2) _roi_percent = 0.11f;
+                            else if (_roi_combo_index == 2) _roi_percent = 0.2f;
                             update_configuration();
                         }
 
@@ -292,6 +292,26 @@ namespace rs2
             _depth_sensor_model->draw_streams_selector = false;
             _depth_sensor_model->draw_fps_selector = true;
 
+            // Retrieve stereo baseline for supported devices
+            auto baseline_mm = -1.f;
+            auto profiles = dpt_sensor.get_stream_profiles();
+            auto right_sensor = std::find_if(profiles.begin(), profiles.end(), [](rs2::stream_profile& p)
+            { return (p.stream_index() == 2) && (p.stream_type() == RS2_STREAM_INFRARED); });
+
+            if (right_sensor != profiles.end())
+            {
+                auto left_sensor = std::find_if(profiles.begin(), profiles.end(), [](rs2::stream_profile& p)
+                                    { return (p.stream_index() == 0) && (p.stream_type() == RS2_STREAM_DEPTH); });
+                try
+                {
+                    auto extrin = (*left_sensor).get_extrinsics_to(*right_sensor);
+                    baseline_mm = fabs(extrin.translation[0])*1000;  // baseline in mm
+                }
+                catch (...) {
+                    _error_message = "Extrinsic parameters are not available";
+                }
+            }
+
             _metrics_model.reset();
 
             // Restore GUI controls to the selected configuration
@@ -316,7 +336,7 @@ namespace rs2
                     {
                         auto depth_profile = profile.as<video_stream_profile>();
                         _metrics_model.update_stream_attributes(depth_profile.get_intrinsics(),
-                                                          sub->s.as<depth_sensor>().get_depth_scale());
+                                                          sub->s.as<depth_sensor>().get_depth_scale(), baseline_mm);
 
                         _metrics_model.update_frame_attributes({ int(depth_profile.width() * (0.5f - 0.5f*_roi_percent)),
                                                            int(depth_profile.height() * (0.5f - 0.5f*_roi_percent)),
@@ -353,7 +373,6 @@ namespace rs2
             }
             return improved > window_size * 0.4;
         }
-
 
         void tool_model::snapshot_metrics()
         {
@@ -394,7 +413,7 @@ namespace rs2
                 export_to_ply(filename_base + "_3d_mesh.ply", _viewer_model.not_model, _viewer_model.pc.get_points(), ply_texture);
 
                 // Save Metrics
-                _metrics_model.serialize_to_csv(filename_base + "_depth_metrics.csv");
+                _metrics_model.serialize_to_csv(filename_base + "_depth_metrics.csv", capture_description());
 
                 // Save camera configuration - supported when camera is in advanced mode only
                 if (_device_model.get())
@@ -428,17 +447,18 @@ namespace rs2
 
                     if (RS2_STREAM_DEPTH == stream_type)
                     {
-                        float su = 0;
+                        float su = 0, baseline = -1.f;
                         rs2_intrinsics intrin;
                         region_of_interest roi;
                         {
                             std::lock_guard<std::mutex> lock(_m);
                             su = _depth_scale_units;
+                            baseline = _stereo_baseline_mm;
                             intrin = _depth_intrinsic;
                             roi = _roi;
                         }
 
-                        auto metrics = analyze_depth_image(depth_frame, su, &intrin, _roi, callback);
+                        auto metrics = analyze_depth_image(depth_frame, su, baseline, &intrin, roi, callback);
 
                         {
                             std::lock_guard<std::mutex> lock(_m);
@@ -470,11 +490,33 @@ namespace rs2
             return res;
         }
 
+        std::string tool_model::capture_description()
+        {
+            std::stringstream ss;
+            ss  << "Device Info:"
+                << "\nType:," << _device_model->dev.get_info(RS2_CAMERA_INFO_NAME)
+                << "\nHW Id:," << _device_model->dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID)
+                << "\nSerial Num:," << _device_model->dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)
+                << "\nFirmware Ver:," << _device_model->dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
+                << "\n\nStreaming profile:\nStream,Format,Resolution,FPS\n";
+
+            for (auto& stream : _pipe.get_active_streams())
+            {
+                auto vs = stream.as<video_stream_profile>();
+                ss << vs.stream_name() << ","
+                    << rs2_format_to_string(vs.format()) << ","
+                    << vs.width() << "x" << vs.height() << "," << vs.fps() << "\n";
+            }
+
+            return ss.str();
+        }
+
         void metric_plot::render(ux_window& win)
         {
             std::lock_guard<std::mutex> lock(_m);
             std::stringstream ss;
             auto val = _vals[(SIZE + _idx - 1) % SIZE];
+
             ss << _label << std::setprecision(2) << std::fixed  << std::setw(3) << val << " " << _units;
 
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
@@ -555,7 +597,7 @@ namespace rs2
                     _description.size() + 1, desc_size, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopStyleColor(3);
 
-                ImGui::PlotLines(_id.c_str(), _vals, 100, _idx, ss.str().c_str(), _min, _max, { 270, 50 });
+                ImGui::PlotLines(_id.c_str(), (float*)&_vals, SIZE, _idx, ss.str().c_str(), _min, _max, { 270, 50 });
 
                 ImGui::PushStyleColor(ImGuiCol_Text, green);
                 ImGui::Text("[%.2f - %.2f] Pass", ranges[0].x, ranges[0].y);
@@ -576,24 +618,31 @@ namespace rs2
             }
         }
 
-        void metrics_model::serialize_to_csv(const std::string& filename) const
+        void metrics_model::serialize_to_csv(const std::string& filename, const std::string& camera_info) const
         {
             // RAII
             std::ofstream csv;
 
             csv.open(filename);
 
+            // Store the device info and the streaming profile details
+            csv << camera_info;
+
             // Create header line
+            csv << "\nSample Id,Timestamp (ms),";
             for (auto&& plot : _plots)
             {
-                csv << plot->_name << ",";
+                csv << plot->_name << " " << plot->_units << ",";
             }
             csv << std::endl;
-            for (size_t i = 0; i < metric_plot::SIZE; i++)
+
+            // Populate the metrics data
+            for (size_t i = _plots[0]->_first_idx, rec=0; i != _plots[0]->_idx; i=(++i) % metric_plot::SIZE)
             {
+                csv << ++rec << "," << std::fixed << std::setprecision(4) << _plots[0]->_timestamps[i] << ",";
                 for (auto&& plot : _plots)
                 {
-                    csv << plot->_vals[(plot->_idx + i) % metric_plot::SIZE] << ",";
+                    csv << plot->_vals[i] << ",";
                 }
                 csv << std::endl;
             }

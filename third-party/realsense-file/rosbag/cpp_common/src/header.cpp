@@ -82,7 +82,7 @@ bool Header::parse(const uint8_t* buffer, uint32_t size, std::string& error_msg)
     if (len > 1000000)
     {
       error_msg = "Received an invalid TCPROS header.  Each element must be prepended by a 4-byte length.";
-      CONSOLE_BRIDGE_logError("%s", error_msg);
+      CONSOLE_BRIDGE_logError("%s", error_msg.c_str());
 
       return false;
     }
@@ -96,7 +96,7 @@ bool Header::parse(const uint8_t* buffer, uint32_t size, std::string& error_msg)
     if (eqpos == string::npos)
     {
       error_msg = "Received an invalid TCPROS header.  Each line must have an equals sign.";
-      CONSOLE_BRIDGE_logError("%s", error_msg);
+      CONSOLE_BRIDGE_logError("%s", error_msg.c_str());
 
       return false;
     }

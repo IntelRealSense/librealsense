@@ -378,13 +378,6 @@ void rs2_get_video_stream_resolution(const rs2_stream_profile* from, int* width,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, from, width, height)
 
-int rs2_get_stream_profile_size(const rs2_stream_profile* profile, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(profile);
-    return static_cast<int>(profile->profile->get_size());
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, profile)
-
 int rs2_is_stream_profile_default(const rs2_stream_profile* profile, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(profile);

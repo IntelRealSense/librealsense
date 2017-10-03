@@ -2609,7 +2609,7 @@ namespace rs2
         ImGui::Text("%s", text);
         ImGui::PopStyleColor();
         if (ImGui::IsItemHovered() && tooltip != "")
-            ImGui::SetTooltip(tooltip.c_str());
+            ImGui::SetTooltip("%s", tooltip.c_str());
 
         ImGui::End();
         ImGui::PopStyleColor();

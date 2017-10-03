@@ -166,18 +166,18 @@ namespace rs2
                 std::lock_guard<std::mutex> lock(_on_load_message_mtx);
                 if (_on_load_message.empty() && blink)
                 {
-                    ImGui::Text(message.c_str());
+                    ImGui::Text("%s", message.c_str());
                 }
                 else if (!_on_load_message.empty())
                 {
-                    ImGui::Text(message.c_str());
+                    ImGui::Text("%s", message.c_str());
                     for (auto& msg : _on_load_message)
                     {
                         auto is_last_msg = (msg == _on_load_message.back());
                         if (is_last_msg && blink)
-                            ImGui::Text(msg.c_str());
+                            ImGui::Text("%s", msg.c_str());
                         else if (!is_last_msg)
-                            ImGui::Text(msg.c_str());
+                            ImGui::Text("%s", msg.c_str());
                     }
                 }
             }

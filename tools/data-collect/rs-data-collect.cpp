@@ -220,7 +220,7 @@ int main(int argc, char** argv) try
                 }
             }
 
-            if (timeout.isSet() && !max_frames.isSet()) 
+            if (timeout.isSet() && !max_frames.isSet())
                 return timed_out;
 
             return timed_out || collected_enough_frames;
@@ -237,7 +237,7 @@ int main(int argc, char** argv) try
             data.ts = f.get_timestamp();
             data.domain = f.get_frame_timestamp_domain();
             data.arrival_time = arrival_time.count();
- 
+
             buffer[(int)data.stream_type].push_back(data);
 
             if (need_to_reset)

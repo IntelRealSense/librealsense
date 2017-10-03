@@ -21,7 +21,7 @@ class single_consumer_queue
 
     // flush mechanism is required to abort wait on cv
     // when need to stop
-    std::atomic<bool> need_to_flush = false;
+    std::atomic<bool> need_to_flush;
     std::atomic<bool> was_flushed;
     std::condition_variable was_flushed_cv;
     std::mutex was_flushed_mutex;
