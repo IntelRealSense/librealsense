@@ -28,8 +28,10 @@ namespace librealsense
         return result;
     }
 
-    device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int vid)
-        : _ctx(ctx), _vid(vid)
+    device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int vid,
+                           bool register_device_notifications)
+        : _ctx(ctx), _vid(vid),
+          _register_device_notifications(register_device_notifications)
     {
         _device_list = filter_by_vid(_ctx->query_devices(), _vid);
 
@@ -59,7 +61,7 @@ namespace librealsense
             // _camera_index is the curr device that user want to work with
 
             auto d = _device_list[ (_camera_index + i) % _device_list.size()];
-            auto dev = d->create_device();
+            auto dev = d->create_device(_register_device_notifications);
 
             if(serial.size() > 0 )
             {

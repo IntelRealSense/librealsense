@@ -7,9 +7,12 @@
 
 namespace librealsense
 {
-    std::shared_ptr<device_interface> sr300_info::create(std::shared_ptr<context> ctx) const
+    std::shared_ptr<device_interface> sr300_info::create(std::shared_ptr<context> ctx,
+                                                         bool register_device_notifications) const
     {
-        return std::make_shared<sr300_camera>(ctx, _color, _depth, _hwm, this->get_device_data());
+        return std::make_shared<sr300_camera>(ctx, _color, _depth, _hwm,
+                                              this->get_device_data(),
+                                              register_device_notifications);
     }
 
     std::vector<std::shared_ptr<device_info>> sr300_info::pick_sr300_devices(
@@ -179,13 +182,17 @@ namespace librealsense
     }
 
     sr300_camera::sr300_camera(std::shared_ptr<context> ctx, const platform::uvc_device_info &color,
-                               const platform::uvc_device_info &depth, const platform::usb_device_info &hwm_device, const platform::backend_device_group& group)
-            : device(ctx, group), _depth_device_idx(add_sensor(create_depth_device(ctx, depth))),
-              _color_device_idx(add_sensor(create_color_device(ctx, color))),
-              _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(ctx->get_backend().create_usb_device(hwm_device), get_depth_sensor()))),
-              _depth_stream(new stream(RS2_STREAM_DEPTH)),
-              _ir_stream(new stream(RS2_STREAM_INFRARED)),
-              _color_stream(new stream(RS2_STREAM_COLOR))
+                               const platform::uvc_device_info &depth,
+                               const platform::usb_device_info &hwm_device,
+                               const platform::backend_device_group& group,
+                               bool register_device_notifications)
+        : device(ctx, group, register_device_notifications),
+          _depth_device_idx(add_sensor(create_depth_device(ctx, depth))),
+          _color_device_idx(add_sensor(create_color_device(ctx, color))),
+          _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(ctx->get_backend().create_usb_device(hwm_device), get_depth_sensor()))),
+          _depth_stream(new stream(RS2_STREAM_DEPTH)),
+          _ir_stream(new stream(RS2_STREAM_INFRARED)),
+          _color_stream(new stream(RS2_STREAM_COLOR))
     {
         using namespace ivcam;
         static auto device_name = "Intel RealSense SR300";

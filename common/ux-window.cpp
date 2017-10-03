@@ -143,7 +143,7 @@ namespace rs2
 
             hourglass[2] += hourglass_index;
 
-            bool blink = sin(_splash_timer.elapsed_ms() / 150.f) > -0.9f;
+            bool blink = sin(_splash_timer.elapsed_ms() / 150.f) > -0.3f;
 
             auto flags = ImGuiWindowFlags_NoResize |
                 ImGuiWindowFlags_NoMove |

@@ -43,9 +43,9 @@ namespace librealsense
     class device_info
     {
     public:
-        virtual std::shared_ptr<device_interface> create_device() const
+        virtual std::shared_ptr<device_interface> create_device(bool register_device_notifications = false) const
         {
-            return create(_ctx);
+            return create(_ctx, register_device_notifications);
         }
 
         virtual ~device_info() = default;
@@ -62,7 +62,8 @@ namespace librealsense
             : _ctx(move(backend))
         {}
 
-        virtual std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx) const = 0;
+        virtual std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx,
+                                                         bool register_device_notifications) const = 0;
 
         std::shared_ptr<context> _ctx;
     };
@@ -85,7 +86,7 @@ namespace librealsense
 
         }
 
-        std::shared_ptr<device_interface> create_device() const override
+        std::shared_ptr<device_interface> create_device(bool) const override
         {
             return _dev;
         }
@@ -94,7 +95,7 @@ namespace librealsense
             return platform::backend_device_group({ platform::playback_device_info{ _dev->get_file_name() } });
         }
 
-        std::shared_ptr<device_interface> create(std::shared_ptr<context>) const override
+        std::shared_ptr<device_interface> create(std::shared_ptr<context>, bool) const override
         {
             return _dev;
         }

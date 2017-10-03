@@ -104,7 +104,7 @@ namespace librealsense
     class recovery_info : public device_info
     {
     public:
-        std::shared_ptr<device_interface> create(std::shared_ptr<context> /*backend*/) const override
+        std::shared_ptr<device_interface> create(std::shared_ptr<context>, bool) const override
         {
             throw unrecoverable_exception(RECOVERY_MESSAGE,
                 RS2_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE);
@@ -146,7 +146,7 @@ namespace librealsense
     class platform_camera_info : public device_info
     {
     public:
-        std::shared_ptr<device_interface> create(std::shared_ptr<context> /*backend*/) const override;
+        std::shared_ptr<device_interface> create(std::shared_ptr<context>, bool) const override;
 
         static std::vector<std::shared_ptr<device_info>> pick_uvc_devices(
             const std::shared_ptr<context>& ctx,
@@ -214,10 +214,9 @@ namespace librealsense
     public:
         platform_camera(const std::shared_ptr<context>& ctx,
                         const std::vector<platform::uvc_device_info>& uvc_infos,
-                        const platform::backend_device_group& group
-
-                        )
-            : device(ctx, group)
+                        const platform::backend_device_group& group,
+                        bool register_device_notifications)
+            : device(ctx, group, register_device_notifications)
         {
             std::vector<std::shared_ptr<platform::uvc_device>> devs;
             for (auto&& info : uvc_infos)
@@ -257,10 +256,11 @@ namespace librealsense
         }
     };
 
-    std::shared_ptr<device_interface> platform_camera_info::create(std::shared_ptr<context> ctx) const
+    std::shared_ptr<device_interface> platform_camera_info::create(std::shared_ptr<context> ctx,
+                                                                   bool register_device_notifications) const
     {
         auto&& backend = ctx->get_backend();
-        return std::make_shared<platform_camera>(ctx, _uvcs, this->get_device_data());
+        return std::make_shared<platform_camera>(ctx, _uvcs, this->get_device_data(), register_device_notifications);
     }
 
     context::~context()

@@ -8,27 +8,24 @@
 
 using namespace librealsense;
 
-device::device(std::shared_ptr<context> ctx, const platform::backend_device_group group, bool device_changed_notifications)
+device::device(std::shared_ptr<context> ctx,
+               const platform::backend_device_group group,
+               bool device_changed_notifications)
     : _context(ctx), _group(group), _is_valid(true),
       _device_changed_notifications(device_changed_notifications)
 {
     if (_device_changed_notifications)
     {
-        auto cb = new devices_changed_callback_internal([&](rs2_device_list* removed, rs2_device_list* added)
+        auto cb = new devices_changed_callback_internal([this](rs2_device_list* removed, rs2_device_list* added)
         {
+            // Update is_valid variable when device is invalid
             std::lock_guard<std::mutex> lock(_device_changed_mtx);
-            static std::vector<std::pair<rs2_device_list*, bool>> dev_lists{{{removed, false},
-                                                                             {added, true}}};
-
-            for (auto& list : dev_lists)
+            for (auto& dev_info : removed->list)
             {
-                for (auto& dev_info : list.first->list)
+                if (dev_info.info->get_device_data() == _group)
                 {
-                    if (dev_info.info->get_device_data() == _group)
-                    {
-                        _is_valid = list.second;
-                        return;
-                    }
+                    _is_valid = false;
+                    return;
                 }
             }
         });
