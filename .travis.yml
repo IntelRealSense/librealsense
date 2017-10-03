@@ -81,6 +81,6 @@ script:
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       mkdir build && cd build;
-      cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -G Xcode;
-      xctool -workspace librealsense2.xcodeproj -scheme realsense2 ONLY_ACTIVE_ARCH=NO;
+      cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false;
+      make -j $CPU_NUM;
     fi
