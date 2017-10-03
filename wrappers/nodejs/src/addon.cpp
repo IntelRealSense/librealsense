@@ -2283,6 +2283,7 @@ class RSPipelineProfile : public Nan::ObjectWrap {
 
     Nan::SetPrototypeMethod(tpl, "getStreams", GetStreams);
     Nan::SetPrototypeMethod(tpl, "getDevice", GetDevice);
+    Nan::SetPrototypeMethod(tpl, "destroy", Destroy);
    
     constructor.Reset(tpl->GetFunction());
     exports->Set(Nan::New("RSPipelineProfile").ToLocalChecked(), tpl->GetFunction());
@@ -2608,7 +2609,7 @@ class RSPipeline : public Nan::ObjectWrap {
     Nan::SetPrototypeMethod(tpl, "pollForFrames", PollForFrames);		
     Nan::SetPrototypeMethod(tpl, "getActiveProfile", GetActiveProfile);
     Nan::SetPrototypeMethod(tpl, "create", Create);
-
+    Nan::SetPrototypeMethod(tpl, "destroy", Destroy);
     
     constructor.Reset(tpl->GetFunction());
     exports->Set(Nan::New("RSPipeline").ToLocalChecked(), tpl->GetFunction());
