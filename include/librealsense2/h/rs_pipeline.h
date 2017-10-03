@@ -112,7 +112,7 @@ int rs2_pipeline_poll_for_frames(rs2_pipeline* pipe, rs2_frame** output_frame, r
 rs2_stream_profile_list* rs2_pipeline_get_active_streams(rs2_pipeline * pipe, rs2_error** error);
 
 /**
-* return the selected profile's count of the pipeline 
+* return the selected profile's count of the pipeline
 * \param[in] list the selected profiles list of the pipeline
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return       list of stream profiles

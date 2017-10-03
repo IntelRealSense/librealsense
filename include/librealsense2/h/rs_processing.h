@@ -112,7 +112,7 @@ int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_err
 void rs2_enqueue_frame(rs2_frame* frame, void* queue);
 
 /**
-* Creates Align processing block. 
+* Creates Align processing block.
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error);

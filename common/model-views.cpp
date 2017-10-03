@@ -1322,7 +1322,7 @@ namespace rs2
     bool stream_model::is_stream_visible()
     {
         if (dev &&
-            (dev->is_paused() || 
+            (dev->is_paused() ||
              (dev->streaming && dev->dev.is<playback>()) ||
              (dev->streaming /*&& texture->get_last_frame()*/ )))
         {
@@ -2590,7 +2590,7 @@ namespace rs2
         ImGui::PopStyleVar(2);
         ImGui::PopFont();
     }
-    void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id, 
+    void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id,
                                  const ImVec4& text_color, const std::string& tooltip)
     {
         auto flags = ImGuiWindowFlags_NoResize |
@@ -2856,9 +2856,9 @@ namespace rs2
             if (!stream_mv.is_stream_alive())
             {
                 show_icon(font2, "warning_icon", u8"\uf071  FPS Alert!  \uf071",
-                          stream_rect.center().x - 70, 
-                          stream_rect.center().y - 25, 
-                          stream_mv.profile.unique_id(), 
+                          stream_rect.center().x - 70,
+                          stream_rect.center().y - 25,
+                          stream_mv.profile.unique_id(),
                           blend(dark_red, alpha),
                           "Did not receive frames from the platform within a reasonable time window!");
             }

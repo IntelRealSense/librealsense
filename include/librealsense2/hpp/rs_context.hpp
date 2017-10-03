@@ -83,7 +83,7 @@ namespace rs2
                 rs2_delete_context);
             error::handle(e);
         }
-       
+
         /**
         * create a static snapshot of all connected devices at the time of the call
         * \return            the list of devices connected devices at the time of the call
@@ -203,7 +203,7 @@ protected:
             error::handle(e);
 
             return device(dev);
-          
+
         }
 
         /**
@@ -216,7 +216,7 @@ protected:
             error::handle(e);
 
             return res > 0 ? true : false;
-            
+
         }
     private:
         context _ctx;

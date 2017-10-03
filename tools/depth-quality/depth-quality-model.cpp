@@ -374,7 +374,6 @@ namespace rs2
             return improved > window_size * 0.4;
         }
 
-
         void tool_model::snapshot_metrics()
         {
             if (auto ret = file_dialog_open(save_file, NULL, NULL, NULL))
@@ -414,7 +413,7 @@ namespace rs2
                 export_to_ply(filename_base + "_3d_mesh.ply", _viewer_model.not_model, _viewer_model.pc.get_points(), ply_texture);
 
                 // Save Metrics
-                _metrics_model.serialize_to_csv(filename_base + "_depth_metrics.csv");
+                _metrics_model.serialize_to_csv(filename_base + "_depth_metrics.csv", capture_description());
 
                 // Save camera configuration - supported when camera is in advanced mode only
                 if (_device_model.get())
@@ -489,6 +488,27 @@ namespace rs2
             auto res = std::make_shared<metric_plot>(name, min, max, units, description);
             _metrics_model.add_metric(res);
             return res;
+        }
+
+        std::string tool_model::capture_description()
+        {
+            std::stringstream ss;
+            ss  << "Device Info:"
+                << "\nType:," << _device_model->dev.get_info(RS2_CAMERA_INFO_NAME)
+                << "\nHW Id:," << _device_model->dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID)
+                << "\nSerial Num:," << _device_model->dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)
+                << "\nFirmware Ver:," << _device_model->dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
+                << "\n\nStreaming profile:\nStream,Format,Resolution,FPS\n";
+
+            for (auto& stream : _pipe.get_active_streams())
+            {
+                auto vs = stream.as<video_stream_profile>();
+                ss << vs.stream_name() << ","
+                    << rs2_format_to_string(vs.format()) << ","
+                    << vs.width() << "x" << vs.height() << "," << vs.fps() << "\n";
+            }
+
+            return ss.str();
         }
 
         void metric_plot::render(ux_window& win)
@@ -577,7 +597,7 @@ namespace rs2
                     _description.size() + 1, desc_size, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopStyleColor(3);
 
-                ImGui::PlotLines(_id.c_str(), _vals, 100, _idx, ss.str().c_str(), _min, _max, { 270, 50 });
+                ImGui::PlotLines(_id.c_str(), (float*)&_vals, SIZE, _idx, ss.str().c_str(), _min, _max, { 270, 50 });
 
                 ImGui::PushStyleColor(ImGuiCol_Text, green);
                 ImGui::Text("[%.2f - %.2f] Pass", ranges[0].x, ranges[0].y);
@@ -598,24 +618,31 @@ namespace rs2
             }
         }
 
-        void metrics_model::serialize_to_csv(const std::string& filename) const
+        void metrics_model::serialize_to_csv(const std::string& filename, const std::string& camera_info) const
         {
             // RAII
             std::ofstream csv;
 
             csv.open(filename);
 
+            // Store the device info and the streaming profile details
+            csv << camera_info;
+
             // Create header line
+            csv << "\nSample Id,Timestamp (ms),";
             for (auto&& plot : _plots)
             {
-                csv << plot->_name << ",";
+                csv << plot->_name << " " << plot->_units << ",";
             }
             csv << std::endl;
-            for (size_t i = 0; i < metric_plot::SIZE; i++)
+
+            // Populate the metrics data
+            for (size_t i = _plots[0]->_first_idx, rec=0; i != _plots[0]->_idx; i=(++i) % metric_plot::SIZE)
             {
+                csv << ++rec << "," << std::fixed << std::setprecision(4) << _plots[0]->_timestamps[i] << ",";
                 for (auto&& plot : _plots)
                 {
-                    csv << plot->_vals[(plot->_idx + i) % metric_plot::SIZE] << ",";
+                    csv << plot->_vals[i] << ",";
                 }
                 csv << std::endl;
             }

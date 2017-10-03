@@ -14,7 +14,7 @@ int main(int argc, char * argv[]) try
     texture depth_image, color_image;
 
     // Declare depth colorizer for pretty visualization of depth data
-    rs2::colorizer color_map; 
+    rs2::colorizer color_map;
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;

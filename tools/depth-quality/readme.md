@@ -1,6 +1,6 @@
 # Depth Quality Tool
 
-<p align="center"><img src="res/depth_quality_glimpse.gif" /></p>
+<p align="center"><img src="res/Depth Quality Tool v2.7.10 10_3_2017 3_10_47 PM.gif" /></p>
 
 ## Overview
 
@@ -18,10 +18,38 @@ You should be able to easily get and interpret several of the depth quality metr
 * Plane Fitting - using reconstructed surface
 * User-defined Region of Interest
 * Depth Quality metrics:
-  * Depth average error
-  * Standard Deviation
+  * Depth Error Average
+  * Depth Error Standard Deviation
   * Fill-Rate
   * Subpixel RMS
   * Distance to target
 * Export metrics and device configuration
 * Depth Sensor controls
+
+## Metrics elaborated
+![](./res/Zi_ZPi.png)
+
+### Depth Error Average & STD
+_Dist<sub>i</sub>_ - Distance from pixel coordinates to the Plane Fit (mm)  
+![](./res/avg.gif)  
+![](./res/std.gif)
+### Subpixel RMS Metric
+_Z<sub>i</sub>_ - Depth value of i-th pixel in the ROI (mm)  
+_ZP<sub>i</sub>_ - Depth value of the i-th pixel projected onto the plane fit (mm)  
+_BL_ - Stereoscopic Baseline (mm)  
+_FL_ -Focal Length as a multiple of pixel width (pixels)  
+_D<sub>i</sub>_ - Disparity value of i-th pixel in the ROI (pixel)  
+ _DP<sub>i</sub>_ - Disparity value of i-th plane-projected pixel (pixel)
+
+![](./res/Di.gif)  ![](./res/DPi.gif)  
+![](./res/rms.gif)
+
+<!---
+Math expressions generated with
+http://www.numberempire.com/texequationeditor/equationeditor.php
+{D}_{i}=\frac{BL\times FL}{{Z}_{i}}  
+{DP}_{i}=\frac{BL\times FL}{{ZP}_{i}}  
+RMS = \sqrt{\frac{\sum_{1}^{n}{\left({D}_{i} -{DP}_{i}\right)}}{n}^{2}}
+AVG = \frac{\sum_{1}^{n}{\left({Dist}_{i}\right)}}{n}
+STD = \sqrt{\frac{\sum_{1}^{n}{\left({Dist}_{i}\right)}}{n}^{2}}  
+--->

@@ -169,7 +169,7 @@ std::pair<std::vector<sensor>, std::vector<profile>> configure_all_supported_str
             sensors.push_back(s);
         }
     }
-           
+
     return{ sensors, profiles };
 }
 
@@ -185,10 +185,10 @@ TEST_CASE("Sync sanity", "[live]") {
         auto dev = list[0];
         disable_sensitive_options_for(dev);
 
-       
+
         rs2::syncer sync;
         auto profiles = configure_all_supported_streams(dev);
-      
+
         for (auto s : dev.query_sensors())
         {
             s.start(sync);
@@ -397,7 +397,7 @@ TEST_CASE("Sync start stop", "[live]") {
         {
             REQUIRE_NOTHROW(s.start(sync));
         }
-        
+
 
         rs2::frameset frames;
         for (auto i = 0; i < 30; i++)
@@ -2490,7 +2490,7 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
 //
 //        auto profiles = configure_all_supported_streams(dev, dev);
 //
-//       
+//
 //        pipe.start();
 //
 //        std::string serial;
@@ -3510,7 +3510,7 @@ TEST_CASE("Pipeline enable open start flow", "[live]") {
         REQUIRE_NOTHROW(pipe.open());
         REQUIRE_NOTHROW(pipe.open());
         REQUIRE_NOTHROW(dev = pipe.get_device());
-        
+
         REQUIRE_THROWS(pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_ANY, 0));
         REQUIRE_NOTHROW(pipe.start());
 
