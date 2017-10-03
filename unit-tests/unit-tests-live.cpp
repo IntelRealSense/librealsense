@@ -3315,8 +3315,16 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
             //the test will be done only on sub set of profile for each sub device
             for (int i = 0; i < modes.size(); i += static_cast<int>(std::ceil((float)modes.size() / (float)num_of_profiles_for_each_subdevice)))
             {
-                if ((modes[i].size() == 1920 * 1080 * 60) ||           // Full-HD is often times too heavy for the build machine to handle
-                    (RS2_STREAM_GPIO <= modes[i].stream_type()))   // GPIO Requires external triggers to produce events
+                // Full-HD is often times too heavy for the build machine to handle
+                if (auto video_profile = modes[i].as<video_stream_profile>())
+                {
+                    if (video_profile.width() == 1920 && video_profile.height() == 1080 && video_profile.fps() == 60)
+                    {
+                        continue;   // Disabling for now
+                    }
+                }
+                // GPIO Requires external triggers to produce events
+                if (RS2_STREAM_GPIO == modes[i].stream_type())   
                     continue;   // Disabling for now
 
                 CAPTURE(modes[i].format());
