@@ -146,7 +146,10 @@ int main(int argc, const char * argv[]) try
     //         Rendering Loop         
     // ===============================
 
-    window.on_load = [&]() { model.start(); };
+    window.on_load = [&]()
+    {
+        model.start(window);
+    };
 
     while(window)
     {

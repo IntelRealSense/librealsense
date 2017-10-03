@@ -140,6 +140,8 @@ namespace librealsense
 
         virtual std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const = 0;
 
+        virtual bool is_valid() const = 0;
+
         virtual ~device_interface() = default;
 
     };

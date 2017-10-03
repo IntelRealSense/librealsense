@@ -46,6 +46,7 @@ namespace librealsense
         platform::backend_device_group get_device_data() const override;
         std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
         static bool try_extend_snapshot(std::shared_ptr<extension_snapshot>& e, rs2_extension extension_type, void** ext);
+        bool is_valid() const override;
 
     private:
         void update_time_base(device_serializer::nanoseconds base_timestamp);

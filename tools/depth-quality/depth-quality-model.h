@@ -151,7 +151,7 @@ namespace rs2
         public:
             tool_model();
 
-            void start();
+            void start(ux_window& win);
 
             void render(ux_window& win);
 
@@ -169,18 +169,18 @@ namespace rs2
             void on_frame(callback_type callback) { _metrics_model.callback = callback; }
 
         private:
-            pipeline                        _pipe;
-            std::shared_ptr<device_model>   _device_model;
-            viewer_model                    _viewer_model;
+            pipeline                         _pipe;
+            std::shared_ptr<device_model>    _device_model;
+            viewer_model                     _viewer_model;
             std::shared_ptr<subdevice_model> _depth_sensor_model;
-            metrics_model                   _metrics_model;
-            std::string                     _error_message;
-            bool                            _first_frame = true;
-            periodic_timer                  _update_readonly_options_timer;
+            metrics_model                    _metrics_model;
+            std::string                      _error_message;
+            bool                             _first_frame = true;
+            periodic_timer                   _update_readonly_options_timer;
 
-            float                           _roi_percent = 0.33f;
-            int                             _roi_combo_index = 1;
-            temporal_event                  _roi_located;
+            float                            _roi_percent = 0.33f;
+            int                              _roi_combo_index = 1;
+            temporal_event                   _roi_located;
         };
     }
 }

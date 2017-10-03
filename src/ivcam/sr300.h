@@ -129,7 +129,8 @@ namespace librealsense
     class sr300_info : public device_info
     {
     public:
-        std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx) const override;
+        std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx,
+                                                 bool register_device_notifications) const override;
 
         sr300_info(std::shared_ptr<context> ctx,
                     platform::uvc_device_info color,
@@ -414,10 +415,11 @@ namespace librealsense
 
 
         sr300_camera(std::shared_ptr<context> ctx,
-            const platform::uvc_device_info& color,
-            const platform::uvc_device_info& depth,
-            const platform::usb_device_info& hwm_device,
-            const platform::backend_device_group& group);
+                     const platform::uvc_device_info& color,
+                     const platform::uvc_device_info& depth,
+                     const platform::usb_device_info& hwm_device,
+                     const platform::backend_device_group& group,
+                     bool register_device_notifications);
 
         void rs2_apply_ivcam_preset(int preset)
         {

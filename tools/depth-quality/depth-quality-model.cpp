@@ -17,7 +17,7 @@ namespace rs2
             _viewer_model.draw_plane = true;
         }
 
-        void tool_model::start()
+        void tool_model::start(ux_window& window)
         {
             _pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
             _pipe.enable_stream(RS2_STREAM_INFRARED, 0, 0, 0, RS2_FORMAT_RGB8, 30);
@@ -33,6 +33,19 @@ namespace rs2
                 _pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
                 _pipe.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, 30);
                 _pipe.start();
+            }
+
+            // Toggle advanced mode
+            auto dev = _pipe.get_device();
+            if (dev.is<rs400::advanced_mode>())
+            {
+                auto advanced_mode = dev.as<rs400::advanced_mode>();
+                if (!advanced_mode.is_enabled())
+                {
+                    window.add_on_load_message("Toggling device to Advanced Mode...");
+                    advanced_mode.toggle_advanced_mode(true);
+                    std::this_thread::sleep_for(std::chrono::seconds(4)); // TODO: wait for connect event
+                }
             }
 
             update_configuration();

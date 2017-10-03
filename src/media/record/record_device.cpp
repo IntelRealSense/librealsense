@@ -413,3 +413,7 @@ std::pair<uint32_t, rs2_extrinsics> record_device::get_extrinsics(const stream_i
     return m_device->get_extrinsics(stream);
 }
 
+bool record_device::is_valid() const
+{
+    return m_device->is_valid();
+}

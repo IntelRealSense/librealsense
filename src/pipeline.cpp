@@ -36,6 +36,24 @@ namespace librealsense
         {
             throw std::runtime_error(to_string() << "get_device() failed. device is not available before commiting all requests");
         }
+
+        // Check if the current device is still connected. if not, wait for it by its serial number.
+        // in case device is not found, return another device from the list.
+        // if the list is empty, throw an exception.
+        if (!_hub.is_connected(*_dev))
+        {
+            if (_device_serial.empty())
+                _dev = _hub.wait_for_device();
+            else
+                _dev = _hub.wait_for_device(5000, _device_serial);
+
+            _sensors.clear();
+            _queue->clear();
+            _queue->start();
+            if (_streaming)
+                start();
+        }
+
         return _dev;
     }
 
@@ -142,6 +160,7 @@ namespace librealsense
             throw std::runtime_error(to_string() << "enable() failed. pipeline already configured");
         }
 
+        _device_serial = device_serial;
         _dev = _hub.wait_for_device(5000, device_serial);
     }
 
@@ -251,7 +270,10 @@ namespace librealsense
     {
         try
         {
-            stop();
+            // TODO: W/O to prevent dead-lock when pipeline waits for device at open(...) function
+            //       and at the same time pipeline object is getting destroyed and trying to stop streaming
+            if (_streaming)
+                stop();
         }
         catch (...) {}
     }
