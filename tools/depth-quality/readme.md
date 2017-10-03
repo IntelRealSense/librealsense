@@ -33,13 +33,13 @@ You should be able to easily get and interpret several of the depth quality metr
 _Dist<sub>i</sub>_ - Distance from pixel coordinates to the Plane Fit (mm)  
 ![](./res/avg.gif)  
 ![](./res/std.gif)
-### RMS Metric
+### Subpixel RMS Metric
 _Z<sub>i</sub>_ - Depth value of i-th pixel in the ROI (mm)  
 _ZP<sub>i</sub>_ - Depth value of the i-th pixel projected onto the plane fit (mm)  
 _BL_ - Stereoscopic Baseline (mm)  
-_FL_ -Focal Length as a multiple of pixel width (pixels)
-_D<sub>i</sub>_ - Disparity value of i-th pixel in the ROI (pixel)
- _DP<sub>i</sub>_ - Disparity value of i-th  plane-projected pixel (pixel)
+_FL_ -Focal Length as a multiple of pixel width (pixels)  
+_D<sub>i</sub>_ - Disparity value of i-th pixel in the ROI (pixel)  
+ _DP<sub>i</sub>_ - Disparity value of i-th plane-projected pixel (pixel)
 
 ![](./res/Di.gif)  ![](./res/DPi.gif)  
 ![](./res/rms.gif)
