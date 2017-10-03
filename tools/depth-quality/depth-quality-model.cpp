@@ -37,7 +37,7 @@ namespace rs2
             }
 
             // Toggle advanced mode
-            auto dev = _pipe.get_device();
+            auto dev = _pipe.get_active_profile().get_device();
             if (dev.is<rs400::advanced_mode>())
             {
                 auto advanced_mode = dev.as<rs400::advanced_mode>();
@@ -501,7 +501,7 @@ namespace rs2
                 << "\nFirmware Ver:," << _device_model->dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
                 << "\n\nStreaming profile:\nStream,Format,Resolution,FPS\n";
 
-            for (auto& stream : _pipe.get_active_streams())
+            for (auto& stream : _pipe.get_active_profile().get_streams())
             {
                 auto vs = stream.as<video_stream_profile>();
                 ss << vs.stream_name() << ","

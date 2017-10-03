@@ -150,7 +150,7 @@ namespace librealsense
     {
     public:
         readonly_device_info(std::shared_ptr<device_interface> dev) : device_info(dev->get_context()), _dev(dev) {}
-        std::shared_ptr<device_interface> create(std::shared_ptr<context> /*backend*/) const override
+        std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx, bool register_device_notifications) const override
         {
             return _dev;
         }
