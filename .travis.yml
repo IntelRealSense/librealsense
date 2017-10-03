@@ -1,33 +1,46 @@
 os:
   - linux
+  - osx
 
 language: cpp
 
 sudo: required
 dist: xenial
+osx_image: xcode7
 
 before_install:
   # Install nodejs via nvm
-  - wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
-  - source ~/.bashrc
-  - nvm install 6 && nvm use 6
-  - npm install -g node-gyp
-
-  # Remove duplicated python 2.x, only leave python2.7; Otherwise node-gyp will complain and stop
-  - for i in `pyenv versions|sed 's/ //g'|grep "^2"`; do if [ $i = "2.7" ]; then continue; else pyenv uninstall -f $i; fi; done
-
-  # Run linter
-  - git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-  - export OLDPATH=$PATH && export PATH=$PATH:$(pwd)/depot_tools;
-  - cd wrappers/nodejs/tools && npm install && cd ..
-  - node ./tools/linter.js
-  - export PATH=$OLDPATH && unset OLDPATH && cd ../../
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash;
+      source ~/.bashrc;
+      nvm install 6 && nvm use 6;
+      npm install -g node-gyp;
+    fi
+    # Remove duplicated python 2.x, only leave python2.7; Otherwise node-gyp will complain and stop
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      for i in `pyenv versions|sed 's/ //g'|grep "^2"`; do if [ $i = "2.7" ]; then continue; else pyenv uninstall -f $i; fi; done;
+    fi
+    # Run linter
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git;
+      export OLDPATH=$PATH && export PATH=$PATH:$(pwd)/depot_tools;
+      cd wrappers/nodejs/tools && npm install && cd ..;
+      node ./tools/linter.js;
+      export PATH=$OLDPATH && unset OLDPATH && cd ../../;
+    fi
 
   # Get logical CPU number
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       export CPU_NUM=`grep -c ^processor /proc/cpuinfo`;
     elif [ "$TRAVIS_OS_NAME" == "osx" ]; then
       export CPU_NUM=`sysctl -n hw.logicalcpu_max`;
+    fi
+    
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      brew uninstall xctool;
+      brew install xctool --HEAD;
+      brew install homebrew/versions/glfw3;
+      brew install libusb;
     fi
 
   # Install linux required packages
@@ -44,24 +57,30 @@ before_install:
 
 install:
   # Install nodejs via nvm
-  - wget https://github.com/glfw/glfw/releases/download/3.1.1/glfw-3.1.1.zip
-  - unzip glfw-3.1.1.zip && cd glfw-3.1.1
-  - cmake -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON
-  - make -j $CPU_NUM
-  - sudo make install && cd ..
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      wget https://github.com/glfw/glfw/releases/download/3.1.1/glfw-3.1.1.zip;
+      unzip glfw-3.1.1.zip && cd glfw-3.1.1;
+      cmake -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON;
+      make -j $CPU_NUM;
+      sudo make install && cd ..;
+    fi
 
 script:
   # Exit immediately if a command exits with a non-zero status
-  - set -e
-  # Use python3 for python wrapper
-  - pyenv local `pyenv versions|sed 's/ //g'|grep "^3"|tail -1`
-  # Build librealsens
-  - mkdir build && cd build
-  - cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_PYTHON_BINDINGS:BOOL=true -DBUILD_NODEJS_BINDINGS:BOOL=true
-  - make -j $CPU_NUM
-  - sudo "PATH=$PATH" make install
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      set -e;
+      pyenv local `pyenv versions|sed 's/ //g'|grep "^3"|tail -1`;
+      mkdir build && cd build;
+      cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_PYTHON_BINDINGS:BOOL=true -DBUILD_NODEJS_BINDINGS:BOOL=true;
+      make -j $CPU_NUM;
+      sudo "PATH=$PATH" make install;
 
-  # Run test
-  - export LRS_LOG_LEVEL="DEBUG"
-  - wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc4
-  - ./unit-tests/live-test from awgc4 -d yes
+      export LRS_LOG_LEVEL="DEBUG";
+      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc4;
+      ./unit-tests/live-test from awgc4 -d yes;
+    fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      mkdir build && cd build;
+      cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false;
+      make -j $CPU_NUM;
+    fi
