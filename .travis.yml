@@ -52,24 +52,24 @@ before_install:
 install:
   # Install nodejs via nvm
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      wget https://github.com/glfw/glfw/releases/download/3.1.1/glfw-3.1.1.zip
-      unzip glfw-3.1.1.zip && cd glfw-3.1.1
-      cmake -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON
-      make -j $CPU_NUM
-      sudo make install && cd ..
+      wget https://github.com/glfw/glfw/releases/download/3.1.1/glfw-3.1.1.zip;
+      unzip glfw-3.1.1.zip && cd glfw-3.1.1;
+      cmake -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON;
+      make -j $CPU_NUM;
+      sudo make install && cd ..;
     fi
 
 script:
   # Exit immediately if a command exits with a non-zero status
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      set -e
-      pyenv local `pyenv versions|sed 's/ //g'|grep "^3"|tail -1`
-      mkdir build && cd build
-      cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_PYTHON_BINDINGS:BOOL=true -DBUILD_NODEJS_BINDINGS:BOOL=true
-      make -j $CPU_NUM
-      sudo "PATH=$PATH" make install
+      set -e;
+      pyenv local `pyenv versions|sed 's/ //g'|grep "^3"|tail -1`;
+      mkdir build && cd build;
+      cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_PYTHON_BINDINGS:BOOL=true -DBUILD_NODEJS_BINDINGS:BOOL=true;
+      make -j $CPU_NUM;
+      sudo "PATH=$PATH" make install;
 
-      export LRS_LOG_LEVEL="DEBUG"
-      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc4
-      ./unit-tests/live-test from awgc4 -d yes
+      export LRS_LOG_LEVEL="DEBUG";
+      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc4;
+      ./unit-tests/live-test from awgc4 -d yes;
     fi
