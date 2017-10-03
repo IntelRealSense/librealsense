@@ -124,8 +124,15 @@ namespace librealsense
         if (sensor)
         {
 
-            auto dev = sensor->get_device().shared_from_this().get();
-
+            const device_interface* dev = nullptr;
+            try
+            {
+                dev = sensor->get_device().shared_from_this().get();
+            }
+            catch (const std::bad_weak_ptr& e)
+            {
+                LOG_WARNING("Device destroyed");
+            }
             if (dev)
             {
                 dev_exist = true;
