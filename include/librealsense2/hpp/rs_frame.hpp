@@ -55,7 +55,6 @@ namespace rs2
         }
         
         bool is_default() const { return _default; }
-        std::size_t size() const { return _size; }
         
         operator bool() const { return _profile != nullptr; }
         
@@ -83,9 +82,6 @@ namespace rs2
             
             _default = !!(rs2_is_stream_profile_default(_profile, &e));
             error::handle(e);
-            
-            _size = rs2_get_stream_profile_size(_profile, &e);
-            error::handle(e);
         }
         
         const rs2_stream_profile* _profile;
@@ -98,7 +94,6 @@ namespace rs2
         rs2_stream _type = RS2_STREAM_ANY;
         
         bool _default = false;
-        size_t _size = 0;
     };
     
     class video_stream_profile : public stream_profile
@@ -560,56 +555,7 @@ namespace rs2
     private:
         size_t _size;
     };
-
-    class frame_source
-    {
-    public:
-
-        frame allocate_video_frame(const stream_profile& profile,
-                                   const frame& original,
-                                   int new_bpp = 0,
-                                   int new_width = 0,
-                                   int new_height = 0,
-                                   int new_stride = 0,
-                                   rs2_extension frame_type = RS2_EXTENSION_VIDEO_FRAME) const
-        {
-            rs2_error* e = nullptr;
-            auto result = rs2_allocate_synthetic_video_frame(_source, profile.get(),
-                original.get(), new_bpp, new_width, new_height, new_stride, frame_type, &e);
-            error::handle(e);
-            return result;
-        }
-
-        frame allocate_composite_frame(std::vector<frame> frames) const
-        {
-            rs2_error* e = nullptr;
-
-            std::vector<rs2_frame*> refs(frames.size(), nullptr);
-            for (size_t i = 0; i < frames.size(); i++)
-                std::swap(refs[i], frames[i].frame_ref);
-
-            auto result = rs2_allocate_composite_frame(_source, refs.data(), (int)refs.size(), &e);
-            error::handle(e);
-            return result;
-        }
-
-        void frame_ready(frame result) const
-        {
-            rs2_error* e = nullptr;
-            rs2_synthetic_frame_ready(_source, result.get(), &e);
-            error::handle(e);
-            result.frame_ref = nullptr;
-        }
-
-        rs2_source* _source;
-    private:
-        template<class T>
-        friend class frame_processor_callback;
-
-        frame_source(rs2_source* source) : _source(source) {}
-        frame_source(const frame_source&) = delete;
-
-    };
+   
 
 }
 #endif // LIBREALSENSE_RS2_FRAME_HPP

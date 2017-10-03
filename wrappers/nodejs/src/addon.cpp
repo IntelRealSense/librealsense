@@ -248,7 +248,6 @@ class RSStreamProfile : public Nan::ObjectWrap {
     Nan::SetPrototypeMethod(tpl, "index", Index);
     Nan::SetPrototypeMethod(tpl, "uniqueID", UniqueID);
     Nan::SetPrototypeMethod(tpl, "isDefault", IsDefault);
-    Nan::SetPrototypeMethod(tpl, "size", Size);
     Nan::SetPrototypeMethod(tpl, "isVideoProfile", IsVideoProfile);
     Nan::SetPrototypeMethod(tpl, "width", Width);
     Nan::SetPrototypeMethod(tpl, "height", Height);
@@ -273,7 +272,6 @@ class RSStreamProfile : public Nan::ObjectWrap {
     me->own_profile = own;
     rs2_get_stream_profile_data(p, &me->stream, &me->format, &me->index,
                                 &me->unique_id, &me->fps, &me->error);
-    me->size = rs2_get_stream_profile_size(p, &me->error);
     me->is_default = rs2_is_stream_profile_default(p, &me->error);
     if (rs2_stream_profile_is(p, RS2_EXTENSION_VIDEO_PROFILE, &me->error)) {
       me->is_video = true;
@@ -295,7 +293,6 @@ class RSStreamProfile : public Nan::ObjectWrap {
     is_video = false;
     width = 0;
     height = 0;
-    size = 0;
     is_default = false;
     own_profile = false;
   }
@@ -375,15 +372,6 @@ class RSStreamProfile : public Nan::ObjectWrap {
     }
     info.GetReturnValue().Set(Nan::Undefined());
   }
-  static NAN_METHOD(Size) {
-    auto me = Nan::ObjectWrap::Unwrap<RSStreamProfile>(info.Holder());
-    if (me) {
-      info.GetReturnValue().Set(Nan::New(me->size));
-      return;
-    }
-    info.GetReturnValue().Set(Nan::Undefined());
-  }
-
   static NAN_METHOD(IsVideoProfile) {
     auto me = Nan::ObjectWrap::Unwrap<RSStreamProfile>(info.Holder());
     if (me) {
@@ -424,7 +412,6 @@ class RSStreamProfile : public Nan::ObjectWrap {
   bool is_video;
   int32_t width;
   int32_t height;
-  int32_t size;
   bool is_default;
   bool own_profile;
 

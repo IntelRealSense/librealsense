@@ -10,6 +10,56 @@
 
 namespace rs2
 {
+    class frame_source
+    {
+    public:
+
+        frame allocate_video_frame(const stream_profile& profile,
+            const frame& original,
+            int new_bpp = 0,
+            int new_width = 0,
+            int new_height = 0,
+            int new_stride = 0,
+            rs2_extension frame_type = RS2_EXTENSION_VIDEO_FRAME) const
+        {
+            rs2_error* e = nullptr;
+            auto result = rs2_allocate_synthetic_video_frame(_source, profile.get(),
+                original.get(), new_bpp, new_width, new_height, new_stride, frame_type, &e);
+            error::handle(e);
+            return result;
+        }
+
+        frame allocate_composite_frame(std::vector<frame> frames) const
+        {
+            rs2_error* e = nullptr;
+
+            std::vector<rs2_frame*> refs(frames.size(), nullptr);
+            for (size_t i = 0; i < frames.size(); i++)
+                std::swap(refs[i], frames[i].frame_ref);
+
+            auto result = rs2_allocate_composite_frame(_source, refs.data(), (int)refs.size(), &e);
+            error::handle(e);
+            return result;
+        }
+
+        void frame_ready(frame result) const
+        {
+            rs2_error* e = nullptr;
+            rs2_synthetic_frame_ready(_source, result.get(), &e);
+            error::handle(e);
+            result.frame_ref = nullptr;
+        }
+
+        rs2_source* _source;
+    private:
+        template<class T>
+        friend class frame_processor_callback;
+
+        frame_source(rs2_source* source) : _source(source) {}
+        frame_source(const frame_source&) = delete;
+
+    };
+    
     template<class T>
     class frame_processor_callback : public rs2_frame_processor_callback
     {
@@ -74,32 +124,6 @@ namespace rs2
         std::shared_ptr<rs2_processing_block> _block;
     };
 
-    class syncer_processing_block
-    {
-    public:
-        syncer_processing_block()
-        {
-            rs2_error* e = nullptr;
-            _processing_block = std::make_shared<processing_block>(
-                    std::shared_ptr<rs2_processing_block>(
-                                        rs2_create_sync_processing_block(&e),
-                                        rs2_delete_processing_block));
-            error::handle(e);
-
-        }
-        template<class S>
-        void start(S on_frame)
-        {
-            _processing_block->start(on_frame);
-        }
-
-        void operator()(frame f) const
-        {
-            _processing_block->operator()(std::move(f));
-        }
-    private:
-        std::shared_ptr<processing_block> _processing_block;
-    };
 
     class frame_queue
     {
@@ -205,7 +229,14 @@ namespace rs2
     public:
         syncer()
         {
-            _sync.start(_results);
+            rs2_error* e = nullptr;
+            _processing_block = std::make_shared<processing_block>(
+                std::shared_ptr<rs2_processing_block>(
+                    rs2_create_sync_processing_block(&e),
+                    rs2_delete_processing_block));
+            error::handle(e);
+
+            _processing_block->start(_results);
         }
 
         /**
@@ -236,10 +267,10 @@ namespace rs2
 
         void operator()(frame f) const
         {
-            _sync(std::move(f));
+            _processing_block->operator()(std::move(f));
         }
     private:
-        syncer_processing_block _sync;
+        std::shared_ptr<processing_block> _processing_block;
         frame_queue _results;
     };
 

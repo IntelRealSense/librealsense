@@ -344,7 +344,6 @@ describe('Sensor tests', function() {
       assert.equal(p.fps>0, true);
       assert.equal(typeof p.uniqueID, 'number');
       assert.equal(typeof p.isDefault, 'boolean');
-      assert.equal(typeof p.size, 'number');
     });
     profiles1.forEach((p) => {
       assert.equal(p instanceof rs2.StreamProfile, true);
