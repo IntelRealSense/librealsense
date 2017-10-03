@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#ifdef RS2_USE_V4L2_BACKEND1
+#ifdef RS2_USE_V4L2_BACKEND
 
 #include "backend-v4l2.h"
 #include "backend-hid.h"

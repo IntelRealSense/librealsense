@@ -11,7 +11,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <signal.h>
-#include <libusb-1.0/libusb.h>
+#include <libusb.h>
 #include "utlist.h"
 
 /** Converts an unaligned four-byte little-endian integer into an int32 */

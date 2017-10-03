@@ -140,6 +140,8 @@ namespace librealsense
                 {
                     return dev.get_xu_range(_xu, _id, sizeof(T));
                 });
+            
+            if (uvc_range.min.size() < sizeof(int32_t)) return option_range{0,0,1,0};
 
             auto min = *(reinterpret_cast<int32_t*>(uvc_range.min.data()));
             auto max = *(reinterpret_cast<int32_t*>(uvc_range.max.data()));

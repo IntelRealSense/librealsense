@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#ifdef RS2_USE_V4L2_BACKEND
+#ifdef RS2_USE_LIBUVC_BACKEND
 
 #include "backend.h"
 #include "types.h"
@@ -36,7 +36,6 @@
 #include <regex>
 #include <list>
 
-#include <sys/signalfd.h>
 #include <signal.h>
 
 #include "libuvc.h"
@@ -127,7 +126,7 @@ namespace librealsense
                     if(status == 0)
                     {
                         auto parent_device = libusb_get_parent(usb_device);
-                        if (parent_device)
+                        //if (parent_device)
                         {
                             usb_device_info info{};
                             std::stringstream ss;
@@ -135,8 +134,9 @@ namespace librealsense
                             info.mi = config->bNumInterfaces - 1; // The hardware monitor USB interface is expected to be the last one
                             action(info, usb_device);
                         }
+                        
+                        libusb_free_config_descriptor(config);
                     }
-                    libusb_free_config_descriptor(config);
                 }
                 libusb_free_device_list(list, 1);
             }

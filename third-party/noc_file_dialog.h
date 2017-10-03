@@ -186,6 +186,7 @@ const char *noc_file_dialog_open(int flags,
 
 #ifdef NOC_FILE_DIALOG_OSX
 
+#ifdef __OBJC__
 #include <AppKit/AppKit.h>
 
 const char *noc_file_dialog_open(int flags,
@@ -253,8 +254,22 @@ const char *noc_file_dialog_open(int flags,
 
     [pool release];
     return g_noc_file_dialog_ret;
+}	
+
+#else
+
+// Patch until proper solution is found
+
+const char *noc_file_dialog_open(int flags,
+                                 const char *filters,
+                                 const char *default_path,
+                                 const char *default_name)
+{
+    return nullptr;
 }
+
 #endif
 
+#endif
 
 #endif
