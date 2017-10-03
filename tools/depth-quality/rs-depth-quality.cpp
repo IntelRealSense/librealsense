@@ -12,7 +12,7 @@ int main(int argc, const char * argv[]) try
     using namespace rs2::depth_quality;
 
     // ===============================
-    //       Metrics Definitions      
+    //       Metrics Definitions
     // ===============================
 
     auto avg = model.make_metric(

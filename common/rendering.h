@@ -694,7 +694,7 @@ namespace rs2
 
     // Temporal event is a very simple time filter
     // that allows a concensus based on a set of measurements in time
-    // You set the window, and add measurements, and the class offers 
+    // You set the window, and add measurements, and the class offers
     // the most agreed upon opinion within the set time window
     // It is useful to remove noise from UX elements
     class temporal_event

@@ -500,7 +500,7 @@ namespace rs2
                 << "\nFirmware Ver:," << _device_model->dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
                 << "\n\nStreaming profile:\nStream,Format,Resolution,FPS\n";
 
-            for (auto& stream : _pipe.get_active_profile().get_streams())
+            for (auto& stream : _pipe.get_active_streams())
             {
                 auto vs = stream.as<video_stream_profile>();
                 ss << vs.stream_name() << ","

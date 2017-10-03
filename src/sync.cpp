@@ -390,7 +390,7 @@ namespace librealsense
             return{ a->get_frame_timestamp(), b->get_frame_timestamp() };
         else
         {
-            return{ a->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL), 
+            return{ a->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL),
                     b->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL) };
         }
     }
