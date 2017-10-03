@@ -122,7 +122,7 @@ set(REALSENSE_CPP
     src/media/record/record_sensor.cpp
     src/media/playback/playback_device.cpp
     src/media/playback/playback_sensor.cpp
-)
+    )
 
 set(REALSENSE_HPP
     include/librealsense2/rs.hpp
@@ -416,6 +416,8 @@ else()
 
 endif()
 
+option(FORCE_LIBUVC "Explicitly turn-on libuvc backend" OFF)
+
 if(WIN32)
     set(BACKEND RS2_USE_WMF_BACKEND)
     set(REALSENSE_DEF CMake/realsense.def)
@@ -429,10 +431,36 @@ if(WIN32)
 
     set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 elseif(APPLE)
-    set(BACKEND RS2_USE_LIBUVC_BACKEND)
+    set(FORCE_LIBUVC ON)
 else()
     set(BACKEND RS2_USE_V4L2_BACKEND)
 endif()
+
+if(FORCE_LIBUVC)
+    set(BACKEND RS2_USE_LIBUVC_BACKEND)
+    
+    list(APPEND REALSENSE_CPP
+    src/libuvc/ctrl.c
+    src/libuvc/ctrl-gen.c
+    src/libuvc/device.c
+    src/libuvc/diag.c
+    src/libuvc/frame.c
+    src/libuvc/init.c
+    src/libuvc/misc.c
+    src/libuvc/stream.c
+	src/libuvc/libuvc.cpp
+	)
+	
+	list(APPEND REALSENSE_HPP
+    src/libuvc/libuvc.h
+    src/libuvc/libuvc_internal.h
+    src/libuvc/utlist.h
+    src/libuvc/libuvc_config.h
+	)
+	
+	message( WARNING "Using libuvc!" )
+endif()
+
 add_definitions(-D${BACKEND} -DUNICODE)
 
 if(ANDROID)
@@ -606,13 +634,13 @@ foreach(afile ${REALSENSE_HPP})
   list(REMOVE_ITEM AllSources ${afile})
 endforeach(afile)
 list(LENGTH AllSources ignore_count)
-if(${ignore_count} GREATER 0)
-  if(${ignore_count} GREATER 1)
-    message ( WARNING "${ignore_count} source files ignored: ${AllSources}" )
-  else(${ignore_count} GREATER 1)
-    message ( WARNING "Source file ignored: ${AllSources}" )
-  endif(${ignore_count} GREATER 1)
-endif(${ignore_count} GREATER 0)
+#if(${ignore_count} GREATER 0)
+#  if(${ignore_count} GREATER 1)
+#    message ( WARNING "${ignore_count} source files ignored: ${AllSources}" )
+#  else(${ignore_count} GREATER 1)
+#    message ( WARNING "Source file ignored: ${AllSources}" )
+#  endif(${ignore_count} GREATER 1)
+#endif(${ignore_count} GREATER 0)
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
 add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
