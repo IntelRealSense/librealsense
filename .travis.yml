@@ -18,7 +18,7 @@ before_install:
     fi
     # Remove duplicated python 2.x, only leave python2.7; Otherwise node-gyp will complain and stop
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      - for i in `pyenv versions|sed 's/ //g'|grep "^2"`; do if [ $i = "2.7" ]; then continue; else pyenv uninstall -f $i; fi; done;
+      for i in `pyenv versions|sed 's/ //g'|grep "^2"`; do if [ $i = "2.7" ]; then continue; else pyenv uninstall -f $i; fi; done;
     fi
     # Run linter
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
