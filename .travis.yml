@@ -9,17 +9,19 @@ dist: xenial
 osx_image: xcode7
 
 before_install:
+  # Install nodejs via nvm
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      # Install nodejs via nvm
       wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash;
       source ~/.bashrc;
       nvm install 6 && nvm use 6;
       npm install -g node-gyp;
-
-      # Remove duplicated python 2.x, only leave python2.7; Otherwise node-gyp will complain and stop
-      for i in `pyenv versions|sed 's/ //g'|grep "^2"`; do if [ $i = "2.7" ]; then continue; else pyenv uninstall -f $i; fi; done;
-
-      # Run linter
+    fi
+    # Remove duplicated python 2.x, only leave python2.7; Otherwise node-gyp will complain and stop
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      - for i in `pyenv versions|sed 's/ //g'|grep "^2"`; do if [ $i = "2.7" ]; then continue; else pyenv uninstall -f $i; fi; done;
+    fi
+    # Run linter
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git;
       export OLDPATH=$PATH && export PATH=$PATH:$(pwd)/depot_tools;
       cd wrappers/nodejs/tools && npm install && cd ..;
@@ -48,29 +50,26 @@ before_install:
     fi
 
 install:
+  # Install nodejs via nvm
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-    # Install nodejs via nvm
-    wget https://github.com/glfw/glfw/releases/download/3.1.1/glfw-3.1.1.zip
-    unzip glfw-3.1.1.zip && cd glfw-3.1.1
-    cmake -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON
-    make -j $CPU_NUM
-    sudo make install && cd ..
-  fi
+      wget https://github.com/glfw/glfw/releases/download/3.1.1/glfw-3.1.1.zip
+      unzip glfw-3.1.1.zip && cd glfw-3.1.1
+      cmake -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON
+      make -j $CPU_NUM
+      sudo make install && cd ..
+    fi
 
 script:
+  # Exit immediately if a command exits with a non-zero status
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-    # Exit immediately if a command exits with a non-zero status
-    set -e
-    # Use python3 for python wrapper
-    pyenv local `pyenv versions|sed 's/ //g'|grep "^3"|tail -1`
-    # Build librealsens
-    mkdir build && cd build
-    cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_PYTHON_BINDINGS:BOOL=true -DBUILD_NODEJS_BINDINGS:BOOL=true
-    make -j $CPU_NUM
-    sudo "PATH=$PATH" make install
+      set -e
+      pyenv local `pyenv versions|sed 's/ //g'|grep "^3"|tail -1`
+      mkdir build && cd build
+      cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_PYTHON_BINDINGS:BOOL=true -DBUILD_NODEJS_BINDINGS:BOOL=true
+      make -j $CPU_NUM
+      sudo "PATH=$PATH" make install
 
-    # Run test
-    export LRS_LOG_LEVEL="DEBUG"
-    wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc4
-    ./unit-tests/live-test from awgc4 -d yes
-  fi
+      export LRS_LOG_LEVEL="DEBUG"
+      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc4
+      ./unit-tests/live-test from awgc4 -d yes
+    fi
