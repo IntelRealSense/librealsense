@@ -343,13 +343,29 @@ namespace librealsense
 
             for (auto& kvp : devices_changed_callbacks)
             {
-                kvp.second->on_devices_changed(new rs2_device_list({ shared_from_this(), rs2_devices_info_removed }),
-                                               new rs2_device_list({ shared_from_this(), rs2_devices_info_added }));
+                try
+                {
+                    kvp.second->on_devices_changed(new rs2_device_list({ shared_from_this(), rs2_devices_info_removed }),
+                                                   new rs2_device_list({ shared_from_this(), rs2_devices_info_added }));
+                }
+                catch (...)
+                {
+                    LOG_ERROR("Exception thrown from user callback handler");
+                }
             }
 
             if (_devices_changed_callback)
-                _devices_changed_callback->on_devices_changed(new rs2_device_list({ shared_from_this(), rs2_devices_info_removed }),
-                                                              new rs2_device_list({ shared_from_this(), rs2_devices_info_added }));
+            {
+                try
+                {
+                    _devices_changed_callback->on_devices_changed(new rs2_device_list({ shared_from_this(), rs2_devices_info_removed }),
+                        new rs2_device_list({ shared_from_this(), rs2_devices_info_added }));
+                }
+                catch (...)
+                {
+                    LOG_ERROR("Exception thrown from user callback handler");
+                }    
+            }
         }
     }
 

@@ -175,7 +175,7 @@ std::pair<std::vector<sensor>, std::vector<profile>> configure_all_supported_str
 
 TEST_CASE("Sync sanity", "[live]") {
 
-    const double DELTA = 20;
+    const double DELTA = 1000 / 30; //MS between frames
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -195,16 +195,24 @@ TEST_CASE("Sync sanity", "[live]") {
         }
 
         std::vector<std::vector<double>> all_timestamps;
-
+        bool hw_timestamp_domain = false;
+        bool system_timestamp_domain = false;
         for (auto i = 0; i < 200; i++)
         {
             auto frames = sync.wait_for_frames(5000);
             REQUIRE(frames.size() > 0);
 
-
             std::vector<double> timestamps;
             for (auto&& f : frames)
             {
+                if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
+                {
+                    hw_timestamp_domain = true;
+                }
+                if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+                {
+                    system_timestamp_domain = true;
+                }
                 timestamps.push_back(f.get_timestamp());
             }
             all_timestamps.push_back(timestamps);
@@ -214,6 +222,14 @@ TEST_CASE("Sync sanity", "[live]") {
         {
             auto frames = sync.wait_for_frames(500);
         }
+
+        if (hw_timestamp_domain == system_timestamp_domain)
+        {
+            CAPTURE(hw_timestamp_domain);
+            CAPTURE(system_timestamp_domain);
+        }
+        REQUIRE(hw_timestamp_domain != system_timestamp_domain);
+
         auto num_of_partial_sync_sets = 0;
         for (auto set_timestamps : all_timestamps)
         {
@@ -228,7 +244,13 @@ TEST_CASE("Sync sanity", "[live]") {
         }
 
         REQUIRE((float)num_of_partial_sync_sets / (float)all_timestamps.size() < 0.90);
+
+        for (auto s : dev.query_sensors())
+        {
+            s.stop();
+        }
     }
+    
 }
 
 TEST_CASE("Sync different fps", "[live][!mayfail]") {
@@ -2386,13 +2408,13 @@ TEST_CASE("Basic device_hub flow", "[live][!mayfail]") {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             --i;
         }
-        if (i == 0)
+        /*if (i == 0)
         {
             WARN("Reset workaround");
             dev->hardware_reset();
             while (hub.is_connected(*dev))
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
+        }*/
 
         // Don't exit the test in unknown state
         REQUIRE_NOTHROW(hub.wait_for_device());
