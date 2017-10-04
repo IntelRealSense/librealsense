@@ -109,9 +109,9 @@ namespace rs2
             glfwPollEvents();
 
             begin_frame();
-
+            
             glPushMatrix();
-            glViewport(0.f, 0.f, _width, _height);
+            glViewport(0.f, 0.f, _fb_width, _fb_height);
             glClearColor(0.036f, 0.044f, 0.051f, 1.f);
             glClear(GL_COLOR_BUFFER_BIT);
 
@@ -213,8 +213,9 @@ namespace rs2
     void ux_window::begin_frame()
     {
         glfwPollEvents();
-        glfwGetFramebufferSize(_win, &_width, &_height);
-
+        glfwGetWindowSize(_win, &_width, &_height);
+        glfwGetFramebufferSize(_win, &_fb_width, &_fb_height);
+        
         // Update the scale factor each frame
         // based on resolution and physical display size
         _scale_factor = pick_scale_factor(_win);

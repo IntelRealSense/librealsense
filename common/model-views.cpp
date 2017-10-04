@@ -2815,7 +2815,7 @@ namespace rs2
     }
 
     void viewer_model::render_2d_view(const rect& view_rect,
-        double width, double heigth, int output_height,
+        ux_window& win, int output_height,
         ImFont *font1, ImFont *font2, size_t dev_model_num,
         const mouse_info &mouse, std::string& error_message)
     {
@@ -2823,15 +2823,17 @@ namespace rs2
         static bool icon_visible = false;
         if (every_sec) icon_visible = !icon_visible;
         float alpha = icon_visible ? 1.f : 0.2f;
-
+        
+        glViewport(0, 0,
+                   win.framebuf_width(), win.framebuf_height());
         glLoadIdentity();
-        glOrtho(0, width, heigth, 0, -1, +1);
+        glOrtho(0, win.width(), win.height(), 0, -1, +1);
 
         auto layout = calc_layout(view_rect);
 
         if ((layout.size() == 0) && (dev_model_num > 0))
         {
-            show_no_stream_overlay(font2, view_rect.x, view_rect.y, width, heigth - output_height);
+            show_no_stream_overlay(font2, view_rect.x, view_rect.y, win.width(), win.height() - output_height);
         }
 
         for (auto &&kvp : layout)
@@ -4004,7 +4006,7 @@ namespace rs2
     {
         if (!is_3d_view)
         {
-            render_2d_view(viewer_rect, window.width(), window.height(),
+            render_2d_view(viewer_rect, window,
                 get_output_height(), window.get_font(), window.get_large_font(),
                 devices, window.get_mouse(), error_message);
         }
@@ -4017,7 +4019,8 @@ namespace rs2
 
             update_3d_camera(viewer_rect, window.get_mouse());
 
-            render_3d_view(viewer_rect, window.get_scale_factor());
+            auto ratio = (float)window.width() / window.framebuf_width();
+            render_3d_view(viewer_rect, window.get_scale_factor() / ratio);
         }
 
         if (ImGui::IsKeyPressed(' '))

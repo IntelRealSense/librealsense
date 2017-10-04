@@ -33,6 +33,9 @@ namespace rs2
 
         float width() const { return float(_width); }
         float height() const { return float(_height); }
+        
+        float framebuf_width() const { return float(_fb_width); }
+        float framebuf_height() const { return float(_fb_height); }
 
         // Check that the graphic subsystem is valid and start a new frame
         operator bool();
@@ -58,6 +61,7 @@ namespace rs2
     private:
         GLFWwindow               *_win;
         int                      _width, _height, _output_height;
+        int                     _fb_width, _fb_height;
         rs2::rect                _viewer_rect;
 
         ImFont                   *_font_14, *_font_18;

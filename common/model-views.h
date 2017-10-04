@@ -536,7 +536,7 @@ namespace rs2
 
         void render_3d_view(const rect& view_rect, float scale_factor);
 
-        void render_2d_view(const rect& view_rect, double width, double heigth, int output_height,
+        void render_2d_view(const rect& view_rect, ux_window& win, int output_height,
             ImFont *font1, ImFont *font2, size_t dev_model_num, const mouse_info &mouse, std::string& error_message);
 
         void gc_streams();
