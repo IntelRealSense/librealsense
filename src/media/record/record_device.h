@@ -40,6 +40,7 @@ namespace librealsense
         void resume_recording();
         platform::backend_device_group get_device_data() const override {return {}; } //ZIV: what to do?
         std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
+        bool is_valid() const override;
 
     private:
         template <typename T> void write_device_extension_changes(const T& ext);

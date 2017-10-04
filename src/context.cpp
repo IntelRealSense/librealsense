@@ -76,7 +76,7 @@ namespace librealsense
                      const char* filename,
                      const char* section,
                      rs2_recording_mode mode)
-        : _devices_changed_callback(nullptr , [](rs2_devices_changed_callback*){})
+        : _devices_changed_callback(nullptr, [](rs2_devices_changed_callback*){})
     {
         LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
 
@@ -104,7 +104,7 @@ namespace librealsense
     class recovery_info : public device_info
     {
     public:
-        std::shared_ptr<device_interface> create(std::shared_ptr<context> /*backend*/) const override
+        std::shared_ptr<device_interface> create(std::shared_ptr<context>, bool) const override
         {
             throw unrecoverable_exception(RECOVERY_MESSAGE,
                 RS2_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE);
@@ -146,7 +146,7 @@ namespace librealsense
     class platform_camera_info : public device_info
     {
     public:
-        std::shared_ptr<device_interface> create(std::shared_ptr<context> /*backend*/) const override;
+        std::shared_ptr<device_interface> create(std::shared_ptr<context>, bool) const override;
 
         static std::vector<std::shared_ptr<device_info>> pick_uvc_devices(
             const std::shared_ptr<context>& ctx,
@@ -214,10 +214,9 @@ namespace librealsense
     public:
         platform_camera(const std::shared_ptr<context>& ctx,
                         const std::vector<platform::uvc_device_info>& uvc_infos,
-                        const platform::backend_device_group& group
-
-                        )
-            : device(ctx, group)
+                        const platform::backend_device_group& group,
+                        bool register_device_notifications)
+            : device(ctx, group, register_device_notifications)
         {
             std::vector<std::shared_ptr<platform::uvc_device>> devs;
             for (auto&& info : uvc_infos)
@@ -257,10 +256,11 @@ namespace librealsense
         }
     };
 
-    std::shared_ptr<device_interface> platform_camera_info::create(std::shared_ptr<context> ctx) const
+    std::shared_ptr<device_interface> platform_camera_info::create(std::shared_ptr<context> ctx,
+                                                                   bool register_device_notifications) const
     {
         auto&& backend = ctx->get_backend();
-        return std::make_shared<platform_camera>(ctx, _uvcs, this->get_device_data());
+        return std::make_shared<platform_camera>(ctx, _uvcs, this->get_device_data(), register_device_notifications);
     }
 
     context::~context()
@@ -334,14 +334,33 @@ namespace librealsense
                 rs2_devices_info_added.push_back({ shared_from_this(), devices_info_added[i] });
                 LOG_DEBUG("\nDevice connected:\n\n" << std::string(devices_info_added[i]->get_device_data()));
             }
-            if (_devices_changed_callback)
+
+            std::map<uint64_t, devices_changed_callback_ptr> devices_changed_callbacks;
             {
+                std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
+                devices_changed_callbacks = _devices_changed_callbacks;
+            }
+
+            for (auto& kvp : devices_changed_callbacks)
+            {
+                kvp.second->on_devices_changed(new rs2_device_list({ shared_from_this(), rs2_devices_info_removed }),
+                                               new rs2_device_list({ shared_from_this(), rs2_devices_info_added }));
+            }
+
+            if (_devices_changed_callback)
                 _devices_changed_callback->on_devices_changed(new rs2_device_list({ shared_from_this(), rs2_devices_info_removed }),
                                                               new rs2_device_list({ shared_from_this(), rs2_devices_info_added }));
-            }
         }
     }
 
+    uint64_t context::register_internal_device_callback(devices_changed_callback_ptr callback)
+    {
+        std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
+        auto callback_id = unique_id::generate_id();
+        _devices_changed_callbacks.insert(std::make_pair(callback_id, std::move(callback)));
+
+        return callback_id;
+    }
 
     void context::set_devices_changed_callback(devices_changed_callback_ptr callback)
     {
@@ -352,6 +371,12 @@ namespace librealsense
         {
             on_device_changed(old, curr, _playback_devices, _playback_devices);
         });
+    }
+
+    void context::unregister_internal_device_callback(uint64_t cb_id)
+    {
+        std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
+        _devices_changed_callbacks.erase(cb_id);
     }
 
     std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list)

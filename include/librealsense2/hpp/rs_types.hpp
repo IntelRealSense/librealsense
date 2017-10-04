@@ -152,8 +152,6 @@ namespace rs2
     class roi_sensor;
     class frame;
 
-    class event_information;
-
     struct option_range
     {
         float min;

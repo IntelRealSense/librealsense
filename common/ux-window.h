@@ -56,23 +56,25 @@ namespace rs2
         rs2::mouse_info& get_mouse() { return _mouse; }
         float get_scale_factor() const { return _scale_factor; }
 
+        void add_on_load_message(const std::string& msg);
+
     private:
-        ux_window(const ux_window&);
-
-        GLFWwindow              *_win;
-        int                     _width, _height, _output_height;
+        GLFWwindow               *_win;
+        int                      _width, _height, _output_height;
         int                     _fb_width, _fb_height;
-        rs2::rect               _viewer_rect;
+        rs2::rect                _viewer_rect;
 
-        ImFont                  *_font_14, *_font_18;
-        rs2::mouse_info         _mouse;
-        std::string             _error_message;
-        float                   _scale_factor;
+        ImFont                   *_font_14, *_font_18;
+        rs2::mouse_info          _mouse;
+        std::string              _error_message;
+        float                    _scale_factor;
 
-        bool                    _first_frame = true;
-        std::atomic<bool>       _app_ready;
-        texture_buffer          _splash_tex;
-        timer                   _splash_timer;
-        std::string             _title_str;
+        bool                     _first_frame;
+        std::atomic<bool>        _app_ready;
+        texture_buffer           _splash_tex;
+        timer                    _splash_timer;
+        std::string              _title_str;
+        std::vector<std::string> _on_load_message;
+        std::mutex               _on_load_message_mtx;
     };
 }

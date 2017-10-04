@@ -25,7 +25,7 @@ namespace rs2
         using callback_type = std::function<void(
             const std::vector<rs2::float3>& points,
             plane p, rs2::region_of_interest roi,
-            float baseline_mm, float focal_length_mm)>;
+            float baseline_mm, float focal_length_pixels, double timestamp)>;
 
         inline plane plane_from_point_and_normal(const rs2::float3& point, const rs2::float3& normal)
         {
@@ -156,7 +156,7 @@ namespace rs2
                 return result;
             }
 
-            callback(roi_pixels, p, roi, baseline_mm, intrin->fx);
+            callback(roi_pixels, p, roi, baseline_mm, intrin->fx, frame.get_timestamp());
             result.p = p;
             result.plane_corners[0] = approximate_intersection(p, intrin, roi.min_x, roi.min_y);
             result.plane_corners[1] = approximate_intersection(p, intrin, roi.max_x, roi.min_y);

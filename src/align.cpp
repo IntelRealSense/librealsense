@@ -606,7 +606,7 @@ namespace librealsense
                         [p_out_frame, p_depth_frame/*, p_out_other_frame, other_bytes_per_pixel*/](int z_pixel_index, int other_pixel_index)
                     {
                         p_out_frame[other_pixel_index] = p_out_frame[other_pixel_index] ?
-                                                            std::min( (int)(p_out_frame[other_pixel_index]), (int)(p_depth_frame[z_pixel_index]) ) 
+                                                            std::min( (int)(p_out_frame[other_pixel_index]), (int)(p_depth_frame[z_pixel_index]) )
                                                           : p_depth_frame[z_pixel_index];
                     });
                     frames[1] = std::move(out_frame);

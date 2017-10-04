@@ -8,7 +8,6 @@
 
 namespace librealsense
 {
-
     typedef rs2::devices_changed_callback<std::function<void(rs2::event_information& info)>> hub_devices_changed_callback;
 
     std::vector<std::shared_ptr<device_info>> filter_by_vid(std::vector<std::shared_ptr<device_info>> devices , int vid)
@@ -29,8 +28,10 @@ namespace librealsense
         return result;
     }
 
-    device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int vid)
-        : _ctx(ctx), _vid(vid)
+    device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int vid,
+                           bool register_device_notifications)
+        : _ctx(ctx), _vid(vid),
+          _register_device_notifications(register_device_notifications)
     {
         _device_list = filter_by_vid(_ctx->query_devices(), _vid);
 
@@ -60,7 +61,7 @@ namespace librealsense
             // _camera_index is the curr device that user want to work with
 
             auto d = _device_list[ (_camera_index + i) % _device_list.size()];
-            auto dev = d->create_device();
+            auto dev = d->create_device(_register_device_notifications);
 
             if(serial.size() > 0 )
             {
@@ -129,20 +130,8 @@ namespace librealsense
     */
     bool device_hub::is_connected(const device_interface& dev)
     {
-        try
-        {
-            std::unique_lock<std::mutex> lock(_mutex);
-
-            for (auto d : _device_list)
-            {
-                if (d->get_device_data() == dev.get_device_data())
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        catch (...)  { return false; }
+        std::unique_lock<std::mutex> lock(_mutex);
+        return dev.is_valid();
     }
 }
 

@@ -169,7 +169,7 @@ std::pair<std::vector<sensor>, std::vector<profile>> configure_all_supported_str
             sensors.push_back(s);
         }
     }
-           
+
     return{ sensors, profiles };
 }
 
@@ -185,10 +185,10 @@ TEST_CASE("Sync sanity", "[live]") {
         auto dev = list[0];
         disable_sensitive_options_for(dev);
 
-       
+
         rs2::syncer sync;
         auto profiles = configure_all_supported_streams(dev);
-      
+
         for (auto s : dev.query_sensors())
         {
             s.start(sync);
@@ -397,7 +397,7 @@ TEST_CASE("Sync start stop", "[live]") {
         {
             REQUIRE_NOTHROW(s.start(sync));
         }
-        
+
 
         rs2::frameset frames;
         for (auto i = 0; i < 30; i++)
@@ -2490,7 +2490,7 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
 //
 //        auto profiles = configure_all_supported_streams(dev, dev);
 //
-//       
+//
 //        pipe.start();
 //
 //        std::string serial;
@@ -3315,8 +3315,16 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
             //the test will be done only on sub set of profile for each sub device
             for (int i = 0; i < modes.size(); i += static_cast<int>(std::ceil((float)modes.size() / (float)num_of_profiles_for_each_subdevice)))
             {
-                if ((modes[i].size() == 1920 * 1080 * 60) ||           // Full-HD is often times too heavy for the build machine to handle
-                    (RS2_STREAM_GPIO <= modes[i].stream_type()))   // GPIO Requires external triggers to produce events
+                // Full-HD is often times too heavy for the build machine to handle
+                if (auto video_profile = modes[i].as<video_stream_profile>())
+                {
+                    if (video_profile.width() == 1920 && video_profile.height() == 1080 && video_profile.fps() == 60)
+                    {
+                        continue;   // Disabling for now
+                    }
+                }
+                // GPIO Requires external triggers to produce events
+                if (RS2_STREAM_GPIO == modes[i].stream_type())   
                     continue;   // Disabling for now
 
                 CAPTURE(modes[i].format());
@@ -3502,7 +3510,7 @@ TEST_CASE("Pipeline enable open start flow", "[live]") {
         REQUIRE_NOTHROW(pipe.open());
         REQUIRE_NOTHROW(pipe.open());
         REQUIRE_NOTHROW(dev = pipe.get_device());
-        
+
         REQUIRE_THROWS(pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_ANY, 0));
         REQUIRE_NOTHROW(pipe.start());
 

@@ -101,7 +101,7 @@ rs2_device* rs2_device_hub_wait_for_device(rs2_context* ctx, const rs2_device_hu
 * \param[in] hub The device hub object
 * \param[in] device The device
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return            1 if the device is connected, 0 otherwise 
+* \return            1 if the device is connected, 0 otherwise
 */
 int rs2_device_hub_is_device_connected(const rs2_device_hub* hub, const rs2_device* device, rs2_error** error);
 

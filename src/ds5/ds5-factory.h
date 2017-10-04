@@ -9,7 +9,8 @@ namespace librealsense
     class ds5_info : public device_info
     {
     public:
-        std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx) const override;
+        std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx,
+                                                 bool register_device_notifications) const override;
 
         ds5_info(std::shared_ptr<context> ctx,
                  std::vector<platform::uvc_device_info> depth,

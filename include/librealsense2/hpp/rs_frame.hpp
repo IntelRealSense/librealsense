@@ -12,15 +12,15 @@ namespace rs2
     {
     public:
         stream_profile() : _profile(nullptr) {}
-        
+
         int stream_index() const { return _index; }
         rs2_stream stream_type() const { return _type; }
         rs2_format format() const { return _format; }
-        
+
         int fps() const { return _framerate; }
-        
+
         int unique_id() const { return _uid; }
-        
+
         stream_profile clone(rs2_stream type, int index, rs2_format format) const
         {
             rs2_error* e = nullptr;
@@ -28,24 +28,24 @@ namespace rs2
             error::handle(e);
             stream_profile res(ref);
             res._clone = std::shared_ptr<rs2_stream_profile>(ref, [](rs2_stream_profile* r) { rs2_delete_stream_profile(r); });
-            
+
             return res;
         }
-        
+
         template<class T>
         bool is() const
         {
             T extension(*this);
             return extension;
         }
-        
+
         template<class T>
         T as() const
         {
             T extension(*this);
             return extension;
         }
-        
+
         std::string stream_name() const
         {
             std::stringstream ss;
@@ -53,14 +53,13 @@ namespace rs2
             if (stream_index() != 0) ss << " " << stream_index();
             return ss.str();
         }
-        
+
         bool is_default() const { return _default; }
-        std::size_t size() const { return _size; }
-        
+
         operator bool() const { return _profile != nullptr; }
-        
+
         const rs2_stream_profile* get() const { return _profile; }
-        
+
         rs2_extrinsics get_extrinsics_to(const stream_profile& to) const
         {
             rs2_error* e = nullptr;
@@ -69,38 +68,35 @@ namespace rs2
             error::handle(e);
             return res;
         }
-        
+
     protected:
         friend class sensor;
         friend class frame;
         friend class pipeline;
-        
+
         explicit stream_profile(const rs2_stream_profile* profile) : _profile(profile)
         {
             rs2_error* e = nullptr;
             rs2_get_stream_profile_data(_profile, &_type, &_format, &_index, &_uid, &_framerate, &e);
             error::handle(e);
-            
+
             _default = !!(rs2_is_stream_profile_default(_profile, &e));
             error::handle(e);
-            
-            _size = rs2_get_stream_profile_size(_profile, &e);
-            error::handle(e);
+
         }
-        
+
         const rs2_stream_profile* _profile;
         std::shared_ptr<rs2_stream_profile> _clone;
-        
+
         int _index = 0;
         int _uid = 0;
         int _framerate = 0;
         rs2_format _format = RS2_FORMAT_ANY;
         rs2_stream _type = RS2_STREAM_ANY;
-        
+
         bool _default = false;
-        size_t _size = 0;
     };
-    
+
     class video_stream_profile : public stream_profile
     {
     public:
@@ -113,24 +109,24 @@ namespace rs2
                 _profile = nullptr;
             }
             error::handle(e);
-            
+
             if (_profile)
             {
                 rs2_get_video_stream_resolution(_profile, &_width, &_height, &e);
                 error::handle(e);
             }
         }
-        
+
         int width() const
         {
             return _width;
         }
-        
+
         int height() const
         {
             return _height;
         }
-        
+
         rs2_intrinsics get_intrinsics() const
         {
             rs2_error* e = nullptr;
@@ -139,12 +135,12 @@ namespace rs2
             error::handle(e);
             return intr;
         }
-        
+
     private:
         int _width = 0;
         int _height = 0;
     };
-    
+
     class frame
     {
     public:
@@ -560,56 +556,7 @@ namespace rs2
     private:
         size_t _size;
     };
-
-    class frame_source
-    {
-    public:
-
-        frame allocate_video_frame(const stream_profile& profile,
-                                   const frame& original,
-                                   int new_bpp = 0,
-                                   int new_width = 0,
-                                   int new_height = 0,
-                                   int new_stride = 0,
-                                   rs2_extension frame_type = RS2_EXTENSION_VIDEO_FRAME) const
-        {
-            rs2_error* e = nullptr;
-            auto result = rs2_allocate_synthetic_video_frame(_source, profile.get(),
-                original.get(), new_bpp, new_width, new_height, new_stride, frame_type, &e);
-            error::handle(e);
-            return result;
-        }
-
-        frame allocate_composite_frame(std::vector<frame> frames) const
-        {
-            rs2_error* e = nullptr;
-
-            std::vector<rs2_frame*> refs(frames.size(), nullptr);
-            for (size_t i = 0; i < frames.size(); i++)
-                std::swap(refs[i], frames[i].frame_ref);
-
-            auto result = rs2_allocate_composite_frame(_source, refs.data(), (int)refs.size(), &e);
-            error::handle(e);
-            return result;
-        }
-
-        void frame_ready(frame result) const
-        {
-            rs2_error* e = nullptr;
-            rs2_synthetic_frame_ready(_source, result.get(), &e);
-            error::handle(e);
-            result.frame_ref = nullptr;
-        }
-
-        rs2_source* _source;
-    private:
-        template<class T>
-        friend class frame_processor_callback;
-
-        frame_source(rs2_source* source) : _source(source) {}
-        frame_source(const frame_source&) = delete;
-
-    };
+   
 
 }
 #endif // LIBREALSENSE_RS2_FRAME_HPP

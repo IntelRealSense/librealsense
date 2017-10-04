@@ -573,9 +573,9 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense2 DESTINATION ${CMAK
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(CMake/realsense2Config.cmake.in realsense2Config.cmake
-				INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
-				INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
-				PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
+    INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+    INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
+    PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
 
 install(EXPORT realsense2Targets FILE realsense2Targets.cmake NAMESPACE realsense2::
     DESTINATION ${CMAKECONFIG_INSTALL_DIR})
