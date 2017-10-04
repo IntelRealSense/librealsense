@@ -12,6 +12,7 @@
 #include "rosbag/structures.h"
 #include <regex>
 #include "stream.h"
+#include "types.h"
 
 namespace librealsense
 {

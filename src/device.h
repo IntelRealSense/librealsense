@@ -23,7 +23,6 @@ namespace librealsense
     {
     public:
         virtual ~device();
-
         size_t get_sensors_count() const override;
 
         sensor_interface& get_sensor(size_t subdevice) override;

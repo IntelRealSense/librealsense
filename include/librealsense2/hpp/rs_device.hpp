@@ -131,7 +131,7 @@ namespace rs2
     protected:
         friend context;
         friend device_list;
-        friend class pipeline;
+        friend class pipeline_profile;
         friend class device_hub;
 
         std::shared_ptr<rs2_device> _dev;

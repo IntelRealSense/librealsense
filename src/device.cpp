@@ -40,6 +40,7 @@ device::~device()
     {
         _context->unregister_internal_device_callback(_callback_id);
     }
+    _sensors.clear();
 }
 
 int device::add_sensor(std::shared_ptr<sensor_interface> sensor_base)

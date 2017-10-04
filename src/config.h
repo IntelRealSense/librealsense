@@ -48,19 +48,27 @@ namespace librealsense
                     return std::make_pair(stream, index) <
                         std::make_pair(other.stream, other.index);
                 }
-
-                bool operator==(const index_type& other) const
-                {
-                    return std::make_pair(stream, index) ==
-                        std::make_pair(other.stream, other.index);
-                }
             };
+
+
+
+            static bool match_stream(const index_type& a, const index_type& b)
+            {
+                if (a.stream != RS2_STREAM_ANY && b.stream != RS2_STREAM_ANY && (a.stream != b.stream))
+                    return false;
+                if (a.index != -1 && b.index != -1 && (a.index != b.index))
+                    return false;
+
+                return true;
+            }
 
             template<class Stream_Profile>
             static bool match(const Stream_Profile& a, const Stream_Profile& b)
             {
                 if (a.stream_type() != RS2_STREAM_ANY && b.stream_type() != RS2_STREAM_ANY && (a.stream_type() != b.stream_type()))
                     return false;
+                 if (a.stream_index() != -1 && b.stream_index() != -1 && (a.stream_index() != b.stream_index()))
+                     return false;
                 if (a.format() != RS2_FORMAT_ANY && b.format() != RS2_FORMAT_ANY && (a.format() != b.format()))
                     return false;
                 if (a.fps() != 0 && b.fps() != 0 && (a.fps() != b.fps()))
@@ -86,7 +94,7 @@ namespace librealsense
             {
                 if (a->get_stream_type() != RS2_STREAM_ANY && b.stream != RS2_STREAM_ANY && (a->get_stream_type() != b.stream))
                     return false;
-                if (a->get_stream_index() != 0 && b.stream_index != 0 && (a->get_stream_index() != b.stream_index))
+                if (a->get_stream_index() != -1 && b.stream_index != -1 && (a->get_stream_index() != b.stream_index))
                     return false;
                 if (a->get_format() != RS2_FORMAT_ANY && b.format != RS2_FORMAT_ANY && (a->get_format() != b.format))
                     return false;
@@ -155,7 +163,7 @@ namespace librealsense
 
             static bool has_wildcards(stream_profile_interface* a)
             {
-                if (a->get_framerate() == 0 || a->get_stream_type() == RS2_STREAM_ANY || a->get_format() == RS2_FORMAT_ANY) return true;
+                if (a->get_framerate() == 0 || a->get_stream_type() == RS2_STREAM_ANY || a->get_stream_index() == -1 || a->get_format() == RS2_FORMAT_ANY) return true;
                 if (auto vid_a = dynamic_cast<video_stream_profile_interface*>(a))
                 {
                     if (vid_a->get_width() == 0 || vid_a->get_height() == 0) return true;
@@ -167,6 +175,7 @@ namespace librealsense
             {
                 if (a.fps == 0 || a.stream == RS2_STREAM_ANY || a.format == RS2_FORMAT_ANY) return true;
                 if (a.width == 0 || a.height == 0) return true;
+                if (a.stream_index == -1) return true;
                 return false;
             }
             std::map<index_type, request_type> get_requests()
@@ -186,11 +195,20 @@ namespace librealsense
 
                 explicit multistream(std::vector<sensor_interface*> results,
                                      std::map<index_type, std::shared_ptr<stream_profile_interface>> profiles,
-                                     std::map<index_type, sensor_interface*> devices)
-                    : _profiles(std::move(profiles)),
-                      _devices(std::move(devices)),
-                      _results(std::move(results))
+                                     std::map<int, stream_profiles> dev_to_profiles)
+                        :   _profiles(std::move(profiles)),
+                            _dev_to_profiles(std::move(dev_to_profiles)),
+                            _results(std::move(results))
                 {}
+
+
+                void open()
+                {
+                    for (auto && kvp : _dev_to_profiles) {
+                        auto&& sub = _results[kvp.first];
+                        sub->open(kvp.second);
+                    }
+                }
 
                 template<class T>
                 void start(T callback)
@@ -210,29 +228,14 @@ namespace librealsense
                     for (auto&& dev : _results)
                         dev->close();
                 }
-
-
-               /* rs2_extrinsics get_extrinsics(rs2_stream from, rs2_stream to) const try
-                {
-                    return _profiles.at({ from, 0 })->get_extrinsics_to(_profiles.at({ to, 0 }).get());
-                }
-                catch (std::out_of_range)
-                {
-                    throw std::runtime_error(std::string("config doesnt have extrinsics for ") + rs2_stream_to_string(from) + "->" + rs2_stream_to_string(to));
-                }
-
-                rs2_extrinsics get_extrinsics(index_type from, index_type to) const try
-                {
-                    return _profiles.at(from)->get_extrinsics_to(_profiles.at(to));
-                }
-                catch (std::out_of_range)
-                {
-                    throw std::runtime_error(std::string("config doesnt have extrinsics for ") + rs2_stream_to_string(from) + "->" + rs2_stream_to_string(to));
-                }*/
-
                 std::map<index_type, std::shared_ptr<stream_profile_interface>> get_profiles() const
                 {
                     return _profiles;
+                }
+
+                std::map<int, stream_profiles> get_profiles_per_sensor() const
+                {
+                    return _dev_to_profiles;
                 }
             private:
                 friend class config;
@@ -240,16 +243,11 @@ namespace librealsense
                 std::map<index_type, std::shared_ptr<stream_profile_interface>> _profiles;
                 std::map<index_type, sensor_interface*> _devices;
                 std::vector<sensor_interface*> _results;
+                std::map<int, stream_profiles> _dev_to_profiles;
             };
 
             config() : require_all(true) {}
 
-            void enable_stream(rs2_stream stream, int width, int height, rs2_format format, int fps)
-            {
-                _presets.erase({ stream, 0 });
-                _requests[{stream, 0}] = request_type{ stream, 0, width, height, format, fps };
-                require_all = true;
-            }
 
             void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int fps)
             {
@@ -281,8 +279,8 @@ namespace librealsense
             }
             void enable_stream(rs2_stream stream, config_preset preset)
             {
-                _requests.erase({ stream, 0 });
-                _presets[{ stream, 0 }] = preset;
+                _requests.erase({ stream, -1 });
+                _presets[{ stream, -1 }] = preset;
                 require_all = true;
             }
 
@@ -297,7 +295,7 @@ namespace librealsense
             {
                 for (int i = RS2_STREAM_DEPTH; i < RS2_STREAM_COUNT; i++)
                 {
-                    enable_stream(static_cast<rs2_stream>(i), 0, p);
+                    enable_stream(static_cast<rs2_stream>(i), -1, p);
                 }
                 require_all = false;
             }
@@ -337,53 +335,65 @@ namespace librealsense
                return false;
 
            }
-            multistream open(device_interface* dev)
+
+            multistream resolve(device_interface* dev)
             {
                  auto mapping = map_streams(dev);
 
                 // If required, make sure we've succeeded at opening
                 // all the requested streams
-                if (require_all) {
+                if (require_all) 
+                {
                     std::set<index_type> all_streams;
                     for (auto && kvp : mapping)
                         all_streams.insert({ kvp.second->get_stream_type(), kvp.second->get_stream_index() });
 
+                    
                     for (auto && kvp : _presets)
-                        if (!all_streams.count(kvp.first))
+                    {
+                        auto it = std::find_if(std::begin(all_streams), std::end(all_streams), [&](const index_type& i)
+                        {
+                            return match_stream(kvp.first, i);
+                        });
+                        if (it == std::end(all_streams))
                             throw std::runtime_error("Config couldn't configure all streams");
+                    }
                     for (auto && kvp : _requests)
-                        if (!all_streams.count(kvp.first))
+                    {
+                        auto it = std::find_if(std::begin(all_streams), std::end(all_streams), [&](const index_type& i)
+                        {
+                            return match_stream(kvp.first, i);
+                        });
+                        if (it == std::end(all_streams))
                             throw std::runtime_error("Config couldn't configure all streams");
+                    }
                 }
 
                 // Unpack the data returned by assign
                 std::map<int, stream_profiles> dev_to_profiles;
-                std::vector<sensor_interface*> devices;
                 std::map<index_type, sensor_interface*> stream_to_dev;
                 std::map<index_type, std::shared_ptr<stream_profile_interface>> stream_to_profile;
 
+                std::map<int, sensor_interface*> sensors_map;
                 std::vector<sensor_interface*> sensors;
                 for(auto i = 0; i< dev->get_sensors_count(); i++)
                 {
-                    sensors.push_back(&dev->get_sensor(i));
+                    if (mapping.find(i) != mapping.end())
+                    {
+                        sensors_map[i] = &dev->get_sensor(i);
+                        sensors.push_back(&dev->get_sensor(i));
+                    }
                 }
 
                 for (auto && kvp : mapping) {
                     dev_to_profiles[kvp.first].push_back(kvp.second);
                     index_type idx{ kvp.second->get_stream_type(), kvp.second->get_stream_index() };
-                    stream_to_dev.emplace(idx, sensors[kvp.first]);
+                    stream_to_dev.emplace(idx, sensors_map.at(kvp.first));
                     stream_to_profile[idx] = kvp.second;
                 }
 
                 // TODO: make sure it works
-
-                for (auto && kvp : dev_to_profiles) {
-                    auto sub = sensors[kvp.first];
-                    devices.push_back(sub);
-                    sub->open(kvp.second);
-                }
-
-                return multistream(std::move(devices), std::move(stream_to_profile), std::move(stream_to_dev));
+                return multistream(std::move(sensors), std::move(stream_to_profile), std::move(dev_to_profiles));
             }
         
         private:
@@ -505,12 +515,14 @@ namespace librealsense
 
                             for (auto itr: profiles)
                             {
-                                if (itr->get_stream_type() == kvp.first.stream && itr->get_stream_index() == kvp.first.index) {
+                                auto stream = index_type{ itr->get_stream_type() ,itr->get_stream_index() };
+                                if (match_stream(stream, kvp.first))
+                                {
                                     return to_request(itr.get());
                                 }
                             }
 
-                            return { RS2_STREAM_ANY, 0, 0, 0, RS2_FORMAT_ANY, 0 };
+                            return { RS2_STREAM_ANY, -1, 0, 0, RS2_FORMAT_ANY, 0 };
                         }();
 
                         // RS2_STREAM_COUNT signals subdevice can't handle this stream
@@ -531,7 +543,7 @@ namespace librealsense
                             {
                                 if (match(p.get(), t))
                                 {
-                                    out.emplace(i, p);
+                                    out.emplace((int)i, p);
                                     break;
                                 }
                             }

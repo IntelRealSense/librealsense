@@ -22,6 +22,7 @@ class device_container
         rs2::colorizer colorize_frame;
         texture tex;
         rs2::pipeline pipe;
+        rs2::pipeline_profile profile;
     };
 
 public:
@@ -43,23 +44,29 @@ public:
         }
         // Create a pipeline from the given device
         rs2::pipeline p;
-        p.enable_device(serial_number);
+        rs2::config c;
+        c.enable_device(serial_number);
+        // Start the pipeline with the configuration
+        rs2::pipeline_profile profile = p.start(c);
         // Hold it internally
-        _devices.emplace(serial_number, view_port{ {},{},{}, p });
+        _devices.emplace(serial_number, view_port{ {},{},{}, p, profile });
 
-        // Start the pipeline with the default configuration
-        p.start();
     }
 
     void remove_devices(const rs2::event_information& info)
     {
         std::lock_guard<std::mutex> lock(_mutex);
         // Go over the list of devices and check if it was disconnected
-        for (auto itr = _devices.begin(); itr != _devices.end(); ++itr)
+        auto itr = _devices.begin();
+        while(itr != _devices.end())
         {
-            if (info.was_removed(itr->second.pipe.get_device()))
+            if (info.was_removed(itr->second.profile.get_device()))
             {
-                _devices.erase(itr);
+                itr = _devices.erase(itr);
+            }
+            else
+            {
+                ++itr;
             }
         }
     }

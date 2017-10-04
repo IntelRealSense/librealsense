@@ -72,7 +72,7 @@ namespace rs2
     protected:
         friend class sensor;
         friend class frame;
-        friend class pipeline;
+        friend class pipeline_profile;
 
         explicit stream_profile(const rs2_stream_profile* profile) : _profile(profile)
         {

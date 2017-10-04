@@ -32,14 +32,14 @@ build:
   verbosity: minimal
 test_script:
 - ps: >-
-    $url = "http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc4"
+    $url = "http://realsense-hw-public.s3.amazonaws.com/rs-tests/live_test_awgc"
 
-    $output = "C:/projects/librealsense/build/Debug/awgc4"
+    $output = "C:/projects/librealsense/build/Debug/live_test_awgc"
 
     Invoke-WebRequest -Uri $url -OutFile $output
 
 
-    & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from C:/projects/librealsense/build/Debug/awgc4 -d yes
+    & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from C:/projects/librealsense/build/Debug/live_test_awgc -d yes
 
     if ($LASTEXITCODE -ne 0)
 
