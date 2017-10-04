@@ -76,8 +76,8 @@ script:
       sudo "PATH=$PATH" make install;
 
       export LRS_LOG_LEVEL="DEBUG";
-      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc4;
-      ./unit-tests/live-test from awgc4 -d yes;
+      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/live_test_awgc;
+      ./unit-tests/live-test from live_test_awgc -d yes;
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       mkdir build && cd build;

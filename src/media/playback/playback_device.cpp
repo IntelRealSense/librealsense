@@ -310,7 +310,7 @@ bool playback_device::is_real_time() const
 
 platform::backend_device_group playback_device::get_device_data() const
 {
-    return {};
+    return platform::backend_device_group({ platform::playback_device_info{ m_reader->get_file_name() } });
 }
 
 std::pair<uint32_t, rs2_extrinsics> playback_device::get_extrinsics(const stream_interface& stream) const

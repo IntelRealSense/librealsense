@@ -19,24 +19,25 @@ namespace rs2
 
         void tool_model::start(ux_window& window)
         {
-            _pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
-            _pipe.enable_stream(RS2_STREAM_INFRARED, 0, 0, 0, RS2_FORMAT_RGB8, 30);
+            rs2::config cfg;
+            cfg.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, 30);
+            cfg.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_RGB8, 30);
 
             // Wait till a valid device is found
             try {
-                _pipe.start();
+                _pipe.start(cfg);
             }
             catch (...)
             {
                 // Switch to infrared luminocity as a secondary in case synthetic chroma is not supported
-                _pipe.disable_all();
-                _pipe.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
-                _pipe.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, 30);
-                _pipe.start();
+                rs2::config cfg;
+                cfg.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
+                cfg.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, 30);
+                _pipe.start(cfg);
             }
 
             // Toggle advanced mode
-            auto dev = _pipe.get_device();
+            auto dev = _pipe.get_active_profile().get_device();
             if (dev.is<rs400::advanced_mode>())
             {
                 auto advanced_mode = dev.as<rs400::advanced_mode>();
@@ -153,16 +154,16 @@ namespace rs2
                             {
                                 // Preserve streams and ui selections
                                 auto primary = _depth_sensor_model->get_selected_profiles().front().as<video_stream_profile>();
-                                auto secondary = _pipe.get_active_streams().back().as<video_stream_profile>();
+                                auto secondary = _pipe.get_active_profile().get_streams().back().as<video_stream_profile>();
                                 _depth_sensor_model->store_ui_selection();
 
                                 _pipe.stop();
 
-                                _pipe.disable_all();
+                                rs2::config cfg;
 
-                                _pipe.enable_stream(primary.stream_type(), primary.stream_index(),
+                                cfg.enable_stream(primary.stream_type(), primary.stream_index(),
                                                     primary.width(), primary.height(), primary.format(), primary.fps());
-                                _pipe.enable_stream(secondary.stream_type(), secondary.stream_index(),
+                                cfg.enable_stream(secondary.stream_type(), secondary.stream_index(),
                                                     primary.width(), primary.height(), secondary.format(), primary.fps());
 
                                 // Wait till a valid device is found and responsive
@@ -171,7 +172,7 @@ namespace rs2
                                 {
                                     try // Retries are needed to cope with HW stability issues
                                     {
-                                        _pipe.start();
+                                        _pipe.start(cfg);
                                         success = true;
                                     }
                                     catch (...){}
@@ -281,7 +282,7 @@ namespace rs2
                 save = true;
             }
 
-            auto dev = _pipe.get_device();
+            auto dev = _pipe.get_active_profile().get_device();
             auto dpt_sensor = dev.first<depth_sensor>();
             _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model));
             _device_model->allow_remove = false;
@@ -326,7 +327,7 @@ namespace rs2
                 if (!sub->s.is<depth_sensor>()) continue;
 
                 sub->show_algo_roi = true;
-                auto profiles = _pipe.get_active_streams();
+                auto profiles = _pipe.get_active_profile().get_streams();
                 sub->streaming = true;      // The streaming activated externally to the device_model
                 for (auto&& profile : profiles)
                 {
@@ -500,7 +501,7 @@ namespace rs2
                 << "\nFirmware Ver:," << _device_model->dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
                 << "\n\nStreaming profile:\nStream,Format,Resolution,FPS\n";
 
-            for (auto& stream : _pipe.get_active_streams())
+            for (auto& stream : _pipe.get_active_profile().get_streams())
             {
                 auto vs = stream.as<video_stream_profile>();
                 ss << vs.stream_name() << ","

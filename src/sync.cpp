@@ -117,15 +117,23 @@ namespace librealsense
         auto stream_id = frame.frame->get_stream()->get_unique_id();
         auto stream_type = frame.frame->get_stream()->get_stream_type();
 
-        auto sensor = frame.frame->get_sensor();
+        auto sensor = frame.frame->get_sensor().get(); //TODO: Potential deadlock if get_sensor() gets a hold of the last reference of that sensor
 
         auto dev_exist = false;
 
-        if(sensor)
+        if (sensor)
         {
-            auto dev = sensor->get_device().shared_from_this();
 
-            if(dev)
+            const device_interface* dev = nullptr;
+            try
+            {
+                dev = sensor->get_device().shared_from_this().get();
+            }
+            catch (const std::bad_weak_ptr& e)
+            {
+                LOG_WARNING("Device destroyed");
+            }
+            if (dev)
             {
                 dev_exist = true;
                 matcher = _matchers[stream_id];
@@ -140,7 +148,7 @@ namespace librealsense
 
                     for (auto stream : matcher->get_streams())
                     {
-                        if(_matchers[stream])
+                        if (_matchers[stream])
                         {
                             _frames_queue.erase(_matchers[stream].get());
                         }
@@ -154,18 +162,20 @@ namespace librealsense
                     }
 
                     if (std::find(_streams_type.begin(), _streams_type.end(), stream_type) == _streams_type.end())
+                    {
                         LOG_ERROR("Stream matcher not found! stream=" << rs2_stream_to_string(stream_type));
+                    }
                 }
-
             }
         }
-        if(!dev_exist)
+
+        if(!dev_exist) 
         {
             matcher = _matchers[stream_id];
             // We don't know what device this frame came from, so just store it under device NULL with ID matcher
             if (!matcher)
             {
-                if(_matchers[stream_id])
+                if (_matchers[stream_id])
                 {
                     _frames_queue.erase(_matchers[stream_id].get());
                 }
@@ -180,10 +190,8 @@ namespace librealsense
                 });
             }
         }
-
         return matcher;
     }
-
 
     void composite_matcher::sync(frame_holder f, syncronization_environment env)
     {

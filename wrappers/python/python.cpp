@@ -612,27 +612,47 @@ PYBIND11_PLUGIN(NAME) {
                 .def("__nonzero__", &rs2::depth_sensor::operator bool);
 
     /* rs2_pipeline.hpp */
+
+
     py::class_<rs2::pipeline> pipeline(m, "pipeline");
     pipeline.def(py::init<rs2::context>(), "ctx"_a = rs2::context())
-            .def("get_device", &rs2::pipeline::get_device)
-            .def("start", (void (rs2::pipeline::*)()const) &rs2::pipeline::start)
-            .def("stop", &rs2::pipeline::stop)
-            .def("enable_stream" , &rs2::pipeline::enable_stream, "stream"_a, "index"_a,
-                 "width"_a, "height"_a, "format"_a, "framerate"_a)
-            .def("disable_stream", &rs2::pipeline::disable_stream, "stream"_a)
-            .def("disable_all", &rs2::pipeline::disable_all)
-            .def("wait_for_frames", &rs2::pipeline::wait_for_frames, "timeout_ms"_a = 5000)
-            .def("poll_for_frames", &rs2::pipeline::poll_for_frames, "frameset*"_a)
-            .def("enable_device",  &rs2::pipeline::enable_device,  "std::string"_a)
-            .def("get_active_streams", (rs2::stream_profile (rs2::pipeline::*)(const rs2_stream, const int) const)
-                 &rs2::pipeline::get_active_streams, "stream"_a, "index"_a = 0)
-            .def("get_active_streams", (std::vector<rs2::stream_profile> (rs2::pipeline::*)() const)
-                 &rs2::pipeline::get_active_streams)
-            .def("open", &rs2::pipeline::open);
+    .def("start", (rs2::pipeline_profile (rs2::pipeline::*)(const rs2::config&)) &rs2::pipeline::start, "config")
+    .def("start", (rs2::pipeline_profile (rs2::pipeline::*)() ) &rs2::pipeline::start)
+    .def("stop", &rs2::pipeline::stop)
+    .def("wait_for_frames", &rs2::pipeline::wait_for_frames, "timeout_ms"_a = 5000)
+    .def("poll_for_frames", &rs2::pipeline::poll_for_frames, "frameset*"_a);
+
+
+    /* rs2_pipeline.hpp */
+    py::class_<rs2::pipeline_profile> pipeline_profile(m, "pipeline_profile");
+    pipeline_profile.def(py::init<>())
+            .def("get_streams", &rs2::pipeline_profile::get_streams)
+            .def("get_device", &rs2::pipeline_profile::get_device);
+
+
+    py::class_<rs2::config> config(m, "config");
+    config.def(py::init<>())
+            .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, int, int, rs2_format, int)) &rs2::config::enable_stream, "stream_type"_a, "stream_index"_a, "width"_a, "height"_a, "format"_a = RS2_FORMAT_ANY, "framerate"_a = 0)
+            .def("enable_stream", (void (rs2::config::*)(rs2_stream, int)) &rs2::config::enable_stream, "stream_type"_a, "stream_index"_a = -1)
+            .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, int, rs2_format, int)) &rs2::config::enable_stream, "stream_type"_a, "width"_a, "height"_a, "format"_a = RS2_FORMAT_ANY, "framerate"_a = 0)
+            .def("enable_stream", (void (rs2::config::*)(rs2_stream, rs2_format, int))&rs2::config::enable_stream, "stream_type"_a, "format"_a, "framerate"_a = 0)
+            .def("enable_stream", (void (rs2::config::*)(rs2_stream, int , rs2_format, int)) &rs2::config::enable_stream, "stream_type"_a, "stream_index"_a, "format"_a, "framerate"_a = 0)
+            .def("enable_all_streams", &rs2::config::enable_all_streams)
+            .def("enable_device",  &rs2::config::enable_device,  "serial"_a)
+            .def("enable_device_from_file", &rs2::config::enable_device_from_file, "file_name"_a)
+            .def("enable_record_to_file", &rs2::config::enable_record_to_file, "file_name"_a)
+            .def("disable_stream", &rs2::config::disable_stream, "stream"_a)
+            .def("disable_all_streams", &rs2::config::disable_all_streams)
+            .def("resolve", (rs2::pipeline_profile (rs2::config::*)(rs2::pipeline) const) &rs2::config::resolve, "pipeline"_a)
+            .def("can_resolve", (bool (rs2::config::*)(rs2::pipeline) const) &rs2::config::can_resolve, "pipeline"_a);
+
 
     /* rs2.hpp */
     m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);
     m.def("log_to_file", &rs2::log_to_file, "min_severity"_a, "file_path"_a);
 
     return m.ptr();
+
+
+
 }

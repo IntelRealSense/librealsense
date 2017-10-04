@@ -49,7 +49,7 @@ Next, we declare three functions to help the code look clearer:
 ```cpp
 void render_slider(rect location, float& clipping_dist);
 void remove_background(rs2::video_frame& color, const rs2::depth_frame& depth_frame, float depth_scale, float clipping_dist);
-bool try_get_depth_scale(rs2::pipeline& p, float& scale);
+bool try_get_depth_scale(rs2::device dev, float& scale);
 ```
 
 `render_slider(..)`  is where all the GUI code goes, and we will not cover this function in this overview.
@@ -70,19 +70,12 @@ We first define some variables that will be used to show the window and render t
     texture renderer;                     // Helper for renderig images
 ```
 
-Then, we create a context:
+Then, we create an `align` object:
 
 ```cpp
-// Create a context
-rs2::context ctx;
-```
-`rs2::context` encapsulates all of the devices and sensors, and provides some additional functionalities.
-In this example we will use the `context` to create an `rs2::align` object:
-
-```cpp
-    // Using the context to create a rs2::align object. 
-    // rs2::align allows you to perform alignment of depth frames to others
-    rs2::align align = ctx.create_align(RS2_STREAM_COLOR); 
+// Using the context to create a rs2::align object. 
+// rs2::align allows you to perform alignment of depth frames to others
+rs2::align align(RS2_STREAM_COLOR); 
 ```
 
 `rs2::align` is a utility class that performs image alignment (registration) of 2 frames. Basically, each pixel from the first image will be transformed so that it matches its corresponding pixel in the second image. 
@@ -94,15 +87,26 @@ Next, we define a `rs2::pipeline` which is a top level API for using RealSense d
 ```cpp
 // Create a pipeline to easily configure and start the camera
 rs2::pipeline pipe;
-pipe.start(align);
+//Calling pipeline's start() without any additional parameters will start the first device
+// with its default streams.
+//The start function returns the pipeline profile which the pipeline used to start the device
+rs2::pipeline_profile profile = pipe.start();
 ```
-we pass the `align` object to `Pipeline::start` as the post processing handler for incoming frames that the pipeline produces. This means that frames will first be processed by the pipeline, and once the pipeline is ready to output them, it will pass them on to `align` which will perform additional processing.
 
-`rs2::align` contains an overload for `operator()` which takes a `rs2::frame`. This allows us to pass it as the argument for `pipeline::start`. The pipeline synchronizes its frames before publishing them, thus, by calling `start` with an `align` object, the frames it will provide will be synchronized and aligned to one another. We will soon see how to get these frames from the `align` object.
-
-At this point of the program the camera is configured and the resulted frames are being aligned.
+At this point of the program the camera is configured and streams are available from the pipeline.
 
 Before actually using the frames, we try to get the depth scale units of the depth camera. Depth scale units are used to convert the depth pixel data (16-bit unsigned) into metric units.
+
+```cpp
+// Each depth camera might have different units for depth pixels, so we get it here
+float depth_scale;
+//Using the pipeline's profile, we can retrieve the device that the pipeline uses
+if (!try_get_depth_scale(profile.get_device(), depth_scale))
+{
+    std::cerr << "Device does not have a depth sensor" << std::endl;
+    return EXIT_FAILURE;
+}
+```
 
 These units are expressed as depth in meters corresponding to a depth value of 1. For example if we have a depth pixel with a value of 2 and the depth scale units are 0.5 then that pixel is `2 X 0.5 = 1` meter away from the camera.
 
