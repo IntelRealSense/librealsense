@@ -1,6 +1,6 @@
 # Depth Quality Tool
 
-<p align="center"><img src="res/Depth Quality Tool v2.7.10 10_3_2017 3_10_47 PM.gif" /></p>
+<p align="center"><img src="res/depth_quality_glimpse.gif" /></p>
 
 ## Overview
 
