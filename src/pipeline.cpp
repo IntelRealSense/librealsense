@@ -157,15 +157,25 @@ namespace librealsense
                     config.enable_stream(r.stream, r.stream_index, r.width, r.height, r.format, r.fps);
                 }
 
-                for (auto dev_info : pipe->get_context()->query_devices())
+                auto devs = pipe->get_context()->query_devices();
+                if (devs.empty())
                 {
-                    try
+                    auto dev = get_first_or_default_device(pipe);
+                    _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
+                    return _resolved_profile;
+                }
+                else
+                {
+                    for (auto dev_info : devs)
                     {
-                        auto dev = dev_info->create_device();
-                        _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
-                        return _resolved_profile;
+                        try
+                        {
+                            auto dev = dev_info->create_device();
+                            _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
+                            return _resolved_profile;
+                        }
+                        catch (...) {}
                     }
-                    catch (...) {}
                 }
 
                 throw std::runtime_error("Failed to resolve request. No device found that satisfies all requirements");
