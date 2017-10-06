@@ -54,9 +54,39 @@ namespace librealsense
         catch (const std::exception& e) { if (error) *error = new rs2_error{ e.what(), name, move(args) }; }
         catch (...) { if (error) *error = new rs2_error{ "unknown error", name, move(args) }; }
     }
+    
+    class api_logger
+    {
+    public:
+        api_logger(std::string function)
+            : _function(std::move(function))
+        {
+            _start = std::chrono::high_resolution_clock::now();
+            LOG_INFO("Begin " << _function);
+        }
+        
+        ~api_logger()
+        {
+            auto d = std::chrono::high_resolution_clock::now() - _start;
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(d).count();
+            LOG_INFO("End " << _function << ", took " << ms << "ms");
+        }
+    private:
+        std::string _function;
+        std::chrono::high_resolution_clock::time_point _start;
+    };
+    
+#ifdef TRACE_API
+#define BEGIN_API_CALL { api_logger __api_logger(__FUNCTION__);\
+try
+#else
+#define BEGIN_API_CALL { try
+#endif
 
-    #define NOEXCEPT_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rs2_error* e; librealsense::translate_exception(__FUNCTION__, ss.str(), &e); LOG_WARNING(rs2_get_error_message(e)); rs2_free_error(e); return R; }
-    #define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); librealsense::translate_exception(__FUNCTION__, ss.str(), error); return R; }
+#define NOEXCEPT_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rs2_error* e; librealsense::translate_exception(__FUNCTION__, ss.str(), &e); LOG_WARNING(rs2_get_error_message(e)); rs2_free_error(e); return R; } }
+#define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); librealsense::translate_exception(__FUNCTION__, ss.str(), error); return R; } }
+#define NOARG_HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { librealsense::translate_exception(__FUNCTION__, "", error); return R; } }
+    
     #define VALIDATE_NOT_NULL(ARG) if(!(ARG)) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
     #define VALIDATE_ENUM(ARG) if(!librealsense::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }
     #define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }
