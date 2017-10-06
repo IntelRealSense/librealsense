@@ -7,8 +7,41 @@
 #include "environment.h"
 
 using namespace librealsense;
-#include <functional>
 
+device::device(std::shared_ptr<context> ctx,
+               const platform::backend_device_group group,
+               bool device_changed_notifications)
+    : _context(ctx), _group(group), _is_valid(true),
+      _device_changed_notifications(device_changed_notifications)
+{
+    if (_device_changed_notifications)
+    {
+        auto cb = new devices_changed_callback_internal([this](rs2_device_list* removed, rs2_device_list* added)
+        {
+            // Update is_valid variable when device is invalid
+            std::lock_guard<std::mutex> lock(_device_changed_mtx);
+            for (auto& dev_info : removed->list)
+            {
+                if (dev_info.info->get_device_data() == _group)
+                {
+                    _is_valid = false;
+                    return;
+                }
+            }
+        });
+
+        _callback_id = _context->register_internal_device_callback({ cb, [](rs2_devices_changed_callback* p) { p->release(); } });
+    }
+}
+
+device::~device()
+{
+    if (_device_changed_notifications)
+    {
+        _context->unregister_internal_device_callback(_callback_id);
+    }
+    _sensors.clear();
+}
 
 int device::add_sensor(std::shared_ptr<sensor_interface> sensor_base)
 {

@@ -477,6 +477,7 @@ namespace librealsense
         p.depth_controls.scoreThreshA = 24;
         p.depth_controls.scoreThreshB = 791;
         p.depth_controls.textureCountThreshold = 0;
+        p.depth_controls.textureDifferenceThreshold = 783;
         p.rsm.diffThresh = 3.80778002739f;
         p.rsm.removeThresh = 93;
         p.rsm.rsmBypass = 0;

@@ -93,7 +93,7 @@ void parse_configuration(const vector<string> row, rs2_stream& type, int& width,
     format = parse_format(to_lower(row[FORMAT]));
 }
 
-void configure_stream(pipeline& pipe, std::string filename)
+void configure_stream(rs2::config& cfg, std::string filename)
 {
     ifstream file(filename);
 
@@ -119,7 +119,7 @@ void configure_stream(pipeline& pipe, std::string filename)
 
         // correctness check
         parse_configuration(row, stream_type, width, height, format, fps);
-        pipe.enable_stream(stream_type, 0, width, height, format, fps);
+        cfg.enable_stream(stream_type, 0, width, height, format, fps);
     }
 }
 
@@ -174,15 +174,16 @@ int main(int argc, char** argv) try
 
     while (!succeed)
     {
-        pipeline pipe;
+        rs2::pipeline pipe;
+        rs2::config config;
         if (config_file.isSet())
         {
-            configure_stream(pipe, config_file.getValue());
+            configure_stream(config, config_file.getValue());
         }
+        
+        rs2::pipeline_profile profile = pipe.start(config);
+        auto dev = profile.get_device();
 
-        pipe.open();
-
-        auto dev = pipe.get_device();
         std::atomic_bool need_to_reset(false);
         for (auto sub : dev.query_sensors())
         {
@@ -195,7 +196,6 @@ int main(int argc, char** argv) try
             });
         }
 
-        pipe.start();
         std::array<std::list<frame_data>, NUM_OF_STREAMS> buffer;
         auto start_time = chrono::high_resolution_clock::now();
         const auto ready = [&]()
@@ -212,7 +212,7 @@ int main(int argc, char** argv) try
             }
 
             bool collected_enough_frames = true;
-            for (auto&& profile : pipe.get_active_streams())
+            for (auto&& profile : pipe.get_active_profile().get_streams())
             {
                 if (buffer[(int)profile.stream_type()].size() < max_frames_number)
                 {
@@ -220,7 +220,7 @@ int main(int argc, char** argv) try
                 }
             }
 
-            if (timeout.isSet() && !max_frames.isSet()) 
+            if (timeout.isSet() && !max_frames.isSet())
                 return timed_out;
 
             return timed_out || collected_enough_frames;
@@ -237,7 +237,7 @@ int main(int argc, char** argv) try
             data.ts = f.get_timestamp();
             data.domain = f.get_frame_timestamp_domain();
             data.arrival_time = arrival_time.count();
- 
+
             buffer[(int)data.stream_type].push_back(data);
 
             if (need_to_reset)

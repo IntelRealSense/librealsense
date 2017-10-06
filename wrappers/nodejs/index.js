@@ -1717,45 +1717,35 @@ class Pipeline {
     this.ctx = undefined;
   }
 
-  /**
-   * Retrieve the device used by the pipeline
-   *
-   * @return {Device} see {@link Device}
-   */
-  getDevice() {
-    const dev = this.cxxPipeline.getDevice();
-    if (dev) return new Device(dev);
-
-    return undefined;
-  }
-
+  
   /**
    * Start streaming
    * There are 2 acceptable syntax
    *
    * <pre><code>
    *  Syntax 1. start()
-   *  Syntax 2. start(align)
+   *  Syntax 2. start(config)
    * </code></pre>
-   * Syntax 1 uses the default configuration or configuration commited by
-   * enable_stream. Syntax 2 starts passing frames into Align object.
-   * Start passing frames into user provided callback
+   * Syntax 1 uses the default configuration.
+   * Syntax 2 used the configured streams and or device of the config parameter
    *
-   * @param {Align} [align] - the {@link Align} object to receive the frame
-   * @return {undefined}
+   * @param {Config} [config] - the {@link Config} object to use for configuration
+   * @return {@link PipelineProfile}
    */
   start() {
     if (this.started === true) return undefined;
 
     if (arguments.length === 0) {
-      this.cxxPipeline.start();
-    } else {
-      if (!(arguments[0] instanceof Align)) {
+      this.started = true;
+      return new PipelineProfile(this.cxxPipeline.start());
+    } 
+    else {
+      if (!(arguments[0] instanceof Config)) {
         throw new TypeError('Invalid argument for Pipeline.start()');
       }
-      this.cxxPipeline.startWithAlign(arguments[0].cxxAlign);
+      this.started = true;
+      return new PipelineProfile(this.cxxPipeline.start(arguments[0].cxxConfig));
     }
-    this.started = true;
     return undefined;
   }
 
@@ -1780,6 +1770,113 @@ class Pipeline {
     const timeoutValue = timeout || 5000;
     const cxxFrameSet = this.cxxPipeline.waitForFrames(timeoutValue);
     return cxxFrameSet ? new FrameSet(cxxFrameSet) : undefined;
+  }
+
+  getActiveProfile() {
+    if (this.started === false) return undefined;
+
+    return new PipelineProfile(this.cxxPipeline.getActiveProfile())
+  }
+}
+
+/**
+ * 
+ */
+class PipelineProfile {
+  constructor(profile) {
+      this.cxxPipelineProfile = profile;
+    }
+
+
+    getStreams() {
+      profiles = this.cxxPipelineProfile.getStreams();
+      const array = [];
+      profiles.forEach((profile) => {
+              array.push(new StreamProfile(profile));
+      });
+      return array;
+    }
+
+    getDevice() {
+      return new Device(this.cxxPipelineProfile.getDevice());
+    }
+}
+
+class Config {
+  constructor() {
+    this.cxxConfig = new RS2.RSConfig();
+    this.cxxConfig.create();
+  }
+
+  enableStream(stream, index, width, height, format, fps){
+    let s = checkStringNumber(stream,
+        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+        stream2Int,
+        'Config.enableStream() expects a number or string to specify the stream',
+        'Config.enableStream() expects a valid value to specify the stream');
+
+    let f = checkStringNumber(format,
+      constants.format.FORMAT_ANY, constants.format.FORMAT_COUNT,
+      format2Int,
+      'Config.enableStream() expects a property \'format\' to be string or integer',
+      'Config.enableStream() expects a valid value to specify the format');
+
+    this.cxxConfig.enableStream(s, index, width, height, f, fps);
+  }
+
+  disableStream(stream){
+    let s = checkStringNumber(stream,
+    constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+    stream2Int,
+    'Config.enableStream() expects a number or string to specify the stream',
+    'Config.enableStream() expects a valid value to specify the stream');
+
+    this.cxxConfig.disableStream(s);
+  }
+
+  enableAllStreams(){
+    this.cxxConfig.enableAllStreams();
+  }
+
+  disableAllStreams() {
+    this.cxxConfig.disableAllStreams();
+  }
+
+  enableDevice(serial){
+    this.cxxConfig.enableDevice(serial);
+  }
+
+  enableDeviceFromFile(filename){
+    this.cxxConfig.enableDeviceFromFile(filename);
+  }
+
+  enableRecordToFile(filename) {
+    this.cxxConfig.enableRecordToFile(filename);
+  }
+
+  resolve(pipeline) {
+    if (arguments.length === 0) {
+        throw new TypeError('Invalid argument for Config.resolve()');
+    } 
+    else {
+      if (!(arguments[0] instanceof Pipeline)) {
+        throw new TypeError('Invalid argument for Config.resolve()');
+      }
+      return new PipelineProfile(this.cxxConfig.resolve(arguments[0].cxxPipeline));
+    }
+
+    return undefined;
+  }
+  canResolve(pipeline) {
+    if (arguments.length === 0) {
+        throw new TypeError('Invalid argument for Config.canResolve()');
+    } 
+    else {
+      if (!(arguments[0] instanceof Pipeline)) {
+        throw new TypeError('Invalid argument for Config.canResolve()');
+      }
+      return this.cxxConfig.canResolve(arguments[0].cxxPipeline);
+    }
   }
 }
 
@@ -2137,387 +2234,6 @@ function checkStreamProfileObject(profile) {
     format: format,
   };
 }
-
-/**
- * A handy class to configure RealSense camera
- */
-util.CameraConfig = class CameraConfig {
-  /**
-   *
-   */
-  constructor() {
-    this.requests = {};
-    this.presets = {};
-    this.device = undefined;
-  }
-
-  /**
-   * Enalbe a stream
-   *
-   *  There are 3 acceptable forms of syntax:
-   * <pre><code>
-   *  Syntax 1. enableStream(streamProfile)
-   *  Syntax 2. enableStream(stream, width, height, fps, format)
-   *  Syntax 3. enableStream(stream, presetPreference)
-   * </code></pre>
-   *  Syntax 1 & 2 are equivalent, syntax 3 is hiding fine details of stream attributes
-   *
-   * @param {String|Integer} stream - See {@link StreamProfileObject} for details
-   * @param {Integer} width - See {@link StreamProfileObject} for details
-   * @param {Integer} height - See {@link StreamProfileObject} for details
-   * @param {Integer} fps - See {@link StreamProfileObject} for details
-   * @param {String|Integer} format - See {@link StreamProfileObject} for details
-   * @param {StreamProfile} profile configuration commited by the device
-   * @param {String|Integer} presetPreference - The preset preference of the stream,
-   * see [util.preset_preference]{@link preset_preference} for available values
-   *
-   * @return {undefined}
-   */
-  enableStream() {
-    if (arguments.length === 1) {
-      let profile = checkStreamProfileObject(arguments[0]);
-      if (profile.stream in this.presets) {
-        delete this.presets[profile.stream];
-      }
-      this.requests[profile.stream] = profile;
-    } else if (arguments.length == 2) {
-      let s = checkStringNumber(arguments[0],
-          constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-          stream2Int,
-          'CameraConfig.enableStream(stream, presetPreference) expects a number or string as the 1st argument', // eslint-disable-line
-          'CameraConfig.enableStream(stream, presetPreference) expects a valid value as the 1st argument'); // eslint-disable-line
-
-      let p = checkStringNumber(arguments[1],
-          preset_preference.PRESET_BEGIN, preset_preference.PRESET_END,
-          CameraConfig.convertPresetPreferenceString,
-          'CameraConfig.enableStream(stream, presetPreference) expects a number or string as the 2nd argument', // eslint-disable-line
-          'CameraConfig.enableStream(stream, presetPreference) expects a valid value as the 2nd argument'); // eslint-disable-line
-
-      if (s in this.requests) {
-        delete this.requests[s];
-      }
-      this.presets[s] = p;
-    } else if (arguments.length === 5) {
-      let profile = {
-        stream: arguments[0],
-        width: arguments[1],
-        height: arguments[2],
-        fps: arguments[3],
-        format: arguments[4],
-      };
-      this.enableStream(profile);
-    } else {
-      throw new TypeError('CameraConfig.enableStream expects 1, 2 or 5 arguments');
-    }
-  }
-
-  /**
-   * Disable a stream
-   * @param {String|Integer} stream - See {@link StreamProfileObject} for details
-   * @return {undefined}
-   */
-  disableStream(stream) {
-    if (arguments.length !== 1) {
-      throw new TypeError('CameraConfig.disableStream(stream) expects 1 argument');
-    }
-
-    let s = checkStringNumber(arguments[0],
-        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-        stream2Int,
-        'CameraConfig.disableStream(stream) expects a number or string as the 1st argument',
-        'CameraConfig.disableStream(stream) expects a valid value as the 1st argument');
-
-    delete this.requests[s];
-    delete this.presets[s];
-  }
-
-  /**
-   * Enable all streams
-   * @return {undefined}
-   * @param {String|Integer} presetPreference - The preset preference of the stream,
-   * see [util.preset_preference]{@link preset_preference} for available values
-   * @return {undefined}
-   */
-  enableAllStreams(presetPreference) {
-    let p = checkStringNumber(arguments[0],
-        preset_preference.PRESET_BEGIN, preset_preference.PRESET_END,
-        CameraConfig.convertPresetPreferenceString,
-        'CameraConfig.enableAllStreams(presetPreference) expects a number or string as the 1st argument', // eslint-disable-line
-        'CameraConfig.enableAllStreams(presetPreference) expects a valid value as the 1st argument'); // eslint-disable-line
-    range(stream.STREAM_DEPTH, stream.STREAM_COUNT).forEach((s) => {
-      this.enableStream(s, p);
-    });
-  }
-
-  /**
-   * Disable all streams
-   * @return {undefined}
-   */
-  disableAllStreams() {
-    this.presets = {};
-    this.requests = {};
-  }
-
-  static canEnableProfileOnSpecificDevice(device, profile) {
-    let profiles = device.getStreamProfiles();
-    for (let i = 0; i < profiles.length; i++) {
-      if (profiles[i].stream === profile.stream &&
-          profiles[i].width === profile.width &&
-          profiles[i].height === profile.height &&
-          profiles[i].fps === profile.fps &&
-          profiles[i].format === profile.format) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Query if a stream can be enabled with provided configuration on the device and its adjacent
-   * devices.
-   *  There are 3 acceptable forms of syntax:
-   * <pre><code>
-   *  Syntax 1. canEnableStream(device, stream, width, height, fps, format)
-   *  Syntax 2. canEnableStream(device, streamProfile)
-   *
-   * @param {Device} device - The RealSense camera device object
-   * @param {String|Integer} stream - See {@link stream} for available values
-   * @param {Integer} width - frame width in pixels
-   * @param {Integer} height - frame height in pixels
-   * @param {Integer} fps - frame rate
-   * @param {String|Integer} format - frame format, see {@link format} for available values
-   *
-   * @param {StreamProfileObject} profile - the stream profile, see {@link StreamProfileObject}
-   * @return {Boolean}
-   */
-  static canEnableStream(device, profile) {
-    let p;
-    if (arguments.length === 2) {
-      p = checkStreamProfileObject(profile);
-    } else if (arguments.length === 6) {
-      p = checkStreamProfileObject({
-        stream: arguments[1],
-        width: arguments[2],
-        height: arguments[3],
-        fps: arguments[4],
-        format: arguments[5],
-      });
-    } else {
-      throw new TypeError('CameraConfig.canEnableStream expects 2 or 6 arguments');
-    }
-    let devs = device.getAdjacentDevices();
-    for (let dev of devs) {
-      if (CameraConfig.canEnableProfileOnSpecificDevice(dev, p)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Given the preset on a stream, return the profile.
-   *
-   * @param {Device} device - The RealSense camera device object
-   * @param {String|Integer} stream - See {@link stream} for available values
-   * @param {String|Integer} presetPreference - The preset preference of the stream,
-   * see [util.preset_preference]{@link preset_preference} for available values
-   * @return {StreamProfileObject} the suitable profile matched the preference.
-   */
-  static getSuitableProfileForPreset(device, stream, presetPreference) {
-    let profiles = device.getStreamProfiles(stream);
-    let pre = checkStringNumber(presetPreference,
-        preset_preference.PRESET_BEGIN, preset_preference.PRESET_END,
-        CameraConfig.convertPresetPreferen3rString,
-        'CameraConfig.getSuitableProf3reForPreset(device, stream, presetPreference) expects a number or string as the 3rd argument', // eslint-disable-line
-        'CameraConfig.getSuitableProfileForPreset(device, stream, presetPreference) expects a valid value as the 3rd argument'); // eslint-disable-line
-
-    if (pre === preset_preference.BEST_QUALITY) {
-      profiles.sort((p1, p2) => {
-        // TODO: remove this hardcoded condition for 640, 480 when native realsense lib updated.
-        if (p1.width == 640 ) {
-          if (p2.width != 640) {
-            return 1;
-          }
-        }
-        if (p2.width == 640 ) {
-          if (p1.width != 640) {
-            return -1;
-          }
-        }
-        if (p1.height == 480) {
-          if (p2.height != 480) {
-            return 1;
-          }
-        }
-        if (p2.height == 480) {
-          if (p1.height != 480) {
-            return -1;
-          }
-        }
-        if (p1.fps === 30) {
-          if (p2.fps != 30) {
-            return 1;
-          }
-        }
-        if (p2.fps === 30) {
-          if (p1.fps != 30) {
-            return -1;
-          }
-        }
-        if (p1.format === constants.format.FORMAT_Y8) {
-          if (p2.format != constants.format.FORMAT_Y8) {
-           return 1;
-          }
-        }
-        if (p2.format === constants.format.FORMAT_Y8) {
-          if (p1.format != constants.format.FORMAT_Y8) {
-            return -1;
-          }
-        }
-        if (p1.format === constants.format.FORMAT_RGB8) {
-          if (p2.format != constants.format.FORMAT_RGB8) {
-           return 1;
-          }
-        }
-        if (p2.format === constants.format.FORMAT_RGB8) {
-          if (p1.format != constants.format.FORMAT_RGB8) {
-           return -1;
-          }
-        }
-        return p1.format - p2.format;
-        // The below logic will be enabled if rsutil2.hpp's sort_best_quality is updated
-        // if (p1.width < p2.width)
-        //   return -1;
-        // else if (p1.width > p2.width)
-        //   return 1;
-        // else if (p1.height < p2.height)
-        //   return -1;
-        // else if (p1.height > p2.height)
-        //   return 1;
-        // else if (p1.fps < p2.fps)
-        //   return -1;
-        // else if (p1.fps > p2.fps)
-        //   return 1;
-        // else if (p1.format < p2.format)
-        //   return -1;
-        // else if (p1.format > p2.format)
-        //   return 1;
-        // else
-        //   return 0;
-      });
-    } else if (pre === preset_preference.LARGEST_IMAGE) {
-      profiles.sort((p1, p2) => {
-        return p1.width*p1.height - p2.width*p2.height;
-      });
-    } else if (pre === preset_preference.HIGHEST_FRAMERATE) {
-      profiles.sort((p1, p2) => {
-        return p1.fps - p2.fps;
-      });
-    }
-    return profiles[profiles.length-1];
-  }
-
-  /**
-   * Open the streams
-   *
-   * @param {Device} device - The RealSense camera device object
-   * @return {util.Streams}
-   */
-  open(device) {
-    // TODO: carry out the config stors in this.presets & this.requests
-    if (!(device instanceof Device)) {
-      throw new TypeError('CameraConfig.open(device) expects a Device as 1st argument');
-    }
-
-    this.device = device;
-    let devices = device.getAdjacentDevices();
-    let profilesArray = [];
-    let profileIndex = 0;
-    let streamToDevIndexMap = {};
-    let devIndexToProfileIndexArrayMap = {};
-
-    for (let r in this.requests) { // eslint-disable-line
-      let profile = this.requests[r];
-      for (let index=0; index < devices.length; index++) {
-        if (CameraConfig.canEnableProfileOnSpecificDevice(devices[index], profile)) {
-          profilesArray.push(profile);
-          streamToDevIndexMap[profile.stream] = index;
-          if (!devIndexToProfileIndexArrayMap[index]) {
-            devIndexToProfileIndexArrayMap[index] = [];
-          }
-          devIndexToProfileIndexArrayMap[index].push(profileIndex);
-          profileIndex++;
-          break;
-        }
-      }
-    }
-
-    for (let i in this.presets) { // eslint-disable-line
-      for (let index=0; index < devices.length; index++ ) {
-        let profile = CameraConfig.getSuitableProfileForPreset(devices[index], parseInt(i),
-            this.presets[i]);
-        if (profile) {
-          profilesArray.push(profile);
-          streamToDevIndexMap[profile.stream] = index;
-          if (!devIndexToProfileIndexArrayMap[index]) {
-            devIndexToProfileIndexArrayMap[index] = [];
-          }
-          devIndexToProfileIndexArrayMap[index].push(profileIndex);
-          profileIndex++;
-          break;
-        }
-      }
-    }
-    // actually open all profiles
-    for (let index in devIndexToProfileIndexArrayMap) { // eslint-disable-line
-      let device = devices[parseInt(index)];
-      let profileIndexes = devIndexToProfileIndexArrayMap[index];
-      let profilesToOpen = [];
-      for (let i = 0; i < profileIndexes.length; i++) {
-        profilesToOpen.push(profilesArray[i]);
-      }
-      device.open(profilesToOpen);
-    }
-    return new util.Streams(devices, profilesArray, streamToDevIndexMap,
-        devIndexToProfileIndexArrayMap);
-  }
-
-  /**
-   * Constant, the best overall quality that is available in the camera
-   * @return {Integer}
-   */
-  static get BEST_QUALITY() {
-    return util.preset_preference.BEST_QUALITY;
-  }
-
-  /**
-   * Constant, the largest image dimension that is available in the camera
-   * @return {Integer}
-   */
-  static get LARGEST_IMAGE() {
-    return util.preset_preference.LARGEST_IMAGE;
-  }
-
-  /**
-   * Constant, the highest frame rate that is available in the camera
-   * @return {Integer}
-   */
-  static get HIGHEST_FRAMERATE() {
-    return util.preset_preference.HIGHEST_FRAMERATE;
-  }
-
-  static convertPresetPreferenceString(str) {
-    switch (str.toLowerCase()) {
-      case 'best-quality':
-        return util.preset_preference.BEST_QUALITY;
-      case 'largest-image':
-        return util.preset_preference.BEST_QUALITY;
-      case 'highest-framerate':
-        return util.preset_preference.HIGHEST_FRAMERATE;
-    }
-    return -1;
-  }
-};
 
 function equalsToEither(arg, strConst, numConst) {
   return (typeof arg === 'string' && arg === strConst) ||
@@ -4316,6 +4032,8 @@ module.exports = {
 
   Context: Context,
   Pipeline: Pipeline,
+  PipelineProfile: PipelineProfile,
+  Config: Config,
   Colorizer: Colorizer,
   Device: Device,
   Sensor: Sensor,

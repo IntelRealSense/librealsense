@@ -349,14 +349,6 @@ int rs2_stream_profile_is(const rs2_stream_profile* mode, rs2_extension type, rs
 void rs2_get_video_stream_resolution(const rs2_stream_profile* from, int* width, int* height, rs2_error** error);
 
 /**
-* Returns the expected bandwidth in bytes per second for specific stream profile
-* \param[in] mode        input stream profile
-* \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return                expected bandwidth in bytes per second for specific stream profile
-*/
-int rs2_get_stream_profile_size(const rs2_stream_profile* profile, rs2_error** error);
-
-/**
 * Returns non-zero if selected profile is recommended for the sensor
 * This is an optional hint we offer to suggest profiles with best performance-quality tradeof
 * \param[in] mode        input stream profile

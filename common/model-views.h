@@ -568,7 +568,7 @@ namespace rs2
 
     private:
         std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
-        void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, 
+        void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y,
                        int id, const ImVec4& color, const std::string& tooltip = "");
 
         streams_layout _layout;

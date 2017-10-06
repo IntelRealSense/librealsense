@@ -89,11 +89,6 @@ namespace librealsense
         _is_default = true;
     }
 
-    size_t stream_profile_base::get_size() const
-    {
-        return get_image_bpp(get_format()) * get_framerate();
-    }
-
     std::shared_ptr<stream_profile_interface> stream_profile_base::clone() const
     {
         auto res = std::make_shared<stream_profile_base>(get_backend_profile());

@@ -22,6 +22,7 @@ namespace librealsense
     class device : public virtual device_interface, public info_container
     {
     public:
+        virtual ~device();
         size_t get_sensors_count() const override;
 
         sensor_interface& get_sensor(size_t subdevice) override;
@@ -42,17 +43,28 @@ namespace librealsense
 
         std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
 
+        bool is_valid() const override
+        {
+            std::lock_guard<std::mutex> lock(_device_changed_mtx);
+            return _is_valid;
+        }
+
     protected:
         int add_sensor(std::shared_ptr<sensor_interface> sensor_base);
         void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t groupd_index);
         uvc_sensor& get_uvc_sensor(int subdevice);
 
-        explicit device(std::shared_ptr<context> ctx, const platform::backend_device_group group): _context(ctx),_group(group)  {}
+        explicit device(std::shared_ptr<context> ctx,
+                        const platform::backend_device_group group,
+                        bool device_changed_notifications = false);
 
     private:
         std::map<int, std::pair<uint32_t, std::shared_ptr<const stream_interface>>> _extrinsics;
         std::vector<std::shared_ptr<sensor_interface>> _sensors;
         std::shared_ptr<context> _context;
         const platform::backend_device_group _group;
+        bool _is_valid, _device_changed_notifications;
+        mutable std::mutex _device_changed_mtx;
+        uint64_t _callback_id;
     };
 }

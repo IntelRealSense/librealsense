@@ -26,7 +26,7 @@ pybind11_add_module(pyrealsense2 SHARED python.cpp)
 target_link_libraries(pyrealsense2 PRIVATE ${DEPENDENCIES})
 set_target_properties(pyrealsense2 PROPERTIES VERSION
         ${REALSENSE_VERSION_STRING} SOVERSION ${REALSENSE_VERSION_MAJOR})
-set_target_properties(pyrealsense2 PROPERTIES FOLDER Wrappers)
+set_target_properties(pyrealsense2 PROPERTIES FOLDER Wrappers/python)
 install(TARGETS pyrealsense2 EXPORT realsense2Targets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -44,7 +44,7 @@ target_link_libraries(pybackend2 PRIVATE ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIB
 set_target_properties(pybackend2 PROPERTIES
                         VERSION     ${REALSENSE_VERSION_STRING}
                         SOVERSION   ${REALSENSE_VERSION_MAJOR})
-set_target_properties(pybackend2 PROPERTIES FOLDER Wrappers)
+set_target_properties(pybackend2 PROPERTIES FOLDER Wrappers/python)
 include_directories(pybackend2 ../../include)
 install(TARGETS pybackend2
         EXPORT realsense2Targets

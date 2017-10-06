@@ -51,7 +51,6 @@ namespace librealsense
         bool is_camera_in_advanced_mode() const;
 
         uint8_t _depth_device_idx;
-        std::shared_ptr<uvc_sensor> _depth_sensor;
 
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
 

@@ -109,7 +109,7 @@ namespace rs2
     public:
         /**
         * open subdevice for exclusive access, by committing to a configuration
-        * \param[in] profile    configuration commited by the device
+        * \param[in] profile    configuration committed by the device
         */
         void open(const stream_profile& profile) const
         {

@@ -14,29 +14,31 @@
 
 void render_slider(rect location, float& clipping_dist);
 void remove_background(rs2::video_frame& color, const rs2::depth_frame& depth_frame, float depth_scale, float clipping_dist);
-bool try_get_depth_scale(rs2::pipeline& p, float& scale);
+bool try_get_depth_scale(rs2::device dev, float& scale);
 int main(int argc, char * argv[]) try
 {
     // Create and initialize GUI related objects
     window app(1280, 720, "CPP - Align Example"); // Simple window handling
-    ImGui_ImplGlfw_Init(app, false);      // ImGui library intializition 
+    ImGui_ImplGlfw_Init(app, false);      // ImGui library intializition
     rs2::colorizer c;                          // Helper to colorize depth images
     texture renderer;                     // Helper for renderig images
 
     const rs2_stream align_to = RS2_STREAM_COLOR;
-    // Using the context to create a rs2::align object. 
+    // Using the context to create a rs2::align object.
     // rs2::align allows you to perform aliment of depth frames to others
     rs2::align align(align_to);
-    
+
     // Create a pipeline to easily configure and start the camera
     rs2::pipeline pipe;
-    
-    // By passing align to Pipeline::start, frames will be passed to align's handler
-    pipe.start();
-    
+    //Calling pipeline's start() without any additional parameters will start the first device
+    // with its default streams.
+    //The start function returns the pipeline profile which the pipeline used to start the device
+    rs2::pipeline_profile profile = pipe.start();
+
     // Each depth camera might have different units for depth pixels, so we get it here
     float depth_scale;
-    if (!try_get_depth_scale(pipe, depth_scale))
+    //Using the pipeline's profile, we can retrieve the device that the pipeline uses
+    if (!try_get_depth_scale(profile.get_device(), depth_scale))
     {
         std::cerr << "Device does not have a depth sensor" << std::endl;
         return EXIT_FAILURE;
@@ -79,7 +81,7 @@ int main(int argc, char * argv[]) try
         // Calculating the position to place the frame in the window
         rect altered_color_frame_rect{ 0, 0, w, h };
         altered_color_frame_rect = altered_color_frame_rect.adjust_ratio({ static_cast<float>(color_frame.get_width()),static_cast<float>(color_frame.get_height()) });
-        
+
         // Render aligned color
         renderer.render(color_frame, altered_color_frame_rect);
 
@@ -113,11 +115,8 @@ catch (const std::exception & e)
     return EXIT_FAILURE;
 }
 
-bool try_get_depth_scale(rs2::pipeline& p, float& scale)
+bool try_get_depth_scale(rs2::device dev, float& scale)
 {
-    // Get the underlying device from the pipeline
-    rs2::device dev = p.get_device();
-
     // Go over the device's sensors
     for (rs2::sensor& sensor : dev.query_sensors())
     {
@@ -133,7 +132,7 @@ bool try_get_depth_scale(rs2::pipeline& p, float& scale)
 
 void render_slider(rect location, float& clipping_dist)
 {
-    // Some trickery to display the control nicely 
+    // Some trickery to display the control nicely
     static const int flags = ImGuiWindowFlags_NoCollapse
         | ImGuiWindowFlags_NoScrollbar
         | ImGuiWindowFlags_NoSavedSettings
@@ -145,7 +144,7 @@ void render_slider(rect location, float& clipping_dist)
 
     ImGui::SetNextWindowPos({ location.x, location.y + pixels_to_buttom_of_stream_text });
     ImGui::SetNextWindowSize({ slider_window_width + 20, location.h - (pixels_to_buttom_of_stream_text * 2) });
-    
+
     //Render the vertical slider
     ImGui::Begin("slider", nullptr, flags);
     ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor(215.f / 255, 215.0f / 255, 215.0f / 255));

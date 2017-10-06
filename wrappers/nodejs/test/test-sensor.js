@@ -230,7 +230,6 @@ describe('Sensor test', function() {
         assert.equal(typeof profiles[i].format, 'number');
         assert.equal(typeof profiles[i].fps, 'number');
         assert.equal(typeof profiles[i].isDefault, 'boolean');
-        assert.equal(typeof profiles[i].size, 'number');
         assert.equal(typeof profiles[i].streamIndex, 'number');
         assert.equal(typeof profiles[i].streamType, 'number');
         assert.equal(typeof profiles[i].uniqueID, 'number');
@@ -256,14 +255,13 @@ describe('Sensor test', function() {
         const format = profiles[i].format;
         const fps = profiles[i].fps;
         const isDefault = profiles[i].isDefault;
-        const size = profiles[i].size;
         const streamIndex = profiles[i].streamIndex;
         const streamType = profiles[i].streamType;
         const uniqueID = profiles[i].uniqueID;
         console.log(profiles[i]);
-        console.log(format, fps, isDefault, size, streamIndex, streamType, uniqueID);
+        console.log(format, fps, isDefault, streamIndex, streamType, uniqueID);
         assert.doesNotThrow(() => { // jshint ignore:line
-          sensor.open([format, fps, isDefault, size, streamIndex,
+          sensor.open([format, fps, isDefault, streamIndex,
             streamType, uniqueID]);
         });
       }

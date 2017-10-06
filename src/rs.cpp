@@ -53,6 +53,16 @@ struct rs2_pipeline
     std::shared_ptr<librealsense::pipeline> pipe;
 };
 
+struct rs2_config
+{
+    std::shared_ptr<librealsense::pipeline_config> config;
+};
+
+struct rs2_pipeline_profile
+{
+    std::shared_ptr<librealsense::pipeline_profile> profile;
+};
+
 struct rs2_frame_queue
 {
     explicit rs2_frame_queue(int cap)
@@ -136,13 +146,6 @@ void notifications_proccessor::raise_notification(const notification n)
         std::lock_guard<std::mutex> lock(_callback_mutex);
         rs2_notification noti(&n);
         if (_callback)_callback->on_notification(&noti);
-        else
-        {
-#ifdef DEBUG
-
-#endif // !DEBUG
-
-        }
     });
 }
 
@@ -178,7 +181,8 @@ rs2_device* rs2_device_hub_wait_for_device(rs2_context* ctx, const rs2_device_hu
 {
     VALIDATE_NOT_NULL(hub);
     VALIDATE_NOT_NULL(ctx);
-    return new rs2_device{ ctx->ctx, /*TODO: how does this affect the new device*/ nullptr, hub->hub->wait_for_device() };
+    auto dev = hub->hub->wait_for_device();
+    return new rs2_device{ ctx->ctx, std::make_shared<readonly_device_info>(dev), dev };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, hub, ctx)
 
@@ -356,13 +360,6 @@ void rs2_get_video_stream_resolution(const rs2_stream_profile* from, int* width,
     if (height) *height = vid->get_height();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, from, width, height)
-
-int rs2_get_stream_profile_size(const rs2_stream_profile* profile, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(profile);
-    return static_cast<int>(profile->profile->get_size());
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, profile)
 
 int rs2_is_stream_profile_default(const rs2_stream_profile* profile, rs2_error** error) BEGIN_API_CALL
 {
@@ -1259,96 +1256,13 @@ rs2_pipeline* rs2_create_pipeline(rs2_context* ctx, rs2_error ** error) BEGIN_AP
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx)
 
-rs2_device* rs2_pipeline_get_device(rs2_context* ctx, rs2_pipeline* pipe, rs2_error ** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(pipe);
-
-    return new rs2_device{ ctx->ctx, /*TODO: how does this affect the new device*/ nullptr, pipe->pipe->get_device()};
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)
-
-void rs2_start_pipeline_with_callback(rs2_pipeline* pipe, rs2_frame_callback* callback, rs2_error ** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(pipe);
-
-    pipe->pipe->start({ callback, [](rs2_frame_callback* p) { p->release(); } });
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
-
-void rs2_start_pipeline(rs2_pipeline* pipe, rs2_error ** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(pipe);
-
-    pipe->pipe->start();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
-
-void rs2_open_pipeline(rs2_pipeline* pipe, rs2_error ** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(pipe);
-
-    pipe->pipe->open();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
-
-void rs2_start_pipeline_with_callback_cpp( rs2_pipeline* pipe, rs2_frame_callback* callback, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(pipe);
-    VALIDATE_NOT_NULL(callback);
-    pipe->pipe->start({ callback, [](rs2_frame_callback* p) { p->release(); } });
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, pipe, callback)
-
-void rs2_start_pipeline_with_callback( rs2_pipeline* pipe,  rs2_frame_callback_ptr on_frame, void* user, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(pipe);
-    VALIDATE_NOT_NULL(on_frame);
-    librealsense::frame_callback_ptr callback(
-        new librealsense::frame_callback(on_frame, user));
-    pipe->pipe->start(move(callback));
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, pipe, on_frame, user)
-
-void rs2_stop_pipeline(rs2_pipeline* pipe, rs2_error ** error) BEGIN_API_CALL
+void rs2_pipeline_stop(rs2_pipeline* pipe, rs2_error ** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(pipe);
 
     pipe->pipe->stop();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
-
-void rs2_enable_pipeline_stream(rs2_pipeline* pipe, rs2_stream stream, int index, int width, int height, rs2_format format, int framerate, rs2_error ** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(pipe);
-
-    pipe->pipe->enable(stream, index,  width,  height,  format, framerate);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
-
-void rs2_enable_pipeline_device(rs2_pipeline* pipe, const char* serial, rs2_error ** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(pipe);
-
-    pipe->pipe->enable(serial);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
-
-void rs2_disable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, rs2_error ** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(pipe);
-
-    pipe->pipe->disable_stream(stream);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
-
-void rs2_disable_all_streams_pipeline(rs2_pipeline* pipe, rs2_error ** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(pipe);
-
-    pipe->pipe->disable_all();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
-
 
 rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, unsigned int timeout_ms, rs2_error ** error) BEGIN_API_CALL
 {
@@ -1377,27 +1291,6 @@ int rs2_pipeline_poll_for_frames(rs2_pipeline * pipe, rs2_frame** output_frame, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, pipe, output_frame)
 
-rs2_stream_profile_list* rs2_pipeline_get_active_streams(rs2_pipeline * pipe, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(pipe);
-    return new rs2_stream_profile_list{ pipe->pipe->get_active_streams() };
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)
-
-const rs2_stream_profile* rs2_pipeline_get_stream_type_selection(const rs2_stream_profile_list* list, rs2_stream stream, int index, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(list);
-   
-    for (auto prof : list->list)
-    {
-        if(prof->get_stream_type() == stream && prof ->get_stream_index() == index)
-            return prof->get_c_wrapper();
-    }
-
-    throw librealsense::invalid_value_exception(librealsense::to_string() << "stream " << stream << " is not contained in list!");
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
-
 void rs2_delete_pipeline(rs2_pipeline* pipe) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(pipe);
@@ -1406,6 +1299,147 @@ void rs2_delete_pipeline(rs2_pipeline* pipe) BEGIN_API_CALL
 }
 NOEXCEPT_RETURN(, pipe)
 
+rs2_pipeline_profile* rs2_pipeline_start(rs2_pipeline* pipe, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(pipe);
+    return new rs2_pipeline_profile{ pipe->pipe->start(std::make_shared<pipeline_config>()) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)
+
+rs2_pipeline_profile* rs2_pipeline_start_with_config(rs2_pipeline* pipe, rs2_config* config, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(pipe);
+    VALIDATE_NOT_NULL(config);
+    return new rs2_pipeline_profile{ pipe->pipe->start(config->config) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe, config)
+
+rs2_pipeline_profile* rs2_pipeline_get_active_profile(rs2_pipeline* pipe, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(pipe);
+
+    return new rs2_pipeline_profile{ pipe->pipe->get_active_profile() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)
+
+rs2_device* rs2_pipeline_profile_get_device(rs2_pipeline_profile* profile, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(profile);
+
+    auto dev = profile->profile->get_device();
+    auto dev_info = std::make_shared<librealsense::readonly_device_info>(dev);
+    return new rs2_device{ dev->get_context(), dev_info , dev };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, profile)
+
+rs2_stream_profile_list* rs2_pipeline_profile_get_streams(rs2_pipeline_profile* profile, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(profile);
+    return new rs2_stream_profile_list{ profile->profile->get_active_streams() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, profile)
+
+void rs2_delete_pipeline_profile(rs2_pipeline_profile* profile) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(profile);
+
+    delete profile;
+}
+NOEXCEPT_RETURN(, profile)
+
+//config
+rs2_config* rs2_create_config(rs2_error** error) BEGIN_API_CALL
+{
+    return new rs2_config{ std::make_shared<librealsense::pipeline_config>() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, 0)
+
+void rs2_delete_config(rs2_config* config) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(config);
+
+    delete config;
+}
+NOEXCEPT_RETURN(, config)
+
+void rs2_config_enable_stream(rs2_config* config,
+                              rs2_stream stream,
+                              int index,
+                              int width,
+                              int height,
+                              rs2_format format,
+                              int framerate,
+                              rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(config);
+    config->config->enable_stream(stream, index, width, height, format, framerate);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, config, stream, index, width, height, format, framerate)
+
+void rs2_config_enable_all_stream(rs2_config* config, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(config);
+    config->config->enable_all_stream();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, config)
+
+void rs2_config_enable_device(rs2_config* config, const char* serial, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(config);
+    VALIDATE_NOT_NULL(serial);
+
+    config->config->enable_device(serial);
+
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, config, serial)
+
+void rs2_config_enable_device_from_file(rs2_config* config, const char* file, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(config);
+    VALIDATE_NOT_NULL(file);
+
+    config->config->enable_device_from_file(file);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, config, file)
+
+void rs2_config_enable_record_to_file(rs2_config* config, const char* file, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(config);
+    VALIDATE_NOT_NULL(file);
+
+    config->config->enable_record_to_file(file);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, config, file)
+
+void rs2_config_disable_stream(rs2_config* config, rs2_stream stream, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(config);
+    config->config->disable_stream(stream);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, config, stream)
+
+void rs2_config_disable_all_streams(rs2_config* config, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(config);
+    config->config->disable_all_streams();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, config)
+
+rs2_pipeline_profile* rs2_config_resolve(rs2_config* config, rs2_pipeline* pipe, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(config);
+    VALIDATE_NOT_NULL(pipe);
+    return new rs2_pipeline_profile{ config->config->resolve(pipe->pipe) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, config, pipe)
+
+int rs2_config_can_resolve(rs2_config* config, rs2_pipeline* pipe, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(config);
+    VALIDATE_NOT_NULL(pipe);
+    return config->config->can_resolve(pipe->pipe) ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, config, pipe)
 
 rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* proc, rs2_error** error) BEGIN_API_CALL
 {
@@ -1416,12 +1450,13 @@ rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, proc)
 
-rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error)
+rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::syncer_proccess_unit>();
 
     return new rs2_processing_block{ block };
 }
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_frame, rs2_error** error) BEGIN_API_CALL
 {

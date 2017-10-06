@@ -43,9 +43,9 @@ namespace librealsense
     class device_info
     {
     public:
-        virtual std::shared_ptr<device_interface> create_device() const
+        virtual std::shared_ptr<device_interface> create_device(bool register_device_notifications = false) const
         {
-            return create(_ctx);
+            return create(_ctx, register_device_notifications);
         }
 
         virtual ~device_info() = default;
@@ -62,7 +62,8 @@ namespace librealsense
             : _ctx(move(backend))
         {}
 
-        virtual std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx) const = 0;
+        virtual std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx,
+                                                         bool register_device_notifications) const = 0;
 
         std::shared_ptr<context> _ctx;
     };
@@ -85,7 +86,7 @@ namespace librealsense
 
         }
 
-        std::shared_ptr<device_interface> create_device() const override
+        std::shared_ptr<device_interface> create_device(bool) const override
         {
             return _dev;
         }
@@ -94,7 +95,7 @@ namespace librealsense
             return platform::backend_device_group({ platform::playback_device_info{ _dev->get_file_name() } });
         }
 
-        std::shared_ptr<device_interface> create(std::shared_ptr<context>) const override
+        std::shared_ptr<device_interface> create(std::shared_ptr<context>, bool) const override
         {
             return _dev;
         }
@@ -115,7 +116,9 @@ namespace librealsense
         std::vector<std::shared_ptr<device_info>> query_devices() const;
         const platform::backend& get_backend() const { return *_backend; }
 
+        uint64_t register_internal_device_callback(devices_changed_callback_ptr callback);
         void set_devices_changed_callback(devices_changed_callback_ptr callback);
+        void unregister_internal_device_callback(uint64_t cb_id);
 
         std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices, const std::map<std::string, std::shared_ptr<device_info>>& playback_devices) const;
 
@@ -134,13 +137,30 @@ namespace librealsense
 
         std::shared_ptr<platform::device_watcher> _device_watcher;
         std::map<std::string, std::shared_ptr<device_info>> _playback_devices;
+        std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
+
+
         devices_changed_callback_ptr _devices_changed_callback;
-
-
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
         std::map<int, std::map<int, std::weak_ptr<lazy<rs2_extrinsics>>>> _extrinsics;
-        std::mutex _streams_mutex;
+        std::mutex _streams_mutex, _devices_changed_callbacks_mtx;
+    };
 
+    class readonly_device_info : public device_info
+    {
+    public:
+        readonly_device_info(std::shared_ptr<device_interface> dev) : device_info(dev->get_context()), _dev(dev) {}
+        std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx, bool register_device_notifications) const override
+        {
+            return _dev;
+        }
+
+        platform::backend_device_group get_device_data() const override
+        {
+            return _dev->get_device_data();
+        }
+    private:
+        std::shared_ptr<device_interface> _dev;
     };
 
     // Helper functions for device list manipulation:

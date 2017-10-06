@@ -29,8 +29,9 @@ namespace librealsense
     {
     public:
         rs400_device(std::shared_ptr<context> ctx,
-                     const platform::backend_device_group& group)
-            : device(ctx, group),
+                     const platform::backend_device_group& group,
+                     bool register_device_notifications)
+            : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
               ds5_rolling_shutter(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
@@ -44,8 +45,9 @@ namespace librealsense
     {
     public:
         rs410_device(std::shared_ptr<context> ctx,
-                     const platform::backend_device_group& group)
-            : device(ctx, group),
+                     const platform::backend_device_group& group,
+                     bool register_device_notifications)
+            : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
               ds5_rolling_shutter(ctx, group),
               ds5_active(ctx, group),
@@ -62,8 +64,9 @@ namespace librealsense
     {
     public:
         rs415_device(std::shared_ptr<context> ctx,
-                     const platform::backend_device_group& group)
-            : device(ctx, group),
+                     const platform::backend_device_group& group,
+                     bool register_device_notifications)
+            : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
               ds5_rolling_shutter(ctx, group),
               ds5_active(ctx, group),
@@ -78,8 +81,9 @@ namespace librealsense
     {
     public:
         rs420_mm_device(std::shared_ptr<context> ctx,
-                        const platform::backend_device_group group)
-            : device(ctx, group),
+                        const platform::backend_device_group group,
+                        bool register_device_notifications)
+            : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
@@ -92,8 +96,9 @@ namespace librealsense
     {
     public:
         rs420_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group)
-            : device(ctx, group),
+            const platform::backend_device_group& group,
+                     bool register_device_notifications)
+            : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
 
@@ -105,8 +110,9 @@ namespace librealsense
     {
     public:
         rs430_device(std::shared_ptr<context> ctx,
-                     const platform::backend_device_group group)
-            : device(ctx, group),
+                     const platform::backend_device_group group,
+                     bool register_device_notifications)
+            : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
               ds5_active(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
@@ -121,8 +127,9 @@ namespace librealsense
     {
     public:
         rs430_mm_device(std::shared_ptr<context> ctx, 
-                        const platform::backend_device_group group)
-            : device(ctx, group),
+                        const platform::backend_device_group group,
+                        bool register_device_notifications)
+            : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
               ds5_active(ctx, group),
               ds5_motion(ctx, group),
@@ -138,8 +145,9 @@ namespace librealsense
     {
     public:
         rs435_device(std::shared_ptr<context> ctx, 
-                     const platform::backend_device_group group)
-            : device(ctx, group),
+                     const platform::backend_device_group group,
+                     bool register_device_notifications)
+            : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
               ds5_active(ctx, group),
               ds5_color(ctx,  group),
@@ -157,8 +165,9 @@ namespace librealsense
     {
     public:
         rs430_rgb_mm_device(std::shared_ptr<context> ctx,
-                            const platform::backend_device_group group)
-            : device(ctx, group),
+                            const platform::backend_device_group group,
+                            bool register_device_notifications)
+            : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
               ds5_active(ctx, group),
               ds5_color(ctx,  group),
@@ -168,7 +177,8 @@ namespace librealsense
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const;
     };
 
-    std::shared_ptr<device_interface> ds5_info::create(std::shared_ptr<context> ctx) const
+    std::shared_ptr<device_interface> ds5_info::create(std::shared_ptr<context> ctx,
+                                                       bool register_device_notifications) const
     {
         using namespace ds;
 
@@ -179,24 +189,24 @@ namespace librealsense
         switch(pid)
         {
         case RS400_PID:
-            return std::make_shared<rs400_device>(ctx, group);
+            return std::make_shared<rs400_device>(ctx, group, register_device_notifications);
         case RS410_PID:
         case RS460_PID:
-            return std::make_shared<rs410_device>(ctx, group);
+            return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
         case RS415_PID:
-            return std::make_shared<rs415_device>(ctx, group);
+            return std::make_shared<rs415_device>(ctx, group, register_device_notifications);
         case RS420_PID:
-            return std::make_shared<rs420_device>(ctx, group);
+            return std::make_shared<rs420_device>(ctx, group, register_device_notifications);
         case RS420_MM_PID:
-            return std::make_shared<rs420_mm_device>(ctx, group);
+            return std::make_shared<rs420_mm_device>(ctx, group, register_device_notifications);
         case RS430_PID:
-            return std::make_shared<rs430_device>(ctx, group);
+            return std::make_shared<rs430_device>(ctx, group, register_device_notifications);
         case RS430_MM_PID:
-            return std::make_shared<rs430_mm_device>(ctx, group);
+            return std::make_shared<rs430_mm_device>(ctx, group, register_device_notifications);
         case RS430_MM_RGB_PID:
-            return std::make_shared<rs430_rgb_mm_device>(ctx, group);
+            return std::make_shared<rs430_rgb_mm_device>(ctx, group, register_device_notifications);
         case RS435_RGB_PID:
-            return std::make_shared<rs435_device>(ctx, group);
+            return std::make_shared<rs435_device>(ctx, group, register_device_notifications);
         default:
             throw std::runtime_error("Unsupported RS400 model!");
         }
@@ -219,8 +229,23 @@ namespace librealsense
             if((devices[0].pid == ds::RS430_MM_PID || devices[0].pid == ds::RS420_MM_PID) &&  hids.size()==0)
                 continue;
 
-            if (!devices.empty() &&
-                mi_present(devices, 0))
+            bool all_sensors_present = mi_present(devices, 0);
+
+            constexpr std::array<int, 3> multi_sensors = { ds::RS415_PID, ds::RS430_MM_RGB_PID, ds::RS435_RGB_PID };
+            auto is_pid_of_multisensor_device = [&multi_sensors](int pid) { return std::find(std::begin(multi_sensors), std::end(multi_sensors), pid) != std::end(multi_sensors); };
+            bool is_device_multisensor = false;;
+            for (auto&& uvc : devices)
+            {
+                if (is_pid_of_multisensor_device(uvc.pid))
+                    is_device_multisensor = true;
+            }
+
+            if(is_device_multisensor)
+            {
+                all_sensors_present = all_sensors_present && mi_present(devices, 3);
+            }
+
+            if (!devices.empty() && all_sensors_present)
             {
                 platform::usb_device_info hwm;
 

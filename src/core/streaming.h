@@ -55,8 +55,6 @@ namespace librealsense
         virtual bool is_default() const = 0;
         virtual void make_default() = 0;
 
-        virtual size_t get_size() const = 0;
-
         virtual std::shared_ptr<stream_profile_interface> clone() const = 0;
         virtual rs2_stream_profile* get_c_wrapper() const = 0;
         virtual void set_c_wrapper(rs2_stream_profile* wrapper) = 0;
@@ -139,6 +137,8 @@ namespace librealsense
         virtual platform::backend_device_group get_device_data() const = 0;
 
         virtual std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const = 0;
+
+        virtual bool is_valid() const = 0;
 
         virtual ~device_interface() = default;
 

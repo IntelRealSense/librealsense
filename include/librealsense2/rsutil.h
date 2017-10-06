@@ -74,7 +74,7 @@ static void rs2_transform_point_to_point(float to_point[3], const struct rs2_ext
 
 /* Calculate horizontal and vertical feild of view, based on video intrinsics */
 static float rs2_fov(const struct rs2_intrinsics * intrin, float to_fov[2])
-{ 
+{
     to_fov[0] = (atan2f(intrin->ppx + 0.5f, intrin->fx) + atan2f(intrin->width - (intrin->ppx + 0.5f), intrin->fx)) * 57.2957795f;
     to_fov[1] = (atan2f(intrin->ppy + 0.5f, intrin->fy) + atan2f(intrin->height - (intrin->ppy + 0.5f), intrin->fy)) * 57.2957795f;
 }
