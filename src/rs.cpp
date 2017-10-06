@@ -1019,7 +1019,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
         case RS2_EXTENSION_ROI :           return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::roi_sensor_interface) != nullptr;
         case RS2_EXTENSION_DEPTH_SENSOR :  return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_sensor) != nullptr;
         default:
-            return 0;
+            return false;
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, extension_type)
@@ -1041,7 +1041,7 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, 
         case RS2_EXTENSION_RECORD        : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::record_device)               != nullptr;
         case RS2_EXTENSION_PLAYBACK      : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::playback_device)             != nullptr;
         default:
-            return 0;
+            return false;
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, dev, extension)
@@ -1060,7 +1060,7 @@ int rs2_is_frame_extendable_to(const rs2_frame* f, rs2_extension extension_type,
         //case RS2_EXTENSION_MOTION_FRAME :  return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::motion_frame) != nullptr;
 
     default:
-        return 0;
+        return false;
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
@@ -1073,7 +1073,7 @@ int rs2_stream_profile_is(const rs2_stream_profile* f, rs2_extension extension_t
     {
     case RS2_EXTENSION_VIDEO_PROFILE:   return VALIDATE_INTERFACE_NO_THROW(f->profile, librealsense::video_stream_profile_interface) != nullptr;
     default:
-        return 0;
+        return false;
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
@@ -1518,7 +1518,7 @@ rs2_processing_block* rs2_create_pointcloud(rs2_error** error) BEGIN_API_CALL
 
     return new rs2_processing_block { block };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, 0)
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error) BEGIN_API_CALL
 {
@@ -1535,7 +1535,7 @@ rs2_processing_block* rs2_create_colorizer(rs2_error** error) BEGIN_API_CALL
 
     return new rs2_processing_block{ block };
 }
-NOARG_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {
@@ -1564,5 +1564,5 @@ rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
 {
     return environment::get_instance().get_time_service()->get_time();
 }
-NOARG_HANDLE_EXCEPTIONS_AND_RETURN(0)
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
 
