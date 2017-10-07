@@ -2120,9 +2120,11 @@ class DevicesChangedCallback : public rs2_devices_changed_callback {
     MainThreadCallback::NotifyMainThread(
         new DevicesChangedCallbackInfo(removed, added, ctx));
   }
+
   virtual void release() {
     delete this;
   }
+
   virtual ~DevicesChangedCallback() {}
   RSContext* ctx;
 };
@@ -2156,6 +2158,7 @@ class RSFrameSet : public Nan::ObjectWrap {
     tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
     Nan::SetPrototypeMethod(tpl, "destroy", Destroy);
+    Nan::SetPrototypeMethod(tpl, "dismiss", Dismiss);
     Nan::SetPrototypeMethod(tpl, "getSize", GetSize);
     Nan::SetPrototypeMethod(tpl, "at", At);
     Nan::SetPrototypeMethod(tpl, "getFrame", GetFrame);
@@ -2177,6 +2180,10 @@ class RSFrameSet : public Nan::ObjectWrap {
     me->SetFrame(frame);
 
     return scope.Escape(instance);
+  }
+
+  rs2_frame* GetFrames() {
+    return frames;
   }
 
  private:
@@ -2204,10 +2211,24 @@ class RSFrameSet : public Nan::ObjectWrap {
     frames = nullptr;
   }
 
+  void DismissMe() {
+    if (error) rs2_free_error(error);
+    error = nullptr;
+    frames = nullptr;
+  }
+
   static NAN_METHOD(Destroy) {
     auto me = Nan::ObjectWrap::Unwrap<RSFrameSet>(info.Holder());
     if (me) {
       me->DestroyMe();
+    }
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(Dismiss) {
+    auto me = Nan::ObjectWrap::Unwrap<RSFrameSet>(info.Holder());
+    if (me) {
+      me->DismissMe();
     }
     info.GetReturnValue().Set(Nan::Undefined());
   }
@@ -2273,7 +2294,6 @@ class RSFrameSet : public Nan::ObjectWrap {
 Nan::Persistent<v8::Function> RSFrameSet::constructor;
 
 
-
 class RSPipelineProfile : public Nan::ObjectWrap {
  public:
   static void Init(v8::Local<v8::Object> exports) {
@@ -2315,6 +2335,11 @@ class RSPipelineProfile : public Nan::ObjectWrap {
   }
 
   void DestroyMe() {
+    if (error) rs2_free_error(error);
+    error = nullptr;
+
+    if (pipelineProfile) rs2_delete_pipeline_profile(pipelineProfile);
+    pipelineProfile = nullptr;
   }
 
   static NAN_METHOD(Destroy) {
@@ -2331,13 +2356,11 @@ class RSPipelineProfile : public Nan::ObjectWrap {
     }
   }
 
-
-
-static NAN_METHOD(GetStreams) {
+  static NAN_METHOD(GetStreams) {
     auto me = Nan::ObjectWrap::Unwrap<RSPipelineProfile>(info.Holder());
     if (me) {
       rs2_stream_profile_list* list =
-              rs2_pipeline_profile_get_streams(me->pipelineProfile, &me->error);
+          rs2_pipeline_profile_get_streams(me->pipelineProfile, &me->error);
 
       if (list) {
         int32_t size = rs2_get_stream_profiles_count(list, &me->error);
@@ -2353,11 +2376,12 @@ static NAN_METHOD(GetStreams) {
     }
     info.GetReturnValue().Set(Nan::Undefined());
   }
-static NAN_METHOD(GetDevice) {
-     auto me = Nan::ObjectWrap::Unwrap<RSPipelineProfile>(info.Holder());
+
+  static NAN_METHOD(GetDevice) {
+    auto me = Nan::ObjectWrap::Unwrap<RSPipelineProfile>(info.Holder());
     if (me) {
       rs2_device* dev =
-               rs2_pipeline_profile_get_device(me->pipelineProfile, &me->error);
+          rs2_pipeline_profile_get_device(me->pipelineProfile, &me->error);
       if (dev) {
         info.GetReturnValue().Set(RSDevice::NewInstance(dev));
         return;
@@ -2372,10 +2396,11 @@ static NAN_METHOD(GetDevice) {
   rs2_pipeline_profile* pipelineProfile;
   rs2_error* error;
 };
+
 Nan::Persistent<v8::Function> RSPipelineProfile::constructor;
 
 class RSPipeline;
-class RSConfig :public Nan::ObjectWrap  {
+class RSConfig : public Nan::ObjectWrap  {
  public:
   static void Init(v8::Local<v8::Object> exports) {
     v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
@@ -2512,7 +2537,7 @@ class RSConfig :public Nan::ObjectWrap  {
     info.GetReturnValue().Set(Nan::Undefined());
   }
 
-static NAN_METHOD(EnableRecordToFile) {
+  static NAN_METHOD(EnableRecordToFile) {
     auto me = Nan::ObjectWrap::Unwrap<RSConfig>(info.Holder());
 
     auto device_file = info[0]->ToString();
@@ -2525,11 +2550,10 @@ static NAN_METHOD(EnableRecordToFile) {
     info.GetReturnValue().Set(Nan::Undefined());
   }
 
-static NAN_METHOD(DisableStream) {
+  static NAN_METHOD(DisableStream) {
     auto me = Nan::ObjectWrap::Unwrap<RSConfig>(info.Holder());
 
     auto stream = info[0]->IntegerValue();
-
 
     if (me) {
       rs2_config_disable_stream(me->config, (rs2_stream)stream,
@@ -2538,9 +2562,8 @@ static NAN_METHOD(DisableStream) {
     info.GetReturnValue().Set(Nan::Undefined());
   }
 
-static NAN_METHOD(DisableAllStreams) {
+  static NAN_METHOD(DisableAllStreams) {
     auto me = Nan::ObjectWrap::Unwrap<RSConfig>(info.Holder());
-
 
     if (me) {
       rs2_config_disable_all_streams(me->config,
@@ -2549,15 +2572,14 @@ static NAN_METHOD(DisableAllStreams) {
     info.GetReturnValue().Set(Nan::Undefined());
   }
 
-static NAN_METHOD(Resolve) {
+  static NAN_METHOD(Resolve) {
     auto me = Nan::ObjectWrap::Unwrap<RSConfig>(info.Holder());
     RSPipeline* pipe = Nan::ObjectWrap::Unwrap<RSPipeline>(info[0]->ToObject());
 
     if (me) {
         auto pipelineProfile = me->ResolveInternal(me->config,
-                                                  pipe,
-                                                  &me->error);
-
+                                                   pipe,
+                                                   &me->error);
 
       info.GetReturnValue().Set(pipelineProfile);
       return;
@@ -2565,7 +2587,7 @@ static NAN_METHOD(Resolve) {
     info.GetReturnValue().Set(Nan::Undefined());
   }
 
-static NAN_METHOD(CanResolve) {
+  static NAN_METHOD(CanResolve) {
     auto me = Nan::ObjectWrap::Unwrap<RSConfig>(info.Holder());
     RSPipeline* pipe = Nan::ObjectWrap::Unwrap<RSPipeline>(info[0]->ToObject());
 
@@ -2580,14 +2602,11 @@ static NAN_METHOD(CanResolve) {
     info.GetReturnValue().Set(Nan::Undefined());
   }
 
-v8::Local<v8::Object> ResolveInternal(rs2_config* config,
-  RSPipeline* pipe, rs2_error** error);
-bool CanResolveInternal(rs2_config* config,
-  RSPipeline* pipe, rs2_error** error);
+  v8::Local<v8::Object> ResolveInternal(rs2_config* config,
+      RSPipeline* pipe, rs2_error** error);
 
-
-
-
+  bool CanResolveInternal(rs2_config* config,
+      RSPipeline* pipe, rs2_error** error);
 
  private:
   static Nan::Persistent<v8::Function> constructor;
@@ -2619,7 +2638,6 @@ class RSPipeline : public Nan::ObjectWrap {
     exports->Set(Nan::New("RSPipeline").ToLocalChecked(), tpl->GetFunction());
   }
 
-
   static v8::Local<v8::Object> NewInstance() {
     Nan::EscapableHandleScope scope;
 
@@ -2636,7 +2654,8 @@ class RSPipeline : public Nan::ObjectWrap {
   }
 
  private:
-    friend class RSConfig;
+  friend class RSConfig;
+
   RSPipeline() {
     error = nullptr;
     pipeline = nullptr;
@@ -2696,6 +2715,7 @@ class RSPipeline : public Nan::ObjectWrap {
     if (me && me->pipeline) {
       rs2_pipeline_profile* prof = rs2_pipeline_start(me->pipeline, &me->error);
       info.GetReturnValue().Set(RSPipelineProfile::NewInstance(prof));
+      return;
     }
     info.GetReturnValue().Set(Nan::Undefined());
   }
@@ -2885,6 +2905,7 @@ class RSAlign : public Nan::ObjectWrap {
 
     Nan::SetPrototypeMethod(tpl, "destroy", Destroy);
     Nan::SetPrototypeMethod(tpl, "waitForFrames", WaitForFrames);
+    Nan::SetPrototypeMethod(tpl, "process", Process);
 
     constructor.Reset(tpl->GetFunction());
     exports->Set(Nan::New("RSAlign").ToLocalChecked(), tpl->GetFunction());
@@ -2938,6 +2959,22 @@ class RSAlign : public Nan::ObjectWrap {
       rs2_frame* result = rs2_wait_for_frame(me->frame_queue, 5000, &me->error);
       if (result) {
         info.GetReturnValue().Set(RSFrameSet::NewInstance(result));
+        return;
+      }
+    }
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(Process) {
+    auto me = Nan::ObjectWrap::Unwrap<RSAlign>(info.Holder());
+    auto frameset = Nan::ObjectWrap::Unwrap<RSFrameSet>(info[0]->ToObject());
+
+    if (me && frameset) {
+      rs2_process_frame(me->align, frameset->GetFrames(), &me->error);
+      rs2_frame* frame = nullptr;
+      auto ret_code = rs2_poll_for_frame(me->frame_queue, &frame, &me->error);
+      if (ret_code) {
+        info.GetReturnValue().Set(RSFrameSet::NewInstance(frame));
         return;
       }
     }
