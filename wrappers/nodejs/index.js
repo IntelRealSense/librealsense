@@ -186,7 +186,8 @@ class StreamProfile {
     this.indexValue = this.cxxProfile.index();
     this.uidValue = this.cxxProfile.uniqueID();
     this.isDefaultValue = this.cxxProfile.isDefault();
-    this.sizeValue = this.cxxProfile.size();
+    // TODO(ting): fix profile API change -- .size() is no longer available
+    // this.sizeValue = this.cxxProfile.size();
   }
 
   /**
@@ -1157,6 +1158,14 @@ class Align {
     this.cxxAlign = new RS2.RSAlign(s);
   }
 
+  process(frameset) {
+    const newFrameset = this.cxxAlign.process(frameset.cxxFrameSet);
+    if (newFrameset) {
+      frameset.dismiss();
+      return new FrameSet(newFrameset);
+    }
+  }
+
   /**
    * Release resources associated with the object
    */
@@ -1668,6 +1677,11 @@ class FrameSet {
     this.cxxFrameSet.destroy();
     this.cxxFrameSet = undefined;
   }
+
+  dismiss() {
+    this.cxxFrameSet.dismiss();
+    this.cxxFrameSet = undefined;
+  }
 }
 
 /**
@@ -1738,8 +1752,7 @@ class Pipeline {
     if (arguments.length === 0) {
       this.started = true;
       return new PipelineProfile(this.cxxPipeline.start());
-    } 
-    else {
+    } else {
       if (!(arguments[0] instanceof Config)) {
         throw new TypeError('Invalid argument for Pipeline.start()');
       }
@@ -1784,22 +1797,21 @@ class Pipeline {
  */
 class PipelineProfile {
   constructor(profile) {
-      this.cxxPipelineProfile = profile;
-    }
+    this.cxxPipelineProfile = profile;
+  }
 
+  getStreams() {
+    profiles = this.cxxPipelineProfile.getStreams();
+    const array = [];
+    profiles.forEach((profile) => {
+      array.push(new StreamProfile(profile));
+    });
+    return array;
+  }
 
-    getStreams() {
-      profiles = this.cxxPipelineProfile.getStreams();
-      const array = [];
-      profiles.forEach((profile) => {
-              array.push(new StreamProfile(profile));
-      });
-      return array;
-    }
-
-    getDevice() {
-      return new Device(this.cxxPipelineProfile.getDevice());
-    }
+  getDevice() {
+    return new Device(this.cxxPipelineProfile.getDevice());
+  }
 }
 
 class Config {

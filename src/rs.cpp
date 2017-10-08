@@ -1418,6 +1418,13 @@ void rs2_config_disable_stream(rs2_config* config, rs2_stream stream, rs2_error 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, config, stream)
 
+void rs2_config_disable_indexed_stream(rs2_config* config, rs2_stream stream, int index, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(config);
+    config->config->disable_stream(stream, index);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, config, stream, index)
+
 void rs2_config_disable_all_streams(rs2_config* config, rs2_error ** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(config);
