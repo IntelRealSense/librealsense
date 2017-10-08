@@ -57,7 +57,7 @@ namespace rs2
         * \return   The first matching stream profile
         */
 
-        stream_profile get_streams(rs2_stream stream_type, int stream_index = -1) const
+        stream_profile get_stream(rs2_stream stream_type, int stream_index = -1) const
         {
             for (auto&& s : get_streams())
             {
