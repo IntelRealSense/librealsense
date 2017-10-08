@@ -102,10 +102,12 @@ namespace rs2
                 {
                     try
                     {
-                        on_load();
-                        _app_ready = true;
+                        _app_ready = on_load();
                     }
-                    catch (...) {}
+                    catch (...)
+                    {
+                        std::this_thread::sleep_for(std::chrono::seconds(1)); // Wait for connect event and retry
+                    }
                 } while (!_app_ready);
             });
             _first_frame = false;
@@ -220,7 +222,7 @@ namespace rs2
         glfwPollEvents();
         glfwGetWindowSize(_win, &_width, &_height);
         glfwGetFramebufferSize(_win, &_fb_width, &_fb_height);
-        
+
         // Update the scale factor each frame
         // based on resolution and physical display size
         _scale_factor = pick_scale_factor(_win);

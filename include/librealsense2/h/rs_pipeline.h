@@ -241,7 +241,7 @@ extern "C" {
     * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     */
     void rs2_config_enable_device_from_file(rs2_config* config, const char* file, rs2_error ** error);
-    
+
     /**
     * Requires that the resolved device would be recorded to file
     * This request cannot be used if enable_device_from_file() is called for the current config, and vise versa
@@ -252,7 +252,7 @@ extern "C" {
     */
     void rs2_config_enable_record_to_file(rs2_config* config, const char* file, rs2_error ** error);
 
-    
+
     /**
     * Disable a device stream explicitly, to remove any requests on this stream type.
     * The stream can still be enabled due to pipeline computer vision module request. This call removes any filter on the
@@ -275,7 +275,7 @@ extern "C" {
     * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     */
     void rs2_config_disable_indexed_stream(rs2_config* config, rs2_stream stream, int index, rs2_error ** error);
-    
+
     /**
     * Disable all device stream explicitly, to remove any requests on the streams profiles.
     * The streams can still be enabled due to pipeline computer vision module request. This call removes any filter on the

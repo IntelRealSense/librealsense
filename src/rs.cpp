@@ -1408,7 +1408,6 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)
 rs2_device* rs2_pipeline_profile_get_device(rs2_pipeline_profile* profile, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(profile);
-    VALIDATE_NOT_NULL(profile->profile); // TODO
 
     auto dev = profile->profile->get_device();
     auto dev_info = std::make_shared<librealsense::readonly_device_info>(dev);

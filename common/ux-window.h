@@ -27,13 +27,13 @@ namespace rs2
     {
     public:
         std::function<void(std::string)> on_file_drop = [](std::string) {};
-        std::function<void()>            on_load = [](){};
+        std::function<bool()>            on_load = []() { return false; };
 
         ux_window(const char* title);
 
         float width() const { return float(_width); }
         float height() const { return float(_height); }
-        
+
         float framebuf_width() const { return float(_fb_width); }
         float framebuf_height() const { return float(_fb_height); }
 

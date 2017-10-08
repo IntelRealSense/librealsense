@@ -17,39 +17,51 @@ namespace rs2
             _viewer_model.draw_plane = true;
         }
 
-        void tool_model::start(ux_window& window)
+        bool tool_model::start(ux_window& window)
         {
+            bool valid_config = false;
+            std::vector<rs2::config> cfgs;
+
             rs2::config cfg;
+            // Preferred configuration Depth + Synthetic Color
             cfg.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, 30);
             cfg.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_RGB8, 30);
+            cfgs.push_back(cfg);
 
-            // Wait till a valid device is found
-            try {
-                _pipe.start(cfg);
-            }
-            catch (...)
-            {
-                // Switch to infrared luminocity as a secondary in case synthetic chroma is not supported
-                rs2::config cfg;
-                cfg.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
-                cfg.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, 30);
-                _pipe.start(cfg);
-            }
+            // Use Infrared luminocity as a secondary video in case synthetic chroma is not supported
+            cfg.disable_all_streams();
+            cfg.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
+            cfg.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, 30);
+            cfgs.push_back(cfg);
 
-            // Toggle advanced mode
-            auto dev = _pipe.get_active_profile().get_device();
-            if (dev.is<rs400::advanced_mode>())
+            for (auto& cfg : cfgs)
             {
-                auto advanced_mode = dev.as<rs400::advanced_mode>();
-                if (!advanced_mode.is_enabled())
+                if (valid_config = cfg.can_resolve(_pipe))
                 {
-                    window.add_on_load_message("Toggling device to Advanced Mode...");
-                    advanced_mode.toggle_advanced_mode(true);
-                    std::this_thread::sleep_for(std::chrono::seconds(4)); // TODO: wait for connect event
+                    _pipe.start(cfg);
+                    break;
                 }
             }
 
-            update_configuration();
+            if (valid_config)
+            {
+                // Toggle advanced mode
+                auto dev = _pipe.get_active_profile().get_device();
+                if (dev.is<rs400::advanced_mode>())
+                {
+                    auto advanced_mode = dev.as<rs400::advanced_mode>();
+                    if (!advanced_mode.is_enabled())
+                    {
+                        window.add_on_load_message("Toggling device into Advanced Mode...");
+                        advanced_mode.toggle_advanced_mode(true);
+                        valid_config = false;
+                    }
+                }
+
+                update_configuration();
+            }
+
+            return valid_config;
         }
 
         void tool_model::draw_instructions(ux_window& win, const rect& viewer_rect)
@@ -99,10 +111,7 @@ namespace rs2
 
             _viewer_model.show_top_bar(win, viewer_rect);
             _viewer_model.roi_rect = _metrics_model.get_plane();
-            try {
-                _viewer_model.draw_viewport(viewer_rect, win, 1, _error_message);
-            }
-            catch(...){ } // TODO - refactor SR300 intrinsic with
+            _viewer_model.draw_viewport(viewer_rect, win, 1, _error_message);
 
             ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
             ImGui::SetNextWindowPos({ 0, 0 });
@@ -178,7 +187,10 @@ namespace rs2
                                         _pipe.start(cfg);
                                         success = true;
                                     }
-                                    catch (...){}
+                                    catch (...)
+                                    {
+                                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                                    }
                                 } while (!success);
 
                                 update_configuration();
@@ -254,7 +266,6 @@ namespace rs2
             ImGui::PopStyleVar();
             ImGui::PopStyleColor();
 
-
             try
             {
                 frameset f;
@@ -270,7 +281,7 @@ namespace rs2
                     }
                 }
             }
-            catch (...){} // TODO - refactor SR300 intrinsic to remove try/catch
+            catch (...){} // on device disconnect
 
             draw_instructions(win, viewer_rect);
 

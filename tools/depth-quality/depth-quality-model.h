@@ -160,7 +160,7 @@ namespace rs2
         public:
             tool_model();
 
-            void start(ux_window& win);
+            bool start(ux_window& win);
 
             void render(ux_window& win);
 

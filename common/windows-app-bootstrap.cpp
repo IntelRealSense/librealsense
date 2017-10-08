@@ -3,7 +3,7 @@
 
 // This file converts the call to WinMain to a call to cross-platform main
 // We need WinMain on Windows to offer proper Windows application and not console application
-// Should not be used in CMake on Linux 
+// Should not be used in CMake on Linux
 
 #include <Windows.h>
 #include <memory>

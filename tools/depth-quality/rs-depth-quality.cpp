@@ -83,7 +83,7 @@ int main(int argc, const char * argv[]) try
                  set(metric_plot::RED_RANGE,     -100, 100);
 
     // ===============================
-    //       Metrics Calculation      
+    //       Metrics Calculation
     // ===============================
 
     model.on_frame([&](const std::vector<rs2::float3>& points, rs2::plane p, rs2::region_of_interest roi,
@@ -145,7 +145,7 @@ int main(int argc, const char * argv[]) try
     });
 
     // ===============================
-    //      Device plug-out handler
+    //      Device plug-in/out handler
     // ===============================
     rs2::context ctx;
     std::mutex m;
@@ -160,12 +160,12 @@ int main(int argc, const char * argv[]) try
     });
 
     // ===============================
-    //         Rendering Loop         
+    //         Rendering Loop
     // ===============================
 
     window.on_load = [&]()
     {
-        model.start(window);
+        return model.start(window);
     };
 
     while(window)
