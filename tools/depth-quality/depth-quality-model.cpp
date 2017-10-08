@@ -99,7 +99,10 @@ namespace rs2
 
             _viewer_model.show_top_bar(win, viewer_rect);
             _viewer_model.roi_rect = _metrics_model.get_plane();
-            _viewer_model.draw_viewport(viewer_rect, win, 1, _error_message);
+            try {
+                _viewer_model.draw_viewport(viewer_rect, win, 1, _error_message);
+            }
+            catch(...){ } // TODO - refactor SR300 intrinsic with
 
             ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
             ImGui::SetNextWindowPos({ 0, 0 });
@@ -251,18 +254,23 @@ namespace rs2
             ImGui::PopStyleVar();
             ImGui::PopStyleColor();
 
-            frameset f;
-            if (_pipe.poll_for_frames(&f))
+
+            try
             {
-                for (auto&& frame : f)
+                frameset f;
+                if (_pipe.poll_for_frames(&f))
                 {
-                    if (frame.is<depth_frame>() && !_viewer_model.paused)
+                    for (auto&& frame : f)
                     {
-                        _metrics_model.begin_process_frame(frame);
+                        if (frame.is<depth_frame>() && !_viewer_model.paused)
+                        {
+                            _metrics_model.begin_process_frame(frame);
+                        }
+                        _viewer_model.upload_frame(std::move(frame));
                     }
-                    _viewer_model.upload_frame(std::move(frame));
                 }
             }
+            catch (...){} // TODO - refactor SR300 intrinsic to remove try/catch
 
             draw_instructions(win, viewer_rect);
 
@@ -280,6 +288,14 @@ namespace rs2
             {
                 prev_ui = _depth_sensor_model->last_valid_ui;
                 save = true;
+
+                // Clean-up the models for new configuration
+                for (auto&& s : _device_model->subdevices)
+                    s->streaming = false;
+                _viewer_model.gc_streams();
+                _viewer_model.pc.reset();
+                _viewer_model.selected_depth_source_uid = -1;
+                _viewer_model.selected_tex_source_uid = -1;
             }
 
             auto dev = _pipe.get_active_profile().get_device();
@@ -348,6 +364,19 @@ namespace rs2
 
                 sub->algo_roi = _metrics_model.get_roi();
             }
+        }
+
+        // Reset tool state when the active camera is disconnected
+        void tool_model::reset(ux_window& win)
+        {
+            try
+            {
+                _pipe.stop();
+            }
+            catch(...){}
+
+            _first_frame = true;
+            win.reset();
         }
 
         bool metric_plot::has_trend(bool positive)
@@ -489,6 +518,19 @@ namespace rs2
             auto res = std::make_shared<metric_plot>(name, min, max, units, description);
             _metrics_model.add_metric(res);
             return res;
+        }
+
+        rs2::device tool_model::get_active_device(void) const
+        {
+            rs2::device dev{};
+            try
+            {
+                if (_pipe.get_active_profile())
+                    dev = _pipe.get_active_profile().get_device();
+            }
+            catch(...){}
+
+            return dev;
         }
 
         std::string tool_model::capture_description()

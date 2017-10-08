@@ -462,8 +462,11 @@ namespace librealsense
     {
         if (_active_profile)
         {
-            _active_profile->_multistream.stop();
-            _active_profile->_multistream.close();
+            try {
+                _active_profile->_multistream.stop();
+                _active_profile->_multistream.close();
+            }
+            catch(...){ } // Stop will throw if device was disconnected. TODO - refactoring anticipated
         }
         _syncer.reset();
         _queue.reset();
@@ -489,7 +492,7 @@ namespace librealsense
             unsafe_start(_prev_conf);
             return frame_holder();
         }
-        catch(const std::exception& e)
+        catch(const std::exception&)
         {
             throw std::runtime_error(to_string() << "Frame didn't arrived within " << timeout_ms);
         }

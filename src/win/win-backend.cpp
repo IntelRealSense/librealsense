@@ -202,6 +202,8 @@ namespace librealsense
                             TranslateMessage(&msg);
                             DispatchMessage(&msg);
                     }
+                    else  // Yield CPU resources, as this is required for connect/disconnect events only
+                        std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 }
 
                 UnregisterDeviceNotification(_data.hdevnotifyHW);

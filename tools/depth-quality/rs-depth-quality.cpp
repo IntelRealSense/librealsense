@@ -145,6 +145,21 @@ int main(int argc, const char * argv[]) try
     });
 
     // ===============================
+    //      Device plug-out handler
+    // ===============================
+    rs2::context ctx;
+    std::mutex m;
+    ctx.set_devices_changed_callback([&model, &window, &m](rs2::event_information info) mutable
+    {
+        auto dev = model.get_active_device();
+        if (dev && info.was_removed(dev))
+        {
+            std::unique_lock<std::mutex> lock(m);
+            model.reset(window);
+        }
+    });
+
+    // ===============================
     //         Rendering Loop         
     // ===============================
 

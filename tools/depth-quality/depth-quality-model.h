@@ -166,6 +166,8 @@ namespace rs2
 
             void update_configuration();
 
+            void reset(ux_window& win);
+
             void snapshot_metrics();
 
             void draw_instructions(ux_window& win, const rect& viewer_rect);
@@ -177,6 +179,7 @@ namespace rs2
 
             void on_frame(callback_type callback) { _metrics_model.callback = callback; }
 
+            rs2::device get_active_device(void) const;
         private:
 
             std::string capture_description();
@@ -190,7 +193,7 @@ namespace rs2
             bool                            _first_frame = true;
             periodic_timer                  _update_readonly_options_timer;
 
-            float                           _roi_percent = 0.33f;
+            float                           _roi_percent = 0.4f;
             int                             _roi_combo_index = 1;
             temporal_event                  _roi_located;
         };
