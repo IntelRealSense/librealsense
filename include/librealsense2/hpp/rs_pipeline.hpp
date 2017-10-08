@@ -230,10 +230,10 @@ namespace rs2
         *
         * \param[in] stream    Stream type, for which the filters are cleared
         */
-        void disable_stream(rs2_stream stream)
+        void disable_stream(rs2_stream stream, int index = -1)
         {
             rs2_error* e = nullptr;
-            rs2_config_disable_stream(_config.get(), stream, &e);
+            rs2_config_disable_indexed_stream(_config.get(), stream, index, &e);
             error::handle(e);
         }
 

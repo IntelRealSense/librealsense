@@ -73,18 +73,18 @@ namespace librealsense
         return _resolved_profile;
     }
 
-
-    void pipeline_config::disable_stream(rs2_stream stream)
+    void pipeline_config::disable_stream(rs2_stream stream, int index)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         auto itr = std::begin(_stream_requests);
-        while (itr != std::end(_stream_requests)) 
+        while (itr != std::end(_stream_requests))
         {
-            if (itr->first.first == stream)
+            //if this is the same stream type and also the user either requested all or it has the same index
+            if (itr->first.first == stream && (index == -1 ||  itr->first.second == index))
             {
                 itr = _stream_requests.erase(itr);
             }
-            else 
+            else
             {
                 ++itr;
             }
@@ -380,6 +380,10 @@ namespace librealsense
 
     std::shared_ptr<pipeline_profile> pipeline::get_active_profile() const
     {
+        std::lock_guard<std::mutex> lock(_mtx);
+        if(!_active_profile)
+            throw librealsense::wrong_api_call_sequence_exception("get_active_profile() can only be called between a start() and a following stop()");
+
         return _active_profile;
     }
 

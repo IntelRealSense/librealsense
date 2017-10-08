@@ -47,7 +47,7 @@ namespace librealsense
          void unsafe_start(std::shared_ptr<pipeline_config> conf);
          void unsafe_stop();
         std::shared_ptr<librealsense::context> _ctx;
-        std::mutex _mtx;
+        mutable std::mutex _mtx;
         device_hub _hub;
         std::shared_ptr<pipeline_profile> _active_profile;
         frame_callback_ptr _callback;
@@ -66,8 +66,8 @@ namespace librealsense
         void enable_all_stream();
         void enable_device(const std::string& serial);
         void enable_device_from_file(const std::string& file);
-        void enable_record_to_file(const std::string& file); //TODO: add to top level api
-        void disable_stream(rs2_stream stream);
+        void enable_record_to_file(const std::string& file);
+        void disable_stream(rs2_stream stream, int index = -1);
         void disable_all_streams();
         std::shared_ptr<pipeline_profile> resolve(std::shared_ptr<pipeline> pipe);
         bool can_resolve(std::shared_ptr<pipeline> pipe);
