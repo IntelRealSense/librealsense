@@ -363,7 +363,7 @@ namespace librealsense
             throw librealsense::wrong_api_call_sequence_exception("start() cannnot be called before stop()");
         }
         unsafe_start(conf);
-        return get_active_profile();
+        return unsafe_get_active_profile();
     }
 
     std::shared_ptr<pipeline_profile> pipeline::start_with_record(std::shared_ptr<pipeline_config> conf, const std::string& file)
@@ -375,18 +375,22 @@ namespace librealsense
         }
         conf->enable_record_to_file(file);
         unsafe_start(conf);
-        return get_active_profile();
+        return unsafe_get_active_profile();
     }
 
     std::shared_ptr<pipeline_profile> pipeline::get_active_profile() const
     {
         std::lock_guard<std::mutex> lock(_mtx);
-        if(!_active_profile)
+        return unsafe_get_active_profile();
+    }
+
+    std::shared_ptr<pipeline_profile> pipeline::unsafe_get_active_profile() const
+    {
+        if (!_active_profile)
             throw librealsense::wrong_api_call_sequence_exception("get_active_profile() can only be called between a start() and a following stop()");
 
         return _active_profile;
     }
-
     void pipeline::unsafe_start(std::shared_ptr<pipeline_config> conf)
     {
         auto syncer = std::unique_ptr<syncer_proccess_unit>(new syncer_proccess_unit());
