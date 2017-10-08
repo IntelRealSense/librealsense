@@ -48,6 +48,7 @@ static const ImVec4 title_color = from_rgba(27, 33, 38, 255);
 static const ImVec4 device_info_color = from_rgba(33, 40, 46, 255);
 static const ImVec4 yellow = from_rgba(229, 195, 101, 255, true);
 static const ImVec4 green = from_rgba(0x20, 0xe0, 0x20, 0xff, true);
+static const ImVec4 dark_sensor_bg = from_rgba(0x1b, 0x21, 0x25, 200);
 
 inline ImVec4 blend(const ImVec4& c, float a)
 {
@@ -276,7 +277,6 @@ namespace rs2
     public:
         stream_model();
         void upload_frame(frame&& f);
-        float get_stream_alpha();
         bool is_stream_visible();
         void update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message);
         void show_frame(const rect& stream_rect, const mouse_info& g, std::string& error_message);
@@ -565,6 +565,8 @@ namespace rs2
 
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;
+
+        float dim_level = 1.f;
 
     private:
         std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);

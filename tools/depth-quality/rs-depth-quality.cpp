@@ -63,25 +63,6 @@ int main(int argc, const char * argv[]) try
                 set(metric_plot::YELLOW_RANGE, 50, 90)->
                 set(metric_plot::RED_RANGE,    0,  50);
 
-    auto dist = model.make_metric(
-                "Distance", 0, 10000, "(mm)",
-                "Approximate Distance\n"
-                "When facing a flat wall at right angle\n"
-                "this metric estimates the distance\n"
-                "in meters of the pixel in the center of FOV")->
-                set(metric_plot::GREEN_RANGE,   0, 2000)->
-                set(metric_plot::YELLOW_RANGE,  2000, 3000)->
-                set(metric_plot::RED_RANGE,     3000, 7000);
-
-    auto angle = model.make_metric(
-                 "Angle", 0, 180, "(deg)",
-                 "Wall Angle\n"
-                 "When facing a flat wall this metric\n"
-                 "estimates the angle to the wall.")->
-                 set(metric_plot::GREEN_RANGE,   -5,   5)->
-                 set(metric_plot::YELLOW_RANGE,  -10,  10)->
-                 set(metric_plot::RED_RANGE,     -100, 100);
-
     // ===============================
     //       Metrics Calculation      
     // ===============================
@@ -90,7 +71,6 @@ int main(int argc, const char * argv[]) try
         float baseline_mm, float focal_length_pixels, double timestamp_msec)
     {
         const double bf_factor = baseline_mm * focal_length_pixels * 0.001; // also convert point units from meter to mm
-        metric_sample sample{ 0,timestamp_msec };
 
         //std::vector<double> distances; // Calculate the distances of all points in the ROI to the fitted plane
         std::vector<std::pair<double, double> > calc;   // Distances and disparities
@@ -117,8 +97,8 @@ int main(int argc, const char * argv[]) try
         // Calculate average distance from the plane fit
         double total_distance = 0;
         for (auto itr = begin; itr < end; ++itr) total_distance += (*itr).first;
-        float avg_dist = sample._val = total_distance / (calc.size());
-        avg->add_value(sample);
+        float avg_dist = total_distance / (calc.size());
+        avg->add_value(avg_dist, timestamp_msec);
 
         // Calculate STD and RMS
         double total_sq_diffs = 0;
@@ -128,20 +108,16 @@ int main(int argc, const char * argv[]) try
             total_sq_diffs += std::pow((*itr).first - avg_dist, 2);
             total_sq_disparity_diff += (*itr).second*(*itr).second;
         }
-        sample._val = static_cast<float>(std::sqrt(total_sq_diffs / (points.size())));
-        std->add_value(sample);
-
-        dist->add_value({ static_cast<float>(-p.d*1000),timestamp_msec }); // Distance of origin (the camera) from the plane is encoded in parameter D of the plane
-        sample._val = static_cast<float>(std::acos(std::abs(p.c)) / M_PI * 180.);
-        angle->add_value(sample); // Angle can be calculated from param C
+        auto std_dist = static_cast<float>(std::sqrt(total_sq_diffs / (points.size())));
+        std->add_value(std_dist, timestamp_msec);
 
         // Calculate Subpixel RMS for Stereo-based Depth sensors
-        sample._val = static_cast<float>(std::sqrt(total_sq_disparity_diff / (points.size())));
-        rms->add_value(sample);
+        auto rms_val = static_cast<float>(std::sqrt(total_sq_disparity_diff / (points.size())));
+        rms->add_value(rms_val, timestamp_msec);
 
         // Calculate fill ratio relative to the ROI
-        sample._val = points.size() / float((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * 100;
-        fill->add_value(sample);
+        auto fill_ratio = points.size() / float((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * 100;
+        fill->add_value(fill_ratio, timestamp_msec);
     });
 
     // ===============================
