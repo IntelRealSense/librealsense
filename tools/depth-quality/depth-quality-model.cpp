@@ -12,10 +12,11 @@ namespace rs2
               _roi_located(std::chrono::seconds(4)),
               _too_close(std::chrono::seconds(4)),
               _too_far(std::chrono::seconds(4)),
-              _sku_right(std::chrono::seconds(4)),
-              _sku_left(std::chrono::seconds(4)),
-              _sku_up(std::chrono::seconds(4)),
-              _sku_down(std::chrono::seconds(4)),
+              _sku_right(std::chrono::seconds(1)),
+              _sku_left(std::chrono::seconds(1)),
+              _sku_up(std::chrono::seconds(1)),
+              _sku_down(std::chrono::seconds(1)),
+              _angle_alert(std::chrono::seconds(4)),
               _min_dist(750.f), _max_dist(3000.f), _max_angle(10.f)
         {
             _viewer_model.is_3d_view = true;
@@ -107,7 +108,8 @@ namespace rs2
                 return false;
             }
 
-            if (fabs(_metrics_model.get_last_metrics().angle) > _max_angle)
+            _angle_alert.add_value(fabs(_metrics_model.get_last_metrics().angle) > _max_angle);
+            if (_angle_alert.eval())
             {
                 orientation = true;
             }

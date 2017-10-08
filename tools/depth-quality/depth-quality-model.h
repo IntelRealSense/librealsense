@@ -202,6 +202,7 @@ namespace rs2
             temporal_event                  _sku_right;
             temporal_event                  _sku_up;
             temporal_event                  _sku_down;
+            temporal_event                  _angle_alert;
             std::map<int, temporal_event>   _depth_scale_events;
 
             float                           _min_dist, _max_dist, _max_angle;
