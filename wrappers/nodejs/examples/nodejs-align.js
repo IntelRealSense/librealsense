@@ -12,8 +12,7 @@ const GLFWWindow = glfwModule.GLFWWindow;
 const Rect = glfwModule.Rect;
 const Texture = glfwModule.Texture;
 
-function tryGetDepthScale(pipeline) {
-  const dev = pipeline.getDevice();
+function tryGetDepthScale(dev) {
   const sensors = dev.querySensors();
   for (let i = 0; i < sensors.length; i++) {
     if (sensors[i] instanceof rs2.DepthSensor) {
@@ -53,9 +52,9 @@ const colorizer = new rs2.Colorizer();
 const renderer = new Texture();
 const align = new rs2.Align(rs2.stream.STREAM_COLOR);
 const pipe = new rs2.Pipeline();
-pipe.start(align);
+const profile = pipe.start();
 
-const depthScale = tryGetDepthScale(pipe);
+const depthScale = tryGetDepthScale(profile.getDevice());
 if (depthScale === undefined) {
   console.error('Device does not have a depth sensor');
   process.exit(1);
@@ -84,7 +83,10 @@ win.setKeyCallback((key, scancode, action, modes) => {
 });
 
 while (!win.shouldWindowClose()) {
-  const frameset = align.waitForFrames();
+  const rawFrameSet = pipe.waitForFrames();
+  if (!rawFrameSet) continue;
+
+  const frameset = align.process(rawFrameSet);
   if (!frameset) continue;
 
   let colorFrame = frameset.colorFrame;
