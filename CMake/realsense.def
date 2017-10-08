@@ -221,6 +221,7 @@ EXPORTS
     rs2_config_enable_device_from_file
     rs2_config_enable_record_to_file
     rs2_config_disable_stream
+    rs2_config_disable_indexed_stream
     rs2_config_disable_all_streams
     rs2_config_resolve
     rs2_config_can_resolve

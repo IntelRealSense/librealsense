@@ -26,7 +26,6 @@ namespace rs2
         *
         * \return   Vector of stream profiles
         */
-
         std::vector<stream_profile> get_streams() const
         {
             std::vector<stream_profile> results;
@@ -48,6 +47,26 @@ namespace rs2
             }
 
             return results;
+        }
+
+        /**
+        * Return the selected stream profile, which are enabled in this profile.
+        *
+        * \param[in] stream_type     Stream type of the desired profile
+        * \param[in] stream_index    Stream index of the desired profile. -1 for any matching.
+        * \return   The first matching stream profile
+        */
+
+        stream_profile get_stream(rs2_stream stream_type, int stream_index = -1) const
+        {
+            for (auto&& s : get_streams())
+            {
+                if (s.stream_type() == stream_type &&  (stream_index == -1 || s.stream_index() == stream_index))
+                {
+                    return s;
+                }
+            }
+            throw std::runtime_error("Profile does not contain the requested stream");
         }
 
         /**
@@ -230,10 +249,10 @@ namespace rs2
         *
         * \param[in] stream    Stream type, for which the filters are cleared
         */
-        void disable_stream(rs2_stream stream)
+        void disable_stream(rs2_stream stream, int index = -1)
         {
             rs2_error* e = nullptr;
-            rs2_config_disable_stream(_config.get(), stream, &e);
+            rs2_config_disable_indexed_stream(_config.get(), stream, index, &e);
             error::handle(e);
         }
 
