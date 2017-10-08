@@ -7,6 +7,8 @@
 #include "core/extension.h"
 #include "device.h"
 
+#include <type_traits>
+
 struct rs2_raw_data_buffer
 {
     std::vector<uint8_t> buffer;
@@ -37,12 +39,69 @@ struct rs2_device
 
 namespace librealsense
 {
+    // Facilities for streaming function arguments
+
+    // First, we define a generic parameter streaming
+    // Assumes T is streamable, reasonable for C API parameters
+    template<class T, bool S>
+    struct arg_streamer
+    {
+        void stream_arg(std::ostream & out, const T& val, bool last)
+        {
+            out << ':' << val << (last ? "" : ", ");
+        }
+    };
+
+    // Next we define type trait for testing if *t for some T* is streamable
+    template<typename T>
+    class is_streamable
+    {
+        template <typename S>
+        static auto test(const S* t) -> decltype(std::cout << **t);
+        static auto test(...)->std::false_type;
+    public:
+        enum { value = !std::is_same<decltype(test((T*)0)), std::false_type>::value };
+    };
+
+    // Using above trait, we can now specialize our streamer
+    // for streamable pointers:
+    template<class T>
+    struct arg_streamer<T*, true>
+    {
+        void stream_arg(std::ostream & out, T* val, bool last)
+        {
+            out << ':'; // If pointer not null, stream its content
+            if (val) out << *val;
+            else out << "nullptr";
+            out << (last ? "" : ", ");
+        }
+    };
+
+    // .. and for not streamable pointers
+    template<class T>
+    struct arg_streamer<T*, false>
+    {
+        void stream_arg(std::ostream & out, T* val, bool last)
+        {
+            out << ':'; // If pointer is not null, stream the pointer
+            if (val) out << (int*)val; // Go through (int*) to avoid dumping the content of char*
+            else out << "nullptr";
+            out << (last ? "" : ", ");
+        }
+    };
+
     // This facility allows for translation of exceptions to rs2_error structs at the API boundary
-    template<class T> void stream_args(std::ostream & out, const char * names, const T & last) { out << names << ':' << last; }
+    template<class T> void stream_args(std::ostream & out, const char * names, const T & last) 
+    { 
+        out << names; 
+        arg_streamer<T, is_streamable<T>::value> s;
+        s.stream_arg(out, last, true);
+    }
     template<class T, class... U> void stream_args(std::ostream & out, const char * names, const T & first, const U &... rest)
     {
         while (*names && *names != ',') out << *names++;
-        out << ':' << first << ", ";
+        arg_streamer<T, is_streamable<T>::value> s;
+        s.stream_arg(out, first, false);
         while (*names && (*names == ',' || isspace(*names))) ++names;
         stream_args(out, names, rest...);
     }
@@ -70,46 +129,61 @@ namespace librealsense
             return instance;
         }
         
-        // Place new object into the registry
+        // Place new object into the registry and give it a name 
+        // according to the class type and the index of the instance
+        // to be presented in the log instead of the object memory address
         std::string register_new_object(const std::string& type, const std::string& address)
         {
             std::lock_guard<std::mutex> lock(_m);
-            auto it = _counters.find(type);
-            if (it == _counters.end()) _counters[type] = 0;
-            _counters[type]++;
-            std::stringstream ss;
-            ss << type << _counters[type];
-            _names[address] = ss.str();
-            return _names[address];
+            return internal_register(type, address);
         }
         
         // Given a list of parameters in form of "param:val,param:val"
         // This function will replace all val that have alternative names in this repository
         // with their names
+        // the function is used by the log with param = function input param name from the prototype, 
+        // and val = the address of the param.
+        // the function will change the val field from memory address to instance class and index name
         std::string augment_params(std::string p)
         {
             std::lock_guard<std::mutex> lock(_m);
             std::string acc = "";
             std::string res = "";
+            std::string param = "";
             p += ",";
             bool is_value = false;
             for (auto i = 0; i < p.size(); i++)
             {
-                if (p[i] == ':') is_value = true;
+                if (p[i] == ':') 
+                {
+                    param = acc;
+                    acc = "";
+                    is_value = true;
+                }
                 else if (is_value)
                 {
                     if (p[i] == ',')
                     {
                         auto it = _names.find(acc);
                         if (it != _names.end()) acc = it->second;
-                        res += ":";
-                        res += acc;
+                        else
+                        {
+                            // Heuristic: Assume things that are the same length
+                            // as pointers are in-fact pointers
+                            std::stringstream ss; ss << (int*)0;
+                            if (acc.size() == ss.str().size())
+                            {
+                                acc = internal_register(param, acc);
+                            }
+                        }
+                        res += param + ":" + acc;
                         if (i != p.size() - 1) res += ",";
                         acc = "";
                         is_value = false;
                     }
                     else acc += p[i];
-                } else res += p[i];
+                }
+                else acc += p[i];
             }
             return res;
         }
@@ -123,6 +197,17 @@ namespace librealsense
                 _names.erase(it);
         }
     private:
+        std::string internal_register(const std::string& type, const std::string& address)
+        {
+            auto it = _counters.find(type);
+            if (it == _counters.end()) _counters[type] = 0;
+            _counters[type]++;
+            std::stringstream ss;
+            ss << type << _counters[type];
+            _names[address] = ss.str();
+            return _names[address];
+        }
+
         std::mutex _m;
         std::map<std::string, std::string> _names;
         std::map<std::string, int> _counters;
@@ -133,28 +218,21 @@ namespace librealsense
     {
     public:
         api_logger(std::string function)
-            : _function(std::move(function)), _result(""), _params(""), _type("")
+            : _function(std::move(function)), _result(""), _param_str(""), _type(""),
+              _params([]() { return std::string{}; })
         {
             _start = std::chrono::high_resolution_clock::now();
             LOG_DEBUG("/* Begin " << _function << " */");
+
+            // Define the returning "type" as the last word in function name
+            std::size_t found = _function.find_last_of("_");
+            _type = _function.substr(found + 1);
             
-            check_if_creator("rs2_create_");
-            check_if_creator("rs2_query_");
             check_if_deleter("rs2_delete");
             check_if_deleter("rs2_release");
         }
         
-        void check_if_creator(const char* prefix)
-        {
-            auto create_pos = _function.find(prefix);
-            if (create_pos == 0)
-            {
-                _type = _function;
-                _type.erase(0, strlen(prefix));
-                _is_creator = true;
-            }
-        }
-        
+        // if the calling function is going to release an API object - remove it from the tracing list
         void check_if_deleter(const char* prefix)
         {
             auto deleter_pos = _function.find(prefix);
@@ -169,12 +247,15 @@ namespace librealsense
             _result = std::move(result);
         }
         
-        void set_params(std::string params)
+        void set_params(std::function<std::string()> params)
         {
             _params = std::move(params);
         }
+
+        std::string get_params() { return _param_str = _params(); }
         
         void report_error() { _error = true; }
+        void report_pointer_return_type() { _returns_pointer = true; }
         
         ~api_logger()
         {
@@ -182,16 +263,18 @@ namespace librealsense
             auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(d).count();
             std::stringstream ss;
             std::string prefix = "";
+            if (_param_str == "") _param_str = _params();
             
             auto&& objs = api_objects::instance();
-            if (_is_creator) {
+            if (_returns_pointer)
+            {
                 prefix = objs.register_new_object(_type, _result) + " = ";
                 _result = "";
             }
             if (_is_deleter) objs.remove_object(_result);
-            if (_params != "") _params = objs.augment_params(_params);
+            if (_param_str != "") _param_str = objs.augment_params(_param_str);
             
-            ss << prefix << _function << "(" << _params << ")";
+            ss << prefix << _function << "(" << _param_str << ")";
             if (_result != "") ss << " returned " << _result;
             ss << ";";
             if (ms > 0) ss << " /* Took " << ms << "ms */";
@@ -199,14 +282,17 @@ namespace librealsense
             else LOG_INFO(ss.str());
         }
     private:
-        std::string _function, _result, _params, _type;
-        bool _is_creator = false;
+        std::string _function, _result, _type, _param_str;
+        std::function<std::string()> _params;
+        bool _returns_pointer = false;
         bool _is_deleter = false;
         bool _error = false;
         std::chrono::high_resolution_clock::time_point _start;
     };
 
     // This dummy helper function lets us fetch return type from lambda
+    // this is used for result_printer, to be able to be used 
+    // similarly for functions with and without return parameter
     template<typename F, typename R>
     R fetch_return_type(F& f, R(F::*mf)() const);
     
@@ -236,6 +322,34 @@ namespace librealsense
         T _res;
         api_logger* _logger;
     };
+
+    // Result printer class for T* should not dump memory content
+    template<class T>
+    class result_printer<T*>
+    {
+    public:
+        result_printer(api_logger* logger) : _logger(logger) {}
+
+        template<class F>
+        T* invoke(F func)
+        {
+            _res = func(); // Invoke lambda and save result for later
+                           // I assume this will not have any side-effects, since it is applied
+                           // to types that are about to be passed from C API
+            return _res;
+        }
+
+        ~result_printer()
+        {
+            std::stringstream ss; ss << (int*)_res; // Force case to int* to avoid char* and such 
+            // being dumped to log
+            _logger->report_pointer_return_type();
+            _logger->set_return_value(ss.str());
+        }
+    private:
+        T* _res;
+        api_logger* _logger;
+    };
     
     // To work-around the fact that void can't be "stringified"
     // we define an alternative printer just for void returning lambdas
@@ -254,26 +368,24 @@ namespace librealsense
 auto func = [&](){
     
 // The various return macros finish the lambda and invoke it using the type printer
-// practicly capturing function return value
+// practically capturing function return value
 // In addition, error flag and function parameters are captured into the API logger
 #define NOEXCEPT_RETURN(R, ...) };\
 result_printer<decltype(fetch_return_type(func, &decltype(func)::operator()))> __p(&__api_logger);\
-std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); auto params = ss.str();\
-__api_logger.set_params(params);\
+__api_logger.set_params([&](){ std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); return ss.str(); });\
 try {\
 return __p.invoke(func);\
 } catch(...) {\
-rs2_error* e; librealsense::translate_exception(__FUNCTION__, params, &e);\
-LOG_WARNING(rs2_get_error_message(e)); rs2_free_error(e); __api_logger.set_params(params); __api_logger.report_error(); return R; } } }
+rs2_error* e; librealsense::translate_exception(__FUNCTION__, __api_logger.get_params(), &e);\
+LOG_WARNING(rs2_get_error_message(e)); rs2_free_error(e); __api_logger.report_error(); return R; } } }
     
 #define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) };\
 result_printer<decltype(fetch_return_type(func, &decltype(func)::operator()))> __p(&__api_logger);\
-std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); auto params = ss.str();\
-__api_logger.set_params(params);\
+__api_logger.set_params([&](){ std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); return ss.str(); });\
 try {\
 return __p.invoke(func);\
 } catch(...) {\
-librealsense::translate_exception(__FUNCTION__, params, error); __api_logger.set_params(params);__api_logger.report_error(); return R; } } }
+librealsense::translate_exception(__FUNCTION__, __api_logger.get_params(), error); __api_logger.report_error(); return R; } } }
     
 #define NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(R, ...) };\
 result_printer<decltype(fetch_return_type(func, &decltype(func)::operator()))> __p(&__api_logger);\

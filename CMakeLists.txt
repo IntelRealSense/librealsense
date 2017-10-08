@@ -461,6 +461,10 @@ if(FORCE_LIBUVC)
 	message( WARNING "Using libuvc!" )
 endif()
 
+if (MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+endif()
+
 add_definitions(-D${BACKEND} -DUNICODE)
 
 if(ANDROID)
