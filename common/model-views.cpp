@@ -2857,12 +2857,12 @@ namespace rs2
 
             if (!stream_mv.is_stream_alive())
             {
-                show_icon(font2, "warning_icon", u8"\uf071  FPS Alert!  \uf071",
-                    stream_rect.center().x - 70,
+                show_icon(font2, "warning_icon", u8"\uf071  No Frames Received!",
+                    stream_rect.center().x - 100,
                     stream_rect.center().y - 25,
                     stream_mv.profile.unique_id(),
                     blend(dark_red, alpha),
-                    "Did not receive frames from the platform within a reasonable time window!");
+                    "Did not receive frames from the platform within a reasonable time window,\nplease try reducing the FPS or the resolution");
             }
 
             if (stream_mv.dev->is_paused() || (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
