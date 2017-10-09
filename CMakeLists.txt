@@ -461,6 +461,10 @@ if(FORCE_LIBUVC)
 	message( WARNING "Using libuvc!" )
 endif()
 
+if (MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+endif()
+
 add_definitions(-D${BACKEND} -DUNICODE)
 
 if(ANDROID)
@@ -514,6 +518,10 @@ endif()
 # Set CMAKE_INSTALL_* if not defined
 include(GNUInstallDirs)
 
+option(TRACE_API "Log all C API calls" OFF)
+if(TRACE_API)
+    add_definitions(-DTRACE_API)
+endif()
 
 option(HWM_OVER_XU "Send HWM commands over UVC XU control" ON)
 if(HWM_OVER_XU)
