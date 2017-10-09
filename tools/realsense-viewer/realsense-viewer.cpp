@@ -276,6 +276,7 @@ int main(int argv, const char** argc) try
     window.on_load = [&]()
     {
         refresh_devices(m, ctx, refresh_device_list, list, device_names, device_models, viewer_model, devs, error_message);
+        return true;
     };
 
     // Closing the window

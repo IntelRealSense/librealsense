@@ -83,7 +83,7 @@ int main(int argc, const char * argv[]) try
                  set(metric_plot::RED_RANGE,     -100, 100);
 
     // ===============================
-    //       Metrics Calculation      
+    //       Metrics Calculation
     // ===============================
 
     model.on_frame([&](const std::vector<rs2::float3>& points, rs2::plane p, rs2::region_of_interest roi,
@@ -145,12 +145,27 @@ int main(int argc, const char * argv[]) try
     });
 
     // ===============================
-    //         Rendering Loop         
+    //      Device plug-in/out handler
+    // ===============================
+    rs2::context ctx;
+    std::mutex m;
+    ctx.set_devices_changed_callback([&model, &window, &m](rs2::event_information info) mutable
+    {
+        auto dev = model.get_active_device();
+        if (dev && info.was_removed(dev))
+        {
+            std::unique_lock<std::mutex> lock(m);
+            model.reset(window);
+        }
+    });
+
+    // ===============================
+    //         Rendering Loop
     // ===============================
 
     window.on_load = [&]()
     {
-        model.start(window);
+        return model.start(window);
     };
 
     while(window)

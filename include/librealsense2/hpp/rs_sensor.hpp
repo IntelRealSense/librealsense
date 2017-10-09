@@ -88,19 +88,19 @@ namespace rs2
 
         void release() override { delete this; }
     };
-    
+
     template<class T>
     class frame_callback : public rs2_frame_callback
     {
         T on_frame_function;
     public:
         explicit frame_callback(T on_frame) : on_frame_function(on_frame) {}
-        
+
         void on_frame(rs2_frame* fref) override
         {
             on_frame_function(frame{ fref });
         }
-        
+
         void release() override { delete this; }
     };
 

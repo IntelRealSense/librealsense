@@ -556,7 +556,7 @@ namespace rs2
     private:
         size_t _size;
     };
-   
+
 
 }
 #endif // LIBREALSENSE_RS2_FRAME_HPP

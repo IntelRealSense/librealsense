@@ -59,7 +59,7 @@ namespace rs2
         frame_source(const frame_source&) = delete;
 
     };
-    
+
     template<class T>
     class frame_processor_callback : public rs2_frame_processor_callback
     {

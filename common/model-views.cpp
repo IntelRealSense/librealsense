@@ -2823,7 +2823,7 @@ namespace rs2
         static bool icon_visible = false;
         if (every_sec) icon_visible = !icon_visible;
         float alpha = icon_visible ? 1.f : 0.2f;
-        
+
         glViewport(0, 0,
                    win.framebuf_width(), win.framebuf_height());
         glLoadIdentity();

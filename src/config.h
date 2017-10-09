@@ -321,7 +321,7 @@ namespace librealsense
                         return true;
                 return false;
             }*/
-          
+
            bool can_enable_stream(device_interface* dev, rs2_stream stream, int index, int width, int height, rs2_format format, int fps)
            {
                config c(*this);
@@ -333,7 +333,6 @@ namespace librealsense
 
                auto it = _requests.erase({stream, index});
                return false;
-
            }
 
             multistream resolve(device_interface* dev)
@@ -342,13 +341,13 @@ namespace librealsense
 
                 // If required, make sure we've succeeded at opening
                 // all the requested streams
-                if (require_all) 
+                if (require_all)
                 {
                     std::set<index_type> all_streams;
                     for (auto && kvp : mapping)
                         all_streams.insert({ kvp.second->get_stream_type(), kvp.second->get_stream_index() });
 
-                    
+
                     for (auto && kvp : _presets)
                     {
                         auto it = std::find_if(std::begin(all_streams), std::end(all_streams), [&](const index_type& i)
@@ -395,7 +394,7 @@ namespace librealsense
                 // TODO: make sure it works
                 return multistream(std::move(sensors), std::move(stream_to_profile), std::move(dev_to_profiles));
             }
-        
+
         private:
             static bool sort_highest_framerate(const std::shared_ptr<stream_profile_interface> lhs, const std::shared_ptr<stream_profile_interface> rhs) {
                 return lhs->get_framerate() < rhs->get_framerate();

@@ -199,6 +199,7 @@ namespace librealsense
 
         auto fw_version = _hw_monitor->get_firmware_version_string(GVD, fw_version_offset);
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
+        _camer_calib_params = [this]() { return get_calibration(); };
         enable_timestamp(true, true);
 
         auto pid_hex_str = hexify(color.pid>>8) + hexify(static_cast<uint8_t>(color.pid));
@@ -214,7 +215,7 @@ namespace librealsense
 
         _depth_to_color_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
         {
-            auto c = get_calibration();
+            auto c = *_camer_calib_params;
             pose depth_to_color = {
                 transpose(reinterpret_cast<const float3x3 &>(c.Rt)),
                 reinterpret_cast<const float3 &>(c.Tt) * 0.001f
@@ -233,7 +234,7 @@ namespace librealsense
         get_depth_sensor().register_option(RS2_OPTION_DEPTH_UNITS,
                                            std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                                             lazy<float>([this]() {
-                                                auto c = get_calibration();
+                                                auto c = *_camer_calib_params;
                                                 return (c.Rmax / 1000 / 0xFFFF);
                                             })));
 
