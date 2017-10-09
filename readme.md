@@ -19,19 +19,21 @@ The library aims to provide an easy to use API and tools for computer vision pro
 Developer kits containing the necessary hardware to use this library are available for purchase at [realsense.intel.com/buy](realsense.intel.com/buy).
 
 ## What’s included in the SDK:
-**[Tools](https://github.com/IntelRealSense/librealsense/tree/development/tools)** Including:
+**[Tools for harnessing your depth camera’s capabilities](https://github.com/IntelRealSense/librealsense/tree/development/tools)** Including:
 
 - **[Intel® RealSense™ Viewer](https://github.com/IntelRealSense/librealsense/tree/development/tools/realsense-viewer)**
-   - With this application, you can quickly access your Intel® RealSense™ Depth Camera to view the depth stream, visualize point clouds, record and playback streams, configure your camera settings and much more.
+   With this application, you can quickly access your Intel® RealSense™ Depth Camera to view the depth stream, visualize point clouds, record and playback streams, configure your camera settings and much more.
 
 - **[Depth Quality Tool](https://github.com/IntelRealSense/librealsense/tree/development/tools/depth-quality)**
-   - This application allows you to test the camera’s depth quality, including: standard deviation from plane fit, normalized RMS – the subpixel accuracy, distance accuracy and fill rate. You should be able to easily get and interpret several of the depth quality metrics and record and save the data for offline analysis.
+   This application allows you to test the camera’s depth quality, including: standard deviation from plane fit, normalized RMS – the subpixel accuracy, distance accuracy and fill rate. You should be able to easily get and interpret several of the depth quality metrics and record and save the data for offline analysis.
+   
+ - **Other Debug Tools** as can be seen in the tools directory
 
-- **[Code Samples to Start Prototyping Quickly](https://github.com/IntelRealSense/librealsense/tree/development/examples)**
-   - These simple examples demonstrate how to easily use the SDK to include code snippets that access the camera into your applications.
+**[Code Samples to Start Prototyping Quickly](https://github.com/IntelRealSense/librealsense/tree/development/examples)**
+   These simple examples demonstrate how to easily use the SDK to include code snippets that access the camera into your applications.
 
-- **[Wrappers](https://github.com/IntelRealSense/librealsense/tree/development/wrappers)**
-  - We provide a C, C++, [Python](./wrappers/python) and [Node.js](./wrappers/nodejs) API. More will come soon, such as LabView and Matlab.
+**[Wrappers](https://github.com/IntelRealSense/librealsense/tree/development/wrappers)**
+  We provide a C, C++, [Python](./wrappers/python) and [Node.js](./wrappers/nodejs) API. More to come , including LabView and Matlab.
 
 
 ## Quick Start
