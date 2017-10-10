@@ -76,8 +76,13 @@ script:
       sudo "PATH=$PATH" make install;
 
       export LRS_LOG_LEVEL="DEBUG";
-      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/live_test_awgc;
-      ./unit-tests/live-test from live_test_awgc -d yes;
+
+      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc_fw_5.8.9_lrs_2.8.0;
+      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/asrc_fw_5.8.9_lrs_2.8.0;
+
+      ./unit-tests/live-test from awgc_fw_5.8.9_lrs_2.8.0 -d yes;
+      ./unit-tests/live-test from asrc_fw_5.8.9_lrs_2.8.0 -d yes;
+
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       mkdir build && cd build;

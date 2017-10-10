@@ -193,7 +193,7 @@ namespace librealsense
             public:
                 multistream() {}
 
-                explicit multistream(std::vector<sensor_interface*> results,
+                explicit multistream(std::map<int, sensor_interface*> results,
                                      std::map<index_type, std::shared_ptr<stream_profile_interface>> profiles,
                                      std::map<int, stream_profiles> dev_to_profiles)
                         :   _profiles(std::move(profiles)),
@@ -205,7 +205,7 @@ namespace librealsense
                 void open()
                 {
                     for (auto && kvp : _dev_to_profiles) {
-                        auto&& sub = _results[kvp.first];
+                        auto&& sub = _results.at(kvp.first);
                         sub->open(kvp.second);
                     }
                 }
@@ -213,20 +213,20 @@ namespace librealsense
                 template<class T>
                 void start(T callback)
                 {
-                    for (auto&& dev : _results)
-                        dev->start(callback);
+                    for (auto&& sensor : _results)
+                        sensor.second->start(callback);
                 }
 
                 void stop()
                 {
-                    for (auto&& dev : _results)
-                        dev->stop();
+                    for (auto&& sensor : _results)
+                        sensor.second->stop();
                 }
 
                 void close()
                 {
-                    for (auto&& dev : _results)
-                        dev->close();
+                    for (auto&& sensor : _results)
+                        sensor.second->close();
                 }
                 std::map<index_type, std::shared_ptr<stream_profile_interface>> get_profiles() const
                 {
@@ -242,7 +242,7 @@ namespace librealsense
 
                 std::map<index_type, std::shared_ptr<stream_profile_interface>> _profiles;
                 std::map<index_type, sensor_interface*> _devices;
-                std::vector<sensor_interface*> _results;
+                std::map<int, sensor_interface*> _results;
                 std::map<int, stream_profiles> _dev_to_profiles;
             };
 
@@ -308,8 +308,8 @@ namespace librealsense
 
             void close(multistream stream)
             {
-                for (auto&& dev : stream._results)
-                    dev->close();
+                for (auto&& sensor : stream._results)
+                    sensor.second->close();
             }
 
          /*   template <typename... Args>
@@ -374,13 +374,11 @@ namespace librealsense
                 std::map<index_type, std::shared_ptr<stream_profile_interface>> stream_to_profile;
 
                 std::map<int, sensor_interface*> sensors_map;
-                std::vector<sensor_interface*> sensors;
                 for(auto i = 0; i< dev->get_sensors_count(); i++)
                 {
                     if (mapping.find(i) != mapping.end())
                     {
                         sensors_map[i] = &dev->get_sensor(i);
-                        sensors.push_back(&dev->get_sensor(i));
                     }
                 }
 
@@ -392,7 +390,7 @@ namespace librealsense
                 }
 
                 // TODO: make sure it works
-                return multistream(std::move(sensors), std::move(stream_to_profile), std::move(dev_to_profiles));
+                return multistream(std::move(sensors_map), std::move(stream_to_profile), std::move(dev_to_profiles));
             }
 
         private:
