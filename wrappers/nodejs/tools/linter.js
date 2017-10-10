@@ -17,7 +17,8 @@ let errors = [];
 function doCppLint(files) {
   if (!files) return;
 
-  let cpplint = which.sync('cpplint.py');
+  let cpplint = (os.platform == 'win32') ? which.sync('cpplint', {pathExt: '.EXE;.PY'})
+                                         : which.sync('cpplint.py');
   if (!cpplint) {
     console.log('You need install depot_tools, and add to PATH.' +
                 ' https://dev.chromium.org/developers/how-tos/install-depot-tools');
@@ -40,11 +41,14 @@ function doJsLint(files) {
   let jsLinterDir = path.join(__dirname, 'node_modules', '.bin');
 
   for (let linter of ['eslint', 'jshint']) {
-    let cmdOptions = [path.join(jsLinterDir, linter)];
-    cmdOptions = cmdOptions.concat(files);
-    let output = spawn('node', cmdOptions).stdout.toString();
+    let output = null;
+    if (os.platform == 'win32') {
+      output = spawn(path.join(jsLinterDir, linter + '.cmd'), files).stdout.toString();
+    } else {
+      output = spawn('node', [path.join(jsLinterDir, linter)].concat(files)).stdout.toString();
+    }
     if (output) {
-      let lines = output.split(os.EOL);
+      let lines = output.split('\n');
       if (lines.length > 0) errors = errors.concat(lines);
     }
   }
@@ -67,7 +71,7 @@ recursive(path.dirname(__dirname),
   doCppLint(cppFiles);
   doJsLint(jsFiles);
 
-  if (errors.length > 1) {
+  if (errors.length >= 1) {
     for (let l of errors) console.log(l);
     process.exit(1);
   }
