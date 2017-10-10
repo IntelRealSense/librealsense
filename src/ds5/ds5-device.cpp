@@ -129,9 +129,15 @@ namespace librealsense
                 if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
                 {
                     auto profile = to_profile(p.get());
-                    video->set_intrinsics([profile, this]()
+                    std::weak_ptr<ds5_depth_sensor> wp =
+                        std::dynamic_pointer_cast<ds5_depth_sensor>(this->shared_from_this());
+                    video->set_intrinsics([profile, wp]()
                     {
-                        return get_intrinsics(profile);
+                        auto sp = wp.lock();
+                        if (sp)
+                            return sp->get_intrinsics(profile);
+                        else
+                            return rs2_intrinsics{};
                     });
                 }
             }
