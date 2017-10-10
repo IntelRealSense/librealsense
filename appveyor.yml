@@ -32,21 +32,30 @@ build:
   verbosity: minimal
 test_script:
 - ps: >-
-    $url = "http://realsense-hw-public.s3.amazonaws.com/rs-tests/live_test_awgc"
+    $url_awgc = "http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc_fw_5.8.9_lrs_2.8.0"
 
-    $output = "C:/projects/librealsense/build/Debug/live_test_awgc"
+    $url_asrc = "http://realsense-hw-public.s3.amazonaws.com/rs-tests/asrc_fw_5.8.9_lrs_2.8.0"
 
-    Invoke-WebRequest -Uri $url -OutFile $output
+    $output_awgc = "C:/projects/librealsense/build/Debug/live_test_awgc"
 
+    $output_asrc = "C:/projects/librealsense/build/Debug/live_test_asrc"
+
+    Invoke-WebRequest -Uri $url_awgc -OutFile $output_awgc
+
+    Invoke-WebRequest -Uri $url_asrc -OutFile $output_asrc
 
     & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from C:/projects/librealsense/build/Debug/live_test_awgc -d yes
 
     if ($LASTEXITCODE -ne 0)
-
     {
+        throw "D435 Tests failed!"
+    }
 
-    throw "Tests failed!"
+    & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from C:/projects/librealsense/build/Debug/live_test_asrc -d yes
 
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw "D415 Tests failed!"
     }
 
     # TODO(halton): Add unit test for Node.js binding
