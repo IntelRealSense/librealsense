@@ -95,11 +95,11 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, advanced
             amc.census.vals[k] = advanced.get_census(k);
         }
         amc.hdad.vals[0] = advanced.get_hdad();
-        amc.hdad.vals[1] = amc.hdad.vals[0]; //setting min/max to the samve value
-        amc.hdad.vals[2] = amc.hdad.vals[0]; //setting min/max to the samve value
+        amc.hdad.vals[1] = amc.hdad.vals[0]; //setting min/max to the same value
+        amc.hdad.vals[2] = amc.hdad.vals[0]; //setting min/max to the same value
         amc.ae.vals[0] = advanced.get_ae_control();
-        amc.ae.vals[1] = amc.ae.vals[0]; //setting min/max to the samve value
-        amc.ae.vals[2] = amc.ae.vals[0]; //setting min/max to the samve value
+        amc.ae.vals[1] = amc.ae.vals[0]; //setting min/max to the same value
+        amc.ae.vals[2] = amc.ae.vals[0]; //setting min/max to the same value
         get_curr_advanced_controls = false;
     }
 
