@@ -233,9 +233,15 @@ namespace librealsense
                         video->make_default();
 
                     auto profile = to_profile(p.get());
-                    video->set_intrinsics([profile, this]()
+                    std::weak_ptr<sr300_color_sensor> wp =
+                        std::dynamic_pointer_cast<sr300_color_sensor>(this->shared_from_this());
+                    video->set_intrinsics([profile, wp]()
                     {
-                        return get_intrinsics(profile);
+                        auto sp = wp.lock();
+                        if (sp)
+                            return sp->get_intrinsics(profile);
+                        else
+                            return rs2_intrinsics{};
                     });
                 }
 
@@ -285,9 +291,16 @@ namespace librealsense
                         video->make_default();
 
                     auto profile = to_profile(p.get());
-                    video->set_intrinsics([profile, this]()
+                    std::weak_ptr<sr300_depth_sensor> wp =
+                        std::dynamic_pointer_cast<sr300_depth_sensor>(this->shared_from_this());
+
+                    video->set_intrinsics([profile, wp]()
                     {
-                        return get_intrinsics(profile);
+                        auto sp = wp.lock();
+                        if (sp)
+                            return sp->get_intrinsics(profile);
+                        else
+                            return rs2_intrinsics{};
                     });
                 }
 
