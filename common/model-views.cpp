@@ -765,7 +765,9 @@ namespace rs2
                 }
             }
 
-            get_default_selection_index(res_values, std::make_pair(0, 0), &selection_index);
+            // Limit Realtec sensor default
+            auto constrain = (rgb_rotation_btn) ? std::make_pair(640, 480) : std::make_pair(0, 0);
+            get_default_selection_index(res_values, constrain, &selection_index);
             ui.selected_res_id = selection_index;
 
             while (ui.selected_res_id >= 0 && !is_selected_combination_supported()) ui.selected_res_id--;
