@@ -1316,11 +1316,6 @@ namespace rs2
         glPopAttrib();
     }
 
-    float stream_model::get_stream_alpha()
-    {
-        return 1.f;
-    }
-
     bool stream_model::is_stream_visible()
     {
         if (dev &&
@@ -1794,7 +1789,7 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(0x1b, 0x21, 0x25, 200));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, dark_sensor_bg);
         ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 265, stream_rect.y + top_bar_height + 5 });
         ImGui::SetNextWindowSize({ 260, 65 });
         ImGui::Begin("3D Info box", nullptr, flags);
@@ -2242,7 +2237,7 @@ namespace rs2
         _normalized_zoom = get_normalized_zoom(stream_rect,
             g, is_middle_clicked,
             zoom_val);
-        texture->show(stream_rect, get_stream_alpha(), _normalized_zoom);
+        texture->show(stream_rect, 1.f, _normalized_zoom);
 
         if (dev && dev->show_algo_roi)
         {

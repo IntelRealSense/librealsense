@@ -9,7 +9,15 @@ namespace rs2
     {
         tool_model::tool_model()
             : _update_readonly_options_timer(std::chrono::seconds(6)), _roi_percent(0.4f),
-              _roi_located(std::chrono::seconds(4))
+              _roi_located(std::chrono::seconds(4)),
+              _too_close(std::chrono::seconds(4)),
+              _too_far(std::chrono::seconds(4)),
+              _sku_right(std::chrono::seconds(1)),
+              _sku_left(std::chrono::seconds(1)),
+              _sku_up(std::chrono::seconds(1)),
+              _sku_down(std::chrono::seconds(1)),
+              _angle_alert(std::chrono::seconds(4)),
+              _min_dist(750.f), _max_dist(3000.f), _max_angle(10.f)
         {
             _viewer_model.is_3d_view = true;
             _viewer_model.allow_3d_source_change = false;
@@ -64,34 +72,314 @@ namespace rs2
             return valid_config;
         }
 
-        void tool_model::draw_instructions(ux_window& win, const rect& viewer_rect)
+        void draw_notification(ux_window& win, const rect& viewer_rect, int w, 
+            const std::string& msg, const std::string& second_line)
+        {
+            auto flags = ImGuiWindowFlags_NoResize |
+                ImGuiWindowFlags_NoMove |
+                ImGuiWindowFlags_NoCollapse |
+                ImGuiWindowFlags_NoTitleBar;
+
+            ImGui::PushStyleColor(ImGuiCol_Text, yellow);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, blend(sensor_bg, 0.8f));
+            ImGui::SetNextWindowPos({ viewer_rect.w / 2 + viewer_rect.x - w / 2, viewer_rect.h / 2 + viewer_rect.y - 38.f });
+
+            ImGui::SetNextWindowSize({ float(w), 76.f });
+            ImGui::Begin(msg.c_str(), nullptr, flags);
+
+            if (second_line != "")
+            {
+                auto pos = ImGui::GetCursorPos();
+                ImGui::SetCursorPosY(pos.y - 10);
+            }
+            ImGui::PushFont(win.get_large_font());
+            ImGui::Text(msg.c_str());
+            ImGui::PopFont();
+
+            ImGui::PushFont(win.get_font());
+            ImGui::Text(second_line.c_str());
+            ImGui::PopFont();
+
+            ImGui::End();
+            ImGui::PopStyleColor(3);
+            ImGui::PopStyleVar(2);
+        }
+
+        bool tool_model::draw_instructions(ux_window& win, const rect& viewer_rect, bool& distance, bool& orientation)
         {
             _roi_located.add_value(is_valid(_metrics_model.get_plane()));
             if (!_roi_located.eval())
             {
-                auto flags = ImGuiWindowFlags_NoResize |
-                    ImGuiWindowFlags_NoMove |
-                    ImGuiWindowFlags_NoCollapse |
-                    ImGuiWindowFlags_NoTitleBar;
-
-                ImGui::PushStyleColor(ImGuiCol_Text, yellow);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
-                ImGui::PushStyleColor(ImGuiCol_WindowBg, blend(sensor_bg, 0.8f));
-                ImGui::SetNextWindowPos({ viewer_rect.w / 2 + viewer_rect.x - 225.f, viewer_rect.h / 2 + viewer_rect.y - 38.f });
-
-                ImGui::SetNextWindowSize({ 450.f, 76.f });
-                ImGui::Begin("Rect not detected window", nullptr, flags);
-
-                ImGui::PushFont(win.get_large_font());
-                ImGui::Text(u8"\n   \uf1b2  Please point the camera to a flat Wall / Surface!");
-                ImGui::PopFont();
-
-                ImGui::End();
-                ImGui::PopStyleColor(3);
-                ImGui::PopStyleVar(2);
+                draw_notification(win, viewer_rect, 450,
+                    u8"\n   \uf1b2  Please point the camera to a flat Wall / Surface!", 
+                    "");
+                return false;
             }
+
+            _angle_alert.add_value(fabs(_metrics_model.get_last_metrics().angle) > _max_angle);
+            if (_angle_alert.eval())
+            {
+                orientation = true;
+            }
+
+            _sku_right.add_value(orientation && _metrics_model.get_last_metrics().angle_x > 0.f
+                && fabs(_metrics_model.get_last_metrics().angle_x) > fabs(_metrics_model.get_last_metrics().angle_y));
+
+            _sku_left.add_value(orientation && _metrics_model.get_last_metrics().angle_x < 0.f
+                && fabs(_metrics_model.get_last_metrics().angle_x) > fabs(_metrics_model.get_last_metrics().angle_y));
+
+            _sku_up.add_value(orientation && _metrics_model.get_last_metrics().angle_y < 0.f
+                && fabs(_metrics_model.get_last_metrics().angle_x) <= fabs(_metrics_model.get_last_metrics().angle_y));
+
+            _sku_down.add_value(orientation && _metrics_model.get_last_metrics().angle_y > 0.f
+                && fabs(_metrics_model.get_last_metrics().angle_x) <= fabs(_metrics_model.get_last_metrics().angle_y));
+
+            _too_close.add_value(_metrics_model.get_last_metrics().distance < _min_dist);
+            _too_far.add_value(_metrics_model.get_last_metrics().distance > _max_dist);
+
+            constexpr const char* orientation_instruction = "                         Recommended angle: < 3 degrees"; // "             Use the orientation gimbal to align the camera";
+            constexpr const char* distance_instruction    = "          Recommended distance: 0.75m-2m from the target"; // "             Use the distance locator to position the camera";
+
+            if (_sku_right.eval())
+            {
+                draw_notification(win, viewer_rect, 400,
+                    u8"\n          \uf061  Rotate the camera slightly Right", 
+                    orientation_instruction);
+                return false;
+            }
+
+            if (_sku_left.eval())
+            {
+                draw_notification(win, viewer_rect, 400,
+                    u8"\n           \uf060  Rotate the camera slightly Left",
+                    orientation_instruction);
+                return false;
+            }
+
+            if (_sku_up.eval())
+            {
+                draw_notification(win, viewer_rect, 400,
+                    u8"\n            \uf062  Rotate the camera slightly Up",
+                    orientation_instruction);
+                return false;
+            }
+
+            if (_sku_down.eval())
+            {
+                draw_notification(win, viewer_rect, 400,
+                    u8"\n          \uf063  Rotate the camera slightly Down",
+                    orientation_instruction);
+                return false;
+            }
+
+            if (_too_close.eval())
+            {
+                draw_notification(win, viewer_rect, 400,
+                    u8"\n          \uf0b2  Move the camera further Away",
+                    distance_instruction);
+                distance = true;
+                return false;
+            }
+
+            if (_too_far.eval())
+            {
+                draw_notification(win, viewer_rect, 400,
+                    u8"\n        \uf066  Move the camera Closer to the wall",
+                    distance_instruction);
+                distance = true;
+                return false;
+            }
+
+            return true;
+        }
+
+        void tool_model::draw_guides(ux_window& win, const rect& viewer_rect, bool distance_guide, bool orientation_guide)
+        {
+            static const float fade_factor = 0.6f;
+            static timer animation_clock;
+
+            auto flags = ImGuiWindowFlags_NoResize |
+                ImGuiWindowFlags_NoScrollbar |
+                ImGuiWindowFlags_NoMove |
+                ImGuiWindowFlags_NoCollapse |
+                ImGuiWindowFlags_NoTitleBar;
+
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+            bool any_guide = distance_guide || orientation_guide;
+            if (any_guide)
+            {
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, dark_sensor_bg);
+            }
+            else
+            {
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, dark_sensor_bg);
+            }
+
+            const auto window_y = viewer_rect.y + viewer_rect.h / 2;
+            const auto window_h = viewer_rect.h / 2 - 5;
+            ImGui::SetNextWindowPos({ viewer_rect.w + viewer_rect.x - 95.f, window_y });
+            ImGui::SetNextWindowSize({ 90.f, window_h });
+            ImGui::Begin("Guides", nullptr, flags);
+
+            ImGui::PushStyleColor(ImGuiCol_Text,
+                blend(light_grey, any_guide ? 1.f : fade_factor));
+
+            //ImGui::PushFont(win.get_large_font());
+            //ImGui::Text(u8"\uf1e5 ");
+            //ImGui::PopFont();
+
+            ImGui::PopStyleColor();
+            ImGui::PushStyleColor(ImGuiCol_Text,
+                blend(light_grey, orientation_guide ? 1.f : fade_factor));
+
+            ImGui::Text("Orientation:");
+            auto angle = _metrics_model.get_last_metrics().angle;
+            auto x = _metrics_model.get_last_metrics().angle_x;
+            auto y = _metrics_model.get_last_metrics().angle_y;
+
+            static float prev_x = 0.f;
+            static float prev_y = 0.f;
+
+            prev_x = (prev_x + x) / 2.f;
+            prev_y = (prev_y + y) / 2.f;
+
+            ImGui::Text("%.1f degree", angle);
+
+            auto pos = ImGui::GetCursorPos();
+
+            ImGui::SetCursorPos({ pos.x, pos.y + 5 });
+            pos = ImGui::GetCursorPos();
+            auto pos1 = ImGui::GetCursorScreenPos();
+
+            ImGui::GetWindowDrawList()->AddCircle(
+            { pos1.x + 41, pos1.y + 40 }, 41,
+                ImColor(blend(light_grey, orientation_guide ? 1.f : fade_factor)), 64);
+
+            for (int i = 2; i < 7; i += 1)
+            {
+                auto t = (animation_clock.elapsed_ms() / 500) * M_PI - i * (M_PI / 5);
+                auto alpha = (1.f + sin(t)) / 2.f;
+
+                auto c = blend(grey, (1.f - float(i)/7.f)*fade_factor);
+                if (orientation_guide) c = blend(light_blue, alpha);
+
+                ImGui::GetWindowDrawList()->AddCircle(
+                { pos1.x + 41 - 2 * i * prev_x, pos1.y + 40 - 2 * i * prev_y }, 40 - i*i,
+                    ImColor(c), 64);
+            }
+
+            if (angle < 50)
+            {
+                ImGui::GetWindowDrawList()->AddCircleFilled(
+                { pos1.x + 41 + 70 * prev_x, pos1.y + 40 + 70 * prev_y }, 10,
+                    ImColor(blend(grey, orientation_guide ? 1.f : fade_factor)), 64);
+            }
+
+            ImGui::SetCursorPos({ pos.x, pos.y + 90 });
+
+            ImGui::PopStyleColor();
+            ImGui::PushStyleColor(ImGuiCol_Text,
+                blend(light_grey, distance_guide ? 1.f : fade_factor));
+
+            if (window_h > 100)
+            {
+                ImGui::Text("Distance:");
+
+                auto wall_dist = _metrics_model.get_last_metrics().distance;
+                ImGui::Text("%.2f mm", wall_dist);
+
+                if (window_h > 220)
+                {
+                    pos = ImGui::GetCursorPos();
+                    pos1 = ImGui::GetCursorScreenPos();
+                    auto min_y = pos1.y + 10;
+                    auto max_y = window_h + window_y;
+                    int bar_spacing = 15;
+                    int parts = (max_y - min_y) / bar_spacing;
+
+                    ImGui::GetWindowDrawList()->AddRect(
+                    { pos1.x + 1, pos1.y },
+                    { pos1.x + 81, max_y - 5 },
+                        ImColor(blend(light_grey, distance_guide ? 1.f : fade_factor * fade_factor)));
+
+                    for (int i = 0; i < parts; i++)
+                    {
+                        auto y = min_y + bar_spacing * i + 5;
+                        auto t = 1.f - float(i) / (parts - 1);
+                        auto tnext = 1.f - float(i + 1) / (parts - 1);
+                        float d = t * 1.5f * _max_dist;
+                        float dnext = tnext * 1.5f * _max_dist;
+
+                        auto c = light_grey;
+
+                        ImGui::GetWindowDrawList()->AddLine({ pos1.x + 45, y },
+                        { pos1.x + 80, y },
+                            ImColor(blend(c, distance_guide ? 1.f : fade_factor * fade_factor)));
+                        if (d >= _min_dist && d <= _max_dist)
+                            c = green;
+                        ImGui::SetCursorPos({ pos.x + 7, pos.y + bar_spacing * i + 5 });
+                        ImGui::PushStyleColor(ImGuiCol_Text, blend(c, distance_guide ? 1.f : fade_factor));
+                        ImGui::Text("%.0f", d);
+                        ImGui::PopStyleColor();
+
+                        _depth_scale_events[i].add_value(d > wall_dist && dnext <= wall_dist);
+                        if (_depth_scale_events[i].eval())
+                        {
+                            for (int j = -2; j < 2; j++)
+                            {
+                                auto yc = yellow;
+                                auto factor = (1 - fabs(j) / 3);
+                                yc = blend(yc, factor*factor);
+                                if (!distance_guide) yc = blend(yc, fade_factor);
+                                ImGui::GetWindowDrawList()->AddRectFilled(
+                                { pos1.x + 45, y + (bar_spacing * j) + 1 },
+                                { pos1.x + 80, y + (bar_spacing * (j + 1)) }, ImColor(yc));
+                            }
+
+                            if (wall_dist < _min_dist)
+                            {
+                                for (int j = 1; j < 5; j++)
+                                {
+                                    auto t = (animation_clock.elapsed_ms() / 500) * M_PI - j * (M_PI / 5);
+                                    auto alpha = (1.f + sin(t)) / 2.f;
+
+                                    ImGui::SetCursorPos({ pos.x + 57, pos.y + bar_spacing * (i - j) + 14 });
+                                    ImGui::PushStyleColor(ImGuiCol_Text,
+                                        blend(blend(light_grey, alpha), distance_guide ? 1.f : fade_factor));
+                                    ImGui::Text(u8"\uf106");
+                                    ImGui::PopStyleColor();
+                                }
+                            }
+
+                            if (wall_dist > _max_dist)
+                            {
+                                for (int j = 1; j < 5; j++)
+                                {
+                                    auto t = (animation_clock.elapsed_ms() / 500) * M_PI - j * (M_PI / 5);
+                                    auto alpha = (1.f + sin(t)) / 2.f;
+
+                                    ImGui::SetCursorPos({ pos.x + 57, pos.y + bar_spacing * (i + j) + 14 });
+                                    ImGui::PushStyleColor(ImGuiCol_Text,
+                                        blend(blend(light_grey, alpha), distance_guide ? 1.f : fade_factor));
+                                    ImGui::Text(u8"\uf107");
+                                    ImGui::PopStyleColor();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            ImGui::PopStyleColor();
+
+            ImGui::End();
+            ImGui::PopStyleColor(2);
+            ImGui::PopStyleVar(2);
         }
 
         void tool_model::render(ux_window& win)
@@ -112,6 +400,11 @@ namespace rs2
             _viewer_model.show_top_bar(win, viewer_rect);
             _viewer_model.roi_rect = _metrics_model.get_plane();
             _viewer_model.draw_viewport(viewer_rect, win, 1, _error_message);
+
+            bool distance_guide = false;
+            bool orientation_guide = false;
+            bool found = draw_instructions(win, viewer_rect, distance_guide, orientation_guide);
+            //draw_guides(win, viewer_rect, distance_guide, orientation_guide);
 
             ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
             ImGui::SetNextWindowPos({ 0, 0 });
@@ -174,9 +467,9 @@ namespace rs2
                                 rs2::config cfg;
 
                                 cfg.enable_stream(primary.stream_type(), primary.stream_index(),
-                                                    primary.width(), primary.height(), primary.format(), primary.fps());
+                                    primary.width(), primary.height(), primary.format(), primary.fps());
                                 cfg.enable_stream(secondary.stream_type(), secondary.stream_index(),
-                                                    primary.width(), primary.height(), secondary.format(), primary.fps());
+                                    primary.width(), primary.height(), secondary.format(), primary.fps());
 
                                 // Wait till a valid device is found and responsive
                                 bool success = false;
@@ -223,7 +516,18 @@ namespace rs2
                         ImGui::PopStyleColor();
                         ImGui::PopItemWidth();
                         ImGui::SetCursorPosX(col0);
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
+                        ImGui::Text("Distance:");
+                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
+                        ImGui::Text("%.2f mm", _metrics_model.get_last_metrics().distance);
+
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+                        ImGui::Text("Angle:");
+                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
+                        ImGui::Text("%.2f deg", _metrics_model.get_last_metrics().angle);
+                        
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                         ImGui::TreePop();
                     }
@@ -231,16 +535,64 @@ namespace rs2
                     ImGui::PopStyleVar();
                     ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, { 0, 0 });
 
-                    if (ImGui::TreeNodeEx("Metrics", ImGuiTreeNodeFlags_DefaultOpen))
+                    ImGui::PopStyleVar();
+                    ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, { 0, 0 });
+
+                    if (found && ImGui::TreeNodeEx("Metrics", ImGuiTreeNodeFlags_DefaultOpen))
                     {
                         ImGui::PopStyleVar();
                         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
 
                         _metrics_model.render(win);
 
+                        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                        if (ImGui::Button(u8"\uf0c7 Save Report", { 140, 25 }))
+                        {
+                            snapshot_metrics();
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Save Metrics snapshot. This will create:\nPNG image with the depth frame\nPLY 3D model with the point cloud\nJSON file with camera settings you can load later\nand a CSV with metrics recent values");
+                        }
+                        ImGui::PopStyleColor(2);
+
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                         ImGui::TreePop();
                     }
+
+                    /*if (ImGui::TreeNode("Allowed Ranges"))
+                    {
+                        ImGui::PopStyleVar();
+                        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
+
+                        auto col0 = ImGui::GetCursorPosX();
+                        auto col1 = 145.f;
+
+                        ImGui::Text("Min Dist(mm):");
+                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
+                        ImGui::PushItemWidth(-1);
+                        ImGui::SliderFloat("##MinDist", &_min_dist, 100, 5000, "%.0f");
+                        ImGui::PopItemWidth();
+                        ImGui::SetCursorPosX(col0);
+
+                        ImGui::Text("Max Dist(mm):");
+                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
+                        ImGui::PushItemWidth(-1);
+                        ImGui::SliderFloat("##MaxDist", &_max_dist, 100, 5000, "%.0f");
+                        ImGui::PopItemWidth();
+                        ImGui::SetCursorPosX(col0);
+
+                        ImGui::Text("Angle(deg):");
+                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
+                        ImGui::PushItemWidth(-1);
+                        ImGui::SliderFloat("##AngleMax", &_max_angle, 0, 90, "%.0f");
+                        ImGui::PopItemWidth();
+                        ImGui::SetCursorPosX(col0);
+
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+                        ImGui::TreePop();
+                    }*/
 
                     ImGui::PopStyleVar();
                     ImGui::PopStyleVar();
@@ -248,19 +600,6 @@ namespace rs2
                     ImGui::PopStyleColor(3);
                 }
             }
-
-            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-            ImGui::Dummy({ 20,25 }); ImGui::SameLine();
-            if (ImGui::Button(u8"\uf0c7 Save Report", { 140, 25 }))
-            {
-                snapshot_metrics();
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Save Metrics snapshot. This will create:\nPNG image with the depth frame\nPLY 3D model with the point cloud\nJSON file with camera settings you can load later\nand a CSV with metrics recent values");
-            }
-            ImGui::PopStyleColor(2);
 
             ImGui::End();
             ImGui::PopStyleVar();
@@ -282,8 +621,6 @@ namespace rs2
                 }
             }
             catch (...){} // on device disconnect
-
-            draw_instructions(win, viewer_rect);
 
             _viewer_model.gc_streams();
             _viewer_model.popup_if_error(win.get_font(), _error_message);
@@ -329,11 +666,11 @@ namespace rs2
             if (right_sensor != profiles.end())
             {
                 auto left_sensor = std::find_if(profiles.begin(), profiles.end(), [](rs2::stream_profile& p)
-                                    { return (p.stream_index() == 0) && (p.stream_type() == RS2_STREAM_DEPTH); });
+                { return (p.stream_index() == 0) && (p.stream_type() == RS2_STREAM_DEPTH); });
                 try
                 {
                     auto extrin = (*left_sensor).get_extrinsics_to(*right_sensor);
-                    baseline_mm = fabs(extrin.translation[0])*1000;  // baseline in mm
+                    baseline_mm = fabs(extrin.translation[0]) * 1000;  // baseline in mm
                 }
                 catch (...) {
                     _error_message = "Extrinsic parameters are not available";
@@ -364,7 +701,7 @@ namespace rs2
                     {
                         auto depth_profile = profile.as<video_stream_profile>();
                         _metrics_model.update_stream_attributes(depth_profile.get_intrinsics(),
-                                                          sub->s.as<depth_sensor>().get_depth_scale(), baseline_mm);
+                            sub->s.as<depth_sensor>().get_depth_scale(), baseline_mm);
 
                         _metrics_model.update_frame_attributes({ int(depth_profile.width() * (0.5f - 0.5f*_roi_percent)),
                                                            int(depth_profile.height() * (0.5f - 0.5f*_roi_percent)),
@@ -547,7 +884,7 @@ namespace rs2
         std::string tool_model::capture_description()
         {
             std::stringstream ss;
-            ss  << "Device Info:"
+            ss << "Device Info:"
                 << "\nType:," << _device_model->dev.get_info(RS2_CAMERA_INFO_NAME)
                 << "\nHW Id:," << _device_model->dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID)
                 << "\nSerial Num:," << _device_model->dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)
@@ -571,7 +908,7 @@ namespace rs2
             std::stringstream ss;
             auto val = _vals[(SIZE + _idx - 1) % SIZE];
 
-            ss << _label << std::setprecision(2) << std::fixed  << std::setw(3) << val << " " << _units;
+            ss << _label << std::setprecision(2) << std::fixed << std::setw(3) << val << " " << _units;
 
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
 
@@ -691,7 +1028,7 @@ namespace rs2
             csv << std::endl;
 
             // Populate the metrics data
-            for (size_t i = _plots[0]->_first_idx, rec=0; i != _plots[0]->_idx; i=(++i) % metric_plot::SIZE)
+            for (size_t i = _plots[0]->_first_idx, rec = 0; i != _plots[0]->_idx; i = (++i) % metric_plot::SIZE)
             {
                 csv << ++rec << "," << std::fixed << std::setprecision(4) << _plots[0]->_timestamps[i] << ",";
                 for (auto&& plot : _plots)
