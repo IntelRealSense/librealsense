@@ -66,6 +66,17 @@ if(BUILD_GRAPHICAL_EXAMPLES)
             ../../third-party/imgui/imgui-fonts-karla.hpp
             ../../third-party/imgui/imgui-fonts-fontawesome.hpp)
 
+        source_group("Utils" FILES
+            ./depth-quality-model.h
+            ./depth-quality-model.cpp
+            ./depth-metrics.h
+            ../../common/rendering.h
+            ../../common/ux-window.h
+            ../../common/ux-window.cpp
+            ../../common/model-views.h
+            ../../common/model-views.cpp
+            ../../common/windows-app-bootstrap.cpp)
+
         include_directories(rs-depth-quality ../../common  ../../third-party
                                              ../../third-party/imgui
                                              ../../third-party/tclap/include

@@ -18,6 +18,11 @@ namespace rs2
 
             rs2::region_of_interest roi;
 
+            float distance;
+            float angle;
+            float angle_x;
+            float angle_y;
+
             plane p;
             std::array<float3, 4> plane_corners;
         };
@@ -162,6 +167,20 @@ namespace rs2
             result.plane_corners[1] = approximate_intersection(p, intrin, roi.max_x, roi.min_y);
             result.plane_corners[2] = approximate_intersection(p, intrin, roi.max_x, roi.max_y);
             result.plane_corners[3] = approximate_intersection(p, intrin, roi.min_x, roi.max_y);
+
+            // Distance of origin (the camera) from the plane is encoded in parameter D of the plane
+            result.distance = static_cast<float>(-p.d * 1000); 
+            // Angle can be calculated from param C
+            result.angle = static_cast<float>(std::acos(std::abs(p.c)) / M_PI * 180.);
+
+            // Calculate normal
+            auto n = float3{ p.a, p.b, p.c };
+            auto cam = float3{ 0.f, 0.f, -1.f };
+            auto dot = n * cam;
+            auto u = cam - n * dot;
+
+            result.angle_x = u.x;
+            result.angle_y = u.y;
 
             return result;
         }

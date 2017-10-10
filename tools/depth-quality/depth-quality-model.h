@@ -15,12 +15,6 @@ namespace rs2
     {
         class metrics_model;
 
-        struct metric_sample
-        {
-            float _val;
-            double _timestamp;
-        };
-
         class metric_plot : public std::enable_shared_from_this<metric_plot>
         {
         public:
@@ -61,11 +55,11 @@ namespace rs2
             }
             ~metric_plot() {}
 
-            void add_value(const metric_sample& val)
+            void add_value(float val, float timestamp)
             {
                 std::lock_guard<std::mutex> lock(_m);
-                _vals[_idx]         = val._val;
-                _timestamps[_idx]   = val._timestamp;
+                _vals[_idx]         = val;
+                _timestamps[_idx]   = timestamp;
                 _idx = (_idx + 1) % SIZE;
                 if (_first_idx== _idx)
                     _first_idx = (_first_idx + 1) % SIZE;
@@ -126,6 +120,12 @@ namespace rs2
                 return _roi;
             }
 
+            snapshot_metrics get_last_metrics()
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                return _latest_metrics;
+            }
+
             void begin_process_frame(rs2::frame f) { _frame_queue.enqueue(std::move(f)); }
 
             void serialize_to_csv(const std::string& filename, const std::string& camera_info) const;
@@ -170,7 +170,9 @@ namespace rs2
 
             void snapshot_metrics();
 
-            void draw_instructions(ux_window& win, const rect& viewer_rect);
+            bool draw_instructions(ux_window& win, const rect& viewer_rect, bool& distance, bool& orientation);
+
+            void draw_guides(ux_window& win, const rect& viewer_rect, bool distance_guide, bool orientation_guide);
 
             std::shared_ptr<metric_plot> make_metric(
                 const std::string& name, float min, float max,
@@ -196,6 +198,17 @@ namespace rs2
             float                           _roi_percent = 0.4f;
             int                             _roi_combo_index = 1;
             temporal_event                  _roi_located;
+
+            temporal_event                  _too_far;
+            temporal_event                  _too_close;
+            temporal_event                  _sku_left;
+            temporal_event                  _sku_right;
+            temporal_event                  _sku_up;
+            temporal_event                  _sku_down;
+            temporal_event                  _angle_alert;
+            std::map<int, temporal_event>   _depth_scale_events;
+
+            float                           _min_dist, _max_dist, _max_angle;
         };
     }
 }

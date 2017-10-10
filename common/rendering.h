@@ -107,10 +107,10 @@ namespace rs2
 
     struct plane
     {
-        double a;
-        double b;
-        double c;
-        double d;
+        float a;
+        float b;
+        float c;
+        float d;
     };
     inline bool operator==(const plane& lhs, const plane& rhs) { return lhs.a == rhs.a && lhs.b == rhs.b && lhs.c == rhs.c && lhs.d == rhs.d; }
 
@@ -126,7 +126,7 @@ namespace rs2
         }
     };
 
-    inline double evaluate_plane(const plane& plane, const float3& point)
+    inline float evaluate_plane(const plane& plane, const float3& point)
     {
         return plane.a * point.x + plane.b * point.y + plane.c * point.z + plane.d;
     }
@@ -701,6 +701,7 @@ namespace rs2
     {
     public:
         temporal_event(clock::duration window) : _window(window) {}
+        temporal_event() : _window(std::chrono::milliseconds(1000)) {}
 
         void add_value(bool val)
         {
