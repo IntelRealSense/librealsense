@@ -49,11 +49,11 @@ The packages and their respective content are listed below:
 Name    |      Content   | Depends on |
 -------- | ------------ | ---------------- |
 librealsense2-udev-rules | Manages the devices permissions configuration for | -
-realsense-uvcvideo | DKMS package for Depth cameras-specific kernel extensions | realsense-sdk-udev-rules
-librealsense2 | RealSense™ SDK runtime (.so) and configuration files | realsense-sdk-udev-rules
-librealsense2-utils | Demos and tools available as a part of RealSense™ SDK | realsense-sdk
-librealsense2-dev | Header files and symbolic link for developers | realsense-sdk
-librealsense2-dbg | Debug symbols for developers  | realsense-sdk
+realsense-uvcvideo | DKMS package for Depth cameras-specific kernel extensions | librealsense2-udev-rules
+librealsense2 | RealSense™ SDK runtime (.so) and configuration files | librealsense2-udev-rules
+librealsense2-utils | Demos and tools available as a part of RealSense™ SDK | librealsense2
+librealsense2-dev | Header files and symbolic link for developers | librealsense2
+librealsense2-dbg | Debug symbols for developers  | librealsense2
 
 **Note** The packages include binaries only.
 Use the github repository to obtain the source code.
