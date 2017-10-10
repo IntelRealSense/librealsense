@@ -140,11 +140,14 @@ namespace rs2
             _too_close.add_value(_metrics_model.get_last_metrics().distance < _min_dist);
             _too_far.add_value(_metrics_model.get_last_metrics().distance > _max_dist);
 
+            constexpr const char* orientation_instruction = "                         Recommended angle: < 3 degrees"; // "             Use the orientation gimbal to align the camera";
+            constexpr const char* distance_instruction    = "          Recommended distance: 0.75m-2m from the target"; // "             Use the distance locator to position the camera";
+
             if (_sku_right.eval())
             {
                 draw_notification(win, viewer_rect, 400,
                     u8"\n          \uf061  Rotate the camera slightly Right", 
-                    "             Use the orientation gimbal to align the camera");
+                    orientation_instruction);
                 return false;
             }
 
@@ -152,7 +155,7 @@ namespace rs2
             {
                 draw_notification(win, viewer_rect, 400,
                     u8"\n           \uf060  Rotate the camera slightly Left",
-                    "             Use the orientation gimbal to align the camera");
+                    orientation_instruction);
                 return false;
             }
 
@@ -160,7 +163,7 @@ namespace rs2
             {
                 draw_notification(win, viewer_rect, 400,
                     u8"\n            \uf062  Rotate the camera slightly Up",
-                    "             Use the orientation gimbal to align the camera");
+                    orientation_instruction);
                 return false;
             }
 
@@ -168,15 +171,15 @@ namespace rs2
             {
                 draw_notification(win, viewer_rect, 400,
                     u8"\n          \uf063  Rotate the camera slightly Down",
-                    "             Use the orientation gimbal to align the camera");
+                    orientation_instruction);
                 return false;
             }
 
             if (_too_close.eval())
             {
                 draw_notification(win, viewer_rect, 400,
-                    u8"\n          \uf0b2  Move the camera further Away", 
-                    "             Use the distance locator to position the camera");
+                    u8"\n          \uf0b2  Move the camera further Away",
+                    distance_instruction);
                 distance = true;
                 return false;
             }
@@ -185,7 +188,7 @@ namespace rs2
             {
                 draw_notification(win, viewer_rect, 400,
                     u8"\n        \uf066  Move the camera Closer to the wall",
-                    "             Use the distance locator to position the camera");
+                    distance_instruction);
                 distance = true;
                 return false;
             }
@@ -401,7 +404,7 @@ namespace rs2
             bool distance_guide = false;
             bool orientation_guide = false;
             bool found = draw_instructions(win, viewer_rect, distance_guide, orientation_guide);
-            draw_guides(win, viewer_rect, distance_guide, orientation_guide);
+            //draw_guides(win, viewer_rect, distance_guide, orientation_guide);
 
             ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
             ImGui::SetNextWindowPos({ 0, 0 });
@@ -513,7 +516,18 @@ namespace rs2
                         ImGui::PopStyleColor();
                         ImGui::PopItemWidth();
                         ImGui::SetCursorPosX(col0);
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
+                        ImGui::Text("Distance:");
+                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
+                        ImGui::Text("%.2f mm", _metrics_model.get_last_metrics().distance);
+
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+                        ImGui::Text("Angle:");
+                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
+                        ImGui::Text("%.2f deg", _metrics_model.get_last_metrics().angle);
+                        
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                         ImGui::TreePop();
                     }
@@ -547,7 +561,7 @@ namespace rs2
                         ImGui::TreePop();
                     }
 
-                    if (ImGui::TreeNode("Allowed Ranges"))
+                    /*if (ImGui::TreeNode("Allowed Ranges"))
                     {
                         ImGui::PopStyleVar();
                         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
@@ -578,7 +592,7 @@ namespace rs2
 
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                         ImGui::TreePop();
-                    }
+                    }*/
 
                     ImGui::PopStyleVar();
                     ImGui::PopStyleVar();
