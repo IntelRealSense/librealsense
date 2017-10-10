@@ -36,7 +36,7 @@ namespace librealsense
 
 const char* rs2_rs400_visual_preset_to_string(rs2_rs400_visual_preset preset){ return get_string(preset); }
 
-void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error) try
+void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
@@ -44,7 +44,7 @@ void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error) tr
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, enable)
 
-void rs2_is_enabled(rs2_device* dev, int* enabled, rs2_error** error) try
+void rs2_is_enabled(rs2_device* dev, int* enabled, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(enabled);
@@ -53,7 +53,7 @@ void rs2_is_enabled(rs2_device* dev, int* enabled, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, enabled)
 
-void rs2_set_depth_control(rs2_device* dev, STDepthControlGroup* group, rs2_error** error) try
+void rs2_set_depth_control(rs2_device* dev, STDepthControlGroup* group, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -62,7 +62,7 @@ void rs2_set_depth_control(rs2_device* dev, STDepthControlGroup* group, rs2_erro
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
 
-void rs2_get_depth_control(rs2_device* dev, STDepthControlGroup* group, int mode, rs2_error** error) try
+void rs2_get_depth_control(rs2_device* dev, STDepthControlGroup* group, int mode, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -71,7 +71,7 @@ void rs2_get_depth_control(rs2_device* dev, STDepthControlGroup* group, int mode
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
 
-void rs2_set_rsm(rs2_device* dev, STRsm* group, rs2_error** error) try
+void rs2_set_rsm(rs2_device* dev, STRsm* group, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -80,7 +80,7 @@ void rs2_set_rsm(rs2_device* dev, STRsm* group, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
 
-void rs2_get_rsm(rs2_device* dev, STRsm* group, int mode, rs2_error** error) try
+void rs2_get_rsm(rs2_device* dev, STRsm* group, int mode, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -89,7 +89,7 @@ void rs2_get_rsm(rs2_device* dev, STRsm* group, int mode, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
 
-void rs2_set_rau_support_vector_control(rs2_device* dev, STRauSupportVectorControl* group, rs2_error** error) try
+void rs2_set_rau_support_vector_control(rs2_device* dev, STRauSupportVectorControl* group, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -98,7 +98,7 @@ void rs2_set_rau_support_vector_control(rs2_device* dev, STRauSupportVectorContr
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
 
-void rs2_get_rau_support_vector_control(rs2_device* dev, STRauSupportVectorControl* group, int mode, rs2_error** error) try
+void rs2_get_rau_support_vector_control(rs2_device* dev, STRauSupportVectorControl* group, int mode, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -107,7 +107,7 @@ void rs2_get_rau_support_vector_control(rs2_device* dev, STRauSupportVectorContr
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
 
-void rs2_set_color_control(rs2_device* dev, STColorControl* group, rs2_error** error) try
+void rs2_set_color_control(rs2_device* dev, STColorControl* group, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -116,7 +116,7 @@ void rs2_set_color_control(rs2_device* dev, STColorControl* group, rs2_error** e
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
 
-void rs2_get_color_control(rs2_device* dev, STColorControl* group, int mode, rs2_error** error) try
+void rs2_get_color_control(rs2_device* dev, STColorControl* group, int mode, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -125,7 +125,7 @@ void rs2_get_color_control(rs2_device* dev, STColorControl* group, int mode, rs2
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
 
-void rs2_set_rau_thresholds_control(rs2_device* dev, STRauColorThresholdsControl* group, rs2_error** error) try
+void rs2_set_rau_thresholds_control(rs2_device* dev, STRauColorThresholdsControl* group, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -134,7 +134,7 @@ void rs2_set_rau_thresholds_control(rs2_device* dev, STRauColorThresholdsControl
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
 
-void rs2_get_rau_thresholds_control(rs2_device* dev, STRauColorThresholdsControl* group, int mode, rs2_error** error) try
+void rs2_get_rau_thresholds_control(rs2_device* dev, STRauColorThresholdsControl* group, int mode, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -143,7 +143,7 @@ void rs2_get_rau_thresholds_control(rs2_device* dev, STRauColorThresholdsControl
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
 
-void rs2_set_slo_color_thresholds_control(rs2_device* dev, STSloColorThresholdsControl* group, rs2_error** error) try
+void rs2_set_slo_color_thresholds_control(rs2_device* dev, STSloColorThresholdsControl* group, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -152,7 +152,7 @@ void rs2_set_slo_color_thresholds_control(rs2_device* dev, STSloColorThresholdsC
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
 
-void rs2_get_slo_color_thresholds_control(rs2_device* dev, STSloColorThresholdsControl* group, int mode, rs2_error** error) try
+void rs2_get_slo_color_thresholds_control(rs2_device* dev, STSloColorThresholdsControl* group, int mode, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -161,7 +161,7 @@ void rs2_get_slo_color_thresholds_control(rs2_device* dev, STSloColorThresholdsC
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
 
-void rs2_set_slo_penalty_control(rs2_device* dev, STSloPenaltyControl* group, rs2_error** error) try
+void rs2_set_slo_penalty_control(rs2_device* dev, STSloPenaltyControl* group, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -170,7 +170,7 @@ void rs2_set_slo_penalty_control(rs2_device* dev, STSloPenaltyControl* group, rs
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
 
-void rs2_get_slo_penalty_control(rs2_device* dev, STSloPenaltyControl* group, int mode, rs2_error** error) try
+void rs2_get_slo_penalty_control(rs2_device* dev, STSloPenaltyControl* group, int mode, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -179,7 +179,7 @@ void rs2_get_slo_penalty_control(rs2_device* dev, STSloPenaltyControl* group, in
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
 
-void rs2_set_hdad(rs2_device* dev, STHdad* group, rs2_error** error) try
+void rs2_set_hdad(rs2_device* dev, STHdad* group, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -188,7 +188,7 @@ void rs2_set_hdad(rs2_device* dev, STHdad* group, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
 
-void rs2_get_hdad(rs2_device* dev, STHdad* group, int mode, rs2_error** error) try
+void rs2_get_hdad(rs2_device* dev, STHdad* group, int mode, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -197,7 +197,7 @@ void rs2_get_hdad(rs2_device* dev, STHdad* group, int mode, rs2_error** error) t
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
 
-void rs2_set_color_correction(rs2_device* dev, STColorCorrection* group, rs2_error** error) try
+void rs2_set_color_correction(rs2_device* dev, STColorCorrection* group, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -206,7 +206,7 @@ void rs2_set_color_correction(rs2_device* dev, STColorCorrection* group, rs2_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
 
-void rs2_get_color_correction(rs2_device* dev, STColorCorrection* group, int mode, rs2_error** error) try
+void rs2_get_color_correction(rs2_device* dev, STColorCorrection* group, int mode, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -215,7 +215,7 @@ void rs2_get_color_correction(rs2_device* dev, STColorCorrection* group, int mod
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
 
-void rs2_set_depth_table(rs2_device* dev, STDepthTableControl* group, rs2_error** error) try
+void rs2_set_depth_table(rs2_device* dev, STDepthTableControl* group, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -224,7 +224,7 @@ void rs2_set_depth_table(rs2_device* dev, STDepthTableControl* group, rs2_error*
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
 
-void rs2_get_depth_table(rs2_device* dev, STDepthTableControl* group, int mode, rs2_error** error) try
+void rs2_get_depth_table(rs2_device* dev, STDepthTableControl* group, int mode, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -233,7 +233,7 @@ void rs2_get_depth_table(rs2_device* dev, STDepthTableControl* group, int mode, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
 
-void rs2_set_ae_control(rs2_device* dev, STAEControl* group, rs2_error** error) try
+void rs2_set_ae_control(rs2_device* dev, STAEControl* group, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -242,7 +242,7 @@ void rs2_set_ae_control(rs2_device* dev, STAEControl* group, rs2_error** error) 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
 
-void rs2_get_ae_control(rs2_device* dev, STAEControl* group, int mode, rs2_error** error) try
+void rs2_get_ae_control(rs2_device* dev, STAEControl* group, int mode, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -251,7 +251,7 @@ void rs2_get_ae_control(rs2_device* dev, STAEControl* group, int mode, rs2_error
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
 
-void rs2_set_census(rs2_device* dev, STCensusRadius* group, rs2_error** error) try
+void rs2_set_census(rs2_device* dev, STCensusRadius* group, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -260,7 +260,7 @@ void rs2_set_census(rs2_device* dev, STCensusRadius* group, rs2_error** error) t
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
 
-void rs2_get_census(rs2_device* dev, STCensusRadius* group, int mode, rs2_error** error) try
+void rs2_get_census(rs2_device* dev, STCensusRadius* group, int mode, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
@@ -269,7 +269,7 @@ void rs2_get_census(rs2_device* dev, STCensusRadius* group, int mode, rs2_error*
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
 
-void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error) try
+void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(json_content);
@@ -278,7 +278,7 @@ void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_s
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)
 
-rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error) try
+rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);

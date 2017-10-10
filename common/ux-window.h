@@ -27,13 +27,13 @@ namespace rs2
     {
     public:
         std::function<void(std::string)> on_file_drop = [](std::string) {};
-        std::function<void()>            on_load = [](){};
+        std::function<bool()>            on_load = []() { return false; };
 
         ux_window(const char* title);
 
         float width() const { return float(_width); }
         float height() const { return float(_height); }
-        
+
         float framebuf_width() const { return float(_fb_width); }
         float framebuf_height() const { return float(_fb_height); }
 
@@ -49,6 +49,8 @@ namespace rs2
         void begin_viewport();
 
         void end_frame();
+
+        void reset();
 
         ImFont* get_large_font() const { return _font_18; }
         ImFont* get_font() const { return _font_14; }
@@ -76,5 +78,10 @@ namespace rs2
         std::string              _title_str;
         std::vector<std::string> _on_load_message;
         std::mutex               _on_load_message_mtx;
+
+        bool                     _query_devices = true;
+        bool                     _missing_device = false;
+        int                      _hourglass_index = 0;
+        std::string              _dev_stat_message;
     };
 }

@@ -627,6 +627,7 @@ PYBIND11_PLUGIN(NAME) {
     py::class_<rs2::pipeline_profile> pipeline_profile(m, "pipeline_profile");
     pipeline_profile.def(py::init<>())
             .def("get_streams", &rs2::pipeline_profile::get_streams)
+            .def("get_stream", &rs2::pipeline_profile::get_stream, "stream_type"_a, "stream_index"_a = -1)
             .def("get_device", &rs2::pipeline_profile::get_device);
 
 
@@ -641,7 +642,7 @@ PYBIND11_PLUGIN(NAME) {
             .def("enable_device",  &rs2::config::enable_device,  "serial"_a)
             .def("enable_device_from_file", &rs2::config::enable_device_from_file, "file_name"_a)
             .def("enable_record_to_file", &rs2::config::enable_record_to_file, "file_name"_a)
-            .def("disable_stream", &rs2::config::disable_stream, "stream"_a)
+            .def("disable_stream", &rs2::config::disable_stream, "stream"_a, "index"_a = -1)
             .def("disable_all_streams", &rs2::config::disable_all_streams)
             .def("resolve", (rs2::pipeline_profile (rs2::config::*)(rs2::pipeline) const) &rs2::config::resolve, "pipeline"_a)
             .def("can_resolve", (bool (rs2::config::*)(rs2::pipeline) const) &rs2::config::can_resolve, "pipeline"_a);

@@ -155,7 +155,7 @@ namespace librealsense
         platform::usb_device_info _hwm;
     };
 
-    class sr300_camera final : public device, public debug_interface
+    class sr300_camera final : public virtual device, public debug_interface
     {
     public:
         class preset_option : public option_base
@@ -208,7 +208,7 @@ namespace librealsense
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
             {
-                return make_color_intrinsics(_owner->get_calibration(), { int(profile.width), int(profile.height) });
+                return make_color_intrinsics(*_owner->_camer_calib_params, { int(profile.width), int(profile.height) });
             }
 
             stream_profiles init_stream_profiles() override
@@ -256,7 +256,7 @@ namespace librealsense
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
             {
-                return make_depth_intrinsics(_owner->get_calibration(), { int(profile.width), int(profile.height) });
+                return make_depth_intrinsics(*_owner->_camer_calib_params, { int(profile.width), int(profile.height) });
             }
 
             stream_profiles init_stream_profiles() override
@@ -538,5 +538,7 @@ namespace librealsense
         std::shared_ptr<stream_interface> _ir_stream;
         std::shared_ptr<stream_interface> _color_stream;
         std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_color_extrinsics;
+
+        lazy<ivcam::camera_calib_params> _camer_calib_params;
     };
 }

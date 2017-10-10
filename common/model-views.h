@@ -478,6 +478,14 @@ namespace rs2
             return model;
         }
 
+        void reset(void)
+        {
+            rs2::frame f{};
+            model = f;
+            while (resulting_3d_models.poll_for_frame(&f));
+            while (depth_frames_to_render.poll_for_frame(&f));
+        }
+
     private:
         void render_loop();
 

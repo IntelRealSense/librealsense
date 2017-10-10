@@ -13,7 +13,8 @@ namespace rs2
     ux_window::ux_window(const char* title) :
         _win(nullptr), _width(0), _height(0), _output_height(0),
         _font_14(nullptr), _font_18(nullptr), _app_ready(false),
-        _first_frame(true)
+        _first_frame(true), _query_devices(true), _missing_device(false),
+        _hourglass_index(0), _dev_stat_message{}
     {
         if (!glfwInit())
             exit(1);
@@ -73,6 +74,9 @@ namespace rs2
         auto r = stbi_load_from_memory(splash, splash_size, &x, &y, &comp, false);
         _splash_tex.upload_image(x, y, r);
 
+        // Apply initial UI state
+        reset();
+
     }
 
     void ux_window::add_on_load_message(const std::string& msg)
@@ -94,12 +98,20 @@ namespace rs2
         if (_first_frame)
         {
             std::thread first_load([&]() {
-                on_load();
-                _app_ready = true;
+                do
+                {
+                    try
+                    {
+                        _app_ready = on_load();
+                    }
+                    catch (...)
+                    {
+                        std::this_thread::sleep_for(std::chrono::seconds(1)); // Wait for connect event and retry
+                    }
+                } while (!_app_ready);
             });
-            first_load.detach();
-
             _first_frame = false;
+            first_load.detach();
         }
 
         // If we are just getting started, render the Splash Screen instead of normal UI
@@ -109,7 +121,7 @@ namespace rs2
             glfwPollEvents();
 
             begin_frame();
-            
+
             glPushMatrix();
             glViewport(0.f, 0.f, _fb_width, _fb_height);
             glClearColor(0.036f, 0.044f, 0.051f, 1.f);
@@ -122,26 +134,22 @@ namespace rs2
             auto opacity = smoothstep(_splash_timer.elapsed_ms(), 100.f, 2000.f);
             _splash_tex.show({ 0.f,0.f,(float)_width,(float)_height }, opacity);
 
-            static bool query_devices = true;
-            static bool missing_device = false;
-            static int hourglass_index = 0;
-            static std::string message = u8"\uf287 Please connect Intel RealSense device!";
             std::string hourglass = u8"\uf250";
             static periodic_timer every_200ms(std::chrono::milliseconds(200));
             bool do_200ms = every_200ms;
-            if (query_devices && do_200ms)
+            if (_query_devices && do_200ms)
             {
-                missing_device = rs2::context().query_devices().size() == 0;
-                hourglass_index = (hourglass_index + 1) % 5;
+                _missing_device = rs2::context().query_devices().size() == 0;
+                _hourglass_index = (_hourglass_index + 1) % 5;
 
-                if (!missing_device)
+                if (!_missing_device)
                 {
-                    message = u8"\uf287 RealSense device detected.";
-                    query_devices = false;
+                    _dev_stat_message = u8"\uf287 RealSense device detected.";
+                    _query_devices = false;
                 }
             }
 
-            hourglass[2] += hourglass_index;
+            hourglass[2] += _hourglass_index;
 
             bool blink = sin(_splash_timer.elapsed_ms() / 150.f) > -0.3f;
 
@@ -166,11 +174,11 @@ namespace rs2
                 std::lock_guard<std::mutex> lock(_on_load_message_mtx);
                 if (_on_load_message.empty() && blink)
                 {
-                    ImGui::Text("%s", message.c_str());
+                    ImGui::Text("%s", _dev_stat_message.c_str());
                 }
                 else if (!_on_load_message.empty())
                 {
-                    ImGui::Text("%s", message.c_str());
+                    ImGui::Text("%s", _dev_stat_message.c_str());
                     for (auto& msg : _on_load_message)
                     {
                         auto is_last_msg = (msg == _on_load_message.back());
@@ -189,7 +197,6 @@ namespace rs2
 
             end_frame();
 
-            //glfwSwapBuffers(_win);
             glPopMatrix();
 
             // Yield the CPU
@@ -215,7 +222,7 @@ namespace rs2
         glfwPollEvents();
         glfwGetWindowSize(_win, &_width, &_height);
         glfwGetFramebufferSize(_win, &_fb_width, &_fb_height);
-        
+
         // Update the scale factor each frame
         // based on resolution and physical display size
         _scale_factor = pick_scale_factor(_win);
@@ -251,5 +258,16 @@ namespace rs2
             glfwSwapBuffers(_win);
             _mouse.mouse_wheel = 0;
         }
+    }
+
+    void ux_window::reset()
+    {
+        _query_devices = true;
+        _missing_device = false;
+        _hourglass_index = 0;
+        _first_frame = true;
+        _app_ready = false;
+        _splash_timer.reset();
+        _dev_stat_message = u8"\uf287 Please connect Intel RealSense device!";
     }
 }
