@@ -1120,7 +1120,8 @@ class FrameCallbackForFrameQueue : public rs2_frame_callback {
   explicit FrameCallbackForFrameQueue(rs2_frame_queue* queue)
       : frame_queue(queue) {}
   void on_frame(rs2_frame* frame) override {
-    rs2_enqueue_frame(frame, frame_queue);
+    if (frame && frame_queue)
+      rs2_enqueue_frame(frame, frame_queue);
   }
   void release() override { delete this; }
   rs2_frame_queue* frame_queue;
@@ -1825,6 +1826,8 @@ class RSPointcloud : public Nan::ObjectWrap {
     auto me = Nan::ObjectWrap::Unwrap<RSPointcloud>(info.Holder());
     auto frame = Nan::ObjectWrap::Unwrap<RSFrame>(info[0]->ToObject());
     if (me && frame) {
+      // rs2_process_frame will release the input frame, so we need to addref
+      rs2_frame_add_ref(frame->frame, &me->error);
       rs2_process_frame(me->pc, frame->frame, &me->error);
       auto frame = rs2_wait_for_frame(me->frame_queue, 5000, &me->error);
       if (frame) {
@@ -1839,6 +1842,8 @@ class RSPointcloud : public Nan::ObjectWrap {
     auto me = Nan::ObjectWrap::Unwrap<RSPointcloud>(info.Holder());
     auto frame = Nan::ObjectWrap::Unwrap<RSFrame>(info[0]->ToObject());
     if (me && frame) {
+      // rs2_process_frame will release the input frame, so we need to addref
+      rs2_frame_add_ref(frame->frame, &me->error);
       rs2_process_frame(me->pc, frame->frame, &me->error);
     }
     info.GetReturnValue().Set(Nan::Undefined());
@@ -2158,7 +2163,6 @@ class RSFrameSet : public Nan::ObjectWrap {
     tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
     Nan::SetPrototypeMethod(tpl, "destroy", Destroy);
-    Nan::SetPrototypeMethod(tpl, "dismiss", Dismiss);
     Nan::SetPrototypeMethod(tpl, "getSize", GetSize);
     Nan::SetPrototypeMethod(tpl, "at", At);
     Nan::SetPrototypeMethod(tpl, "getFrame", GetFrame);
@@ -2211,24 +2215,10 @@ class RSFrameSet : public Nan::ObjectWrap {
     frames = nullptr;
   }
 
-  void DismissMe() {
-    if (error) rs2_free_error(error);
-    error = nullptr;
-    frames = nullptr;
-  }
-
   static NAN_METHOD(Destroy) {
     auto me = Nan::ObjectWrap::Unwrap<RSFrameSet>(info.Holder());
     if (me) {
       me->DestroyMe();
-    }
-    info.GetReturnValue().Set(Nan::Undefined());
-  }
-
-  static NAN_METHOD(Dismiss) {
-    auto me = Nan::ObjectWrap::Unwrap<RSFrameSet>(info.Holder());
-    if (me) {
-      me->DismissMe();
     }
     info.GetReturnValue().Set(Nan::Undefined());
   }
@@ -2876,6 +2866,8 @@ class RSColorizer : public Nan::ObjectWrap {
     auto me = Nan::ObjectWrap::Unwrap<RSColorizer>(info.Holder());
     RSFrame* depth = Nan::ObjectWrap::Unwrap<RSFrame>(info[0]->ToObject());
     if (me && depth) {
+      // rs2_process_frame will release the input frame, so we need to addref
+      rs2_frame_add_ref(depth->frame, &me->error);
       rs2_process_frame(me->colorizer, depth->frame, &me->error);
       rs2_frame* result = rs2_wait_for_frame(me->frame_queue, 5000, &me->error);
       if (result) {
@@ -2968,8 +2960,9 @@ class RSAlign : public Nan::ObjectWrap {
   static NAN_METHOD(Process) {
     auto me = Nan::ObjectWrap::Unwrap<RSAlign>(info.Holder());
     auto frameset = Nan::ObjectWrap::Unwrap<RSFrameSet>(info[0]->ToObject());
-
     if (me && frameset) {
+      // rs2_process_frame will release the input frame, so we need to addref
+      rs2_frame_add_ref(frameset->GetFrames(), &me->error);
       rs2_process_frame(me->align, frameset->GetFrames(), &me->error);
       rs2_frame* frame = nullptr;
       auto ret_code = rs2_poll_for_frame(me->frame_queue, &frame, &me->error);
