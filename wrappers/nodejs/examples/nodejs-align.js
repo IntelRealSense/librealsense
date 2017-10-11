@@ -87,7 +87,10 @@ while (!win.shouldWindowClose()) {
   if (!rawFrameSet) continue;
 
   const frameset = align.process(rawFrameSet);
-  if (!frameset) continue;
+  if (!frameset) {
+    rawFrameSet.destroy();
+    continue;
+  }
 
   let colorFrame = frameset.colorFrame;
   let alignedDepthFrame = frameset.depthFrame;
@@ -96,7 +99,7 @@ while (!win.shouldWindowClose()) {
     if (alignedDepthFrame) alignedDepthFrame.destroy();
 
     if (colorFrame) colorFrame.destroy();
-
+    rawFrameSet.destroy();
     frameset.destroy();
     continue;
   }
@@ -131,6 +134,7 @@ while (!win.shouldWindowClose()) {
   alignedDepthFrame.destroy();
   colorFrame.destroy();
   colorizedDepth.destroy();
+  rawFrameSet.destroy();
   frameset.destroy();
 }
 
