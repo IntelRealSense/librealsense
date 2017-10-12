@@ -186,8 +186,6 @@ class StreamProfile {
     this.indexValue = this.cxxProfile.index();
     this.uidValue = this.cxxProfile.uniqueID();
     this.isDefaultValue = this.cxxProfile.isDefault();
-    // TODO(ting): fix profile API change -- .size() is no longer available
-    // this.sizeValue = this.cxxProfile.size();
   }
 
   /**
@@ -243,15 +241,6 @@ class StreamProfile {
    */
   get isDefault() {
     return this.isDefaultValue;
-  }
-
-  /**
-   * Returns the expected bandwidth in bytes per second for specific stream profile
-   *
-   * @return {Integer}
-   */
-  get size() {
-    return this.sizeValue;
   }
 
   /**
@@ -1161,7 +1150,6 @@ class Align {
   process(frameset) {
     const newFrameset = this.cxxAlign.process(frameset.cxxFrameSet);
     if (newFrameset) {
-      frameset.dismiss();
       return new FrameSet(newFrameset);
     }
   }
@@ -1172,18 +1160,6 @@ class Align {
   destroy() {
     this.cxxAlign.destroy();
     this.cxxAlign = undefined;
-  }
-
-  /**
-   * Wait until new frames becomes available.
-   *
-   * @return {FrameSet|undefined}
-   */
-  waitForFrames() {
-    const cxxFrameset = this.cxxAlign.waitForFrames();
-    if (!cxxFrameset) return undefined;
-
-    return new FrameSet(cxxFrameset);
   }
 }
 
@@ -1273,9 +1249,13 @@ class Frame {
    * Destroy the frame and its resource
    */
   destroy() {
-    this.cxxFrame.destroy();
+    if (this.cxxFrame) {
+      this.cxxFrame.destroy();
+    }
     this.cxxFrame = undefined;
-    this.streamProfile.destroy();
+    if (this.streamProfile) {
+      this.streamProfile.destroy();
+    }
     this.StreamProfile = undefined;
   }
 
@@ -1339,7 +1319,7 @@ class Frame {
    * Retrieve the current value of a single frame metadata
    * @param {String|Number} metadata the type of metadata, see {@link frame_metadata} for avaiable
    * values
-   * @return {Uint8Array} The metadata value, 8 bytes, byte order is the same as the host.
+   * @return {Uint8Array} The metadata value, 8 bytes, byte order is bigendian.
    */
   frameMetadata(metadata) {
     let m = checkStringNumber(metadata,
@@ -1677,11 +1657,6 @@ class FrameSet {
     this.cxxFrameSet.destroy();
     this.cxxFrameSet = undefined;
   }
-
-  dismiss() {
-    this.cxxFrameSet.dismiss();
-    this.cxxFrameSet = undefined;
-  }
 }
 
 /**
@@ -1730,7 +1705,6 @@ class Pipeline {
     }
     this.ctx = undefined;
   }
-
 
   /**
    * Start streaming
@@ -1875,9 +1849,9 @@ class Config {
       }
       return new PipelineProfile(this.cxxConfig.resolve(arguments[0].cxxPipeline));
     }
-
     return undefined;
   }
+
   canResolve(pipeline) {
     if (arguments.length === 0) {
         throw new TypeError('Invalid argument for Config.canResolve()');

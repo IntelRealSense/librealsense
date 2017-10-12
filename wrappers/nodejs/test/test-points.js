@@ -26,7 +26,7 @@ describe('Points test', function() {
     let pointcloud;
     assert.doesNotThrow(() => {
       pipeline = new rs2.Pipeline();
-      pointcloud = ctx.createPointcloud();
+      pointcloud = new rs2.Pointcloud();
       pipeline.start();
     });
     let endTest = false;
@@ -62,7 +62,7 @@ describe('Points test', function() {
     let pointcloud;
     assert.doesNotThrow(() => {
       pipeline = new rs2.Pipeline();
-      pointcloud = ctx.createPointcloud();
+      pointcloud = new rs2.Pointcloud();
       pipeline.start();
     });
     let endTest = false;
