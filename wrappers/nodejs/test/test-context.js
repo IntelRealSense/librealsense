@@ -29,20 +29,18 @@ describe('Context test', function() {
     assert(context._events instanceof EventEmitter);
   });
 
-  it('testing method - createPointcloud, should get Pointcloud', () => {
-    const context = new librealsense2.Context();
+  it('testing constructor - new Pointcloud, should get Pointcloud', () => {
     let pointcloud;
     assert.doesNotThrow(() => {
-      pointcloud = context.createPointcloud();
+      pointcloud = new librealsense2.Pointcloud();
     });
     assert(pointcloud instanceof librealsense2.Pointcloud);
   });
 
-  it('testing method - createPointcloud, invalid 1 option', () => {
-    const context = new librealsense2.Context();
+  it('testing constructor - new Pointcloud, invalid 1 option', () => {
     let pointcloud;
     assert.doesNotThrow(() => {
-      pointcloud = context.createPointcloud(1);
+      pointcloud = new librealsense2.Pointcloud(1);
     });
     assert(pointcloud instanceof librealsense2.Pointcloud);
   });
@@ -66,7 +64,8 @@ describe('Context test', function() {
     });
   });
 
-  it('testing method - getTime, should get number value', () => {
+  // getTime is removed
+  it.skip('testing method - getTime, should get number value', () => {
     const context = new librealsense2.Context();
     assert.doesNotThrow(() => {
       context.getTime();
@@ -74,7 +73,7 @@ describe('Context test', function() {
     assert.equal(typeof context.getTime(), 'number');
   });
 
-  it('testing method - getTime, should get current system time', () => {
+  it.skip('testing method - getTime, should get current system time', () => {
     const context = new librealsense2.Context();
     assert.doesNotThrow(() => {
       context.getTime();

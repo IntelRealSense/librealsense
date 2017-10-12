@@ -102,7 +102,11 @@ class Texture {
   }
 
   upload(videoFrame) {
-    this.glHandle = glfw.uploadAsTexture(
+    if (!this.glHandle) {
+      this.glHandle = glfw.genTexture();
+    }
+    glfw.uploadAsTexture(
+        this.glHandle,
         new Uint8Array(videoFrame.getData()),
         videoFrame.width,
         videoFrame.height,
