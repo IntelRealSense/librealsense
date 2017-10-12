@@ -216,6 +216,7 @@ describe('Colorizer test', function() {
       assert.equal(depthRGB.width, depth.width);
       assert.equal(depthRGB.format, rs2.format.FORMAT_RGB8);
       depthRGB.destroy();
+      depth.destroy();
     }
   });
 });

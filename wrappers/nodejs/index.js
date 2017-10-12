@@ -186,8 +186,6 @@ class StreamProfile {
     this.indexValue = this.cxxProfile.index();
     this.uidValue = this.cxxProfile.uniqueID();
     this.isDefaultValue = this.cxxProfile.isDefault();
-    // TODO(ting): fix profile API change -- .size() is no longer available
-    // this.sizeValue = this.cxxProfile.size();
   }
 
   /**
@@ -243,15 +241,6 @@ class StreamProfile {
    */
   get isDefault() {
     return this.isDefaultValue;
-  }
-
-  /**
-   * Returns the expected bandwidth in bytes per second for specific stream profile
-   *
-   * @return {Integer}
-   */
-  get size() {
-    return this.sizeValue;
   }
 
   /**
@@ -1330,7 +1319,7 @@ class Frame {
    * Retrieve the current value of a single frame metadata
    * @param {String|Number} metadata the type of metadata, see {@link frame_metadata} for avaiable
    * values
-   * @return {Uint8Array} The metadata value, 8 bytes, byte order is the bigendian.
+   * @return {Uint8Array} The metadata value, 8 bytes, byte order is bigendian.
    */
   frameMetadata(metadata) {
     let m = checkStringNumber(metadata,

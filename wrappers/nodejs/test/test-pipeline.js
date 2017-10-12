@@ -46,7 +46,8 @@ describe('Pipeline test', function() {
     });
   });
 
-  it('Testing constructor - 1 device option', () => {
+  // Not supported
+  it.skip('Testing constructor - 1 device option', () => {
     assert.doesNotThrow(() => {
       new rs2.Pipeline(dev);
     });
@@ -109,8 +110,9 @@ describe('Pipeline test', function() {
         assert(frameSet.depthFrame instanceof rs2.VideoFrame);
         assert(frameSet.colorFrame instanceof rs2.VideoFrame);
         endTest = true;
-        frameSet.destroy();
       }
+      // always destroy it
+      frameSet.destroy();
       if (n >= 10) {
         assert(false, 'could not get colorFrame or depthFrame, try to reset camera');
       }

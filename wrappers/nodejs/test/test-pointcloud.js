@@ -23,7 +23,7 @@ describe('Pointcloud test', function() {
   it('Testing method destroy', () => {
     let pointcloud;
     assert.doesNotThrow(() => {
-      pointcloud= ctx.createPointcloud();
+      pointcloud= new rs2.Pointcloud();
       pointcloud.destroy();
     });
     setTimeout(() => {
@@ -37,7 +37,7 @@ describe('Pointcloud test', function() {
     let pointcloud;
     assert.doesNotThrow(() => {
       pipeline = new rs2.Pipeline();
-      pointcloud = ctx.createPointcloud();
+      pointcloud = new rs2.Pointcloud();
       pipeline.start();
     });
     let endTest = false;
@@ -77,7 +77,7 @@ describe('Pointcloud test', function() {
     let pointcloud;
     assert.doesNotThrow(() => {
       pipeline = new rs2.Pipeline();
-      pointcloud = ctx.createPointcloud();
+      pointcloud = new rs2.Pointcloud();
       pipeline.start();
     });
     let endTest = false;
