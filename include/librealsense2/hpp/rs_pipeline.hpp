@@ -170,7 +170,7 @@ namespace rs2
         //Stream type and resolution, and possibly format and frame rate
         void enable_stream(rs2_stream stream_type, int width, int height, rs2_format format = RS2_FORMAT_ANY, int framerate = 0)
         {
-            enable_stream(stream_type, -1, 0, 0, RS2_FORMAT_ANY, 0);
+            enable_stream(stream_type, -1, width, height, RS2_FORMAT_ANY, framerate);
         }
 
         //Stream type and format
