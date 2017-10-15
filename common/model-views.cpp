@@ -4289,4 +4289,31 @@ namespace rs2
         ImGui::PopStyleColor();
         ImGui::PopFont();
     }
+
+    device_changes::device_changes(rs2::context& ctx)
+    {
+        _changes.emplace(rs2::device_list{}, ctx.query_devices());
+        ctx.set_devices_changed_callback([&](event_information& info)
+        {
+            add_changes(info);
+        });
+    }
+
+    void device_changes::add_changes(const event_information& c)
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        _changes.push(c);
+    }
+
+    bool device_changes::try_get_next_changes(event_information& removed_and_connected)
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        if (_changes.empty())
+            return false;
+
+        removed_and_connected = std::move(_changes.front());
+        _changes.pop();
+        return true;
+    }
+
 }

@@ -24,35 +24,6 @@
 using namespace rs2;
 using namespace rs400;
 
-class device_changes
-{
-public:
-    device_changes(const rs2::device_list& devices)
-    {
-        _changes.emplace(rs2::device_list{}, devices);
-    }
-
-    void add_changes(const event_information& c)
-    {
-        std::lock_guard<std::mutex> lock(_mtx);
-        _changes.push(c);
-    }
-
-    bool try_get_next_changes(event_information& removed_and_connected)
-    {
-        std::lock_guard<std::mutex> lock(_mtx);
-        if (_changes.empty())
-            return false;
-
-        removed_and_connected = std::move(_changes.front());
-        _changes.pop();
-        return true;
-    }
-private:
-    std::queue<event_information> _changes;
-    std::mutex _mtx;
-};
-
 void add_playback_device(context& ctx, std::vector<device_model>& device_models, std::string& error_message, viewer_model& viewer_model, const std::string& file)
 {
     bool was_loaded = false;
@@ -193,7 +164,7 @@ void refresh_devices(std::mutex& m,
                     });
                 }
 
-                if (device_models.size() == 0 && prev_size == 0 &&
+                if (device_models.size() == 0 &&
                     dev.supports(RS2_CAMERA_INFO_NAME) && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera")
                 {
                     device_models.emplace_back(dev, error_message, viewer_model);
@@ -223,7 +194,7 @@ int main(int argv, const char** argc) try
 
     // Create RealSense Context
     context ctx;
-    device_changes devices_connection_changes(ctx.query_devices());
+    device_changes devices_connection_changes(ctx);
     std::vector<std::pair<std::string, std::string>> device_names;
 
     std::string error_message{ "" };
@@ -248,11 +219,6 @@ int main(int argv, const char** argc) try
                 0, RS2_LOG_SEVERITY_ERROR, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
         }
     };
-
-    ctx.set_devices_changed_callback([&](event_information& info)
-    {
-        devices_connection_changes.add_changes(info);
-    });
 
     for (int i = 1; i < argv; i++)
     {
