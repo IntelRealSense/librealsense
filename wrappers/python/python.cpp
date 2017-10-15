@@ -622,6 +622,15 @@ PYBIND11_PLUGIN(NAME) {
     .def("wait_for_frames", &rs2::pipeline::wait_for_frames, "timeout_ms"_a = 5000)
     .def("poll_for_frames", &rs2::pipeline::poll_for_frames, "frameset*"_a);
 
+    struct pipeline_wrapper //Workaround to allow python implicit conversion of pipeline to std::shared_ptr<rs2_pipeline>
+    {
+        std::shared_ptr<rs2_pipeline> _ptr;
+    };
+
+    py::class_<pipeline_wrapper>(m, "pipeline_wrapper")
+        .def("__init__", [](pipeline_wrapper &pw, rs2::pipeline p) { new (&pw) pipeline_wrapper{ p }; });
+
+    py::implicitly_convertible<rs2::pipeline, pipeline_wrapper>();
 
     /* rs2_pipeline.hpp */
     py::class_<rs2::pipeline_profile> pipeline_profile(m, "pipeline_profile");
@@ -637,15 +646,15 @@ PYBIND11_PLUGIN(NAME) {
             .def("enable_stream", (void (rs2::config::*)(rs2_stream, int)) &rs2::config::enable_stream, "stream_type"_a, "stream_index"_a = -1)
             .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, int, rs2_format, int)) &rs2::config::enable_stream, "stream_type"_a, "width"_a, "height"_a, "format"_a = RS2_FORMAT_ANY, "framerate"_a = 0)
             .def("enable_stream", (void (rs2::config::*)(rs2_stream, rs2_format, int))&rs2::config::enable_stream, "stream_type"_a, "format"_a, "framerate"_a = 0)
-            .def("enable_stream", (void (rs2::config::*)(rs2_stream, int , rs2_format, int)) &rs2::config::enable_stream, "stream_type"_a, "stream_index"_a, "format"_a, "framerate"_a = 0)
+            .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, rs2_format, int)) &rs2::config::enable_stream, "stream_type"_a, "stream_index"_a, "format"_a, "framerate"_a = 0)
             .def("enable_all_streams", &rs2::config::enable_all_streams)
-            .def("enable_device",  &rs2::config::enable_device,  "serial"_a)
+            .def("enable_device", &rs2::config::enable_device, "serial"_a)
             .def("enable_device_from_file", &rs2::config::enable_device_from_file, "file_name"_a)
             .def("enable_record_to_file", &rs2::config::enable_record_to_file, "file_name"_a)
             .def("disable_stream", &rs2::config::disable_stream, "stream"_a, "index"_a = -1)
             .def("disable_all_streams", &rs2::config::disable_all_streams)
-            .def("resolve", (rs2::pipeline_profile (rs2::config::*)(rs2::pipeline) const) &rs2::config::resolve, "pipeline"_a)
-            .def("can_resolve", (bool (rs2::config::*)(rs2::pipeline) const) &rs2::config::can_resolve, "pipeline"_a);
+            .def("resolve", [](rs2::config* c, pipeline_wrapper pw) -> rs2::pipeline_profile { return c->resolve(pw._ptr); })
+            .def("can_resolve", [](rs2::config* c, pipeline_wrapper pw) -> bool { return c->can_resolve(pw._ptr); });
 
 
     /* rs2.hpp */
