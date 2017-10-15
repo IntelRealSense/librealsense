@@ -24,6 +24,35 @@
 using namespace rs2;
 using namespace rs400;
 
+class device_changes
+{
+public:
+    device_changes(const rs2::device_list& devices)
+    {
+        _changes.emplace(rs2::device_list{}, devices);
+    }
+
+    void add_changes(const event_information& c)
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        _changes.push(c);
+    }
+
+    bool try_get_next_changes(event_information& removed_and_connected)
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        if (_changes.empty())
+            return false;
+
+        removed_and_connected = std::move(_changes.front());
+        _changes.pop();
+        return true;
+    }
+private:
+    std::queue<event_information> _changes;
+    std::mutex _mtx;
+};
+
 void add_playback_device(context& ctx, std::vector<device_model>& device_models, std::string& error_message, viewer_model& viewer_model, const std::string& file)
 {
     bool was_loaded = false;
@@ -100,83 +129,78 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
 // the function will pick up on this and add the device to the viewer
 void refresh_devices(std::mutex& m,
                      context& ctx,
-                     bool& refresh_device_list,
-                     device_list& list,
+                     device_changes& devices_connection_changes,
+                     std::vector<device>& current_connected_devices,
                      std::vector<std::pair<std::string, std::string>>& device_names,
                      std::vector<device_model>& device_models,
                      viewer_model& viewer_model,
-                     std::vector<device>& devs,
                      std::string& error_message)
 {
-    std::lock_guard<std::mutex> lock(m);
-
-    if (refresh_device_list)
+    event_information info({}, {});
+    if (devices_connection_changes.try_get_next_changes(info))
     {
-        refresh_device_list = false;
-
         try
         {
-            auto prev_size = list.size();
-            list = ctx.query_devices();
+            auto prev_size = current_connected_devices.size();
 
-            device_names = get_devices_names(list);
-
-            if (device_models.size() == 0 && list.size() > 0 && prev_size == 0)
+            //Remove disconnected
+            auto dev_itr = begin(current_connected_devices);
+            while(dev_itr != end(current_connected_devices))
             {
-                auto dev = [&](){
-                    for (size_t i = 0; i < list.size(); i++)
-                    {
-                        if (list[i].supports(RS2_CAMERA_INFO_NAME) &&
-                            std::string(list[i].get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera")
-                            return list[i];
-                    }
-                    return device();
-                }();
-
-                if (dev)
+                auto dev = *dev_itr;
+                if (info.was_removed(dev))
                 {
-                    device_models.emplace_back(dev, error_message, viewer_model);
-                    viewer_model.not_model.add_log(to_string() << device_models.rbegin()->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
+                    //Notify change
+                    viewer_model.not_model.add_notification({ get_device_name(dev).first + " Disconnected\n",
+                        0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+
+                    //Remove from devices
+
+                    auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
+                        [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(dev); });
+                    
+                    if(dev_model_itr != end(device_models))
+                        device_models.erase(dev_model_itr);
+
+                    
+                    auto dev_name_itr = std::find(begin(device_names), end(device_names), get_device_name(dev));
+                    if (dev_name_itr != end(device_names))
+                        device_names.erase(dev_name_itr);
+
+                    dev_itr = current_connected_devices.erase(dev_itr);
+                    continue;
+                    
                 }
+                ++dev_itr;
             }
 
-            devs.clear();
-            for (auto&& sub : device_models)
+            //Add connected
+            static bool initial_refresh = true;
+            for (auto dev : info.get_new_devices())
             {
-                devs.push_back(sub.dev);
-                for (auto&& s : sub.dev.query_sensors())
+                auto dev_descriptor = get_device_name(dev);
+                device_names.push_back(dev_descriptor);
+                if(!initial_refresh)
+                    viewer_model.not_model.add_notification({ dev_descriptor.first + " Connected\n",
+                        0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+
+                current_connected_devices.push_back(dev);
+                for (auto&& s : dev.query_sensors())
                 {
                     s.set_notifications_callback([&](const notification& n)
                     {
                         viewer_model.not_model.add_notification({ n.get_description(), n.get_timestamp(), n.get_severity(), n.get_category() });
                     });
                 }
-            }
 
-
-            device_model* device_to_remove = nullptr;
-            while(true)
-            {
-                for (auto&& dev_model : device_models)
+                if (device_models.size() == 0 && prev_size == 0 &&
+                    dev.supports(RS2_CAMERA_INFO_NAME) && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera")
                 {
-                    bool still_around = false;
-                    for (auto&& dev : list)
-                        if (get_device_name(dev_model.dev) == get_device_name(dev))
-                            still_around = true;
-                    if (!still_around) {
-                        for (auto&& s : dev_model.subdevices)
-                            s->streaming = false;
-                        device_to_remove = &dev_model;
-                    }
+                    device_models.emplace_back(dev, error_message, viewer_model);
+                    viewer_model.not_model.add_log(to_string() << device_models.rbegin()->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
                 }
-                if (device_to_remove)
-                {
-                    device_models.erase(std::find_if(begin(device_models), end(device_models),
-                        [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(device_to_remove->dev); }));
-                    device_to_remove = nullptr;
-                }
-                else break;
             }
+            initial_refresh = false;
         }
         catch (const error& e)
         {
@@ -185,6 +209,10 @@ void refresh_devices(std::mutex& m,
         catch (const std::exception& e)
         {
             error_message = e.what();
+        }
+        catch (...)
+        {
+            error_message = "Unknown error";
         }
     }
 }
@@ -195,8 +223,7 @@ int main(int argv, const char** argc) try
 
     // Create RealSense Context
     context ctx;
-    auto refresh_device_list = true;
-
+    device_changes devices_connection_changes(ctx.query_devices());
     std::vector<std::pair<std::string, std::string>> device_names;
 
     std::string error_message{ "" };
@@ -206,9 +233,7 @@ int main(int argv, const char** argc) try
     device_model* device_to_remove = nullptr;
 
     viewer_model viewer_model;
-    device_list list;
-
-    std::vector<device> devs;
+    std::vector<device> connected_devs;
     std::mutex m;
 
     periodic_timer update_readonly_options_timer(std::chrono::seconds(6));
@@ -226,30 +251,7 @@ int main(int argv, const char** argc) try
 
     ctx.set_devices_changed_callback([&](event_information& info)
     {
-        std::lock_guard<std::mutex> lock(m);
-
-        for (auto dev : devs)
-        {
-            if (info.was_removed(dev))
-            {
-                viewer_model.not_model.add_notification({ get_device_name(dev).first + " Disconnected\n",
-                    0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
-            }
-        }
-
-        try
-        {
-            for (auto dev : info.get_new_devices())
-            {
-                viewer_model.not_model.add_notification({ get_device_name(dev).first + " Connected\n",
-                    0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
-            }
-        }
-        catch (...)
-        {
-
-        }
-        refresh_device_list = true;
+        devices_connection_changes.add_changes(info);
     });
 
     for (int i = 1; i < argv; i++)
@@ -275,14 +277,14 @@ int main(int argv, const char** argc) try
 
     window.on_load = [&]()
     {
-        refresh_devices(m, ctx, refresh_device_list, list, device_names, device_models, viewer_model, devs, error_message);
+        refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, device_models, viewer_model, error_message);
         return true;
     };
 
     // Closing the window
     while (window)
     {
-        refresh_devices(m, ctx, refresh_device_list, list, device_names, device_models, viewer_model, devs, error_message);
+        refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, device_models, viewer_model, error_message);
 
         bool update_read_only_options = update_readonly_options_timer;
 
@@ -316,8 +318,14 @@ int main(int argv, const char** argc) try
 
         auto new_devices_count = device_names.size() + 1;
         for (auto&& dev_model : device_models)
-            if (list.contains(dev_model.dev) || dev_model.dev.is<playback>())
+        {
+            auto connected_devs_itr = std::find_if(begin(connected_devs), end(connected_devs),
+                    [&](const device& d) { return get_device_name(d) == get_device_name(dev_model.dev); });
+
+            if (connected_devs_itr != end(connected_devs) || dev_model.dev.is<playback>())
                 new_devices_count--;
+        }
+
 
         ImGui::PushFont(window.get_font());
         ImGui::SetNextWindowSize({ viewer_model.panel_width, 20.f * new_devices_count + 8 });
@@ -336,7 +344,7 @@ int main(int argv, const char** argc) try
                 {
                     try
                     {
-                        auto dev = list[i];
+                        auto dev = connected_devs[i];
                         device_models.emplace_back(dev, error_message, viewer_model);
                     }
                     catch (const error& e)
