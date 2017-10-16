@@ -130,10 +130,13 @@ void refresh_devices(std::mutex& m,
                     auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
                         [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(dev); });
                     
-                    if(dev_model_itr != end(device_models))
-                        device_models.erase(dev_model_itr);
+                    if (dev_model_itr != end(device_models))
+                    {
+                        for (auto&& s : dev_model_itr->subdevices)
+                            s->streaming = false;
 
-                    
+                        device_models.erase(dev_model_itr);
+                    }
                     auto dev_name_itr = std::find(begin(device_names), end(device_names), get_device_name(dev));
                     if (dev_name_itr != end(device_names))
                         device_names.erase(dev_name_itr);
