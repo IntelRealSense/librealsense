@@ -46,7 +46,7 @@ string datetime_string()
 
 int main(int argc, char* argv[])
 {
-    CmdLine cmd("librealsense cpp-fw-logger example tool", ' ', RS2_API_VERSION_STR);
+    CmdLine cmd("librealsense rs-fw-logger example tool", ' ', RS2_API_VERSION_STR);
     ValueArg<string> xml_arg("l", "load", "Full file path of HW Logger Events XML file", false, "", "Load HW Logger Events XML file");
     cmd.add(xml_arg);
     cmd.parse(argc, argv);
