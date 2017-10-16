@@ -21,8 +21,7 @@ namespace librealsense
          * The function implements both blocking and non-blocking device generation functionality based on the input parameters:
          * Calling the function with zero timeout results in searching and fetching the device specified by the `serial` parameter
          * from a list of connected devices. The call will return nullptr if none is found.
-         * Calling the function with a valid timeout will establish block the thread execution till the resulted device is found or the timeout expires.
-         * Additionally, Calling this method multiple times will cycle through the connected devices
+         * Calling the function with a valid timeout will block till the resulted device is found or the timeout expires.
          *
          * \param[in] timeout_ms  The waiting period for the requested device to be reconnected (milliseconds).
          * Set it to zero to avoid blocking the thread execution

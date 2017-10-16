@@ -57,9 +57,7 @@ namespace librealsense
         std::shared_ptr<device_interface> res = nullptr;
         for(auto i = 0; ((i< _device_list.size()) && (nullptr == res)); i++)
         {
-            // user can switch the devices by calling to wait_for_device until he get the desire device
-            // _camera_index is the curr device that user want to work with
-
+            // _camera_index is the curr device that the hub will expose
             auto d = _device_list[ (_camera_index + i) % _device_list.size()];
             auto dev = d->create_device(_register_device_notifications);
 
@@ -70,6 +68,7 @@ namespace librealsense
                 if(serial == new_serial)
                 {
                     res = dev;
+                    cycle_devices = false;  // Requesting a device by its serial shall not invoke internal cycling
                 }
             }
             else
