@@ -66,7 +66,7 @@ void print(rs2_intrinsics intrinsics)
 
 int main(int argc, char** argv) try
 {
-    CmdLine cmd("librealsense cpp-enumerate-devices example tool", ' ', RS2_API_VERSION_STR);
+    CmdLine cmd("librealsense rs-enumerate-devices example tool", ' ', RS2_API_VERSION_STR);
 
     SwitchArg compact_view_arg("s", "short", "Provide short summary of the devices");
     SwitchArg show_options("o", "option", "Show all supported options per subdevice");

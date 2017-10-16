@@ -137,7 +137,7 @@ void save_data_to_file(std::array<list<frame_data>, NUM_OF_STREAMS> buffer, cons
         {
             ostringstream line;
             auto data = buffer[stream_index].front();
-            line << rs2_stream_to_string(data.stream_type) << "," << data.frame_number << "," << data.ts << "," << data.arrival_time << "\n";
+            line << rs2_stream_to_string(data.stream_type) << "," << data.frame_number << "," << std::fixed << std::setprecision(3) << data.ts << "," << data.arrival_time << "\n";
             buffer[stream_index].pop_front();
             csv << line.str();
         }
@@ -151,7 +151,7 @@ int main(int argc, char** argv) try
     log_to_file(RS2_LOG_SEVERITY_WARN);
 
     // Parse command line arguments
-    CmdLine cmd("librealsense cpp-data-collect example tool", ' ');
+    CmdLine cmd("librealsense rs-data-collect example tool", ' ');
     ValueArg<int>    timeout("t", "Timeout", "Max amount of time to receive frames (in seconds)", false, 10, "");
     ValueArg<int>    max_frames("m", "MaxFrames_Number", "Maximun number of frames data to receive", false, 100, "");
     ValueArg<string> filename("f", "FullFilePath", "the file which the data will be saved to", false, "", "");
@@ -238,7 +238,10 @@ int main(int argc, char** argv) try
             data.domain = f.get_frame_timestamp_domain();
             data.arrival_time = arrival_time.count();
 
-            buffer[(int)data.stream_type].push_back(data);
+            if (buffer[(int)data.stream_type].size() < max_frames_number)
+            {
+                buffer[(int)data.stream_type].push_back(data);
+            }
 
             if (need_to_reset)
             {
