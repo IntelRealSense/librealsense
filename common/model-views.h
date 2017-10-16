@@ -615,4 +615,15 @@ namespace rs2
     int save_to_png(const char* filename,
         size_t pixel_width, size_t pixels_height, size_t bytes_per_pixel,
         const void* raster_data, size_t stride_bytes);
+
+    class device_changes
+    {
+    public:
+        explicit device_changes(rs2::context& ctx);
+        bool try_get_next_changes(event_information& removed_and_connected);
+    private:
+        void add_changes(const event_information& c);
+        std::queue<event_information> _changes;
+        std::mutex _mtx;
+    };
 }

@@ -548,7 +548,8 @@ namespace librealsense
             bool operator == (const backend_device_group& other)
             {
                 return !list_changed(uvc_devices, other.uvc_devices) &&
-                    !list_changed(hid_devices, other.hid_devices);
+                    !list_changed(hid_devices, other.hid_devices) &&
+                    !list_changed(playback_devices, other.playback_devices);
             }
 
             operator std::string()
