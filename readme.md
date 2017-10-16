@@ -16,8 +16,25 @@ The library also offers synthetic streams (pointcloud, depth aligned to color an
 
 The library aims to provide an easy to use API and tools for computer vision professionals, game developers and other **Intel® RealSense™** technology enthusiasts.
 
-We provide a C, C++, [Python](./wrappers/python) and [Node.js](./wrappers/nodejs) API.
 Developer kits containing the necessary hardware to use this library are available for purchase at [realsense.intel.com/buy](realsense.intel.com/buy).
+
+## What’s included in the SDK:
+**[Tools for harnessing your depth camera’s capabilities](https://github.com/IntelRealSense/librealsense/tree/development/tools)** Including:
+
+- **[Intel® RealSense™ Viewer](https://github.com/IntelRealSense/librealsense/tree/development/tools/realsense-viewer)**
+   With this application, you can quickly access your Intel® RealSense™ Depth Camera to view the depth stream, visualize point clouds, record and playback streams, configure your camera settings and much more.
+
+- **[Depth Quality Tool](https://github.com/IntelRealSense/librealsense/tree/development/tools/depth-quality)**
+   This application allows you to test the camera’s depth quality, including: standard deviation from plane fit, normalized RMS – the subpixel accuracy, distance accuracy and fill rate. You should be able to easily get and interpret several of the depth quality metrics and record and save the data for offline analysis.
+   
+ - **Other Debug Tools** as can be seen in the tools directory
+
+**[Code Samples to Start Prototyping Quickly](https://github.com/IntelRealSense/librealsense/tree/development/examples)**
+   These simple examples demonstrate how to easily use the SDK to include code snippets that access the camera into your applications.
+
+**[Wrappers](https://github.com/IntelRealSense/librealsense/tree/development/wrappers)**
+  We provide a C, C++, [Python](./wrappers/python) and [Node.js](./wrappers/nodejs) API. More to come , including LabView and Matlab.
+
 
 ## Quick Start
 
@@ -26,7 +43,7 @@ After installing the Intel RealSense SDK (on [Linux](./doc/distribution_linux.md
 
 > **Support & Issues**: If you need product support (e.g. ask a question about / are having problems with the device), please check the [FAQ & Troubleshooting](https://github.com/IntelRealSense/librealsense/wiki/Troubleshooting-Q%26A) section.
 > If not covered there, please search our [Closed GitHub Issues](https://github.com/IntelRealSense/librealsense/issues?utf8=%E2%9C%93&q=is%3Aclosed) page,  [Community](https://communities.intel.com/community/tech/realsense) and [Support](https://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) sites.
-> f you still cannot find an answer to your question, please [open a new issue](https://github.com/IntelRealSense/librealsense/issues/new).
+> If you still cannot find an answer to your question, please [open a new issue](https://github.com/IntelRealSense/librealsense/issues/new).
 
 #### Step 2: Ready to Hack!
 
