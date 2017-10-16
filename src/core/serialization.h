@@ -57,8 +57,8 @@ namespace librealsense
                 max
             };
         public:
-            explicit serialized_data(const device_serializer::nanoseconds& timestamp = device_serializer::nanoseconds::max()) : 
-                _timestamp(timestamp) 
+            explicit serialized_data(const device_serializer::nanoseconds& timestamp = device_serializer::nanoseconds::max()) :
+                _timestamp(timestamp)
             {
             }
             virtual ~serialized_data() = default;
@@ -78,9 +78,9 @@ namespace librealsense
 
                 switch (T::get_type())
                 {
-                    case end_of_file: 
-                    case frame:       
-                    case option:      
+                    case end_of_file:
+                    case frame:
+                    case option:
                         return std::static_pointer_cast<T>(std::const_pointer_cast<serialized_data>(shared_from_this()));
                 }
                 return nullptr;

@@ -129,7 +129,7 @@ namespace librealsense
             {
                 dev = sensor->get_device().shared_from_this().get();
             }
-            catch (const std::bad_weak_ptr& e)
+            catch (const std::bad_weak_ptr&)
             {
                 LOG_WARNING("Device destroyed");
             }
@@ -169,7 +169,7 @@ namespace librealsense
             }
         }
 
-        if(!dev_exist) 
+        if(!dev_exist)
         {
             matcher = _matchers[stream_id];
             // We don't know what device this frame came from, so just store it under device NULL with ID matcher
@@ -398,8 +398,8 @@ namespace librealsense
             return{ a->get_frame_timestamp(), b->get_frame_timestamp() };
         else
         {
-            return{ a->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL),
-                    b->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL) };
+            return{ (double)a->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL),
+                    (double)b->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL) };
         }
     }
 

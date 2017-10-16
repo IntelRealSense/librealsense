@@ -257,7 +257,6 @@ TEST_CASE("Sync sanity", "[live]") {
             s.stop();
         }
     }
-    
 }
 
 TEST_CASE("Sync different fps", "[live][!mayfail]") {
@@ -1185,11 +1184,15 @@ TEST_CASE("Streaming modes sanity check", "[live]")
                     if (auto video = profile.as<video_stream_profile>())
                     {
                         rs2_intrinsics intrin;
+                        CAPTURE(video.stream_type());
                         CAPTURE(video.format());
                         CAPTURE(video.width());
                         CAPTURE(video.height());
 
-                        if ((PID == "0AA5") || (RS2_FORMAT_Y16 != video.format())) // Y16 format intrinsics are available for SR300 only
+                        bool calib_format = ((PID != "0AA5") &&
+                                            (RS2_FORMAT_Y16 == video.format()) &&
+                                            (RS2_STREAM_INFRARED == video.stream_type()));
+                        if (!calib_format) // intrinsics are not available for calibration formats
                         {
                             REQUIRE_NOTHROW(intrin = video.get_intrinsics());
 
@@ -1337,8 +1340,11 @@ TEST_CASE("Check width and height of stream intrinsics", "[live][AdvMd]")
                         CAPTURE(video.width());
                         CAPTURE(video.height());
 
-                        // Calibration format does not provide intrinsic data, except for SR300
-                        if ((PID == "0AA5") || (RS2_FORMAT_Y16 != video.format()))
+                        // Calibration formats does not provide intrinsic data, except for SR300
+                        bool calib_format = ((PID != "0AA5") &&
+                                            (RS2_FORMAT_Y16 == video.format()) &&
+                                            (RS2_STREAM_INFRARED == video.stream_type()));
+                        if (!calib_format)
                             REQUIRE_NOTHROW(intrin = video.get_intrinsics());
                         else
                             REQUIRE_THROWS(intrin = video.get_intrinsics());
@@ -3336,8 +3342,7 @@ static const std::map<std::string, device_profiles> pipeline_configurations_for_
                                      { RS2_STREAM_INFRARED, RS2_FORMAT_Y8,  640, 480, 1 } ,
                                      { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
     /* RS430/AWG*/      { "0AD4",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16, 640, 480, 0 },
-                                     { RS2_STREAM_INFRARED, RS2_FORMAT_Y8,  640, 480, 1 } ,
-                                     { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
+                                     { RS2_STREAM_INFRARED, RS2_FORMAT_Y8,  640, 480, 1 } }, 30, true } },
     /* RS430_MM/AWGT*/  { "0AD5",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16, 640, 480, 0 },
                                      { RS2_STREAM_INFRARED, RS2_FORMAT_Y8,  640, 480, 1 } }, 30, true } },
     /* RS420/PWG*/      { "0AF6",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16, 640, 480, 0 },
@@ -3457,7 +3462,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
                     }
                 }
                 // GPIO Requires external triggers to produce events
-                if (RS2_STREAM_GPIO == modes[i].stream_type())   
+                if (RS2_STREAM_GPIO == modes[i].stream_type())
                     continue;   // Disabling for now
 
                 CAPTURE(modes[i].format());

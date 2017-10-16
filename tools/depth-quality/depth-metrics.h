@@ -169,7 +169,7 @@ namespace rs2
             result.plane_corners[3] = approximate_intersection(p, intrin, roi.min_x, roi.max_y);
 
             // Distance of origin (the camera) from the plane is encoded in parameter D of the plane
-            result.distance = static_cast<float>(-p.d * 1000); 
+            result.distance = static_cast<float>(-p.d * 1000);
             // Angle can be calculated from param C
             result.angle = static_cast<float>(std::acos(std::abs(p.c)) / M_PI * 180.);
 
