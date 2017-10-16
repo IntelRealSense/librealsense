@@ -1,0 +1,156 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+
+#include <librealsense2/rs.hpp>
+#include "../example.hpp"
+#include <imgui.h>
+#include "imgui_impl_glfw.h"
+
+#include <sstream>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <cstring>
+class my_frame_handler_class
+{
+public:
+    void operator()(rs2::frame f)
+    {
+        //Handle frame here...
+    }
+};
+
+void frame_handler_that_does_nothing(rs2::frame f) 
+{ 
+    //Handle frame here...
+};
+
+int main(int argc, char * argv[]) try
+{
+    //First, create a rs2::context.
+    //The context represents the current platform with respect to connected devices
+    rs2::context ctx;
+    
+    //Using the context we can get all connected devices into a device list
+    rs2::device_list devices = ctx.query_devices();
+
+    //device_list is a "lazy" container of devices which allows iteration over the devices 
+    for (rs2::device dev : devices)
+    {
+        //Each device provides some information on itself, such as name:
+        if (dev.supports(RS2_CAMERA_INFO_NAME))
+            std::cout << "Device name: " << dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+
+        //Serial number
+        if (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
+            std::cout << "Device serial number: " << dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << std::endl;
+        
+        //Firmware version, and more...
+        if (dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
+            std::cout << "Device firmware version: " << dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) << std::endl;
+
+        //A rs2::device is a container of rs2::sensors that share some correlation between them. 
+        // For example: 
+        //    * A device where all sensors are on a single board
+        //    * A Robot with mounted sensors that share calibration information
+        
+        std::vector<rs2::sensor> sensors = dev.query_sensors();
+        for (rs2::sensor sensor : sensors)
+        {
+            //A Sensor is an object that is capable of streaming one or more types of data.
+            // For example: 
+            //    * A stereo sensor with Left and Right Infrared streams that creates a stream of depth images
+            //    * A motion sensor with an Accelerometer and Gyroscope that provides a stream of motion information
+            
+
+            //Just like the device, a sensor provides additional information on itself
+            if (sensor.supports(RS2_CAMERA_INFO_NAME))
+                std::cout << "\tSensor name: " << sensor.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+
+            //We can iterate over the available profiles of a sensor
+            for (rs2::stream_profile stream_profile : sensor.get_stream_profiles())
+            {
+                //A Stream is an abstraction for a sequence of data items of a single data type, which are ordered according to their time of creation or arrival.
+                //The stream's data types are represented using the rs2_stream enumeration
+                rs2_stream stream_data_type = stream_profile.stream_type();
+                
+                //The rs2_stream provides only types of data which are supported by the RealSense SDK
+                //For example:
+                //    * rs2_stream::RS2_STREAM_DEPTH describes a stream of depth images
+                //    * rs2_stream::rs2_stream::RS2_STREAM_COLOR describes a stream of color images
+                //    * rs2_stream::rs2_stream::RS2_STREAM_INFRARED describes a stream of infrared images
+                
+                //As mentioned, a sensor can have multiple streams.
+                //In order to distinguish between streams with the same stream type we can use the following methods:
+
+                // 1) Each stream type can have multiple occurances. 
+                //    All streams derived from a single device have distincs indices:
+                int stream_index = stream_profile.stream_index();
+
+                // 2) Each stream has a user friendly name.
+                //    The stream's name is not promised to be unique, rather a human readable description of the stream
+                std::string stream_name = stream_profile.stream_name();
+                
+                // 3) Each stream in the system, which derives from the same rs2::context, has a unique identifier
+                //    This identifier is unique across all streams, and not only between stream with the same stream type
+                int unique_stream_id = stream_profile.unique_id(); // The unique identifier can be used for comparing two streams
+
+                std::cout << "\t\tStream #" << unique_stream_id << " is " << stream_data_type << " #" << stream_index << ", Named: \"" << stream_name << "\"" << std::endl;
+
+                //As noted, a stream is an abstraction. In order to get additional data for the specific type of stream, a mechanism of "Is" and "As" is provided:
+                if (stream_profile.is<rs2::video_stream_profile>()) //"Is" will test if the type tested is of the type given
+                {
+                    //"As" will convert the instance to the given type
+                    rs2::video_stream_profile video_stream_profile = stream_profile.as<rs2::video_stream_profile>();
+
+                    //After using the "as" method we can use the new data type for additinal operations:
+                    std::cout << "\t\t\tThis stream is a video stream representing a stream of images with a resolution of "
+                        << video_stream_profile.width() << "x" << video_stream_profile.height() << 
+                        ", a frame rate of " << video_stream_profile.fps() << " frames per second"
+                        ", and a pixel format of: " << video_stream_profile.format() << std::endl;
+                }
+            }
+
+            if (sensor.get_stream_profiles().size() > 0)
+            {
+                auto first_profile = *sensor.get_stream_profiles().begin();
+                sensor.open(first_profile);
+                //We can pass start() any type of callable object that takes a frame as its parameter
+                //We wrapped the code with try{} catch{} block for 2 reasons here:
+                // 1) Start can throw an exception.
+                // 2) calling start() multiple times throws an exception (but we wanted to show that it compiles with different types)
+                try
+                {
+
+                    //A lambda
+                    sensor.start([](rs2::frame f) { frame_handler_that_does_nothing(f); });
+
+                    //A function pointer
+                    sensor.start(frame_handler_that_does_nothing);
+                    
+                    //A functor
+                    my_frame_handler_class my_frame_handler_instance;
+                    sensor.start(my_frame_handler_instance);
+                    
+                }
+                catch (const rs2::error& e) 
+                {
+                    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+                }
+            }
+
+        }
+    }
+    return EXIT_SUCCESS;
+}
+catch (const rs2::error & e)
+{
+    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+    return EXIT_FAILURE;
+}
+catch (const std::exception & e)
+{
+    std::cerr << e.what() << std::endl;
+    return EXIT_FAILURE;
+}
+
