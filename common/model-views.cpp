@@ -3612,8 +3612,9 @@ namespace rs2
                             {
                                 ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
                             }
-                            draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
                         }
+
+                        draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
                     }
                     else
                     {
