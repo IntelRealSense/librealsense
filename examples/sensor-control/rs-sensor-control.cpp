@@ -111,17 +111,24 @@ int main(int argc, char * argv[]) try
                 }
             }
 
+            //The sensor controls turning the streaming on and off
+            //To being streaming, two calls must be made with the following order:
+            // 1) open(stream_profiles_to_open)
+            // 2) start(function_to_handle_frames)
+
+            //In the following code we start the sensor with the first profile it provides
             if (sensor.get_stream_profiles().size() > 0)
             {
                 auto first_profile = *sensor.get_stream_profiles().begin();
+                //Open can be called with a single profile, or with a collection of profiles
+                //Calling open() tries to get exclusive access to the actual sensor (not only the software object of sensor)
                 sensor.open(first_profile);
-                //We can pass start() any type of callable object that takes a frame as its parameter
-                //We wrapped the code with try{} catch{} block for 2 reasons here:
-                // 1) Start can throw an exception.
-                // 2) calling start() multiple times throws an exception (but we wanted to show that it compiles with different types)
+
+                //In order to begin getting data from the sensor, we need to register a callback to handle frames (data)
+                //To register a callback, the sensor's start() method should be invoked.
+                //The start() method takes any type of callable object that takes a frame as its parameter
                 try
                 {
-
                     //A lambda
                     sensor.start([](rs2::frame f) { frame_handler_that_does_nothing(f); });
 
@@ -132,9 +139,16 @@ int main(int argc, char * argv[]) try
                     my_frame_handler_class my_frame_handler_instance;
                     sensor.start(my_frame_handler_instance);
                     
+
+                    //rs2::frame is an abstraction of the different data types provided by a stream.
+
                 }
                 catch (const rs2::error& e) 
                 {
+                    //We wrapped the calls to start() with try{} catch{} block for 2 reasons here:
+                    // 1) Start can throw an exception.
+                    // 2) calling start() multiple times throws an exception (but we wanted to show that it compiles with different types)
+
                     std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
                 }
             }
