@@ -3662,7 +3662,6 @@ TEST_CASE("Pipeline config enable resolve start flow", "[live]") {
         REQUIRE_NOTHROW(dev = profile.get_device());
         REQUIRE(dev);
 
-        // Specifying RS2_FORMAT_ANY results in RS2_FORMAT_DISPARITY16 which subsequently fails on start
         REQUIRE_NOTHROW(cfg.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, 0));
         REQUIRE_NOTHROW(pipe.start(cfg));
 
@@ -3676,15 +3675,14 @@ TEST_CASE("Pipeline config enable resolve start flow", "[live]") {
         CAPTURE(depth_profile.height());
         std::vector<device_profiles> frames;
 
-        for (auto i = 0; i < 10; i++)
-            REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
-
+        for (auto i = 0; i < 5; i++)
+            REQUIRE_NOTHROW(pipe.wait_for_frames(500));
 
         REQUIRE_NOTHROW(pipe.stop());
         REQUIRE_NOTHROW(pipe.start(cfg));
 
-        for (auto i = 0; i < 20; i++)
-            REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
+        for (auto i = 0; i < 5; i++)
+            REQUIRE_NOTHROW(pipe.wait_for_frames(500));
 
         REQUIRE_NOTHROW(cfg.disable_all_streams());
 

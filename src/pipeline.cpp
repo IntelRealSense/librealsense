@@ -100,11 +100,11 @@ namespace librealsense
         _resolved_profile.reset();
     }
 
-    std::shared_ptr<pipeline_profile> pipeline_config::resolve(std::shared_ptr<pipeline> pipe, unsigned int timeout_ms)
+    std::shared_ptr<pipeline_profile> pipeline_config::resolve(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         _resolved_profile.reset();
-        auto requested_device = resolve_device_requests(pipe, timeout_ms);
+        auto requested_device = resolve_device_requests(pipe, timeout);
 
         std::vector<stream_profile> resolved_profiles;
 
@@ -113,7 +113,7 @@ namespace librealsense
         {
             if (!requested_device)
             {
-                requested_device = pipe->wait_for_device(timeout_ms,false);
+                requested_device = pipe->wait_for_device(timeout);
             }
 
             util::config config;
@@ -130,7 +130,7 @@ namespace librealsense
             {
                 if (!requested_device)
                 {
-                    requested_device = pipe->wait_for_device(timeout_ms,false);
+                    requested_device = pipe->wait_for_device(timeout);
                 }
 
                 auto default_profiles = get_default_configuration(requested_device);
@@ -160,7 +160,7 @@ namespace librealsense
                 auto devs = pipe->get_context()->query_devices();
                 if (devs.empty())
                 {
-                    auto dev = pipe->wait_for_device(timeout_ms,false);
+                    auto dev = pipe->wait_for_device(timeout);
                     _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
                     return _resolved_profile;
                 }
@@ -188,10 +188,8 @@ namespace librealsense
     bool pipeline_config::can_resolve(std::shared_ptr<pipeline> pipe)
     {
         try
-        {
-            // Try to resolve from connected devices. Non-blocking call
-            const unsigned int immediately = 0u;
-            resolve(pipe, immediately);
+        {    // Try to resolve from connected devices. Non-blocking call
+            resolve(pipe);
             _resolved_profile.reset();
         }
         catch (const std::exception& e)
@@ -223,7 +221,7 @@ namespace librealsense
         return pipe->get_context()->add_device(file);
     }
 
-    std::shared_ptr<device_interface> pipeline_config::resolve_device_requests(std::shared_ptr<pipeline> pipe, unsigned int timeout_ms)
+    std::shared_ptr<device_interface> pipeline_config::resolve_device_requests(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout)
     {
         //Prefer filename over serial
         if(!_device_request.filename.empty())
@@ -264,7 +262,7 @@ namespace librealsense
 
         if (!_device_request.serial.empty())
         {
-            return pipe->wait_for_device(timeout_ms, false, _device_request.serial);
+            return pipe->wait_for_device(timeout, _device_request.serial);
         }
 
         return nullptr;
@@ -503,9 +501,10 @@ namespace librealsense
         return false;
     }
 
-    std::shared_ptr<device_interface> pipeline::wait_for_device(unsigned int timeout_ms, bool loop_devices, const std::string& serial)
+    std::shared_ptr<device_interface> pipeline::wait_for_device(const std::chrono::milliseconds& timeout, const std::string& serial)
     {
-        return _hub.wait_for_device(timeout_ms, loop_devices, serial);
+        // Pipeline's device selection shall be deterministic
+        return _hub.wait_for_device(timeout, false, serial);
     }
 
     std::shared_ptr<librealsense::context> pipeline::get_context() const

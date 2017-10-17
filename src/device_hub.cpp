@@ -71,12 +71,13 @@ namespace librealsense
                     cycle_devices = false;  // Requesting a device by its serial shall not invoke internal cycling
                 }
             }
-            else
+            else // Use the first selected if "any device" pattern was used
             {
                 res = dev;
             }
         }
 
+        // Advance the internal selection when appropriate
         if (res && cycle_devices)
             _camera_index = ++_camera_index % _device_list.size();
 
@@ -88,7 +89,7 @@ namespace librealsense
      * If any device is connected return it, otherwise wait until next RealSense device connects.
      * Calling this method multiple times will cycle through connected devices
      */
-    std::shared_ptr<device_interface> device_hub::wait_for_device(unsigned int timeout_ms, bool loop_through_devices, const std::string& serial)
+    std::shared_ptr<device_interface> device_hub::wait_for_device(const std::chrono::milliseconds& timeout, bool loop_through_devices, const std::string& serial)
     {
         std::unique_lock<std::mutex> lock(_mutex);
 
@@ -103,27 +104,18 @@ namespace librealsense
         if (res) return res;
 
         // block for the requested device to be connected, or till the timeout occurs
-        if (!_cv.wait_for(lock, std::chrono::milliseconds(timeout_ms), [&]()
+        if (!_cv.wait_for(lock, timeout, [&]()
         {
-            bool cond = false;
-            res = nullptr;
             if (_device_list.size() > 0)
             {
                 res = create_device(serial, loop_through_devices);
             }
-            if (res != nullptr)
-                cond = true;
-            else
-                std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Avoid busy-wait
-            return cond;
-
+            return res != nullptr;
         }))
         {
             throw std::runtime_error("No device connected");
         }
-
         return res;
-
     }
 
     /**

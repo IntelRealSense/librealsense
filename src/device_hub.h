@@ -20,17 +20,17 @@ namespace librealsense
         /**
          * The function implements both blocking and non-blocking device generation functionality based on the input parameters:
          * Calling the function with zero timeout results in searching and fetching the device specified by the `serial` parameter
-         * from a list of connected devices. The call will return nullptr if none is found.
+         * from a list of connected devices.
          * Calling the function with a valid timeout will block till the resulted device is found or the timeout expires.
-         *
          * \param[in] timeout_ms  The waiting period for the requested device to be reconnected (milliseconds).
-         * Set it to zero to avoid blocking the thread execution
-         *\param[in] loop_through_devices  - promote internal index to the next available device that will be retrieved on successive call
-         * \param[in] serial  The serial number of the requested device. Use empty pattern ("") to request for "any suitable" device.
-         * \return       a shared pointer to the device_interface that satisfies the search criteria. In case of failure the function will
-         * return nullptr for the non-blocking call The function will throw and throw exception when a blocking wait is timed out
+         *.\param[in] loop_through_devices  - promote internal index to the next available device that will be retrieved on successive call
+         *  Note that selection of the next device is deterministic but not predictable, and therefore is recommended for
+         * specific use-cases only , such as tutorials or unit-tests where no assumptions as for the device order are made.
+         * \param[in] serial  The serial number of the requested device. Use empty pattern ("") to request for "any RealSense" device.
+         * \return       a shared pointer to the device_interface that satisfies the search criteria. In case the request was not
+         * satisfied  the call will throw an exception
          */
-        std::shared_ptr<device_interface> wait_for_device( unsigned int timeout_ms = std::numeric_limits<unsigned int>::max(),
+        std::shared_ptr<device_interface> wait_for_device(const std::chrono::milliseconds& timeout = std::chrono::milliseconds(std::numeric_limits<unsigned int>::max()),
                                                             bool loop_through_devices = true,
                                                             const std::string& serial = "");
 
