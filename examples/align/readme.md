@@ -134,7 +134,7 @@ The `frameset` returned from `wait_for_frames` should contain a set of aligned f
     rs2::depth_frame aligned_depth_frame = frameset.get_depth_frame();
 
     //If one of them is unavailable, try to obtain another frameset
-    if (!aligned_depth_frame || !color_frame)
+    if (!aligned_depth_frame)
     {
         continue;
     }

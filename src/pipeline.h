@@ -44,9 +44,10 @@ namespace librealsense
 
 
      private:
-         void unsafe_start(std::shared_ptr<pipeline_config> conf);
-         void unsafe_stop();
-         std::shared_ptr<pipeline_profile> unsafe_get_active_profile() const;
+        void unsafe_start(std::shared_ptr<pipeline_config> conf);
+        void unsafe_stop();
+        std::shared_ptr<pipeline_profile> unsafe_get_active_profile() const;
+        void handle_frame(frame_holder frame, synthetic_source_interface* source);
 
         std::shared_ptr<librealsense::context> _ctx;
         mutable std::mutex _mtx;
@@ -54,9 +55,12 @@ namespace librealsense
         std::shared_ptr<pipeline_profile> _active_profile;
         frame_callback_ptr _callback;
         std::unique_ptr<syncer_proccess_unit> _syncer;
+        std::unique_ptr<processing_block> _pipeline_proccess;
         std::unique_ptr<single_consumer_queue<frame_holder>> _queue;
 
         std::shared_ptr<pipeline_config> _prev_conf;
+
+        std::map<stream_id, frame_holder> _last_set;
     };
 
 
