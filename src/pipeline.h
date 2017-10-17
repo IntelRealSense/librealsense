@@ -39,7 +39,7 @@ namespace librealsense
         bool poll_for_frames(frame_holder* frame);
 
         //Non top level API
-        std::shared_ptr<device_interface> wait_for_device(const std::chrono::milliseconds& timeout = std::chrono::milliseconds(std::numeric_limits<unsigned int>::max()),
+        std::shared_ptr<device_interface> wait_for_device(const std::chrono::milliseconds& timeout = std::chrono::hours::max(),
                                                             const std::string& serial = "");
         std::shared_ptr<librealsense::context> get_context() const;
 
