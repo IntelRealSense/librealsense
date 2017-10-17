@@ -327,7 +327,7 @@ namespace librealsense
                                                         const platform::uvc_device_info& color)
         {
             auto color_ep = std::make_shared<sr300_color_sensor>(this, ctx->get_backend().create_uvc_device(color),
-                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()),
+                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader_from_metadata/*sr300_timestamp_reader*/()), // evgeni
                                                            ctx);
             color_ep->register_pixel_format(pf_yuy2);
             color_ep->register_pixel_format(pf_yuyv);
