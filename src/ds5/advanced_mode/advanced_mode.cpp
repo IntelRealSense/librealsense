@@ -426,7 +426,7 @@ namespace librealsense
     void ds5_advanced_mode_base::set_laser_state(const laser_state_control& val)
     {
         if (val.was_set)
-            _depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED).set(val.laser_state);
+            _depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED).set((float)val.laser_state);
     }
 
     void ds5_advanced_mode_base::set_exposure(uvc_sensor& sensor, const exposure_control& val)
@@ -436,7 +436,7 @@ namespace librealsense
 
     void ds5_advanced_mode_base::set_auto_exposure(uvc_sensor& sensor, const auto_exposure_control& val)
     {
-        sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).set(val.auto_exposure);
+        sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).set(float(val.auto_exposure));
     }
 
     void ds5_advanced_mode_base::set_depth_exposure(const exposure_control& val)
@@ -487,7 +487,7 @@ namespace librealsense
             throw invalid_value_exception("Can't set color_backlight_compensation value! Color sensor not found.");
 
         if (val.was_set)
-            (*_color_sensor)->get_option(RS2_OPTION_BACKLIGHT_COMPENSATION).set(val.backlight_compensation);
+            (*_color_sensor)->get_option(RS2_OPTION_BACKLIGHT_COMPENSATION).set((float)val.backlight_compensation);
     }
 
     void ds5_advanced_mode_base::set_color_brightness(const brightness_control& val)
@@ -568,7 +568,7 @@ namespace librealsense
             throw invalid_value_exception("Can't set color_auto_white_balance value! Color sensor not found.");
 
         if (val.was_set)
-            (*_color_sensor)->get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE).set(val.auto_white_balance);
+            (*_color_sensor)->get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE).set((float)val.auto_white_balance);
     }
 
     void ds5_advanced_mode_base::set_color_power_line_frequency(const power_line_frequency_control& val)
@@ -577,7 +577,7 @@ namespace librealsense
             throw invalid_value_exception("Can't set color_power_line_frequency value! Color sensor not found.");
 
         if (val.was_set)
-            (*_color_sensor)->get_option(RS2_OPTION_POWER_LINE_FREQUENCY).set(val.power_line_frequency);
+            (*_color_sensor)->get_option(RS2_OPTION_POWER_LINE_FREQUENCY).set((float)val.power_line_frequency);
     }
 
     std::vector<uint8_t> ds5_advanced_mode_base::serialize_json() const
