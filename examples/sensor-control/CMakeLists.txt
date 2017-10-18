@@ -18,9 +18,9 @@ endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     #sensor-control
-    add_executable(rs-sensor-control rs-sensor-control.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp)
+    add_executable(rs-sensor-control rs-sensor-control.cpp)
     target_link_libraries(rs-sensor-control ${DEPENDENCIES})
-    include_directories(rs-sensor-control ../../common ../../third-party/imgui)
+    include_directories(rs-sensor-control ../../common)
     set_target_properties (rs-sensor-control PROPERTIES
         FOLDER Examples
     )
