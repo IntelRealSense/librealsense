@@ -364,7 +364,7 @@ namespace librealsense
                 catch (...)
                 {
                     LOG_ERROR("Exception thrown from user callback handler");
-                }    
+                }
             }
         }
     }

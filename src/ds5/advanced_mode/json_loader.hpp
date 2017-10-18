@@ -193,8 +193,8 @@ namespace librealsense
 
         void load(const std::string& str) override
         {
-            float value = ::atof(str.c_str());
-            (strct->vals[0].*field) = (value > 0) ? 0 : 1.f;
+            auto value = ::atof(str.c_str());
+            (strct->vals[0].*field) = (value > 0) ? 0 : 1;
             strct->update = true;
         }
 

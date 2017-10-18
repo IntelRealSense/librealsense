@@ -116,7 +116,7 @@ public:
         glDisable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        draw_text(r.x + 15, r.y + 20, rs2_stream_to_string(stream));
+        draw_text((int)r.x + 15, (int)r.y + 20, rs2_stream_to_string(stream));
     }
 private:
     GLuint gl_handle = 0;

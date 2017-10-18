@@ -276,7 +276,7 @@ namespace rs2
         * In the absence of any request, the rs2::config selects the first available device and the first color and depth
         * streams configuration.
         * The pipeline profile selection during \c start() follows the same method. Thus, the selected profile is the same, if no
-        * change occurs to the available devices occurs.
+        * change occurs to the available devices.
         * Resolving the pipeline configuration provides the application access to the pipeline selected device for advanced
         * control.
         * The returned configuration is not applied to the device, so the application doesn't own the device sensors. However,
