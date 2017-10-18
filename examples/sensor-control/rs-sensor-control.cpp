@@ -9,6 +9,9 @@
 #include <thread>
 #include <librealsense2/rs.hpp>
 
+
+//A simple C++ functor that handles frames (and does nothing with them)
+//An example for using this class can be found below
 class my_frame_handler_class
 {
 public:
@@ -18,6 +21,8 @@ public:
     }
 };
 
+//A simple free function that handles frames (and does nothing with them)
+//An example for using this function can be found below
 void frame_handler_that_does_nothing(rs2::frame f)
 {
     //Handle frame here...
