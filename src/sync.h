@@ -13,6 +13,23 @@
 
 namespace librealsense
 {
+
+    template<class T>
+    class internal_frame_processor_callback : public rs2_frame_processor_callback
+    {
+        T on_frame_function;
+    public:
+        explicit internal_frame_processor_callback(T on_frame) : on_frame_function(on_frame) {}
+
+        void on_frame(rs2_frame * f, rs2_source * source) override
+        {
+            frame_holder front((frame_interface*)f);
+            on_frame_function(std::move(front), source->source);
+        }
+
+        void release() override { delete this; }
+    };
+
     class sync_lock
     {
     public:
@@ -71,8 +88,26 @@ namespace librealsense
         virtual const std::vector<stream_id>& get_streams() const = 0;
         virtual const std::vector<rs2_stream>& get_streams_types() const = 0;
 
+        callback_invocation_holder begin_callback()
+        {
+            return{ callback_inflight.allocate(), &callback_inflight };
+        }
+
+        virtual ~matcher()
+        {
+            callback_inflight.stop_allocation();
+
+            auto callbacks_inflight = callback_inflight.get_size();
+            if (callbacks_inflight > 0)
+            {
+                LOG_WARNING(callbacks_inflight << " callbacks are still running on some other threads. Waiting until all callbacks return...");
+            }
+            // wait until user is done with all the stuff he chose to borrow
+            callback_inflight.wait_until_empty();
+        }
     protected:
         sync_callback _callback;
+        callbacks_heap callback_inflight;
     };
 
     class identity_matcher : public matcher
@@ -155,8 +190,13 @@ namespace librealsense
     public:
         syncer_proccess_unit();
 
+        ~syncer_proccess_unit()
+        {
+            _matcher.reset();
+        }
     private:
-        timestamp_composite_matcher _matcher;
+        std::unique_ptr<timestamp_composite_matcher> _matcher;
         std::mutex _mutex;
+        
     };
 }

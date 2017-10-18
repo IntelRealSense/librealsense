@@ -41,20 +41,19 @@ int main(int argc, char * argv[]) try
         // Wait for the next set of frames from the camera
         auto frames = pipe.wait_for_frames();
 
-        if (rs2::frame depth = frames.get_depth_frame())
-        {
-            // If we got a depth frame, generate the pointcloud and texture mappings
-            points = pc.calculate(depth);
-        }
-        if (rs2::frame color = frames.get_color_frame())
-        {
-            // Tell pointcloud object to map to this color frame
-            pc.map_to(color);
+        auto depth = frames.get_depth_frame();
+        
+        // If we got a depth frame, generate the pointcloud and texture mappings
+        points = pc.calculate(depth);
+        
+        auto color = frames.get_color_frame();
+        
+        // Tell pointcloud object to map to this color frame
+        pc.map_to(color);
 
-            // Upload the color frame to OpenGL
-            app_state.tex.upload(color);
-        }
-
+        // Upload the color frame to OpenGL
+        app_state.tex.upload(color);
+        
         // Draw the pointcloud
         draw_pointcloud(app, app_state, points);
     }
