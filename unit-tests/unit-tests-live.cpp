@@ -3699,3 +3699,68 @@ TEST_CASE("Pipeline config enable resolve start flow", "[live]") {
         REQUIRE(dev);
     }
 }
+
+TEST_CASE("Pipeline enable config and select device", "[live]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size() > 0);
+        auto d = list[0];
+        //Find a serial and a profile it can use
+        std::string required_serial;
+        REQUIRE_NOTHROW(required_serial = d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        stream_profile required_profile;
+        //find the a video profile of some sensor
+        for (auto&& sensor : d.query_sensors())
+        {
+            for (auto&& profile : sensor.get_stream_profiles())
+            {
+                auto vid_profile = profile.as<video_stream_profile>();
+                if (vid_profile)
+                {
+                    required_profile = vid_profile;
+                    break;
+                }
+            }
+            if (required_profile)
+                break;
+        }
+        REQUIRE(required_profile);
+        CAPTURE(required_profile);
+
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+        REQUIRE_NOTHROW(cfg.enable_device(required_serial));
+        auto vid_profile = required_profile.as<video_stream_profile>();
+        REQUIRE_NOTHROW(cfg.enable_stream(vid_profile.stream_type(), vid_profile.stream_index(), vid_profile.width(), vid_profile.height(), vid_profile.format(), vid_profile.fps()));
+        rs2::pipeline_profile resolved_profile;
+        REQUIRE_NOTHROW(resolved_profile = cfg.resolve(pipe));
+        REQUIRE(resolved_profile);
+        REQUIRE_NOTHROW(dev = resolved_profile.get_device());
+        REQUIRE(dev);
+        disable_sensitive_options_for(dev);
+        std::string actual_serial;
+        REQUIRE_NOTHROW(actual_serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        REQUIRE(actual_serial == required_serial);
+        std::vector<rs2::stream_profile> actual_streams;
+        REQUIRE_NOTHROW(actual_streams = resolved_profile.get_streams());
+        REQUIRE(actual_streams.size() == 1);
+        REQUIRE(actual_streams[0] == required_profile);
+
+        rs2::device started_dev;
+        rs2::pipeline_profile strarted_profile;
+        REQUIRE_NOTHROW(strarted_profile = pipe.start(cfg));
+        REQUIRE(strarted_profile);
+        REQUIRE_NOTHROW(started_dev = strarted_profile.get_device());
+        REQUIRE(started_dev);
+        REQUIRE(std::string(started_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == required_serial);
+        std::vector<rs2::stream_profile> strated_streams;
+        REQUIRE_NOTHROW(strated_streams = strarted_profile.get_streams());
+        REQUIRE(strated_streams.size() == 1);
+        REQUIRE(strated_streams[0] == required_profile);
+        pipe.stop();
+    }
+}
