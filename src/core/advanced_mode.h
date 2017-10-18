@@ -151,6 +151,7 @@ namespace librealsense
         void get_depth_exposure(exposure_control* ptr) const;
         void get_depth_auto_exposure(auto_exposure_control* ptr) const;
         void get_depth_gain(gain_control* ptr) const;
+        void get_depth_auto_white_balance(auto_white_balance_control* ptr) const;
         void get_color_exposure(exposure_control* ptr) const;
         void get_color_auto_exposure(auto_exposure_control* ptr) const;
         void get_color_backlight_compensation(backlight_compensation_control* ptr) const;
@@ -170,6 +171,7 @@ namespace librealsense
         void set_depth_exposure(const exposure_control& val);
         void set_depth_auto_exposure(const auto_exposure_control& val);
         void set_depth_gain(const gain_control& val);
+        void set_depth_auto_white_balance(const auto_white_balance_control& val);
         void set_color_exposure(const exposure_control& val);
         void set_color_auto_exposure(const auto_exposure_control& val);
         void set_color_backlight_compensation(const backlight_compensation_control& val);
@@ -183,6 +185,8 @@ namespace librealsense
         void set_color_white_balance(const white_balance_control& val);
         void set_color_auto_white_balance(const auto_white_balance_control& val);
         void set_color_power_line_frequency(const power_line_frequency_control& val);
+
+        bool supports_option(const uvc_sensor& sensor, rs2_option opt) const;
 
         std::shared_ptr<hw_monitor> _hw_monitor;
         uvc_sensor& _depth_sensor;

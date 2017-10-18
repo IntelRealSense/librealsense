@@ -228,19 +228,21 @@ int main(int argc, char** argv) try
 
         while (!ready())
         {
-            auto f = pipe.wait_for_frames();
+            auto frameset = pipe.wait_for_frames();
             auto arrival_time = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start_time);
 
-            frame_data data;
-            data.frame_number = f.get_frame_number();
-            data.stream_type = f.get_profile().stream_type();
-            data.ts = f.get_timestamp();
-            data.domain = f.get_frame_timestamp_domain();
-            data.arrival_time = arrival_time.count();
-
-            if (buffer[(int)data.stream_type].size() < max_frames_number)
+            for (auto it = frameset.begin(); it != frameset.end(); ++it)
             {
-                buffer[(int)data.stream_type].push_back(data);
+                auto f = (*it);
+                frame_data data{f.get_frame_number(),
+                                f.get_timestamp(),
+                                arrival_time.count(),
+                                f.get_frame_timestamp_domain(),
+                                f.get_profile().stream_type()};
+                if (buffer[(int)data.stream_type].size() < max_frames_number)
+                {
+                    buffer[(int)data.stream_type].push_back(data);
+                }
             }
 
             if (need_to_reset)
