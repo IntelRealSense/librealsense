@@ -1,17 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include <librealsense2/rs.hpp>
-#include "../example.hpp"
-#include <imgui.h>
-#include "imgui_impl_glfw.h"
-
 #include <sstream>
 #include <iostream>
 #include <fstream>
 #include <algorithm>
 #include <cstring>
 #include <thread>
+#include <librealsense2/rs.hpp>
+
 class my_frame_handler_class
 {
 public:
@@ -33,7 +30,7 @@ int main(int argc, char * argv[]) try
     //  connected devices
     rs2::context ctx;
 
-    // Using the context we can get all connected devices into a device list
+    // Using the context we can get all connected devices in a device list
     rs2::device_list devices = ctx.query_devices();
 
     // device_list is a "lazy" container of devices which allows
@@ -134,7 +131,8 @@ int main(int argc, char * argv[]) try
                 //  stream type we can use the following methods:
 
                 // 1) Each stream type can have multiple occurances.
-                //    All streams derived from a single device have distinc indices:
+                //    All streams, of the same type, provided from a single
+                //     device have distinc indices:
                 int stream_index = stream_profile.stream_index();
 
                 // 2) Each stream has a user friendly name.
@@ -144,8 +142,7 @@ int main(int argc, char * argv[]) try
 
                 // 3) Each stream in the system, which derives from the same
                 //     rs2::context, has a unique identifier
-                //    This identifier is unique across all streams, and not
-                //     only between stream with the same stream type
+                //    This identifier is unique across all streams, regardless of the stream type.
                 int unique_stream_id = stream_profile.unique_id(); // The unique identifier can be used for comparing two streams
 
                 std::cout << "\t\tStream #" << unique_stream_id
@@ -154,7 +151,7 @@ int main(int argc, char * argv[]) try
                      << ", Named: \"" << stream_name << "\"" << std::endl;
 
                 // As noted, a stream is an abstraction.
-                // In order to get additional data for the specific type of
+                // In order to get additional data for the specific type of a
                 //  stream, a mechanism of "Is" and "As" is provided:
                 if (stream_profile.is<rs2::video_stream_profile>()) //"Is" will test if the type tested is of the type given
                 {
@@ -171,7 +168,7 @@ int main(int argc, char * argv[]) try
             }
 
             // The sensor controls turning the streaming on and off
-            // To being streaming, two calls must be made with the following order:
+            // To start streaming, two calls must be made with the following order:
             //  1) open(stream_profiles_to_open)
             //  2) start(function_to_handle_frames)
 
@@ -180,7 +177,9 @@ int main(int argc, char * argv[]) try
             {
                 auto first_profile = *sensor.get_stream_profiles().begin();
                 // Open can be called with a single profile, or with a collection of profiles
-                // Calling open() tries to get exclusive access to the actual sensor (not only the software object of sensor)
+                // Calling open() tries to get exclusive access to the sensor.
+                // Opening a sensor may have side effects such as actually
+                //  running, consume power, produce data, etc.
                 sensor.open(first_profile);
 
                 // In order to begin getting data from the sensor, we need to register a callback to handle frames (data)
@@ -188,10 +187,11 @@ int main(int argc, char * argv[]) try
                 // The start() method takes any type of callable object that takes a frame as its parameter
                 // NOTE:
                 //  * Since a sensor can stream multiple streams, and start
-                //     takes a single handler, multiple types of frames can arrive to the handler.
-                //  * Different streams arrive from different threads.
-                //    This behavior requires that the frame handler you provide to the start method, must be reentrant
-
+                //     takes a single handler, multiple types of frames can
+                //     arrive to the handler.
+                //  * Different streams' frames arrive on different threads.
+                //    This behavior requires the provided frame handler to the
+                //     start method to be re-entrant
                 // A lambda (that prints the frame number)
                 sensor.start([](rs2::frame f)
                 {
@@ -218,7 +218,7 @@ int main(int argc, char * argv[]) try
                 }
 
                 // After calling start, frames will begin to arrive asynchronously to the callback handler.
-                // We now block the main thread from continuing, to allows frames to arrive during this time
+                // We now block the main thread from continuing, to allow frames to arrive during this time
                 std::this_thread::sleep_for(std::chrono::seconds(5));
 
                 // To stop streaming, we simply need to call the sensor's stop method
