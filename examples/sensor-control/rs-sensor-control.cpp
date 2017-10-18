@@ -11,6 +11,7 @@
 #include <fstream>
 #include <algorithm>
 #include <cstring>
+#include <thread>
 class my_frame_handler_class
 {
 public:
@@ -23,7 +24,7 @@ public:
 void frame_handler_that_does_nothing(rs2::frame f)
 {
     //Handle frame here...
-};
+}
 
 int main(int argc, char * argv[]) try
 {
