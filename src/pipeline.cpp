@@ -513,7 +513,9 @@ namespace librealsense
         {
             try
             {
-                unsafe_start(_prev_conf);
+                auto prev_conf = _prev_conf;
+                unsafe_stop();
+                unsafe_start(prev_conf);
                 return frame_holder();
             }
             catch (const std::exception&)
