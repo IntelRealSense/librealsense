@@ -23,14 +23,14 @@ namespace librealsense
          * from a list of connected devices.
          * Calling the function with a valid timeout will block till the resulted device is found or the timeout expires.
          * \param[in] timeout_ms  The waiting period for the requested device to be reconnected (milliseconds).
-         * Due to aimplementation issue both in MSVC and GCC the timeout duration shall be initialized with hours::max() to avoid generation of
+         * Due to an implementation issue both in MSVC and GCC the timeout duration is initialized with hours::max() to avoid generation of
          * negative durations.
          *.\param[in] loop_through_devices  - promote internal index to the next available device that will be retrieved on successive call
          *  Note that selection of the next device is deterministic but not predictable, and therefore is recommended for
-         * specific use-cases only , such as tutorials or unit-tests where no assumptions as for the device order are made.
+         * specific use-cases only , such as tutorials or unit-tests where no assumptions as to the device ordering are made.
          * \param[in] serial  The serial number of the requested device. Use empty pattern ("") to request for "any RealSense" device.
          * \return       a shared pointer to the device_interface that satisfies the search criteria. In case the request was not
-         * satisfied  the call will throw an exception
+         * resloved the call will throw an exception
          */
         std::shared_ptr<device_interface> wait_for_device(const std::chrono::milliseconds& timeout = std::chrono::hours::max(),
                                                             bool loop_through_devices = true,
