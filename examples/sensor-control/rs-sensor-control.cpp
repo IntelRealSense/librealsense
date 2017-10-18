@@ -62,10 +62,44 @@ int main(int argc, char * argv[]) try
             //    * A stereo sensor with Left and Right Infrared streams that creates a stream of depth images
             //    * A motion sensor with an Accelerometer and Gyroscope that provides a stream of motion information
             
-
             //Just like the device, a sensor provides additional information on itself
             if (sensor.supports(RS2_CAMERA_INFO_NAME))
                 std::cout << "\tSensor name: " << sensor.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+
+            //In addition to information of a sensor, sensors support options control such as Exposure, Brightness etc.
+            //The following loop shows how to iterate over all available options
+            //Starting from 0 until RS2_OPTION_COUNT (exclusive)
+            for (int i = 0; i < static_cast<int>(RS2_OPTION_COUNT); i++)
+            {
+                rs2_option option_type = static_cast<rs2_option>(i);
+                //To control an option, use the following api:
+                if (sensor.supports(option_type))
+                {
+                    //Get a human readable description of the option
+                    const char* description = sensor.get_option_description(option_type);
+
+                    //Get the current value of the option
+                    float current_value = sensor.get_option(option_type);
+
+                    //Get the supported range of the option
+                    rs2::option_range range = sensor.get_option_range(option_type);
+                    float default_value = range.def;
+                    float maximum_supported_value = range.max;
+                    float minimum_supported_value = range.min;
+                    float difference_to_next_value = range.step;
+
+                    //To set an option to a different value, we can call set_option with a new value
+                    //In this example we set each option to its default value
+                    try 
+                    {
+                        sensor.set_option(option_type, default_value);
+                    }
+                    catch (const rs2::error& e)
+                    {
+                        //Some options can only be set while the camera is streaming (and we haven't started streaming yet)
+                    }
+                }
+            }
 
             //We can iterate over the available profiles of a sensor
             for (rs2::stream_profile stream_profile : sensor.get_stream_profiles())
@@ -127,32 +161,46 @@ int main(int argc, char * argv[]) try
                 //In order to begin getting data from the sensor, we need to register a callback to handle frames (data)
                 //To register a callback, the sensor's start() method should be invoked.
                 //The start() method takes any type of callable object that takes a frame as its parameter
+                //NOTE:
+                // * Since a sensor can stream multiple streams, and start takes a single handler, multiple types of frames can arrive to the handler.
+                // * Different streams arrive from different threads. This behavior requires that the frame handler you provide to the start method, must be reentrant
+                //A lambda (that prints the frame number)
+                sensor.start([](rs2::frame f) 
+                            { 
+                                std::cout << "Frame received #" << f.get_frame_number() 
+                                    << " with stream type: " << f.get_profile().stream_type() << std::endl; 
+                            }
+                );
+
                 try
                 {
-                    //A lambda
-                    sensor.start([](rs2::frame f) { frame_handler_that_does_nothing(f); });
-
                     //A function pointer
                     sensor.start(frame_handler_that_does_nothing);
                     
                     //A functor
                     my_frame_handler_class my_frame_handler_instance;
                     sensor.start(my_frame_handler_instance);
-                    
-
-                    //rs2::frame is an abstraction of the different data types provided by a stream.
-
                 }
                 catch (const rs2::error& e) 
                 {
                     //We wrapped the calls to start() with try{} catch{} block for 2 reasons here:
-                    // 1) Start can throw an exception.
-                    // 2) calling start() multiple times throws an exception (but we wanted to show that it compiles with different types)
+                    // 1) calling start() multiple times throws an exception (but we wanted to show that it compiles with different types)
+                    // 2) Start can throw an exception generally.
 
                     std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
                 }
-            }
 
+                //After calling start, frames will begin to arrive asynchronously to the callback handler.
+                //We now block the main thread from continuing, to allows frames to arrive during this time
+                std::this_thread::sleep_for(std::chrono::seconds(5));
+
+                //To stop streaming, we simply need to call the sensor's stop method
+                //After returning from the call to stop(), no frames will arrive from this sensor
+                sensor.stop();
+
+                //To complete the stop operation, and release access of the device, we need to call close() per sensor
+                sensor.close();
+            }
         }
     }
     return EXIT_SUCCESS;
