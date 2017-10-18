@@ -52,14 +52,12 @@ namespace librealsense
         _ctx->set_devices_changed_callback({cb,  [](rs2_devices_changed_callback* p) { p->release(); }});
     }
 
-    std::shared_ptr<device_interface> device_hub::create_device(std::string serial)
+    std::shared_ptr<device_interface> device_hub::create_device(const std::string& serial, bool cycle_devices)
     {
-        for(auto i = 0; i< _device_list.size(); i++)
+        std::shared_ptr<device_interface> res = nullptr;
+        for(auto i = 0; ((i< _device_list.size()) && (nullptr == res)); i++)
         {
-
-            // user can switch the devices by calling to wait_for_device until he get the desire device
-            // _camera_index is the curr device that user want to work with
-
+            // _camera_index is the curr device that the hub will expose
             auto d = _device_list[ (_camera_index + i) % _device_list.size()];
             auto dev = d->create_device(_register_device_notifications);
 
@@ -69,17 +67,21 @@ namespace librealsense
 
                 if(serial == new_serial)
                 {
-                    _camera_index = ++_camera_index % _device_list.size();
-                    return dev;
+                    res = dev;
+                    cycle_devices = false;  // Requesting a device by its serial shall not invoke internal cycling
                 }
             }
-            else
+            else // Use the first selected if "any device" pattern was used
             {
-                _camera_index = ++_camera_index % _device_list.size();
-                 return dev;
+                res = dev;
             }
         }
-        return nullptr;
+
+        // Advance the internal selection when appropriate
+        if (res && cycle_devices)
+            _camera_index = ++_camera_index % _device_list.size();
+
+        return res;
     }
 
 
@@ -87,42 +89,33 @@ namespace librealsense
      * If any device is connected return it, otherwise wait until next RealSense device connects.
      * Calling this method multiple times will cycle through connected devices
      */
-    std::shared_ptr<device_interface> device_hub::wait_for_device(unsigned int timeout_ms, std::string serial)
+    std::shared_ptr<device_interface> device_hub::wait_for_device(const std::chrono::milliseconds& timeout, bool loop_through_devices, const std::string& serial)
     {
-        {
-            std::unique_lock<std::mutex> lock(_mutex);
-            // check if there is at least one device connected
-            if(_device_list.size()>0)
-            {
-                auto res = create_device(serial);
-                if(res)
-                    return res;
-            }
-        }
-        // if there are no devices connected or something wrong happened while enumeration
-        // wait for event of device connection
-        // and do it until camera connected and succeed in its creation
-
-        std::shared_ptr<device_interface> res;
-
         std::unique_lock<std::mutex> lock(_mutex);
 
-        if(!_cv.wait_for(lock, std::chrono::milliseconds(timeout_ms), [&]()
+        std::shared_ptr<device_interface> res = nullptr;
+
+        // check if there is at least one device connected
+        if (_device_list.size() > 0)
         {
-            res = nullptr;
-            if(_device_list.size()>0)
+            res = create_device(serial, loop_through_devices);
+        }
+
+        if (res) return res;
+
+        // block for the requested device to be connected, or till the timeout occurs
+        if (!_cv.wait_for(lock, timeout, [&]()
+        {
+            if (_device_list.size() > 0)
             {
-                res = create_device(serial);
+                res = create_device(serial, loop_through_devices);
             }
             return res != nullptr;
-
         }))
         {
             throw std::runtime_error("No device connected");
         }
-
         return res;
-
     }
 
     /**

@@ -39,7 +39,8 @@ namespace librealsense
         bool poll_for_frames(frame_holder* frame);
 
         //Non top level API
-        std::shared_ptr<device_interface> wait_for_device(unsigned int timeout_ms = std::numeric_limits<unsigned int>::max(), std::string serial = "");
+        std::shared_ptr<device_interface> wait_for_device(const std::chrono::milliseconds& timeout = std::chrono::hours::max(),
+                                                            const std::string& serial = "");
         std::shared_ptr<librealsense::context> get_context() const;
 
 
@@ -71,7 +72,7 @@ namespace librealsense
         void enable_record_to_file(const std::string& file);
         void disable_stream(rs2_stream stream, int index = -1);
         void disable_all_streams();
-        std::shared_ptr<pipeline_profile> resolve(std::shared_ptr<pipeline> pipe);
+        std::shared_ptr<pipeline_profile> resolve(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout = std::chrono::milliseconds(0));
         bool can_resolve(std::shared_ptr<pipeline> pipe);
 
         //Non top level API
@@ -96,10 +97,9 @@ namespace librealsense
             std::string record_output;
         };
         std::shared_ptr<device_interface> get_or_add_playback_device(std::shared_ptr<pipeline> pipe, const std::string& file);
-        std::shared_ptr<device_interface> resolve_device_requests(std::shared_ptr<pipeline> pipe);
+        std::shared_ptr<device_interface> resolve_device_requests(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout);
         stream_profiles get_default_configuration(std::shared_ptr<device_interface> dev);
-        std::shared_ptr<device_interface> get_first_or_default_device(std::shared_ptr<pipeline> pipe);
-        
+
         device_request _device_request;
         std::map<std::pair<rs2_stream, int>, util::config::request_type> _stream_requests;
         std::mutex _mtx;

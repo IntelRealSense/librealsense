@@ -72,7 +72,7 @@ namespace rs2
             return valid_config;
         }
 
-        void draw_notification(ux_window& win, const rect& viewer_rect, int w, 
+        void draw_notification(ux_window& win, const rect& viewer_rect, int w,
             const std::string& msg, const std::string& second_line)
         {
             auto flags = ImGuiWindowFlags_NoResize |
@@ -96,11 +96,11 @@ namespace rs2
                 ImGui::SetCursorPosY(pos.y - 10);
             }
             ImGui::PushFont(win.get_large_font());
-            ImGui::Text(msg.c_str());
+            ImGui::Text("%s", msg.c_str());
             ImGui::PopFont();
 
             ImGui::PushFont(win.get_font());
-            ImGui::Text(second_line.c_str());
+            ImGui::Text("%s", second_line.c_str());
             ImGui::PopFont();
 
             ImGui::End();
@@ -114,7 +114,7 @@ namespace rs2
             if (!_roi_located.eval())
             {
                 draw_notification(win, viewer_rect, 450,
-                    u8"\n   \uf1b2  Please point the camera to a flat Wall / Surface!", 
+                    u8"\n   \uf1b2  Please point the camera to a flat Wall / Surface!",
                     "");
                 return false;
             }
@@ -146,7 +146,7 @@ namespace rs2
             if (_sku_right.eval())
             {
                 draw_notification(win, viewer_rect, 400,
-                    u8"\n          \uf061  Rotate the camera slightly Right", 
+                    u8"\n          \uf061  Rotate the camera slightly Right",
                     orientation_instruction);
                 return false;
             }
@@ -527,7 +527,7 @@ namespace rs2
                         ImGui::Text("Angle:");
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                         ImGui::Text("%.2f deg", _metrics_model.get_last_metrics().angle);
-                        
+
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                         ImGui::TreePop();
                     }

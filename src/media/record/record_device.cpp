@@ -63,8 +63,8 @@ librealsense::record_device::~record_device()
 }
 
 std::shared_ptr<context> librealsense::record_device::get_context() const
-{ 
-    return m_device->get_context(); 
+{
+    return m_device->get_context();
 }
 
 librealsense::sensor_interface& librealsense::record_device::get_sensor(size_t i)
@@ -79,7 +79,7 @@ size_t librealsense::record_device::get_sensors_count() const
 
 void librealsense::record_device::write_header()
 {
-    
+
     auto device_extensions_md = get_extensions_snapshots(m_device.get());
     LOG_DEBUG("Created device snapshot with " << device_extensions_md.get_snapshots().size() << " snapshots");
 
@@ -91,7 +91,7 @@ void librealsense::record_device::write_header()
         sensors_snapshot.emplace_back(static_cast<uint32_t>(j), sensor_extensions_snapshots);
         LOG_DEBUG("Created sensor " << j << " snapshot with " << device_extensions_md.get_snapshots().size() << " snapshots");
     }
-    
+
     m_ros_writer->write_device_description({ device_extensions_md, sensors_snapshot, {/*extrinsics are written by ros_writer*/} });
 }
 
@@ -109,7 +109,7 @@ std::chrono::nanoseconds librealsense::record_device::get_capture_time() const
 void librealsense::record_device::write_data(size_t sensor_index, librealsense::frame_holder frame, std::function<void(std::string const&)> on_error)
 {
     //write_data is called from the sensors, when the live sensor raises a frame
-    
+
     LOG_DEBUG("write frame " << (frame ? std::to_string(frame.frame->get_frame_number()) : "") <<  " from sensor " << sensor_index);
 
     std::call_once(m_first_call_flag, [this]()
@@ -298,7 +298,7 @@ void record_device::write_sensor_extension_snapshot(size_t sensor_index,
     });
 }
 
-template <rs2_extension E, typename P> 
+template <rs2_extension E, typename P>
 bool librealsense::record_device::extend_to_aux(std::shared_ptr<P> p, void** ext)
 {
     using EXT_TYPE = typename ExtensionToType<E>::type;
@@ -312,7 +312,7 @@ bool librealsense::record_device::extend_to_aux(std::shared_ptr<P> p, void** ext
             write_device_extension_changes(ext);
         });
     }
-    
+
     *ext = &ptr;
     return true;
 }
@@ -322,10 +322,10 @@ bool librealsense::record_device::extend_to(rs2_extension extension_type, void**
     /**************************************************************************************
      A record device wraps the live device, and should have the same functionalities.
      To do that, the record device implements the extendable_interface and when the user tries to
-     treat the device as some extension, this function is called, and we return a pointer to the 
+     treat the device as some extension, this function is called, and we return a pointer to the
      live device's extension. If that extension is a recordable one, we also enable_recording for it.
     **************************************************************************************/
-    
+
     switch (extension_type)
     {
     case RS2_EXTENSION_INFO:    // [[fallthrough]]

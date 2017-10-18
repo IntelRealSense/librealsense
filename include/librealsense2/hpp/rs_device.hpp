@@ -280,6 +280,5 @@ namespace rs2
     private:
         std::shared_ptr<rs2_device_list> _list;
     };
-   
 }
 #endif // LIBREALSENSE_RS2_DEVICE_HPP

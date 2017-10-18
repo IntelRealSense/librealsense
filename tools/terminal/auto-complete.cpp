@@ -285,4 +285,5 @@ string auto_complete::get_line(std::function <bool()> to_stop)
     cout.clear();
     cin.clear();
     fflush(nullptr);
+    return std::string{};
 }

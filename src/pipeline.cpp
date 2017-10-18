@@ -19,7 +19,7 @@ namespace librealsense
      \______| \______/  |__| \__| |__|     |__|  \______|
 
     */
-    pipeline_config::pipeline_config() 
+    pipeline_config::pipeline_config()
     {
         //empty
     }
@@ -100,11 +100,11 @@ namespace librealsense
         _resolved_profile.reset();
     }
 
-    std::shared_ptr<pipeline_profile> pipeline_config::resolve(std::shared_ptr<pipeline> pipe)
+    std::shared_ptr<pipeline_profile> pipeline_config::resolve(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         _resolved_profile.reset();
-        auto requested_device = resolve_device_requests(pipe);
+        auto requested_device = resolve_device_requests(pipe, timeout);
 
         std::vector<stream_profile> resolved_profiles;
 
@@ -113,7 +113,7 @@ namespace librealsense
         {
             if (!requested_device)
             {
-                requested_device = get_first_or_default_device(pipe);
+                requested_device = pipe->wait_for_device(timeout);
             }
 
             util::config config;
@@ -130,7 +130,7 @@ namespace librealsense
             {
                 if (!requested_device)
                 {
-                    requested_device = get_first_or_default_device(pipe);
+                    requested_device = pipe->wait_for_device(timeout);
                 }
 
                 auto default_profiles = get_default_configuration(requested_device);
@@ -150,7 +150,7 @@ namespace librealsense
             }
             else
             {
-                //User enabled some stream, enable only them   
+                //User enabled some stream, enable only them
                 for(auto&& req : _stream_requests)
                 {
                     auto r = req.second;
@@ -160,7 +160,7 @@ namespace librealsense
                 auto devs = pipe->get_context()->query_devices();
                 if (devs.empty())
                 {
-                    auto dev = get_first_or_default_device(pipe);
+                    auto dev = pipe->wait_for_device(timeout);
                     _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
                     return _resolved_profile;
                 }
@@ -188,7 +188,7 @@ namespace librealsense
     bool pipeline_config::can_resolve(std::shared_ptr<pipeline> pipe)
     {
         try
-        {
+        {    // Try to resolve from connected devices. Non-blocking call
             resolve(pipe);
             _resolved_profile.reset();
         }
@@ -217,25 +217,12 @@ namespace librealsense
                 }
             }
         }
-        
+
         return pipe->get_context()->add_device(file);
     }
-    std::shared_ptr<device_interface> pipeline_config::get_first_or_default_device(std::shared_ptr<pipeline> pipe)
-    {
-        try
-        {
-            return pipe->wait_for_device(5000);
-        }
-        catch (const std::exception& e)
-        {
-            throw std::runtime_error(to_string() << "Failed to resolve request. " << e.what());
-        }
-    }
-    //TODO: add timeout parameter?
-    std::shared_ptr<device_interface> pipeline_config::resolve_device_requests(std::shared_ptr<pipeline> pipe)
-    {
-        const auto timeout_ms = std::chrono::milliseconds(5000).count();
 
+    std::shared_ptr<device_interface> pipeline_config::resolve_device_requests(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout)
+    {
         //Prefer filename over serial
         if(!_device_request.filename.empty())
         {
@@ -264,7 +251,7 @@ namespace librealsense
                     if (s != _device_request.serial)
                     {
                         throw std::runtime_error(to_string() << "Failed to resolve request. "
-                            "Conflic between enable_device_from_file(\"" << _device_request.filename 
+                            "Conflic between enable_device_from_file(\"" << _device_request.filename
                              << "\") and enable_device(\"" << _device_request.serial << "\"), "
                             "File contains device with different serial number (" << s << "\")");
                     }
@@ -275,7 +262,7 @@ namespace librealsense
 
         if (!_device_request.serial.empty())
         {
-            return pipe->wait_for_device(timeout_ms, _device_request.serial);
+            return pipe->wait_for_device(timeout, _device_request.serial);
         }
 
         return nullptr;
@@ -324,7 +311,7 @@ namespace librealsense
         |  |_)  | |  | |  |_)  | |  |__   |  |     |  | |   \|  | |  |__   
         |   ___/  |  | |   ___/  |   __|  |  |     |  | |  . `  | |   __|  
         |  |      |  | |  |      |  |____ |  `----.|  | |  |\   | |  |____ 
-        | _|      |__| | _|      |_______||_______||__| |__| \__| |_______|                                                        
+        | _|      |__| | _|      |_______||_______||__| |__| \__| |_______|
     */
 
     template<class T>
@@ -360,7 +347,7 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_mtx);
         if (_active_profile)
         {
-            throw librealsense::wrong_api_call_sequence_exception("start() cannnot be called before stop()");
+            throw librealsense::wrong_api_call_sequence_exception("start() cannot be called before stop()");
         }
         unsafe_start(conf);
         return unsafe_get_active_profile();
@@ -371,7 +358,7 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_mtx);
         if (_active_profile)
         {
-            throw librealsense::wrong_api_call_sequence_exception("start() cannnot be called before stop()");
+            throw librealsense::wrong_api_call_sequence_exception("start() cannot be called before stop()");
         }
         conf->enable_record_to_file(file);
         unsafe_start(conf);
@@ -453,7 +440,7 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_mtx);
         if (!_active_profile)
         {
-            throw librealsense::wrong_api_call_sequence_exception("stop() cannnot be called before start()");
+            throw librealsense::wrong_api_call_sequence_exception("stop() cannot be called before start()");
         }
         unsafe_stop();
     }
@@ -478,7 +465,7 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_mtx);
         if (!_active_profile)
         {
-            throw librealsense::wrong_api_call_sequence_exception("wait_for_frames cannnot be called before start()");
+            throw librealsense::wrong_api_call_sequence_exception("wait_for_frames cannot be called before start()");
         }
 
         frame_holder f;
@@ -486,7 +473,7 @@ namespace librealsense
         {
             return f;
         }
-        
+
         try
         {
             unsafe_start(_prev_conf);
@@ -504,7 +491,7 @@ namespace librealsense
 
         if (!_active_profile)
         {
-            throw librealsense::wrong_api_call_sequence_exception("poll_for_frames cannnot be called before start()");
+            throw librealsense::wrong_api_call_sequence_exception("poll_for_frames cannot be called before start()");
         }
 
         if (_queue->try_dequeue(frame))
@@ -514,9 +501,10 @@ namespace librealsense
         return false;
     }
 
-    std::shared_ptr<device_interface> pipeline::wait_for_device(unsigned int timeout_ms, std::string serial)
+    std::shared_ptr<device_interface> pipeline::wait_for_device(const std::chrono::milliseconds& timeout, const std::string& serial)
     {
-        return _hub.wait_for_device(timeout_ms, serial);
+        // Pipeline's device selection shall be deterministic
+        return _hub.wait_for_device(timeout, false, serial);
     }
 
     std::shared_ptr<librealsense::context> pipeline::get_context() const
@@ -534,7 +522,7 @@ namespace librealsense
         | _|      | _| `._____| \______/  |__|     |__| |_______||_______|
     */
 
-    pipeline_profile::pipeline_profile(std::shared_ptr<device_interface> dev, 
+    pipeline_profile::pipeline_profile(std::shared_ptr<device_interface> dev,
                                        util::config config,
                                        const std::string& to_file) :
         _dev(dev), _to_file(to_file)
@@ -553,7 +541,7 @@ namespace librealsense
     {
         //pipeline_profile can be retrieved from a pipeline_config and pipeline::start()
         //either way, it is created by the pipeline
-        
+
         //TODO: handle case where device has disconnected and reconnected
         //TODO: remember to recreate the device as record device in case of to_file.empty() == false
         if (!_dev)

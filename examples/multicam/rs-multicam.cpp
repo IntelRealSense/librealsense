@@ -70,7 +70,8 @@ public:
             }
         }
     }
-    int device_count()
+
+    size_t device_count()
     {
         std::lock_guard<std::mutex> lock(_mutex);
         return _devices.size();
@@ -174,15 +175,16 @@ int main(int argc, char * argv[]) try
         auto total_number_of_streams = connected_devices.stream_count();
         if (total_number_of_streams == 0)
         {
-            draw_text(std::max(0.f, (app.width() / 2) - no_camera_message.length() * 3), app.height() / 2, no_camera_message.c_str());
+            draw_text(int(std::max(0.f, (app.width() / 2) - no_camera_message.length() * 3)),
+                      int(app.height() / 2), no_camera_message.c_str());
             continue;
         }
         if (connected_devices.device_count() == 1)
         {
             draw_text(0, 10, "Please connect another camera");
         }
-        int cols = std::ceil(std::sqrt(total_number_of_streams));
-        int rows = std::ceil(total_number_of_streams / static_cast<float>(cols));
+        int cols = int(std::ceil(std::sqrt(total_number_of_streams)));
+        int rows = int(std::ceil(total_number_of_streams / static_cast<float>(cols)));
 
         float view_width = (app.width() / cols);
         float view_height = (app.height() / rows);

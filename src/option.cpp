@@ -42,7 +42,7 @@ librealsense::option_range librealsense::uvc_pu_option::get_range() const
         {
             return dev.get_pu_range(_id);
         });
-    
+
     if (uvc_range.min.size() < sizeof(int32_t)) return option_range{0,0,1,0};
 
     auto min = *(reinterpret_cast<int32_t*>(uvc_range.min.data()));
