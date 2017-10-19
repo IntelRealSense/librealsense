@@ -157,28 +157,38 @@ namespace librealsense
                     config.enable_stream(r.stream, r.stream_index, r.width, r.height, r.format, r.fps);
                 }
 
-                auto devs = pipe->get_context()->query_devices();
-                if (devs.empty())
+                if (!requested_device)
                 {
-                    auto dev = pipe->wait_for_device(timeout);
-                    _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
-                    return _resolved_profile;
+                    //If the users did not request any device, select one for them
+                    auto devs = pipe->get_context()->query_devices();
+                    if (devs.empty())
+                    {
+                        auto dev = pipe->wait_for_device(timeout);
+                        _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
+                        return _resolved_profile;
+                    }
+                    else
+                    {
+                        for (auto dev_info : devs)
+                        {
+                            try
+                            {
+                                auto dev = dev_info->create_device();
+                                _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
+                                return _resolved_profile;
+                            }
+                            catch (...) {}
+                        }
+                    }
+
+                    throw std::runtime_error("Failed to resolve request. No device found that satisfies all requirements");
                 }
                 else
                 {
-                    for (auto dev_info : devs)
-                    {
-                        try
-                        {
-                            auto dev = dev_info->create_device();
-                            _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
-                            return _resolved_profile;
-                        }
-                        catch (...) {}
-                    }
+                    //User specified a device, use it with the requested configuration
+                    _resolved_profile = std::make_shared<pipeline_profile>(requested_device, config, _device_request.record_output);
+                    return _resolved_profile;
                 }
-
-                throw std::runtime_error("Failed to resolve request. No device found that satisfies all requirements");
             }
         }
 
