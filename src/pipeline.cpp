@@ -401,7 +401,6 @@ namespace librealsense
             {
                 set.push_back(s.second.clone());
             }
-            //frame_holder f(comp);
             auto fref = source->allocate_composite_frame(std::move(set));
 
             _queue->enqueue(fref);
