@@ -114,6 +114,7 @@ namespace librealsense
         exposure_control               depth_exposure;
         auto_exposure_control          depth_auto_exposure;
         gain_control                   depth_gain;
+        auto_white_balance_control     depth_auto_white_balance;
         exposure_control               color_exposure;
         auto_exposure_control          color_auto_exposure;
         backlight_compensation_control color_backlight_compensation;
