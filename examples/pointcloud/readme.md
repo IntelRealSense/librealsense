@@ -74,7 +74,7 @@ Using helper functions on the `frameset` object we check for new depth and color
 	auto frames = pipe.wait_for_frames();
 	auto depth = frames.get_depth_frame();
 
-    // If we got a depth frame, generate the pointcloud and texture mappings
+    // Generate the pointcloud and texture mappings
     points = pc.calculate(depth);
 
 	auto color = frames.get_color_frame();

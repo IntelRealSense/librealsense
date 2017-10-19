@@ -406,7 +406,10 @@ namespace librealsense
 
             _queue->enqueue(fref);
         }
-
+        else
+        {
+            LOG_ERROR("Non composite frame arrived to pipeline::handle_frame");
+        }
     }
 
     void pipeline::unsafe_start(std::shared_ptr<pipeline_config> conf)
@@ -414,17 +417,18 @@ namespace librealsense
         _syncer = std::unique_ptr<syncer_proccess_unit>(new syncer_proccess_unit());
         _queue = std::unique_ptr<single_consumer_queue<frame_holder>>(new single_consumer_queue<frame_holder>());
         _pipeline_proccess = std::unique_ptr<processing_block>(new processing_block());
-        auto f = [&](frame_holder frame, synthetic_source_interface* source)
+
+        auto processing_callback = [&](frame_holder frame, synthetic_source_interface* source)
         {
             handle_frame(std::move(frame), source);
         };
 
         _pipeline_proccess->set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
-            new internal_frame_processor_callback<decltype(f)>(f)));
+            new internal_frame_processor_callback<decltype(processing_callback)>(processing_callback)));
 
-        auto t = [&](frame_holder fref){_pipeline_proccess->invoke(std::move(fref));};
-        frame_callback_ptr user_callback =
-        { new internal_frame_callback<decltype(t)>(t),
+        auto pipeline_proccess_callback = [&](frame_holder fref){_pipeline_proccess->invoke(std::move(fref));};
+        frame_callback_ptr to_pipeline_proccess =
+        { new internal_frame_callback<decltype(pipeline_proccess_callback)>(pipeline_proccess_callback),
             [](rs2_frame_callback* p) { p->release(); } };
 
         auto to_syncer = [&](frame_holder fref)
@@ -436,7 +440,7 @@ namespace librealsense
         { new internal_frame_callback<decltype(to_syncer)>(to_syncer),
             [](rs2_frame_callback* p) { p->release(); } };
 
-        _syncer->set_output_callback(user_callback);
+        _syncer->set_output_callback(to_pipeline_proccess);
 
         std::shared_ptr<pipeline_profile> profile = nullptr;
         const int NUM_TIMES_TO_RETRY = 3;

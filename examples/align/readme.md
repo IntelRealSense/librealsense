@@ -121,11 +121,11 @@ while (app) // Application still alive?
 Inside the loop, the first thing we do is block the program until the `align` object returns a `rs2::frameset`. A `rs2::frameset` is an object that holds a set of frames and provides an interface for easily accessing them.
 
 ```cpp
-    // Using the align object, we block the application until a frameset is available
-    rs2::frameset frameset = align.wait_for_frames();
-```
+    // Using the pipeline object, we block the application until a frameset is available
+    frameset = pipe.wait_for_frames();
+``` auto proccessed = align.proccess(frameset);	
 
-The `frameset` returned from `wait_for_frames` should contain a set of aligned frames, but we should check that the frames it contains are indeed valid:
+The `proccessed` returned from `proccess` should contain a set of aligned frames
 
 
 ```cpp
