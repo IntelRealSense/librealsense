@@ -492,10 +492,10 @@ namespace librealsense
             catch(...){ } // Stop will throw if device was disconnected. TODO - refactoring anticipated
         }
         _syncer.reset();
+        _pipeline_proccess.reset();
         _queue.reset();
         _active_profile.reset();
         _prev_conf.reset();
-        _pipeline_proccess.reset();
         _last_set.clear();
 
     }
