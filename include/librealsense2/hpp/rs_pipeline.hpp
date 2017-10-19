@@ -421,6 +421,8 @@ namespace rs2
         /**
         * Wait until a new set of frames becomes available.
         * The frames set includes time-synchronized frames of each enabled stream in the pipeline.
+        * In case of different frame rates of the streams, the frames set include a matching frame of the slow stream,
+        * which may have been included in previous frames set.
         * The method blocks the calling thread, and fetches the latest unread frames set.
         * Device frames, which were produced while the function wasn't called, are dropped. To avoid frame drops, this method
         * should be called as fast as the device frame rate.

@@ -388,18 +388,57 @@ namespace librealsense
 
         return _active_profile;
     }
+    void pipeline::handle_frame(frame_holder frame, synthetic_source_interface* source)
+    {
+        auto comp = dynamic_cast<composite_frame*>(frame.frame);
+        if (comp)
+        {
+            for (auto i = 0; i< comp->get_embedded_frames_count(); i++)
+            {
+                auto f = comp->get_frame(i);
+                f->acquire();
+                _last_set[f->get_stream()->get_unique_id()] = f;
+            }
+
+            for (auto&& s : _active_profile->get_active_streams())
+            {
+                if (!_last_set[s->get_unique_id()])
+                    return;
+            }
+
+            std::vector<frame_holder> set;
+            for (auto&& s : _last_set)
+            {
+                set.push_back(s.second.clone());
+            }
+            auto fref = source->allocate_composite_frame(std::move(set));
+
+            _queue->enqueue(fref);
+        }
+        else
+        {
+            LOG_ERROR("Non composite frame arrived to pipeline::handle_frame");
+            assert(false);
+        }
+    }
+
     void pipeline::unsafe_start(std::shared_ptr<pipeline_config> conf)
     {
-        auto syncer = std::unique_ptr<syncer_proccess_unit>(new syncer_proccess_unit());
-        auto queue = std::unique_ptr<single_consumer_queue<frame_holder>>(new single_consumer_queue<frame_holder>());
+        _syncer = std::unique_ptr<syncer_proccess_unit>(new syncer_proccess_unit());
+        _queue = std::unique_ptr<single_consumer_queue<frame_holder>>(new single_consumer_queue<frame_holder>());
+        _pipeline_proccess = std::unique_ptr<processing_block>(new processing_block());
 
-        auto to_user = [&](frame_holder fref)
+        auto processing_callback = [&](frame_holder frame, synthetic_source_interface* source)
         {
-            _queue->enqueue(std::move(fref));
+            handle_frame(std::move(frame), source);
         };
 
-        frame_callback_ptr user_callback =
-        { new internal_frame_callback<decltype(to_user)>(to_user),
+        _pipeline_proccess->set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
+            new internal_frame_processor_callback<decltype(processing_callback)>(processing_callback)));
+
+        auto pipeline_proccess_callback = [&](frame_holder fref){_pipeline_proccess->invoke(std::move(fref));};
+        frame_callback_ptr to_pipeline_proccess =
+        { new internal_frame_callback<decltype(pipeline_proccess_callback)>(pipeline_proccess_callback),
             [](rs2_frame_callback* p) { p->release(); } };
 
         auto to_syncer = [&](frame_holder fref)
@@ -411,10 +450,7 @@ namespace librealsense
         { new internal_frame_callback<decltype(to_syncer)>(to_syncer),
             [](rs2_frame_callback* p) { p->release(); } };
 
-        syncer->set_output_callback(user_callback);
-
-        _queue = std::move(queue);
-        _syncer = std::move(syncer);
+        _syncer->set_output_callback(to_pipeline_proccess);
 
         std::shared_ptr<pipeline_profile> profile = nullptr;
         const int NUM_TIMES_TO_RETRY = 3;
@@ -425,7 +461,7 @@ namespace librealsense
                 //first try to get the previously resolved profile (if exists)
                 profile = conf->get_cached_resolved_profile();
                 if(i > 1 || !profile)
-                    profile = conf->resolve(shared_from_this());
+                    profile = conf->resolve(shared_from_this(), std::chrono::seconds(5));
             }
             catch (...)
             {
@@ -466,9 +502,12 @@ namespace librealsense
             catch(...){ } // Stop will throw if device was disconnected. TODO - refactoring anticipated
         }
         _syncer.reset();
+        _pipeline_proccess.reset();
         _queue.reset();
         _active_profile.reset();
         _prev_conf.reset();
+        _last_set.clear();
+
     }
     frame_holder pipeline::wait_for_frames(unsigned int timeout_ms)
     {
@@ -484,15 +523,27 @@ namespace librealsense
             return f;
         }
 
-        try
+        //hub returns true even if device already reconnected
+        if (!_hub.is_connected(*_active_profile->get_device()))
         {
-            unsafe_start(_prev_conf);
-            return frame_holder();
+            try
+            {
+                auto prev_conf = _prev_conf;
+                unsafe_stop();
+                unsafe_start(prev_conf);
+
+                if (_queue->dequeue(&f, timeout_ms))
+                {
+                    return f;
+                }
+
+            }
+            catch (const std::exception& e)
+            {
+                throw std::runtime_error(to_string() << "Device disconnected. Failed to recconect: "<<e.what() << timeout_ms);
+            }
         }
-        catch(const std::exception&)
-        {
-            throw std::runtime_error(to_string() << "Frame didn't arrived within " << timeout_ms);
-        }
+        throw std::runtime_error(to_string() << "Frame didn't arrived within " << timeout_ms);
     }
 
     bool pipeline::poll_for_frames(frame_holder* frame)

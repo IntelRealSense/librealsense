@@ -52,10 +52,7 @@ int main(int argc, char * argv[]) try
         // Using the align object, we block the application until a frameset is available
         rs2::frameset frameset;
 
-        while (!frameset.first_or_default(RS2_STREAM_DEPTH) || !frameset.first_or_default(align_to))
-        {
-            frameset = pipe.wait_for_frames();
-        }
+        frameset = pipe.wait_for_frames();
 
         auto proccessed = align.proccess(frameset);
 
@@ -64,7 +61,7 @@ int main(int argc, char * argv[]) try
         rs2::depth_frame aligned_depth_frame = proccessed.get_depth_frame();
 
         //If one of them is unavailable, continue iteration
-        if (!aligned_depth_frame || !color_frame)
+        if (!aligned_depth_frame)
         {
             continue;
         }
