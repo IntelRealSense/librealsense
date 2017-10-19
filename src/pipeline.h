@@ -48,7 +48,6 @@ namespace librealsense
         void unsafe_start(std::shared_ptr<pipeline_config> conf);
         void unsafe_stop();
         std::shared_ptr<pipeline_profile> unsafe_get_active_profile() const;
-        void handle_frame(frame_holder frame, synthetic_source_interface* source);
 
         std::shared_ptr<librealsense::context> _ctx;
         mutable std::mutex _mtx;
@@ -56,12 +55,72 @@ namespace librealsense
         std::shared_ptr<pipeline_profile> _active_profile;
         frame_callback_ptr _callback;
         std::unique_ptr<syncer_proccess_unit> _syncer;
-        std::unique_ptr<processing_block> _pipeline_proccess;
-        std::unique_ptr<single_consumer_queue<frame_holder>> _queue;
 
+        class pipeline_processing_block : public processing_block
+        {
+            std::map<stream_id, frame_holder> _last_set;
+            std::unique_ptr<single_consumer_queue<frame_holder>> _queue;
+            std::vector<int> _streams_ids;
+            void handle_frame(frame_holder frame, synthetic_source_interface* source)
+            {
+                auto comp = dynamic_cast<composite_frame*>(frame.frame);
+                if (comp)
+                {
+                    for (auto i = 0; i< comp->get_embedded_frames_count(); i++)
+                    {
+                        auto f = comp->get_frame(i);
+                        f->acquire();
+                        _last_set[f->get_stream()->get_unique_id()] = f;
+                    }
+
+                    for (int s : _streams_ids)
+                    {
+                        if (!_last_set[s])
+                            return;
+                    }
+
+                    std::vector<frame_holder> set;
+                    for (auto&& s : _last_set)
+                    {
+                        set.push_back(s.second.clone());
+                    }
+                    auto fref = source->allocate_composite_frame(std::move(set));
+
+                    _queue->enqueue(fref);
+                }
+                else
+                {
+                    LOG_ERROR("Non composite frame arrived to pipeline::handle_frame");
+                    assert(false);
+                }
+            }
+        public:
+            pipeline_processing_block(const std::vector<int>& streams_to_aggragate) :
+                _queue(new single_consumer_queue<frame_holder>()),
+                _streams_ids(streams_to_aggragate)
+            {
+                auto processing_callback = [&](frame_holder frame, synthetic_source_interface* source)
+                {
+                    handle_frame(std::move(frame), source);
+                };
+
+                set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
+                    new internal_frame_processor_callback<decltype(processing_callback)>(processing_callback)));
+            }
+            
+            bool dequeue(frame_holder* item, unsigned int timeout_ms = 5000)
+            {
+                return _queue->dequeue(item, timeout_ms);
+            }
+            bool try_dequeue(frame_holder* item)
+            {
+                return _queue->try_dequeue(item);
+            }
+
+        } ;
+        std::unique_ptr<pipeline_processing_block> _pipeline_proccess;
         std::shared_ptr<pipeline_config> _prev_conf;
 
-        std::map<stream_id, frame_holder> _last_set;
     };
 
 

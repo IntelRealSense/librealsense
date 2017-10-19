@@ -378,70 +378,9 @@ namespace librealsense
 
         return _active_profile;
     }
-    void pipeline::handle_frame(frame_holder frame, synthetic_source_interface* source)
-    {
-        auto comp = dynamic_cast<composite_frame*>(frame.frame);
-        if (comp)
-        {
-            for (auto i = 0; i< comp->get_embedded_frames_count(); i++)
-            {
-                auto f = comp->get_frame(i);
-                f->acquire();
-                _last_set[f->get_stream()->get_unique_id()] = f;
-            }
-
-            for (auto&& s : _active_profile->get_active_streams())
-            {
-                if (!_last_set[s->get_unique_id()])
-                    return;
-            }
-
-            std::vector<frame_holder> set;
-            for (auto&& s : _last_set)
-            {
-                set.push_back(s.second.clone());
-            }
-            auto fref = source->allocate_composite_frame(std::move(set));
-
-            _queue->enqueue(fref);
-        }
-        else
-        {
-            LOG_ERROR("Non composite frame arrived to pipeline::handle_frame");
-            assert(false);
-        }
-    }
 
     void pipeline::unsafe_start(std::shared_ptr<pipeline_config> conf)
     {
-        _syncer = std::unique_ptr<syncer_proccess_unit>(new syncer_proccess_unit());
-        _queue = std::unique_ptr<single_consumer_queue<frame_holder>>(new single_consumer_queue<frame_holder>());
-        _pipeline_proccess = std::unique_ptr<processing_block>(new processing_block());
-
-        auto processing_callback = [&](frame_holder frame, synthetic_source_interface* source)
-        {
-            handle_frame(std::move(frame), source);
-        };
-
-        _pipeline_proccess->set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
-            new internal_frame_processor_callback<decltype(processing_callback)>(processing_callback)));
-
-        auto pipeline_proccess_callback = [&](frame_holder fref){_pipeline_proccess->invoke(std::move(fref));};
-        frame_callback_ptr to_pipeline_proccess =
-        { new internal_frame_callback<decltype(pipeline_proccess_callback)>(pipeline_proccess_callback),
-            [](rs2_frame_callback* p) { p->release(); } };
-
-        auto to_syncer = [&](frame_holder fref)
-        {
-            _syncer->invoke(std::move(fref));
-        };
-
-        frame_callback_ptr syncer_callback =
-        { new internal_frame_callback<decltype(to_syncer)>(to_syncer),
-            [](rs2_frame_callback* p) { p->release(); } };
-
-        _syncer->set_output_callback(to_pipeline_proccess);
-
         std::shared_ptr<pipeline_profile> profile = nullptr;
         const int NUM_TIMES_TO_RETRY = 3;
         for (int i = 1; i <= NUM_TIMES_TO_RETRY; i++)
@@ -460,13 +399,43 @@ namespace librealsense
 
                 continue;
             }
-            assert(profile->_multistream.get_profiles().size() > 0);
-            profile->_multistream.open();
-            profile->_multistream.start(syncer_callback);
-            break;
         }
 
-        //On successfull start, update members:
+        assert(profile->_multistream.get_profiles().size() > 0);
+
+        std::vector<int> unique_ids;
+        for (auto&& s : profile->get_active_streams())
+        {
+            unique_ids.push_back(s->get_unique_id());
+        }
+
+        _syncer = std::unique_ptr<syncer_proccess_unit>(new syncer_proccess_unit());
+        _pipeline_proccess = std::unique_ptr<pipeline_processing_block>(new pipeline_processing_block(unique_ids));
+
+        auto pipeline_proccess_callback = [&](frame_holder fref)
+        {
+            _pipeline_proccess->invoke(std::move(fref));
+        };
+
+        frame_callback_ptr to_pipeline_proccess = {
+            new internal_frame_callback<decltype(pipeline_proccess_callback)>(pipeline_proccess_callback),
+            [](rs2_frame_callback* p) { p->release(); }
+        };
+
+        _syncer->set_output_callback(to_pipeline_proccess);
+
+        auto to_syncer = [&](frame_holder fref)
+        {
+            _syncer->invoke(std::move(fref));
+        };
+
+        frame_callback_ptr syncer_callback = {
+            new internal_frame_callback<decltype(to_syncer)>(to_syncer),
+            [](rs2_frame_callback* p) { p->release(); }
+        };
+
+        profile->_multistream.open();
+        profile->_multistream.start(syncer_callback);
         _active_profile = profile;
         _prev_conf = std::make_shared<pipeline_config>(*conf);
     }
@@ -485,19 +454,20 @@ namespace librealsense
     {
         if (_active_profile)
         {
-            try {
+            try 
+            {
                 _active_profile->_multistream.stop();
                 _active_profile->_multistream.close();
             }
-            catch(...){ } // Stop will throw if device was disconnected. TODO - refactoring anticipated
+            catch(...)
+            {
+            
+            } // Stop will throw if device was disconnected. TODO - refactoring anticipated
         }
+        _active_profile.reset();
         _syncer.reset();
         _pipeline_proccess.reset();
-        _queue.reset();
-        _active_profile.reset();
         _prev_conf.reset();
-        _last_set.clear();
-
     }
     frame_holder pipeline::wait_for_frames(unsigned int timeout_ms)
     {
@@ -508,7 +478,7 @@ namespace librealsense
         }
 
         frame_holder f;
-        if (_queue->dequeue(&f, timeout_ms))
+        if (_pipeline_proccess->dequeue(&f, timeout_ms))
         {
             return f;
         }
@@ -522,7 +492,7 @@ namespace librealsense
                 unsafe_stop();
                 unsafe_start(prev_conf);
 
-                if (_queue->dequeue(&f, timeout_ms))
+                if (_pipeline_proccess->dequeue(&f, timeout_ms))
                 {
                     return f;
                 }
@@ -545,7 +515,7 @@ namespace librealsense
             throw librealsense::wrong_api_call_sequence_exception("poll_for_frames cannot be called before start()");
         }
 
-        if (_queue->try_dequeue(frame))
+        if (_pipeline_proccess->try_dequeue(frame))
         {
             return true;
         }
