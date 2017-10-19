@@ -451,7 +451,7 @@ namespace librealsense
                 //first try to get the previously resolved profile (if exists)
                 profile = conf->get_cached_resolved_profile();
                 if(i > 1 || !profile)
-                    profile = conf->resolve(shared_from_this());
+                    profile = conf->resolve(shared_from_this(), std::chrono::seconds(5));
             }
             catch (...)
             {
@@ -520,11 +520,16 @@ namespace librealsense
                 auto prev_conf = _prev_conf;
                 unsafe_stop();
                 unsafe_start(prev_conf);
-                return frame_holder();
+
+                if (_queue->dequeue(&f, timeout_ms))
+                {
+                    return f;
+                }
+
             }
             catch (const std::exception&)
             {
-                throw std::runtime_error(to_string() << "Frame didn't arrived within " << timeout_ms);
+                throw std::runtime_error(to_string() << "Device disconnected. Failed to recconect" << timeout_ms);
             }
         }
         throw std::runtime_error(to_string() << "Frame didn't arrived within " << timeout_ms);

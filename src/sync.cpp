@@ -82,8 +82,7 @@ namespace librealsense
     {
         for (auto&& matcher : matchers)
         {
-            auto s = matcher->get_streams();
-            for (auto&& stream : s)
+            for (auto&& stream : matcher->get_streams())
             {
                 matcher->set_callback([&](frame_holder f, syncronization_environment env)
                 {
