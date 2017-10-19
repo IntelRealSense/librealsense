@@ -9,6 +9,67 @@
 
 namespace librealsense
 {
+    pipeline_processing_block::pipeline_processing_block(const std::vector<int>& streams_to_aggragate) :
+        _queue(new single_consumer_queue<frame_holder>()),
+        _streams_ids(streams_to_aggragate)
+    {
+        auto processing_callback = [&](frame_holder frame, synthetic_source_interface* source)
+        {
+            handle_frame(std::move(frame), source);
+        };
+
+        set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
+            new internal_frame_processor_callback<decltype(processing_callback)>(processing_callback)));
+    }
+
+    void pipeline_processing_block::handle_frame(frame_holder frame, synthetic_source_interface* source)
+    {
+        auto comp = dynamic_cast<composite_frame*>(frame.frame);
+        if (comp)
+        {
+            for (auto i = 0; i< comp->get_embedded_frames_count(); i++)
+            {
+                auto f = comp->get_frame(i);
+                f->acquire();
+                _last_set[f->get_stream()->get_unique_id()] = f;
+            }
+
+            for (int s : _streams_ids)
+            {
+                if (!_last_set[s])
+                    return;
+            }
+
+            std::vector<frame_holder> set;
+            for (auto&& s : _last_set)
+            {
+                set.push_back(s.second.clone());
+            }
+            auto fref = source->allocate_composite_frame(std::move(set));
+            if (!fref)
+            {
+                LOG_ERROR("Failed to allocate composite frame");
+                return;
+            }
+            _queue->enqueue(fref);
+        }
+        else
+        {
+            LOG_ERROR("Non composite frame arrived to pipeline::handle_frame");
+            assert(false);
+        }
+    }
+
+    bool pipeline_processing_block::dequeue(frame_holder* item, unsigned int timeout_ms)
+    {
+        return _queue->dequeue(item, timeout_ms);
+    }
+
+    bool pipeline_processing_block::try_dequeue(frame_holder* item)
+    {
+        return _queue->try_dequeue(item);
+    }
+
     /*
 
       ______   ______   .__   __.  _______  __    _______
