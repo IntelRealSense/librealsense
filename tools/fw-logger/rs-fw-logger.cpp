@@ -54,9 +54,6 @@ int main(int argc, char* argv[])
     log_to_file(RS2_LOG_SEVERITY_WARN, "librealsense.log");
     // Obtain a list of devices currently present on the system
 
-
-
-
     unique_ptr<fw_logs_parser> fw_log_parser;
     auto use_xml_file = false;
     auto xml_full_file_path = xml_arg.getValue();
@@ -70,17 +67,18 @@ int main(int argc, char* argv[])
         }
     }
 
-
     context ctx;
     device_hub hub(ctx);
 
-    while (true) {
-
+    while (true)
+    {
+        cout << "\nWaiting for RealSense device to connect...\n";
         auto dev = hub.wait_for_device();
-        vector<uint8_t> input;
-
+        cout << "RealSense device has connected...\n";
         try
         {
+            vector<uint8_t> input;
+
             auto str_op_code = dev.get_info(RS2_CAMERA_INFO_DEBUG_OP_CODE);
             auto op_code = static_cast<uint8_t>(stoi(str_op_code));
             input = {0x14, 0x00, 0xab, 0xcd, op_code, 0x00, 0x00, 0x00,
@@ -91,14 +89,8 @@ int main(int argc, char* argv[])
                     "Device Location: " << dev.get_info(RS2_CAMERA_INFO_PHYSICAL_PORT) << endl << endl;
 
             setvbuf(stdout, NULL, _IONBF, 0); // unbuffering stdout
-        }
-        catch (const error & e)
-        {
-            cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
-        }
 
-        while (hub.is_connected(dev)) {
-            try
+            while (hub.is_connected(dev))
             {
                 this_thread::sleep_for(chrono::milliseconds(100));
 
@@ -112,7 +104,7 @@ int main(int argc, char* argv[])
                     fw_logs_binary_data fw_logs_binary_data = {raw_data};
                     fw_logs_binary_data.logs_buffer.erase(fw_logs_binary_data.logs_buffer.begin(),fw_logs_binary_data.logs_buffer.begin()+4);
                     fw_log_lines = fw_log_parser->get_fw_log_lines(fw_logs_binary_data);
-                    for (auto & elem : fw_log_lines)
+                    for (auto& elem : fw_log_lines)
                         elem = datetime_string() + "  " + elem;
                 }
                 else
@@ -128,13 +120,12 @@ int main(int argc, char* argv[])
                 for (auto& line : fw_log_lines)
                     cout << line << endl;
             }
-            catch (const error & e)
-            {
-                cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
-            }
         }
-
+        catch (const error & e)
+        {
+            cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
+        }
     }
-    return EXIT_SUCCESS;
 
+    return EXIT_SUCCESS;
 }
