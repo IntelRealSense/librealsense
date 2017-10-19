@@ -3765,22 +3765,35 @@ TEST_CASE("Pipeline enable config and select device", "[live]") {
         rs2::pipeline_profile resolved_profile;
         REQUIRE_NOTHROW(resolved_profile = cfg.resolve(pipe));
         REQUIRE(resolved_profile);
+        rs2::pipeline_profile resolved_profile_from_start;
+        REQUIRE_NOTHROW(resolved_profile_from_start = pipe.start(cfg));
+        REQUIRE(resolved_profile_from_start);
+
         REQUIRE_NOTHROW(dev = resolved_profile.get_device());
         REQUIRE(dev);
+        rs2::device dev_from_start;
+        REQUIRE_NOTHROW(dev_from_start = resolved_profile_from_start.get_device());
+        REQUIRE(dev_from_start);
         
         //Compare serial number
         std::string actual_serial;
+        std::string actual_serial_from_start;
         REQUIRE_NOTHROW(actual_serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        REQUIRE_NOTHROW(actual_serial_from_start = dev_from_start.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
         REQUIRE(actual_serial == required_serial);
+        REQUIRE(actual_serial == actual_serial_from_start);
         
         //Compare Stream
         std::vector<rs2::stream_profile> actual_streams;
         REQUIRE_NOTHROW(actual_streams = resolved_profile.get_streams());
         REQUIRE(actual_streams.size() == 1);
         REQUIRE(actual_streams[0] == required_profile);
+        std::vector<rs2::stream_profile> actual_streams_from_start;
+        REQUIRE_NOTHROW(actual_streams_from_start = resolved_profile_from_start.get_streams());
+        REQUIRE(actual_streams_from_start.size() == 1);
+        REQUIRE(actual_streams_from_start[0] == required_profile);
 
-
-
+        pipe.stop();
 
         //Using the config object to request the serial and stream that we found above, and test the pipeline.start() returns the right data
         rs2::device started_dev;
