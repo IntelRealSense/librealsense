@@ -409,6 +409,7 @@ namespace librealsense
         else
         {
             LOG_ERROR("Non composite frame arrived to pipeline::handle_frame");
+            assert(false);
         }
     }
 

@@ -90,24 +90,24 @@ namespace librealsense
 
         callback_invocation_holder begin_callback()
         {
-            return{ callback_inflight.allocate(), &callback_inflight };
+            return{ _callback_inflight.allocate(), &_callback_inflight };
         }
 
         virtual ~matcher()
         {
-            callback_inflight.stop_allocation();
+            _callback_inflight.stop_allocation();
 
-            auto callbacks_inflight = callback_inflight.get_size();
+            auto callbacks_inflight = _callback_inflight.get_size();
             if (callbacks_inflight > 0)
             {
                 LOG_WARNING(callbacks_inflight << " callbacks are still running on some other threads. Waiting until all callbacks return...");
             }
             // wait until user is done with all the stuff he chose to borrow
-            callback_inflight.wait_until_empty();
+            _callback_inflight.wait_until_empty();
         }
     protected:
         sync_callback _callback;
-        callbacks_heap callback_inflight;
+        callbacks_heap _callback_inflight;
     };
 
     class identity_matcher : public matcher
