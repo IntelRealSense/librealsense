@@ -13,7 +13,7 @@
 #include <cstring>
 
 void render_slider(rect location, float& clipping_dist);
-void remove_background(rs2::video_frame& color, const rs2::depth_frame& depth_frame, float depth_scale, float clipping_dist);
+void remove_background(rs2::video_frame& other, const rs2::depth_frame& depth_frame, float depth_scale, float clipping_dist);
 float get_depth_scale(rs2::device dev);
 rs2_stream find_stream_to_align(const std::vector<rs2::stream_profile>& streams);
 bool profile_changed(const std::vector<rs2::stream_profile>& current, const std::vector<rs2::stream_profile>& prev);
@@ -38,7 +38,7 @@ int main(int argc, char * argv[]) try
     float depth_scale = get_depth_scale(profile.get_device());
     
     //Pipeline could choose a device that does not have a color stream
-    //If there is no color stream, choose to aligh depth to another stream
+    //If there is no color stream, choose to align depth to another stream
     rs2_stream align_to = find_stream_to_align(profile.get_streams());
     
     // Create a rs2::align object.
@@ -66,40 +66,41 @@ int main(int argc, char * argv[]) try
             depth_scale = get_depth_scale(profile.get_device());
         }
 
+        //Get processed aligned frame
         auto proccessed = align.proccess(frameset);
 
-        // Trying to get both color and aligned depth frames
-        rs2::video_frame color_frame = proccessed.get_color_frame();
+        // Trying to get both other and aligned depth frames
+        rs2::video_frame other_frame = proccessed.first(align_to);
         rs2::depth_frame aligned_depth_frame = proccessed.get_depth_frame();
 
         //If one of them is unavailable, continue iteration
-        if (!aligned_depth_frame)
+        if (!aligned_depth_frame || !other_frame)
         {
             continue;
         }
         // Passing both frames to remove_background so it will "strip" the background
-        // NOTE: in this example, we alter the buffer of the color frame, instead of copying it and altering the copy
-        //       This behavior is not recommended in real application since the color frame could be used elsewhere
-        remove_background(color_frame, aligned_depth_frame, depth_scale, depth_clipping_distance);
+        // NOTE: in this example, we alter the buffer of the other frame, instead of copying it and altering the copy
+        //       This behavior is not recommended in real application since the other frame could be used elsewhere
+        remove_background(other_frame, aligned_depth_frame, depth_scale, depth_clipping_distance);
 
         // Taking dimensions of the window for rendering purposes
         float w = static_cast<float>(app.width());
         float h = static_cast<float>(app.height());
 
-        // At this point, "color_frame" is an altered color frame, stripped form its background
+        // At this point, "other_frame" is an altered frame, stripped form its background
         // Calculating the position to place the frame in the window
-        rect altered_color_frame_rect{ 0, 0, w, h };
-        altered_color_frame_rect = altered_color_frame_rect.adjust_ratio({ static_cast<float>(color_frame.get_width()),static_cast<float>(color_frame.get_height()) });
+        rect altered_other_frame_rect{ 0, 0, w, h };
+        altered_other_frame_rect = altered_other_frame_rect.adjust_ratio({ static_cast<float>(other_frame.get_width()),static_cast<float>(other_frame.get_height()) });
 
-        // Render aligned color
-        renderer.render(color_frame, altered_color_frame_rect);
+        // Render aligned image
+        renderer.render(other_frame, altered_other_frame_rect);
 
         // The example also renders the depth frame, as a picture-in-picture
         // Calculating the position to place the depth frame in the window
         rect pip_stream{ 0, 0, w / 5, h / 5 };
         pip_stream = pip_stream.adjust_ratio({ static_cast<float>(aligned_depth_frame.get_width()),static_cast<float>(aligned_depth_frame.get_height()) });
-        pip_stream.x = altered_color_frame_rect.x + altered_color_frame_rect.w - pip_stream.w - (std::max(w, h) / 25);
-        pip_stream.y = altered_color_frame_rect.y + altered_color_frame_rect.h - pip_stream.h - (std::max(w, h) / 25);
+        pip_stream.x = altered_other_frame_rect.x + altered_other_frame_rect.w - pip_stream.w - (std::max(w, h) / 25);
+        pip_stream.y = altered_other_frame_rect.y + altered_other_frame_rect.h - pip_stream.h - (std::max(w, h) / 25);
 
         // Render depth (as picture in pipcture)
         renderer.upload(c(aligned_depth_frame));
@@ -233,10 +234,11 @@ rs2_stream find_stream_to_align(const std::vector<rs2::stream_profile>& streams)
         }
     }
 
+    if(!depth_stream_found)
+        throw std::runtime_error("No Depth stream available");
+
     if (align_to == RS2_STREAM_ANY)
-    {
         throw std::runtime_error("No stream found to align with Depth");
-    }
 
     return align_to;
 }
