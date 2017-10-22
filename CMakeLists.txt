@@ -63,6 +63,11 @@ if(BUILD_WITH_OPENMP)
     endif()
 endif()
 
+option(BUILD_WITH_TM2 "Build with support for Intel TM2 tracking device" OFF)
+if (BUILD_WITH_TM2)
+	add_subdirectory(src/tm2)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
 set(REALSENSE_CPP
