@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.9)
-project(realsense-tm2)
+project(realsense-tracking)
 
 set(LIBTM_DIR ${CMAKE_CURRENT_LIST_DIR}/libtm)
 
@@ -18,7 +18,7 @@ add_library(${PROJECT_NAME} STATIC
 )
 
 target_link_libraries(${PROJECT_NAME}
-
+	realsense-core
 )
 
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Library)
