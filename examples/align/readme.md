@@ -71,10 +71,10 @@ We first define some variables that will be used to show the window and render t
 
 ```cpp
 // Create and initialize GUI related objects
-    window app(1280, 720, "CPP - Align Example"); // Simple window handling
-    ImGui_ImplGlfw_Init(app, false);      // ImGui library intializition
-    rs2::colorizer c;                          // Helper to colorize depth images
-    texture renderer;                     // Helper for renderig images
+window app(1280, 720, "CPP - Align Example"); // Simple window handling
+ImGui_ImplGlfw_Init(app, false);      // ImGui library intializition
+rs2::colorizer c;                          // Helper to colorize depth images
+texture renderer;                     // Helper for renderig images
 ```
 
 Next, we define a `rs2::pipeline` which is a top level API for using RealSense depth cameras.
@@ -128,20 +128,12 @@ while (app) // Application still alive?
 Inside the loop, the first thing we do is block the program until the `align` object returns a `rs2::frameset`. A `rs2::frameset` is an object that holds a set of frames and provides an interface for easily accessing them.
 
 ```cpp
-<<<<<<< HEAD
-    // Using the pipeline object, we block the application until a frameset is available
-    frameset = pipe.wait_for_frames();
-``` auto proccessed = align.proccess(frameset);	
-
-The `proccessed` returned from `proccess` should contain a set of aligned frames
-=======
   // Using the align object, we block the application until a frameset is available
   rs2::frameset frameset = pipe.wait_for_frames();
 ```
 
 The `frameset` returned from `wait_for_frames` should contain a set of aligned frames. In case of an error getting the frames an exception could be thrown, but if the pipeline manages to reconfigure itself with a new device it will do that and return a frame from the new device.
 In the next lines we check if the pipeline switched its device and if so update the align object and the rest of objects required for the sample.
->>>>>>> changes to docs and names
 
 ```cpp
 // rs2::pipeline::wait_for_frames() can replace the device it uses in case of device error or disconnection.
@@ -167,13 +159,8 @@ At this point the `align` object is valid and will be able to align depth frames
     rs2::video_frame other_frame = proccessed.first_or_default(align_to);
     rs2::depth_frame aligned_depth_frame = proccessed.get_depth_frame();
 
-<<<<<<< HEAD
-    //If one of them is unavailable, try to obtain another frameset
-    if (!aligned_depth_frame)
-=======
     //If one of them is unavailable, continue iteration
     if (!aligned_depth_frame || !other_frame)
->>>>>>> changes to docs and names
     {
         continue;
     }
