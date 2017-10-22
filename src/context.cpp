@@ -20,6 +20,10 @@
 #include "stream.h"
 #include "environment.h"
 
+#ifdef WITH_TRACKING
+#include "tm2/tm-factory.h"
+#endif
+
 template<unsigned... Is> struct seq{};
 template<unsigned N, unsigned... Is>
 struct gen_seq : gen_seq<N-1, N-1, Is...>{};
@@ -296,6 +300,11 @@ namespace librealsense
 
         auto uvc_devices = platform_camera_info::pick_uvc_devices(ctx, devices.uvc_devices);
         std::copy(begin(uvc_devices), end(uvc_devices), std::back_inserter(list));
+
+#ifdef WITH_TRACKING
+		auto tm2_devices = tm2_info::pick_tm2_devices(ctx, devices);
+		std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
+#endif
 
         for (auto&& item : playback_devices)
         {

@@ -4,11 +4,15 @@ project(realsense-tracking)
 set(LIBTM_DIR ${CMAKE_CURRENT_LIST_DIR}/libtm)
 
 FILE(GLOB_RECURSE AllSources
-        tm-device.cpp
-     )
+	tm-device.h
+    tm-device.cpp
+	tm-factory.h
+    tm-factory.cpp
+	)
 
 include_directories(
         ${LIBTM_DIR}/libtm/include
+		../
         )
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
