@@ -68,23 +68,23 @@ Next, we wait in a loop unit for the next set of frames:
 auto data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
 ```
 
-Using helper functions on the `frameset` object we check for new depth and color frames. If we get a color frame, we pass it to the `pointcloud` object to use as the texture, and also give it to OpenGL with the help of the `texture` class. If we get a depth frame, we generate a new pointcloud.
+Using helper functions on the `frameset` object we check for new depth and color frames. We pass it to the `pointcloud` object to use as the texture, and also give it to OpenGL with the help of the `texture` class. We generate a new pointcloud.
 ```cpp
 // Wait for the next set of frames from the camera
-auto frames = pipe.wait_for_frames();
-if (rs2::frame depth = frames.get_depth_frame())
-{
-    // If we got a depth frame, generate the pointcloud and texture mappings
+	auto frames = pipe.wait_for_frames();
+	auto depth = frames.get_depth_frame();
+
+    // Generate the pointcloud and texture mappings
     points = pc.calculate(depth);
-}
-if (rs2::frame color = frames.get_color_frame())
-{
+
+	auto color = frames.get_color_frame();
+
     // Tell pointcloud object to map to this color frame
     pc.map_to(color);
 
     // Upload the color frame to OpenGL
     app_state.tex.upload(color);
-}
+
 ```
 
 Finally we call `draw_pointcloud` to draw the pointcloud.
