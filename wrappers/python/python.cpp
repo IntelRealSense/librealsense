@@ -14,7 +14,7 @@
 
 #include "../include/librealsense2/rs.h"
 #include "../include/librealsense2/rs.hpp"
-
+#include "../include/librealsense2/rs_advanced_mode.hpp"
 #define NAME pyrealsense2
 #define SNAME "pyrealsense2"
 #define BIND_RAW_ARRAY(class, name, type, size) #name, [](const class &c) -> const std::array<type, size>& { return reinterpret_cast<const std::array<type, size>&>(c.name); }
@@ -656,6 +656,127 @@ PYBIND11_PLUGIN(NAME) {
             .def("resolve", [](rs2::config* c, pipeline_wrapper pw) -> rs2::pipeline_profile { return c->resolve(pw._ptr); })
             .def("can_resolve", [](rs2::config* c, pipeline_wrapper pw) -> bool { return c->can_resolve(pw._ptr); });
 
+    /**
+        RS400 Advanced Mode commands
+    */
+
+    py::class_<STDepthControlGroup> STDepthControlGroup(m, "STDepthControlGroup");
+    STDepthControlGroup.def_readwrite("plusIncrement", &STDepthControlGroup::plusIncrement)
+        .def_readwrite("minusDecrement", &STDepthControlGroup::minusDecrement)
+        .def_readwrite("deepSeaMedianThreshold", &STDepthControlGroup::deepSeaMedianThreshold)
+        .def_readwrite("scoreThreshA", &STDepthControlGroup::scoreThreshA)
+        .def_readwrite("scoreThreshB", &STDepthControlGroup::scoreThreshB)
+        .def_readwrite("textureDifferenceThreshold", &STDepthControlGroup::textureDifferenceThreshold)
+        .def_readwrite("textureCountThreshold", &STDepthControlGroup::textureCountThreshold)
+        .def_readwrite("deepSeaSecondPeakThreshold", &STDepthControlGroup::deepSeaSecondPeakThreshold)
+        .def_readwrite("deepSeaNeighborThreshold", &STDepthControlGroup::deepSeaNeighborThreshold)
+        .def_readwrite("lrAgreeThreshold", &STDepthControlGroup::lrAgreeThreshold);
+
+    py::class_<STRsm> STRsm(m, "STRsm");
+    STRsm.def_readwrite("rsmBypass", &STRsm::rsmBypass)
+        .def_readwrite("diffThresh", &STRsm::diffThresh)
+        .def_readwrite("sloRauDiffThresh", &STRsm::sloRauDiffThresh)
+        .def_readwrite("removeThresh", &STRsm::removeThresh);
+
+    py::class_<STRauSupportVectorControl> STRauSupportVectorControl(m, "STRauSupportVectorControl");
+        STRauSupportVectorControl.def_readwrite("minWest", &STRauSupportVectorControl::minWest)
+        .def_readwrite("minEast", &STRauSupportVectorControl::minEast)
+        .def_readwrite("minWEsum", &STRauSupportVectorControl::minWEsum)
+        .def_readwrite("minNorth", &STRauSupportVectorControl::minNorth)
+        .def_readwrite("minSouth", &STRauSupportVectorControl::minSouth)
+        .def_readwrite("minNSsum", &STRauSupportVectorControl::minNSsum)
+        .def_readwrite("uShrink", &STRauSupportVectorControl::uShrink)
+        .def_readwrite("vShrink", &STRauSupportVectorControl::vShrink);
+
+    py::class_<STColorControl> STColorControl(m, "STColorControl");
+        STColorControl.def_readwrite("disableSADColor", &STColorControl::disableSADColor)
+        .def_readwrite("disableRAUColor", &STColorControl::disableRAUColor)
+        .def_readwrite("disableSLORightColor", &STColorControl::disableSLORightColor)
+        .def_readwrite("disableSLOLeftColor", &STColorControl::disableSLOLeftColor)
+        .def_readwrite("disableSADNormalize", &STColorControl::disableSADNormalize);
+
+    py::class_<STRauColorThresholdsControl> STRauColorThresholdsControl(m, "STRauColorThresholdsControl");
+        STRauColorThresholdsControl.def_readwrite("rauDiffThresholdRed", &STRauColorThresholdsControl::rauDiffThresholdRed)
+        .def_readwrite("rauDiffThresholdGreen", &STRauColorThresholdsControl::rauDiffThresholdGreen)
+        .def_readwrite("rauDiffThresholdBlue", &STRauColorThresholdsControl::rauDiffThresholdBlue);
+
+    py::class_<STSloColorThresholdsControl> STSloColorThresholdsControl(m, "STSloColorThresholdsControl");
+    STSloColorThresholdsControl.def_readwrite("diffThresholdRed", &STSloColorThresholdsControl::diffThresholdRed)
+        .def_readwrite("diffThresholdGreen", &STSloColorThresholdsControl::diffThresholdGreen)
+        .def_readwrite("diffThresholdBlue", &STSloColorThresholdsControl::diffThresholdBlue);
+
+    py::class_<STSloPenaltyControl> STSloPenaltyControl(m, "STSloPenaltyControl");
+    STSloPenaltyControl.def_readwrite("sloK1Penalty", &STSloPenaltyControl::sloK1Penalty)
+        .def_readwrite("sloK2Penalty", &STSloPenaltyControl::sloK2Penalty)
+        .def_readwrite("sloK1PenaltyMod1", &STSloPenaltyControl::sloK1PenaltyMod1)
+        .def_readwrite("sloK2PenaltyMod1", &STSloPenaltyControl::sloK2PenaltyMod1)
+        .def_readwrite("sloK1PenaltyMod2", &STSloPenaltyControl::sloK1PenaltyMod2)
+        .def_readwrite("sloK2PenaltyMod2", &STSloPenaltyControl::sloK2PenaltyMod2);
+
+    py::class_<STHdad> STHdad(m, "STHdad");
+        STHdad.def_readwrite("lambdaCensus", &STHdad::lambdaCensus)
+        .def_readwrite("lambdaAD", &STHdad::lambdaAD)
+        .def_readwrite("ignoreSAD", &STHdad::ignoreSAD);
+
+
+    py::class_<STColorCorrection> STColorCorrection(m, "STColorCorrection");
+    STColorCorrection.def_readwrite("colorCorrection1", &STColorCorrection::colorCorrection1)
+        .def_readwrite("colorCorrection2", &STColorCorrection::colorCorrection2)
+        .def_readwrite("colorCorrection3", &STColorCorrection::colorCorrection3)
+        .def_readwrite("colorCorrection4", &STColorCorrection::colorCorrection4)
+        .def_readwrite("colorCorrection5", &STColorCorrection::colorCorrection5)
+        .def_readwrite("colorCorrection6", &STColorCorrection::colorCorrection6)
+        .def_readwrite("colorCorrection7", &STColorCorrection::colorCorrection7)
+        .def_readwrite("colorCorrection8", &STColorCorrection::colorCorrection8)
+        .def_readwrite("colorCorrection9", &STColorCorrection::colorCorrection9)
+        .def_readwrite("colorCorrection10", &STColorCorrection::colorCorrection10)
+        .def_readwrite("colorCorrection11", &STColorCorrection::colorCorrection11)
+        .def_readwrite("colorCorrection12", &STColorCorrection::colorCorrection12);
+
+    py::class_<STAEControl> STAEControl(m, "STAEControl");
+    STAEControl.def_readwrite("meanIntensitySetPoint", &STAEControl::meanIntensitySetPoint);
+
+    py::class_<STDepthTableControl> STDepthTableControl(m, "STDepthTableControl");
+    STDepthTableControl.def_readwrite("depthUnits", &STDepthTableControl::depthUnits)
+        .def_readwrite("depthClampMin", &STDepthTableControl::depthClampMin)
+        .def_readwrite("depthClampMax", &STDepthTableControl::depthClampMax)
+        .def_readwrite("disparityMode", &STDepthTableControl::disparityMode)
+        .def_readwrite("disparityShift", &STDepthTableControl::disparityShift);
+
+    py::class_<STCensusRadius> STCensusRadius(m, "STCensusRadius");
+    STCensusRadius.def_readwrite("uDiameter", &STCensusRadius::uDiameter)
+        .def_readwrite("vDiameter", &STCensusRadius::vDiameter);
+
+    py::class_<rs400::advanced_mode> rs400_advanced_mode(m, "rs400_advanced_mode");
+    rs400_advanced_mode.def(py::init<rs2::device>(), "device"_a)
+        .def("toggle_advanced_mode", &rs400::advanced_mode::toggle_advanced_mode, "enable"_a)
+        .def("is_enabled", &rs400::advanced_mode::is_enabled)
+        .def("set_depth_control", &rs400::advanced_mode::set_depth_control, "group"_a) //STDepthControlGroup
+        .def("get_depth_control", &rs400::advanced_mode::get_depth_control, "mode"_a = 0)
+        .def("set_rsm", &rs400::advanced_mode::set_rsm, "group") //STRsm
+        .def("get_rsm", &rs400::advanced_mode::get_rsm, "mode"_a = 0)
+        .def("set_rau_support_vector_control", &rs400::advanced_mode::set_rau_support_vector_control, "group"_a)//STRauSupportVectorControl
+        .def("get_rau_support_vector_control", &rs400::advanced_mode::get_rau_support_vector_control, "mode"_a = 0)
+        .def("set_color_control", &rs400::advanced_mode::set_color_control, "group"_a) //STColorControl
+        .def("get_color_control", &rs400::advanced_mode::get_color_control, "mode"_a = 0)//STColorControl 
+        .def("set_rau_thresholds_control", &rs400::advanced_mode::set_rau_thresholds_control, "group"_a)//STRauColorThresholdsControl
+        .def("get_rau_thresholds_control", &rs400::advanced_mode::get_rau_thresholds_control, "mode"_a = 0)
+        .def("set_slo_color_thresholds_control", &rs400::advanced_mode::set_slo_color_thresholds_control, "group"_a)//STSloColorThresholdsControl
+        .def("get_slo_color_thresholds_control", &rs400::advanced_mode::get_slo_color_thresholds_control, "mode"_a = 0)//STSloColorThresholdsControl 
+        .def("set_slo_penalty_control", &rs400::advanced_mode::set_slo_penalty_control, "group"_a) //STSloPenaltyControl
+        .def("get_slo_penalty_control", &rs400::advanced_mode::get_slo_penalty_control, "mode"_a = 0)//STSloPenaltyControl 
+        .def("set_hdad", &rs400::advanced_mode::set_hdad, "group"_a) //STHdad
+        .def("get_hdad", &rs400::advanced_mode::get_hdad, "mode"_a = 0)
+        .def("set_color_correction", &rs400::advanced_mode::set_color_correction, "group"_a)
+        .def("get_color_correction", &rs400::advanced_mode::get_color_correction, "mode"_a = 0) //STColorCorrection 
+        .def("set_depth_table", &rs400::advanced_mode::set_depth_table, "group"_a)
+        .def("get_depth_table", &rs400::advanced_mode::get_depth_table, "mode"_a = 0) //STDepthTableControl 
+        .def("set_ae_control", &rs400::advanced_mode::set_ae_control, "group"_a)
+        .def("get_ae_control", &rs400::advanced_mode::get_ae_control, "mode"_a = 0) //STAEControl 
+        .def("set_census", &rs400::advanced_mode::set_census, "group"_a)    //STCensusRadius
+        .def("get_census", &rs400::advanced_mode::get_census, "mode"_a = 0) //STCensusRadius 
+        .def("serialize_json", &rs400::advanced_mode::serialize_json)
+        .def("load_json", &rs400::advanced_mode::load_json, "json_content"_a);
 
     /* rs2.hpp */
     m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);
