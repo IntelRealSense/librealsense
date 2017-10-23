@@ -662,7 +662,8 @@ PYBIND11_PLUGIN(NAME) {
     */
 
     py::class_<STDepthControlGroup> _STDepthControlGroup(m, "STDepthControlGroup");
-    _STDepthControlGroup.def_readwrite("plusIncrement", &STDepthControlGroup::plusIncrement)
+    _STDepthControlGroup.def(py::init<>())
+        .def_readwrite("plusIncrement", &STDepthControlGroup::plusIncrement)
         .def_readwrite("minusDecrement", &STDepthControlGroup::minusDecrement)
         .def_readwrite("deepSeaMedianThreshold", &STDepthControlGroup::deepSeaMedianThreshold)
         .def_readwrite("scoreThreshA", &STDepthControlGroup::scoreThreshA)
@@ -687,7 +688,8 @@ PYBIND11_PLUGIN(NAME) {
         });
 
     py::class_<STRsm> _STRsm(m, "STRsm");
-    _STRsm.def_readwrite("rsmBypass", &STRsm::rsmBypass)
+    _STRsm.def(py::init<>())
+        .def_readwrite("rsmBypass", &STRsm::rsmBypass)
         .def_readwrite("diffThresh", &STRsm::diffThresh)
         .def_readwrite("sloRauDiffThresh", &STRsm::sloRauDiffThresh)
         .def_readwrite("removeThresh", &STRsm::removeThresh)
@@ -701,7 +703,8 @@ PYBIND11_PLUGIN(NAME) {
         });
 
     py::class_<STRauSupportVectorControl> _STRauSupportVectorControl(m, "STRauSupportVectorControl");
-        _STRauSupportVectorControl.def_readwrite("minWest", &STRauSupportVectorControl::minWest)
+        _STRauSupportVectorControl.def(py::init<>())
+        .def_readwrite("minWest", &STRauSupportVectorControl::minWest)
         .def_readwrite("minEast", &STRauSupportVectorControl::minEast)
         .def_readwrite("minWEsum", &STRauSupportVectorControl::minWEsum)
         .def_readwrite("minNorth", &STRauSupportVectorControl::minNorth)
@@ -722,7 +725,8 @@ PYBIND11_PLUGIN(NAME) {
             return ss.str();
         });
     py::class_<STColorControl> _STColorControl(m, "STColorControl");
-        _STColorControl.def_readwrite("disableSADColor", &STColorControl::disableSADColor)
+        _STColorControl.def(py::init<>())
+        .def_readwrite("disableSADColor", &STColorControl::disableSADColor)
         .def_readwrite("disableRAUColor", &STColorControl::disableRAUColor)
         .def_readwrite("disableSLORightColor", &STColorControl::disableSLORightColor)
         .def_readwrite("disableSLOLeftColor", &STColorControl::disableSLOLeftColor)
@@ -738,7 +742,8 @@ PYBIND11_PLUGIN(NAME) {
         });
 
     py::class_<STRauColorThresholdsControl> _STRauColorThresholdsControl(m, "STRauColorThresholdsControl");
-        _STRauColorThresholdsControl.def_readwrite("rauDiffThresholdRed", &STRauColorThresholdsControl::rauDiffThresholdRed)
+        _STRauColorThresholdsControl.def(py::init<>())
+        .def_readwrite("rauDiffThresholdRed", &STRauColorThresholdsControl::rauDiffThresholdRed)
         .def_readwrite("rauDiffThresholdGreen", &STRauColorThresholdsControl::rauDiffThresholdGreen)
         .def_readwrite("rauDiffThresholdBlue", &STRauColorThresholdsControl::rauDiffThresholdBlue)
         .def("__repr__", [](const STRauColorThresholdsControl &e) {
@@ -750,7 +755,8 @@ PYBIND11_PLUGIN(NAME) {
         });
 
     py::class_<STSloColorThresholdsControl> _STSloColorThresholdsControl(m, "STSloColorThresholdsControl");
-    _STSloColorThresholdsControl.def_readwrite("diffThresholdRed", &STSloColorThresholdsControl::diffThresholdRed)
+    _STSloColorThresholdsControl.def(py::init<>())
+        .def_readwrite("diffThresholdRed", &STSloColorThresholdsControl::diffThresholdRed)
         .def_readwrite("diffThresholdGreen", &STSloColorThresholdsControl::diffThresholdGreen)
         .def_readwrite("diffThresholdBlue", &STSloColorThresholdsControl::diffThresholdBlue)
         .def("__repr__", [](const STSloColorThresholdsControl &e) {
@@ -761,7 +767,8 @@ PYBIND11_PLUGIN(NAME) {
             return ss.str();
         });
     py::class_<STSloPenaltyControl> _STSloPenaltyControl(m, "STSloPenaltyControl");
-    _STSloPenaltyControl.def_readwrite("sloK1Penalty", &STSloPenaltyControl::sloK1Penalty)
+    _STSloPenaltyControl.def(py::init<>())
+        .def_readwrite("sloK1Penalty", &STSloPenaltyControl::sloK1Penalty)
         .def_readwrite("sloK2Penalty", &STSloPenaltyControl::sloK2Penalty)
         .def_readwrite("sloK1PenaltyMod1", &STSloPenaltyControl::sloK1PenaltyMod1)
         .def_readwrite("sloK2PenaltyMod1", &STSloPenaltyControl::sloK2PenaltyMod1)
@@ -778,7 +785,8 @@ PYBIND11_PLUGIN(NAME) {
             return ss.str();
         });
     py::class_<STHdad> _STHdad(m, "STHdad");
-        _STHdad.def_readwrite("lambdaCensus", &STHdad::lambdaCensus)
+        _STHdad.def(py::init<>())
+        .def_readwrite("lambdaCensus", &STHdad::lambdaCensus)
         .def_readwrite("lambdaAD", &STHdad::lambdaAD)
         .def_readwrite("ignoreSAD", &STHdad::ignoreSAD)
         .def("__repr__", [](const STHdad &e) {
@@ -790,7 +798,7 @@ PYBIND11_PLUGIN(NAME) {
         });
 
     py::class_<STColorCorrection> _STColorCorrection(m, "STColorCorrection");
-    _STColorCorrection
+    _STColorCorrection.def(py::init<>())
         .def_readwrite("colorCorrection1", &STColorCorrection::colorCorrection1)
         .def_readwrite("colorCorrection2", &STColorCorrection::colorCorrection2)
         .def_readwrite("colorCorrection3", &STColorCorrection::colorCorrection3)
@@ -821,15 +829,17 @@ PYBIND11_PLUGIN(NAME) {
         });
 
     py::class_<STAEControl> _STAEControl(m, "STAEControl");
-    _STAEControl.def_readwrite("meanIntensitySetPoint", &STAEControl::meanIntensitySetPoint)
-    .def("__repr__", [](const STAEControl &e) {
-        std::stringstream ss;
-        ss << "Mean Intensity Set Point: " << e.meanIntensitySetPoint;
-        return ss.str();
-    });
+    _STAEControl.def(py::init<>())
+        .def_readwrite("meanIntensitySetPoint", &STAEControl::meanIntensitySetPoint)
+        .def("__repr__", [](const STAEControl &e) {
+            std::stringstream ss;
+            ss << "Mean Intensity Set Point: " << e.meanIntensitySetPoint;
+            return ss.str();
+        });
 
     py::class_<STDepthTableControl> _STDepthTableControl(m, "STDepthTableControl");
-    _STDepthTableControl.def_readwrite("depthUnits", &STDepthTableControl::depthUnits)
+    _STDepthTableControl.def(py::init<>())
+        .def_readwrite("depthUnits", &STDepthTableControl::depthUnits)
         .def_readwrite("depthClampMin", &STDepthTableControl::depthClampMin)
         .def_readwrite("depthClampMax", &STDepthTableControl::depthClampMax)
         .def_readwrite("disparityMode", &STDepthTableControl::disparityMode)
@@ -845,7 +855,8 @@ PYBIND11_PLUGIN(NAME) {
         });
 
     py::class_<STCensusRadius> _STCensusRadius(m, "STCensusRadius");
-    _STCensusRadius.def_readwrite("uDiameter", &STCensusRadius::uDiameter)
+    _STCensusRadius.def(py::init<>())
+        .def_readwrite("uDiameter", &STCensusRadius::uDiameter)
         .def_readwrite("vDiameter", &STCensusRadius::vDiameter)
         .def("__repr__", [](const STCensusRadius &e) {
             std::stringstream ss;
