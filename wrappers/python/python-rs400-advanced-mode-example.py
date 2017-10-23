@@ -19,7 +19,7 @@ def find_device_that_supports_advanced_mode() :
     for dev in devices:
         if dev.supports(rs.camera_info.product_id) and str(dev.get_info(rs.camera_info.product_id)) in DS5_product_ids:
             if dev.supports(rs.camera_info.name):
-                print("Foudn device that supports advanced mode:", dev.get_info(rs.camera_info.name))
+                print("Found device that supports advanced mode:", dev.get_info(rs.camera_info.name))
             return dev
     raise Exception("No device that supports advanced mode was found")
 
@@ -43,7 +43,7 @@ try:
     # Get each control's current value
     print("Depth Control: \n", advnc_mode.get_depth_control())
     print("RSM: \n", advnc_mode.get_rsm())
-    print("RAU Support Vertial Control: \n", advnc_mode.get_rau_support_vector_control())
+    print("RAU Support Vector Control: \n", advnc_mode.get_rau_support_vector_control())
     print("Color Control: \n", advnc_mode.get_color_control())
     print("RAU Thresholds Control: \n", advnc_mode.get_rau_thresholds_control())
     print("SLO Color Thresholds Control: \n", advnc_mode.get_slo_color_thresholds_control())
@@ -78,11 +78,7 @@ try:
     #  to replace the single quote of the pythonic json to double-quotes
     json_string = str(as_json_object).replace("'", '\"')
     advnc_mode.load_json(json_string)
-#except rs.error as e:
-#    # Method calls agaisnt librealsense objects may throw exceptions of type pylibrs.error
-#    print("pylibrs.error was thrown when calling %s(%s):\n", % (e.get_failed_function(), e.get_failed_args()))
-#    print("    %s\n", e.what())
-#    exit(1)
+
 except Exception as e:
     print(e)
     pass
