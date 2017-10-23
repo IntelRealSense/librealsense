@@ -1601,11 +1601,11 @@ TEST_CASE("Multiple devices", "[live][multicam]")
                     disable_sensitive_options_for(dev1);
                     for (auto & dev2 : list)
                     {
-                        disable_sensitive_options_for(dev2);
-
                         // couldn't think of a better way to compare the two...
                         if (dev1 == dev2)
                             continue;
+
+                        disable_sensitive_options_for(dev2);
 
                         REQUIRE_NOTHROW(dev1.open(dev1.get_stream_profiles().front()));
                         REQUIRE_NOTHROW(dev2.open(dev2.get_stream_profiles().front()));
@@ -3700,7 +3700,7 @@ TEST_CASE("Pipeline config enable resolve start flow", "[live]") {
     }
 }
 
-TEST_CASE("Pipeline enable config and select device", "[live]") {
+TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -3723,8 +3723,7 @@ TEST_CASE("Pipeline enable config and select device", "[live]") {
         }
         if (realsense_devices_count < 2)
         {
-            using namespace Catch::Matchers;
-            CHECK_THAT("WARNING: Skipping test! This test requires a scenario where more than 1 realsense device is connected", Equals(""));
+            WARN("Skipping test! This test requires multiple RealSense devices connected");
             return;
         }
 
