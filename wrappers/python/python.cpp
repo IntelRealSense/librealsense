@@ -675,14 +675,14 @@ PYBIND11_PLUGIN(NAME) {
         .def_readwrite("lrAgreeThreshold", &STDepthControlGroup::lrAgreeThreshold)
         .def("__repr__", [](const STDepthControlGroup &e) {
             std::stringstream ss;
-            ss << "minusDecrement: " << e.minusDecrement << " ";
-            ss << "deepSeaMedianThreshold: " << e.deepSeaMedianThreshold << " ";
-            ss << "scoreThreshA: " << e.scoreThreshA << " ";
-            ss << "scoreThreshB: " << e.scoreThreshB << " ";
-            ss << "textureDifferenceThreshold: " << e.textureDifferenceThreshold << " ";
-            ss << "textureCountThreshold: " << e.textureCountThreshold << " ";
-            ss << "deepSeaSecondPeakThreshold: " << e.deepSeaSecondPeakThreshold << " ";
-            ss << "deepSeaNeighborThreshold: " << e.deepSeaNeighborThreshold << " ";
+            ss << "minusDecrement: " << e.minusDecrement << ", ";
+            ss << "deepSeaMedianThreshold: " << e.deepSeaMedianThreshold << ", ";
+            ss << "scoreThreshA: " << e.scoreThreshA << ", ";
+            ss << "scoreThreshB: " << e.scoreThreshB << ", ";
+            ss << "textureDifferenceThreshold: " << e.textureDifferenceThreshold << ", ";
+            ss << "textureCountThreshold: " << e.textureCountThreshold << ", ";
+            ss << "deepSeaSecondPeakThreshold: " << e.deepSeaSecondPeakThreshold << ", ";
+            ss << "deepSeaNeighborThreshold: " << e.deepSeaNeighborThreshold << ", ";
             ss << "lrAgreeThreshold: " << e.lrAgreeThreshold;
             return ss.str();
         });
@@ -695,9 +695,9 @@ PYBIND11_PLUGIN(NAME) {
         .def_readwrite("removeThresh", &STRsm::removeThresh)
         .def("__repr__", [](const STRsm &e) {
             std::stringstream ss;
-            ss << "rsmBypass: " << e.rsmBypass << " ";
-            ss << "diffThresh: " << e.diffThresh << " ";
-            ss << "sloRauDiffThresh: " << e.sloRauDiffThresh << " ";
+            ss << "rsmBypass: " << e.rsmBypass << ", ";
+            ss << "diffThresh: " << e.diffThresh << ", ";
+            ss << "sloRauDiffThresh: " << e.sloRauDiffThresh << ", ";
             ss << "removeThresh: " << e.removeThresh;
             return ss.str();
         });
@@ -714,13 +714,13 @@ PYBIND11_PLUGIN(NAME) {
         .def_readwrite("vShrink", &STRauSupportVectorControl::vShrink)
         .def("__repr__", [](const STRauSupportVectorControl &e) {
             std::stringstream ss;
-            ss << "minWest: " << e.minWest << " ";
-            ss << "minEast: " << e.minEast << " ";
-            ss << "minWEsum: " << e.minWEsum << " ";
-            ss << "minNorth: " << e.minNorth << " ";
-            ss << "minSouth: " << e.minSouth << " ";
-            ss << "minNSsum: " << e.minNSsum << " ";
-            ss << "uShrink: " << e.uShrink << " ";
+            ss << "minWest: " << e.minWest << ", ";
+            ss << "minEast: " << e.minEast << ", ";
+            ss << "minWEsum: " << e.minWEsum << ", ";
+            ss << "minNorth: " << e.minNorth << ", ";
+            ss << "minSouth: " << e.minSouth << ", ";
+            ss << "minNSsum: " << e.minNSsum << ", ";
+            ss << "uShrink: " << e.uShrink << ", ";
             ss << "vShrink: " << e.vShrink;
             return ss.str();
         });
@@ -733,10 +733,10 @@ PYBIND11_PLUGIN(NAME) {
         .def_readwrite("disableSADNormalize", &STColorControl::disableSADNormalize)
         .def("__repr__", [](const STColorControl &e) {
             std::stringstream ss;
-            ss << "disableSADColor: " << e.disableSADColor << " ";
-            ss << "disableRAUColor: " << e.disableRAUColor << " ";
-            ss << "disableSLORightColor: " << e.disableSLORightColor << " ";
-            ss << "disableSLOLeftColor: " << e.disableSLOLeftColor << " ";
+            ss << "disableSADColor: " << e.disableSADColor << ", ";
+            ss << "disableRAUColor: " << e.disableRAUColor << ", ";
+            ss << "disableSLORightColor: " << e.disableSLORightColor << ", ";
+            ss << "disableSLOLeftColor: " << e.disableSLOLeftColor << ", ";
             ss << "disableSADNormalize: " << e.disableSADNormalize;
             return ss.str();
         });
@@ -748,8 +748,8 @@ PYBIND11_PLUGIN(NAME) {
         .def_readwrite("rauDiffThresholdBlue", &STRauColorThresholdsControl::rauDiffThresholdBlue)
         .def("__repr__", [](const STRauColorThresholdsControl &e) {
             std::stringstream ss;
-            ss << "rauDiffThresholdRed: " << e.rauDiffThresholdRed << " ";
-            ss << "rauDiffThresholdGreen: " << e.rauDiffThresholdGreen << " ";
+            ss << "rauDiffThresholdRed: " << e.rauDiffThresholdRed << ", ";
+            ss << "rauDiffThresholdGreen: " << e.rauDiffThresholdGreen << ", ";
             ss << "rauDiffThresholdBlue: " << e.rauDiffThresholdBlue;
             return ss.str();
         });
@@ -761,8 +761,8 @@ PYBIND11_PLUGIN(NAME) {
         .def_readwrite("diffThresholdBlue", &STSloColorThresholdsControl::diffThresholdBlue)
         .def("__repr__", [](const STSloColorThresholdsControl &e) {
             std::stringstream ss;
-            ss << "diffThresholdRed: " << e.diffThresholdRed << " ";
-            ss << "diffThresholdGreen: " << e.diffThresholdGreen << " ";
+            ss << "diffThresholdRed: " << e.diffThresholdRed << ", ";
+            ss << "diffThresholdGreen: " << e.diffThresholdGreen << ", ";
             ss << "diffThresholdBlue: " << e.diffThresholdBlue;
             return ss.str();
         });
@@ -776,11 +776,11 @@ PYBIND11_PLUGIN(NAME) {
         .def_readwrite("sloK2PenaltyMod2", &STSloPenaltyControl::sloK2PenaltyMod2)
         .def("__repr__", [](const STSloPenaltyControl &e) {
             std::stringstream ss;
-            ss << "sloK1Penalty: " << e.sloK1Penalty << " ";
-            ss << "sloK2Penalty: " << e.sloK2Penalty << " ";
-            ss << "sloK1PenaltyMod1: " << e.sloK1PenaltyMod1 << " ";
-            ss << "sloK2PenaltyMod1: " << e.sloK2PenaltyMod1 << " ";
-            ss << "sloK1PenaltyMod2: " << e.sloK1PenaltyMod2 << " ";
+            ss << "sloK1Penalty: " << e.sloK1Penalty << ", ";
+            ss << "sloK2Penalty: " << e.sloK2Penalty << ", ";
+            ss << "sloK1PenaltyMod1: " << e.sloK1PenaltyMod1 << ", ";
+            ss << "sloK2PenaltyMod1: " << e.sloK2PenaltyMod1 << ", ";
+            ss << "sloK1PenaltyMod2: " << e.sloK1PenaltyMod2 << ", ";
             ss << "sloK2PenaltyMod2: " << e.sloK2PenaltyMod2;
             return ss.str();
         });
@@ -791,8 +791,8 @@ PYBIND11_PLUGIN(NAME) {
         .def_readwrite("ignoreSAD", &STHdad::ignoreSAD)
         .def("__repr__", [](const STHdad &e) {
             std::stringstream ss;
-            ss << "lambdaCensus: " << e.lambdaCensus << " ";
-            ss << "lambdaAD: " << e.lambdaAD << " ";
+            ss << "lambdaCensus: " << e.lambdaCensus << ", ";
+            ss << "lambdaAD: " << e.lambdaAD << ", ";
             ss << "ignoreSAD: " << e.ignoreSAD;
             return ss.str();
         });
@@ -813,17 +813,17 @@ PYBIND11_PLUGIN(NAME) {
         .def_readwrite("colorCorrection12", &STColorCorrection::colorCorrection12)
         .def("__repr__", [](const STColorCorrection &e) {
             std::stringstream ss;
-            ss << "colorCorrection1: "  << e.colorCorrection1 << " ";
-            ss << "colorCorrection2: " << e.colorCorrection2 << " ";
-            ss << "colorCorrection3: " << e.colorCorrection3 << " ";
-            ss << "colorCorrection4: " << e.colorCorrection4 << " ";
-            ss << "colorCorrection5: " << e.colorCorrection5 << " ";
-            ss << "colorCorrection6: " << e.colorCorrection6 << " ";
-            ss << "colorCorrection7: " << e.colorCorrection7 << " ";
-            ss << "colorCorrection8: " << e.colorCorrection8 << " ";
-            ss << "colorCorrection9: " << e.colorCorrection9 << " ";
-            ss << "colorCorrection10: " << e.colorCorrection10 << " ";
-            ss << "colorCorrection11: " << e.colorCorrection11 << " ";
+            ss << "colorCorrection1: "  << e.colorCorrection1 << ", ";
+            ss << "colorCorrection2: " << e.colorCorrection2 << ", ";
+            ss << "colorCorrection3: " << e.colorCorrection3 << ", ";
+            ss << "colorCorrection4: " << e.colorCorrection4 << ", ";
+            ss << "colorCorrection5: " << e.colorCorrection5 << ", ";
+            ss << "colorCorrection6: " << e.colorCorrection6 << ", ";
+            ss << "colorCorrection7: " << e.colorCorrection7 << ", ";
+            ss << "colorCorrection8: " << e.colorCorrection8 << ", ";
+            ss << "colorCorrection9: " << e.colorCorrection9 << ", ";
+            ss << "colorCorrection10: " << e.colorCorrection10 << ", ";
+            ss << "colorCorrection11: " << e.colorCorrection11 << ", ";
             ss << "colorCorrection12: " << e.colorCorrection12;
             return ss.str();
         });
@@ -846,10 +846,10 @@ PYBIND11_PLUGIN(NAME) {
         .def_readwrite("disparityShift", &STDepthTableControl::disparityShift)
         .def("__repr__", [](const STDepthTableControl &e) {
             std::stringstream ss;
-            ss << "depthUnits: " << e.depthUnits << " ";
-            ss << "depthClampMin: " << e.depthClampMin << " ";
-            ss << "depthClampMax: " << e.depthClampMax << " ";
-            ss << "disparityMode: " << e.disparityMode << " ";
+            ss << "depthUnits: " << e.depthUnits << ", ";
+            ss << "depthClampMin: " << e.depthClampMin << ", ";
+            ss << "depthClampMax: " << e.depthClampMax << ", ";
+            ss << "disparityMode: " << e.disparityMode << ", ";
             ss << "disparityShift: " << e.disparityShift;
             return ss.str();
         });
@@ -860,7 +860,7 @@ PYBIND11_PLUGIN(NAME) {
         .def_readwrite("vDiameter", &STCensusRadius::vDiameter)
         .def("__repr__", [](const STCensusRadius &e) {
             std::stringstream ss;
-            ss << "uDiameter: " << e.uDiameter << " ";
+            ss << "uDiameter: " << e.uDiameter << ", ";
             ss << "vDiameter: " << e.vDiameter;
             return ss.str();
         });
