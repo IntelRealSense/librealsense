@@ -7,6 +7,7 @@
 #include <condition_variable>
 #include <thread>
 #include <atomic>
+#include <functional>
 
 const int QUEUE_MAX_SIZE = 10;
 // Simplest implementation of a blocking concurrent queue for thread messaging
