@@ -10,8 +10,17 @@ FILE(GLOB_RECURSE AllSources
     tm-factory.cpp
 	)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../CMake)
+find_package(libtm REQUIRED)
+install(TARGETS libtm
+    EXPORT realsense2Targets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
 include_directories(
-        ${LIBTM_DIR}/libtm/include
+        ${LIBTM_INCLUDE_DIR}
 		../
         )
 
@@ -23,6 +32,7 @@ add_library(${PROJECT_NAME} STATIC
 
 target_link_libraries(${PROJECT_NAME}
 	realsense-core
+	libtm
 )
 
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Library)

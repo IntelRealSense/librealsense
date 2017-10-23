@@ -4,6 +4,15 @@
 
 #include "context.h"
 
+#include <memory>
+#include <vector>
+
+namespace perc
+{
+	class TrackingManager;
+	class TrackingDevice;
+}
+
 namespace librealsense
 {
 	class tm2_info : public device_info
@@ -12,12 +21,11 @@ namespace librealsense
 		std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx,
 			bool register_device_notifications) const override;
 
-		tm2_info(std::shared_ptr<context> ctx,
-			std::vector<platform::uvc_device_info> depth,
-			std::vector<platform::usb_device_info> hwm,
-			std::vector<platform::hid_device_info> hid)
-			: device_info(ctx), _depth(std::move(depth)),
-			_hwm(std::move(hwm)), _hid(std::move(hid)) {}
+		tm2_info(std::shared_ptr<perc::TrackingManager> manager,
+			     perc::TrackingDevice* dev, 
+			     std::shared_ptr<context> ctx,
+				 platform::usb_device_info usb)
+			: device_info(ctx), _usb(usb), _dev(dev), _manager(manager) {}
 
 		static std::vector<std::shared_ptr<device_info>> pick_tm2_devices(
 			std::shared_ptr<context> ctx,
@@ -25,11 +33,11 @@ namespace librealsense
 
 		platform::backend_device_group get_device_data() const override
 		{
-			return platform::backend_device_group(_depth, _hwm, _hid);
+			return platform::backend_device_group({}, { _usb }, {});
 		}
 	private:
-		std::vector<platform::uvc_device_info> _depth;
-		std::vector<platform::usb_device_info> _hwm;
-		std::vector<platform::hid_device_info> _hid;
+		platform::usb_device_info _usb;
+		std::shared_ptr<perc::TrackingManager> _manager;
+		perc::TrackingDevice* _dev;
 	};
 }

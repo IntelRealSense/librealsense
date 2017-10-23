@@ -128,7 +128,10 @@ namespace librealsense
         void remove_device(const std::string& file);
 
     private:
-        void on_device_changed(platform::backend_device_group old, platform::backend_device_group curr, const std::map<std::string, std::shared_ptr<device_info>>& old_playback_devices, const std::map<std::string, std::shared_ptr<device_info>>& new_playback_devices);
+        void on_device_changed(platform::backend_device_group old, 
+			                   platform::backend_device_group curr, 
+			                   const std::map<std::string, std::shared_ptr<device_info>>& old_playback_devices, 
+			                   const std::map<std::string, std::shared_ptr<device_info>>& new_playback_devices);
 
         int find_stream_profile(const stream_interface& p);
         std::shared_ptr<lazy<rs2_extrinsics>> fetch_edge(int from, int to);
@@ -174,4 +177,6 @@ namespace librealsense
     platform::uvc_device_info get_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
     std::vector<platform::uvc_device_info> filter_by_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
 
+	std::vector<platform::usb_device_info> filter_by_product(const std::vector<platform::usb_device_info>& devices, const std::set<uint16_t>& pid_list);
+	void trim_device_list(std::vector<platform::usb_device_info>& devices, const std::vector<platform::usb_device_info>& chosen);
 }

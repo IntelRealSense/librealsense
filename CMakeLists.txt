@@ -610,6 +610,7 @@ target_link_libraries(realsense2 realsense-depth-cameras
 if (BUILD_WITH_TM2)
 	target_link_libraries(realsense2 realsense-tracking)
 	add_definitions(-DWITH_TRACKING)
+	find_package(libtm REQUIRED)
 endif()
 
 list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})

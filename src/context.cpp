@@ -325,7 +325,6 @@ namespace librealsense
 
         if (librealsense::list_changed<std::shared_ptr<device_info>>(old_list, new_list, [](std::shared_ptr<device_info> first, std::shared_ptr<device_info> second) {return *first == *second; }))
         {
-
             std::vector<rs2_device_info> rs2_devices_info_added;
             std::vector<rs2_device_info> rs2_devices_info_removed;
 
@@ -415,6 +414,18 @@ namespace librealsense
         return result;
     }
 
+	// TODO: Make template
+	std::vector<platform::usb_device_info> filter_by_product(const std::vector<platform::usb_device_info>& devices, const std::set<uint16_t>& pid_list)
+	{
+		std::vector<platform::usb_device_info> result;
+		for (auto&& info : devices)
+		{
+			if (pid_list.count(info.pid))
+				result.push_back(info);
+		}
+		return result;
+	}
+
     std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> group_devices_and_hids_by_unique_id(
         const std::vector<std::vector<platform::uvc_device_info>>& devices,
         const std::vector<platform::hid_device_info>& hids)
@@ -475,6 +486,20 @@ namespace librealsense
             result.push_back(kvp.second);
         }
         return result;
+    }
+
+	// TODO: Sergey
+	// Make template
+	void trim_device_list(std::vector<platform::usb_device_info>& devices, const std::vector<platform::usb_device_info>& chosen)
+    {
+        if (chosen.empty())
+            return;
+
+        auto was_chosen = [&chosen](const platform::usb_device_info& info)
+        {
+            return find(chosen.begin(), chosen.end(), info) != chosen.end();
+        };
+        devices.erase(std::remove_if(devices.begin(), devices.end(), was_chosen), devices.end());
     }
 
     void trim_device_list(std::vector<platform::uvc_device_info>& devices, const std::vector<platform::uvc_device_info>& chosen)
