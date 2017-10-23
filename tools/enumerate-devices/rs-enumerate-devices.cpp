@@ -5,6 +5,8 @@
 #include <iostream>
 #include <iomanip>
 #include <map>
+#include <set>
+#include <cstring>
 
 #include "tclap/CmdLine.h"
 
@@ -12,22 +14,28 @@ using namespace std;
 using namespace TCLAP;
 using namespace rs2;
 
-void print(rs2_extrinsics extrinsics)
+void print(const rs2_extrinsics& extrinsics)
 {
     stringstream ss;
-     ss << "Rotation: ";
+     ss << "Rotation Matrix:\n";
 
-    for (auto i = 0 ; i < sizeof(extrinsics.rotation)/sizeof(extrinsics.rotation[0]) ; ++i)
-        ss << setprecision(15) << extrinsics.rotation[i] << "  ";
+    for (auto i = 0 ; i < 3 ; ++i)
+    {
+        for (auto j = 0 ; j < 3 ; ++j)
+        {
+            ss << left << setw(15) << setprecision(5) << extrinsics.rotation[j*3 +i];
+        }
+        ss << endl;
+    }
 
-    ss << "\nTranslation: ";
+    ss << "\nTranslation Vector: ";
     for (auto i = 0 ; i < sizeof(extrinsics.translation)/sizeof(extrinsics.translation[0]) ; ++i)
         ss << setprecision(15) << extrinsics.translation[i] << "  ";
 
     cout << ss.str() << endl << endl;
 }
 
-void print(rs2_motion_device_intrinsic intrinsics)
+void print(const rs2_motion_device_intrinsic& intrinsics)
 {
     stringstream ss;
      ss << "Bias Variances: ";
@@ -46,22 +54,77 @@ void print(rs2_motion_device_intrinsic intrinsics)
     cout << ss.str() << endl << endl;
 }
 
-void print(rs2_intrinsics intrinsics)
+void print(const rs2_intrinsics& intrinsics)
 {
     stringstream ss;
-     ss << "Width: "        << intrinsics.width  <<
-           "\nHeight: "     << intrinsics.height <<
-           "\nPPX: "        << setprecision(15)  << intrinsics.ppx <<
-           "\nPPY: "        << setprecision(15)  << intrinsics.ppy <<
-           "\nFx: "         << setprecision(15)  << intrinsics.fx  <<
-           "\nFy: "         << setprecision(15)  << intrinsics.fy  <<
-           "\nDistortion: " << rs2_distortion_to_string(intrinsics.model) <<
-           "\nCoeffs: ";
+     ss << left << setw(14) << "Width: "      << "\t" << intrinsics.width  << endl <<
+           left << setw(14) << "Height: "     << "\t" << intrinsics.height << endl <<
+           left << setw(14) << "PPX: "        << "\t" << setprecision(15)  << intrinsics.ppx << endl <<
+           left << setw(14) << "PPY: "        << "\t" << setprecision(15)  << intrinsics.ppy << endl <<
+           left << setw(14) << "Fx: "         << "\t" << setprecision(15)  << intrinsics.fx  << endl <<
+           left << setw(14) << "Fy: "         << "\t" << setprecision(15)  << intrinsics.fy  << endl <<
+           left << setw(14) << "Distortion: " << "\t" << rs2_distortion_to_string(intrinsics.model) << endl <<
+           left << setw(14) << "Coeffs: ";
 
     for (auto i = 0 ; i < sizeof(intrinsics.coeffs)/sizeof(intrinsics.coeffs[0]) ; ++i)
-        ss << setprecision(15) << intrinsics.coeffs[i] << "  ";
+        ss << "\t" << setprecision(15) << intrinsics.coeffs[i] << "  ";
 
     cout << ss.str() << endl << endl;
+}
+
+void safe_get_intrinsics(const video_stream_profile& profile, rs2_intrinsics& intrinsics)
+{
+    try{
+        intrinsics = profile.get_intrinsics();
+    }
+    catch(...)
+    {}
+}
+
+struct stream_and_resolution{
+    rs2_stream stream;
+    int stream_index;
+    int width;
+    int height;
+    string stream_name;
+
+    bool operator <(const stream_and_resolution& obj) const
+    {
+        return (std::make_tuple(stream, stream_index, width, height) < std::make_tuple(obj.stream, obj.stream_index, obj.width, obj.height));
+    }
+};
+
+struct stream_and_index{
+    rs2_stream stream;
+    int stream_index;
+
+    bool operator <(const stream_and_index& obj) const
+    {
+        return (std::make_tuple(stream, stream_index) < std::make_tuple(obj.stream, obj.stream_index));
+    }
+};
+
+bool operator ==(const rs2_intrinsics& lhs,
+                 const rs2_intrinsics& rhs)
+{
+    return lhs.width == rhs.width &&
+           lhs.height == rhs.height &&
+           lhs.ppx == rhs.ppx &&
+           lhs.ppy == rhs.ppy &&
+           lhs.fx == rhs.fx &&
+           lhs.fy == rhs.fy &&
+           lhs.model == rhs.model &&
+           !std::memcmp(lhs.coeffs, rhs.coeffs, sizeof(rhs.coeffs));
+}
+
+string get_str_formats(const set<rs2_format>& formats)
+{
+    stringstream ss;
+    for (auto format = formats.begin(); format != formats.end(); ++format)
+    {
+        ss << *format << ((format != formats.end()) && (next(format) == formats.end())?"":"/");
+    }
+    return ss.str();
 }
 
 int main(int argc, char** argv) try
@@ -79,7 +142,7 @@ int main(int argc, char** argv) try
 
     cmd.parse(argc, argv);
 
-    log_to_console(RS2_LOG_SEVERITY_WARN);
+    log_to_console(RS2_LOG_SEVERITY_ERROR);
 
     // Obtain a list of devices currently present on the system
     context ctx;
@@ -87,7 +150,7 @@ int main(int argc, char** argv) try
     size_t device_count = devices.size();
     if (!device_count)
     {
-        printf("No device detected. Is it plugged in?\n");
+        cout <<"No device detected. Is it plugged in?\n";
         return EXIT_SUCCESS;
     }
 
@@ -103,6 +166,7 @@ int main(int argc, char** argv) try
             auto dev = devices[i];
 
             cout << left << setw(30) << dev.get_info(RS2_CAMERA_INFO_NAME)
+                << setw(20) << dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)
                 << setw(20) << dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
                 << endl;
         }
@@ -183,29 +247,71 @@ int main(int argc, char** argv) try
         // Print Intrinsics
         if (show_calibration_data.getValue())
         {
+            std::map<stream_and_index, stream_profile> streams;
+            std::map<stream_and_resolution, std::vector<std::pair<std::set<rs2_format>, rs2_intrinsics>>> intrinsics_map;
             for (auto&& sensor : dev.query_sensors())
             {
-                cout << "Intrinsics provided by " << sensor.get_info(RS2_CAMERA_INFO_NAME) << endl;
-
                 // Intrinsics
                 for (auto&& profile : sensor.get_stream_profiles())
                 {
                     if (auto video = profile.as<video_stream_profile>())
                     {
-                        cout << "Intrinsics of " << profile.stream_name() << "\t  " << video.width() << "x"
-                            << video.height() << "\t@ " << profile.fps() << "Hz\t" << profile.format() << endl;
+                        if (streams.find(stream_and_index{profile.stream_type(), profile.stream_index()}) == streams.end())
+                        {
+                            streams[stream_and_index{profile.stream_type(), profile.stream_index()}] = profile;
+                        }
 
-                        print(video.get_intrinsics());
+                        rs2_intrinsics intrinsics{};
+                        stream_and_resolution stream_res{profile.stream_type(), profile.stream_index(), video.width(), video.height(), profile.stream_name()};
+                        safe_get_intrinsics(video, intrinsics);
+                        auto it = std::find_if((intrinsics_map[stream_res]).begin(), (intrinsics_map[stream_res]).end(), [&](const std::pair<std::set<rs2_format>, rs2_intrinsics>& kvp){
+                            return intrinsics == kvp.second;
+                        });
+                        if (it == (intrinsics_map[stream_res]).end())
+                        {
+                            (intrinsics_map[stream_res]).push_back({{profile.format()}, intrinsics});
+                        }
+                        else
+                        {
+                            it->first.insert(profile.format()); // If the extrinsics are equals, add the profile format to format set
+                        }
                     }
                 }
             }
-        }
-    }
 
-    // Print Extrinsics
-    if (show_calibration_data.getValue())
-    {
-        throw std::runtime_error("TODO: Rewrite Extrinsics info!");
+            cout << "Provided Intrinsics:" << endl;
+            for (auto& kvp : intrinsics_map)
+            {
+                auto stream_res = kvp.first;
+                for (auto& intrinsics : kvp.second)
+                {
+                    auto formats = get_str_formats(intrinsics.first);
+                    cout << "Intrinsics of \"" << stream_res.stream_name << "\"\t  " << stream_res.width << "x"
+                        << stream_res.height << "\t  " << formats << endl;
+                    if (intrinsics.second == rs2_intrinsics{})
+                    {
+                        cout << "Intrinsics NOT available!\n\n";
+                    }
+                    else
+                    {
+                        print(intrinsics.second);
+                    }
+                }
+            }
+
+            // Print Extrinsics
+            cout << "\nProvided Extrinsics:" << endl;
+            for (auto kvp1 = streams.begin(); kvp1 != streams.end(); ++kvp1)
+            {
+                for (auto kvp2 = streams.begin(); kvp2 != streams.end(); ++kvp2)
+                {
+                    cout << "Extrinsics from \"" << kvp1->second.stream_name() << "\"\t  " <<
+                            "To" << "\t  \"" << kvp2->second.stream_name() << "\"\n";
+                    auto extrinsics = kvp1->second.get_extrinsics_to(kvp2->second);
+                    print(extrinsics);
+                }
+            }
+        }
     }
 
     cout << endl;
