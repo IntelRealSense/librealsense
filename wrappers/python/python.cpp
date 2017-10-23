@@ -620,7 +620,8 @@ PYBIND11_PLUGIN(NAME) {
     .def("start", (rs2::pipeline_profile (rs2::pipeline::*)() ) &rs2::pipeline::start)
     .def("stop", &rs2::pipeline::stop)
     .def("wait_for_frames", &rs2::pipeline::wait_for_frames, "timeout_ms"_a = 5000)
-    .def("poll_for_frames", &rs2::pipeline::poll_for_frames, "frameset*"_a);
+    .def("poll_for_frames", &rs2::pipeline::poll_for_frames, "frameset*"_a)
+    .def("get_active_profile", &rs2::pipeline::get_active_profile);
 
     struct pipeline_wrapper //Workaround to allow python implicit conversion of pipeline to std::shared_ptr<rs2_pipeline>
     {
@@ -660,8 +661,8 @@ PYBIND11_PLUGIN(NAME) {
         RS400 Advanced Mode commands
     */
 
-    py::class_<STDepthControlGroup> STDepthControlGroup(m, "STDepthControlGroup");
-    STDepthControlGroup.def_readwrite("plusIncrement", &STDepthControlGroup::plusIncrement)
+    py::class_<STDepthControlGroup> _STDepthControlGroup(m, "STDepthControlGroup");
+    _STDepthControlGroup.def_readwrite("plusIncrement", &STDepthControlGroup::plusIncrement)
         .def_readwrite("minusDecrement", &STDepthControlGroup::minusDecrement)
         .def_readwrite("deepSeaMedianThreshold", &STDepthControlGroup::deepSeaMedianThreshold)
         .def_readwrite("scoreThreshA", &STDepthControlGroup::scoreThreshA)
@@ -670,57 +671,127 @@ PYBIND11_PLUGIN(NAME) {
         .def_readwrite("textureCountThreshold", &STDepthControlGroup::textureCountThreshold)
         .def_readwrite("deepSeaSecondPeakThreshold", &STDepthControlGroup::deepSeaSecondPeakThreshold)
         .def_readwrite("deepSeaNeighborThreshold", &STDepthControlGroup::deepSeaNeighborThreshold)
-        .def_readwrite("lrAgreeThreshold", &STDepthControlGroup::lrAgreeThreshold);
+        .def_readwrite("lrAgreeThreshold", &STDepthControlGroup::lrAgreeThreshold)
+        .def("__repr__", [](const STDepthControlGroup &e) {
+            std::stringstream ss;
+            ss << "minusDecrement: " << e.minusDecrement << " ";
+            ss << "deepSeaMedianThreshold: " << e.deepSeaMedianThreshold << " ";
+            ss << "scoreThreshA: " << e.scoreThreshA << " ";
+            ss << "scoreThreshB: " << e.scoreThreshB << " ";
+            ss << "textureDifferenceThreshold: " << e.textureDifferenceThreshold << " ";
+            ss << "textureCountThreshold: " << e.textureCountThreshold << " ";
+            ss << "deepSeaSecondPeakThreshold: " << e.deepSeaSecondPeakThreshold << " ";
+            ss << "deepSeaNeighborThreshold: " << e.deepSeaNeighborThreshold << " ";
+            ss << "lrAgreeThreshold: " << e.lrAgreeThreshold;
+            return ss.str();
+        });
 
-    py::class_<STRsm> STRsm(m, "STRsm");
-    STRsm.def_readwrite("rsmBypass", &STRsm::rsmBypass)
+    py::class_<STRsm> _STRsm(m, "STRsm");
+    _STRsm.def_readwrite("rsmBypass", &STRsm::rsmBypass)
         .def_readwrite("diffThresh", &STRsm::diffThresh)
         .def_readwrite("sloRauDiffThresh", &STRsm::sloRauDiffThresh)
-        .def_readwrite("removeThresh", &STRsm::removeThresh);
+        .def_readwrite("removeThresh", &STRsm::removeThresh)
+        .def("__repr__", [](const STRsm &e) {
+            std::stringstream ss;
+            ss << "rsmBypass: " << e.rsmBypass << " ";
+            ss << "diffThresh: " << e.diffThresh << " ";
+            ss << "sloRauDiffThresh: " << e.sloRauDiffThresh << " ";
+            ss << "removeThresh: " << e.removeThresh;
+            return ss.str();
+        });
 
-    py::class_<STRauSupportVectorControl> STRauSupportVectorControl(m, "STRauSupportVectorControl");
-        STRauSupportVectorControl.def_readwrite("minWest", &STRauSupportVectorControl::minWest)
+    py::class_<STRauSupportVectorControl> _STRauSupportVectorControl(m, "STRauSupportVectorControl");
+        _STRauSupportVectorControl.def_readwrite("minWest", &STRauSupportVectorControl::minWest)
         .def_readwrite("minEast", &STRauSupportVectorControl::minEast)
         .def_readwrite("minWEsum", &STRauSupportVectorControl::minWEsum)
         .def_readwrite("minNorth", &STRauSupportVectorControl::minNorth)
         .def_readwrite("minSouth", &STRauSupportVectorControl::minSouth)
         .def_readwrite("minNSsum", &STRauSupportVectorControl::minNSsum)
         .def_readwrite("uShrink", &STRauSupportVectorControl::uShrink)
-        .def_readwrite("vShrink", &STRauSupportVectorControl::vShrink);
-
-    py::class_<STColorControl> STColorControl(m, "STColorControl");
-        STColorControl.def_readwrite("disableSADColor", &STColorControl::disableSADColor)
+        .def_readwrite("vShrink", &STRauSupportVectorControl::vShrink)
+        .def("__repr__", [](const STRauSupportVectorControl &e) {
+            std::stringstream ss;
+            ss << "minWest: " << e.minWest << " ";
+            ss << "minEast: " << e.minEast << " ";
+            ss << "minWEsum: " << e.minWEsum << " ";
+            ss << "minNorth: " << e.minNorth << " ";
+            ss << "minSouth: " << e.minSouth << " ";
+            ss << "minNSsum: " << e.minNSsum << " ";
+            ss << "uShrink: " << e.uShrink << " ";
+            ss << "vShrink: " << e.vShrink;
+            return ss.str();
+        });
+    py::class_<STColorControl> _STColorControl(m, "STColorControl");
+        _STColorControl.def_readwrite("disableSADColor", &STColorControl::disableSADColor)
         .def_readwrite("disableRAUColor", &STColorControl::disableRAUColor)
         .def_readwrite("disableSLORightColor", &STColorControl::disableSLORightColor)
         .def_readwrite("disableSLOLeftColor", &STColorControl::disableSLOLeftColor)
-        .def_readwrite("disableSADNormalize", &STColorControl::disableSADNormalize);
+        .def_readwrite("disableSADNormalize", &STColorControl::disableSADNormalize)
+        .def("__repr__", [](const STColorControl &e) {
+            std::stringstream ss;
+            ss << "disableSADColor: " << e.disableSADColor << " ";
+            ss << "disableRAUColor: " << e.disableRAUColor << " ";
+            ss << "disableSLORightColor: " << e.disableSLORightColor << " ";
+            ss << "disableSLOLeftColor: " << e.disableSLOLeftColor << " ";
+            ss << "disableSADNormalize: " << e.disableSADNormalize;
+            return ss.str();
+        });
 
-    py::class_<STRauColorThresholdsControl> STRauColorThresholdsControl(m, "STRauColorThresholdsControl");
-        STRauColorThresholdsControl.def_readwrite("rauDiffThresholdRed", &STRauColorThresholdsControl::rauDiffThresholdRed)
+    py::class_<STRauColorThresholdsControl> _STRauColorThresholdsControl(m, "STRauColorThresholdsControl");
+        _STRauColorThresholdsControl.def_readwrite("rauDiffThresholdRed", &STRauColorThresholdsControl::rauDiffThresholdRed)
         .def_readwrite("rauDiffThresholdGreen", &STRauColorThresholdsControl::rauDiffThresholdGreen)
-        .def_readwrite("rauDiffThresholdBlue", &STRauColorThresholdsControl::rauDiffThresholdBlue);
+        .def_readwrite("rauDiffThresholdBlue", &STRauColorThresholdsControl::rauDiffThresholdBlue)
+        .def("__repr__", [](const STRauColorThresholdsControl &e) {
+            std::stringstream ss;
+            ss << "rauDiffThresholdRed: " << e.rauDiffThresholdRed << " ";
+            ss << "rauDiffThresholdGreen: " << e.rauDiffThresholdGreen << " ";
+            ss << "rauDiffThresholdBlue: " << e.rauDiffThresholdBlue;
+            return ss.str();
+        });
 
-    py::class_<STSloColorThresholdsControl> STSloColorThresholdsControl(m, "STSloColorThresholdsControl");
-    STSloColorThresholdsControl.def_readwrite("diffThresholdRed", &STSloColorThresholdsControl::diffThresholdRed)
+    py::class_<STSloColorThresholdsControl> _STSloColorThresholdsControl(m, "STSloColorThresholdsControl");
+    _STSloColorThresholdsControl.def_readwrite("diffThresholdRed", &STSloColorThresholdsControl::diffThresholdRed)
         .def_readwrite("diffThresholdGreen", &STSloColorThresholdsControl::diffThresholdGreen)
-        .def_readwrite("diffThresholdBlue", &STSloColorThresholdsControl::diffThresholdBlue);
-
-    py::class_<STSloPenaltyControl> STSloPenaltyControl(m, "STSloPenaltyControl");
-    STSloPenaltyControl.def_readwrite("sloK1Penalty", &STSloPenaltyControl::sloK1Penalty)
+        .def_readwrite("diffThresholdBlue", &STSloColorThresholdsControl::diffThresholdBlue)
+        .def("__repr__", [](const STSloColorThresholdsControl &e) {
+            std::stringstream ss;
+            ss << "diffThresholdRed: " << e.diffThresholdRed << " ";
+            ss << "diffThresholdGreen: " << e.diffThresholdGreen << " ";
+            ss << "diffThresholdBlue: " << e.diffThresholdBlue;
+            return ss.str();
+        });
+    py::class_<STSloPenaltyControl> _STSloPenaltyControl(m, "STSloPenaltyControl");
+    _STSloPenaltyControl.def_readwrite("sloK1Penalty", &STSloPenaltyControl::sloK1Penalty)
         .def_readwrite("sloK2Penalty", &STSloPenaltyControl::sloK2Penalty)
         .def_readwrite("sloK1PenaltyMod1", &STSloPenaltyControl::sloK1PenaltyMod1)
         .def_readwrite("sloK2PenaltyMod1", &STSloPenaltyControl::sloK2PenaltyMod1)
         .def_readwrite("sloK1PenaltyMod2", &STSloPenaltyControl::sloK1PenaltyMod2)
-        .def_readwrite("sloK2PenaltyMod2", &STSloPenaltyControl::sloK2PenaltyMod2);
-
-    py::class_<STHdad> STHdad(m, "STHdad");
-        STHdad.def_readwrite("lambdaCensus", &STHdad::lambdaCensus)
+        .def_readwrite("sloK2PenaltyMod2", &STSloPenaltyControl::sloK2PenaltyMod2)
+        .def("__repr__", [](const STSloPenaltyControl &e) {
+            std::stringstream ss;
+            ss << "sloK1Penalty: " << e.sloK1Penalty << " ";
+            ss << "sloK2Penalty: " << e.sloK2Penalty << " ";
+            ss << "sloK1PenaltyMod1: " << e.sloK1PenaltyMod1 << " ";
+            ss << "sloK2PenaltyMod1: " << e.sloK2PenaltyMod1 << " ";
+            ss << "sloK1PenaltyMod2: " << e.sloK1PenaltyMod2 << " ";
+            ss << "sloK2PenaltyMod2: " << e.sloK2PenaltyMod2;
+            return ss.str();
+        });
+    py::class_<STHdad> _STHdad(m, "STHdad");
+        _STHdad.def_readwrite("lambdaCensus", &STHdad::lambdaCensus)
         .def_readwrite("lambdaAD", &STHdad::lambdaAD)
-        .def_readwrite("ignoreSAD", &STHdad::ignoreSAD);
+        .def_readwrite("ignoreSAD", &STHdad::ignoreSAD)
+        .def("__repr__", [](const STHdad &e) {
+            std::stringstream ss;
+            ss << "lambdaCensus: " << e.lambdaCensus << " ";
+            ss << "lambdaAD: " << e.lambdaAD << " ";
+            ss << "ignoreSAD: " << e.ignoreSAD;
+            return ss.str();
+        });
 
-
-    py::class_<STColorCorrection> STColorCorrection(m, "STColorCorrection");
-    STColorCorrection.def_readwrite("colorCorrection1", &STColorCorrection::colorCorrection1)
+    py::class_<STColorCorrection> _STColorCorrection(m, "STColorCorrection");
+    _STColorCorrection
+        .def_readwrite("colorCorrection1", &STColorCorrection::colorCorrection1)
         .def_readwrite("colorCorrection2", &STColorCorrection::colorCorrection2)
         .def_readwrite("colorCorrection3", &STColorCorrection::colorCorrection3)
         .def_readwrite("colorCorrection4", &STColorCorrection::colorCorrection4)
@@ -731,21 +802,57 @@ PYBIND11_PLUGIN(NAME) {
         .def_readwrite("colorCorrection9", &STColorCorrection::colorCorrection9)
         .def_readwrite("colorCorrection10", &STColorCorrection::colorCorrection10)
         .def_readwrite("colorCorrection11", &STColorCorrection::colorCorrection11)
-        .def_readwrite("colorCorrection12", &STColorCorrection::colorCorrection12);
+        .def_readwrite("colorCorrection12", &STColorCorrection::colorCorrection12)
+        .def("__repr__", [](const STColorCorrection &e) {
+            std::stringstream ss;
+            ss << "colorCorrection1: "  << e.colorCorrection1 << " ";
+            ss << "colorCorrection2: " << e.colorCorrection2 << " ";
+            ss << "colorCorrection3: " << e.colorCorrection3 << " ";
+            ss << "colorCorrection4: " << e.colorCorrection4 << " ";
+            ss << "colorCorrection5: " << e.colorCorrection5 << " ";
+            ss << "colorCorrection6: " << e.colorCorrection6 << " ";
+            ss << "colorCorrection7: " << e.colorCorrection7 << " ";
+            ss << "colorCorrection8: " << e.colorCorrection8 << " ";
+            ss << "colorCorrection9: " << e.colorCorrection9 << " ";
+            ss << "colorCorrection10: " << e.colorCorrection10 << " ";
+            ss << "colorCorrection11: " << e.colorCorrection11 << " ";
+            ss << "colorCorrection12: " << e.colorCorrection12;
+            return ss.str();
+        });
 
-    py::class_<STAEControl> STAEControl(m, "STAEControl");
-    STAEControl.def_readwrite("meanIntensitySetPoint", &STAEControl::meanIntensitySetPoint);
+    py::class_<STAEControl> _STAEControl(m, "STAEControl");
+    _STAEControl.def_readwrite("meanIntensitySetPoint", &STAEControl::meanIntensitySetPoint)
+    .def("__repr__", [](const STAEControl &e) {
+        std::stringstream ss;
+        ss << "Mean Intensity Set Point: " << e.meanIntensitySetPoint;
+        return ss.str();
+    });
 
-    py::class_<STDepthTableControl> STDepthTableControl(m, "STDepthTableControl");
-    STDepthTableControl.def_readwrite("depthUnits", &STDepthTableControl::depthUnits)
+    py::class_<STDepthTableControl> _STDepthTableControl(m, "STDepthTableControl");
+    _STDepthTableControl.def_readwrite("depthUnits", &STDepthTableControl::depthUnits)
         .def_readwrite("depthClampMin", &STDepthTableControl::depthClampMin)
         .def_readwrite("depthClampMax", &STDepthTableControl::depthClampMax)
         .def_readwrite("disparityMode", &STDepthTableControl::disparityMode)
-        .def_readwrite("disparityShift", &STDepthTableControl::disparityShift);
+        .def_readwrite("disparityShift", &STDepthTableControl::disparityShift)
+        .def("__repr__", [](const STDepthTableControl &e) {
+            std::stringstream ss;
+            ss << "depthUnits: " << e.depthUnits << " ";
+            ss << "depthClampMin: " << e.depthClampMin << " ";
+            ss << "depthClampMax: " << e.depthClampMax << " ";
+            ss << "disparityMode: " << e.disparityMode << " ";
+            ss << "disparityShift: " << e.disparityShift;
+            return ss.str();
+        });
 
-    py::class_<STCensusRadius> STCensusRadius(m, "STCensusRadius");
-    STCensusRadius.def_readwrite("uDiameter", &STCensusRadius::uDiameter)
-        .def_readwrite("vDiameter", &STCensusRadius::vDiameter);
+    py::class_<STCensusRadius> _STCensusRadius(m, "STCensusRadius");
+    _STCensusRadius.def_readwrite("uDiameter", &STCensusRadius::uDiameter)
+        .def_readwrite("vDiameter", &STCensusRadius::vDiameter)
+        .def("__repr__", [](const STCensusRadius &e) {
+            std::stringstream ss;
+            ss << "uDiameter: " << e.uDiameter << " ";
+            ss << "vDiameter: " << e.vDiameter;
+            return ss.str();
+        });
 
     py::class_<rs400::advanced_mode> rs400_advanced_mode(m, "rs400_advanced_mode");
     rs400_advanced_mode.def(py::init<rs2::device>(), "device"_a)
