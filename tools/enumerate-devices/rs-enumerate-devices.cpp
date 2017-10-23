@@ -273,7 +273,7 @@ int main(int argc, char** argv) try
                         }
                         else
                         {
-                            it->first.insert(profile.format()); // If the extrinsics are equals, add the profile format to format set
+                            it->first.insert(profile.format()); // If the intrinsics are equals, add the profile format to format set
                         }
                     }
                 }
