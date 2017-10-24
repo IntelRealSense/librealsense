@@ -3977,7 +3977,7 @@ TEST_CASE("Pipeline start ignores previous config if it was changed", "[live]") 
         rs2::pipeline_profile profile_from_cfg;
         REQUIRE_NOTHROW(profile_from_cfg = cfg.resolve(pipe));
         REQUIRE(profile_from_cfg);
-        cfg.enable_stream(RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 15); //enable a single stream (unlikely to be the default one)
+        cfg.enable_stream(RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 60); //enable a single stream (unlikely to be the default one)
         rs2::pipeline_profile profile_from_start;
         REQUIRE_NOTHROW(profile_from_start = pipe.start(cfg));
         REQUIRE(profile_from_start);
