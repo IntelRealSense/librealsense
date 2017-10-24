@@ -23,9 +23,8 @@ namespace librealsense
 
 		tm2_info(std::shared_ptr<perc::TrackingManager> manager,
 			     perc::TrackingDevice* dev, 
-			     std::shared_ptr<context> ctx,
-				 platform::usb_device_info usb)
-			: device_info(ctx), _usb(usb), _dev(dev), _manager(manager) {}
+			     std::shared_ptr<context> ctx)
+			: device_info(ctx), _dev(dev), _manager(manager) {}
 
 		static std::vector<std::shared_ptr<device_info>> pick_tm2_devices(
 			std::shared_ptr<context> ctx,
@@ -33,10 +32,9 @@ namespace librealsense
 
 		platform::backend_device_group get_device_data() const override
 		{
-			return platform::backend_device_group({}, { _usb }, {});
+			return platform::backend_device_group({}, {}, {});
 		}
 	private:
-		platform::usb_device_info _usb;
 		std::shared_ptr<perc::TrackingManager> _manager;
 		perc::TrackingDevice* _dev;
 	};

@@ -64,9 +64,6 @@ if(BUILD_WITH_OPENMP)
 endif()
 
 option(BUILD_WITH_TM2 "Build with support for Intel TM2 tracking device" OFF)
-if (BUILD_WITH_TM2)
-	add_subdirectory(src/tm2)
-endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
@@ -608,9 +605,17 @@ target_link_libraries(realsense2 realsense-depth-cameras
 							     realsense-file 
 								 ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 if (BUILD_WITH_TM2)
-	target_link_libraries(realsense2 realsense-tracking)
-	add_definitions(-DWITH_TRACKING)
 	find_package(libtm REQUIRED)
+	add_definitions(-DWITH_TRACKING -DBUILD_STATIC)
+	add_subdirectory(src/tm2)
+	target_link_libraries(realsense2 realsense-tracking libtm)
+
+	install(TARGETS libtm
+		EXPORT realsense2Targets
+		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	)
 endif()
 
 list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})

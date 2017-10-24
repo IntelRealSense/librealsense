@@ -12,9 +12,6 @@
 
 using namespace perc;
 
-#define TM2_PID 0xabcd 
-// TODO: Sergey
-
 namespace librealsense
 {
 	class tm2_context
@@ -85,8 +82,7 @@ namespace librealsense
 	std::shared_ptr<device_interface> tm2_info::create(std::shared_ptr<context> ctx,
 		bool register_device_notifications) const
 	{
-		platform::backend_device_group g{ { _usb } };
-		return std::make_shared<tm2_device>(_manager, _dev, _ctx, g);
+		return std::make_shared<tm2_device>(_manager, _dev, _ctx, get_device_data());
 	}
 
 	std::vector<std::shared_ptr<device_info>> tm2_info::pick_tm2_devices(
@@ -94,27 +90,20 @@ namespace librealsense
 		platform::backend_device_group& group)
 	{
 		static tm2_context context;
-		
-		std::vector<platform::usb_device_info> chosen;
-		std::vector<std::shared_ptr<device_info>> results;
 
-		auto correct_pid = filter_by_product(group.usb_devices, { TM2_PID });
+		std::vector<std::shared_ptr<device_info>> results;
 
 		auto tm_devices = context.query_devices();
 
-		if (correct_pid.size() == tm_devices.size() && correct_pid.size() == 1)
+		if (tm_devices.size() == 1)
 		{
-			auto usb_dev = correct_pid.front();
-			chosen.push_back(usb_dev);
-			auto result = std::make_shared<tm2_info>(context.get_manager(), tm_devices.front(), ctx, usb_dev);
+			auto result = std::make_shared<tm2_info>(context.get_manager(), tm_devices.front(), ctx);
 		}
 		else
 		{
 			LOG_WARNING("At the moment only single TM2 device is supported");
 		}
 		
-		trim_device_list(group.usb_devices, chosen);
-
 		return results;
 	}
 }

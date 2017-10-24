@@ -29,24 +29,39 @@ find_path(LIBTM_INCLUDE_DIR
 	NAMES
 	TrackingManager.h
 	HINTS
-	"${LIBTM_DIR}/libtm/include"
+	"${LIBTM_DIR}/../libtm/include"
 	)
 
 # Look for the library.
 find_library(LIBTM_LIBRARY
 	NAMES
-	libtm	
+	tm	
 	HINTS
-	"${LIBTM_DIR}/lib/${TARGET_ARCH}"
-	"${LIBTM_DIR}/lib/"	
+	"${LIBTM_DIR}/bin/Release"
 	)
 # Look for the library debug flavor.
 find_library(LIBTM_LIBRARY_DEBUG
 	NAMES		
-	libtm_debug
+	tmd
 	HINTS
-	"${LIBTM_DIR}/lib/${TARGET_ARCH}"	
+	"${LIBTM_DIR}/bin/Debug"	
 	)
+
+	# Look for the library.
+find_library(INFRA_LIBRARY
+	NAMES
+	infra
+	HINTS
+	"${LIBTM_DIR}/bin/Release"
+	)
+# Look for the library debug flavor.
+find_library(INFRA_LIBRARY_DEBUG
+	NAMES		
+	infrad
+	HINTS
+	"${LIBTM_DIR}/bin/Debug"
+	)
+
 
 # handle the LIBTM and REQUIRED arguments and set LIBTM_FOUND to TRUE if
 # all listed variables are TRUE
@@ -62,6 +77,10 @@ if (LIBTM_FOUND AND NOT TARGET libtm)
 	add_library(libtm INTERFACE)
 	set_property(TARGET libtm PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${LIBTM_INCLUDE_DIR})
   	target_include_directories(libtm INTERFACE ${LIBTM_INCLUDE_DIR})  	
-  	target_link_libraries(libtm INTERFACE optimized ${LIBTM_LIBRARY} debug ${LIBTM_LIBRARY_DEBUG})
+  	target_link_libraries(libtm INTERFACE optimized ${LIBTM_LIBRARY} ${INFRA_LIBRARY} debug ${LIBTM_LIBRARY_DEBUG} ${INFRA_LIBRARY_DEBUG})
+	if (WIN32)
+		# Force-link to libusb on Windows (TODO: Check how to choose x64 vs Win32)
+		target_link_libraries(libtm INTERFACE ${LIBTM_DIR}/../3rdparty/win/libusb/bin/win32/libusb-1.0.lib)
+	endif()
 	mark_as_advanced(LIBTM_DIR LIBTM_LIBRARY LIBTM_INCLUDE_DIR)
 endif()

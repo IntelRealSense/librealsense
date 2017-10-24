@@ -85,11 +85,6 @@ namespace librealsense
                     if (!parse_usb_path(vid, pid, mi, unique_id, path)) continue;
 
                     usb_device_info info{ path, vid, pid, mi, unique_id};
-                    /*info.id = path;
-                    info.vid = vid;
-                    info.pid = pid;
-                    info.unique_id = unique_id;
-                    info.mi = mi;*/
 
                     result.push_back(info);
                 }
