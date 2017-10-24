@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstring>
 #include <thread>
+#include <array>
 #include <librealsense2/rs.hpp>
 
 
@@ -26,6 +27,25 @@ public:
 void frame_handler_that_does_nothing(rs2::frame f)
 {
     //Handle frame here...
+}
+bool is_desired_stream(const rs2::video_stream_profile& video_stream_profile)
+{
+    return 
+            //Has VGA resolution
+            (video_stream_profile.width() == 640 && video_stream_profile.height() == 480)
+        &&
+            //And is one of the following streams
+            (
+                (video_stream_profile.stream_type() == RS2_STREAM_DEPTH &&
+                 video_stream_profile.format() == RS2_FORMAT_Z16)
+            ||
+                (video_stream_profile.stream_type() == RS2_STREAM_INFRARED &&
+                 video_stream_profile.stream_index() == 1 &&
+                 video_stream_profile.format() == RS2_FORMAT_Y8)
+            ||
+                (video_stream_profile.stream_type() == RS2_STREAM_COLOR &&
+                 video_stream_profile.format() == RS2_FORMAT_RGB8)
+            );
 }
 
 int main(int argc, char * argv[]) try
@@ -113,7 +133,7 @@ int main(int argc, char * argv[]) try
                     }
                 }
             }
-
+            std::vector<rs2::stream_profile> streams_to_open;
             // We can iterate over the available profiles of a sensor
             for (rs2::stream_profile stream_profile : sensor.get_stream_profiles())
             {
@@ -169,6 +189,11 @@ int main(int argc, char * argv[]) try
                         << video_stream_profile.width() << "x" << video_stream_profile.height() <<
                         ", a frame rate of " << video_stream_profile.fps() << " frames per second"
                         ", and a pixel format of: " << video_stream_profile.format() << std::endl;
+
+                    if (is_desired_stream(video_stream_profile))
+                    {
+                        streams_to_open.push_back(video_stream_profile);
+                    }
                 }
             }
 
@@ -180,12 +205,11 @@ int main(int argc, char * argv[]) try
             // In the following code we start the sensor with the first profile it provides
             if (sensor.get_stream_profiles().size() > 0)
             {
-                auto first_profile = *sensor.get_stream_profiles().begin();
                 // Open can be called with a single profile, or with a collection of profiles
                 // Calling open() tries to get exclusive access to the sensor.
                 // Opening a sensor may have side effects such as actually
                 //  running, consume power, produce data, etc.
-                sensor.open(first_profile);
+                sensor.open(streams_to_open);
 
                 // In order to begin getting data from the sensor, we need to register a callback to handle frames (data)
                 // To register a callback, the sensor's start() method should be invoked.
