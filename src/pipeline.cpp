@@ -460,8 +460,10 @@ namespace librealsense
             {
                 //first try to get the previously resolved profile (if exists)
                 profile = conf->get_cached_resolved_profile();
-                if(i > 1 || !profile)
-                    profile = conf->resolve(shared_from_this(), std::chrono::seconds(5));
+                if (profile && i <= 1) //If a cached profile exists and this is the first iteration, no need to resolve
+                    break;
+
+                profile = conf->resolve(shared_from_this(), std::chrono::seconds(5));
             }
             catch (...)
             {
