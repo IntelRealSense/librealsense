@@ -14,17 +14,15 @@ function drawPointCloud(win, color, points) {
   win.beginPaint();
   if (points.vertices && points.textureCoordinates ) {
     let count = points.size;
-    if (color) {
-      glfw.drawDepthAndColorAsPointCloud(
-          win.window,
-          new Uint8Array(points.vertices.buffer),
-          count,
-          new Uint8Array(points.textureCoordinates.buffer),
-          color.data,
-          color.width,
-          color.height,
-          'rgb8');
-    }
+    glfw.drawDepthAndColorAsPointCloud(
+        win.window,
+        new Uint8Array(points.vertices.buffer),
+        count,
+        new Uint8Array(points.textureCoordinates.buffer),
+        color.data,
+        color.width,
+        color.height,
+        'rgb8');
   }
   win.endPaint();
 }
@@ -40,20 +38,9 @@ console.log('Drag to change perspective, scroll mouse wheel to zoom in/out.');
 
 while (! win.shouldWindowClose()) {
   const frameSet = pipeline.waitForFrames();
-  if (! frameSet) {
-    // Failed to capture frames
-    //  e.g. Camera is unplugged (plug in the camera again can resume the pipeline)
-    console.log('waitForFrames() didn\'t get any data...');
-    continue;
-  }
-
-  if (frameSet.depthFrame) {
-    const pointsFrame = pc.calculate(frameSet.depthFrame);
-    if (pointsFrame) {
-      if (frameSet.colorFrame) pc.mapTo(frameSet.colorFrame);
-      drawPointCloud(win, frameSet.colorFrame, pointsFrame);
-    }
-  }
+  const pointsFrame = pc.calculate(frameSet.depthFrame);
+  pc.mapTo(frameSet.colorFrame);
+  drawPointCloud(win, frameSet.colorFrame, pointsFrame);
 }
 
 pc.destroy();

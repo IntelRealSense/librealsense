@@ -24,17 +24,6 @@ pipeline.start();
 
 while (! win.shouldWindowClose()) {
   const frameset = pipeline.waitForFrames();
-  if (! frameset) {
-    // Failed to capture frames
-    //  e.g. Camera is unplugged (plug in the camera again can resume the pipeline)
-    console.log('waitForFrames() didn\'t get any data...');
-    continue;
-  }
-
-  if (!frameset.depthFrame || !frameset.colorFrame) {
-    continue;
-  }
-
   // Build the color map
   const depthMap = colorizer.colorize(frameset.depthFrame);
   if (depthMap) {
