@@ -77,15 +77,17 @@ script:
 
       export LRS_LOG_LEVEL="DEBUG";
 
-      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/D435_fw_5.8.9_lrs_2.8.0.x_Wed_10_18_17_15_53_15;
-      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/D415_fw_5.8.9_lrs_2.8.0.x_Wed_10_18_17_15_53_15;
-      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/D405_fw_5.8.9_lrs_2.8.0.x_Wed_10_18_17_15_53_15;
-      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/SR300_lrs_2.8.0.x_Wed_10_18_17_15_53_15;
+      url_records_path="http://realsense-hw-public.s3.amazonaws.com/rs-tests/1/";
+      records_name="records.txt";
+      url_records_list=$url_records_path$records_name;
+      wget $url_records_path$records_name;
+      tests_list=`cat $records_name`;
 
-      ./unit-tests/live-test from D435_fw_5.8.9_lrs_2.8.0.x_Wed_10_18_17_15_53_15 -d yes;
-      ./unit-tests/live-test from D415_fw_5.8.9_lrs_2.8.0.x_Wed_10_18_17_15_53_15 -d yes;
-      ./unit-tests/live-test from D405_fw_5.8.9_lrs_2.8.0.x_Wed_10_18_17_15_53_15 -d yes;
-      ./unit-tests/live-test from SR300_lrs_2.8.0.x_Wed_10_18_17_15_53_15 -d yes;
+      echo "Downloading unit-test records...";
+      for record in $tests_list; do echo $url_records_path$record; wget $url_records_path$record -P "records/"$(echo $record | cut -d '/' -f 1); done;
+
+      for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done;
+      for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done;
 
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then

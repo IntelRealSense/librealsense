@@ -32,55 +32,39 @@ build:
   verbosity: minimal
 test_script:
 - ps: >-
-    $url_D435 = "http://realsense-hw-public.s3.amazonaws.com/rs-tests/D435_fw_5.8.9_lrs_2.8.0.x_Wed_10_18_17_15_53_15"
+    $url_records_path = "http://realsense-hw-public.s3.amazonaws.com/rs-tests/1/"
 
-    $url_D415 = "http://realsense-hw-public.s3.amazonaws.com/rs-tests/D415_fw_5.8.9_lrs_2.8.0.x_Wed_10_18_17_15_53_15"
+    $url_records_list = $url_records_path + "records.txt"
 
-    $url_D405 = "http://realsense-hw-public.s3.amazonaws.com/rs-tests/D405_fw_5.8.9_lrs_2.8.0.x_Wed_10_18_17_15_53_15"
+    $out_records_list = "records.txt"
 
-    $url_SR300 = "http://realsense-hw-public.s3.amazonaws.com/rs-tests/SR300_lrs_2.8.0.x_Wed_10_18_17_15_53_15"
+    Invoke-WebRequest -Uri $url_records_list -OutFile $out_records_list
 
-    $output_D435 = "C:/projects/librealsense/build/Debug/live_test_D435"
+    $records = Get-Content $out_records_list
 
-    $output_D415 = "C:/projects/librealsense/build/Debug/live_test_D415"
+    mkdir single_cam
 
-    $output_D405 = "C:/projects/librealsense/build/Debug/live_test_D405"
+    mkdir multi_cam
 
-    $output_SR300 = "C:/projects/librealsense/build/Debug/live_test_SR300"
-
-    Invoke-WebRequest -Uri $url_D435 -OutFile $output_D435
-
-    Invoke-WebRequest -Uri $url_D415 -OutFile $output_D415
-
-    Invoke-WebRequest -Uri $url_D405 -OutFile $output_D405
-
-    Invoke-WebRequest -Uri $url_SR300 -OutFile $output_SR300
-
-    & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from C:/projects/librealsense/build/Debug/live_test_D435 -d yes
-
-    if ($LASTEXITCODE -ne 0)
+    foreach ($element in $records)
     {
-        throw "D435 Tests failed!"
+
+        $url_cur = $url_records_path + $element
+
+        Invoke-WebRequest -Uri $url_cur -OutFile $element
     }
 
-    & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from C:/projects/librealsense/build/Debug/live_test_D415 -d yes
-
-    if ($LASTEXITCODE -ne 0)
+    foreach ($element in $records) 
     {
-        throw "D415 Tests failed!"
+
+        $url_cur = $url_records_path + $element
+
+        & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from $element -d yes -i
+
+        if ($LASTEXITCODE -ne 0)
+        {
+            throw  $element + " Tests failed!"
+        }
     }
 
-    & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from C:/projects/librealsense/build/Debug/live_test_D405 -d yes
-
-    if ($LASTEXITCODE -ne 0)
-    {
-        throw "D405 Tests failed!"
-    }
-
-    & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from C:/projects/librealsense/build/Debug/live_test_SR300 -d yes
-
-    if ($LASTEXITCODE -ne 0)
-    {
-        throw "SR300 Tests failed!"
-    }
     # TODO(halton): Add unit test for Node.js binding
