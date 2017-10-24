@@ -546,9 +546,10 @@ namespace librealsense
                     {
                         throw playback_backend_exception("Recording history mismatch!", t, entity_id);
                     }
-                    auto next = pick_next_call();
 
                     _cursors[entity_id] = _cycles[entity_id] = idx;
+
+                    auto next = pick_next_call();
                     if (next && t != call_type::device_watcher_event && next->type == call_type::device_watcher_event)
                     {
                         invoke_device_changed_event();
