@@ -6,6 +6,7 @@
 #include <vector>
 #include <iterator>
 #include <cstddef>
+#include <thread>
 
 #include "tm-factory.h"
 #include "tm-device.h"
@@ -28,11 +29,14 @@ namespace librealsense
 		{
 			return _devices;
 		}
+
+		~tm2_context() { _t.join(); }
 	private:
 		friend class connect_disconnect_listener;
 		std::shared_ptr<perc::TrackingManager::Listener> _listener;
 		std::shared_ptr<perc::TrackingManager> _manager;
 		std::vector<perc::TrackingDevice*> _devices;
+		std::thread _t;
 	};
 
 	class connect_disconnect_listener : public TrackingManager::Listener
@@ -67,6 +71,10 @@ namespace librealsense
 	};
 
 	tm2_context::tm2_context()
+		: _t([this]() {
+			while (!_manager);
+			while(true) _manager->handleEvents();
+		})
 	{
 		_listener = std::make_shared<connect_disconnect_listener>(this);
 		_manager = std::shared_ptr<TrackingManager>(
