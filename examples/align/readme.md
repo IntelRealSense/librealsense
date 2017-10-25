@@ -12,7 +12,9 @@ The example display a GUI for controlling the max distance to show from the orig
 
 ## Expected Output
 
-The application should open a window and display a video stream from the camera. 
+The application should open a window and display a video stream from the camera.
+
+<p align="center"><img src="expected_output.gif" alt="screenshot gif"/></p>
 
 The window should have the following elements:
 - On the left side of the window is a vertical silder for controlling the depth clipping distance.
@@ -20,7 +22,8 @@ The window should have the following elements:
 - A corresponding (colorized) depth image.
 
 
-## Code Overview 
+
+## Code Overview
 
 As with any SDK application we include the Intel RealSense Cross Platform API:
 
@@ -43,20 +46,27 @@ We include 2 more header files which will help us to render GUI controls in our 
 #include "imgui_impl_glfw.h"
 ```
 
-These headers are part of the [ImGui](https://github.com/ocornut/imgui) library which we use to render GUI elements. 
+These headers are part of the [ImGui](https://github.com/ocornut/imgui) library which we use to render GUI elements.
 
 Next, we declare three functions to help the code look clearer:
 ```cpp
 void render_slider(rect location, float& clipping_dist);
 void remove_background(rs2::video_frame& color, const rs2::depth_frame& depth_frame, float depth_scale, float clipping_dist);
-bool try_get_depth_scale(rs2::device dev, float& scale);
+float get_depth_scale(rs2::device dev);
+rs2_stream find_stream_to_align(const std::vector<rs2::stream_profile>& streams);
+bool profile_changed(const std::vector<rs2::stream_profile>& current, const std::vector<rs2::stream_profile>& prev);
 ```
 
 `render_slider(..)`  is where all the GUI code goes, and we will not cover this function in this overview.
 
 `remove_background(..)` takes depth and color images (that are assumed to be aligned to one another), the depth scale units, and the maximum distance the user wishes to show, and updates the color frame so that its background (any pixel with depth distance larger than the maximum allowed) is removed.
 
-`try_get_depth_scale(..)` is a simple function that tries to find a depth sensor from the pipeline's device and retrieves its depth scale units.
+`get_depth_scale(..)` tries to find a depth sensor from the pipeline's device and retrieves its depth scale units.
+
+`find_stream_to_align(..)` goes over the given streams and verify that it has a depth profile and tries to find another profile to which depth should be aligned.
+
+`profile_changed()` checks if the current streaming profiles contains all the previous one.
+
 
 Heading to `main`:
 
@@ -64,22 +74,11 @@ We first define some variables that will be used to show the window and render t
 
 ```cpp
 // Create and initialize GUI related objects
-    window app(1280, 720, "CPP - Align Example"); // Simple window handling
-    ImGui_ImplGlfw_Init(app, false);      // ImGui library intializition 
-    rs2::colorizer c;                          // Helper to colorize depth images
-    texture renderer;                     // Helper for renderig images
+window app(1280, 720, "CPP - Align Example"); // Simple window handling
+ImGui_ImplGlfw_Init(app, false);      // ImGui library intializition
+rs2::colorizer c;                          // Helper to colorize depth images
+texture renderer;                     // Helper for renderig images
 ```
-
-Then, we create an `align` object:
-
-```cpp
-// Using the context to create a rs2::align object. 
-// rs2::align allows you to perform alignment of depth frames to others
-rs2::align align(RS2_STREAM_COLOR); 
-```
-
-`rs2::align` is a utility class that performs image alignment (registration) of 2 frames. Basically, each pixel from the first image will be transformed so that it matches its corresponding pixel in the second image. 
-A `rs2::align` object always transforms depth images to some target image which, in this example, is specified with the `RS2_STREAM_COLOR` parameter.
 
 Next, we define a `rs2::pipeline` which is a top level API for using RealSense depth cameras.
 `rs2::pipeline` automatically chooses a camera from all connected cameras, so we can simply call `pipeline::start()` and the camera is configured and streaming:
@@ -99,16 +98,27 @@ Before actually using the frames, we try to get the depth scale units of the dep
 
 ```cpp
 // Each depth camera might have different units for depth pixels, so we get it here
-float depth_scale;
-//Using the pipeline's profile, we can retrieve the device that the pipeline uses
-if (!try_get_depth_scale(profile.get_device(), depth_scale))
-{
-    std::cerr << "Device does not have a depth sensor" << std::endl;
-    return EXIT_FAILURE;
-}
+// Using the pipeline's profile, we can retrieve the device that the pipeline uses
+float depth_scale = get_depth_scale(profile.get_device());
 ```
 
 These units are expressed as depth in meters corresponding to a depth value of 1. For example if we have a depth pixel with a value of 2 and the depth scale units are 0.5 then that pixel is `2 X 0.5 = 1` meter away from the camera.
+
+Then, we create an `align` object:
+
+```cpp
+//Pipeline could choose a device that does not have a color stream
+//If there is no color stream, choose to align depth to another stream
+rs2_stream align_to = find_stream_to_align(profile.get_streams());
+
+// Create a rs2::align object.
+// rs2::align allows us to perform alignment of depth frames to others frames
+//The "align_to" is the stream type to which we plan to align depth frames.
+rs2::align align(align_to);
+```
+
+`rs2::align` is a utility class that performs image alignment (registration) of 2 frames. Basically, each pixel from the first image will be transformed so that it matches its corresponding pixel in the second image.
+A `rs2::align` object always transforms depth images to some target image which, in this example, is specified with the `RS2_STREAM_COLOR` parameter.
 
 Now comes the interesting part of the application. We start our main loop, which breaks only when the window is closed:
 
@@ -121,20 +131,39 @@ while (app) // Application still alive?
 Inside the loop, the first thing we do is block the program until the `align` object returns a `rs2::frameset`. A `rs2::frameset` is an object that holds a set of frames and provides an interface for easily accessing them.
 
 ```cpp
-    // Using the pipeline object, we block the application until a frameset is available
-    frameset = pipe.wait_for_frames();
-``` auto proccessed = align.proccess(frameset);	
+  // Using the align object, we block the application until a frameset is available
+  rs2::frameset frameset = pipe.wait_for_frames();
+```
 
-The `proccessed` returned from `proccess` should contain a set of aligned frames
-
+The `frameset` returned from `wait_for_frames` should contain a set of aligned frames. In case of an error getting the frames an exception could be thrown, but if the pipeline manages to reconfigure itself with a new device it will do that and return a frame from the new device.
+In the next lines we check if the pipeline switched its device and if so update the align object and the rest of objects required for the sample.
 
 ```cpp
-    // Trying to get both color and aligned depth frames
-    rs2::video_frame color_frame = frameset.get_color_frame();
-    rs2::depth_frame aligned_depth_frame = frameset.get_depth_frame();
+// rs2::pipeline::wait_for_frames() can replace the device it uses in case of device error or disconnection.
+// Since rs2::align is aligning depth to some other stream, we need to make sure that the stream was not changed
+//  after the call to wait_for_frames();
+if (profile_changed(pipe.get_active_profile().get_streams(), profile.get_streams()))
+{
+    //If the profile was changed, update the align object, and also get the new device's depth scale
+    profile = pipe.get_active_profile();
+    align_to = find_stream_to_align(profile.get_streams());
+    align = rs2::align(align_to);
+    depth_scale = get_depth_scale(profile.get_device());
+}
+```
 
-    //If one of them is unavailable, try to obtain another frameset
-    if (!aligned_depth_frame)
+At this point the `align` object is valid and will be able to align depth frames with other frames.
+
+```cpp
+    //Get processed aligned frame
+    auto proccessed = align.proccess(frameset);
+
+    // Trying to get both color and aligned depth frames
+    rs2::video_frame other_frame = proccessed.first_or_default(align_to);
+    rs2::depth_frame aligned_depth_frame = proccessed.get_depth_frame();
+
+    //If one of them is unavailable, continue iteration
+    if (!aligned_depth_frame || !other_frame)
     {
         continue;
     }
@@ -159,7 +188,7 @@ void remove_background(rs2::video_frame& other_frame, const rs2::depth_frame& de
 {
 ```
 
-In the beginning of function, we take a pointer to the raw buffer of both frames, so that we could alter the color image (instead of creating a new buffer). 
+In the beginning of function, we take a pointer to the raw buffer of both frames, so that we could alter the color image (instead of creating a new buffer).
 
 ```cpp
     const uint16_t* p_depth_frame = reinterpret_cast<const uint16_t*>(depth_frame.get_data());
@@ -202,4 +231,3 @@ By "strip off" we mean that we simply paint that pixel with a gray color.
         }
     }
 ```
-
