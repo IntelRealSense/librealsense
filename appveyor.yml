@@ -11,6 +11,10 @@ environment:
 image: Visual Studio 2015
 clone_folder: c:\projects\librealsense
 init:
+- ps:  >-
+      $startTime = (Get-Date)
+
+      echo "Script started on " $startTime
 - cmd: 
 install:
 - ps: Install-Product node $env:nodejs_version
@@ -29,7 +33,34 @@ before_build:
     cmake .. -DBUILD_EXAMPLES=true -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS:BOOL=true
 build:
   project: ./build/librealsense2.sln
+  parallel: true                           # Is not in use on "Free" plans -  https://github.com/appveyor/ci/issues/216. Leaved for future consideration
   verbosity: minimal
+
+#Unit-Test Suite
+# Each successful build will invoke a set of predefined unit-test that will run from recorded live test sessions
+# The records are available for download from the location specified in the tests, and are arranged in the following convention
+# |
+# |---| ..
+# |   | Records.txt
+# |   |
+# |   | single_cam
+# |               | ..
+# |               | Recorded_Test_1
+# |               | Recorded_Test_2
+# |               | ......
+# |
+# |   | multi_cam
+# |               | ..
+# |               | Recorded_Test_3
+# |               | Recorded_Test_4
+# |               | ......
+# |
+# The content of Records.txt is a list of all record paths one per line, e.g:
+# single_cam/Recorded_Test_1
+# single_cam/Recorded_Test_2
+# multi_cam/Recorded_Test_3
+# multi_cam/Recorded_Test_4
+#
 test_script:
 - ps: >-
     $url_records_path = "http://realsense-hw-public.s3.amazonaws.com/rs-tests/1/"
@@ -54,6 +85,8 @@ test_script:
         Invoke-WebRequest -Uri $url_cur -OutFile $element
     }
 
+    $test_failed = @("test_msg1","test_msg2","test_msg3")
+
     foreach ($element in $records) 
     {
 
@@ -63,8 +96,44 @@ test_script:
 
         if ($LASTEXITCODE -ne 0)
         {
-            throw  $element + " Tests failed!"
+            $test_failed +=  $element
         }
     }
 
+    if ($test_failed.length -ne 0)
+    {
+        $err_msg = "The following tests failed: "
+
+        foreach ($elem in $test_failed)
+        {
+
+            $err_msg = $err_msg + $elem + ", "
+
+        }
+
+        throw  $err_msg
+    }
     # TODO(halton): Add unit test for Node.js binding
+
+#---------------------------------#
+#        global handlers          #
+#---------------------------------#
+
+# on successful build
+on_success:
+- ps: >-
+      echo Script completed successfuly
+
+# on build failure
+on_failure:
+- ps: >-
+      echo "Script Failed"
+
+# after build failure or success
+on_finish:
+- ps: >-
+      $endTime  = (Get-Date)
+
+      echo "Ended on $endTime"
+
+      ($endTime-$startTime).ToString('''Execution time: ''mm'' min ''ss'' sec''')

@@ -64,7 +64,31 @@ install:
       make -j $CPU_NUM;
       sudo make install && cd ..;
     fi
-
+#Unit-Test Suite
+# Each successful build will invoke a set of predefined unit-test that will run from recorded live test sessions
+# The records are available for download from the location specified in the tests, and are arranged in the following convention
+# |
+# |---| ..
+# |   | Records.txt
+# |   |
+# |   | single_cam
+# |               | ..
+# |               | Recorded_Test_1
+# |               | Recorded_Test_2
+# |               | ......
+# |
+# |   | multi_cam
+# |               | ..
+# |               | Recorded_Test_3
+# |               | Recorded_Test_4
+# |               | ......
+# |
+# The content of Records.txt is a list of all record paths one per line, e.g:
+# single_cam/Recorded_Test_1
+# single_cam/Recorded_Test_2
+# multi_cam/Recorded_Test_3
+# multi_cam/Recorded_Test_4
+#
 script:
   # Exit immediately if a command exits with a non-zero status
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
