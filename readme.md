@@ -64,8 +64,6 @@ while (true)
     
     // Try to get a frame of a depth image
     rs2::depth_frame depth = frames.get_depth_frame(); 
-    // The frameset might not contain a depth frame, if so continue until it does
-    if (!depth) continue;
 
     // Get the depth frame's dimensions
     float width = depth.get_width();
