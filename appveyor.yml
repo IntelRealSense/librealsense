@@ -14,7 +14,7 @@ init:
 - ps:  >-
       $startTime = (Get-Date)
 
-      echo "Script started on " $startTime
+      echo "Script started on $startTime"
 - cmd: 
 install:
 - ps: Install-Product node $env:nodejs_version
@@ -85,7 +85,7 @@ test_script:
         Invoke-WebRequest -Uri $url_cur -OutFile $element
     }
 
-    $test_failed = @("test_msg1","test_msg2","test_msg3")
+    $test_failed = @()
 
     foreach ($element in $records) 
     {
