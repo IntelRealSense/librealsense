@@ -190,6 +190,7 @@ namespace librealsense
         {
         case RS400_PID:
             return std::make_shared<rs400_device>(ctx, group, register_device_notifications);
+        case RS405_PID:
         case RS410_PID:
         case RS460_PID:
             return std::make_shared<rs410_device>(ctx, group, register_device_notifications);

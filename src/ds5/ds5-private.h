@@ -17,18 +17,19 @@ namespace librealsense
     namespace ds
     {
         const uint16_t RS400_PID        = 0x0ad1; // PSR
-        const uint16_t RS400_MM_PID     = 0x0b00; // PSR
         const uint16_t RS410_PID        = 0x0ad2; // ASR
-        const uint16_t RS410_MM_PID     = 0x0aff; // ASR
         const uint16_t RS415_PID        = 0x0ad3; // ASRC
-        const uint16_t RS420_PID        = 0x0af6; // PWG
-        const uint16_t RS420_MM_PID     = 0x0afe; // PWGT
         const uint16_t RS430_PID        = 0x0ad4; // AWG
         const uint16_t RS430_MM_PID     = 0x0ad5; // AWGT
-        const uint16_t RS430_MM_RGB_PID = 0x0b01; // AWGCT
-        const uint16_t RS435_RGB_PID    = 0x0b07; // AWGC
-        const uint16_t RS460_PID        = 0x0b03; // DS5U
         const uint16_t RS_USB2_PID      = 0x0ad6; // USB2
+        const uint16_t RS420_PID        = 0x0af6; // PWG
+        const uint16_t RS420_MM_PID     = 0x0afe; // PWGT
+        const uint16_t RS410_MM_PID     = 0x0aff; // ASR
+        const uint16_t RS400_MM_PID     = 0x0b00; // PSR
+        const uint16_t RS430_MM_RGB_PID = 0x0b01; // AWGCT
+        const uint16_t RS460_PID        = 0x0b03; // DS5U
+        const uint16_t RS435_RGB_PID    = 0x0b07; // AWGC
+        const uint16_t RS405_PID        = 0x0b0c; // DS5U
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -54,6 +55,7 @@ namespace librealsense
             ds::RS430_MM_RGB_PID,
             ds::RS435_RGB_PID,
             ds::RS460_PID,
+            ds::RS405_PID,
             ds::RS_USB2_PID
         };
 
@@ -70,6 +72,7 @@ namespace librealsense
             { RS430_MM_PID, "Intel RealSense 430 with Tracking Module and RGB Module"},
             { RS435_RGB_PID,"Intel RealSense 435"},
             { RS460_PID,    "Intel RealSense 460" },
+            { RS405_PID,    "Intel RealSense 405" },
             { RS_USB2_PID,  "Intel RealSense USB2" }
         };
 

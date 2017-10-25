@@ -168,6 +168,7 @@ namespace librealsense
                     {
                     case RS_USB2_PID:
                     case RS400_PID:
+                    case RS405_PID:
                     case RS410_PID:
                     case RS460_PID:
                     case RS430_PID:
