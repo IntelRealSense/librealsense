@@ -327,7 +327,7 @@ namespace librealsense
                                                         const platform::uvc_device_info& color)
         {
             auto color_ep = std::make_shared<sr300_color_sensor>(this, ctx->get_backend().create_uvc_device(color),
-                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()),
+                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader_from_metadata()),
                                                            ctx);
             color_ep->register_pixel_format(pf_yuy2);
             color_ep->register_pixel_format(pf_yuyv);
@@ -381,7 +381,7 @@ namespace librealsense
 
             // create uvc-endpoint from backend uvc-device
             auto depth_ep = std::make_shared<sr300_depth_sensor>(this, backend.create_uvc_device(depth),
-                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()),
+                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader_from_metadata()),
                                                            ctx);
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
             depth_ep->register_pixel_format(pf_invz);

@@ -192,7 +192,7 @@ namespace librealsense
                     auto result = check_section_unique();
                     if (result[0].get_int() > 0)
                     {
-                        throw runtime_error("Can't save over existing section!");
+                        throw runtime_error(to_string() << "Append record - can't save over existing section in file " << filename << "!");
                     }
                 }
 
@@ -217,7 +217,7 @@ namespace librealsense
                     auto result = check_section_exists();
                     if (result[0].get_int() == 0)
                     {
-                        throw runtime_error(to_string() << "Could not find section " << section << "!");
+                        throw runtime_error(to_string() << "Append record - Could not find section " << section << " in file " << filename << "!");
                     }
                 }
                 {
@@ -546,9 +546,10 @@ namespace librealsense
                     {
                         throw playback_backend_exception("Recording history mismatch!", t, entity_id);
                     }
-                    auto next = pick_next_call();
 
                     _cursors[entity_id] = _cycles[entity_id] = idx;
+
+                    auto next = pick_next_call();
                     if (next && t != call_type::device_watcher_event && next->type == call_type::device_watcher_event)
                     {
                         invoke_device_changed_event();
@@ -1062,7 +1063,18 @@ namespace librealsense
 
         record_backend::~record_backend()
         {
-            write_to_file();
+            try
+            {
+                write_to_file();
+            }
+            catch (const runtime_error& e)
+            {
+                std::cerr << "Recording failed: " << e.what() << std::endl;
+            }
+            catch (...)
+            {
+                std::cerr << "Recording failed: - unresolved error" << std::endl;
+            }
         }
 
         shared_ptr<hid_device> playback_backend::create_hid_device(hid_device_info info) const

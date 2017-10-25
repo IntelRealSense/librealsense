@@ -47,7 +47,7 @@ inline void slider_float(const char* id, T* val, S T::* field, bool& to_set)
 
     if (ImGui::SliderFloat(slider_id.c_str(), &temp, min, max))
     {
-        val->*field = temp;
+        val->*field = static_cast<S>(temp);
         to_set = true;
     }
 }

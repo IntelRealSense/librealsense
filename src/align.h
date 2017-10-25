@@ -33,7 +33,6 @@ namespace librealsense
 
         rs2_source* get_c_wrapper() override { return _c_wrapper.get(); }
 
-        double get_time() {}
     private:
         frame_source& _actual_source;
         std::shared_ptr<rs2_source> _c_wrapper;
