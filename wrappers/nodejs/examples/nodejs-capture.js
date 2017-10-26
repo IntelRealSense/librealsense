@@ -7,44 +7,47 @@
 'use strict';
 
 const rs2 = require('../index.js');
-const GLFWWindow = require('./glfw-window.js').GLFWWindow;
-const glfw = require('./glfw-window.js').glfw;
+const {GLFWWindow} = require('./glfw-window.js');
+const {glfw} = require('./glfw-window.js');
 
-// Open a GLFW window
+// A GLFW Window to display the captured image
 const win = new GLFWWindow(1280, 720, 'Node.js Capture Example');
+
+// Colorizer is used to map distance in depth image into different colors
 const colorizer = new rs2.Colorizer();
+
+// The main work pipeline of camera
 const pipeline = new rs2.Pipeline();
+
+// Start the camera
 pipeline.start();
 
 while (! win.shouldWindowClose()) {
   const frameset = pipeline.waitForFrames();
+  if (! frameset) {
+    // Failed to capture frames
+    //  e.g. Camera is unplugged (plug in the camera again can resume the pipeline)
+    console.log('waitForFrames() didn\'t get any data...');
+    continue;
+  }
 
-  const depth = frameset.depthFrame;
-  const depthRGB = colorizer.colorize(depth);
-  const color = frameset.colorFrame;
+  if (!frameset.depthFrame || !frameset.colorFrame) {
+    continue;
+  }
 
-  win.beginPaint();
-  glfw.draw2x2Streams(
-      win.window,
-      2, // two channels
-      depthRGB ? depthRGB.getData() : null,
-      'rgb8',
-      depthRGB ? depthRGB.width : 0,
-      depthRGB ? depthRGB.height : 0,
-      color ? color.getData() : null,
-      'rgb8',
-      color ? color.width : 0,
-      color ? color.height : 0,
-      null, '', 0, 0,
-      null, '', 0, 0);
-  win.endPaint();
-
-  if (depth) depth.destroy();
-  if (depthRGB) depthRGB.destroy();
-  if (color) color.destroy();
-
-  frameset.destroy();
+  // Build the color map
+  const depthMap = colorizer.colorize(frameset.depthFrame);
+  if (depthMap) {
+    // Paint the images onto the window
+    win.beginPaint();
+    const color = frameset.colorFrame;
+    glfw.draw2x2Streams(win.window, 2,
+        depthMap.data, 'rgb8', depthMap.width, depthMap.height,
+        color.data, 'rgb8', color.width, color.height);
+    win.endPaint();
+  }
 }
+
 pipeline.stop();
 pipeline.destroy();
 win.destroy();

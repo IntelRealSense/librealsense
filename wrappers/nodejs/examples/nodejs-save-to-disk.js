@@ -14,8 +14,7 @@ let pipeline = new rs2.Pipeline();
 pipeline.start();
 
 for (let i = 0; i < 30; i++) {
-  let frameset = pipeline.waitForFrames();
-  frameset.destroy();
+  pipeline.waitForFrames();
 }
 
 let frameset = pipeline.waitForFrames();
@@ -23,21 +22,18 @@ for (let i = 0; i < frameset.size; i++) {
   let frame = frameset.at(i);
   if (frame instanceof rs2.VideoFrame) {
     if (frame instanceof rs2.DepthFrame) {
-      let newFrame = colorizer.colorize(frame);
-      frame.destroy();
-      frame = newFrame;
+      frame = colorizer.colorize(frame);
     }
     let pngFile = 'rs-save-to-disk-output-' +
                   rs2.stream.streamToString(frame.profile.streamType) + '.png';
     rs2.util.writeFrameToFile(pngFile, frame, 'png');
     console.log('Saved ', pngFile);
+
     let csvFile = 'rs-save-to-disk-output-' +
                   rs2.stream.streamToString(frame.profile.streamType) + '-metadata.csv';
     rs2.util.writeFrameMetadataToFile(csvFile, frame);
   }
-  frame.destroy();
 }
 pipeline.stop();
 pipeline.destroy();
-frameset.destroy();
 rs2.cleanup();
