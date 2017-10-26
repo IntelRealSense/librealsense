@@ -9,38 +9,40 @@ Using the editor of your choice create BGR_sample.cpp and copy-paste the followi
 ```cpp
 // include the librealsense C++ header file
 #include <librealsense2/rs.hpp>
-#include <librealsense2/rsutils.hpp>
 
 // include OpenCV header file
 #include <opencv2/opencv.hpp>
 
 using namespace std;
 using namespace cv;
-using namespace rs2;
 
 int main()
 {
-    // Create a context object. This object owns the handles to all connected realsense devices
-    context ctx;
+    //Contruct a pipeline which abstracts the device
+    rs2::pipeline pipe;
 
-    // Access the first available RealSense device
-    device dev = ctx.query_devices().front();
+    //Create a configuration for configuring the pipeline with a non default profile
+    rs2::config cfg;
 
-    util::config config;
-    config.enable_stream(RS2_STREAM_COLOR, 640, 480, 30, RS2_FORMAT_BGR8);
-    auto stream = config.open(dev);
+    //Add desired streams to configuration
+    cfg.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_BGR8, 30);
 
-    frame_queue queue;
-    // Start streaming
-    stream.start(queue);
+    //Instruct pipeline to start streaming with the requested configuration
+    pipe.start(cfg);
 
-    // Camera warmup - Dropped several first frames to let auto-exposure stabilize
+    // Camera warmup - dropping several first frames to let auto-exposure stabilize
+    rs2::frameset frames;
     for(int i = 0; i < 30; i++)
-       queue.wait_for_frame();
+    {
+        //Wait for all configured streams to produce a frame
+        frames = pipe.wait_for_frames();
+    }
 
-    frame f = queue.wait_for_frame();
+    //Get each frame
+    rs2::frame color_frame = frames.get_color_frame();
+
     // Creating OpenCV Matrix from a color image
-    Mat color(Size(640, 480), CV_8UC3, (void*)f.get_data(), Mat::AUTO_STEP);
+    Mat color(Size(640, 480), CV_8UC3, (void*)color_frame.get_data(), Mat::AUTO_STEP);
 
     // Display in a GUI
     namedWindow("Display Image", WINDOW_AUTOSIZE );
@@ -71,37 +73,40 @@ Copy the following code snippet into IR_sample.cpp:
 ```cpp
 // include the librealsense C++ header file
 #include <librealsense2/rs.hpp>
-#include <librealsense2/rsutils.hpp>
 
 // include OpenCV header file
 #include <opencv2/opencv.hpp>
 
 using namespace std;
 using namespace cv;
-using namespace rs2;
 
 int main()
 {
-    // Create a context object. This object owns the handles to all connected realsense devices
-    context ctx;
+    //Contruct a pipeline which abstracts the device
+    rs2::pipeline pipe;
 
-    // Access the first available RealSense device
-    device dev = ctx.query_devices().front();
+    //Create a configuration for configuring the pipeline with a non default profile
+    rs2::config cfg;
 
-    // Simultaneously open depth and infrared streams
-    dev.open({{ RS2_STREAM_INFRARED, 640, 480, RS2_FORMAT_Y8,  30 },
-              { RS2_STREAM_DEPTH,    640, 480, RS2_FORMAT_Z16, 30 }});
+    //Add desired streams to configuration
+    cfg.enable_stream(RS2_STREAM_INFRARED, 640, 480, RS2_FORMAT_Y8, 30);
+    cfg.enable_stream(RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, 30);
 
-    // Start streaming
-    frame_queue depth_queue, ir_queue;
-    dev.start(RS2_STREAM_DEPTH, depth_queue);
-    dev.start(RS2_STREAM_INFRARED, ir_queue);
+    //Instruct pipeline to start streaming with the requested configuration
+    pipe.start(cfg);
 
-    // Camera warmup - Dropped frames to allow stabilization
-    for(int i = 0; i < 40; i++)
-        ir_queue.wait_for_frame();
+    // Camera warmup - dropping several first frames to let auto-exposure stabilize
+    rs2::frameset frames;
+    for(int i = 0; i < 30; i++)
+    {
+        //Wait for all configured streams to produce a frame
+        frames = pipe.wait_for_frames();
+    }
 
-    frame ir_frame = ir_queue.wait_for_frame();
+    //Get each frame
+    rs2::frame ir_frame = frames.first(RS2_STREAM_INFRARED);
+    rs2::frame depth_frame = frames.get_depth_frame();
+
     // Creating OpenCV matrix from IR image
     Mat ir(Size(640, 480), CV_8UC1, (void*)ir_frame.get_data(), Mat::AUTO_STEP);
 
@@ -122,7 +127,7 @@ int main()
 Compile and run the program from the terminal, with the following command:
 
 ```shell
-g++ -std=c++11 IR_sample.cpp -lrealsense2 -lopencv_core -lopencv_omgproc -lopencv_contrib -o ir && ./ir
+g++ -std=c++11 IR_sample.cpp -lrealsense2 -lopencv_core -lopencv_imgproc -o ir && ./ir
 ```
 
 **Result :**
