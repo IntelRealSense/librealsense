@@ -2,8 +2,6 @@
 // Created by konrad on 10/23/17.
 //
 
-#define HAVE_CUDA
-
 #include "../../include/librealsense/gpu/align_z_to_other_helpers.h"
 #include "../../include/librealsense/rs.h"
 #include "../types.h"
