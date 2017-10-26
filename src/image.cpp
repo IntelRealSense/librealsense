@@ -7,6 +7,8 @@
 #include <cstring> // For memcpy
 #include <cmath>
 #include <algorithm>
+#include "librealsense/gpu/align_z_to_other.h"
+#include <ros/console.h>
 #ifdef __SSSE3__
 #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
 #endif
@@ -551,8 +553,19 @@ namespace rsimpl
         }    
     }
 
-    void align_z_to_other(byte * z_aligned_to_other, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin)
+    void align_z_to_other(byte * z_aligned_to_other, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin, bool force_cpu)
     {
+#if defined (HAVE_CUDA) && !defined (CUDA_DISABLER)
+        if (!force_cpu) {
+            if (true ==
+                gpu::align_z_to_other(z_aligned_to_other, z_pixels, z_scale, z_intrin, z_to_other, other_intrin)) {
+                ROS_INFO_THROTTLE(60, "DONE ON GPU NO ERRORS");
+                return;
+            }
+            ROS_ERROR("FAILED TO DO ON GPU SOME ERRORS...");
+        }
+        // on failure on the GPU we want to still align the images. as fall back we use the CPU.
+#endif
         auto out_z = (uint16_t *)(z_aligned_to_other);
         align_images(z_intrin, z_to_other, other_intrin, 
             [z_pixels, z_scale](int z_pixel_index) { return z_scale * z_pixels[z_pixel_index]; },

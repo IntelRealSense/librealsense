@@ -28,6 +28,9 @@
 
   <build_depend>pkg-config</build_depend>
 
+  <depend>libgpu_kernel_library</depend>
+  <depend>roscpp</depend>
+  <depend>rosconsole</depend>
   <depend>libusb-1.0-dev</depend>
   <depend>linux-headers-generic</depend>
   <depend>libssl-dev</depend>
