@@ -254,7 +254,7 @@ class StreamProfile {
   }
 
   destroy() {
-    this.cxxProfile.destroy();
+    if (this.cxxProfile) this.cxxProfile.destroy();
     this.cxxProfile = undefined;
   }
 }
@@ -1057,26 +1057,30 @@ class SyncerProcessingBlock extends ProcessingBlock {
 }
 
 /**
- * Pointcloud accepts depth frames and outputs Points frames
+ * PointCloud accepts depth frames and outputs Points frames
  * In addition, given non-depth frame, the block will align texture coordinate to the non-depth
  * stream
  */
-class Pointcloud {
+class PointCloud {
   constructor() {
-    this.cxxPointcloud = new RS2.RSPointcloud();
+    this.cxxPointCloud = new RS2.RSPointCloud();
+    this.pointsFrame = new Points();
   }
 
   /**
-   * Calculate Points frame from DepthFrame
-   * @param {Frame} depthFrame the depth frame
-   * @return {Points}
+   * Calculate to get a frame of type {@link Points}, from the data of specified DepthFrame
+   * @param {DepthFrame} depthFrame the depth frame
+   * @return {Points|undefined}
    */
   calculate(depthFrame) {
-    if (depthFrame) {
-      let cxxFrame = this.cxxPointcloud.calculate(depthFrame.cxxFrame);
-      if (cxxFrame) return new Points(cxxFrame);
+    if (arguments.length === 1 && depthFrame && depthFrame instanceof DepthFrame) {
+      this.pointsFrame.release();
+      if (this.cxxPointCloud.calculate(depthFrame.cxxFrame, this.pointsFrame.cxxFrame)) {
+        return this.pointsFrame;
+      }
+      return undefined;
     }
-    return undefined;
+    throw new TypeError('PointCloud.calculate() expects a frame argument.');
   }
 
   /**
@@ -1086,18 +1090,24 @@ class Pointcloud {
    */
   mapTo(mappedFrame) {
     if (mappedFrame) {
-      this.cxxPointcloud.mapTo(mappedFrame.cxxFrame);
+      this.cxxPointCloud.mapTo(mappedFrame.cxxFrame);
     } else {
-      throw new TypeError('Pointcloud.mapTo expects a valid argument');
+      throw new TypeError('PointCloud.mapTo() expects a frame argument');
     }
   }
 
+  release() {
+    if (this.cxxPointCloud) this.cxxPointCloud.destroy();
+    if (this.pointsFrame) this.pointsFrame.destroy();
+  }
+
   /**
-   * Release resources associated with the object
+   * Destroy all resources associated with the object
    */
   destroy() {
-    this.cxxPointcloud.destroy();
-    this.cxxPointcloud = undefined;
+    this.release();
+    this.cxxPointCloud = undefined;
+    this.pointsFrame = undefined;
   }
 }
 
@@ -1108,14 +1118,25 @@ class Colorizer {
   constructor() {
     this.cxxColorizer = new RS2.RSColorizer();
     this.cxxColorizer.create();
+    this.depthRGB = new VideoFrame();
+  }
+
+  release() {
+    if (this.cxxColorizer) this.cxxColorizer.destroy();
+    if (this.depthRGB) this.depthRGB.destroy();
   }
 
   /**
-   * Release resources associated with the colorizer
+   * Destroy all resources associated with the colorizer
    */
   destroy() {
-    this.cxxColorizer.destroy();
+    this.release();
     this.cxxColorizer = undefined;
+    this.depthRGB = undefined;
+  }
+
+  get colorizedFrame() {
+    return this.depthRGB;
   }
 
   /**
@@ -1125,11 +1146,13 @@ class Colorizer {
    * @return {VideoFrame|undefined}
    */
   colorize(depthFrame) {
-    if (depthFrame) {
-      let cxxFrame = this.cxxColorizer.colorize(depthFrame.cxxFrame);
-      if (cxxFrame) return new VideoFrame(cxxFrame);
+    if (arguments.length === 1 && depthFrame instanceof DepthFrame) {
+      const success = this.cxxColorizer.colorize(depthFrame.cxxFrame, this.depthRGB.cxxFrame);
+      this.depthRGB.updateProfile();
+      return success ? this.depthRGB : undefined;
+    } else {
+      throw new TypeError('Colorizer.colorize() expects a frame argument');
     }
-    return undefined;
   }
 }
 
@@ -1145,21 +1168,34 @@ class Align {
             'Align constructor\'s argument value is invalid');
 
     this.cxxAlign = new RS2.RSAlign(s);
+    this.frameSet = new FrameSet();
   }
 
-  process(frameset) {
-    const newFrameset = this.cxxAlign.process(frameset.cxxFrameSet);
-    if (newFrameset) {
-      return new FrameSet(newFrameset);
+  process(frameSet) {
+    if (arguments.length === 1 && frameSet) {
+      this.frameSet.release(); // Destroy all attached-frames (depth/color/etc.)
+      if (this.cxxAlign.process(frameSet.cxxFrameSet, this.frameSet.cxxFrameSet)) {
+        this.frameSet.__update();
+        return this.frameSet;
+      }
+      return undefined;
     }
+
+    throw new TypeError('Align.process() expects a frameset argument');
+  }
+
+  release() {
+    if (this.cxxAlign) this.cxxAlign.destroy();
+    if (this.frameSet) this.frameSet.destroy();
   }
 
   /**
-   * Release resources associated with the object
+   * Destroy resources associated with the object
    */
   destroy() {
-    this.cxxAlign.destroy();
+    this.release();
     this.cxxAlign = undefined;
+    this.frameSet = undefined;
   }
 }
 
@@ -1239,23 +1275,34 @@ class FrameQueue {
  */
 class Frame {
   constructor(cxxFrame) {
-    this.cxxFrame = cxxFrame;
-    let cxxProfile = this.cxxFrame.getStreamProfile();
-    this.streamProfile = cxxProfile.isVideoProfile ?
-        new VideoStreamProfile(cxxProfile) : new StreamProfile(cxxProfile);
+    this.cxxFrame = cxxFrame || new RS2.RSFrame();
+    this.updateProfile();
+  }
+
+  updateProfile() {
+    this.streamProfile = undefined;
+    if (this.cxxFrame) {
+      let cxxProfile = this.cxxFrame.getStreamProfile();
+      if (cxxProfile) {
+        this.streamProfile = cxxProfile.isVideoProfile ?
+            new VideoStreamProfile(cxxProfile) : new StreamProfile(cxxProfile);
+      }
+    }
+  }
+
+  release() {
+    if (this.cxxFrame) this.cxxFrame.destroy();
+    if (this.streamProfile) this.streamProfile.destroy();
+    this.arrayBuffer = undefined;
+    this.typedArray = undefined;
   }
 
   /**
    * Destroy the frame and its resource
    */
   destroy() {
-    if (this.cxxFrame) {
-      this.cxxFrame.destroy();
-    }
+    this.release();
     this.cxxFrame = undefined;
-    if (this.streamProfile) {
-      this.streamProfile.destroy();
-    }
     this.StreamProfile = undefined;
   }
 
@@ -1357,20 +1404,29 @@ class Frame {
 
   /**
    * Retrieve the frame data
-   * @return {Uint16Array|Uint8Array} if the frame is from depth stream, the return value is
-   * Uint16Array, others are Uint8Array.
+   * @return {Float32Array|Uint16Array|Uint8Array|undefined}
+   * if the frame is from the depth stream, the return value is Uint16Array;
+   * if the frame is from the XYZ32F or MOTION_XYZ32F stream, the return value is Float32Array;
+   * for other cases, return value is Uint8Array.
    */
   get data() {
-    const arrayBuffer = this.cxxFrame.getData();
+    if (this.typedArray) return this.typedArray;
 
-    if (!arrayBuffer) return undefined;
+    if (!this.arrayBuffer) {
+      this.arrayBuffer = this.cxxFrame.getData();
+      this.typedArray = undefined;
+    }
 
+    if (!this.arrayBuffer) return undefined;
+
+    this.updateProfile();
     switch (this.format) {
       case constants.format.FORMAT_Z16:
       case constants.format.FORMAT_DISPARITY16:
       case constants.format.FORMAT_Y16:
       case constants.format.FORMAT_RAW16:
-        return new Uint16Array(arrayBuffer.buffer);
+        this.typedArray = new Uint16Array(this.arrayBuffer);
+        return this.typedArray;
       case constants.format.FORMAT_YUYV:
       case constants.format.FORMAT_UYVY:
       case constants.format.FORMAT_RGB8:
@@ -1383,10 +1439,12 @@ class Frame {
       case constants.format.FORMAT_GPIO_RAW:
       case constants.format.FORMAT_RAW10:
       case constants.format.FORMAT_ANY:
-        return new Uint8Array(arrayBuffer.buffer);
+        this.typedArray = new Uint8Array(this.arrayBuffer);
+        return this.typedArray;
       case constants.format.FORMAT_XYZ32F:
       case constants.format.FORMAT_MOTION_XYZ32F:
-        return new Uint32Array(arrayBuffer.buffer);
+        this.typedArray = new Float32Array(this.arrayBuffer);
+        return this.typedArray;
     }
   }
 
@@ -1395,27 +1453,25 @@ class Frame {
    *  There are 2 acceptable forms of syntax:
    * <pre><code>
    *  Syntax 1. getData()
-   *  Syntax 2. getData(buffer)
+   *  Syntax 2. getData(ArrayBuffer)
    * </code></pre>
    *
-   * @param {Buffer} [buffer] The buffer that will be written to.
-   * @return {Uint16Array|Uint8Array|Buffer} if syntax 1 is used, returns the same result
-   * as {@link Frame#data}, if syntax 2 is used, returns the same buffer object the argument.
+   * @param {ArrayBuffer} [buffer] The buffer that will be written to.
+   * @return {Float32Array|Uint16Array|Uint8Array|undefined}
+   *  Returns a <code>TypedArray</code> or <code>undefined</code> for syntax 1,
+   *   see {@link Frame#data};
+   *  if syntax 2 is used, return value is not used (<code>undefined</code>).
    *
-   * @see [Frame.dataByteLength]{@link Frame#dataByteLength} to determine the buffer size
+   * @see [Frame.dataByteLength]{@link Frame#dataByteLength} to determine the buffer size in bytes.
    */
   getData(buffer) {
     if (arguments.length === 0) return this.data;
 
-    if (typeof buffer === 'object') {
-      const arrayBuffer = this.cxxFrame.getData();
-      const sourceBuffer = Buffer.from(arrayBuffer);
-
-      sourceBuffer.copy(buffer);
-      return buffer;
+    if (arguments.length === 1 && isArrayBuffer(buffer)) {
+      return this.cxxFrame.writeData(buffer);
     }
 
-    throw new TypeError('Frame.getData() expects zero or one Buffer object as the argument');
+    throw new TypeError('Frame.getData() expects 1 ArrayBuffer as a argument, or no argument');
   }
 
   /**
@@ -1491,32 +1547,72 @@ class Points extends Frame {
   constructor(cxxFrame) {
     super(cxxFrame);
   }
+
+  // _initVerticesData(length) {
+  //   this.verticesData = new ArrayBuffer(length);
+  //   this.verticesArray = new Float32Array(this.verticesData);
+  // }
+
+  // _initTextureCoordData(length) {
+  //   this.textureCoordData = new ArrayBuffer(length);
+  //   this.verticesCoordArray = new Int32Array(this.textureCoordData);
+  // }
+
   /**
    * Get an array of 3D vertices.
    * The coordinate system is: X right, Y up, Z away from the camera. Units: Meters
    *
-   * @return {Float32Array}
+   * @return {Float32Array|undefined}
    */
-  getVertices() {
-    if (this.cxxFrame.canGetPoints()) {
-      return this.cxxFrame.getVertices();
-    }
+  get vertices() {
+    if (this.verticesArray) return this.verticesArray;
 
-    throw new TypeError('Can\'t get vertices due to invalid frame type');
+    if (this.cxxFrame.canGetPoints()) {
+      const newLength = this.cxxFrame.getVerticesBufferLen();
+      if (!this.verticesData || newLength !== this.verticesData.byteLength) {
+        this.verticesData = new ArrayBuffer(newLength);
+      }
+      if (this.cxxFrame.writeVertices(this.verticesData)) {
+        this.verticesArray = new Float32Array(this.verticesData);
+        return this.verticesArray;
+      }
+    }
+    return undefined;
+  }
+
+  release() {
+    if (this.cxxFrame) this.cxxFrame.destroy();
+    this.verticesArray = undefined;
+    this.verticesCoordArray = undefined;
+  }
+
+  destroy() {
+    this.release();
+    this.verticesData = undefined;
+    this.textureCoordData = undefined;
+    this.cxxFrame = undefined;
   }
 
   /**
    * Get an array of texture coordinates per vertex
    * Each coordinate represent a (u,v) pair within [0,1] range, to be mapped to texture image
    *
-   * @return {Int32Array}
+   * @return {Int32Array|undefined}
    */
-  getTextureCoordinates() {
-    if (this.cxxFrame.canGetPoints()) {
-      return this.cxxFrame.getTextureCoordinates();
-     }
+  get textureCoordinates() {
+    if (this.verticesCoordArray) return this.verticesCoordArray;
 
-    throw new TypeError('Can\'t get coordinates due to invalid frame type');
+    if (this.cxxFrame.canGetPoints()) {
+      const newLength = this.cxxFrame.getTexCoordBufferLen();
+      if (!this.textureCoordData || newLength !== this.textureCoordData.byteLength) {
+        this.textureCoordData = new ArrayBuffer(newLength);
+      }
+      if (this.cxxFrame.writeTextureCoordinates(this.textureCoordData)) {
+        this.verticesCoordArray = new Float32Array(this.textureCoordData);
+        return this.verticesCoordArray;
+      }
+    }
+    return undefined;
   }
 
   /**
@@ -1568,8 +1664,9 @@ class FrameSource {
  */
 class FrameSet {
   constructor(cxxFrameSet) {
-    this.cxxFrameSet = cxxFrameSet;
-    this.sizeValue = cxxFrameSet.getSize();
+    this.cxxFrameSet = cxxFrameSet || new RS2.RSFrameSet();
+    this.cache = [];
+    this.__update();
   }
 
   /**
@@ -1606,6 +1703,11 @@ class FrameSet {
    * @return {DepthFrame|VideoFrame|Frame|undefined}
    */
   at(index) {
+    //
+    // TODO(ting): mapping index to stream and use this.cache[]
+    //   e.g. return getFrame(this.cxxFrameSet.indexToStream(index));
+    //
+
     let cxxFrame = this.cxxFrameSet.at(index);
 
     if (!cxxFrame) return undefined;
@@ -1621,6 +1723,37 @@ class FrameSet {
     return new Frame(cxxFrame);
   }
 
+  __internalAssembleFrame(cxxFrame) {
+    if (!cxxFrame) return undefined;
+    if (cxxFrame.isDepthFrame()) return new DepthFrame(cxxFrame);
+    if (cxxFrame.isVideoFrame()) return new VideoFrame(cxxFrame);
+    return new Frame(cxxFrame);
+  }
+
+  __internalGetFrame(stream) {
+    let s = checkStringNumber(stream,
+        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+        stream2Int,
+        'FrameSet.getFrame() expects the argument to be string or integer',
+        'FrameSet.getFrame()\'s argument value is invalid');
+    return this.__internalAssembleFrame(this.cxxFrameSet.getFrame(s));
+  }
+
+  __internalGetFrameCache(stream, callback) {
+    if (! this.cache[stream]) {
+      this.cache[stream] = callback(stream);
+    } else {
+      let frame = this.cache[stream];
+      if (!frame.cxxFrame) {
+        frame.cxxFrame = new RS2.RSFrame();
+      }
+      if (! this.cxxFrameSet.replaceFrame(stream, frame.cxxFrame)) {
+        this.cache[stream] = undefined;
+      }
+    }
+    return this.cache[stream];
+  }
+
   /**
    * Get the frame with specified stream
    *
@@ -1628,24 +1761,24 @@ class FrameSet {
    * @return {DepthFrame|VideoFrame|Frame|undefined}
    */
   getFrame(stream) {
-    let s = checkStringNumber(stream,
-        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-        stream2Int,
-        'getFrame expects the argument to be string or integer',
-        'getFrame\'s argument value is invalid');
-    let cxxFrame = this.cxxFrameSet.getFrame(s);
+    return this.__internalGetFrameCache(stream, this.__internalGetFrame.bind(this));
+  }
 
-    if (!cxxFrame) return undefined;
+  __update() {
+    this.sizeValue = this.cxxFrameSet.getSize();
+  }
 
-    if (cxxFrame.isDepthFrame()) {
-        return new DepthFrame(cxxFrame);
-    }
+  releaseCache() {
+    this.cache.forEach((f) => {
+      if (f && f.cxxFrame) {
+        f.release();
+      }
+    });
+  }
 
-    if (cxxFrame.isVideoFrame()) {
-      return new VideoFrame(cxxFrame);
-    }
-
-    return new Frame(cxxFrame);
+  release() {
+    this.releaseCache();
+    if (this.cxxFrameSet) this.cxxFrameSet.destroy();
   }
 
   /**
@@ -1654,7 +1787,8 @@ class FrameSet {
    * @return {undefined}
    */
   destroy() {
-    this.cxxFrameSet.destroy();
+    this.release();
+    this.cache = [];
     this.cxxFrameSet = undefined;
   }
 }
@@ -1688,13 +1822,14 @@ class Pipeline {
     this.cxxPipeline = new RS2.RSPipeline();
     this.cxxPipeline.create(this.ctx.cxxCtx);
     this.started = false;
+    this.frameSet = new FrameSet();
   }
 
- /**
-  * Destroy the resource associated with this pipeline
-  *
-  * @return {undefined}
-  */
+  /**
+   * Destroy the resource associated with this pipeline
+   *
+   * @return {undefined}
+   */
   destroy() {
     if (this.started === true) this.stop();
 
@@ -1704,6 +1839,11 @@ class Pipeline {
       this.ctx.destroy();
     }
     this.ctx = undefined;
+
+    if (this.frameSet) {
+      this.frameSet.destroy();
+    }
+    this.frameSet = undefined;
   }
 
   /**
@@ -1742,21 +1882,38 @@ class Pipeline {
    * @return {undefined}
    */
   stop() {
-    if (this.started === false) return undefined;
+    if (this.started === false) return;
 
-    this.cxxPipeline.stop();
+    if (this.cxxPipeline ) {
+      this.cxxPipeline.stop();
+    }
     this.started = false;
+
+    if (this.frameSet) this.frameSet.release();
   }
 
   /**
-   * Wait until new frame becomes available.
-   * @param {Integer} timeout max time in milliseconds to wait
-   * @return {FrameSet|undefined}
+   * Wait until a set of new frames becomes available.
+   *
+   * @param {Integer} timeout - max time to wait, in milliseconds, default to 5000 ms
+   * @return {FrameSet|undefined} a FrameSet object or Undefined
+   * @see See [Pipeline.latestFrame]{@link Pipeline#latestFrame}
    */
-  waitForFrames(timeout) {
-    const timeoutValue = timeout || 5000;
-    const cxxFrameSet = this.cxxPipeline.waitForFrames(timeoutValue);
-    return cxxFrameSet ? new FrameSet(cxxFrameSet) : undefined;
+  waitForFrames() {
+    if ((arguments.length === 1 && isNumber(arguments[0])) || arguments.length === 0) {
+      const timeout = arguments[0] || 5000;
+      this.frameSet.release();
+      if (this.cxxPipeline.waitForFrames(this.frameSet.cxxFrameSet, timeout)) {
+        this.frameSet.__update();
+        return this.frameSet;
+      }
+      return undefined;
+    }
+    throw new TypeError('Pipeline.waitForFrames() expects an integer timeout argument');
+  }
+
+  get latestFrame() {
+    return this.frameSet;
   }
 
   getActiveProfile() {
@@ -3992,6 +4149,10 @@ function visualPreset2Int(str) {
  return str2Int(str, 'visual_preset');
 }
 
+function isArrayBuffer(value) {
+    return value && value instanceof ArrayBuffer && value.byteLength !== undefined;
+}
+
 const constants = {
   stream: stream,
   format: format,
@@ -4025,10 +4186,11 @@ module.exports = {
   ROISensor: ROISensor,
   StreamProfile: StreamProfile,
   Frame: Frame,
+  FrameSet: FrameSet,
   VideoFrame: VideoFrame,
   DepthFrame: DepthFrame,
   Align: Align,
-  Pointcloud: Pointcloud,
+  PointCloud: PointCloud,
   Points: Points,
   FrameQueue: FrameQueue,
   // PlaybackContext: PlaybackContext,
