@@ -462,7 +462,8 @@ if(FORCE_LIBUVC)
 endif()
 
 if (MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /wd4819")
+    add_definitions(-D_UNICODE)
 endif()
 
 add_definitions(-D${BACKEND} -DUNICODE)
