@@ -559,7 +559,7 @@ namespace rsimpl
     void align_z_to_other(byte * z_aligned_to_other, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin, bool force_cpu)
     {
 
-
+/*
         // Generate test output
         static long count = 0;
         std::string filename = "camera_data_file_";
@@ -610,7 +610,7 @@ namespace rsimpl
         myFile.close();
         // End of generate test output
         ROS_INFO("Wrote out file: %s", filename.c_str());
-
+*/
 #if defined (HAVE_CUDA) && !defined (CUDA_DISABLER)
         if (!force_cpu) {
             if (true ==
