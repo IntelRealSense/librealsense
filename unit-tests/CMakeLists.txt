@@ -47,3 +47,5 @@ target_link_libraries(ZR300-live-test ${DEPENDENCIES})
 add_executable(offline-test unit-tests-offline.cpp)
 target_link_libraries(offline-test ${DEPENDENCIES})
 
+file(COPY images DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(INSTALL DESTINATION "${CATKIN_DEVEL_PREFIX}/lib/librealsense/" TYPE DIRECTORY FILES images)

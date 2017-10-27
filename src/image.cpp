@@ -3,7 +3,10 @@
 
 #include "image.h"
 #include "../include/librealsense/rsutil.h" // For projection/deprojection logic
-
+#include <fstream>
+#include <ctime>
+#include <chrono>
+#include <boost/algorithm/string.hpp>
 #include <cstring> // For memcpy
 #include <cmath>
 #include <algorithm>
@@ -555,6 +558,59 @@ namespace rsimpl
 
     void align_z_to_other(byte * z_aligned_to_other, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin, bool force_cpu)
     {
+
+
+        // Generate test output
+        static long count = 0;
+        std::string filename = "camera_data_file_";
+        filename+= std::to_string(count++) + ".bin";
+        std::ofstream myFile(filename);
+
+        // output z_intrin
+        myFile << z_intrin.width << std::endl << z_intrin.height << std::endl;
+        for (auto coef : z_intrin.coeffs) {
+            myFile << coef << std::endl;
+        }
+        myFile << z_intrin.fx << std::endl;
+        myFile << z_intrin.fy << std::endl;
+        myFile << z_intrin.model<< std::endl;
+        myFile << z_intrin.ppx<< std::endl;
+        myFile << z_intrin.ppy<< std::endl;
+
+        // output other intrin
+        myFile << other_intrin.width << std::endl<< z_intrin.height<< std::endl;
+        for (auto coef : other_intrin.coeffs) {
+            myFile << coef;
+        }
+        myFile << other_intrin.fx<< std::endl;
+        myFile << other_intrin.fy<< std::endl;
+        myFile << other_intrin.model<< std::endl;
+        myFile << other_intrin.ppx<< std::endl;
+        myFile << other_intrin.ppy<< std::endl;
+
+
+        // output z_to_other extrinsics
+        for (auto rot : z_to_other.rotation){
+            myFile << rot<< std::endl;
+        }
+        for (auto tran : z_to_other.translation) {
+            myFile << tran<< std::endl;
+        }
+
+
+        // output z scale
+        myFile << z_scale<< std::endl;
+
+        // output pixels
+        int counter = z_intrin.width * z_intrin.height;
+        for (int i = 0; i != counter; ++i) {
+            myFile << z_pixels[i]<< std::endl;
+        }
+
+        myFile.close();
+        // End of generate test output
+        ROS_INFO("Wrote out file: %s", filename.c_str());
+
 #if defined (HAVE_CUDA) && !defined (CUDA_DISABLER)
         if (!force_cpu) {
             if (true ==

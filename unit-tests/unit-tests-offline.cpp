@@ -8,7 +8,9 @@
 
 #include "unit-tests-common.h"
 #include "../src/device.h"
-
+#include <boost/filesystem.hpp>
+#include "../src/image.h"
+#include <ros/time.h>
 #include <sstream>
 
 static std::string unknown = "UNKNOWN"; 
@@ -402,6 +404,96 @@ TEST_CASE("rs API version verification", "[offline] [validation]")
     // Version string is in ["1.0.0".. "99.99.99"] range
     REQUIRE(api_ver_str.size() >= 5);
     REQUIRE(api_ver_str.size() <= 8);
+}
+
+
+bool images_are_equal(const boost::filesystem::directory_entry & entry) {
+    std::ifstream myFile(entry.path().c_str(), std::ios::in);
+
+    std::string enumValue;
+
+    // input z_intrin
+    rs_intrinsics z_intrin;
+    myFile >> z_intrin.width >> z_intrin.height;
+    for (auto & coef : z_intrin.coeffs) {
+        myFile >> coef;
+    }
+    myFile >> z_intrin.fx;
+    myFile >> z_intrin.fy;
+    myFile >> enumValue;
+    z_intrin.model = RS_DISTORTION_NONE;
+    myFile >> z_intrin.ppx;
+    myFile >> z_intrin.ppy;
+
+    // input other intrin
+    rs_intrinsics other_intrin;
+    myFile >> other_intrin.width >> z_intrin.height;
+    for (auto & coef : other_intrin.coeffs) {
+        myFile >> coef;
+    }
+    myFile >> other_intrin.fx;
+    myFile >> other_intrin.fy;
+    myFile >> enumValue;
+    other_intrin.model = RS_DISTORTION_NONE;
+    myFile >> other_intrin.ppx;
+    myFile >> other_intrin.ppy;
+
+
+    // input z_to_other extrinsics
+    rs_extrinsics z_to_other;
+    for (auto & rot : z_to_other.rotation){
+        myFile >> rot;
+    }
+    for (auto & tran : z_to_other.translation) {
+        myFile >> tran;
+    }
+
+
+    // input z scale
+    float z_scale;
+    myFile >> z_scale;
+
+    // input pixels
+    int counter = z_intrin.width * z_intrin.height;
+    std::cerr << "counter:= " << counter;
+    std::unique_ptr<uint16_t[]> z_pixels(new uint16_t[counter]);
+    for (int i = 0; i != counter; ++i) {
+        myFile >> z_pixels[i];
+    }
+
+    myFile.close();
+
+    std::unique_ptr<uint16_t[]> z_pixels_out_cpu(new uint16_t[counter]);
+    std::unique_ptr<uint16_t[]> z_pixels_out_gpu(new uint16_t[counter]);
+
+    rsimpl::align_z_to_other((rsimpl::byte *) z_pixels_out_cpu.get(), z_pixels.get(), z_scale, z_intrin, z_to_other, other_intrin, true);
+    rsimpl::align_z_to_other((rsimpl::byte *) z_pixels_out_gpu.get(), z_pixels.get(), z_scale, z_intrin, z_to_other, other_intrin, false);
+
+    for (int i = 0; i != counter; ++i) {
+        if (z_pixels_out_cpu[i]!=z_pixels_out_gpu[i]) {
+            return false;
+        }
+    }
+    return true;
+
+
+
+}
+
+TEST_CASE("rs GPU align_z_to_other implementation verification", "[offline] [validation] [gpu]")
+{
+    // load test data from local store and invoke tests on images. verify they match.
+    using boost::filesystem::path;
+    using boost::filesystem::directory_entry;
+    using boost::filesystem::directory_iterator;
+    ros::Time::init();
+
+    path p ("./images");
+    directory_iterator iter(p);
+    for (; iter!=directory_iterator(); ++iter) {
+        directory_entry entry = *iter;
+        REQUIRE(images_are_equal(entry));
+    }
 }
 
 #endif /* !defined(MAKEFILE) || ( defined(OFFLINE_TEST) ) */
