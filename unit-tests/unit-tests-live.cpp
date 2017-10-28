@@ -257,7 +257,6 @@ TEST_CASE("Sync sanity", "[live]") {
             s.stop();
         }
     }
-    
 }
 
 TEST_CASE("Sync different fps", "[live][!mayfail]") {
@@ -1185,11 +1184,15 @@ TEST_CASE("Streaming modes sanity check", "[live]")
                     if (auto video = profile.as<video_stream_profile>())
                     {
                         rs2_intrinsics intrin;
+                        CAPTURE(video.stream_type());
                         CAPTURE(video.format());
                         CAPTURE(video.width());
                         CAPTURE(video.height());
 
-                        if ((PID == "0AA5") || (RS2_FORMAT_Y16 != video.format())) // Y16 format intrinsics are available for SR300 only
+                        bool calib_format = ((PID != "0AA5") &&
+                                            (RS2_FORMAT_Y16 == video.format()) &&
+                                            (RS2_STREAM_INFRARED == video.stream_type()));
+                        if (!calib_format) // intrinsics are not available for calibration formats
                         {
                             REQUIRE_NOTHROW(intrin = video.get_intrinsics());
 
@@ -1291,6 +1294,8 @@ TEST_CASE("Check width and height of stream intrinsics", "[live][AdvMd]")
             disable_sensitive_options_for(dev);
             std::string serial;
             REQUIRE_NOTHROW(serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+            std::string PID;
+            REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
             if (shared_dev->is<rs400::advanced_mode>())
             {
                 auto advanced = shared_dev->as<rs400::advanced_mode>();
@@ -1335,8 +1340,11 @@ TEST_CASE("Check width and height of stream intrinsics", "[live][AdvMd]")
                         CAPTURE(video.width());
                         CAPTURE(video.height());
 
-                        // Calibration format does not provide intrinsic data
-                        if ((RS2_FORMAT_Y16 != video.format()) || (RS2_STREAM_INFRARED !=video.stream_type()))
+                        // Calibration formats does not provide intrinsic data, except for SR300
+                        bool calib_format = ((PID != "0AA5") &&
+                                            (RS2_FORMAT_Y16 == video.format()) &&
+                                            (RS2_STREAM_INFRARED == video.stream_type()));
+                        if (!calib_format)
                             REQUIRE_NOTHROW(intrin = video.get_intrinsics());
                         else
                             REQUIRE_THROWS(intrin = video.get_intrinsics());
@@ -1593,11 +1601,11 @@ TEST_CASE("Multiple devices", "[live][multicam]")
                     disable_sensitive_options_for(dev1);
                     for (auto & dev2 : list)
                     {
-                        disable_sensitive_options_for(dev2);
-
                         // couldn't think of a better way to compare the two...
                         if (dev1 == dev2)
                             continue;
+
+                        disable_sensitive_options_for(dev2);
 
                         REQUIRE_NOTHROW(dev1.open(dev1.get_stream_profiles().front()));
                         REQUIRE_NOTHROW(dev2.open(dev2.get_stream_profiles().front()));
@@ -2690,7 +2698,7 @@ void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::
     CAPTURE(requests.sync);
 
     ss.str("");
-    ss << "Received profiles : " << std::endl;
+    ss << "\n\nReceived profiles : " << std::endl;
     std::sort(actual_streams_arrived.begin(), actual_streams_arrived.end());
     auto last = std::unique(actual_streams_arrived.begin(), actual_streams_arrived.end());
     actual_streams_arrived.erase(last, actual_streams_arrived.end());
@@ -2847,17 +2855,17 @@ TEST_CASE("Pipeline poll_for_frames", "[live]")
 }
 
 static const std::map<std::string, device_profiles> pipeline_custom_configurations = {
-    /* RS400/PSR*/      { "0AD1",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
-    /* RS410/ASR*/      { "0AD2",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 640, 1 } }, 30, true } },
+    /* RS400/PSR*/      { "0AD1",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
+    /* RS410/ASR*/      { "0AD2",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
     /* RS415/ASRC*/     { "0AD3",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
     /* RS430/AWG*/      { "0AD4",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 480, 1 } }, 30, true } },
-    /* RS430_MM/AWGT*/  { "0AD5",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
+    /* RS430_MM/AWGT*/  { "0AD5",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
     /* RS420/PWG*/      { "0AF6",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
-    /* RS420_MM/PWGT*/  { "0AFE",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
-    /* RS410_MM/ASRT*/  { "0AFF",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
-    /* RS400_MM/PSR*/   { "0B00",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
+    /* RS420_MM/PWGT*/  { "0AFE",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
+    /* RS410_MM/ASRT*/  { "0AFF",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
+    /* RS400_MM/PSR*/   { "0B00",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
     /* RS430_MC/AWGTC*/ { "0B01",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
-    /* RS405/DS5U*/     { "0B03",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
+    /* RS405/DS5U*/     { "0B03",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
     /* RS435_RGB/AWGC*/ { "0B07",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
 
     /* SR300*/          { "0AA5",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16,  640, 240, 0 },
@@ -2938,9 +2946,9 @@ static const std::map<std::string, device_profiles> pipeline_autocomplete_config
     /* RS430/AWG*/      { "0AD4",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0 } }, 30, true } },
     /* RS430_MM/AWGT*/  { "0AD5",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 0, 0, 1 } }, 30, true } },
     /* RS420/PWG*/      { "0AF6",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0 } }, 30, true } },
-    /* RS420_MM/PWGT*/  { "0AFE",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 0, 0, 1 } }, 30, true } },
-    /* RS410_MM/ASRT*/  { "0AFF",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 0, 0, 1 } }, 30, true } },
-    /* RS400_MM/PSR*/   { "0B00",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 0, 0, 1 } }, 30, true } },
+    /* RS420_MM/PWGT*/  { "0AFE",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
+    /* RS410_MM/ASRT*/  { "0AFF",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
+    /* RS400_MM/PSR*/   { "0B00",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
     /* RS430_MM_RGB/AWGTC*/{ "0B01",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
     /* RS405/DS5U*/     { "0B03",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 0, 0, 1 } }, 30, true } },
     /* RS435_RGB/AWGC*/ { "0B07",{ { /*{ RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0 },*/{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
@@ -3327,15 +3335,14 @@ bool compare(const rs2_extrinsics& first, const rs2_extrinsics& second, double d
 
 static const std::map<std::string, device_profiles> pipeline_configurations_for_extrinsic = {
     /* RS400/PSR*/      { "0AD1",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16,  640, 480, 0 },
-                                     { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
+                                     { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
     /* RS410/ASR*/      { "0AD2",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16,  640, 480, 0 },
-                                     { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
+                                     { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
     /* RS415/ASRC*/     { "0AD3",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16, 640, 480, 0 },
                                      { RS2_STREAM_INFRARED, RS2_FORMAT_Y8,  640, 480, 1 } ,
                                      { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
     /* RS430/AWG*/      { "0AD4",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16, 640, 480, 0 },
-                                     { RS2_STREAM_INFRARED, RS2_FORMAT_Y8,  640, 480, 1 } ,
-                                     { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
+                                     { RS2_STREAM_INFRARED, RS2_FORMAT_Y8,  640, 480, 1 } }, 30, true } },
     /* RS430_MM/AWGT*/  { "0AD5",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16, 640, 480, 0 },
                                      { RS2_STREAM_INFRARED, RS2_FORMAT_Y8,  640, 480, 1 } }, 30, true } },
     /* RS420/PWG*/      { "0AF6",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16, 640, 480, 0 },
@@ -3343,14 +3350,14 @@ static const std::map<std::string, device_profiles> pipeline_configurations_for_
     /* RS420_MM/PWGT*/  { "0AFE",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16, 640, 480, 0 },
                                      { RS2_STREAM_INFRARED, RS2_FORMAT_Y8,  640, 480, 1 } }, 30, true } },
     /* RS410_MM/ASRT*/  { "0AFF",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16,  640, 480, 0 },
-                                     { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
+                                     { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
     /* RS400_MM/PSR*/   { "0B00",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16,  640, 480, 0 },
-                                     { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
+                                     { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
     /* RS430_MM_RGB/AWGTC*/{"0B01",{ { { RS2_STREAM_DEPTH,  RS2_FORMAT_Z16, 640, 480, 0 },
                                      { RS2_STREAM_INFRARED, RS2_FORMAT_Y8,  640, 480, 1 } ,
                                      { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
     /* RS405/DS5U*/     { "0B03",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16,  640, 480, 0 },
-                                     { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
+                                     { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
     /* RS435_RGB/AWGC*/ { "0B07",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16, 640, 480, 0 },
                                      { RS2_STREAM_INFRARED, RS2_FORMAT_Y8,  640, 480, 1 } ,
                                      { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
@@ -3455,7 +3462,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
                     }
                 }
                 // GPIO Requires external triggers to produce events
-                if (RS2_STREAM_GPIO == modes[i].stream_type())   
+                if (RS2_STREAM_GPIO == modes[i].stream_type())
                     continue;   // Disabling for now
 
                 CAPTURE(modes[i].format());
@@ -3655,7 +3662,6 @@ TEST_CASE("Pipeline config enable resolve start flow", "[live]") {
         REQUIRE_NOTHROW(dev = profile.get_device());
         REQUIRE(dev);
 
-        // Specifying RS2_FORMAT_ANY results in RS2_FORMAT_DISPARITY16 which subsequently fails on start
         REQUIRE_NOTHROW(cfg.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, 0));
         REQUIRE_NOTHROW(pipe.start(cfg));
 
@@ -3669,15 +3675,14 @@ TEST_CASE("Pipeline config enable resolve start flow", "[live]") {
         CAPTURE(depth_profile.height());
         std::vector<device_profiles> frames;
 
-        for (auto i = 0; i < 10; i++)
-            REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
-
+        for (auto i = 0; i < 5; i++)
+            REQUIRE_NOTHROW(pipe.wait_for_frames(500));
 
         REQUIRE_NOTHROW(pipe.stop());
         REQUIRE_NOTHROW(pipe.start(cfg));
 
-        for (auto i = 0; i < 20; i++)
-            REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
+        for (auto i = 0; i < 5; i++)
+            REQUIRE_NOTHROW(pipe.wait_for_frames(500));
 
         REQUIRE_NOTHROW(cfg.disable_all_streams());
 
@@ -3692,5 +3697,128 @@ TEST_CASE("Pipeline config enable resolve start flow", "[live]") {
         REQUIRE(profile);
         REQUIRE_NOTHROW(dev = profile.get_device());
         REQUIRE(dev);
+    }
+}
+
+TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+
+        auto list = ctx.query_devices();
+        int realsense_devices_count = 0;
+        rs2::device d;
+        for (auto&& dev : list)
+        {
+            if (dev.supports(RS2_CAMERA_INFO_NAME))
+            {
+                std::string name = dev.get_info(RS2_CAMERA_INFO_NAME);
+                if (name != "Platform Camera")
+                {
+                    realsense_devices_count++;
+                    d = dev;
+                }
+            }
+        }
+        if (realsense_devices_count < 2)
+        {
+            WARN("Skipping test! This test requires multiple RealSense devices connected");
+            return;
+        }
+
+        disable_sensitive_options_for(d);
+        //After getting the device, find a serial and a profile it can use
+        std::string required_serial;
+        REQUIRE_NOTHROW(required_serial = d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        stream_profile required_profile;
+        //find the a video profile of some sensor
+        for (auto&& sensor : d.query_sensors())
+        {
+            for (auto&& profile : sensor.get_stream_profiles())
+            {
+                auto vid_profile = profile.as<video_stream_profile>();
+                if (vid_profile)
+                {
+                    required_profile = vid_profile;
+                    break;
+                }
+            }
+            if (required_profile)
+                break;
+        }
+        REQUIRE(required_profile);
+        CAPTURE(required_profile);
+        auto vid_profile = required_profile.as<video_stream_profile>();
+
+        
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+
+        //Using the config object to request the serial and stream that we found above
+        REQUIRE_NOTHROW(cfg.enable_device(required_serial));
+        REQUIRE_NOTHROW(cfg.enable_stream(vid_profile.stream_type(), vid_profile.stream_index(), vid_profile.width(), vid_profile.height(), vid_profile.format(), vid_profile.fps()));
+        
+        //Testing that config.resolve() returns the right data
+        rs2::pipeline_profile resolved_profile;
+        REQUIRE_NOTHROW(resolved_profile = cfg.resolve(pipe));
+        REQUIRE(resolved_profile);
+        rs2::pipeline_profile resolved_profile_from_start;
+        REQUIRE_NOTHROW(resolved_profile_from_start = pipe.start(cfg));
+        REQUIRE(resolved_profile_from_start);
+
+        REQUIRE_NOTHROW(dev = resolved_profile.get_device());
+        REQUIRE(dev);
+        rs2::device dev_from_start;
+        REQUIRE_NOTHROW(dev_from_start = resolved_profile_from_start.get_device());
+        REQUIRE(dev_from_start);
+        
+        //Compare serial number
+        std::string actual_serial;
+        std::string actual_serial_from_start;
+        REQUIRE_NOTHROW(actual_serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        REQUIRE_NOTHROW(actual_serial_from_start = dev_from_start.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        REQUIRE(actual_serial == required_serial);
+        REQUIRE(actual_serial == actual_serial_from_start);
+        
+        //Compare Stream
+        std::vector<rs2::stream_profile> actual_streams;
+        REQUIRE_NOTHROW(actual_streams = resolved_profile.get_streams());
+        REQUIRE(actual_streams.size() == 1);
+        REQUIRE(actual_streams[0] == required_profile);
+        std::vector<rs2::stream_profile> actual_streams_from_start;
+        REQUIRE_NOTHROW(actual_streams_from_start = resolved_profile_from_start.get_streams());
+        REQUIRE(actual_streams_from_start.size() == 1);
+        REQUIRE(actual_streams_from_start[0] == required_profile);
+
+        pipe.stop();
+
+        //Using the config object to request the serial and stream that we found above, and test the pipeline.start() returns the right data
+        rs2::device started_dev;
+        rs2::pipeline_profile strarted_profile;
+        cfg = rs2::config(); //Clean previous config
+
+        //Using the config object to request the serial and stream that we found above
+        REQUIRE_NOTHROW(cfg.enable_device(required_serial));
+        REQUIRE_NOTHROW(cfg.enable_stream(vid_profile.stream_type(), vid_profile.stream_index(), vid_profile.width(), vid_profile.height(), vid_profile.format(), vid_profile.fps()));
+
+        //Testing that pipeline.start(cfg) returns the right data
+        REQUIRE_NOTHROW(strarted_profile = pipe.start(cfg));
+        REQUIRE(strarted_profile);
+        REQUIRE_NOTHROW(started_dev = strarted_profile.get_device());
+        REQUIRE(started_dev);
+
+        //Compare serial number
+        std::string started_serial;
+        REQUIRE_NOTHROW(started_serial = started_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        REQUIRE(started_serial == required_serial);
+        
+        //Compare Stream
+        std::vector<rs2::stream_profile> started_streams;
+        REQUIRE_NOTHROW(started_streams = strarted_profile.get_streams());
+        REQUIRE(started_streams.size() == 1);
+        REQUIRE(started_streams[0] == required_profile);
+        pipe.stop();
     }
 }

@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #ifdef RS2_USE_LIBUVC_BACKEND
-
+#include "../include/librealsense2/h/rs_types.h"     // Inherit all type definitions in the public API
 #include "backend.h"
 #include "types.h"
 
@@ -50,6 +50,7 @@ struct uvc_device_internal {
     struct uvc_context *ctx;
     int ref;
     libusb_device *usb_dev;
+    int interface;
 };
 
 namespace librealsense
@@ -134,7 +135,7 @@ namespace librealsense
                             info.mi = config->bNumInterfaces - 1; // The hardware monitor USB interface is expected to be the last one
                             action(info, usb_device);
                         }
-                        
+
                         libusb_free_config_descriptor(config);
                     }
                 }
@@ -232,7 +233,7 @@ namespace librealsense
                     // set up device definitions.
                     info.pid = device_desc->idProduct;
                     info.vid = device_desc->idVendor;
-                    info.mi = 0;
+                    info.mi = dev->interface-1;
 
                     uvc_free_device_descriptor(device_desc);
 
@@ -279,6 +280,7 @@ namespace librealsense
                                            _name = name;
                                            _info = i;
                                            _device_path = i.device_path;
+                                           _interface = i.mi;
                                        }
                                    });
                 if (_name == "")
@@ -375,7 +377,7 @@ namespace librealsense
                         throw linux_backend_exception(
                                 "Could not find the device.");
                     }
-                    res = uvc_open2(_device, &_device_handle, 0);
+                    res = uvc_open2(_device, &_device_handle, _interface);
 
                     if (res < 0) {
                         uvc_unref_device(_device);
@@ -387,6 +389,8 @@ namespace librealsense
                 else {
                     // we have been asked to close the device.
                     uvc_unref_device(_device);
+                    uvc_stop_streaming(_device_handle);
+                    _profiles.clear();
                     uvc_close(_device_handle);
                     _device = NULL;
                     _device_handle = NULL;
@@ -504,6 +508,7 @@ namespace librealsense
             uvc_context_t *_ctx;
             uvc_device_t *_device;
             uvc_device_handle_t *_device_handle;
+            int _interface;
         };
 
         // receive the original callback and pass it to the right device. this is registered by libUVC.
@@ -587,7 +592,7 @@ namespace librealsense
                 return std::make_shared<os_time_service>();
             }
 
-            std::shared_ptr<device_watcher> create_device_watcher() const 
+            std::shared_ptr<device_watcher> create_device_watcher() const
             {
                 return std::make_shared<polling_device_watcher>(this);
             }

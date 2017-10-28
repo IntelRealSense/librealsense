@@ -18,10 +18,23 @@ namespace librealsense
         explicit device_hub(std::shared_ptr<librealsense::context> ctx, int vid = 0, bool register_device_notifications = true);
 
         /**
-         * If any device is connected return it, otherwise wait until next RealSense device connects.
-         * Calling this method multiple times will cycle through connected devices
+         * The function implements both blocking and non-blocking device generation functionality based on the input parameters:
+         * Calling the function with zero timeout results in searching and fetching the device specified by the `serial` parameter
+         * from a list of connected devices.
+         * Calling the function with a valid timeout will block till the resulted device is found or the timeout expires.
+         * \param[in] timeout_ms  The waiting period for the requested device to be reconnected (milliseconds).
+         * Due to an implementation issue both in MSVC and GCC the timeout equals to 1 hour to avoid generation of
+         * negative durations.
+         *.\param[in] loop_through_devices  - promote internal index to the next available device that will be retrieved on successive call
+         *  Note that selection of the next device is deterministic but not predictable, and therefore is recommended for
+         * specific use-cases only , such as tutorials or unit-tests where no assumptions as to the device ordering are made.
+         * \param[in] serial  The serial number of the requested device. Use empty pattern ("") to request for "any RealSense" device.
+         * \return       a shared pointer to the device_interface that satisfies the search criteria. In case the request was not
+         * resloved the call will throw an exception
          */
-        std::shared_ptr<device_interface> wait_for_device( unsigned int timeout_ms = std::numeric_limits<unsigned int>::max(), std::string serial = "");
+        std::shared_ptr<device_interface> wait_for_device(const std::chrono::milliseconds& timeout = std::chrono::milliseconds(std::chrono::hours(1)),
+                                                          bool loop_through_devices = true,
+                                                          const std::string& serial = "");
 
         /**
         * Checks if device is still connected
@@ -34,7 +47,7 @@ namespace librealsense
         }
 
     private:
-        std::shared_ptr<device_interface> create_device(std::string serial = "");
+        std::shared_ptr<device_interface> create_device(const std::string& serial, bool cycle_devices = true);
         std::shared_ptr<librealsense::context> _ctx;
         std::mutex _mutex;
         std::condition_variable _cv;
@@ -44,5 +57,3 @@ namespace librealsense
         bool _register_device_notifications;
     };
 }
-
-

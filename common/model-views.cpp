@@ -416,7 +416,7 @@ namespace rs2
                     auto selected = 0, counter = 0;
                     for (auto i = range.min; i <= range.max; i += range.step, counter++)
                     {
-                        if (abs(i - value) < 0.001f) selected = counter;
+                        if (std::fabs(i - value) < 0.001f) selected = counter;
                         labels.push_back(endpoint.get_option_value_description(opt, i));
                     }
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
@@ -509,7 +509,7 @@ namespace rs2
         }
     }
 
-    void option_model::update_all_feilds(std::string& error_message, notifications_model& model)
+    void option_model::update_all_fields(std::string& error_message, notifications_model& model)
     {
         try
         {
@@ -1165,7 +1165,7 @@ namespace rs2
         if (next_option < RS2_OPTION_COUNT)
         {
             auto& opt_md = options_metadata[static_cast<rs2_option>(next_option)];
-            opt_md.update_all_feilds(error_message, notifications);
+            opt_md.update_all_fields(error_message, notifications);
 
             if (next_option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
             {
@@ -1234,7 +1234,7 @@ namespace rs2
                 metadata.update_read_only_status(error_message);
                 if (metadata.read_only)
                 {
-                    metadata.update_all_feilds(error_message, model);
+                    metadata.update_all_fields(error_message, model);
                 }
             }
         }
@@ -3612,8 +3612,9 @@ namespace rs2
                             {
                                 ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
                             }
-                            draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
                         }
+
+                        draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
                     }
                     else
                     {

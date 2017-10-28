@@ -115,7 +115,7 @@ namespace rs2
         bool draw(std::string& error_message);
         void update_supported(std::string& error_message);
         void update_read_only_status(std::string& error_message);
-        void update_all_feilds(std::string& error_message, notifications_model& model);
+        void update_all_fields(std::string& error_message, notifications_model& model);
 
         rs2_option opt;
         option_range range;

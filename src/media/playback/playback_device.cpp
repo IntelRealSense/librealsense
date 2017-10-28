@@ -299,7 +299,7 @@ void playback_device::resume()
 
 void playback_device::set_real_time(bool real_time)
 {
-    LOG_INFO("Set real time to " << real_time ? "True" : "Fales");
+    LOG_INFO("Set real time to " << (real_time) ? "True" : "False");
     m_real_time = real_time;
 }
 
@@ -342,7 +342,7 @@ device_serializer::nanoseconds playback_device::calc_sleep_time(device_serialize
     }
     auto time_diff = timestamp - m_base_timestamp;
     auto recorded_time = std::chrono::duration_cast<device_serializer::nanoseconds>(time_diff / m_sample_rate.load());
-    
+
     LOG_DEBUG("Time Now  : " << now.time_since_epoch().count() << " ,    Time When Started: " << m_base_sys_time.time_since_epoch().count() << " , Diff: " << play_time.count() << " == " << (play_time.count()/1000)/1000 << "ms");
     LOG_DEBUG("Original Recording Delta: " << time_diff.count() << " == " << (time_diff.count() / 1000) / 1000 << "ms");
     LOG_DEBUG("Frame Time: " << timestamp.count() << "  , First Frame: " << m_base_timestamp.count() << " ,  Diff: " << recorded_time.count() << " == " << (recorded_time.count() / 1000) / 1000 << "ms");

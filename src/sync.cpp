@@ -6,26 +6,12 @@
 
 namespace librealsense
 {
-    template<class T>
-    class internal_frame_processor_callback : public rs2_frame_processor_callback
-    {
-        T on_frame_function;
-    public:
-        explicit internal_frame_processor_callback(T on_frame) : on_frame_function(on_frame) {}
 
-        void on_frame(rs2_frame * f, rs2_source * source) override
-        {
-            frame_holder front((frame_interface*)f);
-            on_frame_function(std::move(front), source->source);
-        }
-
-        void release() override { delete this; }
-    };
 
     syncer_proccess_unit::syncer_proccess_unit()
-        : _matcher({})
+        : _matcher((new timestamp_composite_matcher({})))
     {
-        _matcher.set_callback([this](frame_holder f, syncronization_environment env)
+        _matcher->set_callback([this](frame_holder f, syncronization_environment env)
         {
 
             std::stringstream ss;
@@ -37,7 +23,7 @@ namespace librealsense
                 ss << matched->get_stream()->get_stream_type() << " " << matched->get_frame_number() << ", "<<std::fixed<< matched->get_frame_timestamp()<<" ";
             }
 
-            LOG_WARNING(ss.str());
+            LOG_DEBUG(ss.str());
             env.matches.enqueue(std::move(f));
         });
 
@@ -47,7 +33,7 @@ namespace librealsense
 
             {
                 std::lock_guard<std::mutex> lock(_mutex);
-                _matcher.dispatch(std::move(frame), { source, matches });
+                _matcher->dispatch(std::move(frame), { source, matches });
             }
 
             frame_holder f;
@@ -68,6 +54,7 @@ namespace librealsense
 
     void  matcher::sync(frame_holder f, syncronization_environment env)
     {
+        auto cb = begin_callback();
         _callback(std::move(f), env);
     }
 
@@ -129,7 +116,7 @@ namespace librealsense
             {
                 dev = sensor->get_device().shared_from_this().get();
             }
-            catch (const std::bad_weak_ptr& e)
+            catch (const std::bad_weak_ptr&)
             {
                 LOG_WARNING("Device destroyed");
             }
@@ -169,7 +156,7 @@ namespace librealsense
             }
         }
 
-        if(!dev_exist) 
+        if(!dev_exist)
         {
             matcher = _matchers[stream_id];
             // We don't know what device this frame came from, so just store it under device NULL with ID matcher
@@ -195,6 +182,7 @@ namespace librealsense
 
     void composite_matcher::sync(frame_holder f, syncronization_environment env)
     {
+        update_next_expected(f);
         auto matcher = find_matcher(f);
         _frames_queue[matcher.get()].enqueue(std::move(f));
 
@@ -202,7 +190,7 @@ namespace librealsense
         std::vector<librealsense::matcher*> frames_arrived_matchers;
         std::vector<librealsense::matcher*> synced_frames;
         std::vector<librealsense::matcher*> missing_streams;
-
+        
         do
         {
             auto old_frames = false;
@@ -278,7 +266,7 @@ namespace librealsense
                     frame_holder frame;
                     _frames_queue[index].dequeue(&frame);
 
-                    update_next_expected(frame);
+                    
 
                     match.push_back(std::move(frame));
                 }
@@ -309,11 +297,11 @@ namespace librealsense
 
                 }
                 s<<"\n";
-                //std::cout<<s.str();
-                LOG_DEBUG(s.str());
+                //LOG_DEBUG(s.str());
                 frame_holder composite = env.source->allocate_composite_frame(std::move(match));
                 if (composite.frame)
                 {
+                    auto cb = begin_callback();
                     _callback(std::move(composite), env);
                 }
             }
@@ -398,8 +386,8 @@ namespace librealsense
             return{ a->get_frame_timestamp(), b->get_frame_timestamp() };
         else
         {
-            return{ a->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL),
-                    b->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL) };
+            return{ (double)a->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL),
+                    (double)b->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL) };
         }
     }
 

@@ -64,7 +64,31 @@ install:
       make -j $CPU_NUM;
       sudo make install && cd ..;
     fi
-
+#Unit-Test Suite
+# Each successful build will invoke a set of predefined unit-test that will run from recorded live test sessions
+# The records are available for download from the location specified in the tests, and are arranged in the following convention
+# |
+# |---| ..
+# |   | Records.txt
+# |   |
+# |   | single_cam
+# |               | ..
+# |               | Recorded_Test_1
+# |               | Recorded_Test_2
+# |               | ......
+# |
+# |   | multi_cam
+# |               | ..
+# |               | Recorded_Test_3
+# |               | Recorded_Test_4
+# |               | ......
+# |
+# The content of Records.txt is a list of all record paths one per line, e.g:
+# single_cam/Recorded_Test_1
+# single_cam/Recorded_Test_2
+# multi_cam/Recorded_Test_3
+# multi_cam/Recorded_Test_4
+#
 script:
   # Exit immediately if a command exits with a non-zero status
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
@@ -77,11 +101,17 @@ script:
 
       export LRS_LOG_LEVEL="DEBUG";
 
-      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/awgc_fw_5.8.9_lrs_2.8.0;
-      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/asrc_fw_5.8.9_lrs_2.8.0;
+      url_records_path="http://realsense-hw-public.s3.amazonaws.com/rs-tests/1/";
+      records_name="records.txt";
+      url_records_list=$url_records_path$records_name;
+      wget $url_records_path$records_name;
+      tests_list=`cat $records_name`;
 
-      ./unit-tests/live-test from awgc_fw_5.8.9_lrs_2.8.0 -d yes;
-      ./unit-tests/live-test from asrc_fw_5.8.9_lrs_2.8.0 -d yes;
+      echo "Downloading unit-test records...";
+      for record in $tests_list; do echo $url_records_path$record; wget $url_records_path$record -P "records/"$(echo $record | cut -d '/' -f 1); done;
+
+      for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done;
+      for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done;
 
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then

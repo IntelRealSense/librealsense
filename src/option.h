@@ -225,7 +225,7 @@ namespace librealsense
             return nullptr;
         }
 
-        void enable_recording(std::function<void(const option &)> record_action)
+        void enable_recording(std::function<void(const option &)> record_action) override
         {
             _recording_function = record_action;
         }
@@ -282,7 +282,7 @@ namespace librealsense
         const char* get_description() const;
 
         const char* get_value_description(float value) const;
-        void enable_recording(std::function<void(const option &)> record_action)
+        void enable_recording(std::function<void(const option &)> record_action) override
         {
             _recording_function = record_action;
         }
@@ -356,7 +356,7 @@ namespace librealsense
            : _auto_disabling_control(auto_disabling), _auto_exposure(auto_exposure),
              _move_to_manual_values(move_to_manual_values), _manual_value(manual_value)
        {}
-       void enable_recording(std::function<void(const option &)> record_action)
+       void enable_recording(std::function<void(const option &)> record_action) override
        {
            _recording_function = record_action;
        }

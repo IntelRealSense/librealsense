@@ -47,6 +47,7 @@ namespace librealsense
         param_group<exposure_control>               depth_exposure;
         param_group<auto_exposure_control>          depth_auto_exposure;
         param_group<gain_control>                   depth_gain;
+        param_group<auto_white_balance_control>     depth_auto_white_balance;
         param_group<exposure_control>               color_exposure;
         param_group<auto_exposure_control>          color_auto_exposure;
         param_group<backlight_compensation_control> color_backlight_compensation;
@@ -91,6 +92,7 @@ namespace librealsense
             depth_exposure.vals[0] = other.depth_exposure;
             depth_auto_exposure.vals[0] = other.depth_auto_exposure;
             depth_gain.vals[0] = other.depth_gain;
+            depth_auto_white_balance.vals[0] = other.depth_auto_white_balance;
             color_exposure.vals[0] = other.color_exposure;
             color_auto_exposure.vals[0] = other.color_auto_exposure;
             color_backlight_compensation.vals[0] = other.color_backlight_compensation;
@@ -127,8 +129,8 @@ namespace librealsense
 
         void load(const std::string& str) override
         {
-            float value = ::atof(str.c_str());
-            strct->vals[0].*field = (scale * value);
+            float value = static_cast<float>(::atof(str.c_str()));
+            strct->vals[0].*field = static_cast<S>(scale * value);
             strct->update = true;
         }
 
@@ -164,7 +166,7 @@ namespace librealsense
 
         void load(const std::string& value) override
         {
-            (strct->vals[0].*field) = _values[value];
+            (strct->vals[0].*field) = static_cast<S>(_values[value]);
             strct->update = true;
         }
 
@@ -193,8 +195,8 @@ namespace librealsense
 
         void load(const std::string& str) override
         {
-            float value = ::atof(str.c_str());
-            (strct->vals[0].*field) = (value > 0) ? 0 : 1.f;
+            auto value = ::atof(str.c_str());
+            (strct->vals[0].*field) = (value > 0) ? 0 : 1;
             strct->update = true;
         }
 
@@ -207,7 +209,7 @@ namespace librealsense
     };
 
     template<class T, class S>
-    std::shared_ptr<json_field> make_field(T& strct, S T::group_type::* field, double scale = 1.0f)
+    std::shared_ptr<json_field> make_field(T& strct, S T::group_type::* field, float scale = 1.0f)
     {
         std::shared_ptr<json_struct_field<T, S>> f(new json_struct_field<T, S>());
         f->field = field;
@@ -403,6 +405,7 @@ namespace librealsense
         insert_string_control_to_map(map, p.depth_auto_exposure.vals[0].was_set, "controls-autoexposure-auto", p.depth_auto_exposure, &auto_exposure_control::auto_exposure, auto_control_values);
 
         insert_control_to_map(map, p.depth_gain.vals[0].was_set, "controls-depth-gain", p.depth_gain, &gain_control::gain);
+        insert_string_control_to_map(map, p.depth_auto_white_balance.vals[0].was_set, "controls-depth-white-balance-auto", p.depth_auto_white_balance, &auto_white_balance_control::auto_white_balance, auto_control_values);
 
         // Color controls
         insert_control_to_map(map, p.color_exposure.vals[0].was_set, "controls-color-autoexposure-manual", p.color_exposure, &exposure_control::exposure);
@@ -495,6 +498,7 @@ namespace librealsense
         update_preset_camera_control(in_preset.depth_exposure               , p.depth_exposure);
         update_preset_camera_control(in_preset.depth_auto_exposure          , p.depth_auto_exposure);
         update_preset_camera_control(in_preset.depth_gain                   , p.depth_gain);
+        update_preset_camera_control(in_preset.depth_auto_white_balance     , p.depth_auto_white_balance);
         update_preset_camera_control(in_preset.color_exposure               , p.color_exposure);
         update_preset_camera_control(in_preset.color_auto_exposure          , p.color_auto_exposure);
         update_preset_camera_control(in_preset.color_backlight_compensation , p.color_backlight_compensation);

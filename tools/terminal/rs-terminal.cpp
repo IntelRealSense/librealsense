@@ -141,6 +141,13 @@ void read_script_file(const string& full_file_path, vector<string>& hex_lines)
     throw runtime_error("Script file not found!");
 }
 
+device wait_for_device(const device_hub& hub)
+{
+    cout << "\nWaiting for RealSense device to connect...\n";
+    auto dev = hub.wait_for_device();
+    cout << "RealSense device has connected...\n";
+    return dev;
+}
 
 int main(int argc, char** argv)
 {
@@ -190,7 +197,7 @@ int main(int argc, char** argv)
 
     while (true)
     {
-        auto dev = hub.wait_for_device();
+        auto dev = wait_for_device(hub);
         fflush(nullptr);
 
         if (hex_cmd_arg.isSet())
@@ -275,7 +282,7 @@ int main(int argc, char** argv)
 
                 if (line == "next")
                 {
-                    dev = hub.wait_for_device();
+                    dev = wait_for_device(hub);
                     continue;
                 }
                 if (line == "exit")
