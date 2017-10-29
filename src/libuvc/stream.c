@@ -1100,99 +1100,17 @@ uvc_error_t uvc_stream_start(
    * (UVC 1.5: 2.4.3. VideoStreaming Interface) */
   isochronous = interface->num_altsetting > 1;
 
-  if (isochronous) {
-    /* For isochronous streaming, we choose an appropriate altsetting for the endpoint
-     * and set up several transfers */
-    const struct libusb_interface_descriptor *altsetting;
-    const struct libusb_endpoint_descriptor *endpoint;
-    /* The greatest number of bytes that the device might provide, per packet, in this
-     * configuration */
-    size_t config_bytes_per_packet;
-    /* Number of packets per transfer */
-    size_t packets_per_transfer;
-    /* Size of packet transferable from the chosen endpoint */
-    size_t endpoint_bytes_per_packet;
-    /* Index of the altsetting */
-    int alt_idx, ep_idx;
-
-    config_bytes_per_packet = strmh->cur_ctrl.dwMaxPayloadTransferSize;
-
-    /* Go through the altsettings and find one whose packets are at least
-     * as big as our format's maximum per-packet usage. Assume that the
-     * packet sizes are increasing. */
-    for (alt_idx = 0; alt_idx < interface->num_altsetting; alt_idx++) {
-      altsetting = interface->altsetting + alt_idx;
-      endpoint_bytes_per_packet = 0;
-
-      /* Find the endpoint with the number specified in the VS header */
-      for (ep_idx = 0; ep_idx < altsetting->bNumEndpoints; ep_idx++) {
-        endpoint = altsetting->endpoint + ep_idx;
-
-        if (endpoint->bEndpointAddress == format_desc->parent->bEndpointAddress) {
-          endpoint_bytes_per_packet = endpoint->wMaxPacketSize;
-          // wMaxPacketSize: [unused:2 (multiplier-1):3 size:11]
-          endpoint_bytes_per_packet = (endpoint_bytes_per_packet & 0x07ff) *
-                                      (((endpoint_bytes_per_packet >> 11) & 3) + 1);
-          break;
-        }
-      }
-
-      if (endpoint_bytes_per_packet >= config_bytes_per_packet) {
-        /* Transfers will be at most one frame long: Divide the maximum frame size
-         * by the size of the endpoint and round up */
-        packets_per_transfer = (ctrl->dwMaxVideoFrameSize +
-                                endpoint_bytes_per_packet - 1) / endpoint_bytes_per_packet;
-
-        /* But keep a reasonable limit: Otherwise we start dropping data */
-        if (packets_per_transfer > 32)
-          packets_per_transfer = 32;
-
-        total_transfer_size = packets_per_transfer * endpoint_bytes_per_packet;
-        break;
-      }
-    }
-
-    /* If we searched through all the altsettings and found nothing usable */
-    if (alt_idx == interface->num_altsetting) {
-      ret = UVC_ERROR_INVALID_MODE;
-      goto fail;
-    }
-
-    /* Select the altsetting */
-    ret = libusb_set_interface_alt_setting(strmh->devh->usb_devh,
-                                           altsetting->bInterfaceNumber,
-                                           altsetting->bAlternateSetting);
-    if (ret != UVC_SUCCESS) {
-      UVC_DEBUG("libusb_set_interface_alt_setting failed");
-      goto fail;
-    }
-
-    /* Set up the transfers */
-    for (transfer_id = 0; transfer_id < LIBUVC_NUM_TRANSFER_BUFS; ++transfer_id) {
-      transfer = libusb_alloc_transfer(packets_per_transfer);
-      strmh->transfers[transfer_id] = transfer;
-      strmh->transfer_bufs[transfer_id] = malloc(total_transfer_size);
-
-      libusb_fill_iso_transfer(
-        transfer, strmh->devh->usb_devh, format_desc->parent->bEndpointAddress,
+  for (transfer_id = 0; transfer_id < LIBUVC_NUM_TRANSFER_BUFS;
+      ++transfer_id) {
+    transfer = libusb_alloc_transfer(0);
+    strmh->transfers[transfer_id] = transfer;
+    strmh->transfer_bufs[transfer_id] = malloc (
+        strmh->cur_ctrl.dwMaxPayloadTransferSize );
+    libusb_fill_bulk_transfer ( transfer, strmh->devh->usb_devh,
+        format_desc->parent->bEndpointAddress,
         strmh->transfer_bufs[transfer_id],
-        total_transfer_size, packets_per_transfer, _uvc_stream_callback, (void*) strmh, 5000);
-
-      libusb_set_iso_packet_lengths(transfer, endpoint_bytes_per_packet);
-    }
-  } else {
-    for (transfer_id = 0; transfer_id < LIBUVC_NUM_TRANSFER_BUFS;
-        ++transfer_id) {
-      transfer = libusb_alloc_transfer(0);
-      strmh->transfers[transfer_id] = transfer;
-      strmh->transfer_bufs[transfer_id] = malloc (
-          strmh->cur_ctrl.dwMaxPayloadTransferSize );
-      libusb_fill_bulk_transfer ( transfer, strmh->devh->usb_devh,
-          format_desc->parent->bEndpointAddress,
-          strmh->transfer_bufs[transfer_id],
-          strmh->cur_ctrl.dwMaxPayloadTransferSize, _uvc_stream_callback,
-          ( void* ) strmh, 5000 );
-    }
+        strmh->cur_ctrl.dwMaxPayloadTransferSize, _uvc_stream_callback,
+        ( void* ) strmh, 5000 );
   }
 
   strmh->user_cb = cb;
