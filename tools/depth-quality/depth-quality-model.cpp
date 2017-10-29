@@ -17,7 +17,7 @@ namespace rs2
               _sku_up(std::chrono::seconds(1)),
               _sku_down(std::chrono::seconds(1)),
               _angle_alert(std::chrono::seconds(4)),
-              _min_dist(750.f), _max_dist(3000.f), _max_angle(10.f)
+              _min_dist(300.f), _max_dist(2000.f), _max_angle(10.f)
         {
             _viewer_model.is_3d_view = true;
             _viewer_model.allow_3d_source_change = false;
@@ -68,6 +68,16 @@ namespace rs2
 
                 update_configuration();
             }
+
+            _ctx.set_devices_changed_callback([this, &window](rs2::event_information info) mutable
+            {
+                auto dev = get_active_device();
+                if (dev && info.was_removed(dev))
+                {
+                    std::unique_lock<std::mutex> lock(_mutex);
+                    reset(window);
+                }
+            });
 
             return valid_config;
         }
@@ -141,7 +151,7 @@ namespace rs2
             _too_far.add_value(_metrics_model.get_last_metrics().distance > _max_dist);
 
             constexpr const char* orientation_instruction = "                         Recommended angle: < 3 degrees"; // "             Use the orientation gimbal to align the camera";
-            constexpr const char* distance_instruction    = "          Recommended distance: 0.75m-2m from the target"; // "             Use the distance locator to position the camera";
+            constexpr const char* distance_instruction    = "          Recommended distance: 0.3m-2m from the target"; // "             Use the distance locator to position the camera";
 
             if (_sku_right.eval())
             {
@@ -181,7 +191,7 @@ namespace rs2
                     u8"\n          \uf0b2  Move the camera further Away",
                     distance_instruction);
                 distance = true;
-                return false;
+                return true; // Show metrics even when too close/far
             }
 
             if (_too_far.eval())
@@ -190,7 +200,7 @@ namespace rs2
                     u8"\n        \uf066  Move the camera Closer to the wall",
                     distance_instruction);
                 distance = true;
-                return false;
+                return true;
             }
 
             return true;
@@ -989,10 +999,6 @@ namespace rs2
                 ImGui::PopStyleColor(3);
 
                 ImGui::PlotLines(_id.c_str(), (float*)&_vals, SIZE, _idx, ss.str().c_str(), _min, _max, { 270, 50 });
-
-                ImGui::PushStyleColor(ImGuiCol_Text, green);
-                ImGui::Text("[%.2f - %.2f] Pass", ranges[0].x, ranges[0].y);
-                ImGui::PopStyleColor();
 
                 ImGui::TreePop();
             }

@@ -21,10 +21,7 @@ int main(int argc, const char * argv[]) try
                "This metric approximates a plane within\n"
                "the ROI and calculates the average\n"
                "distance of points in the ROI\n"
-               "from that plane, in mm")->
-               set(metric_plot::GREEN_RANGE,  0, 1)->
-               set(metric_plot::YELLOW_RANGE, 1, 7)->
-               set(metric_plot::RED_RANGE,    7, 1000);
+               "from that plane, in mm");
 
     auto std = model.make_metric(
                "STD (Error)", 0, 10, "(mm)",
@@ -32,36 +29,27 @@ int main(int argc, const char * argv[]) try
                "This metric approximates a plane within\n"
                "the ROI and calculates the\n"
                "standard deviation of distances\n"
-               "of points in the ROI from that plane")->
-               set(metric_plot::GREEN_RANGE,  0, 1)->
-               set(metric_plot::YELLOW_RANGE, 1, 7)->
-               set(metric_plot::RED_RANGE,    7, 1000);
+               "of points in the ROI from that plane");
 
     auto rms = model.make_metric(
-                "Subpixel RMS", 0.f, 1.f, "(pixel)",
-                "Normalized RMS .\n"
-                "This metric provides the subpixel accuracy\n"
-                "and is calculated as follows:\n"
-                "Zi - depth range of i-th pixel (mm)\n"
-                "Zpi -depth of Zi projection onto plane fit (mm)\n"
-                "BL - optical baseline (mm)\n"
-                "FL - focal length, as a multiple of pixel width\n"
-                "Di = BL*FL/Zi; Dpi = Bl*FL/Zpi\n"
-                "              n      \n"
-                "RMS = SQRT((SUM(Di-Dpi)^2)/n)\n"
-                "             i=0    \n")->
-                set(metric_plot::GREEN_RANGE, 0, 0.1f)->
-                set(metric_plot::YELLOW_RANGE, 0.1f, 0.5f)->
-                set(metric_plot::RED_RANGE, 0.5f, 100.f);
+               "Subpixel RMS", 0.f, 1.f, "(pixel)",
+               "Normalized RMS .\n"
+               "This metric provides the subpixel accuracy\n"
+               "and is calculated as follows:\n"
+               "Zi - depth range of i-th pixel (mm)\n"
+               "Zpi -depth of Zi projection onto plane fit (mm)\n"
+               "BL - optical baseline (mm)\n"
+               "FL - focal length, as a multiple of pixel width\n"
+               "Di = BL*FL/Zi; Dpi = Bl*FL/Zpi\n"
+               "              n      \n"
+               "RMS = SQRT((SUM(Di-Dpi)^2)/n)\n"
+               "             i=0    ");
 
     auto fill = model.make_metric(
                 "Fill-Rate", 0, 100, "%",
                 "Fill Rate\n"
-                "Percentage of pixels with valid depth values\n"
-                "out of all pixels within the ROI")->
-                set(metric_plot::GREEN_RANGE,  90, 100)->
-                set(metric_plot::YELLOW_RANGE, 50, 90)->
-                set(metric_plot::RED_RANGE,    0,  50);
+                "Percentage of pixels with valid depth\n"
+                "values out of all pixels within the ROI\n");
 
     // ===============================
     //       Metrics Calculation
@@ -118,21 +106,6 @@ int main(int argc, const char * argv[]) try
         // Calculate fill ratio relative to the ROI
         auto fill_ratio = points.size() / float((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * 100;
         fill->add_value(fill_ratio, timestamp_msec);
-    });
-
-    // ===============================
-    //      Device plug-in/out handler
-    // ===============================
-    rs2::context ctx;
-    std::mutex m;
-    ctx.set_devices_changed_callback([&model, &window, &m](rs2::event_information info) mutable
-    {
-        auto dev = model.get_active_device();
-        if (dev && info.was_removed(dev))
-        {
-            std::unique_lock<std::mutex> lock(m);
-            model.reset(window);
-        }
     });
 
     // ===============================

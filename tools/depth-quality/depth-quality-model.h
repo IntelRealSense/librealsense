@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <thread>
+#include <mutex>
 
 namespace rs2
 {
@@ -209,6 +210,8 @@ namespace rs2
             std::map<int, temporal_event>   _depth_scale_events;
 
             float                           _min_dist, _max_dist, _max_angle;
+            std::mutex                      _mutex;
+            rs2::context                    _ctx;
         };
     }
 }
