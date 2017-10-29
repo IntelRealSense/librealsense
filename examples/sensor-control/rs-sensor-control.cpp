@@ -1,15 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include <sstream>
 #include <iostream>
-#include <fstream>
-#include <algorithm>
-#include <cstring>
-#include <thread>
-#include <array>
 #include <librealsense2/rs.hpp>
-
+#include "sample-gui.h" // The collective logic of showing a window with GUI
 
 //A simple C++ functor that handles frames (and does nothing with them)
 //An example for using this class can be found below
@@ -28,20 +22,21 @@ void frame_handler_that_does_nothing(rs2::frame f)
 {
     //Handle frame here...
 }
+
 bool is_desired_stream(const rs2::video_stream_profile& video_stream_profile)
 {
     return 
             //Has VGA resolution
-            (video_stream_profile.width() == 640 && video_stream_profile.height() == 480)
+            (video_stream_profile.width() == 640 && video_stream_profile.height() == 480 && video_stream_profile.fps() == 30)
         &&
             //And is one of the following streams
             (
                 (video_stream_profile.stream_type() == RS2_STREAM_DEPTH &&
                  video_stream_profile.format() == RS2_FORMAT_Z16)
-            ||
-                (video_stream_profile.stream_type() == RS2_STREAM_INFRARED &&
-                 video_stream_profile.stream_index() == 1 &&
-                 video_stream_profile.format() == RS2_FORMAT_Y8)
+            //||
+            //    (video_stream_profile.stream_type() == RS2_STREAM_INFRARED &&
+            //     video_stream_profile.stream_index() == 1 &&
+            //     video_stream_profile.format() == RS2_FORMAT_Y8)
             ||
                 (video_stream_profile.stream_type() == RS2_STREAM_COLOR &&
                  video_stream_profile.format() == RS2_FORMAT_RGB8)
@@ -50,6 +45,8 @@ bool is_desired_stream(const rs2::video_stream_profile& video_stream_profile)
 
 int main(int argc, char * argv[]) try
 {
+    sample_gui gui;
+    std::vector<rs2::sensor> active_sensors;
     // First, create a rs2::context.
     // The context represents the current platform with respect to
     //  connected devices
@@ -192,7 +189,13 @@ int main(int argc, char * argv[]) try
 
                     if (is_desired_stream(video_stream_profile))
                     {
-                        streams_to_open.push_back(video_stream_profile);
+                        auto itr = std::find_if(std::begin(streams_to_open), std::end(streams_to_open), [&](const rs2::stream_profile& s) {
+                            return s.stream_type() == video_stream_profile.stream_type() && s.stream_index() == video_stream_profile.stream_index();
+                        });
+                        if (itr == std::end(streams_to_open))
+                        {
+                            streams_to_open.push_back(video_stream_profile);
+                        }
                     }
                 }
             }
@@ -210,24 +213,27 @@ int main(int argc, char * argv[]) try
                 // Opening a sensor may have side effects such as actually
                 //  running, consume power, produce data, etc.
                 sensor.open(streams_to_open);
-
+                
                 // In order to begin getting data from the sensor, we need to register a callback to handle frames (data)
                 // To register a callback, the sensor's start() method should be invoked.
                 // The start() method takes any type of callable object that takes a frame as its parameter
                 // NOTE:
-                //  * Since a sensor can stream multiple streams, and start
+                //  * Since a sensor can stream multiple streams, and start()
                 //     takes a single handler, multiple types of frames can
                 //     arrive to the handler.
                 //  * Different streams' frames arrive on different threads.
                 //    This behavior requires the provided frame handler to the
                 //     start method to be re-entrant
-                // A lambda (that prints the frame number)
-                sensor.start([](rs2::frame f)
+                
+                // One callable object to pass the start() is a C++11 lambda
+                sensor.start([&gui](rs2::frame f)
                 {
                     std::cout << "Frame received #" << f.get_frame_number()
-                        << " with stream type: " << f.get_profile().stream_type() << std::endl;
+                              << " with stream type: " << f.get_profile().stream_type() << std::endl;
+                    gui.on_frame(f);
                 });
 
+                // Other ways of calling start are:
                 try
                 {
                     // A function pointer
@@ -242,23 +248,32 @@ int main(int argc, char * argv[]) try
                     // We wrapped the calls to start() with try{} catch{} block for 2 reasons here:
                     //  1) calling start() multiple times throws an exception (but we wanted to show that it compiles with different types)
                     //  2) Start can throw an exception generally.
-
                     std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
                 }
 
-                // After calling start, frames will begin to arrive asynchronously to the callback handler.
-                // We now block the main thread from continuing, to allow frames to arrive during this time
-                std::this_thread::sleep_for(std::chrono::seconds(5));
-
-                // To stop streaming, we simply need to call the sensor's stop method
-                // After returning from the call to stop(), no frames will arrive from this sensor
-                sensor.stop();
-
-                // To complete the stop operation, and release access of the device, we need to call close() per sensor
-                sensor.close();
+                // Adding the sensor to the active_sensors in order to extend it 
+                //  life time beyond this loop's scope.
+                active_sensors.push_back(sensor);
             }
         }
     }
+
+    // At this point we have a few active sensors that are receiving frames to their callback
+
+    std::cout << "Openning a window to display window and GUI" << std::endl;
+    gui.run(active_sensors);
+
+    // To stop all running sensors before closing the application
+    for (rs2::sensor sensor : active_sensors)
+    {
+        // To stop streaming, we simply need to call the sensor's stop method
+        // After returning from the call to stop(), no frames will arrive from this sensor
+        sensor.stop();
+
+        // To complete the stop operation, and release access of the device, we need to call close() per sensor
+        sensor.close();
+    }
+
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)
