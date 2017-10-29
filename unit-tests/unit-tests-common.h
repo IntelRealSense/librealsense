@@ -73,7 +73,7 @@ private:
     std::vector<char*> _params;
 };
 
-inline bool file_exists(const char* filename)
+inline bool file_exists(const std::string& filename)
 {
     std::ifstream f(filename);
     return f.good();
@@ -554,4 +554,108 @@ inline rs2::stream_profile get_profile_by_resolution_type(rs2::sensor& s, res_ty
     ss << "stream profile for " << width << "," << height << " resolution is not supported!";
     throw std::runtime_error(ss.str());
 }
+
+
+enum special_folder
+{
+    user_desktop,
+    user_documents,
+    user_pictures,
+    user_videos,
+    temp_folder
+};
+
+#ifdef _WIN32
+#include <windows.h>
+#include <wchar.h>
+#include <KnownFolders.h>
+#include <shlobj.h>
+
+inline std::string get_folder_path(special_folder f)
+{
+    std::string res;
+    if (f == temp_folder)
+    {
+        TCHAR buf[MAX_PATH];
+        if (GetTempPath(MAX_PATH, buf) != 0)
+        {
+            char str[1024];
+            wcstombs(str, buf, 1023);
+            res = str;
+        }
+    }
+    else
+    {
+        GUID folder;
+        switch (f)
+        {
+        case user_desktop: folder = FOLDERID_Desktop;
+            break;
+        case user_documents: folder = FOLDERID_Documents;
+            break;
+        case user_pictures: folder = FOLDERID_Pictures;
+            break;
+        case user_videos: folder = FOLDERID_Videos;
+            break;
+        default:
+            throw std::invalid_argument(std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
+        }
+        PWSTR folder_path = NULL;
+        HRESULT hr = SHGetKnownFolderPath(folder, KF_FLAG_DEFAULT_PATH, NULL, &folder_path);
+        if (SUCCEEDED(hr))
+        {
+            char str[1024];
+            wcstombs(str, folder_path, 1023);
+            CoTaskMemFree(folder_path);
+            res = str;
+        }
+    }
+    return res;
+}
+#endif //_WIN32
+
+#if defined __linux__ || defined __APPLE__
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+
+inline std::string get_folder_path(special_folder f)
+{
+    std::string res;
+    if (f == special_folder::temp_folder)
+    {
+        const char* tmp_dir = getenv("TMPDIR");
+        res = tmp_dir ? tmp_dir : "/tmp/";
+    }
+    else
+    {
+        const char* home_dir = getenv("HOME");
+        if (!home_dir)
+        {
+            struct passwd* pw = getpwuid(getuid());
+            home_dir = (pw && pw->pw_dir) ? pw->pw_dir : "";
+        }
+        if (home_dir)
+        {
+            res = home_dir;
+            switch (f)
+            {
+            case user_desktop: res += "/Desktop/";
+                break;
+            case user_documents: res += "/Documents/";
+                break;
+            case user_pictures: res += "/Pictures/";
+                break;
+            case user_videos: res += "/Videos/";
+                break;
+            default:
+                throw std::invalid_argument(
+                    std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
+            }
+        }
+    }
+    return res;
+}
+#endif // defined __linux__ || defined __APPLE__
+
 #endif
