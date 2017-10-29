@@ -508,11 +508,19 @@ namespace rs2
                                 _pipe.stop();
 
                                 rs2::config cfg;
-
+                                // We have a single resolution control that obides both streams
                                 cfg.enable_stream(primary.stream_type(), primary.stream_index(),
                                     primary.width(), primary.height(), primary.format(), primary.fps());
                                 cfg.enable_stream(secondary.stream_type(), secondary.stream_index(),
                                     primary.width(), primary.height(), secondary.format(), primary.fps());
+
+                                // The secondary stream may use its previous resolution when appropriate
+                                if (!cfg.can_resolve(_pipe))
+                                {
+                                    cfg.disable_stream(secondary.stream_type());
+                                    cfg.enable_stream(secondary.stream_type(), secondary.stream_index(),
+                                        secondary.width(), secondary.height(), secondary.format(), primary.fps());
+                                }
 
                                 // Wait till a valid device is registered and responsive
                                 bool success = false;

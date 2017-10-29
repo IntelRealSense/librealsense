@@ -135,6 +135,10 @@ namespace librealsense
             reserved_1,
             reserved_2,
             res_640_400,
+            // Unofficial resolutions DS5U S
+            res_576_576,
+            res_720_720,
+            res_1152_1152,
             max_ds5_rect_resolutions
         };
 
@@ -317,6 +321,10 @@ namespace librealsense
             { res_1280_720,{ 1280, 720 } },
             { res_1280_800,{ 1280, 800 } },
             { res_1920_1080,{ 1920, 1080 } },
+            // Unofficial DS5U S resolutions
+            { res_576_576,{ 576, 576 } },
+            { res_720_720,{ 720, 720 } },
+            { res_1152_1152,{ 1152, 1152 } },
         };
 
 

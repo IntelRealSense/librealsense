@@ -78,7 +78,6 @@ namespace librealsense
         explicit ds5_depth_sensor(ds5_device* owner,
             std::shared_ptr<platform::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader)
-
             : uvc_sensor("Stereo Module", uvc_device, move(timestamp_reader), owner), _owner(owner), _depth_units(0)
         {}
 
@@ -155,9 +154,74 @@ namespace librealsense
         {
             //does not change over time
         }
-    private:
+    protected:
         const ds5_device* _owner;
         float _depth_units;
+    };
+
+    class ds5u_depth_sensor : public ds5_depth_sensor
+    {
+    public:
+        explicit ds5u_depth_sensor(ds5u_device* owner,
+            std::shared_ptr<platform::uvc_device> uvc_device,
+            std::unique_ptr<frame_timestamp_reader> timestamp_reader)
+            //: ds5_depth_sensor(dynamic_cast<ds5_device*>(owner), uvc_device, move(timestamp_reader)), _owner(owner)
+            : ds5_depth_sensor(owner, uvc_device, move(timestamp_reader)), _owner(owner)
+        {}
+
+        stream_profiles init_stream_profiles() override
+        {
+            auto lock = environment::get_instance().get_extrinsics_graph().lock();
+
+            auto results = uvc_sensor::init_stream_profiles();
+
+            for (auto p : results)
+            {
+                // Register stream types
+                if (p->get_stream_type() == RS2_STREAM_DEPTH)
+                {
+                    assign_stream(_owner->_depth_stream, p);
+                }
+                else if (p->get_stream_type() == RS2_STREAM_INFRARED && p->get_stream_index() < 2)
+                {
+                    assign_stream(_owner->_left_ir_stream, p);
+                }
+                else if (p->get_stream_type() == RS2_STREAM_INFRARED  && p->get_stream_index() == 2)
+                {
+                    assign_stream(_owner->_right_ir_stream, p);
+                }
+                auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+
+                if ((video->get_width() == 720) && (video->get_height() == 720)
+                    && (video->get_format() == RS2_FORMAT_Z16) && (video->get_framerate() == 30))
+                    video->make_default();
+
+                if (video->get_width() == 1152 && video->get_height() == 1152
+                    && p->get_stream_type() == RS2_STREAM_INFRARED
+                    && video->get_format() == RS2_FORMAT_RAW10 && video->get_framerate() == 30)
+                    video->make_default();
+
+                // Register intrinsics
+                if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
+                {
+                    auto profile = to_profile(p.get());
+                    std::weak_ptr<ds5_depth_sensor> wp = std::dynamic_pointer_cast<ds5_depth_sensor>(this->shared_from_this());
+                    video->set_intrinsics([profile, wp]()
+                    {
+                        auto sp = wp.lock();
+                        if (sp)
+                            return sp->get_intrinsics(profile);
+                        else
+                            return rs2_intrinsics{};
+                    });
+                }
+            }
+
+            return results;
+        }
+
+    private:
+        const ds5u_device* _owner;
     };
 
     bool ds5_device::is_camera_in_advanced_mode() const
@@ -193,8 +257,7 @@ namespace librealsense
         auto depth_ep = std::make_shared<ds5_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
 
-        depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
-
+        depth_ep->register_xu(depth_xu); // make sure the XU is initialized every time we power the camera
 
         depth_ep->register_pixel_format(pf_z16); // Depth
         depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
@@ -320,7 +383,6 @@ namespace librealsense
 
             std::unique_ptr<notification_decoder>(new ds5_notification_decoder())));
 
-
              depth_ep.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler.get()));
 
              depth_ep.register_option(RS2_OPTION_ASIC_TEMPERATURE,
@@ -419,5 +481,144 @@ namespace librealsense
             depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type()));
         }
         return std::make_shared<frame_number_composite_matcher>(depth_matchers);
+    }
+
+    ds5u_device::ds5u_device(std::shared_ptr<context> ctx,
+        const platform::backend_device_group& group)
+        : ds5_device(ctx, group), device(ctx, group)
+    {
+        // Modification part of the basic ds5 functionality
+
+        // Override the basic ds5 sensor with the development version
+        _depth_device_idx = assign_sensor(create_ds5u_depth_device(ctx, group.uvc_devices), _depth_device_idx);
+
+        using namespace ds;
+        auto& depth_ep = get_depth_sensor();
+
+        auto&& backend = ctx->get_backend();
+
+        if (group.usb_devices.size()>0)
+        {
+            _hw_monitor = std::make_shared<hw_monitor>(
+                std::make_shared<locked_transfer>(
+                    backend.create_usb_device(group.usb_devices.front()), get_depth_sensor()));
+        }
+        else
+        {
+            _hw_monitor = std::make_shared<hw_monitor>(
+                std::make_shared<locked_transfer>(
+                    std::make_shared<command_transfer_over_xu>(
+                        get_depth_sensor(), depth_xu, DS5_HWMONITOR),
+                    get_depth_sensor()));
+        }
+
+#ifdef HWM_OVER_XU
+    //if hw_monitor was created by usb replace it xu
+    if (group.usb_devices.size() > 0)
+    {
+        _hw_monitor = std::make_shared<hw_monitor>(
+            std::make_shared<locked_transfer>(
+                std::make_shared<command_transfer_over_xu>(
+                    get_depth_sensor(), librealsense::ds::depth_xu, librealsense::ds::DS5_HWMONITOR),
+                get_depth_sensor()));
+    }
+#endif
+
+        if (is_camera_in_advanced_mode())
+        {
+            depth_ep.remove_pixel_format(pf_y8i); // L+R
+            depth_ep.remove_pixel_format(pf_y12i); // L+R
+        }
+
+        // Inhibit specific unresloved options
+        depth_ep.unregister_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED);
+        depth_ep.unregister_option(RS2_OPTION_ERROR_POLLING_ENABLED);
+        depth_ep.unregister_option(RS2_OPTION_ASIC_TEMPERATURE);
+        depth_ep.unregister_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+
+        depth_ep.register_pu(RS2_OPTION_GAIN);
+        auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(get_depth_sensor(),
+            depth_xu,
+            DS5_EXPOSURE,
+            "Depth Exposure");
+
+        auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(get_depth_sensor(),
+            depth_xu,
+            DS5_ENABLE_AUTO_EXPOSURE,
+            "Enable Auto Exposure");
+        depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
+
+        depth_ep.register_option(RS2_OPTION_GAIN,
+            std::make_shared<auto_disabling_control>(
+                std::make_shared<uvc_pu_option>(get_depth_sensor(), RS2_OPTION_GAIN),
+                enable_auto_exposure));
+        depth_ep.register_option(RS2_OPTION_EXPOSURE,
+            std::make_shared<auto_disabling_control>(
+                exposure_option,
+                enable_auto_exposure));
+        depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<depth_scale_option>(*_hw_monitor));
+    }
+
+    std::shared_ptr<uvc_sensor> ds5u_device::create_ds5u_depth_device(std::shared_ptr<context> ctx,
+        const std::vector<platform::uvc_device_info>& all_device_infos)
+    {
+        using namespace ds;
+
+        auto&& backend = ctx->get_backend();
+
+        std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
+        for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
+            depth_devices.push_back(backend.create_uvc_device(info));
+
+        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
+        auto depth_ep = std::make_shared<ds5u_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
+                            std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
+        depth_ep->register_xu(depth_xu); // make sure the XU is initialized every time we power the camera
+
+        depth_ep->register_pixel_format(pf_z16); // Depth
+
+        // Support DS5U-specific pixel format
+        depth_ep->register_pixel_format(pf_w10);
+
+        depth_ep->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
+
+        // Metadata registration
+        depth_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
+
+        // attributes of md_capture_timing
+        auto md_prop_offset = offsetof(metadata_raw, mode) +
+            offsetof(md_depth_mode, depth_y_mode) +
+            offsetof(md_depth_y_normal_mode, intel_capture_timing);
+
+        depth_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute, md_prop_offset));
+        depth_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs400_sensor_ts_parser(make_uvc_header_parser(&platform::uvc_header::timestamp),
+            make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
+
+        // attributes of md_capture_stats
+        md_prop_offset = offsetof(metadata_raw, mode) +
+            offsetof(md_depth_mode, depth_y_mode) +
+            offsetof(md_depth_y_normal_mode, intel_capture_stats);
+
+        depth_ep->register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE, make_attribute_parser(&md_capture_stats::white_balance, md_capture_stat_attributes::white_balance_attribute, md_prop_offset));
+
+        // attributes of md_depth_control
+        md_prop_offset = offsetof(metadata_raw, mode) +
+            offsetof(md_depth_mode, depth_y_mode) +
+            offsetof(md_depth_y_normal_mode, intel_depth_control);
+
+        depth_ep->register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL, make_attribute_parser(&md_depth_control::manual_gain, md_depth_control_attributes::gain_attribute, md_prop_offset));
+        depth_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_attribute_parser(&md_depth_control::manual_exposure, md_depth_control_attributes::exposure_attribute, md_prop_offset));
+        depth_ep->register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_attribute_parser(&md_depth_control::auto_exposure_mode, md_depth_control_attributes::ae_mode_attribute, md_prop_offset));
+
+        // md_configuration - will be used for internal validation only
+        md_prop_offset = offsetof(metadata_raw, mode) + offsetof(md_depth_mode, depth_y_mode) + offsetof(md_depth_y_normal_mode, intel_configuration);
+
+        depth_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HW_TYPE, make_attribute_parser(&md_configuration::hw_type, md_configuration_attributes::hw_type_attribute, md_prop_offset));
+        depth_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_SKU_ID, make_attribute_parser(&md_configuration::sku_id, md_configuration_attributes::sku_id_attribute, md_prop_offset));
+        depth_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_FORMAT, make_attribute_parser(&md_configuration::format, md_configuration_attributes::format_attribute, md_prop_offset));
+        depth_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_WIDTH, make_attribute_parser(&md_configuration::width, md_configuration_attributes::width_attribute, md_prop_offset));
+        depth_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HEIGHT, make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
+
+        return depth_ep;
     }
 }

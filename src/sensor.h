@@ -66,10 +66,8 @@ namespace librealsense
 
         const device_interface& get_device() override;
 
-        void register_pixel_format(native_pixel_format pf)
-        {
-            _pixel_formats.push_back(pf);
-        }
+        void register_pixel_format(native_pixel_format pf);
+        void remove_pixel_format(native_pixel_format pf);
 
         // Make sensor inherit its owning device info by default
         const std::string& get_info(rs2_camera_info info) const override;

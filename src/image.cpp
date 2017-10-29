@@ -161,6 +161,79 @@ namespace librealsense
 #endif
     }
 
+    // Unpack luminocity 8 bit from 10-bit packed macro-pixels (4 pixels in 5 bytes):
+    // The first four bytes store the 8 MSB of each pixel, and the last byte holds the 2 LSB for each pixel :8888[2222]
+    void unpack_y8_from_rw10(byte *  const d[], const byte * s, int n)
+    {
+#ifdef __SSSE3__
+        assert(!(n % 48));  //We process 12 macro-pixels simultaneously to achieve performance boost
+        auto src = reinterpret_cast<const uint8_t *>(s);
+        auto dst = reinterpret_cast<uint8_t *>(d[0]);
+
+        const __m128i * blk_0_in = reinterpret_cast<const __m128i *>(src);
+        const __m128i * blk_1_in = reinterpret_cast<const __m128i *>(src+15);
+        const __m128i * blk_2_in = reinterpret_cast<const __m128i *>(src+30);
+        const __m128i * blk_3_in = reinterpret_cast<const __m128i *>(src+45);
+
+        auto blk_0_out = reinterpret_cast<__m128i *>(dst);
+        auto blk_1_out = reinterpret_cast<__m128i *>(dst + 12);
+        auto blk_2_out = reinterpret_cast<__m128i *>(dst + 24);
+        auto blk_3_out = reinterpret_cast<__m128i *>(dst + 36);
+
+        __m128i res[4];
+        __m128i mask;
+        mask.m128i_u8[0] = 0x00;    // The mask will reorder the input so the 12 bytes with pixels' MSB values will come first
+        mask.m128i_u8[1] = 0x01;
+        mask.m128i_u8[2] = 0x02;
+        mask.m128i_u8[3] = 0x03;
+        mask.m128i_u8[4] = 0x05;
+        mask.m128i_u8[5] = 0x06;
+        mask.m128i_u8[6] = 0x07;
+        mask.m128i_u8[7] = 0x08;
+        mask.m128i_u8[8] = 0x0a;
+        mask.m128i_u8[9] = 0x0b;
+        mask.m128i_u8[10] = 0x0c;
+        mask.m128i_u8[11] = 0x0d;
+        mask.m128i_u8[12] = 0x8f;
+        mask.m128i_u8[13] = 0x8f;
+        mask.m128i_u8[14] = 0x8f;
+        mask.m128i_u8[15] = 0x8f;
+
+        for (int i = 0; (i+48) < n; i += 48, src +=60, dst+=48)
+        {
+            blk_0_in = reinterpret_cast<const __m128i *>(src);
+            blk_1_in = reinterpret_cast<const __m128i *>(src + 15);
+            blk_2_in = reinterpret_cast<const __m128i *>(src + 30);
+            blk_3_in = reinterpret_cast<const __m128i *>(src + 45);
+
+            blk_0_out = reinterpret_cast<__m128i *>(dst);
+            blk_1_out = reinterpret_cast<__m128i *>(dst + 12);
+            blk_2_out = reinterpret_cast<__m128i *>(dst + 24);
+            blk_3_out = reinterpret_cast<__m128i *>(dst + 36);
+
+            res[0] = _mm_shuffle_epi8(_mm_loadu_si128(blk_0_in), mask);
+            res[1] = _mm_shuffle_epi8(_mm_loadu_si128(blk_1_in), mask);
+            res[2] = _mm_shuffle_epi8(_mm_loadu_si128(blk_2_in), mask);
+            res[3] = _mm_shuffle_epi8(_mm_loadu_si128(blk_3_in), mask);
+
+            _mm_storeu_si128(blk_0_out, res[0]);
+            _mm_storeu_si128(blk_1_out, res[1]);
+            _mm_storeu_si128(blk_2_out, res[2]);
+            _mm_storeu_si128(blk_3_out, res[3]);
+        }
+#else  // Generic code for when SSSE3 is not available.
+        auto from = reinterpret_cast<const uint8_t *>(s);
+        uint8_t* tgt = d[0];
+
+        for (int i = 0; i < n; i+=4, from+=5)
+        {
+            *tgt++ = from[0];
+            *tgt++ = from[1];
+            *tgt++ = from[2];
+            *tgt++ = from[3];
+        }
+#endif
+    }
     /////////////////////////////
     // YUY2 unpacking routines //
     /////////////////////////////
@@ -770,6 +843,8 @@ namespace librealsense
     const native_pixel_format pf_rw16       = { 'RW16', 1, 2,{  { false, &copy_pixels<2>,                                { { RS2_STREAM_COLOR,    RS2_FORMAT_RAW16 } } } } };
     const native_pixel_format pf_bayer16    = { 'BYR2', 1, 2,{  { false, &copy_pixels<2>,                                { { RS2_STREAM_COLOR,    RS2_FORMAT_RAW16 } } } } };
     const native_pixel_format pf_rw10       = { 'pRAA', 1, 1,{  { false, &copy_raw10,                                    { { RS2_STREAM_COLOR,    RS2_FORMAT_RAW10 } } } } };
+    // W10 development format will be exposed to the user via Y8
+    const native_pixel_format pf_w10        = { 'W10 ', 1, 1,{  { true,  &unpack_y8_from_rw10,                         { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8 } } } } };
 
     const native_pixel_format pf_yuy2       = { 'YUY2', 1, 2,{  { true,  &unpack_yuy2<RS2_FORMAT_RGB8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_Y16>,                    { { RS2_STREAM_COLOR,    RS2_FORMAT_Y16 } } },
