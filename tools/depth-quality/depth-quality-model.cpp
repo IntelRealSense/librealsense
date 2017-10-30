@@ -529,12 +529,53 @@ namespace rs2
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
                         ImGui::Text("Distance:");
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Estimated distance to the wall in mm");
+                        }
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                         ImGui::Text("%.2f mm", _metrics_model.get_last_metrics().distance);
 
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
+                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                        std::string gt_str("Ground Truth");
+                        if (_use_ground_truth) gt_str += ":";
+                        if (ImGui::Checkbox(gt_str.c_str(), &_use_ground_truth))
+                        {
+                            if (_use_ground_truth) _metrics_model.set_ground_truth(_ground_truth);
+                            else _metrics_model.disable_ground_truth();
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("True measured distance to the wall in mm");
+                        }
+                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
+                        if (_use_ground_truth)
+                        {
+                            ImGui::PushItemWidth(120);
+                            if (ImGui::InputInt("##GT", &_ground_truth, 1))
+                            {
+                                _metrics_model.set_ground_truth(_ground_truth);
+                            }
+                            ImGui::PopItemWidth();
+                            ImGui::SetCursorPosX(col1 + 120); ImGui::SameLine();
+                            ImGui::Text("(mm)");
+                        }
+                        else
+                        {
+                            _ground_truth = _metrics_model.get_last_metrics().distance;
+                            ImGui::Dummy({ 1,1 });
+                        }
+                        ImGui::PopStyleColor();
+
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
                         ImGui::Text("Angle:");
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Estimated angle to the wall in degrees");
+                        }
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                         ImGui::Text("%.2f deg", _metrics_model.get_last_metrics().angle);
 
@@ -570,39 +611,6 @@ namespace rs2
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                         ImGui::TreePop();
                     }
-
-                    /*if (ImGui::TreeNode("Allowed Ranges"))
-                    {
-                        ImGui::PopStyleVar();
-                        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
-
-                        auto col0 = ImGui::GetCursorPosX();
-                        auto col1 = 145.f;
-
-                        ImGui::Text("Min Dist(mm):");
-                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
-                        ImGui::PushItemWidth(-1);
-                        ImGui::SliderFloat("##MinDist", &_min_dist, 100, 5000, "%.0f");
-                        ImGui::PopItemWidth();
-                        ImGui::SetCursorPosX(col0);
-
-                        ImGui::Text("Max Dist(mm):");
-                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
-                        ImGui::PushItemWidth(-1);
-                        ImGui::SliderFloat("##MaxDist", &_max_dist, 100, 5000, "%.0f");
-                        ImGui::PopItemWidth();
-                        ImGui::SetCursorPosX(col0);
-
-                        ImGui::Text("Angle(deg):");
-                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
-                        ImGui::PushItemWidth(-1);
-                        ImGui::SliderFloat("##AngleMax", &_max_angle, 0, 90, "%.0f");
-                        ImGui::PopItemWidth();
-                        ImGui::SetCursorPosX(col0);
-
-                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-                        ImGui::TreePop();
-                    }*/
 
                     ImGui::PopStyleVar();
                     ImGui::PopStyleVar();
@@ -846,7 +854,9 @@ namespace rs2
                             roi = _roi;
                         }
 
-                        auto metrics = analyze_depth_image(depth_frame, su, baseline, &intrin, roi, callback);
+                        _ground_truth_copy = get_ground_truth(); // Copy the mutable GT into a "safe" copy variable
+                        auto gt_ptr = _use_gt ? &_ground_truth_copy : nullptr; // Borrow copy ptr to the callback
+                        auto metrics = analyze_depth_image(depth_frame, su, baseline, &intrin, roi, gt_ptr, callback);
 
                         {
                             std::lock_guard<std::mutex> lock(_m);
@@ -915,6 +925,9 @@ namespace rs2
         void metric_plot::render(ux_window& win)
         {
             std::lock_guard<std::mutex> lock(_m);
+
+            if (!_visible) return;
+
             std::stringstream ss;
             auto val = _vals[(SIZE + _idx - 1) % SIZE];
 

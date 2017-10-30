@@ -15,54 +15,69 @@ int main(int argc, const char * argv[]) try
     //       Metrics Definitions
     // ===============================
 
-    auto avg = model.make_metric(
-               "Average Error", 0, 10, "(mm)",
-               "Average Distance from Plane Fit\n"
-               "This metric approximates a plane within\n"
-               "the ROI and calculates the average\n"
-               "distance of points in the ROI\n"
-               "from that plane, in mm");
+    metric zaccuracy = model.make_metric(
+                       "Z Accuracy", 0, 100, "%",
+                       "Z Accuracy given Ground Truth\n"
+                       "Preformed on the depth image in the ROI\n"
+                       "Calculate the depth-errors map\n"
+                       "i.e., Image – GT (signed values).\n"
+                       "Calculate the median of the depth-errors\n");
 
-    auto std = model.make_metric(
-               "STD (Error)", 0, 10, "(mm)",
-               "Standard Deviation from Plane Fit\n"
-               "This metric approximates a plane within\n"
-               "the ROI and calculates the\n"
-               "standard deviation of distances\n"
-               "of points in the ROI from that plane");
+    metric avg = model.make_metric(
+                 "Average Error", 0, 10, "(mm)",
+                 "Average Distance from Plane Fit\n"
+                 "This metric approximates a plane within\n"
+                 "the ROI and calculates the average\n"
+                 "distance of points in the ROI\n"
+                 "from that plane, in mm");
 
-    auto rms = model.make_metric(
-               "Subpixel RMS", 0.f, 1.f, "(pixel)",
-               "Normalized RMS .\n"
-               "This metric provides the subpixel accuracy\n"
-               "and is calculated as follows:\n"
-               "Zi - depth range of i-th pixel (mm)\n"
-               "Zpi -depth of Zi projection onto plane fit (mm)\n"
-               "BL - optical baseline (mm)\n"
-               "FL - focal length, as a multiple of pixel width\n"
-               "Di = BL*FL/Zi; Dpi = Bl*FL/Zpi\n"
-               "              n      \n"
-               "RMS = SQRT((SUM(Di-Dpi)^2)/n)\n"
-               "             i=0    ");
+    metric rms = model.make_metric(
+                 "Subpixel RMS", 0.f, 1.f, "(pixel)",
+                 "Normalized RMS .\n"
+                 "This metric provides the subpixel accuracy\n"
+                 "and is calculated as follows:\n"
+                 "Zi - depth range of i-th pixel (mm)\n"
+                 "Zpi -depth of Zi projection onto plane fit (mm)\n"
+                 "BL - optical baseline (mm)\n"
+                 "FL - focal length, as a multiple of pixel width\n"
+                 "Di = BL*FL/Zi; Dpi = Bl*FL/Zpi\n"
+                 "              n      \n"
+                 "RMS = SQRT((SUM(Di-Dpi)^2)/n)\n"
+                 "             i=0    ");
 
-    auto fill = model.make_metric(
-                "Fill-Rate", 0, 100, "%",
-                "Fill Rate\n"
-                "Percentage of pixels with valid depth\n"
-                "values out of all pixels within the ROI\n");
+    metric fill = model.make_metric(
+                  "Fill-Rate", 0, 100, "%",
+                  "Fill Rate\n"
+                  "Percentage of pixels with valid depth\n"
+                  "values out of all pixels within the ROI\n");
 
     // ===============================
     //       Metrics Calculation
     // ===============================
 
-    model.on_frame([&](const std::vector<rs2::float3>& points, rs2::plane p, rs2::region_of_interest roi,
-        float baseline_mm, float focal_length_pixels, double timestamp_msec)
+    model.on_frame([&](
+        const std::vector<rs2::float3>& points, 
+        const rs2::plane p,
+        const rs2::region_of_interest roi,
+        const float baseline_mm, 
+        const float focal_length_pixels, 
+        const float* ground_thruth_mm)
     {
-        const double bf_factor = baseline_mm * focal_length_pixels * 0.001; // also convert point units from meter to mm
+        const float TO_METERS = 0.001f;
+        const float TO_MM = 1000.f;
+        const float TO_PERCENT = 100.f;
 
-        //std::vector<double> distances; // Calculate the distances of all points in the ROI to the fitted plane
-        std::vector<std::pair<double, double> > calc;   // Distances and disparities
-        calc.reserve(points.size());        // Calculate the distances of all points in the ROI to the fitted plane
+        const float bf_factor = baseline_mm * focal_length_pixels * TO_METERS; // also convert point units from mm to meter
+
+        // Calculate the distances of all points in the ROI to the fitted plane
+        std::vector<float> distances;
+        std::vector<float> disparities;
+        std::vector<float> errors;
+
+        // Reserve memory for the data
+        distances.reserve(points.size());
+        disparities.reserve(points.size());
+        if (ground_thruth_mm) errors.reserve(points.size());
 
         // Calculate the distance and disparity errors from the point cloud to the fitted plane
         for (auto point : points)
@@ -74,38 +89,41 @@ int main(int argc, const char * argv[]) try
                                             float(point.y - dist2plane*p.b),
                                             float(point.z - dist2plane*p.c) };
 
-            // Store distance and disparity errors
-            calc.emplace_back(std::make_pair(std::fabs(dist2plane) * 1000,
-                                             bf_factor / point.length() - bf_factor / plane_intersect.length()));
+            // Store distance, disparity and error
+            distances.push_back(std::fabs(dist2plane) * TO_MM);
+            disparities.push_back(bf_factor / point.length() - bf_factor / plane_intersect.length());
+            if (ground_thruth_mm) errors.push_back(point.z * TO_MM - *ground_thruth_mm);
         }
 
-        std::sort(calc.begin(), calc.end()); // Filter out the X% of the samples that are further away from the mean
-        auto begin = calc.begin(), end = calc.end();
+        // Show Z accuracy metric only when Ground Truth is available
+        zaccuracy->visible(ground_thruth_mm != nullptr);
+        if (ground_thruth_mm && *ground_thruth_mm > 0)
+        {
+            std::sort(begin(errors), end(errors));
+            auto median = errors[errors.size() / 2];
+            auto accuracy = TO_PERCENT * (fabs(median) / *ground_thruth_mm);
+            zaccuracy->add_value(accuracy);
+        }
 
         // Calculate average distance from the plane fit
         double total_distance = 0;
-        for (auto itr = begin; itr < end; ++itr) total_distance += (*itr).first;
-        float avg_dist = total_distance / (calc.size());
-        avg->add_value(avg_dist, timestamp_msec);
+        for (auto dist : distances) total_distance += dist;
+        float avg_dist = total_distance / distances.size();
+        avg->add_value(avg_dist);
 
-        // Calculate STD and RMS
-        double total_sq_diffs = 0;
+        // Calculate RMS
         double total_sq_disparity_diff = 0;
-        for (auto itr = begin; itr < end; ++itr)
+        for (auto disparity : disparities)
         {
-            total_sq_diffs += std::pow((*itr).first - avg_dist, 2);
-            total_sq_disparity_diff += (*itr).second*(*itr).second;
+            total_sq_disparity_diff += disparity*disparity;
         }
-        auto std_dist = static_cast<float>(std::sqrt(total_sq_diffs / (points.size())));
-        std->add_value(std_dist, timestamp_msec);
-
         // Calculate Subpixel RMS for Stereo-based Depth sensors
-        auto rms_val = static_cast<float>(std::sqrt(total_sq_disparity_diff / (points.size())));
-        rms->add_value(rms_val, timestamp_msec);
+        auto rms_val = static_cast<float>(std::sqrt(total_sq_disparity_diff / points.size()));
+        rms->add_value(rms_val);
 
         // Calculate fill ratio relative to the ROI
-        auto fill_ratio = points.size() / float((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * 100;
-        fill->add_value(fill_ratio, timestamp_msec);
+        auto fill_ratio = points.size() / float((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * TO_PERCENT;
+        fill->add_value(fill_ratio);
     });
 
     // ===============================
