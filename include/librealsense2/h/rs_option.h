@@ -94,7 +94,7 @@ const char* rs2_rs400_visual_preset_to_string(rs2_rs400_visual_preset preset);
 * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return true if option is read-only
 */
-int rs2_is_option_read_only(const rs2_sensor* sensor, rs2_option option, rs2_error** error);
+int rs2_is_option_read_only(const rs2_options* options, rs2_option option, rs2_error** error);
 
 /**
 * read option value from the sensor
@@ -103,7 +103,7 @@ int rs2_is_option_read_only(const rs2_sensor* sensor, rs2_option option, rs2_err
 * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return value of the option
 */
-float rs2_get_option(const rs2_sensor* sensor, rs2_option option, rs2_error** error);
+float rs2_get_option(const rs2_options* options, rs2_option option, rs2_error** error);
 
 /**
 * write new value to sensor option
@@ -112,7 +112,7 @@ float rs2_get_option(const rs2_sensor* sensor, rs2_option option, rs2_error** er
 * \param[in] value      new value for the option
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_set_option(const rs2_sensor* sensor, rs2_option option, float value, rs2_error** error);
+void rs2_set_option(const rs2_options* options, rs2_option option, float value, rs2_error** error);
 
 /**
 * check if particular option is supported by a subdevice
@@ -121,7 +121,7 @@ void rs2_set_option(const rs2_sensor* sensor, rs2_option option, float value, rs
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return true if option is supported
 */
-int rs2_supports_option(const rs2_sensor* sensor, rs2_option option, rs2_error** error);
+int rs2_supports_option(const rs2_options* options, rs2_option option, rs2_error** error);
 
 /**
 * retrieve the available range of values of a supported option
@@ -133,7 +133,7 @@ int rs2_supports_option(const rs2_sensor* sensor, rs2_option option, rs2_error**
 * \param[out] def    the default value of the option
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_get_option_range(const rs2_sensor* sensor, rs2_option option, float* min, float* max, float* step, float* def, rs2_error** error);
+void rs2_get_option_range(const rs2_options* sensor, rs2_option option, float* min, float* max, float* step, float* def, rs2_error** error);
 
 /**
 * get option description
@@ -142,7 +142,7 @@ void rs2_get_option_range(const rs2_sensor* sensor, rs2_option option, float* mi
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return human-readable option description
 */
-const char* rs2_get_option_description(const rs2_sensor* sensor, rs2_option option, rs2_error ** error);
+const char* rs2_get_option_description(const rs2_options* options, rs2_option option, rs2_error ** error);
 
 /**
 * get option value description (in case specific option value hold special meaning)
@@ -152,7 +152,7 @@ const char* rs2_get_option_description(const rs2_sensor* sensor, rs2_option opti
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return human-readable description of a specific value of an option or null if no special meaning
 */
-const char* rs2_get_option_value_description(const rs2_sensor* sensor, rs2_option option, float value, rs2_error ** error);
+const char* rs2_get_option_value_description(const rs2_options* options, rs2_option option, float value, rs2_error ** error);
 
 #ifdef __cplusplus
 }

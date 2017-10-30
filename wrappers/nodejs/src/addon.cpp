@@ -1252,7 +1252,160 @@ class FrameCallbackForProcessingBlock : public rs2_frame_callback {
   rs2_error* error;
 };
 
-class RSSensor : public Nan::ObjectWrap {
+class RSOptions :public Nan::ObjectWrap{
+ public:
+  static void Init(v8::Local<v8::Object> exports) {
+    v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
+    tpl->SetClassName(Nan::New("RSOptions").ToLocalChecked());
+    tpl->InstanceTemplate()->SetInternalFieldCount(1);
+
+    Nan::SetPrototypeMethod(tpl, "destroy", Destroy);
+
+    Nan::SetPrototypeMethod(tpl, "supportsOption", SupportsOption);
+    Nan::SetPrototypeMethod(tpl, "getOption", GetOption);
+    Nan::SetPrototypeMethod(tpl, "setOption", SetOption);
+    Nan::SetPrototypeMethod(tpl, "getOptionRange", GetOptionRange);
+    Nan::SetPrototypeMethod(tpl, "isOptionReadonly", IsOptionReadonly);
+    Nan::SetPrototypeMethod(tpl, "getOptionDescription", GetOptionDescription);
+    Nan::SetPrototypeMethod(tpl, "getOptionValueDescription",
+        GetOptionValueDescription);
+    constructor.Reset(tpl->GetFunction());
+    exports->Set(Nan::New("RSOptions").ToLocalChecked(), tpl->GetFunction());
+}
+    static v8::Local<v8::Object> NewInstance(rs2_options* options) {
+    Nan::EscapableHandleScope scope;
+
+    v8::Local<v8::Function> cons = Nan::New<v8::Function>(constructor);
+    v8::Local<v8::Context> context =
+        v8::Isolate::GetCurrent()->GetCurrentContext();
+
+    v8::Local<v8::Object> instance =
+        cons->NewInstance(context, 0, nullptr).ToLocalChecked();
+
+    auto me = Nan::ObjectWrap::Unwrap<RSOptions>(instance);
+    me->options = options;
+
+    return scope.Escape(instance);
+  }
+
+ private:
+  RSOptions() {
+    error = nullptr;
+    options = nullptr;
+  }
+
+  ~RSOptions() {
+    DestroyMe();
+  }
+  void DestroyMe() {
+    if (error) rs2_free_error(error);
+    error = nullptr;
+  }
+  static void New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+    if (info.IsConstructCall()) {
+      RSOptions* obj = new RSOptions();
+      obj->Wrap(info.This());
+      info.GetReturnValue().Set(info.This());
+    }
+  }
+  static NAN_METHOD(Destroy) {
+    auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
+    if (me) {
+      me->DestroyMe();
+    }
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+  static NAN_METHOD(SupportsOption) {
+    int32_t option = info[0]->IntegerValue();
+    auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
+    if (me) {
+      int32_t on = rs2_supports_option(
+          me->options, (rs2_option)option, &me->error);
+      info.GetReturnValue().Set(Nan::New(on != 0));
+      return;
+    }
+    info.GetReturnValue().Set(Nan::False());
+  }
+  static NAN_METHOD(GetOption) {
+    int32_t option = info[0]->IntegerValue();
+    auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
+    if (me) {
+      auto value = rs2_get_option(me->options, (rs2_option)option, &me->error);
+      info.GetReturnValue().Set(Nan::New(value));
+      return;
+    }
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+  static NAN_METHOD(GetOptionDescription) {
+    int32_t option = info[0]->IntegerValue();
+    auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
+    if (me) {
+      auto desc = rs2_get_option_description(me->options,
+          static_cast<rs2_option>(option), &me->error);
+      info.GetReturnValue().Set(Nan::New(desc).ToLocalChecked());
+      return;
+    }
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+  static NAN_METHOD(GetOptionValueDescription) {
+    int32_t option = info[0]->IntegerValue();
+    auto val = info[1]->NumberValue();
+    auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
+    if (me) {
+      auto desc = rs2_get_option_value_description(me->options,
+          static_cast<rs2_option>(option), val, &me->error);
+      if (desc) {
+        info.GetReturnValue().Set(Nan::New(desc).ToLocalChecked());
+        return;
+      }
+    }
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+  static NAN_METHOD(SetOption) {
+    int32_t option = info[0]->IntegerValue();
+    auto value = info[1]->NumberValue();
+    auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
+    if (me) {
+      rs2_set_option(me->options, (rs2_option)option, value, &me->error);
+    }
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+  static NAN_METHOD(GetOptionRange) {
+    int32_t option = info[0]->IntegerValue();
+    auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
+    if (me) {
+      float min = 0;
+      float max = 0;
+      float step = 0;
+      float def = 0;
+      rs2_get_option_range(me->options,
+          static_cast<rs2_option>(option), &min, &max, &step, &def, &me->error);
+      info.GetReturnValue().Set(RSOptionRange(min, max, step, def).GetObject());
+      return;
+    }
+    info.GetReturnValue().Set(Nan::False());
+  }
+  static NAN_METHOD(IsOptionReadonly) {
+    int32_t option = info[0]->IntegerValue();
+    auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
+    if (me) {
+      int32_t yes = rs2_is_option_read_only(me->options,
+          static_cast<rs2_option>(option), &me->error);
+      info.GetReturnValue().Set(Nan::New((yes)?true:false));
+      return;
+    }
+    info.GetReturnValue().Set(Nan::False());
+  }
+
+ private:
+  static Nan::Persistent<v8::Function> constructor;
+  rs2_options* options;
+  rs2_error* error;
+  friend class RSSensor;
+};
+Nan::Persistent<v8::Function> RSOptions::constructor;
+
+class RSSensor : public RSOptions {
  public:
   static void Init(v8::Local<v8::Object> exports) {
     v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
@@ -1266,14 +1419,6 @@ class RSSensor : public Nan::ObjectWrap {
     // Nan::SetPrototypeMethod(tpl, "startWithFrameQueue", StartWithFrameQueue);
     // Nan::SetPrototypeMethod(tpl, "startWithSyncer", StartWithSyncer);
     Nan::SetPrototypeMethod(tpl, "startWithCallback", StartWithCallback);
-    Nan::SetPrototypeMethod(tpl, "supportsOption", SupportsOption);
-    Nan::SetPrototypeMethod(tpl, "getOption", GetOption);
-    Nan::SetPrototypeMethod(tpl, "setOption", SetOption);
-    Nan::SetPrototypeMethod(tpl, "getOptionRange", GetOptionRange);
-    Nan::SetPrototypeMethod(tpl, "isOptionReadonly", IsOptionReadonly);
-    Nan::SetPrototypeMethod(tpl, "getOptionDescription", GetOptionDescription);
-    Nan::SetPrototypeMethod(tpl, "getOptionValueDescription",
-        GetOptionValueDescription);
     // Nan::SetPrototypeMethod(tpl, "createSyncer", CreateSyncer);
     Nan::SetPrototypeMethod(tpl, "getMotionIntrinsics", GetMotionIntrinsics);
     Nan::SetPrototypeMethod(tpl, "stop", Stop);
@@ -1337,94 +1482,6 @@ class RSSensor : public Nan::ObjectWrap {
       obj->Wrap(info.This());
       info.GetReturnValue().Set(info.This());
     }
-  }
-
-  static NAN_METHOD(SupportsOption) {
-    int32_t option = info[0]->IntegerValue();
-    auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
-    if (me) {
-      int32_t on = rs2_supports_option(
-          me->sensor, (rs2_option)option, &me->error);
-      info.GetReturnValue().Set(Nan::New(on != 0));
-      return;
-    }
-    info.GetReturnValue().Set(Nan::False());
-  }
-
-  static NAN_METHOD(GetOption) {
-    int32_t option = info[0]->IntegerValue();
-    auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
-    if (me) {
-      auto value = rs2_get_option(me->sensor, (rs2_option)option, &me->error);
-      info.GetReturnValue().Set(Nan::New(value));
-      return;
-    }
-    info.GetReturnValue().Set(Nan::Undefined());
-  }
-
-  static NAN_METHOD(GetOptionDescription) {
-    int32_t option = info[0]->IntegerValue();
-    auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
-    if (me) {
-      auto desc = rs2_get_option_description(me->sensor,
-          static_cast<rs2_option>(option), &me->error);
-      info.GetReturnValue().Set(Nan::New(desc).ToLocalChecked());
-      return;
-    }
-    info.GetReturnValue().Set(Nan::Undefined());
-  }
-
-  static NAN_METHOD(GetOptionValueDescription) {
-    int32_t option = info[0]->IntegerValue();
-    auto val = info[1]->NumberValue();
-    auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
-    if (me) {
-      auto desc = rs2_get_option_value_description(me->sensor,
-          static_cast<rs2_option>(option), val, &me->error);
-      if (desc) {
-        info.GetReturnValue().Set(Nan::New(desc).ToLocalChecked());
-        return;
-      }
-    }
-    info.GetReturnValue().Set(Nan::Undefined());
-  }
-
-  static NAN_METHOD(SetOption) {
-    int32_t option = info[0]->IntegerValue();
-    auto value = info[1]->NumberValue();
-    auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
-    if (me) {
-      rs2_set_option(me->sensor, (rs2_option)option, value, &me->error);
-    }
-    info.GetReturnValue().Set(Nan::Undefined());
-  }
-
-  static NAN_METHOD(GetOptionRange) {
-    int32_t option = info[0]->IntegerValue();
-    auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
-    if (me) {
-      float min = 0;
-      float max = 0;
-      float step = 0;
-      float def = 0;
-      rs2_get_option_range(me->sensor,
-          static_cast<rs2_option>(option), &min, &max, &step, &def, &me->error);
-      info.GetReturnValue().Set(RSOptionRange(min, max, step, def).GetObject());
-      return;
-    }
-    info.GetReturnValue().Set(Nan::False());
-  }
-
-  static NAN_METHOD(IsOptionReadonly) {
-    int32_t option = info[0]->IntegerValue();
-    auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
-    if (me) {
-      int32_t yes = rs2_is_option_read_only(me->sensor,
-          static_cast<rs2_option>(option), &me->error);
-      info.GetReturnValue().Set(Nan::New((yes)?true:false));
-      return;
-    }
-    info.GetReturnValue().Set(Nan::False());
   }
 
   static NAN_METHOD(GetCameraInfo) {

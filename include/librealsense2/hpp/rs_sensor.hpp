@@ -104,9 +104,121 @@ namespace rs2
         void release() override { delete this; }
     };
 
-    class sensor
+    class options
     {
     public:
+        options(rs2_options* options = nullptr)
+        {
+            _options = options;
+        }
+        /**
+        * check if particular option is supported by a subdevice
+        * \param[in] option     option id to be checked
+        * \return true if option is supported
+        */
+        bool supports(rs2_option option) const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_supports_option(_options, option, &e);
+            error::handle(e);
+            return res > 0;
+        }
+
+        /**
+        * get option description
+        * \param[in] option     option id to be checked
+        * \return human-readable option description
+        */
+        const char* get_option_description(rs2_option option) const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_option_description(_options, option, &e);
+            error::handle(e);
+            return res;
+        }
+
+        /**
+        * get option value description (in case specific option value hold special meaning)
+        * \param[in] option     option id to be checked
+        * \param[in] value      value of the option
+        * \return human-readable description of a specific value of an option or null if no special meaning
+        */
+        const char* get_option_value_description(rs2_option option, float val) const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_option_value_description(_options, option, val, &e);
+            error::handle(e);
+            return res;
+        }
+
+        /**
+        * read option value from the device
+        * \param[in] option   option id to be queried
+        * \return value of the option
+        */
+        float get_option(rs2_option option) const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_option(_options, option, &e);
+            error::handle(e);
+            return res;
+        }
+
+        /**
+        * retrieve the available range of values of a supported option
+        * \return option  range containing minimum and maximum values, step and default value
+        */
+        option_range get_option_range(rs2_option option) const
+        {
+            option_range result;
+            rs2_error* e = nullptr;
+            rs2_get_option_range(_options, option,
+                &result.min, &result.max, &result.step, &result.def, &e);
+            error::handle(e);
+            return result;
+        }
+
+        /**
+        * write new value to device option
+        * \param[in] option     option id to be queried
+        * \param[in] value      new value for the option
+        */
+        void set_option(rs2_option option, float value) const
+        {
+            rs2_error* e = nullptr;
+            rs2_set_option(_options, option, value, &e);
+            error::handle(e);
+        }
+
+        /**
+        * check if particular option is read-only
+        * \param[in] option     option id to be checked
+        * \return true if option is read-only
+        */
+        bool is_option_read_only(rs2_option option)
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_is_option_read_only(_options, option, &e);
+            error::handle(e);
+            return res > 0;
+        }
+
+   protected:
+        options& operator=(const std::shared_ptr<rs2_sensor> dev)
+        {
+            _options = (rs2_options*)dev.get();
+            return *this;
+        }
+
+    private:
+         rs2_options* _options;
+    };
+
+    class sensor : public options
+    {
+    public:
+
+        using options::supports;
         /**
         * open subdevice for exclusive access, by committing to a configuration
         * \param[in] profile    configuration committed by the device
@@ -203,19 +315,6 @@ namespace rs2
         }
 
         /**
-        * check if particular option is read-only
-        * \param[in] option     option id to be checked
-        * \return true if option is read-only
-        */
-        bool is_option_read_only(rs2_option option)
-        {
-            rs2_error* e = nullptr;
-            auto res = rs2_is_option_read_only(_sensor.get(), option, &e);
-            error::handle(e);
-            return res > 0;
-        }
-
-        /**
         * register notifications callback
         * \param[in] callback   notifications callback
         */
@@ -228,84 +327,6 @@ namespace rs2
             error::handle(e);
         }
 
-        /**
-        * read option value from the device
-        * \param[in] option   option id to be queried
-        * \return value of the option
-        */
-        float get_option(rs2_option option) const
-        {
-            rs2_error* e = nullptr;
-            auto res = rs2_get_option(_sensor.get(), option, &e);
-            error::handle(e);
-            return res;
-        }
-
-        /**
-        * retrieve the available range of values of a supported option
-        * \return option  range containing minimum and maximum values, step and default value
-        */
-        option_range get_option_range(rs2_option option) const
-        {
-            option_range result;
-            rs2_error* e = nullptr;
-            rs2_get_option_range(_sensor.get(), option,
-                &result.min, &result.max, &result.step, &result.def, &e);
-            error::handle(e);
-            return result;
-        }
-
-        /**
-        * write new value to device option
-        * \param[in] option     option id to be queried
-        * \param[in] value      new value for the option
-        */
-        void set_option(rs2_option option, float value) const
-        {
-            rs2_error* e = nullptr;
-            rs2_set_option(_sensor.get(), option, value, &e);
-            error::handle(e);
-        }
-
-        /**
-        * check if particular option is supported by a subdevice
-        * \param[in] option     option id to be checked
-        * \return true if option is supported
-        */
-        bool supports(rs2_option option) const
-        {
-            rs2_error* e = nullptr;
-            auto res = rs2_supports_option(_sensor.get(), option, &e);
-            error::handle(e);
-            return res > 0;
-        }
-
-        /**
-        * get option description
-        * \param[in] option     option id to be checked
-        * \return human-readable option description
-        */
-        const char* get_option_description(rs2_option option) const
-        {
-            rs2_error* e = nullptr;
-            auto res = rs2_get_option_description(_sensor.get(), option, &e);
-            error::handle(e);
-            return res;
-        }
-
-        /**
-        * get option value description (in case specific option value hold special meaning)
-        * \param[in] option     option id to be checked
-        * \param[in] value      value of the option
-        * \return human-readable description of a specific value of an option or null if no special meaning
-        */
-        const char* get_option_value_description(rs2_option option, float val) const
-        {
-            rs2_error* e = nullptr;
-            auto res = rs2_get_option_value_description(_sensor.get(), option, val, &e);
-            error::handle(e);
-            return res;
-        }
 
         /**
         * check if physical subdevice is supported
@@ -347,7 +368,8 @@ namespace rs2
         }
 
         sensor& operator=(const std::shared_ptr<rs2_sensor> dev)
-        {
+        {  
+            options::operator=(dev);
             _sensor.reset();
             _sensor = dev;
             return *this;
@@ -355,6 +377,7 @@ namespace rs2
         sensor& operator=(const sensor& dev)
         {
             *this = nullptr;
+             options::operator=(dev);
             _sensor = dev._sensor;
             return *this;
         }
@@ -392,8 +415,9 @@ namespace rs2
         friend roi_sensor;
 
         std::shared_ptr<rs2_sensor> _sensor;
+
         explicit sensor(std::shared_ptr<rs2_sensor> dev)
-            : _sensor(dev)
+            :options((rs2_options*)dev.get()),  _sensor(dev)
         {
         }
     };
