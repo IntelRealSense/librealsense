@@ -178,12 +178,14 @@ void __global__ align_images(const rs_intrinsics depth_intrin, const rs_extrinsi
             return false;
         }
         align_images<<<numBlocks, threadsPerBlock, 0, myCudaStream>>>(z_intrin, z_to_other, other_intrin, z_scale, z_pixels_gpu, temporary_out_pixels_gpu);
-        if (cudaSuccess != cudaGetLastError()) {
+        cudaCallErrorStatus = cudaGetLastError();
+        if (cudaSuccess != cudaCallErrorStatus) {
             ROS_ERROR("GPU processing failed while launching align_images on the GPU. %s %s", cudaGetErrorName(cudaCallErrorStatus), cudaGetErrorString(cudaCallErrorStatus));
             return false;
         }
         cast_to_ushort<<<numBlocks, threadsPerBlock, 0, myCudaStream>>>(out_pixels_gpu_uint16t,temporary_out_pixels_gpu, other_intrin );
-        if (cudaSuccess != cudaGetLastError()) {
+        cudaCallErrorStatus = cudaGetLastError();
+        if (cudaSuccess != cudaCallErrorStatus) {
             ROS_ERROR("GPU processing failed while launching cast_to_ushort on the GPU. %s %s", cudaGetErrorName(cudaCallErrorStatus), cudaGetErrorString(cudaCallErrorStatus));
             return false;
         }
