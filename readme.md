@@ -18,6 +18,8 @@ The library aims to provide an easy to use API and tools for computer vision pro
 
 Developer kits containing the necessary hardware to use this library are available for purchase at [realsense.intel.com/buy](realsense.intel.com/buy).
 
+> Don't have access to a RealSense camera? Check-out [sample data](./doc/sample-data.md)
+
 ## What’s included in the SDK:
 **[Tools for harnessing your depth camera’s capabilities](https://github.com/IntelRealSense/librealsense/tree/development/tools)** Including:
 
