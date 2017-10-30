@@ -8,6 +8,7 @@
 #include <ros/console.h>
 #include <array>
 #include <cmath>
+#include <mutex>
 
 #if !defined (HAVE_CUDA) || defined (CUDA_DISABLER)
 namespace gpu {
@@ -112,7 +113,7 @@ void __global__ align_images(const rs_intrinsics depth_intrin, const rs_extrinsi
 
 
     };
-
+    static std::mutex gpu_mutex;
     __host__ bool align_z_to_other(rsimpl::byte * z_aligned_to_other, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin)
     {
         ROS_INFO_THROTTLE(60, "GPU NOT DISABLED");
@@ -131,7 +132,22 @@ void __global__ align_images(const rs_intrinsics depth_intrin, const rs_extrinsi
 
         // ignore this error. technically the blocking sync can only be set once prior to device initialization. once
         // that initial setting is done, subsequent settings result in an error until device is restarted
-        cudaCallErrorStatus = cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
+        unsigned int cudaFlags = 0;
+        cudaCallErrorStatus = cudaGetDeviceFlags(&cudaFlags);
+        if (cudaFlags != cudaDeviceScheduleBlockingSync) {
+            std::lock_guard<std::mutex> lock(gpu_mutex);
+            // check flag again to make sure we don't reset it after some other thread set it for us
+            cudaCallErrorStatus = cudaGetDeviceFlags(&cudaFlags);
+            if (cudaFlags != cudaDeviceScheduleBlockingSync) {
+                cudaCallErrorStatus = cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
+                if (cudaCallErrorStatus != cudaSuccess) {
+                    cudaDeviceSynchronize();
+                    cudaDeviceReset();
+                    cudaCallErrorStatus = cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
+                }
+            }
+        }
+
 
         auto out_z = (uint16_t *)(z_aligned_to_other);
 
