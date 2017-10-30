@@ -51,6 +51,7 @@ namespace librealsense
     processing_block::processing_block()
         : _source_wrapper(_source)
     {
+        register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
         _source.init(std::make_shared<metadata_parser_map>());
     }
 
