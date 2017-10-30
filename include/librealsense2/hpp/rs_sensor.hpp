@@ -207,6 +207,7 @@ namespace rs2
         options& operator=(const std::shared_ptr<rs2_sensor> dev)
         {
             _options = (rs2_options*)dev.get();
+            return *this;
         }
 
     private:

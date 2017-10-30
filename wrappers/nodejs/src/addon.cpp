@@ -721,7 +721,6 @@ class RSFrame : public Nan::ObjectWrap {
           internal_data[i] = out_ptr[7-i];
         }
       }
-
       info.GetReturnValue().Set(Nan::New(true));
       return;
     }
