@@ -138,6 +138,20 @@ namespace rs2
         }
 
         /**
+        * get option value description (in case specific option value hold special meaning)
+        * \param[in] option     option id to be checked
+        * \param[in] value      value of the option
+        * \return human-readable description of a specific value of an option or null if no special meaning
+        */
+        const char* get_option_value_description(rs2_option option, float val) const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_option_value_description(_options, option, val, &e);
+            error::handle(e);
+            return res;
+        }
+
+        /**
         * read option value from the device
         * \param[in] option   option id to be queried
         * \return value of the option
@@ -312,19 +326,6 @@ namespace rs2
             error::handle(e);
         }
 
-        /**
-        * get option value description (in case specific option value hold special meaning)
-        * \param[in] option     option id to be checked
-        * \param[in] value      value of the option
-        * \return human-readable description of a specific value of an option or null if no special meaning
-        */
-        const char* get_option_value_description(rs2_option option, float val) const
-        {
-            rs2_error* e = nullptr;
-            auto res = rs2_get_option_value_description(_sensor.get(), option, val, &e);
-            error::handle(e);
-            return res;
-        }
 
         /**
         * check if physical subdevice is supported

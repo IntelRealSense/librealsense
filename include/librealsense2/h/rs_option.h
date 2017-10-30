@@ -152,7 +152,7 @@ const char* rs2_get_option_description(const rs2_options* options, rs2_option op
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return human-readable description of a specific value of an option or null if no special meaning
 */
-const char* rs2_get_option_value_description(const rs2_sensor* sensor, rs2_option option, float value, rs2_error ** error);
+const char* rs2_get_option_value_description(const rs2_options* options, rs2_option option, float value, rs2_error ** error);
 
 #ifdef __cplusplus
 }
