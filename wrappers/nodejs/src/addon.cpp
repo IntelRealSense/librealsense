@@ -1297,11 +1297,11 @@ class RSOptions :public Nan::ObjectWrap{
   ~RSOptions() {
     DestroyMe();
   }
- void DestroyMe() {
+  void DestroyMe() {
     if (error) rs2_free_error(error);
     error = nullptr;
   }
- 
+
   static void New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     if (info.IsConstructCall()) {
       RSOptions* obj = new RSOptions();
@@ -1310,7 +1310,7 @@ class RSOptions :public Nan::ObjectWrap{
     }
   }
 
-static NAN_METHOD(Destroy) {
+  static NAN_METHOD(Destroy) {
     auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
     if (me) {
       me->DestroyMe();
@@ -1318,7 +1318,7 @@ static NAN_METHOD(Destroy) {
     info.GetReturnValue().Set(Nan::Undefined());
   }
 
-static NAN_METHOD(SupportsOption) {
+  static NAN_METHOD(SupportsOption) {
     int32_t option = info[0]->IntegerValue();
     auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
     if (me) {
@@ -1405,12 +1405,12 @@ static NAN_METHOD(SupportsOption) {
     }
     info.GetReturnValue().Set(Nan::False());
   }
-private:
+ private:
   static Nan::Persistent<v8::Function> constructor;
   rs2_options* options;
   rs2_error* error;
   friend class RSSensor;
-  
+
 };
 Nan::Persistent<v8::Function> RSOptions::constructor;
 
@@ -1428,7 +1428,6 @@ class RSSensor : public RSOptions {
     // Nan::SetPrototypeMethod(tpl, "startWithFrameQueue", StartWithFrameQueue);
     // Nan::SetPrototypeMethod(tpl, "startWithSyncer", StartWithSyncer);
     Nan::SetPrototypeMethod(tpl, "startWithCallback", StartWithCallback);
-    
     // Nan::SetPrototypeMethod(tpl, "createSyncer", CreateSyncer);
     Nan::SetPrototypeMethod(tpl, "getMotionIntrinsics", GetMotionIntrinsics);
     Nan::SetPrototypeMethod(tpl, "stop", Stop);
@@ -1493,8 +1492,6 @@ class RSSensor : public RSOptions {
       info.GetReturnValue().Set(info.This());
     }
   }
-
-  
 
   static NAN_METHOD(GetCameraInfo) {
     int32_t camera_info = info[0]->IntegerValue();;
