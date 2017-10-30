@@ -1716,7 +1716,6 @@ class RSSensor : public Nan::ObjectWrap {
       me->video_frame_ = video_frame;
       v8::String::Utf8Value str(info[0]);
       me->frame_callback_name_ = std::string(*str);
-
       rs2_start_cpp(me->sensor_, new FrameCallbackForProc(me), &me->error_);
     }
     info.GetReturnValue().Set(Nan::Undefined());
