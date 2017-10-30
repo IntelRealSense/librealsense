@@ -819,13 +819,13 @@ void rs2_frame_add_ref(rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame)
 
-const char* rs2_get_option_value_description(const rs2_sensor* sensor, rs2_option option, float value, rs2_error** error) BEGIN_API_CALL
+const char* rs2_get_option_value_description(const rs2_options* options, rs2_option option, float value, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(options);
     VALIDATE_ENUM(option);
-    return sensor->sensor->get_option(option).get_value_description(value);
+    return options->options->get_option(option).get_value_description(value);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor, option, value)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option, value)
 
 rs2_frame_queue* rs2_create_frame_queue(int capacity, rs2_error** error) BEGIN_API_CALL
 {

@@ -1454,6 +1454,48 @@ class RSSyncer : public Nan::ObjectWrap {
 
 Nan::Persistent<v8::Function> RSSyncer::constructor_;
 
+class Options {
+ public:
+  explicit Options(rs2_options* options) : options_(options), error_(nullptr) {}
+
+  ~Options() {
+    if (error_) rs2_free_error(error_);
+  }
+
+  bool SupportsOption(rs2_option option) {
+    return (rs2_supports_option(options_, option, &error_) != 0);
+  }
+
+  float GetOption(rs2_option option) {
+    return rs2_get_option(options_, option, &error_);
+  }
+
+  const char* GetOptionDescription(rs2_option option) {
+    return rs2_get_option_description(options_, option, &error_);
+  }
+
+  const char* GetOptionValueDescription(rs2_option option, float val) {
+    return rs2_get_option_value_description(options_, option, val, &error_);
+  }
+
+  void SetOption(rs2_option option, float val) {
+    rs2_set_option(options_, option, val, &error_);
+  }
+
+  void GetOptionRange(
+      rs2_option option, float* min, float* max, float* step, float* def) {
+    rs2_get_option_range(options_, option, min, max, step, def, &error_);
+  }
+
+  bool IsOptionReadonly(rs2_option option) {
+    return (rs2_is_option_read_only(options_, option, &error_) != 0);
+  }
+
+ private:
+  rs2_options* options_;
+  rs2_error* error_;
+};
+
 class RSSensor : public Nan::ObjectWrap {
  public:
   static void Init(v8::Local<v8::Object> exports) {
@@ -1503,7 +1545,7 @@ class RSSensor : public Nan::ObjectWrap {
 
     auto me = Nan::ObjectWrap::Unwrap<RSSensor>(instance);
     me->sensor_ = sensor;
-
+    me->options_ = new Options(reinterpret_cast<rs2_options*>(sensor));
     return scope.Escape(instance);
   }
 
@@ -1526,7 +1568,8 @@ class RSSensor : public Nan::ObjectWrap {
 
  private:
   RSSensor() : sensor_(nullptr), error_(nullptr), profile_list_(nullptr),
-      frame_(nullptr), video_frame_(nullptr), depth_frame_(nullptr) {}
+      frame_(nullptr), video_frame_(nullptr), depth_frame_(nullptr),
+      options_(nullptr) {}
 
   ~RSSensor() {
     DestroyMe();
@@ -1541,6 +1584,8 @@ class RSSensor : public Nan::ObjectWrap {
     sensor_ = nullptr;
     if (profile_list_) rs2_delete_stream_profiles_list(profile_list_);
     profile_list_ = nullptr;
+    if (options_) delete options_;
+    options_ = nullptr;
   }
 
   static void New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
@@ -1555,8 +1600,7 @@ class RSSensor : public Nan::ObjectWrap {
     int32_t option = info[0]->IntegerValue();
     auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
     if (me) {
-      int32_t on = rs2_supports_option(
-          me->sensor_, (rs2_option)option, &me->error_);
+      auto on = me->options_->SupportsOption(static_cast<rs2_option>(option));
       info.GetReturnValue().Set(Nan::New(on ? true : false));
       return;
     }
@@ -1567,7 +1611,7 @@ class RSSensor : public Nan::ObjectWrap {
     int32_t option = info[0]->IntegerValue();
     auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
     if (me) {
-      auto value = rs2_get_option(me->sensor_, (rs2_option)option, &me->error_);
+      auto value = me->options_->GetOption(static_cast<rs2_option>(option));
       info.GetReturnValue().Set(Nan::New(value));
       return;
     }
@@ -1578,8 +1622,8 @@ class RSSensor : public Nan::ObjectWrap {
     int32_t option = info[0]->IntegerValue();
     auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
     if (me) {
-      auto desc = rs2_get_option_description(me->sensor_,
-          static_cast<rs2_option>(option), &me->error_);
+      auto desc = me->options_->GetOptionDescription(static_cast<rs2_option>(
+          option));
       info.GetReturnValue().Set(Nan::New(desc).ToLocalChecked());
       return;
     }
@@ -1591,8 +1635,8 @@ class RSSensor : public Nan::ObjectWrap {
     auto val = info[1]->NumberValue();
     auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
     if (me) {
-      auto desc = rs2_get_option_value_description(me->sensor_,
-          static_cast<rs2_option>(option), val, &me->error_);
+      auto desc = me->options_->GetOptionValueDescription(
+          static_cast<rs2_option>(option), val);
       if (desc) {
         info.GetReturnValue().Set(Nan::New(desc).ToLocalChecked());
         return;
@@ -1606,7 +1650,7 @@ class RSSensor : public Nan::ObjectWrap {
     auto value = info[1]->NumberValue();
     auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
     if (me) {
-      rs2_set_option(me->sensor_, (rs2_option)option, value, &me->error_);
+      me->options_->SetOption(static_cast<rs2_option>(option), value);
     }
     info.GetReturnValue().Set(Nan::Undefined());
   }
@@ -1619,22 +1663,21 @@ class RSSensor : public Nan::ObjectWrap {
       float max = 0;
       float step = 0;
       float def = 0;
-      rs2_get_option_range(me->sensor_,
-          static_cast<rs2_option>(option), &min, &max, &step, &def,
-          &me->error_);
+      me->options_->GetOptionRange(static_cast<rs2_option>(option), &min, &max,
+          &step, &def);
       info.GetReturnValue().Set(RSOptionRange(min, max, step, def).GetObject());
       return;
     }
-    info.GetReturnValue().Set(Nan::False());
+    info.GetReturnValue().Set(Nan::Undefined());
   }
 
   static NAN_METHOD(IsOptionReadonly) {
     int32_t option = info[0]->IntegerValue();
     auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
     if (me) {
-      int32_t yes = rs2_is_option_read_only(me->sensor_,
-          static_cast<rs2_option>(option), &me->error_);
-      info.GetReturnValue().Set(Nan::New((yes) ? true : false));
+      auto val = me->options_->IsOptionReadonly(
+          static_cast<rs2_option>(option));
+      info.GetReturnValue().Set(Nan::New((val) ? true : false));
       return;
     }
     info.GetReturnValue().Set(Nan::False());
@@ -1857,6 +1900,7 @@ class RSSensor : public Nan::ObjectWrap {
   RSFrame* frame_;
   RSFrame* video_frame_;
   RSFrame* depth_frame_;
+  Options* options_;
   friend class RSContext;
   friend class DevicesChangedCallbackInfo;
   friend class FrameCallbackInfo;
