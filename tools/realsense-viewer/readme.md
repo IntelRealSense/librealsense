@@ -1,6 +1,6 @@
 # Intel® RealSense™ Viewer
 
-<p align="center"><img src="res/realsense-viewer-backup.gif" /></p>
+<p align="center"><img src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/realsense-viewer-backup.gif" /></p>
 
 ## Overview
 

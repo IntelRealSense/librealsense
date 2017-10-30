@@ -1,14 +1,14 @@
 # Depth Quality Tool
 
-<p align="center"><img src="res/depth_quality_glimpse.gif" /></p>
+<p align="center"><img src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/depth-quality-glimpse.gif" /></p>
 
 ## Overview
 
-This application allows you to test the camera’s depth quality, including: average distance to plane accuracy, standard deviation from plane, Z (distance) accuracy and fill rate.
+This application allows you to test the camera’s depth quality, including: average distance to plane accuracy, Z (distance) accuracy and fill rate.
 You should be able to easily get and interpret several of the depth quality metrics and record and save the data for offline analysis.
 
 ## Quick Start
-* Position the depth camera within a range of 0.5 -3 meter from a flat non-reflective surface.
+* Position the depth camera within a range of 0.3 - 2 meter from a flat non-reflective surface.
 * Aim the camera to the target and hold it steady for several seconds till the tool is able to recognize the surface (the yellow grid in 3D view).
 * Adjust the camera using the "Angle" metric to minimize the skew and make it as  perpendicular to the surface as possible.
 * Inspect the calculated depth quality metrics, expand the metric properties to get more in-depth info.
@@ -18,8 +18,8 @@ You should be able to easily get and interpret several of the depth quality metr
 * Plane Fitting - using reconstructed surface
 * User-defined Region of Interest
 * Depth Quality metrics:
+  * Z-Accuracy
   * Depth Error Average
-  * Depth Error Standard Deviation
   * Fill-Rate
   * Subpixel RMS
   * Distance to target
@@ -29,10 +29,12 @@ You should be able to easily get and interpret several of the depth quality metr
 ## Metrics elaborated
 ![](./res/Zi_ZPi.png)
 
-### Depth Error Average & STD
+### Depth Error Average
 _Dist<sub>i</sub>_ - Distance from pixel coordinates to the Plane Fit (mm)  
-![](./res/avg.gif)  
-![](./res/std.gif)
+![](./res/avg.gif)
+### Z Accuracy
+_GT_ - Ground truth distance to the wall (mm)  
+![](./res/accuracy.gif)
 ### Subpixel RMS Metric
 _Z<sub>i</sub>_ - Depth value of i-th pixel in the ROI (mm)  
 _ZP<sub>i</sub>_ - Depth value of the i-th pixel projected onto the plane fit (mm)  
