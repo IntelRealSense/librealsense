@@ -1301,7 +1301,6 @@ class RSOptions :public Nan::ObjectWrap{
     if (error) rs2_free_error(error);
     error = nullptr;
   }
-
   static void New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     if (info.IsConstructCall()) {
       RSOptions* obj = new RSOptions();
@@ -1309,7 +1308,6 @@ class RSOptions :public Nan::ObjectWrap{
       info.GetReturnValue().Set(info.This());
     }
   }
-
   static NAN_METHOD(Destroy) {
     auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
     if (me) {
@@ -1317,7 +1315,6 @@ class RSOptions :public Nan::ObjectWrap{
     }
     info.GetReturnValue().Set(Nan::Undefined());
   }
-
   static NAN_METHOD(SupportsOption) {
     int32_t option = info[0]->IntegerValue();
     auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
@@ -1329,7 +1326,6 @@ class RSOptions :public Nan::ObjectWrap{
     }
     info.GetReturnValue().Set(Nan::False());
   }
-
   static NAN_METHOD(GetOption) {
     int32_t option = info[0]->IntegerValue();
     auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
@@ -1340,7 +1336,6 @@ class RSOptions :public Nan::ObjectWrap{
     }
     info.GetReturnValue().Set(Nan::Undefined());
   }
-
   static NAN_METHOD(GetOptionDescription) {
     int32_t option = info[0]->IntegerValue();
     auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
@@ -1352,7 +1347,6 @@ class RSOptions :public Nan::ObjectWrap{
     }
     info.GetReturnValue().Set(Nan::Undefined());
   }
-
   static NAN_METHOD(GetOptionValueDescription) {
     int32_t option = info[0]->IntegerValue();
     auto val = info[1]->NumberValue();
@@ -1367,7 +1361,6 @@ class RSOptions :public Nan::ObjectWrap{
     }
     info.GetReturnValue().Set(Nan::Undefined());
   }
-
   static NAN_METHOD(SetOption) {
     int32_t option = info[0]->IntegerValue();
     auto value = info[1]->NumberValue();
@@ -1377,7 +1370,6 @@ class RSOptions :public Nan::ObjectWrap{
     }
     info.GetReturnValue().Set(Nan::Undefined());
   }
-
   static NAN_METHOD(GetOptionRange) {
     int32_t option = info[0]->IntegerValue();
     auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
@@ -1393,7 +1385,6 @@ class RSOptions :public Nan::ObjectWrap{
     }
     info.GetReturnValue().Set(Nan::False());
   }
-
   static NAN_METHOD(IsOptionReadonly) {
     int32_t option = info[0]->IntegerValue();
     auto me = Nan::ObjectWrap::Unwrap<RSOptions>(info.Holder());
@@ -1405,12 +1396,12 @@ class RSOptions :public Nan::ObjectWrap{
     }
     info.GetReturnValue().Set(Nan::False());
   }
+
  private:
   static Nan::Persistent<v8::Function> constructor;
   rs2_options* options;
   rs2_error* error;
   friend class RSSensor;
-
 };
 Nan::Persistent<v8::Function> RSOptions::constructor;
 
