@@ -77,7 +77,7 @@ namespace rs2
         void release() override { delete this; }
     };
 
-    class processing_block
+    class processing_block: public options
     {
     public:
         template<class S>
@@ -105,7 +105,7 @@ namespace rs2
 
 
         processing_block(std::shared_ptr<rs2_processing_block> block)
-         : _block(block)
+         : options((rs2_options*)block.get()),_block(block)
         {
         }
 
@@ -234,6 +234,7 @@ namespace rs2
                     std::shared_ptr<rs2_processing_block>(
                                         rs2_create_sync_processing_block(&e),
                                         rs2_delete_processing_block));
+
             error::handle(e);
         }
 
@@ -257,6 +258,7 @@ namespace rs2
         syncer()
         {
             _sync.start(_results);
+
         }
 
         /**
