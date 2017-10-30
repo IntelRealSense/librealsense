@@ -9,7 +9,10 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-
+#include <algorithm>
+#include <vector>
+#include <mutex>
+#include <map>
 
 //////////////////////////////
 // Basic Data Types         //
@@ -85,6 +88,9 @@ public:
         {
         case RS2_FORMAT_RGB8:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, frame.get_data());
+            break;
+        case RS2_FORMAT_Y8:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, frame.get_data());
             break;
         default:
             throw std::runtime_error("The requested format is not suported by this demo!");
@@ -205,4 +211,33 @@ public:
 private:
     GLFWwindow* win;
     int _width, _height;
+};
+
+class frames_holder
+{
+    std::map<int, rs2::frame> _latest_frames;
+    std::mutex m;
+public:
+    frames_holder() = default;
+    frames_holder(frames_holder&& other)
+    {
+        _latest_frames.swap(other._latest_frames);
+    }
+
+    void put(const rs2::frame& f)
+    {
+        std::lock_guard<std::mutex> lock(m);
+        _latest_frames[f.get_profile().unique_id()] = f;
+    }
+    std::vector<rs2::frame> get()
+    {
+        std::lock_guard<std::mutex> lock(m);
+        std::vector<rs2::frame> available_frames;
+        std::transform(std::begin(_latest_frames),
+            std::end(_latest_frames),
+            std::back_inserter(available_frames),
+            [](const std::pair<int, rs2::frame>& p) { return p.second; });
+        return available_frames;
+    }
+
 };
