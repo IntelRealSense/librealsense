@@ -14,3 +14,12 @@
   * `mkdir build && cd build`
   * `cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -G Xcode`
 5. Open and build the XCode project
+
+## What works?
+* SR300, D415 and D435 will stream depth, infrared and color at all supported resolutions
+* The Viewer, Depth-Quality Tool and most of the examples should work
+
+## What are the known issues?
+* Camera options are not yet supported (WIP)
+* Playback and record functionality is not yet supported
+* Changing configurations will often result in a crash or the new configuration not being applied (WIP)
