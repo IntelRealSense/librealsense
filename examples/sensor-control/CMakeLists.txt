@@ -18,8 +18,7 @@ endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     #sensor-control
-    add_executable(rs-sensor-control
-        rs-sensor-control.cpp)
+    add_executable(rs-sensor-control api_how_to.h rs-sensor-control.cpp)
     target_link_libraries(rs-sensor-control ${DEPENDENCIES})
     include_directories(rs-sensor-control)
     set_target_properties (rs-sensor-control PROPERTIES
