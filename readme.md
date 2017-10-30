@@ -16,7 +16,7 @@ The library also offers synthetic streams (pointcloud, depth aligned to color an
 
 The library aims to provide an easy to use API and tools for computer vision professionals, game developers and other **Intel® RealSense™** technology enthusiasts.
 
-Developer kits containing the necessary hardware to use this library are available for purchase at [https://realsense.intel.com/buy](https://realsense.intel.com/buy).
+Developer kits containing the necessary hardware to use this library are available for purchase at [realsense.intel.com/buy](https://realsense.intel.com/buy).
 
 ## What’s included in the SDK:
 **[Tools for harnessing your depth camera’s capabilities](https://github.com/IntelRealSense/librealsense/tree/development/tools)** Including:
