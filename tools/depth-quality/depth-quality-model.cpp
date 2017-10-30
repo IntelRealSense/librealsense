@@ -514,12 +514,13 @@ namespace rs2
                         ImGui::PushItemWidth(-1);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
 
-                        static std::vector<std::string> items{ "80%", "40%", "20%" };
+                        static std::vector<std::string> items{ "80%", "60%", "40%", "20%" };
                         if (draw_combo_box("##ROI Percent", items, _roi_combo_index))
                         {
                             if (_roi_combo_index == 0) _roi_percent = 0.8f;
-                            else if (_roi_combo_index == 1) _roi_percent = 0.4f;
-                            else if (_roi_combo_index == 2) _roi_percent = 0.2f;
+                            else if (_roi_combo_index == 1) _roi_percent = 0.6f;
+                            else if (_roi_combo_index == 2) _roi_percent = 0.4f;
+                            else if (_roi_combo_index == 3) _roi_percent = 0.2f;
                             update_configuration();
                         }
 

@@ -18,7 +18,7 @@ int main(int argc, const char * argv[]) try
     metric zaccuracy = model.make_metric(
                        "Z Accuracy", 0, 100, "%",
                        "Z Accuracy given Ground Truth\n"
-                       "Preformed on the depth image in the ROI\n"
+                       "Performed on the depth image in the ROI\n"
                        "Calculate the depth-errors map\n"
                        "i.e., Image – GT (signed values).\n"
                        "Calculate the median of the depth-errors\n");
@@ -61,7 +61,7 @@ int main(int argc, const char * argv[]) try
         const rs2::region_of_interest roi,
         const float baseline_mm, 
         const float focal_length_pixels, 
-        const float* ground_thruth_mm)
+        const float* ground_truth_mm)
     {
         const float TO_METERS = 0.001f;
         const float TO_MM = 1000.f;
@@ -77,7 +77,7 @@ int main(int argc, const char * argv[]) try
         // Reserve memory for the data
         distances.reserve(points.size());
         disparities.reserve(points.size());
-        if (ground_thruth_mm) errors.reserve(points.size());
+        if (ground_truth_mm) errors.reserve(points.size());
 
         // Calculate the distance and disparity errors from the point cloud to the fitted plane
         for (auto point : points)
@@ -92,16 +92,16 @@ int main(int argc, const char * argv[]) try
             // Store distance, disparity and error
             distances.push_back(std::fabs(dist2plane) * TO_MM);
             disparities.push_back(bf_factor / point.length() - bf_factor / plane_intersect.length());
-            if (ground_thruth_mm) errors.push_back(point.z * TO_MM - *ground_thruth_mm);
+            if (ground_truth_mm) errors.push_back(point.z * TO_MM - *ground_truth_mm);
         }
 
         // Show Z accuracy metric only when Ground Truth is available
-        zaccuracy->visible(ground_thruth_mm != nullptr);
-        if (ground_thruth_mm && *ground_thruth_mm > 0)
+        zaccuracy->visible(ground_truth_mm != nullptr);
+        if (ground_truth_mm && *ground_truth_mm > 0)
         {
             std::sort(begin(errors), end(errors));
             auto median = errors[errors.size() / 2];
-            auto accuracy = TO_PERCENT * (fabs(median) / *ground_thruth_mm);
+            auto accuracy = TO_PERCENT * (fabs(median) / *ground_truth_mm);
             zaccuracy->add_value(accuracy);
         }
 

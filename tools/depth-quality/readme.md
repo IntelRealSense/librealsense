@@ -33,6 +33,7 @@ You should be able to easily get and interpret several of the depth quality metr
 _Dist<sub>i</sub>_ - Distance from pixel coordinates to the Plane Fit (mm)  
 ![](./res/avg.gif)
 ### Z Accuracy
+_Z<sub>i</sub>_ - Depth value of i-th pixel in the ROI (mm)  
 _GT_ - Ground truth distance to the wall (mm)  
 ![](./res/accuracy.gif)
 ### Subpixel RMS Metric
@@ -54,4 +55,5 @@ http://www.numberempire.com/texequationeditor/equationeditor.php
 RMS = \sqrt{\frac{\sum_{1}^{n}{\left({D}_{i} -{DP}_{i}\right)}}{n}^{2}}
 AVG = \frac{\sum_{1}^{n}{\left({Dist}_{i}\right)}}{n}
 STD = \sqrt{\frac{\sum_{1}^{n}{\left({Dist}_{i}\right)}}{n}^{2}}  
+ACC = 100 \times median(\frac{\sum_{1}^{n}{\left({Z}_{i}\right - GT)}}{GT})
 --->

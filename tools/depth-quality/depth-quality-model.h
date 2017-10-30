@@ -224,7 +224,7 @@ namespace rs2
             periodic_timer                  _update_readonly_options_timer;
 
             float                           _roi_percent = 0.4f;
-            int                             _roi_combo_index = 1;
+            int                             _roi_combo_index = 2;
             temporal_event                  _roi_located;
 
             temporal_event                  _too_far;
