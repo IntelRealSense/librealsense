@@ -67,6 +67,7 @@ public:
 
         return selected_device;
     }
+
     static void print_device_information(const rs2::device& dev)
     {
         // Each device provides some information on itself
@@ -89,6 +90,7 @@ public:
                 std::cout << "N/A" << std::endl;
         }
     }
+    
     static std::string get_device_name(const rs2::device& dev)
     {
         // Each device provides some information on itself, such as name:
@@ -102,6 +104,7 @@ public:
 
         return name + " " + sn;
     }
+    
     static std::string get_sensor_name(const rs2::sensor& sensor)
     {
         // Sensors support additional information, such as a human readable name
@@ -110,6 +113,7 @@ public:
         else
             return "Unknown Sensor";
     }
+    
     static rs2::sensor get_a_sensor_from_a_device(const rs2::device& dev)
     {
         // Get all sensors of a device:
@@ -132,6 +136,7 @@ public:
 
         return  sensors[selected_sensor_index];
     }
+    
     static rs2_option get_sensor_option(const rs2::sensor& sensor)
     {
         std::cout << "Sensor supports the following options:\n" << std::endl;
@@ -165,6 +170,7 @@ public:
         }
         return static_cast<rs2_option>(selected_sensor_option);
     }
+    
     static float get_depth_units(const rs2::sensor& sensor)
     {
         //A Depth stream contains an image that is composed of pixels with depth information.
@@ -180,6 +186,7 @@ public:
         else
             throw std::runtime_error("Given sensor is not a depth sensor");
     }
+    
     static void get_field_of_view(const rs2::stream_profile& stream)
     {
         if (auto video_stream = stream.as<rs2::video_stream_profile>())
@@ -207,6 +214,7 @@ public:
             std::cerr << "Given stream profile is not a video stream profile" << std::endl;
         }
     }
+    
     static void get_extrinsics(const rs2::stream_profile& from_stream, const rs2::stream_profile& to_stream)
     {
         try
@@ -222,6 +230,7 @@ public:
             std::cerr << "Failed to get extrinsics for the given streams. " << e.what() << std::endl;
         }
     }
+    
     static void change_sensor_option(const rs2::sensor& sensor, rs2_option option_type)
     {
         // To control an option, use the following api:
@@ -269,7 +278,8 @@ public:
             }
         }
     }
-    static rs2::stream_profile choost_a_streaming_profile(const rs2::sensor& sensor)
+    
+    static rs2::stream_profile choose_a_streaming_profile(const rs2::sensor& sensor)
     {
         // A Sensor is an object that is capable of streaming one or more types of data.
         // For example:
@@ -361,7 +371,7 @@ public:
 
         return stream_profiles[selected_profile_index];
     }
-
+    
     static void start_streaming_a_profile(const rs2::sensor& sensor, const rs2::stream_profile& stream_profile)
     {
         // The sensor controls turning the streaming on and off

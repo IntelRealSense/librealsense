@@ -15,4 +15,18 @@ For each one of the device's sensors, the output will contain a list of supporte
 
 ## Code Overview
 
-Please refer to the actual code for details documentation and explanations
+Please follow the [`api_how_to.h`](./api_how_to.h) for detailed documentation and explanations
+This file contains detailed explanations and code on how to do the following:
+
+- [get a realsense device](./api_how_to.h#22)
+- [print device information](./api_how_to.h#71)
+- [get device name](./api_how_to.h#94)
+- [get sensor name](./api_how_to.h#108)
+- [get a sensor from a device](./api_how_to.h#117)
+- [get sensor option](./api_how_to.h#140)
+- [get depth units](./api_how_to.h#174)
+- [get field of view](./api_how_to.h#190)
+- [get extrinsics](./api_how_to.h#218)
+- [change sensor option](./api_how_to.h#234)
+- [choose a streaming profile](./api_how_to.h#282)
+- [start streaming a profile](./api_how_to.h#375)

@@ -114,7 +114,7 @@ std::vector<std::pair<std::function<void(rs2::sensor)>, std::string>> create_sen
             print_seperator();
             // The rs2::sensor allows you to control its streams
             // We will first choose a single stream profile from the available profiles of the sensor
-            rs2::stream_profile selected_profile = how_to::choost_a_streaming_profile(sensor);
+            rs2::stream_profile selected_profile = how_to::choose_a_streaming_profile(sensor);
 
             // Next, we will display the stream in a window
             how_to::start_streaming_a_profile(sensor, selected_profile);
@@ -129,7 +129,7 @@ std::vector<std::pair<std::function<void(rs2::sensor)>, std::string>> create_sen
         while (repeat)
         {
             print_seperator();
-            rs2::stream_profile selected_profile = how_to::choost_a_streaming_profile(sensor);
+            rs2::stream_profile selected_profile = how_to::choose_a_streaming_profile(sensor);
             // The rs2::sensor allows you to control its properties such as Exposure, Brightness etc.
             how_to::get_field_of_view(selected_profile);
             repeat = prompt_yes_no("Choose another profile?");
@@ -143,8 +143,8 @@ std::vector<std::pair<std::function<void(rs2::sensor)>, std::string>> create_sen
         while (repeat)
         {
             print_seperator();
-            rs2::stream_profile from = how_to::choost_a_streaming_profile(sensor);
-            rs2::stream_profile to = how_to::choost_a_streaming_profile(sensor);
+            rs2::stream_profile from = how_to::choose_a_streaming_profile(sensor);
+            rs2::stream_profile to = how_to::choose_a_streaming_profile(sensor);
             // The rs2::sensor allows you to control its properties such as Exposure, Brightness etc.
             how_to::get_extrinsics(from, to);
             repeat = prompt_yes_no("Choose other profiles?");
