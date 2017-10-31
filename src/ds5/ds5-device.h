@@ -41,6 +41,9 @@ namespace librealsense
 
         bool is_camera_in_advanced_mode() const;
 
+        void init(std::shared_ptr<context> ctx,
+            const platform::backend_device_group& group);
+
         friend class ds5_depth_sensor;
 
         std::shared_ptr<hw_monitor> _hw_monitor;
