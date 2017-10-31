@@ -8,7 +8,8 @@
 
 #include "unit-tests-common.h"
 #include "../src/device.h"
-
+#include <boost/filesystem.hpp>
+#include "../src/image.h"
 #include <sstream>
 
 static std::string unknown = "UNKNOWN"; 
@@ -402,6 +403,209 @@ TEST_CASE("rs API version verification", "[offline] [validation]")
     // Version string is in ["1.0.0".. "99.99.99"] range
     REQUIRE(api_ver_str.size() >= 5);
     REQUIRE(api_ver_str.size() <= 8);
+}
+
+#ifndef DEBUG
+#define DEBUG(x) do {} while(0);
+#else
+#define DEBUG(x) do { std::cerr << x << std::endl; } while(0);
+#endif
+
+
+namespace {
+    struct outputResult {
+        bool successful;
+        int countOfNonMatchingPixels;
+        int countPositivePixelsOnCPU;
+        int countPositivePixelsOnGPU;
+        int numberOfPositivePixelsOrig;
+        boost::filesystem::path path;
+
+        outputResult() : successful(false), countOfNonMatchingPixels(0), countPositivePixelsOnCPU(0),
+                         countPositivePixelsOnGPU(0), numberOfPositivePixelsOrig(0)
+        {}
+    };
+}
+
+outputResult images_are_equal(const boost::filesystem::directory_entry & entry, bool force_scale_to_one = false) {
+    std::ifstream myFile(entry.path().c_str(), std::ios::in);
+    DEBUG("Processing: " << entry.path().c_str());
+    std::string enumValue;
+
+    outputResult result;
+    result.path = entry.path();
+
+    // input z_intrin
+    rs_intrinsics z_intrin;
+    myFile >> z_intrin.width >> z_intrin.height;
+    DEBUG("z_intrin.width = " << z_intrin.width << " z_intrin.height = " << z_intrin.height);
+    std::string temp;
+    for (auto & coef : z_intrin.coeffs) {
+
+        myFile >> temp;
+        DEBUG("z_intrin.coeffs = " << temp);
+        coef = std::stoi(temp);
+    }
+    myFile >> temp;
+    z_intrin.fx = std::stof(temp);
+    DEBUG("read in z_intrin.fx" << z_intrin.fx);
+    myFile >> temp;
+    z_intrin.fy = std::stof(temp);
+    DEBUG("read in z_intrin.fy" << z_intrin.fy);
+    myFile >> temp; //enumValue;
+    DEBUG("model = " << temp);
+    z_intrin.model = RS_DISTORTION_NONE;
+    myFile >> temp;
+    z_intrin.ppx = std::stof(temp);
+    DEBUG("read in z_intrin.ppx" << z_intrin.ppx);
+    myFile >> temp;
+    z_intrin.ppy = std::stof(temp);
+    DEBUG("read in z_intrin.ppy" << z_intrin.ppy);
+
+    // input other intrin
+    rs_intrinsics other_intrin;
+    myFile >> other_intrin.width >> z_intrin.height;
+    for (auto & coef : other_intrin.coeffs) {
+        myFile >> temp;
+        DEBUG("other_intrin.coeffs = " << temp);
+        coef = std::stoi(temp);
+    }
+    myFile >> temp;
+    other_intrin.fx = std::stof(temp);
+    DEBUG("read in other_intrin.fx" << other_intrin.fx);
+    myFile >> temp;
+    other_intrin.fy = std::stof(temp);
+    DEBUG("read in z_intrin.fy" << other_intrin.fy);
+    myFile >> temp;//enumValue;
+    other_intrin.model = RS_DISTORTION_NONE;
+    myFile >> temp;
+    other_intrin.ppx = std::stof(temp);
+    DEBUG("read in other_intrin.ppx" << other_intrin.ppx);
+
+    myFile >> temp;
+    other_intrin.ppy = std::stof(temp);
+    DEBUG("read in other_intrin.ppy" << other_intrin.ppy);
+
+
+    // input z_to_other extrinsics
+    rs_extrinsics z_to_other;
+    for (auto & rot : z_to_other.rotation){
+        myFile >> temp;
+        DEBUG("read in z_to_other.rotation: " << temp);
+        rot = std::stof(temp);
+    }
+    for (auto & tran : z_to_other.translation) {
+        myFile >> temp;
+        DEBUG("read in z_to_other.translation: " << temp);
+        tran = std::stof(temp);
+    }
+
+
+    // input z scale
+    float z_scale;
+    myFile >> temp;
+    DEBUG("read in z_scale: " << temp);
+    z_scale = std::stof(temp);
+    if (force_scale_to_one) {
+        z_scale = 10.0f;
+        DEBUG("z_scale reset to: " << z_scale);
+    }
+    // input pixels
+    int counter = z_intrin.width * z_intrin.height;
+    int numberOfPositivePixelsOrig = 0;
+    DEBUG("counter:= " << counter);
+    std::unique_ptr<uint16_t[]> z_pixels(new uint16_t[counter]);
+    for (int i = 0; i != counter; ++i) {
+        myFile >> temp;
+        z_pixels[i] = static_cast<uint16_t >(std::stoi(temp));
+        if (z_pixels[i] > 0) {
+            numberOfPositivePixelsOrig++;
+        }
+    }
+
+    myFile.close();
+
+    std::vector<uint16_t> z_pixels_out_cpu(counter, 0);
+    std::vector<uint16_t> z_pixels_out_gpu(counter, 0);
+
+    rsimpl::align_z_to_other((rsimpl::byte *) z_pixels_out_cpu.data(), z_pixels.get(), z_scale, z_intrin, z_to_other, other_intrin, true);
+    rsimpl::align_z_to_other((rsimpl::byte *) z_pixels_out_gpu.data(), z_pixels.get(), z_scale, z_intrin, z_to_other, other_intrin, false);
+    int countOfNonMatchingPixels = 0;
+    int countPositivePixelsOnGPU = 0;
+    int countPositivePixelsOnCPU = 0;
+    for (int i = 0; i != counter; ++i) {
+        if (z_pixels_out_cpu[i]!=z_pixels_out_gpu[i]) {
+            DEBUG("pixel at i: " << i << " on cpu: " << z_pixels_out_cpu[i] << " on gpu: " << z_pixels_out_gpu[i]);
+            countOfNonMatchingPixels++;
+        }
+        if (z_pixels_out_cpu[i] > 0) {
+            countPositivePixelsOnCPU++;
+        }
+        if (z_pixels_out_gpu[i] > 0) {
+            countPositivePixelsOnGPU++;
+        }
+    }
+    result.countOfNonMatchingPixels = countOfNonMatchingPixels;
+    result.countPositivePixelsOnCPU = countPositivePixelsOnCPU;
+    result.countPositivePixelsOnGPU = countPositivePixelsOnGPU;
+    result.numberOfPositivePixelsOrig = numberOfPositivePixelsOrig;
+    result.successful = countOfNonMatchingPixels == 0;
+
+    DEBUG("countOfNonMatchingPixels = " << countOfNonMatchingPixels);
+    DEBUG("countPositivePixelsOnCPU = " << countPositivePixelsOnCPU);
+    DEBUG("countPositivePixelsOnGPU = " << countPositivePixelsOnGPU);
+    DEBUG("numberOfPositivePixelsOrig = " << numberOfPositivePixelsOrig);
+
+    return result;
+
+
+
+}
+
+
+TEST_CASE("rs GPU align_z_to_other implementation verification", "[offline] [validation] [gpu]")
+{
+    // load test data from local store and invoke tests on images. verify they match.
+    using boost::filesystem::path;
+    using boost::filesystem::directory_entry;
+    using boost::filesystem::directory_iterator;
+
+    path p ("./images");
+    directory_iterator iter(p);
+    std::vector<outputResult> failedTestResults;
+    for (; iter!=directory_iterator(); ++iter) {
+        directory_entry entry = *iter;
+        auto result = images_are_equal(entry);
+        if (!result.successful) {
+            failedTestResults.push_back(result);
+            std::cerr << "image: " << result.path.c_str() << " failed to match all pixels." << std::endl;
+        }
+        sleep(2);
+    }
+    REQUIRE(failedTestResults.empty());
+}
+
+
+TEST_CASE("rs GPU align_z_to_other force z_scale_to_one implementation verification", "[offline] [validation] [gpu]")
+{
+    // load test data from local store and invoke tests on images. verify they match.
+    using boost::filesystem::path;
+    using boost::filesystem::directory_entry;
+    using boost::filesystem::directory_iterator;
+
+    path p ("./images");
+    directory_iterator iter(p);
+    std::vector<outputResult> failedTestResults;
+    for (; iter!=directory_iterator(); ++iter) {
+        directory_entry entry = *iter;
+        auto result = images_are_equal(entry, true);
+        if (!result.successful) {
+            failedTestResults.push_back(result);
+            std::cerr << "image: " << result.path.c_str() << " failed to match all pixels." << std::endl;
+        }
+        sleep(2);
+    }
+    REQUIRE(failedTestResults.empty());
 }
 
 #endif /* !defined(MAKEFILE) || ( defined(OFFLINE_TEST) ) */

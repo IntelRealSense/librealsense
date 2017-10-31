@@ -9,7 +9,9 @@ project(RealsenseUnitTests)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
-
+find_package(catkin REQUIRED
+        roscpp
+        rosconsole)
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
@@ -21,7 +23,7 @@ else()
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-set(DEPENDENCIES realsense)
+set(DEPENDENCIES realsense gpu_kernel_library ${catkin_LIBRARIES})
 if(WIN32)
 else()
     list(APPEND DEPENDENCIES m ${LIBUSB1_LIBRARIES})
@@ -45,3 +47,5 @@ target_link_libraries(ZR300-live-test ${DEPENDENCIES})
 add_executable(offline-test unit-tests-offline.cpp)
 target_link_libraries(offline-test ${DEPENDENCIES})
 
+file(COPY images DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(INSTALL DESTINATION "${CATKIN_DEVEL_PREFIX}/lib/librealsense/" TYPE DIRECTORY FILES images)
