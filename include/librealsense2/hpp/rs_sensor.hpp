@@ -111,6 +111,7 @@ namespace rs2
         {
             _options = options;
         }
+
         /**
         * check if particular option is supported by a subdevice
         * \param[in] option     option id to be checked
@@ -195,7 +196,7 @@ namespace rs2
         * \param[in] option     option id to be checked
         * \return true if option is read-only
         */
-        bool is_option_read_only(rs2_option option)
+        bool is_option_read_only(rs2_option option) const
         {
             rs2_error* e = nullptr;
             auto res = rs2_is_option_read_only(_options, option, &e);
@@ -203,15 +204,24 @@ namespace rs2
             return res > 0;
         }
 
-   protected:
-        options& operator=(const std::shared_ptr<rs2_sensor> dev)
+        options& operator=(const options& other)
         {
-            _options = (rs2_options*)dev.get();
+            _options = other._options;
             return *this;
         }
 
+   protected:
+       template<class T>
+       options& operator=(const T& dev)
+       {
+           _options = (rs2_options*)(dev.get());
+           return *this;
+       }
+
+       options(const options& other) : _options(other._options) {}
+
     private:
-         rs2_options* _options;
+        rs2_options* _options;
     };
 
     class sensor : public options
@@ -374,10 +384,11 @@ namespace rs2
             _sensor = dev;
             return *this;
         }
+
         sensor& operator=(const sensor& dev)
         {
             *this = nullptr;
-             options::operator=(dev);
+             options::operator=(dev._sensor);
             _sensor = dev._sensor;
             return *this;
         }

@@ -52,6 +52,10 @@ typedef enum rs2_option
     RS2_OPTION_DEPTH_UNITS                                , /**< Number of meters represented by a single depth unit */
     RS2_OPTION_ENABLE_MOTION_CORRECTION                   , /**< Enable/Disable automatic correction of the motion data */
     RS2_OPTION_AUTO_EXPOSURE_PRIORITY                     , /**< Allows sensor to dynamically ajust the frame rate depending on lighting conditions */
+    RS2_OPTION_COLOR_SCHEME                               , /**< Color scheme for data visualization */
+    RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED             , /**< Perform histogram equalization post-processing on the depth data */
+    RS2_OPTION_MIN_DISTANCE                               , /**< Minimal distance to the target */
+    RS2_OPTION_MAX_DISTANCE                               , /**< Maximum distance to the target */
     RS2_OPTION_COUNT                                      , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
 const char* rs2_option_to_string(rs2_option option);

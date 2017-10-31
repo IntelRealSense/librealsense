@@ -100,14 +100,12 @@ namespace librealsense {
     public:
         colorizer();
 
-        void set_bounds(float min, float max);
-        void set_equalize(bool equalize);
-        void set_color_map(color_map map);
-
     private:
         float _min, _max;
         bool _equalize;
-        color_map _map;
+        std::vector<color_map*> _maps;
+        int _map_index = 0;
+        int _preset = 0;
         std::mutex _mutex;
         std::shared_ptr<rs2::stream_profile> _stream;
     };

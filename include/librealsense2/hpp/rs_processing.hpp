@@ -13,7 +13,6 @@ namespace rs2
     class frame_source
     {
     public:
-
         frame allocate_video_frame(const stream_profile& profile,
             const frame& original,
             int new_bpp = 0,
@@ -77,7 +76,7 @@ namespace rs2
         void release() override { delete this; }
     };
 
-    class processing_block: public options
+    class processing_block : public options
     {
     public:
         template<class S>
@@ -103,9 +102,8 @@ namespace rs2
             invoke(std::move(f));
         }
 
-
         processing_block(std::shared_ptr<rs2_processing_block> block)
-         : options((rs2_options*)block.get()),_block(block)
+            : options((rs2_options*)block.get()),_block(block)
         {
         }
 
@@ -113,12 +111,14 @@ namespace rs2
         processing_block(S processing_function)
         {
            rs2_error* e = nullptr;
-            _block =  std::shared_ptr<rs2_processing_block>(
+            _block = std::shared_ptr<rs2_processing_block>(
                         rs2_create_processing_block(new frame_processor_callback<S>(processing_function),&e),
                         rs2_delete_processing_block);
-
+            options::operator=(_block);
             error::handle(e);
         }
+
+        operator rs2_options*() const { return (rs2_options*)_block.get(); }
 
     private:
         std::shared_ptr<rs2_processing_block> _block;
@@ -330,22 +330,23 @@ namespace rs2
         frame_queue _queue;
     };
 
-    class colorizer
+    class colorizer : public options
     {
     public:
-        colorizer():
-            _queue(1)
+        colorizer() : _queue(1)
         {
             rs2_error* e = nullptr;
-            _block = std::make_shared<processing_block>(
-                        std::shared_ptr<rs2_processing_block>(
-                            rs2_create_colorizer(&e),
-                            rs2_delete_processing_block));
+            auto pb = std::shared_ptr<rs2_processing_block>(
+                rs2_create_colorizer(&e),
+                rs2_delete_processing_block);
+            _block = std::make_shared<processing_block>(pb);
             error::handle(e);
+
+            // Redirect options API to the processing block
+            options::operator=(pb);
 
             _block->start(_queue);
         }
-
 
         video_frame colorize(frame depth) const
         {

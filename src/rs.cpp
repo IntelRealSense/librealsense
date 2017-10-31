@@ -21,34 +21,40 @@
 #include "../include/librealsense2/h/rs_types.h"
 #include "pipeline.h"
 #include "environment.h"
+
 ////////////////////////
 // API implementation //
 ////////////////////////
+
 struct rs2_stream_profile_list
 {
     std::vector<std::shared_ptr<stream_profile_interface>> list;
 };
 
-
 struct rs2_options
 {
-    rs2_options(librealsense::options_interface* options)
-        :options(options){}
+    rs2_options(librealsense::options_interface* options) : options(options) { }
 
     librealsense::options_interface* options;
+
+    virtual ~rs2_options() = default;
 };
 
-struct rs2_sensor: public rs2_options
+struct rs2_sensor : public rs2_options
 {
     rs2_sensor(rs2_device parent,
                librealsense::sensor_interface* sensor,
                size_t index)
-        :rs2_options((librealsense::options_interface*)sensor),
+        : rs2_options((librealsense::options_interface*)sensor),
           parent(parent), sensor(sensor), index(index)
     {}
+
     rs2_device parent;
     librealsense::sensor_interface* sensor;
     size_t index;
+
+    rs2_sensor& operator=(const rs2_sensor&) = delete;
+    rs2_sensor(const rs2_sensor&) = delete;
 };
 
 
@@ -88,12 +94,16 @@ struct rs2_frame_queue
     single_consumer_queue<librealsense::frame_holder> queue;
 };
 
-struct rs2_processing_block: public rs2_options
+struct rs2_processing_block : public rs2_options
 {
     rs2_processing_block(std::shared_ptr<librealsense::processing_block> block)
-        :rs2_options((librealsense::options_interface*)block.get()),
-          block(block){}
+        : rs2_options((librealsense::options_interface*)block.get()),
+          block(block) { }
+
     std::shared_ptr<librealsense::processing_block_interface> block;
+
+    rs2_processing_block& operator=(const rs2_processing_block&) = delete;
+    rs2_processing_block(const rs2_processing_block&) = delete;
 };
 
 struct rs2_sensor_list
@@ -1594,7 +1604,11 @@ rs2_processing_block* rs2_create_colorizer(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::colorizer>();
 
-    return new rs2_processing_block{ block };
+    auto res = new rs2_processing_block{ block };
+
+    auto res2 = (rs2_options*)res;
+
+    return res;
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
