@@ -181,23 +181,9 @@ namespace librealsense
         auto blk_3_out = reinterpret_cast<__m128i *>(dst + 36);
 
         __m128i res[4];
-        __m128i mask;
-        mask.m128i_u8[0] = 0x00;    // The mask will reorder the input so the 12 bytes with pixels' MSB values will come first
-        mask.m128i_u8[1] = 0x01;
-        mask.m128i_u8[2] = 0x02;
-        mask.m128i_u8[3] = 0x03;
-        mask.m128i_u8[4] = 0x05;
-        mask.m128i_u8[5] = 0x06;
-        mask.m128i_u8[6] = 0x07;
-        mask.m128i_u8[7] = 0x08;
-        mask.m128i_u8[8] = 0x0a;
-        mask.m128i_u8[9] = 0x0b;
-        mask.m128i_u8[10] = 0x0c;
-        mask.m128i_u8[11] = 0x0d;
-        mask.m128i_u8[12] = 0x8f;
-        mask.m128i_u8[13] = 0x8f;
-        mask.m128i_u8[14] = 0x8f;
-        mask.m128i_u8[15] = 0x8f;
+        // The mask will reorder the input so the 12 bytes with pixels' MSB values will come first
+        static const __m128i mask =_mm_setr_epi8(0x0, 0x1, 0x2, 0x3, 0x5, 0x6, 0x7, 0x8, 0xa, 0xb, 0xc, 0xd, -1, -1, -1, -1);
+
 
         for (int i = 0; (i+48) < n; i += 48, src +=60, dst+=48)
         {
