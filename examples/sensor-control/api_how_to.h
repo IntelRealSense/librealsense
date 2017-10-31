@@ -98,6 +98,7 @@ public:
         if (dev.supports(RS2_CAMERA_INFO_NAME))
             name = dev.get_info(RS2_CAMERA_INFO_NAME);
 
+        // and the serial number of the device:
         std::string sn = "########";
         if (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
             sn = std::string("#") + dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
@@ -116,11 +117,17 @@ public:
     
     static rs2::sensor get_a_sensor_from_a_device(const rs2::device& dev)
     {
-        // Get all sensors of a device:
+        // A rs2::device is a container of rs2::sensors that share some correlation between them.
+        // For example:
+        //    * A device where all sensors are on a single board
+        //    * A Robot with mounted sensors that share calibration information
+
+        // Given a device, we can query its sensors using:
         std::vector<rs2::sensor> sensors = dev.query_sensors();
 
         std::cout << "Device consists of " << sensors.size() << " sensors:\n" << std::endl;
         int index = 0;
+        // We can now iterate the sensors and print their names
         for (rs2::sensor sensor : sensors)
         {
             std::cout << "  " << index++ << " : " << get_sensor_name(sensor) << std::endl;
@@ -139,14 +146,22 @@ public:
     
     static rs2_option get_sensor_option(const rs2::sensor& sensor)
     {
+        // Sensors usually have several options to control their properties 
+        //  such as Exposure, Brightness etc.
+
         std::cout << "Sensor supports the following options:\n" << std::endl;
 
+        // The following loop shows how to iterate over all available options
+        // Starting from 0 until RS2_OPTION_COUNT (exclusive)
         for (int i = 0; i < static_cast<int>(RS2_OPTION_COUNT); i++)
         {
             rs2_option option_type = static_cast<rs2_option>(i);
+            //SDK enum types can be streamed to get a string that represents them
             std::cout << "  " << i << ": " << option_type;
 
             // To control an option, use the following api:
+
+            // First, verify that the sensor actually supports this option
             if (sensor.supports(option_type))
             {
                 std::cout << std::endl;
@@ -154,15 +169,19 @@ public:
                 // Get a human readable description of the option
                 const char* description = sensor.get_option_description(option_type);
                 std::cout << "       Description   : " << description << std::endl;
+
                 // Get the current value of the option
                 float current_value = sensor.get_option(option_type);
                 std::cout << "       Current Value : " << current_value << std::endl;
+
+                //To change the value of an option, please follow the change_sensor_option() function
             }
             else
             {
                 std::cout << " is not supported" << std::endl;
             }
         }
+
         uint32_t selected_sensor_option = get_user_selection("Select an option by index: ");
         if (selected_sensor_option >= static_cast<int>(RS2_OPTION_COUNT))
         {
@@ -189,11 +208,17 @@ public:
     
     static void get_field_of_view(const rs2::stream_profile& stream)
     {
+        // A sensor's stream (rs2::stream_profile) is in general a stream of data with no specific type
+        // For video streams (streams of images) the sensor that produces has a lens and thus has properties such 
+        //  as a focal point, distortion, and principal point.
+        // To get these intrinsics parameters, we need to take a stream and first check if it is a video stream
         if (auto video_stream = stream.as<rs2::video_stream_profile>())
         {
             try
             {
+                //If the stream is indeed a video stream, we can now simply call get_intrinsics()
                 rs2_intrinsics intrinsics = video_stream.get_intrinsics();
+
                 auto principal_point = std::make_pair(intrinsics.ppx, intrinsics.ppy);
                 auto focal_length = std::make_pair(intrinsics.fx, intrinsics.fy);
                 rs2_distortion model = intrinsics.model;
@@ -217,8 +242,11 @@ public:
     
     static void get_extrinsics(const rs2::stream_profile& from_stream, const rs2::stream_profile& to_stream)
     {
+        // If the device/sensor that you are using contains more than a single stream, and it was calibrated
+        // then the SDK provides a way of getting the transformation between any two streams (if such exists)
         try
         {
+            // Given two streams, use the get_extrinsics_to() function to get the transformation from the stream to the other stream
             rs2_extrinsics extrinsics = from_stream.get_extrinsics_to(to_stream);
             std::cout << "Translation Vector : [" << extrinsics.translation[0] << "," << extrinsics.translation[1] << "," << extrinsics.translation[2] << "]\n";
             std::cout << "Rotation Matrix    : [" << extrinsics.rotation[0] << "," << extrinsics.rotation[3] << "," << extrinsics.rotation[6] << "]\n";
@@ -233,7 +261,12 @@ public:
     
     static void change_sensor_option(const rs2::sensor& sensor, rs2_option option_type)
     {
+        // Sensors usually have several options to control their properties 
+        //  such as Exposure, Brightness etc.
+
         // To control an option, use the following api:
+
+        // First, verify that the sensor actually supports this option
         if (!sensor.supports(option_type))
         {
             std::cerr << "This option is not supported by this sensor" << std::endl;

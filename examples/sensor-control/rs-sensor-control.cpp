@@ -14,7 +14,7 @@
 
 using namespace helper;
 
-std::vector<std::pair<std::function<void(rs2::sensor)>, std::string>> create_sensor_actions();
+std::vector<std::pair<std::function<void(rs2::device, rs2::sensor)>, std::string>> create_sensor_actions();
 
 int main(int argc, char * argv[]) try
 {
@@ -34,11 +34,6 @@ int main(int argc, char * argv[]) try
 
         //Print the device's information
         how_to::print_device_information(dev);
-
-        // A rs2::device is a container of rs2::sensors that share some correlation between them.
-        // For example:
-        //    * A device where all sensors are on a single board
-        //    * A Robot with mounted sensors that share calibration information
 
         bool choose_a_sensor = true;
         while (choose_a_sensor)
@@ -65,7 +60,7 @@ int main(int argc, char * argv[]) try
 
                 auto selected_action = sensor_actions[selected_action_index].first;
 
-                selected_action(sensor);
+                selected_action(dev, sensor);
 
                 control_sensor = prompt_yes_no("Choose another action for this sensor?");
             }
@@ -89,11 +84,11 @@ catch (const std::exception & e)
     return EXIT_FAILURE;
 }
 
-std::vector<std::pair<std::function<void(rs2::sensor)>, std::string>> create_sensor_actions()
+std::vector<std::pair<std::function<void(rs2::device, rs2::sensor)>, std::string>> create_sensor_actions()
 {
-    std::vector<std::pair<std::function<void(rs2::sensor)>, std::string>> actions;
+    std::vector<std::pair<std::function<void(rs2::device, rs2::sensor)>, std::string>> actions;
     
-    auto options_control = std::make_pair([](rs2::sensor sensor) {
+    auto options_control = std::make_pair([](rs2::device ignored, rs2::sensor sensor) {
         bool repeat = true;
         while (repeat)
         {
@@ -107,7 +102,7 @@ std::vector<std::pair<std::function<void(rs2::sensor)>, std::string>> create_sen
 
     actions.push_back(options_control);
 
-    auto stream_control = std::make_pair([](rs2::sensor sensor) {
+    auto stream_control = std::make_pair([](rs2::device ignored, rs2::sensor sensor) {
         bool repeat = true;
         while (repeat)
         {
@@ -124,7 +119,7 @@ std::vector<std::pair<std::function<void(rs2::sensor)>, std::string>> create_sen
 
     actions.push_back(stream_control);
 
-    auto display_intrinsics = std::make_pair([](rs2::sensor sensor) {
+    auto display_intrinsics = std::make_pair([](rs2::device ignored, rs2::sensor sensor) {
         bool repeat = true;
         while (repeat)
         {
@@ -138,13 +133,18 @@ std::vector<std::pair<std::function<void(rs2::sensor)>, std::string>> create_sen
 
     actions.push_back(display_intrinsics);
 
-    auto display_extrinsics = std::make_pair([](rs2::sensor sensor) {
+    auto display_extrinsics = std::make_pair([](rs2::device dev, rs2::sensor ignored) {
         bool repeat = true;
         while (repeat)
         {
             print_seperator();
-            rs2::stream_profile from = how_to::choose_a_streaming_profile(sensor);
-            rs2::stream_profile to = how_to::choose_a_streaming_profile(sensor);
+            std::cout << "Please choose a sensor and then a stream that will be used as the origin of extrinsic transformation:\n" << std::endl;
+            rs2::sensor from_sensor = how_to::get_a_sensor_from_a_device(dev);
+            rs2::stream_profile from = how_to::choose_a_streaming_profile(from_sensor);
+
+            std::cout << "Please choose a sensor and then a stream that will be used as the target of extrinsic transformation::\n" << std::endl;
+            rs2::sensor to_sensor = how_to::get_a_sensor_from_a_device(dev);
+            rs2::stream_profile to = how_to::choose_a_streaming_profile(to_sensor);
             // The rs2::sensor allows you to control its properties such as Exposure, Brightness etc.
             how_to::get_extrinsics(from, to);
             repeat = prompt_yes_no("Choose other profiles?");
