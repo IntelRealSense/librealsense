@@ -11,9 +11,14 @@
 #include <cmath>
 #include <algorithm>
 #include "librealsense/gpu/align_z_to_other.h"
-#include <ros/console.h>
 #ifdef __SSSE3__
 #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
+#endif
+
+#ifndef DEBUG
+#define DEBUG(x) do {} while(0);
+#else
+#define DEBUG(x) do { std::cerr << x << std::endl; } while(0);
 #endif
 
 #pragma pack(push, 1) // All structs in this file are assumed to be byte-packed
@@ -559,7 +564,7 @@ namespace rsimpl
     void align_z_to_other(byte * z_aligned_to_other, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin, bool force_cpu)
     {
 
-/*
+        /*
         // Generate test output
         static long count = 0;
         std::string filename = "camera_data_file_";
@@ -580,7 +585,7 @@ namespace rsimpl
         // output other intrin
         myFile << other_intrin.width << std::endl<< z_intrin.height<< std::endl;
         for (auto coef : other_intrin.coeffs) {
-            myFile << coef;
+            myFile << coef << std::endl;
         }
         myFile << other_intrin.fx<< std::endl;
         myFile << other_intrin.fy<< std::endl;
@@ -609,16 +614,16 @@ namespace rsimpl
 
         myFile.close();
         // End of generate test output
-        ROS_INFO("Wrote out file: %s", filename.c_str());
-*/
+        DEBUG("Wrote out file: %s", filename.c_str());
+        */
 #if defined (HAVE_CUDA) && !defined (CUDA_DISABLER)
         if (!force_cpu) {
             if (true ==
                 gpu::align_z_to_other(z_aligned_to_other, z_pixels, z_scale, z_intrin, z_to_other, other_intrin)) {
-                ROS_INFO_THROTTLE(60, "DONE ON GPU NO ERRORS");
+                DEBUG("DONE ON GPU NO ERRORS");
                 return;
             }
-            ROS_ERROR("FAILED TO DO ON GPU SOME ERRORS...");
+            DEBUG("FAILED TO DO ON GPU SOME ERRORS...");
         }
         // on failure on the GPU we want to still align the images. as fall back we use the CPU.
 #endif

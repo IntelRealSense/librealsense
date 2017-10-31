@@ -2,7 +2,6 @@
 # ubuntu 14.04 LTS cmake version 2.8.12.2
 # ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 3.5.1)
-set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE INTERNAL "" FORCE)
 include(FindCUDA)
 set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE INTERNAL "" FORCE)
 
@@ -64,28 +63,23 @@ IF (${ROS_BUILD_TYPE})
   # LIBRARIES: libraries you create in this project that dependent projects also need
   # CATKIN_DEPENDS: catkin_packages dependent projects also need
   # DEPENDS: system dependencies of this project that dependent projects also need
-          catkin_package(
-                  INCLUDE_DIRS include
-                  LIBRARIES realsense gpu_kernel_library
-          )
+  catkin_package(
+          INCLUDE_DIRS include
+          LIBRARIES realsense gpu_kernel_library
+  )
 ELSE()
   project(Realsense)
 ENDIF()
 
 if(CUDA_FOUND)
-    MESSAGE(STATUS "CUDA_FOUND")
-    set(CUDA_VERBOSE_BUILD ON)
-    CUDA_INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/include/librealsense/gpu ${CMAKE_CURRENT_SOURCE_DIR}/include/librealsense /opt/ros/kinetic/include)
-    #CUDA_COMPILE(gpu_kernel src/gpu/align_z_to_other.cu)
-    set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
+    MESSAGE(STATUS "CUDA libraries found. Compiling with CUDA support enabled.")
+    CUDA_INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/include/librealsense/gpu ${CMAKE_CURRENT_SOURCE_DIR}/include/librealsense)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -std=c++11 -DHAVE_CUDA -default-stream=per-thread -cudart=shared)
-    CUDA_ADD_LIBRARY(gpu_kernel_library src/gpu/align_z_to_other.cu SHARED) # OPTIONS -std=c++11 -DHAVE_CUDA -default-stream=per-thread -cudart=shared)
-    #target_include_directories(gpu_kernel_library PUBLIC ./include/librealsense)
+    CUDA_ADD_LIBRARY(gpu_kernel_library src/gpu/align_z_to_other.cu SHARED)
 else()
-    MESSAGE(STATUS "CUDA_NOT_FOUND")
-    set(CMAKE_VERBOSE_BUILD ON)
+    MESSAGE(STATUS "CUDA libraries not found. Compiling without CUDA support enabled.")
     ADD_LIBRARY(gpu_kernel_library src/gpu/align_z_to_other.cu SHARED)
-    target_include_directories(gpu_kernel_library PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/librealsense/gpu ${CMAKE_CURRENT_SOURCE_DIR}/include/librealsense /opt/ros/kinetic/include)
+    target_include_directories(gpu_kernel_library PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/librealsense/gpu ${CMAKE_CURRENT_SOURCE_DIR}/include/librealsense)
     set(CUDA_LIBRARIES "")
 endif()
 
@@ -240,7 +234,7 @@ else()
 endif()
 
 target_include_directories(realsense PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                                            $<INSTALL_INTERFACE:include> /opt/ros/kinetic/include
+                                            $<INSTALL_INTERFACE:include>
                                      PRIVATE ${LIBUSB1_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
 
 if(${ROS_BUILD_TYPE})

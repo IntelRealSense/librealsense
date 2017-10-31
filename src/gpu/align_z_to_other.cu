@@ -5,15 +5,23 @@
 #include "../../include/librealsense/gpu/align_z_to_other_helpers.h"
 #include "../../include/librealsense/rs.h"
 #include "../types.h"
-#include <ros/console.h>
-#include <array>
+#include <iostream>
 #include <cmath>
 #include <mutex>
 
+#ifndef DEBUG
+#define DEBUG(x) do {} while(0);
+#else
+#define DEBUG(x) do { std::cerr << x << std::endl; } while(0);
+#endif
+
 #if !defined (HAVE_CUDA) || defined (CUDA_DISABLER)
+
+
+
 namespace gpu {
 bool align_z_to_other(rsimpl::byte * z_aligned_to_other, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin) {
-    ROS_WARN("GPU DISABLED");
+    DEBUG("GPU DISABLED");
     return false;
 }
 }
@@ -97,13 +105,13 @@ void __global__ align_images(const rs_intrinsics depth_intrin, const rs_extrinsi
     public:
         CudaStreamWrapper() {
             cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
-            ROS_INFO_THROTTLE(60, "GPU Stream Created");
+            DEBUG("GPU Stream Created");
 
         }
 
         ~CudaStreamWrapper() {
             cudaStreamDestroy(stream);
-            ROS_INFO_THROTTLE(60, "GPU Stream Destroyed");
+            DEBUG("GPU Stream Destroyed");
 
         }
 
@@ -116,16 +124,16 @@ void __global__ align_images(const rs_intrinsics depth_intrin, const rs_extrinsi
     static std::mutex gpu_mutex;
     __host__ bool align_z_to_other(rsimpl::byte * z_aligned_to_other, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin)
     {
-        ROS_INFO_THROTTLE(60, "GPU NOT DISABLED");
+        DEBUG("GPU NOT DISABLED");
 
         int deviceCount = 0;
         auto cudaCallErrorStatus = cudaGetDeviceCount(&deviceCount);
         if (cudaSuccess != cudaCallErrorStatus) {
-            ROS_ERROR("Failed to obtain number of GPUs. %s %s", cudaGetErrorName(cudaCallErrorStatus), cudaGetErrorString(cudaCallErrorStatus));
+            std::cerr << "Failed to obtain number of GPUs. " << cudaGetErrorName(cudaCallErrorStatus) << " " << cudaGetErrorString(cudaCallErrorStatus) << std::endl;
             return false;
         }
         if (deviceCount == 0) {
-            ROS_WARN("NO ENABLED GPUs PRESENT");
+            DEBUG("NO ENABLED GPUs PRESENT");
             return false;
         }
 
@@ -134,13 +142,18 @@ void __global__ align_images(const rs_intrinsics depth_intrin, const rs_extrinsi
         // that initial setting is done, subsequent settings result in an error until device is restarted
         unsigned int cudaFlags = 0;
         cudaCallErrorStatus = cudaGetDeviceFlags(&cudaFlags);
-        if (cudaFlags != cudaDeviceScheduleBlockingSync) {
+        DEBUG("Flags is set to: " << cudaFlags);
+        DEBUG("Error status is: " << cudaCallErrorStatus);
+        if (!(cudaFlags & cudaDeviceScheduleBlockingSync)) {
+            DEBUG("attempting to set the cudaDeviceScheduleBlockingSync flag");
             std::lock_guard<std::mutex> lock(gpu_mutex);
             // check flag again to make sure we don't reset it after some other thread set it for us
             cudaCallErrorStatus = cudaGetDeviceFlags(&cudaFlags);
-            if (cudaFlags != cudaDeviceScheduleBlockingSync) {
+            if (!(cudaFlags & cudaDeviceScheduleBlockingSync)) {
+                DEBUG("flag still not set");
                 cudaCallErrorStatus = cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
                 if (cudaCallErrorStatus != cudaSuccess) {
+                    DEBUG("reseting device");
                     cudaDeviceSynchronize();
                     cudaDeviceReset();
                     cudaCallErrorStatus = cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
@@ -151,8 +164,8 @@ void __global__ align_images(const rs_intrinsics depth_intrin, const rs_extrinsi
 
         auto out_z = (uint16_t *)(z_aligned_to_other);
 
-        auto cudaDeleterUnsignedInt = [](unsigned int *ptr) {ROS_INFO_THROTTLE(60, "CUDA FREE INVOKED"); cudaFree(ptr);};
-        auto cudaDeleterUInt16t = [](uint16_t *ptr) {ROS_INFO_THROTTLE(60,"CUDA FREE INVOKED"); cudaFree(ptr);};
+        auto cudaDeleterUnsignedInt = [](unsigned int *ptr) {cudaFree(ptr);};
+        auto cudaDeleterUInt16t = [](uint16_t *ptr) {cudaFree(ptr);};
         CudaStreamWrapper myCudaStream;
         // Kernel invocation
         dim3 threadsPerBlock(32, 32);
@@ -167,54 +180,54 @@ void __global__ align_images(const rs_intrinsics depth_intrin, const rs_extrinsi
         cudaCallErrorStatus = cudaMalloc((void **)&z_pixels_gpu, sizeof(uint16_t) * z_intrin.width * z_intrin.height);
         std::unique_ptr<uint16_t, decltype(cudaDeleterUInt16t)> z_pixels_gpu_u_ptr(z_pixels_gpu, cudaDeleterUInt16t);
         if (cudaSuccess != cudaCallErrorStatus || deviceCount == 0) {
-            ROS_ERROR("GPU processing failed while allocating space for z_pixels_gpu %s %s", cudaGetErrorName(cudaCallErrorStatus), cudaGetErrorString(cudaCallErrorStatus));
+            std::cerr << "GPU processing failed while allocating space for z_pixels_gpu " << cudaGetErrorName(cudaCallErrorStatus) << " " << cudaGetErrorString(cudaCallErrorStatus) << std::endl;
             return false;
         }
         cudaCallErrorStatus = cudaMalloc((void **)&temporary_out_pixels_gpu, sizeof(unsigned int) * other_intrin.width * other_intrin.height);
         std::unique_ptr<unsigned int, decltype(cudaDeleterUnsignedInt)> out_pixels_gpu_u_ptr(temporary_out_pixels_gpu, cudaDeleterUnsignedInt);
         if (cudaSuccess != cudaCallErrorStatus || deviceCount == 0) {
-            ROS_ERROR("GPU processing failed while allocating space for temporary_out_pixels_gpu %s %s", cudaGetErrorName(cudaCallErrorStatus), cudaGetErrorString(cudaCallErrorStatus));
+            std::cerr << "GPU processing failed while allocating space for temporary_out_pixels_gpu " << cudaGetErrorName(cudaCallErrorStatus) << " " << cudaGetErrorString(cudaCallErrorStatus) << std::endl;
             return false;
         }
         cudaCallErrorStatus = cudaMemsetAsync(temporary_out_pixels_gpu, sizeof(unsigned int) * other_intrin.width * other_intrin.height, 0, myCudaStream);
         if (cudaSuccess != cudaCallErrorStatus) {
-            ROS_ERROR("GPU processing failed while memsetting space for temporary_out_pixels_gpu %s %s", cudaGetErrorName(cudaCallErrorStatus), cudaGetErrorString(cudaCallErrorStatus));
+            std::cerr << "GPU processing failed while memsetting space for temporary_out_pixels_gpu " << cudaGetErrorName(cudaCallErrorStatus) << " " << cudaGetErrorString(cudaCallErrorStatus) << std::endl;
             return false;
         }
 
         cudaCallErrorStatus = cudaMalloc((void **)&out_pixels_gpu_uint16t, sizeof(uint16_t) * other_intrin.width * other_intrin.height);
         std::unique_ptr<uint16_t, decltype(cudaDeleterUInt16t)> out_pixels_gpu_uint16t_u_ptr(out_pixels_gpu_uint16t, cudaDeleterUInt16t);
         if (cudaSuccess != cudaCallErrorStatus) {
-            ROS_ERROR("GPU processing failed while allocating space for out_pixels_gpu_uint16t %s %s", cudaGetErrorName(cudaCallErrorStatus), cudaGetErrorString(cudaCallErrorStatus));
+            std::cerr << "GPU processing failed while allocating space for out_pixels_gpu_uint16t " << cudaGetErrorName(cudaCallErrorStatus) << " " << cudaGetErrorString(cudaCallErrorStatus) << std::endl;
             return false;
         }
         cudaCallErrorStatus = cudaMemcpyAsync(z_pixels_gpu, &z_pixels[0], sizeof(uint16_t) * z_intrin.width * z_intrin.height,cudaMemcpyHostToDevice, myCudaStream);
         if (cudaSuccess != cudaCallErrorStatus) {
-            ROS_ERROR("GPU processing failed while copying z_pixels to the GPU. %s %s", cudaGetErrorName(cudaCallErrorStatus), cudaGetErrorString(cudaCallErrorStatus));
+            std::cerr << "GPU processing failed while copying z_pixels to the GPU. " << cudaGetErrorName(cudaCallErrorStatus) << " " << cudaGetErrorString(cudaCallErrorStatus) << std::endl;
             return false;
         }
         align_images<<<numBlocks, threadsPerBlock, 0, myCudaStream>>>(z_intrin, z_to_other, other_intrin, z_scale, z_pixels_gpu, temporary_out_pixels_gpu);
         cudaCallErrorStatus = cudaGetLastError();
         if (cudaSuccess != cudaCallErrorStatus) {
-            ROS_ERROR("GPU processing failed while launching align_images on the GPU. %s %s", cudaGetErrorName(cudaCallErrorStatus), cudaGetErrorString(cudaCallErrorStatus));
+            std::cerr << "GPU processing failed while launching align_images on the GPU. " << cudaGetErrorName(cudaCallErrorStatus) << " " << cudaGetErrorString(cudaCallErrorStatus) << std::endl;
             return false;
         }
         cast_to_ushort<<<numBlocks, threadsPerBlock, 0, myCudaStream>>>(out_pixels_gpu_uint16t,temporary_out_pixels_gpu, other_intrin );
         cudaCallErrorStatus = cudaGetLastError();
         if (cudaSuccess != cudaCallErrorStatus) {
-            ROS_ERROR("GPU processing failed while launching cast_to_ushort on the GPU. %s %s", cudaGetErrorName(cudaCallErrorStatus), cudaGetErrorString(cudaCallErrorStatus));
+            std::cerr << "GPU processing failed while launching cast_to_ushort on the GPU. " << cudaGetErrorName(cudaCallErrorStatus) << " " << cudaGetErrorString(cudaCallErrorStatus) << std::endl;
             return false;
         }
 
         cudaCallErrorStatus = cudaMemcpyAsync(out_z, &out_pixels_gpu_uint16t[0], sizeof(uint16_t) * other_intrin.width * other_intrin.height,cudaMemcpyDeviceToHost, myCudaStream);
         if (cudaSuccess != cudaCallErrorStatus) {
-            ROS_ERROR("GPU processing failed while copying out_z from the GPU. %s %s", cudaGetErrorName(cudaCallErrorStatus), cudaGetErrorString(cudaCallErrorStatus));
+            std::cerr << "GPU processing failed while copying out_z from the GPU. " << cudaGetErrorName(cudaCallErrorStatus) << " " << cudaGetErrorString(cudaCallErrorStatus) << std::endl;
             return false;
         }
 
         cudaCallErrorStatus = cudaStreamSynchronize(myCudaStream);
         if (cudaSuccess != cudaCallErrorStatus) {
-            ROS_ERROR("GPU processing failed while synchronizing streams. %s %s", cudaGetErrorName(cudaCallErrorStatus), cudaGetErrorString(cudaCallErrorStatus));
+            std::cerr << "GPU processing failed while synchronizing streams. " << cudaGetErrorName(cudaCallErrorStatus) << " " << cudaGetErrorString(cudaCallErrorStatus) << std::endl;
             return false;
         }
 
