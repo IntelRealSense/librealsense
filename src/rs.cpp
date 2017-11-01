@@ -1607,4 +1607,3 @@ rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
     return environment::get_instance().get_time_service()->get_time();
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
-
