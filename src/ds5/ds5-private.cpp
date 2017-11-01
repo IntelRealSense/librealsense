@@ -166,16 +166,17 @@ namespace librealsense
                     result = *it;
                     switch (info.pid)
                     {
+                    case RS_USB2_PID:
                     case RS400_PID:
                     case RS410_PID:
                     case RS460_PID:
                     case RS430_PID:
                     case RS420_PID:
-                        found = result.mi == 3;
+                        found = (result.mi == 3);
                         break;
                     case RS430_MM_PID:
                     case RS420_MM_PID:
-                        found = result.mi == 6;
+                        found = (result.mi == 6);
                         break;
                     case RS415_PID:
                     case RS435_RGB_PID:
