@@ -1502,6 +1502,16 @@ void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_fr
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, block, on_frame)
 
+void rs2_start_processing_queue(rs2_processing_block* block, rs2_frame_queue* queue, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(block);
+    VALIDATE_NOT_NULL(queue);
+    librealsense::frame_callback_ptr callback(
+        new librealsense::frame_callback(rs2_enqueue_frame, queue));
+    block->block->set_output_callback(move(callback));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, block, queue)
+
 void rs2_process_frame(rs2_processing_block* block, rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(block);
