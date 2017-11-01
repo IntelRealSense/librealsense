@@ -12,26 +12,27 @@
 #include <stdint.h>
 #include <stdio.h>
 
-////////////////////////////////////////////
-// This parameters are reconfigurable     //
-////////////////////////////////////////////
-#define STREAM          RS2_STREAM_DEPTH  //
-#define FORMAT          RS2_FORMAT_Z16    //
-#define WIDTH           1280              //
-#define HEIGHT          720               //
-#define FPS             30                //
-#define STREAM_INDEX    0                 //
-////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                     These parameters are reconfigurable                                        //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#define STREAM          RS2_STREAM_DEPTH  // rs2_stream is a types of data provided by RealSense device           //
+#define FORMAT          RS2_FORMAT_Z16    // rs2_format is identifies how binary data is encoded within a frame   //
+#define WIDTH           640               // Defines the number of columns for each frame                         //
+#define HEIGHT          480               // Defines the number of lines for each frame                           //
+#define FPS             30                // Defines the rate of frames per second                                //
+#define STREAM_INDEX    0                 // Defines the stream index, used for multiple streams of the same type //
+#define HEIGHT_RATIO    20                // Defines the height ratio between the original frame to the new frame //
+#define WIDTH_RATIO     10                // Defines the width ratio between the original frame to the new frame  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define HEIGHT_RATIO  20
-#define WIDTH_RATIO   10
 #define ROWS          (HEIGHT / HEIGHT_RATIO) // Each row represented by 20 rows in the original frame
 #define ROW_LENGTH    (WIDTH / WIDTH_RATIO) // Each column represented by 10 columns in the original frame
 #define DISPLAY_SIZE  ((ROWS + 1) * (ROW_LENGTH + 1))
 #define BUFFER_SIZE   (DISPLAY_SIZE * sizeof(char))
 
 
+// The number of meters represented by a single depth unit
 float get_depth_unit_value(const rs2_device* const dev)
 {
     rs2_error* e = 0;
@@ -49,6 +50,7 @@ float get_depth_unit_value(const rs2_device* const dev)
         rs2_sensor* sensor = rs2_create_sensor(sensor_list, i, &e);
         check_error(e);
 
+        // Check if the given sensor can be extended to depth sensor interface
         is_depth_sensor_found = rs2_is_sensor_extendable_to(sensor, RS2_EXTENSION_DEPTH_SENSOR, &e);
         check_error(e);
 
@@ -66,7 +68,7 @@ float get_depth_unit_value(const rs2_device* const dev)
     if (0 == is_depth_sensor_found)
     {
         printf("Depth sensor not found!\n");
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
 
     return depth_scale;
@@ -76,11 +78,14 @@ float get_depth_unit_value(const rs2_device* const dev)
 int main()
 {
     rs2_error* e = 0;
-    /* Create a context object. This object owns the handles to all connected realsense devices. */
+
+    // Create a context object. This object owns the handles to all connected realsense devices.
+    // The returned object should be released with rs2_delete_context(...)
     rs2_context* ctx = rs2_create_context(RS2_API_VERSION, &e);
     check_error(e);
 
     /* Get a list of all the connected devices. */
+    // The returned object should be released with rs2_delete_device_list(...)
     rs2_device_list* device_list = rs2_query_devices(ctx, &e);
     check_error(e);
 
@@ -90,6 +95,8 @@ int main()
     if (0 == dev_count)
         return EXIT_FAILURE;
 
+    // Get the first connected device
+    // The returned object should be released with rs2_delete_device(...)
     rs2_device* dev = rs2_create_device(device_list, 0, &e);
     check_error(e);
 
@@ -99,10 +106,12 @@ int main()
     uint16_t one_meter = (uint16_t)(1.0f / get_depth_unit_value(dev));
 
     // Create a pipeline to configure, start and stop camera streaming
+    // The returned object should be released with rs2_delete_pipeline(...)
     rs2_pipeline* pipeline =  rs2_create_pipeline(ctx, &e);
     check_error(e);
 
-    // Create a config instance
+    // Create a config instance, used to specify hardware configuration
+    // The retunred object should be released with rs2_delete_config(...)
     rs2_config* config = rs2_create_config(&e);
     check_error(e);
 
@@ -110,35 +119,40 @@ int main()
     rs2_config_enable_stream(config, STREAM, STREAM_INDEX, WIDTH, HEIGHT, FORMAT, FPS, &e);
     check_error(e);
 
-    // Check if current device supports depth streaming
-    int supports_depth = rs2_config_can_resolve(config, pipeline, &e);
-    check_error(e);
-    if (0 == supports_depth)
+    // Start the pipeline streaming
+    // The retunred object should be released with rs2_delete_pipeline_profile(...)
+    rs2_pipeline_profile* pipeline_profile = rs2_pipeline_start_with_config(pipeline, config, &e);
+    if (e)
     {
         printf("The connected device doesn't support depth streaming!\n");
         exit(EXIT_FAILURE);
     }
 
-    // Start the pipeline streaming
-    rs2_pipeline_profile* pipeline_profile = rs2_pipeline_start_with_config(pipeline, config, &e);
-    check_error(e);
-
     char buffer[BUFFER_SIZE];
     char* out = NULL;
     while (1)
     {
-        /* This call waits until a new coherent set of frames is available on a device */
+        // This call waits until a new composite_frame is available
+        // composite_frame holds a set of frames. It is used to prevent frame drops
+        // The retunred object should be released with rs2_release_frame(...)
         rs2_frame* frames = rs2_pipeline_wait_for_frames(pipeline, 5000, &e);
         check_error(e);
 
+        // Returns the number of frames embedded within the composite frame
         int num_of_frames = rs2_embedded_frames_count(frames, &e);
         check_error(e);
 
         int i;
         for (i = 0; i < num_of_frames; ++i)
         {
+            // The retunred object should be released with rs2_release_frame(...)
             rs2_frame* frame = rs2_extract_frame(frames, i, &e);
             check_error(e);
+
+            // Check if the given frame can be extended to depth frame interface
+            // Accept only depth frames and skip other frames
+            if (0 == rs2_is_frame_extendable_to(frame, RS2_EXTENSION_DEPTH_FRAME, &e))
+                continue;
 
             /* Retrieve depth data, configured as 16-bit depth values */
             const uint16_t* depth_frame_data = (const uint16_t*)(rs2_get_frame_data(frame, &e));
@@ -162,7 +176,7 @@ int main()
                 {
                     for (i = 0; i < (ROW_LENGTH); ++i)
                     {
-                        const char* pixels = " .:nhBXWW";
+                        static const char* pixels = " .:nhBXWW";
                         int pixel_index = (coverage[i] / (HEIGHT_RATIO * WIDTH_RATIO / sizeof(pixels)));
                         *out++ = pixels[pixel_index];
                         coverage[i] = 0;
@@ -179,6 +193,7 @@ int main()
         rs2_release_frame(frames);
     }
 
+    // Stop the pipeline streaming
     rs2_pipeline_stop(pipeline, &e);
     check_error(e);
 

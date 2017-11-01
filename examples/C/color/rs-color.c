@@ -11,14 +11,30 @@
 #include <stdio.h>
 #include "../example.h"
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                     These parameters are reconfigurable                                        //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#define STREAM          RS2_STREAM_COLOR  // rs2_stream is a types of data provided by RealSense device           //
+#define FORMAT          RS2_FORMAT_RGB8   // rs2_format is identifies how binary data is encoded within a frame   //
+#define WIDTH           640               // Defines the number of columns for each frame                         //
+#define HEIGHT          480               // Defines the number of lines for each frame                           //
+#define FPS             30                // Defines the rate of frames per second                                //
+#define STREAM_INDEX    0                 // Defines the stream index, used for multiple streams of the same type //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 int main()
 {
     rs2_error* e = 0;
-    /* Create a context object. This object owns the handles to all connected realsense devices. */
+
+    // Create a context object. This object owns the handles to all connected realsense devices.
+    // The returned object should be released with rs2_delete_context(...)
     rs2_context* ctx = rs2_create_context(RS2_API_VERSION, &e);
     check_error(e);
 
     /* Get a list of all the connected devices. */
+    // The returned object should be released with rs2_delete_device_list(...)
     rs2_device_list* device_list = rs2_query_devices(ctx, &e);
     check_error(e);
 
@@ -28,59 +44,56 @@ int main()
     if (0 == dev_count)
         return EXIT_FAILURE;
 
+    // Get the first connected device
+    // The returned object should be released with rs2_delete_device(...)
     rs2_device* dev = rs2_create_device(device_list, 0, &e);
     check_error(e);
 
     print_device_info(dev);
 
-    const rs2_stream stream = RS2_STREAM_COLOR;
-    const rs2_format format = RS2_FORMAT_RGB8;
-    const int width = 640;
-    const int height = 480;
-    const int fps = 30;
-    const int index = 0;
-
     // Create a pipeline to configure, start and stop camera streaming
+    // The returned object should be released with rs2_delete_pipeline(...)
     rs2_pipeline* pipeline =  rs2_create_pipeline(ctx, &e);
     check_error(e);
 
-    // Create a config instance
+    // Create a config instance, used to specify hardware configuration
+    // The retunred object should be released with rs2_delete_config(...)
     rs2_config* config = rs2_create_config(&e);
     check_error(e);
 
     // Request a specific configuration
-    rs2_config_enable_stream(config, stream, index, width, height, format, fps, &e);
+    rs2_config_enable_stream(config, STREAM, STREAM_INDEX, WIDTH, HEIGHT, FORMAT, FPS, &e);
     check_error(e);
 
-    // Check if current device supports color streaming
-    int supports_color = rs2_config_can_resolve(config, pipeline, &e);
-    check_error(e);
-    if (0 == supports_color)
+    // Start the pipeline streaming
+    // The retunred object should be released with rs2_delete_pipeline_profile(...)
+    rs2_pipeline_profile* pipeline_profile = rs2_pipeline_start_with_config(pipeline, config, &e);
+    if (e)
     {
         printf("The connected device doesn't support color streaming!\n");
         exit(EXIT_FAILURE);
     }
 
-    // Start the pipeline streaming
-    rs2_pipeline_profile* pipeline_profile = rs2_pipeline_start_with_config(pipeline, config, &e);
-    check_error(e);
-
     while (1)
     {
-        /* This call waits until a new coherent set of frames is available on a device */
+        // This call waits until a new composite_frame is available
+        // composite_frame holds a set of frames. It is used to prevent frame drops
+        // The retunred object should be released with rs2_release_frame(...)
         rs2_frame* frames = rs2_pipeline_wait_for_frames(pipeline, 5000, &e);
         check_error(e);
 
+        // Returns the number of frames embedded within the composite frame
         int num_of_frames = rs2_embedded_frames_count(frames, &e);
         check_error(e);
 
         int i;
         for (i = 0; i < num_of_frames; ++i)
         {
+            // The retunred object should be released with rs2_release_frame(...)
             rs2_frame* frame = rs2_extract_frame(frames, i, &e);
             check_error(e);
 
-            const uint8_t* rgb_frame = (const uint8_t*)(rs2_get_frame_data(frame, &e));
+            const uint8_t* rgb_frame_data = (const uint8_t*)(rs2_get_frame_data(frame, &e));
             check_error(e);
 
             unsigned long long frame_number = rs2_get_frame_number(frame, &e);
@@ -89,6 +102,7 @@ int main()
             rs2_time_t frame_timestamp = rs2_get_frame_timestamp(frame, &e);
             check_error(e);
 
+            // Specifies the clock in relation to which the frame timestamp was measured
             rs2_timestamp_domain frame_timestamp_domain = rs2_get_frame_timestamp_domain(frame, &e);
             check_error(e);
             const char* frame_timestamp_domain_str = rs2_timestamp_domain_to_string(frame_timestamp_domain);
@@ -100,7 +114,7 @@ int main()
             printf("First 10 bytes: ");
             int i;
             for(i=0; i < 10; ++i)
-                printf("%02x ", rgb_frame[i]);
+                printf("%02x ", rgb_frame_data[i]);
 
             printf("\nFrame No: %llu\n", frame_number);
             printf("Timestamp: %f\n", frame_timestamp);
@@ -112,6 +126,7 @@ int main()
         rs2_release_frame(frames);
     }
 
+    // Stop the pipeline streaming
     rs2_pipeline_stop(pipeline, &e);
     check_error(e);
 
