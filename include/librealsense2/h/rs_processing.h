@@ -59,6 +59,14 @@ rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* 
 void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_frame, rs2_error** error);
 
 /**
+* This method is used to direct the output from the processing block to a dedicated queue object
+* \param[in] block          Processing block
+* \param[in] on_frame       Queue to place the processed frames to
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_start_processing_queue(rs2_processing_block* block, rs2_frame_queue* queue, rs2_error** error);
+
+/**
 * This method is used to pass frame into a processing block
 * \param[in] block          Processing block
 * \param[in] frame          Frame to process, ownership is moved to the block object

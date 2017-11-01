@@ -441,7 +441,7 @@ int main(int argv, const char** argc) try
 
                         if (!sub->streaming)
                         {
-                            label = to_string() << u8"  \uf204\noff   ##" << dev_model.id << "," << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                            label = to_string() << u8"  \uf204\noff   ##" << dev_model.id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
 
                             ImGui::PushStyleColor(ImGuiCol_Text, redish);
                             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
@@ -485,7 +485,7 @@ int main(int argv, const char** argc) try
                         }
                         else
                         {
-                            label = to_string() << u8"  \uf205\n    on##" << dev_model.id << "," << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                            label = to_string() << u8"  \uf205\n    on##" << dev_model.id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
                             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 

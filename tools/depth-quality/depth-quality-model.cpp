@@ -666,7 +666,7 @@ namespace rs2
             }
 
             auto dev = _pipe.get_active_profile().get_device();
-            auto dpt_sensor = dev.first<depth_sensor>();
+            auto dpt_sensor = std::make_shared<sensor>(dev.first<depth_sensor>());
             _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model));
             _device_model->allow_remove = false;
             _device_model->show_depth_only = true;
@@ -678,7 +678,7 @@ namespace rs2
 
             // Retrieve stereo baseline for supported devices
             auto baseline_mm = -1.f;
-            auto profiles = dpt_sensor.get_stream_profiles();
+            auto profiles = dpt_sensor->get_stream_profiles();
             auto right_sensor = std::find_if(profiles.begin(), profiles.end(), [](rs2::stream_profile& p)
             { return (p.stream_index() == 2) && (p.stream_type() == RS2_STREAM_INFRARED); });
 
@@ -707,20 +707,26 @@ namespace rs2
             // Connect the device_model to the viewer_model
             for (auto&& sub : _device_model.get()->subdevices)
             {
-                if (!sub->s.is<depth_sensor>()) continue;
+                if (!sub->s->is<depth_sensor>()) continue;
 
                 sub->show_algo_roi = true;
                 auto profiles = _pipe.get_active_profile().get_streams();
                 sub->streaming = true;      // The streaming activated externally to the device_model
+                sub->depth_colorizer->set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0.f);
+                sub->depth_colorizer->set_option(RS2_OPTION_MIN_DISTANCE, 0.3f);
+                sub->depth_colorizer->set_option(RS2_OPTION_MAX_DISTANCE, 2.7f);
+                sub->options_invalidated = true;
+
                 for (auto&& profile : profiles)
                 {
                     _viewer_model.streams[profile.unique_id()].dev = sub;
+                    _viewer_model.streams[profile.unique_id()].texture->colorize = sub->depth_colorizer;
 
                     if (profile.stream_type() == RS2_STREAM_DEPTH)
                     {
                         auto depth_profile = profile.as<video_stream_profile>();
                         _metrics_model.update_stream_attributes(depth_profile.get_intrinsics(),
-                            sub->s.as<depth_sensor>().get_depth_scale(), baseline_mm);
+                            sub->s->as<depth_sensor>().get_depth_scale(), baseline_mm);
 
                         _metrics_model.update_frame_attributes({ int(depth_profile.width() * (0.5f - 0.5f*_roi_percent)),
                                                            int(depth_profile.height() * (0.5f - 0.5f*_roi_percent)),

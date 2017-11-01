@@ -21,19 +21,40 @@
 #include "../include/librealsense2/h/rs_types.h"
 #include "pipeline.h"
 #include "environment.h"
+
 ////////////////////////
 // API implementation //
 ////////////////////////
+
 struct rs2_stream_profile_list
 {
     std::vector<std::shared_ptr<stream_profile_interface>> list;
 };
 
-struct rs2_sensor
+struct rs2_options
 {
+    rs2_options(librealsense::options_interface* options) : options(options) { }
+
+    librealsense::options_interface* options;
+
+    virtual ~rs2_options() = default;
+};
+
+struct rs2_sensor : public rs2_options
+{
+    rs2_sensor(rs2_device parent,
+               librealsense::sensor_interface* sensor,
+               size_t index)
+        : rs2_options((librealsense::options_interface*)sensor),
+          parent(parent), sensor(sensor), index(index)
+    {}
+
     rs2_device parent;
     librealsense::sensor_interface* sensor;
     size_t index;
+
+    rs2_sensor& operator=(const rs2_sensor&) = delete;
+    rs2_sensor(const rs2_sensor&) = delete;
 };
 
 
@@ -73,9 +94,16 @@ struct rs2_frame_queue
     single_consumer_queue<librealsense::frame_holder> queue;
 };
 
-struct rs2_processing_block
+struct rs2_processing_block : public rs2_options
 {
+    rs2_processing_block(std::shared_ptr<librealsense::processing_block> block)
+        : rs2_options((librealsense::options_interface*)block.get()),
+          block(block) { }
+
     std::shared_ptr<librealsense::processing_block_interface> block;
+
+    rs2_processing_block& operator=(const rs2_processing_block&) = delete;
+    rs2_processing_block(const rs2_processing_block&) = delete;
 };
 
 struct rs2_sensor_list
@@ -485,54 +513,55 @@ void rs2_close(const rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor)
 
-int rs2_is_option_read_only(const rs2_sensor* sensor, rs2_option option, rs2_error** error) BEGIN_API_CALL
+int rs2_is_option_read_only(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(options);
     VALIDATE_ENUM(option);
-    return sensor->sensor->get_option(option).is_read_only();
+    return options->options->get_option(option).is_read_only();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, option)
+HANDLE_EXCEPTIONS_AND_RETURN(0, options, option)
 
-float rs2_get_option(const rs2_sensor* sensor, rs2_option option, rs2_error** error) BEGIN_API_CALL
+float rs2_get_option(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(options);
     VALIDATE_ENUM(option);
-    return sensor->sensor->get_option(option).query();
+    return options->options->get_option(option).query();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0.0f, sensor, option)
+HANDLE_EXCEPTIONS_AND_RETURN(0.0f, options, option)
 
-void rs2_set_option(const rs2_sensor* sensor, rs2_option option, float value, rs2_error** error) BEGIN_API_CALL
+void rs2_set_option(const rs2_options* options, rs2_option option, float value, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(options);
     VALIDATE_ENUM(option);
-    sensor->sensor->get_option(option).set(value);
+    options->options->get_option(option).set(value);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, value)
+HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
 
-int rs2_supports_option(const rs2_sensor* sensor, rs2_option option, rs2_error** error) BEGIN_API_CALL
+
+int rs2_supports_option(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(options);
     VALIDATE_ENUM(option);
-    return sensor->sensor->supports_option(option);
+    return options->options->supports_option(option);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, option)
+HANDLE_EXCEPTIONS_AND_RETURN(0, options, option)
 
-void rs2_get_option_range(const rs2_sensor* sensor, rs2_option option,
+void rs2_get_option_range(const rs2_options* options, rs2_option option,
     float* min, float* max, float* step, float* def, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(options);
     VALIDATE_ENUM(option);
     VALIDATE_NOT_NULL(min);
     VALIDATE_NOT_NULL(max);
     VALIDATE_NOT_NULL(step);
     VALIDATE_NOT_NULL(def);
-    auto range = sensor->sensor->get_option(option).get_range();
+    auto range = options->options->get_option(option).get_range();
     *min = range.min;
     *max = range.max;
     *def = range.def;
     *step = range.step;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, min, max, step, def)
+HANDLE_EXCEPTIONS_AND_RETURN(, options, option, min, max, step, def)
 
 const char* rs2_get_device_info(const rs2_device* dev, rs2_camera_info info, rs2_error** error) BEGIN_API_CALL
 {
@@ -785,13 +814,13 @@ void rs2_release_frame(rs2_frame* frame) BEGIN_API_CALL
 }
 NOEXCEPT_RETURN(, frame)
 
-const char* rs2_get_option_description(const rs2_sensor* sensor, rs2_option option, rs2_error** error) BEGIN_API_CALL
+const char* rs2_get_option_description(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(options);
     VALIDATE_ENUM(option);
-    return sensor->sensor->get_option(option).get_description();
+    return options->options->get_option(option).get_description();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor, option)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option)
 
 void rs2_frame_add_ref(rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
 {
@@ -800,13 +829,13 @@ void rs2_frame_add_ref(rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame)
 
-const char* rs2_get_option_value_description(const rs2_sensor* sensor, rs2_option option, float value, rs2_error** error) BEGIN_API_CALL
+const char* rs2_get_option_value_description(const rs2_options* options, rs2_option option, float value, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(options);
     VALIDATE_ENUM(option);
-    return sensor->sensor->get_option(option).get_value_description(value);
+    return options->options->get_option(option).get_value_description(value);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor, option, value)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option, value)
 
 rs2_frame_queue* rs2_create_frame_queue(int capacity, rs2_error** error) BEGIN_API_CALL
 {
@@ -1473,6 +1502,16 @@ void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_fr
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, block, on_frame)
 
+void rs2_start_processing_queue(rs2_processing_block* block, rs2_frame_queue* queue, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(block);
+    VALIDATE_NOT_NULL(queue);
+    librealsense::frame_callback_ptr callback(
+        new librealsense::frame_callback(rs2_enqueue_frame, queue));
+    block->block->set_output_callback(move(callback));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, block, queue)
+
 void rs2_process_frame(rs2_processing_block* block, rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(block);
@@ -1575,7 +1614,11 @@ rs2_processing_block* rs2_create_colorizer(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::colorizer>();
 
-    return new rs2_processing_block{ block };
+    auto res = new rs2_processing_block{ block };
+
+    auto res2 = (rs2_options*)res;
+
+    return res;
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 

@@ -239,6 +239,10 @@ namespace librealsense
         CASE(DEPTH_UNITS)
         CASE(ENABLE_MOTION_CORRECTION)
         CASE(AUTO_EXPOSURE_PRIORITY)
+        CASE(HISTOGRAM_EQUALIZATION_ENABLED)
+        CASE(MIN_DISTANCE)
+        CASE(MAX_DISTANCE)
+        CASE(COLOR_SCHEME)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE

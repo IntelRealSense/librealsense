@@ -746,15 +746,17 @@ namespace rs2
         GLuint texture;
         rs2::frame_queue last_queue;
         mutable rs2::frame last;
-        colorizer colorize;
 
     public:
+        std::shared_ptr<colorizer> colorize;
+
         rs2::frame get_last_frame() const {
             last_queue.poll_for_frame(&last);
             return last;
         }
 
-        texture_buffer() : last_queue(1), texture(), colorize() {}
+        texture_buffer() : last_queue(1), texture(), 
+            colorize(std::make_shared<colorizer>()) {}
 
         GLuint get_gl_handle() const { return texture; }
 
@@ -805,7 +807,7 @@ namespace rs2
             case RS2_FORMAT_DISPARITY16:
                 if (frame.is<depth_frame>())
                 {
-                    data = colorize(frame).get_data();
+                    data = colorize->colorize(frame).get_data();
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
                 }
                 else glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);

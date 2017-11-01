@@ -78,6 +78,11 @@ namespace librealsense
             _recording_function(*this);
         }
 
+        void unregister_option(rs2_option id)
+        {
+            _options.erase(id);
+        }
+
         void create_snapshot(std::shared_ptr<options_interface>& snapshot) const override
         {
             snapshot = std::make_shared<options_container>(*this);

@@ -382,14 +382,160 @@ class VideoStreamProfile extends StreamProfile {
   }
 }
 
+class Options {
+  constructor(cxxObj) {
+    this.cxxObj = cxxObj;
+  }
+  /**
+  * Check if particular option is read-only
+  * @param {String|Number} option The option to be checked
+  * @return {Boolean|undefined} true if option is read-only and undefined if not supported
+  */
+  isOptionReadOnly(option) {
+    let o = checkStringNumber(arguments[0],
+        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
+        option2Int,
+        'Sensor.isOptionReadOnly(option) expects a number or string as the 1st argument',
+        'Sensor.isOptionReadOnly(option) expects a valid value as the 1st argument');
+    if (!this.cxxObj.supportsOption(o)) return undefined;
+
+    return this.cxxObj.isOptionReadonly(o);
+  }
+
+  /**
+   * Read option value from the sensor.
+   * @param {String|Number} option  The option to be queried
+   * @return {Float32|undefined} The value of the option, or <code>undefined</code> if invalid
+   * option
+   * @see {@link option}
+   */
+  getOption(option) {
+    let o = checkStringNumber(arguments[0],
+        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
+        option2Int,
+        'Sensor.getOption(option) expects a number or string as the 1st argument',
+        'Sensor.getOption(option) expects a valid value as the 1st argument');
+    if (!this.cxxObj.supportsOption(o)) return undefined;
+
+    return this.cxxObj.getOption(o);
+  }
+
+  /**
+   * @typedef {Object} OptionRangeObject
+   * @property {Float32} minValue - the minimum value which will be accepted for this option
+   * @property {Float32} maxValue - the maximum value which will be accepted for this option
+   * @property {Float32} defaultValue - the default value of the option
+   * @property {Float32} step - the granularity of options which accept discrete values, or zero if
+   * the option accepts continuous values
+   * @see [Sensor.getOptionRange()]{@link Sensor#getOptionRange}
+   */
+
+  /**
+   * Retrieve the available range of values of a supported option.
+   * @param {String|Integer} option - the option that is being queried. See {@link option} for
+   * available values
+   * @return {OptionRangeObject|undefined} Returns undefined if an invalid option was specified
+   * @see {@link OptionRangeObject}
+   * @see {@link option}
+   *
+   * @example <caption>Example of 3 equivalent calls of the same option range</caption>
+   * Sensor.getOptionRange('backlight-compensation');
+   * Sensor.getOptionRange(realsense2.option.option_backlight_compensation);
+   * Sensor.getOptionRange(realsense2.option.OPTION_BACKLIGHT_COMPENSATION);
+   */
+  getOptionRange(option) {
+    let o = checkStringNumber(arguments[0],
+        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
+        option2Int,
+        'Sensor.getOptionRange(option) expects a number or string as the 1st argument',
+        'Sensor.getOptionRange(option) expects a valid value as the 1st argument');
+    if (!this.cxxObj.supportsOption(o)) return undefined;
+
+    return this.cxxObj.getOptionRange(o);
+  }
+
+  /**
+   * Write new value to device option.
+   * @param {String|Integer} option - the option that is being queried. See {@link option} for
+   * available values
+   * @param {Float32} value - the new value to be set
+   * @see {@link option}
+   * @return {undefined}
+   */
+  setOption(option, value) {
+    let o = checkStringNumber(arguments[0],
+        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
+        option2Int,
+        'Sensor.getOptionRange(option) expects a number or string as the 1st argument',
+        'Sensor.getOptionRange(option) expects a valid value as the 1st argument');
+    if (!this.cxxObj.supportsOption(o) || this.cxxObj.isOptionReadonly(o)) return undefined;
+
+    this.cxxObj.setOption(o, value);
+  }
+
+  /**
+   * Check if particular option is supported by a subdevice.
+   * @param {String|Integer} option - the option that is being queried. See {@link option} for
+   * available values
+   * @return {Boolean|undefined} Returns undefined if an invalid option was specified
+   * @see {@link option}
+   */
+  supportsOption(option) {
+    let o = checkStringNumber(arguments[0],
+        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
+        option2Int,
+        'Sensor.supportsOption(option) expects a number or string as the 1st argument',
+        'Sensor.supportsOption(option) expects a valid value as the 1st argument');
+    return this.cxxObj.supportsOption(o);
+  }
+
+  /**
+   * Get option description.
+   * @param {String|Integer} option - the option that is being queried. See {@link option} for
+   * available values
+   * @return {String|undefined} the human readable description of the option. Returns undefined if
+   * an invalid option was specified
+   * @see {@link option}
+   */
+  getOptionDescription(option) {
+    let o = checkStringNumber(arguments[0],
+        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
+        option2Int,
+        'Sensor.supportsOption(option) expects a number or string as the 1st argument',
+        'Sensor.supportsOption(option) expects a valid value as the 1st argument');
+    if (!this.cxxObj.supportsOption(o)) return undefined;
+    return this.cxxObj.getOptionDescription(o);
+  }
+
+  /**
+   * Get option value description (in case specific option value hold special meaning).
+   * @param {String|Integer} option - the option that is being queried. See {@link option} for
+   * available values
+   * @return {String|undefined} the human readable description of the option value. Returns
+   * undefined if an invalid option was specified
+   * @see {@link option}
+   */
+  getOptionValueDescription(option, value) {
+    let o = checkStringNumber(arguments[0],
+        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
+        option2Int,
+        'Sensor.supportsOption(option) expects a number or string as the 1st argument',
+        'Sensor.supportsOption(option) expects a valid value as the 1st argument');
+    if (!this.cxxObj.supportsOption(o)) return undefined;
+
+    return this.cxxObj.getOptionValueDescription(o, value);
+  }
+}
+
 /**
  * A sensor device in a RealSense camera
  */
-class Sensor {
+class Sensor extends Options {
   /**
    * Construct a Sensor object, representing a RealSense camera subdevice
    */
   constructor(sensor) {
+    super(sensor);
     this.cxxSensor = sensor;
     this._events = new EventEmitter();
   }
@@ -526,22 +672,6 @@ class Sensor {
   }
 
   /**
-  * Check if particular option is read-only
-  * @param {String|Number} option The option to be checked
-  * @return {Boolean|undefined} true if option is read-only and undefined if not supported
-  */
-  isOptionReadOnly(option) {
-    let o = checkStringNumber(arguments[0],
-        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-        option2Int,
-        'Sensor.isOptionReadOnly(option) expects a number or string as the 1st argument',
-        'Sensor.isOptionReadOnly(option) expects a valid value as the 1st argument');
-    if (!this.cxxSensor.supportsOption(o)) return undefined;
-
-    return this.cxxSensor.isOptionReadonly(o);
-  }
-
-  /**
    * @typedef {Object} NotificationEventObject
    * @property {String} descr - The human readable literal description of the notification
    * @property {Float}  timestamp - The timestamp of the notification
@@ -594,131 +724,6 @@ class Sensor {
       this.cxxSensor.setNotificationCallback('notificationCallback');
     }
     return undefined;
-  }
-
-  /**
-   * Read option value from the sensor.
-   * @param {String|Number} option  The option to be queried
-   * @return {Float32|undefined} The value of the option, or <code>undefined</code> if invalid
-   * option
-   * @see {@link option}
-   */
-  getOption(option) {
-    let o = checkStringNumber(arguments[0],
-        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-        option2Int,
-        'Sensor.getOption(option) expects a number or string as the 1st argument',
-        'Sensor.getOption(option) expects a valid value as the 1st argument');
-    if (!this.cxxSensor.supportsOption(o)) return undefined;
-
-    return this.cxxSensor.getOption(o);
-  }
-
-  /**
-   * @typedef {Object} OptionRangeObject
-   * @property {Float32} minValue - the minimum value which will be accepted for this option
-   * @property {Float32} maxValue - the maximum value which will be accepted for this option
-   * @property {Float32} defaultValue - the default value of the option
-   * @property {Float32} step - the granularity of options which accept discrete values, or zero if
-   * the option accepts continuous values
-   * @see [Sensor.getOptionRange()]{@link Sensor#getOptionRange}
-   */
-
-  /**
-   * Retrieve the available range of values of a supported option.
-   * @param {String|Integer} option - the option that is being queried. See {@link option} for
-   * available values
-   * @return {OptionRangeObject|undefined} Returns undefined if an invalid option was specified
-   * @see {@link OptionRangeObject}
-   * @see {@link option}
-   *
-   * @example <caption>Example of 3 equivalent calls of the same option range</caption>
-   * Sensor.getOptionRange('backlight-compensation');
-   * Sensor.getOptionRange(realsense2.option.option_backlight_compensation);
-   * Sensor.getOptionRange(realsense2.option.OPTION_BACKLIGHT_COMPENSATION);
-   */
-  getOptionRange(option) {
-    let o = checkStringNumber(arguments[0],
-        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-        option2Int,
-        'Sensor.getOptionRange(option) expects a number or string as the 1st argument',
-        'Sensor.getOptionRange(option) expects a valid value as the 1st argument');
-    if (!this.cxxSensor.supportsOption(o)) return undefined;
-
-    return this.cxxSensor.getOptionRange(o);
-  }
-
-  /**
-   * Write new value to device option.
-   * @param {String|Integer} option - the option that is being queried. See {@link option} for
-   * available values
-   * @param {Float32} value - the new value to be set
-   * @see {@link option}
-   * @return {undefined}
-   */
-  setOption(option, value) {
-    let o = checkStringNumber(arguments[0],
-        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-        option2Int,
-        'Sensor.getOptionRange(option) expects a number or string as the 1st argument',
-        'Sensor.getOptionRange(option) expects a valid value as the 1st argument');
-    if (!this.cxxSensor.supportsOption(o) || this.cxxSensor.isOptionReadonly(o)) return undefined;
-
-    this.cxxSensor.setOption(o, value);
-  }
-
-  /**
-   * Check if particular option is supported by a subdevice.
-   * @param {String|Integer} option - the option that is being queried. See {@link option} for
-   * available values
-   * @return {Boolean|undefined} Returns undefined if an invalid option was specified
-   * @see {@link option}
-   */
-  supportsOption(option) {
-    let o = checkStringNumber(arguments[0],
-        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-        option2Int,
-        'Sensor.supportsOption(option) expects a number or string as the 1st argument',
-        'Sensor.supportsOption(option) expects a valid value as the 1st argument');
-    return this.cxxSensor.supportsOption(o);
-  }
-
-  /**
-   * Get option description.
-   * @param {String|Integer} option - the option that is being queried. See {@link option} for
-   * available values
-   * @return {String|undefined} the human readable description of the option. Returns undefined if
-   * an invalid option was specified
-   * @see {@link option}
-   */
-  getOptionDescription(option) {
-    let o = checkStringNumber(arguments[0],
-        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-        option2Int,
-        'Sensor.supportsOption(option) expects a number or string as the 1st argument',
-        'Sensor.supportsOption(option) expects a valid value as the 1st argument');
-    if (!this.cxxSensor.supportsOption(o)) return undefined;
-
-    return this.cxxSensor.getOptionDescription(o);
-  }
-
-  /**
-   * Get option value description (in case specific option value hold special meaning).
-   * @param {String|Integer} option - the option that is being queried. See {@link option} for
-   * available values
-   * @return {String|undefined} the human readable description of the option value. Returns
-   * undefined if an invalid option was specified
-   * @see {@link option}
-   */
-  getOptionValueDescription(option, value) {
-    let o = checkStringNumber(arguments[0],
-        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-        option2Int,
-        'Sensor.supportsOption(option) expects a number or string as the 1st argument',
-        'Sensor.supportsOption(option) expects a valid value as the 1st argument');
-    if (!this.cxxSensor.supportsOption(o)) return undefined;
-
-    return this.cxxSensor.getOptionValueDescription(o, value);
   }
 
   /**
