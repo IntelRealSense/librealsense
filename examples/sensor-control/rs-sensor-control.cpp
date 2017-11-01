@@ -107,12 +107,13 @@ void display_live_stream(rs2::device device, rs2::sensor sensor)
 }
 void show_stream_intrinsics(rs2::device device, rs2::sensor sensor)
 {
+    // Each stream has its own intrinsic information, first choose a stream, then display its intrinsics
     rs2::stream_profile selected_profile = how_to::choose_a_streaming_profile(sensor);
-    // The rs2::sensor allows you to control its properties such as Exposure, Brightness etc.
     how_to::get_field_of_view(selected_profile);
 }
 void show_extrinsics_between_streams(rs2::device device, rs2::sensor sensor)
 {
+    // A rs2::device can have its sensors and streams calibrated and provide the extrinsics between 2 streams.
     std::cout << "Please choose a sensor and then a stream that will be used as the origin of extrinsic transformation:\n" << std::endl;
     rs2::sensor from_sensor = how_to::get_a_sensor_from_a_device(device);
     rs2::stream_profile from = how_to::choose_a_streaming_profile(from_sensor);
@@ -120,7 +121,7 @@ void show_extrinsics_between_streams(rs2::device device, rs2::sensor sensor)
     std::cout << "Please choose a sensor and then a stream that will be used as the target of extrinsic transformation::\n" << std::endl;
     rs2::sensor to_sensor = how_to::get_a_sensor_from_a_device(device);
     rs2::stream_profile to = how_to::choose_a_streaming_profile(to_sensor);
-    // The rs2::sensor allows you to control its properties such as Exposure, Brightness etc.
+
     how_to::get_extrinsics(from, to);
 }
 std::vector<sensor_action> create_sensor_actions()
