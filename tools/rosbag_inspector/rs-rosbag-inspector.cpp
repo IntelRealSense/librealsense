@@ -23,6 +23,24 @@
 #include "../../third-party/realsense-file/rosbag/msgs/std_msgs/Float32.h"
 #include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/StreamInfo.h"
 #include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/ImuIntrinsic.h"
+
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/compressed_frame_info.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/controller_command.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/controller_event.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/controller_vendor_data.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/extrinsics.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/frame_info.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/ImuIntrinsic.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/metadata.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/motion_intrinsics.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/motion_stream_info.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/occupancy_map.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/pose.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/stream_extrinsics.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/stream_info.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/StreamInfo.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/vendor_data.h"
+
 #include "../../third-party/realsense-file/rosbag/msgs/sensor_msgs/CameraInfo.h"
 #include "../../third-party/realsense-file/rosbag/msgs/sensor_msgs/TimeReference.h"
 #include "../../third-party/realsense-file/rosbag/msgs/geometry_msgs/Transform.h"
@@ -33,6 +51,32 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_internal.h>
 #include <noc_file_dialog.h>
+
+std::ostream& operator<<(std::ostream& os, const rosbag::MessageInstance& m);
+
+template <size_t N, typename T>
+std::ostream& operator<<(std::ostream& os, const std::array<T,N>& arr)
+{
+    for (size_t i = 0; i < arr.size(); ++i)
+    {
+        if (i != 0)
+            os << ",";
+        os << arr[i];
+    }
+    return os;
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
+{
+    for (size_t i = 0; i < v.size(); ++i)
+    {
+        if (i != 0)
+            os << ",";
+        os << v[i];
+    }
+    return os;
+}
 
 struct to_string
 {
@@ -118,7 +162,10 @@ std::ostream& operator<<(std::ostream& os, const rosbag::MessageInstance& m)
     }
     if (m.isType<realsense_msgs::ImuIntrinsic>())
     {
-        
+        auto data = m.instantiate<realsense_msgs::ImuIntrinsic>();
+        os << "bias_variances : " << data->bias_variances << "\n";
+        os << "data : " << data->data << "\n";
+        os << "noise_variances : " << data->noise_variances << "\n";
     }
     if (m.isType<sensor_msgs::Image>())
     {
@@ -132,7 +179,17 @@ std::ostream& operator<<(std::ostream& os, const rosbag::MessageInstance& m)
     }
     if (m.isType<sensor_msgs::Imu>())
     {
-        
+        auto imu = m.instantiate<sensor_msgs::Imu>();
+        os << "header : " << imu->header << "\n";
+        os << "orientation : " << imu->orientation << "\n";
+        os << "orientation_covariance : " << imu->orientation_covariance << "\n";
+        os << "angular_velocity : " << imu->angular_velocity << "\n";
+        os << "angular_velocity_covariance : " << imu->angular_velocity_covariance << "\n";
+        os << "linear_acceleration : " << imu->linear_acceleration << "\n";
+        os << "linear_acceleration_covariance : " << imu->linear_acceleration_covariance << "\n";
+        os << "orientation_covariance : " << imu->orientation_covariance << "\n";
+        os << "angular_velocity_covariance : " << imu->angular_velocity_covariance << "\n";
+        os << "linear_acceleration_covariance : " << imu->linear_acceleration_covariance << "\n";
     }
     if (m.isType<sensor_msgs::TimeReference>())
     {
@@ -149,9 +206,150 @@ std::ostream& operator<<(std::ostream& os, const rosbag::MessageInstance& m)
         os << "    Translation : " << tf->translation << std::endl;
     }
 
+
+
+
+    /*************************************************************/
+    /*************************************************************/
+    /*                  Older Version                            */
+    /*************************************************************/
+    /*************************************************************/
+
+
+
+
+    if (m.isType<realsense_msgs::compressed_frame_info>())
+    {
+        auto data = m.instantiate<realsense_msgs::compressed_frame_info>();
+        os << data << "\n";
+        os << "encoding: " << data->encoding << "\n";
+        os << "frame_metadata: " << data->frame_metadata << "\n";
+        os << "height: " << data->height << "\n";
+        os << "step: " << data->step << "\n";
+        os << "system_time: " << data->system_time << "\n";
+        os << "time_stamp_domain: " << data->time_stamp_domain << "\n";
+        os << "width: " << data->width << "\n";
+    }
+    if (m.isType<realsense_msgs::controller_command>())
+    {
+        auto data = m.instantiate<realsense_msgs::controller_command>();
+        os << "controller_id : " << data->controller_id << "\n";
+        os << "mac_address : " << data->mac_address << "\n";
+        os << "type : " << data->type << "\n";
+    }
+    if (m.isType<realsense_msgs::controller_event>())
+    {
+        auto data = m.instantiate<realsense_msgs::controller_event>();
+        os << "controller_id : " << data->controller_id << "\n";
+        os << "mac_address : " << data->mac_address << "\n";
+        os << "type : " << data->type << "\n";
+        os << "type : " << data->timestamp << "\n";
+    }
+    if (m.isType<realsense_msgs::controller_vendor_data>())
+    {
+        auto data = m.instantiate<realsense_msgs::controller_vendor_data>();
+        os << "controller_id : " << data->controller_id << "\n";
+        os << "data : " << data->data << "\n";
+        os << "timestamp : " << data->timestamp << "\n";
+        os << "vendor_data_source_index : " << data->vendor_data_source_index << "\n";
+        os << "vendor_data_source_type : " << data->vendor_data_source_type << "\n";
+
+    }
+    if (m.isType<realsense_msgs::extrinsics>())
+    {
+        auto data = m.instantiate<realsense_msgs::extrinsics>();
+        os << "  Extrinsics : " << std::endl;
+        os << "    Rotation    : " << data->rotation << std::endl;
+        os << "    Translation : " << data->translation << std::endl;
+    }
+    if (m.isType<realsense_msgs::frame_info>())
+    {
+        auto data = m.instantiate<realsense_msgs::frame_info>();
+        os << "frame_metadata :" << data->frame_metadata << "\n";
+        os << "system_time :" << data->system_time << "\n";
+        os << "time_stamp_domain :" << data->time_stamp_domain << "\n";
+    }
+    if (m.isType<realsense_msgs::metadata>())
+    {
+        auto data = m.instantiate<realsense_msgs::metadata>();
+        os << "type : " << data->type << "\n";
+        os << "data : " << data->data << "\n";
+    }
+    if (m.isType<realsense_msgs::motion_intrinsics>())
+    {
+        auto data = m.instantiate<realsense_msgs::motion_intrinsics>();
+        os << "bias_variances : " << data->bias_variances << "\n";
+        os << "data : " << data->data << "\n";
+        os << "noise_variances : " << data->noise_variances << "\n";
+    }
+    if (m.isType<realsense_msgs::motion_stream_info>())
+    {
+        auto data = m.instantiate<realsense_msgs::motion_stream_info>();
+        os << "fps : " << data->fps << "\n";
+        os << "motion_type : " << data->motion_type << "\n";
+        os << "stream_extrinsics : " << data->stream_extrinsics << "\n";
+        os << "stream_intrinsics : " << data->stream_intrinsics << "\n";
+    }
+    if (m.isType<realsense_msgs::occupancy_map>())
+    {
+        auto data = m.instantiate<realsense_msgs::occupancy_map>();
+        os << "accuracy : " << data->accuracy << "\n";
+        os << "reserved : " << data->reserved << "\n";
+        os << "tiles : " << data->tiles << "\n";
+        os << "tile_count : " << data->tile_count << "\n";
+    }
+    if (m.isType<realsense_msgs::pose>())
+    {
+        auto data = m.instantiate<realsense_msgs::pose>();
+        os << "translation : " << data->translation << "\n";
+        os << "rotation : " << data->rotation << "\n";
+        os << "velocity : " << data->velocity << "\n";
+        os << "angular_velocity : " << data->angular_velocity << "\n";
+        os << "acceleration : " << data->acceleration << "\n";
+        os << "angular_acceleration : " << data->angular_acceleration << "\n";
+        os << "timestamp : " << data->timestamp << "\n";
+        os << "system_timestamp : " << data->system_timestamp << "\n";
+    }
+    if (m.isType<realsense_msgs::stream_extrinsics>())
+    {
+        auto data = m.instantiate<realsense_msgs::stream_extrinsics>();
+        os << "extrinsics : " << data->extrinsics << "\n";
+        os << "reference_point_id : " << data->reference_point_id << "\n";
+    }
+    if (m.isType<realsense_msgs::stream_info>())
+    {
+        auto data = m.instantiate<realsense_msgs::stream_info>();
+        os << "stream_type : " << data->stream_type << "\n";
+        os << "fps : " << data->fps << "\n";
+        os << "camera_info : " << data->camera_info << "\n";
+        os << "stream_extrinsics : " << data->stream_extrinsics << "\n";
+        os << "width : " << data->width << "\n";
+        os << "height : " << data->height << "\n";
+        os << "encoding : " << data->encoding << "\n";
+    }
+    if (m.isType<realsense_msgs::vendor_data>())
+    {
+        auto data = m.instantiate<realsense_msgs::vendor_data>();
+        os << "name : " << data->name << "\n";
+        os << "value : " << data->value << "\n";
+    }
+
+    
     return os;
 }
-
+struct compression_info
+{
+    compression_info() : compressed(0), uncompressed(0) {}
+    compression_info(const std::tuple<std::string, uint64_t, uint64_t>& t)
+    {
+        compression_type = std::get<0>(t);
+        compressed = std::get<1>(t);
+        uncompressed = std::get<2>(t);
+    }
+    std::string compression_type;
+    uint64_t compressed;
+    uint64_t uncompressed;
+};
 struct rosbag_content
 {
     rosbag_content(const std::string& file)
@@ -177,7 +375,7 @@ struct rosbag_content
         version = to_string() << bag.getMajorVersion() << "." << bag.getMinorVersion();
         file_duration = get_duration(bag);
         size = 1.0 * bag.getSize() / (1024LL * 1024LL);
-        compression_type = bag.getCompression();
+        compression_info = bag.getCompressionInfo();
     }
 
     rosbag_content(const rosbag_content& other)
@@ -189,7 +387,7 @@ struct rosbag_content
         path = other.path;
         version = other.version;
         size = other.size;
-        compression_type = other.compression_type;
+        compression_info = other.compression_info;
         topics_to_message_types = other.topics_to_message_types;
     }
     rosbag_content(rosbag_content&& other)
@@ -202,7 +400,7 @@ struct rosbag_content
         path = other.path;
         version = other.version;
         size = other.size;
-        compression_type = other.compression_type;
+        compression_info = other.compression_info;
         topics_to_message_types = other.topics_to_message_types;
 
         other.cache.clear();
@@ -211,7 +409,9 @@ struct rosbag_content
         other.path.clear();
         other.version.clear();
         other.size = 0;
-        other.compression_type = static_cast<rosbag::compression::CompressionType>(0);
+        other.compression_info.compressed = 0;
+        other.compression_info.uncompressed = 0;
+        other.compression_info.compression_type = "";
         other.topics_to_message_types.clear();
     }
     std::string instanciate_and_cache(const rosbag::MessageInstance& m)
@@ -242,7 +442,7 @@ struct rosbag_content
     std::string path;
     std::string version;
     double size;
-    rosbag::compression::CompressionType compression_type;
+    compression_info compression_info;
     std::map<std::string, std::vector<std::string>> topics_to_message_types;
     rosbag::Bag bag;
 };
@@ -397,8 +597,14 @@ int main(int argc, const char** argv)
                 ImGui::Text("\t%s", std::string(to_string() << std::left << std::setw(20) << "Bag Version: " << bag.version).c_str());
                 ImGui::Text("\t%s", std::string(to_string() << std::left << std::setw(20) << "Duration: " << pretty_time(bag.file_duration)).c_str());
                 ImGui::Text("\t%s", std::string(to_string() << std::left << std::setw(20) << "Size: " << bag.size << " MB").c_str());
-                ImGui::Text("\t%s", std::string(to_string() << std::left << std::setw(20) << "Compression: " << bag.compression_type).c_str());
-
+                ImGui::Text("\t%s", std::string(to_string() << std::left << std::setw(20) << "Compression: " << bag.compression_info.compression_type).c_str());
+                ImGui::Text("\t%s", std::string(to_string() << std::left << std::setw(20) << "uncompressed: " << bag.compression_info.compressed).c_str());
+                ImGui::Text("\t%s", std::string(to_string() << std::left << std::setw(20) << "compressed: " << bag.compression_info.uncompressed).c_str());
+                /*
+                compression:  lz4 [119/119 chunks; 25.39%]
+                uncompressed: 207.5 MB @ 51.9 MB/s
+                compressed:    52.7 MB @ 13.2 MB/s (25.39%)
+                */
                 if (ImGui::CollapsingHeader("Topics"))
                 {
                     for (auto&& topic_to_message_type : bag.topics_to_message_types)
