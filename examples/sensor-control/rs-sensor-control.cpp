@@ -12,23 +12,24 @@
 #include "api_how_to.h"
 #include "helper.h"
 
-using namespace helper;
-
-std::vector<std::pair<std::function<void(rs2::device, rs2::sensor)>, std::string>> create_sensor_actions();
+// Forward declaration of the create_sensor_actions which returns a collection of functions
+//  and their description that operate on a device or sensor
+using sensor_action = std::pair<std::function<void(rs2::device, rs2::sensor)>, std::string>;
+std::vector<sensor_action> create_sensor_actions();
 
 int main(int argc, char * argv[]) try
 {
-    //In this example we will go throw a flow of selecting a device, then selecting one of its sensors,
+    //In this example we will go through a flow of selecting a device, then selecting one of its sensors,
     // and finally run some operations on that sensor
 
     //We will use the "how_to" class to make the code clear, expressive and encapsulate common actions inside a function
     
-    auto sensor_actions = create_sensor_actions();
+    std::vector<sensor_action> sensor_actions = create_sensor_actions();
 
     bool choose_a_device = true;
     while (choose_a_device)
     {
-        print_seperator();
+        print_separator();
         //First thing, let's choose a device:
         rs2::device dev = how_to::get_a_realsense_device();
 
@@ -38,14 +39,14 @@ int main(int argc, char * argv[]) try
         bool choose_a_sensor = true;
         while (choose_a_sensor)
         {
-            print_seperator();
+            print_separator();
             //Next, choose one of the device's sensors
             rs2::sensor sensor = how_to::get_a_sensor_from_a_device(dev);
 
             bool control_sensor = true;
             while (control_sensor)
             {
-                print_seperator();
+                print_separator();
                 std::cout << "What would you like to do with the sensor?\n" << std::endl;
                 int i = 0;
                 for (auto&& action : sensor_actions)
@@ -60,8 +61,13 @@ int main(int argc, char * argv[]) try
 
                 auto selected_action = sensor_actions[selected_action_index].first;
 
-                selected_action(dev, sensor);
-
+                bool repeat = true;
+                while (repeat)
+                {
+                    print_separator();
+                    selected_action(dev, sensor);
+                    repeat = prompt_yes_no(sensor_actions[selected_action_index].second + " again?");
+                }
                 control_sensor = prompt_yes_no("Choose another action for this sensor?");
             }
 
@@ -84,73 +90,47 @@ catch (const std::exception & e)
     return EXIT_FAILURE;
 }
 
-std::vector<std::pair<std::function<void(rs2::device, rs2::sensor)>, std::string>> create_sensor_actions()
+void control_sensor_options(rs2::device device, rs2::sensor sensor)
 {
-    std::vector<std::pair<std::function<void(rs2::device, rs2::sensor)>, std::string>> actions;
-    
-    auto options_control = std::make_pair([](rs2::device ignored, rs2::sensor sensor) {
-        bool repeat = true;
-        while (repeat)
-        {
-            print_seperator();
-            // The rs2::sensor allows you to control its properties such as Exposure, Brightness etc.
-            rs2_option sensor_option = how_to::get_sensor_option(sensor);
-            how_to::change_sensor_option(sensor, sensor_option);
-            repeat = prompt_yes_no("Choose another option?");
-        }
-    }, "Control sensor's options");
+    // The rs2::sensor allows you to control its properties such as Exposure, Brightness etc.
+    rs2_option sensor_option = how_to::get_sensor_option(sensor);
+    how_to::change_sensor_option(sensor, sensor_option);
+}
+void display_live_stream(rs2::device device, rs2::sensor sensor)
+{
+    // The rs2::sensor allows you to control its streams
+    // We will first choose a single stream profile from the available profiles of the sensor
+    rs2::stream_profile selected_profile = how_to::choose_a_streaming_profile(sensor);
 
-    actions.push_back(options_control);
+    // Next, we will display the stream in a window
+    how_to::start_streaming_a_profile(sensor, selected_profile);
+}
+void show_stream_intrinsics(rs2::device device, rs2::sensor sensor)
+{
+    rs2::stream_profile selected_profile = how_to::choose_a_streaming_profile(sensor);
+    // The rs2::sensor allows you to control its properties such as Exposure, Brightness etc.
+    how_to::get_field_of_view(selected_profile);
+}
+void show_extrinsics_between_streams(rs2::device device, rs2::sensor sensor)
+{
+    std::cout << "Please choose a sensor and then a stream that will be used as the origin of extrinsic transformation:\n" << std::endl;
+    rs2::sensor from_sensor = how_to::get_a_sensor_from_a_device(device);
+    rs2::stream_profile from = how_to::choose_a_streaming_profile(from_sensor);
 
-    auto stream_control = std::make_pair([](rs2::device ignored, rs2::sensor sensor) {
-        bool repeat = true;
-        while (repeat)
-        {
-            print_seperator();
-            // The rs2::sensor allows you to control its streams
-            // We will first choose a single stream profile from the available profiles of the sensor
-            rs2::stream_profile selected_profile = how_to::choose_a_streaming_profile(sensor);
-
-            // Next, we will display the stream in a window
-            how_to::start_streaming_a_profile(sensor, selected_profile);
-            repeat = prompt_yes_no("Choose another profile?");
-        }
-    }, "Control sensor's streams");
-
-    actions.push_back(stream_control);
-
-    auto display_intrinsics = std::make_pair([](rs2::device ignored, rs2::sensor sensor) {
-        bool repeat = true;
-        while (repeat)
-        {
-            print_seperator();
-            rs2::stream_profile selected_profile = how_to::choose_a_streaming_profile(sensor);
-            // The rs2::sensor allows you to control its properties such as Exposure, Brightness etc.
-            how_to::get_field_of_view(selected_profile);
-            repeat = prompt_yes_no("Choose another profile?");
-        }
-    }, "Display intrinsics");
-
-    actions.push_back(display_intrinsics);
-
-    auto display_extrinsics = std::make_pair([](rs2::device dev, rs2::sensor ignored) {
-        bool repeat = true;
-        while (repeat)
-        {
-            print_seperator();
-            std::cout << "Please choose a sensor and then a stream that will be used as the origin of extrinsic transformation:\n" << std::endl;
-            rs2::sensor from_sensor = how_to::get_a_sensor_from_a_device(dev);
-            rs2::stream_profile from = how_to::choose_a_streaming_profile(from_sensor);
-
-            std::cout << "Please choose a sensor and then a stream that will be used as the target of extrinsic transformation::\n" << std::endl;
-            rs2::sensor to_sensor = how_to::get_a_sensor_from_a_device(dev);
-            rs2::stream_profile to = how_to::choose_a_streaming_profile(to_sensor);
-            // The rs2::sensor allows you to control its properties such as Exposure, Brightness etc.
-            how_to::get_extrinsics(from, to);
-            repeat = prompt_yes_no("Choose other profiles?");
-        }
-    }, "Display extrinsics");
-
-    actions.push_back(display_extrinsics);
-    return actions;
+    std::cout << "Please choose a sensor and then a stream that will be used as the target of extrinsic transformation::\n" << std::endl;
+    rs2::sensor to_sensor = how_to::get_a_sensor_from_a_device(device);
+    rs2::stream_profile to = how_to::choose_a_streaming_profile(to_sensor);
+    // The rs2::sensor allows you to control its properties such as Exposure, Brightness etc.
+    how_to::get_extrinsics(from, to);
+}
+std::vector<sensor_action> create_sensor_actions()
+{
+    //This function creates several functions ("sensor_action") that takes a device and a sensor,
+    // and perform some specific action 
+    return std::vector<sensor_action> {
+            std::make_pair(&control_sensor_options, "Control sensor's options"),
+            std::make_pair(&display_live_stream, "Control sensor's streams"),
+            std::make_pair(&show_stream_intrinsics, "Show stream intrinsics"),
+            std::make_pair(&show_extrinsics_between_streams, "Display extrinsics")
+    };
 }

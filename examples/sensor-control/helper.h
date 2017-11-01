@@ -32,7 +32,7 @@ namespace helper
         return input;
     }
 
-    inline void print_seperator()
+    inline void print_separator()
     {
         std::cout << "\n======================================================\n" << std::endl;
     }

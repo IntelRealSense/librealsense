@@ -6,12 +6,13 @@ The sensor control samples aims to provide the entry point and a tutorial for us
 In addition to the `r2::pipeline` API, which simplifies streaming flow, the SDK provides the `rs2::context`, `rs2::device`, and `rs2::sensor` APIs that provide an abstraction for RealSense devices.
 
 In this sample we show how to use this API for querying all connected devices, their sensors, and their streams.
-Using a `rs2::sensor` one can control a camera's options, stream from it, and get the frames directly without having them without having them processed or synchronized (as the `rs2::pipeline` does).
+Using a `rs2::sensor` one can control a camera's options, stream from it, and get the frames directly without having them processed or synchronized (as the `rs2::pipeline` does).
 
 ## Expected Output
 
-Running this example with a connected Intel RealSense device, will output the device name and some of its details.
-For each one of the device's sensors, the output will contain a list of supported stream profiles, and if all goes well a number of frames should arrive and print their number and stream type to the output.
+Running this example with a connected Intel RealSense device, will output the connected device names, and requests the user to select a camera (or connect one).
+After selecting a camera, the user will be prompt to select one of the device's sensor, and select which action to perform using that sensor.
+This flow will repeat itself as long as the user desires.
 
 ## Code Overview
 

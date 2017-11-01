@@ -74,7 +74,7 @@ public:
         // The different types of available information are represented using the "RS2_CAMERA_INFO_*" enum
 
         std::cout << "Device information: " << std::endl;
-        //The following code shows how to enumarate all of the RS2_CAMERA_INFO
+        //The following code shows how to enumerate all of the RS2_CAMERA_INFO
         //Note that all enum types in the SDK start with the value of zero and end at the "*_COUNT" value
         for (int i = 0; i < static_cast<int>(RS2_CAMERA_INFO_COUNT); i++)
         {
@@ -117,7 +117,7 @@ public:
     
     static rs2::sensor get_a_sensor_from_a_device(const rs2::device& dev)
     {
-        // A rs2::device is a container of rs2::sensors that share some correlation between them.
+        // A rs2::device is a container of rs2::sensors that have some correlation between them.
         // For example:
         //    * A device where all sensors are on a single board
         //    * A Robot with mounted sensors that share calibration information
@@ -208,8 +208,8 @@ public:
     
     static void get_field_of_view(const rs2::stream_profile& stream)
     {
-        // A sensor's stream (rs2::stream_profile) is in general a stream of data with no specific type
-        // For video streams (streams of images) the sensor that produces has a lens and thus has properties such 
+        // A sensor's stream (rs2::stream_profile) is in general a stream of data with no specific type.
+        // For video streams (streams of images), the sensor that produces the data has a lens and thus has properties such 
         //  as a focal point, distortion, and principal point.
         // To get these intrinsics parameters, we need to take a stream and first check if it is a video stream
         if (auto video_stream = stream.as<rs2::video_stream_profile>())
@@ -223,10 +223,10 @@ public:
                 auto focal_length = std::make_pair(intrinsics.fx, intrinsics.fy);
                 rs2_distortion model = intrinsics.model;
 
-                std::cout << "Principal Potint : " << principal_point.first << ", " << principal_point.second << std::endl;
-                std::cout << "Focal Length     : " << focal_length.first << ", " << focal_length.second << std::endl;
-                std::cout << "Distortion Model : " << model << std::endl;
-                std::cout << "Coefficients     : [" << intrinsics.coeffs[0] << "," << intrinsics.coeffs[1] << "," <<
+                std::cout << "Principal Point         : " << principal_point.first << ", " << principal_point.second << std::endl;
+                std::cout << "Focal Length            : " << focal_length.first << ", " << focal_length.second << std::endl;
+                std::cout << "Distortion Model        : " << model << std::endl;
+                std::cout << "Distortion Coefficients : [" << intrinsics.coeffs[0] << "," << intrinsics.coeffs[1] << "," <<
                     intrinsics.coeffs[2] << "," << intrinsics.coeffs[3] << "," << intrinsics.coeffs[4] << "]" << std::endl;
             }
             catch (const std::exception& e)
@@ -326,7 +326,7 @@ public:
 
         // Usually a sensor provides one or more streams which are identifiable by their stream_type and stream_index
         // Each of these streams can have several profiles (e.g FHD/HHD/VGA/QVGA resolution, or 90/60/30 fps, etc..)
-        //The following 
+        //The following code shows how to go over a sensor's stream profiles, and group the profiles by streams.
         std::map<std::pair<rs2_stream, int>, int> unique_streams;
         for (auto&& sp : stream_profiles)
         {
@@ -340,8 +340,8 @@ public:
             std::cout << "  - " << it->first.first << " #" << it->first.second << std::endl;
         }
 
+        //Next, we go over all the stream profiles and print the details of each one
         std::cout << "Sensor provides the following stream profiles:" << std::endl;
-        // We can iterate over the available profiles of a sensor
         int profile_num = 0;
         for (rs2::stream_profile stream_profile : stream_profiles)
         {
@@ -365,10 +365,10 @@ public:
 
             // 1) Each stream type can have multiple occurances.
             //    All streams, of the same type, provided from a single
-            //     device have distinc indices:
+            //     device have distinct indices:
             int stream_index = stream_profile.stream_index();
 
-            // 2) Each stream has a user friendly name.
+            // 2) Each stream has a user-friendly name.
             //    The stream's name is not promised to be unique,
             //     rather a human readable description of the stream
             std::string stream_name = stream_profile.stream_name();
@@ -384,7 +384,7 @@ public:
             //  stream, a mechanism of "Is" and "As" is provided:
             if (stream_profile.is<rs2::video_stream_profile>()) //"Is" will test if the type tested is of the type given
             {
-                // "As" will convert the instance to the given type
+                // "As" will try to convert the instance to the given type
                 rs2::video_stream_profile video_stream_profile = stream_profile.as<rs2::video_stream_profile>();
 
                 // After using the "as" method we can use the new data type
