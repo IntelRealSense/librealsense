@@ -9,14 +9,14 @@ Linux | Windows |
 ## Overview
 **Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras (D400 series and the SR300).
 
-> For other Intel® RealSense™ devices, please refer to the [latest legacy release](https://github.com/IntelRealSense/librealsense/tree/v1.12.1).
+> For other Intel® RealSense™ devices (F200, R200, LR200 and ZR300), please refer to the [latest legacy release](https://github.com/IntelRealSense/librealsense/tree/v1.12.1).
 
 The SDK allows depth and color streaming, and provides intrinsic and extrinsic calibration information.
 The library also offers synthetic streams (pointcloud, depth aligned to color and vise-versa), and a built-in support for [record and playback](./src/media/readme.md) of streaming sessions.
 
 The library aims to provide an easy to use API and tools for computer vision professionals, game developers and other **Intel® RealSense™** technology enthusiasts.
 
-Developer kits containing the necessary hardware to use this library are available for purchase at [realsense.intel.com/buy](realsense.intel.com/buy).
+Developer kits containing the necessary hardware to use this library are available for purchase at [realsense.intel.com/buy](https://realsense.intel.com/buy).
 
 > Don't have access to a RealSense camera? Check-out [sample data](./doc/sample-data.md)
 
@@ -35,7 +35,7 @@ Developer kits containing the necessary hardware to use this library are availab
    These simple examples demonstrate how to easily use the SDK to include code snippets that access the camera into your applications.
 
 **[Wrappers](https://github.com/IntelRealSense/librealsense/tree/development/wrappers)**
-  We provide a C, C++, [Python](./wrappers/python) and [Node.js](./wrappers/nodejs) API. More to come , including LabView and Matlab.
+  We provide a C, C++, [Python](./wrappers/python), [Node.js](./wrappers/nodejs) API and [ROS](https://github.com/intel-ros/realsense/releases). More to come , including LabView and Matlab.
 
 
 ## Quick Start
