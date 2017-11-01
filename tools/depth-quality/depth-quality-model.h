@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <thread>
+#include <mutex>
 
 namespace rs2
 {
@@ -55,16 +56,23 @@ namespace rs2
             }
             ~metric_plot() {}
 
-            void add_value(float val, float timestamp)
+            void add_value(float val)
             {
                 std::lock_guard<std::mutex> lock(_m);
                 _vals[_idx]         = val;
-                _timestamps[_idx]   = timestamp;
+                _timestamps[_idx]   = _model_timer.elapsed_ms();
                 _idx = (_idx + 1) % SIZE;
                 if (_first_idx== _idx)
                     _first_idx = (_first_idx + 1) % SIZE;
             }
+
             void render(ux_window& win);
+
+            void visible(bool is_visible) 
+            { 
+                std::lock_guard<std::mutex> lock(_m); 
+                _visible = is_visible; 
+            }
 
         private:
             bool has_trend(bool positive);
@@ -76,6 +84,7 @@ namespace rs2
             std::array<double, SIZE> _timestamps;
             float _min, _max;
             std::string _id, _label, _units, _name, _description;
+            bool _visible = true;
 
             timer _model_timer;
             temporal_event _trending_up;
@@ -134,10 +143,24 @@ namespace rs2
 
             callback_type callback;
 
+            void set_ground_truth(float gt)
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                _ground_truth = gt;
+                _use_gt = true;
+            }
+            void disable_ground_truth() 
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                _use_gt = false; 
+            }
+            float get_ground_truth() const { std::lock_guard<std::mutex> lock(_m); return _ground_truth; }
+
             void reset() {
                 rs2::frame f;
                 while (_frame_queue.poll_for_frame(&f));
             }
+
         private:
             metrics_model(const metrics_model&);
 
@@ -147,13 +170,18 @@ namespace rs2
             rs2_intrinsics          _depth_intrinsic;
             float                   _depth_scale_units;
             float                   _stereo_baseline_mm;
+            float                   _ground_truth;
+            float                   _ground_truth_copy;
+            bool                    _use_gt = false;
             region_of_interest      _roi;
             snapshot_metrics        _latest_metrics;
             bool                    _active;
 
             std::vector<std::shared_ptr<metric_plot>> _plots;
-            std::mutex              _m;
+            mutable std::mutex      _m;
         };
+
+        using metric = std::shared_ptr<metric_plot>;
 
         class tool_model
         {
@@ -196,7 +224,7 @@ namespace rs2
             periodic_timer                  _update_readonly_options_timer;
 
             float                           _roi_percent = 0.4f;
-            int                             _roi_combo_index = 1;
+            int                             _roi_combo_index = 2;
             temporal_event                  _roi_located;
 
             temporal_event                  _too_far;
@@ -209,6 +237,11 @@ namespace rs2
             std::map<int, temporal_event>   _depth_scale_events;
 
             float                           _min_dist, _max_dist, _max_angle;
+            std::mutex                      _mutex;
+            rs2::context                    _ctx;
+
+            bool                            _use_ground_truth = false;
+            int                             _ground_truth = 0;
         };
     }
 }

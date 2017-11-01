@@ -107,7 +107,7 @@ class Texture {
     }
     glfw.uploadAsTexture(
         this.glHandle,
-        new Uint8Array(videoFrame.getData()),
+        new Uint8Array(videoFrame.getData().buffer),
         videoFrame.width,
         videoFrame.height,
         rs2.format.formatToString(videoFrame.format));

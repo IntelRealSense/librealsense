@@ -129,8 +129,8 @@ namespace librealsense
 
         void load(const std::string& str) override
         {
-            float value = ::atof(str.c_str());
-            strct->vals[0].*field = (scale * value);
+            float value = static_cast<float>(::atof(str.c_str()));
+            strct->vals[0].*field = static_cast<S>(scale * value);
             strct->update = true;
         }
 
@@ -166,7 +166,7 @@ namespace librealsense
 
         void load(const std::string& value) override
         {
-            (strct->vals[0].*field) = _values[value];
+            (strct->vals[0].*field) = static_cast<S>(_values[value]);
             strct->update = true;
         }
 
@@ -209,7 +209,7 @@ namespace librealsense
     };
 
     template<class T, class S>
-    std::shared_ptr<json_field> make_field(T& strct, S T::group_type::* field, double scale = 1.0f)
+    std::shared_ptr<json_field> make_field(T& strct, S T::group_type::* field, float scale = 1.0f)
     {
         std::shared_ptr<json_struct_field<T, S>> f(new json_struct_field<T, S>());
         f->field = field;

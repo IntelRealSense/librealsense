@@ -55,7 +55,11 @@ try:
                 coverage = [0]*64
                 print(line)
 ```
-A longer example can be found [here](./python-tutorial-1-depth.py)
+
+Additionally the following examples are available:
+ - [Tutorial 1](./python-tutorial-1-depth.py)
+ - [RS400 Advanced Mode](./python-rs400-advanced-mode-example.py)
+ - [Backend Example](./pybackend_example_1_general.py)
 
 ### NumPy Integration
 Librealsense frames support the buffer protocol. A numpy array can be constructed using this protocol with no data marshalling overhead:

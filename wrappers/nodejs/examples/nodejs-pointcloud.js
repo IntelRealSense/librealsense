@@ -7,54 +7,45 @@
 'use strict';
 
 const rs2 = require('../index.js');
-const GLFWWindow = require('./glfw-window.js').GLFWWindow;
-const glfw = require('./glfw-window.js').glfw;
+const {GLFWWindow} = require('./glfw-window.js');
+const {glfw} = require('./glfw-window.js');
 
-function drawPointcloud(win, color, points) {
-  let vertices = points.getVertices();
-  let texCoords = points.getTextureCoordinates();
-  let count = points.size;
-  let colorWidth = color?color.width:0;
-  let colorHeight = color?color.height:0;
+function drawPointCloud(win, color, points) {
   win.beginPaint();
-  glfw.drawDepthAndColorAsPointCloud(
-      win.window,
-      vertices,
-      count,
-      texCoords,
-      color ? color.getData() : null,
-      colorWidth,
-      colorHeight,
-      'rgb8');
+  if (points.vertices && points.textureCoordinates ) {
+    let count = points.size;
+    glfw.drawDepthAndColorAsPointCloud(
+        win.window,
+        new Uint8Array(points.vertices.buffer),
+        count,
+        new Uint8Array(points.textureCoordinates.buffer),
+        color.data,
+        color.width,
+        color.height,
+        'rgb8');
+  }
   win.endPaint();
 }
 
 // Open a GLFW window
-const win = new GLFWWindow(1280, 720, 'Node.js Pointcloud Example');
-const pc = new rs2.Pointcloud();
-const pipe = new rs2.Pipeline();
-pipe.start();
+const win = new GLFWWindow(1280, 720, 'Node.js PointCloud Example');
+const pc = new rs2.PointCloud();
+const pipeline = new rs2.Pipeline();
+
+pipeline.start();
+
+console.log('Drag to change perspective, scroll mouse wheel to zoom in/out.');
 
 while (! win.shouldWindowClose()) {
-  const frameset = pipe.waitForFrames();
-  if (!frameset) continue;
-
-  let points;
-  let color = frameset.colorFrame;
-  let depth = frameset.depthFrame;
-
-  if (depth) points = pc.calculate(depth);
-  if (color) pc.mapTo(color);
-  if (points) drawPointcloud(win, color, points);
-
-  if (depth) depth.destroy();
-  if (color) color.destroy();
-  frameset.destroy();
+  const frameSet = pipeline.waitForFrames();
+  const pointsFrame = pc.calculate(frameSet.depthFrame);
+  pc.mapTo(frameSet.colorFrame);
+  drawPointCloud(win, frameSet.colorFrame, pointsFrame);
 }
 
 pc.destroy();
-pipe.stop();
-pipe.destroy();
+pipeline.stop();
+pipeline.destroy();
 win.destroy();
 
 rs2.cleanup();

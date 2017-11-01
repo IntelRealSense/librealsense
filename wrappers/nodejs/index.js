@@ -55,16 +55,14 @@ class Device {
    * This information is mainly available for camera debug and troubleshooting and should not be
    * used in applications.
    * @typedef {Object} CameraInfoObject
-   * @property {String|undefined} deviceName - Device friendly name. <br> undefined is not
+   * @property {String|undefined} name - Device friendly name. <br> undefined is not
    * supported.
-   * @property {String|undefined} moduleName - Specific sensor name within a RealSense device.
-   * <br> undefined is not supported.
    * @property {String|undefined} serialNumber - Device serial number. <br> undefined is not
    * supported.
    * @property {String|undefined} firmwareVersion - Primary firmware version.
    * <br> undefined is not supported.
-   * @property {String|undefined} location - Unique identifier of the port the device is connected
-   * to (platform specific). <br> undefined is not supported.
+   * @property {String|undefined} physicalPort - Unique identifier of the port the device is
+   * connected to (platform specific). <br> undefined is not supported.
    * @property {String|undefined} debugOpCode - If device supports firmware logging, this is the
    * command to send to get logs from firmware. <br> undefined is not supported.
    * @property {String|undefined} advancedMode - True iff the device is in advanced mode.
@@ -102,8 +100,8 @@ class Device {
         result.firmwareVersion = this.cxxDev.getCameraInfo(
             camera_info.CAMERA_INFO_FIRMWARE_VERSION);
       }
-      if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_LOCATION)) {
-        result.location = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_LOCATION);
+      if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_PHYSICAL_PORT)) {
+        result.physicalPort = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_PHYSICAL_PORT);
       }
       if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_DEBUG_OP_CODE)) {
         result.debugOpCode = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_DEBUG_OP_CODE);
@@ -244,18 +242,87 @@ class StreamProfile {
   }
 
   /**
+   * Extrinsics:
+   * @typedef {Object} ExtrinsicsObject
+   * @property {Float32[]} rotation - Array(9), Column-major 3x3 rotation matrix
+   * @property {Float32[]} translation - Array(3), Three-element translation vector, in meters
+   * @see [StreamProfile.getExtrinsicsTo()]{@link StreamProfile#getExtrinsicsTo}
+   */
+
+  /**
    * Get extrinsics from a this stream to the target stream
    *
    * @param {StreamProfile} toProfile the target stream profile
-   * @return {Extrinsics}
+   * @return {ExtrinsicsObject}
    */
   getExtrinsicsTo(toProfile) {
-    // TODO: implement this
+    return this.cxxProfile.getExtrinsicsTo(toProfile.cxxProfile);
   }
 
   destroy() {
-    this.cxxProfile.destroy();
+    if (this.cxxProfile) this.cxxProfile.destroy();
     this.cxxProfile = undefined;
+  }
+}
+
+/**
+ * List of devices
+ */
+class DeviceList {
+  constructor(cxxList) {
+    this.cxxList = cxxList;
+  }
+
+  /**
+   * Release resources associated with the object
+   */
+  destroy() {
+    this.cxxList.destroy();
+    this.cxxList = undefined;
+  }
+
+  /**
+   * Checks if a specific device is contained inside a device list.
+   *
+   * @param {Device} device the camera to be checked
+   * @return {Boolean} true if the camera is contained in the list, otherwise false
+   */
+  contains(device) {
+    if (!(device instanceof Device)) {
+      throw new TypeError('DeviceList.contains expects a Device object as the argument!');
+    }
+    return this.cxxList.contains(device.cxxDev);
+  }
+
+  /**
+   * Creates a device by index. The device object represents a physical camera and provides the
+   * means to manipulate it.
+   *
+   * @param {Integer} index the zero based index of the device in the device list
+   * @return {Device|undefined}
+   */
+  getDevice(index) {
+    let dev = this.cxxList.getDevice(index);
+    return dev ? new Device(dev) : undefined;
+  }
+
+  get devices() {
+    let len = this.cxxList.size();
+    if (!len) {
+      return undefined;
+    }
+    let output = [];
+    for (let i = 0; i < len; i++) {
+      output[i] = new Device(this.cxxList.getDevice(i));
+    }
+    return output;
+  }
+  /**
+   * Determines number of devices in a list.
+   * @return {Integer}
+   */
+  get size() {
+    return this.cxxList.size();
   }
 }
 
@@ -290,8 +357,28 @@ class VideoStreamProfile extends StreamProfile {
     return this.heightValue;
   }
 
-  getIntrinsics() {
+  /**
+   * Stream intrinsics:
+   * @typedef {Object} IntrinsicsObject
+   * @property {Integer} width - Width of the image in pixels
+   * @property {Integer} height - Height of the image in pixels
+   * @property {Float32} ppx - Horizontal coordinate of the principal point of the image, as a
+   * pixel offset from the left edge
+   * @property {Float32} ppy - Vertical coordinate of the principal point of the image, as a pixel
+   * offset from the top edge
+   * @property {Float32} fx - Focal length of the image plane, as a multiple of pixel width
+   * @property {Float32} fy - Focal length of the image plane, as a multiple of pixel height
+   * @property {Integer} model - Distortion model of the image, see
+   * @property {Float32[]} coeffs - Array(5), Distortion coefficients
+   * @see [StreamProfile.getIntrinsics()]{@link StreamProfile#getIntrinsics}
+   */
 
+  /**
+   * When called on a VideoStreamProfile, returns the intrinsics of specific stream configuration
+   * @return {IntrinsicsObject}
+   */
+  getIntrinsics() {
+    return this.cxxProfile.getVideoStreamIntrinsics();
   }
 }
 
@@ -380,19 +467,13 @@ class Sensor {
 
   /**
    * Start passing frames into user provided callback
-   * There are 6 acceptable syntax:
+   * There are 2 acceptable syntax:
    * <pre><code>
    *  Syntax 1. start(callback)
-   *  Syntax 2. start(callback, stream)
-   *  Syntax 3. start(frameQueue)
-   *  Syntax 4. start(frameQueue, stream)
-   *  Syntax 5. start(Syncer)
-   *  Syntax 6. start(Syncer, stream)
+   *  Syntax 2. start(Syncer)
    * </code></pre>
    *
    * @param {FrameCallback} callback
-   * @param {String|Integer} [stream], see {@link stream} for available values
-   * @param {FrameQueue} frameQueue, the queue to store frames
    * @param {Syncer} syncer, the syncer to synchronize frames
    *
    * @example <caption>Simply do logging when a frame is captured</caption>
@@ -402,64 +483,46 @@ class Sensor {
    *
    */
   start(callback) {
-    if (arguments.length === 1) {
-      if (arguments[0] instanceof FrameQueue) {
-        this.cxxSensor.startWithFrameQueue(arguments[0].cxxQueue, false, 0);
-      } else if (arguments[0] instanceof Syncer) {
-        this.cxxSensor.startWithSyncer(arguments[0].cxxSyncer, false, 0);
-      } else {
-        this.cxxSensor.frameCallback = function(frame) {
-          if (frame.isDepthFrame()) {
-            callback(new DepthFrame(frame));
-          } else if (frame.isVideoFrame()) {
-            callback(new VideoFrame(frame));
-          } else {
-            callback(new Frame(frame));
-          }
-        };
-        this.cxxSensor.startWithCallback('frameCallback', false, 0);
-      }
-    } else if (arguments.length >= 2) {
-      let stream = checkStringNumber(arguments[1],
-          constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-          stream2Int,
-          'Sensor.start() expects a number or string as the 2nd argument',
-          'Sensor.start() expects a valid value as the 2nd argument');
-      if (arguments[1] instanceof FrameQueue) {
-        this.cxxSensor.startWithFrameQueue(arguments[1].cxxQueue, true, stream);
-      } else if (arguments[1] instanceof Syncer) {
-        this.cxxSensor.startWithSyncer(arguments[1].cxxSyncer, true, stream);
-      } else {
-        this.cxxSensor.frameCallback = function(frame) {
-          callback(frame);
-        };
-        this.cxxSensor.startWithCallback('frameCallback', true, stream);
-      }
+    if (arguments.length != 1) {
+      throw new TypeError('Sensor.start expects 1 argument');
+    }
+    if (arguments[0] instanceof Syncer) {
+      this.cxxSensor.startWithSyncer(arguments[0].cxxSyncer, false, 0);
+    } else {
+      // create object to hold frames generated from native.
+      this.frame = new Frame();
+      this.depthFrame = new DepthFrame();
+      this.videoFrame = new VideoFrame();
+
+      let inst = this;
+      this.cxxSensor.frameCallback = function() {
+        // When the callback is triggered, the underlying frame bas been saved in the objects
+        // created above, we need to update it and callback.
+        if (inst.depthFrame.isValid) {
+          inst.depthFrame.updateProfile();
+          callback(inst.depthFrame);
+        } else if (inst.videoFrame.isValid) {
+          inst.videoFrame.updateProfile();
+          callback(inst.videoFrame);
+        } else {
+          inst.frame.updateProfile();
+          callback(inst.frame);
+        }
+      };
+      this.cxxSensor.startWithCallback('frameCallback', this.frame.cxxFrame,
+          this.depthFrame.cxxFrame, this.videoFrame.cxxFrame);
     }
   }
 
   /**
    * stop streaming
-   * There are 2 acceptable forms of syntax:
-   * <pre><code>
-   *  Syntax 1. stop()
-   *  Syntax 2. stop(stream)
-   * </code></pre>
-   *
-   * @param {String|Integer} [stream], see {@link stream} for available values
    * @return {undefined} No return value
    */
-  stop(stream) {
-    if (arguments.length === 0) {
-      this.cxxSensor.stop(true, 0);
-    } else {
-      let s = checkStringNumber(arguments[0],
-          constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-          stream2Int,
-          'Sensor.stop(stream) expects a number or string as the 1st argument',
-          'Sensor.stop(stream) expects a valid value as the 1st argument');
-      this.cxxSensor.stop(false, s);
-    }
+  stop() {
+    this.cxxSensor.stop();
+    if (this.frame) this.frame.release();
+    if (this.videoFrame) this.videoFrame.release();
+    if (this.depthFrame) this.depthFrame.release();
   }
 
   /**
@@ -500,7 +563,6 @@ class Sensor {
    */
 
   /**
-   * When one or more devices are plugged or unplugged into the system
    * @event Sensor#notification
    * @param {NotificationEventObject} evt
    * @param {String} evt.descr - See {@link NotificationEventObject} for details
@@ -521,13 +583,13 @@ class Sensor {
   setNotificationsCallback(callback) {
     if (!callback) return undefined;
 
-    this.events_.on('notification', (info) => {
+    this._events.on('notification', (info) => {
       callback(info);
     });
     let inst = this;
     if (!this.cxxSensor.notificationCallback) {
       this.cxxSensor.notificationCallback = function(info) {
-        inst.events_.emit('notification', info);
+        inst._events.emit('notification', info);
       };
       this.cxxSensor.setNotificationCallback('notificationCallback');
     }
@@ -671,7 +733,11 @@ class Sensor {
     if (profiles) {
       const array = [];
       profiles.forEach((profile) => {
-        array.push(new StreamProfile(profile));
+        if (profile.isVideoProfile()) {
+          array.push(new VideoStreamProfile(profile));
+        } else {
+          array.push(new StreamProfile(profile));
+        }
       });
       return array;
     }
@@ -830,7 +896,6 @@ const internal = {
 class Context {
   constructor(cxxCtx) {
     this._events = new EventEmitter();
-    this.devices = [];
     if (arguments.length === 1 && arguments[0] === 'no-cxx-context') {
       // Subclass will do the cxxCtx
     } else {
@@ -848,27 +913,12 @@ class Context {
   }
 
   /**
-   * Get extrinsics
-   *
-   * There are 2 acceptable forms of syntax:
-   * 1. getExtrinsics(fromSensor, toSensor)
-   * 2. getExtrinsics(fromStreamProfile, toStreamProfile)
-   */
-  getExtrinsics(fromSensor, toSensor) {
-
-  }
-
-  /**
    * Cleanup underlying C++ context, and release all resources that were created by this context.
    * The JavaScript Context object(s) will not be garbage-collected without call(s) to this function
    */
   destroy() {
-    // TODO(tingshao): check if any devices are not stopped
-    this.devices = null;
     this.cxxCtx.destroy();
-    // TODO(tingshao): destroy all other resources, e.g. devices
     this.cxxCtx = undefined;
-
     internal.cleanupContext();
   }
 
@@ -882,19 +932,11 @@ class Context {
 
   /**
   * Create a static snapshot of all connected devices at the time of the call
-  * @return {Device[]|undefined} array of connected devices at the time of the call
+  * @return {DeviceList|undefined} connected devices at the time of the call
   */
   queryDevices() {
-    const num = this.cxxCtx.getDeviceCount();
-    if (num) {
-      let array = new Array(num);
-      for (let i = 0; i < num; ++ i) {
-        array[i] = new Device(this.cxxCtx.getDevice(i));
-        this.devices[i] = array[i];
-      }
-      return array;
-    }
-    return undefined;
+    let list = this.cxxCtx.queryDevices();
+    return (list ? new DeviceList(list) : undefined);
   }
 
   /**
@@ -902,10 +944,14 @@ class Context {
   * @return {Sensor[]|undefined}
   */
   querySensors() {
-    this.queryDevices();
-    if (this.devices && this.devices.length) {
+    let devList = this.queryDevices();
+    if (!devList) {
+      return undefined;
+    }
+    let devices = devList.devices;
+    if (devices && devices.length) {
       const array = [];
-      this.devices.forEach((dev) => {
+      devices.forEach((dev) => {
         const sensors = dev.querySensors();
         sensors.forEach((sensor) => {
           array.push(sensor);
@@ -916,31 +962,32 @@ class Context {
     return undefined;
   }
 
-  getSensorParent(sensor) {
-    // TODO: implement
-  }
   /**
-   * Get the time at specific time point.
-   *  in live and redord contextes it will return the system time
-   *  and in playback contextes it will return the recorded time
-   * @return {Float} the time, unit is milliseconds.
+   * Get the device from one of its sensors
+   *
+   * @param {Sensor} sensor
+   * @return {Device|undefined}
    */
-  getTime() {
-    return this.cxxCtx.getTime();
+  getSensorParent(sensor) {
+    let cxxDev = this.cxxCtx.createDeviceFromSensor(sensor.cxxSensor);
+    if (!cxxDev) {
+      return undefined;
+    }
+    return new Device(cxxDev);
   }
 
   /**
    * When one or more devices are plugged or unplugged into the system
    * @event Context#device-changed
-   * @param {Device[]} removed - The devices removed from the system
-   * @param {Device[]} added - The devices added to the system
+   * @param {DeviceList} removed - The devices removed from the system
+   * @param {DeviceList} added - The devices added to the system
    */
 
   /**
    * This callback is called when number of devices is changed
    * @callback devicesChangedCallback
-   * @param {Device[]} removed - The devices removed from the system
-   * @param {Device[]} added - The devices added to the system
+   * @param {DeviceList} removed - The devices removed from the system
+   * @param {DeviceList} added - The devices added to the system
    *
    * @see [Context.setDevicesChangedCallback]{@link Context#setDevicesChangedCallback}
    */
@@ -957,19 +1004,13 @@ class Context {
     });
     let inst = this;
     if (!this.cxxCtx.deviceChangedCallback) {
-      this.cxxCtx.deviceChangedCallback = function(added, removed) {
-        inst._events.emit('device-changed', added, removed);
+      this.cxxCtx.deviceChangedCallback = function(removed, added) {
+        let rmList = (removed ? new DeviceList(removed) : undefined);
+        let addList = (added ? new DeviceList(added) : undefined);
+        inst._events.emit('device-changed', rmList, addList);
       };
       this.cxxCtx.setDevicesChangedCallback('deviceChangedCallback');
     }
-  }
-
-  /**
-   * Check wether a device is still connected
-   * @return {Boolean}
-   */
-  isDeviceConnected(device) {
-    return this.cxxCtx.isDeviceConnected(device.cxxDev);
   }
 
   /**
@@ -988,6 +1029,7 @@ class Context {
    * @param {String} file The file name that was loaded to create the playback device
    */
   unloadDevice(file) {
+    // TODO (Shaoting) support this method
   }
 }
 
@@ -1042,41 +1084,31 @@ class PlaybackDevice extends Device {
   }
 }
 
-class ProcessingBlock {
-  constructor(cxxProcessBlock) {
-    this.cxxProcessBlock = cxxProcessBlock;
-  }
-
-  start() {
-
-  }
-}
-
-class SyncerProcessingBlock extends ProcessingBlock {
-
-}
-
 /**
- * Pointcloud accepts depth frames and outputs Points frames
+ * PointCloud accepts depth frames and outputs Points frames
  * In addition, given non-depth frame, the block will align texture coordinate to the non-depth
  * stream
  */
-class Pointcloud {
+class PointCloud {
   constructor() {
-    this.cxxPointcloud = new RS2.RSPointcloud();
+    this.cxxPointCloud = new RS2.RSPointCloud();
+    this.pointsFrame = new Points();
   }
 
   /**
-   * Calculate Points frame from DepthFrame
-   * @param {Frame} depthFrame the depth frame
-   * @return {Points}
+   * Calculate to get a frame of type {@link Points}, from the data of specified DepthFrame
+   * @param {DepthFrame} depthFrame the depth frame
+   * @return {Points|undefined}
    */
   calculate(depthFrame) {
-    if (depthFrame) {
-      let cxxFrame = this.cxxPointcloud.calculate(depthFrame.cxxFrame);
-      if (cxxFrame) return new Points(cxxFrame);
+    if (arguments.length === 1 && depthFrame && depthFrame instanceof DepthFrame) {
+      this.pointsFrame.release();
+      if (this.cxxPointCloud.calculate(depthFrame.cxxFrame, this.pointsFrame.cxxFrame)) {
+        return this.pointsFrame;
+      }
+      return undefined;
     }
-    return undefined;
+    throw new TypeError('PointCloud.calculate() expects a frame argument.');
   }
 
   /**
@@ -1086,18 +1118,24 @@ class Pointcloud {
    */
   mapTo(mappedFrame) {
     if (mappedFrame) {
-      this.cxxPointcloud.mapTo(mappedFrame.cxxFrame);
+      this.cxxPointCloud.mapTo(mappedFrame.cxxFrame);
     } else {
-      throw new TypeError('Pointcloud.mapTo expects a valid argument');
+      throw new TypeError('PointCloud.mapTo() expects a frame argument');
     }
   }
 
+  release() {
+    if (this.cxxPointCloud) this.cxxPointCloud.destroy();
+    if (this.pointsFrame) this.pointsFrame.destroy();
+  }
+
   /**
-   * Release resources associated with the object
+   * Destroy all resources associated with the object
    */
   destroy() {
-    this.cxxPointcloud.destroy();
-    this.cxxPointcloud = undefined;
+    this.release();
+    this.cxxPointCloud = undefined;
+    this.pointsFrame = undefined;
   }
 }
 
@@ -1108,14 +1146,25 @@ class Colorizer {
   constructor() {
     this.cxxColorizer = new RS2.RSColorizer();
     this.cxxColorizer.create();
+    this.depthRGB = new VideoFrame();
+  }
+
+  release() {
+    if (this.cxxColorizer) this.cxxColorizer.destroy();
+    if (this.depthRGB) this.depthRGB.destroy();
   }
 
   /**
-   * Release resources associated with the colorizer
+   * Destroy all resources associated with the colorizer
    */
   destroy() {
-    this.cxxColorizer.destroy();
+    this.release();
     this.cxxColorizer = undefined;
+    this.depthRGB = undefined;
+  }
+
+  get colorizedFrame() {
+    return this.depthRGB;
   }
 
   /**
@@ -1125,11 +1174,13 @@ class Colorizer {
    * @return {VideoFrame|undefined}
    */
   colorize(depthFrame) {
-    if (depthFrame) {
-      let cxxFrame = this.cxxColorizer.colorize(depthFrame.cxxFrame);
-      if (cxxFrame) return new VideoFrame(cxxFrame);
+    if (arguments.length === 1 && depthFrame instanceof DepthFrame) {
+      const success = this.cxxColorizer.colorize(depthFrame.cxxFrame, this.depthRGB.cxxFrame);
+      this.depthRGB.updateProfile();
+      return success ? this.depthRGB : undefined;
+    } else {
+      throw new TypeError('Colorizer.colorize() expects a frame argument');
     }
-    return undefined;
   }
 }
 
@@ -1145,74 +1196,34 @@ class Align {
             'Align constructor\'s argument value is invalid');
 
     this.cxxAlign = new RS2.RSAlign(s);
+    this.frameSet = new FrameSet();
   }
 
-  process(frameset) {
-    const newFrameset = this.cxxAlign.process(frameset.cxxFrameSet);
-    if (newFrameset) {
-      return new FrameSet(newFrameset);
+  process(frameSet) {
+    if (arguments.length === 1 && frameSet) {
+      this.frameSet.release(); // Destroy all attached-frames (depth/color/etc.)
+      if (this.cxxAlign.process(frameSet.cxxFrameSet, this.frameSet.cxxFrameSet)) {
+        this.frameSet.__update();
+        return this.frameSet;
+      }
+      return undefined;
     }
+
+    throw new TypeError('Align.process() expects a frameset argument');
+  }
+
+  release() {
+    if (this.cxxAlign) this.cxxAlign.destroy();
+    if (this.frameSet) this.frameSet.destroy();
   }
 
   /**
-   * Release resources associated with the object
+   * Destroy resources associated with the object
    */
   destroy() {
-    this.cxxAlign.destroy();
+    this.release();
     this.cxxAlign = undefined;
-  }
-}
-
-/**
- * A queue used to store frames
- */
-class FrameQueue {
-  /**
-   * Create a frame queue
-   * @param {Integer} capacity - how many frames can be stored in the newly created queue
-   */
-  constructor(capacity) {
-    if (capacity <= 0) {
-      throw new TypeError('new FrameQueue(capacity) expects a positive argument');
-    }
-    this.cxxQueue = new RS2.RSFrameQueue();
-    this.cxxQueue.create(capacity);
-  }
-
-  /**
-   * Destroy a frame queue
-   * @return {undefined}
-   */
-  destroy() {
-    this.cxxQueue.destroy();
-    this.cxxQueue = undefined;
-  }
-
-  /**
-   * Wait until new frame becomes avaiable and dequeue it
-   * @param {Integer} timeout Max time in milliseconds to wait
-   * @return {Frame} a newly received frame.
-   */
-  waitForFrame(timeout) {
-    return new Frame(this.cxxQueue.waitForFrame());
-  }
-
-  /**
-   * Poll if a new frame is available and dequeue if it is.
-   * @return {Frame|undefined} A frame if there is or undefined if none.
-   */
-  pollForFrame() {
-    let frame = this.cxxQueue.pollForFrame();
-    return frame ? new Frame(frame) : undefined;
-  }
-
-  /**
-   * Put a frame in to queue, this operation passed the ownership of frame to the queue
-   * @return {undefined}
-   */
-  enqueueFrame(frame) {
-    this.cxxQueue.enqueueFrame(frame.cxxFrame);
-    frame.cxxFrame = null;
+    this.frameSet = undefined;
   }
 }
 
@@ -1239,23 +1250,34 @@ class FrameQueue {
  */
 class Frame {
   constructor(cxxFrame) {
-    this.cxxFrame = cxxFrame;
-    let cxxProfile = this.cxxFrame.getStreamProfile();
-    this.streamProfile = cxxProfile.isVideoProfile ?
-        new VideoStreamProfile(cxxProfile) : new StreamProfile(cxxProfile);
+    this.cxxFrame = cxxFrame || new RS2.RSFrame();
+    this.updateProfile();
+  }
+
+  updateProfile() {
+    this.streamProfile = undefined;
+    if (this.cxxFrame) {
+      let cxxProfile = this.cxxFrame.getStreamProfile();
+      if (cxxProfile) {
+        this.streamProfile = cxxProfile.isVideoProfile ?
+            new VideoStreamProfile(cxxProfile) : new StreamProfile(cxxProfile);
+      }
+    }
+  }
+
+  release() {
+    if (this.cxxFrame) this.cxxFrame.destroy();
+    if (this.streamProfile) this.streamProfile.destroy();
+    this.arrayBuffer = undefined;
+    this.typedArray = undefined;
   }
 
   /**
    * Destroy the frame and its resource
    */
   destroy() {
-    if (this.cxxFrame) {
-      this.cxxFrame.destroy();
-    }
+    this.release();
     this.cxxFrame = undefined;
-    if (this.streamProfile) {
-      this.streamProfile.destroy();
-    }
     this.StreamProfile = undefined;
   }
 
@@ -1292,7 +1314,7 @@ class Frame {
    * @return {Boolean}
    */
   get isValid() {
-    return this.cxxFrame ? true : false;
+    return (this.cxxFrame && this.cxxFrame.isValid());
   }
 
   /**
@@ -1357,20 +1379,29 @@ class Frame {
 
   /**
    * Retrieve the frame data
-   * @return {Uint16Array|Uint8Array} if the frame is from depth stream, the return value is
-   * Uint16Array, others are Uint8Array.
+   * @return {Float32Array|Uint16Array|Uint8Array|undefined}
+   * if the frame is from the depth stream, the return value is Uint16Array;
+   * if the frame is from the XYZ32F or MOTION_XYZ32F stream, the return value is Float32Array;
+   * for other cases, return value is Uint8Array.
    */
   get data() {
-    const arrayBuffer = this.cxxFrame.getData();
+    if (this.typedArray) return this.typedArray;
 
-    if (!arrayBuffer) return undefined;
+    if (!this.arrayBuffer) {
+      this.arrayBuffer = this.cxxFrame.getData();
+      this.typedArray = undefined;
+    }
 
+    if (!this.arrayBuffer) return undefined;
+
+    this.updateProfile();
     switch (this.format) {
       case constants.format.FORMAT_Z16:
       case constants.format.FORMAT_DISPARITY16:
       case constants.format.FORMAT_Y16:
       case constants.format.FORMAT_RAW16:
-        return new Uint16Array(arrayBuffer.buffer);
+        this.typedArray = new Uint16Array(this.arrayBuffer);
+        return this.typedArray;
       case constants.format.FORMAT_YUYV:
       case constants.format.FORMAT_UYVY:
       case constants.format.FORMAT_RGB8:
@@ -1383,10 +1414,12 @@ class Frame {
       case constants.format.FORMAT_GPIO_RAW:
       case constants.format.FORMAT_RAW10:
       case constants.format.FORMAT_ANY:
-        return new Uint8Array(arrayBuffer.buffer);
+        this.typedArray = new Uint8Array(this.arrayBuffer);
+        return this.typedArray;
       case constants.format.FORMAT_XYZ32F:
       case constants.format.FORMAT_MOTION_XYZ32F:
-        return new Uint32Array(arrayBuffer.buffer);
+        this.typedArray = new Float32Array(this.arrayBuffer);
+        return this.typedArray;
     }
   }
 
@@ -1395,27 +1428,25 @@ class Frame {
    *  There are 2 acceptable forms of syntax:
    * <pre><code>
    *  Syntax 1. getData()
-   *  Syntax 2. getData(buffer)
+   *  Syntax 2. getData(ArrayBuffer)
    * </code></pre>
    *
-   * @param {Buffer} [buffer] The buffer that will be written to.
-   * @return {Uint16Array|Uint8Array|Buffer} if syntax 1 is used, returns the same result
-   * as {@link Frame#data}, if syntax 2 is used, returns the same buffer object the argument.
+   * @param {ArrayBuffer} [buffer] The buffer that will be written to.
+   * @return {Float32Array|Uint16Array|Uint8Array|undefined}
+   *  Returns a <code>TypedArray</code> or <code>undefined</code> for syntax 1,
+   *   see {@link Frame#data};
+   *  if syntax 2 is used, return value is not used (<code>undefined</code>).
    *
-   * @see [Frame.dataByteLength]{@link Frame#dataByteLength} to determine the buffer size
+   * @see [Frame.dataByteLength]{@link Frame#dataByteLength} to determine the buffer size in bytes.
    */
   getData(buffer) {
     if (arguments.length === 0) return this.data;
 
-    if (typeof buffer === 'object') {
-      const arrayBuffer = this.cxxFrame.getData();
-      const sourceBuffer = Buffer.from(arrayBuffer);
-
-      sourceBuffer.copy(buffer);
-      return buffer;
+    if (arguments.length === 1 && isArrayBuffer(buffer)) {
+      return this.cxxFrame.writeData(buffer);
     }
 
-    throw new TypeError('Frame.getData() expects zero or one Buffer object as the argument');
+    throw new TypeError('Frame.getData() expects 1 ArrayBuffer as a argument, or no argument');
   }
 
   /**
@@ -1491,32 +1522,62 @@ class Points extends Frame {
   constructor(cxxFrame) {
     super(cxxFrame);
   }
+
   /**
    * Get an array of 3D vertices.
    * The coordinate system is: X right, Y up, Z away from the camera. Units: Meters
    *
-   * @return {Float32Array}
+   * @return {Float32Array|undefined}
    */
-  getVertices() {
-    if (this.cxxFrame.canGetPoints()) {
-      return this.cxxFrame.getVertices();
-    }
+  get vertices() {
+    if (this.verticesArray) return this.verticesArray;
 
-    throw new TypeError('Can\'t get vertices due to invalid frame type');
+    if (this.cxxFrame.canGetPoints()) {
+      const newLength = this.cxxFrame.getVerticesBufferLen();
+      if (!this.verticesData || newLength !== this.verticesData.byteLength) {
+        this.verticesData = new ArrayBuffer(newLength);
+      }
+      if (this.cxxFrame.writeVertices(this.verticesData)) {
+        this.verticesArray = new Float32Array(this.verticesData);
+        return this.verticesArray;
+      }
+    }
+    return undefined;
+  }
+
+  release() {
+    if (this.cxxFrame) this.cxxFrame.destroy();
+    this.verticesArray = undefined;
+    this.verticesCoordArray = undefined;
+  }
+
+  destroy() {
+    this.release();
+    this.verticesData = undefined;
+    this.textureCoordData = undefined;
+    this.cxxFrame = undefined;
   }
 
   /**
    * Get an array of texture coordinates per vertex
    * Each coordinate represent a (u,v) pair within [0,1] range, to be mapped to texture image
    *
-   * @return {Int32Array}
+   * @return {Int32Array|undefined}
    */
-  getTextureCoordinates() {
-    if (this.cxxFrame.canGetPoints()) {
-      return this.cxxFrame.getTextureCoordinates();
-     }
+  get textureCoordinates() {
+    if (this.verticesCoordArray) return this.verticesCoordArray;
 
-    throw new TypeError('Can\'t get coordinates due to invalid frame type');
+    if (this.cxxFrame.canGetPoints()) {
+      const newLength = this.cxxFrame.getTexCoordBufferLen();
+      if (!this.textureCoordData || newLength !== this.textureCoordData.byteLength) {
+        this.textureCoordData = new ArrayBuffer(newLength);
+      }
+      if (this.cxxFrame.writeTextureCoordinates(this.textureCoordData)) {
+        this.verticesCoordArray = new Int32Array(this.textureCoordData);
+        return this.verticesCoordArray;
+      }
+    }
+    return undefined;
   }
 
   /**
@@ -1531,10 +1592,6 @@ class Points extends Frame {
 
     throw new TypeError('Can\'t get size due to invalid frame type');
   }
-}
-
-class CompositeFrame extends Frame {
-
 }
 
 /**
@@ -1552,11 +1609,12 @@ class DepthFrame extends VideoFrame {
    * @return {Float}
    */
   getDistance(x, y) {
+    if ((arguments.length != 2) || (typeof x !== 'number') || (typeof y !== 'number')) {
+      throw new TypeError('DepthFrame.getDistance(x, y) expects 2 integer arguments.');
+    }
+
+    return this.cxxFrame.getDistance(x, y);
   }
-}
-
-class FrameSource {
-
 }
 
 /**
@@ -1568,8 +1626,9 @@ class FrameSource {
  */
 class FrameSet {
   constructor(cxxFrameSet) {
-    this.cxxFrameSet = cxxFrameSet;
-    this.sizeValue = cxxFrameSet.getSize();
+    this.cxxFrameSet = cxxFrameSet || new RS2.RSFrameSet();
+    this.cache = [];
+    this.__update();
   }
 
   /**
@@ -1606,6 +1665,11 @@ class FrameSet {
    * @return {DepthFrame|VideoFrame|Frame|undefined}
    */
   at(index) {
+    //
+    // TODO(ting): mapping index to stream and use this.cache[]
+    //   e.g. return getFrame(this.cxxFrameSet.indexToStream(index));
+    //
+
     let cxxFrame = this.cxxFrameSet.at(index);
 
     if (!cxxFrame) return undefined;
@@ -1621,6 +1685,37 @@ class FrameSet {
     return new Frame(cxxFrame);
   }
 
+  __internalAssembleFrame(cxxFrame) {
+    if (!cxxFrame) return undefined;
+    if (cxxFrame.isDepthFrame()) return new DepthFrame(cxxFrame);
+    if (cxxFrame.isVideoFrame()) return new VideoFrame(cxxFrame);
+    return new Frame(cxxFrame);
+  }
+
+  __internalGetFrame(stream) {
+    let s = checkStringNumber(stream,
+        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+        stream2Int,
+        'FrameSet.getFrame() expects the argument to be string or integer',
+        'FrameSet.getFrame()\'s argument value is invalid');
+    return this.__internalAssembleFrame(this.cxxFrameSet.getFrame(s));
+  }
+
+  __internalGetFrameCache(stream, callback) {
+    if (! this.cache[stream]) {
+      this.cache[stream] = callback(stream);
+    } else {
+      let frame = this.cache[stream];
+      if (!frame.cxxFrame) {
+        frame.cxxFrame = new RS2.RSFrame();
+      }
+      if (! this.cxxFrameSet.replaceFrame(stream, frame.cxxFrame)) {
+        this.cache[stream] = undefined;
+      }
+    }
+    return this.cache[stream];
+  }
+
   /**
    * Get the frame with specified stream
    *
@@ -1628,24 +1723,24 @@ class FrameSet {
    * @return {DepthFrame|VideoFrame|Frame|undefined}
    */
   getFrame(stream) {
-    let s = checkStringNumber(stream,
-        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-        stream2Int,
-        'getFrame expects the argument to be string or integer',
-        'getFrame\'s argument value is invalid');
-    let cxxFrame = this.cxxFrameSet.getFrame(s);
+    return this.__internalGetFrameCache(stream, this.__internalGetFrame.bind(this));
+  }
 
-    if (!cxxFrame) return undefined;
+  __update() {
+    this.sizeValue = this.cxxFrameSet.getSize();
+  }
 
-    if (cxxFrame.isDepthFrame()) {
-        return new DepthFrame(cxxFrame);
-    }
+  releaseCache() {
+    this.cache.forEach((f) => {
+      if (f && f.cxxFrame) {
+        f.release();
+      }
+    });
+  }
 
-    if (cxxFrame.isVideoFrame()) {
-      return new VideoFrame(cxxFrame);
-    }
-
-    return new Frame(cxxFrame);
+  release() {
+    this.releaseCache();
+    if (this.cxxFrameSet) this.cxxFrameSet.destroy();
   }
 
   /**
@@ -1654,16 +1749,28 @@ class FrameSet {
    * @return {undefined}
    */
   destroy() {
-    this.cxxFrameSet.destroy();
+    this.release();
+    this.cache = [];
     this.cxxFrameSet = undefined;
   }
 }
 
 /**
  * This class provides a simple way to retrieve frame data
- * @param {Context} [context] - the {@link Context} that is being used by the pipeline
  */
 class Pipeline {
+  /**
+   * Construct a Pipeline object
+   * There are 2 acceptable syntax
+   *
+   * <pre><code>
+   *  Syntax 1. new Pipeline()
+   *  Syntax 2. new Pipeline(context)
+   * </code></pre>
+   * Syntax 1 uses the default context.
+   * Syntax 2 used the context created by application
+   * @param {Context} [context] - the {@link Context} that is being used by the pipeline
+   */
   constructor(context) {
     if (arguments.length > 1) {
       throw new TypeError('new Pipeline() can only accept at most 1 argument');
@@ -1688,13 +1795,14 @@ class Pipeline {
     this.cxxPipeline = new RS2.RSPipeline();
     this.cxxPipeline.create(this.ctx.cxxCtx);
     this.started = false;
+    this.frameSet = new FrameSet();
   }
 
- /**
-  * Destroy the resource associated with this pipeline
-  *
-  * @return {undefined}
-  */
+  /**
+   * Destroy the resource associated with this pipeline
+   *
+   * @return {undefined}
+   */
   destroy() {
     if (this.started === true) this.stop();
 
@@ -1704,6 +1812,11 @@ class Pipeline {
       this.ctx.destroy();
     }
     this.ctx = undefined;
+
+    if (this.frameSet) {
+      this.frameSet.destroy();
+    }
+    this.frameSet = undefined;
   }
 
   /**
@@ -1731,7 +1844,7 @@ class Pipeline {
         throw new TypeError('Invalid argument for Pipeline.start()');
       }
       this.started = true;
-      return new PipelineProfile(this.cxxPipeline.start(arguments[0].cxxConfig));
+      return new PipelineProfile(this.cxxPipeline.startWithConfig(arguments[0].cxxConfig));
     }
     return undefined;
   }
@@ -1742,23 +1855,77 @@ class Pipeline {
    * @return {undefined}
    */
   stop() {
-    if (this.started === false) return undefined;
+    if (this.started === false) return;
 
-    this.cxxPipeline.stop();
+    if (this.cxxPipeline ) {
+      this.cxxPipeline.stop();
+    }
     this.started = false;
+
+    if (this.frameSet) this.frameSet.release();
   }
 
   /**
-   * Wait until new frame becomes available.
-   * @param {Integer} timeout max time in milliseconds to wait
-   * @return {FrameSet|undefined}
+   * Wait until a new set of frames becomes available.
+   * The returned frameset includes time-synchronized frames of each enabled stream in the pipeline.
+   * In case of different frame rates of the streams, the frames set include a matching frame of the
+   * slow stream, which may have been included in previous frames set.
+   * The method blocks the calling thread, and fetches the latest unread frames set.
+   * Device frames, which were produced while the function wasn't called, are dropped.
+   * To avoid frame drops, this method should be called as fast as the device frame rate.
+   *
+   * @param {Integer} timeout - max time to wait, in milliseconds, default to 5000 ms
+   * @return {FrameSet|undefined} a FrameSet object or Undefined
+   * @see See [Pipeline.latestFrame]{@link Pipeline#latestFrame}
    */
-  waitForFrames(timeout) {
-    const timeoutValue = timeout || 5000;
-    const cxxFrameSet = this.cxxPipeline.waitForFrames(timeoutValue);
-    return cxxFrameSet ? new FrameSet(cxxFrameSet) : undefined;
+  waitForFrames() {
+    if ((arguments.length === 1 && isNumber(arguments[0])) || arguments.length === 0) {
+      const timeout = arguments[0] || 5000;
+      this.frameSet.release();
+      if (this.cxxPipeline.waitForFrames(this.frameSet.cxxFrameSet, timeout)) {
+        this.frameSet.__update();
+        return this.frameSet;
+      }
+      return undefined;
+    }
+    throw new TypeError('Pipeline.waitForFrames() expects an integer timeout argument');
   }
 
+  get latestFrame() {
+    return this.frameSet;
+  }
+
+  /**
+   * Check if a new set of frames is available and retrieve the latest undelivered set.
+   * The frameset includes time-synchronized frames of each enabled stream in the pipeline.
+   * The method returns without blocking the calling thread, with status of new frames available
+   * or not. If available, it fetches the latest frames set.
+   * Device frames, which were produced while the function wasn't called, are dropped.
+   * To avoid frame drops, this method should be called as fast as the device frame rate.
+   *
+   * @return {FrameSet|undefined}
+   */
+  pollForFrames() {
+    this.frameSet.release();
+    if (this.cxxPipeline.pollForFrames(this.frameSet.cxxFrameSet)) {
+      this.frameSet.__update();
+      return this.frameSet;
+    }
+    return undefined;
+  }
+
+  /**
+   * Return the active device and streams profiles, used by the pipeline.
+   * The pipeline streams profiles are selected during {@link Pipeline.start}. The method returns a
+   * valid result only when the pipeline is active -
+   * between calls to {@link Pipeline.start} and {@link Pipeline.stop}.
+   * After {@link Pipeline.stop} is called, the pipeline doesn't own the device, thus, the pipeline
+   * selected device may change in
+   * subsequent activations.
+   *
+   * @return {PipelineProfile} the actual pipeline device and streams profile, which was
+   * successfully configured to the streaming device on start.
+   */
   getActiveProfile() {
     if (this.started === false) return undefined;
 
@@ -1767,33 +1934,93 @@ class Pipeline {
 }
 
 /**
- * 
+ * The pipeline profile includes a device and a selection of active streams, with specific profile.
+ * The profile is a selection of the above under filters and conditions defined by the pipeline.
+ * Streams may belong to more than one sensor of the device.
  */
 class PipelineProfile {
   constructor(profile) {
     this.cxxPipelineProfile = profile;
   }
 
+  /**
+   * Return the selected streams profiles, which are enabled in this profile.
+   *
+   * @return {StreamProfile[]} an array of StreamProfile
+   */
   getStreams() {
     let profiles = this.cxxPipelineProfile.getStreams();
+    if (!profiles) return undefined;
+
     const array = [];
     profiles.forEach((profile) => {
-      array.push(new StreamProfile(profile));
+      if (profile.isVideoProfile()) {
+        array.push(new VideoStreamProfile(profile));
+      } else {
+        array.push(new StreamProfile(profile));
+      }
     });
     return array;
   }
 
+  /**
+   * Retrieve the device used by the pipeline.
+   * The device class provides the application access to control camera additional settings -
+   * get device information, sensor options information, options value query and set, sensor
+   * specific extensions.
+   * Since the pipeline controls the device streams configuration, activation state and frames
+   * reading, calling the device API functions, which execute those operations, results in
+   * unexpected behavior. The pipeline streaming device is selected during {@link Pipeline.start}.
+   * Devices of profiles, which are not returned by
+   * {@link Pipeline.start} or {@link Pipeline.getActiveProfile}, are not guaranteed to be used by
+   * the pipeline.
+   *
+   * @return {Device} the pipeline selected device
+   */
   getDevice() {
     return new Device(this.cxxPipelineProfile.getDevice());
   }
 }
 
+/**
+ * The config allows pipeline users to request filters for the pipeline streams and device selection
+ * and configuration.
+ * This is an optional step in pipeline creation, as the pipeline resolves its streaming device
+ * internally.
+ * Config provides its users a way to set the filters and test if there is no conflict with the
+ * pipeline requirements from the device. It also allows the user to find a matching device for
+ * the config filters and the pipeline, in order to select a device explicitly, and modify its
+ * controls before streaming starts.
+ */
 class Config {
   constructor() {
     this.cxxConfig = new RS2.RSConfig();
-    this.cxxConfig.create();
   }
 
+ /**
+  * Enable a device stream explicitly, with selected stream parameters.
+  * The method allows the application to request a stream with specific configuration. If no stream
+  * is explicitly enabled, the pipeline configures the device and its streams according to the
+  * attached computer vision modules and processing blocks requirements, or default configuration
+  * for the first available device.
+  * The application can configure any of the input stream parameters according to its requirement,
+  * or set to 0 for don't care value. The config accumulates the application calls for enable
+  * configuration methods, until the configuration is applied. Multiple enable stream calls for the
+  * same stream override each other, and the last call is maintained.
+  * Upon calling {@link Config.resolve}, the config checks for conflicts between the application
+  * configuration requests and the attached computer vision modules and processing blocks
+  * requirements, and fails if conflicts are found.
+  * Before {@link Config.resolve} is called, no conflict check is done.
+  *
+  * @param {Integer|String} stream  stream type to be enabled
+  * @param {Integer} index stream index, used for multiple streams of the same type. -1 indicates
+  * any.
+  * @param {Integer} width stream image width - for images streams. 0 indicates any.
+  * @param {Integer} height stream image height - for images streams. 0 indicates any.
+  * @param {Integer|String} format stream data format - pixel format for images streams, of data
+  * type for other streams. format.FORMAT_ANY indicates any.
+  * @param {Integer} fps stream frames per second. 0 indicates any.
+  */
   enableStream(stream, index, width, height, format, fps) {
     let s = checkStringNumber(stream,
         constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
@@ -1810,6 +2037,9 @@ class Config {
     this.cxxConfig.enableStream(s, index, width, height, f, fps);
   }
 
+  /**
+   * Disable a device stream explicitly, to remove any requests on this stream profile.
+   */
   disableStream(stream) {
     let s = checkStringNumber(stream,
     constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
@@ -1820,26 +2050,78 @@ class Config {
     this.cxxConfig.disableStream(s);
   }
 
+  /**
+   * Enable all device streams explicitly.
+   */
   enableAllStreams() {
     this.cxxConfig.enableAllStreams();
   }
 
+  /**
+   * Disable all device streams explicitly.
+   */
   disableAllStreams() {
     this.cxxConfig.disableAllStreams();
   }
 
+  /**
+   * Select a specific device explicitly by its serial number, to be used by the pipeline.
+   * The conditions and behavior of this method are similar to those of {@link Config.enableStream}.
+   * This method is required if the application needs to set device or sensor settings prior to
+   * pipeline streaming, to enforce the pipeline to use the configured device.
+   *
+   * @param {String} serial device serial number, as returned by
+   * Device.getCameraInfo(camera_info.CAMERA_INFO_SERIAL_NUMBER).
+   */
   enableDevice(serial) {
     this.cxxConfig.enableDevice(serial);
   }
 
+  /**
+   * Select a recorded device from a file, to be used by the pipeline through playback.
+   * The device available streams are as recorded to the file, and {@link Config.resolve} considers
+   * only this device and configuration as available.
+   * This request cannot be used if {@link Config.enableRecordToFile} is called for the current
+   * config, and vise versa
+   *
+   * @param {String} filename the playback file of the device
+   */
   enableDeviceFromFile(filename) {
     this.cxxConfig.enableDeviceFromFile(filename);
   }
 
+  /**
+   * Requires that the resolved device would be recorded to file
+   * This request cannot be used if {@link Config.enableDeviceFromFile} is called for the current
+   * config, and vise versa as available.
+   *
+   * @param {String} filename the desired file for the output record
+   */
   enableRecordToFile(filename) {
     this.cxxConfig.enableRecordToFile(filename);
   }
 
+  /**
+   * Resolve the configuration filters, to find a matching device and streams profiles.
+   * The method resolves the user configuration filters for the device and streams, and combines
+   * them with the requirements of the computer vision modules and processing blocks attached to the
+   * pipeline. If there are no conflicts of requests,
+   * it looks for an available device, which can satisfy all requests, and selects the first
+   * matching streams configuration. In the absence of any request, the config selects the first
+   * available device and the first color and depth streams configuration.
+   * The pipeline profile selection during {@link Pipeline.start} follows the same method. Thus,
+   * the selected profile is the same, if no change occurs to the available devices occurs.
+   * Resolving the pipeline configuration provides the application access to the pipeline selected
+   * device for advanced control.
+   * The returned configuration is not applied to the device, so the application doesn't own the
+   * device sensors. However, the application can call {@link Cofnig.enableDevice}, to enforce the
+   * device returned by this method is selected by pipeline start, and configure the device and
+   * sensors options or extensions before streaming starts.
+   *
+   * @param {Pipeline} pipeline the pipeline for which the selected filters are applied
+   * @return {PipelineProfile|undefined} a matching device and streams profile, which satisfies the
+   * filters and pipeline requests.
+   */
   resolve(pipeline) {
     if (arguments.length === 0) {
         throw new TypeError('Invalid argument for Config.resolve()');
@@ -1852,6 +2134,14 @@ class Config {
     return undefined;
   }
 
+  /**
+   * Check if the config can resolve the configuration filters, to find a matching device and
+   * streams profiles. The resolution conditions are as described in {@link Config.resolve}.
+   *
+   * @param {Pipeline} pipeline the pipeline for which the selected filters are applied
+   * @return {boolean} true if a valid profile selection exists, false if no selection can be found
+   * under the config filters and the available devices.
+   */
   canResolve(pipeline) {
     if (arguments.length === 0) {
         throw new TypeError('Invalid argument for Config.canResolve()');
@@ -1868,8 +2158,9 @@ class Config {
  * Syncer class, which is used to group synchronized frames into coherent frame-sets.
  */
 class Syncer {
-  constructor(cxxSyncer) {
-    this.cxxSyncer = cxxSyncer;
+  constructor() {
+    this.cxxSyncer = new RS2.RSSyncer();
+    this.frameSet = new FrameSet();
   }
 
   /*
@@ -1878,14 +2169,16 @@ class Syncer {
    * @return {Frame[]|undefined} Set of coherent frames or undefined if no frames.
    */
   waitForFrames(timeout) {
-    const frames = this.cxxSyncer.waitForFrames(timeout);
-    if (!frames) return undefined;
-
-    let result = [];
-    frames.forEach((f) => {
-      result.push(new Frame(f));
-    });
-    return result;
+    if ((arguments.length === 1 && isNumber(arguments[0])) || arguments.length === 0) {
+      const timeout = arguments[0] || 5000;
+      this.frameSet.release();
+      if (this.cxxSyncer.waitForFrames(this.frameSet.cxxFrameSet, timeout)) {
+        this.frameSet.__update();
+        return this.frameSet;
+      }
+      return undefined;
+    }
+    throw new TypeError('Syncer.waitForFrames() expects an integer timeout argument');
   }
 
   /**
@@ -1893,64 +2186,49 @@ class Syncer {
    * @return {Frame[]|undefined} an array of frames if available and undefined if not.
    */
   pollForFrames() {
-    const frames = this.cxxSyncer.pollForFrames();
-    if (!frames) return undefined;
-    let result = [];
-    frames.forEach((f) => {
-      result.push(new Frame(f));
-    });
-    return result;
+    this.frameSet.release();
+    if (this.cxxSyncer.pollForFrames(this.frameSet.cxxFrameSet)) {
+      this.frameSet.__update();
+      return this.frameSet;
+    }
+    return undefined;
   }
 
   /**
-  * Dispatch the frame into the syncer, this operation passed the frame ownership to the syncer.
-  * @param {Frame} frame - frame to enqueue
-  */
-  enqueueFrame(frame) {
-    this.cxxSyncer.enqueueFrame(frame.cxxFrame);
-    frame.cxxFrame = null;
+   * Release resources associated with the object
+   */
+  destroy() {
+    this.cxxSyncer.destroy();
+    this.cxxSyncer = undefined;
+    if (this.frameset) {
+      this.frameSet.destroy();
+    }
+    this.frameSet = undefined;
   }
 }
 
-const util = {};
-
 /**
- * util.DeviceHub Utility class.
  * Encapsulate the handling of 'device-changed' notification, when devices are conncted or
  * disconnected. It can connect to the existing device(s) in system, and/or wait for the
  * arrival/removal of devices.
  */
-util.DeviceHub = class DeviceHub {
+class DeviceHub {
   /**
    * @param {Context} context - a librealsense2 Context
    */
   constructor(context) {
     this.context = context;
-    this.events = new EventEmitter();
+    this.cxxHub = new RS2.RSDeviceHub(context.cxxCtx);
   }
 
   /**
-   * Wait for any device is avaiable to be used
-   * @async
-   * @return {Promise<Device[]>} The device array at the moment
-   * @example
-   * hub.waitForDevice().then(function(array) {
-   *   console.log(array[0].cameraInfo);
-   * });
-   *
+   * If any device is connected return it, otherwise wait until next RealSense device connects.
+   * Calling this method multiple times will cycle through connected devices
+   * @return {Device|undefined}
    */
   waitForDevice() {
-    return new Promise(function(resolve, reject) {
-      this.device_list = this.context.queryDevices();
-      if (this.device_list.length) {
-        resolve(this.device_list);
-      } else {
-        this.context.events.once('device-changed', function() {
-          this.device_list = this.context.queryDevices();
-          resolve(this.device_list);
-        }.bind(this));
-      }
-    }.bind(this));
+    let dev = this.cxxHub.waitForDevice();
+    return (dev ? new Device(dev) : undefined);
   }
 
   /**
@@ -1958,112 +2236,17 @@ util.DeviceHub = class DeviceHub {
    * @return {Boolean}
    */
   isConnected(device) {
-    return this.context.isDeviceConnected(device);
-  }
-};
-
-/**
- * Representing one or more streams of RealSense camera
- */
-util.Streams = class Streams {
-  /**
-   *
-   */
-  constructor(devicesArray, profilesArray, streamToDevIndexMap, devIndexToProfileMap) {
-    this.devicesArray = devicesArray;
-    this.streamProfiles = profilesArray;
-    this.streamToDevIndexMap = streamToDevIndexMap;
-    this.devIndexToProfileMap = devIndexToProfileMap;
+    return this.cxxHub.isConnected(device.cxxDev);
   }
 
   /**
-   * Start the device with opened streams.
-   *  There are 2 acceptable forms of syntax:
-   * <pre><code>
-   *  Syntax 1. start(syncer)
-   *  Syntax 2. start(frameQueue)
-   * </code></pre>
-   *
-   * @param {Syncer|FrameQueue} syncerOrFrameQueue - see {@link Syncer}
-   * @param {frameQueue} frameQueue - see {@link FrameQueue}
-   * @return {undefined}
+   * Release resources associated with the object
    */
-  start(syncerOrFrameQueue) {
-    this.devicesArray.forEach((dev) => {
-      dev.start(syncerOrFrameQueue);
-    });
+  destroy() {
+    this.cxxHub.destroy();
+    this.cxxHub = undefined;
   }
-
-  /**
-   * Stop all streams.
-   * @return {undefined}
-   */
-  stop() {
-    this.devicesArray.forEach((dev) => {
-      dev.stop();
-    });
-  }
-
-  /**
-   * Close all streams.
-   * @return {undefined}
-   */
-  close() {
-    this.devicesArray.forEach((dev) => {
-      dev.close();
-    });
-  }
-
-  /**
-   * Get profiles.
-   * @return {StreamProfileObject[]}
-   */
-  getProfiles() {
-    return this.streamProfiles;
-  }
-
-  /**
-   * Get intrinsics of the stream
-   * @return {IntrinsicsObject} see {@link IntrinsicsObject}
-   */
-  getIntrinsics(stream) {
-    let s = checkStringNumber(stream,
-        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-        stream2Int,
-        'getIntrinsics expects the argument to be string or integer',
-        'getIntrinsics\'s argument value is invalid');
-    let devIndex = this.streamToDevIndexMap[s];
-    let device = this.devicesArray[devIndex];
-    for (let i = 0; i < this.streamProfiles.length; i++) {
-      if (this.streamProfiles[i].stream === s) {
-        return device.getStreamIntrinsics(this.streamProfiles[i]);
-      }
-    }
-    return undefined;
-  }
-
-  /**
-   * Get extrinsics of the two stream
-   * @return {ExtrinsicsObject} see {@link ExtrinsicsObject}
-   */
-  getExtrinsics(fromStream, toStream) {
-    let sfrom = checkStringNumber(fromStream,
-        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-        stream2Int,
-        'getExtrinsics expects the fromStream argument to be string or integer',
-        'getExtrinsics\'s fromStream argument value is invalid');
-    let sto = checkStringNumber(toStream,
-        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-        stream2Int,
-        'getExtrinsics expects the toStream argument to be string or integer',
-        'getExtrinsics\'s toStream argument value is invalid');
-    let fromDevIndex = this.streamToDevIndexMap[sfrom];
-    let fromDevice = this.devicesArray[fromDevIndex];
-    let toDevIndex = this.streamToDevIndexMap[sto];
-    let toDevice = this.devicesArray[toDevIndex];
-    return fromDevice.getExtrinsics(fromStream, toDevice, toStream);
-  }
-};
+}
 
 /**
  * <code>util.preset_preference</code>: The enum for preset preference values.
@@ -2109,6 +2292,8 @@ const preset_preference = {
   PRESET_BEGIN: 0,
   PRESET_END: 3,
 };
+
+const util = {};
 
 util.preset_preference = preset_preference;
 
@@ -2308,7 +2493,8 @@ util.deprojectPixelToPoint = function(intrinsics, pixelCoordinate, depth) {
 
 /**
  * Transform 3D coordinates relative to one sensor to 3D coordinates relative to another viewpoint
- * @param {Extrinsics} extrinsics - The exrinsics from the original stream to the target stream
+ * @param {ExtrinsicsObject} extrinsics - The exrinsics from the original stream to the target
+ * stream
  * @param {Object} pointCoordinate - The 3D space coordinate of the original point,
  * like {x: 0, y: 0, z:1}.
  * @return {Object} The tranformed 3D coordinate, like {x:0, y:0, z:0}.
@@ -3326,11 +3512,11 @@ const camera_info = {
    */
   camera_info_firmware_version: 'firmware-version',
   /**
-   * String literal of <code>'location'</code>. <br>Unique identifier of the port the device is
+   * String literal of <code>'port'</code>. <br>Unique identifier of the port the device is
    * connected to (platform specific). <br>Equivalent to its uppercase counterpart.
    *
    */
-  camera_info_location: 'location',
+  camera_info_physical_port: 'physical-port',
   /**
    * String literal of <code>'debug-op-code'</code>. <br>If device supports firmware logging,
    * this is the command to send to get logs from firmware. <br>Equivalent to its uppercase
@@ -3375,7 +3561,7 @@ const camera_info = {
    * its lowercase counterpart.
    * @type {Integer}
    */
-  CAMERA_INFO_LOCATION: RS2.RS2_CAMERA_INFO_LOCATION,
+  CAMERA_INFO_PHYSICAL_PORT: RS2.RS2_CAMERA_INFO_PHYSICAL_PORT,
   /**
    * If device supports firmware logging, this is the command to send to get logs from firmware.
    * <br>Equivalent to its lowercase counterpart.
@@ -3425,8 +3611,8 @@ const camera_info = {
           return this.camera_info_serial_number;
         case this.CAMERA_INFO_FIRMWARE_VERSION:
           return this.camera_info_firmware_version;
-        case this.CAMERA_INFO_LOCATION:
-          return this.camera_info_location;
+        case this.CAMERA_INFO_PHYSICAL_PORT:
+          return this.camera_info_physical_port;
         case this.CAMERA_INFO_DEBUG_OP_CODE:
           return this.camera_info_debug_op_code;
         case this.CAMERA_INFO_ADVANCED_MODE:
@@ -3825,6 +4011,29 @@ const timestamp_domain = {
      * @type {Integer}
      */
     TIMESTAMP_DOMAIN_COUNT: RS2.RS2_TIMESTAMP_DOMAIN_COUNT,
+    /**
+     * Get the string representation out of the integer timestamp_domain type
+     * @param {Integer} domainVal the timestamp_domain type
+     * @return {String}
+     */
+    timestampDomainToString: function(domainVal) {
+      if (arguments.length !== 1) {
+        throw new TypeError('timestamp_domain.timestampDomainToString() expects 1 argument');
+      }
+      let i = checkStringNumber(arguments[0],
+          this.TIMESTAMP_DOMAIN_HARDWARE_CLOCK, this.TIMESTAMP_DOMAIN_COUNT,
+          timestampDomain2Int,
+          'timestamp_domain.timestampDomainToString() expects a number or string as the 1st argument', // eslint-disable-line
+          'timestamp_domain.timestampDomainToString() expects a valid value as the 1st argument');
+      switch (i) {
+        case this.TIMESTAMP_DOMAIN_HARDWARE_CLOCK:
+          return this.timestamp_domain_hardware_clock;
+        case this.TIMESTAMP_DOMAIN_SYSTEM_TIME:
+          return this.timestamp_domain_system_time;
+        default:
+          throw new TypeError('timestamp_domain.timestampDomainToString() expects a valid value as the 1st argument'); // eslint-disable-line
+      }
+    },
 };
 
 /**
@@ -3992,6 +4201,10 @@ function visualPreset2Int(str) {
  return str2Int(str, 'visual_preset');
 }
 
+function isArrayBuffer(value) {
+    return value && value instanceof ArrayBuffer && value.byteLength !== undefined;
+}
+
 const constants = {
   stream: stream,
   format: format,
@@ -4020,17 +4233,20 @@ module.exports = {
   Config: Config,
   Colorizer: Colorizer,
   Device: Device,
+  DeviceList: DeviceList,
+  DeviceHub: DeviceHub,
   Sensor: Sensor,
   DepthSensor: DepthSensor,
   ROISensor: ROISensor,
   StreamProfile: StreamProfile,
+  VideoStreamProfile: VideoStreamProfile,
   Frame: Frame,
+  FrameSet: FrameSet,
   VideoFrame: VideoFrame,
   DepthFrame: DepthFrame,
   Align: Align,
-  Pointcloud: Pointcloud,
+  PointCloud: PointCloud,
   Points: Points,
-  FrameQueue: FrameQueue,
   // PlaybackContext: PlaybackContext,
   // RecordingContext: RecordingContext,
   Syncer: Syncer,

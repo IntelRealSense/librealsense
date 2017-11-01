@@ -1601,11 +1601,11 @@ TEST_CASE("Multiple devices", "[live][multicam]")
                     disable_sensitive_options_for(dev1);
                     for (auto & dev2 : list)
                     {
-                        disable_sensitive_options_for(dev2);
-
                         // couldn't think of a better way to compare the two...
                         if (dev1 == dev2)
                             continue;
+
+                        disable_sensitive_options_for(dev2);
 
                         REQUIRE_NOTHROW(dev1.open(dev1.get_stream_profiles().front()));
                         REQUIRE_NOTHROW(dev2.open(dev2.get_stream_profiles().front()));
@@ -3700,7 +3700,7 @@ TEST_CASE("Pipeline config enable resolve start flow", "[live]") {
     }
 }
 
-TEST_CASE("Pipeline enable config and select device", "[live]") {
+TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -3723,8 +3723,7 @@ TEST_CASE("Pipeline enable config and select device", "[live]") {
         }
         if (realsense_devices_count < 2)
         {
-            using namespace Catch::Matchers;
-            CHECK_THAT("WARNING: Skipping test! This test requires a scenario where more than 1 realsense device is connected", Equals(""));
+            WARN("Skipping test! This test requires multiple RealSense devices connected");
             return;
         }
 
@@ -3821,5 +3820,254 @@ TEST_CASE("Pipeline enable config and select device", "[live]") {
         REQUIRE(started_streams.size() == 1);
         REQUIRE(started_streams[0] == required_profile);
         pipe.stop();
+    }
+}
+
+TEST_CASE("Empty Pipeline Profile", "[live]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        REQUIRE_NOTHROW(rs2::pipeline_profile p);
+        rs2::pipeline_profile prof;
+        REQUIRE_FALSE(prof);
+        rs2::device dev;
+        CHECK_THROWS(dev = prof.get_device());
+        REQUIRE(!dev);
+        for (int i = 0; i < (int)RS2_STREAM_COUNT; i++)
+        {
+            rs2_stream stream = static_cast<rs2_stream>(i);
+            CAPTURE(stream);
+            rs2::stream_profile sp;
+            CHECK_THROWS(sp = prof.get_stream(stream));
+            REQUIRE(!sp);
+        }
+        std::vector<rs2::stream_profile> spv;
+        CHECK_THROWS(spv = prof.get_streams());
+        REQUIRE(spv.size() == 0);
+    }
+}
+
+void require_pipeline_profile_same(const rs2::pipeline_profile& profile1, const rs2::pipeline_profile& profile2)
+{
+    rs2::device d1 = profile1.get_device();
+    rs2::device d2 = profile2.get_device();
+
+    REQUIRE(d1.get().get());
+    REQUIRE(d2.get().get());
+    std::string serial1, serial2;
+    REQUIRE_NOTHROW(serial1 = d1.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+    REQUIRE_NOTHROW(serial2 = d2.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+    if (serial1 != serial2)
+    {
+        throw std::runtime_error(serial1 + " is different than " + serial2);
+    }
+
+    std::string name1, name2;
+    REQUIRE_NOTHROW(name1 = d1.get_info(RS2_CAMERA_INFO_NAME));
+    REQUIRE_NOTHROW(name2 = d2.get_info(RS2_CAMERA_INFO_NAME));
+    if (name1 != name2)
+    {
+        throw std::runtime_error(name1 + " is different than " + name2);
+    }
+
+    auto streams1 = profile1.get_streams();
+    auto streams2 = profile2.get_streams();
+    if (streams1.size() != streams2.size())
+    {
+        throw std::runtime_error(std::string("Profiles contain different number of streams ") +  std::to_string(streams1.size()) + " vs " + std::to_string(streams2.size()));
+    }
+
+    auto streams1_and_2_equals = true;
+    for (auto&& s : streams1)
+    {
+        auto it = std::find_if(streams2.begin(), streams2.end(), [&s](const stream_profile& sp) {
+            return
+                s.format() == sp.format() &&
+                s.fps() == sp.fps() &&
+                s.is_default() == sp.is_default() &&
+                s.stream_index() == sp.stream_index() &&
+                s.stream_type() == sp.stream_type() &&
+                s.stream_name() == sp.stream_name();
+        });
+        if (it == streams2.end())
+        {
+            streams1_and_2_equals = false;
+        }
+    }
+
+    if (!streams1_and_2_equals)
+    {
+        throw std::runtime_error(std::string("Profiles contain different streams"));
+    }
+}
+TEST_CASE("Pipeline empty Config", "[live]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        REQUIRE_NOTHROW(rs2::config c);
+        //Empty config
+        rs2::pipeline p(ctx);
+        rs2::config c1;
+        REQUIRE(c1.get().get() != nullptr);
+        bool can_resolve = false;
+        REQUIRE_NOTHROW(can_resolve = c1.can_resolve(p));
+        REQUIRE(true == can_resolve);
+        REQUIRE_THROWS(c1.resolve(nullptr));
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = c1.resolve(p));
+        REQUIRE(true == profile);
+    }
+}
+
+TEST_CASE("Pipeline 2 Configs", "[live]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        rs2::pipeline p(ctx);
+        REQUIRE_NOTHROW(rs2::config c1);
+        REQUIRE_NOTHROW(rs2::config c2);
+        rs2::config c1;
+        rs2::config c2;
+        bool can_resolve1 = false;
+        bool can_resolve2 = false;
+        REQUIRE_NOTHROW(can_resolve1 = c1.can_resolve(p));
+        REQUIRE_NOTHROW(can_resolve2 = c2.can_resolve(p));
+        REQUIRE(can_resolve1);
+        REQUIRE(can_resolve2);
+        rs2::pipeline_profile profile1;
+        rs2::pipeline_profile profile2;
+
+        REQUIRE_NOTHROW(profile1 = c1.resolve(p));
+        REQUIRE(profile1);
+        REQUIRE_NOTHROW(profile2 = c2.resolve(p));
+        REQUIRE(profile2);
+
+        REQUIRE_NOTHROW(require_pipeline_profile_same(profile1, profile2));
+    }
+}
+
+TEST_CASE("Pipeline start after resolve uses the same profile", "[live]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+        cfg.enable_stream(RS2_STREAM_DEPTH);
+        rs2::pipeline_profile profile_from_cfg;
+        REQUIRE_NOTHROW(profile_from_cfg = cfg.resolve(pipe));
+        REQUIRE(profile_from_cfg);
+        rs2::pipeline_profile profile_from_start;
+        REQUIRE_NOTHROW(profile_from_start = pipe.start(cfg));
+        REQUIRE(profile_from_start);
+        REQUIRE_NOTHROW(require_pipeline_profile_same(profile_from_cfg, profile_from_start));
+
+    }
+}
+
+TEST_CASE("Pipeline start ignores previous config if it was changed", "[live]") {
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+        rs2::pipeline_profile profile_from_cfg;
+        REQUIRE_NOTHROW(profile_from_cfg = cfg.resolve(pipe));
+        REQUIRE(profile_from_cfg);
+        cfg.enable_stream(RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 60); //enable a single stream (unlikely to be the default one)
+        rs2::pipeline_profile profile_from_start;
+        REQUIRE_NOTHROW(profile_from_start = pipe.start(cfg));
+        REQUIRE(profile_from_start);
+        REQUIRE_THROWS(require_pipeline_profile_same(profile_from_cfg, profile_from_start));
+    }
+}
+TEST_CASE("Pipeline Config disable all is a nop with empty config", "[live]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        rs2::pipeline p(ctx);
+        rs2::config c1;
+        c1.disable_all_streams();
+        rs2::config c2;
+        rs2::pipeline_profile profile1;
+        rs2::pipeline_profile profile2;
+
+        REQUIRE_NOTHROW(profile1 = c1.resolve(p));
+        REQUIRE(profile1);
+        REQUIRE_NOTHROW(profile2 = c2.resolve(p));
+        REQUIRE(profile2);
+        REQUIRE_NOTHROW(require_pipeline_profile_same(profile1, profile2));
+    }
+}
+TEST_CASE("Pipeline Config disable each stream is nop on empty config", "[live]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        rs2::pipeline p(ctx);
+        rs2::config c1;
+        for (int i = 0; i < (int)RS2_STREAM_COUNT; i++)
+        {
+            REQUIRE_NOTHROW(c1.disable_stream(static_cast<rs2_stream>(i)));
+        }
+        rs2::config c2;
+        rs2::pipeline_profile profile1;
+        rs2::pipeline_profile profile2;
+
+        REQUIRE_NOTHROW(profile1 = c1.resolve(p));
+        REQUIRE(profile1);
+        REQUIRE_NOTHROW(profile2 = c2.resolve(p));
+        REQUIRE(profile2);
+        REQUIRE_NOTHROW(require_pipeline_profile_same(profile1, profile2));
+    }
+}
+
+TEST_CASE("Pipeline record and playback", "[live]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        const std::string filename = get_folder_path(special_folder::temp_folder) + "test_file.bag";
+        //Scoping the below code to make sure no one holds the device
+        {
+            rs2::pipeline p(ctx);
+            rs2::config cfg;
+            REQUIRE_NOTHROW(cfg.enable_record_to_file(filename));
+            rs2::pipeline_profile profile;
+            REQUIRE_NOTHROW(profile = cfg.resolve(p));
+            REQUIRE(profile);
+            auto dev = profile.get_device();
+            REQUIRE(dev);
+            disable_sensitive_options_for(dev);
+            REQUIRE_NOTHROW(p.start(cfg));
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+            rs2::frameset frames;
+            REQUIRE_NOTHROW(frames = p.wait_for_frames(200));
+            REQUIRE(frames);
+            REQUIRE(frames.size() > 0);
+            REQUIRE_NOTHROW(p.stop());
+        } 
+        //Scoping the above code to make sure no one holds the device
+        
+        REQUIRE(file_exists(filename));
+
+        {
+            rs2::pipeline p(ctx);
+            rs2::config cfg;
+            rs2::pipeline_profile profile;
+            REQUIRE_NOTHROW(cfg.enable_device_from_file(filename));
+            REQUIRE_NOTHROW(profile = cfg.resolve(p));
+            REQUIRE(profile);
+            REQUIRE_NOTHROW(p.start(cfg));
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+            rs2::frameset frames;
+            REQUIRE_NOTHROW(frames = p.wait_for_frames(200));
+            REQUIRE(frames);
+            REQUIRE_NOTHROW(p.stop());
+        }
     }
 }

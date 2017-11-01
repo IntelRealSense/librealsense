@@ -40,7 +40,7 @@ namespace rs400
             return !!enabled;
         }
 
-        void set_depth_control(STDepthControlGroup& group)
+        void set_depth_control(const STDepthControlGroup& group)
         {
             rs2_error* e = nullptr;
             rs2_set_depth_control(_dev.get(), &group, &e);
@@ -57,7 +57,7 @@ namespace rs400
             return group;
         }
 
-        void set_rsm(STRsm& group)
+        void set_rsm(const STRsm& group)
         {
             rs2_error* e = nullptr;
             rs2_set_rsm(_dev.get(), &group, &e);
@@ -74,7 +74,7 @@ namespace rs400
             return group;
         }
 
-        void set_rau_support_vector_control(STRauSupportVectorControl& group)
+        void set_rau_support_vector_control(const STRauSupportVectorControl& group)
         {
             rs2_error* e = nullptr;
             rs2_set_rau_support_vector_control(_dev.get(), &group, &e);
@@ -91,7 +91,7 @@ namespace rs400
             return group;
         }
 
-        void set_color_control(STColorControl& group)
+        void set_color_control(const STColorControl& group)
         {
             rs2_error* e = nullptr;
             rs2_set_color_control(_dev.get(),  &group, &e);
@@ -108,7 +108,7 @@ namespace rs400
             return group;
         }
 
-        void set_rau_thresholds_control(STRauColorThresholdsControl& group)
+        void set_rau_thresholds_control(const STRauColorThresholdsControl& group)
         {
             rs2_error* e = nullptr;
             rs2_set_rau_thresholds_control(_dev.get(), &group, &e);
@@ -125,7 +125,7 @@ namespace rs400
             return group;
         }
 
-        void set_slo_color_thresholds_control(STSloColorThresholdsControl& group)
+        void set_slo_color_thresholds_control(const STSloColorThresholdsControl& group)
         {
             rs2_error* e = nullptr;
             rs2_set_slo_color_thresholds_control(_dev.get(), &group, &e);
@@ -142,7 +142,7 @@ namespace rs400
             return group;
         }
 
-        void set_slo_penalty_control(STSloPenaltyControl& group)
+        void set_slo_penalty_control(const STSloPenaltyControl& group)
         {
             rs2_error* e = nullptr;
             rs2_set_slo_penalty_control(_dev.get(), &group, &e);
@@ -159,7 +159,7 @@ namespace rs400
             return group;
         }
 
-        void set_hdad(STHdad& group)
+        void set_hdad(const STHdad& group)
         {
             rs2_error* e = nullptr;
             rs2_set_hdad(_dev.get(), &group, &e);
@@ -176,7 +176,7 @@ namespace rs400
             return group;
         }
 
-        void set_color_correction(STColorCorrection& group)
+        void set_color_correction(const STColorCorrection& group)
         {
             rs2_error* e = nullptr;
             rs2_set_color_correction(_dev.get(), &group, &e);
@@ -193,7 +193,7 @@ namespace rs400
             return group;
         }
 
-        void set_depth_table(STDepthTableControl& group)
+        void set_depth_table(const STDepthTableControl& group)
         {
             rs2_error* e = nullptr;
             rs2_set_depth_table(_dev.get(), &group, &e);
@@ -210,7 +210,7 @@ namespace rs400
             return group;
         }
 
-        void set_ae_control(STAEControl& group)
+        void set_ae_control(const STAEControl& group)
         {
             rs2_error* e = nullptr;
             rs2_set_ae_control(_dev.get(), &group, &e);
@@ -227,7 +227,7 @@ namespace rs400
             return group;
         }
 
-        void set_census(STCensusRadius& group)
+        void set_census(const STCensusRadius& group)
         {
             rs2_error* e = nullptr;
             rs2_set_census(_dev.get(), &group, &e);

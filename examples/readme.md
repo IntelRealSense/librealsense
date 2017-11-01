@@ -12,7 +12,8 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 3. [Multicam](./multicam) - Present multiple cameras depth streams simultaneously, in separate windows.
 4. [Pointcloud](./pointcloud) - Showcase Projection API while generating and rendering 3D pointcloud. 
 5. [Streams Alignment](./align) - Show a simple method for dynamic background removal from video. 
-6. Measure - Lets the user measure the dimentions of 3D objects in a picture.
+6. [Sensor Control](./sensor-control) -- A tutorial for using the `rs2::sensor` API
+7. Measure - Lets the user measure the dimentions of 3D objects in a picture.
 
 ### C Examples
 1. [Depth](./C/depth) - Demonstrates how to stream depth data and prints a simple text-based representation of the depth image.

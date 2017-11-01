@@ -88,7 +88,7 @@ describe('Context test', function() {
     assert.doesNotThrow(() => {
       context.queryDevices();
     });
-    const obj = context.queryDevices();
+    const obj = context.queryDevices().devices;
     assert.equal(Object.prototype.toString.call(obj), '[object Array]');
     assert.equal(obj[0] instanceof librealsense2.Device, true);
   });
@@ -98,7 +98,7 @@ describe('Context test', function() {
     assert.doesNotThrow(() => {
       context.queryDevices();
     });
-    const obj = context.queryDevices();
+    const obj = context.queryDevices().devices;
     assert.equal(obj[0] instanceof librealsense2.Device, true);
   });
 
@@ -128,9 +128,10 @@ describe('Context test', function() {
     });
   });
 
-  it('testing method - isDeviceConnected', () => {
+  // isDeviceConnected is no more a method of Context
+  it.skip('testing method - isDeviceConnected', () => {
     const context = new librealsense2.Context();
-    const devs = context.queryDevices();
+    const devs = context.queryDevices().devices;
     assert(devs[0]);
     const dev = devs[0];
     assert.doesNotThrow(() => {
@@ -138,9 +139,10 @@ describe('Context test', function() {
     });
   });
 
-  it('testing method - isDeviceConnected, return value', () => {
+  // isDeviceConnected is no more a method of Context
+  it.skip('testing method - isDeviceConnected, return value', () => {
     const context = new librealsense2.Context();
-    const devs = context.queryDevices();
+    const devs = context.queryDevices().devices;
     assert(devs[0]);
     const dev = devs[0];
     assert.equal(typeof context.isDeviceConnected(dev), 'boolean');

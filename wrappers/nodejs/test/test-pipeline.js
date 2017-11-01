@@ -13,7 +13,7 @@ let dev;
 describe('Pipeline test', function() {
   before(function() {
     ctx = new rs2.Context();
-    const devices = ctx.queryDevices();
+    const devices = ctx.queryDevices().devices;
     assert(devices.length > 0); // Device must be connected
     dev = devices[0];
   });

@@ -313,7 +313,7 @@ void rs2_get_stream_profile_data(const rs2_stream_profile* mode, rs2_stream* str
 void rs2_set_stream_profile_data(rs2_stream_profile* mode, rs2_stream stream, int index, rs2_format format, rs2_error** error);
 
 /**
-* Creates a copy of stream profile, assigning new values to some of the feilds
+* Creates a copy of stream profile, assigning new values to some of the fields
 * \param[in] mode        input stream profile
 * \param[in] stream      stream type for the profile
 * \param[in] format      binary data format of the profile

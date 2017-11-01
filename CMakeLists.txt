@@ -210,7 +210,6 @@ set(REALSENSE_HPP
     src/win/win-hid.h
     src/win/win-backend.h
     src/api.h
-    src/core/advanced_mode.h
     src/core/serialization.h
 
     src/media/record/record_device.h
@@ -331,6 +330,7 @@ if(WIN32)
 
     source_group("Header Files\\Media" FILES
         src/media/record/record_device.h
+        src/media/record/record_sensor.h
         src/media/playback/playback_device.h
         src/media/playback/playback_sensor.h
         )
@@ -462,7 +462,8 @@ if(FORCE_LIBUVC)
 endif()
 
 if (MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /wd4819")
+    add_definitions(-D_UNICODE)
 endif()
 
 add_definitions(-D${BACKEND} -DUNICODE)
