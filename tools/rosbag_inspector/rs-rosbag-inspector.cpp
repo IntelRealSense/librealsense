@@ -243,7 +243,7 @@ std::ostream& operator<<(std::ostream& os, const rosbag::MessageInstance& m)
         os << "controller_id : " << data->controller_id << "\n";
         os << "mac_address : " << data->mac_address << "\n";
         os << "type : " << data->type << "\n";
-        os << "type : " << data->timestamp << "\n";
+        os << "timestamp : " << data->timestamp << "\n";
     }
     if (m.isType<realsense_msgs::controller_vendor_data>())
     {
@@ -253,7 +253,6 @@ std::ostream& operator<<(std::ostream& os, const rosbag::MessageInstance& m)
         os << "timestamp : " << data->timestamp << "\n";
         os << "vendor_data_source_index : " << data->vendor_data_source_index << "\n";
         os << "vendor_data_source_type : " << data->vendor_data_source_type << "\n";
-
     }
     if (m.isType<realsense_msgs::extrinsics>())
     {
@@ -414,9 +413,9 @@ struct rosbag_content
         other.compression_info.compression_type = "";
         other.topics_to_message_types.clear();
     }
-    std::string instanciate_and_cache(const rosbag::MessageInstance& m)
+    std::string instanciate_and_cache(const rosbag::MessageInstance& m, uint64_t count)
     {
-        auto key = std::make_tuple(m.getCallerId(), m.getDataType(), m.getMD5Sum(), m.getTopic(), m.getTime());
+        auto key = std::make_tuple(m.getCallerId(), m.getDataType(), m.getMD5Sum(), m.getTopic(), m.getTime(), count);
         if (cache.find(key) != cache.end())
         {
             return cache[key];
@@ -436,7 +435,7 @@ struct rosbag_content
         return std::chrono::nanoseconds((only_frames.getEndTime() - only_frames.getBeginTime()).toNSec());
     }
 
-    std::map<std::tuple<std::string, std::string, std::string, std::string, ros::Time>, std::string> cache;
+    std::map<std::tuple<std::string, std::string, std::string, std::string, ros::Time, uint64_t>, std::string> cache;
     std::chrono::nanoseconds file_duration;
     std::string file_name;
     std::string path;
@@ -529,7 +528,7 @@ int main(int argc, const char** argv)
         io.MouseWheel += yoffset;
     });
 
-    std::map<std::string, int> num_topics_to_show;
+    std::map<std::string, uint64_t> num_topics_to_show;
     int w, h;
     while (!glfwWindowShouldClose(window))
     {
@@ -622,9 +621,9 @@ int main(int argc, const char** argv)
                         if (ImGui::CollapsingHeader(line.c_str()))
                         {
                             rosbag::View messages(bag.bag, rosbag::TopicQuery(topic));
-                            int count = 0;
-                            num_topics_to_show[topic] = std::max(num_topics_to_show[topic], 10);
-                            int max = num_topics_to_show[topic];
+                            uint64_t count = 0;
+                            num_topics_to_show[topic] = std::max(num_topics_to_show[topic], 10ull);
+                            uint64_t max = num_topics_to_show[topic];
                             auto win_pos = ImGui::GetWindowPos();
                             ImGui::SetWindowPos({ win_pos.x + 20, win_pos.y });
                             for (auto&& m : messages)
@@ -636,7 +635,7 @@ int main(int argc, const char** argv)
                                 ImGui::Text("Content"); ImGui::NextColumn();
                                 ImGui::Separator();
                                 ImGui::Text(pretty_time(std::chrono::nanoseconds(m.getTime().toNSec())).c_str()); ImGui::NextColumn();
-                                ImGui::Text(bag.instanciate_and_cache(m).c_str());
+                                ImGui::Text(bag.instanciate_and_cache(m, count).c_str());
                                 ImGui::Columns(1);
                                 ImGui::Separator();
                                 if (count >= max)
