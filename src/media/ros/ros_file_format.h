@@ -370,20 +370,6 @@ namespace librealsense
         {
             return create_from({ device_prefix(stream_id.device_index), sensor_prefix(stream_id.sensor_index), stream_prefix(stream_id.stream_type, stream_id.stream_index) }).substr(1); //substr(1) to remove the first "/"
         }
-    private:
-
-        static std::string create_from(const std::vector<std::string>& parts)
-        {
-            std::ostringstream oss;
-            oss << elements_separator;
-            if (parts.empty() == false)
-            {
-                std::copy(parts.begin(), parts.end() - 1, std::ostream_iterator<std::string>(oss, elements_separator));
-                oss << parts.back();
-            }
-            return oss.str();
-        }
-
         template<uint32_t index>
         static std::string get(const std::string& value)
         {
@@ -407,6 +393,21 @@ namespace librealsense
 
             throw std::out_of_range(to_string() << "Requeted index \"" << index << "\" is out of bound of topic: \"" << value << "\"");
         }
+    private:
+
+        static std::string create_from(const std::vector<std::string>& parts)
+        {
+            std::ostringstream oss;
+            oss << elements_separator;
+            if (parts.empty() == false)
+            {
+                std::copy(parts.begin(), parts.end() - 1, std::ostream_iterator<std::string>(oss, elements_separator));
+                oss << parts.back();
+            }
+            return oss.str();
+        }
+
+
         static uint32_t get_id(const std::string& prefix, const std::string& str)
         {
             if (str.compare(0, prefix.size(), prefix) != 0)
@@ -471,5 +472,155 @@ namespace librealsense
         
         auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(t);
         return ros::Time(secs.count());
+    }
+
+    namespace legacy_file_format
+    {
+        constexpr const char* USB_DESCRIPTOR = "{ 0x94b5fb99, 0x79f2, 0x4d66,{ 0x85, 0x06, 0xb1, 0x5e, 0x8b, 0x8c, 0x9d, 0xa1 } }";
+        constexpr const char* DEVICE_INTERFACE_VERSION = "{ 0xafcd9c11, 0x52e3, 0x4258,{ 0x8d, 0x23, 0xbe, 0x86, 0xfa, 0x97, 0xa0, 0xab } }";
+        constexpr const char* FW_VERSION = "{ 0x7b79605b, 0x5e36, 0x4abe,{ 0xb1, 0x01, 0x94, 0x86, 0xb8, 0x9a, 0xfe, 0xbe } }";
+        constexpr const char* CENTRAL_VERSION = "{ 0x5652ffdb, 0xacac, 0x47ea,{ 0xbf, 0x65, 0x73, 0x3e, 0xf3, 0xd9, 0xe2, 0x70 } }";
+        constexpr const char* CENTRAL_PROTOCOL_VERSION = "{ 0x50376dea, 0x89f4, 0x4d70,{ 0xb1, 0xb0, 0x05, 0xf6, 0x07, 0xb6, 0xae, 0x8a } }";
+        constexpr const char* EEPROM_VERSION = "{ 0x4617d177, 0xb546, 0x4747,{ 0x9d, 0xbf, 0x4f, 0xf8, 0x99, 0x0c, 0x45, 0x6b } }";
+        constexpr const char* ROM_VERSION = "{ 0x16a64010, 0xfee4, 0x4c67,{ 0xae, 0xc5, 0xa0, 0x4d, 0xff, 0x06, 0xeb, 0x0b } }";
+        constexpr const char* TM_DEVICE_TYPE = "{ 0x1212e1d5, 0xfa3e, 0x4273,{ 0x9e, 0xbf, 0xe4, 0x43, 0x87, 0xbe, 0xe5, 0xe8 } }";
+        constexpr const char* HW_VERSION = "{ 0x4439fcca, 0x8673, 0x4851,{ 0x9b, 0xb6, 0x1a, 0xab, 0xbd, 0x74, 0xbd, 0xdc } }";
+        constexpr const char* STATUS = "{ 0x5d6c6637, 0x28c7, 0x4a90,{ 0xab, 0x35, 0x90, 0xb2, 0x1f, 0x1a, 0xe6, 0xb8 } }";
+        constexpr const char* STATUS_CODE = "{ 0xe22a94a6, 0xed64, 0x46ea,{ 0x81, 0x52, 0x6a, 0xb3, 0x0b, 0x0e, 0x2a, 0x18 } }";
+        constexpr const char* EXTENDED_STATUS = "{ 0xff6e50db, 0x3c5f, 0x43e7,{ 0xb4, 0x82, 0xb8, 0xc3, 0xa6, 0x8e, 0x78, 0xcd } }";
+        constexpr const char* SERIAL_NUMBER = "{ 0x7d3e44e7, 0x8970, 0x4a32,{ 0x8e, 0xee, 0xe8, 0xd1, 0xd1, 0x32, 0xa3, 0x22 } }";
+        constexpr const char* TIMESTAMP_SORT_TYPE = "{ 0xb409b217, 0xe5cd, 0x4a04,{ 0x9e, 0x85, 0x1a, 0x7d, 0x59, 0xd7, 0xe5, 0x61 } }";
+
+        inline bool info_from_string(const std::string& str, rs2_camera_info& out)
+        {
+            const size_t number_of_hexadecimal_values_in_a_guid = 11;
+            const std::string left_group = R"RE(\s*(0x[0-9a-fA-F]{1,8})\s*,\s*(0x[0-9a-fA-F]{1,4})\s*,\s*(0x[0-9a-fA-F]{1,4})\s*,\s*)RE";
+            const std::string right_group = R"RE(\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*)RE";
+            const std::string guid_regex_pattern = R"RE(\{)RE" + left_group + R"RE(\{)RE" + right_group + R"RE(\}\s*\})RE";
+            //The GUID pattern looks like this: 	"{ 0x________, 0x____, 0x____, { 0x__, 0x__, 0x__, ... , 0x__ } }"
+
+            std::regex reg(guid_regex_pattern, std::regex_constants::icase);
+            const std::map<rs2_camera_info, const char*> legacy_infos{
+                { RS2_CAMERA_INFO_SERIAL_NUMBER                  , SERIAL_NUMBER },
+                { RS2_CAMERA_INFO_FIRMWARE_VERSION               , FW_VERSION },
+                { RS2_CAMERA_INFO_PHYSICAL_PORT                  , USB_DESCRIPTOR },
+            };
+            for (auto&& s : legacy_infos)
+            {
+                if (std::regex_match(s.second, reg))
+                {
+                    out = s.first;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        constexpr uint32_t file_version()
+        {
+            return 1u;
+        }
+
+        constexpr uint32_t get_maximum_supported_legacy_file_version()
+        {
+            return file_version();
+        }
+
+        inline std::string stream_type_to_string(const stream_descriptor& source)
+        {
+            std::string name;
+            assert(source.index != 0); //Streams either have no index (which means index = "1") or the index itself, but not "0"
+            switch (source.type)
+            {
+            default:
+            case RS2_STREAM_DEPTH: name = "DEPTH"; break;
+            case RS2_STREAM_COLOR: name = "COLOR"; break;
+            case RS2_STREAM_INFRARED: name = "INFRARED"; break;
+            case RS2_STREAM_FISHEYE: name = "FISHEYE"; break;
+            case RS2_STREAM_GYRO: name = "GYROMETER"; break;
+            case RS2_STREAM_ACCEL: name = "ACCELEROMETER"; break;
+                break;
+            }
+            name += source.index == 1 ? "" : std::to_string(source.index);
+            return name;
+        }
+
+        inline stream_descriptor parse_stream_type(const std::string& source)
+        {
+            const std::string DEPTH = "DEPTH";
+            const std::string COLOR = "COLOR";
+            const std::string INFRARED = "INFRARED";
+            const std::string INFRARED2 = "INFRARED2";
+            const std::string FISHEYE = "FISHEYE";
+            const std::string FISHEYE2 = "FISHEYE2";
+            const std::string FISHEYE3 = "FISHEYE3";
+            const std::string FISHEYE4 = "FISHEYE4";
+            const std::string RECTIFIED_COLOR = "RECTIFIED_COLOR";
+            const std::string ACCEL = "GYROMETER";
+            const std::string GYRO = "ACCELEROMETER";
+
+            if (source == DEPTH)
+                return { RS2_STREAM_DEPTH, 0 };
+            else if (source == COLOR)
+                return { RS2_STREAM_COLOR, 0 };
+            else if (source == INFRARED)
+                return { RS2_STREAM_INFRARED, 1 };
+            else if (source == INFRARED2)
+                return { RS2_STREAM_INFRARED, 2 };
+            else if (source == FISHEYE)
+                return { RS2_STREAM_FISHEYE, 1 };
+            else if (source == FISHEYE2)
+                return { RS2_STREAM_FISHEYE, 2 };
+            else if (source == FISHEYE3)
+                return { RS2_STREAM_FISHEYE, 3 };
+            else if (source == FISHEYE4)
+                return { RS2_STREAM_FISHEYE, 4 };
+
+            throw io_exception(to_string() << "Unknown stream type : " << source);
+        }
+
+        class FrameQuery : public RegexTopicQuery
+        {
+        public:
+            //Possible patterns:
+            //    /camera/FISHEYE<id>/image_raw/0
+            //    /camera/rs_6DoF<id>/image_raw/0
+            //   /imu/ACCELEROMETER/imu_raw/0
+            //   /imu/GYROMETER/imu_raw/0
+            FrameQuery() : RegexTopicQuery(to_string() << R"RRR(/(camera|imu)/.*/(image|imu)_raw/\d)RRR") {}
+        };
+
+        class StreamQuery : public RegexTopicQuery
+        {
+            static bool is_camera(rs2_stream s)
+            {
+                return
+                    s == RS2_STREAM_DEPTH ||
+                    s == RS2_STREAM_COLOR ||
+                    s == RS2_STREAM_INFRARED ||
+                    s == RS2_STREAM_FISHEYE;
+            }
+
+        public:
+            StreamQuery(const device_serializer::stream_identifier& stream_id) :
+                RegexTopicQuery(to_string() 
+                    << (is_camera(stream_id.stream_type) ? "/camera/" : "/imu/") 
+                    << stream_type_to_string({ stream_id.stream_type, (int)stream_id.stream_index})
+                    << (is_camera(stream_id.stream_type) ? "/image_raw/" : "/imu_raw/")<< stream_id.sensor_index)
+            {
+            }
+        };
+
+        inline device_serializer::stream_identifier get_stream_identifier(const std::string& topic)
+        {
+            auto stream = parse_stream_type(ros_topic::get<2>(topic));
+            auto sensor_index = static_cast<uint32_t>(std::stoll(ros_topic::get<4>(topic)));
+            return device_serializer::stream_identifier{ 0u,   static_cast<uint32_t>(sensor_index),  stream.type, static_cast<uint32_t>(stream.index) };
+        }
+
+        inline std::string file_version_topic()
+        {
+            return "/FILE_VERSION";
+        }
     }
 }
