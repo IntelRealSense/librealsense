@@ -483,6 +483,10 @@ PYBIND11_PLUGIN(NAME) {
              .def("colorize", &rs2::colorizer::colorize, "depth"_a)
              /*.def("__call__", &rs2::colorizer::operator())*/;
 
+    py::class_<rs2::align> align(m, "align");
+    align.def(py::init<rs2_stream>(), "align_to"_a)
+        .def("proccess", &rs2::align::proccess, "depth"_a);
+
     /* rs2_record_playback.hpp */
     py::class_<rs2::playback, rs2::device> playback(m, "playback");
     playback.def(py::init<rs2::device>(), "device"_a)
