@@ -207,7 +207,7 @@ namespace serialization
       stream.next(m.step);
     }
 
-    ROS_DECLARE_ALLINONE_SERIALIZER;
+    ROS_DECLARE_ALLINONE_SERIALIZER
   }; // struct compressed_frame_info_
 
 } // namespace serialization

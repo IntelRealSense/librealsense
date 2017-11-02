@@ -387,7 +387,7 @@ namespace serialization
       stream.next(m.encoding);
     }
 
-    ROS_DECLARE_ALLINONE_SERIALIZER;
+    ROS_DECLARE_ALLINONE_SERIALIZER
   }; // struct stream_info_
 
 } // namespace serialization

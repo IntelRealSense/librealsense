@@ -199,7 +199,7 @@ namespace serialization
       stream.next(m.stream_extrinsics);
     }
 
-    ROS_DECLARE_ALLINONE_SERIALIZER;
+    ROS_DECLARE_ALLINONE_SERIALIZER
   }; // struct motion_stream_info_
 
 } // namespace serialization

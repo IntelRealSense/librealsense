@@ -166,7 +166,7 @@ namespace serialization
       stream.next(m.value);
     }
 
-    ROS_DECLARE_ALLINONE_SERIALIZER;
+    ROS_DECLARE_ALLINONE_SERIALIZER
   }; // struct vendor_data_
 
 } // namespace serialization

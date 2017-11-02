@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 #include <map>
 
 #include <ros/types.h>
@@ -183,7 +184,7 @@ namespace serialization
       stream.next(m.bias_variances);
     }
 
-    ROS_DECLARE_ALLINONE_SERIALIZER;
+    ROS_DECLARE_ALLINONE_SERIALIZER
   }; // struct motion_intrinsics_
 
 } // namespace serialization

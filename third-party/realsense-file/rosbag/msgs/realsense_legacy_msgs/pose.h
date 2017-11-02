@@ -235,7 +235,7 @@ namespace serialization
       stream.next(m.system_timestamp);
     }
 
-    ROS_DECLARE_ALLINONE_SERIALIZER;
+    ROS_DECLARE_ALLINONE_SERIALIZER
   }; // struct pose_
 
 } // namespace serialization

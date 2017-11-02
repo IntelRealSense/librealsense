@@ -179,7 +179,7 @@ namespace serialization
       stream.next(m.time_stamp_domain);
     }
 
-    ROS_DECLARE_ALLINONE_SERIALIZER;
+    ROS_DECLARE_ALLINONE_SERIALIZER
   }; // struct frame_info_
 
 } // namespace serialization

@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 #include <map>
 
 #include <ros/types.h>
@@ -189,7 +190,7 @@ namespace serialization
       stream.next(m.timestamp);
     }
 
-    ROS_DECLARE_ALLINONE_SERIALIZER;
+    ROS_DECLARE_ALLINONE_SERIALIZER
   }; // struct controller_vendor_data_
 
 } // namespace serialization

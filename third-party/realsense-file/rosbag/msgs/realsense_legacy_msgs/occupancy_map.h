@@ -180,7 +180,7 @@ namespace serialization
       stream.next(m.tiles);
     }
 
-    ROS_DECLARE_ALLINONE_SERIALIZER;
+    ROS_DECLARE_ALLINONE_SERIALIZER
   }; // struct occupancy_map_
 
 } // namespace serialization

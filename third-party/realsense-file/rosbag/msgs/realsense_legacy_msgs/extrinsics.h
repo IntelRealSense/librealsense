@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 #include <map>
 
 #include <ros/types.h>
@@ -172,7 +173,7 @@ namespace serialization
       stream.next(m.translation);
     }
 
-    ROS_DECLARE_ALLINONE_SERIALIZER;
+    ROS_DECLARE_ALLINONE_SERIALIZER
   }; // struct extrinsics_
 
 } // namespace serialization

@@ -172,7 +172,7 @@ namespace serialization
       stream.next(m.reference_point_id);
     }
 
-    ROS_DECLARE_ALLINONE_SERIALIZER;
+    ROS_DECLARE_ALLINONE_SERIALIZER
   }; // struct stream_extrinsics_
 
 } // namespace serialization
