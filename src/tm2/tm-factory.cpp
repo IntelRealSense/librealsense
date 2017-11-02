@@ -73,7 +73,7 @@ namespace librealsense
 	tm2_context::tm2_context()
 		: _t([this]() {
 			while (!_manager);
-			while(true) _manager->handleEvents();
+            while (true) { _manager->handleEvents(); std::this_thread::sleep_for(std::chrono::microseconds(100)); }
 		})
 	{
 		_listener = std::make_shared<connect_disconnect_listener>(this);
@@ -101,17 +101,31 @@ namespace librealsense
 
 		std::vector<std::shared_ptr<device_info>> results;
 
-		auto tm_devices = context.query_devices();
+        int wait_sec = 10;
+        while (wait_sec > 0)
+        {
+            auto tm_devices = context.query_devices();
 
-		if (tm_devices.size() == 1)
-		{
-			auto result = std::make_shared<tm2_info>(context.get_manager(), tm_devices.front(), ctx);
-		}
-		else
-		{
-			LOG_WARNING("At the moment only single TM2 device is supported");
-		}
-		
+            if (tm_devices.size() == 0)
+            {
+                //wait for device FW load for a few seconds
+                wait_sec--;
+                std::this_thread::sleep_for(std::chrono::seconds(1));                
+            }
+            else
+            {
+                wait_sec = 0;
+                if (tm_devices.size() == 1)
+                {
+                    auto result = std::make_shared<tm2_info>(context.get_manager(), tm_devices.front(), ctx);
+                    results.push_back(result);
+                }
+                else
+                {
+                    LOG_WARNING("At the moment only single TM2 device is supported");
+                }
+            }
+        }		
 		return results;
 	}
 }

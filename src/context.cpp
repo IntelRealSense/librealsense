@@ -289,6 +289,11 @@ namespace librealsense
         // to allow them to modify context later on
         auto ctx = t->shared_from_this();
 
+#ifdef WITH_TRACKING
+        auto tm2_devices = tm2_info::pick_tm2_devices(ctx, devices);
+        std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
+#endif
+
         auto ds5_devices = ds5_info::pick_ds5_devices(ctx, devices);
         std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
 
@@ -300,11 +305,6 @@ namespace librealsense
 
         auto uvc_devices = platform_camera_info::pick_uvc_devices(ctx, devices.uvc_devices);
         std::copy(begin(uvc_devices), end(uvc_devices), std::back_inserter(list));
-
-#ifdef WITH_TRACKING
-		auto tm2_devices = tm2_info::pick_tm2_devices(ctx, devices);
-		std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
-#endif
 
         for (auto&& item : playback_devices)
         {

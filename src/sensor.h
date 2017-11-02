@@ -79,7 +79,7 @@ namespace librealsense
         bool try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const;
 
         void assign_stream(const std::shared_ptr<stream_interface>& stream,
-                           std::shared_ptr<stream_profile_interface>& target) const;
+                           std::shared_ptr<stream_profile_interface> target) const;
 
         std::vector<request_mapping> resolve_requests(stream_profiles requests);
 
