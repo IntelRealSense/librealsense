@@ -54,13 +54,13 @@ describe('Colorizer test', function() {
     let n = 0;
     while (!endTest) {
       const frameSet = pipeline.waitForFrames();
-      const depthf = frameSet.depthFrame;
-      const colorf = frameSet.colorFrame;
-      frameSet.destroy();
       n++;
       console.log(`retring left ...${10 - n} times`);
-      if (colorf !== undefined &&
-        depthf !== undefined) {
+      if (frameSet !== undefined &&
+          frameSet.colorFrame !== undefined &&
+          frameSet.depthFrame !== undefined) {
+        const depthf = frameSet.depthFrame;
+        const colorf = frameSet.colorFrame;
         assert(depthf instanceof rs2.DepthFrame);
         assert(colorf instanceof rs2.VideoFrame);
         let videoFrame;
@@ -69,19 +69,19 @@ describe('Colorizer test', function() {
           videoFrame = colorizer.colorize(depthf);
         });
         assert(videoFrame instanceof rs2.VideoFrame);
-        assert.doesNotThrow(() => { // jshint ignore:line
+        assert.throws(() => { // jshint ignore:line
           videoFrameNull = colorizer.colorize();
         });
         assert(videoFrameNull === undefined);
         colorizer.destroy();
+        if (colorf) colorf.destroy();
+        if (depthf) depthf.destroy();
         endTest = true;
         if (videoFrame) videoFrame.destroy();
       }
       if (n >= 10) {
         assert(false, 'could not get colorFrame or depthFrame, try to reset camera');
       }
-      if (colorf) colorf.destroy();
-      if (depthf) depthf.destroy();
     }
     pipeline.destroy();
   });
