@@ -29,7 +29,7 @@ struct controller_event_
     , type(0)
     , mac_address()
     , timestamp()  {
-      mac_address.assign(0);
+      mac_address.fill(0);
   }
   controller_event_(const ContainerAllocator& _alloc)
     : controller_id(0)
@@ -37,7 +37,7 @@ struct controller_event_
     , mac_address()
     , timestamp()  {
   (void)_alloc;
-      mac_address.assign(0);
+      mac_address.fill(0);
   }
 
 

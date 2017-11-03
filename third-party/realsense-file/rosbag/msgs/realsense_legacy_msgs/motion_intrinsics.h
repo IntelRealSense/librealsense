@@ -28,22 +28,22 @@ struct motion_intrinsics_
     : data()
     , noise_variances()
     , bias_variances()  {
-      data.assign(0.0);
+      data.fill(0.0);
 
-      noise_variances.assign(0.0);
+      noise_variances.fill(0.0);
 
-      bias_variances.assign(0.0);
+      bias_variances.fill(0.0);
   }
   motion_intrinsics_(const ContainerAllocator& _alloc)
     : data()
     , noise_variances()
     , bias_variances()  {
   (void)_alloc;
-      data.assign(0.0);
+      data.fill(0.0);
 
-      noise_variances.assign(0.0);
+      noise_variances.fill(0.0);
 
-      bias_variances.assign(0.0);
+      bias_variances.fill(0.0);
   }
 
 

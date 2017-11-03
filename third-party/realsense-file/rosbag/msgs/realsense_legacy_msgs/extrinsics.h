@@ -27,17 +27,17 @@ struct extrinsics_
   extrinsics_()
     : rotation()
     , translation()  {
-      rotation.assign(0.0);
+      rotation.fill(0.0);
 
-      translation.assign(0.0);
+      translation.fill(0.0);
   }
   extrinsics_(const ContainerAllocator& _alloc)
     : rotation()
     , translation()  {
   (void)_alloc;
-      rotation.assign(0.0);
+      rotation.fill(0.0);
 
-      translation.assign(0.0);
+      translation.fill(0.0);
   }
 
 

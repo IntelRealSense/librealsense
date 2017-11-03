@@ -30,7 +30,7 @@ struct controller_vendor_data_
     , vendor_data_source_index(0)
     , data()
     , timestamp()  {
-      data.assign(0);
+      data.fill(0);
   }
   controller_vendor_data_(const ContainerAllocator& _alloc)
     : controller_id(0)
@@ -39,7 +39,7 @@ struct controller_vendor_data_
     , data()
     , timestamp()  {
   (void)_alloc;
-      data.assign(0);
+      data.fill(0);
   }
 
 

@@ -28,14 +28,14 @@ struct controller_command_
     : controller_id(0)
     , type(0)
     , mac_address()  {
-      mac_address.assign(0);
+      mac_address.fill(0);
   }
   controller_command_(const ContainerAllocator& _alloc)
     : controller_id(0)
     , type(0)
     , mac_address()  {
   (void)_alloc;
-      mac_address.assign(0);
+      mac_address.fill(0);
   }
 
 
