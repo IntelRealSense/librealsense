@@ -25,22 +25,26 @@ namespace librealsense
     {
         using namespace ds;
 
-        auto& depth_ep = get_depth_sensor();
-        auto emitter_enabled = std::make_shared<emitter_option>(depth_ep);
-        depth_ep.register_option(RS2_OPTION_EMITTER_ENABLED, emitter_enabled);
+        auto pid = group.uvc_devices.front().pid;
+        if (pid != RS_USB2_PID)
+        {
+            auto& depth_ep = get_depth_sensor();
+            auto emitter_enabled = std::make_shared<emitter_option>(depth_ep);
+            depth_ep.register_option(RS2_OPTION_EMITTER_ENABLED, emitter_enabled);
 
-        auto laser_power = std::make_shared<uvc_xu_option<uint16_t>>(depth_ep,
-                                                                     depth_xu,
-                                                                     DS5_LASER_POWER,
-                                                                     "Manual laser power in mw. applicable only when laser power mode is set to Manual");
-        depth_ep.register_option(RS2_OPTION_LASER_POWER,
-                                 std::make_shared<auto_disabling_control>(
-                                 laser_power,
-                                 emitter_enabled,
-                                 std::vector<float>{0.f, 2.f}, 1.f));
+            auto laser_power = std::make_shared<uvc_xu_option<uint16_t>>(depth_ep,
+                                                                         depth_xu,
+                                                                         DS5_LASER_POWER,
+                                                                         "Manual laser power in mw. applicable only when laser power mode is set to Manual");
+            depth_ep.register_option(RS2_OPTION_LASER_POWER,
+                                     std::make_shared<auto_disabling_control>(
+                                     laser_power,
+                                     emitter_enabled,
+                                     std::vector<float>{0.f, 2.f}, 1.f));
 
-        depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                std::make_shared<asic_and_projector_temperature_options>(depth_ep,
-                RS2_OPTION_PROJECTOR_TEMPERATURE));
+            depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                    std::make_shared<asic_and_projector_temperature_options>(depth_ep,
+                    RS2_OPTION_PROJECTOR_TEMPERATURE));
+        }
     }
 }
