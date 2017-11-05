@@ -197,7 +197,9 @@ namespace librealsense
     {
     public:
         RegexTopicQuery(std::string const& regexp) : _exp(regexp)
-        {}
+        {
+            LOG_DEBUG("RegexTopicQuery with expression: " << regexp);
+        }
 
         bool operator()(rosbag::ConnectionInfo const* info) const
         {
@@ -357,6 +359,14 @@ namespace librealsense
         {
             return create_from({ stream_full_prefix(stream_id), "image", "metadata" });
         }
+        static std::string imu_data_topic(const device_serializer::stream_identifier& stream_id)
+        {
+            return create_from({ stream_full_prefix(stream_id), "imu", "data" });
+        }
+        static std::string imu_metadata_topic(const device_serializer::stream_identifier& stream_id)
+        {
+            return create_from({ stream_full_prefix(stream_id), "imu", "metadata" });
+        }
         static std::string stream_extrinsic_topic(const device_serializer::stream_identifier& stream_id, uint32_t ref_id)
         {
             return create_from({ stream_full_prefix(stream_id), "tf", std::to_string(ref_id) });
@@ -490,6 +500,70 @@ namespace librealsense
         constexpr const char* EXTENDED_STATUS = "{ 0xff6e50db, 0x3c5f, 0x43e7,{ 0xb4, 0x82, 0xb8, 0xc3, 0xa6, 0x8e, 0x78, 0xcd } }";
         constexpr const char* SERIAL_NUMBER = "{ 0x7d3e44e7, 0x8970, 0x4a32,{ 0x8e, 0xee, 0xe8, 0xd1, 0xd1, 0x32, 0xa3, 0x22 } }";
         constexpr const char* TIMESTAMP_SORT_TYPE = "{ 0xb409b217, 0xe5cd, 0x4a04,{ 0x9e, 0x85, 0x1a, 0x7d, 0x59, 0xd7, 0xe5, 0x61 } }";
+        
+        constexpr const char* DEPTH = "DEPTH";
+        constexpr const char* COLOR = "COLOR";
+        constexpr const char* INFRARED = "INFRARED";
+        constexpr const char* INFRARED2 = "INFRARED2";
+        constexpr const char* FISHEYE = "FISHEYE";
+        constexpr const char* FISHEYE2 = "FISHEYE2";
+        constexpr const char* FISHEYE3 = "FISHEYE3";
+        constexpr const char* FISHEYE4 = "FISHEYE4";
+        constexpr const char* RECTIFIED_COLOR = "RECTIFIED_COLOR";
+        constexpr const char* ACCEL = "ACCLEROMETER"; //Yes, there is a typo, that's how it is saved.
+        constexpr const char* GYRO = "GYROMETER";
+
+        constexpr uint32_t actual_exposure = 0; //    float RS2_FRAME_METADATA_ACTUAL_EXPOSURE
+        constexpr uint32_t actual_fps = 1; //    float
+        constexpr uint32_t frame_counter = 2; //    float RS2_FRAME_METADATA_FRAME_COUNTER
+        constexpr uint32_t frame_timestamp = 3; //    float RS2_FRAME_METADATA_FRAME_TIMESTAMP
+        constexpr uint32_t sensor_timestamp = 4; //    float RS2_FRAME_METADATA_SENSOR_TIMESTAMP
+        constexpr uint32_t gain_level = 5; //    float RS2_FRAME_METADATA_GAIN_LEVEL
+        constexpr uint32_t auto_exposure = 6; //    float RS2_FRAME_METADATA_AUTO_EXPOSURE
+        constexpr uint32_t white_balance = 7; //    float RS2_FRAME_METADATA_WHITE_BALANCE
+        constexpr uint32_t time_of_arrival = 8; //    float RS2_FRAME_METADATA_TIME_OF_ARRIVAL
+        constexpr uint32_t SYSTEM_TIMESTAMP = 65536; //    int64
+        constexpr uint32_t TEMPRATURE = 65537; //    float
+        constexpr uint32_t EXPOSURE_TIME = 65538; //    uint32_t
+        constexpr uint32_t FRAME_LENGTH = 65539; //    uint32_t
+        constexpr uint32_t ARRIVAL_TIMESTAMP = 65540; //    int64
+        constexpr uint32_t CONFIDENCE = 65541; //    uint32
+
+        inline bool convert_metadata_type(uint64_t type, rs2_frame_metadata_value& res)
+        {
+            switch (type)
+            {
+            case actual_exposure: res = RS2_FRAME_METADATA_ACTUAL_EXPOSURE;
+                //Not supported case actual_fps: ;
+            case frame_counter: res = RS2_FRAME_METADATA_FRAME_COUNTER;
+            case frame_timestamp: res = RS2_FRAME_METADATA_FRAME_TIMESTAMP;
+            case sensor_timestamp: res = RS2_FRAME_METADATA_SENSOR_TIMESTAMP;
+            case gain_level: res = RS2_FRAME_METADATA_GAIN_LEVEL;
+            case auto_exposure: res = RS2_FRAME_METADATA_AUTO_EXPOSURE;
+            case white_balance: res = RS2_FRAME_METADATA_WHITE_BALANCE;
+            case time_of_arrival: res = RS2_FRAME_METADATA_TIME_OF_ARRIVAL;
+                //Not supported here case SYSTEM_TIMESTAMP: 
+                //Not supported case TEMPRATURE: res =  RS2_FRAME_METADATA_;
+            case EXPOSURE_TIME: res = RS2_FRAME_METADATA_SENSOR_TIMESTAMP;
+                //Not supported case FRAME_LENGTH: res =  RS2_FRAME_METADATA_;
+            case ARRIVAL_TIMESTAMP: res = RS2_FRAME_METADATA_TIME_OF_ARRIVAL;
+                //Not supported case CONFIDENCE: res =  RS2_FRAME_METADATA_;
+            default:
+                return false;
+            }
+            return true;
+        }
+        inline rs2_timestamp_domain convert(uint64_t source)
+        {
+            switch (source)
+            {
+            case 0 /*camera*/: //[[fallthrough]]
+            case 1 /*microcontroller*/ : 
+                return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
+            case 2: return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
+           }
+            throw std::runtime_error(to_string() << "Unknown timestamp domain: " << source);
+        }
 
         inline bool info_from_string(const std::string& str, rs2_camera_info& out)
         {
@@ -525,40 +599,38 @@ namespace librealsense
         {
             return file_version();
         }
-
+     
         inline std::string stream_type_to_string(const stream_descriptor& source)
         {
             std::string name;
-            assert(source.index != 0); //Streams either have no index (which means index = "1") or the index itself, but not "0"
             switch (source.type)
             {
-            default:
-            case RS2_STREAM_DEPTH: name = "DEPTH"; break;
-            case RS2_STREAM_COLOR: name = "COLOR"; break;
-            case RS2_STREAM_INFRARED: name = "INFRARED"; break;
-            case RS2_STREAM_FISHEYE: name = "FISHEYE"; break;
-            case RS2_STREAM_GYRO: name = "GYROMETER"; break;
-            case RS2_STREAM_ACCEL: name = "ACCELEROMETER"; break;
-                break;
+            case RS2_STREAM_DEPTH: name = DEPTH; break;
+            case RS2_STREAM_COLOR: name = COLOR; break;
+            case RS2_STREAM_INFRARED: name = INFRARED; break;
+            case RS2_STREAM_FISHEYE: 
+            {
+                switch (source.index)
+                {
+                case 1: return FISHEYE;
+                case 2: return FISHEYE2;
+                case 3: return FISHEYE3;
+                case 4: return FISHEYE4;
+                default:
+                    throw io_exception(to_string() << "Unknown stream index : " << source.index);
+                }
             }
-            name += source.index == 1 ? "" : std::to_string(source.index);
-            return name;
+            case RS2_STREAM_GYRO: name = GYRO; break;
+            case RS2_STREAM_ACCEL: name = ACCEL; break;
+                break;
+            default:
+                throw io_exception(to_string() << "Unknown stream type : " << source.type);
+            }
+            return name + (source.index == 0 ? "" : std::to_string(source.index));
         }
 
         inline stream_descriptor parse_stream_type(const std::string& source)
         {
-            const std::string DEPTH = "DEPTH";
-            const std::string COLOR = "COLOR";
-            const std::string INFRARED = "INFRARED";
-            const std::string INFRARED2 = "INFRARED2";
-            const std::string FISHEYE = "FISHEYE";
-            const std::string FISHEYE2 = "FISHEYE2";
-            const std::string FISHEYE3 = "FISHEYE3";
-            const std::string FISHEYE4 = "FISHEYE4";
-            const std::string RECTIFIED_COLOR = "RECTIFIED_COLOR";
-            const std::string ACCEL = "GYROMETER";
-            const std::string GYRO = "ACCELEROMETER";
-
             if (source == DEPTH)
                 return { RS2_STREAM_DEPTH, 0 };
             else if (source == COLOR)
@@ -575,6 +647,10 @@ namespace librealsense
                 return { RS2_STREAM_FISHEYE, 3 };
             else if (source == FISHEYE4)
                 return { RS2_STREAM_FISHEYE, 4 };
+            else if (source == ACCEL)
+                return { RS2_STREAM_ACCEL, 0 };
+            else if (source == GYRO)
+                return { RS2_STREAM_GYRO, 0 };
 
             throw io_exception(to_string() << "Unknown stream type : " << source);
         }
@@ -590,17 +666,17 @@ namespace librealsense
             FrameQuery() : RegexTopicQuery(to_string() << R"RRR(/(camera|imu)/.*/(image|imu)_raw/\d)RRR") {}
         };
 
+        inline bool is_camera(rs2_stream s)
+        {
+            return
+                s == RS2_STREAM_DEPTH ||
+                s == RS2_STREAM_COLOR ||
+                s == RS2_STREAM_INFRARED ||
+                s == RS2_STREAM_FISHEYE;
+        }
+
         class StreamQuery : public RegexTopicQuery
         {
-            static bool is_camera(rs2_stream s)
-            {
-                return
-                    s == RS2_STREAM_DEPTH ||
-                    s == RS2_STREAM_COLOR ||
-                    s == RS2_STREAM_INFRARED ||
-                    s == RS2_STREAM_FISHEYE;
-            }
-
         public:
             StreamQuery(const device_serializer::stream_identifier& stream_id) :
                 RegexTopicQuery(to_string() 
@@ -611,6 +687,17 @@ namespace librealsense
             }
         };
 
+        class FrameInfoExt : public RegexTopicQuery
+        {
+        public:
+            FrameInfoExt(const device_serializer::stream_identifier& stream_id) :
+                RegexTopicQuery(to_string()
+                    << (is_camera(stream_id.stream_type) ? "/camera/" : "/imu/")
+                    << stream_type_to_string({ stream_id.stream_type, (int)stream_id.stream_index })
+                    << "/rs_frame_info_ext/" << stream_id.sensor_index)
+            {
+            }
+        };
         inline device_serializer::stream_identifier get_stream_identifier(const std::string& topic)
         {
             auto stream = parse_stream_type(ros_topic::get<2>(topic));

@@ -314,7 +314,15 @@ namespace librealsense
 
     MAP_EXTENSION(RS2_EXTENSION_DEPTH_FRAME, librealsense::depth_frame);
 
-    //TODO: Define Motion Frame
+    class motion_frame : public frame
+    {
+    public:
+        motion_frame() : frame()
+        {}
+    };
+
+    MAP_EXTENSION(RS2_EXTENSION_MOTION_FRAME, librealsense::motion_frame);
+
 
     class archive_interface : public sensor_part
     {

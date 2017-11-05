@@ -41,9 +41,9 @@ namespace librealsense
         return std::make_shared<frame_queue_size>(&_max_publish_list_size, option_range{ 1, 32, 1, 16 });
     }
 
-    frame_source::frame_source()
+    frame_source::frame_source(uint32_t max_publish_list_size)
             : _callback(nullptr, [](rs2_frame_callback*) {}),
-              _max_publish_list_size(16),
+              _max_publish_list_size(max_publish_list_size),
               _ts(environment::get_instance().get_time_service())
     {}
 
@@ -54,7 +54,8 @@ namespace librealsense
         std::vector<rs2_extension> supported { RS2_EXTENSION_VIDEO_FRAME,
                                                RS2_EXTENSION_COMPOSITE_FRAME,
                                                RS2_EXTENSION_POINTS,
-                                               RS2_EXTENSION_DEPTH_FRAME };
+                                               RS2_EXTENSION_DEPTH_FRAME,
+                                               RS2_EXTENSION_MOTION_FRAME };
 
         for (auto type : supported)
         {

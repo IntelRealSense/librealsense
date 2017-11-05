@@ -151,11 +151,6 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
         frame->set_stream(m_streams[std::make_pair(type, index)]);
         frame->set_sensor(shared_from_this());
         auto stream_id = frame.frame->get_stream()->get_unique_id();
-        //TODO: remove this once filter is implemented (which will only read streams that were 'open'ed
-        if(m_dispatchers.find(stream_id) == m_dispatchers.end())
-        {
-            return;
-        }
         //TODO: Ziv, remove usage of shared_ptr when frame_holder is cpoyable
         auto pf = std::make_shared<frame_holder>(std::move(frame));
         m_dispatchers.at(stream_id)->invoke([this, pf](dispatcher::cancellable_timer t)

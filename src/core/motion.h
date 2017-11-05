@@ -13,5 +13,13 @@ namespace librealsense
         virtual rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) const = 0;
     };
 
+    class motion_stream_profile_interface : public virtual stream_profile_interface
+    {
+    public:
+        virtual rs2_motion_device_intrinsic get_intrinsics() const = 0;
+        virtual void set_intrinsics(std::function<rs2_motion_device_intrinsic()> calc) = 0;
+    };
+
     MAP_EXTENSION(RS2_EXTENSION_MOTION, librealsense::motion_sensor_interface);
+    MAP_EXTENSION(RS2_EXTENSION_MOTION_PROFILE, librealsense::motion_stream_profile_interface);
 }

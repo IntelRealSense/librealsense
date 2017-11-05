@@ -15,7 +15,7 @@ namespace librealsense
     class frame_source
     {
     public:
-        frame_source();
+        frame_source(uint32_t max_publish_list_size = 16);
 
         void init(std::shared_ptr<metadata_parser_map> metadata_parsers);
 
