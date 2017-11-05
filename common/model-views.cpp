@@ -1596,8 +1596,9 @@ namespace rs2
                 tex_sources.push_back(s.second.profile.unique_id());
 
                 auto dev_name = s.second.dev ? s.second.dev->dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
-                auto stream_name = rs2_stream_to_string(s.second.profile.stream_type());
-
+                std::string stream_name = rs2_stream_to_string(s.second.profile.stream_type());
+                if (s.second.profile.stream_index())
+                    stream_name += "_" + std::to_string(s.second.profile.stream_index());
                 tex_sources_str.push_back(to_string() << dev_name << " " << stream_name);
 
                 i++;
@@ -1610,9 +1611,8 @@ namespace rs2
             ImGui::SetCursorPosY(7);
             ImGui::Text("Texture Source:"); ImGui::SameLine();
 
-
             ImGui::SetCursorPosY(7);
-            ImGui::PushItemWidth(190);
+            ImGui::PushItemWidth(200);
             draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
 
             i = 0;
