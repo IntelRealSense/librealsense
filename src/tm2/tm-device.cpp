@@ -79,13 +79,19 @@ namespace librealsense
             for (auto&& r : requests)
             {
                 auto sp = to_profile(r.get());
-                auto tm_profile = _tm_supported_profiles.video[sp.index-1];
+                // need to set both L & R streams profile, due to TM2 FW limitation
+                int stream_index = sp.index - 1;
+                int pair_stream_index = (stream_index % 2) == 0 ? stream_index + 1 : stream_index - 1;
+                // TODO - assuming a single profile per IR stream, for both L & R
+                auto tm_profile = _tm_supported_profiles.video[stream_index];
+                auto tm_profile_pair = _tm_supported_profiles.video[pair_stream_index];  
                 if (tm_profile.fps == sp.fps && 
                     tm_profile.profile.height == sp.height && 
                     tm_profile.profile.width == sp.width && 
                     tm_profile.profile.pixelFormat == convertToTm2PixelFormat(sp.format))
                 {
                     _tm_active_profiles.set(tm_profile, true, true);
+                    _tm_active_profiles.set(tm_profile_pair, true, true);
                 }
             }
             _is_opened = true;
@@ -193,7 +199,7 @@ namespace librealsense
                 }
             }            
             //TODO - extension_type param assumes not depth
-            frame_holder frame = _source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, tm_frame.profile.width * tm_frame.profile.stride, additional_data, true);
+            frame_holder frame = _source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, tm_frame.profile.height * tm_frame.profile.stride, additional_data, true);
             if (frame.frame)
             {
                 auto video = (video_frame*)(frame.frame);
@@ -202,7 +208,7 @@ namespace librealsense
                 frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME);//TODO - is this correct?
                 frame->set_stream(profile);
                 //frame->set_sensor(this); //TODO? uvc doesn't set it?
-                video->data.assign(tm_frame.data, tm_frame.data + tm_frame.profile.width * tm_frame.profile.stride);
+                video->data.assign(tm_frame.data, tm_frame.data + (tm_frame.profile.height * tm_frame.profile.stride));
             }
             else
             {
