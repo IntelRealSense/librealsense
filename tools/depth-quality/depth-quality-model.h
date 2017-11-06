@@ -45,10 +45,12 @@ namespace rs2
             }
 
             metric_plot(const std::string& name, float min, float max,
-                        const std::string& units, const std::string& description)
+                        const std::string& units, const std::string& description,
+                        const bool with_plane_fit)
                 : _idx(0), _first_idx(0),_vals(), _min(min), _max(max), _id("##" + name),
                   _label(name + " = "), _name(name),
                   _units(units), _description(description),
+                _visible(true), _requires_plane_fit(with_plane_fit),
                   _trending_up(std::chrono::milliseconds(700)),
                   _trending_down(std::chrono::milliseconds(700))
             {
@@ -71,8 +73,10 @@ namespace rs2
             void visible(bool is_visible) 
             { 
                 std::lock_guard<std::mutex> lock(_m); 
-                _visible = is_visible; 
+                _visible = is_visible;
             }
+
+            bool requires_plane_fit() const { return _requires_plane_fit; }
 
         private:
             bool has_trend(bool positive);
@@ -84,7 +88,8 @@ namespace rs2
             std::array<double, SIZE> _timestamps;
             float _min, _max;
             std::string _id, _label, _units, _name, _description;
-            bool _visible = true;
+            bool _visible;
+            const bool _requires_plane_fit;
 
             timer _model_timer;
             temporal_event _trending_up;
@@ -149,14 +154,32 @@ namespace rs2
                 _ground_truth = gt;
                 _use_gt = true;
             }
-            void disable_ground_truth() 
+
+            void set_plane_fit(bool found)
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                if (_plane_fit != (int)found)
+                {
+                    // Affects the visibility of plane-fit-dependent metrics
+                    _plane_fit = found;
+                    for (auto&& plot : _plots)
+                    {
+                        if (plot->requires_plane_fit())
+                            plot->visible(found);
+                    }
+                }
+            }
+
+            void disable_ground_truth()
             {
                 std::lock_guard<std::mutex> lock(_m);
                 _use_gt = false; 
             }
             float get_ground_truth() const { std::lock_guard<std::mutex> lock(_m); return _ground_truth; }
 
-            void reset() {
+            void reset()
+            {
+                _plane_fit = -1;
                 rs2::frame f;
                 while (_frame_queue.poll_for_frame(&f));
             }
@@ -172,7 +195,8 @@ namespace rs2
             float                   _stereo_baseline_mm;
             float                   _ground_truth;
             float                   _ground_truth_copy;
-            bool                    _use_gt = false;
+            bool                    _use_gt;
+            int                     _plane_fit;
             region_of_interest      _roi;
             snapshot_metrics        _latest_metrics;
             bool                    _active;
@@ -203,7 +227,7 @@ namespace rs2
             void draw_guides(ux_window& win, const rect& viewer_rect, bool distance_guide, bool orientation_guide);
 
             std::shared_ptr<metric_plot> make_metric(
-                const std::string& name, float min, float max,
+                const std::string& name, float min, float max, bool plane_fit,
                 const std::string& units,
                 const std::string& description);
 

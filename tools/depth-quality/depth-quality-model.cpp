@@ -283,20 +283,20 @@ namespace rs2
             for (int i = 2; i < 7; i += 1)
             {
                 auto t = (animation_clock.elapsed_ms() / 500) * M_PI - i * (M_PI / 5);
-                auto alpha = (1.f + sin(t)) / 2.f;
+                float alpha = (1.f + float(sin(t))) / 2.f;
 
                 auto c = blend(grey, (1.f - float(i)/7.f)*fade_factor);
                 if (orientation_guide) c = blend(light_blue, alpha);
 
                 ImGui::GetWindowDrawList()->AddCircle(
-                { pos1.x + 41 - 2 * i * prev_x, pos1.y + 40 - 2 * i * prev_y }, 40 - i*i,
+                { pos1.x + 41 - 2 * i * prev_x, pos1.y + 40 - 2 * i * prev_y }, 40.f - i*i,
                     ImColor(c), 64);
             }
 
             if (angle < 50)
             {
                 ImGui::GetWindowDrawList()->AddCircleFilled(
-                { pos1.x + 41 + 70 * prev_x, pos1.y + 40 + 70 * prev_y }, 10,
+                { pos1.x + 41 + 70 * prev_x, pos1.y + 40 + 70 * prev_y }, 10.f,
                     ImColor(blend(grey, orientation_guide ? 1.f : fade_factor)), 64);
             }
 
@@ -320,7 +320,7 @@ namespace rs2
                     auto min_y = pos1.y + 10;
                     auto max_y = window_h + window_y;
                     int bar_spacing = 15;
-                    int parts = (max_y - min_y) / bar_spacing;
+                    int parts = int(max_y - min_y) / bar_spacing;
 
                     ImGui::GetWindowDrawList()->AddRect(
                     { pos1.x + 1, pos1.y },
@@ -353,7 +353,7 @@ namespace rs2
                             for (int j = -2; j < 2; j++)
                             {
                                 auto yc = yellow;
-                                auto factor = (1 - fabs(j) / 3);
+                                auto factor = (1 - abs(j) / 3.f);
                                 yc = blend(yc, factor*factor);
                                 if (!distance_guide) yc = blend(yc, fade_factor);
                                 ImGui::GetWindowDrawList()->AddRectFilled(
@@ -366,7 +366,7 @@ namespace rs2
                                 for (int j = 1; j < 5; j++)
                                 {
                                     auto t = (animation_clock.elapsed_ms() / 500) * M_PI - j * (M_PI / 5);
-                                    auto alpha = (1.f + sin(t)) / 2.f;
+                                    auto alpha = (1 + float(sin(t))) / 2.f;
 
                                     ImGui::SetCursorPos({ pos.x + 57, pos.y + bar_spacing * (i - j) + 14 });
                                     ImGui::PushStyleColor(ImGuiCol_Text,
@@ -381,7 +381,7 @@ namespace rs2
                                 for (int j = 1; j < 5; j++)
                                 {
                                     auto t = (animation_clock.elapsed_ms() / 500) * M_PI - j * (M_PI / 5);
-                                    auto alpha = (1.f + sin(t)) / 2.f;
+                                    auto alpha = (1.f + float(sin(t))) / 2.f;
 
                                     ImGui::SetCursorPos({ pos.x + 57, pos.y + bar_spacing * (i + j) + 14 });
                                     ImGui::PushStyleColor(ImGuiCol_Text,
@@ -424,7 +424,7 @@ namespace rs2
             bool distance_guide = false;
             bool orientation_guide = false;
             bool found = draw_instructions(win, viewer_rect, distance_guide, orientation_guide);
-            //draw_guides(win, viewer_rect, distance_guide, orientation_guide);
+            _metrics_model.set_plane_fit(found);
 
             ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
             ImGui::SetNextWindowPos({ 0, 0 });
@@ -491,7 +491,7 @@ namespace rs2
                                 cfg.enable_stream(secondary.stream_type(), secondary.stream_index(),
                                     primary.width(), primary.height(), secondary.format(), primary.fps());
 
-                                // Wait till a valid device is found and responsive
+                                // Wait till a valid device is registered and responsive
                                 bool success = false;
                                 do
                                 {
@@ -554,7 +554,7 @@ namespace rs2
                         if (_use_ground_truth) gt_str += ":";
                         if (ImGui::Checkbox(gt_str.c_str(), &_use_ground_truth))
                         {
-                            if (_use_ground_truth) _metrics_model.set_ground_truth(_ground_truth);
+                            if (_use_ground_truth) _metrics_model.set_ground_truth(float(_ground_truth));
                             else _metrics_model.disable_ground_truth();
                         }
                         if (ImGui::IsItemHovered())
@@ -567,7 +567,7 @@ namespace rs2
                             ImGui::PushItemWidth(120);
                             if (ImGui::InputInt("##GT", &_ground_truth, 1))
                             {
-                                _metrics_model.set_ground_truth(_ground_truth);
+                                _metrics_model.set_ground_truth(float(_ground_truth));
                             }
                             ImGui::PopItemWidth();
                             ImGui::SetCursorPosX(col1 + 120); ImGui::SameLine();
@@ -575,7 +575,7 @@ namespace rs2
                         }
                         else
                         {
-                            _ground_truth = _metrics_model.get_last_metrics().distance;
+                            _ground_truth = int(_metrics_model.get_last_metrics().distance);
                             ImGui::Dummy({ 1,1 });
                         }
                         ImGui::PopStyleColor();
@@ -600,7 +600,7 @@ namespace rs2
                     ImGui::PopStyleVar();
                     ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, { 0, 0 });
 
-                    if (found && ImGui::TreeNodeEx("Metrics", ImGuiTreeNodeFlags_DefaultOpen))
+                    if (ImGui::TreeNodeEx("Metrics", ImGuiTreeNodeFlags_DefaultOpen))
                     {
                         ImGui::PopStyleVar();
                         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
@@ -845,7 +845,7 @@ namespace rs2
 
         metrics_model::metrics_model() :
             _frame_queue(1),
-            _depth_scale_units(0.f), _active(true)
+            _depth_scale_units(0.f), _use_gt(false), _plane_fit(-1),_active(true)
         {
             _worker_thread = std::thread([this]() {
                 while (_active)
@@ -897,11 +897,11 @@ namespace rs2
         }
 
         std::shared_ptr<metric_plot> tool_model::make_metric(
-            const std::string& name, float min, float max,
+            const std::string& name, float min, float max, const bool requires_plane_fit,
             const std::string& units,
             const std::string& description)
         {
-            auto res = std::make_shared<metric_plot>(name, min, max, units, description);
+            auto res = std::make_shared<metric_plot>(name, min, max, units, description, requires_plane_fit);
             _metrics_model.add_metric(res);
             return res;
         }
@@ -1029,7 +1029,7 @@ namespace rs2
                     _description.size() + 1, desc_size, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopStyleColor(3);
 
-                ImGui::PlotLines(_id.c_str(), (float*)&_vals, SIZE, _idx, ss.str().c_str(), _min, _max, { 270, 50 });
+                ImGui::PlotLines(_id.c_str(), (float*)&_vals, int(SIZE), int(_idx), ss.str().c_str(), _min, _max, { 270, 50 });
 
                 ImGui::TreePop();
             }

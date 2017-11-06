@@ -16,7 +16,7 @@ int main(int argc, const char * argv[]) try
     // ===============================
 
     metric zaccuracy = model.make_metric(
-                       "Z Accuracy", 0, 100, "%",
+                       "Z Accuracy", -100, 100, true, "%",
                        "Z Accuracy given Ground Truth\n"
                        "Performed on the depth image in the ROI\n"
                        "Calculate the depth-errors map\n"
@@ -24,7 +24,7 @@ int main(int argc, const char * argv[]) try
                        "Calculate the median of the depth-errors\n");
 
     metric avg = model.make_metric(
-                 "Average Error", 0, 10, "(mm)",
+                 "Average Error", 0, 10, true, "(mm)",
                  "Average Distance from Plane Fit\n"
                  "This metric approximates a plane within\n"
                  "the ROI and calculates the average\n"
@@ -32,7 +32,7 @@ int main(int argc, const char * argv[]) try
                  "from that plane, in mm");
 
     metric rms = model.make_metric(
-                 "Subpixel RMS", 0.f, 1.f, "(pixel)",
+                 "Subpixel RMS", 0.f, 1.f, true, "(pixel)",
                  "Normalized RMS .\n"
                  "This metric provides the subpixel accuracy\n"
                  "and is calculated as follows:\n"
@@ -46,7 +46,7 @@ int main(int argc, const char * argv[]) try
                  "             i=0    ");
 
     metric fill = model.make_metric(
-                  "Fill-Rate", 0, 100, "%",
+                  "Fill-Rate", 0, 100, false, "%",
                   "Fill Rate\n"
                   "Percentage of pixels with valid depth\n"
                   "values out of all pixels within the ROI\n");
@@ -56,11 +56,11 @@ int main(int argc, const char * argv[]) try
     // ===============================
 
     model.on_frame([&](
-        const std::vector<rs2::float3>& points, 
+        const std::vector<rs2::float3>& points,
         const rs2::plane p,
         const rs2::region_of_interest roi,
-        const float baseline_mm, 
-        const float focal_length_pixels, 
+        const float baseline_mm,
+        const float focal_length_pixels,
         const float* ground_truth_mm)
     {
         const float TO_METERS = 0.001f;
@@ -101,7 +101,7 @@ int main(int argc, const char * argv[]) try
         {
             std::sort(begin(errors), end(errors));
             auto median = errors[errors.size() / 2];
-            auto accuracy = TO_PERCENT * (fabs(median) / *ground_truth_mm);
+            auto accuracy = TO_PERCENT * (median / *ground_truth_mm);
             zaccuracy->add_value(accuracy);
         }
 
