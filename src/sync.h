@@ -10,7 +10,7 @@
 #include <vector>
 #include <mutex>
 #include <memory>
-#include "align.h"
+#include "proc/align.h"
 
 namespace librealsense
 {

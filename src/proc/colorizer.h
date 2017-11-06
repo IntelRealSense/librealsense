@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "align.h"
+#include "proc/synthetic-stream.h"
 
 #include <map>
 #include <vector>
