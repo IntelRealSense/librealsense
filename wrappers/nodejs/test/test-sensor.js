@@ -49,10 +49,18 @@ describe('Sensor test', function() {
     sensors.forEach((sensor) => {
       Object.keys(rs2.option).forEach((o) => {
         if (o === 'OPTION_COUNT' || o === 'optionToString') return;
-        assert.equal(typeof sensor.isOptionReadOnly(rs2.option[o]), 'boolean');
+        if (sensor.supportsOption(rs2.option[o])) {
+          assert.equal(typeof sensor.isOptionReadOnly(rs2.option[o]), 'boolean');
+        } else {
+          assert.equal(typeof sensor.isOptionReadOnly(rs2.option[o]), 'undefined');
+        }
       });
       optionsTestArray.forEach((o) => {
-        assert.equal(typeof sensor.isOptionReadOnly(o), 'boolean');
+        if (sensor.supportsOption(o)) {
+          assert.equal(typeof sensor.isOptionReadOnly(o), 'boolean');
+        } else {
+          assert.equal(typeof sensor.isOptionReadOnly(o), 'undefined');
+        }
       });
     });
   });
@@ -103,10 +111,18 @@ describe('Sensor test', function() {
     sensors.forEach((sensor) => {
       Object.keys(rs2.option).forEach((o) => {
         if (o === 'OPTION_COUNT' || o === 'optionToString') return;
-        assert.equal(typeof sensor.getOption(rs2.option[o]), 'number');
+        if (sensor.supportsOption(rs2.option[o])) {
+          assert.equal(typeof sensor.getOption(rs2.option[o]), 'number');
+        } else {
+          assert.equal(typeof sensor.getOption(rs2.option[o]), 'undefined');
+        }
       });
       optionsTestArray.forEach((o) => {
-        assert.equal(typeof sensor.getOption(o), 'number');
+        if (sensor.supportsOption(o)) {
+          assert.equal(typeof sensor.getOption(o), 'number');
+        } else {
+          assert.equal(typeof sensor.getOption(o), 'undefined');
+        }
       });
     });
   });
@@ -134,20 +150,28 @@ describe('Sensor test', function() {
     sensors.forEach((sensor) => {
       Object.keys(rs2.option).forEach((o) => {
         if (o === 'OPTION_COUNT' || o === 'optionToString') return;
-        const r = sensor.getOptionRange(rs2.option[o]);
-        assert.equal(typeof r, 'object');
-        assert.equal(typeof r.minValue, 'number');
-        assert.equal(typeof r.maxValue, 'number');
-        assert.equal(typeof r.defaultValue, 'number');
-        assert.equal(typeof r.step, 'number');
+        if (sensor.supportsOption(rs2.option[o])) {
+          const r = sensor.getOptionRange(rs2.option[o]);
+          assert.equal(typeof r, 'object');
+          assert.equal(typeof r.minValue, 'number');
+          assert.equal(typeof r.maxValue, 'number');
+          assert.equal(typeof r.defaultValue, 'number');
+          assert.equal(typeof r.step, 'number');
+        } else {
+          assert.equal(typeof sensor.getOptionRange(rs2.option[o]), 'undefined');
+        }
       });
       optionsTestArray.forEach((o) => {
-        const r = sensor.getOptionRange(o);
-        assert.equal(typeof r, 'object');
-        assert.equal(typeof r.minValue, 'number');
-        assert.equal(typeof r.maxValue, 'number');
-        assert.equal(typeof r.defaultValue, 'number');
-        assert.equal(typeof r.step, 'number');
+        if (sensor.supportsOption(o)) {
+          const r = sensor.getOptionRange(o);
+          assert.equal(typeof r, 'object');
+          assert.equal(typeof r.minValue, 'number');
+          assert.equal(typeof r.maxValue, 'number');
+          assert.equal(typeof r.defaultValue, 'number');
+          assert.equal(typeof r.step, 'number');
+        } else {
+          assert.equal(typeof sensor.getOptionRange(o), 'undefined');
+        }
       });
     });
   });

@@ -24,7 +24,7 @@ describe('Frame test', function() {
   });
 
   it('Testing constructor', () => {
-    assert.throws(() => {
+    assert.doesNotThrow(() => {
       new rs2.Frame();
     });
   });
@@ -55,7 +55,6 @@ describe('Frame test', function() {
     assert.equal(typeof frame.timestamp, 'number');
   });
 
-  // DSO-7440
   it.skip('Testing property streamType', () => {
     assert.equal(typeof frame.streamType, 'number');
   });

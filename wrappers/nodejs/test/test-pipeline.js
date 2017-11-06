@@ -87,7 +87,7 @@ describe('Pipeline test', function() {
       pipeline.start();
       pipeline.stop();
       pipeline.destroy();
-    });
+   });
   });
 
   it('Testing method waitForFrames', () => {
@@ -97,7 +97,6 @@ describe('Pipeline test', function() {
       pipeline = new rs2.Pipeline();
       pipeline.start();
       frameSet = pipeline.waitForFrames();
-      frameSet.destroy();
     });
     let endTest = false;
     let n = 0;
@@ -111,8 +110,6 @@ describe('Pipeline test', function() {
         assert(frameSet.colorFrame instanceof rs2.VideoFrame);
         endTest = true;
       }
-      // always destroy it
-      frameSet.destroy();
       if (n >= 10) {
         assert(false, 'could not get colorFrame or depthFrame, try to reset camera');
       }
