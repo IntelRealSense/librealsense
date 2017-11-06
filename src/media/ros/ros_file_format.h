@@ -520,7 +520,7 @@ namespace librealsense
         constexpr const char* RECTIFIED_COLOR = "RECTIFIED_COLOR";
         constexpr const char* ACCEL = "ACCLEROMETER"; //Yes, there is a typo, that's how it is saved.
         constexpr const char* GYRO = "GYROMETER";
-        constexpr const char* POSE = "rs_6DoF";
+        constexpr const char* POSE = "rs_6DoF0";
 
         constexpr uint32_t actual_exposure = 0; //    float RS2_FRAME_METADATA_ACTUAL_EXPOSURE
         constexpr uint32_t actual_fps = 1; //    float
@@ -632,7 +632,6 @@ namespace librealsense
             case RS2_STREAM_GYRO: name = GYRO; break;
             case RS2_STREAM_ACCEL: name = ACCEL; break;
             case RS2_STREAM_POSE: name = POSE; break;
-                break;
             default:
                 throw io_exception(to_string() << "Unknown stream type : " << source.type);
             }
@@ -697,7 +696,8 @@ namespace librealsense
                 RegexTopicQuery(to_string() 
                     << (is_camera(stream_id.stream_type) ? "/camera/" : "/imu/") 
                     << stream_type_to_string({ stream_id.stream_type, (int)stream_id.stream_index})
-                    << (is_camera(stream_id.stream_type) ? "/image_raw/" : "/imu_raw/")<< stream_id.sensor_index)
+                    << ((stream_id.stream_type == RS2_STREAM_POSE) ? "/" : (is_camera(stream_id.stream_type)) ? "/image_raw/" : "/imu_raw/")
+                    << stream_id.sensor_index)
             {
             }
         };
@@ -716,7 +716,12 @@ namespace librealsense
         inline device_serializer::stream_identifier get_stream_identifier(const std::string& topic)
         {
             auto stream = parse_stream_type(ros_topic::get<2>(topic));
-            auto sensor_index = static_cast<uint32_t>(std::stoll(ros_topic::get<4>(topic)));
+            uint32_t sensor_index;
+            if(stream.type == RS2_STREAM_POSE)
+                sensor_index = static_cast<uint32_t>(std::stoll(ros_topic::get<3>(topic)));
+            else
+                sensor_index = static_cast<uint32_t>(std::stoll(ros_topic::get<4>(topic)));
+
             return device_serializer::stream_identifier{ 0u,   static_cast<uint32_t>(sensor_index),  stream.type, static_cast<uint32_t>(stream.index) };
         }
 

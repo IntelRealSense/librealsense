@@ -835,8 +835,32 @@ namespace rs2
             {
                 auto axes = *(reinterpret_cast<const float3*>(data));
                 draw_motion_data(axes.x, axes.y, axes.z);
+                break;
             }
-            break;
+            case RS2_FORMAT_6DOF:
+            {
+                const char* ptr = reinterpret_cast<const char*>(data);
+                std::array<float, 3> translation{};
+                memcpy(&translation, ptr, sizeof(translation));
+                ptr += sizeof(translation);
+                std::array<float, 3> velocity{};
+                memcpy(&velocity, ptr, sizeof(velocity));
+                ptr += sizeof(velocity);
+                std::array<float, 3> angular_velocity{};
+                memcpy(&angular_velocity, ptr, sizeof(angular_velocity));
+                ptr += sizeof(angular_velocity);
+                std::array<float, 3> acceleration{};
+                memcpy(&acceleration, ptr, sizeof(acceleration));
+                ptr += sizeof(acceleration);
+                std::array<float, 3> angular_acceleration{};
+                memcpy(&angular_acceleration, ptr, sizeof(angular_acceleration));
+                ptr += sizeof(angular_acceleration);
+                std::array<float, 4> rotation{};
+                memcpy(&rotation, ptr, sizeof(rotation));
+                draw_motion_data(translation[0], translation[1], translation[2]);
+                //TODO: draw_pose_visualization(translation, velocity, angular_velocity, acceleration, angular_acceleration, rotation);
+                break;
+            }
             case RS2_FORMAT_Y16:
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
                 break;

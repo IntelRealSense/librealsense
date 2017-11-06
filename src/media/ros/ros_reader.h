@@ -531,17 +531,17 @@ namespace librealsense
             new_frame->get_stream()->set_stream_index(stream_id.stream_index);
             new_frame->get_stream()->set_stream_type(stream_id.stream_type);
             byte* data = pose_frame->data.data();
-            std::copy(std::begin(translation), std::end(translation), data);
+            memcpy(data, &translation, sizeof(translation));
             data += sizeof(translation);
-            std::copy(std::begin(velocity), std::end(velocity), data);
+            memcpy(data, &velocity, sizeof(velocity));
             data += sizeof(velocity);
-            std::copy(std::begin(angular_velocity), std::end(angular_velocity), data);
+            memcpy(data, &angular_velocity, sizeof(angular_velocity));
             data += sizeof(angular_velocity);
-            std::copy(std::begin(acceleration), std::end(acceleration), data);
+            memcpy(data, &acceleration, sizeof(acceleration));
             data += sizeof(acceleration);
-            std::copy(std::begin(angular_acceleration), std::end(angular_acceleration), data);
+            memcpy(data, &angular_acceleration, sizeof(angular_acceleration));
             data += sizeof(angular_acceleration);
-            std::copy(std::begin(rotation), std::end(rotation), data);
+            memcpy(data, &rotation, sizeof(rotation));
 
             frame_holder fh{ new_frame };
             LOG_DEBUG("Created new frame " << frame_type);
