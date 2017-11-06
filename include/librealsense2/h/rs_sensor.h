@@ -44,6 +44,7 @@ typedef enum rs2_stream
     RS2_STREAM_GYRO                             , /**< Native stream of gyroscope motion data produced by RealSense device */
     RS2_STREAM_ACCEL                            , /**< Native stream of accelerometer motion data produced by RealSense device */
     RS2_STREAM_GPIO                             , /**< Signals from external device connected through GPIO */
+    RS2_STREAM_POSE                             , /**< Stream of 6 DOF(Degrees of Freedom) data */
     RS2_STREAM_COUNT
 } rs2_stream;
 const char* rs2_stream_to_string(rs2_stream stream);
@@ -69,6 +70,7 @@ typedef enum rs2_format
     RS2_FORMAT_MOTION_RAW      , /**< Raw data from the motion sensor */
     RS2_FORMAT_MOTION_XYZ32F   , /**< Motion data packed as 3 32-bit float values, for X, Y, and Z axis */
     RS2_FORMAT_GPIO_RAW        , /**< Raw data from the external sensors hooked to one of the GPIO's */
+    RS2_FORMAT_6DOF            , /**< 5xVector3 and one Vector4 */ 
     RS2_FORMAT_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_format;
 const char* rs2_format_to_string(rs2_format format);

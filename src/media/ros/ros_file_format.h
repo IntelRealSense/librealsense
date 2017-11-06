@@ -13,6 +13,7 @@
 #include <regex>
 #include "stream.h"
 #include "types.h"
+#include <vector>
 
 namespace librealsense
 {
@@ -193,17 +194,32 @@ namespace librealsense
         bool operator()(rosbag::ConnectionInfo const* info) const { return false; }
     };
 
-    class RegexTopicQuery
+    class MultipleRegexTopicQuery
     {
     public:
-        RegexTopicQuery(std::string const& regexp) : _exp(regexp)
+        MultipleRegexTopicQuery(const std::vector<std::string>& regexps)
         {
-            LOG_DEBUG("RegexTopicQuery with expression: " << regexp);
+            for (auto&& regexp : regexps)
+            {
+                LOG_DEBUG("RegexTopicQuery with expression: " << regexp);
+                _exps.emplace_back(regexp);
+            }
         }
 
         bool operator()(rosbag::ConnectionInfo const* info) const
         {
-            return std::regex_search(info->topic, _exp);
+            return std::any_of(std::begin(_exps), std::end(_exps), [info](const std::regex& exp) { return std::regex_search(info->topic, exp); });
+        }
+
+    private:
+        std::vector<std::regex> _exps;
+    };
+
+    class RegexTopicQuery : public MultipleRegexTopicQuery
+    {
+    public:
+        RegexTopicQuery(std::string const& regexp) : MultipleRegexTopicQuery({ regexp })
+        {
         }
 
         static std::string data_msg_types()
@@ -351,21 +367,13 @@ namespace librealsense
             return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", rs2_option_to_string(option_type), "description" });
         }
 
-        static std::string image_data_topic(const device_serializer::stream_identifier& stream_id)
+        static std::string frame_data_topic(const device_serializer::stream_identifier& stream_id)
         {
-            return create_from({ stream_full_prefix(stream_id), "image", "data" });
+            return create_from({ stream_full_prefix(stream_id), rs2_stream_to_string(stream_id.stream_type), "data" });
         }
-        static std::string image_metadata_topic(const device_serializer::stream_identifier& stream_id)
+        static std::string frame_metadata_topic(const device_serializer::stream_identifier& stream_id)
         {
-            return create_from({ stream_full_prefix(stream_id), "image", "metadata" });
-        }
-        static std::string imu_data_topic(const device_serializer::stream_identifier& stream_id)
-        {
-            return create_from({ stream_full_prefix(stream_id), "imu", "data" });
-        }
-        static std::string imu_metadata_topic(const device_serializer::stream_identifier& stream_id)
-        {
-            return create_from({ stream_full_prefix(stream_id), "imu", "metadata" });
+            return create_from({ stream_full_prefix(stream_id), rs2_stream_to_string(stream_id.stream_type), "metadata" });
         }
         static std::string stream_extrinsic_topic(const device_serializer::stream_identifier& stream_id, uint32_t ref_id)
         {
@@ -512,6 +520,7 @@ namespace librealsense
         constexpr const char* RECTIFIED_COLOR = "RECTIFIED_COLOR";
         constexpr const char* ACCEL = "ACCLEROMETER"; //Yes, there is a typo, that's how it is saved.
         constexpr const char* GYRO = "GYROMETER";
+        constexpr const char* POSE = "rs_6DoF";
 
         constexpr uint32_t actual_exposure = 0; //    float RS2_FRAME_METADATA_ACTUAL_EXPOSURE
         constexpr uint32_t actual_fps = 1; //    float
@@ -622,6 +631,7 @@ namespace librealsense
             }
             case RS2_STREAM_GYRO: name = GYRO; break;
             case RS2_STREAM_ACCEL: name = ACCEL; break;
+            case RS2_STREAM_POSE: name = POSE; break;
                 break;
             default:
                 throw io_exception(to_string() << "Unknown stream type : " << source.type);
@@ -651,19 +661,23 @@ namespace librealsense
                 return { RS2_STREAM_ACCEL, 0 };
             else if (source == GYRO)
                 return { RS2_STREAM_GYRO, 0 };
+            else if (source == POSE)
+                return { RS2_STREAM_POSE, 0 };
 
             throw io_exception(to_string() << "Unknown stream type : " << source);
         }
 
-        class FrameQuery : public RegexTopicQuery
+        class FrameQuery : public MultipleRegexTopicQuery
         {
         public:
             //Possible patterns:
-            //    /camera/FISHEYE<id>/image_raw/0
-            //    /camera/rs_6DoF<id>/image_raw/0
+            //    /camera/<CAMERA_STREAM_TYPE><id>/image_raw/0
+            //    /camera/rs_6DoF<id>/0
             //   /imu/ACCELEROMETER/imu_raw/0
             //   /imu/GYROMETER/imu_raw/0
-            FrameQuery() : RegexTopicQuery(to_string() << R"RRR(/(camera|imu)/.*/(image|imu)_raw/\d)RRR") {}
+            FrameQuery() : MultipleRegexTopicQuery({ 
+                to_string() << R"RRR(/(camera|imu)/.*/(image|imu)_raw/\d+)RRR" ,
+                to_string() << R"RRR(/camera/rs_6DoF\d+/\d+)RRR" }) {}
         };
 
         inline bool is_camera(rs2_stream s)
@@ -672,7 +686,8 @@ namespace librealsense
                 s == RS2_STREAM_DEPTH ||
                 s == RS2_STREAM_COLOR ||
                 s == RS2_STREAM_INFRARED ||
-                s == RS2_STREAM_FISHEYE;
+                s == RS2_STREAM_FISHEYE ||
+                s == RS2_STREAM_POSE;
         }
 
         class StreamQuery : public RegexTopicQuery

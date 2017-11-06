@@ -323,6 +323,14 @@ namespace librealsense
 
     MAP_EXTENSION(RS2_EXTENSION_MOTION_FRAME, librealsense::motion_frame);
 
+    class pose_frame : public frame
+    {
+    public:
+        pose_frame() : frame()
+        {}
+    };
+
+    MAP_EXTENSION(RS2_EXTENSION_POSE_FRAME, librealsense::pose_frame);
 
     class archive_interface : public sensor_part
     {

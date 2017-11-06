@@ -119,6 +119,7 @@ namespace librealsense
         STRCASE(STREAM, GYRO)
         STRCASE(STREAM, ACCEL)
         STRCASE(STREAM, GPIO)
+        STRCASE(STREAM, POSE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
@@ -167,6 +168,8 @@ namespace librealsense
             CASE(RECORD)
             CASE(VIDEO_PROFILE)
             CASE(PLAYBACK)
+            CASE(MOTION_PROFILE)
+            CASE(POSE_FRAME)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
@@ -271,6 +274,7 @@ namespace librealsense
         CASE(MOTION_RAW)
         CASE(MOTION_XYZ32F)
         CASE(GPIO_RAW)
+        CASE(6DOF)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE

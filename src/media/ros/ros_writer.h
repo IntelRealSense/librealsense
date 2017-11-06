@@ -113,7 +113,7 @@ namespace librealsense
             image.header.stamp = ros::Time(std::chrono::duration<double>(timestamp_ms).count());
             std::string TODO_CORRECT_ME = "0";
             image.header.frame_id = TODO_CORRECT_ME;
-            auto image_topic = ros_topic::image_data_topic(stream_id);
+            auto image_topic = ros_topic::frame_data_topic(stream_id);
             write_message(image_topic, timestamp, image);
             try
             {
@@ -151,7 +151,7 @@ namespace librealsense
 
         void write_image_metadata(const stream_identifier& stream_id, const nanoseconds& timestamp, video_frame* vid_frame)
         {
-            auto metadata_topic = ros_topic::image_metadata_topic(stream_id);
+            auto metadata_topic = ros_topic::frame_metadata_topic(stream_id);
             diagnostic_msgs::KeyValue system_time;
             system_time.key = "system_time";
             system_time.value = std::to_string(vid_frame->get_frame_system_time());

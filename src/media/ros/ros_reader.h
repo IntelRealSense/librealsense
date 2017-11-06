@@ -60,7 +60,7 @@ namespace librealsense
             rosbag::MessageInstance next_msg = *m_samples_itrator;
             ++m_samples_itrator;
 
-            if (next_msg.isType<sensor_msgs::Image>() || next_msg.isType<sensor_msgs::Imu>())
+            if (next_msg.isType<sensor_msgs::Image>() || next_msg.isType<sensor_msgs::Imu>() || next_msg.isType<realsense_legacy_msgs::pose>())
             {
                 LOG_DEBUG("Next message is a frame");
                 return create_frame(next_msg);
@@ -247,6 +247,11 @@ namespace librealsense
                 return std::make_shared<serialized_frame>(timestamp, stream_id, std::move(frame));
             }
 
+            if (msg.isType<realsense_legacy_msgs::pose>())
+            {
+                frame_holder frame = create_pose_sample(msg);
+                return std::make_shared<serialized_frame>(timestamp, stream_id, std::move(frame));
+            }
             std::string err_msg = to_string() << "Unknown frame type: " << msg.getDataType() << "(Topic: " << next_msg_topic << ")";
             LOG_ERROR(err_msg);
             throw invalid_value_exception(err_msg);
@@ -274,65 +279,11 @@ namespace librealsense
             auto streaming_duration = all_frames_view.getEndTime() - all_frames_view.getBeginTime();
             return nanoseconds(streaming_duration.toNSec());
         }
-        
-        frame_holder create_image_from_message(const rosbag::MessageInstance &image_data) const
-        {
-            LOG_DEBUG("Trying to create an image frame from message");
-            auto msg = image_data.instantiate<sensor_msgs::Image>();
-            if (msg == nullptr)
-            {
-                throw io_exception(to_string() 
-                    << "Invalid file format, expected " 
-                    << ros::message_traits::DataType<sensor_msgs::Image>::value()
-                    << " message but got: " << image_data.getDataType()
-                    << "(Topic: " << image_data.getTopic() << ")");
-            }
 
-            frame_additional_data additional_data {};
-            std::chrono::duration<double, std::milli> timestamp_us(std::chrono::duration<double>(msg->header.stamp.toSec()));
-            additional_data.timestamp = timestamp_us.count();
-            additional_data.frame_number = msg->header.seq;
-            additional_data.fisheye_ae_mode = false;
-
-            stream_identifier stream_id;
-            if (m_version == legacy_file_format::file_version())
-            {
-                //Version 1 legacy
-                stream_id = legacy_file_format::get_stream_identifier(image_data.getTopic());
-                get_legacy_frame_metadata(m_file, stream_id, image_data, additional_data);
-            }
-            else
-            {
-                //Version 2 and above
-                auto info_topic = ros_topic::imu_metadata_topic(stream_id);
-                stream_id = ros_topic::get_stream_identifier(image_data.getTopic());
-                auto info_topic = ros_topic::image_metadata_topic(stream_id);
-                get_frame_metadata(m_file, info_topic, stream_id, image_data, additional_data);
-            }
-            
-            frame_interface* frame = m_frame_source->alloc_frame((stream_id.stream_type == RS2_STREAM_DEPTH) ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME,
-                                                                msg->data.size(), additional_data, true);
-            if (frame == nullptr)
-            {
-                throw invalid_value_exception("Failed to allocate new frame");
-            }
-            librealsense::video_frame* video_frame = static_cast<librealsense::video_frame*>(frame);
-            video_frame->assign(msg->width, msg->height, msg->step, msg->step / msg->width * 8);
-            rs2_format stream_format;
-            convert(msg->encoding, stream_format);
-            //attaching a temp stream to the frame. Playback sensor should assign the real stream
-            frame->set_stream(std::make_shared<video_stream_profile>(platform::stream_profile{}));
-            frame->get_stream()->set_format(stream_format);
-            frame->get_stream()->set_stream_index(stream_id.stream_index);
-            frame->get_stream()->set_stream_type(stream_id.stream_type);
-            video_frame->data = std::move(msg->data);
-            librealsense::frame_holder fh{ video_frame };
-            LOG_DEBUG("Created image frame: " << stream_id << " " << video_frame->get_width() << "x" << video_frame->get_height() << " " << stream_format);
-
-            return std::move(fh);
-        }
-
-        static void get_legacy_frame_metadata(const rosbag::Bag& bag, const device_serializer::stream_identifier& stream_id, const rosbag::MessageInstance &msg, frame_additional_data& additional_data)
+        static void get_legacy_frame_metadata(const rosbag::Bag& bag, 
+            const device_serializer::stream_identifier& stream_id, 
+            const rosbag::MessageInstance &msg, 
+            frame_additional_data& additional_data)
         {
             uint32_t total_md_size = 0;
             rosbag::View frame_metadata_view(bag, legacy_file_format::FrameInfoExt(stream_id), msg.getTime(), msg.getTime());
@@ -369,6 +320,7 @@ namespace librealsense
                 additional_data.timestamp_domain = legacy_file_format::convert(info->time_stamp_domain);
             }
         }
+        
         static void get_frame_metadata(const rosbag::Bag& bag, 
             const std::string& topic,
             const device_serializer::stream_identifier& stream_id, 
@@ -416,16 +368,72 @@ namespace librealsense
             }
             additional_data.metadata_size = total_md_size;
         }
-        
-        frame_holder create_motion_sample(const rosbag::MessageInstance &motion_data) const
+
+        frame_holder create_image_from_message(const rosbag::MessageInstance &image_data) const
         {
             LOG_DEBUG("Trying to create an image frame from message");
+            auto msg = image_data.instantiate<sensor_msgs::Image>();
+            if (msg == nullptr)
+            {
+                throw io_exception(to_string()
+                    << "Invalid file format, expected "
+                    << ros::message_traits::DataType<sensor_msgs::Image>::value()
+                    << " message but got: " << image_data.getDataType()
+                    << "(Topic: " << image_data.getTopic() << ")");
+            }
+
+            frame_additional_data additional_data{};
+            std::chrono::duration<double, std::milli> timestamp_ms(std::chrono::duration<double>(msg->header.stamp.toSec()));
+            additional_data.timestamp = timestamp_ms.count();
+            additional_data.frame_number = msg->header.seq;
+            additional_data.fisheye_ae_mode = false;
+
+            stream_identifier stream_id;
+            if (m_version == legacy_file_format::file_version())
+            {
+                //Version 1 legacy
+                stream_id = legacy_file_format::get_stream_identifier(image_data.getTopic());
+                get_legacy_frame_metadata(m_file, stream_id, image_data, additional_data);
+            }
+            else
+            {
+                //Version 2 and above
+                stream_id = ros_topic::get_stream_identifier(image_data.getTopic());
+                auto info_topic = ros_topic::frame_metadata_topic(stream_id);
+                get_frame_metadata(m_file, info_topic, stream_id, image_data, additional_data);
+            }
+
+            frame_interface* frame = m_frame_source->alloc_frame((stream_id.stream_type == RS2_STREAM_DEPTH) ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME,
+                msg->data.size(), additional_data, true);
+            if (frame == nullptr)
+            {
+                throw invalid_value_exception("Failed to allocate new frame");
+            }
+            librealsense::video_frame* video_frame = static_cast<librealsense::video_frame*>(frame);
+            video_frame->assign(msg->width, msg->height, msg->step, msg->step / msg->width * 8);
+            rs2_format stream_format;
+            convert(msg->encoding, stream_format);
+            //attaching a temp stream to the frame. Playback sensor should assign the real stream
+            frame->set_stream(std::make_shared<video_stream_profile>(platform::stream_profile{}));
+            frame->get_stream()->set_format(stream_format);
+            frame->get_stream()->set_stream_index(stream_id.stream_index);
+            frame->get_stream()->set_stream_type(stream_id.stream_type);
+            video_frame->data = std::move(msg->data);
+            librealsense::frame_holder fh{ video_frame };
+            LOG_DEBUG("Created image frame: " << stream_id << " " << video_frame->get_width() << "x" << video_frame->get_height() << " " << stream_format);
+
+            return std::move(fh);
+        }
+
+        frame_holder create_motion_sample(const rosbag::MessageInstance &motion_data) const
+        {
+            LOG_DEBUG("Trying to create a motion frame from message");
 
             auto msg = instantiate_msg<sensor_msgs::Imu>(motion_data);
 
             frame_additional_data additional_data{};
-            std::chrono::duration<double, std::milli> timestamp_us(std::chrono::duration<double>(msg->header.stamp.toSec()));
-            additional_data.timestamp = timestamp_us.count();
+            std::chrono::duration<double, std::milli> timestamp_ms(std::chrono::duration<double>(msg->header.stamp.toSec()));
+            additional_data.timestamp = timestamp_ms.count();
             additional_data.frame_number = msg->header.seq;
             additional_data.fisheye_ae_mode = false; //TODO: where should this come from?
 
@@ -440,7 +448,7 @@ namespace librealsense
             {
                 //Version 2 and above
                 stream_id = ros_topic::get_stream_identifier(motion_data.getTopic());
-                auto info_topic = ros_topic::imu_metadata_topic(stream_id);
+                auto info_topic = ros_topic::frame_metadata_topic(stream_id);
                 get_frame_metadata(m_file, info_topic, stream_id, motion_data, additional_data);
             }
 
@@ -451,7 +459,7 @@ namespace librealsense
             }
             librealsense::motion_frame* motion_frame = static_cast<librealsense::motion_frame*>(frame);
             //attaching a temp stream to the frame. Playback sensor should assign the real stream
-            frame->set_stream(std::make_shared<video_stream_profile>(platform::stream_profile{}));
+            frame->set_stream(std::make_shared<motion_stream_profile>(platform::stream_profile{}));
             frame->get_stream()->set_format(RS2_FORMAT_MOTION_XYZ32F);
             frame->get_stream()->set_stream_index(stream_id.stream_index);
             frame->get_stream()->set_stream_type(stream_id.stream_type);
@@ -474,8 +482,69 @@ namespace librealsense
                 throw io_exception(to_string() << "Unsupported stream type " << stream_id.stream_type);
             }
             librealsense::frame_holder fh{ motion_frame };
-            LOG_DEBUG("Created image frame: " << stream_id);
+            LOG_DEBUG("Created motion frame: " << stream_id);
 
+            return std::move(fh);
+        }
+        
+        frame_holder create_pose_sample(const rosbag::MessageInstance &pose_data) const
+        {
+            LOG_DEBUG("Trying to create a pose frame from message");
+
+            auto msg = instantiate_msg<realsense_legacy_msgs::pose>(pose_data);
+
+            std::array<float,3> translation{ msg->translation.x,msg->translation.y, msg->translation.z };
+            std::array<float,3> velocity{ msg->velocity.x,msg->velocity.y, msg->velocity.z };
+            std::array<float,3> angular_velocity{ msg->angular_velocity.x,msg->angular_velocity.y, msg->angular_velocity.z };
+            std::array<float,3> acceleration{ msg->acceleration.x,msg->acceleration.y, msg->acceleration.z };
+            std::array<float,3> angular_acceleration{ msg->angular_acceleration.x,msg->angular_acceleration.y, msg->angular_acceleration.z };
+            std::array<float, 4> rotation{ msg->rotation.x,msg->rotation.y, msg->rotation.z, msg->rotation.w };
+
+            size_t frame_size = sizeof(translation) +  sizeof(velocity) +  sizeof(angular_velocity) +  sizeof(acceleration) +  sizeof(angular_acceleration) + sizeof(rotation);
+            
+            rs2_extension frame_type = RS2_EXTENSION_POSE_FRAME;
+            frame_additional_data additional_data{};
+            std::chrono::duration<double, std::milli> timestamp_ms(static_cast<double>(msg->timestamp));
+            additional_data.timestamp = timestamp_ms.count();
+            additional_data.frame_number = 0; //No support for frame numbers
+            additional_data.fisheye_ae_mode = false;
+            
+            stream_identifier stream_id;
+            if (m_version == legacy_file_format::file_version())
+            {
+                //Version 1 legacy
+                stream_id = legacy_file_format::get_stream_identifier(pose_data.getTopic());
+                get_legacy_frame_metadata(m_file, stream_id, pose_data, additional_data);
+            }
+            else
+            {
+                //Version 2 and above
+                stream_id = ros_topic::get_stream_identifier(pose_data.getTopic());
+                auto info_topic = ros_topic::frame_metadata_topic(stream_id);
+                get_frame_metadata(m_file, info_topic, stream_id, pose_data, additional_data);
+            }
+            frame_interface* new_frame = m_frame_source->alloc_frame(frame_type, frame_size, additional_data, true);
+            librealsense::pose_frame* pose_frame = static_cast<librealsense::pose_frame*>(new_frame);
+            //attaching a temp stream to the frame. Playback sensor should assign the real stream
+            new_frame->set_stream(std::make_shared<stream_profile_base>(platform::stream_profile{}));
+            new_frame->get_stream()->set_format(RS2_FORMAT_6DOF);
+            new_frame->get_stream()->set_stream_index(stream_id.stream_index);
+            new_frame->get_stream()->set_stream_type(stream_id.stream_type);
+            byte* data = pose_frame->data.data();
+            std::copy(std::begin(translation), std::end(translation), data);
+            data += sizeof(translation);
+            std::copy(std::begin(velocity), std::end(velocity), data);
+            data += sizeof(velocity);
+            std::copy(std::begin(angular_velocity), std::end(angular_velocity), data);
+            data += sizeof(angular_velocity);
+            std::copy(std::begin(acceleration), std::end(acceleration), data);
+            data += sizeof(acceleration);
+            std::copy(std::begin(angular_acceleration), std::end(angular_acceleration), data);
+            data += sizeof(angular_acceleration);
+            std::copy(std::begin(rotation), std::end(rotation), data);
+
+            frame_holder fh{ new_frame };
+            LOG_DEBUG("Created new frame " << frame_type);
             return std::move(fh);
         }
 
@@ -727,6 +796,7 @@ namespace librealsense
         stream_profiles read_legacy_stream_info(uint32_t sensor_index) const
         {
             //legacy files have the form of "/(camera|imu)/<stream type><stream index>/(image_imu)_raw/<sensor_index>
+            //6DoF streams have no streaming profiles in the file - handling them seperatly
             stream_profiles streams;
             rosbag::View stream_infos_view(m_file, RegexTopicQuery(to_string() << R"RRR(/camera/(rs_stream_info|rs_motion_stream_info)/)RRR" << sensor_index));
             for (auto infos_msg : stream_infos_view)
@@ -773,6 +843,31 @@ namespace librealsense
                         << " message but got: " << infos_msg.getDataType()
                         << "(Topic: " << infos_msg.getTopic() << ")");
                 }
+            }
+            std::unique_ptr<rosbag::View> entire_bag = std::unique_ptr<rosbag::View>(new rosbag::View(m_file, rosbag::View::TrueQuery()));
+            std::vector<uint32_t> indices;
+            for (auto&& topic : get_topics(entire_bag))
+            {
+                std::regex r(R"RRR(/camera/rs_6DoF(\d+)/\d+)RRR");
+                std::smatch sm;
+                if(std::regex_search(topic, sm, r))
+                {
+                    for (int i = 1; i<sm.size(); i++)
+                    {
+                        indices.push_back(std::stoul(sm[i].str()));
+                    }
+                }
+            }
+            for (auto&& index : indices)
+            {
+                stream_descriptor stream_id{ RS2_STREAM_POSE, static_cast<int>(index) };
+                rs2_format format = RS2_FORMAT_6DOF;
+                auto profile = std::make_shared<stream_profile_base>(platform::stream_profile{ 0, 0, 0, static_cast<uint32_t>(format) });
+                profile->set_stream_index(stream_id.index);
+                profile->set_stream_type(stream_id.type);
+                profile->set_format(format);
+                profile->set_framerate(0);
+                streams.push_back(profile);
             }
             return streams;
         }
