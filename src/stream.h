@@ -140,24 +140,27 @@ namespace librealsense
         uint32_t _width, _height;
     };
 
+
     class motion_stream_profile : public motion_stream_profile_interface, public stream_profile_base, public extension_snapshot
     {
     public:
         explicit motion_stream_profile(platform::stream_profile sp)
             : stream_profile_base(std::move(sp)),
             _calc_intrinsics([]() -> rs2_motion_device_intrinsic { throw not_implemented_exception("No intrinsics are available for this stream profile!"); })
-        {
-        }
-        rs2_motion_device_intrinsic get_intrinsics() const override { return _calc_intrinsics(); }
-        void set_intrinsics(std::function<rs2_motion_device_intrinsic()> calc) override { _calc_intrinsics = calc; }
-
-        void update(std::shared_ptr<extension_snapshot> ext) override
-        {
-            return; //TODO: apply changes here
-        }
+            {
+            }
+            rs2_motion_device_intrinsic get_intrinsics() const override { return _calc_intrinsics(); }
+            void set_intrinsics(std::function<rs2_motion_device_intrinsic()> calc) override { _calc_intrinsics = calc; }
+            
+            void update(std::shared_ptr<extension_snapshot> ext) override
+            {
+                return; //TODO: apply changes here
+            }
     private:
         std::function<rs2_motion_device_intrinsic()> _calc_intrinsics;
     };
+
+
     inline stream_profile to_profile(const stream_profile_interface* sp)
     {
         auto fps = static_cast<uint32_t>(sp->get_framerate());

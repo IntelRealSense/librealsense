@@ -928,7 +928,7 @@ namespace rs2
 
                     if (!show_single_fps_list)
                     {
-                        ImGui::Text("Format:");
+                        //ImGui::Text("Format:"); //TODO - check with Sergey if needed
                         streaming_tooltip();
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                     }
@@ -958,7 +958,7 @@ namespace rs2
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
 
                         label = to_string() << "##" << s->get_info(RS2_CAMERA_INFO_NAME)
-                            << s->get_info(RS2_CAMERA_INFO_NAME)
+                            << s.get_info(RS2_CAMERA_INFO_NAME)
                             << f.first << " fps";
 
                         if (streaming)
