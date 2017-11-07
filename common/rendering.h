@@ -857,8 +857,7 @@ namespace rs2
                 ptr += sizeof(angular_acceleration);
                 std::array<float, 4> rotation{};
                 memcpy(&rotation, ptr, sizeof(rotation));
-                draw_motion_data(translation[0], translation[1], translation[2]);
-                //TODO: draw_pose_visualization(translation, velocity, angular_velocity, acceleration, angular_acceleration, rotation);
+                draw_pose_visualization(translation, velocity, angular_velocity, acceleration, angular_acceleration, rotation);
                 break;
             }
             case RS2_FORMAT_Y16:
@@ -954,7 +953,7 @@ namespace rs2
             glEnd();
         }
 
-        void draw_cyrcle(float xx, float xy, float xz, float yx, float yy, float yz, float radius = 1.1)
+        void draw_circle(float xx, float xy, float xz, float yx, float yy, float yz, float radius = 1.1)
         {
             const auto N = 50;
             glColor3f(0.5f, 0.5f, 0.5f);
@@ -1037,9 +1036,9 @@ namespace rs2
             glRotatef(-45, 0.0f, 1.0f, 0.0f);
 
             draw_axis();
-            draw_cyrcle(1, 0, 0, 0, 1, 0);
-            draw_cyrcle(0, 1, 0, 0, 0, 1);
-            draw_cyrcle(1, 0, 0, 0, 0, 1);
+            draw_circle(1, 0, 0, 0, 1, 0);
+            draw_circle(0, 1, 0, 0, 0, 1);
+            draw_circle(1, 0, 0, 0, 0, 1);
 
             const auto canvas_size = 230;
             const auto vec_threshold = 0.01f;
@@ -1097,6 +1096,18 @@ namespace rs2
             glPopMatrix();
             glMatrixMode(GL_PROJECTION);
             glPopMatrix();
+        }
+
+        using float3arr = std::array<float, 3>;
+        using float4arr = std::array<float, 4>;
+        void draw_pose_visualization(const float3arr& translation,
+            const float3arr& velocity, 
+            const float3arr& angular_velocity, 
+            const float3arr& acceleration, 
+            const float3arr& angular_acceleration, 
+            const float4arr& rotation)
+        {
+
         }
 
         double t = 0;
