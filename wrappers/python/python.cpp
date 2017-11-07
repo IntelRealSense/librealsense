@@ -463,8 +463,9 @@ PYBIND11_PLUGIN(NAME) {
                .def("__call__", &rs2::frame_queue::operator());
 
     py::class_<rs2::pointcloud> pointcloud(m, "pointcloud");
-    pointcloud.def("calculate", &rs2::pointcloud::calculate, "depth"_a)
-              .def("map_to", &rs2::pointcloud::map_to, "mapped"_a);
+    pointcloud.def(py::init<>())
+        .def("calculate", &rs2::pointcloud::calculate, "depth"_a)
+        .def("map_to", &rs2::pointcloud::map_to, "mapped"_a);
 
     py::class_<rs2::syncer> syncer(m, "syncer");
     syncer.def(py::init<>())
