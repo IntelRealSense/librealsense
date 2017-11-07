@@ -22,12 +22,19 @@ namespace rs2
         rs2_error* e = nullptr;
         _title_str = to_string() << title << " v" << api_version_to_string(rs2_get_api_version(&e));
 
+        _width = 1024;
+        _height = 768;
+
+        // Dynamically adjust new window size (by detecting monitor resolution)
         auto primary = glfwGetPrimaryMonitor();
-        const auto mode = glfwGetVideoMode(primary);
+        if (primary)
+        {
+            const auto mode = glfwGetVideoMode(primary);
+            _width = int(mode->width * 0.7f);
+            _height = int(mode->height * 0.7f);
+        }
 
         // Create GUI Windows
-        _width = int(mode->width * 0.7f);
-        _height = int(mode->height * 0.7f);
         _win = glfwCreateWindow(_width, _height, _title_str.c_str(), nullptr, nullptr);
         glfwMakeContextCurrent(_win);
         ImGui_ImplGlfw_Init(_win, true);
