@@ -12,6 +12,11 @@ namespace librealsense
     static rs2_format convertTm2PixelFormat(perc::PixelFormat format);
     static perc::PixelFormat convertToTm2PixelFormat(rs2_format format);
     static rs2_distortion convertTm2CameraModel(int model);
+    static uint32_t convertTm2InterruptRate(SIXDOF_INTERRUPT_RATE rate);
+    static float3 toFloat3(perc::TrackingData::Axis a);
+    static float3 toFloat3(perc::TrackingData::EulerAngles a);
+    static float4 toFloat4(perc::TrackingData::Quaternion q);
+
 
     class tm2_sensor : public sensor_base, public video_sensor_interface, public TrackingDevice::Listener
     {
@@ -40,20 +45,15 @@ namespace librealsense
             std::vector<TrackingData::VideoProfile> video_profiles(_tm_supported_profiles.video, _tm_supported_profiles.video + VideoProfileMax);
             for (auto tm_profile : video_profiles)
             {
-                platform::stream_profile p;
-                p.width = tm_profile.profile.width;
-                p.height = tm_profile.profile.height;
-                p.fps = tm_profile.fps;  
-                p.format = tm_profile.profile.pixelFormat; //save the TM2 native pixel format 
-
+                platform::stream_profile p = { tm_profile.profile.width, tm_profile.profile.height, tm_profile.fps, static_cast<uint32_t>(tm_profile.profile.pixelFormat) };
                 auto profile = std::make_shared<video_stream_profile>(p);
                 profile->set_dims(p.width, p.height);
-                profile->set_stream_type(RS2_STREAM_FISHEYE);   //TM2_API provides only fisheye video streams
-                // for nice presentation by the viewer - add 1 to stream index
-                profile->set_stream_index(tm_profile.sensorIndex + 1); //TM2_API sensor index represents a fisheye virtual sensor. 
+                profile->set_stream_type(RS2_STREAM_FISHEYE); //TM2_API provides only fisheye video streams
+                //TM2_API video sensor index represents a fisheye virtual sensor.
+                profile->set_stream_index(tm_profile.sensorIndex + 1);  // for nice presentation by the viewer - add 1 to stream index
                 profile->set_format(convertTm2PixelFormat(tm_profile.profile.pixelFormat));
                 profile->set_framerate(p.fps);
-                profile->set_unique_id(uid++);//TODO - is this unique??
+                profile->set_unique_id(uid++); //TODO - is this unique??
 
                 results.push_back(profile);
 
@@ -63,42 +63,64 @@ namespace librealsense
                 //native_pixel_format pf;
                 //register_pixel_format(pf);
             }
+
             //TM2_API - the following profiles follow the convention:
             // index 0 - HMD, index 1 - controller 1, index 2 - controller 2
             
             //extract gyro profiles
             std::vector<TrackingData::GyroProfile> gyro_profiles(_tm_supported_profiles.gyro, _tm_supported_profiles.gyro + GyroProfileMax);
-            for (auto tm_g_profile : gyro_profiles)
+            for (auto tm_profile : gyro_profiles)
             {
                 rs2_format format = RS2_FORMAT_MOTION_XYZ32F;
-                auto profile = std::make_shared<motion_stream_profile>(platform::stream_profile{ 0, 0, tm_g_profile.fps, static_cast<uint32_t>(format) });
-                profile->set_stream_type(RS2_STREAM_GYRO);    
-                // for nice presentation by the viewer - add 1 to stream index
-                profile->set_stream_index(tm_g_profile.sensorIndex + 1);  
+                auto profile = std::make_shared<motion_stream_profile>(platform::stream_profile{ 0, 0, tm_profile.fps, static_cast<uint32_t>(format) });
+                profile->set_stream_type(RS2_STREAM_GYRO);  
+                profile->set_stream_index(tm_profile.sensorIndex + 1); // for nice presentation by the viewer - add 1 to stream index
                 profile->set_format(format);
-                profile->set_framerate(tm_g_profile.fps);
-                profile->set_unique_id(uid++);//TODO - is this unique??               
+                profile->set_framerate(tm_profile.fps);
+                profile->set_unique_id(uid++);              
 
                 results.push_back(profile);
             }
 
             //extract accelerometer profiles
             std::vector<TrackingData::AccelerometerProfile> accel_profiles(_tm_supported_profiles.accelerometer, _tm_supported_profiles.accelerometer + AccelerometerProfileMax);
-            for (auto tm_a_profile : accel_profiles)
+            for (auto tm_profile : accel_profiles)
             {
                 rs2_format format = RS2_FORMAT_MOTION_XYZ32F;
-                auto profile = std::make_shared<motion_stream_profile>(platform::stream_profile{ 0, 0, tm_a_profile.fps, static_cast<uint32_t>(format) });
-                profile->set_stream_type(RS2_STREAM_ACCEL);
-                // for nice presentation by the viewer - add 1 to stream index
-                profile->set_stream_index(tm_a_profile.sensorIndex + 1);
+                auto profile = std::make_shared<motion_stream_profile>(platform::stream_profile{ 0, 0, tm_profile.fps, static_cast<uint32_t>(format) });
+                profile->set_stream_type(RS2_STREAM_ACCEL);               
+                profile->set_stream_index(tm_profile.sensorIndex + 1); // for nice presentation by the viewer - add 1 to stream index
                 profile->set_format(format);
-                profile->set_framerate(tm_a_profile.fps);
-                profile->set_unique_id(uid++);//TODO - is this unique??               
+                profile->set_framerate(tm_profile.fps);
+                profile->set_unique_id(uid++);             
 
                 results.push_back(profile);
             }
 
             //extract 6Dof profiles - TODO
+            std::vector<TrackingData::SixDofProfile> pose_profiles(_tm_supported_profiles.sixDof, _tm_supported_profiles.sixDof + SixDofProfileMax);
+            for (auto tm_profile : pose_profiles)
+            {
+                rs2_format format = RS2_FORMAT_6DOF;
+                uint32_t fps = convertTm2InterruptRate(tm_profile.interruptRate);
+                if (fps == 0)
+                {
+                    //pose stream is calculated but not streamed. can be queried by the host
+                    continue;
+                }
+                auto profile = std::make_shared<motion_stream_profile>(platform::stream_profile{ 0, 0, fps, static_cast<uint32_t>(format) });
+                profile->set_stream_type(RS2_STREAM_POSE);
+                // TM2_API - 6dof profile type enum behaves the same as stream index
+                profile->set_stream_index(static_cast<uint32_t>(tm_profile.profileType) + 1); 
+                profile->set_format(format);
+                profile->set_framerate(fps);
+                profile->set_unique_id(uid++);              
+
+                results.push_back(profile);
+
+
+                //TODO - do I need to define native_pixel_format for RS2_STREAM_POSE? and how to draw it?
+            }
 
             return results;           
         }
@@ -144,19 +166,28 @@ namespace librealsense
                 }
                 case RS2_STREAM_GYRO:
                 {
-                    auto tm_g_profile = _tm_supported_profiles.gyro[stream_index];
-                    if (tm_g_profile.fps == sp.fps)
+                    auto tm_profile = _tm_supported_profiles.gyro[stream_index];
+                    if (tm_profile.fps == sp.fps)
                     {
-                        _tm_active_profiles.set(tm_g_profile, true, true);
+                        _tm_active_profiles.set(tm_profile, true, true);
                     }
                     break;
                 }
                 case RS2_STREAM_ACCEL:
                 {
-                    auto tm_a_profile = _tm_supported_profiles.accelerometer[stream_index];
-                    if (tm_a_profile.fps == sp.fps)
+                    auto tm_profile = _tm_supported_profiles.accelerometer[stream_index];
+                    if (tm_profile.fps == sp.fps)
                     {
-                        _tm_active_profiles.set(tm_a_profile, true, true);
+                        _tm_active_profiles.set(tm_profile, true, true);
+                    }
+                    break;
+                }
+                case RS2_STREAM_POSE:
+                {
+                    auto tm_profile = _tm_supported_profiles.sixDof[stream_index];
+                    if (convertTm2InterruptRate(tm_profile.interruptRate) == sp.fps)
+                    {
+                        _tm_active_profiles.set(tm_profile, true);
                     }
                     break;
                 }
@@ -175,12 +206,8 @@ namespace librealsense
             else if (!_is_opened)
                 throw wrong_api_call_sequence_exception("close() failed. TM2 device was not opened!");
 
-            //reset active profile
-            std::vector<TrackingData::VideoProfile> video_profiles(_tm_active_profiles.video, _tm_active_profiles.video + VideoProfileMax);
-            for (auto tm_profile : video_profiles)
-            {
-                _tm_active_profiles.set(tm_profile, false, false);
-            }
+            //reset active profiles
+            _tm_active_profiles.reset();            
 
             _is_opened = false;
         }
@@ -261,8 +288,6 @@ namespace librealsense
  
         // Tracking listener
         ////////////////////
-        void onPoseFrame(perc::TrackingData::PoseFrame& pose) override {}
-
         void onVideoFrame(perc::TrackingData::VideoFrame& tm_frame) override 
         {           
             if (!_is_streaming)
@@ -272,7 +297,6 @@ namespace librealsense
             }
 
             auto bpp = get_image_bpp(convertTm2PixelFormat(tm_frame.profile.pixelFormat));
-
             auto ts_double_nanos = duration<double, std::nano>(tm_frame.timestamp);
             duration<double, std::milli> ts_ms(ts_double_nanos);
             auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame.systemTimestamp);
@@ -330,7 +354,7 @@ namespace librealsense
                 return;
             }
 
-            float data[3] = { tm_frame.acceleration.x, tm_frame.acceleration.y, tm_frame.acceleration.z };
+            float3 data = { tm_frame.acceleration.x, tm_frame.acceleration.y, tm_frame.acceleration.z };
             handle_imu_frame(tm_frame, tm_frame.frameId, RS2_STREAM_ACCEL, tm_frame.sensorIndex + 1, data);
         }
 
@@ -341,11 +365,11 @@ namespace librealsense
                 LOG_WARNING("Frame received with streaming inactive");
                 return;
             }
-            float data[3] = { tm_frame.angularVelocity.x, tm_frame.angularVelocity.y, tm_frame.angularVelocity.z };
+            float3 data = { tm_frame.angularVelocity.x, tm_frame.angularVelocity.y, tm_frame.angularVelocity.z };
             handle_imu_frame(tm_frame, tm_frame.frameId, RS2_STREAM_GYRO, tm_frame.sensorIndex + 1, data);            
         }
 
-        void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float imu_data[3]) 
+        void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data) 
         {
             auto ts_double_nanos = duration<double, std::nano>(tm_frame_ts.timestamp);
             duration<double, std::milli> ts_ms(ts_double_nanos);
@@ -368,6 +392,8 @@ namespace librealsense
                 }
             }
             //TODO - assert profile is found
+
+            //TODO - should we add x,y,z to motion_frame instead of a raw buffer? or in addition?
             frame_holder frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, 3 * sizeof(float), additional_data, true);
             if (frame.frame)
             {
@@ -388,6 +414,61 @@ namespace librealsense
             _source.invoke_callback(std::move(frame));
         }
 
+        void onPoseFrame(perc::TrackingData::PoseFrame& tm_frame) override 
+        {
+            if (!_is_streaming)
+            {
+                LOG_WARNING("Frame received with streaming inactive");
+                return;
+            }
+            static unsigned long long frame_num = 0; //TODO - TM2 doesn't expose frame number for pose
+
+            auto ts_double_nanos = duration<double, std::nano>(tm_frame.timestamp);
+            duration<double, std::milli> ts_ms(ts_double_nanos);
+            auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame.systemTimestamp);
+            duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
+
+            frame_additional_data additional_data(ts_ms.count(), frame_num++, system_ts_ms.count(), 0, nullptr);
+
+            // Find the frame stream profile
+            std::shared_ptr<stream_profile_interface> profile = nullptr;
+            auto profiles = get_stream_profiles();
+            for (auto&& p : profiles)
+            {
+                //TODO - assuming single profile per motion stream
+                if (p->get_stream_type() == RS2_STREAM_POSE &&
+                    p->get_stream_index() == tm_frame.sourceIndex + 1)
+                {
+                    profile = p;
+                    break;
+                }
+            }
+            //TODO - assert profile is found
+
+            //TODO - maybe pass a raw data and parse up? do I have to pass any data on the buffer?
+            frame_holder frame = _source.alloc_frame(RS2_EXTENSION_POSE_FRAME, 0, additional_data, false);
+            if (frame.frame)
+            {
+                auto pose_frame = static_cast<librealsense::pose_frame*>(frame.frame);
+                frame->set_timestamp(ts_ms.count());
+                frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK);
+                frame->set_stream(profile);
+                pose_frame->assign(toFloat3(tm_frame.translation), 
+                                   toFloat3(tm_frame.velocity), 
+                                   toFloat3(tm_frame.acceleration), 
+                                   toFloat4(tm_frame.rotation), 
+                                   toFloat3(tm_frame.angularVelocity), 
+                                   toFloat3(tm_frame.angularAcceleration), 
+                                   tm_frame.confidence);
+            }
+            else
+            {
+                LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
+                return;
+            }
+            _source.invoke_callback(std::move(frame));
+        }
+        
         void onControllerDiscoveryEventFrame(perc::TrackingData::ControllerDiscoveryEventFrame& frame) override {}
         void onControllerDisconnectedEventFrame(perc::TrackingData::ControllerDisconnectedEventFrame& frame) override {}
         void onControllerFrame(perc::TrackingData::ControllerFrame& frame) override {}
@@ -479,6 +560,25 @@ namespace librealsense
             throw invalid_value_exception("Invalid TM2 camera model");
         }
     }
+
+    static uint32_t convertTm2InterruptRate(SIXDOF_INTERRUPT_RATE rate)
+    {
+        switch (rate)
+        {
+        case SIXDOF_INTERRUPT_RATE_NONE:
+            return 0;
+        case SIXDOF_INTERRUPT_RATE_FISHEYE:
+            return 30;
+        case SIXDOF_INTERRUPT_RATE_IMU:
+            return 262; //TODO - going to change by TM2 to something else...
+        default: 
+            throw invalid_value_exception("Invalid TM2 pose rate");
+        }
+    }
+
+    static float3 toFloat3(perc::TrackingData::Axis a) { return float3{ a.x, a.y, a.z }; }
+    static float3 toFloat3(perc::TrackingData::EulerAngles a) { return float3{ a.x, a.y, a.z }; }
+    static float4 toFloat4(perc::TrackingData::Quaternion q) { return float4{ q.i, q.j, q.k, q.r }; }
 
     
 

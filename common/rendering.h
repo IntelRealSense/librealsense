@@ -870,6 +870,15 @@ namespace rs2
             case RS2_FORMAT_GPIO_RAW:
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
                 break;
+            case RS2_FORMAT_6DOF:
+                //TODO - for now just rendering position
+//                 if (frame.is<pose_frame>())
+//                 {
+//                     auto pose_frame = frame.as<pose_frame>();
+//                     auto axes = *(reinterpret_cast<const float3*>(data));
+//                     draw_motion_data(axes.x, axes.y, axes.z);
+//                 }
+                break;
             //case RS2_FORMAT_RAW10:
             //{
             //    // Visualize Raw10 by performing a naive downsample. Each 2x2 block contains one red pixel, two green pixels, and one blue pixel, so combine them into a single RGB triple.
