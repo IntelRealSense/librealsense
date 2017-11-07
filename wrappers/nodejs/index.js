@@ -1676,24 +1676,11 @@ class FrameSet {
    * @return {DepthFrame|VideoFrame|Frame|undefined}
    */
   at(index) {
-    //
-    // TODO(ting): mapping index to stream and use this.cache[]
-    //   e.g. return getFrame(this.cxxFrameSet.indexToStream(index));
-    //
-
-    let cxxFrame = this.cxxFrameSet.at(index);
-
-    if (!cxxFrame) return undefined;
-
-    if (cxxFrame.isDepthFrame()) {
-      return new DepthFrame(cxxFrame);
+    if ((arguments.length !== 1) || (typeof index !== 'number') ||
+        (parseInt(index) >= this.size)) {
+      throw new TypeError('FrameSet.at(index) expects a valid integer argument');
     }
-
-    if (cxxFrame.isVideoFrame()) {
-      return new VideoFrame(cxxFrame);
-    }
-
-    return new Frame(cxxFrame);
+    return this.getFrame(this.cxxFrameSet.indexToStream(index));
   }
 
   __internalAssembleFrame(cxxFrame) {
