@@ -115,7 +115,7 @@ namespace librealsense
             m_file.open(m_file_path, rosbag::BagMode::Read);
             m_version = read_file_version(m_file);
             m_samples_view = nullptr;
-            m_frame_source = std::make_shared<frame_source>(m_version == 1 ? 32 : 16);
+            m_frame_source = std::make_shared<frame_source>(m_version == 1 ? 128 : 16);
             m_frame_source->init(m_metadata_parser_map);
             m_initial_device_description = read_device_description(get_static_file_info_timestamp(), true);
         }
@@ -286,7 +286,7 @@ namespace librealsense
             frame_additional_data& additional_data)
         {
             uint32_t total_md_size = 0;
-            rosbag::View frame_metadata_view(bag, legacy_file_format::FrameInfoExt(stream_id), msg.getTime(), msg.getTime());
+            rosbag::View frame_metadata_view(bag, legacy_file_format::FrameInfoExt(stream_id), msg.getTime(), true);
             assert(frame_metadata_view.size() == 1);
             for (auto message_instance : frame_metadata_view)
             {

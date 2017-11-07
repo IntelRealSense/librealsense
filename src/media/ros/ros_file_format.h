@@ -512,15 +512,10 @@ namespace librealsense
         constexpr const char* DEPTH = "DEPTH";
         constexpr const char* COLOR = "COLOR";
         constexpr const char* INFRARED = "INFRARED";
-        constexpr const char* INFRARED2 = "INFRARED2";
         constexpr const char* FISHEYE = "FISHEYE";
-        constexpr const char* FISHEYE2 = "FISHEYE2";
-        constexpr const char* FISHEYE3 = "FISHEYE3";
-        constexpr const char* FISHEYE4 = "FISHEYE4";
-        constexpr const char* RECTIFIED_COLOR = "RECTIFIED_COLOR";
         constexpr const char* ACCEL = "ACCLEROMETER"; //Yes, there is a typo, that's how it is saved.
         constexpr const char* GYRO = "GYROMETER";
-        constexpr const char* POSE = "rs_6DoF0";
+        constexpr const char* POSE = "rs_6DoF";
 
         constexpr uint32_t actual_exposure = 0; //    float RS2_FRAME_METADATA_ACTUAL_EXPOSURE
         constexpr uint32_t actual_fps = 1; //    float
@@ -611,59 +606,94 @@ namespace librealsense
      
         inline std::string stream_type_to_string(const stream_descriptor& source)
         {
+            //Other than 6DOF, streams are in the form of "<stream_type><stream_index>" where "stream_index" is empty for index 0/1 and the actual number for 2 and above
+            //6DOF is in the form "rs_6DoF<stream_index>" where "stream_index" is a zero based index
             std::string name;
             switch (source.type)
             {
             case RS2_STREAM_DEPTH: name = DEPTH; break;
             case RS2_STREAM_COLOR: name = COLOR; break;
             case RS2_STREAM_INFRARED: name = INFRARED; break;
-            case RS2_STREAM_FISHEYE: 
-            {
-                switch (source.index)
-                {
-                case 1: return FISHEYE;
-                case 2: return FISHEYE2;
-                case 3: return FISHEYE3;
-                case 4: return FISHEYE4;
-                default:
-                    throw io_exception(to_string() << "Unknown stream index : " << source.index);
-                }
-            }
+            case RS2_STREAM_FISHEYE: name = FISHEYE; break;
             case RS2_STREAM_GYRO: name = GYRO; break;
             case RS2_STREAM_ACCEL: name = ACCEL; break;
             case RS2_STREAM_POSE: name = POSE; break;
             default:
                 throw io_exception(to_string() << "Unknown stream type : " << source.type);
             }
-            return name + (source.index == 0 ? "" : std::to_string(source.index));
+            if (source.type == RS2_STREAM_POSE)
+            {
+                return name  + std::to_string(source.index);
+            }
+            else
+            {
+                if (source.index == 1)
+                {
+                    throw io_exception(to_string() << "Unknown index for type : " << source.type << ", index = " << source.index);
+                }
+                return name + (source.index == 0 ? "" : std::to_string(source.index));
+            }
         }
 
         inline stream_descriptor parse_stream_type(const std::string& source)
         {
-            if (source == DEPTH)
-                return { RS2_STREAM_DEPTH, 0 };
-            else if (source == COLOR)
-                return { RS2_STREAM_COLOR, 0 };
-            else if (source == INFRARED)
-                return { RS2_STREAM_INFRARED, 1 };
-            else if (source == INFRARED2)
-                return { RS2_STREAM_INFRARED, 2 };
-            else if (source == FISHEYE)
-                return { RS2_STREAM_FISHEYE, 1 };
-            else if (source == FISHEYE2)
-                return { RS2_STREAM_FISHEYE, 2 };
-            else if (source == FISHEYE3)
-                return { RS2_STREAM_FISHEYE, 3 };
-            else if (source == FISHEYE4)
-                return { RS2_STREAM_FISHEYE, 4 };
-            else if (source == ACCEL)
-                return { RS2_STREAM_ACCEL, 0 };
-            else if (source == GYRO)
-                return { RS2_STREAM_GYRO, 0 };
-            else if (source == POSE)
-                return { RS2_STREAM_POSE, 0 };
+            stream_descriptor retval{};
+            auto starts_with = [source](const std::string& s) {return source.find(s) == 0; };
+            int ind = source.find(FISHEYE);
+            std::string type_str;
+            if (starts_with(DEPTH))
+            {
+                retval.type = RS2_STREAM_DEPTH;
+                type_str = DEPTH;
+            }
+            else if (starts_with(COLOR))
+            {
+                retval.type = RS2_STREAM_COLOR;
+                type_str = COLOR;
+            }
+            else if (starts_with(INFRARED))
+            {
+                retval.type = RS2_STREAM_INFRARED;
+                type_str = INFRARED;
+            }
+            else if (starts_with(FISHEYE))
+            {
+                retval.type = RS2_STREAM_FISHEYE;
+                type_str = FISHEYE;
+            }
+            else if (starts_with(ACCEL))
+            {
+                retval.type = RS2_STREAM_ACCEL;
+                type_str = ACCEL;
+            }
+            else if (starts_with(GYRO))
+            {
+                retval.type = RS2_STREAM_GYRO;
+                type_str = GYRO;
+            }
+            else if (starts_with(POSE))
+            {
+                retval.type = RS2_STREAM_POSE;
+                auto index_str = source.substr(std::string(POSE).length());
+                retval.index = std::stoi(index_str);
+                return retval;
+            }
+            else
+                throw io_exception(to_string() << "Unknown stream type : " << source);
 
-            throw io_exception(to_string() << "Unknown stream type : " << source);
+            auto index_str = source.substr(type_str.length());
+            if (index_str.empty())
+            {
+                    
+                retval.index = 0;
+            }
+            else
+            {
+                int index = std::stoi(index_str);
+                assert(index != 1);
+                retval.index = index;
+            }
+            return retval;
         }
 
         class FrameQuery : public MultipleRegexTopicQuery
