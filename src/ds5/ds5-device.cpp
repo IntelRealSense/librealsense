@@ -192,6 +192,7 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
         auto depth_ep = std::make_shared<ds5_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
+
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
 
 
@@ -413,8 +414,10 @@ namespace librealsense
         std::vector<std::shared_ptr<matcher>> depth_matchers;
 
         for (auto& s : streams)
-            depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type()));
-
+        {
+            depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type(),
+                                     generate_matcher_name(s->get_stream_type(), s->get_unique_id())));
+        }
         return std::make_shared<frame_number_composite_matcher>(depth_matchers);
     }
 }

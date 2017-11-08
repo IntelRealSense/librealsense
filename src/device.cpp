@@ -101,7 +101,9 @@ void device::hardware_reset()
 
 std::shared_ptr<matcher> librealsense::device::create_matcher(const frame_holder& frame) const
 {
-    return std::make_shared<identity_matcher>( frame.frame->get_stream()->get_unique_id(), frame.frame->get_stream()->get_stream_type());
+
+    return std::make_shared<identity_matcher>( frame.frame->get_stream()->get_unique_id(), frame.frame->get_stream()->get_stream_type() ,
+                                               generate_matcher_name(frame.frame->get_stream()->get_stream_type(), frame.frame->get_stream()->get_unique_id()));
 }
 
 std::pair<uint32_t, rs2_extrinsics> librealsense::device::get_extrinsics(const stream_interface& stream) const

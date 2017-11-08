@@ -36,7 +36,7 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
         if (auto p = dev.as<playback>())
         {
             auto filename = p.file_name();
-            p.set_status_changed_callback([&device_models, filename](rs2_playback_status status)
+            p.set_status_changed_callback([&viewer_model, &device_models, filename](rs2_playback_status status)
             {
                 if (status == RS2_PLAYBACK_STATUS_STOPPED)
                 {
@@ -52,14 +52,14 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
                         if (it->_playback_repeat)
                         {
                             //Calling from different since playback callback is from reading thread
-                            std::thread{ [subs]()
+                            std::thread{ [subs, &viewer_model]()
                             {
                                 for (auto&& sub : subs)
                                 {
                                     if (sub->streaming)
                                     {
                                         auto profiles = sub->get_selected_profiles();
-                                        sub->play(profiles);
+                                        sub->play(profiles, viewer_model);
                                     }
                                 }
                             } }.detach();
@@ -129,7 +129,7 @@ void refresh_devices(std::mutex& m,
 
                     auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
                         [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(dev); });
-                    
+
                     if (dev_model_itr != end(device_models))
                     {
                         for (auto&& s : dev_model_itr->subdevices)
@@ -143,7 +143,7 @@ void refresh_devices(std::mutex& m,
 
                     dev_itr = current_connected_devices.erase(dev_itr);
                     continue;
-                    
+
                 }
                 ++dev_itr;
             }
@@ -451,7 +451,7 @@ int main(int argv, const char** argc) try
                                 if (ImGui::Button(label.c_str(), { 30,30 }))
                                 {
                                     auto profiles = sub->get_selected_profiles();
-                                    sub->play(profiles);
+                                    sub->play(profiles, viewer_model);
 
                                     for (auto&& profile : profiles)
                                     {
@@ -552,9 +552,13 @@ int main(int argv, const char** argc) try
         ImGui::PopStyleVar();
         ImGui::PopStyleColor();
 
+        frameset f;
+        if(viewer_model.s.poll_for_frames(&f))
+            viewer_model.syncer_queue.enqueue(std::move(f));
+
         // Fetch frames from queues
         for (auto&& device_model : device_models)
-            for (auto&& sub : device_model.subdevices)
+           for (auto&& sub : device_model.subdevices)
             {
                 sub->queues.foreach([&](frame_queue& queue)
                 {
@@ -563,7 +567,7 @@ int main(int argv, const char** argc) try
                         frame f;
                         if (queue.poll_for_frame(&f))
                         {
-                            viewer_model.upload_frame(std::move(f));
+                           viewer_model.upload_frame(std::move(f));
                         }
                     }
                     catch (const error& ex)

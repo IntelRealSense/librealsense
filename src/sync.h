@@ -2,6 +2,10 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
+
+#ifndef SYNC_H
+#define SYNC_H
+
 #include "types.h"
 #include "archive.h"
 
@@ -13,6 +17,14 @@
 
 namespace librealsense
 {
+
+    typedef int stream_id;
+    static std::string generate_matcher_name(rs2_stream stream_type, stream_id stream)
+    {
+        std::stringstream s;
+        s<<rs2_stream_to_string(stream_type) << " "/*<<stream*/;
+        return s.str();
+    }
 
     template<class T>
     class internal_frame_processor_callback : public rs2_frame_processor_callback
@@ -74,14 +86,12 @@ namespace librealsense
     };
 
 
-    typedef int stream_id;
+
     typedef std::function<void(frame_holder, syncronization_environment)> sync_callback;
 
     class matcher
     {
     public:
-        matcher();
-
         virtual void dispatch(frame_holder f, syncronization_environment env) = 0;
         virtual void sync(frame_holder f, syncronization_environment env);
         virtual void set_callback(sync_callback f);
@@ -105,35 +115,58 @@ namespace librealsense
             // wait until user is done with all the stuff he chose to borrow
             _callback_inflight.wait_until_empty();
         }
+       std::string get_name()
+       {
+          return _name;
+       }
+
+       bool get_active() const
+       {
+           return _active;
+       }
+
+       void set_active(const bool active)
+       {
+           _active = active;
+       }
+
     protected:
+        std::vector<stream_id> _streams_id;
+
         sync_callback _callback;
         callbacks_heap _callback_inflight;
+        std::string _name;
+
+        bool _active = true;
     };
 
     class identity_matcher : public matcher
     {
     public:
-        identity_matcher(stream_id stream, rs2_stream streams_type);
+        identity_matcher(stream_id stream, rs2_stream streams_type, std::string name);
 
         void dispatch(frame_holder f, syncronization_environment env) override;
         const std::vector<stream_id>& get_streams() const override;
         const std::vector<rs2_stream>& get_streams_types() const override;
 
     private:
-        std::vector<stream_id> _stream_id;
+
         std::vector<rs2_stream> _stream_type;
     };
 
     class composite_matcher : public matcher
     {
     public:
-        composite_matcher(std::vector<std::shared_ptr<matcher>> matchers);
+        composite_matcher(std::vector<std::shared_ptr<matcher>> matchers, std::string name);
 
 
         virtual bool are_equivalent(frame_holder& a, frame_holder& b) { return true; };
         virtual bool is_smaller_than(frame_holder& a, frame_holder& b) { return true; };
         virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) { return false; };
         virtual void clean_dead_streams(frame_holder& f) = 0;
+        virtual void update_last_arrived(frame_holder& f, matcher* m) = 0;
+
+        void dispatch(frame_holder f, syncronization_environment env) override;
         void sync(frame_holder f, syncronization_environment env) override;
         const std::vector<stream_id>& get_streams() const override;
         const std::vector<rs2_stream>& get_streams_types() const override;
@@ -157,7 +190,7 @@ namespace librealsense
     {
     public:
         frame_number_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers);
-        void dispatch(frame_holder f, syncronization_environment env) override;
+        virtual void update_last_arrived(frame_holder& f, matcher* m) override;
         bool are_equivalent(frame_holder& a, frame_holder& b) override;
         bool is_smaller_than(frame_holder& a, frame_holder& b) override;
         bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) override;
@@ -174,7 +207,7 @@ namespace librealsense
         timestamp_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers);
         bool are_equivalent(frame_holder& a, frame_holder& b) override;
         bool is_smaller_than(frame_holder& a, frame_holder& b) override;
-        void dispatch(frame_holder f, syncronization_environment env) override;
+        virtual void update_last_arrived(frame_holder& f, matcher* m) override;
         void clean_dead_streams(frame_holder& f) override;
         bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) override;
         void update_next_expected(const frame_holder & f) override;
@@ -200,3 +233,4 @@ namespace librealsense
         
     };
 }
+#endif

@@ -1113,15 +1113,22 @@ namespace rs2
         _pause = false;
     }
 
-    void subdevice_model::play(const std::vector<stream_profile>& profiles)
+    void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer)
     {
         s->open(profiles);
         try {
             s->start([&](frame f) {
                 auto index = f.get_profile().unique_id();
-                queues.at(index).enqueue(std::move(f));
+                if (viewer.syncronize)
+                {
+                    if (index == viewer.selected_depth_source_uid || index ==  viewer.selected_tex_source_uid)
+                        viewer.s(f);
+                }
+                queues.at(index).enqueue(f);
             });
+
         }
+
         catch (...)
         {
             s->close();
@@ -1493,7 +1500,6 @@ namespace rs2
         //    }
         //}
 
-        auto model = pc.get_points();
 
         const auto top_bar_height = 32.f;
         const auto num_of_buttons = 4;
@@ -1657,17 +1663,6 @@ namespace rs2
         //}
         //ImGui::PopItemWidth();
 
-        if (selected_depth_source_uid >= 0) {
-            auto depth = streams[selected_depth_source_uid].texture->get_last_frame();
-            if (depth) pc.push_frame(depth);
-        }
-
-        frame tex;
-        if (selected_tex_source_uid >= 0)
-        {
-            tex = streams[selected_tex_source_uid].texture->get_last_frame();
-            if (tex) pc.update_texture(tex);
-        }
 
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons - 5, 0 });
 
@@ -1713,6 +1708,15 @@ namespace rs2
         {
             if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
             {
+                auto model = pc.get_points();
+
+                frame tex;
+                if (selected_tex_source_uid >= 0)
+                {
+                    tex = streams[selected_tex_source_uid].texture->get_last_frame();
+                    if (tex) pc.update_texture(tex);
+                }
+
                 std::string fname(ret);
                 if (!ends_with(to_lower(fname), ".ply")) fname += ".ply";
                 export_to_ply(fname.c_str(), not_model, model, tex);
@@ -1801,6 +1805,7 @@ namespace rs2
 
     void viewer_model::gc_streams()
     {
+        std::lock_guard<std::mutex> lock(streams_mutex);
         std::vector<int> streams_to_remove;
         for (auto&& kvp : streams)
         {
@@ -2363,7 +2368,7 @@ namespace rs2
                 if (profiles.empty())
                     continue;
 
-                sub->play(profiles);
+                sub->play(profiles, viewer);
 
                 for (auto&& profile : profiles)
                 {
@@ -2598,32 +2603,93 @@ namespace rs2
     {
         show_icon(font_18, "recording_icon", u8"\uf111", x, y, id, from_rgba(255, 46, 54, alpha_delta * 255));
     }
+
+    void async_pointclound_mapper::proccess(rs2::frame f, const rs2::frame_source& source)
+    {
+
+        points p;
+        std::vector<frame> results;
+
+
+        if(viewer.syncronize)
+        {
+            if (auto composite = f.as<rs2::frameset>())
+            {
+                for(auto&& f: composite)
+                {
+                    if(f.get_profile().unique_id() == viewer.selected_depth_source_uid)
+                    {
+                        p = pc.calculate(f);
+                        results.push_back(std::move(p));
+
+                    }
+                    if(f.get_profile().unique_id() == viewer.selected_tex_source_uid)
+                    {
+                        update_texture(f);
+                        results.push_back(std::move(f));
+                    }
+                }
+            }
+
+
+            auto res = source.allocate_composite_frame(results);
+            source.frame_ready(std::move(res));
+
+
+        }
+        else
+        {
+            if(f.get_profile().unique_id() == viewer.selected_depth_source_uid)
+            {
+
+                if(last_tex_frame)
+                    results.push_back(last_tex_frame);
+                p = pc.calculate(f);
+                results.push_back(std::move(p));
+
+                auto res = source.allocate_composite_frame(results);
+                source.frame_ready(std::move(res));
+            }
+
+        }
+    }
+
     void async_pointclound_mapper::render_loop()
     {
         while (keep_calculating_pointcloud)
         {
             try
             {
-                frame f;
-                if (depth_frames_to_render.poll_for_frame(&f))
+                if(viewer.syncronize)
                 {
-                    if (f.get_frame_number() == last_frame_number &&
-                        f.get_timestamp() <= last_timestamp &&
-                        f.get_profile().unique_id() == last_stream_id)
-                        continue;
-
-                    resulting_3d_models.enqueue(pc.calculate(f));
-
-                    last_frame_number = f.get_frame_number();
-                    last_timestamp = f.get_timestamp();
-                    last_stream_id = f.get_profile().unique_id();
+                    frameset frames;
+                    if (viewer.syncer_queue.poll_for_frame(&frames))
+                    {
+                        processing_block.invoke(frames);
+                    }
+                }
+                else
+                {
+                    std::lock_guard<std::mutex> lock(viewer.streams_mutex);
+                    for (auto&& s : viewer.streams)
+                    {
+                        if(s.first == viewer.selected_tex_source_uid)
+                        {
+                            update_texture(s.second.texture->get_last_frame());
+                            last_tex_frame = s.second.texture->get_last_frame();
+                        }
+                        if(s.first == viewer.selected_depth_source_uid)
+                        {
+                            processing_block.invoke(s.second.texture->get_last_frame());
+                        }
+                    }
                 }
             }
             catch (...) {}
 
             // There is no practical reason to re-calculate the 3D model
             // at higher frequency then 100 FPS
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }
 
@@ -2925,40 +2991,26 @@ namespace rs2
 
         glColor4f(1.f, 1.f, 1.f, 1.f);
 
-        if (syncronize)
+
+        if(!paused)
         {
-            auto tex = streams[selected_tex_source_uid].texture->get_last_frame();
-            if (tex) s(tex);
+            auto res = pc.get_points();
+
+            for (auto&& f : res)
+            {
+                if (f.is<rs2::points>())
+                    last_points = f;
+                else
+                    last_texture = f;
+            }
+
         }
-
-        if (auto points = pc.get_points())
+        if (draw_frustrum && last_points)
         {
-            if (syncronize)
-            {
-                s(points);
-                rs2::frameset fs;
-                if (s.poll_for_frames(&fs))
-                    if (fs && fs.size() > 1)
-                    {
-                        for (auto&& f : fs)
-                        {
-                            if (f.is<rs2::points>()) last_points = f;
-                            else last_texture = f;
-                        }
-                    }
-            }
-            else
-            {
-                last_texture = streams[selected_tex_source_uid].texture->get_last_frame();
-                last_points = points;
-            }
-
-            if (draw_frustrum)
-            {
                 glLineWidth(1.f);
                 glBegin(GL_LINES);
 
-                auto intrin = points.get_profile().as<video_stream_profile>().get_intrinsics();
+                auto intrin = last_points.get_profile().as<video_stream_profile>().get_intrinsics();
 
                 glColor4f(sensor_bg.x, sensor_bg.y, sensor_bg.z, 0.5f);
 
@@ -2990,11 +3042,11 @@ namespace rs2
                 glColor4f(1.f, 1.f, 1.f, 1.f);
             }
 
-            if (last_points && last_texture)
+            if ( last_points && last_texture)
             {
                 texture.upload(last_texture);
 
-                glPointSize((float)viewer_rect.w / points.get_profile().as<video_stream_profile>().width());
+                glPointSize((float)viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width());
 
                 if (selected_tex_source_uid >= 0)
                 {
@@ -3008,23 +3060,25 @@ namespace rs2
 
                 //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
 
-                glBegin(GL_POINTS);
 
-                auto vertices = last_points.get_vertices();
-                auto tex_coords = last_points.get_texture_coordinates();
+                    glBegin(GL_POINTS);
 
-                for (int i = 0; i < last_points.size(); i++)
-                {
-                    if (vertices[i].z)
+                    auto vertices = last_points.get_vertices();
+                    auto tex_coords = last_points.get_texture_coordinates();
+
+                    for (int i = 0; i < last_points.size(); i++)
                     {
-                        glVertex3fv(vertices[i]);
-                        glTexCoord2fv(tex_coords[i]);
-                    }
+                        if (vertices[i].z)
+                        {
+                            glVertex3fv(vertices[i]);
+                            glTexCoord2fv(tex_coords[i]);
+                        }
 
-                }
-                glEnd();
+                    }
+                    glEnd();
+
             }
-        }
+
 
         glDisable(GL_DEPTH_TEST);
 
