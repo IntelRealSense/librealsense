@@ -408,8 +408,6 @@ namespace rsimpl
 
                 if(usb_handle) libusb_close(usb_handle);
                 if(usb_device) libusb_unref_device(usb_device);
-
-                rsimpl::ds::force_firmware_reset(*this);
             }
 
             bool has_mi(int mi) const

@@ -116,8 +116,6 @@ namespace rsimpl
                     if(status < 0) LOG_ERROR("libusb_release_interface(...) returned " << libusb_error_name(status));
                 }
 
-                rsimpl::ds::force_firmware_reset(*this);
-
                 for(auto & sub : subdevices) if(sub.handle) uvc_close(sub.handle);
                 if(claimed_interfaces.size()) if(uvcdevice) uvc_unref_device(uvcdevice);
             }
