@@ -1115,6 +1115,7 @@ namespace rs2
 
     void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer)
     {
+        viewer.pc.start();
         s->open(profiles);
         try {
             s->start([&](frame f) {
@@ -2658,34 +2659,37 @@ namespace rs2
     {
         while (keep_calculating_pointcloud)
         {
-            try
+            if(streaming)
             {
-                if(viewer.syncronize)
+                try
                 {
-                    frameset frames;
-                    if (viewer.syncer_queue.poll_for_frame(&frames))
+                    if(viewer.syncronize)
                     {
-                        processing_block.invoke(frames);
-                    }
-                }
-                else
-                {
-                    std::lock_guard<std::mutex> lock(viewer.streams_mutex);
-                    for (auto&& s : viewer.streams)
-                    {
-                        if(s.first == viewer.selected_tex_source_uid)
+                        frameset frames;
+                        if (viewer.syncer_queue.poll_for_frame(&frames))
                         {
-                            update_texture(s.second.texture->get_last_frame());
-                            last_tex_frame = s.second.texture->get_last_frame();
-                        }
-                        if(s.first == viewer.selected_depth_source_uid)
-                        {
-                            processing_block.invoke(s.second.texture->get_last_frame());
+                            processing_block.invoke(frames);
                         }
                     }
+                    else
+                    {
+                        std::lock_guard<std::mutex> lock(viewer.streams_mutex);
+                        for (auto&& s : viewer.streams)
+                        {
+                            if(s.first == viewer.selected_tex_source_uid)
+                            {
+                                update_texture(s.second.texture->get_last_frame());
+                                last_tex_frame = s.second.texture->get_last_frame();
+                            }
+                            if(s.first == viewer.selected_depth_source_uid)
+                            {
+                                processing_block.invoke(s.second.texture->get_last_frame());
+                            }
+                        }
+                    }
                 }
+                catch (...) {}
             }
-            catch (...) {}
 
             // There is no practical reason to re-calculate the 3D model
             // at higher frequency then 100 FPS

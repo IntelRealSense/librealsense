@@ -490,8 +490,9 @@ namespace rs2
         }),
         viewer(viewer),
         keep_calculating_pointcloud(true),
-              resulting_3d_models(1),
-              t([this]() {render_loop(); })
+        streaming(false),
+        resulting_3d_models(1),
+        t([this]() {render_loop(); })
         {
             processing_block.start(resulting_3d_models);
         }
@@ -526,6 +527,10 @@ namespace rs2
             model = f;
             while (resulting_3d_models.poll_for_frame(&f));
         }
+        void start()
+        {
+            streaming = true;
+        }
 
     private:
         viewer_model& viewer;
@@ -537,6 +542,8 @@ namespace rs2
         pointcloud pc;
         rs2::frameset model;
         std::atomic<bool> keep_calculating_pointcloud;
+        std::atomic<bool> streaming;
+
         frame_queue resulting_3d_models;
 
         std::thread t;
@@ -609,6 +616,7 @@ namespace rs2
         bool is_output_collapsed = false;
         bool is_3d_view = false;
         bool paused = false;
+
 
         void draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
 
