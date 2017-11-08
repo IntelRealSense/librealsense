@@ -957,7 +957,7 @@ namespace rs2
                         streaming_tooltip();
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
 
-                        label = to_string() << s->get_info(RS2_CAMERA_INFO_NAME)
+                        label = to_string() << "##" << s->get_info(RS2_CAMERA_INFO_NAME)
                             << s->get_info(RS2_CAMERA_INFO_NAME)
                             << f.first << " fps";
 
@@ -4019,7 +4019,8 @@ namespace rs2
                     }
                 }
 
-                label = to_string() << "Controls ##" << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << id;;
+                label = to_string() << "Controls ##" << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << id;
+                int count_supported = 0;
                 if (ImGui::TreeNode(label.c_str()))
                 {
                     for (auto i = 0; i < RS2_OPTION_COUNT; i++)
@@ -4029,11 +4030,15 @@ namespace rs2
                         {
                             if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
                             {
+                                count_supported++;
                                 get_curr_advanced_controls = true;
                             }
                         }
                     }
-
+                    if (count_supported == 0)
+                    {
+                        ImGui::Text("No supported controls");
+                    }
                     ImGui::TreePop();
                 }
 

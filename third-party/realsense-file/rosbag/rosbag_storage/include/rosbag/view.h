@@ -122,8 +122,6 @@ public:
     View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query,
          ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX, bool const& reduce_overlap = false);
 
-    View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query,
-        ros::Time const& specific_time, bool single_message);
     ~View();
 
     iterator begin();
@@ -146,7 +144,7 @@ public:
      * param end_time   The end of the time range for the query
      */
     void addQuery(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query,
-    		      ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX, bool single_message = false);
+    		      ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX);
 
     std::vector<const ConnectionInfo*> getConnections();
 
@@ -156,7 +154,7 @@ public:
 protected:
     friend class iterator;
 
-    void updateQueries(BagQuery* q, bool single_message = false);
+    void updateQueries(BagQuery* q);
     void update();
 
     MessageInstance* newMessageInstance(ConnectionInfo const* connection_info, IndexEntry const& index, Bag const& bag);

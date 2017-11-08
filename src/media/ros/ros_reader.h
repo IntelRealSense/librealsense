@@ -286,7 +286,7 @@ namespace librealsense
             frame_additional_data& additional_data)
         {
             uint32_t total_md_size = 0;
-            rosbag::View frame_metadata_view(bag, legacy_file_format::FrameInfoExt(stream_id), msg.getTime(), true);
+            rosbag::View frame_metadata_view(bag, legacy_file_format::FrameInfoExt(stream_id), msg.getTime(), msg.getTime());
             assert(frame_metadata_view.size() <= 1);
             for (auto message_instance : frame_metadata_view)
             {

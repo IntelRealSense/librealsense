@@ -176,12 +176,6 @@ View::View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, r
 	addQuery(bag, query, start_time, end_time);
 }
 
-View::View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query,
-    ros::Time const& specific_time, bool single_message)
-{
-    addQuery(bag, query, specific_time, specific_time, single_message);
-}
-
 View::~View() {
     foreach(MessageRange* range, ranges_)
         delete range;
@@ -262,16 +256,16 @@ void View::addQuery(Bag const& bag, ros::Time const& start_time, ros::Time const
     updateQueries(queries_.back());
 }
 
-void View::addQuery(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, ros::Time const& start_time, ros::Time const& end_time, bool single_message) {
+void View::addQuery(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, ros::Time const& start_time, ros::Time const& end_time) {
     if ((bag.getMode() & bagmode::Read) != bagmode::Read)
         throw BagException("Bag not opened for reading");
 
     queries_.push_back(new BagQuery(&bag, Query(query, start_time, end_time), bag.bag_revision_));
 
-    updateQueries(queries_.back(), single_message);
+    updateQueries(queries_.back());
 }
 
-void View::updateQueries(BagQuery* q, bool single_message) {
+void View::updateQueries(BagQuery* q) {
     for (map<uint32_t, ConnectionInfo*>::const_iterator i = q->bag->connections_.begin(); i != q->bag->connections_.end(); i++) {
         ConnectionInfo const* connection = i->second;
 
@@ -286,19 +280,10 @@ void View::updateQueries(BagQuery* q, bool single_message) {
             continue;
         multiset<IndexEntry> const& index = j->second;
 
-        if (single_message)
-        {
-            assert(q->query.getStartTime() == q->query.getEndTime());
-            auto it = index.find({ q->query.getStartTime(),0,0 });
-            if(it != index.end())
-                ranges_.push_back(new MessageRange(it, it, connection, q));
-            continue;
-        }
-
         // lower_bound/upper_bound do a binary search to find the appropriate range of Index Entries given our time range
 
-        std::multiset<IndexEntry>::const_iterator begin = std::lower_bound(index.begin(), index.end(), q->query.getStartTime(), IndexEntryCompare());
-        std::multiset<IndexEntry>::const_iterator end   = std::upper_bound(index.begin(), index.end(), q->query.getEndTime(),   IndexEntryCompare());		
+        std::multiset<IndexEntry>::const_iterator begin = index.lower_bound({ q->query.getStartTime(), 0, 0 });
+        std::multiset<IndexEntry>::const_iterator end   = index.upper_bound({ q->query.getEndTime()  , 0, 0 });
 
         // Make sure we are at the right beginning
         while (begin != index.begin())
