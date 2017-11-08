@@ -843,21 +843,23 @@ namespace rs2
                 std::array<float, 3> translation{};
                 memcpy(&translation, ptr, sizeof(translation));
                 ptr += sizeof(translation);
-                std::array<float, 3> velocity{};
-                memcpy(&velocity, ptr, sizeof(velocity));
-                ptr += sizeof(velocity);
-                std::array<float, 3> angular_velocity{};
-                memcpy(&angular_velocity, ptr, sizeof(angular_velocity));
-                ptr += sizeof(angular_velocity);
-                std::array<float, 3> acceleration{};
-                memcpy(&acceleration, ptr, sizeof(acceleration));
-                ptr += sizeof(acceleration);
-                std::array<float, 3> angular_acceleration{};
-                memcpy(&angular_acceleration, ptr, sizeof(angular_acceleration));
-                ptr += sizeof(angular_acceleration);
+                //std::array<float, 3> velocity{};
+                //memcpy(&velocity, ptr, sizeof(velocity));
+                ptr += sizeof(std::array<float, 3>);
+                //std::array<float, 3> angular_velocity{};
+                //memcpy(&angular_velocity, ptr, sizeof(angular_velocity));
+                ptr += sizeof(std::array<float, 3>);
+                //std::array<float, 3> acceleration{};
+                //memcpy(&acceleration, ptr, sizeof(acceleration));
+                ptr += sizeof(std::array<float, 3>);
+                //std::array<float, 3> angular_acceleration{};
+                //memcpy(&angular_acceleration, ptr, sizeof(angular_acceleration));
+                ptr += sizeof(std::array<float, 3>);
                 std::array<float, 4> rotation{};
                 memcpy(&rotation, ptr, sizeof(rotation));
-                draw_pose_visualization(translation, velocity, angular_velocity, acceleration, angular_acceleration, rotation);
+
+                qpose_t pose{ { rotation[0] ,rotation[1] ,rotation[2] ,rotation[3] }, { translation[0] ,translation[1] ,translation[2] } };
+                draw_pose_visualization(pose, frame.get_profile().unique_id());
                 break;
             }
             case RS2_FORMAT_Y16:
@@ -1098,16 +1100,70 @@ namespace rs2
             glPopMatrix();
         }
 
-        using float3arr = std::array<float, 3>;
-        using float4arr = std::array<float, 4>;
-        void draw_pose_visualization(const float3arr& translation,
-            const float3arr& velocity, 
-            const float3arr& angular_velocity, 
-            const float3arr& acceleration, 
-            const float3arr& angular_acceleration, 
-            const float4arr& rotation)
+        typedef struct { struct { float w, x, y, z; } Q; float T[3]; } qpose_t;
+        static inline std::array<float, 3> transform_by_pose(const qpose_t& p, const std::array<float, 3>& vi)
         {
+            float w = p.Q.w, x = p.Q.x, y = p.Q.y, z = p.Q.z; auto T = p.T;
+            return {
+                vi[0] * (1 - 2 * (y*y + z*z)) + vi[1] * (2 * (x*y - w*z))     + vi[2] * (2 * (x*z + w*y))     + T[0],
+                vi[0] * (2 * (x*y + w*z))     + vi[1] * (1 - 2 * (x*x + z*z)) + vi[2] * (2 * (y*z - w*x))     + T[1],
+                vi[0] * (2 * (x*z - w*y))     + vi[1] * (2 * (y*z + w*x))     + vi[2] * (1 - 2 * (x*x + y*y)) + T[2]
+            };
+        }
 
+        void draw_pose_visualization(const qpose_t& pose, int id)
+        {
+            using colored_line = std::pair<std::array<std::array<float, 3>, 2>, std::array<float, 3>>;
+            static const std::array<colored_line, 3> axis = {
+                { // Need extra brackets, until c++14
+                      //    Start Position,   ,  End Position         ,  Color
+                    { { { { 0.0f, 0.0f, 0.0f },{ 1.0f, 0.0f, 0.0f } } },{ 1.0f, 0.0f, 0.0f } },
+                    { { { { 0.0f, 0.0f, 0.0f },{ 0.0f, -1.0f, 0.0f } } },{ 0.0f, 1.0f, 0.0f } },
+                    { { { { 0.0f, 0.0f, 0.0f },{ 0.0f, 0.0f, 1.0f } } },{ 0.0f, 0.0f, 1.0f } },
+                }
+            };
+
+            glMatrixMode(GL_PROJECTION);
+            glPushMatrix();
+            glMatrixMode(GL_MODELVIEW);
+            glPushMatrix();
+
+            glViewport(0, 0, 1024, 1024);
+
+            glClearColor(0, 0, 0, 1);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            glMatrixMode(GL_PROJECTION);
+            glLoadIdentity();
+
+            //glRotatef(-25, 1.0f, 0.0f, 0.0f);
+            //glRotatef(-45, 0.0f, 1.0f, 0.0f);
+
+            // Drawing Axis
+            int count = 0;
+            glBegin(GL_LINES);
+            for (auto&& colored_line : axis)
+            {
+                auto& line = colored_line.first;
+                auto& color = colored_line.second;
+                glColor3f(color[0], color[1], color[2]);
+                for (auto&& p : line)
+                {
+                    std::array<float, 3> po = transform_by_pose(pose, p);
+                    glVertex3f(po[0], po[1], po[2]);
+                }
+            }
+            glEnd();
+
+            const auto canvas_size = 230;
+            const auto vec_threshold = 0.01f;
+
+            glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
+
+            glMatrixMode(GL_MODELVIEW);
+            glPopMatrix();
+            glMatrixMode(GL_PROJECTION);
+            glPopMatrix();
         }
 
         double t = 0;

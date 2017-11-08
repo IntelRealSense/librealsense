@@ -287,7 +287,7 @@ namespace librealsense
         {
             uint32_t total_md_size = 0;
             rosbag::View frame_metadata_view(bag, legacy_file_format::FrameInfoExt(stream_id), msg.getTime(), true);
-            assert(frame_metadata_view.size() == 1);
+            assert(frame_metadata_view.size() <= 1);
             for (auto message_instance : frame_metadata_view)
             {
                 auto info = instantiate_msg<realsense_legacy_msgs::frame_info>(message_instance);

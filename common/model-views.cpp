@@ -916,9 +916,11 @@ namespace rs2
 
                 if (stream_enabled[f.first])
                 {
-                    ImGui::SameLine(); ImGui::SetCursorPosX(col1);
-
-                    //if (show_single_fps_list) ImGui::SameLine();
+                    if (show_single_fps_list)
+                    {
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosX(col1);
+                    }
 
                     label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
                         << s->get_info(RS2_CAMERA_INFO_NAME)
