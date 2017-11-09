@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
         {
             cout << "\nWaiting for RealSense device to connect...\n";
             auto dev = hub.wait_for_device();
-            cout << "RealSense device has connected...\n";
+            cout << "RealSense device was connected...\n";
 
             vector<uint8_t> input;
             auto str_op_code = dev.get_info(RS2_CAMERA_INFO_DEBUG_OP_CODE);

@@ -97,12 +97,7 @@ namespace rs2
 
         if (_first_frame)
         {
-            if (_first_load.joinable())
-            {
-                _keep_alive = false;
-                _first_load.join();
-                _keep_alive = true;
-            }
+            assert(!_first_load.joinable()); // You must call to reset() before initiate new thread
 
             _first_load = std::thread([&]() {
                 while (_keep_alive && !_app_ready)
@@ -223,7 +218,6 @@ namespace rs2
             _first_load.join();
         }
 
-
         ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
         ImGui_ImplGlfw_Shutdown();
         glfwDestroyWindow(_win);
@@ -275,6 +269,13 @@ namespace rs2
 
     void ux_window::reset()
     {
+        if (_first_load.joinable())
+        {
+            _keep_alive = false;
+            _first_load.join();
+            _keep_alive = true;
+        }
+
         _query_devices = true;
         _missing_device = false;
         _hourglass_index = 0;
