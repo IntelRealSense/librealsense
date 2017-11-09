@@ -872,12 +872,12 @@ namespace rs2
                 break;
             case RS2_FORMAT_6DOF:
                 //TODO - for now just rendering position
-//                 if (frame.is<pose_frame>())
-//                 {
-//                     auto pose_frame = frame.as<pose_frame>();
-//                     auto axes = *(reinterpret_cast<const float3*>(data));
-//                     draw_motion_data(axes.x, axes.y, axes.z);
-//                 }
+                if (frame.is<pose_frame>())
+                {
+                    auto pose = frame.as<pose_frame>();
+                    auto pose_data = pose.get_pose_data();
+                    draw_motion_data(pose_data.translation.x, pose_data.translation.y, pose_data.translation.z);
+                }
                 break;
             //case RS2_FORMAT_RAW10:
             //{

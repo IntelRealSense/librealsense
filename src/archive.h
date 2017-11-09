@@ -326,36 +326,28 @@ namespace librealsense
     class pose_frame : public frame
     {
     public:
+        // pose frame data buffer is pose info struct
+        struct pose_info
+        {
+            float3   translation;         /**< X, Y, Z values of translation, in meters (relative to initial position)                                    */
+            float3   velocity;            /**< X, Y, Z values of velocity, in meter/sec                                                                   */
+            float3   acceleration;        /**< X, Y, Z values of acceleration, in meter/sec^2                                                             */
+            float4   rotation;            /**< Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position) */
+            float3   angularVelocity;     /**< X, Y, Z values of angular velocity, in radians/sec                                                         */
+            float3   angularAcceleration; /**< X, Y, Z values of angular acceleration, in radians/sec^2                                                   */
+            uint32_t confidence;          /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                       */
+        };
+
         pose_frame() : frame()
         {}
 
-        float3   get_translation() { return  _translation; }
-        float3   get_velocity() { return _velocity; } 
-        float3   get_acceleration() { return _acceleration; }
-        float4   get_rotation() { return _rotation; }
-        float3   get_angularVelocity() { return _angularVelocity; }
-        float3   get_angularAcceleration() { return _angularAcceleration; }
-        uint32_t get_confidence() { return _confidence; }
-
-        void assign(float3 translation, float3 velocity, float3 acceleration, float4 rotation, float3 angularVelocity, float3 angularAcceleration, uint32_t confidence)
-        {
-            _translation = translation;
-            _velocity = velocity;
-            _acceleration = acceleration;
-            _rotation = rotation;
-            _angularVelocity = angularVelocity;
-            _angularAcceleration = angularAcceleration;
-            _confidence =  confidence;
-        }
-
-    private:
-        float3   _translation;         /**< X, Y, Z values of translation, in meters (relative to initial position)                                    */
-        float3   _velocity;            /**< X, Y, Z values of velocity, in meter/sec                                                                   */
-        float3   _acceleration;        /**< X, Y, Z values of acceleration, in meter/sec^2                                                             */
-        float4   _rotation;            /**< Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position) */
-        float3   _angularVelocity;     /**< X, Y, Z values of angular velocity, in radians/sec                                                         */
-        float3   _angularAcceleration; /**< X, Y, Z values of angular acceleration, in radians/sec^2                                                   */
-        uint32_t _confidence;        /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                     */
+        float3   get_translation() { return  reinterpret_cast<pose_info*>(data.data())->translation; }
+        float3   get_velocity() { return reinterpret_cast<pose_info*>(data.data())->velocity; }
+        float3   get_acceleration() { return reinterpret_cast<pose_info*>(data.data())->acceleration; }
+        float4   get_rotation() { return reinterpret_cast<pose_info*>(data.data())->rotation; }
+        float3   get_angularVelocity() { return reinterpret_cast<pose_info*>(data.data())->angularVelocity; }
+        float3   get_angularAcceleration() { return reinterpret_cast<pose_info*>(data.data())->angularAcceleration; }
+        uint32_t get_confidence() { return reinterpret_cast<pose_info*>(data.data())->confidence; }
     };
 
     MAP_EXTENSION(RS2_EXTENSION_POSE_FRAME, librealsense::pose_frame);

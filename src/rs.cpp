@@ -1083,7 +1083,8 @@ int rs2_is_frame_extendable_to(const rs2_frame* f, rs2_extension extension_type,
         case RS2_EXTENSION_COMPOSITE_FRAME : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::composite_frame) != nullptr;
         case RS2_EXTENSION_POINTS :          return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::points) != nullptr;
         case RS2_EXTENSION_DEPTH_FRAME:      return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::depth_frame) != nullptr;
-        //case RS2_EXTENSION_MOTION_FRAME :  return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::motion_frame) != nullptr;
+        case RS2_EXTENSION_MOTION_FRAME :    return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::motion_frame) != nullptr;
+        case RS2_EXTENSION_POSE_FRAME :      return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::pose_frame) != nullptr;
 
     default:
         return false;
@@ -1644,6 +1645,26 @@ float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2
     return df->get_distance(x, y);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref, x, y)
+
+void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame);
+    auto pf = VALIDATE_INTERFACE(((frame_interface*)frame), librealsense::pose_frame);
+    float3 f = pf->get_translation();
+    pose->translation = { f.x, f.y, f.z };
+    f = pf->get_velocity();
+    pose->velocity = { f.x, f.y, f.z };
+    f = pf->get_acceleration();
+    pose->acceleration = { f.x, f.y, f.z };
+    float4 r = pf->get_rotation();
+    pose->rotation = { r.x, r.y, r.z, r.w };
+    f = pf->get_angularVelocity();
+    pose->angularVelocity = { f.x, f.y, f.z };
+    f = pf->get_angularAcceleration();
+    pose->angularAcceleration = { f.x, f.y, f.z };
+    pose->confidence = pf->get_confidence();    
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, frame, pose)
 
 rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
 {

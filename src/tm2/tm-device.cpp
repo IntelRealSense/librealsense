@@ -446,20 +446,22 @@ namespace librealsense
             //TODO - assert profile is found
 
             //TODO - maybe pass a raw data and parse up? do I have to pass any data on the buffer?
-            frame_holder frame = _source.alloc_frame(RS2_EXTENSION_POSE_FRAME, 0, additional_data, false);
+            frame_holder frame = _source.alloc_frame(RS2_EXTENSION_POSE_FRAME, sizeof(librealsense::pose_frame::pose_info), additional_data, true);
             if (frame.frame)
             {
                 auto pose_frame = static_cast<librealsense::pose_frame*>(frame.frame);
                 frame->set_timestamp(ts_ms.count());
                 frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK);
                 frame->set_stream(profile);
-                pose_frame->assign(toFloat3(tm_frame.translation), 
-                                   toFloat3(tm_frame.velocity), 
-                                   toFloat3(tm_frame.acceleration), 
-                                   toFloat4(tm_frame.rotation), 
-                                   toFloat3(tm_frame.angularVelocity), 
-                                   toFloat3(tm_frame.angularAcceleration), 
-                                   tm_frame.confidence);
+
+                auto info = reinterpret_cast<librealsense::pose_frame::pose_info*>(pose_frame->data.data());
+                info->translation = toFloat3(tm_frame.translation);
+                info->velocity = toFloat3(tm_frame.velocity);
+                info->acceleration = toFloat3(tm_frame.acceleration);
+                info->rotation = toFloat4(tm_frame.rotation);
+                info->angularVelocity = toFloat3(tm_frame.angularVelocity);
+                info->angularAcceleration = toFloat3(tm_frame.angularAcceleration);
+                info->confidence = tm_frame.confidence;
             }
             else
             {

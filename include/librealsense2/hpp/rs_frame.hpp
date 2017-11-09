@@ -446,6 +446,39 @@ namespace rs2
             return r;
         }
     };
+
+    class pose_frame : public frame
+    {
+    public:
+        pose_frame(const frame& f)
+            : frame(f)
+        {
+            rs2_error* e = nullptr;
+            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_POSE_FRAME, &e) == 0 && !e))
+            {
+                reset();
+            }
+            error::handle(e);
+        }
+
+        rs2_pose get_pose_data()
+        {
+            rs2_pose p = read_pose_data();
+            return p;
+        }
+
+    private:
+        rs2_pose read_pose_data()
+        {
+            rs2_error * e = nullptr;
+            rs2_pose pose;
+            rs2_pose_frame_get_pose_data(get(), &pose, &e);
+            error::handle(e);
+            return pose;
+        }
+
+    };
+
     class frameset : public frame
     {
     public:
