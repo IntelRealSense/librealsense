@@ -222,6 +222,7 @@ namespace rs2
             std::string                     _error_message;
             bool                            _first_frame = true;
             periodic_timer                  _update_readonly_options_timer;
+            bool                            _device_in_use = false;
 
             float                           _roi_percent = 0.4f;
             int                             _roi_combo_index = 2;

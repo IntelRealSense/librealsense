@@ -46,8 +46,18 @@ namespace rs2
             {
                 if (valid_config = cfg.can_resolve(_pipe))
                 {
-                    _pipe.start(cfg);
-                    break;
+                    try {
+                        _pipe.start(cfg);
+                        break;
+                    }
+                    catch (...)
+                    {
+                        if (!_device_in_use)
+                        {
+                            window.add_on_load_message("Device is not functional or busy!");
+                            _device_in_use = true;
+                        }
+                    }
                 }
             }
 
@@ -748,6 +758,7 @@ namespace rs2
             }
             catch(...){}
 
+            _device_in_use = false;
             _first_frame = true;
             win.reset();
         }
