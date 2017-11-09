@@ -415,8 +415,7 @@ namespace librealsense
 
         for (auto& s : streams)
         {
-            depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type(),
-                                     generate_matcher_name(s->get_stream_type(), s->get_unique_id())));
+            depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type()));
         }
         return std::make_shared<frame_number_composite_matcher>(depth_matchers);
     }

@@ -314,14 +314,12 @@ namespace librealsense
 
         for (auto& s : streams)
         {
-            depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type(),
-                                                                         generate_matcher_name(s->get_stream_type(),s->get_unique_id() )));
+            depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type()));
         }
         std::vector<std::shared_ptr<matcher>> matchers;
         matchers.push_back( std::make_shared<frame_number_composite_matcher>(depth_matchers));
 
-        auto color_matcher = std::make_shared<identity_matcher>( _color_stream->get_unique_id(), _color_stream->get_stream_type(),
-                                                                 generate_matcher_name(_color_stream->get_stream_type(), _color_stream->get_unique_id()));
+        auto color_matcher = std::make_shared<identity_matcher>( _color_stream->get_unique_id(), _color_stream->get_stream_type());
         matchers.push_back(color_matcher);
 
         return std::make_shared<timestamp_composite_matcher>(matchers);

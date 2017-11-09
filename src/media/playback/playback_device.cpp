@@ -189,8 +189,7 @@ std::shared_ptr<matcher> playback_device::create_matcher(const frame_holder& fra
     //TOOD: Use future implementation of matcher factory with the device's name (or other unique identifier)
     LOG_WARNING("Playback device does not provide a matcher");
     auto s = frame.frame->get_stream();
-    return std::make_shared<identity_matcher>(s->get_unique_id(), s->get_stream_type(),
-                                              generate_matcher_name(s->get_stream_type(), s->get_unique_id()));
+    return std::make_shared<identity_matcher>(s->get_unique_id(), s->get_stream_type());
 }
 
 void playback_device::set_frame_rate(double rate)

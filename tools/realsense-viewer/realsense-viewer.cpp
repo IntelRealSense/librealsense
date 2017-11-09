@@ -143,7 +143,6 @@ void refresh_devices(std::mutex& m,
 
                     dev_itr = current_connected_devices.erase(dev_itr);
                     continue;
-
                 }
                 ++dev_itr;
             }

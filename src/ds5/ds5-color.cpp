@@ -171,7 +171,6 @@ namespace librealsense
             return device::create_matcher(frame);
         }
 
-        return std::make_shared<identity_matcher>( _color_stream->get_unique_id(), _color_stream->get_stream_type(),
-                                                   generate_matcher_name(_color_stream->get_stream_type(), _color_stream->get_unique_id()));
+        return std::make_shared<identity_matcher>( _color_stream->get_unique_id(), _color_stream->get_stream_type());
     }
 }
