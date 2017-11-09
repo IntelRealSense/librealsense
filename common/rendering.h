@@ -1110,7 +1110,24 @@ namespace rs2
                 vi[0] * (2 * (x*z - w*y))     + vi[1] * (2 * (y*z + w*x))     + vi[2] * (1 - 2 * (x*x + y*y)) + T[2]
             };
         }
-
+        void draw_grid()
+        {
+            glBegin(GL_LINES);
+            glColor4f(0.4f, 0.4f, 0.4f, 0.8f);
+            glLineWidth(1);
+            float step = 0.1f;
+            for (float x = -1.5; x < 1.5; x += step)
+            {
+                for (float y = -1.5; y < 1.5; y += step)
+                {
+                    glVertex3f(x, y, 0);
+                    glVertex3f(x + step, y, 0);
+                    glVertex3f(x + step, y, 0);
+                    glVertex3f(x + step, y + step, 0);
+                }
+            }
+            glEnd();
+        }
         void draw_pose_visualization(const qpose_t& pose, int id)
         {
             using colored_line = std::pair<std::array<std::array<float, 3>, 2>, std::array<float, 3>>;
@@ -1136,11 +1153,13 @@ namespace rs2
             glMatrixMode(GL_PROJECTION);
             glLoadIdentity();
 
-            //glRotatef(-25, 1.0f, 0.0f, 0.0f);
-            //glRotatef(-45, 0.0f, 1.0f, 0.0f);
-
-            // Drawing Axis
+            draw_grid();
+            draw_axis(0.3, 2);
+            
+            // Drawing pose:
             int count = 0;
+            const float scale_factor = 0.5;
+            glLineWidth(5);
             glBegin(GL_LINES);
             for (auto&& colored_line : axis)
             {
@@ -1150,7 +1169,7 @@ namespace rs2
                 for (auto&& p : line)
                 {
                     std::array<float, 3> po = transform_by_pose(pose, p);
-                    glVertex3f(po[0], po[1], po[2]);
+                    glVertex3f(po[0] * scale_factor, po[1] * scale_factor, po[2] * scale_factor);
                 }
             }
             glEnd();
