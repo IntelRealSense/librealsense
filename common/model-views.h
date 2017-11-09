@@ -490,7 +490,7 @@ namespace rs2
         }),
         viewer(viewer),
         keep_calculating_pointcloud(true),
-        streaming(false),
+        start_streaming(false),
         resulting_3d_models(1),
         t([this]() {render_loop(); })
         {
@@ -529,7 +529,7 @@ namespace rs2
         }
         void start()
         {
-            streaming = true;
+            start_streaming = true;
         }
 
     private:
@@ -542,7 +542,7 @@ namespace rs2
         pointcloud pc;
         rs2::frameset model;
         std::atomic<bool> keep_calculating_pointcloud;
-        std::atomic<bool> streaming;
+        std::atomic<bool> start_streaming;
 
         frame_queue resulting_3d_models;
 
@@ -627,6 +627,7 @@ namespace rs2
         bool draw_plane = false;
 
         bool draw_frustrum = true;
+        bool support_non_syncronized_mode = true;
         bool syncronize = true;
 
         int selected_depth_source_uid = -1;

@@ -1737,27 +1737,31 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if (syncronize)
+        if(support_non_syncronized_mode)
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            if (ImGui::Button(u8"\uf09c", { 24, top_bar_height }))
+            if (syncronize)
             {
-                syncronize = false;
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                if (ImGui::Button(u8"\uf09c", { 24, top_bar_height }))
+                {
+                    syncronize = false;
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Disable syncronization between the pointcloud and the texture");
+                ImGui::PopStyleColor(2);
             }
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Disable syncronization between the pointcloud and the texture");
-            ImGui::PopStyleColor(2);
-        }
-        else
-        {
-            if (ImGui::Button(u8"\uf023", { 24, top_bar_height }))
+            else
             {
-                syncronize = true;
+                if (ImGui::Button(u8"\uf023", { 24, top_bar_height }))
+                {
+                    syncronize = true;
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Keep the pointcloud and the texture sycronized");
             }
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Keep the pointcloud and the texture sycronized");
         }
+
 
         ImGui::End();
         ImGui::PopStyleColor(6);
@@ -2659,7 +2663,7 @@ namespace rs2
     {
         while (keep_calculating_pointcloud)
         {
-            if(streaming)
+            if(start_streaming)
             {
                 try
                 {
@@ -3200,6 +3204,7 @@ namespace rs2
 
     void viewer_model::upload_frame(frame&& f)
     {
+        pc.start();
         auto index = f.get_profile().unique_id();
         streams[index].upload_frame(std::move(f));
     }
