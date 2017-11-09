@@ -851,6 +851,10 @@ namespace rs2
                 {
                     auto pose = frame.as<pose_frame>();
                     rs2_pose pose_data = pose.get_pose_data();
+                    std::swap(pose_data.rotation.y, pose_data.rotation.w);
+                    pose_data.translation.x *= 2.5f;
+                    pose_data.translation.y *= 2.5f;
+                    pose_data.translation.z *= 2.5f;
                     draw_pose_visualization(pose_data, frame.get_profile().unique_id());
                 }
                 else
