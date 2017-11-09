@@ -584,13 +584,75 @@ namespace librealsense
         }
         bool try_read_legacy_stream_extrinsic(const stream_identifier& stream_id, uint32_t& group_id, rs2_extrinsics& extrinsic) const
         {
-            return false; //TODO: Implement
+            std::string topic;
+            if (stream_id.stream_type == RS2_STREAM_ACCEL || stream_id.stream_type == RS2_STREAM_GYRO)
+            {
+                topic = to_string() << "/camera/rs_motion_stream_info/" << stream_id.sensor_index;
+            }
+            else if (legacy_file_format::is_camera(stream_id.stream_type))
+            {
+                topic = to_string() << "/camera/rs_stream_info/" << stream_id.sensor_index;
+            }
+            else
+            {
+                return false;
+            }
+            rosbag::View extrinsics_view(m_file, rosbag::TopicQuery(topic));
+            if (extrinsics_view.size() == 0)
+            {
+                return false;
+            }
+            for (auto&& msg : extrinsics_view)
+            {
+                if (msg.isType<realsense_legacy_msgs::motion_stream_info>())
+                {
+                    auto msi_msg = instantiate_msg<realsense_legacy_msgs::motion_stream_info>(msg);
+                    auto parsed_stream_id =  legacy_file_format::parse_stream_type(msi_msg->motion_type);
+                    if (stream_id.stream_type != parsed_stream_id.type || stream_id.stream_index != static_cast<uint32_t>(parsed_stream_id.index))
+                    {
+                        continue;
+                    }
+                    std::copy(std::begin(msi_msg->stream_extrinsics.extrinsics.rotation),
+                              std::end(msi_msg->stream_extrinsics.extrinsics.rotation), 
+                              std::begin(extrinsic.rotation));
+                    std::copy(std::begin(msi_msg->stream_extrinsics.extrinsics.translation),
+                              std::end(msi_msg->stream_extrinsics.extrinsics.translation),
+                              std::begin(extrinsic.translation));
+                    group_id = static_cast<uint32_t>(msi_msg->stream_extrinsics.reference_point_id);
+                    return true;
+                }
+                else if (msg.isType<realsense_legacy_msgs::stream_info>())
+                {
+                    auto si_msg = instantiate_msg<realsense_legacy_msgs::stream_info>(msg);
+                    auto parsed_stream_id = legacy_file_format::parse_stream_type(si_msg->stream_type);
+                    if (stream_id.stream_type != parsed_stream_id.type || stream_id.stream_index != static_cast<uint32_t>(parsed_stream_id.index))
+                    {
+                        continue;
+                    }
+                    std::copy(std::begin(si_msg->stream_extrinsics.extrinsics.rotation),
+                        std::end(si_msg->stream_extrinsics.extrinsics.rotation),
+                        std::begin(extrinsic.rotation));
+                    std::copy(std::begin(si_msg->stream_extrinsics.extrinsics.translation),
+                        std::end(si_msg->stream_extrinsics.extrinsics.translation),
+                        std::begin(extrinsic.translation));
+                    group_id = static_cast<uint32_t>(si_msg->stream_extrinsics.reference_point_id);
+                    return true;
+                }
+                else
+                {
+                    throw io_exception(to_string() <<
+                        "Expected either \"realsense_legacy_msgs::motion_stream_info\" or \"realsense_legacy_msgs::stream_info\", but got "
+                        << msg.getDataType());
+                }
+            }
+            return false;
         }
         bool try_read_stream_extrinsic(const stream_identifier& stream_id, uint32_t& group_id, rs2_extrinsics& extrinsic) const
         {
             if (m_version == legacy_file_format::file_version())
+            {
                 return try_read_legacy_stream_extrinsic(stream_id, group_id, extrinsic);
-
+            }
             rosbag::View tf_view(m_file, ExtrinsicsQuery(stream_id));
             if (tf_view.size() == 0)
             {
@@ -803,15 +865,11 @@ namespace librealsense
             {
                 if (infos_msg.isType<realsense_legacy_msgs::motion_stream_info>())
                 {
-                    //TODO: implement
                     auto motion_stream_info_msg = instantiate_msg<realsense_legacy_msgs::motion_stream_info>(infos_msg);
                     auto fps = motion_stream_info_msg->fps;
                     
                     std::string stream_name = motion_stream_info_msg->motion_type;
                     stream_descriptor stream_id = legacy_file_format::parse_stream_type(stream_name);
-
-                    //TODO: motion_stream_info_msg->stream_extrinsics;
-                    //TODO: motion_stream_info_msg->stream_intrinsics;
                     rs2_format format = RS2_FORMAT_MOTION_XYZ32F;
                     auto profile = std::make_shared<motion_stream_profile>(platform::stream_profile{ 0, 0, fps, static_cast<uint32_t>(format) });
                     profile->set_stream_index(stream_id.index);
@@ -828,8 +886,8 @@ namespace librealsense
                     convert(stream_info_msg->encoding, format);
                     std::string stream_name = stream_info_msg->stream_type;
                     stream_descriptor stream_id = legacy_file_format::parse_stream_type(stream_name);
-                    auto profile = create_video_stream_profile(platform::stream_profile{ stream_info_msg->camera_info.width,
-                        stream_info_msg->camera_info.height, fps, static_cast<uint32_t>(format) }, 
+                    auto profile = create_video_stream_profile(
+                        platform::stream_profile{ stream_info_msg->camera_info.width, stream_info_msg->camera_info.height, fps, static_cast<uint32_t>(format) }, 
                         stream_info_msg->camera_info, 
                         stream_id);
                     streams.push_back(profile);
@@ -875,7 +933,9 @@ namespace librealsense
         stream_profiles read_stream_info(uint32_t device_index, uint32_t sensor_index) const
         {
             if (m_version == legacy_file_format::file_version())
+            {
                 return read_legacy_stream_info(sensor_index);
+            }
             stream_profiles streams;
             //The below regex matches both stream info messages and also video \ imu stream info (both have the same prefix)
             rosbag::View stream_infos_view(m_file, RegexTopicQuery("/device_" + std::to_string(device_index) + "/sensor_" + std::to_string(sensor_index) + R"RRR(/(\w)+_(\d)+/info)RRR"));
@@ -908,8 +968,10 @@ namespace librealsense
                     assert(video_stream_infos_view.size() == 1);
                     auto video_stream_msg_ptr = *video_stream_infos_view.begin();
                     auto video_stream_msg = instantiate_msg<sensor_msgs::CameraInfo>(video_stream_msg_ptr);
-                    auto profile = create_video_stream_profile(platform::stream_profile{ video_stream_msg->width ,video_stream_msg->height, fps, static_cast<uint32_t>(format) }
-                    , *video_stream_msg, { stream_id.stream_type, static_cast<int>(stream_id.stream_index)});
+                    auto profile = create_video_stream_profile(
+                        platform::stream_profile{ video_stream_msg->width ,video_stream_msg->height, fps, static_cast<uint32_t>(format) }
+                        , *video_stream_msg, 
+                        { stream_id.stream_type, static_cast<int>(stream_id.stream_index)});
                     streams.push_back(profile);
                 }
 
