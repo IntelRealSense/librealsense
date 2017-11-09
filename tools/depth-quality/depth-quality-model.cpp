@@ -46,8 +46,19 @@ namespace rs2
             {
                 if (valid_config = cfg.can_resolve(_pipe))
                 {
-                    _pipe.start(cfg);
-                    break;
+                    static bool device_is_used = false;
+                    try {
+                        _pipe.start(cfg);
+                        break;
+                    }
+                    catch (...)
+                    {
+                        if (!device_is_used)
+                        {
+                            window.add_on_load_message("Device is used by another application!");
+                            device_is_used = true;
+                        }
+                    }
                 }
             }
 

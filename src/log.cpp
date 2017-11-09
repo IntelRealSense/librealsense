@@ -99,12 +99,13 @@ namespace librealsense
             if (content)
             {
                 std::string content_str(content);
-                std::transform(content_str.begin(), content_str.end(), content_str.begin(), ::toupper);
+                std::transform(content_str.begin(), content_str.end(), content_str.begin(), ::tolower);
 
                 for (uint32_t i = 0; i < RS2_LOG_SEVERITY_COUNT; i++)
                 {
                     auto current = (rs2_log_severity)i;
                     std::string name = librealsense::get_string(current);
+                    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
                     if (content_str == name)
                     {
                         severity = current;
