@@ -928,7 +928,7 @@ namespace rs2
 
                     if (!show_single_fps_list)
                     {
-                        //ImGui::Text("Format:"); //TODO - check with Sergey if needed
+                        ImGui::Text("Format:");
                         streaming_tooltip();
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                     }

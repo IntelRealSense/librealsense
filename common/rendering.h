@@ -837,31 +837,6 @@ namespace rs2
                 draw_motion_data(axes.x, axes.y, axes.z);
                 break;
             }
-            case RS2_FORMAT_6DOF:
-            {
-                const char* ptr = reinterpret_cast<const char*>(data);
-                std::array<float, 3> translation{};
-                memcpy(&translation, ptr, sizeof(translation));
-                ptr += sizeof(translation);
-                //std::array<float, 3> velocity{};
-                //memcpy(&velocity, ptr, sizeof(velocity));
-                ptr += sizeof(std::array<float, 3>);
-                //std::array<float, 3> angular_velocity{};
-                //memcpy(&angular_velocity, ptr, sizeof(angular_velocity));
-                ptr += sizeof(std::array<float, 3>);
-                //std::array<float, 3> acceleration{};
-                //memcpy(&acceleration, ptr, sizeof(acceleration));
-                ptr += sizeof(std::array<float, 3>);
-                //std::array<float, 3> angular_acceleration{};
-                //memcpy(&angular_acceleration, ptr, sizeof(angular_acceleration));
-                ptr += sizeof(std::array<float, 3>);
-                std::array<float, 4> rotation{};
-                memcpy(&rotation, ptr, sizeof(rotation));
-
-                qpose_t pose{ { rotation[0] ,rotation[1] ,rotation[2] ,rotation[3] }, { translation[0] ,translation[1] ,translation[2] } };
-                draw_pose_visualization(pose, frame.get_profile().unique_id());
-                break;
-            }
             case RS2_FORMAT_Y16:
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
                 break;
@@ -871,14 +846,19 @@ namespace rs2
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
                 break;
             case RS2_FORMAT_6DOF:
-                //TODO - for now just rendering position
+            {
                 if (frame.is<pose_frame>())
                 {
                     auto pose = frame.as<pose_frame>();
-                    auto pose_data = pose.get_pose_data();
-                    draw_motion_data(pose_data.translation.x, pose_data.translation.y, pose_data.translation.z);
+                    rs2_pose pose_data = pose.get_pose_data();
+                    draw_pose_visualization(pose_data, frame.get_profile().unique_id());
+                }
+                else
+                {
+                    assert(false); //Not expecting a 6DOF format from non pose frame (currently)
                 }
                 break;
+            }
             //case RS2_FORMAT_RAW10:
             //{
             //    // Visualize Raw10 by performing a naive downsample. Each 2x2 block contains one red pixel, two green pixels, and one blue pixel, so combine them into a single RGB triple.
@@ -1109,10 +1089,10 @@ namespace rs2
             glPopMatrix();
         }
 
-        typedef struct { struct { float w, x, y, z; } Q; float T[3]; } qpose_t;
-        static inline std::array<float, 3> transform_by_pose(const qpose_t& p, const std::array<float, 3>& vi)
+        static inline std::array<float, 3> transform_by_pose(const rs2_pose& p, const std::array<float, 3>& vi)
         {
-            float w = p.Q.w, x = p.Q.x, y = p.Q.y, z = p.Q.z; auto T = p.T;
+            float w = p.rotation.w, x = p.rotation.x, y = p.rotation.y, z = p.rotation.z;
+            auto T = p.translation;
             return {
                 vi[0] * (1 - 2 * (y*y + z*z)) + vi[1] * (2 * (x*y - w*z))     + vi[2] * (2 * (x*z + w*y))     + T[0],
                 vi[0] * (2 * (x*y + w*z))     + vi[1] * (1 - 2 * (x*x + z*z)) + vi[2] * (2 * (y*z - w*x))     + T[1],
@@ -1137,7 +1117,7 @@ namespace rs2
             }
             glEnd();
         }
-        void draw_pose_visualization(const qpose_t& pose, int id)
+        void draw_pose_visualization(const rs2_pose& pose, int id)
         {
             using colored_line = std::pair<std::array<std::array<float, 3>, 2>, std::array<float, 3>>;
             static const std::array<colored_line, 3> axis = {
@@ -1149,6 +1129,7 @@ namespace rs2
                 }
             };
 
+            //TODO: use id if required to keep track of some state
             glMatrixMode(GL_PROJECTION);
             glPushMatrix();
             glMatrixMode(GL_MODELVIEW);

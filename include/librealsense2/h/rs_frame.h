@@ -67,13 +67,13 @@ typedef struct rs2_quaternion
 
 typedef struct rs2_pose
 {
-    rs2_vector      translation;         /**< X, Y, Z values of translation, in meters (relative to initial position)                                    */
-    rs2_vector      velocity;            /**< X, Y, Z values of velocity, in meter/sec                                                                   */
-    rs2_vector      acceleration;        /**< X, Y, Z values of acceleration, in meter/sec^2                                                             */
-    rs2_quaternion  rotation;            /**< Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position) */
-    rs2_vector      angularVelocity;     /**< X, Y, Z values of angular velocity, in radians/sec                                                         */
-    rs2_vector      angularAcceleration; /**< X, Y, Z values of angular acceleration, in radians/sec^2                                                   */
-    unsigned int    confidence;          /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                      */
+    rs2_vector      translation;          /**< X, Y, Z values of translation, in meters (relative to initial position)                                    */
+    rs2_vector      velocity;             /**< X, Y, Z values of velocity, in meter/sec                                                                   */
+    rs2_vector      acceleration;         /**< X, Y, Z values of acceleration, in meter/sec^2                                                             */
+    rs2_quaternion  rotation;             /**< Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position) */
+    rs2_vector      angular_velocity;     /**< X, Y, Z values of angular velocity, in radians/sec                                                         */
+    rs2_vector      angular_acceleration; /**< X, Y, Z values of angular acceleration, in radians/sec^2                                                   */
+    unsigned int    confidence;           /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                      */
 } rs2_pose;
 
 

@@ -1649,20 +1649,29 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref, x, y)
 void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame);
-    auto pf = VALIDATE_INTERFACE(((frame_interface*)frame), librealsense::pose_frame);
-    float3 f = pf->get_translation();
-    pose->translation = { f.x, f.y, f.z };
-    f = pf->get_velocity();
-    pose->velocity = { f.x, f.y, f.z };
-    f = pf->get_acceleration();
-    pose->acceleration = { f.x, f.y, f.z };
-    float4 r = pf->get_rotation();
+    VALIDATE_NOT_NULL(pose);
+
+    auto pf = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::pose_frame);
+
+    const float3 t = pf->get_translation();
+    pose->translation = { t.x, t.y, t.z };
+
+    const float3 v = pf->get_velocity();
+    pose->velocity = { v.x, v.y, v.z };
+
+    const float3 a = pf->get_acceleration();
+    pose->acceleration = { a.x, a.y, a.z };
+
+    const float4 r = pf->get_rotation();
     pose->rotation = { r.x, r.y, r.z, r.w };
-    f = pf->get_angularVelocity();
-    pose->angularVelocity = { f.x, f.y, f.z };
-    f = pf->get_angularAcceleration();
-    pose->angularAcceleration = { f.x, f.y, f.z };
-    pose->confidence = pf->get_confidence();    
+
+    const float3 av = pf->get_angular_velocity();
+    pose->angular_velocity = { av.x, av.y, av.z };
+
+    const float3 aa = pf->get_angular_acceleration();
+    pose->angular_acceleration = { aa.x, aa.y, aa.z };
+
+    pose->confidence = pf->get_confidence();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame, pose)
 

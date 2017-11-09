@@ -486,22 +486,32 @@ namespace librealsense
 
             return std::move(fh);
         }
-        
+
+        static float3 double_to_float(const std::array<double, 3>& a)
+        {
+            return float3{ static_cast<float>(a[0]), static_cast<float>(a[1]), static_cast<float>(a[2]) };
+        }
+
+        static float4 double_to_float(const std::array<double, 4>& a)
+        {
+            return float4{ static_cast<float>(a[0]), static_cast<float>(a[1]), static_cast<float>(a[2]), static_cast<float>(a[3]) };
+        }
+
         frame_holder create_pose_sample(const rosbag::MessageInstance &pose_data) const
         {
             LOG_DEBUG("Trying to create a pose frame from message");
 
             auto msg = instantiate_msg<realsense_legacy_msgs::pose>(pose_data);
+            pose_frame::pose_info pose{};
+            pose.translation         = double_to_float(std::array<double, 3>{ msg->translation.x, msg->translation.y, msg->translation.z });
+            pose.velocity            = double_to_float(std::array<double, 3>{ msg->velocity.x, msg->velocity.y, msg->velocity.z });
+            pose.angular_velocity    = double_to_float(std::array<double, 3>{ msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z });
+            pose.acceleration        = double_to_float(std::array<double, 3>{ msg->acceleration.x, msg->acceleration.y, msg->acceleration.z });
+            pose.angular_acceleration= double_to_float(std::array<double, 3>{ msg->angular_acceleration.x, msg->angular_acceleration.y, msg->angular_acceleration.z });
+            pose.rotation            = double_to_float(std::array<double, 4>{ msg->rotation.x, msg->rotation.y, msg->rotation.z, msg->rotation.w });
+            //pose.confidence = not supported in legacy format
 
-            std::array<float,3> translation{ msg->translation.x,msg->translation.y, msg->translation.z };
-            std::array<float,3> velocity{ msg->velocity.x,msg->velocity.y, msg->velocity.z };
-            std::array<float,3> angular_velocity{ msg->angular_velocity.x,msg->angular_velocity.y, msg->angular_velocity.z };
-            std::array<float,3> acceleration{ msg->acceleration.x,msg->acceleration.y, msg->acceleration.z };
-            std::array<float,3> angular_acceleration{ msg->angular_acceleration.x,msg->angular_acceleration.y, msg->angular_acceleration.z };
-            std::array<float, 4> rotation{ msg->rotation.x,msg->rotation.y, msg->rotation.z, msg->rotation.w };
-
-            size_t frame_size = sizeof(translation) +  sizeof(velocity) +  sizeof(angular_velocity) +  sizeof(acceleration) +  sizeof(angular_acceleration) + sizeof(rotation);
-            
+            size_t frame_size = sizeof(pose);
             rs2_extension frame_type = RS2_EXTENSION_POSE_FRAME;
             frame_additional_data additional_data{};
             std::chrono::duration<double, std::milli> timestamp_ms(static_cast<double>(msg->timestamp));
@@ -531,18 +541,7 @@ namespace librealsense
             new_frame->get_stream()->set_stream_index(stream_id.stream_index);
             new_frame->get_stream()->set_stream_type(stream_id.stream_type);
             byte* data = pose_frame->data.data();
-            memcpy(data, &translation, sizeof(translation));
-            data += sizeof(translation);
-            memcpy(data, &velocity, sizeof(velocity));
-            data += sizeof(velocity);
-            memcpy(data, &angular_velocity, sizeof(angular_velocity));
-            data += sizeof(angular_velocity);
-            memcpy(data, &acceleration, sizeof(acceleration));
-            data += sizeof(acceleration);
-            memcpy(data, &angular_acceleration, sizeof(angular_acceleration));
-            data += sizeof(angular_acceleration);
-            memcpy(data, &rotation, sizeof(rotation));
-
+            memcpy(data, &pose, frame_size);
             frame_holder fh{ new_frame };
             LOG_DEBUG("Created new frame " << frame_type);
             return std::move(fh);
