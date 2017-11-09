@@ -386,6 +386,10 @@ class Options {
   constructor(cxxObj) {
     this.cxxObj = cxxObj;
   }
+
+  setCxxOptionsObject(cxxObj) {
+    this.cxxObj = cxxObj;
+  }
   /**
   * Check if particular option is read-only
   * @param {String|Number} option The option to be checked
@@ -1147,10 +1151,12 @@ class PointCloud {
 /**
  * The Colorizer can be used to quickly visualize the depth data by tranform data into RGB8 format
  */
-class Colorizer {
+class Colorizer extends Options {
   constructor() {
+    super();
     this.cxxColorizer = new RS2.RSColorizer();
     this.cxxColorizer.create();
+    this.setCxxOptionsObject(this.cxxColorizer);
     this.depthRGB = new VideoFrame();
   }
 
@@ -3238,7 +3244,36 @@ const option = {
    * correction of the motion data . <br>Equivalent to its uppercase counterpart.
    */
   option_enable_motion_correction: 'enable-motion-correction',
+  /**
+   * String literal of <code>'auto-exposure-priority'</code>.
+   * <br>Allows sensor to dynamically ajust the frame rate
+   * depending on lighting conditions <br>Equivalent to its uppercase counterpart
+   */
+  option_auto_exposure_priority: 'auto-exposure-priority',
 
+  /**
+   * String literal of <code>''color-scheme'</code>. <br>Color scheme for data visualization
+   * <br>Equivalent to its uppercase counterpart
+   */
+  option_color_scheme: 'color-scheme',
+
+  /**
+   * String literal of <code>''histogram-equalization-enabled'</code>. <br>Perform histogram
+   * equalization post-processing on the depth data <br>Equivalent to its uppercase counterpart
+   */
+  option_histogram_equalization_enabled: 'histogram-equalization-enabled',
+
+  /**
+   * String literal of <code>''min-distance'</code>. <br>Minimal distance to the target
+   * <br>Equivalent to its uppercase counterpart
+   */
+  option_min_distance: 'min-distance',
+
+  /**
+   * String literal of <code>''max-distance'</code>. <br>Maximum distance to the target
+   * <br>Equivalent to its uppercase counterpart
+   */
+  option_max_distance: 'max-distance',
   /**
    * Enable / disable color backlight compensatio.<br>Equivalent to its lowercase counterpart.
    * @type {Integer}
@@ -3407,6 +3442,32 @@ const option = {
    */
   OPTION_ENABLE_MOTION_CORRECTION: RS2.RS2_OPTION_ENABLE_MOTION_CORRECTION,
   /**
+   * Allows sensor to dynamically ajust the frame rate depending on lighting conditions.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_AUTO_EXPOSURE_PRIORITY: RS2.OPTION_AUTO_EXPOSURE_PRIORITY,
+
+  /**
+   * Color scheme for data visualization <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_COLOR_SCHEME: RS2.OPTION_COLOR_SCHEME,
+
+  /**
+   * Perform histogram equalization post-processing on the depth data.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_HISTOGRAM_EQUALIZATION_ENABLED: RS2.OPTION_HISTOGRAM_EQUALIZATION_ENABLED,
+
+  /**
+   * Minimal distance to the target <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_MIN_DISTANCE: RS2.OPTION_MIN_DISTANCE,
+
+  /**
+   * Maximum distance to the target <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_MAX_DISTANCE: RS2.OPTION_MAX_DISTANCE,
+  /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
    */
@@ -3487,6 +3548,19 @@ const option = {
           return this.option_depth_units;
         case this.OPTION_ENABLE_MOTION_CORRECTION:
           return this.option_enable_motion_correction;
+        case this.OPTION_AUTO_EXPOSURE_PRIORITY:
+          return this.option_auto_exposure_priority;
+        case this.OPTION_COLOR_SCHEME:
+          return this.option_color_scheme;
+        case this.OPTION_HISTOGRAM_EQUALIZATION_ENABLED:
+          return this.option_histogram_equalization_enabled;
+        case this.OPTION_MIN_DISTANCE:
+          return this.option_min_distance;
+        case this.OPTION_MAX_DISTANCE:
+          return this.option_max_distance;
+        default:
+          throw new TypeError(
+              'option.optionToString(option) expects a valid value as the 1st argument');
       }
     }
   },

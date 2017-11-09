@@ -193,6 +193,29 @@ describe('Colorizer test', function() {
     assert.equal(depthRGB.width, depth.width);
     assert.equal(depthRGB.format, rs2.format.FORMAT_RGB8);
   });
+  it('colorizer option API test', () => {
+    for (let i = rs2.option.OPTION_BACKLIGHT_COMPENSATION; i < rs2.option.OPTION_COUNT; i++) {
+      let readonly = colorizer.isOptionReadOnly(i);
+      assert.equal((readonly === undefined) || (typeof readonly === 'boolean'), true);
+      let supports = colorizer.supportsOption(i);
+      assert.equal((supports === undefined) || (typeof supports === 'boolean'), true);
+      let value = colorizer.getOption(i);
+      assert.equal((value === undefined) || (typeof value === 'number'), true);
+      let des = colorizer.getOptionDescription(i);
+      assert.equal((des === undefined) || (typeof des === 'string'), true);
+      des = colorizer.getOptionDescription(i, 1);
+      assert.equal((des === undefined) || (typeof des === 'string'), true);
+
+      if (supports && !readonly) {
+        let range = colorizer.getOptionRange(i);
+        for (let j = range.minvalue; j <= range.maxValue; j += range.step) {
+          colorizer.setOption(i, j);
+          let val = colorizer.getOption(i);
+          assert.equal(val, j);
+        }
+      }
+    }
+  });
 });
 
 
@@ -414,9 +437,6 @@ describe('Sensor tests', function() {
   it('Notification test', () => {
     return new Promise((resolve, reject) => {
       let dev = ctx.queryDevices().devices[0];
-      setTimeout(() => {
-        dev.cxxDev.triggerErrorForTest();
-      }, 500);
       sensors[0].setNotificationsCallback((n) => {
         assert.equal(typeof n.descr, 'string');
         assert.equal(typeof n.timestamp, 'number');
@@ -424,6 +444,9 @@ describe('Sensor tests', function() {
         assert.equal(typeof n.category, 'number');
         resolve();
       });
+      setTimeout(() => {
+        dev.cxxDev.triggerErrorForTest();
+      }, 100);
     });
   });
 });
