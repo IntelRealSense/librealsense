@@ -6,7 +6,14 @@ This is the Node.js wrapper for the C++ `librealsense2` for Intel® RealSense™
 ## 1.1. Install Build Prerequisites
 
 ### Install Node.js
-Install [`Node.js`](https://nodejs.org/en/download/).
+Install [`Node.js`](https://nodejs.org/en/download/), the version should be at least v6.x.
+
+Note: In Ubuntu16.04, the default apt-get installed version may not meet the requirement. Manually install the required version is necessary.
+The version can be checked through this command:
+
+```
+node -v
+```
 
 After `Node.js` is installed, run the following command to install required modules.
 
