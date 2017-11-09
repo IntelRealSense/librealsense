@@ -855,7 +855,7 @@ namespace rs2
                 }
                 else
                 {
-                    assert(false); //Not expecting a 6DOF format from non pose frame (currently)
+                    throw std::runtime_error("Not expecting a frame with 6DOF format that is not a pose_frame");
                 }
                 break;
             }
@@ -1094,9 +1094,9 @@ namespace rs2
             float w = p.rotation.w, x = p.rotation.x, y = p.rotation.y, z = p.rotation.z;
             auto T = p.translation;
             return {
-                vi[0] * (1 - 2 * (y*y + z*z)) + vi[1] * (2 * (x*y - w*z))     + vi[2] * (2 * (x*z + w*y))     + T[0],
-                vi[0] * (2 * (x*y + w*z))     + vi[1] * (1 - 2 * (x*x + z*z)) + vi[2] * (2 * (y*z - w*x))     + T[1],
-                vi[0] * (2 * (x*z - w*y))     + vi[1] * (2 * (y*z + w*x))     + vi[2] * (1 - 2 * (x*x + y*y)) + T[2]
+                vi[0] * (1 - 2 * (y*y + z*z)) + vi[1] * (2 * (x*y - w*z))     + vi[2] * (2 * (x*z + w*y))     + T.x,
+                vi[0] * (2 * (x*y + w*z))     + vi[1] * (1 - 2 * (x*x + z*z)) + vi[2] * (2 * (y*z - w*x))     + T.y,
+                vi[0] * (2 * (x*z - w*y))     + vi[1] * (2 * (y*z + w*x))     + vi[2] * (1 - 2 * (x*x + y*y)) + T.z
             };
         }
         void draw_grid()
