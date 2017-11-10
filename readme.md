@@ -7,7 +7,7 @@ Linux | Windows |
 [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=development)](https://travis-ci.org/IntelRealSense/librealsense) | [![Build status](https://ci.appveyor.com/api/projects/status/6u04bgmpwfejpgo8?svg=true)](https://ci.appveyor.com/project/dorodnic/librealsense-s4xnv) |
 
 ## Overview
-**Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras (D400 series and the SR300).
+**Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras (D400 series and the SR300). 
 
 > For other Intel® RealSense™ devices (F200, R200, LR200 and ZR300), please refer to the [latest legacy release](https://github.com/IntelRealSense/librealsense/tree/v1.12.1).
 
@@ -19,6 +19,8 @@ The library aims to provide an easy to use API and tools for computer vision pro
 Developer kits containing the necessary hardware to use this library are available for purchase at [realsense.intel.com/buy](https://realsense.intel.com/buy).
 
 > Don't have access to a RealSense camera? Check-out [sample data](./doc/sample-data.md)
+
+Information about the Intel® RealSense™ technology at [realsense.intel.com](https://realsense.intel.com)
 
 ## What’s included in the SDK:
 **[Tools for harnessing your depth camera’s capabilities](https://github.com/IntelRealSense/librealsense/tree/development/tools)** Including:
