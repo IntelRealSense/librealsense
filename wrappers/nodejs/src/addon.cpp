@@ -1177,9 +1177,9 @@ class RSFrameSet : public Nan::ObjectWrap {
 
     Nan::SetPrototypeMethod(tpl, "destroy", Destroy);
     Nan::SetPrototypeMethod(tpl, "getSize", GetSize);
-    Nan::SetPrototypeMethod(tpl, "at", At);
     Nan::SetPrototypeMethod(tpl, "getFrame", GetFrame);
     Nan::SetPrototypeMethod(tpl, "replaceFrame", ReplaceFrame);
+    Nan::SetPrototypeMethod(tpl, "indexToStream", IndexToStream);
 
     constructor_.Reset(tpl->GetFunction());
     exports->Set(Nan::New("RSFrameSet").ToLocalChecked(), tpl->GetFunction());
@@ -1306,17 +1306,34 @@ class RSFrameSet : public Nan::ObjectWrap {
     info.GetReturnValue().Set(Nan::False());
   }
 
-  static NAN_METHOD(At) {
+  static NAN_METHOD(IndexToStream) {
     auto me = Nan::ObjectWrap::Unwrap<RSFrameSet>(info.Holder());
     int32_t index = info[0]->IntegerValue();
-    if (me && me->frames_) {
-      rs2_frame* frame = rs2_extract_frame(me->frames_, index, &me->error_);
-      if (frame) {
-        info.GetReturnValue().Set(RSFrame::NewInstance(frame));
-        return;
-      }
+    if (!(me && me->frames_)) {
+      info.GetReturnValue().Set(Nan::Undefined());
+      return;
     }
-    info.GetReturnValue().Set(Nan::Undefined());
+    rs2_frame* frame = rs2_extract_frame(me->frames_, index, &me->error_);
+    if (!frame) {
+      info.GetReturnValue().Set(Nan::Undefined());
+      return;
+    }
+    const rs2_stream_profile* profile = rs2_get_frame_stream_profile(
+        frame, &me->error_);
+    if (!profile) {
+      rs2_release_frame(frame);
+      info.GetReturnValue().Set(Nan::Undefined());
+      return;
+    }
+    rs2_stream stream = RS2_STREAM_ANY;
+    rs2_format format = RS2_FORMAT_ANY;
+    int32_t fps = 0;
+    int32_t idx = 0;
+    int32_t unique_id = 0;
+    rs2_get_stream_profile_data(profile, &stream, &format, &idx,
+        &unique_id, &fps, &me->error_);
+    info.GetReturnValue().Set(Nan::New(stream));
+    rs2_release_frame(frame);
   }
 
  private:
