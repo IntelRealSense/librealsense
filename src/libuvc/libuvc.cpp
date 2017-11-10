@@ -407,6 +407,7 @@ namespace librealsense
             }
             power_state get_power_state() const override { return _state; }
 
+            void init_xu(const extension_unit& xu) override {};
             bool set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size) override
             {
                 uvc_set_ctrl(_device_handle, xu.unit, control, (void *)data, size);
