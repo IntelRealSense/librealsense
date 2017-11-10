@@ -38,7 +38,7 @@ namespace librealsense
         std::shared_ptr<rs2_source> _c_wrapper;
     };
 
-    class processing_block : public processing_block_interface
+    class processing_block : public processing_block_interface, public options_container
     {
     public:
         processing_block();

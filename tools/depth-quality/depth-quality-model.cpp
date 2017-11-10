@@ -17,7 +17,7 @@ namespace rs2
               _sku_up(std::chrono::seconds(1)),
               _sku_down(std::chrono::seconds(1)),
               _angle_alert(std::chrono::seconds(4)),
-              _min_dist(750.f), _max_dist(3000.f), _max_angle(10.f)
+              _min_dist(300.f), _max_dist(2000.f), _max_angle(10.f)
         {
             _viewer_model.is_3d_view = true;
             _viewer_model.allow_3d_source_change = false;
@@ -46,8 +46,18 @@ namespace rs2
             {
                 if (valid_config = cfg.can_resolve(_pipe))
                 {
-                    _pipe.start(cfg);
-                    break;
+                    try {
+                        _pipe.start(cfg);
+                        break;
+                    }
+                    catch (...)
+                    {
+                        if (!_device_in_use)
+                        {
+                            window.add_on_load_message("Device is not functional or busy!");
+                            _device_in_use = true;
+                        }
+                    }
                 }
             }
 
@@ -68,6 +78,16 @@ namespace rs2
 
                 update_configuration();
             }
+
+            _ctx.set_devices_changed_callback([this, &window](rs2::event_information info) mutable
+            {
+                auto dev = get_active_device();
+                if (dev && info.was_removed(dev))
+                {
+                    std::unique_lock<std::mutex> lock(_mutex);
+                    reset(window);
+                }
+            });
 
             return valid_config;
         }
@@ -141,7 +161,7 @@ namespace rs2
             _too_far.add_value(_metrics_model.get_last_metrics().distance > _max_dist);
 
             constexpr const char* orientation_instruction = "                         Recommended angle: < 3 degrees"; // "             Use the orientation gimbal to align the camera";
-            constexpr const char* distance_instruction    = "          Recommended distance: 0.75m-2m from the target"; // "             Use the distance locator to position the camera";
+            constexpr const char* distance_instruction    = "          Recommended distance: 0.3m-2m from the target"; // "             Use the distance locator to position the camera";
 
             if (_sku_right.eval())
             {
@@ -181,7 +201,7 @@ namespace rs2
                     u8"\n          \uf0b2  Move the camera further Away",
                     distance_instruction);
                 distance = true;
-                return false;
+                return true; // Show metrics even when too close/far
             }
 
             if (_too_far.eval())
@@ -190,7 +210,7 @@ namespace rs2
                     u8"\n        \uf066  Move the camera Closer to the wall",
                     distance_instruction);
                 distance = true;
-                return false;
+                return true;
             }
 
             return true;
@@ -504,12 +524,13 @@ namespace rs2
                         ImGui::PushItemWidth(-1);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
 
-                        static std::vector<std::string> items{ "80%", "40%", "20%" };
+                        static std::vector<std::string> items{ "80%", "60%", "40%", "20%" };
                         if (draw_combo_box("##ROI Percent", items, _roi_combo_index))
                         {
                             if (_roi_combo_index == 0) _roi_percent = 0.8f;
-                            else if (_roi_combo_index == 1) _roi_percent = 0.4f;
-                            else if (_roi_combo_index == 2) _roi_percent = 0.2f;
+                            else if (_roi_combo_index == 1) _roi_percent = 0.6f;
+                            else if (_roi_combo_index == 2) _roi_percent = 0.4f;
+                            else if (_roi_combo_index == 3) _roi_percent = 0.2f;
                             update_configuration();
                         }
 
@@ -519,12 +540,53 @@ namespace rs2
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
                         ImGui::Text("Distance:");
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Estimated distance to the wall in mm");
+                        }
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                         ImGui::Text("%.2f mm", _metrics_model.get_last_metrics().distance);
 
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
+                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                        std::string gt_str("Ground Truth");
+                        if (_use_ground_truth) gt_str += ":";
+                        if (ImGui::Checkbox(gt_str.c_str(), &_use_ground_truth))
+                        {
+                            if (_use_ground_truth) _metrics_model.set_ground_truth(_ground_truth);
+                            else _metrics_model.disable_ground_truth();
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("True measured distance to the wall in mm");
+                        }
+                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
+                        if (_use_ground_truth)
+                        {
+                            ImGui::PushItemWidth(120);
+                            if (ImGui::InputInt("##GT", &_ground_truth, 1))
+                            {
+                                _metrics_model.set_ground_truth(_ground_truth);
+                            }
+                            ImGui::PopItemWidth();
+                            ImGui::SetCursorPosX(col1 + 120); ImGui::SameLine();
+                            ImGui::Text("(mm)");
+                        }
+                        else
+                        {
+                            _ground_truth = _metrics_model.get_last_metrics().distance;
+                            ImGui::Dummy({ 1,1 });
+                        }
+                        ImGui::PopStyleColor();
+
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
                         ImGui::Text("Angle:");
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Estimated angle to the wall in degrees");
+                        }
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                         ImGui::Text("%.2f deg", _metrics_model.get_last_metrics().angle);
 
@@ -560,39 +622,6 @@ namespace rs2
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                         ImGui::TreePop();
                     }
-
-                    /*if (ImGui::TreeNode("Allowed Ranges"))
-                    {
-                        ImGui::PopStyleVar();
-                        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
-
-                        auto col0 = ImGui::GetCursorPosX();
-                        auto col1 = 145.f;
-
-                        ImGui::Text("Min Dist(mm):");
-                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
-                        ImGui::PushItemWidth(-1);
-                        ImGui::SliderFloat("##MinDist", &_min_dist, 100, 5000, "%.0f");
-                        ImGui::PopItemWidth();
-                        ImGui::SetCursorPosX(col0);
-
-                        ImGui::Text("Max Dist(mm):");
-                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
-                        ImGui::PushItemWidth(-1);
-                        ImGui::SliderFloat("##MaxDist", &_max_dist, 100, 5000, "%.0f");
-                        ImGui::PopItemWidth();
-                        ImGui::SetCursorPosX(col0);
-
-                        ImGui::Text("Angle(deg):");
-                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
-                        ImGui::PushItemWidth(-1);
-                        ImGui::SliderFloat("##AngleMax", &_max_angle, 0, 90, "%.0f");
-                        ImGui::PopItemWidth();
-                        ImGui::SetCursorPosX(col0);
-
-                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-                        ImGui::TreePop();
-                    }*/
 
                     ImGui::PopStyleVar();
                     ImGui::PopStyleVar();
@@ -647,7 +676,7 @@ namespace rs2
             }
 
             auto dev = _pipe.get_active_profile().get_device();
-            auto dpt_sensor = dev.first<depth_sensor>();
+            auto dpt_sensor = std::make_shared<sensor>(dev.first<depth_sensor>());
             _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model));
             _device_model->allow_remove = false;
             _device_model->show_depth_only = true;
@@ -659,7 +688,7 @@ namespace rs2
 
             // Retrieve stereo baseline for supported devices
             auto baseline_mm = -1.f;
-            auto profiles = dpt_sensor.get_stream_profiles();
+            auto profiles = dpt_sensor->get_stream_profiles();
             auto right_sensor = std::find_if(profiles.begin(), profiles.end(), [](rs2::stream_profile& p)
             { return (p.stream_index() == 2) && (p.stream_type() == RS2_STREAM_INFRARED); });
 
@@ -688,20 +717,26 @@ namespace rs2
             // Connect the device_model to the viewer_model
             for (auto&& sub : _device_model.get()->subdevices)
             {
-                if (!sub->s.is<depth_sensor>()) continue;
+                if (!sub->s->is<depth_sensor>()) continue;
 
                 sub->show_algo_roi = true;
                 auto profiles = _pipe.get_active_profile().get_streams();
                 sub->streaming = true;      // The streaming activated externally to the device_model
+                sub->depth_colorizer->set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0.f);
+                sub->depth_colorizer->set_option(RS2_OPTION_MIN_DISTANCE, 0.3f);
+                sub->depth_colorizer->set_option(RS2_OPTION_MAX_DISTANCE, 2.7f);
+                sub->options_invalidated = true;
+
                 for (auto&& profile : profiles)
                 {
                     _viewer_model.streams[profile.unique_id()].dev = sub;
+                    _viewer_model.streams[profile.unique_id()].texture->colorize = sub->depth_colorizer;
 
                     if (profile.stream_type() == RS2_STREAM_DEPTH)
                     {
                         auto depth_profile = profile.as<video_stream_profile>();
                         _metrics_model.update_stream_attributes(depth_profile.get_intrinsics(),
-                            sub->s.as<depth_sensor>().get_depth_scale(), baseline_mm);
+                            sub->s->as<depth_sensor>().get_depth_scale(), baseline_mm);
 
                         _metrics_model.update_frame_attributes({ int(depth_profile.width() * (0.5f - 0.5f*_roi_percent)),
                                                            int(depth_profile.height() * (0.5f - 0.5f*_roi_percent)),
@@ -723,6 +758,7 @@ namespace rs2
             }
             catch(...){}
 
+            _device_in_use = false;
             _first_frame = true;
             win.reset();
         }
@@ -836,7 +872,9 @@ namespace rs2
                             roi = _roi;
                         }
 
-                        auto metrics = analyze_depth_image(depth_frame, su, baseline, &intrin, roi, callback);
+                        _ground_truth_copy = get_ground_truth(); // Copy the mutable GT into a "safe" copy variable
+                        auto gt_ptr = _use_gt ? &_ground_truth_copy : nullptr; // Borrow copy ptr to the callback
+                        auto metrics = analyze_depth_image(depth_frame, su, baseline, &intrin, roi, gt_ptr, callback);
 
                         {
                             std::lock_guard<std::mutex> lock(_m);
@@ -905,6 +943,9 @@ namespace rs2
         void metric_plot::render(ux_window& win)
         {
             std::lock_guard<std::mutex> lock(_m);
+
+            if (!_visible) return;
+
             std::stringstream ss;
             auto val = _vals[(SIZE + _idx - 1) % SIZE];
 
@@ -989,10 +1030,6 @@ namespace rs2
                 ImGui::PopStyleColor(3);
 
                 ImGui::PlotLines(_id.c_str(), (float*)&_vals, SIZE, _idx, ss.str().c_str(), _min, _max, { 270, 50 });
-
-                ImGui::PushStyleColor(ImGuiCol_Text, green);
-                ImGui::Text("[%.2f - %.2f] Pass", ranges[0].x, ranges[0].y);
-                ImGui::PopStyleColor();
 
                 ImGui::TreePop();
             }

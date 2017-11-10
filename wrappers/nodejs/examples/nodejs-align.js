@@ -83,22 +83,11 @@ win.setKeyCallback((key, scancode, action, modes) => {
 
 while (!win.shouldWindowClose()) {
   const rawFrameset = pipeline.waitForFrames();
-  if (! rawFrameset) {
-    // Failed to capture frames
-    //  e.g. Camera is unplugged (plug in the camera again can resume the pipeline)
-    console.log('waitForFrames() didn\'t get any data...');
-    continue;
-  }
-
   const alignedFrameset = align.process(rawFrameset);
-  if (! alignedFrameset) {
-    continue;
-  }
-
   let colorFrame = alignedFrameset.colorFrame;
   let depthFrame = alignedFrameset.depthFrame;
 
-  if (!depthFrame || !colorFrame) {
+  if (!depthFrame) {
     continue;
   }
 

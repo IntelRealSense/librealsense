@@ -13,7 +13,7 @@ let depthSensor;
 describe('Device test', function() {
   before(function() {
     ctx = new rs2.Context();
-    const devices = ctx.queryDevices();
+    const devices = ctx.queryDevices().devices;
     assert(devices.length > 0); // Device must be connected
     const dev = devices[0];
     const pipeline = new rs2.Pipeline();
@@ -33,7 +33,7 @@ describe('Device test', function() {
   });
 
   it('Testing constructor', () => {
-    assert.throws(() => {
+    assert.doesNotThrow(() => {
       new rs2.DepthFrame();
     });
   });

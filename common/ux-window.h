@@ -6,6 +6,7 @@
 #include "imgui.h"
 #include <string>
 #include <functional>
+#include <thread>
 #include "rendering.h"
 
 namespace rs2
@@ -71,8 +72,10 @@ namespace rs2
         std::string              _error_message;
         float                    _scale_factor;
 
+        std::thread              _first_load;
         bool                     _first_frame;
         std::atomic<bool>        _app_ready;
+        std::atomic<bool>        _keep_alive;
         texture_buffer           _splash_tex;
         timer                    _splash_timer;
         std::string              _title_str;

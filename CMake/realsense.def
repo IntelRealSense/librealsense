@@ -141,6 +141,7 @@ EXPORTS
     rs2_synthetic_frame_ready
     rs2_create_processing_block
     rs2_start_processing
+    rs2_start_processing_queue
     rs2_process_frame
     rs2_delete_processing_block
     rs2_create_sync_processing_block

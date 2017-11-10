@@ -7,6 +7,8 @@ Overview
 In addition to streaming video and other data from devices and sensors, the realsense SDK provides the ability to record a live session of streaming to a file. The recorded files can later be loaded by the SDK and to create a device with "read-only" abilities of the recorded device ( we will explain what "read-only" abilities mean later on).
 The SDK is recording a single device to a single [rosbag file](http://wiki.ros.org/rosbag), using mostly standard ROS messages. This allows files recorded by the SDK to be replayed using any ROS tools \ application.
 
+> For example recording files, please see [Sample Data](../../doc/sample-data.md)
+
 
 Quick Start
 -------------

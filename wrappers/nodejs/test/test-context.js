@@ -29,20 +29,18 @@ describe('Context test', function() {
     assert(context._events instanceof EventEmitter);
   });
 
-  it('testing constructor - new Pointcloud, should get Pointcloud', () => {
-    let pointcloud;
+  it('testing constructor - new Context, should get Context', () => {
+    let context;
     assert.doesNotThrow(() => {
-      pointcloud = new librealsense2.Pointcloud();
+      context = new librealsense2.Context();
     });
-    assert(pointcloud instanceof librealsense2.Pointcloud);
+    assert(context instanceof librealsense2.Context);
   });
 
-  it('testing constructor - new Pointcloud, invalid 1 option', () => {
-    let pointcloud;
-    assert.doesNotThrow(() => {
-      pointcloud = new librealsense2.Pointcloud(1);
+  it('testing constructor - new Context, invalid 1 option', () => {
+    assert.throws(() => {
+      new librealsense2.Context(1);
     });
-    assert(pointcloud instanceof librealsense2.Pointcloud);
   });
 
   it('testing method - destroy, call 1 time', () => {
@@ -88,7 +86,7 @@ describe('Context test', function() {
     assert.doesNotThrow(() => {
       context.queryDevices();
     });
-    const obj = context.queryDevices();
+    const obj = context.queryDevices().devices;
     assert.equal(Object.prototype.toString.call(obj), '[object Array]');
     assert.equal(obj[0] instanceof librealsense2.Device, true);
   });
@@ -98,7 +96,7 @@ describe('Context test', function() {
     assert.doesNotThrow(() => {
       context.queryDevices();
     });
-    const obj = context.queryDevices();
+    const obj = context.queryDevices().devices;
     assert.equal(obj[0] instanceof librealsense2.Device, true);
   });
 
@@ -128,9 +126,10 @@ describe('Context test', function() {
     });
   });
 
-  it('testing method - isDeviceConnected', () => {
+  // isDeviceConnected is no more a method of Context
+  it.skip('testing method - isDeviceConnected', () => {
     const context = new librealsense2.Context();
-    const devs = context.queryDevices();
+    const devs = context.queryDevices().devices;
     assert(devs[0]);
     const dev = devs[0];
     assert.doesNotThrow(() => {
@@ -138,9 +137,10 @@ describe('Context test', function() {
     });
   });
 
-  it('testing method - isDeviceConnected, return value', () => {
+  // isDeviceConnected is no more a method of Context
+  it.skip('testing method - isDeviceConnected, return value', () => {
     const context = new librealsense2.Context();
-    const devs = context.queryDevices();
+    const devs = context.queryDevices().devices;
     assert(devs[0]);
     const dev = devs[0];
     assert.equal(typeof context.isDeviceConnected(dev), 'boolean');

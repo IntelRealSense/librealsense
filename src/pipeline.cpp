@@ -453,27 +453,31 @@ namespace librealsense
     void pipeline::unsafe_start(std::shared_ptr<pipeline_config> conf)
     {
         std::shared_ptr<pipeline_profile> profile = nullptr;
-        const int NUM_TIMES_TO_RETRY = 3;
-        for (int i = 1; i <= NUM_TIMES_TO_RETRY; i++)
+        //first try to get the previously resolved profile (if exists)
+        auto cached_profile = conf->get_cached_resolved_profile();
+        if (cached_profile)
         {
-            try
+            profile = cached_profile;
+        }
+        else
+        {
+            const int NUM_TIMES_TO_RETRY = 3;
+            for (int i = 1; i <= NUM_TIMES_TO_RETRY; i++)
             {
-                //first try to get the previously resolved profile (if exists)
-                profile = conf->get_cached_resolved_profile();
-                if (profile && i <= 1) //If a cached profile exists and this is the first iteration, no need to resolve
+                try
+                {
+                    profile = conf->resolve(shared_from_this(), std::chrono::seconds(5));
                     break;
-
-                profile = conf->resolve(shared_from_this(), std::chrono::seconds(5));
-            }
-            catch (...)
-            {
-                if (i == NUM_TIMES_TO_RETRY)
-                    throw;
-
-                continue;
+                }
+                catch (...)
+                {
+                    if (i == NUM_TIMES_TO_RETRY)
+                        throw;
+                }
             }
         }
 
+        assert(profile);
         assert(profile->_multistream.get_profiles().size() > 0);
 
         std::vector<int> unique_ids;

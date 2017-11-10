@@ -12,7 +12,7 @@ let ctx;
 describe('Points test', function() {
   before(function() {
     ctx = new rs2.Context();
-    const devices = ctx.queryDevices();
+    const devices = ctx.queryDevices().devices;
     assert(devices.length > 0); // Device must be connected
   });
 
@@ -20,13 +20,13 @@ describe('Points test', function() {
     rs2.cleanup();
   });
 
-  it('Testing method getTextureCoordinates', () => {
+  it('Testing member textureCoordinates', () => {
     let pipeline;
     let frameSet;
     let pointcloud;
     assert.doesNotThrow(() => {
       pipeline = new rs2.Pipeline();
-      pointcloud = new rs2.Pointcloud();
+      pointcloud = new rs2.PointCloud();
       pipeline.start();
     });
     let endTest = false;
@@ -41,7 +41,7 @@ describe('Points test', function() {
         let arr;
         assert.doesNotThrow(() => { // jshint ignore:line
           points = pointcloud.calculate(frameSet.depthFrame);
-          arr = points.getTextureCoordinates();
+          arr = points.textureCoordinates;
         });
         assert.equal(typeof arr[0], 'number');
         assert.equal(Object.prototype.toString.call(arr), '[object Int32Array]');
@@ -56,13 +56,13 @@ describe('Points test', function() {
     pipeline.destroy();
   });
 
-  it('Testing method getVertices', () => {
+  it('Testing member vertices', () => {
     let pipeline;
     let frameSet;
     let pointcloud;
     assert.doesNotThrow(() => {
       pipeline = new rs2.Pipeline();
-      pointcloud = new rs2.Pointcloud();
+      pointcloud = new rs2.PointCloud();
       pipeline.start();
     });
     let endTest = false;
@@ -77,7 +77,7 @@ describe('Points test', function() {
         let arr;
         assert.doesNotThrow(() => { // jshint ignore:line
           points = pointcloud.calculate(frameSet.depthFrame);
-          arr = points.getVertices();
+          arr = points.vertices;
         });
         assert.equal(typeof arr[0], 'number');
         assert.equal(Object.prototype.toString.call(arr), '[object Float32Array]');

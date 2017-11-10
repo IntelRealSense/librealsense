@@ -61,6 +61,65 @@ namespace librealsense
         std::string _desc;
     };
 
+    template<class T>
+    class ptr_option : public option
+    {
+    public:
+        ptr_option(T min, T max, T step, T def, T* value, const std::string& desc)
+            : _min(min), _max(max), _step(step), _def(def), _value(value), _desc(desc)
+        {
+            _on_set = [](float x) {};
+        }
+
+        void set(float value) override 
+        { 
+            if (_max < value || _min > value) 
+                throw invalid_value_exception("Given value is outside valid range!");
+            *_value = value; 
+            _on_set(value);
+        }
+
+        float query() const override 
+        {
+            return *_value;
+        }
+
+        option_range get_range() const override { 
+            return{ 
+                (float)_min, (float)_max, 
+                (float)_step, (float)_def }; 
+        }
+
+        bool is_enabled() const override { return true; }
+
+        void enable_recording(std::function<void(const option &)> record_action) override {}
+
+        const char* get_description() const override { return _desc.c_str(); }
+
+        const char* get_value_description(float val) const override
+        {
+            auto it = _item_desc.find(val);
+            if (it != _item_desc.end())
+            {
+                return it->second.c_str();
+            }
+            return nullptr;
+        }
+
+        void set_description(float val, const std::string& desc)
+        {
+            _item_desc[val] = desc;
+        }
+
+        void on_set(std::function<void(float)> on_set) { _on_set = on_set; }
+    private:
+        T _min, _max, _step, _def;
+        T* _value;
+        std::string _desc;
+        std::map<float, std::string> _item_desc;
+        std::function<void(float)> _on_set;
+    };
+
     class uvc_pu_option : public option
     {
     public:

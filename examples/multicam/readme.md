@@ -11,7 +11,7 @@ Each part of the split window should display a single stream from a different ca
 
 In the following example we've used two Intel® RealSense™ Depth Cameras pointing at different locations.
 
-<p align="center"><img src="example_screenshot.gif" alt="screenshot gif"/></p>
+<p align="center"><img src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/multi-cam-expected.gif" alt="screenshot gif"/></p>
 
 > Note: The above animation was cropped to display only the depth streams.
 

@@ -117,9 +117,12 @@ namespace rs2
         void update_read_only_status(std::string& error_message);
         void update_all_fields(std::string& error_message, notifications_model& model);
 
+        bool draw_option(bool update_read_only_options, bool is_streaming,
+            std::string& error_message, notifications_model& model);
+
         rs2_option opt;
         option_range range;
-        sensor endpoint;
+        std::shared_ptr<options> endpoint;
         bool* invalidate_flag;
         bool supported = false;
         bool read_only = false;
@@ -169,10 +172,38 @@ namespace rs2
         std::map<int, int> selected_format_id;
     };
 
+    class subdevice_model;
+
+    class processing_block_model
+    {
+    public:
+        processing_block_model(subdevice_model* owner,
+            const std::string& name,
+            std::shared_ptr<options> block,
+            std::string& error_message);
+
+        const std::string& get_name() const { return _name; }
+
+        option_model& get_option(rs2_option opt) { return options_metadata[opt]; }
+    private:
+        std::shared_ptr<options> _block;
+        std::map<int, option_model> options_metadata;
+        std::string _name;
+        subdevice_model* _owner;
+    };
+
     class subdevice_model
     {
     public:
-        subdevice_model(device& dev, sensor& s, std::string& error_message);
+        static void populate_options(std::map<int, option_model>& opt_container,
+            const device& dev,
+            const sensor& s,
+            bool* options_invalidated,
+            subdevice_model* model,
+            std::shared_ptr<options> options,
+            std::string& error_message);
+
+        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::string& error_message);
         bool is_there_common_fps() ;
         bool draw_stream_selection();
         bool is_selected_combination_supported();
@@ -183,8 +214,12 @@ namespace rs2
         void draw_options(const std::vector<rs2_option>& drawing_order,
                           bool update_read_only_options, std::string& error_message,
                           notifications_model& model);
+
         bool draw_option(rs2_option opt, bool update_read_only_options,
-                         std::string& error_message, notifications_model& model);
+            std::string& error_message, notifications_model& model)
+        {
+            return options_metadata[opt].draw_option(update_read_only_options, streaming, error_message, model);
+        }
 
         bool is_paused() const;
         void pause();
@@ -214,7 +249,7 @@ namespace rs2
             return false;
         }
 
-        sensor s;
+        std::shared_ptr<sensor> s;
         device dev;
 
         std::map<int, option_model> options_metadata;
@@ -241,7 +276,6 @@ namespace rs2
         bool options_invalidated = false;
         int next_option = RS2_OPTION_COUNT;
         bool streaming = false;
-        bool rgb_rotation_btn = false;
 
         rect normalized_zoom{0, 0, 1, 1};
         rect roi_rect;
@@ -257,6 +291,10 @@ namespace rs2
 
         region_of_interest algo_roi;
         bool show_algo_roi = false;
+
+        std::shared_ptr<rs2::colorizer> depth_colorizer;
+
+        std::vector<std::shared_ptr<processing_block_model>> post_processing;
     };
 
     class viewer_model;
@@ -521,7 +559,6 @@ namespace rs2
         }
 
         void upload_frame(frame&& f);
-        void draw_histogram_options(float depth_scale, const subdevice_model& sensor);
 
         std::map<int, rect> calc_layout(const rect& r);
 
