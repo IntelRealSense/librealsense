@@ -563,11 +563,28 @@ PYBIND11_PLUGIN(NAME) {
 
     // not binding notifications_callback, templated
 
-    py::class_<rs2::sensor> sensor(m, "sensor");
+    py::class_<rs2::options> options(m, "options");
+    options.def("get_option_description", &rs2::options::get_option_description, "Get option description.", "option"_a)
+        .def("get_option_value_description", &rs2::options::get_option_value_description,
+            "Get option value description "
+               "(In case a specific option value holds special meaning)",
+             "option"_a, "value"_a)
+        .def("get_option", &rs2::options::get_option,
+            "Read option value from the device.", "option"_a)
+        .def("get_option_range", &rs2::options::get_option_range,
+            "Retrieve the available range of values "
+               "of a supported option", "option"_a)
+        .def("set_option", &rs2::options::set_option,
+            "Write new value to device option", "option"_a, "value"_a)
+        .def("supports", &rs2::options::supports,
+            "Check if particular option is supported by a subdevice",
+            "option"_a)
+        .def("is_option_read_only", &rs2::options::is_option_read_only,
+            "Check if particular option is read only.", "option"_a);
+
+    py::class_<rs2::sensor> sensor(m, "sensor", options);
     sensor.def("open", (void (rs2::sensor::*)(const rs2::stream_profile&) const) &rs2::sensor::open,
                "Open subdevice for exclusive access, by commiting to a configuration", "profile"_a)
-          .def("supports", (bool (rs2::sensor::*)(rs2_camera_info) const) &rs2::device::supports,
-               "Check if speific camera info is supported.", "info")
           .def("get_info", &rs2::sensor::get_info, "Retrieve camera specific information, "
                "like versions of various internal components.", "info"_a)
           .def("open", (void (rs2::sensor::*)(const std::vector<rs2::stream_profile>&) const) &rs2::sensor::open,
@@ -578,19 +595,8 @@ PYBIND11_PLUGIN(NAME) {
                { self.start(callback); }, "Start passing frames into user provided callback.", "callback"_a)
           .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) { self.start(queue); })
           .def("stop", &rs2::sensor::stop, "Stop streaming.")
-          .def("is_option_read_only", &rs2::sensor::is_option_read_only, "Check if particular option "
-               "is read only.", "option"_a)
           .def("set_notifications_callback", [](const rs2::sensor& self, std::function<void(rs2::notification)> callback)
                { self.set_notifications_callback(callback); }, "Register Notifications callback", "callback"_a)
-          .def("get_option", &rs2::sensor::get_option, "Read option value from the device.", "option"_a)
-          .def("get_option_range", &rs2::sensor::get_option_range, "Retrieve the available range of values "
-               "of a supported option", "option"_a)
-          .def("set_option", &rs2::sensor::set_option, "Write new value to device option", "option"_a, "value"_a)
-          .def("supports", (bool (rs2::sensor::*)(rs2_option option) const) &rs2::sensor::supports, "Check if particular "
-               "option is supported by a subdevice", "option"_a)
-          .def("get_option_description", &rs2::sensor::get_option_description, "Get option description.", "option"_a)
-          .def("get_option_value_description", &rs2::sensor::get_option_value_description, "Get option value description "
-               "(In case a specific option value holds special meaning)", "option"_a, "value"_a)
           .def("get_stream_profiles", &rs2::sensor::get_stream_profiles, "Check if physical subdevice is supported.")
           .def("get_motion_intrisics", &rs2::sensor::get_motion_intrinsics, "Returns scale and bias of a motion stream.",
                "stream"_a)
