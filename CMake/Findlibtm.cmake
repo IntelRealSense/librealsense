@@ -42,7 +42,7 @@ find_library(LIBTM_LIBRARY
 # Look for the library debug flavor.
 find_library(LIBTM_LIBRARY_DEBUG
 	NAMES		
-	tmd
+	tm
 	HINTS
 	"${LIBTM_DIR}/bin/Debug"	
 	)
@@ -57,7 +57,7 @@ find_library(INFRA_LIBRARY
 # Look for the library debug flavor.
 find_library(INFRA_LIBRARY_DEBUG
 	NAMES		
-	infrad
+	infra
 	HINTS
 	"${LIBTM_DIR}/bin/Debug"
 	)
