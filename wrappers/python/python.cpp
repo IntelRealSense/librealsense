@@ -437,7 +437,7 @@ PYBIND11_PLUGIN(NAME) {
 
     /* rs2_processing.hpp */
     // Not binding frame_processor_callback, templated
-    py::class_<rs2::options, rs2::processing_block> processing_block(m, "processing_block");
+    py::class_<rs2::processing_block> processing_block(m, "processing_block");
     processing_block.def("start", [](rs2::processing_block& self, std::function<void(rs2::frame)> f)
                             {
                                 self.start(f);
@@ -567,7 +567,7 @@ PYBIND11_PLUGIN(NAME) {
 
     // not binding notifications_callback, templated
 
-    py::class_<rs2::options, rs2::sensor> sensor(m, "sensor");
+    py::class_<rs2::sensor> sensor(m, "sensor");
     sensor.def("open", (void (rs2::sensor::*)(const rs2::stream_profile&) const) &rs2::sensor::open,
                "Open subdevice for exclusive access, by commiting to a configuration", "profile"_a)
           .def("supports", (bool (rs2::sensor::*)(rs2_camera_info) const) &rs2::device::supports,
