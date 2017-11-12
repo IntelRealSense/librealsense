@@ -12,10 +12,10 @@ namespace rs2
               _roi_located(std::chrono::seconds(4)),
               _too_close(std::chrono::seconds(4)),
               _too_far(std::chrono::seconds(4)),
-              _sku_right(std::chrono::seconds(1)),
-              _sku_left(std::chrono::seconds(1)),
-              _sku_up(std::chrono::seconds(1)),
-              _sku_down(std::chrono::seconds(1)),
+              _skew_right(std::chrono::seconds(1)),
+              _skew_left(std::chrono::seconds(1)),
+              _skew_up(std::chrono::seconds(1)),
+              _skew_down(std::chrono::seconds(1)),
               _angle_alert(std::chrono::seconds(4)),
               _min_dist(300.f), _max_dist(2000.f), _max_angle(10.f)
         {
@@ -130,7 +130,9 @@ namespace rs2
 
         bool tool_model::draw_instructions(ux_window& win, const rect& viewer_rect, bool& distance, bool& orientation)
         {
-            _roi_located.add_value(is_valid(_metrics_model.get_plane()));
+            auto plane_fit_found = is_valid(_metrics_model.get_plane());
+            _metrics_model.set_plane_fit(plane_fit_found);
+            _roi_located.add_value(plane_fit_found);
             if (!_roi_located.eval())
             {
                 draw_notification(win, viewer_rect, 450,
@@ -145,16 +147,16 @@ namespace rs2
                 orientation = true;
             }
 
-            _sku_right.add_value(orientation && _metrics_model.get_last_metrics().angle_x > 0.f
+            _skew_right.add_value(orientation && _metrics_model.get_last_metrics().angle_x > 0.f
                 && fabs(_metrics_model.get_last_metrics().angle_x) > fabs(_metrics_model.get_last_metrics().angle_y));
 
-            _sku_left.add_value(orientation && _metrics_model.get_last_metrics().angle_x < 0.f
+            _skew_left.add_value(orientation && _metrics_model.get_last_metrics().angle_x < 0.f
                 && fabs(_metrics_model.get_last_metrics().angle_x) > fabs(_metrics_model.get_last_metrics().angle_y));
 
-            _sku_up.add_value(orientation && _metrics_model.get_last_metrics().angle_y < 0.f
+            _skew_up.add_value(orientation && _metrics_model.get_last_metrics().angle_y < 0.f
                 && fabs(_metrics_model.get_last_metrics().angle_x) <= fabs(_metrics_model.get_last_metrics().angle_y));
 
-            _sku_down.add_value(orientation && _metrics_model.get_last_metrics().angle_y > 0.f
+            _skew_down.add_value(orientation && _metrics_model.get_last_metrics().angle_y > 0.f
                 && fabs(_metrics_model.get_last_metrics().angle_x) <= fabs(_metrics_model.get_last_metrics().angle_y));
 
             _too_close.add_value(_metrics_model.get_last_metrics().distance < _min_dist);
@@ -163,7 +165,7 @@ namespace rs2
             constexpr const char* orientation_instruction = "                         Recommended angle: < 3 degrees"; // "             Use the orientation gimbal to align the camera";
             constexpr const char* distance_instruction    = "          Recommended distance: 0.3m-2m from the target"; // "             Use the distance locator to position the camera";
 
-            if (_sku_right.eval())
+            if (_skew_right.eval())
             {
                 draw_notification(win, viewer_rect, 400,
                     u8"\n          \uf061  Rotate the camera slightly Right",
@@ -171,7 +173,7 @@ namespace rs2
                 return false;
             }
 
-            if (_sku_left.eval())
+            if (_skew_left.eval())
             {
                 draw_notification(win, viewer_rect, 400,
                     u8"\n           \uf060  Rotate the camera slightly Left",
@@ -179,7 +181,7 @@ namespace rs2
                 return false;
             }
 
-            if (_sku_up.eval())
+            if (_skew_up.eval())
             {
                 draw_notification(win, viewer_rect, 400,
                     u8"\n            \uf062  Rotate the camera slightly Up",
@@ -187,7 +189,7 @@ namespace rs2
                 return false;
             }
 
-            if (_sku_down.eval())
+            if (_skew_down.eval())
             {
                 draw_notification(win, viewer_rect, 400,
                     u8"\n          \uf063  Rotate the camera slightly Down",
@@ -424,7 +426,6 @@ namespace rs2
             bool distance_guide = false;
             bool orientation_guide = false;
             bool found = draw_instructions(win, viewer_rect, distance_guide, orientation_guide);
-            _metrics_model.set_plane_fit(found);
 
             ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
             ImGui::SetNextWindowPos({ 0, 0 });
@@ -554,7 +555,7 @@ namespace rs2
                         if (_use_ground_truth) gt_str += ":";
                         if (ImGui::Checkbox(gt_str.c_str(), &_use_ground_truth))
                         {
-                            if (_use_ground_truth) _metrics_model.set_ground_truth(float(_ground_truth));
+                            if (_use_ground_truth) _metrics_model.set_ground_truth(_ground_truth);
                             else _metrics_model.disable_ground_truth();
                         }
                         if (ImGui::IsItemHovered())
@@ -567,7 +568,7 @@ namespace rs2
                             ImGui::PushItemWidth(120);
                             if (ImGui::InputInt("##GT", &_ground_truth, 1))
                             {
-                                _metrics_model.set_ground_truth(float(_ground_truth));
+                                _metrics_model.set_ground_truth(_ground_truth);
                             }
                             ImGui::PopItemWidth();
                             ImGui::SetCursorPosX(col1 + 120); ImGui::SameLine();
@@ -845,7 +846,12 @@ namespace rs2
 
         metrics_model::metrics_model() :
             _frame_queue(1),
-            _depth_scale_units(0.f), _use_gt(false), _plane_fit(-1),_active(true)
+            _depth_scale_units(0.f),
+            _stereo_baseline_mm(0.f),
+            _ground_truth_mm(0),
+            _use_gt(false),
+            _plane_fit(-1),
+            _active(true)
         {
             _worker_thread = std::thread([this]() {
                 while (_active)
@@ -863,6 +869,7 @@ namespace rs2
                     {
                         float su = 0, baseline = -1.f;
                         rs2_intrinsics intrin;
+                        int gt_mm, plane_fit_set;
                         region_of_interest roi;
                         {
                             std::lock_guard<std::mutex> lock(_m);
@@ -872,9 +879,8 @@ namespace rs2
                             roi = _roi;
                         }
 
-                        _ground_truth_copy = get_ground_truth(); // Copy the mutable GT into a "safe" copy variable
-                        auto gt_ptr = _use_gt ? &_ground_truth_copy : nullptr; // Borrow copy ptr to the callback
-                        auto metrics = analyze_depth_image(depth_frame, su, baseline, &intrin, roi, gt_ptr, callback);
+                        std::tie(gt_mm, plane_fit_set) = get_inputs();
+                        auto metrics = analyze_depth_image(depth_frame, su, baseline, &intrin, roi, gt_mm, plane_fit_set,callback);
 
                         {
                             std::lock_guard<std::mutex> lock(_m);
@@ -1048,13 +1054,17 @@ namespace rs2
 
         void metrics_model::serialize_to_csv(const std::string& filename, const std::string& camera_info) const
         {
-            // RAII
+            // TODO RAII
             std::ofstream csv;
 
             csv.open(filename);
 
             // Store the device info and the streaming profile details
             csv << camera_info;
+
+            //Store metric environment
+            if (_plane_fit > 0) csv << "\nEnvironment:\nPlane- Fit distance mm," << _latest_metrics.distance << std::endl;
+            if (_use_gt)        csv << "Ground Truth Distance mm," << _ground_truth_mm << std::endl;
 
             // Create header line
             csv << "\nSample Id,Timestamp (ms),";

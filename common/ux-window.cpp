@@ -139,8 +139,8 @@ namespace rs2
             glOrtho(0, _width, _height, 0, -1, +1);
 
             // Fade-in the logo
-            auto opacity = smoothstep(_splash_timer.elapsed_ms(), 100.f, 2000.f);
-            _splash_tex.show({ 0.f,0.f,(float)_width,(float)_height }, opacity);
+            auto opacity = smoothstep(float(_splash_timer.elapsed_ms()), 100.f, 2000.f);
+            _splash_tex.show({ 0.f,0.f,float(_width),float(_height) }, opacity);
 
             std::string hourglass = u8"\uf250";
             static periodic_timer every_200ms(std::chrono::milliseconds(200));

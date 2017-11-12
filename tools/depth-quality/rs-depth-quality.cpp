@@ -1,6 +1,7 @@
 ﻿// License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#include <numeric>
 #include <librealsense2/rs.hpp>
 #include "depth-quality-model.h"
 
@@ -14,24 +15,26 @@ int main(int argc, const char * argv[]) try
     // ===============================
     //       Metrics Definitions
     // ===============================
+    metric z_accuracy = model.make_metric(
+                "Z Accuracy", -100, 100, true, "%",
+                "Z Accuracy given Ground Truth\n"
+                "Performed on the depth image in the ROI\n"
+                "Calculate the depth-errors map\n"
+                "i.e., GT-aligned Z values – GT (signed).\n"
+                "Calculate the median of the depth-errors\n");
 
-    metric zaccuracy = model.make_metric(
-                       "Z Accuracy", -100, 100, true, "%",
-                       "Z Accuracy given Ground Truth\n"
-                       "Performed on the depth image in the ROI\n"
-                       "Calculate the depth-errors map\n"
-                       "i.e., Image – GT (signed values).\n"
-                       "Calculate the median of the depth-errors\n");
+    metric rms_z_err = model.make_metric(
+                "Z-Error RMS", 0.f, 5.f, true, "(mm)",
+                "Z-Error RMS .\n"
+                "This metric calculates RMS of Z-Error (Spatial Noise)\n"
+                "and is calculated as follows:\n"
+                "Zi - depth range of i-th pixel (mm)\n"
+                "Zpi -depth of Zi projection onto plane fit (mm)\n"
+                "               n      \n"
+                "RMS = SQRT((SUM(Zi-Zpi)^2)/n)\n"
+                 "             i=1    ");
 
-    metric avg = model.make_metric(
-                 "Average Error", 0, 10, true, "(mm)",
-                 "Average Distance from Plane Fit\n"
-                 "This metric approximates a plane within\n"
-                 "the ROI and calculates the average\n"
-                 "distance of points in the ROI\n"
-                 "from that plane, in mm");
-
-    metric rms = model.make_metric(
+    metric rms_sub_pixel = model.make_metric(
                  "Subpixel RMS", 0.f, 1.f, true, "(pixel)",
                  "Normalized RMS .\n"
                  "This metric provides the subpixel accuracy\n"
@@ -43,7 +46,7 @@ int main(int argc, const char * argv[]) try
                  "Di = BL*FL/Zi; Dpi = Bl*FL/Zpi\n"
                  "              n      \n"
                  "RMS = SQRT((SUM(Di-Dpi)^2)/n)\n"
-                 "             i=0    ");
+                 "             i=1    ");
 
     metric fill = model.make_metric(
                   "Fill-Rate", 0, 100, false, "%",
@@ -61,26 +64,42 @@ int main(int argc, const char * argv[]) try
         const rs2::region_of_interest roi,
         const float baseline_mm,
         const float focal_length_pixels,
-        const float* ground_truth_mm)
+        const int ground_truth_mm,
+        const bool plane_fit,
+        const float plane_fit_to_ground_truth_mm)
     {
-        const float TO_METERS = 0.001f;
-        const float TO_MM = 1000.f;
-        const float TO_PERCENT = 100.f;
+        static const float TO_METERS = 0.001f;
+        static const float TO_MM = 1000.f;
+        static const float TO_PERCENT = 100.f;
+
+        // Calculate fill rate relative to the ROI
+        auto fill_rate = points.size() / float((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * TO_PERCENT;
+        fill->add_value(fill_rate);
+
+        if (!plane_fit) return;
 
         const float bf_factor = baseline_mm * focal_length_pixels * TO_METERS; // also convert point units from mm to meter
 
-        // Calculate the distances of all points in the ROI to the fitted plane
+        std::vector<rs2::float3> points_set = points;
         std::vector<float> distances;
         std::vector<float> disparities;
-        std::vector<float> errors;
+        std::vector<float> gt_errors;
 
         // Reserve memory for the data
         distances.reserve(points.size());
         disparities.reserve(points.size());
-        if (ground_truth_mm) errors.reserve(points.size());
+        if (ground_truth_mm) gt_errors.reserve(points.size());
 
-        // Calculate the distance and disparity errors from the point cloud to the fitted plane
-        for (auto point : points)
+        // Remove outliers [below 0.5% and above 99.5%)
+        std::sort(points_set.begin(), points_set.end(), [](const rs2::float3& a, const rs2::float3& b) { return a.z < b.z; });
+        size_t outliers = points_set.size() / 200;
+        points_set.erase(points_set.begin(), points_set.begin() + outliers); // crop min 0.5% of the dataset
+        points_set.resize(points_set.size() - outliers); // crop max 0.5% of the dataset
+
+        // Convert Z values into Depth values by aligning the Fitted plane with the Ground Truth (GT) plane
+        // Calculate distance and disparity of Z values to the fitted plane.
+        // Use the aligned fit to calculate GT errors
+        for (auto point : points_set)
         {
             // Find distance from point to the reconstructed plane
             auto dist2plane = p.a*point.x + p.b*point.y + p.c*point.z + p.d;
@@ -89,41 +108,35 @@ int main(int argc, const char * argv[]) try
                                             float(point.y - dist2plane*p.b),
                                             float(point.z - dist2plane*p.c) };
 
-            // Store distance, disparity and error
-            distances.push_back(std::fabs(dist2plane) * TO_MM);
+            // Store distance, disparity and gt- error
+            distances.push_back(dist2plane * TO_MM);
             disparities.push_back(bf_factor / point.length() - bf_factor / plane_intersect.length());
-            if (ground_truth_mm) errors.push_back(point.z * TO_MM - *ground_truth_mm);
+            if (ground_truth_mm) gt_errors.push_back(plane_fit_to_ground_truth_mm - (dist2plane * TO_MM));
         }
 
         // Show Z accuracy metric only when Ground Truth is available
-        zaccuracy->visible(ground_truth_mm != nullptr);
-        if (ground_truth_mm && *ground_truth_mm > 0)
+        z_accuracy->visible(ground_truth_mm > 0);
+        if (ground_truth_mm)
         {
-            std::sort(begin(errors), end(errors));
-            auto median = errors[errors.size() / 2];
-            auto accuracy = TO_PERCENT * (median / *ground_truth_mm);
-            zaccuracy->add_value(accuracy);
+            std::sort(begin(gt_errors), end(gt_errors));
+            auto gt_median = gt_errors[gt_errors.size() / 2];
+            auto accuracy = TO_PERCENT * (gt_median / ground_truth_mm);
+            z_accuracy->add_value(accuracy);
         }
 
-        // Calculate average distance from the plane fit
-        double total_distance = 0;
-        for (auto dist : distances) total_distance += dist;
-        float avg_dist = total_distance / distances.size();
-        avg->add_value(avg_dist);
-
-        // Calculate RMS
+        // Calculate Sub-pixel RMS for Stereo-based Depth sensors
         double total_sq_disparity_diff = 0;
         for (auto disparity : disparities)
         {
             total_sq_disparity_diff += disparity*disparity;
         }
-        // Calculate Subpixel RMS for Stereo-based Depth sensors
-        auto rms_val = static_cast<float>(std::sqrt(total_sq_disparity_diff / points.size()));
-        rms->add_value(rms_val);
+        auto rms_subpixel_val = static_cast<float>(std::sqrt(total_sq_disparity_diff / disparities.size()));
+        rms_sub_pixel->add_value(rms_subpixel_val);
 
-        // Calculate fill ratio relative to the ROI
-        auto fill_ratio = points.size() / float((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * TO_PERCENT;
-        fill->add_value(fill_ratio);
+        // calculate RMS of Z-error (Spatial Noise) mm
+        double z_error_sqr_sum = std::inner_product(distances.begin(), distances.end(), distances.begin(), 0.);
+        auto rms_error_val = static_cast<float>(std::sqrt(z_error_sqr_sum / distances.size()));
+        rms_z_err->add_value(rms_error_val);
     });
 
     // ===============================

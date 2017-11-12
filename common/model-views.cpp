@@ -285,7 +285,7 @@ namespace rs2
         size_t pixel_width, size_t pixels_height, size_t bytes_per_pixel,
         const void* raster_data, size_t stride_bytes)
     {
-        return stbi_write_png(filename, pixel_width, pixels_height, bytes_per_pixel, raster_data, stride_bytes);
+        return stbi_write_png(filename, (int)pixel_width, (int)pixels_height, bytes_per_pixel, raster_data, stride_bytes);
     }
 
     std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec)

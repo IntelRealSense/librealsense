@@ -6,6 +6,7 @@
 #include "model-views.h"
 #include "ux-window.h"
 
+#include <tuple>
 #include <vector>
 #include <thread>
 #include <mutex>
@@ -148,10 +149,10 @@ namespace rs2
 
             callback_type callback;
 
-            void set_ground_truth(float gt)
+            void set_ground_truth(int gt)
             {
                 std::lock_guard<std::mutex> lock(_m);
-                _ground_truth = gt;
+                _ground_truth_mm = gt;
                 _use_gt = true;
             }
 
@@ -173,9 +174,10 @@ namespace rs2
             void disable_ground_truth()
             {
                 std::lock_guard<std::mutex> lock(_m);
-                _use_gt = false; 
+                _use_gt = false;
+                _ground_truth_mm = 0;
             }
-            float get_ground_truth() const { std::lock_guard<std::mutex> lock(_m); return _ground_truth; }
+            std::tuple<int, int> get_inputs() const { std::lock_guard<std::mutex> lock(_m); return std::make_tuple(_ground_truth_mm, _plane_fit); }
 
             void reset()
             {
@@ -193,8 +195,7 @@ namespace rs2
             rs2_intrinsics          _depth_intrinsic;
             float                   _depth_scale_units;
             float                   _stereo_baseline_mm;
-            float                   _ground_truth;
-            float                   _ground_truth_copy;
+            int                     _ground_truth_mm;
             bool                    _use_gt;
             int                     _plane_fit;
             region_of_interest      _roi;
@@ -254,10 +255,10 @@ namespace rs2
 
             temporal_event                  _too_far;
             temporal_event                  _too_close;
-            temporal_event                  _sku_left;
-            temporal_event                  _sku_right;
-            temporal_event                  _sku_up;
-            temporal_event                  _sku_down;
+            temporal_event                  _skew_left;
+            temporal_event                  _skew_right;
+            temporal_event                  _skew_up;
+            temporal_event                  _skew_down;
             temporal_event                  _angle_alert;
             std::map<int, temporal_event>   _depth_scale_events;
 
