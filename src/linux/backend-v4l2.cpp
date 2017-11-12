@@ -517,11 +517,8 @@ namespace librealsense
             if (_thread) _thread->join();
         }
 
-        void v4l_uvc_device::probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers)
+        void v4l_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
         {
-            if(!zero_copy)
-                buffers = 1;
-
             if(!_is_capturing && !_callback)
             {
                 v4l2_fmtdesc pixel_format = {};
@@ -538,7 +535,7 @@ namespace librealsense
                         // Microsoft Depth GUIDs for R400 series are not yet recognized
                         // by the Linux kernel, but they do not require a patch, since there
                         // are "backup" Z16 and Y8 formats in place
-                        std::set<std::string> known_problematic_formats = {
+                        static const std::set<std::string> known_problematic_formats = {
                             "00000050-0000-0010-8000-00aa003",
                             "00000032-0000-0010-8000-00aa003",
                         };

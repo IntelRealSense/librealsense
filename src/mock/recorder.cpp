@@ -628,11 +628,11 @@ namespace librealsense
         }
 
 
-        void record_uvc_device::probe_and_commit( stream_profile profile, bool zero_copy,   frame_callback callback, int buffers)
+        void record_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
         {
-            _owner->try_record([this, zero_copy, callback, profile](recording* rec, lookup_key k)
+            _owner->try_record([this, callback, profile](recording* rec, lookup_key k)
             {
-                _source->probe_and_commit(profile, zero_copy, [this, callback](stream_profile p, frame_object f, std::function<void()> continuation)
+                _source->probe_and_commit(profile, [this, callback](stream_profile p, frame_object f, std::function<void()> continuation)
                 {
                     _owner->try_record([this, callback, p, &f, continuation](recording* rec1, lookup_key key1)
                     {
@@ -1179,7 +1179,7 @@ namespace librealsense
             });
         }
 
-        void playback_uvc_device::probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers)
+        void playback_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
         {
             auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_probe_commit);
             vector<stream_profile> input{ profile };
