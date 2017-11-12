@@ -447,6 +447,29 @@ namespace rs2
         }
     };
 
+
+    class motion_frame : public frame
+    {
+    public:
+        motion_frame(const frame& f)
+            : frame(f)
+        {
+            rs2_error* e = nullptr;
+            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_MOTION_FRAME, &e) == 0 && !e))
+            {
+                reset();
+            }
+            error::handle(e);
+        }
+
+        rs2_vector get_motion_data()
+        {
+            auto data = reinterpret_cast<const float*>(get_data());
+            return rs2_vector{data[0], data[1], data[2]};
+        }
+    };
+
+
     class pose_frame : public frame
     {
     public:

@@ -833,8 +833,16 @@ namespace rs2
                 break;
             case RS2_FORMAT_MOTION_XYZ32F:
             {
-                auto axes = *(reinterpret_cast<const float3*>(data));
-                draw_motion_data(axes.x, axes.y, axes.z);
+                if (frame.is<motion_frame>())
+                {
+                    auto motion = frame.as<motion_frame>();
+                    auto axes = motion.get_motion_data();
+                    draw_motion_data(axes.x, axes.y, axes.z);
+                }
+                else
+                {
+                    throw std::runtime_error("Not expecting a frame with motion format that is not a motion_frame");
+                }
                 break;
             }
             case RS2_FORMAT_Y16:
