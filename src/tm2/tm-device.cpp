@@ -365,7 +365,7 @@ namespace librealsense
                 LOG_WARNING("Frame received with streaming inactive");
                 return;
             }
-            float3 data = { tm_frame.angular_velocity.x, tm_frame.angular_velocity.y, tm_frame.angular_velocity.z };
+            float3 data = { tm_frame.angularVelocity.x, tm_frame.angularVelocity.y, tm_frame.angularVelocity.z };
             handle_imu_frame(tm_frame, tm_frame.frameId, RS2_STREAM_GYRO, tm_frame.sensorIndex + 1, data);            
         }
 
@@ -459,8 +459,8 @@ namespace librealsense
                 info->velocity = toFloat3(tm_frame.velocity);
                 info->acceleration = toFloat3(tm_frame.acceleration);
                 info->rotation = toFloat4(tm_frame.rotation);
-                info->angular_velocity = toFloat3(tm_frame.angular_velocity);
-                info->angular_acceleration = toFloat3(tm_frame.angular_acceleration);
+                info->angular_velocity = toFloat3(tm_frame.angularVelocity);
+                info->angular_acceleration = toFloat3(tm_frame.angularAcceleration);
                 info->confidence = tm_frame.confidence;
             }
             else
@@ -502,6 +502,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_NAME, "RealSense Tracking Module 2");
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, to_string() << info.serialNumber);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, to_string() << info.fw.major << "." << info.fw.minor << "." << info.fw.patch << "." << info.fw.build);
+        register_info(RS2_CAMERA_INFO_PRODUCT_ID, to_string() << info.usbDescriptor.idProduct);
 
         add_sensor(std::make_shared<tm2_sensor>(this, _dev)); 
 
