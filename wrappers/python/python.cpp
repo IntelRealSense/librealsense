@@ -592,7 +592,7 @@ PYBIND11_PLUGIN(NAME) {
           .def("get_option_value_description", &rs2::sensor::get_option_value_description, "Get option value description "
                "(In case a specific option value holds special meaning)", "option"_a, "value"_a)
           .def("get_stream_profiles", &rs2::sensor::get_stream_profiles, "Check if physical subdevice is supported.")
-          .def("get_motion_intrisics", &rs2::sensor::get_motion_intrinsics, "Returns scale and bias of a motion stream.",
+          .def("get_motion_intrinsics", &rs2::sensor::get_motion_intrinsics, "Returns scale and bias of a motion stream.",
                "stream"_a)
           .def(py::init<>())
           .def("__nonzero__", &rs2::sensor::operator bool)
