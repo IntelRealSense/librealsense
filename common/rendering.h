@@ -864,7 +864,7 @@ namespace rs2
             //}
             //break;
             default:
-                throw std::runtime_error("The requested format is not suported for rendering");
+                throw std::runtime_error("The requested format is not supported for rendering");
             }
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
