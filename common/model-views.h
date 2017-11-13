@@ -490,7 +490,7 @@ namespace rs2
         }),
         viewer(viewer),
         keep_calculating_pointcloud(true),
-        start_streaming(false),
+        depth_stream_active(false),
         resulting_3d_models(1),
         t([this]() {render_loop(); })
         {
@@ -527,10 +527,8 @@ namespace rs2
             model = f;
             while (resulting_3d_models.poll_for_frame(&f));
         }
-        void start()
-        {
-            start_streaming = true;
-        }
+
+        std::atomic<bool> depth_stream_active;
 
     private:
         viewer_model& viewer;
@@ -542,7 +540,7 @@ namespace rs2
         pointcloud pc;
         rs2::frameset model;
         std::atomic<bool> keep_calculating_pointcloud;
-        std::atomic<bool> start_streaming;
+
 
         frame_queue resulting_3d_models;
 

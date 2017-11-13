@@ -1115,7 +1115,6 @@ namespace rs2
 
     void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer)
     {
-        viewer.pc.start();
         s->open(profiles);
         try {
             s->start([&](frame f) {
@@ -1816,7 +1815,13 @@ namespace rs2
         {
             if (!kvp.second.is_stream_visible() &&
                 (!kvp.second.dev || (!kvp.second.dev->is_paused() && !kvp.second.dev->streaming)))
+            {
+                if(kvp.first == selected_depth_source_uid)
+                {
+                    pc.depth_stream_active = false;
+                }
                 streams_to_remove.push_back(kvp.first);
+            }
         }
         for (auto&& i : streams_to_remove) {
             streams.erase(i);
@@ -2663,7 +2668,7 @@ namespace rs2
     {
         while (keep_calculating_pointcloud)
         {
-            if(start_streaming)
+            if(depth_stream_active)
             {
                 try
                 {
@@ -2697,7 +2702,7 @@ namespace rs2
 
             // There is no practical reason to re-calculate the 3D model
             // at higher frequency then 100 FPS
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
 
@@ -3204,7 +3209,9 @@ namespace rs2
 
     void viewer_model::upload_frame(frame&& f)
     {
-        pc.start();
+        if(f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+            pc.depth_stream_active = true;
+
         auto index = f.get_profile().unique_id();
         streams[index].upload_frame(std::move(f));
     }

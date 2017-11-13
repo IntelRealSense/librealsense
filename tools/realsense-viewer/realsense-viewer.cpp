@@ -125,6 +125,8 @@ void refresh_devices(std::mutex& m,
                     viewer_model.not_model.add_notification({ get_device_name(dev).first + " Disconnected\n",
                         0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
+                    viewer_model.pc.depth_stream_active = false;
+
                     //Remove from devices
 
                     auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
