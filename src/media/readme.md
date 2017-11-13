@@ -201,16 +201,42 @@ The following table depicts the Topics that are supported by RealSense file form
     <td>Additional information of a single imu frame. Many message to a single topic</td>
   </tr>
   <tr>
-    <td>6DOF Data</td>
-    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/6dof/data</td>
-    <td>realsense_msgs/6DoF (TBD)</td>
-    <td>Six DOF data</td>
+    <td>Pose Data</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/pose/{transform, accel, twist}/data</td>
+    <td>
+        <table>
+               <tbody>
+                    <tr>
+                        <td>pose/transform
+                        <td><a href="http://docs.ros.org/jade/api/geometry_msgs/html/msg/Transform.html">geometry_msgs/Transform Message</a></tr>
+                    <tr>
+                        <td>pose/accel
+                        <td><a href="http://docs.ros.org/jade/api/geometry_msgs/html/msg/Accel.html">geometry_msgs/Accel Message</a></tr>
+                    <tr>
+                        <td>pose/twist
+                        <td><a href="http://docs.ros.org/jade/api/geometry_msgs/html/msg/Twist.html">geometry_msgs/Twist Message</a></tr>
+        </table>
+    </td>
+    <td>The Pose data is split into 3 messages (each under different topic <sup><a href="#1-pose-frames">[1]</a></sup>):</br>
+        <table>
+               <tbody>
+                    <tr>
+                        <td>pose/transform
+                        <td>Translation and rotation of the object</tr>
+                    <tr>
+                        <td>pose/accel
+                        <td>Angular and linear acceleration of the object</tr>
+                    <tr>
+                        <td>pose/twist
+                        <td>Angular and linear velocity of the object</tr>
+        </table>
+    </td>
   </tr>
   <tr>
-    <td>6DOF Information</td>
-    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/6dof/metadata</td>
+    <td>Pose Information</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/pose/metadata</td>
     <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue</a></td>
-    <td>Additional information of a single image. Many message to a single topic</td>
+    <td>Additional information of a single pose frame. Many message to a single topic</td>
   </tr>
   <tr>
     <td>Occupancy Map Data</td>
@@ -249,6 +275,16 @@ The following table depicts the Topics that are supported by RealSense file form
     <td>Additinal information of any kind. Can be useful for application that require additional metadata on the recorded file (such as program name, version etc...)</td>
   </tr>
 </table>
+
+##### [1] Pose frames
+
+As you might have noticed, pose data is split into three messages, each under a different topic.
+The reasons for this choice is so that we expose only standard ros messages instead of creating a proprietary message. 
+This choice allows any common tool that uses rosbag to read the content of a pose frame (and most of the rest of the messages we save).
+
+When reading a file using the SDK's playback, the reader will only iterate over `pose/transform` messages and for each of those messages, will match the corresponding `pose/accel` and `pose/twist` message to form a single pose frame.
+This matching of messages adds an overhead of searching the file for a single message, each frame. 
+But, this overhead should have minor performance impact even for huge files since it is merely a tree search (See [ros/ros_comm: PR #1223 - Performance improvement for lower/upper bound](https://github.com/ros/ros_comm/pull/1223))
 
 
 ##### Messages

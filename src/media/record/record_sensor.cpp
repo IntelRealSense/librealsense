@@ -44,7 +44,15 @@ void librealsense::record_sensor::open(const stream_profiles& requests)
         std::shared_ptr<stream_profile_interface> snapshot;
         request->create_snapshot(snapshot);
         //TODO: handle non video profiles
-        m_device_record_snapshot_handler(RS2_EXTENSION_VIDEO_PROFILE, std::dynamic_pointer_cast<extension_snapshot>(snapshot), [this](const std::string& err) { stop_with_error(err); });
+        rs2_extension extension_type;
+        if (Is<librealsense::video_stream_profile_interface>(request))
+            extension_type = RS2_EXTENSION_VIDEO_PROFILE;
+        else if (Is<librealsense::motion_stream_profile_interface>(request))
+            extension_type = RS2_EXTENSION_MOTION_PROFILE;
+        else
+            throw io_exception("Unsupported stream profile");
+     
+        m_device_record_snapshot_handler(extension_type, std::dynamic_pointer_cast<extension_snapshot>(snapshot), [this](const std::string& err) { stop_with_error(err); });
     }
 }
 

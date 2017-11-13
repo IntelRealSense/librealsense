@@ -5,20 +5,13 @@
 
 #include <string>
 #include <memory>
+#include <iomanip>
 #include "core/debug.h"
 #include "core/serialization.h"
 #include "archive.h"
 #include "types.h"
 #include "stream.h"
 #include "rosbag/bag.h"
-#include "std_msgs/UInt32.h"
-#include "std_msgs/Float32.h"
-#include "std_msgs/String.h"
-#include "diagnostic_msgs/KeyValue.h"
-#include "sensor_msgs/Image.h"
-#include "sensor_msgs/Imu.h"
-#include "realsense_msgs/StreamInfo.h"
-#include "sensor_msgs/CameraInfo.h"
 #include "ros_file_format.h"
 
 namespace librealsense
@@ -221,19 +214,85 @@ namespace librealsense
             write_additional_frame_messages(stream_id, timestamp, frame);
         }
 
-        void write_pose_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, const frame_holder& frame)
+        inline geometry_msgs::Vector3 to_vector3(const float3& f)
         {
-            throw not_implemented_exception("TODO: define pose message and write to file");
+            geometry_msgs::Vector3 v;
+            v.x = f.x;
+            v.y = f.y;
+            v.z = f.z;
+            return v;
         }
 
-        void write_streaming_info(nanoseconds timestamp, const sensor_identifier& sensor_id, std::shared_ptr<video_stream_profile_interface> profile)
+        inline geometry_msgs::Quaternion to_quaternion(const float4& f)
+        {
+            geometry_msgs::Quaternion q;
+            q.x = f.x;
+            q.y = f.y;
+            q.z = f.z;
+            q.w = f.w;
+            return q;
+        }
+
+        void write_pose_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, const frame_holder& frame)
+        {
+            auto pose = As<librealsense::pose_frame>(frame.frame);
+            if (!frame)
+            {
+                throw io_exception("Null frame passed to write_motion_frame");
+            }
+            auto rotation = pose->get_rotation();
+
+            geometry_msgs::Transform transform;
+            geometry_msgs::Accel accel;
+            geometry_msgs::Twist twist;
+
+            transform.rotation = to_quaternion(pose->get_rotation());
+            transform.translation = to_vector3(pose->get_translation());
+            accel.angular = to_vector3(pose->get_angular_acceleration());
+            accel.linear = to_vector3(pose->get_acceleration());
+            twist.angular = to_vector3(pose->get_angular_velocity());
+            twist.linear = to_vector3(pose->get_velocity());
+
+            std::string transform_topic = ros_topic::pose_transform_topic(stream_id);
+            std::string accel_topic = ros_topic::pose_accel_topic(stream_id);
+            std::string twist_topic = ros_topic::pose_twist_topic(stream_id);
+
+            //Write the the pose frame as 3 seperate messages (each with different topic)
+            write_message(transform_topic, timestamp, transform);
+            write_message(accel_topic, timestamp, accel);
+            write_message(twist_topic, timestamp, twist);
+
+            // Write the pose confidence as metadata for the pose frame
+            std::string md_topic = ros_topic::frame_metadata_topic(stream_id);
+            
+            diagnostic_msgs::KeyValue confidence_msg;
+            confidence_msg.key = "confidence"; //TODO: use constant
+            confidence_msg.value = std::to_string(pose->get_confidence());
+            write_message(md_topic, timestamp, confidence_msg);
+
+            //Write frame's timestamp as metadata
+            diagnostic_msgs::KeyValue frame_timestamp_msg;
+            frame_timestamp_msg.key = "frame_timestamp"; //TODO: use constant
+            frame_timestamp_msg.value = to_string() << std::hexfloat << pose->get_frame_timestamp();
+            write_message(md_topic, timestamp, frame_timestamp_msg);
+            
+            // Write the rest of the frame metadata and stream extrinsics
+            write_additional_frame_messages(stream_id, timestamp, frame);
+        }
+
+        void write_stream_info(nanoseconds timestamp, const sensor_identifier& sensor_id, std::shared_ptr<stream_profile_interface> profile)
         {
             realsense_msgs::StreamInfo stream_info_msg;
             stream_info_msg.is_recommended = profile->is_default();
             convert(profile->get_format(), stream_info_msg.encoding);
             stream_info_msg.fps = profile->get_framerate();
             write_message(ros_topic::stream_info_topic({ sensor_id.device_index, sensor_id.sensor_index, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) }), timestamp, stream_info_msg);
+        }
 
+        void write_streaming_info(nanoseconds timestamp, const sensor_identifier& sensor_id, std::shared_ptr<video_stream_profile_interface> profile)
+        {
+            write_stream_info(timestamp, sensor_id, profile);
+            
             sensor_msgs::CameraInfo camera_info_msg;
             camera_info_msg.width = profile->get_width();
             camera_info_msg.height = profile->get_height();
@@ -255,6 +314,28 @@ namespace librealsense
             write_message(ros_topic::video_stream_info_topic({ sensor_id.device_index, sensor_id.sensor_index, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) }), timestamp, camera_info_msg);
         }
 
+        void write_streaming_info(nanoseconds timestamp, const sensor_identifier& sensor_id, std::shared_ptr<motion_stream_profile_interface> profile)
+        {
+            write_stream_info(timestamp, sensor_id, profile);
+
+            realsense_msgs::ImuIntrinsic motion_info_msg;
+            
+            rs2_motion_device_intrinsic intrinsics{};
+            try {
+                intrinsics = profile->get_intrinsics();
+            }
+            catch (...)
+            {
+                LOG_ERROR("Error trying to get intrinsc data for stream " << profile->get_stream_type() << ", " << profile->get_stream_index());
+            }
+            //Writing empty in case of failure
+            std::copy(&intrinsics.data[0][0], &intrinsics.data[0][0] + motion_info_msg.data.size(), std::begin(motion_info_msg.data));
+            std::copy(std::begin(intrinsics.bias_variances) , std::end(intrinsics.bias_variances), std::begin(motion_info_msg.bias_variances));
+            std::copy(std::begin(intrinsics.noise_variances), std::end(intrinsics.noise_variances), std::begin(motion_info_msg.noise_variances));
+
+            std::string topic = ros_topic::imu_intrinsic_topic({ sensor_id.device_index, sensor_id.sensor_index, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) });
+            write_message(topic, timestamp, motion_info_msg);
+        }
         void write_extension_snapshot(uint32_t device_id, const nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
         {
             const auto ignored = 0u;
@@ -320,6 +401,12 @@ namespace librealsense
             case RS2_EXTENSION_VIDEO_PROFILE:
             {
                 auto profile = SnapshotAs<RS2_EXTENSION_VIDEO_PROFILE>(snapshot);
+                write_streaming_info(timestamp, { device_id, sensor_id }, profile);
+                break;
+            }
+            case RS2_EXTENSION_MOTION_PROFILE:
+            {
+                auto profile = SnapshotAs<RS2_EXTENSION_MOTION_PROFILE>(snapshot);
                 write_streaming_info(timestamp, { device_id, sensor_id }, profile);
                 break;
             }

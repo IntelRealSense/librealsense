@@ -6,7 +6,19 @@
 #include <chrono>
 #include "librealsense2/rs.h"
 #include "sensor_msgs/image_encodings.h"
+#include "sensor_msgs/Imu.h"
+#include "sensor_msgs/Image.h"
+#include "diagnostic_msgs/KeyValue.h"
+#include "std_msgs/UInt32.h"
+#include "std_msgs/Float32.h"
+#include "std_msgs/String.h"
+#include "realsense_msgs/StreamInfo.h"
+#include "realsense_msgs/ImuIntrinsic.h"
+#include "realsense_legacy_msgs/legacy_headers.h"
+#include "sensor_msgs/CameraInfo.h"
 #include "geometry_msgs/Transform.h"
+#include "geometry_msgs/Twist.h"
+#include "geometry_msgs/Accel.h"
 #include "metadata-parser.h"
 #include "option.h"
 #include "rosbag/structures.h"
@@ -224,7 +236,7 @@ namespace librealsense
 
         static std::string data_msg_types()
         {
-            return "image|imu";
+            return "image|imu|pose/transform";
         }
 
         static std::string stream_prefix(const device_serializer::stream_identifier& stream_id)
@@ -247,6 +259,7 @@ namespace librealsense
     class FrameQuery : public RegexTopicQuery
     {
     public:
+        //TODO: Improve readability and robustness of expressions
         FrameQuery() : RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/.*_\d+)RRR" << "/(" << data_msg_types() << ")/data") {}
     };
 
@@ -255,7 +268,7 @@ namespace librealsense
     public:
         StreamQuery(const device_serializer::stream_identifier& stream_id) :
             RegexTopicQuery(to_string() << stream_prefix(stream_id)
-                << "/(" << RegexTopicQuery::data_msg_types() << ")/data")
+                << "/(" << data_msg_types() << ")/data")
         {
         }
     };
@@ -367,18 +380,35 @@ namespace librealsense
             return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", rs2_option_to_string(option_type), "description" });
         }
 
+        static std::string pose_transform_topic(const device_serializer::stream_identifier& stream_id)
+        {
+            return create_from({ stream_full_prefix(stream_id), rs2_stream_to_string(stream_id.stream_type), "transform", "data" });
+        }
+
+        static std::string pose_accel_topic(const device_serializer::stream_identifier& stream_id)
+        {
+            return create_from({ stream_full_prefix(stream_id), rs2_stream_to_string(stream_id.stream_type), "accel", "data" });
+        }
+        static std::string pose_twist_topic(const device_serializer::stream_identifier& stream_id)
+        {
+            return create_from({ stream_full_prefix(stream_id), rs2_stream_to_string(stream_id.stream_type),"twist",  "data" });
+        }
+
         static std::string frame_data_topic(const device_serializer::stream_identifier& stream_id)
         {
             return create_from({ stream_full_prefix(stream_id), rs2_stream_to_string(stream_id.stream_type), "data" });
         }
+
         static std::string frame_metadata_topic(const device_serializer::stream_identifier& stream_id)
         {
             return create_from({ stream_full_prefix(stream_id), rs2_stream_to_string(stream_id.stream_type), "metadata" });
         }
+
         static std::string stream_extrinsic_topic(const device_serializer::stream_identifier& stream_id, uint32_t ref_id)
         {
             return create_from({ stream_full_prefix(stream_id), "tf", std::to_string(ref_id) });
         }
+
         static std::string  additional_info_topic()
         {
             return create_from({ "additional_info" });
@@ -639,7 +669,6 @@ namespace librealsense
         {
             stream_descriptor retval{};
             auto starts_with = [source](const std::string& s) {return source.find(s) == 0; };
-            int ind = source.find(FISHEYE);
             std::string type_str;
             if (starts_with(DEPTH))
             {
