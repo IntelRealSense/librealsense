@@ -18,7 +18,7 @@ namespace librealsense
     static float4 toFloat4(perc::TrackingData::Quaternion q);
 
 
-    class tm2_sensor : public sensor_base, public video_sensor_interface, public TrackingDevice::Listener
+    class tm2_sensor : public sensor_base, public video_sensor_interface, public motion_sensor_interface, public TrackingDevice::Listener
     {
     public:
         tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev)
@@ -54,6 +54,10 @@ namespace librealsense
                 profile->set_format(convertTm2PixelFormat(tm_profile.profile.pixelFormat));
                 profile->set_framerate(p.fps);
                 profile->set_unique_id(uid++); //TODO - is this unique??
+                if (tm_profile.sensorIndex == 0)
+                {
+                    profile->make_default();
+                }
 
                 results.push_back(profile);
 
@@ -78,7 +82,10 @@ namespace librealsense
                 profile->set_format(format);
                 profile->set_framerate(tm_profile.fps);
                 profile->set_unique_id(uid++);              
-
+                if (tm_profile.sensorIndex == 0)
+                {
+                    profile->make_default();
+                }
                 results.push_back(profile);
             }
 
@@ -92,7 +99,11 @@ namespace librealsense
                 profile->set_stream_index(tm_profile.sensorIndex + 1); // for nice presentation by the viewer - add 1 to stream index
                 profile->set_format(format);
                 profile->set_framerate(tm_profile.fps);
-                profile->set_unique_id(uid++);             
+                profile->set_unique_id(uid++);  
+                if (tm_profile.sensorIndex == 0)
+                {
+                    profile->make_default();
+                }
 
                 results.push_back(profile);
             }
@@ -114,7 +125,11 @@ namespace librealsense
                 profile->set_stream_index(static_cast<uint32_t>(tm_profile.profileType) + 1); 
                 profile->set_format(format);
                 profile->set_framerate(fps);
-                profile->set_unique_id(uid++);              
+                profile->set_unique_id(uid++);  
+                if (tm_profile.profileType == SixDofProfile0)
+                {
+                    profile->make_default();
+                }
 
                 results.push_back(profile);
 
@@ -266,6 +281,23 @@ namespace librealsense
             result.fy       = tm_intrinsics.fy;
             result.model    = convertTm2CameraModel(tm_intrinsics.distortionModel);
             std::copy(std::begin(tm_intrinsics.coeffs), std::end(tm_intrinsics.coeffs), std::begin(result.coeffs));
+            return result;
+        }
+
+        rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) const override
+        {
+            rs2_motion_device_intrinsic result;
+            TrackingData::MotionIntrinsics tm_intrinsics;
+            //int stream_index = profile.index - 1; //TODO - need stream profile here, not stream type!
+            //    auto status = _tm_dev->GetMotionModuleIntrinsics(tm_intrinsics, SET_SENSOR_ID(SensorType::, stream_index));
+            //             if (status != Status::SUCCESS)
+            //             {
+            //                 throw io_exception("Failed to read TM2 intrinsics");
+            //             }
+            std::memcpy(result.data, tm_intrinsics.data, sizeof(result.data));
+            std::copy(std::begin(tm_intrinsics.noiseVariances), std::end(tm_intrinsics.noiseVariances), std::begin(result.noise_variances));
+            std::copy(std::begin(tm_intrinsics.biasVariances), std::end(tm_intrinsics.biasVariances), std::begin(result.bias_variances));
+            
             return result;
         }
 
