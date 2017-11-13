@@ -30,13 +30,19 @@ namespace librealsense
 			return _devices;
 		}
 
-		~tm2_context() { _t.join(); }
+        void dispose()
+        {
+            _is_disposed = true;
+        }
+
+		~tm2_context() { dispose();  _t.join(); }
 	private:
 		friend class connect_disconnect_listener;
 		std::shared_ptr<perc::TrackingManager::Listener> _listener;
 		std::shared_ptr<perc::TrackingManager> _manager;
 		std::vector<perc::TrackingDevice*> _devices;
 		std::thread _t;
+        std::atomic_bool _is_disposed;
 	};
 
 	class connect_disconnect_listener : public TrackingManager::Listener
@@ -73,7 +79,7 @@ namespace librealsense
 	tm2_context::tm2_context()
 		: _t([this]() {
 			while (!_manager);
-            while (true) { _manager->handleEvents(); std::this_thread::sleep_for(std::chrono::microseconds(100)); }
+            while (!_is_disposed) { _manager->handleEvents(); std::this_thread::sleep_for(std::chrono::microseconds(100)); }
 		})
 	{
 		_listener = std::make_shared<connect_disconnect_listener>(this);

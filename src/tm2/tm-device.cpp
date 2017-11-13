@@ -175,7 +175,8 @@ namespace librealsense
                         // need to set both L & R streams profile, due to TM2 FW limitation
                         int pair_stream_index = (stream_index % 2) == 0 ? stream_index + 1 : stream_index - 1;
                         auto tm_profile_pair = _tm_supported_profiles.video[pair_stream_index];
-                        _tm_active_profiles.set(tm_profile_pair, true, true);
+                        // no need to get the pair stream output, but make sure not to disable a previously enabled stream
+                        _tm_active_profiles.set(tm_profile_pair, true, _tm_active_profiles.video[pair_stream_index].outputEnabled);
                     }
                     break;
                 }
@@ -337,7 +338,7 @@ namespace librealsense
             frame_additional_data additional_data(ts_ms.count(),
                                                   tm_frame.frameId,
                                                   system_ts_ms.count(),
-                                                  0, //TODO - need to add metadata
+                                                  0, //TODO - need to add metadata - just actual exposure
                                                   nullptr);
 
             // Find the frame stream profile
@@ -535,6 +536,12 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, to_string() << info.serialNumber);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, to_string() << info.fw.major << "." << info.fw.minor << "." << info.fw.patch << "." << info.fw.build);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, to_string() << info.usbDescriptor.idProduct);
+        std::string device_path =
+            std::string(" pid:") + std::to_string(info.usbDescriptor.idProduct) +
+            std::string(" vid:") + std::to_string(info.usbDescriptor.idVendor) +
+            std::string(" bus:") + std::to_string(info.usbDescriptor.bus) +
+            std::string(" port:") + std::to_string(info.usbDescriptor.port);
+        register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, device_path);
 
         add_sensor(std::make_shared<tm2_sensor>(this, _dev)); 
 
