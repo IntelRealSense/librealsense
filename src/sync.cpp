@@ -190,7 +190,7 @@ namespace librealsense
         std::vector<librealsense::matcher*> frames_arrived_matchers;
         std::vector<librealsense::matcher*> synced_frames;
         std::vector<librealsense::matcher*> missing_streams;
-        
+
         do
         {
             auto old_frames = false;
@@ -265,8 +265,6 @@ namespace librealsense
                 {
                     frame_holder frame;
                     _frames_queue[index].dequeue(&frame);
-
-                    
 
                     match.push_back(std::move(frame));
                 }

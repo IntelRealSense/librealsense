@@ -755,7 +755,7 @@ namespace rs2
             return last;
         }
 
-        texture_buffer() : last_queue(1), texture(), 
+        texture_buffer() : last_queue(1), texture(),
             colorize(std::make_shared<colorizer>()) {}
 
         GLuint get_gl_handle() const { return texture; }

@@ -615,9 +615,9 @@ namespace rs2
             owner->dev, *owner->s, &owner->options_invalidated, owner, block, error_message);
     }
 
-    subdevice_model::subdevice_model(device& dev, 
+    subdevice_model::subdevice_model(device& dev,
                                      std::shared_ptr<sensor> s, std::string& error_message)
-        : s(s), dev(dev), ui(), last_valid_ui(), 
+        : s(s), dev(dev), ui(), last_valid_ui(),
           streaming(false), _pause(false), depth_colorizer(std::make_shared<rs2::colorizer>())
     {
         try

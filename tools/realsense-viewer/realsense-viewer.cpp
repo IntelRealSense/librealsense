@@ -126,10 +126,9 @@ void refresh_devices(std::mutex& m,
                         0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
                     //Remove from devices
-
                     auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
                         [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(dev); });
-                    
+
                     if (dev_model_itr != end(device_models))
                     {
                         for (auto&& s : dev_model_itr->subdevices)
@@ -143,7 +142,6 @@ void refresh_devices(std::mutex& m,
 
                     dev_itr = current_connected_devices.erase(dev_itr);
                     continue;
-                    
                 }
                 ++dev_itr;
             }

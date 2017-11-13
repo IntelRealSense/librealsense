@@ -71,9 +71,9 @@ namespace rs2
 
             void render(ux_window& win);
 
-            void visible(bool is_visible) 
-            { 
-                std::lock_guard<std::mutex> lock(_m); 
+            void visible(bool is_visible)
+            {
+                std::lock_guard<std::mutex> lock(_m);
                 _visible = is_visible;
             }
 

@@ -29,7 +29,7 @@ namespace rs2
 
         using callback_type = std::function<void(
             const std::vector<rs2::float3>& points,
-            const plane p, 
+            const plane p,
             const rs2::region_of_interest roi,
             const float baseline_mm,
             const float focal_length_pixels,
