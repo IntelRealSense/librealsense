@@ -16,16 +16,20 @@ int main(int argc, const char * argv[]) try
     //       Metrics Definitions
     // ===============================
     metric z_accuracy = model.make_metric(
-                "Z Accuracy", -100, 100, true, "%",
+                "Z Accuracy", -10, 10, true, "%",
                 "Z Accuracy given Ground Truth\n"
-                "Performed on the depth image in the ROI\n"
+                "Realign the Plane Fit with GT plane\n"
                 "Calculate the depth-errors map\n"
-                "i.e., GT-aligned Z values – GT (signed).\n"
-                "Calculate the median of the depth-errors\n");
+                "GT-aligned Z values - GT (signed).\n"
+                "Calculate the median of the depth-errors\n"
+                "Positive value indicates the Plane Fit\n"
+                "is further than the Ground Truth\n"
+                "Negative value indicates the Plane Fit\n"
+                "is in front of Ground Truth\n");
 
-    metric rms_z_err = model.make_metric(
-                "Z-Error RMS", 0.f, 5.f, true, "(mm)",
-                "Z-Error RMS .\n"
+    metric plane_fit_rms_error = model.make_metric(
+                "Plane Fit RMS Error", 0.f, 5.f, true, "(mm)",
+                "Plane Fit RMS Error .\n"
                 "This metric calculates RMS of Z-Error (Spatial Noise)\n"
                 "and is calculated as follows:\n"
                 "Zi - depth range of i-th pixel (mm)\n"
@@ -34,9 +38,9 @@ int main(int argc, const char * argv[]) try
                 "RMS = SQRT((SUM(Zi-Zpi)^2)/n)\n"
                  "             i=1    ");
 
-    metric rms_sub_pixel = model.make_metric(
-                 "Subpixel RMS", 0.f, 1.f, true, "(pixel)",
-                 "Normalized RMS .\n"
+    metric sub_pixel_rms_error = model.make_metric(
+                 "Subpixel RMS Error", 0.f, 1.f, true, "(pixel)",
+                 "Subpixel RMS Error .\n"
                  "This metric provides the subpixel accuracy\n"
                  "and is calculated as follows:\n"
                  "Zi - depth range of i-th pixel (mm)\n"
@@ -50,7 +54,7 @@ int main(int argc, const char * argv[]) try
 
     metric fill = model.make_metric(
                   "Fill-Rate", 0, 100, false, "%",
-                  "Fill Rate\n"
+                  "Fill Rate.\n"
                   "Percentage of pixels with valid depth\n"
                   "values out of all pixels within the ROI\n");
 
@@ -131,12 +135,12 @@ int main(int argc, const char * argv[]) try
             total_sq_disparity_diff += disparity*disparity;
         }
         auto rms_subpixel_val = static_cast<float>(std::sqrt(total_sq_disparity_diff / disparities.size()));
-        rms_sub_pixel->add_value(rms_subpixel_val);
+        sub_pixel_rms_error->add_value(rms_subpixel_val);
 
-        // calculate RMS of Z-error (Spatial Noise) mm
-        double z_error_sqr_sum = std::inner_product(distances.begin(), distances.end(), distances.begin(), 0.);
-        auto rms_error_val = static_cast<float>(std::sqrt(z_error_sqr_sum / distances.size()));
-        rms_z_err->add_value(rms_error_val);
+        // calculate Plane Fit RMS  (Spatial Noise) mm
+        double plane_fit_err_sqr_sum = std::inner_product(distances.begin(), distances.end(), distances.begin(), 0.);
+        auto rms_error_val = static_cast<float>(std::sqrt(plane_fit_err_sqr_sum / distances.size()));
+        plane_fit_rms_error->add_value(rms_error_val);
     });
 
     // ===============================
