@@ -4,12 +4,6 @@
 # Then use with find_package(libtm) in your project
 
 
-#set target architeture variable 
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-	set(TARGET_ARCH x64)
-else()
-	set(TARGET_ARCH win32)
-endif()
 #add windows/linux SUFFIX for libraries
 if(WIN32)
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib" ".dll")
@@ -79,7 +73,13 @@ if (LIBTM_FOUND AND NOT TARGET libtm)
   	target_include_directories(libtm INTERFACE ${LIBTM_INCLUDE_DIR})  	
   	target_link_libraries(libtm INTERFACE optimized ${LIBTM_LIBRARY} ${INFRA_LIBRARY} debug ${LIBTM_LIBRARY_DEBUG} ${INFRA_LIBRARY_DEBUG})
 	if (WIN32)
-		# Force-link to libusb on Windows
+        #set target architeture variable 
+        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	        set(TARGET_ARCH x64)
+        else()
+	        set(TARGET_ARCH win32)
+        endif()
+		# Force-link to libusb on Windows 
 		target_link_libraries(libtm INTERFACE ${LIBTM_DIR}/../3rdparty/win/libusb/bin/${TARGET_ARCH}/libusb-1.0.lib)
 	endif()
 	mark_as_advanced(LIBTM_DIR LIBTM_LIBRARY LIBTM_INCLUDE_DIR)
