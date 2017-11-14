@@ -563,7 +563,8 @@ namespace rs2
         float get_output_height() const { return (is_output_collapsed ? default_log_h : 20); }
 
         viewer_model()
-            :pc(*this)
+            :pc(*this),
+             synchronization_enable(true)
         {
             reset_camera();
             rs2_error* e = nullptr;
@@ -572,8 +573,8 @@ namespace rs2
 
         ~viewer_model()
         {
-            streams.clear();
             pc.stop();
+            streams.clear();
         }
         void upload_frame(frame&& f);
 
@@ -626,7 +627,7 @@ namespace rs2
 
         bool draw_frustrum = true;
         bool support_non_syncronized_mode = true;
-        bool syncronize = true;
+        std::atomic<bool> synchronization_enable;
 
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;

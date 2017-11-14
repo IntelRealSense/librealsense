@@ -23,7 +23,7 @@ namespace rs2
             _viewer_model.allow_3d_source_change = false;
             _viewer_model.allow_stream_close = false;
             _viewer_model.draw_plane = true;
-            _viewer_model.syncronize = false;
+            _viewer_model.synchronization_enable = false;
             _viewer_model.support_non_syncronized_mode = false; //pipeline outputs only syncronized frameset
         }
 

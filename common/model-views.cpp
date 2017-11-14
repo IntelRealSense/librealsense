@@ -1119,7 +1119,7 @@ namespace rs2
         try {
             s->start([&](frame f) {
                 auto index = f.get_profile().unique_id();
-                if (viewer.syncronize)
+                if (viewer.synchronization_enable)
                 {
                     if (index == viewer.selected_depth_source_uid || index ==  viewer.selected_tex_source_uid)
                         viewer.s(f);
@@ -1738,13 +1738,13 @@ namespace rs2
 
         if(support_non_syncronized_mode)
         {
-            if (syncronize)
+            if (synchronization_enable)
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
                 if (ImGui::Button(u8"\uf09c", { 24, top_bar_height }))
                 {
-                    syncronize = false;
+                    synchronization_enable = false;
                 }
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Disable syncronization between the pointcloud and the texture");
@@ -1754,7 +1754,7 @@ namespace rs2
             {
                 if (ImGui::Button(u8"\uf023", { 24, top_bar_height }))
                 {
-                    syncronize = true;
+                    synchronization_enable = true;
                 }
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Keep the pointcloud and the texture sycronized");
@@ -2621,7 +2621,7 @@ namespace rs2
         std::vector<frame> results;
 
 
-        if(viewer.syncronize)
+        if(viewer.synchronization_enable)
         {
             if (auto composite = f.as<rs2::frameset>())
             {
@@ -2672,7 +2672,7 @@ namespace rs2
             {
                 try
                 {
-                    if(viewer.syncronize)
+                    if(viewer.synchronization_enable)
                     {
                         frameset frames;
                         if (viewer.syncer_queue.poll_for_frame(&frames))

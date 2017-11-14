@@ -64,6 +64,31 @@ namespace librealsense
         return{ _callback_inflight.allocate(), &_callback_inflight };
     }
 
+    std::string matcher::get_name() const
+    {
+        return _name;
+    }
+
+    bool matcher::get_active() const
+    {
+        return _active;
+    }
+
+    void matcher::set_active(const bool active)
+    {
+        _active = active;
+    }
+
+    const std::vector<stream_id>& matcher::get_streams() const
+    {
+        return _streams_id;
+    }
+
+    const std::vector<rs2_stream>& matcher::get_streams_types() const
+    {
+        return _streams_type;
+    }
+
     matcher::~matcher()
     {
         _callback_inflight.stop_allocation();
@@ -78,9 +103,11 @@ namespace librealsense
     }
 
     identity_matcher::identity_matcher(stream_id stream, rs2_stream stream_type)
-        :matcher({stream}),
-          _name("I " + std::string(rs2_stream_to_string(stream_type))),
-         _stream_type {stream_type}{}
+        :matcher({stream})
+    {
+        _streams_type = {stream_type};
+        _name = "I " + std::string(rs2_stream_to_string(stream_type));
+    }
 
     void identity_matcher::dispatch(frame_holder f, syncronization_environment env)
     {
@@ -91,22 +118,7 @@ namespace librealsense
         sync(std::move(f), env);
     }
 
-    std::string identity_matcher::get_name() const
-    {
-       return _name;
-    }
-
-
-    const std::vector<stream_id>& identity_matcher::get_streams() const
-    {
-        return  _streams_id;
-    }
-
-    const std::vector<rs2_stream>& identity_matcher::get_streams_types() const
-    {
-        return  _stream_type;
-    }
-    composite_matcher::composite_matcher(std::vector<std::shared_ptr<matcher>> matchers, std::string name)
+    std::string create_composite_name(const std::vector<std::shared_ptr<matcher>>& matchers, std::string name)
     {
         std::stringstream s;
         s<<"("<<name;
@@ -114,6 +126,15 @@ namespace librealsense
         for (auto&& matcher : matchers)
         {
             s<<matcher->get_name()<<" ";
+        }
+        s<<")";
+        return s.str();
+    }
+
+    composite_matcher::composite_matcher(std::vector<std::shared_ptr<matcher>> matchers, std::string name)
+    {
+        for (auto&& matcher : matchers)
+        {
             for (auto&& stream : matcher->get_streams())
             {
                 matcher->set_callback([&](frame_holder f, syncronization_environment env)
@@ -121,22 +142,15 @@ namespace librealsense
                     sync(std::move(f), env);
                 });
                 _matchers[stream] = matcher;
-                _streams.push_back(stream);
+                _streams_id.push_back(stream);
             }
             for (auto&& stream : matcher->get_streams_types())
             {
                 _streams_type.push_back(stream);
             }
         }
-        s<<")";
-        _name = s.str();
 
-    }
-
-
-    std::string composite_matcher::get_name() const
-    {
-        return _name;
+        _name = create_composite_name(matchers, name);
     }
 
     void composite_matcher::dispatch(frame_holder f, syncronization_environment env)
@@ -149,7 +163,6 @@ namespace librealsense
         auto matcher = find_matcher(f);
         update_last_arrived(f, matcher.get());
         matcher->dispatch(std::move(f), env);
-
     }
 
     std::shared_ptr<matcher> composite_matcher::find_matcher(const frame_holder& frame)
@@ -195,7 +208,7 @@ namespace librealsense
                             _frames_queue.erase(_matchers[stream].get());
                         }
                         _matchers[stream] = matcher;
-                        _streams.push_back(stream);
+                        _streams_id.push_back(stream);
 
                     }
                     for (auto stream : matcher->get_streams_types())
@@ -229,7 +242,7 @@ namespace librealsense
                     _frames_queue.erase(_matchers[stream_id].get());
                 }
                  _matchers[stream_id] = std::make_shared<identity_matcher>(stream_id, stream_type);
-                _streams.push_back(stream_id);
+                _streams_id.push_back(stream_id);
                 _streams_type.push_back(stream_type);
                 matcher = _matchers[stream_id];
 
@@ -374,16 +387,6 @@ namespace librealsense
                 }
             }
         } while (synced_frames.size() > 0);
-    }
-
-    const std::vector<stream_id>& composite_matcher::get_streams() const
-    {
-        return _streams;
-    }
-
-    const std::vector<rs2_stream>& composite_matcher::get_streams_types() const
-    {
-        return _streams_type;
     }
 
     frame_number_composite_matcher::frame_number_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
