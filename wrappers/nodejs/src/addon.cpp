@@ -3,6 +3,7 @@
 // that can be found in the LICENSE file.
 
 #include <librealsense2/rs.h>
+#include <librealsense2/h/rs_internal.h>
 #include <librealsense2/h/rs_pipeline.h>
 #include <librealsense2/hpp/rs_types.hpp>
 #include <nan.h>
@@ -2332,6 +2333,11 @@ Nan::Persistent<v8::Function> RSDeviceList::constructor_;
 
 class RSContext : public Nan::ObjectWrap {
  public:
+  enum ContextType {
+    kNormal = 0,
+    kRecording,
+    kPlayback,
+  };
   static void Init(v8::Local<v8::Object> exports) {
     v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
     tpl->SetClassName(Nan::New("RSContext").ToLocalChecked());
@@ -2369,7 +2375,8 @@ class RSContext : public Nan::ObjectWrap {
   }
 
  private:
-  RSContext() : ctx_(nullptr), error_(nullptr) {}
+  explicit RSContext(ContextType type = kNormal) : ctx_(nullptr),
+      error_(nullptr), type_(type), mode_(RS2_RECORDING_MODE_BLANK_FRAMES) {}
 
   ~RSContext() {
     DestroyMe();
@@ -2385,20 +2392,52 @@ class RSContext : public Nan::ObjectWrap {
   }
 
   static void New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-    if (info.IsConstructCall()) {
-      RSContext* obj = new RSContext();
-      obj->Wrap(info.This());
-      info.GetReturnValue().Set(info.This());
+    if (!info.IsConstructCall())
+      return;
+
+    ContextType type = kNormal;
+    if (info.Length()) {
+      v8::String::Utf8Value type_str(info[0]->ToString());
+      std::string std_type_str(*type_str);
+      if (!std_type_str.compare("recording"))
+        type = kRecording;
+      else if (!std_type_str.compare("playback"))
+        type = kPlayback;
     }
+    RSContext* obj = new RSContext(type);
+    if (type == kRecording || type == kPlayback) {
+      v8::String::Utf8Value file(info[1]->ToString());
+      v8::String::Utf8Value section(info[2]->ToString());
+      obj->file_name_ = std::string(*file);
+      obj->section_ = std::string(*section);
+    }
+    if (type == kRecording)
+      obj->mode_ = static_cast<rs2_recording_mode>(info[3]->IntegerValue());
+    obj->Wrap(info.This());
+    info.GetReturnValue().Set(info.This());
   }
 
   static NAN_METHOD(Create) {
     MainThreadCallback::Init();
+    info.GetReturnValue().Set(Nan::Undefined());
     auto me = Nan::ObjectWrap::Unwrap<RSContext>(info.Holder());
-    if (me) {
-      me->ctx_ = rs2_create_context(RS2_API_VERSION, &me->error_);
+    if (!me)
+      return;
+
+    switch (me->type_) {
+      case kRecording:
+        me->ctx_ = rs2_create_recording_context(RS2_API_VERSION,
+            me->file_name_.c_str(), me->section_.c_str(), me->mode_,
+            &me->error_);
+        break;
+      case kPlayback:
+        me->ctx_ = rs2_create_mock_context(RS2_API_VERSION,
+            me->file_name_.c_str(), me->section_.c_str(), &me->error_);
+        break;
+      default:
+        me->ctx_ = rs2_create_context(RS2_API_VERSION, &me->error_);
+        break;
     }
-    info.GetReturnValue().Set(Nan::True());
   }
 
   static NAN_METHOD(Destroy) {
@@ -2467,6 +2506,10 @@ class RSContext : public Nan::ObjectWrap {
   rs2_context* ctx_;
   rs2_error* error_;
   std::string device_changed_callback_name_;
+  ContextType type_;
+  std::string file_name_;
+  std::string section_;
+  rs2_recording_mode mode_;
   friend class DevicesChangedCallbackInfo;
   friend class RSPipeline;
   friend class RSDeviceHub;
@@ -3553,6 +3596,12 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK);
   _FORCE_SET_ENUM(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME);
   _FORCE_SET_ENUM(RS2_TIMESTAMP_DOMAIN_COUNT);
+
+  // rs2_recording_mode
+  _FORCE_SET_ENUM(RS2_RECORDING_MODE_BLANK_FRAMES);
+  _FORCE_SET_ENUM(RS2_RECORDING_MODE_COMPRESSED);
+  _FORCE_SET_ENUM(RS2_RECORDING_MODE_BEST_QUALITY);
+  _FORCE_SET_ENUM(RS2_RECORDING_MODE_COUNT);
 }
 
 NODE_MODULE(node_librealsense, InitModule);
