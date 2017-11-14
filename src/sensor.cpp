@@ -419,8 +419,7 @@ namespace librealsense
                         if (pref->get_stream().get())
                             _source.invoke_callback(std::move(pref));
                     }
-                },
-                DEFAULT_FRAME_BUFFERS);
+                });
             }
             catch(...)
             {
