@@ -143,10 +143,6 @@ namespace rs2
         frame_queue& at(int id)
         {
             std::lock_guard<std::mutex> lock(_lookup_mutex);
-            if (_queues.find(id) == _queues.end())
-            {
-                _queues[id] = frame_queue(4);
-            }
             return _queues[id];
         }
 

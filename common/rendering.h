@@ -777,6 +777,7 @@ namespace rs2
 
         void upload(rs2::frame frame)
         {
+            last_queue.enqueue(frame);
             // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
             if (!texture)
                 glGenTextures(1, &texture);
@@ -873,7 +874,6 @@ namespace rs2
             glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
             glBindTexture(GL_TEXTURE_2D, 0);
 
-            last_queue.enqueue(frame);
         }
 
         static void draw_axis(float axis_size = 1.f, float axisWidth = 4.f)
