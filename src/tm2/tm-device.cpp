@@ -18,7 +18,7 @@ namespace librealsense
     static float4 toFloat4(perc::TrackingData::Quaternion q);
 
 
-    class tm2_sensor : public sensor_base, public video_sensor_interface, public motion_sensor_interface, public TrackingDevice::Listener
+    class tm2_sensor : public sensor_base, public video_sensor_interface, public TrackingDevice::Listener
     {
     public:
         tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev)
@@ -86,6 +86,8 @@ namespace librealsense
                 {
                     profile->make_default();
                 }
+                //auto intrinsics = get_motion_intrinsics(profile);
+                //profile->set_intrinsics([intrinsics](){return intrinsics;})
                 results.push_back(profile);
             }
 
@@ -130,7 +132,6 @@ namespace librealsense
                 {
                     profile->make_default();
                 }
-
                 results.push_back(profile);
 
 
@@ -285,12 +286,24 @@ namespace librealsense
             return result;
         }
 
-        rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) const override
+        rs2_motion_device_intrinsic get_motion_intrinsics(const stream_profile& profile) const 
         {
             rs2_motion_device_intrinsic result;
             TrackingData::MotionIntrinsics tm_intrinsics;
-            //int stream_index = profile.index - 1; //TODO - need stream profile here, not stream type!
-            //    auto status = _tm_dev->GetMotionModuleIntrinsics(tm_intrinsics, SET_SENSOR_ID(SensorType::, stream_index));
+            int stream_index = profile.index - 1; 
+            SensorType type = SensorType::Max;
+            switch (profile.stream)
+            {
+            case RS2_STREAM_ACCEL:
+                type = SensorType::Accelerometer;
+                break;
+            case RS2_STREAM_GYRO:
+                type = SensorType::Gyro;
+                break;
+            default:
+                throw invalid_value_exception("Invalid motion stream type");
+            }
+            //auto status = _tm_dev->GetMotionModuleIntrinsics(tm_intrinsics, SET_SENSOR_ID(type, stream_index));
             //             if (status != Status::SUCCESS)
             //             {
             //                 throw io_exception("Failed to read TM2 intrinsics");
