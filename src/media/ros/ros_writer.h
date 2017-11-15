@@ -116,16 +116,16 @@ namespace librealsense
             }
         }
 
-        void write_extrinsics(const stream_identifier& stream_id, const frame_holder& frame)
+        void write_extrinsics(const stream_identifier& stream_id, frame_interface* frame)
         {
             if (m_extrinsics_msgs.find(stream_id) != m_extrinsics_msgs.end())
             {
                 return; //already wrote it
             }
-            auto& dev = frame.frame->get_sensor()->get_device();
+            auto& dev = frame->get_sensor()->get_device();
             uint32_t reference_id = 0;
             rs2_extrinsics ext;
-            std::tie(reference_id, ext) = dev.get_extrinsics(*frame.frame->get_stream());
+            std::tie(reference_id, ext) = dev.get_extrinsics(*frame->get_stream());
             geometry_msgs::Transform tf_msg;
             convert(ext, tf_msg);
             write_message(ros_topic::stream_extrinsic_topic(stream_id, reference_id), get_static_file_info_timestamp(), tf_msg);
@@ -153,7 +153,7 @@ namespace librealsense
             }
         }
 
-        void write_video_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, const frame_holder& frame)
+        void write_video_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame)
         {
             sensor_msgs::Image image;
             auto vid_frame = dynamic_cast<librealsense::video_frame*>(frame.frame);
@@ -177,7 +177,7 @@ namespace librealsense
             write_additional_frame_messages(stream_id, timestamp, frame);
         }
 
-        void write_motion_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, const frame_holder& frame)
+        void write_motion_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame)
         {
             sensor_msgs::Imu imu_msg;
             if (!frame)
@@ -233,7 +233,7 @@ namespace librealsense
             return q;
         }
 
-        void write_pose_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, const frame_holder& frame)
+        void write_pose_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame)
         {
             auto pose = As<librealsense::pose_frame>(frame.frame);
             if (!frame)
