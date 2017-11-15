@@ -589,9 +589,9 @@ PYBIND11_PLUGIN(NAME) {
     sensor.def("open", (void (rs2::sensor::*)(const rs2::stream_profile&) const) &rs2::sensor::open,
                "Open sensor for exclusive access, by commiting to a configuration", "profile"_a)
           .def("supports", (bool (rs2::sensor::*)(rs2_camera_info) const) &rs2::sensor::supports,
-               "Check if speific camera info is supported.", "info")
+               "Check if specific camera info is supported.", "info")
           .def("supports", (bool (rs2::sensor::*)(rs2_option) const) &rs2::options::supports,
-            "Check if speific camera info is supported.", "info")
+            "Check if specific camera info is supported.", "info")
           .def("get_info", &rs2::sensor::get_info, "Retrieve camera specific information, "
                "like versions of various internal components.", "info"_a)
            .def("set_notifications_callback", [](const rs2::sensor& self, std::function<void(rs2::notification)> callback)
