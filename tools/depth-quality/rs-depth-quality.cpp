@@ -15,6 +15,12 @@ int main(int argc, const char * argv[]) try
     // ===============================
     //       Metrics Definitions
     // ===============================
+    metric fill = model.make_metric(
+        "Fill-Rate", 0, 100, false, "%",
+        "Fill Rate.\n"
+        "Percentage of pixels with valid depth\n"
+        "values out of all pixels within the ROI\n");
+
     metric z_accuracy = model.make_metric(
                 "Z Accuracy", -10, 10, true, "%",
                 "Z Accuracy given Ground Truth\n"
@@ -51,12 +57,6 @@ int main(int argc, const char * argv[]) try
                  "              n      \n"
                  "RMS = SQRT((SUM(Di-Dpi)^2)/n)\n"
                  "             i=1    ");
-
-    metric fill = model.make_metric(
-                  "Fill-Rate", 0, 100, false, "%",
-                  "Fill Rate.\n"
-                  "Percentage of pixels with valid depth\n"
-                  "values out of all pixels within the ROI\n");
 
     // ===============================
     //       Metrics Calculation

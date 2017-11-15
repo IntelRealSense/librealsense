@@ -1063,10 +1063,10 @@ namespace rs2
             csv << camera_info;
 
             //Store metric environment
-            if (_plane_fit > 0) csv << "\nEnvironment:\nPlane- Fit distance mm," << _latest_metrics.distance << std::endl;
-            if (_use_gt)        csv << "Ground Truth Distance mm," << _ground_truth_mm << std::endl;
+            csv << "\nEnvironment:\nPlane-Fit_distance_mm," << (_plane_fit > 0 ? std::to_string(_latest_metrics.distance) : "N/A") << std::endl;
+            csv << "Ground-Truth_Distance_mm," << (_use_gt ? std::to_string(_ground_truth_mm ) : "N/A") << std::endl;
 
-            // Create header line
+            // Generate columns header
             csv << "\nSample Id,Timestamp (ms),";
             for (auto&& plot : _plots)
             {
@@ -1074,7 +1074,7 @@ namespace rs2
             }
             csv << std::endl;
 
-            // Populate the metrics data
+            // Populate metrics data using the fill-rate persistent metric as pivot
             for (size_t i = _plots[0]->_first_idx, rec = 0; i != _plots[0]->_idx; i = (++i) % metric_plot::SIZE)
             {
                 csv << ++rec << "," << std::fixed << std::setprecision(4) << _plots[0]->_timestamps[i] << ",";
