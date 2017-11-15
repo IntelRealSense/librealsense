@@ -170,12 +170,16 @@ std::ostream& operator<<(std::ostream& os, const rosbag::MessageInstance& m)
     if (m.isType<sensor_msgs::Image>())
     {
         auto image = m.instantiate<sensor_msgs::Image>();
+        os << "Header       : \n";
+        os << "  frame_id           : " << image->header.frame_id << std::endl;
+        os << "  Frame Number (seq) : " << image->header.seq << std::endl;
+        os << "  stamp              : " << image->header.stamp << std::endl;
         os << "Encoding     : " << image->encoding << std::endl;
         os << "Width        : " << image->width << std::endl;
         os << "Height       : " << image->height << std::endl;
         os << "Step         : " << image->step << std::endl;
-        os << "Frame Number : " << image->header.seq << std::endl;
-        os << "Timestamp    : " << pretty_time(std::chrono::nanoseconds(image->header.stamp.toNSec())) << std::endl;
+        //os << "Frame Number : " << image->header.seq << std::endl;
+        //os << "Timestamp    : " << pretty_time(std::chrono::nanoseconds(image->header.stamp.toNSec())) << std::endl;
     }
     if (m.isType<sensor_msgs::Imu>())
     {
@@ -449,17 +453,34 @@ struct rosbag_content
 class Files
 {
 public:
-    int size() const
+    int size()
     {
+        std::lock_guard<std::mutex> lock(mutex);
         return m_files.size();
     }
 
     rosbag_content& operator[](int index)
     {
         std::lock_guard<std::mutex> lock(mutex);
-        return m_files[index];
+        if (index >= m_files.size())
+            throw std::out_of_range(std::string("index: ") + std::to_string(index));
+
+        auto itr = m_files.begin();
+        std::advance(itr, index);
+        return *itr;
     }
 
+    int remove_file(int index)
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (index >= m_files.size())
+            throw std::out_of_range(std::string("index: ") + std::to_string(index));
+
+        auto it_to_remove = m_files.begin();
+        std::advance(it_to_remove, index);
+        auto it = m_files.erase(it_to_remove);
+        return std::distance(m_files.begin(), it);
+    }
     void AddFiles(std::vector<std::string> const& files)
     {
         std::lock_guard<std::mutex> lock(mutex);
@@ -495,7 +516,7 @@ public:
     }
 private:
     std::mutex mutex;
-    std::vector<rosbag_content> m_files;
+    std::list<rosbag_content> m_files;
     std::string last_error_message;
 };
 
@@ -576,10 +597,21 @@ int main(int argc, const char** argv)
             ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(37.0f / 255, 40.0f / 255, 48.0f / 255, 1.00f));
             for (int i = 0; i < files.size(); i++)
             {
-                if (ImGui::Selectable(files[i].file_name.c_str(), selected == i))
+                if (ImGui::Selectable(files[i].file_name.c_str(), selected == i, 0, ImVec2(100,0)))
                 {
                     selected = i;
                     num_topics_to_show.clear();
+                }
+                ImGui::SameLine();
+                ImGui::SetCursorPosX(120);
+                std::string label = "x##" + files[i].file_name ;
+                if (ImGui::SmallButton(label.c_str()))
+                {
+                    int next = files.remove_file(i);
+                    if (selected >= i)
+                        selected = std::max(0, selected-1);
+                    i = next - 1; //since we will "i++" next
+
                 }
             }
             ImGui::PopStyleColor(2);
