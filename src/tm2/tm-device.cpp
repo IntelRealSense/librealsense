@@ -328,6 +328,11 @@ namespace librealsense
                 LOG_WARNING("Frame received with streaming inactive");
                 return;
             }
+            if (tm_frame.frameLength == 0)
+            {
+                LOG_INFO("Dropped frame. Frame length is 0");
+                return;
+            }
 
             auto bpp = get_image_bpp(convertTm2PixelFormat(tm_frame.profile.pixelFormat));
             auto ts_double_nanos = duration<double, std::nano>(tm_frame.timestamp);
@@ -368,7 +373,7 @@ namespace librealsense
                 frame->set_timestamp(ts_ms.count());
                 frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK);
                 frame->set_stream(profile);
-                //frame->set_sensor(this); //TODO? uvc doesn't set it?
+                frame->set_sensor(this->shared_from_this()); //TODO? uvc doesn't set it?
                 video->data.assign(tm_frame.data, tm_frame.data + (tm_frame.profile.height * tm_frame.profile.stride));
             }
             else
