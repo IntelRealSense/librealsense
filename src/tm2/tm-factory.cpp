@@ -78,7 +78,7 @@ namespace librealsense
 
 	tm2_context::tm2_context()
 		: _t([this]() {
-			while (!_manager);
+			while (!_is_disposed && !_manager);
             while (!_is_disposed) { _manager->handleEvents(); std::this_thread::sleep_for(std::chrono::microseconds(100)); }
 		})
 	{

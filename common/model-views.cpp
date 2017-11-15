@@ -688,21 +688,25 @@ namespace rs2
                 push_back_if_not_exists(formats[profile.unique_id()], format);
                 push_back_if_not_exists(format_values[profile.unique_id()], profile.format());
 
-                auto any_stream_enabled = false;
-                for (auto it : stream_enabled)
-                {
-                    if (it.second)
-                    {
-                        any_stream_enabled = true;
-                        break;
-                    }
-                }
-                if (!any_stream_enabled)
+                if (profile.is_default())
                 {
                     stream_enabled[profile.unique_id()] = true;
-                }
+                }               
 
                 profiles.push_back(profile);
+            }
+            auto any_stream_enabled = false;
+            for (auto it : stream_enabled)
+            {
+                if (it.second)
+                {
+                    any_stream_enabled = true;
+                    break;
+                }
+            }
+            if (!any_stream_enabled)
+            {
+                stream_enabled[uvc_profiles[uvc_profiles.size()-1].unique_id()] = true;
             }
 
             for (auto&& fps_list : fps_values_per_stream)

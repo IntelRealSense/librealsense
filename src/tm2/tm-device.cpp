@@ -330,7 +330,7 @@ namespace librealsense
             }
             if (tm_frame.frameLength == 0)
             {
-                LOG_INFO("Dropped frame. Frame length is 0");
+                LOG_WARNING("Dropped frame. Frame length is 0");
                 return;
             }
 
@@ -363,7 +363,12 @@ namespace librealsense
                         break;
                     }                    
                 }
-            }            
+            }  
+            if (profile == nullptr)
+            {
+                LOG_WARNING("Dropped frame. No valid profile");
+                return;
+            }
             //TODO - extension_type param assumes not depth
             frame_holder frame = _source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, tm_frame.profile.height * tm_frame.profile.stride, additional_data, true);
             if (frame.frame)
@@ -378,7 +383,7 @@ namespace librealsense
             }
             else
             {
-                LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
+                LOG_WARNING("Dropped frame. alloc_frame(...) returned nullptr");
                 return;
             }             
             _source.invoke_callback(std::move(frame));
@@ -429,9 +434,12 @@ namespace librealsense
                     break;
                 }
             }
-            //TODO - assert profile is found
+            if (profile == nullptr)
+            {
+                LOG_WARNING("Dropped frame. No valid profile");
+                return;
+            }
 
-            //TODO - should we add x,y,z to motion_frame instead of a raw buffer? or in addition?
             frame_holder frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, 3 * sizeof(float), additional_data, true);
             if (frame.frame)
             {
@@ -446,7 +454,7 @@ namespace librealsense
             }
             else
             {
-                LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
+                LOG_WARNING("Dropped frame. alloc_frame(...) returned nullptr");
                 return;
             }
             _source.invoke_callback(std::move(frame));
@@ -481,7 +489,11 @@ namespace librealsense
                     break;
                 }
             }
-            //TODO - assert profile is found
+            if (profile == nullptr)
+            {
+                LOG_WARNING("Dropped frame. No valid profile");
+                return;
+            }
 
             //TODO - maybe pass a raw data and parse up? do I have to pass any data on the buffer?
             frame_holder frame = _source.alloc_frame(RS2_EXTENSION_POSE_FRAME, sizeof(librealsense::pose_frame::pose_info), additional_data, true);
