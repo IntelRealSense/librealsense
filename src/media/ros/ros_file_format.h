@@ -201,98 +201,13 @@ namespace librealsense
         rs2_frame_metadata_value _type;
     };
 
-    class FalseQuery {
-    public:
-        bool operator()(rosbag::ConnectionInfo const* info) const { return false; }
-    };
-
-    class MultipleRegexTopicQuery
-    {
-    public:
-        MultipleRegexTopicQuery(const std::vector<std::string>& regexps)
-        {
-            for (auto&& regexp : regexps)
-            {
-                LOG_DEBUG("RegexTopicQuery with expression: " << regexp);
-                _exps.emplace_back(regexp);
-            }
-        }
-
-        bool operator()(rosbag::ConnectionInfo const* info) const
-        {
-            return std::any_of(std::begin(_exps), std::end(_exps), [info](const std::regex& exp) { return std::regex_search(info->topic, exp); });
-        }
-
-    private:
-        std::vector<std::regex> _exps;
-    };
-
-    class RegexTopicQuery : public MultipleRegexTopicQuery
-    {
-    public:
-        RegexTopicQuery(std::string const& regexp) : MultipleRegexTopicQuery({ regexp })
-        {
-        }
-
-        static std::string data_msg_types()
-        {
-            return "image|imu|pose/transform";
-        }
-
-        static std::string stream_prefix(const device_serializer::stream_identifier& stream_id)
-        {
-           return  to_string() << "/device_" << stream_id.device_index
-                               << "/sensor_" << stream_id.sensor_index
-                               << "/" << stream_id.stream_type << "_" << stream_id.stream_index;
-        }
-
-    private:
-        std::regex _exp;
-    };
-
-    class SensorInfoQuery : public RegexTopicQuery
-    {
-    public:
-        SensorInfoQuery(uint32_t device_index) : RegexTopicQuery(to_string() << "/device_" << device_index << R"RRR(/sensor_(\d)+/info)RRR") {}
-    };
-
-    class FrameQuery : public RegexTopicQuery
-    {
-    public:
-        //TODO: Improve readability and robustness of expressions
-        FrameQuery() : RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/.*_\d+)RRR" << "/(" << data_msg_types() << ")/data") {}
-    };
-
-    class StreamQuery : public RegexTopicQuery
-    {
-    public:
-        StreamQuery(const device_serializer::stream_identifier& stream_id) :
-            RegexTopicQuery(to_string() << stream_prefix(stream_id)
-                << "/(" << data_msg_types() << ")/data")
-        {
-        }
-    };
-
-    class ExtrinsicsQuery : public RegexTopicQuery
-    {
-    public:
-        ExtrinsicsQuery(const device_serializer::stream_identifier& stream_id) :
-            RegexTopicQuery(to_string() << stream_prefix(stream_id) << "/tf")
-        {
-        }
-    };
-
-    class OptionsQuery : public RegexTopicQuery
-    {
-    public:
-        OptionsQuery() : 
-            RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/option/.*/value)RRR") {}
-    };
-
     class ros_topic
     {
     public:
         static constexpr const char* elements_separator = "/";
+        static constexpr const char* ros_image_type_str = "image";
+        static constexpr const char* ros_imu_type_str = "imu";
+        static constexpr const char* ros_pose_type_str = "pose";
 
         static uint32_t get_device_index(const std::string& topic)
         {
@@ -382,26 +297,29 @@ namespace librealsense
 
         static std::string pose_transform_topic(const device_serializer::stream_identifier& stream_id)
         {
-            return create_from({ stream_full_prefix(stream_id), rs2_stream_to_string(stream_id.stream_type), "transform", "data" });
+            assert(stream_id.stream_type == RS2_STREAM_POSE);
+            return create_from({ stream_full_prefix(stream_id), stream_to_ros_type(stream_id.stream_type), "transform", "data" });
         }
 
         static std::string pose_accel_topic(const device_serializer::stream_identifier& stream_id)
         {
-            return create_from({ stream_full_prefix(stream_id), rs2_stream_to_string(stream_id.stream_type), "accel", "data" });
+            assert(stream_id.stream_type == RS2_STREAM_POSE);
+            return create_from({ stream_full_prefix(stream_id), stream_to_ros_type(stream_id.stream_type), "accel", "data" });
         }
         static std::string pose_twist_topic(const device_serializer::stream_identifier& stream_id)
         {
-            return create_from({ stream_full_prefix(stream_id), rs2_stream_to_string(stream_id.stream_type),"twist",  "data" });
+            assert(stream_id.stream_type == RS2_STREAM_POSE);
+            return create_from({ stream_full_prefix(stream_id), stream_to_ros_type(stream_id.stream_type),"twist",  "data" });
         }
 
         static std::string frame_data_topic(const device_serializer::stream_identifier& stream_id)
         {
-            return create_from({ stream_full_prefix(stream_id), rs2_stream_to_string(stream_id.stream_type), "data" });
+            return create_from({ stream_full_prefix(stream_id), stream_to_ros_type(stream_id.stream_type), "data" });
         }
 
         static std::string frame_metadata_topic(const device_serializer::stream_identifier& stream_id)
         {
-            return create_from({ stream_full_prefix(stream_id), rs2_stream_to_string(stream_id.stream_type), "metadata" });
+            return create_from({ stream_full_prefix(stream_id), stream_to_ros_type(stream_id.stream_type), "metadata" });
         }
 
         static std::string stream_extrinsic_topic(const device_serializer::stream_identifier& stream_id, uint32_t ref_id)
@@ -442,7 +360,25 @@ namespace librealsense
             throw std::out_of_range(to_string() << "Requeted index \"" << index << "\" is out of bound of topic: \"" << value << "\"");
         }
     private:
+        static std::string stream_to_ros_type(rs2_stream type)
+        {
+            switch (type)
+            {
+            case RS2_STREAM_DEPTH:
+            case RS2_STREAM_COLOR:
+            case RS2_STREAM_INFRARED:
+            case RS2_STREAM_FISHEYE:
+                return ros_image_type_str;
 
+            case RS2_STREAM_GYRO:
+            case RS2_STREAM_ACCEL:
+                return ros_imu_type_str;
+
+            case RS2_STREAM_POSE:
+                return ros_pose_type_str;
+            }
+            throw io_exception(to_string() << "Unknown stream type when resolving ros type: " << type);
+        }
         static std::string create_from(const std::vector<std::string>& parts)
         {
             std::ostringstream oss;
@@ -479,6 +415,94 @@ namespace librealsense
         {
             return std::string(rs2_stream_to_string(type)) + "_" + std::to_string(stream_id);
         }
+    };
+
+    class FalseQuery {
+    public:
+        bool operator()(rosbag::ConnectionInfo const* info) const { return false; }
+    };
+
+    class MultipleRegexTopicQuery
+    {
+    public:
+        MultipleRegexTopicQuery(const std::vector<std::string>& regexps)
+        {
+            for (auto&& regexp : regexps)
+            {
+                LOG_DEBUG("RegexTopicQuery with expression: " << regexp);
+                _exps.emplace_back(regexp);
+            }
+        }
+
+        bool operator()(rosbag::ConnectionInfo const* info) const
+        {
+            return std::any_of(std::begin(_exps), std::end(_exps), [info](const std::regex& exp) { return std::regex_search(info->topic, exp); });
+        }
+
+    private:
+        std::vector<std::regex> _exps;
+    };
+
+    class RegexTopicQuery : public MultipleRegexTopicQuery
+    {
+    public:
+        RegexTopicQuery(std::string const& regexp) : MultipleRegexTopicQuery({ regexp })
+        {
+        }
+
+        static std::string data_msg_types()
+        {   //Either "image" or "imu" or "pose/transform"
+            return to_string() << ros_topic::ros_image_type_str << "|" << ros_topic::ros_imu_type_str << "|" << ros_topic::ros_pose_type_str << "/transform";
+        }
+
+        static std::string stream_prefix(const device_serializer::stream_identifier& stream_id)
+        {
+           return  to_string() << "/device_" << stream_id.device_index
+                               << "/sensor_" << stream_id.sensor_index
+                               << "/" << stream_id.stream_type << "_" << stream_id.stream_index;
+        }
+
+    private:
+        std::regex _exp;
+    };
+
+    class SensorInfoQuery : public RegexTopicQuery
+    {
+    public:
+        SensorInfoQuery(uint32_t device_index) : RegexTopicQuery(to_string() << "/device_" << device_index << R"RRR(/sensor_(\d)+/info)RRR") {}
+    };
+
+    class FrameQuery : public RegexTopicQuery
+    {
+    public:
+        //TODO: Improve readability and robustness of expressions
+        FrameQuery() : RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/.*_\d+)RRR" << "/(" << data_msg_types() << ")/data") {}
+    };
+
+    class StreamQuery : public RegexTopicQuery
+    {
+    public:
+        StreamQuery(const device_serializer::stream_identifier& stream_id) :
+            RegexTopicQuery(to_string() << stream_prefix(stream_id)
+                << "/(" << data_msg_types() << ")/data")
+        {
+        }
+    };
+
+    class ExtrinsicsQuery : public RegexTopicQuery
+    {
+    public:
+        ExtrinsicsQuery(const device_serializer::stream_identifier& stream_id) :
+            RegexTopicQuery(to_string() << stream_prefix(stream_id) << "/tf")
+        {
+        }
+    };
+
+    class OptionsQuery : public RegexTopicQuery
+    {
+    public:
+        OptionsQuery() : 
+            RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/option/.*/value)RRR") {}
     };
 
     /**

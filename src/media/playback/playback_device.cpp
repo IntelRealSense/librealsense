@@ -512,6 +512,12 @@ void playback_device::try_looping()
                 throw invalid_value_exception(error_msg);
             }
             LOG_DEBUG("Dispatching frame " << frame->stream_id);
+
+            if (data->is<serialized_bad_frame>())
+            {
+                LOG_WARNING("Bad frame from reader, ignoring");
+                 return true;
+            }
             //Dispatch frame to the relevant sensor
             m_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time);
             return true;

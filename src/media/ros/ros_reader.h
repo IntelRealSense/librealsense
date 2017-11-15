@@ -51,7 +51,10 @@ namespace librealsense
             rosbag::MessageInstance next_msg = *m_samples_itrator;
             ++m_samples_itrator;
 
-            if (next_msg.isType<sensor_msgs::Image>() || next_msg.isType<sensor_msgs::Imu>() || next_msg.isType<realsense_legacy_msgs::pose>())
+            if (next_msg.isType<sensor_msgs::Image>() 
+                || next_msg.isType<sensor_msgs::Imu>() 
+                || next_msg.isType<realsense_legacy_msgs::pose>()
+                || next_msg.isType<geometry_msgs::Transform>())
             {
                 LOG_DEBUG("Next message is a frame");
                 return create_frame(next_msg);
@@ -106,7 +109,7 @@ namespace librealsense
             m_file.open(m_file_path, rosbag::BagMode::Read);
             m_version = read_file_version(m_file);
             m_samples_view = nullptr;
-            m_frame_source = std::make_shared<frame_source>(m_version == 1 ? 128 : 16);
+            m_frame_source = std::make_shared<frame_source>(m_version == 1 ? 128 : 32);
             m_frame_source->init(m_metadata_parser_map);
             m_initial_device_description = read_device_description(get_static_file_info_timestamp(), true);
         }
@@ -226,26 +229,31 @@ namespace librealsense
             {
                 stream_id = ros_topic::get_stream_identifier(next_msg_topic);
             }
+            frame_holder frame{ nullptr };
             if (msg.isType<sensor_msgs::Image>())
             {
-                frame_holder frame = create_image_from_message(msg);
-                return std::make_shared<serialized_frame>(timestamp, stream_id, std::move(frame));
+                frame = create_image_from_message(msg);
+            }
+            else if (msg.isType<sensor_msgs::Imu>())
+            {
+                frame = create_motion_sample(msg);
+            }
+            else if (msg.isType<realsense_legacy_msgs::pose>() || msg.isType<geometry_msgs::Transform>())
+            {
+                frame = create_pose_sample(msg);
+            }
+            else
+            {
+                std::string err_msg = to_string() << "Unknown frame type: " << msg.getDataType() << "(Topic: " << next_msg_topic << ")";
+                LOG_ERROR(err_msg);
+                throw invalid_value_exception(err_msg);
             }
 
-            if (msg.isType<sensor_msgs::Imu>())
+            if (frame.frame == nullptr)
             {
-                frame_holder frame = create_motion_sample(msg);
-                return std::make_shared<serialized_frame>(timestamp, stream_id, std::move(frame));
+                return std::make_shared<serialized_bad_frame>(timestamp, stream_id);
             }
-
-            if (msg.isType<realsense_legacy_msgs::pose>() || msg.isType<geometry_msgs::Transform>())
-            {
-                frame_holder frame = create_pose_sample(msg);
-                return std::make_shared<serialized_frame>(timestamp, stream_id, std::move(frame));
-            }
-            std::string err_msg = to_string() << "Unknown frame type: " << msg.getDataType() << "(Topic: " << next_msg_topic << ")";
-            LOG_ERROR(err_msg);
-            throw invalid_value_exception(err_msg);
+            return std::make_shared<serialized_frame>(timestamp, stream_id, std::move(frame));
         }
 
         static std::shared_ptr<metadata_parser_map> create_metadata_parser_map()
@@ -401,7 +409,8 @@ namespace librealsense
                 msg->data.size(), additional_data, true);
             if (frame == nullptr)
             {
-                throw invalid_value_exception("Failed to allocate new frame");
+                LOG_WARNING("Failed to allocate new frame");
+                return nullptr;
             }
             librealsense::video_frame* video_frame = static_cast<librealsense::video_frame*>(frame);
             video_frame->assign(msg->width, msg->height, msg->step, msg->step / msg->width * 8);
@@ -449,7 +458,8 @@ namespace librealsense
             frame_interface* frame = m_frame_source->alloc_frame(RS2_EXTENSION_MOTION_FRAME, 3 * sizeof(float), additional_data, true);
             if (frame == nullptr)
             {
-                throw invalid_value_exception("Failed to allocate new frame");
+                LOG_WARNING("Failed to allocate new frame");
+                return nullptr;
             }
             librealsense::motion_frame* motion_frame = static_cast<librealsense::motion_frame*>(frame);
             //attaching a temp stream to the frame. Playback sensor should assign the real stream
@@ -581,6 +591,11 @@ namespace librealsense
             additional_data.timestamp = timestamp_ms.count();
 
             frame_interface* new_frame = m_frame_source->alloc_frame(frame_type, frame_size, additional_data, true);
+            if (new_frame == nullptr)
+            {
+                LOG_WARNING("Failed to allocate new frame");
+                return nullptr;
+            }
             librealsense::pose_frame* pose_frame = static_cast<librealsense::pose_frame*>(new_frame);
             //attaching a temp stream to the frame. Playback sensor should assign the real stream
             new_frame->set_stream(std::make_shared<stream_profile_base>(platform::stream_profile{}));
