@@ -4027,22 +4027,25 @@ namespace rs2
                 int count_supported = 0;
                 if (ImGui::TreeNode(label.c_str()))
                 {
-                    for (auto i = 0; i < RS2_OPTION_COUNT; i++)
-                    {
-                        auto opt = static_cast<rs2_option>(i);
-                        if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
-                        {
-                            if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
-                            {
-                                count_supported++;
-                                get_curr_advanced_controls = true;
-                            }
-                        }
-                    }
-                    if (count_supported == 0)
+                    if (sub->num_supported_options() == 0)
                     {
                         ImGui::Text("No supported controls");
                     }
+                    else
+                    {
+                        for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+                        {
+                            auto opt = static_cast<rs2_option>(i);
+                            if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
+                            {
+                                if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
+                                {
+                                    get_curr_advanced_controls = true;
+                                }
+                            }
+                        }
+                    }
+
                     ImGui::TreePop();
                 }
 
