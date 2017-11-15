@@ -894,14 +894,14 @@ namespace librealsense
             }
             return sensor_indices;
         }
-        static std::shared_ptr<stream_profile_base> create_pose_profile(uint32_t stream_index)
+        static std::shared_ptr<stream_profile_base> create_pose_profile(uint32_t stream_index, uint32_t fps)
         {
             rs2_format format = RS2_FORMAT_6DOF;
-            auto profile = std::make_shared<stream_profile_base>(platform::stream_profile{ 0, 0, 0, static_cast<uint32_t>(format) });
+            auto profile = std::make_shared<stream_profile_base>(platform::stream_profile{ 0, 0, fps, static_cast<uint32_t>(format) });
             profile->set_stream_index(stream_index);
             profile->set_stream_type(RS2_STREAM_POSE);
             profile->set_format(format);
-            profile->set_framerate(0);
+            profile->set_framerate(fps);
             return profile;
         }
 
@@ -999,7 +999,7 @@ namespace librealsense
             }
             for (auto&& index : indices)
             {
-                auto profile = create_pose_profile(index);
+                auto profile = create_pose_profile(index, 0); //TODO: Where to read the fps from?
                 streams.push_back(profile);
             }
             return streams;
@@ -1058,7 +1058,7 @@ namespace librealsense
 
                 if (stream_id.stream_type == RS2_STREAM_POSE)
                 {
-                    auto profile = create_pose_profile(stream_id.stream_index);
+                    auto profile = create_pose_profile(stream_id.stream_index, fps);
                     streams.push_back(profile);
                 }
 
