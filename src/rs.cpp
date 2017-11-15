@@ -14,6 +14,10 @@
 #include <media/ros/ros_writer.h>
 #include <media/ros/ros_reader.h>
 #include "core/advanced_mode.h"
+#include "source.h"
+#include "core/processing.h"
+#include "processing_block.h"
+#include "syncer_processing_block.h"
 #include "align.h"
 #include "colorizer.h"
 #include "media/playback/playback_device.h"

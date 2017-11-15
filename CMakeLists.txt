@@ -89,9 +89,12 @@ set(REALSENSE_CPP
     src/linux/backend-hid.cpp
     src/backend.cpp
     src/verify.c
+    src/processing_block.cpp
+    src/syncer_processing_block.cpp
     src/align.cpp
     src/colorizer.cpp
     src/source.cpp
+    src/decimation_filter.cpp
     src/ds5/ds5-options.cpp
     src/ds5/ds5-timestamp.cpp
     src/ds5/ds5-private.cpp
@@ -176,10 +179,13 @@ set(REALSENSE_HPP
     src/context.h
     src/sensor.h
     src/sync.h
+    src/syncer_processing_block.h
     src/sensor.h
     src/stream.h
+    src/processing_block.h
     src/align.h
     src/colorizer.h
+    src/decimation_filter.h
     src/algo.h
     src/option.h
     src/metadata.h
@@ -396,11 +402,19 @@ if(WIN32)
         )
 
     source_group("Source Files\\Processing Blocks" FILES
+        src/processing_block.cpp
         src/colorizer.cpp
+        src/align.cpp
+        src/decimation_filter.cpp
+        src/syncer_processing_block.cpp
         )
 
     source_group("Header Files\\Processing Blocks" FILES
+        src/processing_block.h
         src/colorizer.h
+        src/align.h
+        src/decimation_filter.h
+        src/syncer_processing_block.h
         )
 
     foreach(flag_var

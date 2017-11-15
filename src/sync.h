@@ -9,7 +9,7 @@
 #include <vector>
 #include <mutex>
 #include <memory>
-#include "align.h"
+//#include "align.h"
 
 namespace librealsense
 {
@@ -65,6 +65,8 @@ namespace librealsense
         std::mutex& _mutex;
     };
     //sync_lock::ref = 0;
+
+    class synthetic_source_interface;
 
     struct syncronization_environment
     {
@@ -183,20 +185,5 @@ namespace librealsense
         bool are_equivalent(double a, double b, int fps);
         std::map<matcher*, double> _last_arrived;
 
-    };
-
-    class syncer_proccess_unit : public processing_block
-    {
-    public:
-        syncer_proccess_unit();
-
-        ~syncer_proccess_unit()
-        {
-            _matcher.reset();
-        }
-    private:
-        std::unique_ptr<timestamp_composite_matcher> _matcher;
-        std::mutex _mutex;
-        
     };
 }

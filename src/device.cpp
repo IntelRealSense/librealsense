@@ -1,10 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "device.h"
-#include "image.h"
-#include "stream.h"
+#include "source.h"
+#include "core/processing.h"
+#include "processing_block.h"
+
+//#include "image.h"
+//#include "stream.h"
 #include "environment.h"
+#include "device.h"
 
 using namespace librealsense;
 

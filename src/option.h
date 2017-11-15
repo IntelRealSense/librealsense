@@ -73,7 +73,7 @@ namespace librealsense
 
         void set(float value) override 
         { 
-            if (_max < value || _min > value) 
+            if (_max < value || _min > value)
                 throw invalid_value_exception("Given value is outside valid range!");
             *_value = value; 
             _on_set(value);

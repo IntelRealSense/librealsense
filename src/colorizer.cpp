@@ -3,10 +3,13 @@
 
 #include "../include/librealsense2/rs.hpp"
 
+#include "source.h"
+#include "core/processing.h"
+#include "processing_block.h"
 #include "context.h"
-#include "colorizer.h"
 #include "environment.h"
 #include "option.h"
+#include "colorizer.h"
 
 namespace librealsense
 {
