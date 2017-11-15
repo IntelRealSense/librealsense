@@ -5,6 +5,22 @@
 
 namespace librealsense
 {
+    enum rs2_filter_type : unsigned char
+    {
+        rs2_filter_none = 0,
+        rs2_decimation_filter,
+        rs2_spatial_filter,
+        rs2_temporal_filter
+    };
+
+    enum rs2_filter_kernel : unsigned char
+    {
+        rs2_fixed_pick = 0,
+        rs2_median,
+        rs2_median_nz,
+        rs2_mean,
+    };
+
     class processing_block;
     class decimation_filter : public processing_block
     {
@@ -14,18 +30,11 @@ namespace librealsense
     private:
         std::mutex              _mutex;
 
-        const rs2_intrinsics*   _depth_intrinsics_ptr;
-        const float*            _depth_units_ptr;
-        const rs2_intrinsics*   _other_intrinsics_ptr;
-        const rs2_extrinsics*   _depth_to_other_extrinsics_ptr;
-
-        rs2_intrinsics          _stream_intrinsics;
+        rs2_filter_type         _filter_type;
         float                   _depth_units;
-        rs2_extrinsics          _depth_to_other_extrinsics;
-        rs2_stream              _other_stream_type;
+        float                   _filter_magnitude;
+        float                   _kernel_size;
         int                     _width, _height;
-        int                     _other_bytes_per_pixel;
-        int*                    _other_bytes_per_pixel_ptr;
         std::shared_ptr<stream_profile_interface> _stream_profile;
     };
 }

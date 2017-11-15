@@ -125,6 +125,12 @@ void rs2_enqueue_frame(rs2_frame* frame, void* queue);
 */
 rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error);
 
+/**
+* Creates Depth post-processing filter block. This block accepts depth frames, applies spatial filters and plots modified prames
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_depth_filter_block(rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

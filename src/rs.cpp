@@ -18,6 +18,7 @@
 #include "core/processing.h"
 #include "processing_block.h"
 #include "syncer_processing_block.h"
+#include "decimation_filter.h"
 #include "align.h"
 #include "colorizer.h"
 #include "media/playback/playback_device.h"
@@ -1623,6 +1624,15 @@ rs2_processing_block* rs2_create_colorizer(rs2_error** error) BEGIN_API_CALL
     auto res2 = (rs2_options*)res;
 
     return res;
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+
+rs2_processing_block* rs2_create_depth_filter_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::decimation_filter>();
+
+    return new rs2_processing_block{ block };
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 

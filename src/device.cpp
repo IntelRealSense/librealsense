@@ -123,7 +123,7 @@ std::pair<uint32_t, rs2_extrinsics> librealsense::device::get_extrinsics(const s
 
 void librealsense::device::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t groupd_index)
 {
-    auto iter = std::find_if(_extrinsics.begin(), 
+    auto iter = std::find_if(_extrinsics.begin(),
                            _extrinsics.end(),
                            [groupd_index](const std::pair<int, std::pair<uint32_t, std::shared_ptr<const stream_interface>>>& p) { return p.second.first == groupd_index; });
     if (iter == _extrinsics.end())
