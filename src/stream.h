@@ -160,7 +160,12 @@ namespace librealsense
         std::function<rs2_motion_device_intrinsic()> _calc_intrinsics;
     };
 
-
+    class pose_stream_profile : public pose_stream_profile_interface, public stream_profile_base, public extension_snapshot
+    {
+    public:
+        explicit pose_stream_profile(platform::stream_profile sp) : stream_profile_base(std::move(sp)) {}
+        void update(std::shared_ptr<extension_snapshot> ext) override { /*Nothing to do here*/ }
+    };
     inline stream_profile to_profile(const stream_profile_interface* sp)
     {
         auto fps = static_cast<uint32_t>(sp->get_framerate());

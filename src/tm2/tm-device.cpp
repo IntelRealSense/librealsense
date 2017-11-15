@@ -119,7 +119,7 @@ namespace librealsense
                     //pose stream is calculated but not streamed. can be queried by the host
                     continue;
                 }
-                auto profile = std::make_shared<motion_stream_profile>(platform::stream_profile{ 0, 0, fps, static_cast<uint32_t>(format) });
+                auto profile = std::make_shared<pose_stream_profile>(platform::stream_profile{ 0, 0, fps, static_cast<uint32_t>(format) });
                 profile->set_stream_type(RS2_STREAM_POSE);
                 // TM2_API - 6dof profile type enum behaves the same as stream index
                 profile->set_stream_index(static_cast<uint32_t>(tm_profile.profileType) + 1); 

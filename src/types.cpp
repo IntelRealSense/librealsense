@@ -170,6 +170,7 @@ namespace librealsense
             CASE(PLAYBACK)
             CASE(MOTION_PROFILE)
             CASE(POSE_FRAME)
+            CASE(POSE_PROFILE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE

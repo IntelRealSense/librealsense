@@ -49,8 +49,8 @@ void librealsense::record_sensor::open(const stream_profiles& requests)
             extension_type = RS2_EXTENSION_VIDEO_PROFILE;
         else if (Is<librealsense::motion_stream_profile_interface>(request))
             extension_type = RS2_EXTENSION_MOTION_PROFILE;
-        else
-            throw io_exception("Unsupported stream profile");
+        else if (Is<librealsense::pose_stream_profile_interface>(request))
+            extension_type = RS2_EXTENSION_POSE_PROFILE;
      
         m_device_record_snapshot_handler(extension_type, std::dynamic_pointer_cast<extension_snapshot>(snapshot), [this](const std::string& err) { stop_with_error(err); });
     }
@@ -175,22 +175,9 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
     case RS2_EXTENSION_INFO:    // [[fallthrough]]
         *ext = this;
         return true;
-
-    //case RS2_EXTENSION_DEBUG           : return extend_to_aux<RS2_EXTENSION_DEBUG          >(&m_sensor, ext);
     //TODO: Add once implements recordable: case RS2_EXTENSION_MOTION          : return extend_to_aux<RS2_EXTENSION_MOTION         >(m_device, ext);
-    //case RS2_EXTENSION_MOTION          : return extend_to_aux<RS2_EXTENSION_MOTION         >(&m_sensor, ext);
-    //case RS2_EXTENSION_VIDEO           : return extend_to_aux<RS2_EXTENSION_VIDEO          >(&m_sensor, ext);
-    //case RS2_EXTENSION_ROI             : return extend_to_aux<RS2_EXTENSION_ROI            >(&m_sensor, ext);
     case RS2_EXTENSION_DEPTH_SENSOR    : return extend_to_aux<RS2_EXTENSION_DEPTH_SENSOR   >(&m_sensor, ext);
-    //case RS2_EXTENSION_VIDEO_FRAME     : return extend_to_aux<RS2_EXTENSION_VIDEO_FRAME    >(&m_sensor, ext);
-    //case RS2_EXTENSION_MOTION_FRAME    : return extend_to_aux<RS2_EXTENSION_MOTION_FRAME   >(&m_sensor, ext);
-    //case RS2_EXTENSION_COMPOSITE_FRAME : return extend_to_aux<RS2_EXTENSION_COMPOSITE_FRAME>(&m_sensor, ext);
-    //case RS2_EXTENSION_POINTS          : return extend_to_aux<RS2_EXTENSION_POINTS         >(&m_sensor, ext);
-    //case RS2_EXTENSION_DEPTH_FRAME     : return extend_to_aux<RS2_EXTENSION_DEPTH_FRAME    >(&m_sensor, ext);
-    //case RS2_EXTENSION_ADVANCED_MODE   : return extend_to_aux<RS2_EXTENSION_ADVANCED_MODE  >(&m_sensor, ext);
-    //case RS2_EXTENSION_VIDEO_PROFILE   : return extend_to_aux<RS2_EXTENSION_VIDEO_PROFILE  >(&m_sensor, ext);
-    //case RS2_EXTENSION_PLAYBACK        : return extend_to_aux<RS2_EXTENSION_PLAYBACK       >(&m_sensor, ext);
-    //case RS2_EXTENSION_RECORD          : return extend_to_aux<RS2_EXTENSION_PLAYBACK       >(&m_sensor, ext);
+    //Other extensions are not expected to be extensions of a sensor
     default:
         LOG_WARNING("Extensions type is unhandled: " << extension_type);
         return false;

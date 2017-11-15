@@ -24,4 +24,11 @@ namespace librealsense
     };
 
     MAP_EXTENSION(RS2_EXTENSION_MOTION_PROFILE, librealsense::motion_stream_profile_interface);
+
+    class pose_stream_profile_interface : public virtual stream_profile_interface
+    {
+        //Empty for now
+    };
+
+    MAP_EXTENSION(RS2_EXTENSION_POSE_PROFILE, librealsense::pose_stream_profile_interface);
 }

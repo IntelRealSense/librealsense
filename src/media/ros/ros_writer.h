@@ -336,6 +336,10 @@ namespace librealsense
             std::string topic = ros_topic::imu_intrinsic_topic({ sensor_id.device_index, sensor_id.sensor_index, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) });
             write_message(topic, timestamp, motion_info_msg);
         }
+        void write_streaming_info(nanoseconds timestamp, const sensor_identifier& sensor_id, std::shared_ptr<pose_stream_profile_interface> profile)
+        {
+            write_stream_info(timestamp, sensor_id, profile);
+        }
         void write_extension_snapshot(uint32_t device_id, const nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
         {
             const auto ignored = 0u;
@@ -407,6 +411,12 @@ namespace librealsense
             case RS2_EXTENSION_MOTION_PROFILE:
             {
                 auto profile = SnapshotAs<RS2_EXTENSION_MOTION_PROFILE>(snapshot);
+                write_streaming_info(timestamp, { device_id, sensor_id }, profile);
+                break;
+            }
+            case RS2_EXTENSION_POSE_PROFILE:
+            {
+                auto profile = SnapshotAs<RS2_EXTENSION_POSE_PROFILE>(snapshot);
                 write_streaming_info(timestamp, { device_id, sensor_id }, profile);
                 break;
             }
