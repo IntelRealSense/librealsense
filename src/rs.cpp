@@ -15,6 +15,7 @@
 #include <media/ros/ros_reader.h>
 #include "core/advanced_mode.h"
 #include "proc/align.h"
+#include "proc/pointcloud.h"
 #include "proc/colorizer.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"

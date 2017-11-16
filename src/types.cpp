@@ -243,6 +243,7 @@ namespace librealsense
         CASE(MIN_DISTANCE)
         CASE(MAX_DISTANCE)
         CASE(COLOR_SCHEME)
+        CASE(TEXTURE_SOURCE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE

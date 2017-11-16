@@ -56,6 +56,7 @@ typedef enum rs2_option
     RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED             , /**< Perform histogram equalization post-processing on the depth data */
     RS2_OPTION_MIN_DISTANCE                               , /**< Minimal distance to the target */
     RS2_OPTION_MAX_DISTANCE                               , /**< Maximum distance to the target */
+    RS2_OPTION_TEXTURE_SOURCE                             , /**< Texture mapping stream unique ID */
     RS2_OPTION_COUNT                                      , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
 const char* rs2_option_to_string(rs2_option option);

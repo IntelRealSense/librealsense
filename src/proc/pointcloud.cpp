@@ -9,6 +9,7 @@
 #include "archive.h"
 #include "context.h"
 #include "environment.h"
+#include "option.h"
 
 namespace librealsense
 {
@@ -43,8 +44,20 @@ namespace librealsense
         _depth_units_ptr(nullptr),
         _mapped_intrinsics_ptr(nullptr),
         _extrinsics_ptr(nullptr),
-        _mapped(nullptr)
+        _mapped(nullptr), _invalidate_mapped(false)
     {
+
+        auto mapped_opt = std::make_shared<ptr_option<int>>(0, std::numeric_limits<int>::max(), 1, -1, &_mapped_stream_id, "Mapped stream ID");
+        register_option(RS2_OPTION_TEXTURE_SOURCE, mapped_opt);
+        float old_value = _mapped_stream_id;
+        mapped_opt->on_set([this, old_value](float x) mutable {
+            if (fabs(old_value - x) > 1e-6)
+            {
+                _invalidate_mapped = true;
+                old_value = x;
+            }
+        });
+
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
             auto inspect_depth_frame = [this](const rs2::frame& depth)
@@ -94,7 +107,12 @@ namespace librealsense
                 auto other_frame = (frame_interface*)other.get();
                 std::lock_guard<std::mutex> lock(_mutex);
 
-                if (_mapped.get() != other_frame->get_stream().get())
+                if (_mapped && _invalidate_mapped)
+                {
+                    _mapped = nullptr;
+                }
+
+                if (!_mapped.get())
                 {
                     _mapped = other_frame->get_stream();
                     _mapped_intrinsics_ptr = nullptr;
@@ -183,24 +201,25 @@ namespace librealsense
                 auto depth = composite.first_or_default(RS2_STREAM_DEPTH);
                 if (depth)
                 {
-                    auto id = depth.get_profile().unique_id();
                     inspect_depth_frame(depth);
                     process_depth_frame(depth);
                 }
-                else
-                {
-                    composite.foreach(inspect_other_frame);
-                }
+
+                composite.foreach([&](const rs2::frame& f) {
+                    if (f.get_profile().unique_id() == _mapped_stream_id)
+                    {
+                        inspect_other_frame(f);
+                    }
+                });
             }
             else
             {
                 if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
                 {
-                    auto id = f.get_profile().unique_id();
                     inspect_depth_frame(f);
                     process_depth_frame(f);
                 }
-                else
+                if (f.get_profile().unique_id() == _mapped_stream_id)
                 {
                     inspect_other_frame(f);
                 }

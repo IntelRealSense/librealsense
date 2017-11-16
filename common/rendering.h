@@ -744,18 +744,19 @@ namespace rs2
     class texture_buffer
     {
         GLuint texture;
-        rs2::frame_queue last_queue;
-        mutable rs2::frame last;
+        rs2::frame_queue last_queue[2];
+        mutable rs2::frame last[2];
 
     public:
         std::shared_ptr<colorizer> colorize;
 
-        rs2::frame get_last_frame() const {
-            last_queue.poll_for_frame(&last);
-            return last;
+        rs2::frame get_last_frame(bool with_texture = false) const {
+            auto idx = with_texture ? 1 : 0;
+            last_queue[idx].poll_for_frame(&last[idx]);
+            return last[idx];
         }
 
-        texture_buffer() : last_queue(1), texture(), 
+        texture_buffer() : last_queue(), texture(), 
             colorize(std::make_shared<colorizer>()) {}
 
         GLuint get_gl_handle() const { return texture; }
@@ -788,6 +789,7 @@ namespace rs2
             auto data = frame.get_data();
 
             auto image = frame.as<video_frame>();
+            auto rendered_frame = image; 
 
             if (image)
             {
@@ -807,7 +809,8 @@ namespace rs2
             case RS2_FORMAT_DISPARITY16:
                 if (frame.is<depth_frame>())
                 {
-                    data = colorize->colorize(frame).get_data();
+                    rendered_frame = colorize->colorize(frame);
+                    data = rendered_frame.get_data();
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
                 }
                 else glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
@@ -873,7 +876,8 @@ namespace rs2
             glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
             glBindTexture(GL_TEXTURE_2D, 0);
 
-            last_queue.enqueue(frame);
+            last_queue[0].enqueue(frame);
+            last_queue[1].enqueue(rendered_frame);
         }
 
         static void draw_axis(float axis_size = 1.f, float axisWidth = 4.f)
@@ -1082,21 +1086,21 @@ namespace rs2
             auto image = get_last_frame().as<video_frame>();
             if (!image) return false;
 
-            auto format = last.get_profile().format();
+            auto format = image.get_profile().format();
             switch (format)
             {
             case RS2_FORMAT_Z16:
             case RS2_FORMAT_Y16:
             case RS2_FORMAT_DISPARITY16:
             {
-                auto ptr = (const uint16_t*)last.get_data();
+                auto ptr = (const uint16_t*)image.get_data();
                 *result = ptr[y * (image.get_stride_in_bytes() / sizeof(uint16_t)) + x];
                 return true;
             }
             case RS2_FORMAT_RAW8:
             case RS2_FORMAT_Y8:
             {
-                auto ptr = (const uint8_t*)last.get_data();
+                auto ptr = (const uint8_t*)image.get_data();
                 *result = ptr[y * image.get_stride_in_bytes() + x];
                 return true;
             }

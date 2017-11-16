@@ -1581,8 +1581,7 @@ namespace rs2
         for (auto&& s : streams)
         {
             if (s.second.is_stream_visible() &&
-                s.second.texture->get_last_frame() &&
-                s.second.profile.stream_type() != RS2_STREAM_DEPTH)
+                s.second.texture->get_last_frame())
             {
                 if (selected_tex_source_uid == -1)
                 {
@@ -1619,8 +1618,7 @@ namespace rs2
             for (auto&& s : streams)
             {
                 if (s.second.is_stream_visible() &&
-                    s.second.texture->get_last_frame() &&
-                    s.second.profile.stream_type() != RS2_STREAM_DEPTH)
+                    s.second.texture->get_last_frame())
                 {
                     if (i == selected_tex_source)
                     {
@@ -1665,7 +1663,7 @@ namespace rs2
         frame tex;
         if (selected_tex_source_uid >= 0)
         {
-            tex = streams[selected_tex_source_uid].texture->get_last_frame();
+            tex = streams[selected_tex_source_uid].texture->get_last_frame(true);
             if (tex) pc.update_texture(tex);
         }
 
@@ -1926,7 +1924,7 @@ namespace rs2
                 std::string filename = ret;
                 if (!ends_with(to_lower(filename), ".png")) filename += ".png";
 
-                auto frame = texture->get_last_frame().as<video_frame>();
+                auto frame = texture->get_last_frame(true).as<video_frame>();
                 if (frame)
                 {
                     save_to_png(filename.data(), frame.get_width(), frame.get_height(), frame.get_bytes_per_pixel(), frame.get_data(), frame.get_width() * frame.get_bytes_per_pixel());
@@ -2927,7 +2925,7 @@ namespace rs2
 
         if (syncronize)
         {
-            auto tex = streams[selected_tex_source_uid].texture->get_last_frame();
+            auto tex = streams[selected_tex_source_uid].texture->get_last_frame(true);
             if (tex) s(tex);
         }
 
@@ -2949,7 +2947,7 @@ namespace rs2
             }
             else
             {
-                last_texture = streams[selected_tex_source_uid].texture->get_last_frame();
+                last_texture = streams[selected_tex_source_uid].texture->get_last_frame(true);
                 last_points = points;
             }
 

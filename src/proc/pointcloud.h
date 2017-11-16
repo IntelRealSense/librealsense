@@ -27,8 +27,10 @@ namespace librealsense
         rs2_intrinsics          _mapped_intrinsics;
         float                   _depth_units;
         rs2_extrinsics          _extrinsics;
+        std::atomic_bool        _invalidate_mapped;
 
         std::shared_ptr<stream_profile_interface> _stream, _mapped;
+        int                     _mapped_stream_id = -1;
         stream_profile_interface* _depth_stream = nullptr;
     };
 }
