@@ -379,7 +379,6 @@ namespace librealsense
                 break;
             }
             case RS2_EXTENSION_DEBUG:
-            case RS2_EXTENSION_MOTION:
                 break;
             //case RS2_EXTENSION_OPTION:
             //{

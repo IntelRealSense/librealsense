@@ -141,6 +141,34 @@ namespace rs2
         int _height = 0;
     };
 
+
+    class motion_stream_profile : public stream_profile
+    {
+    public:
+        explicit motion_stream_profile(const stream_profile& sp)
+            : stream_profile(sp)
+        {
+            rs2_error* e = nullptr;
+            if ((rs2_stream_profile_is(sp.get(), RS2_EXTENSION_MOTION_PROFILE, &e) == 0 && !e))
+            {
+                _profile = nullptr;
+            }
+            error::handle(e);
+        }
+
+        /**
+        * returns scale and bias of a the motion stream profile
+        */
+        rs2_motion_device_intrinsic get_motion_intrinsics() 
+        {
+            rs2_error *e = nullptr;
+            rs2_motion_device_intrinsic intrin;
+            rs2_get_motion_intrinsics(_profile, &intrin, &e);
+            error::handle(e);
+            return intrin;
+        }
+    };
+
     class frame
     {
     public:
@@ -163,7 +191,7 @@ namespace rs2
         }
 
         /**
-        * relases the frame handle
+        * releases the frame handle
         */
         ~frame()
         {
@@ -224,7 +252,7 @@ namespace rs2
 
         /**
         * retrieve frame number (from frame handle)
-        * \return               the frame nubmer of the frame, in milliseconds since the device was started
+        * \return               the frame number of the frame, in milliseconds since the device was started
         */
         unsigned long long get_frame_number() const
         {
@@ -446,8 +474,7 @@ namespace rs2
             return r;
         }
     };
-
-
+    
     class motion_frame : public frame
     {
     public:
@@ -468,8 +495,7 @@ namespace rs2
             return rs2_vector{data[0], data[1], data[2]};
         }
     };
-
-
+    
     class pose_frame : public frame
     {
     public:

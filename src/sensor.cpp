@@ -671,7 +671,7 @@ namespace librealsense
             {
                 auto p = elem.second;
                 platform::stream_profile sp{ 1, 1, p.fps, stream_to_fourcc(p.stream) };
-                auto profile = std::make_shared<stream_profile_base>(sp);
+                auto profile = std::make_shared<motion_stream_profile>(sp);
                 profile->set_stream_type(p.stream);
                 profile->set_format(p.format);
                 profile->set_framerate(p.fps);

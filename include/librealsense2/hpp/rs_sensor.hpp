@@ -361,24 +361,12 @@ namespace rs2
 
             return results;
         }
-
-        /**
-         * returns scale and bias of a motion stream
-         * \param stream    Motion stream type (Gyro / Accel / ...)
-         */
-        rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) {
-            rs2_error *e = nullptr;
-            rs2_motion_device_intrinsic intrin;
-            rs2_get_motion_intrinsics(_sensor.get(), stream, &intrin, &e);
-            error::handle(e);
-            return intrin;
-        }
-
-        sensor& operator=(const std::shared_ptr<rs2_sensor> other)
-        {
-            options::operator=(other);
+        
+        sensor& operator=(const std::shared_ptr<rs2_sensor> dev)
+        {  
+            options::operator=(dev);
             _sensor.reset();
-            _sensor = other;
+            _sensor = dev;
             return *this;
         }
 

@@ -63,6 +63,19 @@ typedef struct rs2_intrinsics
     float         coeffs[5]; /**< Distortion coefficients */
 } rs2_intrinsics;
 
+/** \brief Motion device intrinsics: scale, bias, and variances */
+typedef struct rs2_motion_device_intrinsic
+{
+    /* \internal
+    * Scale X       cross axis  cross axis  Bias X \n
+    * cross axis    Scale Y     cross axis  Bias Y \n
+    * cross axis    cross axis  Scale Z     Bias Z */
+    float data[3][4];          //!< Interpret data array values
+
+    float noise_variances[3];  //!< Variance of noise for X, Y, and Z axis
+    float bias_variances[3];   //!< Variance of bias for X, Y, and Z axis
+} rs2_motion_device_intrinsic;
+
 /** \brief Severity of the librealsense logger */
 typedef enum rs2_log_severity {
     RS2_LOG_SEVERITY_DEBUG, /**< Detailed information about ordinary operations */
@@ -81,7 +94,6 @@ typedef enum rs2_extension
     RS2_EXTENSION_UNKNOWN,
     RS2_EXTENSION_DEBUG,
     RS2_EXTENSION_INFO,
-    RS2_EXTENSION_MOTION,
     RS2_EXTENSION_OPTIONS,
     RS2_EXTENSION_VIDEO,
     RS2_EXTENSION_ROI,

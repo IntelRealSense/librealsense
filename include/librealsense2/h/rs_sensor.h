@@ -348,7 +348,15 @@ int rs2_stream_profile_is(const rs2_stream_profile* mode, rs2_extension type, rs
 * \param[out] height     height in pixels of the video stream
 * \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_get_video_stream_resolution(const rs2_stream_profile* from, int* width, int* height, rs2_error** error);
+void rs2_get_video_stream_resolution(const rs2_stream_profile* mode, int* width, int* height, rs2_error** error);
+
+/**
+* Obtain the intrinsics of a specific stream configuration from the device.
+* \param[in] mode          input stream profile
+* \param[out] intrinsics   Pointer to the struct to store the data in
+* \param[out] error        If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_get_motion_intrinsics(const rs2_stream_profile* mode, rs2_motion_device_intrinsic * intrinsics, rs2_error ** error);
 
 /**
 * Returns non-zero if selected profile is recommended for the sensor
@@ -357,7 +365,7 @@ void rs2_get_video_stream_resolution(const rs2_stream_profile* from, int* width,
 * \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return                non-zero if selected profile is recommended for the sensor
 */
-int rs2_is_stream_profile_default(const rs2_stream_profile* profile, rs2_error** error);
+int rs2_is_stream_profile_default(const rs2_stream_profile* mode, rs2_error** error);
 
 /**
 * get the number of supported stream profiles
@@ -385,11 +393,11 @@ void rs2_get_extrinsics(const rs2_stream_profile* from,
 
 /**
  * When called on a video profile, returns the intrinsics of specific stream configuration
- * \param[in] from          input stream profile
+ * \param[in] mode          input stream profile
  * \param[out] intrinsics   resulting intrinsics for the video profile
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_get_video_stream_intrinsics(const rs2_stream_profile* from, rs2_intrinsics* intrinsics, rs2_error** error);
+void rs2_get_video_stream_intrinsics(const rs2_stream_profile* mode, rs2_intrinsics* intrinsics, rs2_error** error);
 
 #ifdef __cplusplus
 }

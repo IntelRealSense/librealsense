@@ -154,7 +154,6 @@ namespace librealsense
             CASE(UNKNOWN)
             CASE(DEBUG)
             CASE(INFO)
-            CASE(MOTION)
             CASE(OPTIONS)
             CASE(VIDEO)
             CASE(ROI)

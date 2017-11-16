@@ -87,7 +87,7 @@ namespace librealsense
                     profile->make_default();
                 }
                 //auto intrinsics = get_motion_intrinsics(profile);
-                //profile->set_intrinsics([intrinsics](){return intrinsics;})
+                //profile->set_intrinsics([intrinsics](){ return intrinsics;});
                 results.push_back(profile);
             }
 

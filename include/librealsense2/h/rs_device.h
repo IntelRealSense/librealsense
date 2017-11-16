@@ -16,19 +16,6 @@ extern "C" {
 #include "rs_types.h"
 #include "rs_sensor.h"
 
-/** \brief Motion device intrinsics: scale, bias, and variances */
-typedef struct rs2_motion_device_intrinsic
-{
-    /* \internal
-    * Scale X       cross axis  cross axis  Bias X \n
-    * cross axis    Scale Y     cross axis  Bias Y \n
-    * cross axis    cross axis  Scale Z     Bias Z */
-    float data[3][4];          //!< Interpret data array values
-
-    float noise_variances[3];  //!< Variance of noise for X, Y, and Z axis
-    float bias_variances[3];   //!< Variance of bias for X, Y, and Z axis
-} rs2_motion_device_intrinsic;
-
 /**
 * Determines number of devices in a list.
 * \param[in]  info_list The list of connected devices captured using rs2_query_devices
@@ -102,15 +89,6 @@ void rs2_hardware_reset(const rs2_device * device, rs2_error ** error);
 * \return                               Device's response in a rs2_raw_data_buffer, which should be released by rs2_delete_raw_data
 */
 const rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error);
-
-/**
- * Obtain the intrinsics of a specific stream configuration from the device.
- * \param[in]  device       RealSense device to query
- * \param[in]  stream       Type of stream
- * \param[out] intrinsics   Pointer to the struct to store the data in
- * \param[out] error        If non-null, receives any error that occurs during this call, otherwise, errors are ignored
- */
-void rs2_get_motion_intrinsics(const rs2_sensor * device, rs2_stream stream, rs2_motion_device_intrinsic * intrinsics, rs2_error ** error);
 
 /**
 * Test if the given device can be extended to the requested extension.
