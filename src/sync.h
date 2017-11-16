@@ -10,7 +10,6 @@
 #include <vector>
 #include <mutex>
 #include <memory>
-#include "proc/align.h"
 
 namespace librealsense
 {
@@ -75,6 +74,8 @@ namespace librealsense
     };
     //sync_lock::ref = 0;
 
+    class synthetic_source_interface;
+
     struct syncronization_environment
     {
         synthetic_source_interface* source;
@@ -82,6 +83,7 @@ namespace librealsense
         single_consumer_queue<frame_holder>& matches;
     };
 
+    typedef int stream_id;
     typedef std::function<void(frame_holder, syncronization_environment)> sync_callback;
 
     class matcher_interface
@@ -186,21 +188,6 @@ namespace librealsense
     private:
         bool are_equivalent(double a, double b, int fps);
         std::map<matcher*, double> _last_arrived;
-
-    };
-
-    class syncer_proccess_unit : public processing_block
-    {
-    public:
-        syncer_proccess_unit();
-
-        ~syncer_proccess_unit()
-        {
-            _matcher.reset();
-        }
-    private:
-        std::unique_ptr<timestamp_composite_matcher> _matcher;
-        std::mutex _mutex;
 
     };
 }

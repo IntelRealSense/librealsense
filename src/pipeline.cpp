@@ -2,6 +2,10 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <algorithm>
+#include "source.h"
+#include "core/processing.h"
+#include "proc/synthetic-stream.h"
+#include "proc/syncer_processing_block.h"
 #include "pipeline.h"
 #include "stream.h"
 #include "media/record/record_device.h"
@@ -9,9 +13,9 @@
 
 namespace librealsense
 {
-    pipeline_processing_block::pipeline_processing_block(const std::vector<int>& streams_to_aggragate) :
+    pipeline_processing_block::pipeline_processing_block(const std::vector<int>& streams_to_aggregate) :
         _queue(new single_consumer_queue<frame_holder>()),
-        _streams_ids(streams_to_aggragate)
+        _streams_ids(streams_to_aggregate)
     {
         auto processing_callback = [&](frame_holder frame, synthetic_source_interface* source)
         {

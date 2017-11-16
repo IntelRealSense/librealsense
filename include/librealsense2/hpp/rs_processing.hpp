@@ -367,5 +367,41 @@ namespace rs2
          frame_queue _queue;
      };
 
+    class depth_filter : public options
+    {
+    public:
+        depth_filter() :_queue(1)
+        {
+            rs2_error* e = nullptr;
+            auto pb = std::shared_ptr<rs2_processing_block>(
+                rs2_create_depth_filter_block(&e),
+                rs2_delete_processing_block);
+            _block = std::make_shared<processing_block>(pb);
+            error::handle(e);
+
+            // Redirect options API to the processing block
+            options::operator=(pb);
+
+            _block->start(_queue);
+        }
+
+        frameset proccess(frameset frame)
+        {
+            (*_block)(frame);
+            rs2::frame f;
+            _queue.poll_for_frame(&f);
+            return frameset(f);
+        }
+
+        void operator()(frame f) const
+        {
+            (*_block)(std::move(f));
+        }
+    private:
+        friend class context;
+
+        std::shared_ptr<processing_block> _block;
+        frame_queue _queue;
+    };
 }
 #endif // LIBREALSENSE_RS2_PROCESSING_HPP

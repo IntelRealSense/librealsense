@@ -3,11 +3,6 @@
 
 #pragma once
 
-#include "core/processing.h"
-#include "proc/synthetic-stream.h"
-#include "image.h"
-#include "source.h"
-
 namespace librealsense
 {
     class pointcloud : public processing_block

@@ -9,6 +9,11 @@
 
 namespace rs2
 {
+    class context;
+    class device_list;
+    class pipeline_profile;
+    class device_hub;
+
     class device
     {
     public:
@@ -129,10 +134,10 @@ namespace rs2
         {
         }
     protected:
-        friend context;
-        friend device_list;
-        friend class pipeline_profile;
-        friend class device_hub;
+        friend class rs2::context;
+        friend class rs2::device_list;
+        friend class rs2::pipeline_profile;
+        friend class rs2::device_hub;
 
         std::shared_ptr<rs2_device> _dev;
         explicit device(std::shared_ptr<rs2_device> dev) : _dev(dev)

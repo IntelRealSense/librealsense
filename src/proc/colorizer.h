@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include "proc/synthetic-stream.h"
-
 #include <map>
 #include <vector>
 

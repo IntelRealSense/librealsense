@@ -1,14 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/rs.hpp"
-#include "../include/librealsense2/rsutil.h"
-
+#include "core/processing.h"
+#include "source.h"
 #include "core/video.h"
-#include "align.h"
-#include "archive.h"
-#include "context.h"
-#include "environment.h"
+#include "proc/synthetic-stream.h"
 
 namespace librealsense
 {
