@@ -554,7 +554,7 @@ int main(int argv, const char** argc) try
         ImGui::PopStyleColor();
 
         frameset f;
-        if(viewer_model.s.poll_for_frames(&f))
+        if(viewer_model.synchronize.poll_for_frames(&f))
             viewer_model.syncer_queue.enqueue(std::move(f));
 
         // Fetch frames from queues
@@ -568,7 +568,7 @@ int main(int argv, const char** argc) try
                         frame f;
                         if (queue.poll_for_frame(&f))
                         {
-                           viewer_model.upload_frame(std::move(f));
+                            viewer_model.upload_frame(std::move(f));
                         }
                     }
                     catch (const error& ex)

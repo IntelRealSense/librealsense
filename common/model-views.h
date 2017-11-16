@@ -481,14 +481,14 @@ namespace rs2
     public:
         async_pointclound_mapper(viewer_model& viewer)
             : processing_block([&](rs2::frame f, const rs2::frame_source& source)
-        {
-            this->proccess(std::move(f),source);
-        }),
-        viewer(viewer),
-        keep_calculating_pointcloud(true),
-        depth_stream_active(false),
-        resulting_3d_models(1),
-        t([this]() {render_loop(); })
+            {
+                this->proccess(std::move(f),source);
+            }),
+            viewer(viewer),
+            keep_calculating_pointcloud(true),
+            depth_stream_active(false),
+            resulting_3d_models(1),
+            t([this]() {render_loop(); })
         {
             processing_block.start(resulting_3d_models);
         }
@@ -559,8 +559,8 @@ namespace rs2
         float get_output_height() const { return (is_output_collapsed ? default_log_h : 20); }
 
         viewer_model()
-            :pc(*this),
-             synchronization_enable(true)
+            : pc(*this),
+              synchronization_enable(true)
         {
             reset_camera();
             rs2_error* e = nullptr;
@@ -630,7 +630,7 @@ namespace rs2
 
         float dim_level = 1.f;
 
-        rs2::syncer s;
+        rs2::syncer synchronize;
         rs2::frame_queue syncer_queue;
     private:
 

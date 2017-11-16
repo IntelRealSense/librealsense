@@ -1121,8 +1121,8 @@ namespace rs2
                 auto index = f.get_profile().unique_id();
                 if (viewer.synchronization_enable)
                 {
-                    if (index == viewer.selected_depth_source_uid || index ==  viewer.selected_tex_source_uid)
-                        viewer.s(f);
+                    if (index == viewer.selected_depth_source_uid || index == viewer.selected_tex_source_uid)
+                        viewer.synchronize(f);
                 }
                 queues.at(index).enqueue(f);
             });
@@ -1629,6 +1629,7 @@ namespace rs2
                     if (i == selected_tex_source)
                     {
                         selected_tex_source_uid = s.second.profile.unique_id();
+                        texture.colorize = s.second.texture->colorize;
                     }
                     i++;
                 }
@@ -1711,7 +1712,7 @@ namespace rs2
                 frame tex;
                 if (selected_tex_source_uid >= 0)
                 {
-                    tex = streams[selected_tex_source_uid].texture->get_last_frame();
+                    tex = streams[selected_tex_source_uid].texture->get_last_frame(true);
                     if (tex) pc.update_texture(tex);
                 }
 
@@ -2685,8 +2686,9 @@ namespace rs2
                         {
                             if(s.first == viewer.selected_tex_source_uid)
                             {
-                                update_texture(s.second.texture->get_last_frame());
-                                last_tex_frame = s.second.texture->get_last_frame();
+                                auto t = s.second.texture->get_last_frame(true);
+                                update_texture(t);
+                                last_tex_frame = t;
                             }
                             if(s.first == viewer.selected_depth_source_uid)
                             {
@@ -3207,7 +3209,7 @@ namespace rs2
 
     void viewer_model::upload_frame(frame&& f)
     {
-        if(f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+        if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
             pc.depth_stream_active = true;
 
         auto index = f.get_profile().unique_id();
