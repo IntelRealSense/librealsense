@@ -228,7 +228,7 @@ rs2_frame* rs2_allocate_composite_frame(rs2_source* source, rs2_frame** frames, 
 * \param[in] index       Index of the frame to extract within the composite frame
 * \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return                returns reference to a frame existing within the composite frame
-*                        If you wish to keep this frame after the composite is released, you need to call aquire_ref
+*                        If you wish to keep this frame after the composite is released, you need to call acquire_ref
 *                        Otherwise the resulting frame lifetime is bound by owning composite frame
 */
 rs2_frame* rs2_extract_frame(rs2_frame* composite, int index, rs2_error** error);

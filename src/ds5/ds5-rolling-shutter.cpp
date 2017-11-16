@@ -25,7 +25,8 @@ namespace librealsense
     {
         using namespace ds;
 
-        if (_fw_version >= firmware_version("5.5.8.0"))
+        auto pid = group.uvc_devices.front().pid;
+        if ((_fw_version >= firmware_version("5.5.8.0")) && (pid != RS_USB2_PID))
         {
             get_depth_sensor().register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE,
                 std::make_shared<uvc_xu_option<uint8_t>>(get_depth_sensor(),

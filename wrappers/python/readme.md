@@ -22,8 +22,17 @@
 1. Install Python 2 or 3 for windows
   * You can find the downloads on the official Python website [here](https://www.python.org/downloads/windows/)
 2. When running cmake, select the BUILD_PYTHON_BINDINGS option
+> `-DBUILD_PYTHON_BINDINGS=true`
+3. If you have multiple python installations on your machine you can use:
+> `-DPYTHON_EXECUTABLE=<path to python executable`
+
+  For example: `-DPYTHON_EXECUTABLE=C:/Python27/python.exe`
 
 ## Examples
+
+> For a list of full code examples see the [examples](./examples) folder
+
+#### Streaming using _rs.pipeline_
 ```python
 # First import the library
 import pyrealsense2 as rs
@@ -47,7 +56,7 @@ try:
                 dist = depth.get_distance(x, y)
                 if 0 < dist and dist < 1:
                     coverage[x/10] += 1
-            
+
             if y%20 is 19:
                 line = ""
                 for c in coverage:
@@ -56,12 +65,7 @@ try:
                 print(line)
 ```
 
-Additionally the following examples are available:
- - [Tutorial 1](./python-tutorial-1-depth.py)
- - [RS400 Advanced Mode](./python-rs400-advanced-mode-example.py)
- - [Backend Example](./pybackend_example_1_general.py)
-
-### NumPy Integration
+#### NumPy Integration
 Librealsense frames support the buffer protocol. A numpy array can be constructed using this protocol with no data marshalling overhead:
 ```python
 import numpy as np
@@ -69,4 +73,4 @@ depth = frames.get_depth_frame()
 depth_data = depth.as_frame().get_data()
 np_image = np.asanyarray(depth_data)
 ```
-A simple viewer example with NumPy and OpenCV can be found [here](./opencv_viewer_example.py)
+

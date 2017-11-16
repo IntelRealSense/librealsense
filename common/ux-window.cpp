@@ -14,7 +14,7 @@ namespace rs2
         _win(nullptr), _width(0), _height(0), _output_height(0),
         _font_14(nullptr), _font_18(nullptr), _app_ready(false),
         _first_frame(true), _query_devices(true), _missing_device(false),
-        _hourglass_index(0), _dev_stat_message{}
+        _hourglass_index(0), _dev_stat_message{}, _keep_alive(true)
     {
         if (!glfwInit())
             exit(1);
@@ -22,12 +22,19 @@ namespace rs2
         rs2_error* e = nullptr;
         _title_str = to_string() << title << " v" << api_version_to_string(rs2_get_api_version(&e));
 
+        _width = 1024;
+        _height = 768;
+
+        // Dynamically adjust new window size (by detecting monitor resolution)
         auto primary = glfwGetPrimaryMonitor();
-        const auto mode = glfwGetVideoMode(primary);
+        if (primary)
+        {
+            const auto mode = glfwGetVideoMode(primary);
+            _width = int(mode->width * 0.7f);
+            _height = int(mode->height * 0.7f);
+        }
 
         // Create GUI Windows
-        _width = int(mode->width * 0.7f);
-        _height = int(mode->height * 0.7f);
         _win = glfwCreateWindow(_width, _height, _title_str.c_str(), nullptr, nullptr);
         glfwMakeContextCurrent(_win);
         ImGui_ImplGlfw_Init(_win, true);
@@ -97,8 +104,10 @@ namespace rs2
 
         if (_first_frame)
         {
-            std::thread first_load([&]() {
-                do
+            assert(!_first_load.joinable()); // You must call to reset() before initiate new thread
+
+            _first_load = std::thread([&]() {
+                while (_keep_alive && !_app_ready)
                 {
                     try
                     {
@@ -108,10 +117,9 @@ namespace rs2
                     {
                         std::this_thread::sleep_for(std::chrono::seconds(1)); // Wait for connect event and retry
                     }
-                } while (!_app_ready);
+                }
             });
             _first_frame = false;
-            first_load.detach();
         }
 
         // If we are just getting started, render the Splash Screen instead of normal UI
@@ -163,7 +171,7 @@ namespace rs2
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
             ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
             ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
-            ImGui::SetNextWindowPos({ (float)_width/2 - 150, (float)_height/2 + 70 });
+            ImGui::SetNextWindowPos({ (float)_width / 2 - 150, (float)_height / 2 + 70 });
             ImGui::PushFont(_font_18);
             ImGui::SetNextWindowSize({ (float)_width, (float)_height });
             ImGui::Begin("Splash Screen Banner", nullptr, flags);
@@ -211,6 +219,12 @@ namespace rs2
 
     ux_window::~ux_window()
     {
+        if (_first_load.joinable())
+        {
+            _keep_alive = false;
+            _first_load.join();
+        }
+
         ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
         ImGui_ImplGlfw_Shutdown();
         glfwDestroyWindow(_win);
@@ -262,6 +276,13 @@ namespace rs2
 
     void ux_window::reset()
     {
+        if (_first_load.joinable())
+        {
+            _keep_alive = false;
+            _first_load.join();
+            _keep_alive = true;
+        }
+
         _query_devices = true;
         _missing_device = false;
         _hourglass_index = 0;
@@ -269,5 +290,10 @@ namespace rs2
         _app_ready = false;
         _splash_timer.reset();
         _dev_stat_message = u8"\uf287 Please connect Intel RealSense device!";
+
+        {
+            std::lock_guard<std::mutex> lock(_on_load_message_mtx);
+            _on_load_message.clear();
+        }
     }
 }

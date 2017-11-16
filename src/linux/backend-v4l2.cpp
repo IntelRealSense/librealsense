@@ -132,11 +132,11 @@ namespace librealsense
             }
         }
 
-        void named_mutex::aquire()
+        void named_mutex::acquire()
         {
             auto ret = lockf(_fildes, F_LOCK, 0);
             if (ret != 0)
-                throw linux_backend_exception(to_string() << "Aquire failed");
+                throw linux_backend_exception(to_string() << "Acquire failed");
         }
 
         void named_mutex::release()
@@ -520,7 +520,7 @@ namespace librealsense
         void v4l_uvc_device::probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers)
         {
             if(!zero_copy)
-                buffers = 1;
+                buffers = 3;
 
             if(!_is_capturing && !_callback)
             {

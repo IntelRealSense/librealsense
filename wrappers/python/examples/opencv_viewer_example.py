@@ -1,3 +1,10 @@
+## License: Apache 2.0. See LICENSE file in root directory.
+## Copyright(c) 2015-2017 Intel Corporation. All Rights Reserved.
+
+###############################################
+##      Open CV and Numpy integration        ##
+###############################################
+
 import pyrealsense2 as rs
 import numpy as np
 import cv2

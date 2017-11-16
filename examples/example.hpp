@@ -89,7 +89,7 @@ public:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, frame.get_data());
             break;
         default:
-            throw std::runtime_error("The requested format is not suported by this demo!");
+            throw std::runtime_error("The requested format is not supported by this demo!");
         }
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

@@ -23,6 +23,8 @@ namespace rs2
             _viewer_model.allow_3d_source_change = false;
             _viewer_model.allow_stream_close = false;
             _viewer_model.draw_plane = true;
+            _viewer_model.synchronization_enable = false;
+            _viewer_model.support_non_syncronized_mode = false; //pipeline outputs only syncronized frameset
         }
 
         bool tool_model::start(ux_window& window)
@@ -46,8 +48,18 @@ namespace rs2
             {
                 if (valid_config = cfg.can_resolve(_pipe))
                 {
-                    _pipe.start(cfg);
-                    break;
+                    try {
+                        _pipe.start(cfg);
+                        break;
+                    }
+                    catch (...)
+                    {
+                        if (!_device_in_use)
+                        {
+                            window.add_on_load_message("Device is not functional or busy!");
+                            _device_in_use = true;
+                        }
+                    }
                 }
             }
 
@@ -748,6 +760,7 @@ namespace rs2
             }
             catch(...){}
 
+            _device_in_use = false;
             _first_frame = true;
             win.reset();
         }

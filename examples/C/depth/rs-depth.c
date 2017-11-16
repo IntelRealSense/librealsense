@@ -56,7 +56,7 @@ float get_depth_unit_value(const rs2_device* const dev)
 
         if (1 == is_depth_sensor_found)
         {
-            depth_scale = rs2_get_option(sensor, RS2_OPTION_DEPTH_UNITS, &e);
+            depth_scale = rs2_get_option((const rs2_options*)sensor, RS2_OPTION_DEPTH_UNITS, &e);
             check_error(e);
             rs2_delete_sensor(sensor);
             break;
