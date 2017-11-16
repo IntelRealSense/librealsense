@@ -732,7 +732,7 @@ namespace librealsense
         {
             if (!try_lock())
             {
-                throw std::runtime_error("Aquire failed!");
+                throw std::runtime_error("Acquire failed!");
             }
         }
 

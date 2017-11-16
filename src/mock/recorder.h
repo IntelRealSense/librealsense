@@ -458,7 +458,7 @@ namespace librealsense
                 {
                     auto&& c = _rec->add_call(k);
                     c.had_error = true;
-                    c.inline_string = "Unknown exception has occured!";
+                    c.inline_string = "Unknown exception has occurred!";
 
                     throw;
                 }
