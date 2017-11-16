@@ -3,27 +3,25 @@
 
 #pragma once
 
-#include "core/processing.h"
-#include "image.h"
-#include "source.h"
-
 namespace librealsense
 {
+    class synthetic_source_interface;
+
     class synthetic_source : public synthetic_source_interface
     {
     public:
         synthetic_source(frame_source& actual)
-            : _actual_source(actual), _c_wrapper(new rs2_source { this })
+            : _actual_source(actual), _c_wrapper(new rs2_source{ this })
         {
         }
 
         frame_interface* allocate_video_frame(std::shared_ptr<stream_profile_interface> stream,
-                                              frame_interface* original,
-                                              int new_bpp = 0,
-                                              int new_width = 0,
-                                              int new_height = 0,
-                                              int new_stride = 0,
-                                              rs2_extension frame_type = RS2_EXTENSION_VIDEO_FRAME) override;
+            frame_interface* original,
+            int new_bpp = 0,
+            int new_width = 0,
+            int new_height = 0,
+            int new_stride = 0,
+            rs2_extension frame_type = RS2_EXTENSION_VIDEO_FRAME) override;
 
         frame_interface* allocate_composite_frame(std::vector<frame_holder> frames) override;
 
@@ -49,7 +47,7 @@ namespace librealsense
 
         synthetic_source_interface& get_source() override { return _source_wrapper; }
 
-        virtual ~processing_block(){_source.flush();}
+        virtual ~processing_block() { _source.flush(); }
     protected:
         frame_source _source;
         std::mutex _mutex;

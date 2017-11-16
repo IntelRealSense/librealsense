@@ -14,9 +14,14 @@
 #include <media/ros/ros_writer.h>
 #include <media/ros/ros_reader.h>
 #include "core/advanced_mode.h"
+#include "source.h"
+#include "core/processing.h"
+#include "proc/synthetic-stream.h"
 #include "proc/align.h"
 #include "proc/colorizer.h"
 #include "proc/pointcloud.h"
+#include "proc/syncer_processing_block.h"
+#include "proc/decimation_filter.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"
 #include "../include/librealsense2/h/rs_types.h"
@@ -1620,6 +1625,15 @@ rs2_processing_block* rs2_create_colorizer(rs2_error** error) BEGIN_API_CALL
     auto res2 = (rs2_options*)res;
 
     return res;
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+
+rs2_processing_block* rs2_create_depth_filter_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::decimation_filter>();
+
+    return new rs2_processing_block{ block };
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
