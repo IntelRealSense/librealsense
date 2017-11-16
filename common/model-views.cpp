@@ -2957,6 +2957,69 @@ namespace rs2
                 streams[kvp.first].show_metadata(mouse);
         }
     }
+    using point = std::array<float, 3>;
+    using color = point;
+    using face = std::array<point, 4>;
+    using colored_cube = std::array<std::pair<face, color>, 6>;
+    
+    constexpr std::array<point, 2> tm2_lenses()
+    {
+        constexpr point v5{ -1.0f,  2.0f, -0.5f };
+        constexpr point v6{  1.0f,  2.0f, -0.5f };
+        constexpr point v7{ -1.0f, -2.0f, -0.5f };
+        constexpr point v8{  1.0f, -2.0f, -0.5f };
+        constexpr float len_x = v8[0] - v7[0];
+        constexpr float len_y = v6[1] - v8[1];
+
+        constexpr point center_a{ v7[0] + len_x / 3, v6[1] - len_y / 3, v5[2] };
+        constexpr point center_b{ v7[0] + len_x / 3, v8[1] + len_y / 3, v5[2] };
+        return { center_a , center_b };
+    }
+
+    constexpr colored_cube create_cube()
+    {
+        constexpr point v1{ -1.0f, -2.0f,  0.5f };
+        constexpr point v2{ 1.0f, -2.0f,  0.5f };
+        constexpr point v3{ 1.0f,  2.0f,  0.5f };
+        constexpr point v4{ -1.0f,  2.0f,  0.5f };
+        constexpr point v5{ -1.0f,  2.0f, -0.5f };
+        constexpr point v6{ 1.0f,  2.0f, -0.5f };
+        constexpr point v7{ -1.0f, -2.0f, -0.5f };
+        constexpr point v8{ 1.0f, -2.0f, -0.5f };
+
+        constexpr face f1{ v1,v2,v3,v4 };
+        constexpr face f2{ v2,v8,v6,v3 };
+        constexpr face f3{ v4,v3,v6,v5 };
+        constexpr face f4{ v1,v4,v5,v7 };
+        constexpr face f5{ v7,v8,v6,v5 };
+        constexpr face f6{ v1,v2,v8,v7 };
+
+        constexpr std::array<point, 6> colors{ {
+            { 0.7f, 0.7f, 0.7f }, //Back
+            { 0.7f, 0.7f, 0.7f }, //Side
+            { 0.7f, 0.7f, 0.7f }, //Side
+            { 0.7f, 0.7f, 0.7f }, //Side
+            { 0.4f, 0.4f, 0.4f }, //Front
+            { 0.7f, 0.7f, 0.7f }  //Side
+        } };
+
+        return colored_cube{ { { f1,colors[0] },{ f2,colors[1] },{ f3,colors[2] },{ f4,colors[3] },{ f5,colors[4] },{ f6,colors[5] } } };
+    }
+    void draw_hollow_circle(point p, float radius, const rs2_pose& pose_data, float scale_factor) {
+        int i;
+        int lineAmount = 100;
+        GLfloat twicePi = 2.0f * M_PI;
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glLineWidth(5);
+        glBegin(GL_LINE_LOOP);
+        for (i = 0; i <= lineAmount; i++) 
+        {
+            point pp = { p[0] + (radius * cos(i *  twicePi / lineAmount)), p[1] + (radius* sin(i * twicePi / lineAmount)), p[2] };
+            point center = texture_buffer::transform_by_pose(pose_data, pp);
+            glVertex3f(center[0] * scale_factor, center[1] * scale_factor, center[2]* scale_factor);
+        }
+        glEnd();
+    }
 
     void viewer_model::render_3d_view(const rect& viewer_rect, float scale_factor)
     {
@@ -3022,22 +3085,76 @@ namespace rs2
 
         glColor4f(1.f, 1.f, 1.f, 1.f);
 
-
-        if(!paused)
+        if (syncronize)
         {
-            auto res = pc.get_points();
-
-            for (auto&& f : res)
+            auto tex = streams[selected_tex_source_uid].texture->get_last_frame();
+            if (tex) s(tex);
+        }
+        for (auto&& stream : streams)
+        {
+            if (stream.second.profile.stream_type() == RS2_STREAM_POSE)
             {
-                if (f.is<rs2::points>())
-                    last_points = f;
-                else
-                    last_texture = f;
+                auto f = stream.second.texture->get_last_frame();
+                auto pose = f.as<pose_frame>();
+                if (!pose)
+                    continue;
+
+                constexpr colored_cube box = create_cube();
+                constexpr float scale_factor = 0.15f;
+
+                rs2_pose pose_data = pose.get_pose_data();
+                // Coordinate System correction:
+                std::swap(pose_data.rotation.y, pose_data.rotation.w);
+                pose_data.translation.x *= 2.5f;
+                pose_data.translation.y *= 2.5f;
+                pose_data.translation.z *= 2.5f;
+
+                // Drawing pose:
+                glBegin(GL_QUADS);
+                for (auto&& colored_face : box)
+                {
+                    auto& c = colored_face.second;
+                    glColor3f(c[0], c[1], c[2]);
+                    for (auto&& v : colored_face.first)
+                    {
+                        point po = texture_buffer::transform_by_pose(pose_data, v);
+                        glVertex3f(po[0] * scale_factor, po[1] * scale_factor, po[2] * scale_factor);
+                    }
+                }
+                glEnd();
+                auto lenses = tm2_lenses();
+                float radius = 0.3;
+                for (auto&& lens : lenses)
+                {
+                    draw_hollow_circle(lens, radius, pose_data, scale_factor);
+                }
+                //TODO: distinguish between the different objects
+            }
+        }
+        if (auto points = pc.get_points())
+        {
+            if (syncronize)
+            {
+                s(points);
+                rs2::frameset fs;
+                if (s.poll_for_frames(&fs))
+                    if (fs && fs.size() > 1)
+                    {
+                        for (auto&& f : fs)
+                        {
+                            if (f.is<rs2::points>()) last_points = f;
+                            else last_texture = f;
+                        }
+                    }
+            }
+            else
+            {
+                last_texture = streams[selected_tex_source_uid].texture->get_last_frame();
+                last_points = points;
             }
 
-        }
-        if (draw_frustrum && last_points)
-        {
+            if (draw_frustrum)
+            {
                 glLineWidth(1.f);
                 glBegin(GL_LINES);
 
