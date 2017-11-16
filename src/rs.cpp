@@ -16,6 +16,7 @@
 #include "core/advanced_mode.h"
 #include "proc/align.h"
 #include "proc/colorizer.h"
+#include "proc/pointcloud.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"
 #include "../include/librealsense2/h/rs_types.h"
