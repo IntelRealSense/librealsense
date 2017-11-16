@@ -10,6 +10,7 @@
 #include "proc/synthetic-stream.h"
 #include "environment.h"
 #include "pointcloud.h"
+#include "option.h"
 
 namespace librealsense
 {
