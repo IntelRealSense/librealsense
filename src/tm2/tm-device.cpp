@@ -45,10 +45,11 @@ namespace librealsense
             std::vector<TrackingData::VideoProfile> video_profiles(_tm_supported_profiles.video, _tm_supported_profiles.video + VideoProfileMax);
             for (auto tm_profile : video_profiles)
             {
+                rs2_stream stream = RS2_STREAM_FISHEYE; //TM2_API provides only fisheye video streams
                 platform::stream_profile p = { tm_profile.profile.width, tm_profile.profile.height, tm_profile.fps, static_cast<uint32_t>(tm_profile.profile.pixelFormat) };
                 auto profile = std::make_shared<video_stream_profile>(p);
                 profile->set_dims(p.width, p.height);
-                profile->set_stream_type(RS2_STREAM_FISHEYE); //TM2_API provides only fisheye video streams
+                profile->set_stream_type(stream);
                 //TM2_API video sensor index represents a fisheye virtual sensor.
                 profile->set_stream_index(tm_profile.sensorIndex + 1);  // for nice presentation by the viewer - add 1 to stream index
                 profile->set_format(convertTm2PixelFormat(tm_profile.profile.pixelFormat));
@@ -58,7 +59,9 @@ namespace librealsense
                 {
                     profile->make_default();
                 }
-
+                stream_profile sp = { stream, profile->get_stream_index(), p.width, p.height, p.fps, profile->get_format() };
+                auto intrinsics = get_intrinsics(sp);
+                profile->set_intrinsics([intrinsics]() { return intrinsics; });
                 results.push_back(profile);
 
                 //assign_stream(_fisheye_left, profile);             
@@ -86,8 +89,8 @@ namespace librealsense
                 {
                     profile->make_default();
                 }
-                //auto intrinsics = get_motion_intrinsics(profile);
-                //profile->set_intrinsics([intrinsics](){ return intrinsics;});
+                auto intrinsics = get_motion_intrinsics(*profile);
+                profile->set_intrinsics([intrinsics](){ return intrinsics;});
                 results.push_back(profile);
             }
 
@@ -106,7 +109,8 @@ namespace librealsense
                 {
                     profile->make_default();
                 }
-
+                auto intrinsics = get_motion_intrinsics(*profile);
+                profile->set_intrinsics([intrinsics]() { return intrinsics; });
                 results.push_back(profile);
             }
 
@@ -286,13 +290,13 @@ namespace librealsense
             return result;
         }
 
-        rs2_motion_device_intrinsic get_motion_intrinsics(const stream_profile& profile) const 
+        rs2_motion_device_intrinsic get_motion_intrinsics(const motion_stream_profile_interface& profile) const
         {
             rs2_motion_device_intrinsic result;
             TrackingData::MotionIntrinsics tm_intrinsics;
-            int stream_index = profile.index - 1; 
+            int stream_index = profile.get_stream_index() - 1; 
             SensorType type = SensorType::Max;
-            switch (profile.stream)
+            switch (profile.get_stream_type())
             {
             case RS2_STREAM_ACCEL:
                 type = SensorType::Accelerometer;

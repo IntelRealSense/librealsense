@@ -234,9 +234,43 @@ public:
                 std::cerr << "Failed to get intrinsics for the given stream. " << e.what() << std::endl;
             }
         }
+        else if (auto motion_stream = stream.as<rs2::motion_stream_profile>())
+        {
+            try
+            {
+                //If the stream is indeed a motion stream, we can now simply call get_motion_intrinsics()
+                rs2_motion_device_intrinsic intrinsics = motion_stream.get_motion_intrinsics();
+
+                std::cout << " Scale X      cross axis      cross axis  Bias X \n";
+                std::cout << " cross axis    Scale Y        cross axis  Bias Y  \n";
+                std::cout << " cross axis    cross axis     Scale Z     Bias Z  \n";
+                for (int i = 0; i < 3; i++)
+                {
+                    for (int j = 0; j < 4; j++)
+                    {
+                        std::cout << intrinsics.data[i][j] << "    ";
+                    }
+                    std::cout << "\n";
+                }
+                
+                std::cout << "Variance of noise for X, Y, Z axis \n";
+                for (int i = 0; i < 3; i++)
+                    std::cout << intrinsics.noise_variances[i] << " ";
+                std::cout << "\n";
+
+                std::cout << "Variance of bias for X, Y, Z axis \n";
+                for (int i = 0; i < 3; i++)
+                    std::cout << intrinsics.bias_variances[i] << " ";
+                std::cout << "\n";
+            }
+            catch (const std::exception& e)
+            {
+                std::cerr << "Failed to get intrinsics for the given stream. " << e.what() << std::endl;
+            }
+        }
         else
         {
-            std::cerr << "Given stream profile is not a video stream profile" << std::endl;
+            std::cerr << "Given stream profile has no intrinsics data" << std::endl;
         }
     }
 
