@@ -414,19 +414,7 @@ namespace librealsense
 
     void ds5_advanced_mode_base::set_census_radius(const STCensusRadius& val)
     {
-        /////////////////////////////////////////////////////////////////////////////////////////
-        // Workaround for bug DSO-7649 Can't load visual presets with LibRS2.8.1 and FW 5.8.13 //
-        /////////////////////////////////////////////////////////////////////////////////////////
-        static const int min = 1;
-        static const int max = 9;
-        auto temp_val(val);
-        if (temp_val.uDiameter < min || temp_val.uDiameter > max)
-            temp_val.uDiameter = max;
-        if (temp_val.vDiameter < min || temp_val.vDiameter > max)
-            temp_val.vDiameter = max;
-        /////////////////////////////////////////////////////////////////////////////////////////
-
-        set(temp_val, advanced_mode_traits<STCensusRadius>::group);
+        set(val, advanced_mode_traits<STCensusRadius>::group);
     }
 
     void ds5_advanced_mode_base::set_laser_power(const laser_power_control& val)
