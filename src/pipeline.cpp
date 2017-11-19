@@ -2,8 +2,6 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <algorithm>
-#include "source.h"
-#include "core/processing.h"
 #include "proc/synthetic-stream.h"
 #include "proc/syncer_processing_block.h"
 #include "pipeline.h"

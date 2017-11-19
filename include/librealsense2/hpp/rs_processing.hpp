@@ -215,7 +215,7 @@ namespace rs2
 
         void map_to(frame mapped)
         {
-            _block->set_option(RS2_OPTION_TEXTURE_SOURCE, mapped.get_profile().unique_id());
+            _block->set_option(RS2_OPTION_TEXTURE_SOURCE, float(mapped.get_profile().unique_id()));
             if (mapped.get_profile().stream_type() != RS2_STREAM_DEPTH)
                 _block->invoke(std::move(mapped));
         }

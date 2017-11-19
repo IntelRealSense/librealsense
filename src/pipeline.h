@@ -3,12 +3,12 @@
 
 #pragma once
 
-#include "device_hub.h"
-//#include "proc/synthetic-stream.h"
-#include "sync.h"
-#include "config.h"
 #include <map>
 #include <utility>
+
+#include "device_hub.h"
+#include "sync.h"
+#include "config.h"
 
 namespace librealsense
 {

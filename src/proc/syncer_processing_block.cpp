@@ -4,7 +4,6 @@
 #include <functional>
 #include "source.h"
 #include "sync.h"
-#include "core/processing.h"
 #include "proc/synthetic-stream.h"
 #include "proc/syncer_processing_block.h"
 

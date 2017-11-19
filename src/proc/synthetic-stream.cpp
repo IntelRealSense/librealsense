@@ -1,8 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "core/processing.h"
-#include "source.h"
 #include "core/video.h"
 #include "proc/synthetic-stream.h"
 

@@ -2,8 +2,6 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #include "../include/librealsense2/rs.hpp"
 
-#include "source.h"
-#include "core/processing.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation_filter.h"
 
@@ -14,30 +12,34 @@ namespace librealsense
     decimation_filter::decimation_filter():
         _decimation_mode(rs2_median),
         _depth_units(0.001f),
-        _decimation_factor(1),
+        _decimation_factor(16),
         _prev_factor(0),
         _kernel_size(1),
         _width(0), _height(0)
     {
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
-            rs2::frame ret = f;
-            if (auto composite = f.as<rs2::frameset>())
+            rs2::frame tgt=f, depth;
+
+            rs2::frameset composite = f.as<rs2::frameset>();
+
+            depth = (composite) ? composite.first_or_default(RS2_STREAM_DEPTH) : f;
+
+            if (depth) // Processing required
             {
-                auto depth = composite.first_or_default(RS2_STREAM_DEPTH);
-                if (depth)
+                update_internals(depth);
+                if ( tgt = prepare_target_frame(depth, source))
                 {
-                    update_internals(depth);
-                    if (auto tgt = prepare_target_frame(depth, source))
-                    {
-                        auto src = depth.as<rs2::video_frame>();
-                        downsample_depth(static_cast<const uint16_t*>(src.get_data()),
-                                         static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
-                            src.get_width(), src.get_height(), this->_decimation_factor);
-                    }
+                    auto src = depth.as<rs2::video_frame>();
+                    downsample_depth(static_cast<const uint16_t*>(src.get_data()),
+                        static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
+                        src.get_width(), src.get_height(), this->_decimation_factor);
                 }
             }
-            source.frame_ready(ret);
+
+            rs2::frame out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
+
+            source.frame_ready(out);
         };
 
         auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
@@ -50,7 +52,20 @@ namespace librealsense
         if (!_source_stream_profile)
         {
             _source_stream_profile = rs2::stream_profile(f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16));
+            _target_stream_profile = _source_stream_profile;
         }
+        auto vf = f.as<rs2::video_frame>();
+        auto vp = _target_stream_profile.as<rs2::video_stream_profile>();
+
+        if ((vp.width()%_decimation_factor) || (vp.height() % _decimation_factor))
+            throw invalid_value_exception(to_string() << "Invalid decimation factor: " << _decimation_factor
+                << " for frame size [" << vp.width() << "," << vp.height() << "]");
+
+        //TODO generate video_stream_profile with correct intrinsic data
+        //// Recalculate the target frame dimensions
+        //vp.assign(  vp.width() / _decimation_factor,
+        //            vp.height() / _decimation_factor,
+        //            vf.get_stride(), vf.get_bpp());
     }
 
     rs2::frame decimation_filter::prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source)
@@ -59,7 +74,8 @@ namespace librealsense
         return source.allocate_video_frame(_target_stream_profile, f, 2,
             vf.get_width() / _decimation_factor,
             vf.get_height()/ _decimation_factor,
-            vf.get_width() * 2, RS2_EXTENSION_DEPTH_FRAME);
+            vf.get_stride_in_bytes() / _decimation_factor,
+            RS2_EXTENSION_DEPTH_FRAME);
     }
 }
 
@@ -79,7 +95,9 @@ void downsample_depth(const uint16_t * frame_data_in, uint16_t * frame_data_out,
     std::vector<uint16_t*> pixel_raws(scale);
     uint16_t* block_start = const_cast<uint16_t*>(frame_data_in);
 
-    for (size_t j = 0; j < height_out; j++)
+    //#pragma omp parallel for schedule(dynamic) //Using OpenMP to try to parallelise the loop
+    //TODO Evgeni
+    for (int j = 0; j < height_out; j++)
     {
         // Mark the beginning of each of the N lines that the filter will run upon
         for (size_t i = 0; i < pixel_raws.size(); i++)

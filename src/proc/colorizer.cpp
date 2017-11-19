@@ -3,8 +3,6 @@
 
 #include "../include/librealsense2/rs.hpp"
 
-#include "source.h"
-#include "core/processing.h"
 #include "proc/synthetic-stream.h"
 #include "context.h"
 #include "environment.h"

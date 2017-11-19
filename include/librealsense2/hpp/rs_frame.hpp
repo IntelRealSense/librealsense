@@ -466,6 +466,7 @@ namespace rs2
             if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_COMPOSITE_FRAME, &e) == 0 && !e))
             {
                 reset();
+                // TODO - Evgeni  - throw exception
             }
             error::handle(e);
 

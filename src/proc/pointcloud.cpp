@@ -4,9 +4,6 @@
 #include "../include/librealsense2/rs.hpp"
 #include "../include/librealsense2/rsutil.h"
 
-#include "source.h"
-#include "core/video.h"
-#include "core/processing.h"
 #include "proc/synthetic-stream.h"
 #include "environment.h"
 #include "pointcloud.h"
