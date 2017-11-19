@@ -407,11 +407,19 @@ namespace librealsense
             }
             power_state get_power_state() const override { return _state; }
 
-            void init_xu(const extension_unit& xu) override {};
+            void init_xu(const extension_unit& xu) override {
+                // TODO : implement.
+            };
             bool set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size) override
             {
-                uvc_set_ctrl(_device_handle, xu.unit, control, (void *)data, size);
-                return true;
+                int status =
+                    uvc_set_ctrl(_device_handle, xu.unit, control, (void *)data, size);
+
+                if ( status >= 0) {
+                    return true;
+                }
+                return false;
+
             }
             bool get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const override
             {
@@ -434,28 +442,28 @@ namespace librealsense
                 status = uvc_get_ctrl(_device_handle, xu.unit, control, &max, sizeof(int32_t), UVC_GET_MAX);
                 if ( status < 0) {
                     throw std::runtime_error(
-                            to_string() << "uvc_get_ctrl(...) returned "
+                            to_string() << "uvc_get_ctrl(...) returned for UVC_GET_MAX "
                                         << status);
                 }
 
                 status =uvc_get_ctrl(_device_handle, xu.unit, control, &min, sizeof(int32_t), UVC_GET_MIN);
                 if ( status < 0) {
                     throw std::runtime_error(
-                            to_string() << "uvc_get_ctrl(...) returned "
+                            to_string() << "uvc_get_ctrl(...) returned for UVC_GET_MIN"
                                         << status);
                 }
 
                 status = uvc_get_ctrl(_device_handle, xu.unit, control, &step, sizeof(int32_t), UVC_GET_RES);
                 if ( status < 0) {
                     throw std::runtime_error(
-                            to_string() << "uvc_get_ctrl(...) returned "
+                            to_string() << "uvc_get_ctrl(...) returned for UVC_GET_RES"
                                         << status);
                 }
 
                 status = uvc_get_ctrl(_device_handle, xu.unit, control, &def, sizeof(int32_t), UVC_GET_DEF);
                 if ( status < 0) {
                     throw std::runtime_error(
-                            to_string() << "uvc_get_ctrl(...) returned "
+                            to_string() << "uvc_get_ctrl(...) returned for UVC_GET_DEF"
                                         << status);
                 }
 
