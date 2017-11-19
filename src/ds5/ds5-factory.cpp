@@ -207,6 +207,8 @@ namespace librealsense
             return std::make_shared<rs430_rgb_mm_device>(ctx, group, register_device_notifications);
         case RS435_RGB_PID:
             return std::make_shared<rs435_device>(ctx, group, register_device_notifications);
+        case RS_USB2_PID:
+            return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
         default:
             throw std::runtime_error("Unsupported RS400 model!");
         }

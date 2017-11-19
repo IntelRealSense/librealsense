@@ -463,8 +463,9 @@ PYBIND11_PLUGIN(NAME) {
                .def("__call__", &rs2::frame_queue::operator());
 
     py::class_<rs2::pointcloud> pointcloud(m, "pointcloud");
-    pointcloud.def("calculate", &rs2::pointcloud::calculate, "depth"_a)
-              .def("map_to", &rs2::pointcloud::map_to, "mapped"_a);
+    pointcloud.def(py::init<>())
+        .def("calculate", &rs2::pointcloud::calculate, "depth"_a)
+        .def("map_to", &rs2::pointcloud::map_to, "mapped"_a);
 
     py::class_<rs2::syncer> syncer(m, "syncer");
     syncer.def(py::init<>())
@@ -482,6 +483,10 @@ PYBIND11_PLUGIN(NAME) {
     colorizer.def(py::init<>())
              .def("colorize", &rs2::colorizer::colorize, "depth"_a)
              /*.def("__call__", &rs2::colorizer::operator())*/;
+
+    py::class_<rs2::align> align(m, "align");
+    align.def(py::init<rs2_stream>(), "align_to"_a)
+        .def("proccess", &rs2::align::proccess, "depth"_a);
 
     /* rs2_record_playback.hpp */
     py::class_<rs2::playback, rs2::device> playback(m, "playback");

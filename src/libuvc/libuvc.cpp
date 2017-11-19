@@ -39,6 +39,7 @@
 #include <signal.h>
 
 #include "libuvc.h"
+#include "libuvc_internal.h"
 
 #pragma GCC diagnostic ignored "-Wpedantic"
 #include <libusb.h>
@@ -240,18 +241,6 @@ namespace librealsense
                     // declare this device to the caller.
                     action(info, "Intel Camera");
 
-                    // this code was used for the sr300 version.
-/*                    libusb_config_descriptor *config;
-                    int status = libusb_get_active_config_descriptor(dev->usb_dev, &config);
-
-                    if (config->bNumInterfaces >= 2)
-                    {
-                        info.mi = 2;
-                        action(info, "depth");
-                    }
-
-                    libusb_free_config_descriptor(config);*/
-
                     i++;
 
                 }
@@ -385,6 +374,22 @@ namespace librealsense
                         throw linux_backend_exception(
                                 "Could not open device.");
                     }
+
+                    for(auto ct = uvc_get_input_terminals(_device_handle);
+                        ct; ct = ct->next) {
+                        _input_terminal = ct->bTerminalID;
+                    }
+
+                    for(auto pu = uvc_get_processing_units(_device_handle);
+                        pu; pu = pu->next) {
+                        _processing_unit = pu->bUnitID;
+                    }
+
+                    for(auto eu = uvc_get_extension_units(_device_handle);
+                        eu; eu = eu->next) {
+                        _extension_unit = eu->bUnitID;
+                    }
+
                 }
                 else {
                     // we have been asked to close the device.
@@ -403,41 +408,180 @@ namespace librealsense
             power_state get_power_state() const override { return _state; }
 
             void init_xu(const extension_unit& xu) override {
-              // TODO : implement.
-            }
+                // TODO : implement.
+            };
             bool set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size) override
             {
-              // TODO : implement.
-                return true;
+                int status =
+                    uvc_set_ctrl(_device_handle, xu.unit, control, (void *)data, size);
+
+                if ( status >= 0) {
+                    return true;
+                }
+                return false;
+
             }
             bool get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const override
             {
-              // TODO : implement.
-                return true;
+                int status =
+                        uvc_get_ctrl(_device_handle, xu.unit, control, data, size, UVC_GET_CUR);
+
+                if ( status >= 0) {
+                    return true;
+                }
+                return false;
             }
             control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override
             {
-              // TODO : implement.
-                control_range result{};
+                int status;
+                int32_t value;
+                int max;
+                int min;
+                int step;
+                int def;
+                status = uvc_get_ctrl(_device_handle, xu.unit, control, &max, sizeof(int32_t), UVC_GET_MAX);
+                if ( status < 0) {
+                    throw std::runtime_error(
+                            to_string() << "uvc_get_ctrl(...) returned for UVC_GET_MAX "
+                                        << status);
+                }
+
+                status =uvc_get_ctrl(_device_handle, xu.unit, control, &min, sizeof(int32_t), UVC_GET_MIN);
+                if ( status < 0) {
+                    throw std::runtime_error(
+                            to_string() << "uvc_get_ctrl(...) returned for UVC_GET_MIN"
+                                        << status);
+                }
+
+                status = uvc_get_ctrl(_device_handle, xu.unit, control, &step, sizeof(int32_t), UVC_GET_RES);
+                if ( status < 0) {
+                    throw std::runtime_error(
+                            to_string() << "uvc_get_ctrl(...) returned for UVC_GET_RES"
+                                        << status);
+                }
+
+                status = uvc_get_ctrl(_device_handle, xu.unit, control, &def, sizeof(int32_t), UVC_GET_DEF);
+                if ( status < 0) {
+                    throw std::runtime_error(
+                            to_string() << "uvc_get_ctrl(...) returned for UVC_GET_DEF"
+                                        << status);
+                }
+
+                control_range result(min, max, step, def);
                 return result;
+            }
+
+            int rs2_option_to_ctrl_selector(rs2_option option, int &unit) const {
+                // chances are that we will need to adjust some of these operation to the
+                // processing unit anod some to the camera terminal.
+                unit = _processing_unit;
+                switch(option) {
+                    case RS2_OPTION_BACKLIGHT_COMPENSATION:
+                        return UVC_PU_BACKLIGHT_COMPENSATION_CONTROL;
+                    case RS2_OPTION_BRIGHTNESS:
+                        return UVC_PU_BRIGHTNESS_CONTROL;
+                    case RS2_OPTION_CONTRAST:
+                        return UVC_PU_CONTRAST_CONTROL;
+                    case RS2_OPTION_EXPOSURE:
+                        unit = _input_terminal;
+                        return UVC_CT_EXPOSURE_TIME_ABSOLUTE_CONTROL;
+                    case RS2_OPTION_GAIN:
+                        return UVC_PU_GAIN_CONTROL;
+                    case RS2_OPTION_GAMMA:
+                        return UVC_PU_GAMMA_CONTROL;
+                    case RS2_OPTION_HUE:
+                        return UVC_PU_HUE_CONTROL;
+                    case RS2_OPTION_SATURATION:
+                        return UVC_PU_SATURATION_CONTROL;
+                    case RS2_OPTION_SHARPNESS:
+                        return UVC_PU_SHARPNESS_CONTROL;
+                    case RS2_OPTION_WHITE_BALANCE:
+                        return UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL;
+                    case RS2_OPTION_ENABLE_AUTO_EXPOSURE:
+                        unit = _input_terminal;
+                        return UVC_CT_AE_MODE_CONTROL; // Automatic gain/exposure control
+                    case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE:
+                        return UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL;
+                    case RS2_OPTION_POWER_LINE_FREQUENCY :
+                        return UVC_PU_POWER_LINE_FREQUENCY_CONTROL;
+                    case RS2_OPTION_AUTO_EXPOSURE_PRIORITY:
+                        unit = _input_terminal;
+                        return UVC_CT_AE_PRIORITY_CONTROL;
+                    default:
+                        throw linux_backend_exception(to_string() << "invalid option : " << option);
+                }
+            }
+
+            int32_t get_data_usb( uvc_req_code action, int control, int unit) const {
+                unsigned char buffer[4];
+
+                int status = libusb_control_transfer(_device_handle->usb_devh,
+                                                     UVC_REQ_TYPE_GET,
+                                                     action,
+                                                     control << 8,
+                                                     unit << 8 | (_interface),
+                                                     buffer,
+                                                     sizeof(int32_t), 0);
+
+                if (status < 0) throw std::runtime_error(
+                            to_string() << "libusb_control_transfer(...) returned "
+                                        << libusb_error_name(status));
+
+                if (status != sizeof(int32_t))
+                    throw std::runtime_error("insufficient data read from USB");
+
+                return DW_TO_INT(buffer);
+            }
+
+            void set_data_usb( uvc_req_code action, int control, int unit, int value) const {
+                unsigned char buffer[4];
+
+                INT_TO_DW(value, buffer);
+
+                int status = libusb_control_transfer(_device_handle->usb_devh,
+                                                     UVC_REQ_TYPE_SET,
+                                                     action,
+                                                     control << 8,
+                                                     unit << 8 | (_interface),
+                                                     buffer,
+                                                     sizeof(int32_t), 0);
+
+                if (status < 0) throw std::runtime_error(
+                            to_string() << "libusb_control_transfer(...) returned "
+                                        << libusb_error_name(status));
+
+                if (status != sizeof(int32_t))
+                    throw std::runtime_error("insufficient data writen to USB");
             }
 
             bool get_pu(rs2_option opt, int32_t& value) const override
             {
-              // TODO : implement.
+                int unit;
+                int control = rs2_option_to_ctrl_selector(opt, unit);
+
+                value = get_data_usb( UVC_GET_CUR, control, unit);
                 return true;
             }
 
             bool set_pu(rs2_option opt, int32_t value) override
             {
-              // TODO : implement.
+                int unit;
+                int control = rs2_option_to_ctrl_selector(opt, unit);
+
+                set_data_usb( UVC_SET_CUR, control, unit, value);
                 return true;
             }
 
             control_range get_pu_range(rs2_option option) const override
             {
-              // TODO : implement.
-                control_range result{};
+                int unit;
+                int control = rs2_option_to_ctrl_selector(option, unit);
+                int min = get_data_usb( UVC_GET_MIN, control, unit);
+                int max = get_data_usb( UVC_GET_MAX, control, unit);
+                int step = get_data_usb( UVC_GET_RES, control, unit);
+                int def = get_data_usb( UVC_GET_DEF, control, unit);
+
+                control_range result(min, max, step, def);
 
                 return result;
             }
@@ -508,6 +652,9 @@ namespace librealsense
             uvc_context_t *_ctx;
             uvc_device_t *_device;
             uvc_device_handle_t *_device_handle;
+            int _input_terminal;
+            int _processing_unit;
+            int _extension_unit;
             int _interface;
         };
 
