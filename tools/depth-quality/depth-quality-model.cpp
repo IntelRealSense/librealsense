@@ -852,7 +852,7 @@ namespace rs2
             _stereo_baseline_mm(0.f),
             _ground_truth_mm(0),
             _use_gt(false),
-            _plane_fit(-1),
+            _plane_fit(false),
             _active(true)
         {
             _worker_thread = std::thread([this]() {
@@ -871,7 +871,8 @@ namespace rs2
                     {
                         float su = 0, baseline = -1.f;
                         rs2_intrinsics intrin;
-                        int gt_mm, plane_fit_set;
+                        int gt_mm;
+                        bool plane_fit_set;
                         region_of_interest roi;
                         {
                             std::lock_guard<std::mutex> lock(_m);
@@ -1065,7 +1066,7 @@ namespace rs2
             csv << camera_info;
 
             //Store metric environment
-            csv << "\nEnvironment:\nPlane-Fit_distance_mm," << (_plane_fit > 0 ? std::to_string(_latest_metrics.distance) : "N/A") << std::endl;
+            csv << "\nEnvironment:\nPlane-Fit_distance_mm," << (_plane_fit ? std::to_string(_latest_metrics.distance) : "N/A") << std::endl;
             csv << "Ground-Truth_Distance_mm," << (_use_gt ? std::to_string(_ground_truth_mm ) : "N/A") << std::endl;
 
             // Generate columns header

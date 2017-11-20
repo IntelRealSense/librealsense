@@ -159,15 +159,11 @@ namespace rs2
             void set_plane_fit(bool found)
             {
                 std::lock_guard<std::mutex> lock(_m);
-                if (_plane_fit != (int)found)
+                _plane_fit = found;
+                for (auto&& plot : _plots)
                 {
-                    // Affects the visibility of plane-fit-dependent metrics
-                    _plane_fit = found;
-                    for (auto&& plot : _plots)
-                    {
-                        if (plot->requires_plane_fit())
-                            plot->visible(found);
-                    }
+                    if (plot->requires_plane_fit())
+                        plot->visible(found);
                 }
             }
 
@@ -177,11 +173,15 @@ namespace rs2
                 _use_gt = false;
                 _ground_truth_mm = 0;
             }
-            std::tuple<int, int> get_inputs() const { std::lock_guard<std::mutex> lock(_m); return std::make_tuple(_ground_truth_mm, _plane_fit); }
+            std::tuple<int, bool> get_inputs() const
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                return std::make_tuple(_ground_truth_mm, _plane_fit);
+            }
 
             void reset()
             {
-                _plane_fit = -1;
+                _plane_fit = false;
                 rs2::frame f;
                 while (_frame_queue.poll_for_frame(&f));
             }
@@ -197,7 +197,7 @@ namespace rs2
             float                   _stereo_baseline_mm;
             int                     _ground_truth_mm;
             bool                    _use_gt;
-            int                     _plane_fit;
+            bool                    _plane_fit;
             region_of_interest      _roi;
             snapshot_metrics        _latest_metrics;
             bool                    _active;

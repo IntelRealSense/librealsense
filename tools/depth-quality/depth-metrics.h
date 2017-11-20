@@ -129,7 +129,7 @@ namespace rs2
             const rs2_intrinsics * intrin,
             rs2::region_of_interest roi,
             const int ground_truth_mm,
-            const int plane_fit_present,
+            bool plane_fit_present,
             callback_type callback)
         {
             auto pixels = (const uint16_t*)frame.get_data();
