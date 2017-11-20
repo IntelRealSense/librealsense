@@ -68,14 +68,15 @@ namespace librealsense
         ptr_option(T min, T max, T step, T def, T* value, const std::string& desc)
             : _min(min), _max(max), _step(step), _def(def), _value(value), _desc(desc)
         {
+            static_assert((std::is_arithmetic<T>::value),  "ptr_option class supports arithmetic built-in types only");
             _on_set = [](float x) {};
         }
 
-        void set(float value) override 
+        void set(float value) override
         { 
             if (_max < value || _min > value)
-                throw invalid_value_exception("Given value is outside valid range!");
-            *_value = value; 
+                throw invalid_value_exception(to_string() << "Given value " << value << "is outside valid range!");
+            *_value = static_cast<T>(value);
             _on_set(value);
         }
 

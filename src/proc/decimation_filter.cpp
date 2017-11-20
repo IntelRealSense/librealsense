@@ -2,6 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #include "../include/librealsense2/rs.hpp"
 
+#include "option.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation_filter.h"
 
@@ -10,34 +11,46 @@ void downsample_depth(const uint16_t * frame_data_in, uint16_t * frame_data_out,
 namespace librealsense
 {
     decimation_filter::decimation_filter():
-        _decimation_mode(rs2_median),
-        _depth_units(0.001f),
-        _decimation_factor(16),
-        _prev_factor(0),
-        _kernel_size(1),
-        _width(0), _height(0)
+        _decimation_filter(rs2_median),
+        _decimation_factor(8),
+        _kernel_size(_decimation_factor*_decimation_factor),
+        _width(0), _height(0), _enable_filter(true)
     {
+        auto decimation_control = std::make_shared<ptr_option<uint8_t>>(1, 4, 1, 4, &_decimation_factor, "Decimation magnitude");
+        decimation_control->on_set([this](float val)
+        {
+            _kernel_size = 0x1 << uint8_t(val);
+        });
+        register_option(RS2_OPTION_FILTER_MAGNITUDE, decimation_control);
+
+        // TODO - a candidate to base class refactoring
+        auto enable_control = std::make_shared<ptr_option<bool>>(false,true,true,true, &_enable_filter, "Apply decimation");
+        register_option(RS2_OPTION_FILTER_ENABLED, enable_control);
+
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
-            rs2::frame tgt=f, depth;
+            rs2::frame out = f, tgt, depth;
 
-            rs2::frameset composite = f.as<rs2::frameset>();
-
-            depth = (composite) ? composite.first_or_default(RS2_STREAM_DEPTH) : f;
-
-            if (depth) // Processing required
+            if (this->_enable_filter)
             {
-                update_internals(depth);
-                if ( tgt = prepare_target_frame(depth, source))
-                {
-                    auto src = depth.as<rs2::video_frame>();
-                    downsample_depth(static_cast<const uint16_t*>(src.get_data()),
-                        static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
-                        src.get_width(), src.get_height(), this->_decimation_factor);
-                }
-            }
+                rs2::frameset composite = f.as<rs2::frameset>();
 
-            rs2::frame out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
+                depth = (composite) ? composite.first_or_default(RS2_STREAM_DEPTH) : f;
+
+                if (depth) // Processing required
+                {
+                    update_internals(depth);
+                    if (tgt = prepare_target_frame(depth, source))
+                    {
+                        auto src = depth.as<rs2::video_frame>();
+                        downsample_depth(static_cast<const uint16_t*>(src.get_data()),
+                            static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
+                            src.get_width(), src.get_height(), this->_decimation_factor);
+                    }
+                }
+
+                out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
+            }
 
             source.frame_ready(out);
         };
@@ -58,20 +71,17 @@ namespace librealsense
         auto vp = _target_stream_profile.as<rs2::video_stream_profile>();
 
         if ((vp.width()%_decimation_factor) || (vp.height() % _decimation_factor))
-            throw invalid_value_exception(to_string() << "Invalid decimation factor: " << _decimation_factor
+            throw invalid_value_exception(to_string() << "Unsupported decimation factor: " << _decimation_factor
                 << " for frame size [" << vp.width() << "," << vp.height() << "]");
 
-        //TODO generate video_stream_profile with correct intrinsic data
-        //// Recalculate the target frame dimensions
-        //vp.assign(  vp.width() / _decimation_factor,
-        //            vp.height() / _decimation_factor,
-        //            vf.get_stride(), vf.get_bpp());
+        //TODO re-generate video_stream_profile with correct intrinsic data
     }
 
     rs2::frame decimation_filter::prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source)
     {
         auto vf = f.as<rs2::video_frame>();
-        return source.allocate_video_frame(_target_stream_profile, f, 2,
+        return source.allocate_video_frame(_target_stream_profile, f,
+            vf.get_bytes_per_pixel(),
             vf.get_width() / _decimation_factor,
             vf.get_height()/ _decimation_factor,
             vf.get_stride_in_bytes() / _decimation_factor,

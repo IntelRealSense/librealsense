@@ -31,13 +31,12 @@ namespace librealsense
 
         std::mutex              _mutex;
 
-        rs2_filter_kernel        _decimation_mode;
-        float                   _depth_units;
-        uint32_t                 _decimation_factor;
-        uint32_t                 _prev_factor;
-        float                   _kernel_size;
+        rs2_filter_kernel       _decimation_filter;
+        uint8_t                 _decimation_factor;
+        uint8_t                 _kernel_size;
         int                     _width, _height;
         rs2::stream_profile     _source_stream_profile;
         rs2::stream_profile     _target_stream_profile;
+        bool                    _enable_filter;
     };
 }
