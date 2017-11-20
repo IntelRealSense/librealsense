@@ -12,7 +12,7 @@ namespace librealsense
 {
     decimation_filter::decimation_filter():
         _decimation_filter(rs2_median),
-        _decimation_factor(8),
+        _decimation_factor(4),
         _kernel_size(_decimation_factor*_decimation_factor),
         _width(0), _height(0), _enable_filter(true)
     {
@@ -20,8 +20,10 @@ namespace librealsense
         decimation_control->on_set([this](float val)
         {
             _kernel_size = 0x1 << uint8_t(val);
+            _kernel_size *= _kernel_size;
         });
         register_option(RS2_OPTION_FILTER_MAGNITUDE, decimation_control);
+        unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
 
         // TODO - a candidate to base class refactoring
         auto enable_control = std::make_shared<ptr_option<bool>>(false,true,true,true, &_enable_filter, "Apply decimation");
@@ -33,9 +35,9 @@ namespace librealsense
 
             if (this->_enable_filter)
             {
-                rs2::frameset composite = f.as<rs2::frameset>();
+                bool composite = f.is<rs2::frameset>();
 
-                depth = (composite) ? composite.first_or_default(RS2_STREAM_DEPTH) : f;
+                depth = (composite) ? f.as<rs2::frameset>().first_or_default(RS2_STREAM_DEPTH) : f;
 
                 if (depth) // Processing required
                 {

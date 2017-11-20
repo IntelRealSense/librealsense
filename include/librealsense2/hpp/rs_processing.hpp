@@ -385,12 +385,12 @@ namespace rs2
             _block->start(_queue);
         }
 
-        frameset proccess(frameset frame)
+        rs2::frame proccess(rs2::frame frame)
         {
             (*_block)(frame);
             rs2::frame f;
             _queue.poll_for_frame(&f);
-            return frameset(f);
+            return f;
         }
 
         void operator()(frame f) const

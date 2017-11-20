@@ -748,6 +748,7 @@ namespace rs2
         mutable rs2::frame last[2];
 
     public:
+        std::shared_ptr<depth_filter> decimate;
         std::shared_ptr<colorizer> colorize;
 
         rs2::frame get_last_frame(bool with_texture = false) const {
@@ -756,8 +757,9 @@ namespace rs2
             return last[idx];
         }
 
-        texture_buffer() : last_queue(), texture(), 
-            colorize(std::make_shared<colorizer>()) {}
+        texture_buffer() : last_queue(), texture(),
+            colorize(std::make_shared<colorizer>()),
+            decimate(std::make_shared<depth_filter>()) {}
 
         GLuint get_gl_handle() const { return texture; }
 
@@ -810,9 +812,17 @@ namespace rs2
             case RS2_FORMAT_DISPARITY16:
                 if (frame.is<depth_frame>())
                 {
-                    rendered_frame = colorize->colorize(frame);
-                    data = rendered_frame.get_data();
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                    if (auto rendered_frame = colorize->colorize(decimate->proccess(frame)).as<video_frame>())
+                    {
+                        data = rendered_frame.get_data();
+                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 
+                            rendered_frame.get_width(),
+                            rendered_frame.get_height(),
+                            0, GL_RGB, GL_UNSIGNED_BYTE,
+                            rendered_frame.get_data());
+                    }
+                    else
+                    { }
                 }
                 else glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
                 break;

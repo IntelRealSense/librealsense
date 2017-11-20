@@ -290,6 +290,7 @@ namespace rs2
         bool show_algo_roi = false;
 
         std::shared_ptr<rs2::colorizer> depth_colorizer;
+        std::shared_ptr<rs2::depth_filter> decimation_filter; // Evgeni
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
     };

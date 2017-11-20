@@ -618,7 +618,9 @@ namespace rs2
     subdevice_model::subdevice_model(device& dev, 
                                      std::shared_ptr<sensor> s, std::string& error_message)
         : s(s), dev(dev), ui(), last_valid_ui(), 
-          streaming(false), _pause(false), depth_colorizer(std::make_shared<rs2::colorizer>())
+          streaming(false), _pause(false),
+        depth_colorizer(std::make_shared<rs2::colorizer>()),
+        decimation_filter(std::make_shared<rs2::depth_filter>())
     {
         try
         {
@@ -645,6 +647,10 @@ namespace rs2
             auto colorizer = std::make_shared<processing_block_model>(
                 this, "Depth Visualization", depth_colorizer, error_message);
             post_processing.push_back(colorizer);
+
+            auto decimation = std::make_shared<processing_block_model>(
+                this, "Decimation Filter", decimation_filter, error_message);
+            post_processing.push_back(decimation);
         }
 
         populate_options(options_metadata, dev, *s, &options_invalidated, this, s, error_message);
@@ -1333,8 +1339,8 @@ namespace rs2
     {
         dev = d;
         profile = p;
-        profile = p;
         texture->colorize = d->depth_colorizer;
+        texture->decimate = d->decimation_filter;
 
         if (auto vd = p.as<video_stream_profile>())
         {
@@ -1630,6 +1636,7 @@ namespace rs2
                     {
                         selected_tex_source_uid = s.second.profile.unique_id();
                         texture.colorize = s.second.texture->colorize;
+                        texture.decimate = s.second.texture->decimate;
                     }
                     i++;
                 }
