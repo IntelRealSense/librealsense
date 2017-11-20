@@ -520,7 +520,7 @@ namespace librealsense
         void v4l_uvc_device::probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers)
         {
             if(!zero_copy)
-                buffers = 1;
+                buffers = 3;
 
             if(!_is_capturing && !_callback)
             {
