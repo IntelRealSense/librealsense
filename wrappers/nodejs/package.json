@@ -1,6 +1,6 @@
 {
   "name": "node-librealsense",
-  "version": "0.279.3",
+  "version": "0.281.0",
   "description": "Node.js API for Intel® RealSense™ SDK 2.0",
   "main": "index.js",
   "directories": {
@@ -25,12 +25,12 @@
   "license": "Apache-2.0",
   "dependencies": {
     "bindings": "^1.2.1",
+    "fs-compare": "0.0.4",
     "jsonfile": "^3.0.1",
+    "nan": "^2.7.0",
     "pngjs": "^3.3.0"
   },
   "devDependencies": {
-    "fs-compare": "0.0.4",
-    "jsdoc": "^3.5.5",
-    "nan": "^2.7.0"
+    "jsdoc": "^3.5.5"
   }
 }
