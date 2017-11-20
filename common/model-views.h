@@ -168,7 +168,7 @@ namespace rs2
         std::map<int, int> selected_format_id;
     };
 
-     class viewer_model;    
+     class viewer_model;
      class subdevice_model;
 
     class processing_block_model
@@ -657,7 +657,7 @@ namespace rs2
 
     };
 
-    void export_to_ply(const std::string& file_name, notifications_model& ns, points points, video_frame texture);
+    void export_to_ply(const std::string& file_name, notifications_model& ns, frameset points, video_frame texture);
 
     // Wrapper for cross-platform dialog control
     enum file_dialog_mode {

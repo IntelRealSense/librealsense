@@ -3751,7 +3751,6 @@ TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam
         CAPTURE(required_profile);
         auto vid_profile = required_profile.as<video_stream_profile>();
 
-        
         rs2::device dev;
         rs2::pipeline pipe(ctx);
         rs2::config cfg;
@@ -3759,7 +3758,7 @@ TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam
         //Using the config object to request the serial and stream that we found above
         REQUIRE_NOTHROW(cfg.enable_device(required_serial));
         REQUIRE_NOTHROW(cfg.enable_stream(vid_profile.stream_type(), vid_profile.stream_index(), vid_profile.width(), vid_profile.height(), vid_profile.format(), vid_profile.fps()));
-        
+
         //Testing that config.resolve() returns the right data
         rs2::pipeline_profile resolved_profile;
         REQUIRE_NOTHROW(resolved_profile = cfg.resolve(pipe));
@@ -3773,7 +3772,7 @@ TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam
         rs2::device dev_from_start;
         REQUIRE_NOTHROW(dev_from_start = resolved_profile_from_start.get_device());
         REQUIRE(dev_from_start);
-        
+
         //Compare serial number
         std::string actual_serial;
         std::string actual_serial_from_start;
@@ -3781,7 +3780,7 @@ TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam
         REQUIRE_NOTHROW(actual_serial_from_start = dev_from_start.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
         REQUIRE(actual_serial == required_serial);
         REQUIRE(actual_serial == actual_serial_from_start);
-        
+
         //Compare Stream
         std::vector<rs2::stream_profile> actual_streams;
         REQUIRE_NOTHROW(actual_streams = resolved_profile.get_streams());
@@ -3813,7 +3812,7 @@ TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam
         std::string started_serial;
         REQUIRE_NOTHROW(started_serial = started_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
         REQUIRE(started_serial == required_serial);
-        
+
         //Compare Stream
         std::vector<rs2::stream_profile> started_streams;
         REQUIRE_NOTHROW(started_streams = strarted_profile.get_streams());
@@ -4050,9 +4049,8 @@ TEST_CASE("Pipeline record and playback", "[live]") {
             REQUIRE(frames);
             REQUIRE(frames.size() > 0);
             REQUIRE_NOTHROW(p.stop());
-        } 
+        }
         //Scoping the above code to make sure no one holds the device
-        
         REQUIRE(file_exists(filename));
 
         {

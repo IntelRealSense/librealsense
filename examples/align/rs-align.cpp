@@ -36,11 +36,11 @@ int main(int argc, char * argv[]) try
     // Each depth camera might have different units for depth pixels, so we get it here
     // Using the pipeline's profile, we can retrieve the device that the pipeline uses
     float depth_scale = get_depth_scale(profile.get_device());
-    
+
     //Pipeline could choose a device that does not have a color stream
     //If there is no color stream, choose to align depth to another stream
     rs2_stream align_to = find_stream_to_align(profile.get_streams());
-    
+
     // Create a rs2::align object.
     // rs2::align allows us to perform alignment of depth frames to others frames
     //The "align_to" is the stream type to which we plan to align depth frames.
