@@ -128,7 +128,6 @@ void refresh_devices(std::mutex& m,
                     viewer_model.pc.depth_stream_active = false;
 
                     //Remove from devices
-
                     auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
                         [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(dev); });
 

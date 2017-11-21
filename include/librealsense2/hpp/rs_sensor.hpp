@@ -375,7 +375,7 @@ namespace rs2
         }
 
         sensor& operator=(const std::shared_ptr<rs2_sensor> other)
-        {  
+        {
             options::operator=(other);
             _sensor.reset();
             _sensor = other;

@@ -230,12 +230,13 @@ namespace librealsense
                                 get_depth_sensor()));
         }
 
-        // Define Left-Right extrinsics calculation (lazy)
+        // Define Left-to-Right extrinsics calculation (lazy)
+        // Reference CS - Right-handed; positive [X,Y,Z] point to [Left,Up,Forward] accordingly.
         _left_right_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
         {
             rs2_extrinsics ext = identity_matrix();
             auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
-            ext.translation[0] = -0.001f * table->baseline;
+            ext.translation[0] = 0.001f * table->baseline; // mm to meters
             return ext;
         });
 

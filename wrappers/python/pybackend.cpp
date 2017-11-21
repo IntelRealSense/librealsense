@@ -230,7 +230,7 @@ PYBIND11_PLUGIN(NAME) {
         .def("probe_and_commit",
             [](platform::retry_controls_work_around& dev, const platform::stream_profile& profile,
                 std::function<void(const platform::stream_profile&, const platform::frame_object&)> callback) {
-        dev.probe_and_commit(profile, false, [=](const platform::stream_profile& p,
+        dev.probe_and_commit(profile, [=](const platform::stream_profile& p,
             const platform::frame_object& fo, std::function<void()> next)
         {
             callback(p, fo);

@@ -540,7 +540,6 @@ namespace librealsense
             }
             catch(...)
             {
-            
             } // Stop will throw if device was disconnected. TODO - refactoring anticipated
         }
         _active_profile.reset();

@@ -4,8 +4,8 @@
 
 ## Overview
 
-This application allows you to test the camera’s depth quality, including: average distance to plane accuracy, Z (distance) accuracy and fill rate.
-You should be able to easily get and interpret several of the depth quality metrics and record and save the data for offline analysis.
+This application allows you to test the camera’s depth quality, including: Z-Accuracy, Sub-Pixel and Z RMS errors (spatial noise) and Fill Rate.
+You should be able to easily get and interpret several of the depth quality metrics, or record and save the data for offline analysis.
 
 ## Quick Start
 * Position the depth camera within a range of 0.3 - 2 meter from a flat non-reflective surface.
@@ -19,9 +19,10 @@ You should be able to easily get and interpret several of the depth quality metr
 * User-defined Region of Interest
 * Depth Quality metrics:
   * Z-Accuracy
-  * Depth Error Average
+  * Spatial Noise:
+    * Plane Fit RMS Error
+    * Sub-Pixel RMS Error
   * Fill-Rate
-  * Subpixel RMS
   * Distance to target
 * Export metrics and device configuration
 * Depth Sensor controls
@@ -29,14 +30,11 @@ You should be able to easily get and interpret several of the depth quality metr
 ## Metrics elaborated
 ![](./res/Zi_ZPi.png)
 
-### Depth Error Average
+### Plane Fit RMS Error
 _Dist<sub>i</sub>_ - Distance from pixel coordinates to the Plane Fit (mm)  
-![](./res/avg.gif)
-### Z Accuracy
-_Z<sub>i</sub>_ - Depth value of i-th pixel in the ROI (mm)  
-_GT_ - Ground truth distance to the wall (mm)  
-![](./res/accuracy.gif)
-### Subpixel RMS Metric
+![](./res/z_error_rms.gif)
+
+### Sub-Pixel RMS Error
 _Z<sub>i</sub>_ - Depth value of i-th pixel in the ROI (mm)  
 _ZP<sub>i</sub>_ - Depth value of the i-th pixel projected onto the plane fit (mm)  
 _BL_ - Stereoscopic Baseline (mm)  
@@ -45,8 +43,17 @@ _D<sub>i</sub>_ - Disparity value of i-th pixel in the ROI (pixel)
  _DP<sub>i</sub>_ - Disparity value of i-th plane-projected pixel (pixel)
 
 ![](./res/Di.gif)  ![](./res/DPi.gif)  
-![](./res/rms.gif)
+![](./res/subpixel_rms.gif)
 
+### Z Accuracy
+![](./res/z_accuracy.png)  
+_RotationPivot<sub>x,y,z</sub>_ - Intersection point between the Camera's optical axis (principal point) and the Fitted Plane  
+_PlanesOffset<sub>mm</sub>_ - Distance (signed) from the Fitted to the Ground Truth planes (mm)  
+_D<sub>i</sub>_ - Distance (signed) from pixel coordinates to the Fitted Plane (mm)  
+_D'<sub>i</sub>_ - Distance from the rotated _D<sub>i</sub>_ coordinate to the Ground Truth Plane (mm)  
+_GT_ - Ground Truth distance to the wall (mm)  
+![](./res/z_accuracy_d_rotated.gif)  
+![](./res/z_accuracy_percentage.gif)
 <!---
 Math expressions generated with
 http://www.numberempire.com/texequationeditor/equationeditor.php
@@ -56,4 +63,6 @@ RMS = \sqrt{\frac{\sum_{1}^{n}{\left({D}_{i} -{DP}_{i}\right)}}{n}^{2}}
 AVG = \frac{\sum_{1}^{n}{\left({Dist}_{i}\right)}}{n}
 STD = \sqrt{\frac{\sum_{1}^{n}{\left({Dist}_{i}\right)}}{n}^{2}}  
 ACC = 100 \times median(\frac{\sum_{1}^{n}{\left({Z}_{i}\right - GT)}}{GT})
+{D'}_{mm}={D}_{i} -{Planes Offset}_{mm}
+Z-Accuracy = 100 \times median(\frac{\sum_{1}^{n}{\left({D'}_{i}\right - GT)}}{GT})
 --->

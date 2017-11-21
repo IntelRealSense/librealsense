@@ -196,83 +196,95 @@ namespace rs2
             texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
     }
 
-    void export_to_ply(const std::string& fname, notifications_model& ns, points points, video_frame texture)
+    void export_to_ply(const std::string& fname, notifications_model& ns, frameset frames, video_frame texture)
     {
-
-        std::thread([&ns, points, texture, fname]() {
+        std::thread([&ns, frames, texture, fname]() mutable {
             std::string texfname(fname);
             texfname += ".png";
 
-            const auto vertices = points.get_vertices();
-            const auto texcoords = points.get_texture_coordinates();
-            const auto tex = reinterpret_cast<const uint8_t*>(texture.get_data());
-            std::vector<vertex> new_vertices;
-            //std::vector<texture_coordinate> new_texcoords;
-            std::vector<std::tuple<uint8_t, uint8_t, uint8_t>> new_tex;
-            new_vertices.reserve(points.size());
-            //new_texcoords.reserve(points.size());
-            new_tex.reserve(points.size());
+            points p;
 
-            for (int i = 0; i < points.size(); ++i)
-                if (std::abs(vertices[i].x) >= 1e-6 || std::abs(vertices[i].y) >= 1e-6 || std::abs(vertices[i].z) >= 1e-6)
+            for (auto&& f : frames)
+            {
+                if (p = f.as<points>())
                 {
-                    new_vertices.push_back(vertices[i]);
-                    if (texture)
+                    break;
+                }
+            }
+
+            if (p)
+            {
+                const auto vertices = p.get_vertices();
+                const auto texcoords = p.get_texture_coordinates();
+                const auto tex = reinterpret_cast<const uint8_t*>(texture.get_data());
+                std::vector<vertex> new_vertices;
+                //std::vector<texture_coordinate> new_texcoords;
+                std::vector<std::tuple<uint8_t, uint8_t, uint8_t>> new_tex;
+                new_vertices.reserve(p.size());
+                //new_texcoords.reserve(points.size());
+                new_tex.reserve(p.size());
+                assert(p.size());
+                for (size_t i = 0; i < p.size(); ++i)
+                    if (std::abs(vertices[i].x) >= 1e-6 || std::abs(vertices[i].y) >= 1e-6 || std::abs(vertices[i].z) >= 1e-6)
                     {
-                        //new_texcoords.push_back(texcoords[i]);
-                        auto color = get_texcolor(texture, texcoords[i]);
-                        new_tex.push_back(color);
+                        new_vertices.push_back(vertices[i]);
+                        if (texture)
+                        {
+                            //new_texcoords.push_back(texcoords[i]);
+                            auto color = get_texcolor(texture, texcoords[i]);
+                            new_tex.push_back(color);
+                        }
+
                     }
 
-                }
-
-            std::ofstream out(fname);
-            out << "ply\n";
-            out << "format binary_little_endian 1.0\n" /*"format ascii 1.0\n"*/;
-            out << "comment pointcloud saved from Realsense Viewer\n";
-            //if (texture) out << "comment TextureFile " << get_file_name(texfname) << "\n";
-            out << "element vertex " << new_vertices.size() << "\n";
-            out << "property float" << sizeof(float) * 8 << " x\n";
-            out << "property float" << sizeof(float) * 8 << " y\n";
-            out << "property float" << sizeof(float) * 8 << " z\n";
-            if (texture)
-            {
-                //out << "property float" << sizeof(float) * 8 << " u\n";
-                //out << "property float" << sizeof(float) * 8 << " v\n";
-                out << "property uchar red\n";
-                out << "property uchar green\n";
-                out << "property uchar blue\n";
-            }
-            out << "end_header\n";
-            out.close();
-
-            out.open(fname, std::ios_base::app | std::ios_base::binary);
-            for (int i = 0; i < new_vertices.size(); ++i)
-            {
-                // we assume little endian architecture on your device
-                out.write(reinterpret_cast<const char*>(&(new_vertices[i].x)), sizeof(float));
-                out.write(reinterpret_cast<const char*>(&(new_vertices[i].y)), sizeof(float));
-                out.write(reinterpret_cast<const char*>(&(new_vertices[i].z)), sizeof(float));
-                //                out << new_vertices[i].x << ' ' << new_vertices[i].y << ' ' << new_vertices[i].z;
+                std::ofstream out(fname);
+                out << "ply\n";
+                out << "format binary_little_endian 1.0\n" /*"format ascii 1.0\n"*/;
+                out << "comment pointcloud saved from Realsense Viewer\n";
+                //if (texture) out << "comment TextureFile " << get_file_name(texfname) << "\n";
+                out << "element vertex " << new_vertices.size() << "\n";
+                out << "property float" << sizeof(float) * 8 << " x\n";
+                out << "property float" << sizeof(float) * 8 << " y\n";
+                out << "property float" << sizeof(float) * 8 << " z\n";
                 if (texture)
                 {
-                    //out.write(reinterpret_cast<const char*>(&(new_texcoords[i].u)), sizeof(float));
-                    //out.write(reinterpret_cast<const char*>(&(new_texcoords[i].v)), sizeof(float));
-                    out.write(reinterpret_cast<const char*>(&(std::get<0>(new_tex[i]))), sizeof(uint8_t));
-                    out.write(reinterpret_cast<const char*>(&(std::get<1>(new_tex[i]))), sizeof(uint8_t));
-                    out.write(reinterpret_cast<const char*>(&(std::get<2>(new_tex[i]))), sizeof(uint8_t));
-                    //                    out << std::hex << ' ' << std::get<0>(new_tex[i]) << ' ' << std::get<1>(new_tex[i]) << ' ' << std::get<2>(new_tex[i]);
+                    //out << "property float" << sizeof(float) * 8 << " u\n";
+                    //out << "property float" << sizeof(float) * 8 << " v\n";
+                    out << "property uchar red\n";
+                    out << "property uchar green\n";
+                    out << "property uchar blue\n";
                 }
-                //                out << '\n';
+                out << "end_header\n";
+                out.close();
+
+                out.open(fname, std::ios_base::app | std::ios_base::binary);
+                for (int i = 0; i < new_vertices.size(); ++i)
+                {
+                    // we assume little endian architecture on your device
+                    out.write(reinterpret_cast<const char*>(&(new_vertices[i].x)), sizeof(float));
+                    out.write(reinterpret_cast<const char*>(&(new_vertices[i].y)), sizeof(float));
+                    out.write(reinterpret_cast<const char*>(&(new_vertices[i].z)), sizeof(float));
+                    //                out << new_vertices[i].x << ' ' << new_vertices[i].y << ' ' << new_vertices[i].z;
+                    if (texture)
+                    {
+                        //out.write(reinterpret_cast<const char*>(&(new_texcoords[i].u)), sizeof(float));
+                        //out.write(reinterpret_cast<const char*>(&(new_texcoords[i].v)), sizeof(float));
+                        out.write(reinterpret_cast<const char*>(&(std::get<0>(new_tex[i]))), sizeof(uint8_t));
+                        out.write(reinterpret_cast<const char*>(&(std::get<1>(new_tex[i]))), sizeof(uint8_t));
+                        out.write(reinterpret_cast<const char*>(&(std::get<2>(new_tex[i]))), sizeof(uint8_t));
+                        //                    out << std::hex << ' ' << std::get<0>(new_tex[i]) << ' ' << std::get<1>(new_tex[i]) << ' ' << std::get<2>(new_tex[i]);
+                    }
+                    //                out << '\n';
+                }
+
+                /* save texture to texfname */
+                //if (texture) stbi_write_png(texfname.data(), texture.get_width(), texture.get_height(), texture.get_bytes_per_pixel(), texture.get_data(), texture.get_width() * texture.get_bytes_per_pixel());
+
+                ns.add_notification({ to_string() << "Finished saving 3D view " << (texture ? "to " : "without texture to ") << fname,
+                    std::chrono::duration_cast<std::chrono::duration<double,std::micro>>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(),
+                    RS2_LOG_SEVERITY_INFO,
+                    RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
             }
-
-            /* save texture to texfname */
-            //if (texture) stbi_write_png(texfname.data(), texture.get_width(), texture.get_height(), texture.get_bytes_per_pixel(), texture.get_data(), texture.get_width() * texture.get_bytes_per_pixel());
-
-            ns.add_notification({ to_string() << "Finished saving 3D view " << (texture ? "to " : "without texture to ") << fname,
-                std::chrono::duration_cast<std::chrono::duration<double,std::micro>>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(),
-                RS2_LOG_SEVERITY_INFO,
-                RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
         }).detach();
     }
 
@@ -285,7 +297,7 @@ namespace rs2
         size_t pixel_width, size_t pixels_height, size_t bytes_per_pixel,
         const void* raster_data, size_t stride_bytes)
     {
-        return stbi_write_png(filename, pixel_width, pixels_height, bytes_per_pixel, raster_data, stride_bytes);
+        return stbi_write_png(filename, (int)pixel_width, (int)pixels_height, bytes_per_pixel, raster_data, stride_bytes);
     }
 
     std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec)
@@ -615,9 +627,9 @@ namespace rs2
             owner->dev, *owner->s, &owner->options_invalidated, owner, block, error_message);
     }
 
-    subdevice_model::subdevice_model(device& dev, 
+    subdevice_model::subdevice_model(device& dev,
                                      std::shared_ptr<sensor> s, std::string& error_message)
-        : s(s), dev(dev), ui(), last_valid_ui(), 
+        : s(s), dev(dev), ui(), last_valid_ui(),
           streaming(false), _pause(false),
         depth_colorizer(std::make_shared<rs2::colorizer>()),
         decimation_filter(std::make_shared<rs2::depth_filter>()),
@@ -1613,8 +1625,9 @@ namespace rs2
                 tex_sources.push_back(s.second.profile.unique_id());
 
                 auto dev_name = s.second.dev ? s.second.dev->dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
-                auto stream_name = rs2_stream_to_string(s.second.profile.stream_type());
-
+                std::string stream_name = rs2_stream_to_string(s.second.profile.stream_type());
+                if (s.second.profile.stream_index())
+                    stream_name += "_" + std::to_string(s.second.profile.stream_index());
                 tex_sources_str.push_back(to_string() << dev_name << " " << stream_name);
 
                 i++;
@@ -1627,9 +1640,8 @@ namespace rs2
             ImGui::SetCursorPosY(7);
             ImGui::Text("Texture Source:"); ImGui::SameLine();
 
-
             ImGui::SetCursorPosY(7);
-            ImGui::PushItemWidth(190);
+            ImGui::PushItemWidth(200);
             draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
 
             i = 0;

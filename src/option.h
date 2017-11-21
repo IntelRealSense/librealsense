@@ -80,15 +80,15 @@ namespace librealsense
             _on_set(value);
         }
 
-        float query() const override 
+        float query() const override
         {
             return *_value;
         }
 
-        option_range get_range() const override { 
-            return{ 
-                (float)_min, (float)_max, 
-                (float)_step, (float)_def }; 
+        option_range get_range() const override {
+            return{
+                (float)_min, (float)_max,
+                (float)_step, (float)_def };
         }
 
         bool is_enabled() const override { return true; }
@@ -200,7 +200,7 @@ namespace librealsense
                 {
                     return dev.get_xu_range(_xu, _id, sizeof(T));
                 });
-            
+
             if (uvc_range.min.size() < sizeof(int32_t)) return option_range{0,0,1,0};
 
             auto min = *(reinterpret_cast<int32_t*>(uvc_range.min.data()));
