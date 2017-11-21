@@ -35,7 +35,7 @@ Developer kits containing the necessary hardware to use this library are availab
    These simple examples demonstrate how to easily use the SDK to include code snippets that access the camera into your applications.
 
 **[Wrappers](https://github.com/IntelRealSense/librealsense/tree/development/wrappers)**
-  We provide a C, C++, [Python](./wrappers/python), [Node.js](./wrappers/nodejs) API and [ROS](https://github.com/intel-ros/realsense/releases). More to come , including LabView and Matlab.
+  We provide a C, C++, [Python](./wrappers/python), [Node.js](./wrappers/nodejs) API, [ROS](https://github.com/intel-ros/realsense/releases) and [LabVIEW](./wrappers/labview). More to come, including C# and Matlab.
 
 
 ## Quick Start
