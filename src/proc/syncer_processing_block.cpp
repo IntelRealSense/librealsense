@@ -7,6 +7,7 @@
 #include "proc/synthetic-stream.h"
 #include "proc/syncer_processing_block.h"
 
+
 namespace librealsense
 {
     syncer_proccess_unit::syncer_proccess_unit()

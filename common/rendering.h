@@ -748,6 +748,7 @@ namespace rs2
         mutable rs2::frame last[2];
 
     public:
+        std::shared_ptr<temporal_filter> temporal;
         std::shared_ptr<depth_filter> decimate;
         std::shared_ptr<colorizer> colorize;
 
@@ -759,7 +760,8 @@ namespace rs2
 
         texture_buffer() : last_queue(), texture(),
             colorize(std::make_shared<colorizer>()),
-            decimate(std::make_shared<depth_filter>()) {}
+            decimate(std::make_shared<depth_filter>()),
+            temporal(std::make_shared<temporal_filter>()) {}
 
         GLuint get_gl_handle() const { return texture; }
 
@@ -812,7 +814,7 @@ namespace rs2
             case RS2_FORMAT_DISPARITY16:
                 if (frame.is<depth_frame>())
                 {
-                    if (auto rendered_frame = colorize->colorize(decimate->proccess(frame)).as<video_frame>())
+                    if (auto rendered_frame = colorize->colorize(temporal->proccess(decimate->proccess(frame))).as<video_frame>())
                     {
                         data = rendered_frame.get_data();
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 

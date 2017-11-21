@@ -27,6 +27,7 @@
 #include "../include/librealsense2/h/rs_types.h"
 #include "pipeline.h"
 #include "environment.h"
+#include "proc/temporal_filter.h"
 
 ////////////////////////
 // API implementation //
@@ -1632,6 +1633,16 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 rs2_processing_block* rs2_create_depth_filter_block(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::decimation_filter>();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+
+
+rs2_processing_block* rs2_create_temporal_filter_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::temporal_filter>();
 
     return new rs2_processing_block{ block };
 }

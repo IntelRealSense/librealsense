@@ -15,12 +15,6 @@ namespace librealsense
 {
 
     typedef int stream_id;
-    inline std::string generate_matcher_name(rs2_stream stream_type, stream_id stream)
-    {
-        std::stringstream s;
-        s<<rs2_stream_to_string(stream_type) << " "/*<<stream*/;
-        return s.str();
-    }
 
     template<class T>
     class internal_frame_processor_callback : public rs2_frame_processor_callback

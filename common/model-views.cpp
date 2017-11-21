@@ -620,7 +620,8 @@ namespace rs2
         : s(s), dev(dev), ui(), last_valid_ui(), 
           streaming(false), _pause(false),
         depth_colorizer(std::make_shared<rs2::colorizer>()),
-        decimation_filter(std::make_shared<rs2::depth_filter>())
+        decimation_filter(std::make_shared<rs2::depth_filter>()),
+        temporal_filter(std::make_shared<rs2::temporal_filter>())
     {
         try
         {
@@ -651,6 +652,10 @@ namespace rs2
             auto decimation = std::make_shared<processing_block_model>(
                 this, "Decimation Filter", decimation_filter, error_message);
             post_processing.push_back(decimation);
+
+            auto temporal = std::make_shared<processing_block_model>(
+                this, "Temporal Filter", temporal_filter, error_message);
+            post_processing.push_back(temporal);
         }
 
         populate_options(options_metadata, dev, *s, &options_invalidated, this, s, error_message);
@@ -1128,7 +1133,7 @@ namespace rs2
                 if (viewer.synchronization_enable)
                 {
                     if (index == viewer.selected_depth_source_uid || index == viewer.selected_tex_source_uid)
-                        viewer.synchronize(f);
+                        viewer.s(f);
                 }
                 queues.at(index).enqueue(f);
             });
@@ -1341,6 +1346,7 @@ namespace rs2
         profile = p;
         texture->colorize = d->depth_colorizer;
         texture->decimate = d->decimation_filter;
+        texture->temporal = d->temporal_filter;
 
         if (auto vd = p.as<video_stream_profile>())
         {
@@ -1637,6 +1643,7 @@ namespace rs2
                         selected_tex_source_uid = s.second.profile.unique_id();
                         texture.colorize = s.second.texture->colorize;
                         texture.decimate = s.second.texture->decimate;
+                        texture.temporal = s.second.texture->temporal;
                     }
                     i++;
                 }

@@ -291,6 +291,7 @@ namespace rs2
 
         std::shared_ptr<rs2::colorizer> depth_colorizer;
         std::shared_ptr<rs2::depth_filter> decimation_filter; // Evgeni
+        std::shared_ptr<rs2::temporal_filter> temporal_filter;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
     };
@@ -563,6 +564,7 @@ namespace rs2
             : pc(*this),
               synchronization_enable(true)
         {
+            s.start(syncer_queue);
             reset_camera();
             rs2_error* e = nullptr;
             not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
@@ -631,7 +633,8 @@ namespace rs2
 
         float dim_level = 1.f;
 
-        rs2::syncer synchronize;
+
+        rs2::asynchronous_syncer s;
         rs2::frame_queue syncer_queue;
     private:
 

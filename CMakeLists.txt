@@ -95,6 +95,7 @@ set(REALSENSE_CPP
     src/proc/synthetic-stream.cpp
     src/proc/syncer_processing_block.cpp
     src/proc/decimation_filter.cpp
+    src/proc/temporal_filter.cpp
     src/source.cpp
     src/ds5/ds5-options.cpp
     src/ds5/ds5-timestamp.cpp
@@ -187,6 +188,7 @@ set(REALSENSE_HPP
     src/proc/pointcloud.h
     src/proc/synthetic-stream.h
     src/proc/decimation_filter.h
+    src/proc/temporal_filter.h
     src/proc/syncer_processing_block.h
     src/algo.h
     src/option.h
@@ -409,6 +411,7 @@ if(WIN32)
         src/proc/align.cpp
         src/proc/pointcloud.cpp
         src/proc/decimation_filter.cpp
+        src/proc/temporal_filter.cpp
         src/proc/syncer_processing_block.cpp
         )
 
@@ -418,6 +421,7 @@ if(WIN32)
         src/proc/pointcloud.h
         src/proc/synthetic-stream.h
         src/proc/decimation_filter.h
+        src/proc/temporal_filter.h
         src/proc/syncer_processing_block.h
         )
 

@@ -403,5 +403,42 @@ namespace rs2
         std::shared_ptr<processing_block> _block;
         frame_queue _queue;
     };
+
+    class temporal_filter : public options
+    {
+    public:
+        temporal_filter() :_queue(1)
+        {
+            rs2_error* e = nullptr;
+            auto pb = std::shared_ptr<rs2_processing_block>(
+                rs2_create_temporal_filter_block(&e),
+                rs2_delete_processing_block);
+            _block = std::make_shared<processing_block>(pb);
+            error::handle(e);
+
+            // Redirect options API to the processing block
+            options::operator=(pb);
+
+            _block->start(_queue);
+        }
+
+        rs2::frame proccess(rs2::frame frame)
+        {
+            (*_block)(frame);
+            rs2::frame f;
+            _queue.poll_for_frame(&f);
+            return f;
+        }
+
+        void operator()(frame f) const
+        {
+            (*_block)(std::move(f));
+        }
+    private:
+        friend class context;
+
+        std::shared_ptr<processing_block> _block;
+        frame_queue _queue;
+    };
 }
 #endif // LIBREALSENSE_RS2_PROCESSING_HPP

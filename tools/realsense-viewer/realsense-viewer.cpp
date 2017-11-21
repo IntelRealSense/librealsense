@@ -554,8 +554,9 @@ int main(int argv, const char** argc) try
         ImGui::PopStyleColor();
 
         frameset f;
-        if(viewer_model.synchronize.poll_for_frames(&f))
-            viewer_model.syncer_queue.enqueue(std::move(f));
+
+//        if(viewer_model.s.poll_for_frames(&f))
+//            viewer_model.syncer_queue.enqueue(std::move(f));
 
         // Fetch frames from queues
         for (auto&& device_model : device_models)
