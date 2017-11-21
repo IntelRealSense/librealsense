@@ -54,7 +54,7 @@ namespace librealsense
 
             named_mutex(const named_mutex&) = delete;
 
-            void lock() { aquire(); }
+            void lock() { acquire(); }
             void unlock() { release(); }
 
             bool try_lock();
@@ -62,7 +62,7 @@ namespace librealsense
             ~named_mutex();
 
         private:
-            void aquire();
+            void acquire();
 
             void release();
 
@@ -141,7 +141,7 @@ namespace librealsense
 
             ~v4l_uvc_device();
 
-            void probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers) override;
+            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override;
 
             void stream_on(std::function<void(const notification& n)> error_handler) override;
 

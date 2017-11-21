@@ -373,7 +373,6 @@ namespace librealsense
             { "aux-param-depthclampmin", make_field(p.depth_table, &STDepthTableControl::depthClampMin) },
             { "aux-param-depthclampmax", make_field(p.depth_table, &STDepthTableControl::depthClampMax) },
             { "param-disparitymode", make_field(p.depth_table, &STDepthTableControl::disparityMode) },
-            { "aux-param-disparitymultiplier", make_field(p.depth_table, &STDepthTableControl::disparityMode) },
             { "param-disparityshift", make_field(p.depth_table, &STDepthTableControl::disparityShift) },
             { "aux-param-disparityshift", make_field(p.depth_table, &STDepthTableControl::disparityShift) },
 
@@ -392,6 +391,12 @@ namespace librealsense
             { "param-regionspatialthresholdv", make_ignored_field() },
             { "result:", make_ignored_field() },
             { "result", make_ignored_field() },
+            { "aux-param-disparitymultiplier",  make_ignored_field() },
+            { "stream-depth-format",  make_ignored_field() },
+            { "stream-ir-format",  make_ignored_field() },
+            { "stream-width",  make_ignored_field() },
+            { "stream-height",  make_ignored_field() },
+            { "stream-fps",  make_ignored_field() },
         };
 
         static const std::map<std::string, float> auto_control_values{ { "False", 0.f }, { "True", 1.f } };

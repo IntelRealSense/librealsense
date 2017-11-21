@@ -692,46 +692,50 @@ namespace librealsense
 
         void wmf_uvc_device::foreach_uvc_device(enumeration_callback action)
         {
-            CComPtr<IMFAttributes> pAttributes = nullptr;
-            CHECK_HR(MFCreateAttributes(&pAttributes, 1));
-            CHECK_HR(pAttributes->SetGUID(
-                MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE,
-                MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID));
-
-            IMFActivate ** ppDevices;
-            UINT32 numDevices;
-            CHECK_HR(MFEnumDeviceSources(pAttributes, &ppDevices, &numDevices));
-
-            for (UINT32 i = 0; i < numDevices; ++i)
+            for (auto attributes_params_set : attributes_params)
             {
-                CComPtr<IMFActivate> pDevice;
-                *&pDevice = ppDevices[i];
-
-                WCHAR * wchar_name = nullptr; UINT32 length;
-                CHECK_HR(pDevice->GetAllocatedString(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK, &wchar_name, &length));
-                auto name = win_to_utf(wchar_name);
-                CoTaskMemFree(wchar_name);
-
-                uint16_t vid, pid, mi; std::string unique_id;
-                if (!parse_usb_path(vid, pid, mi, unique_id, name)) continue;
-
-                uvc_device_info info;
-                info.vid = vid;
-                info.pid = pid;
-                info.unique_id = unique_id;
-                info.mi = mi;
-                info.device_path = name;
-                try
+                CComPtr<IMFAttributes> pAttributes = nullptr;
+                CHECK_HR(MFCreateAttributes(&pAttributes, 1));
+                for (auto attribute_params : attributes_params_set)
                 {
-                    action(info, ppDevices[i]);
+                    CHECK_HR(pAttributes->SetGUID(attribute_params.first, attribute_params.second));
                 }
-                catch (...)
+
+                IMFActivate ** ppDevices;
+                UINT32 numDevices;
+                CHECK_HR(MFEnumDeviceSources(pAttributes, &ppDevices, &numDevices));
+
+                for (UINT32 i = 0; i < numDevices; ++i)
                 {
-                    // TODO
+                    CComPtr<IMFActivate> pDevice;
+                    *&pDevice = ppDevices[i];
+
+                    WCHAR * wchar_name = nullptr; UINT32 length;
+                    CHECK_HR(pDevice->GetAllocatedString(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK, &wchar_name, &length));
+                    auto name = win_to_utf(wchar_name);
+                    CoTaskMemFree(wchar_name);
+
+                    uint16_t vid, pid, mi; std::string unique_id;
+                    if (!parse_usb_path(vid, pid, mi, unique_id, name)) continue;
+
+                    uvc_device_info info;
+                    info.vid = vid;
+                    info.pid = pid;
+                    info.unique_id = unique_id;
+                    info.mi = mi;
+                    info.device_path = name;
+                    try
+                    {
+                        action(info, ppDevices[i]);
+                    }
+                    catch (...)
+                    {
+                        // TODO
+                    }
                 }
+
+                CoTaskMemFree(ppDevices);
             }
-
-            CoTaskMemFree(ppDevices);
         }
 
         void wmf_uvc_device::set_power_state(power_state state)
@@ -982,7 +986,7 @@ namespace librealsense
             }
         }
 
-        void wmf_uvc_device::probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int /*buffers*/)
+        void wmf_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int /*buffers*/)
         {
             if (_streaming)
                 throw std::runtime_error("Device is already streaming!");

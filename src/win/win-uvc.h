@@ -15,6 +15,22 @@
 #include <mutex>
 #include <atomic>
 
+#ifndef KSCATEGORY_SENSOR_CAMERA
+DEFINE_GUIDSTRUCT("24E552D7-6523-47F7-A647-D3465BF1F5CA", KSCATEGORY_SENSOR_CAMERA);
+#define KSCATEGORY_SENSOR_CAMERA DEFINE_GUIDNAMED(KSCATEGORY_SENSOR_CAMERA)
+#endif // !KSCATEGORY_SENSOR_CAMERA
+
+
+static const std::vector<std::vector<std::pair<GUID, GUID>>> attributes_params = {
+    {
+        { MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID },
+        { MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_CATEGORY, KSCATEGORY_SENSOR_CAMERA }
+    },
+    {
+        { MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID }
+    },
+};
+
 namespace librealsense
 {
     namespace platform
@@ -37,7 +53,7 @@ namespace librealsense
             wmf_uvc_device(const uvc_device_info& info, std::shared_ptr<const wmf_backend> backend);
             ~wmf_uvc_device();
 
-            void probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers) override;
+            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override;
             void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override;
             void start_callbacks() override;
             void stop_callbacks() override;

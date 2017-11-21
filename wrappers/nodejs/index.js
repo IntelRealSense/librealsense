@@ -18,6 +18,7 @@ class Device {
   constructor(dev) {
     this.cxxDev = dev;
     this._events = new EventEmitter();
+    internal.addObject(this);
   }
 
   /**
@@ -166,8 +167,10 @@ class Device {
    * Release resources associated with the object
    */
   destroy() {
-    this.cxxDev.destroy();
-    this.cxxDev = undefined;
+    if (this.cxxDev) {
+      this.cxxDev.destroy();
+      this.cxxDev = undefined;
+    }
     this._events = undefined;
   }
 }
@@ -260,8 +263,10 @@ class StreamProfile {
   }
 
   destroy() {
-    if (this.cxxProfile) this.cxxProfile.destroy();
-    this.cxxProfile = undefined;
+    if (this.cxxProfile) {
+      this.cxxProfile.destroy();
+      this.cxxProfile = undefined;
+    }
   }
 }
 
@@ -271,14 +276,17 @@ class StreamProfile {
 class DeviceList {
   constructor(cxxList) {
     this.cxxList = cxxList;
+    internal.addObject(this);
   }
 
   /**
    * Release resources associated with the object
    */
   destroy() {
-    this.cxxList.destroy();
-    this.cxxList = undefined;
+    if (this.cxxList) {
+      this.cxxList.destroy();
+      this.cxxList = undefined;
+    }
   }
 
   /**
@@ -384,6 +392,10 @@ class VideoStreamProfile extends StreamProfile {
 
 class Options {
   constructor(cxxObj) {
+    this.cxxObj = cxxObj;
+  }
+
+  setCxxOptionsObject(cxxObj) {
     this.cxxObj = cxxObj;
   }
   /**
@@ -538,6 +550,7 @@ class Sensor extends Options {
     super(sensor);
     this.cxxSensor = sensor;
     this._events = new EventEmitter();
+    internal.addObject(this);
   }
 
   /**
@@ -599,8 +612,10 @@ class Sensor extends Options {
   */
   destroy() {
     this.events_ = null;
-    this.cxxSensor.destroy();
-    this.cxxSensor = undefined;
+    if (this.cxxSensor) {
+      this.cxxSensor.destroy();
+      this.cxxSensor = undefined;
+    }
   }
 
   /**
@@ -871,12 +886,21 @@ class DepthSensor extends Sensor {
 
 const internal = {
   ctx: [],
+  objs: [],
 
   addContext: function(c) {
     this.ctx.push(c);
   },
 
+  addObject: function(o) {
+    this.objs.push(o);
+  },
+
   cleanup: function() {
+    this.objs.forEach((obj) => {
+      obj.destroy();
+    });
+    this.objs = [];
     this.ctx.forEach((context) => {
       context.destroy();
     });
@@ -901,19 +925,21 @@ const internal = {
 class Context {
   constructor(cxxCtx) {
     this._events = new EventEmitter();
-    if (arguments.length === 1 && arguments[0] === 'no-cxx-context') {
-      // Subclass will do the cxxCtx
+    if (arguments.length === 0) {
+      this.cxxCtx = new RS2.RSContext();
+      this.cxxCtx.create();
     } else {
-      if (arguments.length === 0) {
-        this.cxxCtx = new RS2.RSContext();
+      if (arguments[0] === 'recording' || arguments[0] === 'playback') {
+        this.cxxCtx = new (Function.prototype.bind.apply(
+            RS2.RSContext, [null].concat(Array.from(arguments))))();
         this.cxxCtx.create();
-      } else {
+      } else if (arguments[0] instanceof RS2.RSContext) {
         this.cxxCtx = cxxCtx;
+      } else {
+        throw new TypeError('Invalid arguement for Context.constructor()');
       }
-
-      this.cxxCtx._events = this._events;
     }
-
+    this.cxxCtx._events = this._events;
     internal.addContext(this);
   }
 
@@ -922,9 +948,11 @@ class Context {
    * The JavaScript Context object(s) will not be garbage-collected without call(s) to this function
    */
   destroy() {
-    this.cxxCtx.destroy();
-    this.cxxCtx = undefined;
-    internal.cleanupContext();
+    if (this.cxxCtx) {
+      this.cxxCtx.destroy();
+      this.cxxCtx = undefined;
+      internal.cleanupContext();
+    }
   }
 
   /**
@@ -1039,27 +1067,36 @@ class Context {
 }
 
 /**
- * Record camera data to a disk file
+ * This class is for testing purpose.
+ * It is used to record all operations over librealsense into a file
  * @extends Context
  */
-class RecordContext extends Context {
+class RecordingContext extends Context {
   /**
-   * @param {String} fileName The file name of the recording data
-   * @param {String} section The section name to record
-   * @param {String|Integer} mode Recording mode, default to 'best-quality'
-   *
+   * @param {String} fileName The file name to store the recorded data
+   * @param {String} section The section name within the recording
+   * @param {String|Integer} mode Recording mode, default to 'blank-frames'
    * @see [enum recording_mode]{@link recording_mode}
    */
-  constructor(fileName, section, mode = 'best-quality') {
-    super('no-cxx-context');
-    // TODO: create this.cxxCtx in child class
-    // this.cxxCtx = ...
-    this.cxxCtx._events = this._events;
+  constructor(fileName, section = '', mode = 'blank-frames') {
+    if (!isString(fileName) || !isString(section)) {
+      throw new TypeError('RecordingContext constructor\'s argument type is invalid');
+    }
+    let m = checkStringNumber(mode,
+        constants.recording_mode.RECORDING_MODE_BLANK_FRAMES,
+        constants.recording_mode.RECORDING_MODE_STREAM_COUNT,
+        recordingMode2Int,
+        'RecordingContext constructor expects a string or an integer for the 3rd argument',
+        'RecordingContext constructor\'s 3rd argument value is invalid');
+    super('recording', fileName, section, m);
   }
 }
 
 /**
- * Playback camera recordings
+ * This class is for testing purpose.
+ * It is used to reproduce the same responses for the same operations as
+ * recording. The user must call the same methods as recorded in the file
+ * to get correct response.
  * @extends Context
  */
 class PlaybackContext extends Context {
@@ -1067,11 +1104,11 @@ class PlaybackContext extends Context {
    * @param {String} fileName The file name of the recording
    * @param {String} section The section name used in recording
    */
-  constructor(fileName = '', section = '') {
-    super('no-cxx-context');
-    // TODO: create this.cxxCtx in child class
-    // this.cxxCtx = ...
-    this.cxxCtx._events = this._events;
+  constructor(fileName, section = '') {
+    if (!isString(fileName) || !isString(section)) {
+      throw new TypeError('PlaybackContext constructor\'s argument type is invalid');
+    }
+    super('playback', fileName, section);
   }
 }
 
@@ -1088,6 +1125,9 @@ class PlaybackDevice extends Device {
     this.file = file;
   }
 }
+
+internal.RecordingContext = RecordingContext;
+internal.PlaybackContext = PlaybackContext;
 
 /**
  * PointCloud accepts depth frames and outputs Points frames
@@ -1147,10 +1187,12 @@ class PointCloud {
 /**
  * The Colorizer can be used to quickly visualize the depth data by tranform data into RGB8 format
  */
-class Colorizer {
+class Colorizer extends Options {
   constructor() {
+    super();
     this.cxxColorizer = new RS2.RSColorizer();
     this.cxxColorizer.create();
+    this.setCxxOptionsObject(this.cxxColorizer);
     this.depthRGB = new VideoFrame();
   }
 
@@ -1257,6 +1299,7 @@ class Frame {
   constructor(cxxFrame) {
     this.cxxFrame = cxxFrame || new RS2.RSFrame();
     this.updateProfile();
+    internal.addObject(this);
   }
 
   updateProfile() {
@@ -1670,24 +1713,11 @@ class FrameSet {
    * @return {DepthFrame|VideoFrame|Frame|undefined}
    */
   at(index) {
-    //
-    // TODO(ting): mapping index to stream and use this.cache[]
-    //   e.g. return getFrame(this.cxxFrameSet.indexToStream(index));
-    //
-
-    let cxxFrame = this.cxxFrameSet.at(index);
-
-    if (!cxxFrame) return undefined;
-
-    if (cxxFrame.isDepthFrame()) {
-      return new DepthFrame(cxxFrame);
+    if ((arguments.length !== 1) || (typeof index !== 'number') ||
+        (parseInt(index) >= this.size)) {
+      throw new TypeError('FrameSet.at(index) expects a valid integer argument');
     }
-
-    if (cxxFrame.isVideoFrame()) {
-      return new VideoFrame(cxxFrame);
-    }
-
-    return new Frame(cxxFrame);
+    return this.getFrame(this.cxxFrameSet.indexToStream(index));
   }
 
   __internalAssembleFrame(cxxFrame) {
@@ -1801,6 +1831,7 @@ class Pipeline {
     this.cxxPipeline.create(this.ctx.cxxCtx);
     this.started = false;
     this.frameSet = new FrameSet();
+    internal.addObject(this);
   }
 
   /**
@@ -1811,9 +1842,12 @@ class Pipeline {
   destroy() {
     if (this.started === true) this.stop();
 
-    this.cxxPipeline.destroy();
-    this.cxxPipeline = undefined;
-    if (this.ownCtx) {
+    if (this.cxxPipeline) {
+      this.cxxPipeline.destroy();
+      this.cxxPipeline = undefined;
+    }
+
+    if (this.ownCtx && this.ctx) {
       this.ctx.destroy();
     }
     this.ctx = undefined;
@@ -1946,6 +1980,7 @@ class Pipeline {
 class PipelineProfile {
   constructor(profile) {
     this.cxxPipelineProfile = profile;
+    internal.addObject(this);
   }
 
   /**
@@ -1984,6 +2019,18 @@ class PipelineProfile {
    */
   getDevice() {
     return new Device(this.cxxPipelineProfile.getDevice());
+  }
+
+  /**
+   * Destroy the resource associated with this object
+   *
+   * @return {undefined}
+   */
+  destroy() {
+    if (this.cxxPipelineProfile) {
+      this.cxxPipelineProfile.destroy();
+      this.cxxPipelineProfile = undefined;
+    }
   }
 }
 
@@ -2203,12 +2250,15 @@ class Syncer {
    * Release resources associated with the object
    */
   destroy() {
-    this.cxxSyncer.destroy();
-    this.cxxSyncer = undefined;
+    if (this.cxxSyncer) {
+      this.cxxSyncer.destroy();
+      this.cxxSyncer = undefined;
+    }
+
     if (this.frameset) {
       this.frameSet.destroy();
+      this.frameSet = undefined;
     }
-    this.frameSet = undefined;
   }
 }
 
@@ -2248,8 +2298,10 @@ class DeviceHub {
    * Release resources associated with the object
    */
   destroy() {
-    this.cxxHub.destroy();
-    this.cxxHub = undefined;
+    if (this.cxxHub) {
+      this.cxxHub.destroy();
+      this.cxxHub = undefined;
+    }
   }
 }
 
@@ -3032,38 +3084,43 @@ const recording_mode = {
    * but pixel data will be replaced with zeros to save space. <br>Equivalent to its uppercase
    * counterpart.
    */
-  blank_frames: 'blank-frames',
+  recording_mode_blank_frames: 'blank-frames',
   /**
    * String literal of <code>'compressed'</code>. <br>Frames will be encoded using a proprietary
    * lossy encoding, aiming at x5 compression at some CPU expense. <br>Equivalent to its uppercase
    * counterpart.
    */
-  compressed: 'compressed',
+  recording_mode_compressed: 'compressed',
   /**
    * String literal of <code>'best-quality'</code>. <br>Frames will not be compressed,
    * but rather stored as-is. This gives best quality and low CPU overhead, but you might run out
    * of memory. <br>Equivalent to its uppercase counterpart.
    */
-  best_quality: 'best-quality',
+  recording_mode_best_quality: 'best-quality',
 
   /**
    * Frame metadata will be recorded, but pixel data will be replaced with zeros to save space.
    * <br>Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
-  BLANK_FRAMES: RS2.RS2_RECORDING_MODE_BLANK_FRAMES,
+  RECORDING_MODE_BLANK_FRAMES: RS2.RS2_RECORDING_MODE_BLANK_FRAMES,
   /**
    * Frames will be encoded using a proprietary lossy encoding, aiming at x5 compression at some
    * CPU expense.<br>Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
-  COMPRESSED: RS2.RS2_RECORDING_MODE_COMPRESSED,
+  RECORDING_MODE_COMPRESSED: RS2.RS2_RECORDING_MODE_COMPRESSED,
   /**
    * Frames will not be compressed, but rather stored as-is. This gives best quality and low CPU
    * overhead, but you might run out of memory.<br>Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
-  BEST_QUALITY: RS2.RS2_RECORDING_MODE_BEST_QUALITY,
+  RECORDING_MODE_BEST_QUALITY: RS2.RS2_RECORDING_MODE_BEST_QUALITY,
+  /**
+   * Number of enumeration values. Not a valid input: intended to be used in for-loops.
+   * @type {Integer}
+  */
+  RECORDING_MODE_COUNT: RS2.RS2_RECORDING_MODE_COUNT,
 };
 
 /**
@@ -3238,7 +3295,36 @@ const option = {
    * correction of the motion data . <br>Equivalent to its uppercase counterpart.
    */
   option_enable_motion_correction: 'enable-motion-correction',
+  /**
+   * String literal of <code>'auto-exposure-priority'</code>.
+   * <br>Allows sensor to dynamically ajust the frame rate
+   * depending on lighting conditions <br>Equivalent to its uppercase counterpart
+   */
+  option_auto_exposure_priority: 'auto-exposure-priority',
 
+  /**
+   * String literal of <code>''color-scheme'</code>. <br>Color scheme for data visualization
+   * <br>Equivalent to its uppercase counterpart
+   */
+  option_color_scheme: 'color-scheme',
+
+  /**
+   * String literal of <code>''histogram-equalization-enabled'</code>. <br>Perform histogram
+   * equalization post-processing on the depth data <br>Equivalent to its uppercase counterpart
+   */
+  option_histogram_equalization_enabled: 'histogram-equalization-enabled',
+
+  /**
+   * String literal of <code>''min-distance'</code>. <br>Minimal distance to the target
+   * <br>Equivalent to its uppercase counterpart
+   */
+  option_min_distance: 'min-distance',
+
+  /**
+   * String literal of <code>''max-distance'</code>. <br>Maximum distance to the target
+   * <br>Equivalent to its uppercase counterpart
+   */
+  option_max_distance: 'max-distance',
   /**
    * Enable / disable color backlight compensatio.<br>Equivalent to its lowercase counterpart.
    * @type {Integer}
@@ -3407,6 +3493,32 @@ const option = {
    */
   OPTION_ENABLE_MOTION_CORRECTION: RS2.RS2_OPTION_ENABLE_MOTION_CORRECTION,
   /**
+   * Allows sensor to dynamically ajust the frame rate depending on lighting conditions.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_AUTO_EXPOSURE_PRIORITY: RS2.OPTION_AUTO_EXPOSURE_PRIORITY,
+
+  /**
+   * Color scheme for data visualization <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_COLOR_SCHEME: RS2.OPTION_COLOR_SCHEME,
+
+  /**
+   * Perform histogram equalization post-processing on the depth data.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_HISTOGRAM_EQUALIZATION_ENABLED: RS2.OPTION_HISTOGRAM_EQUALIZATION_ENABLED,
+
+  /**
+   * Minimal distance to the target <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_MIN_DISTANCE: RS2.OPTION_MIN_DISTANCE,
+
+  /**
+   * Maximum distance to the target <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_MAX_DISTANCE: RS2.OPTION_MAX_DISTANCE,
+  /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
    */
@@ -3487,6 +3599,19 @@ const option = {
           return this.option_depth_units;
         case this.OPTION_ENABLE_MOTION_CORRECTION:
           return this.option_enable_motion_correction;
+        case this.OPTION_AUTO_EXPOSURE_PRIORITY:
+          return this.option_auto_exposure_priority;
+        case this.OPTION_COLOR_SCHEME:
+          return this.option_color_scheme;
+        case this.OPTION_HISTOGRAM_EQUALIZATION_ENABLED:
+          return this.option_histogram_equalization_enabled;
+        case this.OPTION_MIN_DISTANCE:
+          return this.option_min_distance;
+        case this.OPTION_MAX_DISTANCE:
+          return this.option_max_distance;
+        default:
+          throw new TypeError(
+              'option.optionToString(option) expects a valid value as the 1st argument');
       }
     }
   },
@@ -4252,8 +4377,6 @@ module.exports = {
   Align: Align,
   PointCloud: PointCloud,
   Points: Points,
-  // PlaybackContext: PlaybackContext,
-  // RecordingContext: RecordingContext,
   Syncer: Syncer,
 
   stream: stream,
@@ -4269,6 +4392,7 @@ module.exports = {
   visual_preset: visual_preset,
 
   util: util,
+  internal: internal,
 
   stringConstantToIntegerValue: str2Int,
 };

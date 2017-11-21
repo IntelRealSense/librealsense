@@ -12,10 +12,10 @@ namespace rs2
               _roi_located(std::chrono::seconds(4)),
               _too_close(std::chrono::seconds(4)),
               _too_far(std::chrono::seconds(4)),
-              _sku_right(std::chrono::seconds(1)),
-              _sku_left(std::chrono::seconds(1)),
-              _sku_up(std::chrono::seconds(1)),
-              _sku_down(std::chrono::seconds(1)),
+              _skew_right(std::chrono::seconds(1)),
+              _skew_left(std::chrono::seconds(1)),
+              _skew_up(std::chrono::seconds(1)),
+              _skew_down(std::chrono::seconds(1)),
               _angle_alert(std::chrono::seconds(4)),
               _min_dist(300.f), _max_dist(2000.f), _max_angle(10.f)
         {
@@ -23,6 +23,8 @@ namespace rs2
             _viewer_model.allow_3d_source_change = false;
             _viewer_model.allow_stream_close = false;
             _viewer_model.draw_plane = true;
+            _viewer_model.synchronization_enable = false;
+            _viewer_model.support_non_syncronized_mode = false; //pipeline outputs only syncronized frameset
         }
 
         bool tool_model::start(ux_window& window)
@@ -46,8 +48,18 @@ namespace rs2
             {
                 if (valid_config = cfg.can_resolve(_pipe))
                 {
-                    _pipe.start(cfg);
-                    break;
+                    try {
+                        _pipe.start(cfg);
+                        break;
+                    }
+                    catch (...)
+                    {
+                        if (!_device_in_use)
+                        {
+                            window.add_on_load_message("Device is not functional or busy!");
+                            _device_in_use = true;
+                        }
+                    }
                 }
             }
 
@@ -120,7 +132,9 @@ namespace rs2
 
         bool tool_model::draw_instructions(ux_window& win, const rect& viewer_rect, bool& distance, bool& orientation)
         {
-            _roi_located.add_value(is_valid(_metrics_model.get_plane()));
+            auto plane_fit_found = is_valid(_metrics_model.get_plane());
+            _metrics_model.set_plane_fit(plane_fit_found);
+            _roi_located.add_value(plane_fit_found);
             if (!_roi_located.eval())
             {
                 draw_notification(win, viewer_rect, 450,
@@ -135,16 +149,16 @@ namespace rs2
                 orientation = true;
             }
 
-            _sku_right.add_value(orientation && _metrics_model.get_last_metrics().angle_x > 0.f
+            _skew_right.add_value(orientation && _metrics_model.get_last_metrics().angle_x > 0.f
                 && fabs(_metrics_model.get_last_metrics().angle_x) > fabs(_metrics_model.get_last_metrics().angle_y));
 
-            _sku_left.add_value(orientation && _metrics_model.get_last_metrics().angle_x < 0.f
+            _skew_left.add_value(orientation && _metrics_model.get_last_metrics().angle_x < 0.f
                 && fabs(_metrics_model.get_last_metrics().angle_x) > fabs(_metrics_model.get_last_metrics().angle_y));
 
-            _sku_up.add_value(orientation && _metrics_model.get_last_metrics().angle_y < 0.f
+            _skew_up.add_value(orientation && _metrics_model.get_last_metrics().angle_y < 0.f
                 && fabs(_metrics_model.get_last_metrics().angle_x) <= fabs(_metrics_model.get_last_metrics().angle_y));
 
-            _sku_down.add_value(orientation && _metrics_model.get_last_metrics().angle_y > 0.f
+            _skew_down.add_value(orientation && _metrics_model.get_last_metrics().angle_y > 0.f
                 && fabs(_metrics_model.get_last_metrics().angle_x) <= fabs(_metrics_model.get_last_metrics().angle_y));
 
             _too_close.add_value(_metrics_model.get_last_metrics().distance < _min_dist);
@@ -153,7 +167,7 @@ namespace rs2
             constexpr const char* orientation_instruction = "                         Recommended angle: < 3 degrees"; // "             Use the orientation gimbal to align the camera";
             constexpr const char* distance_instruction    = "          Recommended distance: 0.3m-2m from the target"; // "             Use the distance locator to position the camera";
 
-            if (_sku_right.eval())
+            if (_skew_right.eval())
             {
                 draw_notification(win, viewer_rect, 400,
                     u8"\n          \uf061  Rotate the camera slightly Right",
@@ -161,7 +175,7 @@ namespace rs2
                 return false;
             }
 
-            if (_sku_left.eval())
+            if (_skew_left.eval())
             {
                 draw_notification(win, viewer_rect, 400,
                     u8"\n           \uf060  Rotate the camera slightly Left",
@@ -169,7 +183,7 @@ namespace rs2
                 return false;
             }
 
-            if (_sku_up.eval())
+            if (_skew_up.eval())
             {
                 draw_notification(win, viewer_rect, 400,
                     u8"\n            \uf062  Rotate the camera slightly Up",
@@ -177,7 +191,7 @@ namespace rs2
                 return false;
             }
 
-            if (_sku_down.eval())
+            if (_skew_down.eval())
             {
                 draw_notification(win, viewer_rect, 400,
                     u8"\n          \uf063  Rotate the camera slightly Down",
@@ -273,20 +287,20 @@ namespace rs2
             for (int i = 2; i < 7; i += 1)
             {
                 auto t = (animation_clock.elapsed_ms() / 500) * M_PI - i * (M_PI / 5);
-                auto alpha = (1.f + sin(t)) / 2.f;
+                float alpha = (1.f + float(sin(t))) / 2.f;
 
                 auto c = blend(grey, (1.f - float(i)/7.f)*fade_factor);
                 if (orientation_guide) c = blend(light_blue, alpha);
 
                 ImGui::GetWindowDrawList()->AddCircle(
-                { pos1.x + 41 - 2 * i * prev_x, pos1.y + 40 - 2 * i * prev_y }, 40 - i*i,
+                { pos1.x + 41 - 2 * i * prev_x, pos1.y + 40 - 2 * i * prev_y }, 40.f - i*i,
                     ImColor(c), 64);
             }
 
             if (angle < 50)
             {
                 ImGui::GetWindowDrawList()->AddCircleFilled(
-                { pos1.x + 41 + 70 * prev_x, pos1.y + 40 + 70 * prev_y }, 10,
+                { pos1.x + 41 + 70 * prev_x, pos1.y + 40 + 70 * prev_y }, 10.f,
                     ImColor(blend(grey, orientation_guide ? 1.f : fade_factor)), 64);
             }
 
@@ -310,7 +324,7 @@ namespace rs2
                     auto min_y = pos1.y + 10;
                     auto max_y = window_h + window_y;
                     int bar_spacing = 15;
-                    int parts = (max_y - min_y) / bar_spacing;
+                    int parts = int(max_y - min_y) / bar_spacing;
 
                     ImGui::GetWindowDrawList()->AddRect(
                     { pos1.x + 1, pos1.y },
@@ -343,7 +357,7 @@ namespace rs2
                             for (int j = -2; j < 2; j++)
                             {
                                 auto yc = yellow;
-                                auto factor = (1 - fabs(j) / 3);
+                                auto factor = (1 - abs(j) / 3.f);
                                 yc = blend(yc, factor*factor);
                                 if (!distance_guide) yc = blend(yc, fade_factor);
                                 ImGui::GetWindowDrawList()->AddRectFilled(
@@ -356,7 +370,7 @@ namespace rs2
                                 for (int j = 1; j < 5; j++)
                                 {
                                     auto t = (animation_clock.elapsed_ms() / 500) * M_PI - j * (M_PI / 5);
-                                    auto alpha = (1.f + sin(t)) / 2.f;
+                                    auto alpha = (1 + float(sin(t))) / 2.f;
 
                                     ImGui::SetCursorPos({ pos.x + 57, pos.y + bar_spacing * (i - j) + 14 });
                                     ImGui::PushStyleColor(ImGuiCol_Text,
@@ -371,7 +385,7 @@ namespace rs2
                                 for (int j = 1; j < 5; j++)
                                 {
                                     auto t = (animation_clock.elapsed_ms() / 500) * M_PI - j * (M_PI / 5);
-                                    auto alpha = (1.f + sin(t)) / 2.f;
+                                    auto alpha = (1.f + float(sin(t))) / 2.f;
 
                                     ImGui::SetCursorPos({ pos.x + 57, pos.y + bar_spacing * (i + j) + 14 });
                                     ImGui::PushStyleColor(ImGuiCol_Text,
@@ -414,7 +428,6 @@ namespace rs2
             bool distance_guide = false;
             bool orientation_guide = false;
             bool found = draw_instructions(win, viewer_rect, distance_guide, orientation_guide);
-            //draw_guides(win, viewer_rect, distance_guide, orientation_guide);
 
             ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
             ImGui::SetNextWindowPos({ 0, 0 });
@@ -481,7 +494,7 @@ namespace rs2
                                 cfg.enable_stream(secondary.stream_type(), secondary.stream_index(),
                                     primary.width(), primary.height(), secondary.format(), primary.fps());
 
-                                // Wait till a valid device is found and responsive
+                                // Wait till a valid device is registered and responsive
                                 bool success = false;
                                 do
                                 {
@@ -565,7 +578,7 @@ namespace rs2
                         }
                         else
                         {
-                            _ground_truth = _metrics_model.get_last_metrics().distance;
+                            _ground_truth = int(_metrics_model.get_last_metrics().distance);
                             ImGui::Dummy({ 1,1 });
                         }
                         ImGui::PopStyleColor();
@@ -590,7 +603,7 @@ namespace rs2
                     ImGui::PopStyleVar();
                     ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, { 0, 0 });
 
-                    if (found && ImGui::TreeNodeEx("Metrics", ImGuiTreeNodeFlags_DefaultOpen))
+                    if (ImGui::TreeNodeEx("Metrics", ImGuiTreeNodeFlags_DefaultOpen))
                     {
                         ImGui::PopStyleVar();
                         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
@@ -748,6 +761,7 @@ namespace rs2
             }
             catch(...){}
 
+            _device_in_use = false;
             _first_frame = true;
             win.reset();
         }
@@ -834,7 +848,12 @@ namespace rs2
 
         metrics_model::metrics_model() :
             _frame_queue(1),
-            _depth_scale_units(0.f), _active(true)
+            _depth_scale_units(0.f),
+            _stereo_baseline_mm(0.f),
+            _ground_truth_mm(0),
+            _use_gt(false),
+            _plane_fit(false),
+            _active(true)
         {
             _worker_thread = std::thread([this]() {
                 while (_active)
@@ -852,6 +871,8 @@ namespace rs2
                     {
                         float su = 0, baseline = -1.f;
                         rs2_intrinsics intrin;
+                        int gt_mm;
+                        bool plane_fit_set;
                         region_of_interest roi;
                         {
                             std::lock_guard<std::mutex> lock(_m);
@@ -861,9 +882,8 @@ namespace rs2
                             roi = _roi;
                         }
 
-                        _ground_truth_copy = get_ground_truth(); // Copy the mutable GT into a "safe" copy variable
-                        auto gt_ptr = _use_gt ? &_ground_truth_copy : nullptr; // Borrow copy ptr to the callback
-                        auto metrics = analyze_depth_image(depth_frame, su, baseline, &intrin, roi, gt_ptr, callback);
+                        std::tie(gt_mm, plane_fit_set) = get_inputs();
+                        auto metrics = analyze_depth_image(depth_frame, su, baseline, &intrin, roi, gt_mm, plane_fit_set,callback);
 
                         {
                             std::lock_guard<std::mutex> lock(_m);
@@ -886,11 +906,11 @@ namespace rs2
         }
 
         std::shared_ptr<metric_plot> tool_model::make_metric(
-            const std::string& name, float min, float max,
+            const std::string& name, float min, float max, const bool requires_plane_fit,
             const std::string& units,
             const std::string& description)
         {
-            auto res = std::make_shared<metric_plot>(name, min, max, units, description);
+            auto res = std::make_shared<metric_plot>(name, min, max, units, description, requires_plane_fit);
             _metrics_model.add_metric(res);
             return res;
         }
@@ -1018,7 +1038,7 @@ namespace rs2
                     _description.size() + 1, desc_size, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopStyleColor(3);
 
-                ImGui::PlotLines(_id.c_str(), (float*)&_vals, SIZE, _idx, ss.str().c_str(), _min, _max, { 270, 50 });
+                ImGui::PlotLines(_id.c_str(), (float*)&_vals, int(SIZE), int(_idx), ss.str().c_str(), _min, _max, { 270, 50 });
 
                 ImGui::TreePop();
             }
@@ -1037,7 +1057,7 @@ namespace rs2
 
         void metrics_model::serialize_to_csv(const std::string& filename, const std::string& camera_info) const
         {
-            // RAII
+            // TODO RAII
             std::ofstream csv;
 
             csv.open(filename);
@@ -1045,7 +1065,11 @@ namespace rs2
             // Store the device info and the streaming profile details
             csv << camera_info;
 
-            // Create header line
+            //Store metric environment
+            csv << "\nEnvironment:\nPlane-Fit_distance_mm," << (_plane_fit ? std::to_string(_latest_metrics.distance) : "N/A") << std::endl;
+            csv << "Ground-Truth_Distance_mm," << (_use_gt ? std::to_string(_ground_truth_mm ) : "N/A") << std::endl;
+
+            // Generate columns header
             csv << "\nSample Id,Timestamp (ms),";
             for (auto&& plot : _plots)
             {
@@ -1053,7 +1077,7 @@ namespace rs2
             }
             csv << std::endl;
 
-            // Populate the metrics data
+            // Populate metrics data using the fill-rate persistent metric as pivot
             for (size_t i = _plots[0]->_first_idx, rec = 0; i != _plots[0]->_idx; i = (++i) % metric_plot::SIZE)
             {
                 csv << ++rec << "," << std::fixed << std::setprecision(4) << _plots[0]->_timestamps[i] << ",";

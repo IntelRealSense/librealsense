@@ -72,13 +72,13 @@ int main(int argc, char* argv[])
 
     while (true)
     {
-        cout << "\nWaiting for RealSense device to connect...\n";
-        auto dev = hub.wait_for_device();
-        cout << "RealSense device has connected...\n";
         try
         {
-            vector<uint8_t> input;
+            cout << "\nWaiting for RealSense device to connect...\n";
+            auto dev = hub.wait_for_device();
+            cout << "RealSense device was connected...\n";
 
+            vector<uint8_t> input;
             auto str_op_code = dev.get_info(RS2_CAMERA_INFO_DEBUG_OP_CODE);
             auto op_code = static_cast<uint8_t>(stoi(str_op_code));
             input = {0x14, 0x00, 0xab, 0xcd, op_code, 0x00, 0x00, 0x00,

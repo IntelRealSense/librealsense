@@ -143,10 +143,6 @@ namespace rs2
         frame_queue& at(int id)
         {
             std::lock_guard<std::mutex> lock(_lookup_mutex);
-            if (_queues.find(id) == _queues.end())
-            {
-                _queues[id] = frame_queue(4);
-            }
             return _queues[id];
         }
 
@@ -172,7 +168,8 @@ namespace rs2
         std::map<int, int> selected_format_id;
     };
 
-    class subdevice_model;
+     class viewer_model;
+     class subdevice_model;
 
     class processing_block_model
     {
@@ -209,7 +206,7 @@ namespace rs2
         bool is_selected_combination_supported();
         std::vector<stream_profile> get_selected_profiles();
         void stop();
-        void play(const std::vector<stream_profile>& profiles);
+        void play(const std::vector<stream_profile>& profiles, viewer_model& viewer);
         void update(std::string& error_message, notifications_model& model);
         void draw_options(const std::vector<rs2_option>& drawing_order,
                           bool update_read_only_options, std::string& error_message,
@@ -478,14 +475,22 @@ namespace rs2
 
     std::string get_file_name(const std::string& path);
 
+    class viewer_model;
     class async_pointclound_mapper
     {
     public:
-        async_pointclound_mapper()
-            : keep_calculating_pointcloud(true),
-              resulting_3d_models(1), depth_frames_to_render(1),
-              t([this]() {render_loop(); })
+        async_pointclound_mapper(viewer_model& viewer)
+            : processing_block([&](rs2::frame f, const rs2::frame_source& source)
         {
+            this->proccess(std::move(f),source);
+        }),
+        viewer(viewer),
+        keep_calculating_pointcloud(true),
+        depth_stream_active(false),
+        resulting_3d_models(1),
+        t([this]() {render_loop(); })
+        {
+            processing_block.start(resulting_3d_models);
         }
 
         ~async_pointclound_mapper() { stop(); }
@@ -501,17 +506,13 @@ namespace rs2
             }
         }
 
-        void push_frame(frame f)
-        {
-            depth_frames_to_render.enqueue(f);
-        }
-
-        points get_points()
+        rs2::frameset get_points()
         {
             frame f;
             if (resulting_3d_models.poll_for_frame(&f))
             {
-                model = f;
+                rs2::frameset frameset(f);
+                model = frameset;
             }
             return model;
         }
@@ -521,16 +522,22 @@ namespace rs2
             rs2::frame f{};
             model = f;
             while (resulting_3d_models.poll_for_frame(&f));
-            while (depth_frames_to_render.poll_for_frame(&f));
         }
 
-    private:
-        void render_loop();
+        std::atomic<bool> depth_stream_active;
 
+    private:
+        viewer_model& viewer;
+
+        void render_loop();
+        void proccess(rs2::frame f, const rs2::frame_source& source);
+        rs2::frame last_tex_frame;
+        rs2::processing_block processing_block;
         pointcloud pc;
-        points model;
+        rs2::frameset model;
         std::atomic<bool> keep_calculating_pointcloud;
-        frame_queue depth_frames_to_render;
+
+
         frame_queue resulting_3d_models;
 
         std::thread t;
@@ -552,12 +559,19 @@ namespace rs2
         float get_output_height() const { return (is_output_collapsed ? default_log_h : 20); }
 
         viewer_model()
+            :pc(*this),
+             synchronization_enable(true)
         {
             reset_camera();
             rs2_error* e = nullptr;
             not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
         }
 
+        ~viewer_model()
+        {
+            pc.stop();
+            streams.clear();
+        }
         void upload_frame(frame&& f);
 
         std::map<int, rect> calc_layout(const rect& r);
@@ -586,6 +600,7 @@ namespace rs2
 
         void gc_streams();
 
+        std::mutex streams_mutex;
         std::map<int, stream_model> streams;
         bool fullscreen = false;
         stream_model* selected_stream = nullptr;
@@ -597,6 +612,7 @@ namespace rs2
         bool is_3d_view = false;
         bool paused = false;
 
+
         void draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
 
         bool allow_3d_source_change = true;
@@ -606,14 +622,19 @@ namespace rs2
         bool draw_plane = false;
 
         bool draw_frustrum = true;
-        bool syncronize = false;
+        bool support_non_syncronized_mode = true;
+        std::atomic<bool> synchronization_enable;
 
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;
 
         float dim_level = 1.f;
 
+        rs2::syncer s;
+        rs2::frame_queue syncer_queue;
     private:
+
+        friend class async_pointclound_mapper;
         std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
         void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y,
                        int id, const ImVec4& color, const std::string& tooltip = "");
@@ -633,10 +654,10 @@ namespace rs2
         rs2::points last_points;
         rs2::frame last_texture;
         texture_buffer texture;
-        rs2::syncer s;
+
     };
 
-    void export_to_ply(const std::string& file_name, notifications_model& ns, points points, video_frame texture);
+    void export_to_ply(const std::string& file_name, notifications_model& ns, frameset points, video_frame texture);
 
     // Wrapper for cross-platform dialog control
     enum file_dialog_mode {

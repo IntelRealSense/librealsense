@@ -134,7 +134,7 @@ int main(int argc, char** argv) try
     SwitchArg compact_view_arg("s", "short", "Provide short summary of the devices");
     SwitchArg show_options("o", "option", "Show all supported options per subdevice");
     SwitchArg show_modes("m", "modes", "Show all supported stream modes per subdevice");
-    SwitchArg show_calibration_data("c", "calib_data", "Show extrinsics and intrinsics of all subdevices");
+    SwitchArg show_calibration_data("c", "calib_data", "Show extrinsic and intrinsic of all subdevices");
     cmd.add(compact_view_arg);
     cmd.add(show_options);
     cmd.add(show_modes);
@@ -279,18 +279,18 @@ int main(int argc, char** argv) try
                 }
             }
 
-            cout << "Provided Intrinsics:" << endl;
+            cout << "Provided Intrinsic:" << endl;
             for (auto& kvp : intrinsics_map)
             {
                 auto stream_res = kvp.first;
                 for (auto& intrinsics : kvp.second)
                 {
                     auto formats = get_str_formats(intrinsics.first);
-                    cout << "Intrinsics of \"" << stream_res.stream_name << "\"\t  " << stream_res.width << "x"
+                    cout << "Intrinsic of \"" << stream_res.stream_name << "\"\t  " << stream_res.width << "x"
                         << stream_res.height << "\t  " << formats << endl;
                     if (intrinsics.second == rs2_intrinsics{})
                     {
-                        cout << "Intrinsics NOT available!\n\n";
+                        cout << "Intrinsic NOT available!\n\n";
                     }
                     else
                     {
@@ -300,12 +300,12 @@ int main(int argc, char** argv) try
             }
 
             // Print Extrinsics
-            cout << "\nProvided Extrinsics:" << endl;
+            cout << "\nProvided Extrinsic:" << endl;
             for (auto kvp1 = streams.begin(); kvp1 != streams.end(); ++kvp1)
             {
                 for (auto kvp2 = streams.begin(); kvp2 != streams.end(); ++kvp2)
                 {
-                    cout << "Extrinsics from \"" << kvp1->second.stream_name() << "\"\t  " <<
+                    cout << "Extrinsic from \"" << kvp1->second.stream_name() << "\"\t  " <<
                             "To" << "\t  \"" << kvp2->second.stream_name() << "\"\n";
                     auto extrinsics = kvp1->second.get_extrinsics_to(kvp2->second);
                     print(extrinsics);

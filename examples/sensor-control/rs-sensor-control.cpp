@@ -23,7 +23,7 @@ int main(int argc, char * argv[]) try
     // and finally run some operations on that sensor
 
     //We will use the "how_to" class to make the code clear, expressive and encapsulate common actions inside a function
-    
+
     std::vector<sensor_action> sensor_actions = create_sensor_actions();
 
     bool choose_a_device = true;
@@ -127,7 +127,7 @@ void show_extrinsics_between_streams(rs2::device device, rs2::sensor sensor)
 std::vector<sensor_action> create_sensor_actions()
 {
     //This function creates several functions ("sensor_action") that takes a device and a sensor,
-    // and perform some specific action 
+    // and perform some specific action
     return std::vector<sensor_action> {
             std::make_pair(&control_sensor_options, "Control sensor's options"),
             std::make_pair(&display_live_stream, "Control sensor's streams"),

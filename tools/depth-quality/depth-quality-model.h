@@ -6,6 +6,7 @@
 #include "model-views.h"
 #include "ux-window.h"
 
+#include <tuple>
 #include <vector>
 #include <thread>
 #include <mutex>
@@ -45,10 +46,12 @@ namespace rs2
             }
 
             metric_plot(const std::string& name, float min, float max,
-                        const std::string& units, const std::string& description)
+                        const std::string& units, const std::string& description,
+                        const bool with_plane_fit)
                 : _idx(0), _first_idx(0),_vals(), _min(min), _max(max), _id("##" + name),
                   _label(name + " = "), _name(name),
                   _units(units), _description(description),
+                _visible(true), _requires_plane_fit(with_plane_fit),
                   _trending_up(std::chrono::milliseconds(700)),
                   _trending_down(std::chrono::milliseconds(700))
             {
@@ -68,11 +71,13 @@ namespace rs2
 
             void render(ux_window& win);
 
-            void visible(bool is_visible) 
-            { 
-                std::lock_guard<std::mutex> lock(_m); 
-                _visible = is_visible; 
+            void visible(bool is_visible)
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                _visible = is_visible;
             }
+
+            bool requires_plane_fit() const { return _requires_plane_fit; }
 
         private:
             bool has_trend(bool positive);
@@ -84,7 +89,8 @@ namespace rs2
             std::array<double, SIZE> _timestamps;
             float _min, _max;
             std::string _id, _label, _units, _name, _description;
-            bool _visible = true;
+            bool _visible;
+            const bool _requires_plane_fit;
 
             timer _model_timer;
             temporal_event _trending_up;
@@ -143,20 +149,39 @@ namespace rs2
 
             callback_type callback;
 
-            void set_ground_truth(float gt)
+            void set_ground_truth(int gt)
             {
                 std::lock_guard<std::mutex> lock(_m);
-                _ground_truth = gt;
+                _ground_truth_mm = gt;
                 _use_gt = true;
             }
-            void disable_ground_truth() 
+
+            void set_plane_fit(bool found)
             {
                 std::lock_guard<std::mutex> lock(_m);
-                _use_gt = false; 
+                _plane_fit = found;
+                for (auto&& plot : _plots)
+                {
+                    if (plot->requires_plane_fit())
+                        plot->visible(found);
+                }
             }
-            float get_ground_truth() const { std::lock_guard<std::mutex> lock(_m); return _ground_truth; }
 
-            void reset() {
+            void disable_ground_truth()
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                _use_gt = false;
+                _ground_truth_mm = 0;
+            }
+            std::tuple<int, bool> get_inputs() const
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                return std::make_tuple(_ground_truth_mm, _plane_fit);
+            }
+
+            void reset()
+            {
+                _plane_fit = false;
                 rs2::frame f;
                 while (_frame_queue.poll_for_frame(&f));
             }
@@ -170,9 +195,9 @@ namespace rs2
             rs2_intrinsics          _depth_intrinsic;
             float                   _depth_scale_units;
             float                   _stereo_baseline_mm;
-            float                   _ground_truth;
-            float                   _ground_truth_copy;
-            bool                    _use_gt = false;
+            int                     _ground_truth_mm;
+            bool                    _use_gt;
+            bool                    _plane_fit;
             region_of_interest      _roi;
             snapshot_metrics        _latest_metrics;
             bool                    _active;
@@ -203,7 +228,7 @@ namespace rs2
             void draw_guides(ux_window& win, const rect& viewer_rect, bool distance_guide, bool orientation_guide);
 
             std::shared_ptr<metric_plot> make_metric(
-                const std::string& name, float min, float max,
+                const std::string& name, float min, float max, bool plane_fit,
                 const std::string& units,
                 const std::string& description);
 
@@ -222,6 +247,7 @@ namespace rs2
             std::string                     _error_message;
             bool                            _first_frame = true;
             periodic_timer                  _update_readonly_options_timer;
+            bool                            _device_in_use = false;
 
             float                           _roi_percent = 0.4f;
             int                             _roi_combo_index = 2;
@@ -229,10 +255,10 @@ namespace rs2
 
             temporal_event                  _too_far;
             temporal_event                  _too_close;
-            temporal_event                  _sku_left;
-            temporal_event                  _sku_right;
-            temporal_event                  _sku_up;
-            temporal_event                  _sku_down;
+            temporal_event                  _skew_left;
+            temporal_event                  _skew_right;
+            temporal_event                  _skew_up;
+            temporal_event                  _skew_down;
             temporal_event                  _angle_alert;
             std::map<int, temporal_event>   _depth_scale_events;
 

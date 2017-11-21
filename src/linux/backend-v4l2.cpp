@@ -132,11 +132,11 @@ namespace librealsense
             }
         }
 
-        void named_mutex::aquire()
+        void named_mutex::acquire()
         {
             auto ret = lockf(_fildes, F_LOCK, 0);
             if (ret != 0)
-                throw linux_backend_exception(to_string() << "Aquire failed");
+                throw linux_backend_exception(to_string() << "Acquire failed");
         }
 
         void named_mutex::release()
@@ -517,11 +517,8 @@ namespace librealsense
             if (_thread) _thread->join();
         }
 
-        void v4l_uvc_device::probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers)
+        void v4l_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
         {
-            if(!zero_copy)
-                buffers = 1;
-
             if(!_is_capturing && !_callback)
             {
                 v4l2_fmtdesc pixel_format = {};
@@ -538,15 +535,15 @@ namespace librealsense
                         // Microsoft Depth GUIDs for R400 series are not yet recognized
                         // by the Linux kernel, but they do not require a patch, since there
                         // are "backup" Z16 and Y8 formats in place
-                        std::set<std::string> known_problematic_formats = {
+                        static const std::set<std::string> pending_formats = {
                             "00000050-0000-0010-8000-00aa003",
                             "00000032-0000-0010-8000-00aa003",
                         };
 
-                        if (std::find(known_problematic_formats.begin(),
-                                      known_problematic_formats.end(),
+                        if (std::find(pending_formats.begin(),
+                                      pending_formats.end(),
                                       (const char*)pixel_format.description) ==
-                            known_problematic_formats.end())
+                            pending_formats.end())
                         {
                             const std::string s(to_string() << "!" << pixel_format.description);
                             std::regex rgx("!([0-9a-f]+)-.*");
