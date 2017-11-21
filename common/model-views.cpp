@@ -1127,18 +1127,22 @@ namespace rs2
     void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer)
     {
         s->open(profiles);
+
         try {
-            s->start([&](frame f) {
+            s->start([&](frame f)
+            {
                 auto index = f.get_profile().unique_id();
-                if (viewer.synchronization_enable)
+                if (viewer.synchronization_enable && (index == viewer.selected_depth_source_uid || index == viewer.selected_tex_source_uid))
                 {
-                    if (index == viewer.selected_depth_source_uid || index == viewer.selected_tex_source_uid)
-                        viewer.s(f);
+                    viewer.s(f);
                 }
-                queues.at(index).enqueue(f);
+                else
+                {
+                    viewer.ppf.frames_queue.enqueue(f);
+                }
             });
 
-        }
+            }
 
         catch (...)
         {
@@ -1721,13 +1725,13 @@ namespace rs2
         {
             if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
             {
-                auto model = pc.get_points();
+                auto model = ppf.get_points();
 
                 frame tex;
                 if (selected_tex_source_uid >= 0)
                 {
                     tex = streams[selected_tex_source_uid].texture->get_last_frame(true);
-                    if (tex) pc.update_texture(tex);
+                    if (tex) ppf.update_texture(tex);
                 }
 
                 std::string fname(ret);
@@ -1831,7 +1835,7 @@ namespace rs2
             {
                 if(kvp.first == selected_depth_source_uid)
                 {
-                    pc.depth_stream_active = false;
+                    ppf.depth_stream_active = false;
                 }
                 streams_to_remove.push_back(kvp.first);
             }
@@ -2627,57 +2631,59 @@ namespace rs2
         show_icon(font_18, "recording_icon", u8"\uf111", x, y, id, from_rgba(255, 46, 54, alpha_delta * 255));
     }
 
-    void async_pointclound_mapper::proccess(rs2::frame f, const rs2::frame_source& source)
+    rs2::frame post_processing_filters::apply_filters(rs2::frame f)
+    {
+        for(auto&& s: viewer.streams)
+        {
+            for(auto&& p: s.second.dev->get_selected_profiles())
+            {
+                if(f.get_profile() == p)
+                {
+                    auto dec_filter = s.second.dev->decimation_filter;
+                    auto temp_filter = s.second.dev->temporal_filter;
+
+                    return temp_filter->proccess(dec_filter->proccess(f));
+                }
+            }
+        }
+    }
+
+    void post_processing_filters::proccess(rs2::frame f, const rs2::frame_source& source)
     {
 
         points p;
         std::vector<frame> results;
 
-
-        if(viewer.synchronization_enable)
+        if (auto composite = f.as<rs2::frameset>())
         {
-            if (auto composite = f.as<rs2::frameset>())
+            for(auto&& f: composite)
             {
-                for(auto&& f: composite)
+                if(f.get_profile());
+                if(f.get_profile().unique_id() == viewer.selected_depth_source_uid)
                 {
-                    if(f.get_profile().unique_id() == viewer.selected_depth_source_uid)
-                    {
-                        p = pc.calculate(f);
-                        results.push_back(std::move(p));
-
-                    }
+                    p = pc.calculate(f);
+                    results.push_back(std::move(p));
+                }
+                else
+                {
                     if(f.get_profile().unique_id() == viewer.selected_tex_source_uid)
                     {
                         update_texture(f);
-                        results.push_back(std::move(f));
                     }
+                    results.push_back(std::move(f));
                 }
+
             }
-
-
             auto res = source.allocate_composite_frame(results);
-            source.frame_ready(std::move(res));
-
-
         }
-        else
-        {
-            if(f.get_profile().unique_id() == viewer.selected_depth_source_uid)
-            {
 
-                if(last_tex_frame)
-                    results.push_back(last_tex_frame);
-                p = pc.calculate(f);
-                results.push_back(std::move(p));
 
-                auto res = source.allocate_composite_frame(results);
-                source.frame_ready(std::move(res));
-            }
+        source.frame_ready(std::move(res));
 
-        }
     }
 
-    void async_pointclound_mapper::render_loop()
+
+    void post_processing_filters::render_loop()
     {
         while (keep_calculating_pointcloud)
         {
@@ -2687,27 +2693,10 @@ namespace rs2
                 {
                     if(viewer.synchronization_enable)
                     {
-                        frameset frames;
-                        if (viewer.syncer_queue.poll_for_frame(&frames))
+                        frame frames;
+                        if (frames_queue.poll_for_frame(&frames))
                         {
                             processing_block.invoke(frames);
-                        }
-                    }
-                    else
-                    {
-                        std::lock_guard<std::mutex> lock(viewer.streams_mutex);
-                        for (auto&& s : viewer.streams)
-                        {
-                            if(s.first == viewer.selected_tex_source_uid)
-                            {
-                                auto t = s.second.texture->get_last_frame(true);
-                                update_texture(t);
-                                last_tex_frame = t;
-                            }
-                            if(s.first == viewer.selected_depth_source_uid)
-                            {
-                                processing_block.invoke(s.second.texture->get_last_frame());
-                            }
                         }
                     }
                 }
@@ -3021,7 +3010,7 @@ namespace rs2
 
         if(!paused)
         {
-            auto res = pc.get_points();
+            auto res = ppf.get_points();
 
             for (auto&& f : res)
             {
@@ -3224,7 +3213,7 @@ namespace rs2
     void viewer_model::upload_frame(frame&& f)
     {
         if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
-            pc.depth_stream_active = true;
+            ppf.depth_stream_active = true;
 
         auto index = f.get_profile().unique_id();
         streams[index].upload_frame(std::move(f));
