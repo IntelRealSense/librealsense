@@ -673,7 +673,7 @@ namespace rs2
                 for (auto&& s : _device_model->subdevices)
                     s->streaming = false;
                 _viewer_model.gc_streams();
-                _viewer_model.pc.reset();
+                _viewer_model.ppf.reset();
                 _viewer_model.selected_depth_source_uid = -1;
                 _viewer_model.selected_tex_source_uid = -1;
             }
@@ -825,9 +825,9 @@ namespace rs2
                 {
                     ply_texture = _viewer_model.streams[_viewer_model.selected_tex_source_uid].texture->get_last_frame();
                     if (ply_texture)
-                        _viewer_model.pc.update_texture(ply_texture);
+                        _viewer_model.ppf.update_texture(ply_texture);
                 }
-                export_to_ply(filename_base + "_3d_mesh.ply", _viewer_model.not_model, _viewer_model.pc.get_points(), ply_texture);
+                export_to_ply(filename_base + "_3d_mesh.ply", _viewer_model.not_model, _viewer_model.ppf.get_points(), ply_texture);
 
                 // Save Metrics
                 _metrics_model.serialize_to_csv(filename_base + "_depth_metrics.csv", capture_description());

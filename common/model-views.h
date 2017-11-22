@@ -478,13 +478,13 @@ namespace rs2
     std::string get_file_name(const std::string& path);
 
     class viewer_model;
-    class async_pointclound_mapper
+    class post_processing_filters
     {
     public:
-        async_pointclound_mapper(viewer_model& viewer)
+        post_processing_filters(viewer_model& viewer)
             : processing_block([&](rs2::frame f, const rs2::frame_source& source)
             {
-                this->proccess(std::move(f),source);
+                proccess(std::move(f),source);
             }),
             viewer(viewer),
             keep_calculating_pointcloud(true),
@@ -495,7 +495,7 @@ namespace rs2
             processing_block.start(resulting_3d_models);
         }
 
-        ~async_pointclound_mapper() { stop(); }
+        ~post_processing_filters() { stop(); }
 
         void update_texture(frame f) { pc.map_to(f); }
 
@@ -528,11 +528,14 @@ namespace rs2
 
         std::atomic<bool> depth_stream_active;
 
+        rs2::frame_queue frames_queue;
+
     private:
         viewer_model& viewer;
 
         void render_loop();
         void proccess(rs2::frame f, const rs2::frame_source& source);
+        rs2::frame apply_filters(rs2::frame f);
         rs2::frame last_tex_frame;
         rs2::processing_block processing_block;
         pointcloud pc;
@@ -561,10 +564,10 @@ namespace rs2
         float get_output_height() const { return (is_output_collapsed ? default_log_h : 20); }
 
         viewer_model()
-            : pc(*this),
+            : ppf(*this),
               synchronization_enable(true)
         {
-            s.start(syncer_queue);
+            s.start(ppf.frames_queue);
             reset_camera();
             rs2_error* e = nullptr;
             not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
@@ -572,7 +575,7 @@ namespace rs2
 
         ~viewer_model()
         {
-            pc.stop();
+            ppf.stop();
             streams.clear();
         }
         void upload_frame(frame&& f);
@@ -608,7 +611,7 @@ namespace rs2
         bool fullscreen = false;
         stream_model* selected_stream = nullptr;
 
-        async_pointclound_mapper pc;
+        post_processing_filters ppf;
 
         notifications_model not_model;
         bool is_output_collapsed = false;
@@ -635,10 +638,9 @@ namespace rs2
 
 
         rs2::asynchronous_syncer s;
-        rs2::frame_queue syncer_queue;
     private:
 
-        friend class async_pointclound_mapper;
+        friend class post_processing_filters;
         std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
         void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y,
                        int id, const ImVec4& color, const std::string& tooltip = "");

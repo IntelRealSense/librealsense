@@ -125,7 +125,7 @@ void refresh_devices(std::mutex& m,
                     viewer_model.not_model.add_notification({ get_device_name(dev).first + " Disconnected\n",
                         0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
-                    viewer_model.pc.depth_stream_active = false;
+                    viewer_model.ppf.depth_stream_active = false;
 
                     //Remove from devices
                     auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
@@ -554,9 +554,6 @@ int main(int argv, const char** argc) try
 
         frameset f;
 
-//        if(viewer_model.s.poll_for_frames(&f))
-//            viewer_model.syncer_queue.enqueue(std::move(f));
-
         // Fetch frames from queues
         for (auto&& device_model : device_models)
            for (auto&& sub : device_model.subdevices)
@@ -596,7 +593,7 @@ int main(int argv, const char** argc) try
     }
 
     // Stop calculating 3D model
-    viewer_model.pc.stop();
+    viewer_model.ppf.stop();
 
     // Stop all subdevices
     for (auto&& device_model : device_models)
