@@ -5,7 +5,12 @@
 
 /* global describe, it, before, after */
 const assert = require('assert');
-const rs2 = require('../index.js');
+let rs2;
+try {
+  rs2 = require('node-librealsense');
+} catch (e) {
+  rs2 = require('../index.js');
+}
 
 let ctx;
 describe('Colorizer test', function() {
