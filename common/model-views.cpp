@@ -2658,19 +2658,21 @@ namespace rs2
                 }
             }
         }
+
+        // TODO Avishag
+        throw std::runtime_error(to_string() << "Post-processing blocks invoked, but no filters applied");
     }
 
     void post_processing_filters::proccess(rs2::frame f, const rs2::frame_source& source)
     {
-
         points p;
         std::vector<frame> results;
+        rs2::frame res;
 
         if (auto composite = f.as<rs2::frameset>())
         {
             for(auto&& f: composite)
             {
-                if(f.get_profile());
                 if(f.get_profile().unique_id() == viewer.selected_depth_source_uid)
                 {
                     p = pc.calculate(f);
@@ -2686,9 +2688,12 @@ namespace rs2
                 }
 
             }
-            auto res = source.allocate_composite_frame(results);
+            res = source.allocate_composite_frame(results);
         }
-
+        else
+        {
+            throw std::runtime_error(to_string() << "Post-processing blocks requires composite inputs only");
+        }
 
         source.frame_ready(std::move(res));
 
