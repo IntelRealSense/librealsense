@@ -19,17 +19,17 @@ The pipeline API is accompanied by the processing blocks, which provide tools to
 * Future releases will add **computer vision plugins** capabilities to the pipeline, for easy enriching available outputs based on camera streams. The pipeline makes sure all synchronization and alignment requirements of those plugins are met and takes care of threading and resource management.
 
 ## Low-Level Device API
-Intel RealSense™ devices use sensors, some commonplace like a regular RGB camera and some more exotic like the RS400 Stereo module or SR300 Structured-Light sensor:
+Intel RealSense™ devices use sensors, some commonplace like a regular RGB camera and some more exotic like the D400 Stereo module or SR300 Structured-Light sensor:
 <p align="center"><img src="img/sensors_within_device.png" width="400" height="200" /></p>
 
 The Low-Level Device API provides you with the means to take direct control of the individual device sensors.   
 * Each sensor has its own power management and control.  
 * Different sensors can be safely used from different applications and can only influence each other indirectly.
-* Each sensor can offer one or more streams of data (images, motion). Streams must be configured together and are usually dependent on each other. For example, RS400 depth stream depends on infrared data, so the streams must be configured with a single resolution.
+* Each sensor can offer one or more streams of data (images, motion). Streams must be configured together and are usually dependent on each other. For example, D400 depth stream depends on infrared data, so the streams must be configured with a single resolution.
 * All sensors provide streaming as minimal capability, but each individual sensor can be extended to offer additional functionality. For example, most video devices let the user configure a custom region of interest for the auto-exposure mechanism.
 * Standard video sensors pass UVC / HID compliance and can be used without custom drivers.
 
-Intel RealSense™ RS400 stereo module offers **Advanced Mode** functionality, letting you control the various ASIC registers responsible for depth generation.  
+Intel RealSense™ D400 stereo module offers **Advanced Mode** functionality, letting you control the various ASIC registers responsible for depth generation.  
 
 The user of the device interface provides a callback to be invoked whenever new data frames become available. This callback runs immediately on the OS thread providing the best possible latency. 
 The callback provides a frame with the relevant data type according to the stream, which produced the data. Data frames can be extended to offer the additional functionality relevant to their stream type. For example, video stream frame data includes image resolution and information how to parse the image raw buffer.
