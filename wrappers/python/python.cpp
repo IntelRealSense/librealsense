@@ -605,7 +605,7 @@ PYBIND11_PLUGIN(NAME) {
           .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) { self.start(queue); })
           .def("stop", &rs2::sensor::stop, "Stop streaming.")
           .def("get_stream_profiles", &rs2::sensor::get_stream_profiles, "Check if physical sensor is supported.")
-          .def("get_motion_intrisics", &rs2::sensor::get_motion_intrinsics, "Returns scale and bias of a motion stream.",
+          .def("get_motion_intrinsics", &rs2::sensor::get_motion_intrinsics, "Returns scale and bias of a motion stream.",
                "stream"_a)
           .def(py::init<>())
           .def("__nonzero__", &rs2::sensor::operator bool)
