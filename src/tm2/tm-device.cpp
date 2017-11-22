@@ -571,10 +571,10 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, to_string() << info.fw.major << "." << info.fw.minor << "." << info.fw.patch << "." << info.fw.build);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, to_string() << info.usbDescriptor.idProduct);
         std::string device_path =
-            std::string(" pid:") + std::to_string(info.usbDescriptor.idProduct) +
-            std::string(" vid:") + std::to_string(info.usbDescriptor.idVendor) +
-            std::string(" bus:") + std::to_string(info.usbDescriptor.bus) +
-            std::string(" port:") + std::to_string(info.usbDescriptor.port);
+            std::string("vid_") + std::to_string(info.usbDescriptor.idVendor) +
+            std::string(" pid_") + std::to_string(info.usbDescriptor.idProduct) +
+            std::string(" bus_") + std::to_string(info.usbDescriptor.bus) +
+            std::string(" port_") + std::to_string(info.usbDescriptor.port);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, device_path);
 
         add_sensor(std::make_shared<tm2_sensor>(this, _dev)); 

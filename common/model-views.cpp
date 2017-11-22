@@ -2962,12 +2962,12 @@ namespace rs2
     using face = std::array<point, 4>;
     using colored_cube = std::array<std::pair<face, color>, 6>;
     
-    constexpr std::array<point, 2> tm2_lenses()
+    std::array<point, 2> tm2_lenses()
     {
         constexpr point v5{ -1.0f,  2.0f, -0.5f };
-        constexpr point v6{  1.0f,  2.0f, -0.5f };
+        constexpr point v6{ 1.0f,  2.0f, -0.5f };
         constexpr point v7{ -1.0f, -2.0f, -0.5f };
-        constexpr point v8{  1.0f, -2.0f, -0.5f };
+        constexpr point v8{ 1.0f, -2.0f, -0.5f };
         constexpr float len_x = v8[0] - v7[0];
         constexpr float len_y = v6[1] - v8[1];
 
@@ -2976,7 +2976,7 @@ namespace rs2
         return { center_a , center_b };
     }
 
-    constexpr colored_cube create_cube()
+    colored_cube create_cube()
     {
         constexpr point v1{ -1.0f, -2.0f,  0.5f };
         constexpr point v2{ 1.0f, -2.0f,  0.5f };
@@ -2995,7 +2995,7 @@ namespace rs2
         constexpr face f6{ v1,v2,v8,v7 };
 
         constexpr std::array<point, 6> colors{ {
-            { 0.7f, 0.7f, 0.7f }, //Back
+            { 0.5f, 0.5f, 0.5f }, //Back
             { 0.7f, 0.7f, 0.7f }, //Side
             { 0.7f, 0.7f, 0.7f }, //Side
             { 0.7f, 0.7f, 0.7f }, //Side
@@ -3099,15 +3099,15 @@ namespace rs2
                 if (!pose)
                     continue;
 
-                constexpr colored_cube box = create_cube();
+                colored_cube box = create_cube();
                 constexpr float scale_factor = 0.15f;
 
                 rs2_pose pose_data = pose.get_pose_data();
                 // Coordinate System correction:
-                std::swap(pose_data.rotation.y, pose_data.rotation.w);
-                pose_data.translation.x *= 2.5f;
-                pose_data.translation.y *= 2.5f;
-                pose_data.translation.z *= 2.5f;
+                rs2_pose correct_pose = correct_tm2_pose(pose_data);
+                correct_pose.translation.x *= 2.5f;
+                correct_pose.translation.y *= 2.5f;
+                correct_pose.translation.z *= 2.5f;
 
                 // Drawing pose:
                 glBegin(GL_QUADS);
@@ -3117,7 +3117,7 @@ namespace rs2
                     glColor3f(c[0], c[1], c[2]);
                     for (auto&& v : colored_face.first)
                     {
-                        point po = texture_buffer::transform_by_pose(pose_data, v);
+                        point po = texture_buffer::transform_by_pose(correct_pose, v);
                         glVertex3f(po[0] * scale_factor, po[1] * scale_factor, po[2] * scale_factor);
                     }
                 }
@@ -3126,7 +3126,7 @@ namespace rs2
                 float radius = 0.3;
                 for (auto&& lens : lenses)
                 {
-                    draw_hollow_circle(lens, radius, pose_data, scale_factor);
+                    draw_hollow_circle(lens, radius, correct_pose, scale_factor); //there is draw_circle??
                 }
                 //TODO: distinguish between the different objects
             }
