@@ -2957,56 +2957,9 @@ namespace rs2
                 streams[kvp.first].show_metadata(mouse);
         }
     }
-    using point = std::array<float, 3>;
-    using color = point;
-    using face = std::array<point, 4>;
-    using colored_cube = std::array<std::pair<face, color>, 6>;
     
-    std::array<point, 2> tm2_lenses()
+    void draw_hollow_circle(point center, float radius, const rs2_pose& pose_data)
     {
-        constexpr point v5{ -2.0f, 1.0f, -0.5f };
-        constexpr point v6{ 2.0f,  1.0f, -0.5f };
-        constexpr point v7{ -2.0f, -1.0f, -0.5f };
-        constexpr point v8{ 2.0f, -1.0f, -0.5f };
-
-        constexpr float len_x = v8[0] - v7[0];
-        constexpr float len_y = v6[1] - v8[1];
-
-        constexpr point center_a{ v7[0] + len_x / 3, v6[1] - len_y / 3, v5[2] };
-        constexpr point center_b{ v8[0] - len_x / 3, v6[1] - len_y / 3, v5[2] };
-        return { center_a , center_b };
-    }
-
-    colored_cube create_cube()
-    {
-        constexpr point v1{ -2.0f, -1.0f,  0.5f };
-        constexpr point v2{ 2.0f, -1.0f,  0.5f };
-        constexpr point v3{ 2.0f,  1.0f,  0.5f };
-        constexpr point v4{ -2.0f, 1.0f,  0.5f };
-        constexpr point v5{ -2.0f, 1.0f, -0.5f };
-        constexpr point v6{ 2.0f,  1.0f, -0.5f };
-        constexpr point v7{ -2.0f, -1.0f, -0.5f };
-        constexpr point v8{ 2.0f, -1.0f, -0.5f };
-
-        constexpr face f1{ v1,v2,v3,v4 };
-        constexpr face f2{ v2,v8,v6,v3 };
-        constexpr face f3{ v4,v3,v6,v5 };
-        constexpr face f4{ v1,v4,v5,v7 };
-        constexpr face f5{ v7,v8,v6,v5 };
-        constexpr face f6{ v1,v2,v8,v7 };
-
-        constexpr std::array<point, 6> colors{ {
-            { 0.5f, 0.5f, 0.5f }, //Back
-            { 0.7f, 0.7f, 0.7f }, //Side
-            { 0.7f, 0.7f, 0.7f }, //Side
-            { 0.7f, 0.7f, 0.7f }, //Side
-            { 0.4f, 0.4f, 0.4f }, //Front
-            { 0.7f, 0.7f, 0.7f }  //Side
-        } };
-
-        return colored_cube{ { { f1,colors[0] },{ f2,colors[1] },{ f3,colors[2] },{ f4,colors[3] },{ f5,colors[4] },{ f6,colors[5] } } };
-    }
-    void draw_hollow_circle(point p, float radius, const rs2_pose& pose_data, float scale_factor) {
         int i;
         int lineAmount = 100;
         GLfloat twicePi = 2.0f * M_PI;
@@ -3015,9 +2968,9 @@ namespace rs2
         glBegin(GL_LINE_LOOP);
         for (i = 0; i <= lineAmount; i++) 
         {
-            point pp = { p[0] + (radius * cos(i *  twicePi / lineAmount)), p[1] + (radius* sin(i * twicePi / lineAmount)), p[2] };
-            point center = texture_buffer::transform_by_pose(pose_data, pp);
-            glVertex3f(center[0] * scale_factor, center[1] * scale_factor, center[2]* scale_factor);
+            point pp = { center[0] + (radius * cos(i *  twicePi / lineAmount)), center[1] + (radius* sin(i * twicePi / lineAmount)), center[2] };
+            point circle = texture_buffer::transform_by_pose(pose_data, pp);
+            glVertex3f(circle[0], circle[1], circle[2]);
         }
         glEnd();
     }
@@ -3100,15 +3053,10 @@ namespace rs2
                 if (!pose)
                     continue;
 
-                colored_cube box = create_cube();
-                constexpr float scale_factor = 0.15f;
-
+                colored_cube box = tm2.get_tm2_cube();
+                
                 rs2_pose pose_data = pose.get_pose_data();
-                // Coordinate System correction:
                 rs2_pose correct_pose = correct_tm2_pose(pose_data);
-                correct_pose.translation.x *= 2.5f;
-                correct_pose.translation.y *= 2.5f;
-                correct_pose.translation.z *= 2.5f;
 
                 // Drawing pose:
                 glBegin(GL_QUADS);
@@ -3119,15 +3067,16 @@ namespace rs2
                     for (auto&& v : colored_face.first)
                     {
                         point po = texture_buffer::transform_by_pose(correct_pose, v);
-                        glVertex3f(po[0] * scale_factor, po[1] * scale_factor, po[2] * scale_factor);
+                        glVertex3f(po[0], po[1], po[2]);
                     }
                 }
                 glEnd();
-                auto lenses = tm2_lenses();
-                float radius = 0.3;
+
+                auto lenses = tm2.get_tm2_lenses_center();
+                float radius = tm2.get_tm2_lenses_radius();
                 for (auto&& lens : lenses)
                 {
-                    draw_hollow_circle(lens, radius, correct_pose, scale_factor); //there is draw_circle??
+                    draw_hollow_circle(lens, radius, correct_pose); 
                 }
                 //TODO: distinguish between the different objects
             }

@@ -336,11 +336,11 @@ namespace rs2
     {
         matrix4 rotation(pose.rotation);
         matrix4 translation(pose.translation);
-        matrix4 G_tm2_body_to_tm2_world = translation * rotation; 
-        float rotate_180_y[4][4] = {{-1, 0, 0, 0 },
-                                    { 0, 1, 0, 0 },
-                                    { 0, 0,-1, 0 },
-                                    { 0, 0, 0, 1 }}; 
+        matrix4 G_tm2_body_to_tm2_world = translation * rotation;
+        float rotate_180_y[4][4] = { { -1, 0, 0, 0 },
+                                     { 0, 1, 0, 0 },
+                                     { 0, 0,-1, 0 },
+                                     { 0, 0, 0, 1 } };
         matrix4 G_vr_body_to_tm2_body(rotate_180_y);
         matrix4 G_vr_body_to_tm2_world = G_tm2_body_to_tm2_world * G_vr_body_to_tm2_body;
 
@@ -358,7 +358,7 @@ namespace rs2
         res.rotation = G_vr_body_to_vr_world.to_quaternion();
         return res;
     }
-    
+
     struct mouse_info
     {
         float2 cursor;
@@ -988,11 +988,7 @@ namespace rs2
                 {
                     auto pose = frame.as<pose_frame>();
                     rs2_pose pose_data = pose.get_pose_data();
-                    // Coordinate System correction:
                     rs2_pose correct_pose = correct_tm2_pose(pose_data);
-                    correct_pose.translation.x *= 2.5f;
-                    correct_pose.translation.y *= 2.5f;
-                    correct_pose.translation.z *= 2.5f;
                     draw_pose_visualization(correct_pose, frame.get_profile().unique_id());
                 }
                 else

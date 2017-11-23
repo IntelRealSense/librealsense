@@ -550,6 +550,60 @@ namespace rs2
         int last_stream_id = 0;
     };
 
+    using point = std::array<float, 3>;
+    using color = point;
+    using face = std::array<point, 4>;
+    using colored_cube = std::array<std::pair<face, color>, 6>;
+
+    class tm2_model
+    {
+    public:
+        colored_cube get_tm2_cube()
+        {
+            return colored_cube{ { { f1,colors[0] },{ f2,colors[1] },{ f3,colors[2] },{ f4,colors[3] },{ f5,colors[4] },{ f6,colors[5] } } };
+        }
+
+        std::array<point, 2> get_tm2_lenses_center()
+        {
+            point center_a{ v7[0] + len_x / 3, v6[1] - len_y / 3, v5[2] };
+            point center_b{ v8[0] - len_x / 3, v6[1] - len_y / 3, v5[2] };
+            return{ center_a , center_b };
+        } 
+
+        float get_tm2_lenses_radius()
+        {
+            return 0.02f;
+        }
+
+    private:
+        float len_x = 0.5;
+        float len_y = 0.2;
+        float len_z = 0.05;
+        point v1{ -len_x/2, -len_y/2,  len_z/2 };
+        point v2{  len_x/2, -len_y/2,  len_z/2 };
+        point v3{  len_x/2,  len_y/2,  len_z/2 };
+        point v4{ -len_x/2,  len_y/2,  len_z/2 };
+        point v5{ -len_x/2,  len_y/2, -len_z/2 };
+        point v6{  len_x/2,  len_y/2, -len_z/2 };
+        point v7{ -len_x/2, -len_y/2, -len_z/2 };
+        point v8{  len_x/2, -len_y/2, -len_z/2 };
+        face f1{ v1,v2,v3,v4 };
+        face f2{ v2,v8,v6,v3 };
+        face f3{ v4,v3,v6,v5 };
+        face f4{ v1,v4,v5,v7 };
+        face f5{ v7,v8,v6,v5 };
+        face f6{ v1,v2,v8,v7 };
+
+        std::array<point, 6> colors{ {
+            { 0.5f, 0.5f, 0.5f }, //Back
+            { 0.7f, 0.7f, 0.7f }, //Side
+            { 0.7f, 0.7f, 0.7f }, //Side
+            { 0.7f, 0.7f, 0.7f }, //Side
+            { 0.4f, 0.4f, 0.4f }, //Front
+            { 0.7f, 0.7f, 0.7f }  //Side
+            } };
+    };
+
     class viewer_model
     {
     public:
@@ -609,6 +663,7 @@ namespace rs2
         stream_model* selected_stream = nullptr;
 
         async_pointclound_mapper pc;
+        tm2_model tm2;
 
         notifications_model not_model;
         bool is_output_collapsed = false;
