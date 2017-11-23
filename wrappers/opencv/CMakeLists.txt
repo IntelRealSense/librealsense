@@ -25,3 +25,4 @@ endif()
 set(DEPENDENCIES realsense2 ${OpenCV_LIBS})
 
 add_subdirectory(imshow)
+add_subdirectory(bg-removal)

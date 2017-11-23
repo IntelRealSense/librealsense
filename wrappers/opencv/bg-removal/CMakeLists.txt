@@ -1,7 +1,7 @@
 #  minimum required cmake version: 3.1.0
 cmake_minimum_required(VERSION 3.1.0)
 
-project(RealSenseImShowExample)
+project(RealSenseBgRemovalExample)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -16,16 +16,16 @@ elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
-add_executable(rs-imshow rs-imshow.cpp)
-target_link_libraries(rs-imshow ${DEPENDENCIES})
-set_target_properties (rs-imshow PROPERTIES
+add_executable(rs-bg-removal rs-bg-removal.cpp ../cv-helpers.hpp)
+target_link_libraries(rs-bg-removal ${DEPENDENCIES})
+set_target_properties (rs-bg-removal PROPERTIES
 	FOLDER "Examples/CV"
 )
 
 install(
 	TARGETS
 
-	rs-imshow
+	rs-bg-removal
 
 	RUNTIME DESTINATION
 	${CMAKE_INSTALL_PREFIX}/bin

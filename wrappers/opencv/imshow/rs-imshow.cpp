@@ -4,8 +4,6 @@
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <opencv2/opencv.hpp>   // Include OpenCV API
 
-// Capture Example demonstrates how to
-// capture depth and color video streams and render them to the screen
 int main(int argc, char * argv[]) try
 {
     // Declare depth colorizer for pretty visualization of depth data
@@ -23,12 +21,11 @@ int main(int argc, char * argv[]) try
     while (waitKey(1) < 0 && cvGetWindowHandle(window_name))
     {
         rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
-
-        rs2::frame depth = color_map(data.get_depth_frame()); // Find and colorize the depth data
+        rs2::frame depth = color_map(data.get_depth_frame());
 
         // Query frame size (width and height)
-        auto w = depth.as<rs2::video_frame>().get_width();
-        auto h = depth.as<rs2::video_frame>().get_height();
+        const int w = depth.as<rs2::video_frame>().get_width();
+        const int h = depth.as<rs2::video_frame>().get_height();
 
         // Create OpenCV matrix of size (w,h) from the colorized depth data
         Mat image(Size(w, h), CV_8UC3, (void*)depth.get_data(), Mat::AUTO_STEP);
