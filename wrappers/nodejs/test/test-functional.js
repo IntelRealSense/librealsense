@@ -6,9 +6,24 @@
 
 /* global describe, it, before, after */
 const assert = require('assert');
-const rs2 = require('../index.js');
+let rs2;
+try {
+  rs2 = require('node-librealsense');
+} catch (e) {
+  rs2 = require('../index.js');
+}
 
 describe('Pipeline tests', function() {
+  before(function() {
+    const ctx = new rs2.Context();
+    const devices = ctx.queryDevices().devices;
+    assert(devices.length > 0); // Device must be connected
+  });
+
+  after(function() {
+    rs2.cleanup();
+  });
+
   it('Default pipeline', () => {
     const pipe = new rs2.Pipeline();
     pipe.start();
@@ -616,6 +631,7 @@ describe(('DeviceHub test'), function() {
   after(() => {
     hub.destroy();
     ctx.destroy();
+    rs2.cleanup();
   });
   it('API test', () => {
     const dev = hub.waitForDevice();
