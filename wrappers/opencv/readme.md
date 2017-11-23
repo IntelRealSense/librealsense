@@ -5,7 +5,7 @@ For a detailed explanations and API documentation see our [Documentation](../doc
  
 ## List of Samples:
 1. [ImShow](./imshow) - Minimal OpenCV application for visualizing depth data
-2. [GrabCut](./bg-removal) - Simple background removal using the GrabCut algorithm
+2. [GrabCuts](./grabcuts) - Simple background removal using the GrabCut algorithm
 
 ## Getting Started:
 This page is certainly **not** a comprehensive guide to getting started with OpenCV and CMake, but it can help get on the right track. 

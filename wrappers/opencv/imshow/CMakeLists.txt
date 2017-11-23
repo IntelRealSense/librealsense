@@ -19,7 +19,7 @@ endif()
 add_executable(rs-imshow rs-imshow.cpp)
 target_link_libraries(rs-imshow ${DEPENDENCIES})
 set_target_properties (rs-imshow PROPERTIES
-	FOLDER "Examples/CV"
+	FOLDER "Examples/OpenCV"
 )
 
 install(

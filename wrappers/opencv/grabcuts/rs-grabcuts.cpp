@@ -59,11 +59,6 @@ int main(int argc, char * argv[]) try
         colorize.set_option(RS2_OPTION_COLOR_SCHEME, 2);
         frame bw_depth = colorize(depth);
 
-        cv::imshow(window_name, frame_to_mat(bw_depth));
-        waitKey(0);
-        cv::imshow(window_name, color_mat);
-        waitKey(0);
-
         // Generate "near" mask image:
         auto near = frame_to_mat(bw_depth);
         cvtColor(near, near, CV_BGR2GRAY);
@@ -76,11 +71,6 @@ int main(int argc, char * argv[]) try
         cvtColor(far, far, CV_BGR2GRAY);
         far.setTo(255, far == 0); // Note: 0 value does not indicate pixel near the camera, and requires special attention 
         create_mask_from_depth(far, 100, THRESH_BINARY_INV);
-
-        cv::imshow(window_name, near);
-        waitKey(0);
-        cv::imshow(window_name, far);
-        waitKey(0);
 
         // GrabCut algorithm needs a mask with every pixel marked as either:
         // BGD, FGB, PR_BGD, PR_FGB
@@ -98,7 +88,6 @@ int main(int argc, char * argv[]) try
         cv::Mat3b foreground = cv::Mat3b::zeros(color_mat.rows, color_mat.cols);
         color_mat.copyTo(foreground, (mask == cv::GC_FGD) | (mask == cv::GC_PR_FGD));
         cv::imshow(window_name, foreground);
-        waitKey(0);
     }
 
     return EXIT_SUCCESS;
