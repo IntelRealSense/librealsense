@@ -598,6 +598,7 @@ option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
+option(BUILD_CV_EXAMPLES "Build OpenCV examples" OFF)
 option(BUILD_NODEJS_BINDINGS "Build Node.js bindings" OFF)
 
 # This parameter is meant for disabling graphical examples when building for
@@ -627,6 +628,10 @@ endif()
 
 if (BUILD_NODEJS_BINDINGS)
   add_subdirectory(wrappers/nodejs)
+endif()
+
+if (BUILD_CV_EXAMPLES)
+  add_subdirectory(wrappers/opencv)
 endif()
 
 # Check for unreferenced files
