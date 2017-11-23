@@ -18,15 +18,15 @@ namespace librealsense
         auto cur_index = 2;
         *reinterpret_cast<uint16_t *>(writePtr + cur_index) = preHeaderData;
         cur_index += sizeof(uint16_t);
-        *reinterpret_cast<int *>(writePtr + cur_index) = opCodeNumber;
+        *reinterpret_cast<uint32_t *>(writePtr + cur_index) = opCodeNumber;
         cur_index += sizeof(uint32_t);
-        *reinterpret_cast<int *>(writePtr + cur_index) = p1;
+        *reinterpret_cast<uint32_t *>(writePtr + cur_index) = p1;
         cur_index += sizeof(uint32_t);
-        *reinterpret_cast<int *>(writePtr + cur_index) = p2;
+        *reinterpret_cast<uint32_t *>(writePtr + cur_index) = p2;
         cur_index += sizeof(uint32_t);
-        *reinterpret_cast<int *>(writePtr + cur_index) = p3;
+        *reinterpret_cast<uint32_t *>(writePtr + cur_index) = p3;
         cur_index += sizeof(uint32_t);
-        *reinterpret_cast<int *>(writePtr + cur_index) = p4;
+        *reinterpret_cast<uint32_t *>(writePtr + cur_index) = p4;
         cur_index += sizeof(uint32_t);
 
         if (dataLength)

@@ -40,7 +40,7 @@
 #include <list>
 
 #pragma GCC diagnostic ignored "-Wpedantic"
-#include <libusb.h>
+#include "../third-party/libusb/libusb/libusb.h"
 #pragma GCC diagnostic pop
 
 namespace librealsense

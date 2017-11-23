@@ -3,6 +3,10 @@
 #include <string>
 #include <stdint.h>
 
+#ifdef ANDROID
+#include "../../common/android_helpers.h"
+#endif
+
 namespace fw_logger
 {
     struct fw_log_event

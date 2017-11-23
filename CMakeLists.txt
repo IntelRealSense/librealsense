@@ -51,7 +51,29 @@ elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
+# This parameter is meant for disabling graphical examples when building for
+# save-to-disk targets.
+option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
+
 option(BUILD_WITH_OPENMP "Use OpenMP" ON)
+
+if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
+    cmake_minimum_required(VERSION 3.6.1)
+    unset(WIN32)
+    unset(UNIX)
+    unset(APPLE)
+    set(BUILD_WITH_OPENMP OFF)
+    set(FORCE_LIBUVC ON)
+    set(BUILD_GRAPHICAL_EXAMPLES OFF)
+    set(ANDROID_STL "c++_static")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -g -D_BSD_SOURCE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -g -Wno-missing-field-initializers")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar")
+
+    message(STATUS "Prepare RealSense SDK for Android OS (${ANDROID_NDK_ABI_NAME})")
+    add_subdirectory(third-party/libusb/)
+endif()
+
 if(BUILD_WITH_OPENMP)
     find_package(OpenMP)
     if(NOT OPENMP_FOUND)
@@ -468,20 +490,7 @@ endif()
 
 add_definitions(-D${BACKEND} -DUNICODE)
 
-if(ANDROID)
-    set(ANDROID_STL "c++_static")
-
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -g -D_BSD_SOURCE")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -g -Wno-missing-field-initializers")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar")
-
-    set(LIBUSB1_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/libusb")
-    set(LIBUSB1_LIBRARY_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/android/libs/${ANDROID_NDK_ABI_NAME}")
-    set(LIBUSB1_LIBRARIES "usb1.0")
-
-    include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})
-    link_directories(${LIBUSB1_LIBRARY_DIRS})
-elseif(UNIX)
+if(UNIX)
     find_package(PkgConfig)
     if(NOT PKG_CONFIG_FOUND)
         message(FATAL_ERROR "\n\n PkgConfig package is missing!\n\n")
@@ -555,6 +564,10 @@ set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
 target_link_libraries(realsense2 realsense-file ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
 
+if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
+target_link_libraries(realsense2 usb ${USB_LIBRARIES})
+endif()
+
 add_definitions(-DELPP_THREAD_SAFE)
 add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 include_directories(realsense2 src)
@@ -599,10 +612,6 @@ option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
 option(BUILD_NODEJS_BINDINGS "Build Node.js bindings" OFF)
-
-# This parameter is meant for disabling graphical examples when building for
-# save-to-disk targets.
-option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 
 if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) AND WIN32)
   add_subdirectory(third-party/glfw)

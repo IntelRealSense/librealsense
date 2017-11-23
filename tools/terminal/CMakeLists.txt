@@ -18,7 +18,7 @@ endif()
 
 # terminal
 add_executable(rs-terminal rs-terminal.cpp auto-complete.cpp auto-complete.h)
-if(WIN32)
+if(WIN32 OR ANDROID)
     target_link_libraries(rs-terminal ${DEPENDENCIES})
 else()
     target_link_libraries(rs-terminal -lpthread ${DEPENDENCIES})

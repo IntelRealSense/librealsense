@@ -197,7 +197,7 @@ namespace ros
       }
     return 0;
 #else
-    timespec req = { sec, nsec };
+    timespec req = { static_cast<time_t>(sec), static_cast<long>(nsec) };
     return nanosleep(&req, NULL);
 #endif
   }
@@ -212,7 +212,7 @@ namespace ros
 #if defined(WIN32)
     ros_nanosleep(sec,nsec);
 #else
-    timespec req = { sec, nsec };
+    timespec req = { static_cast<time_t>(sec), static_cast<long>(nsec) };
     timespec rem = {0, 0};
     while (nanosleep(&req, &rem) && !g_stopped)
       {

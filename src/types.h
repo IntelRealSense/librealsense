@@ -24,9 +24,7 @@
 #include <condition_variable>
 #include <functional>
 #include "backend.h"
-
 #include "concurrency.h"
-
 #include "../third-party/easyloggingpp/src/easylogging++.h"
 
 typedef unsigned char byte;
@@ -38,6 +36,10 @@ const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+D
 #endif
 
 #pragma warning(disable: 4250)
+
+#ifdef ANDROID
+#include "../common/android_helpers.h"
+#endif
 
 namespace librealsense
 {
