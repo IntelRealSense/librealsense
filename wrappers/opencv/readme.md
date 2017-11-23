@@ -14,13 +14,13 @@ This page is certainly **not** a comprehensive guide to getting started with Ope
 2. Clone or download OpenCV sources from [github.com/opencv/opencv](https://github.com/opencv/opencv) into a local directory (`C:/git/opencv-master`)
 3. Run `cmake-gui`, input source code and binaries locations: 
 
-![1](res/1.PNG)
+<p align="center"><img src="res/1.PNG" /></p>
 
 4. Click `Configure`
 > When working behind a firewall, you might want to consider unchecking `WITH_FFMPEG` and `WITH_IPP` to avoid additional downloads
 5. Uncheck `BUILD_SHARED_LIBS`: 
 
-![2](res/2.PNG)
+<p align="center"><img src="res/2.PNG" /></p>
 
 6. Click `Generate`
 7. Click `Open Project` to open Visual Studio
@@ -29,18 +29,16 @@ This page is certainly **not** a comprehensive guide to getting started with Ope
 10. Run `cmake-gui` and fill source code and binaries locations and press `Configure`
 11. Make sure you check the `BUILD_CV_EXAMPLES` flag and click `Configure` again:
 
-![3](res/3.PNG)
+<p align="center"><img src="res/3.PNG" /></p>
 
 12. Specify CMake binaries folder for OpenCV as `OpenCV_DIR` (`c:/git/opencv-master`)
 
-![4](res/4.PNG)
+<p align="center"><img src="res/4.PNG" /></p>
 
 13. Click `Generate` and `Open Project`
 14. Locate CV solution-folder under Examples
 
-![5](res/5.PNG)
+<img src="res/5.PNG" />
 
 15. Right-click on one of the examples to `Set as StartUp Project`
-16. Press `F5` to compile and run the example:
-
-![6](res/6.PNG)
+16. Press `F5` to compile and run the example
