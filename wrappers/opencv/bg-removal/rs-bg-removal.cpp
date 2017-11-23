@@ -52,11 +52,17 @@ int main(int argc, char * argv[]) try
         // (each pixel in depth image corresponds to the same pixel in the color image)
         frameset aligned_set = align_to.proccess(data);
         frame depth = aligned_set.get_depth_frame();
+        auto color_mat = frame_to_mat(aligned_set.get_color_frame());
 
         // Colorize depth image with white being near and black being far
         // This will take advantage of histogram equalization done by the colorizer
         colorize.set_option(RS2_OPTION_COLOR_SCHEME, 2);
         frame bw_depth = colorize(depth);
+
+        cv::imshow(window_name, frame_to_mat(bw_depth));
+        waitKey(0);
+        cv::imshow(window_name, color_mat);
+        waitKey(0);
 
         // Generate "near" mask image:
         auto near = frame_to_mat(bw_depth);
@@ -71,6 +77,11 @@ int main(int argc, char * argv[]) try
         far.setTo(255, far == 0); // Note: 0 value does not indicate pixel near the camera, and requires special attention 
         create_mask_from_depth(far, 100, THRESH_BINARY_INV);
 
+        cv::imshow(window_name, near);
+        waitKey(0);
+        cv::imshow(window_name, far);
+        waitKey(0);
+
         // GrabCut algorithm needs a mask with every pixel marked as either:
         // BGD, FGB, PR_BGD, PR_FGB
         Mat mask;
@@ -79,17 +90,15 @@ int main(int argc, char * argv[]) try
         mask.setTo(GC_PR_BGD, far == 0); // Relax this to "probably background" for pixels outside "far" region
         mask.setTo(GC_FGD, near == 255); // Set pixels within the "near" region to "foreground"
 
-        // Fetch the RGB image from the frameset
-        Mat color = frame_to_mat(aligned_set.get_color_frame());
-
         // Run Grab-Cut algorithm:
         Mat bgModel, fgModel; 
-        cv::grabCut(color, mask, Rect(), bgModel, fgModel, 1, cv::GC_INIT_WITH_MASK);
+        cv::grabCut(color_mat, mask, Rect(), bgModel, fgModel, 1, cv::GC_INIT_WITH_MASK);
 
         // Extract foreground pixels based on refined mask from the algorithm
-        cv::Mat3b foreground = cv::Mat3b::zeros(color.rows, color.cols);
-        color.copyTo(foreground, (mask == cv::GC_FGD) | (mask == cv::GC_PR_FGD));
+        cv::Mat3b foreground = cv::Mat3b::zeros(color_mat.rows, color_mat.cols);
+        color_mat.copyTo(foreground, (mask == cv::GC_FGD) | (mask == cv::GC_PR_FGD));
         cv::imshow(window_name, foreground);
+        waitKey(0);
     }
 
     return EXIT_SUCCESS;
