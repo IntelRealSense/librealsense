@@ -337,10 +337,10 @@ namespace rs2
         matrix4 rotation(pose.rotation);
         matrix4 translation(pose.translation);
         matrix4 G_tm2_body_to_tm2_world = translation * rotation; 
-        float rotate_180_y[4][4] = {{ -1, 0, 0, 0.03 },
-                                    { 0, 1, 0,-0.023 },
-                                    { 0, 0,-1,-0.1   },
-                                    { 0, 0, 0, 1.0   }}; //includes translation from gyro to center of eyes
+        float rotate_180_y[4][4] = {{-1, 0, 0, 0 },
+                                    { 0, 1, 0, 0 },
+                                    { 0, 0,-1, 0 },
+                                    { 0, 0, 0, 1 }}; 
         matrix4 G_vr_body_to_tm2_body(rotate_180_y);
         matrix4 G_vr_body_to_tm2_world = G_tm2_body_to_tm2_world * G_vr_body_to_tm2_body;
 

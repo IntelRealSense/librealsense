@@ -2964,28 +2964,29 @@ namespace rs2
     
     std::array<point, 2> tm2_lenses()
     {
-        constexpr point v5{ -1.0f,  2.0f, -0.5f };
-        constexpr point v6{ 1.0f,  2.0f, -0.5f };
-        constexpr point v7{ -1.0f, -2.0f, -0.5f };
-        constexpr point v8{ 1.0f, -2.0f, -0.5f };
+        constexpr point v5{ -2.0f, 1.0f, -0.5f };
+        constexpr point v6{ 2.0f,  1.0f, -0.5f };
+        constexpr point v7{ -2.0f, -1.0f, -0.5f };
+        constexpr point v8{ 2.0f, -1.0f, -0.5f };
+
         constexpr float len_x = v8[0] - v7[0];
         constexpr float len_y = v6[1] - v8[1];
 
         constexpr point center_a{ v7[0] + len_x / 3, v6[1] - len_y / 3, v5[2] };
-        constexpr point center_b{ v7[0] + len_x / 3, v8[1] + len_y / 3, v5[2] };
+        constexpr point center_b{ v8[0] - len_x / 3, v6[1] - len_y / 3, v5[2] };
         return { center_a , center_b };
     }
 
     colored_cube create_cube()
     {
-        constexpr point v1{ -1.0f, -2.0f,  0.5f };
-        constexpr point v2{ 1.0f, -2.0f,  0.5f };
-        constexpr point v3{ 1.0f,  2.0f,  0.5f };
-        constexpr point v4{ -1.0f,  2.0f,  0.5f };
-        constexpr point v5{ -1.0f,  2.0f, -0.5f };
-        constexpr point v6{ 1.0f,  2.0f, -0.5f };
-        constexpr point v7{ -1.0f, -2.0f, -0.5f };
-        constexpr point v8{ 1.0f, -2.0f, -0.5f };
+        constexpr point v1{ -2.0f, -1.0f,  0.5f };
+        constexpr point v2{ 2.0f, -1.0f,  0.5f };
+        constexpr point v3{ 2.0f,  1.0f,  0.5f };
+        constexpr point v4{ -2.0f, 1.0f,  0.5f };
+        constexpr point v5{ -2.0f, 1.0f, -0.5f };
+        constexpr point v6{ 2.0f,  1.0f, -0.5f };
+        constexpr point v7{ -2.0f, -1.0f, -0.5f };
+        constexpr point v8{ 2.0f, -1.0f, -0.5f };
 
         constexpr face f1{ v1,v2,v3,v4 };
         constexpr face f2{ v2,v8,v6,v3 };
