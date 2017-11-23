@@ -217,6 +217,8 @@ namespace rs2
             pipeline                        _pipe;
             std::shared_ptr<device_model>   _device_model;
             viewer_model                    _viewer_model;
+            rs2::points                     _last_points;
+            texture_buffer*                  _last_texture;
             std::shared_ptr<subdevice_model> _depth_sensor_model;
             metrics_model                   _metrics_model;
             std::string                     _error_message;

@@ -91,7 +91,8 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
     }
     if (failed && was_loaded)
     {
-        try { ctx.unload_device(file); } catch (...){ }
+        try { ctx.unload_device(file); }
+        catch (...) {}
     }
 }
 
@@ -99,13 +100,13 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
 // If between the frames there was an asyncronous connect/disconnect event
 // the function will pick up on this and add the device to the viewer
 void refresh_devices(std::mutex& m,
-                     context& ctx,
-                     device_changes& devices_connection_changes,
-                     std::vector<device>& current_connected_devices,
-                     std::vector<std::pair<std::string, std::string>>& device_names,
-                     std::vector<device_model>& device_models,
-                     viewer_model& viewer_model,
-                     std::string& error_message)
+    context& ctx,
+    device_changes& devices_connection_changes,
+    std::vector<device>& current_connected_devices,
+    std::vector<std::pair<std::string, std::string>>& device_names,
+    std::vector<device_model>& device_models,
+    viewer_model& viewer_model,
+    std::string& error_message)
 {
     event_information info({}, {});
     if (devices_connection_changes.try_get_next_changes(info))
@@ -116,7 +117,7 @@ void refresh_devices(std::mutex& m,
 
             //Remove disconnected
             auto dev_itr = begin(current_connected_devices);
-            while(dev_itr != end(current_connected_devices))
+            while (dev_itr != end(current_connected_devices))
             {
                 auto dev = *dev_itr;
                 if (info.was_removed(dev))
@@ -125,7 +126,7 @@ void refresh_devices(std::mutex& m,
                     viewer_model.not_model.add_notification({ get_device_name(dev).first + " Disconnected\n",
                         0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
-                    viewer_model.pc.depth_stream_active = false;
+                    viewer_model.ppf.depth_stream_active = false;
 
                     //Remove from devices
 
@@ -155,7 +156,7 @@ void refresh_devices(std::mutex& m,
             {
                 auto dev_descriptor = get_device_name(dev);
                 device_names.push_back(dev_descriptor);
-                if(!initial_refresh)
+                if (!initial_refresh)
                     viewer_model.not_model.add_notification({ dev_descriptor.first + " Connected\n",
                         0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
@@ -290,7 +291,7 @@ int main(int argv, const char** argc) try
         for (auto&& dev_model : device_models)
         {
             auto connected_devs_itr = std::find_if(begin(connected_devs), end(connected_devs),
-                    [&](const device& d) { return get_device_name(d) == get_device_name(dev_model.dev); });
+                [&](const device& d) { return get_device_name(d) == get_device_name(dev_model.dev); });
 
             if (connected_devs_itr != end(connected_devs) || dev_model.dev.is<playback>())
                 new_devices_count--;
@@ -348,13 +349,13 @@ int main(int argv, const char** argc) try
 
             if (ImGui::Selectable("Load Recorded Sequence", false, ImGuiSelectableFlags_SpanAllColumns))
             {
-                if (auto ret = file_dialog_open(open_file,"ROS-bag\0*.bag\0", NULL, NULL))
+                if (auto ret = file_dialog_open(open_file, "ROS-bag\0*.bag\0", NULL, NULL))
                 {
                     add_playback_device(ctx, device_models, error_message, viewer_model, ret);
                 }
             }
             ImGui::NextColumn();
-            ImGui::Text("%s","");
+            ImGui::Text("%s", "");
             ImGui::NextColumn();
 
             ImGui::PopStyleColor();
@@ -554,42 +555,62 @@ int main(int argv, const char** argc) try
         ImGui::PopStyleColor();
 
         frameset f;
+        points p;
+        texture_buffer* texture;
+        // Fetch frames from queue
+        try
+        {
+            frame f;
 
-//        if(viewer_model.s.poll_for_frames(&f))
-//            viewer_model.syncer_queue.enqueue(std::move(f));
-
-        // Fetch frames from queues
-        for (auto&& device_model : device_models)
-           for (auto&& sub : device_model.subdevices)
+            if (viewer_model.ppf.resulting_queue.poll_for_frame(&f))
             {
-                sub->queues.foreach([&](frame_queue& queue)
+                frameset frames;
+                p = f.as<points>();
+                if (frames = f.as<frameset>())
                 {
-                    try
+                    for (auto&& frame : frames)
                     {
-                        frame f;
-                        if (queue.poll_for_frame(&f))
+                        if(!p)
                         {
-                            viewer_model.upload_frame(std::move(f));
+                            if(p = frame.as<points>())
+                            {
+                                continue;
+                            }
                         }
+                        if (!viewer_model.is_3d_view)
+                        {
+                            texture = viewer_model.upload_frame(std::move(frame));
+                        }
+                        else if (frame.get_profile().format()!= RS2_FORMAT_ANY && frame.get_profile().unique_id() == viewer_model.selected_tex_source_uid)
+                        {
+                            texture = viewer_model.upload_frame(std::move(frame));
+                        }
+
                     }
-                    catch (const error& ex)
-                    {
-                        error_message = error_to_string(ex);
-                        sub->stop();
-                    }
-                    catch (const std::exception& ex)
-                    {
-                        error_message = ex.what();
-                        sub->stop();
-                    }
-                });
+                }
+                else if(!p)
+                {
+                   viewer_model.upload_frame(std::move(f));
+                }
+                
             }
+        }
+        catch (const error& ex)
+        {
+            error_message = error_to_string(ex);
+        }
+        catch (const std::exception& ex)
+        {
+            error_message = ex.what();
+        }
+
+
 
         viewer_model.gc_streams();
 
         window.begin_viewport();
 
-        viewer_model.draw_viewport(viewer_rect, window, device_models.size(), error_message);
+        viewer_model.draw_viewport(viewer_rect, window, device_models.size(), error_message, texture, p);
 
         viewer_model.not_model.draw(window.get_font(), window.width(), window.height());
 
@@ -597,7 +618,7 @@ int main(int argv, const char** argc) try
     }
 
     // Stop calculating 3D model
-    viewer_model.pc.stop();
+    viewer_model.ppf.stop();
 
     // Stop all subdevices
     for (auto&& device_model : device_models)

@@ -14,7 +14,7 @@ namespace librealsense
         _decimation_filter(rs2_median),
         _decimation_factor(4),
         _kernel_size(_decimation_factor*_decimation_factor),
-        _width(0), _height(0), _enable_filter(true)
+        _width(0), _height(0), _enable_filter(false)
     {
         auto decimation_control = std::make_shared<ptr_option<uint8_t>>(1, 4, 1, 4, &_decimation_factor, "Decimation magnitude");
         decimation_control->on_set([this](float val)

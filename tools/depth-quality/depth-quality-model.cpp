@@ -421,7 +421,7 @@ namespace rs2
 
             _viewer_model.show_top_bar(win, viewer_rect);
             _viewer_model.roi_rect = _metrics_model.get_plane();
-            _viewer_model.draw_viewport(viewer_rect, win, 1, _error_message);
+            _viewer_model.draw_viewport(viewer_rect, win, 1, _error_message, _last_texture, _last_points);
 
             bool distance_guide = false;
             bool orientation_guide = false;
@@ -636,19 +636,32 @@ namespace rs2
             ImGui::PopStyleVar();
             ImGui::PopStyleColor();
 
+
             try
             {
                 frameset f;
                 if (_pipe.poll_for_frames(&f))
                 {
-                    for (auto&& frame : f)
+                    _viewer_model.ppf.frames_queue.enqueue(f);
+                    if(_viewer_model.ppf.resulting_queue.poll_for_frame(&f))
                     {
-                        if (frame.is<depth_frame>() && !_viewer_model.paused)
+                        for (auto&& frame : f)
                         {
-                            _metrics_model.begin_process_frame(frame);
+                            auto points = frame.as<rs2::points>();
+                            if(points)
+                            {
+                                _last_points = points;
+                                continue;
+                            }
+
+                            if (frame.is<depth_frame>() && !_viewer_model.paused)
+                            {
+                                _metrics_model.begin_process_frame(frame);
+                            }
+                            _last_texture =_viewer_model.upload_frame(std::move(frame));
                         }
-                        _viewer_model.upload_frame(std::move(frame));
                     }
+
                 }
             }
             catch (...){} // on device disconnect
@@ -672,7 +685,7 @@ namespace rs2
                 for (auto&& s : _device_model->subdevices)
                     s->streaming = false;
                 _viewer_model.gc_streams();
-                _viewer_model.pc.reset();
+                _viewer_model.ppf.reset();
                 _viewer_model.selected_depth_source_uid = -1;
                 _viewer_model.selected_tex_source_uid = -1;
             }
@@ -824,9 +837,9 @@ namespace rs2
                 {
                     ply_texture = _viewer_model.streams[_viewer_model.selected_tex_source_uid].texture->get_last_frame();
                     if (ply_texture)
-                        _viewer_model.pc.update_texture(ply_texture);
+                        _viewer_model.ppf.update_texture(ply_texture);
                 }
-                export_to_ply(filename_base + "_3d_mesh.ply", _viewer_model.not_model, _viewer_model.pc.get_points(), ply_texture);
+                export_to_ply(filename_base + "_3d_mesh.ply", _viewer_model.not_model, _viewer_model.ppf.get_points(), ply_texture);
 
                 // Save Metrics
                 _metrics_model.serialize_to_csv(filename_base + "_depth_metrics.csv", capture_description());
