@@ -1,7 +1,5 @@
 # OpenCV Samples for Intel® RealSense™ cameras
-**Code Examples to start prototyping quickly:** These simple examples demonstrate how to easily use the SDK to include code snippets that access the camera into your applications.  
-
-For a detailed explanations and API documentation see our [Documentation](../doc) section 
+Examples in this folder are designed to complement existing [SDK examples](../../examples) and demonstrate how Intel RealSense cameras can be used together with `opencv` in domain of computer-vision. 
  
 ## List of Samples:
 1. [ImShow](./imshow) - Minimal OpenCV application for visualizing depth data
@@ -10,6 +8,9 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 
 ## Getting Started:
 This page is certainly **not** a comprehensive guide to getting started with OpenCV and CMake, but it can help get on the right track. 
+
+* [Windows Installation](#windows)
+* [Linux Installation](#linux)
 
 ### Windows
 1. Download and install `CMake` from [cmake.org/download](https://cmake.org/download/)
