@@ -132,7 +132,8 @@ public:
         : _digits(digits), _packer(digits), 
           _display_w(display_w),
           _t([this]() { detect(); }),
-          _preview_size(600, 350)
+          _preview_size(600, 350),
+          _next_value(0), _next(false), _alive(true)
     {
         using namespace cv;
 
@@ -359,15 +360,15 @@ private:
     const int _digits;
     const int _display_w;
 
-    std::atomic_bool _alive = true;
+    std::atomic_bool _alive;
     bit_packer _packer;
     std::thread _t;
     single_consumer_queue<record> _queue;
     std::chrono::high_resolution_clock::time_point _start_time;
     std::chrono::high_resolution_clock::time_point _render_start;
 
-    std::atomic_bool _next = false;
-    std::atomic<int> _next_value = 0;
+    std::atomic_bool _next;
+    std::atomic<int> _next_value;
 
     const cv::Size _preview_size;
     std::mutex _preview_mutex;
