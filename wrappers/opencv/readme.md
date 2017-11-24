@@ -44,3 +44,11 @@ This page is certainly **not** a comprehensive guide to getting started with Ope
 
 15. Right-click on one of the examples to `Set as StartUp Project`
 16. Press `F5` to compile and run the example
+
+
+### Linux
+
+1. Build `opencv` from source using the [official guide](https://docs.opencv.org/trunk/d7/d9f/tutorial_linux_install.html)
+2. Run `export OpenCV_DIR=~/opencv/build` (`~/opencv/build` is the folder containing `OpenCVConfig.cmake`)
+3. Follow [the instructions](https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md) to build `librealsense` from source
+4. Add `-DBUILD_CV_EXAMPLES=true` to your `cmake` command
