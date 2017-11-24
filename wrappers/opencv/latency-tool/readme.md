@@ -1,68 +1,75 @@
-# rs-grabcuts Sample
+# rs-latency-tool Sample
 
 ## Overview
-This example demonstrates how to enchance existing 2D algorithms with 3D data: [GrabCut algorithm](https://docs.opencv.org/trunk/d8/d83/tutorial_py_grabcut.html) is commonly used for interactive, user-assisted foreground extraction. 
-In this demo we replace user input with initial guess based on depth data. 
 
-> **How is it different from [rs-align example](../../../examples/align)?**
-> **rs-align** is doing real-time background removal using simple masking and thresholding. This results in fast but not very clean results. 
-> This demo is performing pixel-level optimization to cut the foreground in the 2D image. The depth data serves only as an initial estimate of what is near and what is far. 
+The goal of this sample to show how we could estimate visual latency with computer vision. 
 
-## Example Flow
+> This method has a lot of unknowns and should not serve substitute to proper latency testing with dedicated equipment, but can offer some insights into camera performance and provide framework for comparison between devices / configurations.
 
-### Get Aligned Color & Depth
-We start by getting a pair of spatially and temporally synchronized frames:
+## Why is Latency Important? 
+Visual latency (for our use-case) is defined as the time between an event and when it is observed as a frame in the application. Different types of events have different ranges of acceptable latency. 
+
+
+USB webcams usually provide latencies in the order of tens-hundreds of milliseconds, since the video data is expensive to transmit, decode and process. 
+
+## How this sample works?
+
+The demo relies on the idea that if you look at a clock and a video-stream of the same clock side-by-side, the clock in the video will "lag" behind the real one by exactly the visual latency:
+<p align="center"><img src="res/1.png" /></p>
+
+The demo will encode current clock value into binary form and render the bits to screen (circle = bit is on):
+<p align="center"><img src="res/2.PNG" /></p>
+
+The user is asked to point the camera back at the screen to capture the pattern.
+
+
+Next, we will use [Hough Transform](https://docs.opencv.org/2.4/doc/tutorials/imgproc/imgtrans/hough_circle/hough_circle.html) to identify sent bits in the `rs2::frame` we get back from the camera (marked as black squares)
+<p align="center"><img src="res/3.png" /></p>
+
+The demo filters-out bad detections using basic 2-bit [Checksum](https://en.wikipedia.org/wiki/Checksum).
+
+Once it detects bits and decodes the clock value embedded in the image, the sample compares it to the clock value when `rs2::frame` was provided by the SDK.
+
+## Implementation Details
+
+To make sure expensive detection logic is not preventing us from getting the frames in time, detection is being done on a seperate thread. Frames are being passed to this thread, alongside their respective clock measurements, using a concurrent queue. 
+We ensure that the queue will not spill, by emptying it after each successful or unsuccessful detection attempt. 
+
+## Controlling the Demo
+
+Uncomment one of the following lines to select a configuration:
 ```cpp
-frameset data = pipe.wait_for_frames();
-// Make sure the frameset is spatialy aligned 
-// (each pixel in depth image corresponds to the same pixel in the color image)
-frameset aligned_set = align_to.proccess(data);
-frame depth = aligned_set.get_depth_frame();
-auto color_mat = frame_to_mat(aligned_set.get_color_frame());
+//cfg.enable_stream(RS2_STREAM_COLOR, RS2_FORMAT_BGR8);
+//cfg.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_BGR8, 30);
+//cfg.enable_stream(RS2_STREAM_COLOR, 1920, 1080, RS2_FORMAT_BGR8, 30);
+//cfg.enable_stream(RS2_STREAM_INFRARED, 640, 480, RS2_FORMAT_Y8);
+//cfg.enable_stream(RS2_STREAM_INFRARED, 1280, 720, RS2_FORMAT_Y8);
 ```
-<p align="center"><img src="res/input.png" /><br/><b>Left:</b> Color frame, <b>Right:</b> Raw depth frame aligned to Color</p>
+You can add more then one stream to check how multiple streams are affecting each other. The demo will however just use the first frame out of every frame-set. 
 
-### Generate Near / Far Mask
-We continue to generate pixel regions that would estimate near and far objects. We use basic [morphological transformations](https://docs.opencv.org/2.4/doc/tutorials/imgproc/erosion_dilatation/erosion_dilatation.html) to improve the quality of the two masks:
-```cpp
-// Generate "near" mask image:
-auto near = frame_to_mat(bw_depth);
-cvtColor(near, near, CV_BGR2GRAY);
-// Take just values within range [180-255]
-// These will roughly correspond to near objects due to histogram equalization
-create_mask_from_depth(near, 180, THRESH_BINARY);
 
-// Generate "far" mask image:
-auto far = frame_to_mat(bw_depth);
-cvtColor(far, far, CV_BGR2GRAY);
-// Note: 0 value does not indicate pixel near the camera, and requires special attention:
-far.setTo(255, far == 0);
-create_mask_from_depth(far, 100, THRESH_BINARY_INV);
-```
-<p align="center"><img src="res/masks.png" /><br/><b>Left:</b> Foreground Guess in Green, <b>Right:</b> Background Guess in Red</p>
+This method will not work for the depth stream. 
+**D400** will produce readable results for both `RS2_STREAM_COLOR` and `RS2_STREAM_INFRARED`. **SR300** infrared stream doesn't seem to capture the content of a screen.
 
-### Invoke `cv::GrabCut` Algorithm
 
-The two masks are combined into a single guess:
+In addition, if you want to run this demo with a regular web-cam, use the following code instead of using the `pipeline` object:
 ```cpp
-// GrabCut algorithm needs a mask with every pixel marked as either:
-// BGD, FGB, PR_BGD, PR_FGB
-Mat mask;
-mask.create(near.size(), CV_8UC1); 
-mask.setTo(Scalar::all(GC_BGD)); // Set "background" as default guess
-mask.setTo(GC_PR_BGD, far == 0); // Relax this to "probably background" for pixels outside "far" region
-mask.setTo(GC_FGD, near == 255); // Set pixels within the "near" region to "foreground"
+context ctx;
+auto dev = ctx.query_devices().front();
+auto sensor = dev.query_sensors().front();
+auto sps = sensor.get_stream_profiles();
+stream_profile selected;
+for (auto& sp : sps)
+{
+    if (auto vid = sp.as<video_stream_profile>())
+    {
+        if (vid.format() == RS2_FORMAT_BGR8 &&
+            vid.width() == 640 && vid.height() == 480 &&
+            vid.fps() == 30)
+            selected = vid;
+    }
+}
+sensor.open(selected);
+syncer pipe;
+sensor.start(pipe);
 ```
-We run the algorithm:
-```cpp
-Mat bgModel, fgModel; 
-cv::grabCut(color_mat, mask, Rect(), bgModel, fgModel, 1, cv::GC_INIT_WITH_MASK);
-```
-And generate the resulting image:
-```cpp
-// Extract foreground pixels based on refined mask from the algorithm
-cv::Mat3b foreground = cv::Mat3b::zeros(color_mat.rows, color_mat.cols);
-color_mat.copyTo(foreground, (mask == cv::GC_FGD) | (mask == cv::GC_PR_FGD));
-cv::imshow(window_name, foreground);
-```
-<p align="center"><img src="res/result.png" /></p>

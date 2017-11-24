@@ -6,6 +6,7 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 ## List of Samples:
 1. [ImShow](./imshow) - Minimal OpenCV application for visualizing depth data
 2. [GrabCuts](./grabcuts) - Simple background removal using the GrabCut algorithm
+3. [Latency-Tool](./latency-tool) - Basic latency estimation using computer vision
 
 ## Getting Started:
 This page is certainly **not** a comprehensive guide to getting started with OpenCV and CMake, but it can help get on the right track. 
