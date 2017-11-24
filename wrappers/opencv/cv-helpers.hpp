@@ -26,6 +26,18 @@ cv::Mat frame_to_mat(const rs2::frame& f)
         cv::cvtColor(r, r, CV_BGR2RGB);
         return r;
     }
+    else if (f.get_profile().format() == RS2_FORMAT_Z16)
+    {
+        static colorizer c;
+        rs2::frame cf = c(f);
+        auto r = Mat(Size(w, h), CV_8UC3, (void*)cf.get_data(), Mat::AUTO_STEP);
+        return r;
+    }
+    else if (f.get_profile().format() == RS2_FORMAT_Y8)
+    {
+        auto r = Mat(Size(w, h), CV_8UC1, (void*)f.get_data(), Mat::AUTO_STEP);
+        return r;
+    }
 
     throw std::exception("Frame format is not supported yet!");
 }
