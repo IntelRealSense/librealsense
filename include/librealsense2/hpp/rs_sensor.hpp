@@ -107,13 +107,8 @@ namespace rs2
     class options
     {
     public:
-        options(rs2_options* options = nullptr)
-        {
-            _options = options;
-        }
-
         /**
-        * check if particular option is supported by a subdevice
+        * check if particular option is supported
         * \param[in] option     option id to be checked
         * \return true if option is supported
         */
@@ -153,7 +148,7 @@ namespace rs2
         }
 
         /**
-        * read option value from the device
+        * read option's value
         * \param[in] option   option id to be queried
         * \return value of the option
         */
@@ -180,7 +175,7 @@ namespace rs2
         }
 
         /**
-        * write new value to device option
+        * write new value to the option
         * \param[in] option     option id to be queried
         * \param[in] value      new value for the option
         */
@@ -211,6 +206,8 @@ namespace rs2
         }
 
    protected:
+       explicit options(rs2_options* o = nullptr) : _options(o) {}
+
        template<class T>
        options& operator=(const T& dev)
        {
@@ -230,8 +227,8 @@ namespace rs2
 
         using options::supports;
         /**
-        * open subdevice for exclusive access, by committing to a configuration
-        * \param[in] profile    configuration committed by the device
+        * open sensor for exclusive access, by committing to a configuration
+        * \param[in] profile    configuration committed by the sensor
         */
         void open(const stream_profile& profile) const
         {
@@ -245,7 +242,7 @@ namespace rs2
         /**
         * check if specific camera info is supported
         * \param[in] info    the parameter to check for support
-        * \return                true if the parameter both exist and well-defined for the specific device
+        * \return                true if the parameter both exist and well-defined for the specific sensor
         */
         bool supports(rs2_camera_info info) const
         {
@@ -258,7 +255,7 @@ namespace rs2
         /**
         * retrieve camera specific information, like versions of various internal components
         * \param[in] info     camera info type to retrieve
-        * \return             the requested camera info string, in a format specific to the device model
+        * \return             the requested camera info string, in a format specific to the sensor model
         */
         const char* get_info(rs2_camera_info info) const
         {
@@ -269,9 +266,9 @@ namespace rs2
         }
 
         /**
-        * open subdevice for exclusive access, by committing to composite configuration, specifying one or more stream profiles
+        * open sensor for exclusive access, by committing to composite configuration, specifying one or more stream profiles
         * this method should be used for interdependent  streams, such as depth and infrared, that have to be configured together
-        * \param[in] profiles   vector of configurations to be commited by the device
+        * \param[in] profiles   vector of configurations to be commited by the sensor
         */
         void open(const std::vector<stream_profile>& profiles) const
         {
@@ -292,8 +289,8 @@ namespace rs2
         }
 
         /**
-        * close subdevice for exclusive access
-        * this method should be used for releasing device resource
+        * close sensor for exclusive access
+        * this method should be used for releasing sensor resource
         */
         void close() const
         {
@@ -339,8 +336,8 @@ namespace rs2
 
 
         /**
-        * check if physical subdevice is supported
-        * \return   list of stream profiles that given subdevice can provide, should be released by rs2_delete_profiles_list
+        * check if physical sensor is supported
+        * \return   list of stream profiles that given sensor can provide, should be released by rs2_delete_profiles_list
         */
         std::vector<stream_profile> get_stream_profiles() const
         {
@@ -377,19 +374,19 @@ namespace rs2
             return intrin;
         }
 
-        sensor& operator=(const std::shared_ptr<rs2_sensor> dev)
-        {  
-            options::operator=(dev);
+        sensor& operator=(const std::shared_ptr<rs2_sensor> other)
+        {
+            options::operator=(other);
             _sensor.reset();
-            _sensor = dev;
+            _sensor = other;
             return *this;
         }
 
-        sensor& operator=(const sensor& dev)
+        sensor& operator=(const sensor& other)
         {
             *this = nullptr;
-             options::operator=(dev._sensor);
-            _sensor = dev._sensor;
+             options::operator=(other._sensor);
+            _sensor = other._sensor;
             return *this;
         }
         sensor() : _sensor(nullptr) {}

@@ -313,8 +313,9 @@ namespace librealsense
         std::vector<stream_interface*> streams = { _depth_stream.get(), _ir_stream.get()};
 
         for (auto& s : streams)
+        {
             depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type()));
-
+        }
         std::vector<std::shared_ptr<matcher>> matchers;
         matchers.push_back( std::make_shared<frame_number_composite_matcher>(depth_matchers));
 

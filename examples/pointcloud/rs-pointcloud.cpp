@@ -42,18 +42,18 @@ int main(int argc, char * argv[]) try
         auto frames = pipe.wait_for_frames();
 
         auto depth = frames.get_depth_frame();
-        
+
         // Generate the pointcloud and texture mappings
         points = pc.calculate(depth);
-        
+
         auto color = frames.get_color_frame();
-        
+
         // Tell pointcloud object to map to this color frame
         pc.map_to(color);
 
         // Upload the color frame to OpenGL
         app_state.tex.upload(color);
-        
+
         // Draw the pointcloud
         draw_pointcloud(app, app_state, points);
     }

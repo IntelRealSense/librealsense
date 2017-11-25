@@ -2,6 +2,7 @@
 
 * [Python](./python/) - supports both Python 2 and 3
 * [Node.js](./nodejs) - support Node.js v6 above
-* [ROS 2.0](https://github.com/intel-ros/realsense/releases) - separate repository
+* [ROS](https://github.com/intel-ros/realsense/releases) - integration with Robot Operating System
+* [LabVIEW](./labview) - integration with National Instruments LabVIEW
 * .NET - TBD
 * Matlab - TBD
