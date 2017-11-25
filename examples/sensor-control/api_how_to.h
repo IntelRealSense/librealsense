@@ -32,7 +32,7 @@ public:
         if (devices.size() == 0)
         {
             std::cerr << "No device connected, please connect a RealSense device" << std::endl;
-                
+
             //To help with the boilerplate code of waiting for a device to connect
             //The SDK provides the rs2::device_hub class
             rs2::device_hub device_hub(ctx);
@@ -61,7 +61,7 @@ public:
                 throw std::out_of_range("Selected device index is out of range");
             }
 
-            // Update the selected device 
+            // Update the selected device
             selected_device = devices[selected_device_index];
         }
 
@@ -90,7 +90,7 @@ public:
                 std::cout << "N/A" << std::endl;
         }
     }
-    
+
     static std::string get_device_name(const rs2::device& dev)
     {
         // Each device provides some information on itself, such as name:
@@ -105,7 +105,7 @@ public:
 
         return name + " " + sn;
     }
-    
+
     static std::string get_sensor_name(const rs2::sensor& sensor)
     {
         // Sensors support additional information, such as a human readable name
@@ -114,7 +114,7 @@ public:
         else
             return "Unknown Sensor";
     }
-    
+
     static rs2::sensor get_a_sensor_from_a_device(const rs2::device& dev)
     {
         // A rs2::device is a container of rs2::sensors that have some correlation between them.
@@ -143,10 +143,10 @@ public:
 
         return  sensors[selected_sensor_index];
     }
-    
+
     static rs2_option get_sensor_option(const rs2::sensor& sensor)
     {
-        // Sensors usually have several options to control their properties 
+        // Sensors usually have several options to control their properties
         //  such as Exposure, Brightness etc.
 
         std::cout << "Sensor supports the following options:\n" << std::endl;
@@ -189,7 +189,7 @@ public:
         }
         return static_cast<rs2_option>(selected_sensor_option);
     }
-    
+
     static float get_depth_units(const rs2::sensor& sensor)
     {
         //A Depth stream contains an image that is composed of pixels with depth information.
@@ -205,11 +205,11 @@ public:
         else
             throw std::runtime_error("Given sensor is not a depth sensor");
     }
-    
+
     static void get_field_of_view(const rs2::stream_profile& stream)
     {
         // A sensor's stream (rs2::stream_profile) is in general a stream of data with no specific type.
-        // For video streams (streams of images), the sensor that produces the data has a lens and thus has properties such 
+        // For video streams (streams of images), the sensor that produces the data has a lens and thus has properties such
         //  as a focal point, distortion, and principal point.
         // To get these intrinsics parameters, we need to take a stream and first check if it is a video stream
         if (auto video_stream = stream.as<rs2::video_stream_profile>())
@@ -239,7 +239,7 @@ public:
             std::cerr << "Given stream profile is not a video stream profile" << std::endl;
         }
     }
-    
+
     static void get_extrinsics(const rs2::stream_profile& from_stream, const rs2::stream_profile& to_stream)
     {
         // If the device/sensor that you are using contains more than a single stream, and it was calibrated
@@ -258,10 +258,10 @@ public:
             std::cerr << "Failed to get extrinsics for the given streams. " << e.what() << std::endl;
         }
     }
-    
+
     static void change_sensor_option(const rs2::sensor& sensor, rs2_option option_type)
     {
-        // Sensors usually have several options to control their properties 
+        // Sensors usually have several options to control their properties
         //  such as Exposure, Brightness etc.
 
         // To control an option, use the following api:
@@ -305,13 +305,13 @@ public:
             }
             catch (const rs2::error& e)
             {
-                // Some options can only be set while the camera is streaming, 
+                // Some options can only be set while the camera is streaming,
                 // and generally the hardware might fail so it is good practice to catch exceptions from set_option
                 std::cerr << "Failed to set option " << option_type << ". (" << e.what() << ")" << std::endl;
             }
         }
     }
-    
+
     static rs2::stream_profile choose_a_streaming_profile(const rs2::sensor& sensor)
     {
         // A Sensor is an object that is capable of streaming one or more types of data.
@@ -404,7 +404,7 @@ public:
 
         return stream_profiles[selected_profile_index];
     }
-    
+
     static void start_streaming_a_profile(const rs2::sensor& sensor, const rs2::stream_profile& stream_profile)
     {
         // The sensor controls turning the streaming on and off
@@ -420,7 +420,7 @@ public:
 
         std::ostringstream oss;
         oss << "Displaying profile " << stream_profile.stream_name();
-        
+
         // In order to begin getting data from the sensor, we need to register a callback to handle frames (data)
         // To register a callback, the sensor's start() method should be invoked.
         // The start() method takes any type of callable object that takes a frame as its parameter
@@ -432,7 +432,7 @@ public:
         //    This behavior requires the provided frame handler to the
         //     start method to be re-entrant
 
-        // In this example we have created a class to handle the frames, 
+        // In this example we have created a class to handle the frames,
         // and we capture it by reference inside a C++11 lambda which is passed to the start() function
         helper::frame_viewer display(oss.str());
         sensor.start([&](rs2::frame f) { display(f); });

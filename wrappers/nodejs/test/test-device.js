@@ -6,7 +6,12 @@
 
 /* global describe, it, beforeEach, afterEach */
 const assert = require('assert');
-const rs2 = require('../index.js');
+let rs2;
+try {
+  rs2 = require('node-librealsense');
+} catch (e) {
+  rs2 = require('../index.js');
+}
 
 let ctx;
 let dev;

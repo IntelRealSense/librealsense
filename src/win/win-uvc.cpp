@@ -986,7 +986,7 @@ namespace librealsense
             }
         }
 
-        void wmf_uvc_device::probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int /*buffers*/)
+        void wmf_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int /*buffers*/)
         {
             if (_streaming)
                 throw std::runtime_error("Device is already streaming!");

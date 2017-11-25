@@ -18,6 +18,7 @@ class Device {
   constructor(dev) {
     this.cxxDev = dev;
     this._events = new EventEmitter();
+    internal.addObject(this);
   }
 
   /**
@@ -166,8 +167,10 @@ class Device {
    * Release resources associated with the object
    */
   destroy() {
-    this.cxxDev.destroy();
-    this.cxxDev = undefined;
+    if (this.cxxDev) {
+      this.cxxDev.destroy();
+      this.cxxDev = undefined;
+    }
     this._events = undefined;
   }
 }
@@ -260,8 +263,10 @@ class StreamProfile {
   }
 
   destroy() {
-    if (this.cxxProfile) this.cxxProfile.destroy();
-    this.cxxProfile = undefined;
+    if (this.cxxProfile) {
+      this.cxxProfile.destroy();
+      this.cxxProfile = undefined;
+    }
   }
 }
 
@@ -271,14 +276,17 @@ class StreamProfile {
 class DeviceList {
   constructor(cxxList) {
     this.cxxList = cxxList;
+    internal.addObject(this);
   }
 
   /**
    * Release resources associated with the object
    */
   destroy() {
-    this.cxxList.destroy();
-    this.cxxList = undefined;
+    if (this.cxxList) {
+      this.cxxList.destroy();
+      this.cxxList = undefined;
+    }
   }
 
   /**
@@ -542,6 +550,7 @@ class Sensor extends Options {
     super(sensor);
     this.cxxSensor = sensor;
     this._events = new EventEmitter();
+    internal.addObject(this);
   }
 
   /**
@@ -603,8 +612,10 @@ class Sensor extends Options {
   */
   destroy() {
     this.events_ = null;
-    this.cxxSensor.destroy();
-    this.cxxSensor = undefined;
+    if (this.cxxSensor) {
+      this.cxxSensor.destroy();
+      this.cxxSensor = undefined;
+    }
   }
 
   /**
@@ -875,12 +886,21 @@ class DepthSensor extends Sensor {
 
 const internal = {
   ctx: [],
+  objs: [],
 
   addContext: function(c) {
     this.ctx.push(c);
   },
 
+  addObject: function(o) {
+    this.objs.push(o);
+  },
+
   cleanup: function() {
+    this.objs.forEach((obj) => {
+      obj.destroy();
+    });
+    this.objs = [];
     this.ctx.forEach((context) => {
       context.destroy();
     });
@@ -905,19 +925,21 @@ const internal = {
 class Context {
   constructor(cxxCtx) {
     this._events = new EventEmitter();
-    if (arguments.length === 1 && arguments[0] === 'no-cxx-context') {
-      // Subclass will do the cxxCtx
+    if (arguments.length === 0) {
+      this.cxxCtx = new RS2.RSContext();
+      this.cxxCtx.create();
     } else {
-      if (arguments.length === 0) {
-        this.cxxCtx = new RS2.RSContext();
+      if (arguments[0] === 'recording' || arguments[0] === 'playback') {
+        this.cxxCtx = new (Function.prototype.bind.apply(
+            RS2.RSContext, [null].concat(Array.from(arguments))))();
         this.cxxCtx.create();
-      } else {
+      } else if (arguments[0] instanceof RS2.RSContext) {
         this.cxxCtx = cxxCtx;
+      } else {
+        throw new TypeError('Invalid arguement for Context.constructor()');
       }
-
-      this.cxxCtx._events = this._events;
     }
-
+    this.cxxCtx._events = this._events;
     internal.addContext(this);
   }
 
@@ -926,9 +948,11 @@ class Context {
    * The JavaScript Context object(s) will not be garbage-collected without call(s) to this function
    */
   destroy() {
-    this.cxxCtx.destroy();
-    this.cxxCtx = undefined;
-    internal.cleanupContext();
+    if (this.cxxCtx) {
+      this.cxxCtx.destroy();
+      this.cxxCtx = undefined;
+      internal.cleanupContext();
+    }
   }
 
   /**
@@ -1043,27 +1067,36 @@ class Context {
 }
 
 /**
- * Record camera data to a disk file
+ * This class is for testing purpose.
+ * It is used to record all operations over librealsense into a file
  * @extends Context
  */
-class RecordContext extends Context {
+class RecordingContext extends Context {
   /**
-   * @param {String} fileName The file name of the recording data
-   * @param {String} section The section name to record
-   * @param {String|Integer} mode Recording mode, default to 'best-quality'
-   *
+   * @param {String} fileName The file name to store the recorded data
+   * @param {String} section The section name within the recording
+   * @param {String|Integer} mode Recording mode, default to 'blank-frames'
    * @see [enum recording_mode]{@link recording_mode}
    */
-  constructor(fileName, section, mode = 'best-quality') {
-    super('no-cxx-context');
-    // TODO: create this.cxxCtx in child class
-    // this.cxxCtx = ...
-    this.cxxCtx._events = this._events;
+  constructor(fileName, section = '', mode = 'blank-frames') {
+    if (!isString(fileName) || !isString(section)) {
+      throw new TypeError('RecordingContext constructor\'s argument type is invalid');
+    }
+    let m = checkStringNumber(mode,
+        constants.recording_mode.RECORDING_MODE_BLANK_FRAMES,
+        constants.recording_mode.RECORDING_MODE_STREAM_COUNT,
+        recordingMode2Int,
+        'RecordingContext constructor expects a string or an integer for the 3rd argument',
+        'RecordingContext constructor\'s 3rd argument value is invalid');
+    super('recording', fileName, section, m);
   }
 }
 
 /**
- * Playback camera recordings
+ * This class is for testing purpose.
+ * It is used to reproduce the same responses for the same operations as
+ * recording. The user must call the same methods as recorded in the file
+ * to get correct response.
  * @extends Context
  */
 class PlaybackContext extends Context {
@@ -1071,11 +1104,11 @@ class PlaybackContext extends Context {
    * @param {String} fileName The file name of the recording
    * @param {String} section The section name used in recording
    */
-  constructor(fileName = '', section = '') {
-    super('no-cxx-context');
-    // TODO: create this.cxxCtx in child class
-    // this.cxxCtx = ...
-    this.cxxCtx._events = this._events;
+  constructor(fileName, section = '') {
+    if (!isString(fileName) || !isString(section)) {
+      throw new TypeError('PlaybackContext constructor\'s argument type is invalid');
+    }
+    super('playback', fileName, section);
   }
 }
 
@@ -1092,6 +1125,9 @@ class PlaybackDevice extends Device {
     this.file = file;
   }
 }
+
+internal.RecordingContext = RecordingContext;
+internal.PlaybackContext = PlaybackContext;
 
 /**
  * PointCloud accepts depth frames and outputs Points frames
@@ -1263,6 +1299,7 @@ class Frame {
   constructor(cxxFrame) {
     this.cxxFrame = cxxFrame || new RS2.RSFrame();
     this.updateProfile();
+    internal.addObject(this);
   }
 
   updateProfile() {
@@ -1794,6 +1831,7 @@ class Pipeline {
     this.cxxPipeline.create(this.ctx.cxxCtx);
     this.started = false;
     this.frameSet = new FrameSet();
+    internal.addObject(this);
   }
 
   /**
@@ -1804,9 +1842,12 @@ class Pipeline {
   destroy() {
     if (this.started === true) this.stop();
 
-    this.cxxPipeline.destroy();
-    this.cxxPipeline = undefined;
-    if (this.ownCtx) {
+    if (this.cxxPipeline) {
+      this.cxxPipeline.destroy();
+      this.cxxPipeline = undefined;
+    }
+
+    if (this.ownCtx && this.ctx) {
       this.ctx.destroy();
     }
     this.ctx = undefined;
@@ -1939,6 +1980,7 @@ class Pipeline {
 class PipelineProfile {
   constructor(profile) {
     this.cxxPipelineProfile = profile;
+    internal.addObject(this);
   }
 
   /**
@@ -1977,6 +2019,18 @@ class PipelineProfile {
    */
   getDevice() {
     return new Device(this.cxxPipelineProfile.getDevice());
+  }
+
+  /**
+   * Destroy the resource associated with this object
+   *
+   * @return {undefined}
+   */
+  destroy() {
+    if (this.cxxPipelineProfile) {
+      this.cxxPipelineProfile.destroy();
+      this.cxxPipelineProfile = undefined;
+    }
   }
 }
 
@@ -2196,12 +2250,15 @@ class Syncer {
    * Release resources associated with the object
    */
   destroy() {
-    this.cxxSyncer.destroy();
-    this.cxxSyncer = undefined;
+    if (this.cxxSyncer) {
+      this.cxxSyncer.destroy();
+      this.cxxSyncer = undefined;
+    }
+
     if (this.frameset) {
       this.frameSet.destroy();
+      this.frameSet = undefined;
     }
-    this.frameSet = undefined;
   }
 }
 
@@ -2241,8 +2298,10 @@ class DeviceHub {
    * Release resources associated with the object
    */
   destroy() {
-    this.cxxHub.destroy();
-    this.cxxHub = undefined;
+    if (this.cxxHub) {
+      this.cxxHub.destroy();
+      this.cxxHub = undefined;
+    }
   }
 }
 
@@ -3025,38 +3084,43 @@ const recording_mode = {
    * but pixel data will be replaced with zeros to save space. <br>Equivalent to its uppercase
    * counterpart.
    */
-  blank_frames: 'blank-frames',
+  recording_mode_blank_frames: 'blank-frames',
   /**
    * String literal of <code>'compressed'</code>. <br>Frames will be encoded using a proprietary
    * lossy encoding, aiming at x5 compression at some CPU expense. <br>Equivalent to its uppercase
    * counterpart.
    */
-  compressed: 'compressed',
+  recording_mode_compressed: 'compressed',
   /**
    * String literal of <code>'best-quality'</code>. <br>Frames will not be compressed,
    * but rather stored as-is. This gives best quality and low CPU overhead, but you might run out
    * of memory. <br>Equivalent to its uppercase counterpart.
    */
-  best_quality: 'best-quality',
+  recording_mode_best_quality: 'best-quality',
 
   /**
    * Frame metadata will be recorded, but pixel data will be replaced with zeros to save space.
    * <br>Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
-  BLANK_FRAMES: RS2.RS2_RECORDING_MODE_BLANK_FRAMES,
+  RECORDING_MODE_BLANK_FRAMES: RS2.RS2_RECORDING_MODE_BLANK_FRAMES,
   /**
    * Frames will be encoded using a proprietary lossy encoding, aiming at x5 compression at some
    * CPU expense.<br>Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
-  COMPRESSED: RS2.RS2_RECORDING_MODE_COMPRESSED,
+  RECORDING_MODE_COMPRESSED: RS2.RS2_RECORDING_MODE_COMPRESSED,
   /**
    * Frames will not be compressed, but rather stored as-is. This gives best quality and low CPU
    * overhead, but you might run out of memory.<br>Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
-  BEST_QUALITY: RS2.RS2_RECORDING_MODE_BEST_QUALITY,
+  RECORDING_MODE_BEST_QUALITY: RS2.RS2_RECORDING_MODE_BEST_QUALITY,
+  /**
+   * Number of enumeration values. Not a valid input: intended to be used in for-loops.
+   * @type {Integer}
+  */
+  RECORDING_MODE_COUNT: RS2.RS2_RECORDING_MODE_COUNT,
 };
 
 /**
@@ -4313,8 +4377,6 @@ module.exports = {
   Align: Align,
   PointCloud: PointCloud,
   Points: Points,
-  // PlaybackContext: PlaybackContext,
-  // RecordingContext: RecordingContext,
   Syncer: Syncer,
 
   stream: stream,
@@ -4330,6 +4392,7 @@ module.exports = {
   visual_preset: visual_preset,
 
   util: util,
+  internal: internal,
 
   stringConstantToIntegerValue: str2Int,
 };

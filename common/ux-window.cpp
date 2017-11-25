@@ -78,7 +78,7 @@ namespace rs2
 
         // Prepare the splash screen and do some initialization in the background
         int x, y, comp;
-        auto r = stbi_load_from_memory(splash, splash_size, &x, &y, &comp, false);
+        auto r = stbi_load_from_memory(splash, (int)splash_size, &x, &y, &comp, false);
         _splash_tex.upload_image(x, y, r);
 
         // Apply initial UI state
@@ -131,7 +131,7 @@ namespace rs2
             begin_frame();
 
             glPushMatrix();
-            glViewport(0.f, 0.f, _fb_width, _fb_height);
+            glViewport(0, 0, _fb_width, _fb_height);
             glClearColor(0.036f, 0.044f, 0.051f, 1.f);
             glClear(GL_COLOR_BUFFER_BIT);
 
@@ -139,8 +139,8 @@ namespace rs2
             glOrtho(0, _width, _height, 0, -1, +1);
 
             // Fade-in the logo
-            auto opacity = smoothstep(_splash_timer.elapsed_ms(), 100.f, 2000.f);
-            _splash_tex.show({ 0.f,0.f,(float)_width,(float)_height }, opacity);
+            auto opacity = smoothstep(float(_splash_timer.elapsed_ms()), 100.f, 2000.f);
+            _splash_tex.show({ 0.f,0.f,float(_width),float(_height) }, opacity);
 
             std::string hourglass = u8"\uf250";
             static periodic_timer every_200ms(std::chrono::milliseconds(200));

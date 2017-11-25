@@ -283,7 +283,7 @@ namespace librealsense
             }
 
             /* request to set up a streaming profile and its calback */
-            void probe_and_commit(stream_profile profile, bool zero_copy, frame_callback callback, int buffers) override
+            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override
             {
                 uvc_error_t res;
                 uvc_stream_ctrl_t ctrl;

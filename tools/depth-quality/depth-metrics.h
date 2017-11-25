@@ -1,3 +1,8 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+//
+// Plane Fit implementation follows http://www.ilikebigbits.com/blog/2015/3/2/plane-from-points algorithm
+
 #pragma once
 #include <vector>
 #include <mutex>
@@ -29,11 +34,13 @@ namespace rs2
 
         using callback_type = std::function<void(
             const std::vector<rs2::float3>& points,
-            const plane p, 
+            const plane p,
             const rs2::region_of_interest roi,
-            const float baseline_mm, 
-            const float focal_length_pixels, 
-            const float* ground_thruth_mm)>;
+            const float baseline_mm,
+            const float focal_length_pixels,
+            const int ground_thruth_mm,
+            const bool plane_fit,
+            const float plane_fit_to_ground_truth_mm)>;
 
         inline plane plane_from_point_and_normal(const rs2::float3& point, const rs2::float3& normal)
         {
@@ -90,14 +97,14 @@ namespace rs2
             return plane_from_point_and_normal(centroid, dir.normalize());
         }
 
-        inline double evaluate_pixel(const plane& p, const rs2_intrinsics* intrin, int x, int y, float distance, float3& output)
+        inline double evaluate_pixel(const plane& p, const rs2_intrinsics* intrin, float x, float y, float distance, float3& output)
         {
-            float pixel[2] = { float(x), float(y) };
+            float pixel[2] = { x, y };
             rs2_deproject_pixel_to_point(&output.x, intrin, pixel, distance);
             return evaluate_plane(p, output);
         }
 
-        inline float3 approximate_intersection(const plane& p, const rs2_intrinsics* intrin, int x, int y, float min, float max)
+        inline float3 approximate_intersection(const plane& p, const rs2_intrinsics* intrin, float x, float y, float min, float max)
         {
             float3 point;
             auto far = evaluate_pixel(p, intrin, x, y, max, point);
@@ -111,7 +118,7 @@ namespace rs2
             return approximate_intersection(p, intrin, x, y, avg, max);
         }
 
-        inline float3 approximate_intersection(const plane& p, const rs2_intrinsics* intrin, int x, int y)
+        inline float3 approximate_intersection(const plane& p, const rs2_intrinsics* intrin, float x, float y)
         {
             return approximate_intersection(p, intrin, x, y, 0.f, 1000.f);
         }
@@ -121,7 +128,8 @@ namespace rs2
             float units, float baseline_mm,
             const rs2_intrinsics * intrin,
             rs2::region_of_interest roi,
-            const float* ground_thruth,
+            const int ground_truth_mm,
+            bool plane_fit_present,
             callback_type callback)
         {
             auto pixels = (const uint16_t*)frame.get_data();
@@ -149,7 +157,6 @@ namespace rs2
 
                         rs2_deproject_pixel_to_point(point, intrin, pixel, distance);
 
-
                         std::lock_guard<std::mutex> lock(m);
                         roi_pixels.push_back({ point[0], point[1], point[2] });
                     }
@@ -161,19 +168,24 @@ namespace rs2
 
             plane p = plane_from_points(roi_pixels);
 
-            if (p == plane{ 0, 0, 0, 0 }) { // The points in RoI don't span a plane
+            if (p == plane{ 0, 0, 0, 0 }) { // The points in RoI don't span a valid plane
                 return result;
             }
 
-            callback(roi_pixels, p, roi, baseline_mm, intrin->fx, ground_thruth);
+            // Calculate intersection point of the camera's optical axis with the plane fit in camera's CS
+            float3 plane_fit_pivot = approximate_intersection(p, intrin, intrin->ppx, intrin->ppy);
+            // Find the distance between the "rectified" fit and the ground truth planes.
+            float plane_fit_to_gt_dist_mm = (ground_truth_mm > 0.f) ? (plane_fit_pivot.z * 1000 - ground_truth_mm): 0;
+
+            callback(roi_pixels, p, roi, baseline_mm, intrin->fx, ground_truth_mm, (plane_fit_present > 0), plane_fit_to_gt_dist_mm);
             result.p = p;
-            result.plane_corners[0] = approximate_intersection(p, intrin, roi.min_x, roi.min_y);
-            result.plane_corners[1] = approximate_intersection(p, intrin, roi.max_x, roi.min_y);
-            result.plane_corners[2] = approximate_intersection(p, intrin, roi.max_x, roi.max_y);
-            result.plane_corners[3] = approximate_intersection(p, intrin, roi.min_x, roi.max_y);
+            result.plane_corners[0] = approximate_intersection(p, intrin, float(roi.min_x), float(roi.min_y));
+            result.plane_corners[1] = approximate_intersection(p, intrin, float(roi.max_x), float(roi.min_y));
+            result.plane_corners[2] = approximate_intersection(p, intrin, float(roi.max_x), float(roi.max_y));
+            result.plane_corners[3] = approximate_intersection(p, intrin, float(roi.min_x), float(roi.max_y));
 
             // Distance of origin (the camera) from the plane is encoded in parameter D of the plane
-            result.distance = static_cast<float>(-p.d * 1000);
+            result.distance = is_valid(result.plane_corners) ? static_cast<float>(-p.d * 1000) : -1;
             // Angle can be calculated from param C
             result.angle = static_cast<float>(std::acos(std::abs(p.c)) / M_PI * 180.);
 

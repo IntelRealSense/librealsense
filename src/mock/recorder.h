@@ -324,7 +324,7 @@ namespace librealsense
         class record_uvc_device : public uvc_device
         {
         public:
-            void probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers) override;
+            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override;
             void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n) {}) override;
             void start_callbacks() override;
             void stop_callbacks() override;
@@ -458,7 +458,7 @@ namespace librealsense
                 {
                     auto&& c = _rec->add_call(k);
                     c.had_error = true;
-                    c.inline_string = "Unknown exception has occured!";
+                    c.inline_string = "Unknown exception has occurred!";
 
                     throw;
                 }
@@ -502,7 +502,7 @@ namespace librealsense
         class playback_uvc_device : public uvc_device
         {
         public:
-            void probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers) override;
+            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override;
             void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n) {}) override;
             void start_callbacks() override;
             void stop_callbacks() override;
