@@ -18,9 +18,6 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 endif()
 
 find_package(OpenCV REQUIRED)
-if(NOT OPENCV_FOUND)
-	message(FATAL_ERROR "\n\n OpenCV package is missing!\n\n")
-endif()
 
 set(DEPENDENCIES realsense2 ${OpenCV_LIBS})
 

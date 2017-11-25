@@ -5,6 +5,7 @@
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <opencv2/opencv.hpp>   // Include OpenCV API
+#include <exception>
 
 // Convert rs2::frame to cv::Mat
 cv::Mat frame_to_mat(const rs2::frame& f)
@@ -39,7 +40,7 @@ cv::Mat frame_to_mat(const rs2::frame& f)
         return r;
     }
 
-    throw std::exception("Frame format is not supported yet!");
+    throw std::runtime_error("Frame format is not supported yet!");
 }
 
 
