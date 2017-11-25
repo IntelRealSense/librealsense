@@ -14,6 +14,8 @@
   * `sudo apt-get install python python-dev` or `sudo apt-get install python3 python3-dev`
   * **Note:** The project will only use Python2 if it can't use Python3
 3. run the toplevel cmake command with the following additional flag: `-DBUILD_PYTHON_BINDINGS=bool:true`
+4. update your PYTHONPATH environment variable to add the path to the pyrealsense library
+  * `export PYTHONPATH=$PYTHONPATH:/usr/local/lib`
 
 **Note**: To force compilation with a specific version on a system with both Python 2 and Python 3 installed, add the following flag to CMake command:
 `-DPYTHON_EXECUTABLE=[full path to the exact python executable]`
@@ -73,4 +75,3 @@ depth = frames.get_depth_frame()
 depth_data = depth.as_frame().get_data()
 np_image = np.asanyarray(depth_data)
 ```
-
