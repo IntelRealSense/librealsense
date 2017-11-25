@@ -6,6 +6,35 @@
 
 const glfw = require('node-glfw-3');
 const rs2 = require('../index.js');
+const now = require('performance-now');
+
+class FPSCounter {
+  // fps is reported to console for each interval frames
+  constructor(interval = 10) {
+    this.cnt = 0;
+    this.interval = interval;
+    this.timestamps = [];
+  }
+
+  count() {
+    this.timestamps[this.cnt] = now();
+    this.cnt++;
+    if (this.cnt === this.interval) {
+      this._report();
+      this.reset();
+    }
+  }
+
+  reset() {
+    this.cnt = 0;
+  }
+
+  _report() {
+    let duration = this.timestamps[this.cnt - 1] - this.timestamps[0];
+    let fps = Math.round((this.cnt - 1) / (duration / 1000));
+    console.log('FPS: ', fps);
+  }
+}
 
 /* eslint-disable new-cap */
 class GLFWWindow {
@@ -21,6 +50,14 @@ class GLFWWindow {
 
     // Enable vertical sync (on cards that support it)
     glfw.SwapInterval(1); // 0 for vsync off
+    this.enableFps = false;
+    this.fpsCounter = new FPSCounter();
+  }
+
+  // Call this method to show or not to show fps to console
+  showFPS(showOrNot) {
+    this.enableFps = showOrNot;
+    this.fpsCounter.reset();
   }
 
   get width() {
@@ -56,6 +93,9 @@ class GLFWWindow {
     glfw.PollEvents();
     glfw.PushMatrix();
     glfw.Ortho(0, this.width_, this.height_, 0, -1, +1);
+    if (this.enableFps) {
+      this.fpsCounter.count();
+    }
   }
 
   destroy() {
