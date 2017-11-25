@@ -197,7 +197,9 @@ enum uvc_req_code {
   UVC_GET_RES = 0x84,
   UVC_GET_LEN = 0x85,
   UVC_GET_INFO = 0x86,
-  UVC_GET_DEF = 0x87
+  UVC_GET_DEF = 0x87,
+  UVC_REQ_TYPE_GET = 0xa1,
+  UVC_REQ_TYPE_SET = 0x21
 };
 
 enum uvc_device_power_mode {
