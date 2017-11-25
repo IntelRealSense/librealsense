@@ -10,12 +10,15 @@
 #include "../../../src/concurrency.h" // We are borrowing from librealsense concurrency infrastructure for this sample
 #include <algorithm>
 
+// Helper class to keep track of measured data
+// and generate basic statistics
 template<class T>
 class measurement
 {
 public:
     measurement(int cap = 10) : _capacity(cap), _sum() {}
 
+    // Media over rolling window
     T median() const
     {
         std::lock_guard<std::mutex> lock(_m);
@@ -27,6 +30,7 @@ public:
         return copy[copy.size() / 2];
     }
 
+    // Average over all samples
     T avg() const
     {
         std::lock_guard<std::mutex> lock(_m);
@@ -34,12 +38,14 @@ public:
         return _sum;
     }
 
+    // Total count of measurements
     int total() const 
     { 
         std::lock_guard<std::mutex> lock(_m);
         return _total; 
     }
 
+    // Add new measurement
     void add(T val)
     {
         std::lock_guard<std::mutex> lock(_m);
@@ -60,6 +66,8 @@ private:
     int _total = 0;
 };
 
+// Helper class to encode / decode numbers into
+// binary sequences, with 2-bit checksum
 class bit_packer
 {
 public:
@@ -73,6 +81,7 @@ public:
         std::fill(_bits.begin(), _bits.end(), false);
     }
 
+    // Try to reconstruct the number from bits inside the class
     bool try_unpack(int* number)
     {
         // Calculate and verify Checksum
@@ -92,6 +101,7 @@ public:
         else return false;
     }
 
+    // Try to store the number as bits into the class
     bool try_pack(int number)
     {
         if (number < 1 << (_digits - 2))
@@ -118,6 +128,7 @@ public:
         else return false;
     }
 
+    // Access bits array
     std::vector<bool>& get() { return _bits; }
 
 private:
@@ -125,6 +136,7 @@ private:
     int _digits;
 };
 
+// Main class in charge of detecting latency measurements
 class detector
 {
 public:
@@ -168,6 +180,7 @@ public:
         _t.join();
     }
 
+    // Add new frame from the camera
     void submit_frame(rs2::frame f)
     {
         record frame_for_processing;
@@ -188,6 +201,9 @@ public:
         _queue.enqueue(std::move(frame_for_processing));
     }
 
+    // Get next value to transmit
+    // This will either be the same as the last time
+    // Or a new value when needed
     int get_next_value()
     {
         // Capture clock for next cycle
@@ -203,6 +219,7 @@ public:
         return _next_value;
     }
 
+    // Copy preview image stored inside into a matrix
     void copy_preview_to(cv::Mat& display)
     {
         std::lock_guard<std::mutex> lock(_preview_mutex);
@@ -239,6 +256,7 @@ private:
         detector* _owner;
     };
 
+    // Render textual instructions
     void update_instructions()
     {
         using namespace cv;
@@ -270,6 +288,7 @@ private:
             0.8, Scalar(255, 255, 255), 2, LINE_AA);
     }
 
+    // Detector main loop
     void detect() 
     {
         using namespace cv;
@@ -280,6 +299,8 @@ private:
             record r;
             if (_queue.try_dequeue(&r))
             {
+                // Make sure we request new number,
+                // UNLESS we decide to keep waiting
                 detector_lock flush_queue_after(this);
 
                 auto color_mat = frame_to_mat(r.f);
@@ -287,19 +308,15 @@ private:
                 if (color_mat.channels() > 1)
                     cvtColor(color_mat, color_mat, COLOR_BGR2GRAY);
                 medianBlur(color_mat, color_mat, 5);
-                //adaptiveThreshold(color_mat, color_mat, 255, CV_ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY, 11, 12);
 
                 std::vector<Vec3f> circles;
                 cv::Rect roi(Point(0, 0), Size(color_mat.size().width, color_mat.size().height / 4));
-                HoughCircles(color_mat(roi), circles, HOUGH_GRADIENT, 1,
-                    10,  // change this value to detect circles with different distances to each other
-                    100, 30, 1, 100 // change the last two parameters
-                                    // (min_radius & max_radius) to detect larger circles
-                );
+                HoughCircles(color_mat(roi), circles, HOUGH_GRADIENT, 1, 10, 100, 30, 1, 100);
                 for (size_t i = 0; i < circles.size(); i++)
                 {
                     Vec3i c = circles[i];
-                    rectangle(color_mat, Rect(c[0] - c[2] - 5, c[1] - c[2] - 5, 2 * c[2] + 10, 2 * c[2] + 10), Scalar(0, 100, 100), -1, LINE_AA);
+                    Rect r(c[0] - c[2] - 5, c[1] - c[2] - 5, 2 * c[2] + 10, 2 * c[2] + 10);
+                    rectangle(color_mat, r, Scalar(0, 100, 100), -1, LINE_AA);
                 }
 
                 cv::resize(color_mat, color_mat, _preview_size);
