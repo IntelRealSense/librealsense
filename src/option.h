@@ -83,7 +83,7 @@ namespace librealsense
 
         float query() const override
         {
-            return *_value;
+            return static_cast<float>(*_value);
         }
 
         option_range get_range() const override {
