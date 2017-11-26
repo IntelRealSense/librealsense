@@ -27,9 +27,7 @@ namespace librealsense
         rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source);
 
     private:
-        void    update_internals(const rs2::frame& f);
-
-        std::mutex              _mutex;
+        void    update_output_profile(const rs2::frame& f);
 
         rs2_filter_kernel       _decimation_filter;
         uint8_t                 _decimation_factor;

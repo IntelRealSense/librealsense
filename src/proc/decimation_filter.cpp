@@ -3,6 +3,7 @@
 #include "../include/librealsense2/rs.hpp"
 
 #include "option.h"
+#include "context.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation_filter.h"
 
@@ -12,9 +13,9 @@ namespace librealsense
 {
     decimation_filter::decimation_filter():
         _decimation_filter(rs2_median),
-        _decimation_factor(5),
+        _decimation_factor(4),
         _kernel_size(_decimation_factor*_decimation_factor),
-        _width(0), _height(0), _enable_filter(false)
+        _width(0), _height(0)
     {
         auto decimation_control = std::make_shared<ptr_option<uint8_t>>(1, 5, 1, 4, &_decimation_factor, "Decimation magnitude");
         decimation_control->on_set([this](float val)
@@ -28,6 +29,7 @@ namespace librealsense
         // TODO - a candidate to base class refactoring
         auto enable_control = std::make_shared<ptr_option<bool>>(false,true,true,true, &_enable_filter, "Apply decimation");
         register_option(RS2_OPTION_FILTER_ENABLED, enable_control);
+        _enable_filter = true;
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
@@ -41,7 +43,7 @@ namespace librealsense
 
                 if (depth) // Processing required
                 {
-                    update_internals(depth);
+                    update_output_profile(depth);
                     if (tgt = prepare_target_frame(depth, source))
                     {
                         auto src = depth.as<rs2::video_frame>();
@@ -61,26 +63,35 @@ namespace librealsense
         processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
     }
 
-    void  decimation_filter::update_internals(const rs2::frame& f)
+    void  decimation_filter::update_output_profile(const rs2::frame& f)
     {
-        std::lock_guard<std::mutex> lock(_mutex);
-        if (!_source_stream_profile)
+        if (f.get_profile() != _source_stream_profile )
         {
             _source_stream_profile = rs2::stream_profile(f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16));
             _target_stream_profile = _source_stream_profile;
         }
-        auto vf = f.as<rs2::video_frame>();
-        auto vp = _target_stream_profile.as<rs2::video_stream_profile>();
 
-        if ((vp.width()%_decimation_factor) || (vp.height() % _decimation_factor))
+        // Rectify target profile
+        auto vp = _target_stream_profile.as<rs2::video_stream_profile>();
+        if ((vp.width() % _decimation_factor) || (vp.height() % _decimation_factor))
             throw invalid_value_exception(to_string() << "Unsupported decimation factor: " << _decimation_factor
                 << " for frame size [" << vp.width() << "," << vp.height() << "]");
 
-        //TODO re-generate video_stream_profile with correct intrinsic data
+        auto vspi = dynamic_cast<video_stream_profile_interface*>(_target_stream_profile.get()->profile);
+        rs2_intrinsics tgt_intrin = vspi->get_intrinsics();
+        tgt_intrin.width /= _decimation_factor;
+        tgt_intrin.height /= _decimation_factor;
+        tgt_intrin.fx /= _decimation_factor;
+        tgt_intrin.fy /= _decimation_factor;
+        tgt_intrin.ppx /= _decimation_factor;
+        tgt_intrin.ppy /= _decimation_factor;
+        vspi->set_intrinsics([tgt_intrin]() { return tgt_intrin; });
+
     }
 
     rs2::frame decimation_filter::prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source)
     {
+        auto fi = (frame_interface*)f.get();
         auto vf = f.as<rs2::video_frame>();
         return source.allocate_video_frame(_target_stream_profile, f,
             vf.get_bytes_per_pixel(),

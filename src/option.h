@@ -73,7 +73,7 @@ namespace librealsense
         }
 
         void set(float value) override
-        { 
+        {
             T val = static_cast<T>(value);
             if ((_max < val) || (_min > val))
                 throw invalid_value_exception(to_string() << "Given value " << value << "is outside valid range!");
