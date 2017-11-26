@@ -20,14 +20,14 @@
 #include "proc/align.h"
 #include "proc/colorizer.h"
 #include "proc/pointcloud.h"
-#include "proc/syncer_processing_block.h"
-#include "proc/decimation_filter.h"
+#include "proc/syncer-processing-block.h"
+#include "proc/decimation-filter.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"
 #include "../include/librealsense2/h/rs_types.h"
 #include "pipeline.h"
 #include "environment.h"
-#include "proc/temporal_filter.h"
+#include "proc/temporal-filter.h"
 
 ////////////////////////
 // API implementation //

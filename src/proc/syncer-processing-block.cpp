@@ -5,7 +5,7 @@
 #include "source.h"
 #include "sync.h"
 #include "proc/synthetic-stream.h"
-#include "proc/syncer_processing_block.h"
+#include "proc/syncer-processing-block.h"
 
 
 namespace librealsense

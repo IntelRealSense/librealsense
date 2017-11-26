@@ -3,7 +3,7 @@
 
 #include <algorithm>
 #include "proc/synthetic-stream.h"
-#include "proc/syncer_processing_block.h"
+#include "proc/syncer-processing-block.h"
 #include "pipeline.h"
 #include "stream.h"
 #include "media/record/record_device.h"

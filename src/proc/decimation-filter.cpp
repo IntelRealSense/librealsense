@@ -5,7 +5,7 @@
 #include "option.h"
 #include "context.h"
 #include "proc/synthetic-stream.h"
-#include "proc/decimation_filter.h"
+#include "proc/decimation-filter.h"
 
 void downsample_depth(const uint16_t * frame_data_in, uint16_t * frame_data_out, size_t width_in, size_t height_in, size_t scale);
 

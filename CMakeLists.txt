@@ -93,9 +93,9 @@ set(REALSENSE_CPP
     src/proc/colorizer.cpp
     src/proc/pointcloud.cpp
     src/proc/synthetic-stream.cpp
-    src/proc/syncer_processing_block.cpp
-    src/proc/decimation_filter.cpp
-    src/proc/temporal_filter.cpp
+    src/proc/syncer-processing-block.cpp
+    src/proc/decimation-filter.cpp
+    src/proc/temporal-filter.cpp
     src/source.cpp
     src/ds5/ds5-options.cpp
     src/ds5/ds5-timestamp.cpp
@@ -187,9 +187,9 @@ set(REALSENSE_HPP
     src/proc/colorizer.h
     src/proc/pointcloud.h
     src/proc/synthetic-stream.h
-    src/proc/decimation_filter.h
-    src/proc/temporal_filter.h
-    src/proc/syncer_processing_block.h
+    src/proc/decimation-filter.h
+    src/proc/temporal-filter.h
+    src/proc/syncer-processing-block.h
     src/algo.h
     src/option.h
     src/metadata.h
@@ -410,9 +410,9 @@ if(WIN32)
         src/proc/synthetic-stream.cpp
         src/proc/align.cpp
         src/proc/pointcloud.cpp
-        src/proc/decimation_filter.cpp
-        src/proc/temporal_filter.cpp
-        src/proc/syncer_processing_block.cpp
+        src/proc/decimation-filter.cpp
+        src/proc/temporal-filter.cpp
+        src/proc/syncer-processing-block.cpp
         )
 
     source_group("Header Files\\Processing Blocks" FILES
@@ -420,9 +420,9 @@ if(WIN32)
         src/proc/align.h
         src/proc/pointcloud.h
         src/proc/synthetic-stream.h
-        src/proc/decimation_filter.h
-        src/proc/temporal_filter.h
-        src/proc/syncer_processing_block.h
+        src/proc/decimation-filter.h
+        src/proc/temporal-filter.h
+        src/proc/syncer-processing-block.h
         )
 
     foreach(flag_var

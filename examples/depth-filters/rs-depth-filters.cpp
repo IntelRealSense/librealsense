@@ -4,7 +4,7 @@
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include "example.hpp"          // Include short list of convenience functions for rendering
 #include "proc/synthetic-stream.h"
-#include "proc/decimation_filter.h"
+#include "proc/decimation-filter.h"
 
 // Capture Example demonstrates how to
 // capture depth and color video streams and render them to the screen
@@ -34,12 +34,9 @@ int main(int argc, char * argv[]) try
         rs2::frame depth_original = color_map(data.get_depth_frame()); // Find and colorize the original depth data
         rs2::frame depth_decimated = color_map(decimated.get_depth_frame()); // Find and colorize the filtered depth data
 
-
-        // Render depth on to the first half of the screen and color on to the second
+        // Render original depth on to the first half of the screen and the filtered data on the second
         depth_image.render(     depth_original, { 0,               0, app.width() / 2, app.height() });
         filtered_image.render(  depth_decimated, { app.width() / 2, 0, app.width() / 2, app.height() });
-        //filtered_image.render(  depth_decimated,{ app.width() / 2, 0, app.width() / 2, app.height() });
-        //color_image.render(color, { app.width() / 2, 0, app.width() / 2, app.height() });
     }
 
     return EXIT_SUCCESS;

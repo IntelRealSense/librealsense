@@ -6,7 +6,7 @@
 #include "source.h"
 #include "proc/synthetic-stream.h"
 #include "sync.h"
-#include "proc/temporal_filter.h"
+#include "proc/temporal-filter.h"
 #include "../include/librealsense2/rs.hpp"
 #include "option.h"
 
