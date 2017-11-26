@@ -5,6 +5,7 @@
 
 #include "../include/librealsense2/hpp/rs_frame.hpp"
 #include "../include/librealsense2/hpp/rs_processing.hpp"
+//#include ""
 
 namespace librealsense
 {
@@ -17,22 +18,17 @@ namespace librealsense
         rs2_mean,
     };
 
-    class decimation_filter : public processing_block
+    class spatial_filter : public processing_block
     {
     public:
-        decimation_filter();
+        spatial_filter();
 
     protected:
-        rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source);
-
-        void decimate_depth(const uint16_t * frame_data_in, uint16_t * frame_data_out,
-            size_t width_in, size_t height_in, size_t scale);
 
     private:
-        void    update_output_profile(const rs2::frame& f);
 
-        rs2_filter_kernel       _decimation_filter;
-        uint8_t                 _decimation_factor;
+        rs2_filter_kernel       _filter_type;
+        uint8_t                 _spatial_param;
         uint8_t                 _kernel_size;
         int                     _width, _height;
         rs2::stream_profile     _source_stream_profile;
