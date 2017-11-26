@@ -17,7 +17,7 @@ elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
-find_package( PCL 1.8 REQUIRED )
+find_package( PCL REQUIRED )
  
 if (PCL_FOUND)
   include_directories(${PCL_INCLUDE_DIRS})

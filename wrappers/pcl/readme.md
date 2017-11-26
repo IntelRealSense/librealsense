@@ -50,4 +50,15 @@ set PATH=%PATH%;%PCL_ROOT%\bin;%OPENNI2_REDIST64%
 
 ### Linux
 
-TODO
+1. Install PCL from [official PPA](http://pointclouds.org/downloads/linux.html):
+```shell
+sudo add-apt-repository ppa:v-launchpad-jochen-sprickerhof-de/pcl
+sudo apt-get update
+sudo apt-get install libpcl-all
+```
+2. Follow [the instructions](https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md) to build `librealsense` from source
+3. Add `-DBUILD_PCL_EXAMPLES=true` to your `cmake` command
+4. Run `./wrappers/pcl/pcl/rs-pcl` or just `rs-pcl` if you have previously executed `sudo make install`
+
+> The demo seem to **Seg-Fault** in Debug configuration. This is very troubling, but it seem to be somewhat of a [known issue with PCL](https://stackoverflow.com/questions/26346690/debug-seg-fault-in-boostmathlanczos-with-libpcl-surface). As a work-around add `-DCMAKE_BUILD_TYPE=RelWithDebInfo` to your `cmake` command
+
