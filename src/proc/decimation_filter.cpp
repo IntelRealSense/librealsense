@@ -12,14 +12,14 @@ namespace librealsense
 {
     decimation_filter::decimation_filter():
         _decimation_filter(rs2_median),
-        _decimation_factor(4),
+        _decimation_factor(5),
         _kernel_size(_decimation_factor*_decimation_factor),
         _width(0), _height(0), _enable_filter(true)
     {
-        auto decimation_control = std::make_shared<ptr_option<uint8_t>>(1, 4, 1, 4, &_decimation_factor, "Decimation magnitude");
+        auto decimation_control = std::make_shared<ptr_option<uint8_t>>(1, 5, 1, 4, &_decimation_factor, "Decimation magnitude");
         decimation_control->on_set([this](float val)
         {
-            _kernel_size = 0x1 << uint8_t(val);
+            _kernel_size = 0x1 << uint8_t(val-1);
             _kernel_size *= _kernel_size;
         });
         register_option(RS2_OPTION_FILTER_MAGNITUDE, decimation_control);
@@ -104,6 +104,7 @@ void downsample_depth(const uint16_t * frame_data_in, uint16_t * frame_data_out,
 
     // Use median filtering
     std::vector<uint16_t> working_kernel(kernel_size);
+    auto wk_begin = working_kernel.data();
     std::vector<uint16_t*> pixel_raws(scale);
     uint16_t* block_start = const_cast<uint16_t*>(frame_data_in);
 
@@ -124,7 +125,8 @@ void downsample_depth(const uint16_t * frame_data_in, uint16_t * frame_data_out,
                     working_kernel[n*scale+m] = *(pixel_raws[n]+ chunk_offset +m);
             }
 
-            std::sort(working_kernel.begin(),working_kernel.end());
+            std::nth_element(wk_begin, wk_begin + (kernel_size / 2), wk_begin + kernel_size);
+            //std::sort(working_kernel.begin(),working_kernel.end());
             *frame_data_out++ = working_kernel[kernel_size / 2];
 
             chunk_offset += scale;
