@@ -14,7 +14,7 @@ namespace librealsense
 {
     temporal_filter::temporal_filter()
     {
-        _values.resize(_num_of_frames);
+        //_values.resize(_num_of_frames);
         auto enable_control = std::make_shared<ptr_option<bool>>(false,true,true,true, &_enable_filter, "Apply temporal");
         register_option(RS2_OPTION_FILTER_ENABLED, enable_control);
 
@@ -118,6 +118,7 @@ namespace librealsense
             auto data = static_cast<uint16_t*>(const_cast<void*>(video.get_data()));
            // memcpy(data, _frames[0].get_data(), video.get_width() * video.get_height()*2);
 
+            #pragma omp parallel for schedule(dynamic) //Using OpenMP to try to parallelise the loop
             for(auto i = 0; i< video.get_width() * video.get_height(); i++)
             {
 

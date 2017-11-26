@@ -313,7 +313,7 @@ namespace rs2
     {
     public:
         stream_model();
-        void upload_frame(frame&& f);
+        texture_buffer* upload_frame(frame&& f);
         bool is_stream_visible();
         void update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message);
         void show_frame(const rect& stream_rect, const mouse_info& g, std::string& error_message);
@@ -487,12 +487,13 @@ namespace rs2
                 proccess(std::move(f),source);
             }),
             viewer(viewer),
-            keep_calculating_pointcloud(true),
+            keep_calculating(true),
             depth_stream_active(false),
-            resulting_3d_models(1),
+            resulting_queue(1),
+            frames_queue(10),
             t([this]() {render_loop(); })
         {
-            processing_block.start(resulting_3d_models);
+            processing_block.start(resulting_queue);
         }
 
         ~post_processing_filters() { stop(); }
@@ -501,9 +502,9 @@ namespace rs2
 
         void stop()
         {
-            if (keep_calculating_pointcloud)
+            if (keep_calculating)
             {
-                keep_calculating_pointcloud = false;
+                keep_calculating = false;
                 t.join();
             }
         }
@@ -511,7 +512,7 @@ namespace rs2
         rs2::frameset get_points()
         {
             frame f;
-            if (resulting_3d_models.poll_for_frame(&f))
+            if (resulting_queue.poll_for_frame(&f))
             {
                 rs2::frameset frameset(f);
                 model = frameset;
@@ -523,27 +524,27 @@ namespace rs2
         {
             rs2::frame f{};
             model = f;
-            while (resulting_3d_models.poll_for_frame(&f));
+            while (resulting_queue.poll_for_frame(&f));
         }
 
         std::atomic<bool> depth_stream_active;
 
         rs2::frame_queue frames_queue;
+        frame_queue resulting_queue;
 
     private:
         viewer_model& viewer;
 
         void render_loop();
         void proccess(rs2::frame f, const rs2::frame_source& source);
+        std::vector<rs2::frame> handle_frame(rs2::frame f);
+
         rs2::frame apply_filters(rs2::frame f);
         rs2::frame last_tex_frame;
         rs2::processing_block processing_block;
         pointcloud pc;
         rs2::frameset model;
-        std::atomic<bool> keep_calculating_pointcloud;
-
-
-        frame_queue resulting_3d_models;
+        std::atomic<bool> keep_calculating;
 
         std::thread t;
 
@@ -578,7 +579,7 @@ namespace rs2
             ppf.stop();
             streams.clear();
         }
-        void upload_frame(frame&& f);
+        texture_buffer* upload_frame(frame&& f);
 
         std::map<int, rect> calc_layout(const rect& r);
 
@@ -599,7 +600,7 @@ namespace rs2
 
         void show_top_bar(ux_window& window, const rect& viewer_rect);
 
-        void render_3d_view(const rect& view_rect, float scale_factor);
+        void render_3d_view(const rect& view_rect, float scale_factor, texture_buffer* texture, rs2::points points);
 
         void render_2d_view(const rect& view_rect, ux_window& win, int output_height,
             ImFont *font1, ImFont *font2, size_t dev_model_num, const mouse_info &mouse, std::string& error_message);
@@ -619,7 +620,7 @@ namespace rs2
         bool paused = false;
 
 
-        void draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
+        void draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message, texture_buffer* texture, rs2::points  f = rs2::points());
 
         bool allow_3d_source_change = true;
         bool allow_stream_close = true;
@@ -658,7 +659,7 @@ namespace rs2
         GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
 
         rs2::points last_points;
-        rs2::frame last_texture;
+        texture_buffer* last_texture;
         texture_buffer texture;
 
     };

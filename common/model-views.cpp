@@ -628,9 +628,9 @@ namespace rs2
     }
 
     subdevice_model::subdevice_model(device& dev,
-                                     std::shared_ptr<sensor> s, std::string& error_message)
+        std::shared_ptr<sensor> s, std::string& error_message)
         : s(s), dev(dev), ui(), last_valid_ui(),
-          streaming(false), _pause(false),
+        streaming(false), _pause(false),
         depth_colorizer(std::make_shared<rs2::colorizer>()),
         decimation_filter(std::make_shared<rs2::depth_filter>()),
         temporal_filter(std::make_shared<rs2::temporal_filter>())
@@ -1256,9 +1256,9 @@ namespace rs2
         _stream_not_alive(std::chrono::milliseconds(1500))
     {}
 
-    void stream_model::upload_frame(frame&& f)
+    texture_buffer* stream_model::upload_frame(frame&& f)
     {
-        if (dev && dev->is_paused()) return;
+        if (dev && dev->is_paused()) return false;
 
         last_frame = std::chrono::high_resolution_clock::now();
 
@@ -1284,6 +1284,7 @@ namespace rs2
         }
 
         texture->upload(f);
+        return texture.get();
     }
 
     void outline_rect(const rect& r)
@@ -1765,7 +1766,7 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if(support_non_syncronized_mode)
+        if (support_non_syncronized_mode)
         {
             if (synchronization_enable)
             {
@@ -1845,7 +1846,7 @@ namespace rs2
             if (!kvp.second.is_stream_visible() &&
                 (!kvp.second.dev || (!kvp.second.dev->is_paused() && !kvp.second.dev->streaming)))
             {
-                if(kvp.first == selected_depth_source_uid)
+                if (kvp.first == selected_depth_source_uid)
                 {
                     ppf.depth_stream_active = false;
                 }
@@ -2645,80 +2646,89 @@ namespace rs2
 
     rs2::frame post_processing_filters::apply_filters(rs2::frame f)
     {
-        for(auto&& s: viewer.streams)
-        {
-            for(auto&& p: s.second.dev->get_selected_profiles())
-            {
-                if(f.get_profile() == p)
-                {
-                    auto dec_filter = s.second.dev->decimation_filter;
-                    auto temp_filter = s.second.dev->temporal_filter;
 
-                    return temp_filter->proccess(dec_filter->proccess(f));
+        if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+        {
+            for (auto&& s : viewer.streams)
+            {
+                for (auto&& p : s.second.dev->profiles)
+                {
+
+                    if (p.stream_type() == RS2_STREAM_DEPTH)
+                    {
+                        auto dec_filter = s.second.dev->decimation_filter;
+                        auto temp_filter = s.second.dev->temporal_filter;
+
+                        return temp_filter->proccess(dec_filter->proccess(f));
+                    }
+
                 }
             }
         }
+       
+        return f;
+    }
 
-        // TODO Avishag
-        throw std::runtime_error(to_string() << "Post-processing blocks invoked, but no filters applied");
+    std::vector<rs2::frame> post_processing_filters::handle_frame(rs2::frame f)
+    {
+        std::vector<rs2::frame> res;
+        auto filtered = apply_filters(f);
+        res.push_back(filtered);
+
+        if (filtered.get_profile().unique_id() == viewer.selected_depth_source_uid)
+        {
+            res.push_back(pc.calculate(filtered));
+        }
+
+        if (filtered.get_profile().unique_id() == viewer.selected_tex_source_uid)
+        {
+            update_texture(filtered);
+        }
+
+        return res;
     }
 
     void post_processing_filters::proccess(rs2::frame f, const rs2::frame_source& source)
     {
         points p;
         std::vector<frame> results;
-        rs2::frame res;
+        frame res;
 
         if (auto composite = f.as<rs2::frameset>())
         {
-            for(auto&& f: composite)
+            for (auto&& f : composite)
             {
-                if(f.get_profile().unique_id() == viewer.selected_depth_source_uid)
-                {
-                    p = pc.calculate(f);
-                    results.push_back(std::move(p));
-                }
-                else
-                {
-                    if(f.get_profile().unique_id() == viewer.selected_tex_source_uid)
-                    {
-                        update_texture(f);
-                    }
-                    results.push_back(std::move(f));
-                }
-
+                auto res = handle_frame(f);
+                results.insert(results.end(), res.begin(), res.end());
             }
-            res = source.allocate_composite_frame(results);
+
         }
         else
         {
-            throw std::runtime_error(to_string() << "Post-processing blocks requires composite inputs only");
+             auto res = handle_frame(f);
+             results.insert(results.end(), res.begin(), res.end());
         }
 
+        res = source.allocate_composite_frame(results);
         source.frame_ready(std::move(res));
-
     }
 
 
     void post_processing_filters::render_loop()
     {
-        while (keep_calculating_pointcloud)
+        while (keep_calculating)
         {
-            if(depth_stream_active)
+
+            try
             {
-                try
+                frame frames;
+                if (frames_queue.poll_for_frame(&frames))
                 {
-                    if(viewer.synchronization_enable)
-                    {
-                        frame frames;
-                        if (frames_queue.poll_for_frame(&frames))
-                        {
-                            processing_block.invoke(frames);
-                        }
-                    }
+                    processing_block.invoke(frames);
                 }
-                catch (...) {}
             }
+            catch (...) {}
+
 
             // There is no practical reason to re-calculate the 3D model
             // at higher frequency then 100 FPS
@@ -2899,7 +2909,7 @@ namespace rs2
         float alpha = icon_visible ? 1.f : 0.2f;
 
         glViewport(0, 0,
-                   win.framebuf_width(), win.framebuf_height());
+            win.framebuf_width(), win.framebuf_height());
         glLoadIdentity();
         glOrtho(0, win.width(), win.height(), 0, -1, +1);
 
@@ -2960,8 +2970,13 @@ namespace rs2
         }
     }
 
-    void viewer_model::render_3d_view(const rect& viewer_rect, float scale_factor)
+    void viewer_model::render_3d_view(const rect& viewer_rect, float scale_factor, texture_buffer* texture, rs2::points points)
     {
+        if(points)
+            last_points = points;
+        if(texture)
+            last_texture = texture;
+
         glViewport(viewer_rect.x * scale_factor, 0,
             viewer_rect.w * scale_factor, viewer_rect.h * scale_factor);
 
@@ -3025,93 +3040,78 @@ namespace rs2
         glColor4f(1.f, 1.f, 1.f, 1.f);
 
 
-        if(!paused)
-        {
-            auto res = ppf.get_points();
-
-            for (auto&& f : res)
-            {
-                if (f.is<rs2::points>())
-                    last_points = f;
-                else
-                    last_texture = f;
-            }
-
-        }
         if (draw_frustrum && last_points)
         {
-                glLineWidth(1.f);
-                glBegin(GL_LINES);
+            glLineWidth(1.f);
+            glBegin(GL_LINES);
 
-                auto intrin = last_points.get_profile().as<video_stream_profile>().get_intrinsics();
+            auto intrin = last_points.get_profile().as<video_stream_profile>().get_intrinsics();
 
-                glColor4f(sensor_bg.x, sensor_bg.y, sensor_bg.z, 0.5f);
+            glColor4f(sensor_bg.x, sensor_bg.y, sensor_bg.z, 0.5f);
 
-                for (float d = 1; d < 6; d += 2)
-                {
-                    auto get_point = [&](float x, float y) -> float3
-                    {
-                        float point[3];
-                        float pixel[2]{ x, y };
-                        rs2_deproject_pixel_to_point(point, &intrin, pixel, d);
-                        glVertex3f(0.f, 0.f, 0.f);
-                        glVertex3fv(point);
-                        return{ point[0], point[1], point[2] };
-                    };
-
-                    auto top_left = get_point(0, 0);
-                    auto top_right = get_point(intrin.width, 0);
-                    auto bottom_right = get_point(intrin.width, intrin.height);
-                    auto bottom_left = get_point(0, intrin.height);
-
-                    glVertex3fv(&top_left.x); glVertex3fv(&top_right.x);
-                    glVertex3fv(&top_right.x); glVertex3fv(&bottom_right.x);
-                    glVertex3fv(&bottom_right.x); glVertex3fv(&bottom_left.x);
-                    glVertex3fv(&bottom_left.x); glVertex3fv(&top_left.x);
-                }
-
-                glEnd();
-
-                glColor4f(1.f, 1.f, 1.f, 1.f);
-            }
-
-            if ( last_points && last_texture)
+            for (float d = 1; d < 6; d += 2)
             {
-                texture.upload(last_texture);
-
-                glPointSize((float)viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width());
-
-                if (selected_tex_source_uid >= 0)
+                auto get_point = [&](float x, float y) -> float3
                 {
-                    auto tex = texture.get_gl_handle();
-                    glBindTexture(GL_TEXTURE_2D, tex);
-                    glEnable(GL_TEXTURE_2D);
+                    float point[3];
+                    float pixel[2]{ x, y };
+                    rs2_deproject_pixel_to_point(point, &intrin, pixel, d);
+                    glVertex3f(0.f, 0.f, 0.f);
+                    glVertex3fv(point);
+                    return{ point[0], point[1], point[2] };
+                };
 
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
-                }
+                auto top_left = get_point(0, 0);
+                auto top_right = get_point(intrin.width, 0);
+                auto bottom_right = get_point(intrin.width, intrin.height);
+                auto bottom_left = get_point(0, intrin.height);
 
-                //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
-
-
-                    glBegin(GL_POINTS);
-
-                    auto vertices = last_points.get_vertices();
-                    auto tex_coords = last_points.get_texture_coordinates();
-
-                    for (int i = 0; i < last_points.size(); i++)
-                    {
-                        if (vertices[i].z)
-                        {
-                            glVertex3fv(vertices[i]);
-                            glTexCoord2fv(tex_coords[i]);
-                        }
-
-                    }
-                    glEnd();
-
+                glVertex3fv(&top_left.x); glVertex3fv(&top_right.x);
+                glVertex3fv(&top_right.x); glVertex3fv(&bottom_right.x);
+                glVertex3fv(&bottom_right.x); glVertex3fv(&bottom_left.x);
+                glVertex3fv(&bottom_left.x); glVertex3fv(&top_left.x);
             }
 
+            glEnd();
+
+            glColor4f(1.f, 1.f, 1.f, 1.f);
+        }
+
+        if (last_points)
+        {
+            glPointSize((float)viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width());
+
+            if (selected_tex_source_uid >= 0)
+            {
+                auto tex = texture->get_gl_handle();
+                glBindTexture(GL_TEXTURE_2D, tex);
+                glEnable(GL_TEXTURE_2D);
+
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
+            }
+
+            //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+
+
+            glBegin(GL_POINTS);
+
+            auto vertices = last_points.get_vertices();
+            auto tex_coords = last_points.get_texture_coordinates();
+
+            for (int i = 0; i < last_points.size(); i++)
+            {
+                if (vertices[i].z)
+                {
+                    glVertex3fv(vertices[i]);
+                    glTexCoord2fv(tex_coords[i]);
+                }
+
+            }
+            glEnd();
+
+
+        }
 
         glDisable(GL_DEPTH_TEST);
 
@@ -3227,13 +3227,13 @@ namespace rs2
         mouse.prev_cursor = mouse.cursor;
     }
 
-    void viewer_model::upload_frame(frame&& f)
+    texture_buffer* viewer_model::upload_frame(frame&& f)
     {
         if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
             ppf.depth_stream_active = true;
 
         auto index = f.get_profile().unique_id();
-        streams[index].upload_frame(std::move(f));
+        return streams[index].upload_frame(std::move(f));
     }
 
     void device_model::start_recording(const std::string& path, std::string& error_message)
@@ -4084,7 +4084,7 @@ namespace rs2
         ImGui::PopFont();
     }
 
-    void viewer_model::draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message)
+    void viewer_model::draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message, texture_buffer* texture, points points)
     {
         if (!is_3d_view)
         {
@@ -4102,7 +4102,7 @@ namespace rs2
             update_3d_camera(viewer_rect, window.get_mouse());
 
             auto ratio = (float)window.width() / window.framebuf_width();
-            render_3d_view(viewer_rect, window.get_scale_factor() / ratio);
+            render_3d_view(viewer_rect, window.get_scale_factor() / ratio, texture, points);
         }
 
         if (ImGui::IsKeyPressed(' '))
