@@ -1,7 +1,7 @@
 #  minimum required cmake version: 3.1.0
 cmake_minimum_required(VERSION 3.1.0)
 
-project(RealSenseGrabCutsExample)
+project(RealSenseDNNExample)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -23,7 +23,7 @@ set_target_properties (rs-dnn PROPERTIES
 )
 
 set(PROTOTEXT_FILE "MobileNetSSD_deploy.prototxt")
-set(PROTOTEXT_URL "https://raw.githubusercontent.com/chuanqi305/MobileNet-SSD/master/${PROTOTEXT_FILE}")
+set(PROTOTEXT_URL "https://raw.githubusercontent.com/chuanqi305/MobileNet-SSD/master/MobileNetSSD_deploy.prototxt")
 set(PROTOTEXT_PATH "${CMAKE_CURRENT_BINARY_DIR}/${PROTOTEXT_FILE}")
 
 set(MODEL_FILE "MobileNetSSD_deploy.caffemodel")

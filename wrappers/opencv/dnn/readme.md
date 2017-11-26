@@ -10,7 +10,7 @@ The demo will load existing [Caffe model](https://github.com/chuanqi305/MobileNe
 
 ## Implementation Details
 
-Unline the other samples, this demo requires access to the exact depth values. We generate a matrix of floating point values (in meters) using the following helper function:
+Unlike the other samples, this demo requires access to the exact depth values. We generate a matrix of floating point values (in meters) using the following helper function:
 ```cpp
 auto depth_mat = depth_frame_to_meters(pipe, depth_frame);
 ```

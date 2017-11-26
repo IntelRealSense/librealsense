@@ -45,7 +45,7 @@ Uncomment one of the following lines to select a configuration:
 //cfg.enable_stream(RS2_STREAM_INFRARED, 640, 480, RS2_FORMAT_Y8);
 //cfg.enable_stream(RS2_STREAM_INFRARED, 1280, 720, RS2_FORMAT_Y8);
 ```
-You can add more then one stream to check how multiple streams are affecting each other. The demo will however just use the first frame out of every frame-set. 
+You can add more than one stream to check how multiple streams are affecting each other. The demo will however just use the first frame out of every frame-set. 
 
 
 This method will not work for the depth stream. 
