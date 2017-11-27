@@ -22,6 +22,7 @@
 #include "proc/pointcloud.h"
 #include "proc/syncer-processing-block.h"
 #include "proc/decimation-filter.h"
+#include "proc/spatial-filter.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"
 #include "../include/librealsense2/h/rs_types.h"
@@ -1630,15 +1631,13 @@ rs2_processing_block* rs2_create_colorizer(rs2_error** error) BEGIN_API_CALL
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 
-rs2_processing_block* rs2_create_depth_filter_block(rs2_error** error) BEGIN_API_CALL
+rs2_processing_block* rs2_create_decimation_filter_block(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::decimation_filter>();
 
     return new rs2_processing_block{ block };
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
-
-
 
 rs2_processing_block* rs2_create_temporal_filter_block(rs2_error** error) BEGIN_API_CALL
 {
@@ -1647,6 +1646,15 @@ rs2_processing_block* rs2_create_temporal_filter_block(rs2_error** error) BEGIN_
     return new rs2_processing_block{ block };
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+rs2_processing_block* rs2_create_spatial_filter_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::spatial_filter>();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
 
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {

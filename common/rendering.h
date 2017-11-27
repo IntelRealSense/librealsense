@@ -751,7 +751,8 @@ namespace rs2
 
     public:
         std::shared_ptr<temporal_filter> temporal;
-        std::shared_ptr<depth_filter> decimate;
+        std::shared_ptr<decimation_filter> decimate;
+        std::shared_ptr<spatial_filter> smooth;
         std::shared_ptr<colorizer> colorize;
 
         texture_buffer(const texture_buffer& other)
@@ -772,8 +773,9 @@ namespace rs2
 
         texture_buffer() : last_queue(), texture(),
             colorize(std::make_shared<colorizer>()),
-            decimate(std::make_shared<depth_filter>()),
-            temporal(std::make_shared<temporal_filter>()) {}
+            decimate(std::make_shared<decimation_filter>()),
+            temporal(std::make_shared<temporal_filter>()),
+            smooth(std::make_shared<spatial_filter>()) {}
 
         GLuint get_gl_handle() const { return texture; }
 

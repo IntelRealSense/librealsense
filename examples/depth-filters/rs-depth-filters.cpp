@@ -5,6 +5,7 @@
 #include "example.hpp"          // Include short list of convenience functions for rendering
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"
+#include "proc/spatial-filter.h"
 
 // Capture Example demonstrates how to
 // capture depth and color video streams and render them to the screen
@@ -17,7 +18,8 @@ int main(int argc, char * argv[]) try
 
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
-    rs2::depth_filter depth_filter;
+    rs2::decimation_filter depth_filter;
+    //rs2::spatial_filter depth_filter;
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
@@ -29,14 +31,14 @@ int main(int argc, char * argv[]) try
         rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
 
         // Apply filter
-        rs2::frameset decimated = depth_filter.proccess(data);
+        rs2::frameset post_processed = depth_filter.proccess(data);
 
         rs2::frame depth_original = color_map(data.get_depth_frame()); // Find and colorize the original depth data
-        rs2::frame depth_decimated = color_map(decimated.get_depth_frame()); // Find and colorize the filtered depth data
+        rs2::frame depth_processed = color_map(post_processed.get_depth_frame()); // Find and colorize the filtered depth data
 
         // Render original depth on to the first half of the screen and the filtered data on the second
         depth_image.render(     depth_original, { 0,               0, app.width() / 2, app.height() });
-        filtered_image.render(  depth_decimated, { app.width() / 2, 0, app.width() / 2, app.height() });
+        filtered_image.render( depth_processed, { app.width() / 2, 0, app.width() / 2, app.height() });
     }
 
     return EXIT_SUCCESS;

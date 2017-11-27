@@ -8,21 +8,39 @@
 #include "proc/decimation-filter.h"
 
 
-
 namespace librealsense
 {
+    const uint8_t decimation_min_val = 1;
+    const uint8_t decimation_max_val = 5;
+    const uint8_t decimation_default_val = 3;
+    const uint8_t decimation_step = 1;    // The filter suppors kernel sizes [2^1...2^5]
+
     decimation_filter::decimation_filter() :
         _decimation_filter(rs2_median),
-        _decimation_factor(4),
-        _kernel_size(_decimation_factor*_decimation_factor),
-        _width(0), _height(0), _enable_filter(true)
+        _decimation_factor(decimation_default_val),
+        _patch_size(0x1 << (uint8_t(decimation_default_val - 1))),
+        _kernel_size(_patch_size*_patch_size),
+        _enable_filter(true), _recalc_profile(false)
     {
-        auto decimation_control = std::make_shared<ptr_option<uint8_t>>(1, 5, 1, 4, &_decimation_factor, "Decimation magnitude");
-        decimation_control->on_set([this](float val)
+        auto decimation_control = std::make_shared<ptr_option<uint8_t>>(
+            decimation_min_val,
+            decimation_max_val,
+            decimation_step,
+            decimation_default_val,
+            &_decimation_factor, "Decimation magnitude");
+        decimation_control->on_set([this, decimation_control](float val)
         {
-            _kernel_size = 0x1 << uint8_t(val - 1);
-            _kernel_size *= _kernel_size;
+            if (!decimation_control->is_valid(val))
+                throw invalid_value_exception(to_string()
+                    << "Unsupported decimation factor value " << val << " is out of range.");
+
+            // The factor represent the 2's exponent
+            _decimation_factor = val;
+            _patch_size = 0x1 << uint8_t(_decimation_factor - 1);
+            _kernel_size = _patch_size*_patch_size;
+            _recalc_profile = true;
         });
+
         register_option(RS2_OPTION_FILTER_MAGNITUDE, decimation_control);
         unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
 
@@ -49,7 +67,7 @@ namespace librealsense
                         auto src = depth.as<rs2::video_frame>();
                         decimate_depth(static_cast<const uint16_t*>(src.get_data()),
                             static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
-                            src.get_width(), src.get_height(), this->_decimation_factor);
+                            src.get_width(), src.get_height(), this->_patch_size);
                     }
                 }
 
@@ -69,35 +87,43 @@ namespace librealsense
         {
             _source_stream_profile = f.get_profile();
             _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16);
+            auto vp = _source_stream_profile.as<rs2::video_stream_profile>();
+            _recalc_profile = true;
         }
 
         // Rectify target profile
-        auto vp = _target_stream_profile.as<rs2::video_stream_profile>();
-        if ((vp.width() % _decimation_factor) || (vp.height() % _decimation_factor))
-            throw invalid_value_exception(to_string() << "Unsupported decimation factor: " << _decimation_factor
-                << " for frame size [" << vp.width() << "," << vp.height() << "]");
+        if (_recalc_profile)
+        {
+            // Verify decimation
+            auto vp = _source_stream_profile.as<rs2::video_stream_profile>();
+            if ((vp.width() % _patch_size) || (vp.height() % _patch_size))
+                throw invalid_value_exception(to_string() << "Unsupported decimation patch: " << _patch_size
+                    << " for frame size [" << vp.width() << "," << vp.height() << "]");
 
-        auto vspi = dynamic_cast<video_stream_profile_interface*>(_source_stream_profile.get()->profile);
-        auto trg = dynamic_cast<video_stream_profile_interface*>(_target_stream_profile.get()->profile);
-        rs2_intrinsics tgt_intrin = vspi->get_intrinsics();
-        tgt_intrin.width /= _decimation_factor;
-        tgt_intrin.height /= _decimation_factor;
-        tgt_intrin.fx /= _decimation_factor;
-        tgt_intrin.fy /= _decimation_factor;
-        tgt_intrin.ppx /= _decimation_factor;
-        tgt_intrin.ppy /= _decimation_factor;
-        trg->set_intrinsics([tgt_intrin]() { return tgt_intrin; });
+            auto src_vspi = dynamic_cast<video_stream_profile_interface*>(_source_stream_profile.get()->profile);
+            auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(_target_stream_profile.get()->profile);
+            rs2_intrinsics src_intrin = src_vspi->get_intrinsics();
+            rs2_intrinsics tgt_intrin = tgt_vspi->get_intrinsics();
+            tgt_intrin.width    = src_vspi->get_width()/_patch_size;
+            tgt_intrin.height   = src_vspi->get_height()/_patch_size;
+            tgt_intrin.fx       = src_intrin.fx/_patch_size;
+            tgt_intrin.fy       = src_intrin.fy/_patch_size;
+            tgt_intrin.ppx      = src_intrin.ppx/_patch_size;
+            tgt_intrin.ppy      = src_intrin.ppy/_patch_size;
+            tgt_vspi->set_intrinsics([tgt_intrin]() { return tgt_intrin; });
+            tgt_vspi->set_dims(tgt_intrin.width, tgt_intrin.height);
+            _recalc_profile = false;
+        }
     }
 
     rs2::frame decimation_filter::prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source)
     {
-        auto fi = (frame_interface*)f.get();
         auto vf = f.as<rs2::video_frame>();
         return source.allocate_video_frame(_target_stream_profile, f,
             vf.get_bytes_per_pixel(),
-            vf.get_width() / _decimation_factor,
-            vf.get_height() / _decimation_factor,
-            vf.get_stride_in_bytes() / _decimation_factor,
+            vf.get_width() / _patch_size,
+            vf.get_height() / _patch_size,
+            vf.get_stride_in_bytes() / _patch_size,
             RS2_EXTENSION_DEPTH_FRAME);
     }
 

@@ -62,11 +62,15 @@ namespace librealsense
     };
 
     template<class T>
-    class ptr_option : public option
+    class ptr_option : public option_base
     {
     public:
         ptr_option(T min, T max, T step, T def, T* value, const std::string& desc)
-            : _min(min), _max(max), _step(step), _def(def), _value(value), _desc(desc)
+            : option_base({ static_cast<float>(min),
+                            static_cast<float>(max),
+                            static_cast<float>(step),
+                            static_cast<float>(def), }),
+            _min(min), _max(max), _step(step), _def(def), _value(value), _desc(desc)
         {
             static_assert((std::is_arithmetic<T>::value),  "ptr_option class supports arithmetic built-in types only");
             _on_set = [](float x) {};
