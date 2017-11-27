@@ -99,7 +99,7 @@ namespace helper
     private:
         texture renderer;
         rs2::colorizer colorize;
-        rs2::depth_filter decimate;
+        rs2::decimation_filter decimate;
         std::string _window_title;
         rs2::frame_queue _frames;
         rs2::frame _last_frame;

@@ -632,7 +632,8 @@ namespace rs2
         : s(s), dev(dev), ui(), last_valid_ui(),
         streaming(false), _pause(false),
         depth_colorizer(std::make_shared<rs2::colorizer>()),
-        decimation_filter(std::make_shared<rs2::depth_filter>()),
+        decimation_filter(std::make_shared<rs2::decimation_filter>()),
+        spatial_filter(std::make_shared<rs2::spatial_filter>()),
         temporal_filter(std::make_shared<rs2::temporal_filter>())
     {
         try
@@ -664,6 +665,10 @@ namespace rs2
             auto decimation = std::make_shared<processing_block_model>(
                 this, "Decimation Filter", decimation_filter, error_message);
             post_processing.push_back(decimation);
+
+            auto spatial = std::make_shared<processing_block_model>(
+                this, "Spatial Filter", spatial_filter, error_message);
+            post_processing.push_back(spatial);
 
             auto temporal = std::make_shared<processing_block_model>(
                 this, "Temporal Filter", temporal_filter, error_message);
@@ -2653,13 +2658,13 @@ namespace rs2
             {
                 for (auto&& p : s.second.dev->profiles)
                 {
-
                     if (p.stream_type() == RS2_STREAM_DEPTH)
                     {
                         auto dec_filter = s.second.dev->decimation_filter;
+                        auto spatial_filter = s.second.dev->spatial_filter;
                         auto temp_filter = s.second.dev->temporal_filter;
-                        auto res = dec_filter->proccess(f);
-                        return temp_filter->proccess(res);
+
+                        return temp_filter->proccess(spatial_filter->proccess(dec_filter->proccess(f)));
                     }
 
                 }
