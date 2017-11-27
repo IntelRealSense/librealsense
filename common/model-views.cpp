@@ -1520,7 +1520,7 @@ namespace rs2
 
 
         const auto top_bar_height = 32.f;
-        const auto num_of_buttons = 4;
+        auto num_of_buttons = 4;
 
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -1681,6 +1681,27 @@ namespace rs2
         //}
         //ImGui::PopItemWidth();
 
+        if (selected_depth_source_uid >= 0) {
+            auto depth = streams[selected_depth_source_uid].texture->get_last_frame();
+            if (depth) pc.push_frame(depth);
+        }
+
+        frame tex;
+        if (selected_tex_source_uid >= 0)
+        {
+            tex = streams[selected_tex_source_uid].texture->get_last_frame();
+            if (tex) pc.update_texture(tex);
+        }
+        bool render_pose = false;
+        for (auto&& s : streams)
+        {
+            if (s.second.is_stream_visible() &&
+                s.second.profile.stream_type() == RS2_STREAM_POSE)
+            {
+                render_pose = true;
+                num_of_buttons++; // add trajectory button
+            }
+        }
 
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons - 5, 0 });
 
@@ -1754,32 +1775,57 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if(support_non_syncronized_mode)
+        if (syncronize)
         {
-            if (synchronization_enable)
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            if (ImGui::Button(u8"\uf09c", { 24, top_bar_height }))
+            {
+                syncronize = false;
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Disable synchronization between the pointcloud and the texture");
+            ImGui::PopStyleColor(2);
+        }
+        else
+        {
+            if (ImGui::Button(u8"\uf023", { 24, top_bar_height }))
+            {
+                syncronize = true;
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Keep the pointcloud and the texture synchronized");
+        }
+
+        if (render_pose)
+        {
+            ImGui::SameLine();
+
+            if (tm2.is_trajectory_on())
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-                if (ImGui::Button(u8"\uf09c", { 24, top_bar_height }))
+
+                if (ImGui::Button(u8"\uf1b0", { 24, top_bar_height }))
                 {
-                    synchronization_enable = false;
+                    tm2.toggle_trajectory();
                 }
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Disable syncronization between the pointcloud and the texture");
+                    ImGui::SetTooltip("Stop drawing trajectory");
+
                 ImGui::PopStyleColor(2);
             }
             else
             {
-                if (ImGui::Button(u8"\uf023", { 24, top_bar_height }))
+                if (ImGui::Button(u8"\uf1b0", { 24, top_bar_height }))
                 {
-                    synchronization_enable = true;
+                    tm2.toggle_trajectory();
                 }
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Keep the pointcloud and the texture sycronized");
+                    ImGui::SetTooltip("Draw trajectory");
             }
         }
-
-
+        
         ImGui::End();
         ImGui::PopStyleColor(6);
         ImGui::PopStyleVar();
@@ -3039,8 +3085,9 @@ namespace rs2
                 rs2_pose pose_data = pose.get_pose_data();
                 rs2_pose correct_pose = correct_tm2_pose(pose_data);
                 tm2.draw_pose(correct_pose);
-                //TODO: enable/disable trajectory
-                //tm2.draw_trajectory(correct_pose);
+                tm2.draw_trajectory(correct_pose);
+                
+                
             }
         }
         if (auto points = pc.get_points())
@@ -4457,10 +4504,16 @@ namespace rs2
     
     void tm2_model::draw_trajectory(rs2_pose& pose)
     {
+        if (!trajectory_on)
+        {
+            return;
+        }
+
         add_to_trajectory(pose);
+
         glBegin(GL_LINE_STRIP);
         glColor3f(1.0, 1.0, 0.0);
-        glLineWidth(0.1);
+        glLineWidth(1);
         for (auto&& v : trajectory)
         {
             glVertex3f(v.first.x, v.first.y, v.first.z);
@@ -4479,10 +4532,10 @@ namespace rs2
         }
         else
         {
-            //check if new element is far enough - more than 1 centimeter
+            //check if new element is far enough - more than 1 mm
             rs2_vector prev = trajectory.back().first;
             rs2_vector curr = pose.translation;
-            if (sqrt(pow((curr.x - prev.x), 2) + pow((curr.y - prev.y), 2) + pow((curr.z - prev.z), 2)) < 0.01)
+            if (sqrt(pow((curr.x - prev.x), 2) + pow((curr.y - prev.y), 2) + pow((curr.z - prev.z), 2)) < 0.001)
             {
                 //if too close - check confidence and replace element
                 if (pose.confidence > trajectory.back().second)
@@ -4498,6 +4551,13 @@ namespace rs2
             }
         }
     }
-
+    void tm2_model::toggle_trajectory()
+    {
+        trajectory_on = !trajectory_on;
+        if(!trajectory_on)
+        {
+            trajectory.clear();
+        }
+    }
 
 }

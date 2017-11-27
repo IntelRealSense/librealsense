@@ -560,14 +560,16 @@ namespace rs2
     public:
         void draw_pose(rs2_pose& pose);
         void draw_trajectory(rs2_pose& pose);
+        void toggle_trajectory();
+        bool is_trajectory_on() { return trajectory_on; }        
 
     private:
         void add_to_trajectory(rs2_pose& pose);
 
-        const float len_x = 0.5;
-        const float len_y = 0.2;
-        const float len_z = 0.05;
-        const float lens_radius = 0.02f;
+        const float len_x = 0.1;
+        const float len_y = 0.03;
+        const float len_z = 0.01;
+        const float lens_radius = 0.005f;
         /*
           4--------------------------3
          /|                         /|
@@ -603,9 +605,9 @@ namespace rs2
         colored_cube camera_box{ { { f1,colors[0] },{ f2,colors[1] },{ f3,colors[2] },{ f4,colors[3] },{ f5,colors[4] },{ f6,colors[5] } } };
         float3 center_left{ v5.x + len_x / 3, v6.y - len_y / 3, v5.z };
         float3 center_right{ v6.x - len_x / 3, v6.y - len_y / 3, v5.z };
-
-        
+                
         std::vector<tracked_point> trajectory;
+        bool trajectory_on = false;
     };
 
     class viewer_model
