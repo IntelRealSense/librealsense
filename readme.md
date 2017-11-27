@@ -14,13 +14,10 @@ Linux | Windows |
 The SDK allows depth and color streaming, and provides intrinsic and extrinsic calibration information.
 The library also offers synthetic streams (pointcloud, depth aligned to color and vise-versa), and a built-in support for [record and playback](./src/media/readme.md) of streaming sessions.
 
-The library aims to provide an easy to use API and tools for computer vision professionals, game developers and other **Intel® RealSense™** technology enthusiasts.
-
 Developer kits containing the necessary hardware to use this library are available for purchase at [realsense.intel.com/buy](https://realsense.intel.com/buy).
+Information about the Intel® RealSense™ technology at [realsense.intel.com](https://realsense.intel.com)
 
 > Don't have access to a RealSense camera? Check-out [sample data](./doc/sample-data.md)
-
-Information about the Intel® RealSense™ technology at [realsense.intel.com](https://realsense.intel.com)
 
 ## What’s included in the SDK:
 **[Tools for harnessing your depth camera’s capabilities](https://github.com/IntelRealSense/librealsense/tree/development/tools)** Including:
@@ -37,8 +34,7 @@ Information about the Intel® RealSense™ technology at [realsense.intel.com](h
    These simple examples demonstrate how to easily use the SDK to include code snippets that access the camera into your applications.
 
 **[Wrappers](https://github.com/IntelRealSense/librealsense/tree/development/wrappers)**
-  We provide a C, C++, [Python](./wrappers/python), [Node.js](./wrappers/nodejs) API, [ROS](https://github.com/intel-ros/realsense/releases), [LabVIEW](./wrappers/labview) and [OpenCV](./wrappers/opencv) integration. More to come, including C#, Unity and Matlab.
-
+  We provide a C, C++, [Python](./wrappers/python), [Node.js](./wrappers/nodejs) API, as well as integration with the following 3rd-party technologies: [ROS](https://github.com/intel-ros/realsense/releases), [LabVIEW](./wrappers/labview), [OpenCV](./wrappers/opencv), [PCL](./wrappers/pcl) and more to come, including C#, Unity and Matlab.
 
 ## Quick Start
 
