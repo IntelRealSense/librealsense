@@ -18,6 +18,29 @@ namespace librealsense
     static float4 toFloat4(perc::TrackingData::Quaternion q);
 
 
+    class md_tm2_exposure_time_parser : public md_attribute_parser_base
+    {
+    public:
+        rs2_metadata_type get(const frame& frm) const override
+        {
+            // a video frame has only exposure time metadata, placed at the metadata blob
+            if (auto* vf = dynamic_cast<const video_frame*>(&frm))
+            {
+                return (rs2_metadata_type)frm.additional_data.metadata_blob.data();
+            }
+            return 0;
+        }
+
+        bool supports(const frame& frm) const override
+        {
+            if (auto* vf = dynamic_cast<const video_frame*>(&frm))
+            {
+                return true;
+            }
+            return false;
+        }
+    };
+
     class tm2_sensor : public sensor_base, public video_sensor_interface, public TrackingDevice::Listener
     {
     public:
@@ -25,9 +48,10 @@ namespace librealsense
             : sensor_base("Tracking Module", owner), _tm_dev(dev),
               _fisheye_left(std::make_shared<stream>(RS2_STREAM_FISHEYE)),
               _fisheye_right(std::make_shared<stream>(RS2_STREAM_FISHEYE))             
-        {}
-
-
+        {
+            register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, std::make_shared<md_tm2_exposure_time_parser>());
+        }
+        
         //sensor
         ////////
         stream_profiles init_stream_profiles() override
@@ -356,12 +380,13 @@ namespace librealsense
             duration<double, std::milli> ts_ms(ts_double_nanos);
             auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame.systemTimestamp);
             duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
+            rs2_metadata_type metadata = tm_frame.exposuretime;
 
             frame_additional_data additional_data(ts_ms.count(),
                                                   tm_frame.frameId,
                                                   system_ts_ms.count(),
-                                                  0, //TODO - need to add metadata - just actual exposure
-                                                  nullptr);
+                                                  sizeof(metadata), 
+                                                  (uint8_t*)&metadata);
 
             // Find the frame stream profile
             std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -656,7 +681,7 @@ namespace librealsense
     static float3 toFloat3(perc::TrackingData::EulerAngles a) { return float3{ a.x, a.y, a.z }; }
     static float4 toFloat4(perc::TrackingData::Quaternion q) { return float4{ q.i, q.j, q.k, q.r }; }
 
-    
+   
 
 
 
