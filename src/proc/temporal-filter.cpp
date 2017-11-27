@@ -17,8 +17,11 @@ namespace librealsense
         //_values.resize(_num_of_frames);
         auto enable_control = std::make_shared<ptr_option<bool>>(false,true,true,true, &_enable_filter, "Apply temporal");
         register_option(RS2_OPTION_FILTER_ENABLED, enable_control);
+        _enable_filter = true;
 
         auto temporal_control = std::make_shared<ptr_option<uint8_t>>(1, 15, 1, 5, &_num_of_frames, "Temporal magnitude");
+        _num_of_frames = 5;
+
 
         temporal_control->on_set([this](float val)
         {
@@ -105,6 +108,7 @@ namespace librealsense
         else
         {
             _frames.resize(_num_of_frames);
+            _values.resize(_num_of_frames);
         }
         _frames[0] = new_frame;
 
@@ -116,19 +120,19 @@ namespace librealsense
         {
             auto video = result.as<rs2::video_frame>();
             auto data = static_cast<uint16_t*>(const_cast<void*>(video.get_data()));
-           // memcpy(data, _frames[0].get_data(), video.get_width() * video.get_height()*2);
+            //memcpy(data, _frames[0].get_data(), video.get_width() * video.get_height()*2);
 
             #pragma omp parallel for schedule(dynamic) //Using OpenMP to try to parallelise the loop
             for(auto i = 0; i< video.get_width() * video.get_height(); i++)
             {
-
+                std::vector<uint16_t> values(_frames.size(), 0);
                 for(auto j = 0; j<_frames.size(); j++)
                 {
                     if(_frames[j])
-                        _values[j] = ((uint16_t*)(_frames[j].get_data()))[i];
+                        values[j] = ((uint16_t*)(_frames[j].get_data()))[i];
                 }
-                std::sort(_values.begin(), _values.end());
-                data[i] = _values[_values.size()/2];
+                std::sort(values.begin(), values.end());
+                data[i] = values[values.size()/2];
             }
         }
         catch(...){}
