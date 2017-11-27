@@ -1104,6 +1104,23 @@ namespace rs2
             glEnd();
         }
 
+        static void draw_hollow_circle(float3 center, float radius, const rs2_pose& pose_data)
+        {
+            int i;
+            int lineAmount = 100;
+            GLfloat twicePi = 2.0f * M_PI;
+            glColor3f(1.0f, 1.0f, 1.0f);
+            glLineWidth(5);
+            glBegin(GL_LINE_LOOP);
+            for (i = 0; i <= lineAmount; i++)
+            {
+                float3 pp = { center.x + (radius * cos(i *  twicePi / lineAmount)), center.y + (radius* sin(i * twicePi / lineAmount)), center.z };
+                float3 circle = texture_buffer::transform_by_pose(pose_data, pp);
+                glVertex3f(circle.x, circle.y, circle.z);
+            }
+            glEnd();
+        }
+
         void multiply_vector_by_matrix(GLfloat vec[], GLfloat mat[], GLfloat* result)
         {
             const auto N = 4;
@@ -1227,14 +1244,14 @@ namespace rs2
             glPopMatrix();
         }
 
-        static inline std::array<float, 3> transform_by_pose(const rs2_pose& p, const std::array<float, 3>& vi)
+        static inline float3 transform_by_pose(const rs2_pose& p, const float3& vi)
         {
             float w = p.rotation.w, x = p.rotation.x, y = p.rotation.y, z = p.rotation.z;
             auto T = p.translation;
             return {
-                vi[0] * (1 - 2 * (y*y + z*z)) + vi[1] * (2 * (x*y - w*z))     + vi[2] * (2 * (x*z + w*y))     + T.x,
-                vi[0] * (2 * (x*y + w*z))     + vi[1] * (1 - 2 * (x*x + z*z)) + vi[2] * (2 * (y*z - w*x))     + T.y,
-                vi[0] * (2 * (x*z - w*y))     + vi[1] * (2 * (y*z + w*x))     + vi[2] * (1 - 2 * (x*x + y*y)) + T.z
+                vi.x * (1 - 2 * (y*y + z*z)) + vi.y * (2 * (x*y - w*z))     + vi.z * (2 * (x*z + w*y))     + T.x,
+                vi.x * (2 * (x*y + w*z))     + vi.y * (1 - 2 * (x*x + z*z)) + vi.z * (2 * (y*z - w*x))     + T.y,
+                vi.x * (2 * (x*z - w*y))     + vi.y * (2 * (y*z + w*x))     + vi.z * (1 - 2 * (x*x + y*y)) + T.z
             };
         }
         void draw_grid()
@@ -1257,13 +1274,14 @@ namespace rs2
         }
         void draw_pose_visualization(const rs2_pose& pose, int id)
         {
-            using colored_line = std::pair<std::array<std::array<float, 3>, 2>, std::array<float, 3>>;
+            using colored_line = std::pair<std::array<float3, 2>, std::array<float, 3>>;
+            const float pose_axis_size = 0.5;
             static const std::array<colored_line, 3> axis = {
                 { // Need extra brackets, until c++14
-                      //    Start Position,   ,  End Position         ,  Color
-                    { { { { 0.0f, 0.0f, 0.0f },{ 1.0f, 0.0f, 0.0f } } },{ 1.0f, 0.0f, 0.0f } },
-                    { { { { 0.0f, 0.0f, 0.0f },{ 0.0f, -1.0f, 0.0f } } },{ 0.0f, 1.0f, 0.0f } },
-                    { { { { 0.0f, 0.0f, 0.0f },{ 0.0f, 0.0f, 1.0f } } },{ 0.0f, 0.0f, 1.0f } },
+                      //    Start Position,   ,  End Position                     ,  Color
+                    { { { { 0.0f, 0.0f, 0.0f },{ pose_axis_size, 0.0f, 0.0f } } } ,{ 1.0f, 0.0f, 0.0f } },
+                    { { { { 0.0f, 0.0f, 0.0f },{ 0.0f, -pose_axis_size, 0.0f } } },{ 0.0f, 1.0f, 0.0f } },
+                    { { { { 0.0f, 0.0f, 0.0f },{ 0.0f, 0.0f, pose_axis_size } } } ,{ 0.0f, 0.0f, 1.0f } },
                 }
             };
 
@@ -1285,8 +1303,6 @@ namespace rs2
             draw_axis(0.3, 2);
             
             // Drawing pose:
-            int count = 0;
-            const float scale_factor = 0.5;
             glLineWidth(5);
             glBegin(GL_LINES);
             for (auto&& colored_line : axis)
@@ -1296,8 +1312,8 @@ namespace rs2
                 glColor3f(color[0], color[1], color[2]);
                 for (auto&& p : line)
                 {
-                    std::array<float, 3> po = transform_by_pose(pose, p);
-                    glVertex3f(po[0] * scale_factor, po[1] * scale_factor, po[2] * scale_factor);
+                    float3 po = transform_by_pose(pose, p);
+                    glVertex3f(po.x, po.y, po.z);
                 }
             }
             glEnd();
@@ -1312,8 +1328,6 @@ namespace rs2
             glMatrixMode(GL_PROJECTION);
             glPopMatrix();
         }
-
-        double t = 0;
 
         bool try_pick(int x, int y, float* result)
         {

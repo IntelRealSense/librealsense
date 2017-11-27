@@ -2958,23 +2958,6 @@ namespace rs2
         }
     }
     
-    void draw_hollow_circle(point center, float radius, const rs2_pose& pose_data)
-    {
-        int i;
-        int lineAmount = 100;
-        GLfloat twicePi = 2.0f * M_PI;
-        glColor3f(1.0f, 1.0f, 1.0f);
-        glLineWidth(5);
-        glBegin(GL_LINE_LOOP);
-        for (i = 0; i <= lineAmount; i++) 
-        {
-            point pp = { center[0] + (radius * cos(i *  twicePi / lineAmount)), center[1] + (radius* sin(i * twicePi / lineAmount)), center[2] };
-            point circle = texture_buffer::transform_by_pose(pose_data, pp);
-            glVertex3f(circle[0], circle[1], circle[2]);
-        }
-        glEnd();
-    }
-
     void viewer_model::render_3d_view(const rect& viewer_rect, float scale_factor)
     {
         glViewport(viewer_rect.x * scale_factor, 0,
@@ -3051,34 +3034,13 @@ namespace rs2
                 auto f = stream.second.texture->get_last_frame();
                 auto pose = f.as<pose_frame>();
                 if (!pose)
-                    continue;
-
-                colored_cube box = tm2.get_tm2_cube();
+                    continue;               
                 
                 rs2_pose pose_data = pose.get_pose_data();
                 rs2_pose correct_pose = correct_tm2_pose(pose_data);
-
-                // Drawing pose:
-                glBegin(GL_QUADS);
-                for (auto&& colored_face : box)
-                {
-                    auto& c = colored_face.second;
-                    glColor3f(c[0], c[1], c[2]);
-                    for (auto&& v : colored_face.first)
-                    {
-                        point po = texture_buffer::transform_by_pose(correct_pose, v);
-                        glVertex3f(po[0], po[1], po[2]);
-                    }
-                }
-                glEnd();
-
-                auto lenses = tm2.get_tm2_lenses_center();
-                float radius = tm2.get_tm2_lenses_radius();
-                for (auto&& lens : lenses)
-                {
-                    draw_hollow_circle(lens, radius, correct_pose); 
-                }
-                //TODO: distinguish between the different objects
+                tm2.draw_pose(correct_pose);
+                //TODO: enable/disable trajectory
+                //tm2.draw_trajectory(correct_pose);
             }
         }
         if (auto points = pc.get_points())
@@ -4473,5 +4435,69 @@ namespace rs2
         _changes.pop();
         return true;
     }
+
+    void tm2_model::draw_pose(rs2_pose& pose)
+    {
+        glBegin(GL_QUADS);
+        for (auto&& colored_face : camera_box)
+        {
+            auto& c = colored_face.second;
+            glColor3f(c[0], c[1], c[2]);
+            for (auto&& v : colored_face.first)
+            {
+                float3 po = texture_buffer::transform_by_pose(pose, v);
+                glVertex3f(po.x, po.y, po.z);
+            }
+        }
+        glEnd();
+
+        texture_buffer::draw_hollow_circle(center_left, lens_radius, pose);
+        texture_buffer::draw_hollow_circle(center_right, lens_radius, pose);
+    }
+    
+    void tm2_model::draw_trajectory(rs2_pose& pose)
+    {
+        add_to_trajectory(pose);
+        glBegin(GL_LINE_STRIP);
+        glColor3f(1.0, 1.0, 0.0);
+        glLineWidth(0.1);
+        for (auto&& v : trajectory)
+        {
+            glVertex3f(v.first.x, v.first.y, v.first.z);
+        }
+        glEnd();
+    }
+
+    void tm2_model::add_to_trajectory(rs2_pose& pose)
+    {
+        tracked_point p{ pose.translation , pose.confidence };
+
+        //insert first element anyway
+        if (trajectory.size() == 0)
+        {
+            trajectory.push_back(p);
+        }
+        else
+        {
+            //check if new element is far enough - more than 1 centimeter
+            rs2_vector prev = trajectory.back().first;
+            rs2_vector curr = pose.translation;
+            if (sqrt(pow((curr.x - prev.x), 2) + pow((curr.y - prev.y), 2) + pow((curr.z - prev.z), 2)) < 0.01)
+            {
+                //if too close - check confidence and replace element
+                if (pose.confidence > trajectory.back().second)
+                {
+                    trajectory.back() = p;
+                }
+                //else - discard this sample
+            }
+            else
+            {
+                //sample is far enough - keep it
+                trajectory.push_back(p);
+            }
+        }
+    }
+
 
 }
