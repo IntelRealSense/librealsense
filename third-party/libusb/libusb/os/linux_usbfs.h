@@ -21,8 +21,6 @@
 #ifndef LIBUSB_USBFS_H
 #define LIBUSB_USBFS_H
 
-#include <linux/types.h>
-
 #define SYSFS_DEVICE_PATH "/sys/bus/usb/devices"
 
 struct usbfs_ctrltransfer {
@@ -163,7 +161,7 @@ struct usbfs_streams {
 #define IOCTL_USBFS_CONNECT	_IO('U', 23)
 #define IOCTL_USBFS_CLAIM_PORT	_IOR('U', 24, unsigned int)
 #define IOCTL_USBFS_RELEASE_PORT	_IOR('U', 25, unsigned int)
-#define IOCTL_USBFS_GET_CAPABILITIES	_IOR('U', 26, __u32)
+#define IOCTL_USBFS_GET_CAPABILITIES	_IOR('U', 26, uint32_t)
 #define IOCTL_USBFS_DISCONNECT_CLAIM	_IOR('U', 27, struct usbfs_disconnect_claim)
 #define IOCTL_USBFS_ALLOC_STREAMS	_IOR('U', 28, struct usbfs_streams)
 #define IOCTL_USBFS_FREE_STREAMS	_IOR('U', 29, struct usbfs_streams)

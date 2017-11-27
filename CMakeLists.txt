@@ -71,7 +71,6 @@ if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar")
 
     message(STATUS "Prepare RealSense SDK for Android OS (${ANDROID_NDK_ABI_NAME})")
-    add_subdirectory(third-party/libusb/)
 endif()
 
 if(BUILD_WITH_OPENMP)
@@ -499,15 +498,6 @@ if(UNIX)
     find_package (Threads REQUIRED)
     list(APPEND librealsense_PKG_DEPS "Threads")
 
-    pkg_search_module(LIBUSB1 REQUIRED libusb-1.0)
-    if(LIBUSB1_FOUND)
-        include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})
-        link_directories(${LIBUSB1_LIBRARY_DIRS})
-        list(APPEND librealsense_PKG_DEPS "libusb-1.0")
-    else()
-        message( FATAL_ERROR "Failed to find libusb-1.0" )
-    endif(LIBUSB1_FOUND)
-
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -g -D_BSD_SOURCE")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -g -Wno-missing-field-initializers")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar")
@@ -538,6 +528,10 @@ if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
 endif()
 
+if(NOT WIN32)
+add_subdirectory(third-party/libusb/)
+endif()
+
 add_subdirectory(third-party/realsense-file)
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
@@ -561,11 +555,11 @@ endif()
 
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
-target_link_libraries(realsense2 realsense-file ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(realsense2 realsense-file ${CMAKE_THREAD_LIBS_INIT})
 list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
 
-if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
-target_link_libraries(realsense2 usb ${USB_LIBRARIES})
+if(NOT WIN32)
+  target_link_libraries(realsense2 usb)
 endif()
 
 add_definitions(-DELPP_THREAD_SAFE)
@@ -580,7 +574,7 @@ set(LRS_LIB_NAME realsense2)
 
 target_include_directories(realsense2 PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                             $<INSTALL_INTERFACE:include>
-                                     PRIVATE ${LIBUSB1_INCLUDE_DIRS})
+                                     PRIVATE ${USB_INCLUDE_DIRS})
 
 set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/realsense2")
 

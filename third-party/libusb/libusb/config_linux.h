@@ -1,5 +1,5 @@
 /*
- * Android build config for libusb
+ * Linux build config for libusb
  * Copyright © 2012-2013 RealVNC Ltd. <toby.gray@realvnc.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -72,7 +72,7 @@
 #define HAVE_LINUX_FILTER_H 1
 
 /* Define to 1 if you have the <linux/netlink.h> header file. */
-#define HAVE_LINUX_NETLINK_H 1
+#define HAVE_LINUX_NETLINK_H 0
 
 /* Define to 1 if you have the <asm/types.h> header file. */
 #define HAVE_ASM_TYPES_H 1

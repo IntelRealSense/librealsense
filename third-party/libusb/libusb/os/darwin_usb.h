@@ -20,7 +20,7 @@
 #if !defined(LIBUSB_DARWIN_H)
 #define LIBUSB_DARWIN_H
 
-#include "libusbi.h"
+#include "../libusbi.h"
 
 #include <IOKit/IOTypes.h>
 #include <IOKit/IOCFBundle.h>

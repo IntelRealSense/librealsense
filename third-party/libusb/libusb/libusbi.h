@@ -21,7 +21,7 @@
 #ifndef LIBUSBI_H
 #define LIBUSBI_H
 
-#include "../android/config.h"
+#include "config.h"
 
 #include <stdlib.h>
 

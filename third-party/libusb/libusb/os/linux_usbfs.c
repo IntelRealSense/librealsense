@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "../../android/config.h"
+#include "../config.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -41,6 +41,14 @@
 
 #include "../libusbi.h"
 #include "linux_usbfs.h"
+
+#ifndef ECOMM
+#define	ECOMM		70	/* Communication error on send */
+#endif
+
+#ifndef EREMOTEIO
+#define	EREMOTEIO	121	/* Remote I/O error */
+#endif
 
 /* sysfs vs usbfs:
  * opening a usbfs node causes the device to be resumed, so we attempt to

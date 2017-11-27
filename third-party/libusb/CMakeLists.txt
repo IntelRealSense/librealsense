@@ -5,6 +5,32 @@ cmake_minimum_required(VERSION 2.8.3)
 
 project(usb)
 
+if (APPLE)
+set(LIBUSB_C
+  libusb/descriptor.c
+  libusb/core.c
+  libusb/hotplug.c
+  libusb/io.c
+  libusb/sync.c
+  libusb/strerror.c
+  libusb/os/poll_posix.c
+  libusb/os/threads_posix.c
+  libusb/os/darwin_usb.c
+  )
+elseif(ANDROID)
+    set(LIBUSB_C
+      libusb/descriptor.c
+      libusb/core.c
+      libusb/hotplug.c
+      libusb/io.c
+      libusb/sync.c
+      libusb/strerror.c
+      libusb/os/linux_usbfs.c
+      libusb/os/poll_posix.c
+      libusb/os/threads_posix.c
+      libusb/os/linux_netlink.c
+      )
+else()
 set(LIBUSB_C
   libusb/descriptor.c
   libusb/core.c
@@ -15,8 +41,9 @@ set(LIBUSB_C
   libusb/os/linux_usbfs.c
   libusb/os/poll_posix.c
   libusb/os/threads_posix.c
-  libusb/os/linux_netlink.c
-)
+  libusb/os/linux_udev.c
+  )
+endif()
 
 set(LIBUSB_H
     libusb/libusb.h
@@ -29,6 +56,9 @@ include_directories(
 
 add_library(usb STATIC ${LIBUSB_C} ${LIBUSB_H})
 
+if((NOT APPLE) AND (NOT ANDROID))
+  TARGET_LINK_LIBRARIES(usb udev)
+endif()
 
 install(TARGETS ${PROJECT_NAME}
     EXPORT realsense2Targets

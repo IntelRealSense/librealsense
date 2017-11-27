@@ -2,8 +2,7 @@
 This document describes how to build the [Intel&reg; RealSense&trade; SDK 2.0](https://github.com/IntelRealSense/librealsense) including headless tools and examples for Android devices.
 
 > **Disclaimer:** Intel&reg; RealSense&trade; SDK 2.0 for Android devices is an experimental capability and is **not** officially supported by Intel RealSense group at this point. Pay attention that your target Android device should be [rooted](https://en.wikipedia.org/wiki/Rooting_(Android)) in order to run RealSense SDK tools/examples and to access the RealSense cameras.
-
-**Doing this tutorial is on your own risk.**
+* **Doing this tutorial is on your own risk.**
 
 ## Ingredients
 Before jumping to the instructions section please ensure you have all the required accessories. 
@@ -17,11 +16,11 @@ Before jumping to the instructions section please ensure you have all the requir
 3. Install [CMake](https://cmake.org/) 3.6.1 or newer.
 4. Download [ADB](https://developer.android.com/studio/command-line/adb.html) to the host machine by typing `sudo apt-get install adb`.
 5. Clone the latest [RealSense&trade; SDK 2.0](https://github.com/IntelRealSense/librealsense/releases) to your host machine.
-6. Change the streaming resolution in [rs-depth](https://github.com/IntelRealSense/librealsense/blob/7724c1d8717f4e6b4486ae7b106559a889de4a1c/examples/C/depth/rs-depth.c#L21) and [rs-distance](https://github.com/IntelRealSense/librealsense/blob/7724c1d8717f4e6b4486ae7b106559a889de4a1c/examples/C/distance/rs-distance.c#L21) examples you should change width and height to 480 and 270 respectively using Linux text editor.
+6. Change the streaming width and height to 480 and 270 respectively in [rs-depth](https://github.com/IntelRealSense/librealsense/blob/7724c1d8717f4e6b4486ae7b106559a889de4a1c/examples/C/depth/rs-depth.c#L21) and [rs-distance](https://github.com/IntelRealSense/librealsense/blob/7724c1d8717f4e6b4486ae7b106559a889de4a1c/examples/C/distance/rs-distance.c#L21) examples using Linux text editor.
 
 7. Open Terminal on the host machine, navigate to *librealsense* root directory and type the following lines:
 ```shell
-mkdir build && cd build`
+mkdir build && cd build
 cmake .. -DANDROID_ABI=<Application Binary Interface> -DCMAKE_TOOLCHAIN_FILE=<Path to NDK folder>/build/cmake/android.toolchain.cmake
 make
 ```
@@ -41,7 +40,6 @@ cp ../tools/enumerate-devices/rs-enumerate-devices ./
 cp ../tools/fw-logger/rs-fw-logger ./
 cp ../tools/terminal/rs-terminal ./
 ```
-
 9. Connect your Android device to the host machine using USB OTG cable.
 10. Create new folder and copy the binaries to your Android device using ADB by the following lines:
 ```shell
