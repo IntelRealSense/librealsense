@@ -2658,8 +2658,8 @@ namespace rs2
                     {
                         auto dec_filter = s.second.dev->decimation_filter;
                         auto temp_filter = s.second.dev->temporal_filter;
-
-                        return temp_filter->proccess(dec_filter->proccess(f));
+                        auto res = dec_filter->proccess(f);
+                        return temp_filter->proccess(res);
                     }
 
                 }
@@ -3083,7 +3083,7 @@ namespace rs2
 
             if (selected_tex_source_uid >= 0)
             {
-                auto tex = texture->get_gl_handle();
+                auto tex = last_texture->get_gl_handle();
                 glBindTexture(GL_TEXTURE_2D, tex);
                 glEnable(GL_TEXTURE_2D);
 

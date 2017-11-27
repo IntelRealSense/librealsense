@@ -63,20 +63,20 @@ namespace librealsense
                 auto depth_frame = (frame_interface*)depth.get();
                 std::lock_guard<std::mutex> lock(_mutex);
 
-                if (!_stream.get() || _depth_stream != depth_frame->get_stream().get())
-                {
+//                if (!_stream.get() || _depth_stream != depth_frame->get_stream().get())
+//                {
                     _stream = depth_frame->get_stream()->clone();
                     _depth_stream = depth_frame->get_stream().get();
                     environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_stream, *depth_frame->get_stream());
                     _depth_intrinsics_ptr = nullptr;
                     _depth_units_ptr = nullptr;
-                }
+//                }
 
                 bool found_depth_intrinsics = false;
                 bool found_depth_units = false;
 
-                if (!_depth_intrinsics_ptr)
-                {
+//                if (!_depth_intrinsics_ptr)
+//                {
                     auto stream_profile = depth_frame->get_stream();
                     if (auto video = dynamic_cast<video_stream_profile_interface*>(stream_profile.get()))
                     {
@@ -84,7 +84,7 @@ namespace librealsense
                         _depth_intrinsics_ptr = &_depth_intrinsics;
                         found_depth_intrinsics = true;
                     }
-                }
+//                }
 
                 if (!_depth_units_ptr)
                 {
@@ -94,10 +94,10 @@ namespace librealsense
                     found_depth_units = true;
                 }
 
-                if (found_depth_units != found_depth_intrinsics)
-                {
-                    throw wrong_api_call_sequence_exception("Received depth frame that doesn't provide either intrinsics or depth units!");
-                }
+//                if (found_depth_units != found_depth_intrinsics)
+//                {
+//                    throw wrong_api_call_sequence_exception("Received depth frame that doesn't provide either intrinsics or depth units!");
+//                }
             };
 
             auto inspect_other_frame = [this](const rs2::frame& other)
@@ -110,21 +110,21 @@ namespace librealsense
                     _mapped = nullptr;
                 }
 
-                if (!_mapped.get())
-                {
+//                if (!_mapped.get())
+//                {
                     _mapped = other_frame->get_stream();
                     _mapped_intrinsics_ptr = nullptr;
                     _extrinsics_ptr = nullptr;
-                }
+//                }
 
-                if (!_mapped_intrinsics_ptr)
-                {
+//                if (!_mapped_intrinsics_ptr)
+//                {
                     if (auto video = dynamic_cast<video_stream_profile_interface*>(_mapped.get()))
                     {
                         _mapped_intrinsics = video->get_intrinsics();
                         _mapped_intrinsics_ptr = &_mapped_intrinsics;
                     }
-                }
+//                }
 
                 if (_stream && !_extrinsics_ptr)
                 {

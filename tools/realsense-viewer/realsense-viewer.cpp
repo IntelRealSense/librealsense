@@ -555,7 +555,7 @@ int main(int argv, const char** argc) try
 
         frameset f;
         points p;
-        texture_buffer* texture;
+        texture_buffer* texture = nullptr;
         // Fetch frames from queue
         try
         {
@@ -591,7 +591,7 @@ int main(int argv, const char** argc) try
                 {
                    viewer_model.upload_frame(std::move(f));
                 }
-                
+
             }
         }
         catch (const error& ex)
