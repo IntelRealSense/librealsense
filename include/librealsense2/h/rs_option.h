@@ -59,6 +59,8 @@ typedef enum rs2_option
     RS2_OPTION_TEXTURE_SOURCE                             , /**< Texture mapping stream unique ID */
     RS2_OPTION_FILTER_ENABLED                             , /**< The 2D filter state */
     RS2_OPTION_FILTER_MAGNITUDE                           , /**< The 2D filter magnitude */
+    RS2_OPTION_FILTER_OPT1                                , /**< Filter-specific params. TBD Evgeni */
+    RS2_OPTION_FILTER_OPT2                                , /**< Filter-specific params. TBD Evgeni */
     RS2_OPTION_COUNT                                      , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
 const char* rs2_option_to_string(rs2_option option);

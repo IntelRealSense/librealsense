@@ -9,37 +9,52 @@
 #include "proc/synthetic-stream.h"
 #include "proc/spatial-filter.h"
 
+// TODO refactor
+# define DO_HORIZONTAL
+# define DO_LEFT_TO_RIGHT
+# define DO_RIGHT_TO_LEFT
+# define DO_VERTICAL
+# define DO_TOP_TO_BOTTOM
+# define DO_BOTTOM_TO_TOP
+
 namespace librealsense
 {
-    const uint8_t spatial_patch_min_val        = 3;
-    const uint8_t spatial_patch_max_val        = 11;
-    const uint8_t spatial_patch_default_val    = 5;
-    const uint8_t spatial_patch_step           = 2;    // The filter suppors non-even kernels in the range of [3..11]
+    const uint8_t spatial_patch_min_val = 3;
+    const uint8_t spatial_patch_max_val = 11;
+    const uint8_t spatial_patch_default_val = 9;
+    const uint8_t spatial_patch_step = 2;    // The filter suppors non-even kernels in the range of [3..11]
 
 
-    spatial_filter::spatial_filter():
+    spatial_filter::spatial_filter() :
         _spatial_param(spatial_patch_default_val),
-        _kernel_size(_spatial_param*_spatial_param),
+        _window_size(_spatial_param*_spatial_param),
         _patch_size(spatial_patch_default_val),
+        _spatial_alpha_param(0.85f),
+        _spatial_delta_param(50.f),
         _width(0), _height(0),
         _range_from(1), _range_to(0xFFFF)
     {
+        //"Spatial Alpha [0.1,.0.2,.. ..., 0.85,   ...,2] size"
+        auto spatial_filter_alpha = std::make_shared<ptr_option<float>>(0.1f, 2.f, 0.05f, 0.85f, &_spatial_alpha_param, "Spatial alpha");
+        auto spatial_filter_delta = std::make_shared<ptr_option<float>>(25.f, 100.f, 5.f, 50.f, &_spatial_delta_param, "Spatial delta");
         auto spatial_filter_control = std::make_shared<ptr_option<uint8_t>>(
-            spatial_patch_step,    spatial_patch_default_val,
             spatial_patch_min_val, spatial_patch_max_val,
+            spatial_patch_step, spatial_patch_default_val,
             &_spatial_param, "Spatial kernel size");
 
-        spatial_filter_control->on_set([this, spatial_filter_control](float val)
-        {
-            if (!spatial_filter_control->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported spatial patch size " << val << " is out of range.");
+        //spatial_filter_control->on_set([this, spatial_filter_control](float val)
+        //{
+        //    if (!spatial_filter_control->is_valid(val))
+        //        throw invalid_value_exception(to_string()
+        //            << "Unsupported spatial patch size " << val << " is out of range.");
 
-            _patch_size = uint8_t(val);
-            _kernel_size = _patch_size*_patch_size;
-        });
+        //    _patch_size = uint8_t(val);
+        //    _window_size = _patch_size*_patch_size;
+        //});
 
         register_option(RS2_OPTION_FILTER_MAGNITUDE, spatial_filter_control);
+        register_option(RS2_OPTION_FILTER_OPT1, spatial_filter_alpha);
+        register_option(RS2_OPTION_FILTER_OPT2, spatial_filter_delta);
         unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
@@ -53,8 +68,16 @@ namespace librealsense
                 update_configuration(f);
                 tgt = prepare_target_frame(depth, source);
                 // In place spatial smooth - running on generated frame
-                do_smoothing(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
-                    _sandbox[_current_frm_size_pixels].data(), 1);     // Flag that control the filter properties
+                if (false)
+                {
+                    median_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
+                        _sandbox[_current_frm_size_pixels].data(), 1);     // Flag that control the filter properties
+                }
+                else
+                {
+                    dxf_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
+                        _sandbox[_current_frm_size_pixels].data());
+                }
             }
 
             out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
@@ -96,11 +119,11 @@ namespace librealsense
             RS2_EXTENSION_DEPTH_FRAME);
 
         // TODO - optimize
-        memmove(const_cast<void*>(tgt.get_data()), f.get_data(), _current_frm_size_pixels*2); // Z16-bit specialized
+        memmove(const_cast<void*>(tgt.get_data()), f.get_data(), _current_frm_size_pixels * 2); // Z16-bit specialized
         return tgt;
     }
 
-    bool spatial_filter::do_smoothing(uint16_t * frame_data, uint16_t * intermediate_data, int flags)
+    bool spatial_filter::median_smooth(uint16_t * frame_data, uint16_t * intermediate_data, int flags)
     {
         if (_patch_size < spatial_patch_min_val || _patch_size > spatial_patch_max_val || _range_from < 0 || _range_to < _range_from)
             return false;
@@ -109,6 +132,8 @@ namespace librealsense
         uint8_t half_size = _patch_size >> 1;
         size_t h = _height - half_size;
 
+        // TODO refactor to stl container for boundary checking
+        //std::array<uint16_t, spatial_patch_max_val*spatial_patch_max_val> data;
         uint16_t data[spatial_patch_max_val*spatial_patch_max_val];
 
         memmove(axl_buf, frame_data, _width * half_size * sizeof(uint16_t));
@@ -159,7 +184,7 @@ namespace librealsense
                             }
 
                             p += _width;
-                            pdata += _patch_size;
+                            //pdata += _patch_size; - Ev - memory override
                         }
 
                         if (counter)
@@ -286,4 +311,279 @@ namespace librealsense
 
         return true;
     }
+
+    bool spatial_filter::dxf_smooth(uint16_t * frame_data, uint16_t * intermediate_data, float alpha, float delta, int iterations)
+    {
+        //m_dxf->zImageToFloat(frame_data, m_buf_float, m_width, m_height);
+        //m_dxf->filterRSsimple(m_buf_float, m_buf_float, m_width, m_height, alpha, delta, iterations);
+        for (int i = 0; i < iterations; i++)
+        {
+            recursive_filter_horizontal(frame_data, intermediate_data, alpha, delta);
+            recursive_filter_vertical(frame_data, intermediate_data, alpha, delta);
+        }
+        //m_dxf->floatToZimage(m_buf_float, frame_data, m_width, m_height);
+        return true;
+    }
+
+    void spatial_filter::recursive_filter_horizontal(uint16_t *frame_data, uint16_t * intermediate_data, float alpha, float deltaZ)
+    {
+        int32_t v{}, u{};
+        static const float z_to_meter = 0.001f;      // TODO Evgeni - retrieve from stream profile
+        static const float meter_to_z = 1.f / z_to_meter;      // TODO Evgeni - retrieve from stream profile
+
+        for (v = 0; v < _height;) {
+            // left to right
+            uint16_t *im = frame_data + v * _width;
+            float state = (*im)*z_to_meter;
+            float previousInnovation = state;
+# ifdef DO_LEFT_TO_RIGHT
+            im++;
+            float innovation = (*im)*z_to_meter;
+            u = _width - 1;
+            if (!(*(int*)&previousInnovation > 0))
+                goto CurrentlyInvalidLR;
+            // else fall through
+
+        CurrentlyValidLR:
+            for (;;) {
+                if (*(int*)&innovation > 0) {
+                    float delta = previousInnovation - innovation;
+                    bool smallDifference = delta < deltaZ && delta > -deltaZ;
+
+                    if (smallDifference) {
+                        float filtered = innovation * alpha + state * (1.0f - alpha);
+                        *im = static_cast<uint16_t>((state = filtered) * meter_to_z);
+                    }
+                    else {
+                        state = innovation;
+                    }
+                    u--;
+                    if (u <= 0)
+                        goto DoneLR;
+                    previousInnovation = innovation;
+                    im += 1;
+                    innovation = (*im)*z_to_meter;
+                }
+                else {  // switch to CurrentlyInvalid state
+                    u--;
+                    if (u <= 0)
+                        goto DoneLR;
+                    previousInnovation = innovation;
+                    im += 1;
+                    innovation = (*im)*z_to_meter;
+                    goto CurrentlyInvalidLR;
+                }
+            }
+
+        CurrentlyInvalidLR:
+            for (;;) {
+                u--;
+                if (u <= 0)
+                    goto DoneLR;
+                if (*(int*)&innovation > 0) { // switch to CurrentlyValid state
+                    previousInnovation = state = innovation;
+                    im += 1;
+                    innovation = (*im)*z_to_meter;
+                    goto CurrentlyValidLR;
+                }
+                else {
+                    im += 1;
+                    innovation = (*im)*z_to_meter;
+                }
+            }
+        DoneLR:
+# endif
+# ifdef DO_RIGHT_TO_LEFT
+            // right to left
+            im = frame_data + (v + 1) * _width - 2;  // end of row - two pixels
+            previousInnovation = state = (im[1]) * z_to_meter;
+            u = _width - 1;
+            innovation = (*im)*z_to_meter;
+            if (!(*(int*)&previousInnovation > 0))
+                goto CurrentlyInvalidRL;
+            // else fall through
+        CurrentlyValidRL:
+            for (;;) {
+                if (*(int*)&innovation > 0) {
+                    float delta = previousInnovation - innovation;
+                    bool smallDifference = delta < deltaZ && delta > -deltaZ;
+
+                    if (smallDifference) {
+                        float filtered = innovation * alpha + state * (1.0f - alpha);
+                        *im = static_cast<uint16_t>((state = filtered) * meter_to_z);
+                    }
+                    else {
+                        state = innovation;
+                    }
+                    u--;
+                    if (u <= 0)
+                        goto DoneRL;
+                    previousInnovation = innovation;
+                    im -= 1;
+                    innovation = (*im)*z_to_meter;
+                }
+                else {  // switch to CurrentlyInvalid state
+                    u--;
+                    if (u <= 0)
+                        goto DoneRL;
+                    previousInnovation = innovation;
+                    im -= 1;
+                    innovation = (*im)*z_to_meter;
+                    goto CurrentlyInvalidRL;
+                }
+            }
+
+        CurrentlyInvalidRL:
+            for (;;) {
+                u--;
+                if (u <= 0)
+                    goto DoneRL;
+                if (*(int*)&innovation > 0) { // switch to CurrentlyValid state
+                    previousInnovation = state = innovation;
+                    im -= 1;
+                    innovation = (*im)*z_to_meter;
+                    goto CurrentlyValidRL;
+                }
+                else {
+                    im -= 1;
+                    innovation = (*im)*z_to_meter;
+                }
+            }
+        DoneRL:
+            v++;
+        }
+    }
+    void spatial_filter::recursive_filter_vertical(uint16_t *frame_data, uint16_t * intermediate_data, float alpha, float deltaZ)
+    {
+        int32_t v{}, u{};
+        static const float z_to_meter = 0.001f;      // TODO Evgeni - retrieve from stream profile
+        static const float meter_to_z = 1.f / z_to_meter;      // TODO Evgeni - retrieve from stream profile
+
+        // we'll do one column at a time, top to bottom, bottom to top, left to right, 
+
+        for (u = 0; u < _width;) {
+
+            uint16_t *im = frame_data + u;
+            float state = im[0] * z_to_meter;
+            float previousInnovation = state;
+# ifdef DO_TOP_TO_BOTTOM
+            v = _height - 1;
+            im += _width;
+            float innovation = (*im)*z_to_meter;
+
+            if (!(*(int*)&previousInnovation > 0))
+                goto CurrentlyInvalidTB;
+            // else fall through
+
+        CurrentlyValidTB:
+            for (;;) {
+                if (*(int*)&innovation > 0) {
+                    float delta = previousInnovation - innovation;
+                    bool smallDifference = delta < deltaZ && delta > -deltaZ;
+
+                    if (smallDifference) {
+                        float filtered = innovation * alpha + state * (1.0f - alpha);
+                        *im = static_cast<uint16_t>((state = filtered) * meter_to_z);
+                    }
+                    else {
+                        state = innovation;
+                    }
+                    v--;
+                    if (v <= 0)
+                        goto DoneTB;
+                    previousInnovation = innovation;
+                    im += _width;
+                    innovation = (*im)*z_to_meter;
+                }
+                else {  // switch to CurrentlyInvalid state
+                    v--;
+                    if (v <= 0)
+                        goto DoneTB;
+                    previousInnovation = innovation;
+                    im += _width;
+                    innovation = (*im)*z_to_meter;
+                    goto CurrentlyInvalidTB;
+                }
+            }
+
+        CurrentlyInvalidTB:
+            for (;;) {
+                v--;
+                if (v <= 0)
+                    goto DoneTB;
+                if (*(int*)&innovation > 0) { // switch to CurrentlyValid state
+                    previousInnovation = state = innovation;
+                    im += _width;
+                    innovation = (*im)*z_to_meter;
+                    goto CurrentlyValidTB;
+                }
+                else {
+                    im += _width;
+                    innovation = (*im)*z_to_meter;
+                }
+            }
+        DoneTB:
+# endif
+# ifdef DO_BOTTOM_TO_TOP
+            im = frame_data + u + (_height - 2) * _width;
+            state = (im[_width]) * z_to_meter;
+            previousInnovation = state;
+            innovation = (*im)*z_to_meter;
+            v = _height - 1;
+            if (!(*(int*)&previousInnovation > 0))
+                goto CurrentlyInvalidBT;
+            // else fall through
+        CurrentlyValidBT:
+            for (;;) {
+                if (*(int*)&innovation > 0) {
+                    float delta = previousInnovation - innovation;
+                    bool smallDifference = delta < deltaZ && delta > -deltaZ;
+
+                    if (smallDifference) {
+                        float filtered = innovation * alpha + state * (1.0f - alpha);
+                        *im = static_cast<uint16_t>((state = filtered) * meter_to_z);
+                    }
+                    else {
+                        state = innovation;
+                    }
+                    v--;
+                    if (v <= 0)
+                        goto DoneBT;
+                    previousInnovation = innovation;
+                    im -= _width;
+                    innovation = (*im)*z_to_meter;
+                }
+                else {  // switch to CurrentlyInvalid state
+                    v--;
+                    if (v <= 0)
+                        goto DoneBT;
+                    previousInnovation = innovation;
+                    im -= _width;
+                    innovation = (*im)*z_to_meter;
+                    goto CurrentlyInvalidBT;
+                }
+            }
+
+        CurrentlyInvalidBT:
+            for (;;) {
+                v--;
+                if (v <= 0)
+                    goto DoneBT;
+                if (*(int*)&innovation > 0) { // switch to CurrentlyValid state
+                    previousInnovation = state = innovation;
+                    im -= _width;
+                    innovation = (*im)*z_to_meter;
+                    goto CurrentlyValidBT;
+                }
+                else {
+                    im -= _width;
+                    innovation = (*im)*z_to_meter;
+                }
+            }
+        DoneBT:
+            u++;
+# endif
+        }
+    }
+#endif
 }

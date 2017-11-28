@@ -86,12 +86,10 @@ namespace librealsense
         if (f.get_profile() != _source_stream_profile)
         {
             _source_stream_profile = f.get_profile();
-            _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16);
-            auto vp = _source_stream_profile.as<rs2::video_stream_profile>();
             _recalc_profile = true;
         }
 
-        // Rectify target profile
+        // Buld a new target profile for every system/filter change
         if (_recalc_profile)
         {
             // Verify decimation
@@ -100,18 +98,21 @@ namespace librealsense
                 throw invalid_value_exception(to_string() << "Unsupported decimation patch: " << _patch_size
                     << " for frame size [" << vp.width() << "," << vp.height() << "]");
 
+            _target_stream_profile = _source_stream_profile.clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16);
             auto src_vspi = dynamic_cast<video_stream_profile_interface*>(_source_stream_profile.get()->profile);
             auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(_target_stream_profile.get()->profile);
-            rs2_intrinsics src_intrin = src_vspi->get_intrinsics();
-            rs2_intrinsics tgt_intrin = tgt_vspi->get_intrinsics();
-            tgt_intrin.width    = src_vspi->get_width()/_patch_size;
-            tgt_intrin.height   = src_vspi->get_height()/_patch_size;
-            tgt_intrin.fx       = src_intrin.fx/_patch_size;
-            tgt_intrin.fy       = src_intrin.fy/_patch_size;
-            tgt_intrin.ppx      = src_intrin.ppx/_patch_size;
-            tgt_intrin.ppy      = src_intrin.ppy/_patch_size;
+            rs2_intrinsics src_intrin   = src_vspi->get_intrinsics();
+            rs2_intrinsics tgt_intrin   = tgt_vspi->get_intrinsics();
+            tgt_intrin.width            = src_vspi->get_width()/_patch_size;
+            tgt_intrin.height           = src_vspi->get_height()/_patch_size;
+            tgt_intrin.fx               = src_intrin.fx/_patch_size;
+            tgt_intrin.fy               = src_intrin.fy/_patch_size;
+            tgt_intrin.ppx              = src_intrin.ppx/_patch_size;
+            tgt_intrin.ppy              = src_intrin.ppy/_patch_size;
+
             tgt_vspi->set_intrinsics([tgt_intrin]() { return tgt_intrin; });
             tgt_vspi->set_dims(tgt_intrin.width, tgt_intrin.height);
+
             _recalc_profile = false;
         }
     }
@@ -142,6 +143,7 @@ namespace librealsense
         // Use median filtering
         std::vector<uint16_t> working_kernel(kernel_size);
         auto wk_begin = working_kernel.data();
+        auto wk_itr = wk_begin;
         std::vector<uint16_t*> pixel_raws(scale);
         uint16_t* block_start = const_cast<uint16_t*>(frame_data_in);
 
@@ -149,17 +151,24 @@ namespace librealsense
         //TODO Evgeni
         for (int j = 0; j < height_out; j++)
         {
+            uint16_t *p{};
             // Mark the beginning of each of the N lines that the filter will run upon
             for (size_t i = 0; i < pixel_raws.size(); i++)
                 pixel_raws[i] = block_start + (width_in*i);
 
             for (size_t i = 0, chunk_offset = 0; i < width_out; i++)
             {
-                // extract data the kernel to prrocess
+                wk_itr = wk_begin;
+                // extract data the kernel to process
                 for (size_t n = 0; n < scale; ++n)
                 {
+                    p = pixel_raws[n] + chunk_offset;
                     for (size_t m = 0; m < scale; ++m)
-                        working_kernel[n*scale + m] = *(pixel_raws[n] + chunk_offset + m);
+                    {
+                        *wk_itr++ = *(p + m);
+                        //*wk_itr++ = *(pixel_raws[n] + chunk_offset + m);
+                        //working_kernel[n*scale + m] = *(pixel_raws[n] + chunk_offset + m);
+                    }
                 }
 
                 std::nth_element(wk_begin, wk_begin + (kernel_size / 2), wk_begin + kernel_size);

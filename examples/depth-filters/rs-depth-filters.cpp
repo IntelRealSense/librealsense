@@ -18,8 +18,14 @@ int main(int argc, char * argv[]) try
 
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
-    rs2::decimation_filter depth_filter;
-    //rs2::spatial_filter depth_filter;
+    //rs2::decimation_filter depth_filter;
+    rs2::spatial_filter depth_filter;
+    rs2::option_range rng = depth_filter.get_option_range(rs2_option::RS2_OPTION_FILTER_MAGNITUDE);
+    size_t counter = 0;
+    size_t cur_idx = 0;
+    std::vector<float> filter_magnitudes;
+    for (float v = rng.min; v <= rng.max; v += rng.step)
+        filter_magnitudes.push_back(v);
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
@@ -39,6 +45,13 @@ int main(int argc, char * argv[]) try
         // Render original depth on to the first half of the screen and the filtered data on the second
         depth_image.render(     depth_original, { 0,               0, app.width() / 2, app.height() });
         filtered_image.render( depth_processed, { app.width() / 2, 0, app.width() / 2, app.height() });
+
+        if (false && (0 ==(++counter % 40)))
+        {
+            auto new_val = filter_magnitudes[(++cur_idx) % filter_magnitudes.size()];
+            std::cout << "New magnitude is " << new_val << std::endl;
+            depth_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, new_val);
+        }
     }
 
     return EXIT_SUCCESS;

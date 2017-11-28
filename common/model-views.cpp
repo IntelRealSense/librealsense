@@ -2664,7 +2664,10 @@ namespace rs2
                         auto spatial_filter = s.second.dev->spatial_filter;
                         auto temp_filter = s.second.dev->temporal_filter;
 
-                        return temp_filter->proccess(spatial_filter->proccess(dec_filter->proccess(f)));
+                        //return dec_filter->proccess(f);
+                        return spatial_filter->proccess(dec_filter->proccess(f));
+                        //return temp_filter->proccess(spatial_filter->proccess(dec_filter->proccess(f))); // Evgeni
+                        //return temp_filter->proccess(dec_filter->proccess(f));
                     }
 
                 }

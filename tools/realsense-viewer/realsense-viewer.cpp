@@ -555,7 +555,7 @@ int main(int argv, const char** argc) try
 
         frameset f;
         points p;
-        texture_buffer* texture;
+        texture_buffer* texture{};
         // Fetch frames from queue
         try
         {
