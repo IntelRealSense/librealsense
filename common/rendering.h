@@ -312,6 +312,26 @@ namespace rs2
             }
             return normalize(res);
         }
+
+        void to_column_major(float column_major[16])
+        {
+            column_major[0] = mat[0][0];
+            column_major[1] = mat[1][0];
+            column_major[2] = mat[2][0];
+            column_major[3] = mat[3][0];
+            column_major[4] = mat[0][1]; 
+            column_major[5] = mat[1][1];
+            column_major[6] = mat[2][1];
+            column_major[7] = mat[3][1];
+            column_major[8] = mat[0][2]; 
+            column_major[9] = mat[1][2];
+            column_major[10] = mat[2][2]; 
+            column_major[11] = mat[3][2];
+            column_major[12] = mat[0][3];
+            column_major[13] = mat[1][3]; 
+            column_major[14] = mat[2][3]; 
+            column_major[15] = mat[3][3];
+        }
     };
 
     inline matrix4 operator*(matrix4 a, matrix4 b)
@@ -332,7 +352,7 @@ namespace rs2
         return res;
     }
 
-    inline rs2_pose correct_tm2_pose(const rs2_pose& pose)
+    inline matrix4 tm2_pose_to_world_transformation(const rs2_pose& pose)
     {
         matrix4 rotation(pose.rotation);
         matrix4 translation(pose.translation);
@@ -351,6 +371,12 @@ namespace rs2
         matrix4 G_tm2_world_to_vr_world(rotate_90_x);
         matrix4 G_vr_body_to_vr_world = G_tm2_world_to_vr_world * G_vr_body_to_tm2_world;
 
+        return G_vr_body_to_vr_world;
+    }
+
+    inline rs2_pose correct_tm2_pose(const rs2_pose& pose)
+    {
+        matrix4 G_vr_body_to_vr_world = tm2_pose_to_world_transformation(pose);
         rs2_pose res = pose;
         res.translation.x = G_vr_body_to_vr_world.mat[0][3];
         res.translation.y = G_vr_body_to_vr_world.mat[1][3];
@@ -988,8 +1014,7 @@ namespace rs2
                 {
                     auto pose = frame.as<pose_frame>();
                     rs2_pose pose_data = pose.get_pose_data();
-                    rs2_pose correct_pose = correct_tm2_pose(pose_data);
-                    draw_pose_visualization(correct_pose, frame.get_profile().unique_id());
+                    draw_pose_data(pose_data, frame.get_profile().unique_id());
                 }
                 else
                 {
@@ -999,7 +1024,7 @@ namespace rs2
             }
             //case RS2_FORMAT_RAW10:
             //{
-            //    // Visualize Raw10 by performing a naive downsample. Each 2x2 block contains one red pixel, two green pixels, and one blue pixel, so combine them into a single RGB triple.
+            //    // Visualize Raw10 by performing a naive down sample. Each 2x2 block contains one red pixel, two green pixels, and one blue pixel, so combine them into a single RGB triple.
             //    rgb.clear(); rgb.resize(width / 2 * height / 2 * 3);
             //    auto out = rgb.data(); auto in0 = reinterpret_cast<const uint8_t *>(data), in1 = in0 + width * 5 / 4;
             //    for (auto y = 0; y<height; y += 2)
@@ -1082,10 +1107,11 @@ namespace rs2
             glEnd();
         }
 
-        void draw_circle(float xx, float xy, float xz, float yx, float yy, float yz, float radius = 1.1)
+        // intensity is grey intensity
+        static void draw_circle(float xx, float xy, float xz, float yx, float yy, float yz, float radius = 1.1, float3 center = { 0.0, 0.0, 0.0 }, float intensity = 0.5f)
         {
             const auto N = 50;
-            glColor3f(0.5f, 0.5f, 0.5f);
+            glColor3f(intensity, intensity, intensity);
             glLineWidth(2);
             glBegin(GL_LINE_STRIP);
 
@@ -1095,31 +1121,14 @@ namespace rs2
                 const auto cost = static_cast<float>(cos(theta));
                 const auto sint = static_cast<float>(sin(theta));
                 glVertex3f(
-                    radius * (xx * cost + yx * sint),
-                    radius * (xy * cost + yy * sint),
-                    radius * (xz * cost + yz * sint)
+                    center.x + radius * (xx * cost + yx * sint),
+                    center.y + radius * (xy * cost + yy * sint),
+                    center.z + radius * (xz * cost + yz * sint)
                     );
             }
 
             glEnd();
-        }
-
-        static void draw_hollow_circle(float3 center, float radius, const rs2_pose& pose_data)
-        {
-            int i;
-            int lineAmount = 100;
-            GLfloat twicePi = 2.0f * M_PI;
-            glColor3f(1.0f, 1.0f, 1.0f);
-            glLineWidth(5);
-            glBegin(GL_LINE_LOOP);
-            for (i = 0; i <= lineAmount; i++)
-            {
-                float3 pp = { center.x + (radius * cos(i *  twicePi / lineAmount)), center.y + (radius* sin(i * twicePi / lineAmount)), center.z };
-                float3 circle = texture_buffer::transform_by_pose(pose_data, pp);
-                glVertex3f(circle.x, circle.y, circle.z);
-            }
-            glEnd();
-        }
+        }       
 
         void multiply_vector_by_matrix(GLfloat vec[], GLfloat mat[], GLfloat* result)
         {
@@ -1254,6 +1263,7 @@ namespace rs2
                 vi.x * (2 * (x*z - w*y))     + vi.y * (2 * (y*z + w*x))     + vi.z * (1 - 2 * (x*x + y*y)) + T.z
             };
         }
+
         void draw_grid()
         {
             glBegin(GL_LINES);
@@ -1272,19 +1282,9 @@ namespace rs2
             }
             glEnd();
         }
-        void draw_pose_visualization(const rs2_pose& pose, int id)
-        {
-            using colored_line = std::pair<std::array<float3, 2>, std::array<float, 3>>;
-            const float pose_axis_size = 0.5;
-            static const std::array<colored_line, 3> axis = {
-                { // Need extra brackets, until c++14
-                      //    Start Position,   ,  End Position                     ,  Color
-                    { { { { 0.0f, 0.0f, 0.0f },{ pose_axis_size, 0.0f, 0.0f } } } ,{ 1.0f, 0.0f, 0.0f } },
-                    { { { { 0.0f, 0.0f, 0.0f },{ 0.0f, -pose_axis_size, 0.0f } } },{ 0.0f, 1.0f, 0.0f } },
-                    { { { { 0.0f, 0.0f, 0.0f },{ 0.0f, 0.0f, pose_axis_size } } } ,{ 0.0f, 0.0f, 1.0f } },
-                }
-            };
 
+        void draw_pose_data(const rs2_pose& pose, int id)
+        {
             //TODO: use id if required to keep track of some state
             glMatrixMode(GL_PROJECTION);
             glPushMatrix();
@@ -1303,20 +1303,17 @@ namespace rs2
             draw_axis(0.3, 2);
             
             // Drawing pose:
-            glLineWidth(5);
-            glBegin(GL_LINES);
-            for (auto&& colored_line : axis)
-            {
-                auto& line = colored_line.first;
-                auto& color = colored_line.second;
-                glColor3f(color[0], color[1], color[2]);
-                for (auto&& p : line)
-                {
-                    float3 po = transform_by_pose(pose, p);
-                    glVertex3f(po.x, po.y, po.z);
-                }
-            }
-            glEnd();
+            matrix4 pose_trans = tm2_pose_to_world_transformation(pose);
+            float model[16];
+            pose_trans.to_column_major(model);
+
+            glMatrixMode(GL_MODELVIEW);
+            glPushMatrix();
+            glLoadMatrixf(model);
+
+            draw_axis(0.3, 2);
+
+            glPopMatrix();
 
             const auto canvas_size = 230;
             const auto vec_threshold = 0.01f;

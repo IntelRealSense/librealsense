@@ -1699,7 +1699,7 @@ namespace rs2
                 s.second.profile.stream_type() == RS2_STREAM_POSE)
             {
                 render_pose = true;
-                num_of_buttons++; // add trajectory button
+                num_of_buttons+= 2; // add trajectory button and draw camera button
             }
         }
 
@@ -1799,6 +1799,7 @@ namespace rs2
 
         if (render_pose)
         {
+            // draw trajectory button
             ImGui::SameLine();
 
             if (tm2.is_trajectory_on())
@@ -1823,6 +1824,27 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Draw trajectory");
+            }
+            // draw camera button
+            ImGui::SameLine();
+
+            if (tm2.is_draw_camera_on())
+            {
+                if (ImGui::Button(u8"\uf047", { 24, top_bar_height }))
+                {
+                    tm2.draw_camera_box(false);
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Draw pose axis");
+            }
+            else
+            {
+                if (ImGui::Button(u8"\uf083", { 24, top_bar_height }))
+                {
+                    tm2.draw_camera_box(true);
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Draw camera pose");
             }
         }
         
@@ -3083,11 +3105,22 @@ namespace rs2
                     continue;               
                 
                 rs2_pose pose_data = pose.get_pose_data();
-                rs2_pose correct_pose = correct_tm2_pose(pose_data);
-                tm2.draw_pose(correct_pose);
-                tm2.draw_trajectory(correct_pose);
+                matrix4 pose_trans = tm2_pose_to_world_transformation(pose_data);
+                float model[16];
+                pose_trans.to_column_major(model);
                 
-                
+                glMatrixMode(GL_MODELVIEW);
+                glPushMatrix();
+                glLoadMatrixf(view);
+                glMultMatrixf(model); // = view x model
+
+                tm2.draw_pose_object();
+
+                glPopMatrix();
+
+                rs2_vector translation{ pose_trans.mat[0][3], pose_trans.mat[1][3], pose_trans.mat[2][3] };
+                tracked_point p{ translation , pose_data.confidence };
+                tm2.draw_trajectory(p);
             }
         }
         if (auto points = pc.get_points())
@@ -4483,48 +4516,67 @@ namespace rs2
         return true;
     }
 
-    void tm2_model::draw_pose(rs2_pose& pose)
+    void tm2_model::draw_pose_object()
     {
-        glBegin(GL_QUADS);
-        for (auto&& colored_face : camera_box)
+        if (draw_camera)
         {
-            auto& c = colored_face.second;
-            glColor3f(c[0], c[1], c[2]);
-            for (auto&& v : colored_face.first)
+            glBegin(GL_QUADS);
+            for (auto&& colored_face : camera_box)
             {
-                float3 po = texture_buffer::transform_by_pose(pose, v);
-                glVertex3f(po.x, po.y, po.z);
+                auto& c = colored_face.second;
+                glColor3f(c[0], c[1], c[2]);
+                for (auto&& v : colored_face.first)
+                {
+                    glVertex3f(v.x, v.y, v.z);
+                }
             }
-        }
-        glEnd();
+            glEnd();
 
-        texture_buffer::draw_hollow_circle(center_left, lens_radius, pose);
-        texture_buffer::draw_hollow_circle(center_right, lens_radius, pose);
+            texture_buffer::draw_circle(1, 0, 0, 0, 1, 0, lens_radius, center_left, 1.0f);
+            texture_buffer::draw_circle(1, 0, 0, 0, 1, 0, lens_radius, center_right, 1.0f);
+        }
+        else
+        {
+            texture_buffer::draw_axis(0.1f, 1.f);
+        }        
     }
     
-    void tm2_model::draw_trajectory(rs2_pose& pose)
+    void tm2_model::draw_trajectory(tracked_point& p)
     {
         if (!trajectory_on)
         {
             return;
         }
+        add_to_trajectory(p);
 
-        add_to_trajectory(pose);
-
+        glLineWidth(3.0f);
         glBegin(GL_LINE_STRIP);
-        glColor3f(1.0, 1.0, 0.0);
-        glLineWidth(1);
         for (auto&& v : trajectory)
         {
+            switch (v.second) //color the line according to confidence
+            {
+            case 3:
+                glColor3f(0.0f, 1.0f, 0.0f); //green
+                break;
+            case 2:
+                glColor3f(1.0f, 1.0f, 0.0f); //yellow
+                break;
+            case 1:
+                glColor3f(1.0f, 0.0f, 0.0f); //red
+                break;
+            case 0:
+                glColor3f(0.7f, 0.7f, 0.7f); //grey - failed pose
+                break;
+            default:
+                throw std::runtime_error("Invalid pose confidence value");
+            }
             glVertex3f(v.first.x, v.first.y, v.first.z);
         }
         glEnd();
     }
 
-    void tm2_model::add_to_trajectory(rs2_pose& pose)
+    void tm2_model::add_to_trajectory(tracked_point& p)
     {
-        tracked_point p{ pose.translation , pose.confidence };
-
         //insert first element anyway
         if (trajectory.size() == 0)
         {
@@ -4534,11 +4586,11 @@ namespace rs2
         {
             //check if new element is far enough - more than 1 mm
             rs2_vector prev = trajectory.back().first;
-            rs2_vector curr = pose.translation;
+            rs2_vector curr = p.first;
             if (sqrt(pow((curr.x - prev.x), 2) + pow((curr.y - prev.y), 2) + pow((curr.z - prev.z), 2)) < 0.001)
             {
                 //if too close - check confidence and replace element
-                if (pose.confidence > trajectory.back().second)
+                if (p.second > trajectory.back().second)
                 {
                     trajectory.back() = p;
                 }
@@ -4551,6 +4603,7 @@ namespace rs2
             }
         }
     }
+
     void tm2_model::toggle_trajectory()
     {
         trajectory_on = !trajectory_on;

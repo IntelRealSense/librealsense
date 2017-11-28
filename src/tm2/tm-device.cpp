@@ -45,9 +45,7 @@ namespace librealsense
     {
     public:
         tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev)
-            : sensor_base("Tracking Module", owner), _tm_dev(dev),
-              _fisheye_left(std::make_shared<stream>(RS2_STREAM_FISHEYE)),
-              _fisheye_right(std::make_shared<stream>(RS2_STREAM_FISHEYE))             
+            : sensor_base("Tracking Module", owner), _tm_dev(dev)
         {
             register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, std::make_shared<md_tm2_exposure_time_parser>());
         }
@@ -87,8 +85,6 @@ namespace librealsense
                 auto intrinsics = get_intrinsics(sp);
                 profile->set_intrinsics([intrinsics]() { return intrinsics; });
                 results.push_back(profile);
-
-                //assign_stream(_fisheye_left, profile);             
 
                 //TODO - need to register to have resolve_requests work
                 //native_pixel_format pf;
@@ -570,7 +566,6 @@ namespace librealsense
 
     private:
         perc::TrackingDevice* _tm_dev;
-        std::shared_ptr<stream> _fisheye_left, _fisheye_right;
         std::mutex _configure_lock;
         TrackingData::Profile _tm_supported_profiles;
         TrackingData::Profile _tm_active_profiles;

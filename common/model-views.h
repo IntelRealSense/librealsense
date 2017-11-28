@@ -558,17 +558,19 @@ namespace rs2
     class tm2_model
     {
     public:
-        void draw_pose(rs2_pose& pose);
-        void draw_trajectory(rs2_pose& pose);
+        void draw_pose_object();
+        void draw_trajectory(tracked_point& p);
         void toggle_trajectory();
-        bool is_trajectory_on() { return trajectory_on; }        
+        bool is_trajectory_on() { return trajectory_on; } 
+        void draw_camera_box(bool on) { draw_camera = on; }
+        bool is_draw_camera_on() { return draw_camera;  }
 
     private:
-        void add_to_trajectory(rs2_pose& pose);
+        void add_to_trajectory(tracked_point& p);
 
-        const float len_x = 0.1;
-        const float len_y = 0.03;
-        const float len_z = 0.01;
+        const float len_x = 0.1f;
+        const float len_y = 0.03f;
+        const float len_z = 0.01f;
         const float lens_radius = 0.005f;
         /*
           4--------------------------3
@@ -596,7 +598,7 @@ namespace rs2
         std::array<color, 6> colors{ {
             { 0.5f, 0.5f, 0.5f }, //Back
             { 0.7f, 0.7f, 0.7f }, //Right side
-            { 0.7f, 0.7f, 0.7f }, //Top side
+            { 1.0f, 0.7f, 0.7f }, //Top side
             { 0.7f, 0.7f, 0.7f }, //Left side
             { 0.4f, 0.4f, 0.4f }, //Front
             { 0.7f, 0.7f, 0.7f }  //Bottom side
@@ -608,6 +610,7 @@ namespace rs2
                 
         std::vector<tracked_point> trajectory;
         bool trajectory_on = false;
+        bool draw_camera = true;
     };
 
     class viewer_model
