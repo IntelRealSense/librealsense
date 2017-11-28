@@ -4,8 +4,9 @@
 
 'use strict';
 
-/* global describe, it, before, after */
+/* global describe, it, before, after, afterEach */
 const assert = require('assert');
+const fs = require('fs');
 let rs2;
 try {
   rs2 = require('node-librealsense');
@@ -639,4 +640,116 @@ describe(('DeviceHub test'), function() {
     assert.equal(hub.isConnected(dev), true);
     dev.destroy();
   });
+});
+
+describe(('record & playback test'), function() {
+  let fileName = 'ut-record.bag';
+
+  afterEach(() => {
+    rs2.cleanup();
+  });
+
+  function startRecording(file, cnt, callback) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        let ctx = new rs2.Context();
+        let dev = ctx.queryDevices().devices[0];
+        let recorder = new rs2.RecorderDevice(file, dev);
+        let sensors = recorder.querySensors();
+        let sensor = sensors[0];
+        let profiles = sensor.getStreamProfiles();
+        for (let i =0; i < profiles.length; i++) {
+          if (profiles[i].streamType === rs2.stream.STREAM_DEPTH &&
+              profiles[i].fps === 30 &&
+              profiles[i].width === 640 &&
+              profiles[i].height === 480 &&
+              profiles[i].format === rs2.format.FORMAT_Z16) {
+            sensor.open(profiles[i]);
+          }
+        }
+        let counter = 0;
+        sensor.start((frame) => {
+          if (callback) {
+            callback(recorder, counter);
+          }
+          counter++;
+          if (counter === cnt) {
+            recorder.reset();
+            rs2.cleanup();
+            resolve();
+          }
+        });
+      }, 2000);
+    });
+  }
+
+  function startPlayback(file, callback) {
+    return new Promise((resolve, reject) => {
+      let ctx = new rs2.Context();
+      let dev = ctx.loadDevice(file);
+      let sensors = dev.querySensors();
+      let sensor = sensors[0];
+      let profiles = sensor.getStreamProfiles();
+      let cnt = 0;
+
+      dev.setStatusChangedCallback((status) => {
+        callback(dev, status, cnt);
+        if (status.description === 'stopped') {
+          console.log('stopped');
+          dev.stop();
+          ctx.unloadDevice(file);
+          rs2.cleanup();
+          resolve();
+        }
+      });
+      sensor.open(profiles);
+      sensor.start((frame) => {
+        cnt++;
+      });
+    });
+  }
+
+  it('record test', () => {
+    return new Promise((resolve, reject) => {
+      startRecording(fileName, 1, null).then(() => {
+        assert.equal(fs.existsSync(fileName), true);
+        fs.unlinkSync(fileName);
+        resolve();
+      });
+    });
+  }).timeout(5000);
+
+  it('pause/resume test', () => {
+    return new Promise((resolve, reject) => {
+      startRecording(fileName, 2, (recorder, cnt) => {
+        if (cnt === 1) {
+          recorder.pause();
+          recorder.resume();
+        }
+      }).then(() => {
+        assert.equal(fs.existsSync(fileName), true);
+        fs.unlinkSync(fileName);
+        resolve();
+      });
+    });
+  }).timeout(5000);
+
+  it('playback test', () => {
+    return new Promise((resolve, reject) => {
+      startRecording(fileName, 1, null).then(() => {
+        assert.equal(fs.existsSync(fileName), true);
+        return startPlayback(fileName, (playbackDev, status) => {
+          if (status.description === 'stopped') {
+            resolve();
+          } else if (status.description === 'playing') {
+            assert.equal(playbackDev.fileName, 'ut-record.bag');
+            assert.equal(typeof playbackDev.duration, 'number');
+            assert.equal(typeof playbackDev.position, 'number');
+            assert.equal(typeof playbackDev.isRealTime, 'boolean');
+            assert.equal(playbackDev.currentStatus.description, 'playing');
+          }
+        });
+      });
+    });
+  }).timeout(5000);
 });
