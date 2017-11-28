@@ -6,7 +6,7 @@
 #include "context.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"
-
+#include "environment.h"
 
 namespace librealsense
 {
@@ -87,6 +87,8 @@ namespace librealsense
         {
             _source_stream_profile = f.get_profile();
             _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16);
+            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*(stream_interface*)(_source_stream_profile.get()->profile), *(stream_interface*)(_target_stream_profile.get()->profile));
+
             auto vp = _source_stream_profile.as<rs2::video_stream_profile>();
             _recalc_profile = true;
         }
@@ -100,6 +102,8 @@ namespace librealsense
                 throw invalid_value_exception(to_string() << "Unsupported decimation patch: " << _patch_size
                     << " for frame size [" << vp.width() << "," << vp.height() << "]");
 
+            _target_stream_profile = _source_stream_profile.clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16);
+            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*(stream_interface*)(_source_stream_profile.get()->profile), *(stream_interface*)(_target_stream_profile.get()->profile));
             auto src_vspi = dynamic_cast<video_stream_profile_interface*>(_source_stream_profile.get()->profile);
             auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(_target_stream_profile.get()->profile);
             rs2_intrinsics src_intrin = src_vspi->get_intrinsics();

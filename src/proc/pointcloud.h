@@ -2,9 +2,10 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-
+#include "../include/librealsense2/hpp/rs_frame.hpp"
 namespace librealsense
 {
+
     class pointcloud : public processing_block
     {
     public:
@@ -27,5 +28,11 @@ namespace librealsense
         std::shared_ptr<stream_profile_interface> _stream, _mapped;
         int                     _mapped_stream_id = -1;
         stream_profile_interface* _depth_stream = nullptr;
+
+        void inspect_depth_frame(const rs2::frame& depth);
+        void inspect_other_frame(const rs2::frame& other);
+        void process_depth_frame(const rs2::depth_frame& depth);
+
+        bool stream_changed(stream_profile_interface* old, stream_profile_interface* curr);
     };
 }
