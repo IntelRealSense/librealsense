@@ -12,12 +12,6 @@ FILE(GLOB_RECURSE AllSources
         ${ROSBAG_DIR}/*.c
         )
 
-include_directories(
-        ${ROSBAG_HEADER_DIRS}
-        ${BOOST_INCLUDE_PATH}
-        ${LZ4_INCLUDE_PATH}
-        )
-
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 source_group("Header Files\\lz4" FILES
         lz4/lz4.h
@@ -36,6 +30,12 @@ add_library(${PROJECT_NAME} STATIC
     ${SOURCE_FILES_ROSBAG}
     ${SOURCE_FILES_COMPRESSION}
 )
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+        ${ROSBAG_HEADER_DIRS}
+        ${BOOST_INCLUDE_PATH}
+        ${LZ4_INCLUDE_PATH}
+        )
 
 #set_target_properties(${PROJECT_NAME} PROPERTIES VERSION "${LIBVERSION}" SOVERSION "${LIBSOVERSION}")
 
