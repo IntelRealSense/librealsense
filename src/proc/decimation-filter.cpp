@@ -83,7 +83,7 @@ namespace librealsense
 
     void  decimation_filter::update_output_profile(const rs2::frame& f)
     {
-        if (f.get_profile() != _source_stream_profile)
+        if (f.get_profile().get() != _source_stream_profile.get())
         {
             _source_stream_profile = f.get_profile();
             _recalc_profile = true;
