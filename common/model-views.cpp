@@ -2695,7 +2695,6 @@ namespace rs2
                             //return temp_filter->proccess(spatial_filter->proccess(dec_filter->proccess(f))); // Evgeni
                             //return temp_filter->proccess(dec_filter->proccess(f));
                         }
-
                     }
             }
         }
