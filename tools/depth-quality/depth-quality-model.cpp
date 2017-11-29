@@ -774,10 +774,11 @@ namespace rs2
                         _metrics_model.update_stream_attributes(depth_profile.get_intrinsics(),
                             sub->s->as<depth_sensor>().get_depth_scale(), baseline_mm);
 
-                        _metrics_model.update_frame_attributes({ int(depth_profile.width() * (0.5f - 0.5f*_roi_percent)),
+                        _metrics_model.update_roi_attributes({ int(depth_profile.width() * (0.5f - 0.5f*_roi_percent)),
                                                            int(depth_profile.height() * (0.5f - 0.5f*_roi_percent)),
                                                            int(depth_profile.width() * (0.5f + 0.5f*_roi_percent)),
-                                                           int(depth_profile.height() * (0.5f + 0.5f*_roi_percent)) });
+                                                           int(depth_profile.height() * (0.5f + 0.5f*_roi_percent)) },
+                                                            _roi_percent);
                     }
                 }
 
@@ -886,6 +887,7 @@ namespace rs2
             _ground_truth_mm(0),
             _use_gt(false),
             _plane_fit(false),
+            _roi_percentage(0.4f),
             _active(true)
         {
             _worker_thread = std::thread([this]() {
@@ -898,20 +900,31 @@ namespace rs2
                         continue;
                     }
 
-                    auto stream_type = depth_frame.get_profile().stream_type();
+                    auto profile = depth_frame.get_profile();
+                    auto stream_type = profile.stream_type();
 
                     if (RS2_STREAM_DEPTH == stream_type)
                     {
                         float su = 0, baseline = -1.f;
-                        rs2_intrinsics intrin;
-                        int gt_mm;
-                        bool plane_fit_set;
-                        region_of_interest roi;
+                        rs2_intrinsics intrin{};
+                        int gt_mm{};
+                        bool plane_fit_set{};
+                        region_of_interest roi{};
+
                         {
                             std::lock_guard<std::mutex> lock(_m);
                             su = _depth_scale_units;
                             baseline = _stereo_baseline_mm;
-                            intrin = _depth_intrinsic;
+                            //intrin = _depth_intrinsic; // Evgeni
+                            auto depth_profile = profile.as<video_stream_profile>();
+                            intrin = depth_profile.get_intrinsics();
+                            _depth_intrinsic = intrin;
+                            _roi = { int(intrin.width * (0.5f - 0.5f*this->_roi_percentage)),
+                                int(intrin.height * (0.5f - 0.5f*this->_roi_percentage)),
+                                int(intrin.width * (0.5f + 0.5f*this->_roi_percentage)),
+                                int(intrin.height * (0.5f + 0.5f*this->_roi_percentage)) };
+
+                            //intrin = depth_frame.get_profile().as<video_stream_profile>().get_intrinsics() ; // Evgeni
                             roi = _roi;
                         }
 
