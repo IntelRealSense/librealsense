@@ -2,6 +2,7 @@
 #include "depth-quality-model.h"
 #include <librealsense2/rs_advanced_mode.hpp>
 #include "model-views.h"
+#include <imgui_internal.h>
 
 namespace rs2
 {
@@ -451,15 +452,34 @@ namespace rs2
             if (_device_model.get())
             {
                 device_model* device_to_remove = nullptr;
-                std::map<subdevice_model*, float> model_to_y;
-                std::map<subdevice_model*, float> model_to_abs_y;
+                std::vector<std::function<void()>> draw_later;
                 auto windows_width = ImGui::GetContentRegionMax().x;
 
                 _device_model->draw_controls(_viewer_model.panel_width, _viewer_model.panel_y,
-                    win.get_font(), win.get_large_font(), win.get_mouse(),
+                    win,
                     _error_message, device_to_remove, _viewer_model, windows_width,
                     _update_readonly_options_timer,
-                    model_to_y, model_to_abs_y);
+                    draw_later);
+
+                ImGui::SetContentRegionWidth(windows_width);
+                auto pos = ImGui::GetCursorScreenPos();
+
+                for (auto&& lambda : draw_later)
+                {
+                    try
+                    {
+                        lambda();
+                    }
+                    catch (const error& e)
+                    {
+                        _error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        _error_message = e.what();
+                    }
+                }
+                ImGui::SetCursorScreenPos(pos);
 
                 if (_depth_sensor_model.get())
                 {
