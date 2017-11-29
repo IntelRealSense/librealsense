@@ -746,13 +746,7 @@ namespace rs2
         GLuint texture;
         rs2::frame_queue last_queue[2];
         mutable rs2::frame last[2];
-
-
-
     public:
-        std::shared_ptr<temporal_filter> temporal;
-        std::shared_ptr<decimation_filter> decimate;
-        std::shared_ptr<spatial_filter> smooth;
         std::shared_ptr<colorizer> colorize;
 
         texture_buffer(const texture_buffer& other)
@@ -772,10 +766,7 @@ namespace rs2
         }
 
         texture_buffer() : last_queue(), texture(),
-            colorize(std::make_shared<colorizer>()),
-            decimate(std::make_shared<decimation_filter>()),
-            temporal(std::make_shared<temporal_filter>()),
-            smooth(std::make_shared<spatial_filter>()) {}
+            colorize(std::make_shared<colorizer>()) {}
 
         GLuint get_gl_handle() const { return texture; }
 
@@ -897,8 +888,8 @@ namespace rs2
             default:
                 throw std::runtime_error("The requested format is not supported for rendering");
             }
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
             glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
