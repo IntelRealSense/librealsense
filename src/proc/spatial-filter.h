@@ -29,8 +29,12 @@ namespace librealsense
 
     private:
 
+        // Ev - not doing much
         void recursive_filter_horizontal(uint16_t *frame_data, uint16_t * intermediate_data, float alpha, float deltaZ);
         void recursive_filter_vertical(uint16_t *frame_data, uint16_t * intermediate_data, float alpha, float deltaZ);
+        // Current try
+        void recursive_filter_horizontal_v2(uint16_t *frame_data, uint16_t * intermediate_data, float alpha, float deltaZ);
+        void recursive_filter_vertical_v2(uint16_t *frame_data, uint16_t * intermediate_data, float alpha, float deltaZ);
 
         uint8_t                 _spatial_param;
         float                    _spatial_alpha_param;

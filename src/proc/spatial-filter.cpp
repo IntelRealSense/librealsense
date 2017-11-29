@@ -21,7 +21,7 @@ namespace librealsense
 {
     const uint8_t spatial_patch_min_val = 3;
     const uint8_t spatial_patch_max_val = 11;
-    const uint8_t spatial_patch_default_val = 9;
+    const uint8_t spatial_patch_default_val = 5;
     const uint8_t spatial_patch_step = 2;    // The filter suppors non-even kernels in the range of [3..11]
 
 
@@ -67,7 +67,7 @@ namespace librealsense
             {
                 update_configuration(f);
                 tgt = prepare_target_frame(depth, source);
-                // In place spatial smooth - running on generated frame
+                
                 if (false)
                 {
                     median_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
@@ -75,6 +75,7 @@ namespace librealsense
                 }
                 else
                 {
+                    // Spatial smooth with domain trandform filter
                     dxf_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
                         _sandbox[_current_frm_size_pixels].data());
                 }
@@ -318,8 +319,8 @@ namespace librealsense
         //m_dxf->filterRSsimple(m_buf_float, m_buf_float, m_width, m_height, alpha, delta, iterations);
         for (int i = 0; i < iterations; i++)
         {
-            recursive_filter_horizontal(frame_data, intermediate_data, alpha, delta);
-            recursive_filter_vertical(frame_data, intermediate_data, alpha, delta);
+            recursive_filter_horizontal_v2(frame_data, intermediate_data, alpha, delta);
+            recursive_filter_vertical_v2(frame_data, intermediate_data, alpha, delta);
         }
         //m_dxf->floatToZimage(m_buf_float, frame_data, m_width, m_height);
         return true;
@@ -586,4 +587,85 @@ namespace librealsense
         }
     }
 #endif
+
+    void  spatial_filter::recursive_filter_horizontal_v2(uint16_t *image, uint16_t * intermediate_data, float alpha, float deltaZ)
+    {
+        int32_t v{}, u{};
+        //static const float z_to_meter = 0.001f;      // TODO Evgeni - retrieve from stream profile
+        //static const float meter_to_z = 1.f / z_to_meter;      // TODO Evgeni - retrieve from stream profile
+
+        for (v = 0; v < _height; v++) {
+            // left to right
+            unsigned short *im = image + v * _width;
+            unsigned short val0 = im[0];
+            for (u = 1; u < _width; u++) {
+                unsigned short val1 = im[1];
+                int delta = val0 - val1;
+                if (delta < deltaZ && delta > -deltaZ) {
+                    float filtered = val1 * alpha + val0 * (1.0f - alpha);
+                    val0 = (unsigned short)(filtered + 0.5f);
+                    im[1] = val0;
+                }
+                im += 1;
+            }
+
+            // right to left
+            im = image + (v + 1) * _width - 2;  // end of row - two pixels
+            unsigned short val1 = im[1];
+            for (u = _width - 1; u > 0; u--) {
+                unsigned short val0 = im[0];
+                int delta = val0 - val1;
+                if (delta < deltaZ && delta > -deltaZ) {
+                    float filtered = val0 * alpha + val1 * (1.0f - alpha);
+                    val1 = (unsigned short)(filtered + 0.5f);
+                    im[0] = val1;
+                }
+                im -= 1;
+            }
+        }
+    }
+    void spatial_filter::recursive_filter_vertical_v2(uint16_t *image, uint16_t * intermediate_data, float alpha, float deltaZ)
+    {
+        int32_t v{}, u{};
+
+        // we'll do one row at a time, top to bottom, then bottom to top
+
+        // top to bottom
+
+        unsigned short *im = image;
+        for (v = 1; v < _height; v++) {
+            for (u = 0; u < _width; u++) {
+                unsigned short im0 = im[0];
+                unsigned short imw = im[_width];
+
+                if (im0 && imw) {
+                    int delta = im0 - imw;
+                    if (delta < deltaZ && delta > -deltaZ) {
+                        float filtered = imw * alpha + im0 * (1.0f - alpha);
+                        im[_width] = (unsigned short)(filtered + 0.5f);
+                    }
+                }
+                im += 1;
+            }
+        }
+
+        // bottom to top
+        im = image + (_height - 2) * _width;
+        for (v = 1; v < _height; v++, im -= (_width * 2)) {
+            for (u = 0; u < _width; u++) {
+                unsigned short  im0 = im[0];
+                unsigned short  imw = im[_width];
+
+                if (im0 && imw) {
+                    int delta = im0 - imw;
+                    if (delta < deltaZ && delta > -deltaZ) {
+                        float filtered = im0 * alpha + imw * (1.0f - alpha);
+                        im[0] = (unsigned short)(filtered + 0.5f);
+                    }
+                }
+                im += 1;
+            }
+        }
+    }
+
 }
