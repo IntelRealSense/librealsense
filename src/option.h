@@ -465,5 +465,4 @@ namespace librealsense
        float                   _manual_value;
        std::function<void(const option&)> _recording_function = [](const option&) {};
    };
-
 }

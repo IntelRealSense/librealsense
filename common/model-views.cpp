@@ -2654,11 +2654,16 @@ namespace rs2
 
         if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
         {
+            //std::lock_guard<std::mutex> lock(streams_mutex);
             for (auto&& s : viewer.streams)
             {
-                for (auto&& p : s.second.dev->profiles)
+                if(!s.second.dev) continue;
+                auto dev = s.second.dev;
+                //lock.unlock();
+
+                for (auto&& p : dev->profiles)
                 {
-                    if (p.stream_type() == RS2_STREAM_DEPTH)
+                    if (p.stream_type() == RS2_STREAM_DEPTH )
                     {
                         auto dec_filter = s.second.dev->decimation_filter;
                         auto spatial_filter = s.second.dev->spatial_filter;
@@ -2730,7 +2735,7 @@ namespace rs2
             try
             {
                 frame frames;
-                if (frames_queue.poll_for_frame(&frames))
+                if (frames = frames_queue.wait_for_frame())
                 {
                     processing_block.invoke(frames);
                 }
@@ -2738,9 +2743,9 @@ namespace rs2
             catch (...) {}
 
 
-            // There is no practical reason to re-calculate the 3D model
-            // at higher frequency then 100 FPS
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+//            // There is no practical reason to re-calculate the 3D model
+//            // at higher frequency then 100 FPS
+//            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
 
@@ -2981,10 +2986,13 @@ namespace rs2
     void viewer_model::render_3d_view(const rect& viewer_rect, float scale_factor, texture_buffer* texture, rs2::points points)
     {
         if(points)
+        {
             last_points = points;
+        }
         if(texture)
+        {
             last_texture = texture;
-
+        }
         glViewport(viewer_rect.x * scale_factor, 0,
             viewer_rect.w * scale_factor, viewer_rect.h * scale_factor);
 
@@ -3091,7 +3099,7 @@ namespace rs2
 
             if (selected_tex_source_uid >= 0)
             {
-                auto tex = texture->get_gl_handle();
+                auto tex = last_texture->get_gl_handle();
                 glBindTexture(GL_TEXTURE_2D, tex);
                 glEnable(GL_TEXTURE_2D);
 
