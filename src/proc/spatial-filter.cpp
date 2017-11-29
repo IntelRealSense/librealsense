@@ -37,24 +37,9 @@ namespace librealsense
         _enable_filter(true)
     {
         //"Spatial Alpha [0.1,.0.2,.. ..., 0.85,   ...,2] size"
-        auto spatial_filter_alpha = std::make_shared<ptr_option<float>>(0.1f, 2.f, 0.05f, 0.85f, &_spatial_alpha_param, "Spatial alpha");
-        auto spatial_filter_delta = std::make_shared<ptr_option<float>>(25.f, 100.f, 5.f, 50.f, &_spatial_delta_param, "Spatial delta");
-        auto spatial_filter_control = std::make_shared<ptr_option<uint8_t>>(
-            spatial_patch_min_val, spatial_patch_max_val,
-            spatial_patch_step, spatial_patch_default_val,
-            &_spatial_param, "Spatial kernel size");
+        auto spatial_filter_alpha = std::make_shared<ptr_option<float>>(0.01f, 1.f, 0.01f, 0.85f, &_spatial_alpha_param, "Spatial alpha");
+        auto spatial_filter_delta = std::make_shared<ptr_option<float>>(0.f, 100.f, 1.f, 50.f, &_spatial_delta_param, "Spatial delta");
 
-        //spatial_filter_control->on_set([this, spatial_filter_control](float val)
-        //{
-        //    if (!spatial_filter_control->is_valid(val))
-        //        throw invalid_value_exception(to_string()
-        //            << "Unsupported spatial patch size " << val << " is out of range.");
-
-        //    _patch_size = uint8_t(val);
-        //    _window_size = _patch_size*_patch_size;
-        //});
-
-        register_option(RS2_OPTION_FILTER_MAGNITUDE, spatial_filter_control);
         register_option(RS2_OPTION_FILTER_OPT1, spatial_filter_alpha);
         register_option(RS2_OPTION_FILTER_OPT2, spatial_filter_delta);
         unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
@@ -77,7 +62,7 @@ namespace librealsense
                     update_configuration(f);
                     tgt = prepare_target_frame(depth, source);
 
-                    if (false)
+                    if (false) // provisional version of smoothing
                     {
                         median_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
                             _sandbox[_current_frm_size_pixels].data(), 1);     // Flag that control the filter properties
@@ -86,7 +71,7 @@ namespace librealsense
                     {
                         // Spatial smooth with domain trandform filter
                         dxf_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
-                            _sandbox[_current_frm_size_pixels].data());
+                            _sandbox[_current_frm_size_pixels].data(), this->_spatial_alpha_param, this->_spatial_delta_param);
                     }
                 }
 
@@ -333,8 +318,10 @@ namespace librealsense
         //m_dxf->filterRSsimple(m_buf_float, m_buf_float, m_width, m_height, alpha, delta, iterations);
         for (int i = 0; i < iterations; i++)
         {
-            recursive_filter_horizontal_v2(frame_data, intermediate_data, alpha, delta);
-            recursive_filter_vertical_v2(frame_data, intermediate_data, alpha, delta);
+            recursive_filter_horizontal(frame_data, intermediate_data, alpha, delta);
+            recursive_filter_vertical(frame_data, intermediate_data, alpha, delta);
+            //recursive_filter_horizontal_v2(frame_data, intermediate_data, alpha, delta);
+            //recursive_filter_vertical_v2(frame_data, intermediate_data, alpha, delta);
         }
         //m_dxf->floatToZimage(m_buf_float, frame_data, m_width, m_height);
         return true;
@@ -605,8 +592,6 @@ namespace librealsense
     void  spatial_filter::recursive_filter_horizontal_v2(uint16_t *image, uint16_t * intermediate_data, float alpha, float deltaZ)
     {
         int32_t v{}, u{};
-        //static const float z_to_meter = 0.001f;      // TODO Evgeni - retrieve from stream profile
-        //static const float meter_to_z = 1.f / z_to_meter;      // TODO Evgeni - retrieve from stream profile
 
         for (v = 0; v < _height; v++) {
             // left to right
@@ -629,7 +614,7 @@ namespace librealsense
             for (u = _width - 1; u > 0; u--) {
                 unsigned short val0 = im[0];
                 int delta = val0 - val1;
-                if (delta < deltaZ && delta > -deltaZ) {
+                if (delta && delta < deltaZ && delta > -deltaZ) {
                     float filtered = val0 * alpha + val1 * (1.0f - alpha);
                     val1 = (unsigned short)(filtered + 0.5f);
                     im[0] = val1;
@@ -654,7 +639,7 @@ namespace librealsense
 
                 if (im0 && imw) {
                     int delta = im0 - imw;
-                    if (delta < deltaZ && delta > -deltaZ) {
+                    if (delta && delta < deltaZ && delta > -deltaZ) {
                         float filtered = imw * alpha + im0 * (1.0f - alpha);
                         im[_width] = (unsigned short)(filtered + 0.5f);
                     }

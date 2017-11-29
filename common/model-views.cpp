@@ -2670,9 +2670,8 @@ namespace rs2
                         auto temp_filter = s.second.dev->temporal_filter;
 
                         //return dec_filter->proccess(f);
-                        //return spatial_filter->proccess(dec_filter->proccess(f));
-                        return temp_filter->proccess(spatial_filter->proccess(dec_filter->proccess(f))); // Evgeni
-                        //return temp_filter->proccess(dec_filter->proccess(f));
+                        return spatial_filter->proccess(dec_filter->proccess(f));
+                        //return temp_filter->proccess(spatial_filter->proccess(dec_filter->proccess(f)));
                     }
                 }
             }
@@ -2734,7 +2733,7 @@ namespace rs2
             try
             {
                 frame frames;
-                if (frames = frames_queue.wait_for_frame())
+                if (frames_queue.poll_for_frame(&frames))
                 {
                     processing_block.invoke(frames);
                 }
@@ -2744,7 +2743,7 @@ namespace rs2
 
 //            // There is no practical reason to re-calculate the 3D model
 //            // at higher frequency then 100 FPS
-//            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
 
