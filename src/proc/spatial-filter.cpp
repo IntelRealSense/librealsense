@@ -94,7 +94,8 @@ namespace librealsense
     {
         if (f.get_profile() != _target_stream_profile)
         {
-            _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16);
+            // The target profile is persistent
+            _target_stream_profile = f.get_profile();// .clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16);
 
             auto vp = _target_stream_profile.as<rs2::video_stream_profile>();
             _width = vp.width();
