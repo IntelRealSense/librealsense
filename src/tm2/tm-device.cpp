@@ -117,7 +117,7 @@ namespace librealsense
                 profile->set_stream_index(tm_profile.sensorIndex + 1);  // for nice presentation by the viewer - add 1 to stream index
                 profile->set_format(convertTm2PixelFormat(tm_profile.profile.pixelFormat));
                 profile->set_framerate(p.fps);
-                profile->set_unique_id(uid++); //TODO - is this unique??
+                profile->set_unique_id(environment::get_instance().generate_stream_id()); 
                 if (tm_profile.sensorIndex == 0)
                 {
                     profile->make_default();
@@ -145,7 +145,7 @@ namespace librealsense
                 profile->set_stream_index(tm_profile.sensorIndex + 1); // for nice presentation by the viewer - add 1 to stream index
                 profile->set_format(format);
                 profile->set_framerate(tm_profile.fps);
-                profile->set_unique_id(uid++);              
+                profile->set_unique_id(environment::get_instance().generate_stream_id());
                 if (tm_profile.sensorIndex == 0)
                 {
                     profile->make_default();
@@ -165,7 +165,7 @@ namespace librealsense
                 profile->set_stream_index(tm_profile.sensorIndex + 1); // for nice presentation by the viewer - add 1 to stream index
                 profile->set_format(format);
                 profile->set_framerate(tm_profile.fps);
-                profile->set_unique_id(uid++);  
+                profile->set_unique_id(environment::get_instance().generate_stream_id());
                 if (tm_profile.sensorIndex == 0)
                 {
                     profile->make_default();
@@ -192,7 +192,7 @@ namespace librealsense
                 profile->set_stream_index(static_cast<uint32_t>(tm_profile.profileType) + 1); 
                 profile->set_format(format);
                 profile->set_framerate(fps);
-                profile->set_unique_id(uid++);  
+                profile->set_unique_id(environment::get_instance().generate_stream_id());
                 if (tm_profile.profileType == SixDofProfile0)
                 {
                     profile->make_default();

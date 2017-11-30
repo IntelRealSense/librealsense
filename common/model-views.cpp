@@ -1520,7 +1520,8 @@ namespace rs2
 
 
         const auto top_bar_height = 32.f;
-        auto num_of_buttons = 4;
+        const auto num_of_buttons = 4;
+        auto total_top_bar_height = top_bar_height; // may include single bar or additional bar for pose
 
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -1692,17 +1693,8 @@ namespace rs2
             tex = streams[selected_tex_source_uid].texture->get_last_frame();
             if (tex) pc.update_texture(tex);
         }
-        bool render_pose = false;
-        for (auto&& s : streams)
-        {
-            if (s.second.is_stream_visible() &&
-                s.second.profile.stream_type() == RS2_STREAM_POSE)
-            {
-                render_pose = true;
-                num_of_buttons+= 2; // add trajectory button and draw camera button
-            }
-        }
-
+        
+        // Draw the selection buttons on the right
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons - 5, 0 });
 
         if (paused)
@@ -1797,11 +1789,54 @@ namespace rs2
                 ImGui::SetTooltip("Keep the pointcloud and the texture synchronized");
         }
 
+        ImGui::End();
+
+        // Draw pose header if pose stream exists
+        bool render_pose = false;
+
+        for (auto&& s : streams)
+        {
+            if (s.second.is_stream_visible() &&
+                s.second.profile.stream_type() == RS2_STREAM_POSE)
+            {
+                render_pose = true;                
+            }
+        }
         if (render_pose)
         {
-            // draw trajectory button
-            ImGui::SameLine();
+            total_top_bar_height += top_bar_height; // add additional bar height for pose
+            const int num_of_pose_buttons = 2; // trajectory button and draw camera button
 
+            ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + top_bar_height });
+            ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
+            std::string pose_label = to_string() << "header of 3dviewer - pose";
+            ImGui::Begin(pose_label.c_str(), nullptr, flags);
+
+            // Draw selection buttons on the pose header
+            ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_pose_buttons - 5, 0 });
+            
+            // Draw camera button
+            if (tm2.is_draw_camera_on())
+            {
+                if (ImGui::Button(u8"\uf047", { 24, top_bar_height }))
+                {
+                    tm2.draw_camera_box(false);
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Draw pose axis");
+            }
+            else
+            {
+                if (ImGui::Button(u8"\uf083", { 24, top_bar_height }))
+                {
+                    tm2.draw_camera_box(true);
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Draw camera pose");
+            }
+
+            // Draw trajectory button            
+            ImGui::SameLine();
             if (tm2.is_trajectory_on())
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
@@ -1825,30 +1860,10 @@ namespace rs2
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Draw trajectory");
             }
-            // draw camera button
-            ImGui::SameLine();
 
-            if (tm2.is_draw_camera_on())
-            {
-                if (ImGui::Button(u8"\uf047", { 24, top_bar_height }))
-                {
-                    tm2.draw_camera_box(false);
-                }
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Draw pose axis");
-            }
-            else
-            {
-                if (ImGui::Button(u8"\uf083", { 24, top_bar_height }))
-                {
-                    tm2.draw_camera_box(true);
-                }
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Draw camera pose");
-            }
+            ImGui::End();
         }
         
-        ImGui::End();
         ImGui::PopStyleColor(6);
         ImGui::PopStyleVar();
 
@@ -1861,7 +1876,8 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, dark_sensor_bg);
-        ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 265, stream_rect.y + top_bar_height + 5 });
+        
+        ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 265, stream_rect.y + total_top_bar_height + 5 });
         ImGui::SetNextWindowSize({ 260, 65 });
         ImGui::Begin("3D Info box", nullptr, flags);
 

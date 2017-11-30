@@ -167,5 +167,4 @@ void draw_pointcloud(window& app, state& app_state, rs2::points& points)
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     glPopAttrib();
-    glPushMatrix();
 }
