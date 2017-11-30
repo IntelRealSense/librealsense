@@ -111,7 +111,7 @@ namespace librealsense
         std::shared_ptr<stream_profile_interface> clone() const override
         {
             auto res = std::make_shared<video_stream_profile>(platform::stream_profile{});
-            environment::get_instance().generate_stream_id();
+            res->set_unique_id(environment::get_instance().generate_stream_id());
             res->set_dims(get_width(), get_height());
             std::function<rs2_intrinsics()> int_func = _calc_intrinsics;
             res->set_intrinsics([int_func]() { return int_func(); });

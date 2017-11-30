@@ -2670,8 +2670,8 @@ namespace rs2
                         auto temp_filter = s.second.dev->temporal_filter;
 
                         //return dec_filter->proccess(f);
-                        return spatial_filter->proccess(dec_filter->proccess(f));
-                        //return temp_filter->proccess(spatial_filter->proccess(dec_filter->proccess(f))); // Evgeni
+                        //return spatial_filter->proccess(dec_filter->proccess(f));
+                        return temp_filter->proccess(spatial_filter->proccess(dec_filter->proccess(f))); // Evgeni
                         //return temp_filter->proccess(dec_filter->proccess(f));
                     }
 
@@ -2688,16 +2688,17 @@ namespace rs2
         auto filtered = apply_filters(f);
         res.push_back(filtered);
 
-        if (filtered.get_profile().unique_id() == viewer.selected_depth_source_uid)
+        if (filtered.get_profile().unique_id() == viewer.selected_depth_source_uid || viewer.streams_origin[filtered.get_profile().unique_id()] == viewer.selected_depth_source_uid)
         {
             res.push_back(pc.calculate(filtered));
         }
 
-        if (filtered.get_profile().unique_id() == viewer.selected_tex_source_uid)
+        if (filtered.get_profile().unique_id() == viewer.selected_tex_source_uid || viewer.streams_origin[filtered.get_profile().unique_id()] == viewer.selected_tex_source_uid)
         {
             update_texture(filtered);
         }
-
+        auto uid = f.get_profile().unique_id();
+        viewer.streams_origin[filtered.get_profile().unique_id()] = uid;
         return res;
     }
 
@@ -2711,6 +2712,7 @@ namespace rs2
         {
             for (auto&& f : composite)
             {
+
                 auto res = handle_frame(f);
                 results.insert(results.end(), res.begin(), res.end());
             }
@@ -2735,7 +2737,7 @@ namespace rs2
             try
             {
                 frame frames;
-                if (frames = frames_queue.wait_for_frame())
+                if (frames_queue.poll_for_frame(&frames))
                 {
                     processing_block.invoke(frames);
                 }
@@ -2745,7 +2747,7 @@ namespace rs2
 
 //            // There is no practical reason to re-calculate the 3D model
 //            // at higher frequency then 100 FPS
-//            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
 
@@ -2985,13 +2987,16 @@ namespace rs2
 
     void viewer_model::render_3d_view(const rect& viewer_rect, float scale_factor, texture_buffer* texture, rs2::points points)
     {
-        if(points)
+        if(!paused)
         {
-            last_points = points;
-        }
-        if(texture)
-        {
-            last_texture = texture;
+            if(points)
+            {
+                last_points = points;
+            }
+            if(texture)
+            {
+                last_texture = texture;
+            }
         }
         glViewport(viewer_rect.x * scale_factor, 0,
             viewer_rect.w * scale_factor, viewer_rect.h * scale_factor);
@@ -3249,7 +3254,8 @@ namespace rs2
             ppf.depth_stream_active = true;
 
         auto index = f.get_profile().unique_id();
-        return streams[index].upload_frame(std::move(f));
+
+        return streams[streams_origin[index]].upload_frame(std::move(f));
     }
 
     void device_model::start_recording(const std::string& path, std::string& error_message)

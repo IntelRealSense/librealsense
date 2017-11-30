@@ -128,7 +128,8 @@ namespace librealsense
                 std::vector<uint16_t> values(_frames.size(), 0);
                 for(auto j = 0; j<_frames.size(); j++)
                 {
-                    if(_frames[j])
+                    auto frame_j = _frames[j].as<rs2::video_frame>();
+                    if(_frames[j] && i < frame_j.get_width() * frame_j.get_height())
                         values[j] = ((uint16_t*)(_frames[j].get_data()))[i];
                 }
                 std::sort(values.begin(), values.end());

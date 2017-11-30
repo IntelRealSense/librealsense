@@ -610,6 +610,7 @@ namespace rs2
 
         std::mutex streams_mutex;
         std::map<int, stream_model> streams;
+        std::map<int, int> streams_origin;
         bool fullscreen = false;
         stream_model* selected_stream = nullptr;
 

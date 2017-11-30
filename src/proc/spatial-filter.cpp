@@ -92,7 +92,8 @@ namespace librealsense
 
     void  spatial_filter::update_configuration(const rs2::frame& f)
     {
-        if (f.get_profile() != _target_stream_profile)
+        auto p = f.get_profile();
+        if (p.get() != _target_stream_profile.get())
         {
             // The target profile is persistent
             _target_stream_profile = f.get_profile();// .clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16);
