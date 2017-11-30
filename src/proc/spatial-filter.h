@@ -33,8 +33,10 @@ namespace librealsense
 
         float                   _spatial_alpha_param;
         uint8_t                 _spatial_delta_param;
+        uint8_t                 _spatial_iterations;
         size_t                  _width, _height;
         size_t                  _current_frm_size_pixels;
+        rs2::stream_profile     _source_stream_profile;
         rs2::stream_profile     _target_stream_profile;
         std::map < size_t, std::vector<uint16_t> > _sandbox;    // Depth Z16-specialized container for intermediate results
         uint16_t                _range_from;                    // The minimum depth to use the filer

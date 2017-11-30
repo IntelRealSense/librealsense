@@ -36,10 +36,16 @@ namespace librealsense
     const uint8_t delta_default_val   = 20;
     const uint8_t delta_step          = 1;
 
+    const uint8_t filter_iter_min = 1;
+    const uint8_t filter_iter_max = 5;
+    const uint8_t filter_iter_def = 2;
+    const uint8_t filter_iter_step = 1;
+
 
     spatial_filter::spatial_filter() :
         _spatial_alpha_param(alpha_default_val),
         _spatial_delta_param(delta_default_val),
+        _spatial_iterations(filter_iter_def),
         _width(0), _height(0),
         _range_from(1), _range_to(0xFFFF),
         _enable_filter(true)
@@ -58,8 +64,16 @@ namespace librealsense
             delta_step,
             &_spatial_delta_param, "Spatial delta");
 
+        auto spatial_filter_iterations = std::make_shared<ptr_option<uint8_t>>(
+            filter_iter_min,
+            filter_iter_max,
+            filter_iter_def,
+            filter_iter_step,
+            &_spatial_iterations, "Spatial iterations");
+
         register_option(RS2_OPTION_FILTER_OPT1, spatial_filter_alpha);
         register_option(RS2_OPTION_FILTER_OPT2, spatial_filter_delta);
+        register_option(RS2_OPTION_FILTER_OPT3, spatial_filter_iterations);
 
         unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
 
@@ -83,7 +97,8 @@ namespace librealsense
                     // Spatial smooth with domain transform filter
                     dxf_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
                         this->_spatial_alpha_param,
-                        this->_spatial_delta_param, 3);
+                        this->_spatial_delta_param,
+                        this->_spatial_iterations);
                 }
 
                 out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
@@ -97,9 +112,11 @@ namespace librealsense
 
     void  spatial_filter::update_configuration(const rs2::frame& f)
     {
-        if (f.get_profile().get() != _target_stream_profile.get())
+        if (f.get_profile().get() != _source_stream_profile.get())
         {
-            _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16);
+            _source_stream_profile = f.get_profile();
+            _target_stream_profile = _source_stream_profile.clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16);
+
             environment::get_instance().get_extrinsics_graph().register_same_extrinsics(
                 *(stream_interface*)(f.get_profile().get()->profile),
                 *(stream_interface*)(_target_stream_profile.get()->profile));

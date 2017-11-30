@@ -248,6 +248,7 @@ namespace librealsense
         CASE(FILTER_MAGNITUDE)
         CASE(FILTER_OPT1)
         CASE(FILTER_OPT2)
+        CASE(FILTER_OPT3)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
