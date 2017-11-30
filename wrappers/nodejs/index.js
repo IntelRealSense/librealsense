@@ -3496,28 +3496,28 @@ const option = {
    * Allows sensor to dynamically ajust the frame rate depending on lighting conditions.
    * <br>Equivalent to its uppercase counterpart
    */
-  OPTION_AUTO_EXPOSURE_PRIORITY: RS2.OPTION_AUTO_EXPOSURE_PRIORITY,
+  OPTION_AUTO_EXPOSURE_PRIORITY: RS2.RS2_OPTION_AUTO_EXPOSURE_PRIORITY,
 
   /**
    * Color scheme for data visualization <br>Equivalent to its uppercase counterpart
    */
-  OPTION_COLOR_SCHEME: RS2.OPTION_COLOR_SCHEME,
+  OPTION_COLOR_SCHEME: RS2.RS2_OPTION_COLOR_SCHEME,
 
   /**
    * Perform histogram equalization post-processing on the depth data.
    * <br>Equivalent to its uppercase counterpart
    */
-  OPTION_HISTOGRAM_EQUALIZATION_ENABLED: RS2.OPTION_HISTOGRAM_EQUALIZATION_ENABLED,
+  OPTION_HISTOGRAM_EQUALIZATION_ENABLED: RS2.RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED,
 
   /**
    * Minimal distance to the target <br>Equivalent to its uppercase counterpart
    */
-  OPTION_MIN_DISTANCE: RS2.OPTION_MIN_DISTANCE,
+  OPTION_MIN_DISTANCE: RS2.RS2_OPTION_MIN_DISTANCE,
 
   /**
    * Maximum distance to the target <br>Equivalent to its uppercase counterpart
    */
-  OPTION_MAX_DISTANCE: RS2.OPTION_MAX_DISTANCE,
+  OPTION_MAX_DISTANCE: RS2.RS2_OPTION_MAX_DISTANCE,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
