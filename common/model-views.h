@@ -496,8 +496,8 @@ namespace rs2
             viewer(viewer),
             keep_calculating(true),
             depth_stream_active(false),
-            resulting_queue(1),
-            frames_queue(10),
+            resulting_queue(5),
+            frames_queue(5),
             t([this]() {render_loop(); })
         {
             processing_block.start(resulting_queue);

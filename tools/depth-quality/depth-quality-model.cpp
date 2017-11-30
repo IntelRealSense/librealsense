@@ -658,6 +658,8 @@ namespace rs2
             ImGui::PopStyleColor();
 
 
+
+
             try
             {
                 frameset f;
@@ -666,7 +668,8 @@ namespace rs2
                     _viewer_model.ppf.frames_queue.enqueue(f);
                     if(_viewer_model.ppf.resulting_queue.poll_for_frame(&f))
                     {
-                        for (auto&& frame : f)
+
+                        for (auto&& frame : f.as<rs2::frameset>())
                         {
                             auto points = frame.as<rs2::points>();
                             if(points)
@@ -679,7 +682,12 @@ namespace rs2
                             {
                                 _metrics_model.begin_process_frame(frame);
                             }
-                            _last_texture =_viewer_model.upload_frame(std::move(frame));
+                            if (!_viewer_model.is_3d_view)
+                            {
+                                _last_texture =_viewer_model.upload_frame(std::move(frame));
+                            }
+                            if(_viewer_model.selected_tex_source_uid == -1 || _viewer_model.selected_tex_source_uid == frame.get_profile().unique_id())
+                                _last_texture =_viewer_model.upload_frame(std::move(frame));
                         }
                     }
 
