@@ -114,7 +114,7 @@ namespace librealsense
         md_attribute_parser(const md_attribute_parser&) = delete;
 
         Attribute S::*      _md_attribute;  // Pointer to the attribute within struct that holds the relevant data
-        Flag                _md_flag;       // Bit that indicates whether the particluar attribute is actiive
+        Flag                _md_flag;       // Bit that indicates whether the particular attribute is active
         unsigned long long  _offset;        // Inner struct offset with regard to the most outer one
         attrib_modifyer     _modifyer;      // Post-processing on received attribute
     };

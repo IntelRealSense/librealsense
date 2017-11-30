@@ -17,16 +17,33 @@ namespace librealsense
     static float3 toFloat3(perc::TrackingData::EulerAngles a);
     static float4 toFloat4(perc::TrackingData::Quaternion q);
 
+    struct frame_metadata
+    {
+        int64_t arrival_ts;
+    };
+
+    struct video_frame_metadata
+    {
+        frame_metadata frame_md; 
+        uint32_t exposure_time;        
+    };
+
+    struct motion_frame_metadata
+    {
+        frame_metadata frame_md; 
+        float temperature;
+    };
+
 
     class md_tm2_exposure_time_parser : public md_attribute_parser_base
     {
     public:
         rs2_metadata_type get(const frame& frm) const override
         {
-            // a video frame has only exposure time metadata, placed at the metadata blob
             if (auto* vf = dynamic_cast<const video_frame*>(&frm))
             {
-                return (rs2_metadata_type)frm.additional_data.metadata_blob.data();
+                const video_frame_metadata* video_md = reinterpret_cast<const video_frame_metadata*>(frm.additional_data.metadata_blob.data());
+                return (rs2_metadata_type)(video_md->exposure_time);
             }
             return 0;
         }
@@ -41,6 +58,29 @@ namespace librealsense
         }
     };
 
+    class md_tm2_temperature_parser : public md_attribute_parser_base
+    {
+    public:
+        rs2_metadata_type get(const frame& frm) const override
+        {
+            if (auto* mf = dynamic_cast<const motion_frame*>(&frm))
+            {
+                const motion_frame_metadata* video_md = reinterpret_cast<const motion_frame_metadata*>(frm.additional_data.metadata_blob.data());
+                return (rs2_metadata_type)(video_md->temperature);
+            }
+            return 0;
+        }
+
+        bool supports(const frame& frm) const override
+        {
+            if (auto* mf = dynamic_cast<const motion_frame*>(&frm))
+            {
+                return true;
+            }
+            return false;
+        }
+    };
+    
     class tm2_sensor : public sensor_base, public video_sensor_interface, public TrackingDevice::Listener
     {
     public:
@@ -48,6 +88,7 @@ namespace librealsense
             : sensor_base("Tracking Module", owner), _tm_dev(dev)
         {
             register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, std::make_shared<md_tm2_exposure_time_parser>());
+            register_metadata(RS2_FRAME_METADATA_TEMPERATURE, std::make_shared<md_tm2_temperature_parser>());            
         }
         
         //sensor
@@ -376,13 +417,11 @@ namespace librealsense
             duration<double, std::milli> ts_ms(ts_double_nanos);
             auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame.systemTimestamp);
             duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
-            rs2_metadata_type metadata = tm_frame.exposuretime;
+            video_frame_metadata video_md = { 0 };
+            video_md.frame_md.arrival_ts = tm_frame.arrivalTimeStamp;
+            video_md.exposure_time = tm_frame.exposuretime;
 
-            frame_additional_data additional_data(ts_ms.count(),
-                                                  tm_frame.frameId,
-                                                  system_ts_ms.count(),
-                                                  sizeof(metadata), 
-                                                  (uint8_t*)&metadata);
+            frame_additional_data additional_data(ts_ms.count(), tm_frame.frameId, system_ts_ms.count(), sizeof(video_md), (uint8_t*)&video_md);
 
             // Find the frame stream profile
             std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -436,7 +475,7 @@ namespace librealsense
             }
 
             float3 data = { tm_frame.acceleration.x, tm_frame.acceleration.y, tm_frame.acceleration.z };
-            handle_imu_frame(tm_frame, tm_frame.frameId, RS2_STREAM_ACCEL, tm_frame.sensorIndex + 1, data);
+            handle_imu_frame(tm_frame, tm_frame.frameId, RS2_STREAM_ACCEL, tm_frame.sensorIndex + 1, data, tm_frame.temperature);
         }
 
         void onGyroFrame(perc::TrackingData::GyroFrame& tm_frame) override 
@@ -447,17 +486,20 @@ namespace librealsense
                 return;
             }
             float3 data = { tm_frame.angularVelocity.x, tm_frame.angularVelocity.y, tm_frame.angularVelocity.z };
-            handle_imu_frame(tm_frame, tm_frame.frameId, RS2_STREAM_GYRO, tm_frame.sensorIndex + 1, data);            
+            handle_imu_frame(tm_frame, tm_frame.frameId, RS2_STREAM_GYRO, tm_frame.sensorIndex + 1, data, tm_frame.temperature);            
         }
 
-        void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data) 
+        void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature) 
         {
             auto ts_double_nanos = duration<double, std::nano>(tm_frame_ts.timestamp);
             duration<double, std::milli> ts_ms(ts_double_nanos);
             auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame_ts.systemTimestamp);
             duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
+            motion_frame_metadata motion_md = { 0 };
+            motion_md.frame_md.arrival_ts = tm_frame_ts.arrivalTimeStamp;
+            motion_md.temperature = temperature;
 
-            frame_additional_data additional_data(ts_ms.count(), frame_number, system_ts_ms.count(), 0, nullptr);
+            frame_additional_data additional_data(ts_ms.count(), frame_number, system_ts_ms.count(), sizeof(motion_md), (uint8_t*)&motion_md);
 
             // Find the frame stream profile
             std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -511,8 +553,10 @@ namespace librealsense
             duration<double, std::milli> ts_ms(ts_double_nanos);
             auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame.systemTimestamp);
             duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
+            frame_metadata frame_md = { 0 };
+            frame_md.arrival_ts = tm_frame.arrivalTimeStamp;
 
-            frame_additional_data additional_data(ts_ms.count(), frame_num++, system_ts_ms.count(), 0, nullptr);
+            frame_additional_data additional_data(ts_ms.count(), frame_num++, system_ts_ms.count(), sizeof(frame_md), (uint8_t*)&frame_md);
 
             // Find the frame stream profile
             std::shared_ptr<stream_profile_interface> profile = nullptr;

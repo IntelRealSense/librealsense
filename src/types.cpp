@@ -326,6 +326,7 @@ namespace librealsense
         CASE(AUTO_EXPOSURE)
         CASE(WHITE_BALANCE)
         CASE(TIME_OF_ARRIVAL)
+        CASE(TEMPERATURE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
