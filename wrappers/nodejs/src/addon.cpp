@@ -3431,15 +3431,10 @@ NAN_METHOD(GetTime) {
 }
 
 #define _FORCE_SET_ENUM(name) \
-  exports->ForceSet(Nan::New(#name).ToLocalChecked(), \
-  Nan::New(static_cast<int>((name))), \
-  static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete));
-
-// TODO(tingshao): try DefineOwnProperty or CreateDataProperty
-// e.g.
-// exports->DefineOwnProperty(env->context(),
-//                            OneByteString(env->isolate(), str),
-//                            True(env->isolate()), ReadOnly).FromJust();
+  Nan::DefineOwnProperty(exports, \
+      Nan::New(#name).ToLocalChecked(), \
+      Nan::New(static_cast<int>((name))), \
+      static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete));
 
 void InitModule(v8::Local<v8::Object> exports) {
   exports->Set(Nan::New("globalCleanup").ToLocalChecked(),

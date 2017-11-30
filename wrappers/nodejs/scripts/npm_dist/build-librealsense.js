@@ -41,17 +41,17 @@ function buildNativeLibWindows() {
 
   exec('cmd /c .\\scripts\\npm_dist\\build-dist.bat ' + cmakeGenPlatform + ' ' + msBuildPlatform,
        (error, stdout, stderr) => {
-    if (error) {
-      console.log('Failed to build librealsense, error:', error);
-      throw error;
-    }
-
     if (stdout) {
       process.stdout.write(stdout);
     }
 
     if (stderr) {
       process.stderr.write(stderr);
+    }
+
+    if (error) {
+      console.log('Failed to build librealsense, error:', error);
+      throw error;
     }
   });
 }
