@@ -5,6 +5,7 @@
 #include<algorithm>
 
 #include "option.h"
+#include "environment.h"
 #include "context.h"
 #include "proc/synthetic-stream.h"
 #include "proc/spatial-filter.h"
@@ -32,57 +33,50 @@ namespace librealsense
         _spatial_alpha_param(0.85f),
         _spatial_delta_param(50.f),
         _width(0), _height(0),
-        _range_from(1), _range_to(0xFFFF)
+        _range_from(1), _range_to(0xFFFF),
+        _enable_filter(true)
     {
         //"Spatial Alpha [0.1,.0.2,.. ..., 0.85,   ...,2] size"
-        auto spatial_filter_alpha = std::make_shared<ptr_option<float>>(0.1f, 2.f, 0.05f, 0.85f, &_spatial_alpha_param, "Spatial alpha");
-        auto spatial_filter_delta = std::make_shared<ptr_option<float>>(25.f, 100.f, 5.f, 50.f, &_spatial_delta_param, "Spatial delta");
-        auto spatial_filter_control = std::make_shared<ptr_option<uint8_t>>(
-            spatial_patch_min_val, spatial_patch_max_val,
-            spatial_patch_step, spatial_patch_default_val,
-            &_spatial_param, "Spatial kernel size");
+        auto spatial_filter_alpha = std::make_shared<ptr_option<float>>(0.01f, 1.f, 0.01f, 0.85f, &_spatial_alpha_param, "Spatial alpha");
+        auto spatial_filter_delta = std::make_shared<ptr_option<float>>(0.f, 100.f, 1.f, 50.f, &_spatial_delta_param, "Spatial delta");
 
-        //spatial_filter_control->on_set([this, spatial_filter_control](float val)
-        //{
-        //    if (!spatial_filter_control->is_valid(val))
-        //        throw invalid_value_exception(to_string()
-        //            << "Unsupported spatial patch size " << val << " is out of range.");
-
-        //    _patch_size = uint8_t(val);
-        //    _window_size = _patch_size*_patch_size;
-        //});
-
-        register_option(RS2_OPTION_FILTER_MAGNITUDE, spatial_filter_control);
         register_option(RS2_OPTION_FILTER_OPT1, spatial_filter_alpha);
         register_option(RS2_OPTION_FILTER_OPT2, spatial_filter_delta);
         unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
 
+        auto enable_control = std::make_shared<ptr_option<bool>>(false, true, true, true, &_enable_filter, "Apply spatial dxf");
+        register_option(RS2_OPTION_FILTER_ENABLED, enable_control);
+        _enable_filter = true;
+
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
             rs2::frame out = f, tgt, depth;
-            bool composite = f.is<rs2::frameset>();
 
-            depth = (composite) ? f.as<rs2::frameset>().first_or_default(RS2_STREAM_DEPTH) : f;
-            if (depth) // Processing required
+            if (this->_enable_filter)
             {
-                update_configuration(f);
-                tgt = prepare_target_frame(depth, source);
-                
-                if (false)
+                bool composite = f.is<rs2::frameset>();
+
+                depth = (composite) ? f.as<rs2::frameset>().first_or_default(RS2_STREAM_DEPTH) : f;
+                if (depth) // Processing required
                 {
-                    median_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
-                        _sandbox[_current_frm_size_pixels].data(), 1);     // Flag that control the filter properties
+                    update_configuration(f);
+                    tgt = prepare_target_frame(depth, source);
+
+                    if (false) // provisional version of smoothing
+                    {
+                        median_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
+                            _sandbox[_current_frm_size_pixels].data(), 1);     // Flag that control the filter properties
+                    }
+                    else
+                    {
+                        // Spatial smooth with domain trandform filter
+                        dxf_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
+                            _sandbox[_current_frm_size_pixels].data(), this->_spatial_alpha_param, this->_spatial_delta_param);
+                    }
                 }
-                else
-                {
-                    // Spatial smooth with domain trandform filter
-                    dxf_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
-                        _sandbox[_current_frm_size_pixels].data());
-                }
+
+                out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
             }
-
-            out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
-
             source.frame_ready(out);
         };
 
@@ -92,12 +86,12 @@ namespace librealsense
 
     void  spatial_filter::update_configuration(const rs2::frame& f)
     {
-        auto p = f.get_profile();
-        if (p.get() != _target_stream_profile.get())
+        if (f.get_profile().get() != _target_stream_profile.get())
         {
-            // The target profile is persistent
-            _target_stream_profile = f.get_profile();// .clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16);
-
+            _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16);
+            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(
+                *(stream_interface*)(f.get_profile().get()->profile),
+                *(stream_interface*)(_target_stream_profile.get()->profile));
             auto vp = _target_stream_profile.as<rs2::video_stream_profile>();
             _width = vp.width();
             _height = vp.height();
@@ -121,6 +115,9 @@ namespace librealsense
             vf.get_stride_in_bytes(),
             RS2_EXTENSION_DEPTH_FRAME);
 
+        int a = vf.get_width();
+        int b = vf.get_height();
+        std::cout << a - b << std::endl;
         // TODO - optimize
         memmove(const_cast<void*>(tgt.get_data()), f.get_data(), _current_frm_size_pixels * 2); // Z16-bit specialized
         return tgt;
@@ -321,8 +318,10 @@ namespace librealsense
         //m_dxf->filterRSsimple(m_buf_float, m_buf_float, m_width, m_height, alpha, delta, iterations);
         for (int i = 0; i < iterations; i++)
         {
-            recursive_filter_horizontal_v2(frame_data, intermediate_data, alpha, delta);
-            recursive_filter_vertical_v2(frame_data, intermediate_data, alpha, delta);
+            recursive_filter_horizontal(frame_data, intermediate_data, alpha, delta);
+            recursive_filter_vertical(frame_data, intermediate_data, alpha, delta);
+            //recursive_filter_horizontal_v2(frame_data, intermediate_data, alpha, delta);
+            //recursive_filter_vertical_v2(frame_data, intermediate_data, alpha, delta);
         }
         //m_dxf->floatToZimage(m_buf_float, frame_data, m_width, m_height);
         return true;
@@ -593,8 +592,6 @@ namespace librealsense
     void  spatial_filter::recursive_filter_horizontal_v2(uint16_t *image, uint16_t * intermediate_data, float alpha, float deltaZ)
     {
         int32_t v{}, u{};
-        //static const float z_to_meter = 0.001f;      // TODO Evgeni - retrieve from stream profile
-        //static const float meter_to_z = 1.f / z_to_meter;      // TODO Evgeni - retrieve from stream profile
 
         for (v = 0; v < _height; v++) {
             // left to right
@@ -617,7 +614,7 @@ namespace librealsense
             for (u = _width - 1; u > 0; u--) {
                 unsigned short val0 = im[0];
                 int delta = val0 - val1;
-                if (delta < deltaZ && delta > -deltaZ) {
+                if (delta && delta < deltaZ && delta > -deltaZ) {
                     float filtered = val0 * alpha + val1 * (1.0f - alpha);
                     val1 = (unsigned short)(filtered + 0.5f);
                     im[0] = val1;
@@ -642,7 +639,7 @@ namespace librealsense
 
                 if (im0 && imw) {
                     int delta = im0 - imw;
-                    if (delta < deltaZ && delta > -deltaZ) {
+                    if (delta && delta < deltaZ && delta > -deltaZ) {
                         float filtered = imw * alpha + im0 * (1.0f - alpha);
                         im[_width] = (unsigned short)(filtered + 0.5f);
                     }

@@ -47,5 +47,6 @@ namespace librealsense
         std::map < size_t, std::vector<uint16_t> > _sandbox;    // Depth Z16-specialized container for intermediate results
         uint16_t                _range_from;                    // The minimum depth to use the filer
         uint16_t                _range_to;                      // The max depth to use filter
+        bool                    _enable_filter;
     };
 }

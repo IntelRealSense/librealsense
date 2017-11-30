@@ -177,16 +177,22 @@ namespace rs2
         processing_block_model(subdevice_model* owner,
             const std::string& name,
             std::shared_ptr<options> block,
+            std::function<rs2::frame(rs2::frame)> invoker,
             std::string& error_message);
 
         const std::string& get_name() const { return _name; }
 
         option_model& get_option(rs2_option opt) { return options_metadata[opt]; }
+
+        rs2::frame invoke(rs2::frame f) const { return _invoker(f); }
+
+        bool enabled = false;
     private:
         std::shared_ptr<options> _block;
         std::map<int, option_model> options_metadata;
         std::string _name;
         subdevice_model* _owner;
+        std::function<rs2::frame(rs2::frame)> _invoker;
     };
 
     class subdevice_model
@@ -290,11 +296,13 @@ namespace rs2
         bool show_algo_roi = false;
 
         std::shared_ptr<rs2::colorizer> depth_colorizer;
-        std::shared_ptr<rs2::decimation_filter> decimation_filter;
-        std::shared_ptr<rs2::spatial_filter> spatial_filter;
-        std::shared_ptr<rs2::temporal_filter> temporal_filter;
+        std::shared_ptr<processing_block_model> decimation_filter;
+        std::shared_ptr<processing_block_model> spatial_filter;
+        std::shared_ptr<processing_block_model> temporal_filter;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
+        bool post_processing_enabled = false;
+        std::vector<std::shared_ptr<processing_block_model>> const_effects;
     };
 
     class viewer_model;
@@ -371,14 +379,12 @@ namespace rs2
         int draw_playback_panel(ImFont* font, viewer_model& view);
         void draw_advanced_mode_tab();
         void draw_controls(float panel_width, float panel_height,
-            ImFont *font1, ImFont *font2,
-            const mouse_info &mouse,
+            ux_window& window,
             std::string& error_message,
             device_model*& device_to_remove,
             viewer_model& viewer, float windows_width,
             bool update_read_only_options,
-            std::map<subdevice_model*, float>& model_to_y,
-            std::map<subdevice_model*, float>& model_to_abs_y);
+            std::vector<std::function<void()>>& draw_later);
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
 
         bool metadata_supported = false;

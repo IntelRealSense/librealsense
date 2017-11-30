@@ -123,10 +123,11 @@ namespace rs2
                 _stereo_baseline_mm = baseline;
             };
 
-            void update_frame_attributes(const region_of_interest& roi)
+            void update_roi_attributes(const region_of_interest& roi, float roi_percent)
             {
                 std::lock_guard<std::mutex> lock(_m);
                 _roi = roi;
+                _roi_percentage = roi_percent;
             }
 
             region_of_interest get_roi()
@@ -199,6 +200,7 @@ namespace rs2
             bool                    _use_gt;
             bool                    _plane_fit;
             region_of_interest      _roi;
+            float                   _roi_percentage;
             snapshot_metrics        _latest_metrics;
             bool                    _active;
 
