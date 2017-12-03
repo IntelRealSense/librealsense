@@ -5,7 +5,6 @@
 // Purpose: pack librealsense dir & wrappers/nodejs dir into npm package
 
 const {exec} = require('child_process');
-const package = require('../package.json');
 const jf = require('jsonfile');
 
 function genDistPackage() {
@@ -32,8 +31,7 @@ function genPackageJson() {
 }
 
 function callDistScript() {
-  const fileName = 'librealsense.' + package.version + '.tar.gz';
-  exec('./scripts/npm_dist/gen-dist.sh ' + fileName, (error, stdout, stderr) => {
+  exec('./scripts/npm_dist/gen-dist.sh ', (error, stdout, stderr) => {
     if (error) {
       console.log('fail to generate dist package, error:', error);
       throw error;
