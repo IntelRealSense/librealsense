@@ -16,11 +16,10 @@ namespace librealsense
     const uint8_t decimation_step = 1;    // The filter suppors kernel sizes [2^1...2^5]
 
     decimation_filter::decimation_filter() :
-        _decimation_filter(rs2_median),
         _decimation_factor(decimation_default_val),
         _patch_size(0x1 << (uint8_t(decimation_default_val - 1))),
         _kernel_size(_patch_size*_patch_size),
-        _enable_filter(true), _recalc_profile(false)
+         _recalc_profile(false)
     {
         auto decimation_control = std::make_shared<ptr_option<uint8_t>>(
             decimation_min_val,
@@ -44,35 +43,27 @@ namespace librealsense
         register_option(RS2_OPTION_FILTER_MAGNITUDE, decimation_control);
         unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
 
-        // TODO - a candidate to base class refactoring
-        auto enable_control = std::make_shared<ptr_option<bool>>(false, true, true, true, &_enable_filter, "Apply decimation");
-        register_option(RS2_OPTION_FILTER_ENABLED, enable_control);
-        _enable_filter = true;
-
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
             rs2::frame out = f, tgt, depth;
 
-            if (this->_enable_filter)
+            bool composite = f.is<rs2::frameset>();
+
+            depth = (composite) ? f.as<rs2::frameset>().first_or_default(RS2_STREAM_DEPTH) : f;
+
+            if (depth) // Processing required
             {
-                bool composite = f.is<rs2::frameset>();
-
-                depth = (composite) ? f.as<rs2::frameset>().first_or_default(RS2_STREAM_DEPTH) : f;
-
-                if (depth) // Processing required
+                update_output_profile(depth);
+                if (tgt = prepare_target_frame(depth, source))
                 {
-                    update_output_profile(depth);
-                    if (tgt = prepare_target_frame(depth, source))
-                    {
-                        auto src = depth.as<rs2::video_frame>();
-                        decimate_depth(static_cast<const uint16_t*>(src.get_data()),
-                            static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
-                            src.get_width(), src.get_height(), this->_patch_size);
-                    }
+                    auto src = depth.as<rs2::video_frame>();
+                    decimate_depth(static_cast<const uint16_t*>(src.get_data()),
+                        static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
+                        src.get_width(), src.get_height(), this->_patch_size);
                 }
-
-                out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
             }
+
+            out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
 
             source.frame_ready(out);
         };

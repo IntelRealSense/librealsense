@@ -1013,7 +1013,7 @@ namespace rs2
         {
             std::lock_guard<std::mutex> lock(_m);
 
-            if (!_visible) return;
+            if (!_persistent_visibility.eval()) return;
 
             std::stringstream ss;
             auto val = _vals[(SIZE + _idx - 1) % SIZE];
@@ -1107,6 +1107,7 @@ namespace rs2
             ImGui::PopStyleColor(3);
         }
 
+        // Display the latest metrics in the panel view
         void metrics_model::render(ux_window& win)
         {
             for (auto&& plot : _plots)
@@ -1117,7 +1118,6 @@ namespace rs2
 
         void metrics_model::serialize_to_csv(const std::string& filename, const std::string& camera_info) const
         {
-            // TODO RAII
             std::ofstream csv;
 
             csv.open(filename);

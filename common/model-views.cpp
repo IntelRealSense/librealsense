@@ -2690,10 +2690,7 @@ namespace rs2
                             if (temp_filter->enabled)
                                 f = temp_filter->invoke(f);
 
-                            //return dec_filter->proccess(f);
                             return f;
-                            //return temp_filter->proccess(spatial_filter->proccess(dec_filter->proccess(f))); // Evgeni
-                            //return temp_filter->proccess(dec_filter->proccess(f));
                         }
                     }
             }

@@ -135,7 +135,7 @@ namespace librealsense
             reserved_1,
             reserved_2,
             res_640_400,
-            // Unofficial resolutions DS5U S
+            // Resolutions for DS5U
             res_576_576,
             res_720_720,
             res_1152_1152,
@@ -321,12 +321,11 @@ namespace librealsense
             { res_1280_720,{ 1280, 720 } },
             { res_1280_800,{ 1280, 800 } },
             { res_1920_1080,{ 1920, 1080 } },
-            // Unofficial DS5U S resolutions
+            //Resolutions for DS5U
             { res_576_576,{ 576, 576 } },
             { res_720_720,{ 720, 720 } },
             { res_1152_1152,{ 1152, 1152 } },
         };
-
 
 
         ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
@@ -344,9 +343,9 @@ namespace librealsense
         enum ds5_notifications_types
         {
             success = 0,
-            hot_laser_power_reduce = 1, // reported to error depth XU control
-            hot_laser_disable = 2, // reported to error depth XU control
-            flag_B_laser_disable = 3 // reported to error depth XU control
+            hot_laser_power_reduce  = 1, // reported to error depth XU control
+            hot_laser_disable       = 2, // reported to error depth XU control
+            flag_B_laser_disable    = 3 // reported to error depth XU control
         };
 
     } // librealsense::ds

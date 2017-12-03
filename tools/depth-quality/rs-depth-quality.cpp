@@ -119,7 +119,7 @@ int main(int argc, const char * argv[]) try
         }
 
         // Show Z accuracy metric only when Ground Truth is available
-        z_accuracy->visible(ground_truth_mm > 0);
+        z_accuracy->enable(ground_truth_mm > 0);
         if (ground_truth_mm)
         {
             std::sort(begin(gt_errors), end(gt_errors));

@@ -438,8 +438,6 @@ namespace librealsense
                 std::make_shared<auto_disabling_control>(
                     exposure_option,
                     enable_auto_exposure));
-
-            depth_ep.register_pu(RS2_OPTION_GAIN);
         }
 
         if (_fw_version >= firmware_version("5.5.8.0"))

@@ -47,8 +47,7 @@ namespace librealsense
         _spatial_delta_param(delta_default_val),
         _spatial_iterations(filter_iter_def),
         _width(0), _height(0),
-        _range_from(1), _range_to(0xFFFF),
-        _enable_filter(true)
+        _range_from(1), _range_to(0xFFFF)
     {
         auto spatial_filter_alpha = std::make_shared<ptr_option<float>>(
             alpha_min_val,
@@ -77,32 +76,27 @@ namespace librealsense
 
         unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
 
-        auto enable_control = std::make_shared<ptr_option<bool>>(false, true, true, true, &_enable_filter, "Apply spatial dxf");
-        register_option(RS2_OPTION_FILTER_ENABLED, enable_control);
-
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
             rs2::frame out = f, tgt, depth;
 
-            if (this->_enable_filter)
+            bool composite = f.is<rs2::frameset>();
+
+            depth = (composite) ? f.as<rs2::frameset>().first_or_default(RS2_STREAM_DEPTH) : f;
+            if (depth) // Processing required
             {
-                bool composite = f.is<rs2::frameset>();
+                update_configuration(f);
+                tgt = prepare_target_frame(depth, source);
 
-                depth = (composite) ? f.as<rs2::frameset>().first_or_default(RS2_STREAM_DEPTH) : f;
-                if (depth) // Processing required
-                {
-                    update_configuration(f);
-                    tgt = prepare_target_frame(depth, source);
-
-                    // Spatial smooth with domain transform filter
-                    dxf_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
-                        this->_spatial_alpha_param,
-                        this->_spatial_delta_param,
-                        this->_spatial_iterations);
-                }
-
-                out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
+                // Spatial smooth with domain transform filter
+                dxf_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
+                    this->_spatial_alpha_param,
+                    this->_spatial_delta_param,
+                    this->_spatial_iterations);
             }
+
+            out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
+
             source.frame_ready(out);
         };
 
