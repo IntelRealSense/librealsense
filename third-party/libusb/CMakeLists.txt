@@ -5,7 +5,20 @@ cmake_minimum_required(VERSION 2.8.3)
 
 project(usb)
 
-if (APPLE)
+if(WIN32)
+  set(LIBUSB_C
+  libusb/core.c
+  libusb/descriptor.c
+  libusb/hotplug.c
+  libusb/io.c
+  libusb/strerror.c
+  libusb/sync.c
+  libusb/os/threads_windows.c
+  libusb/os/poll_windows.c
+  libusb/os/windows_winusb.c
+  libusb/os/windows_nt_common.c
+  )
+elseif (APPLE)
 set(LIBUSB_C
   libusb/descriptor.c
   libusb/core.c
@@ -56,7 +69,13 @@ include_directories(
 
 add_library(usb STATIC ${LIBUSB_C} ${LIBUSB_H})
 
-if((NOT APPLE) AND (NOT ANDROID))
+if(WIN32)
+    set_target_properties (usb PROPERTIES
+        FOLDER "3rd Party"
+    )
+endif()
+
+if((NOT APPLE) AND (NOT ANDROID) AND (NOT WIN32))
   TARGET_LINK_LIBRARIES(usb udev)
 endif()
 

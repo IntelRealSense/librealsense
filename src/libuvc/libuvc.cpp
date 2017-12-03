@@ -23,16 +23,16 @@
 #include <thread>
 #include <atomic>
 
-#include <dirent.h>
+//#include <dirent.h>
 #include <fcntl.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <limits.h>
 #include <cmath>
 #include <errno.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <fts.h>
+//#include <sys/mman.h>
+//#include <sys/ioctl.h>
+//#include <fts.h>
 #include <regex>
 #include <list>
 

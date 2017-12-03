@@ -22,13 +22,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <config.h>
+#include "../config.h"
 
 #include <inttypes.h>
 #include <process.h>
 #include <stdio.h>
 
-#include "libusbi.h"
+#include "../libusbi.h"
 #include "windows_common.h"
 #include "windows_nt_common.h"
 

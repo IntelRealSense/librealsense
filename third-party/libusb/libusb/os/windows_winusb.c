@@ -22,7 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <config.h>
+#include "../config.h"
 
 #if !defined(USE_USBDK)
 
@@ -37,7 +37,7 @@
 #include <objbase.h>
 #include <winioctl.h>
 
-#include "libusbi.h"
+#include "../libusbi.h"
 #include "poll_windows.h"
 #include "windows_winusb.h"
 

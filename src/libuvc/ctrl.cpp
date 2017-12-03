@@ -93,7 +93,7 @@ int uvc_get_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *da
     REQ_TYPE_GET, req_code,
     ctrl << 8,
     unit << 8 | devh->info->ctrl_if.bInterfaceNumber,		// XXX saki
-    data,
+    static_cast<unsigned char*>(data),
     len,
     0 /* timeout */);
 }
@@ -116,7 +116,7 @@ int uvc_set_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *da
     REQ_TYPE_SET, UVC_SET_CUR,
     ctrl << 8,
     unit << 8 | devh->info->ctrl_if.bInterfaceNumber,		// XXX saki
-    data,
+      static_cast<unsigned char*>(data),
     len,
     0 /* timeout */);
 }
@@ -124,7 +124,7 @@ int uvc_set_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *da
 /***** INTERFACE CONTROLS *****/
 uvc_error_t uvc_get_power_mode(uvc_device_handle_t *devh, enum uvc_device_power_mode *mode, enum uvc_req_code req_code) {
   uint8_t mode_char;
-  uvc_error_t ret;
+  int ret;
 
   ret = libusb_control_transfer(
     devh->usb_devh,
@@ -136,16 +136,16 @@ uvc_error_t uvc_get_power_mode(uvc_device_handle_t *devh, enum uvc_device_power_
     0);
 
   if (ret == 1) {
-    *mode = mode_char;
+    *mode = static_cast<uvc_device_power_mode>(mode_char);
     return UVC_SUCCESS;
   } else {
-    return ret;
+    return static_cast<uvc_error_t>(ret);
   }
 }
 
 uvc_error_t uvc_set_power_mode(uvc_device_handle_t *devh, enum uvc_device_power_mode mode) {
   uint8_t mode_char = mode;
-  uvc_error_t ret;
+  int ret;
 
   ret = libusb_control_transfer(
     devh->usb_devh,
@@ -159,7 +159,7 @@ uvc_error_t uvc_set_power_mode(uvc_device_handle_t *devh, enum uvc_device_power_
   if (ret == 1)
     return UVC_SUCCESS;
   else
-    return ret;
+    return static_cast<uvc_error_t>(ret);
 }
 
 /** @todo Request Error Code Control (UVC 1.5, 4.2.1.2) */

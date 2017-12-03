@@ -461,14 +461,14 @@ if(FORCE_LIBUVC)
     set(BACKEND RS2_USE_LIBUVC_BACKEND)
     
     list(APPEND REALSENSE_CPP
-    src/libuvc/ctrl.c
-    src/libuvc/ctrl-gen.c
-    src/libuvc/device.c
-    src/libuvc/diag.c
-    src/libuvc/frame.c
-    src/libuvc/init.c
-    src/libuvc/misc.c
-    src/libuvc/stream.c
+    src/libuvc/ctrl.cpp
+    src/libuvc/ctrl-gen.cpp
+    src/libuvc/device.cpp
+    src/libuvc/diag.cpp
+    src/libuvc/frame.cpp
+    src/libuvc/init.cpp
+    src/libuvc/misc.cpp
+    src/libuvc/stream.cpp
 	src/libuvc/libuvc.cpp
 	)
 	
@@ -528,10 +528,7 @@ if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
 endif()
 
-if(NOT WIN32)
 add_subdirectory(third-party/libusb/)
-endif()
-
 add_subdirectory(third-party/realsense-file)
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
@@ -558,9 +555,7 @@ set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
 target_link_libraries(realsense2 realsense-file ${CMAKE_THREAD_LIBS_INIT})
 list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
 
-if(NOT WIN32)
-  target_link_libraries(realsense2 usb)
-endif()
+target_link_libraries(realsense2 usb)
 
 add_definitions(-DELPP_THREAD_SAFE)
 add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)

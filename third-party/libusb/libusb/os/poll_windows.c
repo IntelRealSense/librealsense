@@ -40,13 +40,13 @@
  * with a fake pipe. The read/write functions are only meant to be used in that
  * context.
  */
-#include <config.h>
+#include "../config.h"
 
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "libusbi.h"
+#include "../libusbi.h"
 
 // Uncomment to debug the polling layer
 //#define DEBUG_POLL_WINDOWS

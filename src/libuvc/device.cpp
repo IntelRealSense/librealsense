@@ -216,7 +216,7 @@ uvc_error_t uvc_find_devices(
   dev_idx = 0;
   found_dev = 0;
 
-  list_internal = malloc(sizeof(*list_internal));
+  list_internal = (uvc_device_t **)malloc(sizeof(*list_internal));
   *list_internal = NULL;
 
   while ((test_dev = list[dev_idx++]) != NULL) {
@@ -232,7 +232,7 @@ uvc_error_t uvc_find_devices(
       uvc_ref_device(test_dev);
 
       num_uvc_devices++;
-      list_internal = realloc(list_internal, (num_uvc_devices + 1) * sizeof(*list_internal));
+      list_internal = (uvc_device_t **)realloc(list_internal, (num_uvc_devices + 1) * sizeof(*list_internal));
 
       list_internal[num_uvc_devices - 1] = test_dev;
       list_internal[num_uvc_devices] = NULL;
@@ -293,7 +293,7 @@ uvc_error_t uvc_open2(
         uvc_device_t *dev,
         uvc_device_handle_t **devh,
         int camera_number) {
-  uvc_error_t ret;
+  int ret;
   struct libusb_device_handle *usb_devh;
   uvc_device_handle_t *internal_devh;
   struct libusb_device_descriptor desc;
@@ -306,13 +306,13 @@ uvc_error_t uvc_open2(
 
   if (ret != UVC_SUCCESS) {
     UVC_EXIT(ret);
-    return ret;
+    return (uvc_error_t)ret;
   }
 
   is_opened = 1;
   uvc_ref_device(dev);
   dev->ctx->kill_handler_thread = 0;
-  internal_devh = calloc(1, sizeof(*internal_devh));
+  internal_devh = (uvc_device_handle_t *)calloc(1, sizeof(*internal_devh));
   internal_devh->dev = dev;
   internal_devh->usb_devh = usb_devh;
 
@@ -363,7 +363,7 @@ uvc_error_t uvc_open2(
 
   UVC_EXIT(ret);
 
-  return ret;
+  return (uvc_error_t)ret;
 
   fail:
   if ( internal_devh->info ) {
@@ -375,7 +375,7 @@ uvc_error_t uvc_open2(
 
   UVC_EXIT(ret);
 
-  return ret;
+  return (uvc_error_t)ret;
 }
 /**
  * @internal
@@ -410,7 +410,7 @@ uvc_error_t uvc_get_device_info2(uvc_device_t *dev,
 
   UVC_ENTER();
 
-  internal_info = calloc(1, sizeof(*internal_info));
+  internal_info = (uvc_device_info_t *)calloc(1, sizeof(*internal_info));
   if (!internal_info) {
     UVC_EXIT(UVC_ERROR_NO_MEM);
     return UVC_ERROR_NO_MEM;
@@ -523,7 +523,7 @@ uvc_error_t uvc_get_device_descriptor(
   uvc_device_descriptor_t *desc_internal;
   struct libusb_device_descriptor usb_desc;
   struct libusb_device_handle *usb_devh;
-  uvc_error_t ret;
+  int ret;
 
   UVC_ENTER();
 
@@ -531,10 +531,10 @@ uvc_error_t uvc_get_device_descriptor(
 
   if (ret != UVC_SUCCESS) {
     UVC_EXIT(ret);
-    return ret;
+    return (uvc_error_t)ret;
   }
 
-  desc_internal = calloc(1, sizeof(*desc_internal));
+  desc_internal = (uvc_device_descriptor_t *)calloc(1, sizeof(*desc_internal));
   desc_internal->idVendor = usb_desc.idVendor;
   desc_internal->idProduct = usb_desc.idProduct;
 
@@ -568,7 +568,7 @@ uvc_error_t uvc_get_device_descriptor(
   *desc = desc_internal;
 
   UVC_EXIT(ret);
-  return ret;
+  return (uvc_error_t)ret;
 }
 
 /**
@@ -640,7 +640,7 @@ uvc_error_t uvc_get_device_list(
     return UVC_ERROR_IO;
   }
 
-  list_internal = malloc(sizeof(*list_internal));
+  list_internal = (uvc_device_t **)malloc(sizeof(*list_internal));
   *list_internal = NULL;
 
   num_uvc_devices = 0;
@@ -674,7 +674,7 @@ uvc_error_t uvc_get_device_list(
 
           /* Video, Streaming */
           if (if_desc->bInterfaceClass == 14 && if_desc->bInterfaceSubClass == 2) {
-            uvc_device_t *uvc_dev = malloc(sizeof(*uvc_dev));
+            uvc_device_t *uvc_dev = (uvc_device_t *)malloc(sizeof(*uvc_dev));
             uvc_dev->ctx = ctx;
             uvc_dev->ref = 0;
             uvc_dev->usb_dev = usb_dev;
@@ -682,7 +682,7 @@ uvc_error_t uvc_get_device_list(
             uvc_ref_device(uvc_dev);
 
             num_uvc_devices++;
-            list_internal = realloc(list_internal, (num_uvc_devices + 1) * sizeof(*list_internal));
+            list_internal = (uvc_device_t **)realloc(list_internal, (num_uvc_devices + 1) * sizeof(*list_internal));
 
             list_internal[num_uvc_devices - 1] = uvc_dev;
             list_internal[num_uvc_devices] = NULL;
@@ -904,7 +904,7 @@ uvc_error_t uvc_claim_if(uvc_device_handle_t *devh, int idx) {
   }
 
   UVC_EXIT(ret);
-  return ret;
+  return (uvc_error_t)ret;
 }
 
 /** @internal
@@ -940,7 +940,7 @@ uvc_error_t uvc_release_if(uvc_device_handle_t *devh, int idx) {
   }
 
   UVC_EXIT(ret);
-  return ret;
+  return (uvc_error_t)ret;
 }
 
 /** @internal
@@ -1077,10 +1077,10 @@ uvc_error_t uvc_parse_vc_input_terminal(uvc_device_t *dev,
     return UVC_SUCCESS;
   }
 
-  term = calloc(1, sizeof(*term));
+  term = (uvc_input_terminal_t *)calloc(1, sizeof(*term));
 
   term->bTerminalID = block[3];
-  term->wTerminalType = SW_TO_SHORT(&block[4]);
+  term->wTerminalType = (uvc_it_type)SW_TO_SHORT(&block[4]);
   term->wObjectiveFocalLengthMin = SW_TO_SHORT(&block[8]);
   term->wObjectiveFocalLengthMax = SW_TO_SHORT(&block[10]);
   term->wOcularFocalLength = SW_TO_SHORT(&block[12]);
@@ -1106,7 +1106,7 @@ uvc_error_t uvc_parse_vc_processing_unit(uvc_device_t *dev,
 
   UVC_ENTER();
 
-  unit = calloc(1, sizeof(*unit));
+  unit = (uvc_processing_unit_t *)calloc(1, sizeof(*unit));
   unit->bUnitID = block[3];
   unit->bSourceID = block[4];
 
@@ -1131,7 +1131,7 @@ uvc_error_t uvc_parse_vc_selector_unit(uvc_device_t *dev,
 
   UVC_ENTER();
 
-  unit = calloc(1, sizeof(*unit));
+  unit = (uvc_selector_unit_t *)calloc(1, sizeof(*unit));
   unit->bUnitID = block[3];
 
   DL_APPEND(info->ctrl_if.selector_unit_descs, unit);
@@ -1147,7 +1147,7 @@ uvc_error_t uvc_parse_vc_selector_unit(uvc_device_t *dev,
 uvc_error_t uvc_parse_vc_extension_unit(uvc_device_t *dev,
                                         uvc_device_info_t *info,
                                         const unsigned char *block, size_t block_size) {
-  uvc_extension_unit_t *unit = calloc(1, sizeof(*unit));
+  uvc_extension_unit_t *unit = (uvc_extension_unit_t *)calloc(1, sizeof(*unit));
   const uint8_t *start_of_controls;
   int size_of_controls, num_in_pins;
   int i;
@@ -1237,7 +1237,7 @@ uvc_error_t uvc_scan_streaming(uvc_device_t *dev,
   buffer = if_desc->extra;
   buffer_left = if_desc->extra_length;
 
-  stream_if = calloc(1, sizeof(*stream_if));
+  stream_if = (uvc_streaming_interface_t *)calloc(1, sizeof(*stream_if));
   stream_if->parent = info;
   stream_if->bInterfaceNumber = if_desc->bInterfaceNumber;
   DL_APPEND(info->stream_ifs, stream_if);
@@ -1284,10 +1284,10 @@ uvc_error_t uvc_parse_vs_format_uncompressed(uvc_streaming_interface_t *stream_i
                                              size_t block_size) {
   UVC_ENTER();
 
-  uvc_format_desc_t *format = calloc(1, sizeof(*format));
+  uvc_format_desc_t *format = (uvc_format_desc_t *)calloc(1, sizeof(*format));
 
   format->parent = stream_if;
-  format->bDescriptorSubtype = block[2];
+  format->bDescriptorSubtype = (uvc_vs_desc_subtype)block[2];
   format->bFormatIndex = block[3];
   //format->bmCapabilities = block[4];
   //format->bmFlags = block[5];
@@ -1314,10 +1314,10 @@ uvc_error_t uvc_parse_vs_frame_format(uvc_streaming_interface_t *stream_if,
                                       size_t block_size) {
   UVC_ENTER();
 
-  uvc_format_desc_t *format = calloc(1, sizeof(*format));
+  uvc_format_desc_t *format = (uvc_format_desc_t *)calloc(1, sizeof(*format));
 
   format->parent = stream_if;
-  format->bDescriptorSubtype = block[2];
+  format->bDescriptorSubtype = (uvc_vs_desc_subtype)block[2];
   format->bFormatIndex = block[3];
   format->bNumFrameDescriptors = block[4];
   memcpy(format->guidFormat, &block[5], 16);
@@ -1344,10 +1344,10 @@ uvc_error_t uvc_parse_vs_format_mjpeg(uvc_streaming_interface_t *stream_if,
                                       size_t block_size) {
   UVC_ENTER();
 
-  uvc_format_desc_t *format = calloc(1, sizeof(*format));
+  uvc_format_desc_t *format = (uvc_format_desc_t *)calloc(1, sizeof(*format));
 
   format->parent = stream_if;
-  format->bDescriptorSubtype = block[2];
+  format->bDescriptorSubtype = (uvc_vs_desc_subtype)block[2];
   format->bFormatIndex = block[3];
   memcpy(format->fourccFormat, "MJPG", 4);
   format->bmFlags = block[5];
@@ -1380,11 +1380,11 @@ uvc_error_t uvc_parse_vs_frame_frame(uvc_streaming_interface_t *stream_if,
   UVC_ENTER();
 
   format = stream_if->format_descs->prev;
-  frame = calloc(1, sizeof(*frame));
+  frame = (uvc_frame_desc_t *)calloc(1, sizeof(*frame));
 
   frame->parent = format;
 
-  frame->bDescriptorSubtype = block[2];
+  frame->bDescriptorSubtype = (uvc_vs_desc_subtype)block[2];
   frame->bFrameIndex = block[3];
   frame->bmCapabilities = block[4];
   frame->wWidth = block[5] + (block[6] << 8);
@@ -1400,7 +1400,7 @@ uvc_error_t uvc_parse_vs_frame_frame(uvc_streaming_interface_t *stream_if,
     frame->dwMaxFrameInterval = DW_TO_INT(&block[30]);
     frame->dwFrameIntervalStep = DW_TO_INT(&block[34]);
   } else {
-    frame->intervals = calloc(block[21] + 1, sizeof(frame->intervals[0]));
+    frame->intervals = (uint32_t *)calloc(block[21] + 1, sizeof(frame->intervals[0]));
     p = &block[26];
 
     for (i = 0; i < block[21]; ++i) {
@@ -1432,11 +1432,11 @@ uvc_error_t uvc_parse_vs_frame_uncompressed(uvc_streaming_interface_t *stream_if
   UVC_ENTER();
 
   format = stream_if->format_descs->prev;
-  frame = calloc(1, sizeof(*frame));
+  frame = (uvc_frame_desc_t *)calloc(1, sizeof(*frame));
 
   frame->parent = format;
 
-  frame->bDescriptorSubtype = block[2];
+  frame->bDescriptorSubtype = (uvc_vs_desc_subtype)block[2];
   frame->bFrameIndex = block[3];
   frame->bmCapabilities = block[4];
   frame->wWidth = block[5] + (block[6] << 8);
@@ -1452,7 +1452,7 @@ uvc_error_t uvc_parse_vs_frame_uncompressed(uvc_streaming_interface_t *stream_if
     frame->dwMaxFrameInterval = DW_TO_INT(&block[30]);
     frame->dwFrameIntervalStep = DW_TO_INT(&block[34]);
   } else {
-    frame->intervals = calloc(block[25] + 1, sizeof(frame->intervals[0]));
+    frame->intervals = (uint32_t *)calloc(block[25] + 1, sizeof(frame->intervals[0]));
     p = &block[26];
 
     for (i = 0; i < block[25]; ++i) {
@@ -1558,7 +1558,7 @@ void uvc_close(uvc_device_handle_t *devh) {
   if (ctx->own_usb_ctx && ctx->open_devices == devh && devh->next == NULL) {
     ctx->kill_handler_thread = 1;
     libusb_close(devh->usb_devh);
-    pthread_join(ctx->handler_thread, NULL);
+    ctx->handler_thread.join();
   } else {
     libusb_close(devh->usb_devh);
   }
@@ -1651,7 +1651,7 @@ void uvc_process_control_status(uvc_device_handle_t *devh, unsigned char *data, 
     return;
   }
 
-  attribute = data[4];
+  attribute = (uvc_status_attribute)data[4];
   content = data + 5;
   content_len = len - 5;
 
@@ -1748,7 +1748,7 @@ void LIBUSB_CALL _uvc_status_callback(struct libusb_transfer *transfer) {
   }
 
   if (transfer->actual_length != 0) {
-    uvc_error_t ret = libusb_submit_transfer(transfer);
+    uvc_error_t ret = (uvc_error_t)libusb_submit_transfer(transfer);
     UVC_DEBUG("libusb_submit_transfer() = %d", ret);
   }
 
