@@ -2708,6 +2708,10 @@ namespace rs2
         auto filtered = apply_filters(f);
         res.push_back(filtered);
 
+        auto uid = f.get_profile().unique_id();
+        auto new_uid = filtered.get_profile().unique_id();
+        viewer.streams_origin[new_uid] = uid;
+
         if (filtered.get_profile().unique_id() == viewer.selected_depth_source_uid || viewer.streams_origin[filtered.get_profile().unique_id()] == viewer.selected_depth_source_uid)
         {
             res.push_back(pc.calculate(filtered));
@@ -2717,9 +2721,7 @@ namespace rs2
         {
             update_texture(filtered);
         }
-        auto uid = f.get_profile().unique_id();
-        auto new_uid = filtered.get_profile().unique_id();
-        viewer.streams_origin[new_uid] = uid;
+
         return res;
     }
 
