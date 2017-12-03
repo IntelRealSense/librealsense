@@ -839,7 +839,7 @@ namespace librealsense
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGR8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGRA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGRA8 } } } } };
 
-    const native_pixel_format pf_y8         = { 'GREY', 1, 1,{  { false, &copy_pixels<1>,                                { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8  } } } } };
+    const native_pixel_format pf_y8         = { 'GREY', 1, 1,{  { true, &copy_pixels<1>,                                { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8  } } } } };
     const native_pixel_format pf_y16        = { 'Y16 ', 1, 2,{  { true,  &unpack_y16_from_y16_10,                        { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y16 } } } } };
     const native_pixel_format pf_y8i        = { 'Y8I ', 1, 2,{  { true,  &unpack_y8_y8_from_y8i,                         { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8  },{ { RS2_STREAM_INFRARED, 2 }, RS2_FORMAT_Y8 } } } } };
     const native_pixel_format pf_y12i       = { 'Y12I', 1, 3,{  { true,  &unpack_y16_y16_from_y12i_10,                   { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y16 },{ { RS2_STREAM_INFRARED, 2 }, RS2_FORMAT_Y16 } } } } };
