@@ -37,7 +37,6 @@ namespace librealsense
         uint8_t                 _kernel_size;
         rs2::stream_profile     _source_stream_profile;
         rs2::stream_profile     _target_stream_profile;
-        bool                    _enable_filter;
         bool                    _recalc_profile;
     };
 }

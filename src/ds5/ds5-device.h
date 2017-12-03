@@ -36,6 +36,14 @@ namespace librealsense
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
     protected:
+
+        std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
+
+        bool is_camera_in_advanced_mode() const;
+
+        void init(std::shared_ptr<context> ctx,
+            const platform::backend_device_group& group);
+
         friend class ds5_depth_sensor;
 
         std::shared_ptr<hw_monitor> _hw_monitor;
@@ -44,19 +52,26 @@ namespace librealsense
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _left_ir_stream;
         std::shared_ptr<stream_interface> _right_ir_stream;
-        std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
-
-    private:
-
-        bool is_camera_in_advanced_mode() const;
 
         uint8_t _depth_device_idx;
 
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
 
         std::unique_ptr<polling_error_handler> _polling_error_handler;
-
         std::shared_ptr<lazy<rs2_extrinsics>> _left_right_extrinsics;
+    };
+
+    class ds5u_device : public ds5_device
+    {
+    public:
+        ds5u_device(std::shared_ptr<context> ctx,
+            const platform::backend_device_group& group);
+
+        std::shared_ptr<uvc_sensor> create_ds5u_depth_device(std::shared_ptr<context> ctx,
+            const std::vector<platform::uvc_device_info>& all_device_infos);
+
+    protected:
+        friend class ds5u_depth_sensor;
     };
 
     class ds5_notification_decoder : public notification_decoder

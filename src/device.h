@@ -51,6 +51,7 @@ namespace librealsense
 
     protected:
         int add_sensor(std::shared_ptr<sensor_interface> sensor_base);
+        int assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t idx);
         void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t groupd_index);
         uvc_sensor& get_uvc_sensor(int subdevice);
 

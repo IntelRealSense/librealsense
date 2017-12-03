@@ -45,6 +45,13 @@ namespace librealsense
             intrinsics.height = resolutions_list[resolution].y;
 
             auto rect_params = static_cast<const float4>(table->rect_params[resolution]);
+            // DS5U - assume ideal intrinsic params
+            if ((rect_params.x == rect_params.y) && (rect_params.z == rect_params.w))
+            {
+                rect_params.x = rect_params.y = intrinsics.width * 1.5f;
+                rect_params.z = intrinsics.width * 0.5f;
+                rect_params.w = intrinsics.height * 0.5f;
+            }
             intrinsics.fx = rect_params[0];
             intrinsics.fy = rect_params[1];
             intrinsics.ppx = rect_params[2];
@@ -168,6 +175,7 @@ namespace librealsense
                     {
                     case RS_USB2_PID:
                     case RS400_PID:
+                    case RS405_PID:
                     case RS410_PID:
                     case RS460_PID:
                     case RS430_PID:

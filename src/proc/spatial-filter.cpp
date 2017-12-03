@@ -47,8 +47,7 @@ namespace librealsense
         _spatial_delta_param(delta_default_val),
         _spatial_iterations(filter_iter_def),
         _width(0), _height(0),
-        _range_from(1), _range_to(0xFFFF),
-        _enable_filter(true)
+        _range_from(1), _range_to(0xFFFF)
     {
         auto spatial_filter_alpha = std::make_shared<ptr_option<float>>(
             alpha_min_val,
@@ -71,38 +70,33 @@ namespace librealsense
             filter_iter_step,
             &_spatial_iterations, "Spatial iterations");
 
-        register_option(RS2_OPTION_FILTER_OPT1, spatial_filter_alpha);
-        register_option(RS2_OPTION_FILTER_OPT2, spatial_filter_delta);
-        register_option(RS2_OPTION_FILTER_OPT3, spatial_filter_iterations);
+        register_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, spatial_filter_alpha);
+        register_option(RS2_OPTION_FILTER_SMOOTH_DELTA, spatial_filter_delta);
+        register_option(RS2_OPTION_FILTER_MAGNITUDE, spatial_filter_iterations);
 
         unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
-
-        auto enable_control = std::make_shared<ptr_option<bool>>(false, true, true, true, &_enable_filter, "Apply spatial dxf");
-        register_option(RS2_OPTION_FILTER_ENABLED, enable_control);
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
             rs2::frame out = f, tgt, depth;
 
-            if (this->_enable_filter)
+            bool composite = f.is<rs2::frameset>();
+
+            depth = (composite) ? f.as<rs2::frameset>().first_or_default(RS2_STREAM_DEPTH) : f;
+            if (depth) // Processing required
             {
-                bool composite = f.is<rs2::frameset>();
+                update_configuration(f);
+                tgt = prepare_target_frame(depth, source);
 
-                depth = (composite) ? f.as<rs2::frameset>().first_or_default(RS2_STREAM_DEPTH) : f;
-                if (depth) // Processing required
-                {
-                    update_configuration(f);
-                    tgt = prepare_target_frame(depth, source);
-
-                    // Spatial smooth with domain transform filter
-                    dxf_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
-                        this->_spatial_alpha_param,
-                        this->_spatial_delta_param,
-                        this->_spatial_iterations);
-                }
-
-                out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
+                // Spatial smooth with domain transform filter
+                dxf_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
+                    this->_spatial_alpha_param,
+                    this->_spatial_delta_param,
+                    this->_spatial_iterations);
             }
+
+            out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
+
             source.frame_ready(out);
         };
 
@@ -297,8 +291,8 @@ namespace librealsense
     void spatial_filter::recursive_filter_vertical(uint16_t *frame_data, float alpha, float deltaZ)
     {
         int32_t v{}, u{};
-        static const float z_to_meter = 0.001f;      // TODO Evgeni - retrieve from stream profile
-        static const float meter_to_z = 1.f / z_to_meter;      // TODO Evgeni - retrieve from stream profile
+        static const float z_to_meter = 0.001f;
+        static const float meter_to_z = 1.f / z_to_meter;
 
         // we'll do one column at a time, top to bottom, bottom to top, left to right, 
 

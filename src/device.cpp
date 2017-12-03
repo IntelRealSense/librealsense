@@ -47,6 +47,19 @@ int device::add_sensor(std::shared_ptr<sensor_interface> sensor_base)
     return (int)_sensors.size() - 1;
 }
 
+int device::assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t idx)
+{
+    try
+    {
+        _sensors[idx] = sensor_base;
+        return (int)_sensors.size() - 1;
+    }
+    catch (std::out_of_range)
+    {
+        throw invalid_value_exception(to_string() << "Cannot assign sensor - invalid subdevice value" << idx);
+    }
+}
+
 uvc_sensor& device::get_uvc_sensor(int sub)
 {
     return dynamic_cast<uvc_sensor&>(*_sensors[sub]);

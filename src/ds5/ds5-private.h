@@ -17,18 +17,19 @@ namespace librealsense
     namespace ds
     {
         const uint16_t RS400_PID        = 0x0ad1; // PSR
-        const uint16_t RS400_MM_PID     = 0x0b00; // PSR
         const uint16_t RS410_PID        = 0x0ad2; // ASR
-        const uint16_t RS410_MM_PID     = 0x0aff; // ASR
         const uint16_t RS415_PID        = 0x0ad3; // ASRC
-        const uint16_t RS420_PID        = 0x0af6; // PWG
-        const uint16_t RS420_MM_PID     = 0x0afe; // PWGT
         const uint16_t RS430_PID        = 0x0ad4; // AWG
         const uint16_t RS430_MM_PID     = 0x0ad5; // AWGT
-        const uint16_t RS430_MM_RGB_PID = 0x0b01; // AWGCT
-        const uint16_t RS435_RGB_PID    = 0x0b07; // AWGC
-        const uint16_t RS460_PID        = 0x0b03; // DS5U
         const uint16_t RS_USB2_PID      = 0x0ad6; // USB2
+        const uint16_t RS420_PID        = 0x0af6; // PWG
+        const uint16_t RS420_MM_PID     = 0x0afe; // PWGT
+        const uint16_t RS410_MM_PID     = 0x0aff; // ASR
+        const uint16_t RS400_MM_PID     = 0x0b00; // PSR
+        const uint16_t RS430_MM_RGB_PID = 0x0b01; // AWGCT
+        const uint16_t RS460_PID        = 0x0b03; // DS5U
+        const uint16_t RS435_RGB_PID    = 0x0b07; // AWGC
+        const uint16_t RS405_PID        = 0x0b0c; // DS5U
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -54,6 +55,7 @@ namespace librealsense
             ds::RS430_MM_RGB_PID,
             ds::RS435_RGB_PID,
             ds::RS460_PID,
+            ds::RS405_PID,
             ds::RS_USB2_PID
         };
 
@@ -70,6 +72,7 @@ namespace librealsense
             { RS430_MM_PID, "Intel RealSense 430 with Tracking Module and RGB Module"},
             { RS435_RGB_PID,"Intel RealSense 435"},
             { RS460_PID,    "Intel RealSense 460" },
+            { RS405_PID,    "Intel RealSense 405" },
             { RS_USB2_PID,  "Intel RealSense USB2" }
         };
 
@@ -132,6 +135,10 @@ namespace librealsense
             reserved_1,
             reserved_2,
             res_640_400,
+            // Resolutions for DS5U
+            res_576_576,
+            res_720_720,
+            res_1152_1152,
             max_ds5_rect_resolutions
         };
 
@@ -314,8 +321,11 @@ namespace librealsense
             { res_1280_720,{ 1280, 720 } },
             { res_1280_800,{ 1280, 800 } },
             { res_1920_1080,{ 1920, 1080 } },
+            //Resolutions for DS5U
+            { res_576_576,{ 576, 576 } },
+            { res_720_720,{ 720, 720 } },
+            { res_1152_1152,{ 1152, 1152 } },
         };
-
 
 
         ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
@@ -333,9 +343,9 @@ namespace librealsense
         enum ds5_notifications_types
         {
             success = 0,
-            hot_laser_power_reduce = 1, // reported to error depth XU control
-            hot_laser_disable = 2, // reported to error depth XU control
-            flag_B_laser_disable = 3 // reported to error depth XU control
+            hot_laser_power_reduce  = 1, // reported to error depth XU control
+            hot_laser_disable       = 2, // reported to error depth XU control
+            flag_B_laser_disable    = 3 // reported to error depth XU control
         };
 
     } // librealsense::ds

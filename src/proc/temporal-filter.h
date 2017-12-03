@@ -19,8 +19,7 @@ namespace librealsense
         std::mutex _mutex;
         std::vector<rs2::frame> _frames;
         std::vector<uint16_t> _values;
-        bool _enable_filter = false;
-        uint8_t _num_of_frames = 5;
+        uint8_t _num_of_frames;
 
     };
 }

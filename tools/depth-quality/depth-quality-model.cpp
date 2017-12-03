@@ -508,11 +508,19 @@ namespace rs2
                                 _pipe.stop();
 
                                 rs2::config cfg;
-
+                                // We have a single resolution control that obides both streams
                                 cfg.enable_stream(primary.stream_type(), primary.stream_index(),
                                     primary.width(), primary.height(), primary.format(), primary.fps());
                                 cfg.enable_stream(secondary.stream_type(), secondary.stream_index(),
                                     primary.width(), primary.height(), secondary.format(), primary.fps());
+
+                                // The secondary stream may use its previous resolution when appropriate
+                                if (!cfg.can_resolve(_pipe))
+                                {
+                                    cfg.disable_stream(secondary.stream_type());
+                                    cfg.enable_stream(secondary.stream_type(), secondary.stream_index(),
+                                        secondary.width(), secondary.height(), secondary.format(), primary.fps());
+                                }
 
                                 // Wait till a valid device is registered and responsive
                                 bool success = false;
@@ -923,7 +931,6 @@ namespace rs2
                             std::lock_guard<std::mutex> lock(_m);
                             su = _depth_scale_units;
                             baseline = _stereo_baseline_mm;
-                            //intrin = _depth_intrinsic; // Evgeni
                             auto depth_profile = profile.as<video_stream_profile>();
                             intrin = depth_profile.get_intrinsics();
                             _depth_intrinsic = intrin;
@@ -932,7 +939,6 @@ namespace rs2
                                 int(intrin.width * (0.5f + 0.5f*this->_roi_percentage)),
                                 int(intrin.height * (0.5f + 0.5f*this->_roi_percentage)) };
 
-                            //intrin = depth_frame.get_profile().as<video_stream_profile>().get_intrinsics() ; // Evgeni
                             roi = _roi;
                         }
 
@@ -1007,7 +1013,7 @@ namespace rs2
         {
             std::lock_guard<std::mutex> lock(_m);
 
-            if (!_visible) return;
+            if (!_persistent_visibility.eval()) return;
 
             std::stringstream ss;
             auto val = _vals[(SIZE + _idx - 1) % SIZE];
@@ -1101,6 +1107,7 @@ namespace rs2
             ImGui::PopStyleColor(3);
         }
 
+        // Display the latest metrics in the panel view
         void metrics_model::render(ux_window& win)
         {
             for (auto&& plot : _plots)
@@ -1111,7 +1118,6 @@ namespace rs2
 
         void metrics_model::serialize_to_csv(const std::string& filename, const std::string& camera_info) const
         {
-            // TODO RAII
             std::ofstream csv;
 
             csv.open(filename);
