@@ -931,7 +931,6 @@ namespace rs2
                             std::lock_guard<std::mutex> lock(_m);
                             su = _depth_scale_units;
                             baseline = _stereo_baseline_mm;
-                            //intrin = _depth_intrinsic; // Evgeni
                             auto depth_profile = profile.as<video_stream_profile>();
                             intrin = depth_profile.get_intrinsics();
                             _depth_intrinsic = intrin;
@@ -940,7 +939,6 @@ namespace rs2
                                 int(intrin.width * (0.5f + 0.5f*this->_roi_percentage)),
                                 int(intrin.height * (0.5f + 0.5f*this->_roi_percentage)) };
 
-                            //intrin = depth_frame.get_profile().as<video_stream_profile>().get_intrinsics() ; // Evgeni
                             roi = _roi;
                         }
 

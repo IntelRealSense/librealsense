@@ -177,7 +177,7 @@ namespace rs2
             // Find the distance between the "rectified" fit and the ground truth planes.
             float plane_fit_to_gt_dist_mm = (ground_truth_mm > 0.f) ? (plane_fit_pivot.z * 1000 - ground_truth_mm): 0;
 
-            callback(roi_pixels, p, roi, baseline_mm, intrin->fx, ground_truth_mm, (plane_fit_present > 0), plane_fit_to_gt_dist_mm);
+            callback(roi_pixels, p, roi, baseline_mm, intrin->fx, ground_truth_mm, plane_fit_present, plane_fit_to_gt_dist_mm);
             result.p = p;
             result.plane_corners[0] = approximate_intersection(p, intrin, float(roi.min_x), float(roi.min_y));
             result.plane_corners[1] = approximate_intersection(p, intrin, float(roi.max_x), float(roi.min_y));

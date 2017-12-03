@@ -246,9 +246,8 @@ namespace librealsense
         CASE(TEXTURE_SOURCE)
         CASE(FILTER_ENABLED)
         CASE(FILTER_MAGNITUDE)
-        CASE(FILTER_OPT1)
-        CASE(FILTER_OPT2)
-        CASE(FILTER_OPT3)
+        CASE(FILTER_SMOOTH_ALPHA)
+        CASE(FILTER_SMOOTH_DELTA)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE

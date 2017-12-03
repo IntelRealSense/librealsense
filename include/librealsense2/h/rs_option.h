@@ -58,10 +58,9 @@ typedef enum rs2_option
     RS2_OPTION_MAX_DISTANCE                               , /**< Maximum distance to the target */
     RS2_OPTION_TEXTURE_SOURCE                             , /**< Texture mapping stream unique ID */
     RS2_OPTION_FILTER_ENABLED                             , /**< The 2D filter state */
-    RS2_OPTION_FILTER_MAGNITUDE                           , /**< The 2D filter magnitude */
-    RS2_OPTION_FILTER_OPT1                                , /**< Filter-specific params. TBD Evgeni */
-    RS2_OPTION_FILTER_OPT2                                , /**< Filter-specific params. TBD Evgeni */
-    RS2_OPTION_FILTER_OPT3                                , /**< Filter-specific params. TBD Evgeni */
+    RS2_OPTION_FILTER_MAGNITUDE                           , /**< The 2D-filter affects. The specific interpretation is given within the context of the filter */
+    RS2_OPTION_FILTER_SMOOTH_ALPHA                        , /**< Spatial smoothing parameter alpha*/
+    RS2_OPTION_FILTER_SMOOTH_DELTA                        , /**< Spatial smoothing radius param */
     RS2_OPTION_COUNT                                      , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
 const char* rs2_option_to_string(rs2_option option);

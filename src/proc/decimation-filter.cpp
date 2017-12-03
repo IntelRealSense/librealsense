@@ -149,7 +149,7 @@ namespace librealsense
         uint16_t* block_start = const_cast<uint16_t*>(frame_data_in);
 
         //#pragma omp parallel for schedule(dynamic) //Using OpenMP to try to parallelise the loop
-        //TODO Evgeni
+        //TODO SSE Optimizations
         for (int j = 0; j < height_out; j++)
         {
             uint16_t *p{};

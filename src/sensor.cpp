@@ -336,7 +336,7 @@ namespace librealsense
         {
             try
             {
-                _device->probe_and_commit(mode.profile, !mode.requires_processing(),
+                _device->probe_and_commit(mode.profile,
                 [this, mode, timestamp_reader, requests](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
                     auto system_time = environment::get_instance().get_time_service()->get_time();

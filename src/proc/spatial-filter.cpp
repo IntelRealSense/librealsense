@@ -71,9 +71,9 @@ namespace librealsense
             filter_iter_step,
             &_spatial_iterations, "Spatial iterations");
 
-        register_option(RS2_OPTION_FILTER_OPT1, spatial_filter_alpha);
-        register_option(RS2_OPTION_FILTER_OPT2, spatial_filter_delta);
-        register_option(RS2_OPTION_FILTER_OPT3, spatial_filter_iterations);
+        register_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, spatial_filter_alpha);
+        register_option(RS2_OPTION_FILTER_SMOOTH_DELTA, spatial_filter_delta);
+        register_option(RS2_OPTION_FILTER_MAGNITUDE, spatial_filter_iterations);
 
         unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
 
@@ -297,8 +297,8 @@ namespace librealsense
     void spatial_filter::recursive_filter_vertical(uint16_t *frame_data, float alpha, float deltaZ)
     {
         int32_t v{}, u{};
-        static const float z_to_meter = 0.001f;      // TODO Evgeni - retrieve from stream profile
-        static const float meter_to_z = 1.f / z_to_meter;      // TODO Evgeni - retrieve from stream profile
+        static const float z_to_meter = 0.001f;
+        static const float meter_to_z = 1.f / z_to_meter;
 
         // we'll do one column at a time, top to bottom, bottom to top, left to right, 
 
