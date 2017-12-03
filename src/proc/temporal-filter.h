@@ -6,20 +6,38 @@
 
 namespace librealsense
 {
+    const size_t confidence_map_size = 256;
+
     class temporal_filter : public processing_block
     {
     public:
         temporal_filter();
 
+    protected:
+        void    update_configuration(const rs2::frame& f);
+
+        rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source);
+
+        void temp_jw_smooth(uint16_t * frame_data, uint16_t * _last_frame_data, uint8_t *history);
+
     private:
-        void on_set_temporal_magnitude(int val);
-        void save_frames(rs2::frame new_frame);
-        void smooth(rs2::frame result);
+        void on_set_confidence_control(uint8_t val);
 
+        void recalc_confidence_map();
         std::mutex _mutex;
-        std::vector<rs2::frame> _frames;
-        std::vector<uint16_t> _values;
-        uint8_t _num_of_frames;
+        uint8_t                 _confidence_param;
 
+        float                   _alpha_param;
+        float                   _one_minus_alpha;
+        uint8_t                 _delta_param;
+        uint8_t                 _spatial_iterations;
+        size_t                  _width, _height;
+        size_t                  _current_frm_size_pixels;
+        rs2::stream_profile     _source_stream_profile;
+        rs2::stream_profile     _target_stream_profile;
+        std::map < size_t, std::vector<uint16_t> > _last_frame_map; // Hold the last frame for eachsize
+        std::map < size_t, std::vector<uint8_t> > _history;    // represents the history over the last 8 frames, 1 bit per frame
+        uint8_t                 _cur_frame_index; // mod 8
+        std::array<uint8_t, confidence_map_size> _confidence_map;  // encodes whether a particular 8 bit history is good enough for all 8 phases of storage
     };
 }
