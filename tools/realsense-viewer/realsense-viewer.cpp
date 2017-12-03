@@ -481,7 +481,7 @@ int main(int argv, const char** argc) try
                         {
                             texture = viewer_model.upload_frame(std::move(frame));
                         }
-                        else if (frame.get_profile().format()!= RS2_FORMAT_ANY && frame.get_profile().unique_id() == viewer_model.selected_tex_source_uid)
+                        else if (frame.get_profile().format()!= RS2_FORMAT_ANY && (frame.get_profile().unique_id() == viewer_model.selected_tex_source_uid || viewer_model.streams_origin[frame.get_profile().unique_id()] == viewer_model.selected_tex_source_uid))
                         {
                             texture = viewer_model.upload_frame(std::move(frame));
                         }
