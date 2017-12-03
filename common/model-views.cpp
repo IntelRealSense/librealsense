@@ -1162,8 +1162,11 @@ namespace rs2
             s->start([&](frame f)
             {
                 auto index = f.get_profile().unique_id();
-                //viewer.s(f);
-                if (viewer.synchronization_enable && (index == viewer.selected_depth_source_uid || index == viewer.selected_tex_source_uid))
+                auto mapped_index = viewer.streams_origin[f.get_profile().unique_id()];
+
+                if (viewer.synchronization_enable &&
+                    (!viewer.is_3d_view || index == viewer.selected_depth_source_uid || index == viewer.selected_tex_source_uid ||
+                     mapped_index == viewer.selected_depth_source_uid || mapped_index == viewer.selected_tex_source_uid))
                 {
                     viewer.s(f);
                 }
@@ -1581,9 +1584,9 @@ namespace rs2
             {
                 if (selected_depth_source_uid == -1)
                 {
-                    selected_depth_source_uid = s.second.profile.unique_id();
+                    selected_depth_source_uid = streams_origin[s.second.profile.unique_id()];
                 }
-                if (s.second.profile.unique_id() == selected_depth_source_uid)
+                if (streams_origin[s.second.profile.unique_id()] == selected_depth_source_uid)
                 {
                     selected_depth_source = i;
                 }
@@ -1616,7 +1619,7 @@ namespace rs2
                 {
                     if (i == selected_depth_source)
                     {
-                        selected_depth_source_uid = s.second.profile.unique_id();
+                        selected_depth_source_uid =  streams_origin[s.second.profile.unique_id()];
                     }
                     i++;
                 }
@@ -1637,9 +1640,9 @@ namespace rs2
             {
                 if (selected_tex_source_uid == -1)
                 {
-                    selected_tex_source_uid = s.second.profile.unique_id();
+                    selected_tex_source_uid = streams_origin[s.second.profile.unique_id()];
                 }
-                if (s.second.profile.unique_id() == selected_tex_source_uid)
+                if (streams_origin[s.second.profile.unique_id()] == selected_tex_source_uid)
                 {
                     selected_tex_source = i;
                 }
@@ -1675,7 +1678,7 @@ namespace rs2
                 {
                     if (i == selected_tex_source)
                     {
-                        selected_tex_source_uid = s.second.profile.unique_id();
+                        selected_tex_source_uid = streams_origin[s.second.profile.unique_id()];
                         texture.colorize = s.second.texture->colorize;
                     }
                     i++;
@@ -1788,7 +1791,7 @@ namespace rs2
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-                if (ImGui::Button(u8"\uf09c", { 24, top_bar_height }))
+                if (ImGui::Button(u8"\uf023", { 24, top_bar_height }))
                 {
                     synchronization_enable = false;
                 }
@@ -1798,7 +1801,7 @@ namespace rs2
             }
             else
             {
-                if (ImGui::Button(u8"\uf023", { 24, top_bar_height }))
+                if (ImGui::Button(u8"\uf09c", { 24, top_bar_height }))
                 {
                     synchronization_enable = true;
                 }

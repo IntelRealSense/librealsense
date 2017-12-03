@@ -325,11 +325,11 @@ namespace librealsense
                         for (int i = 0; i < composite->get_embedded_frames_count(); i++)
                         {
                             auto matched = composite->get_frame(i);
-                            s << matched->get_stream()->get_stream_type()<<" "<<matched->get_frame_timestamp()<<" ";
+                            s << matched->get_stream()->get_stream_type()<<" "<<f->get_frame_number()<<" "<<matched->get_frame_timestamp()<<" ";
                         }
                     }
                     else {
-                         s<<f->get_stream()->get_stream_type()<<" "<<(double)f->get_frame_timestamp()<<" ";
+                         s<<f->get_stream()->get_stream_type()<<" "<<f->get_frame_number()<<" "<<(double)f->get_frame_timestamp()<<" ";
                     }
 
 
