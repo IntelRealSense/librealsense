@@ -1280,7 +1280,7 @@ namespace rs2
 
     texture_buffer* stream_model::upload_frame(frame&& f)
     {
-        if (dev && dev->is_paused()) return false;
+        if (dev && dev->is_paused()) return nullptr;
 
         last_frame = std::chrono::high_resolution_clock::now();
 
