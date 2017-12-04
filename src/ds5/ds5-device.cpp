@@ -184,8 +184,10 @@ namespace librealsense
 
         auto&& backend = ctx->get_backend();
 
+        std::set<platform::uvc_device_info> unique_infos(all_device_infos.begin(), all_device_infos.end());
+
         std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
-        for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
+        for (auto&& info : filter_by_mi(std::vector<platform::uvc_device_info>{ unique_infos.begin(), unique_infos.end() }, 0)) // Filter just mi=0, DEPTH
             depth_devices.push_back(backend.create_uvc_device(info));
 
 

@@ -75,6 +75,12 @@ if(WIN32)
     )
 endif()
 
+if(APPLE)
+  find_library(corefoundation_lib CoreFoundation)
+  find_library(iokit_lib IOKit)
+  TARGET_LINK_LIBRARIES(usb objc ${corefoundation_lib} ${iokit_lib})
+endif()
+
 if((NOT APPLE) AND (NOT ANDROID) AND (NOT WIN32))
   TARGET_LINK_LIBRARIES(usb udev)
 endif()

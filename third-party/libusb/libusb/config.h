@@ -19,7 +19,7 @@
 
 #ifdef WIN32
 #include "config_win.h"
-#elif APPLE
+#elif __APPLE__
 #include "config_osx.h"
 #elif ANDROID
 #include "config_linux.h"

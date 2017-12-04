@@ -10,15 +10,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
-
-#ifdef WIN32
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#else
-#include <pthread.h>
-#endif
-
 #include <signal.h>
 #include "../third-party/libusb/libusb/libusb.h"
 #include "utlist.h"
@@ -263,15 +257,9 @@ struct uvc_stream_handle {
   uint32_t last_scr, hold_last_scr;
   size_t got_bytes, hold_bytes;
   uint8_t *outbuf, *holdbuf;
-#ifdef WIN32
   std::mutex cb_mutex;
   std::condition_variable cb_cond;
   std::thread cb_thread;
-#else
-  pthread_mutex_t cb_mutex;
-  pthread_cond_t cb_cond;
-  pthread_t cb_thread;
-#endif
   uint32_t last_polled_seq;
   uvc_frame_callback_t *user_cb;
   void *user_ptr;

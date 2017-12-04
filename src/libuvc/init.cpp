@@ -158,6 +158,6 @@ void uvc_exit(uvc_context_t *ctx) {
  */
 void uvc_start_handler_thread(uvc_context_t *ctx) {
     if (ctx->own_usb_ctx)
-        ctx->handler_thread = std::thread([&]() {_uvc_handle_events((void*)ctx); });
+        ctx->handler_thread = std::thread([ctx]() {_uvc_handle_events((void*)ctx); });
 }
 

@@ -4,7 +4,7 @@
 
 'use strict';
 
-/* global describe, it */
+/* global describe, it, before, after */
 const assert = require('assert');
 const EventEmitter = require('events');
 let librealsense2;
