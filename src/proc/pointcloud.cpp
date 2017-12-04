@@ -171,10 +171,6 @@ namespace librealsense
                         auto tex_xy = project_to_texcoord(&mapped_intr, trans);
 
                         *tex_ptr = tex_xy;
-                        if(x<width/2 && tex_xy.x>0.5)
-                        {
-                            std::cout<<"\n";
-                        }
                     }
                     else
                     {

@@ -454,67 +454,9 @@ int main(int argv, const char** argc) try
         ImGui::PopStyleVar();
         ImGui::PopStyleColor();
 
-        frameset f;
-        points p;
-        texture_buffer* texture = nullptr;
+
         // Fetch frames from queue
-        try
-        {
-            frame f;
-
-            if (viewer_model.ppf.resulting_queue.poll_for_frame(&f))
-            {
-                frameset frames;
-                p = f.as<points>();
-                if (frames = f.as<frameset>())
-                {
-                    for (auto&& frame : frames)
-                    {
-                        if(!p)
-                        {
-                            if(p = frame.as<points>())
-                            {
-                                continue;
-                            }
-                        }
-                        if (!viewer_model.is_3d_view)
-                        {
-                            texture = viewer_model.upload_frame(std::move(frame));
-                        }
-                        else if (frame.get_profile().format()!= RS2_FORMAT_ANY && (frame.get_profile().unique_id() == viewer_model.selected_tex_source_uid || viewer_model.streams_origin[frame.get_profile().unique_id()] == viewer_model.selected_tex_source_uid))
-                        {
-                            texture = viewer_model.upload_frame(std::move(frame));
-                        }
-
-                    }
-                }
-                else if(!p)
-                {
-                   viewer_model.upload_frame(std::move(f));
-                }
-
-            }
-        }
-        catch (const error& ex)
-        {
-            error_message = error_to_string(ex);
-        }
-        catch (const std::exception& ex)
-        {
-            error_message = ex.what();
-        }
-
-
-
-        viewer_model.gc_streams();
-
-        window.begin_viewport();
-
-        viewer_model.draw_viewport(viewer_rect, window, device_models.size(), error_message, texture, p);
-
-        viewer_model.not_model.draw(window.get_font(), window.width(), window.height());
-
-        viewer_model.popup_if_error(window.get_font(), error_message);
+        viewer_model.handle_ready_frames(viewer_rect, window, device_models.size(), error_message);
     }
 
     // Stop calculating 3D model
