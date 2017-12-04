@@ -11,9 +11,9 @@
 namespace librealsense
 {
     const uint8_t decimation_min_val = 1;
-    const uint8_t decimation_max_val = 5;
-    const uint8_t decimation_default_val = 3;
-    const uint8_t decimation_step = 1;    // The filter suppors kernel sizes [2^1...2^5]
+    const uint8_t decimation_max_val = 6;
+    const uint8_t decimation_default_val = 2;
+    const uint8_t decimation_step = 1;    // The filter suppors kernel sizes [2^0...2^5]
 
     decimation_filter::decimation_filter() :
         _decimation_factor(decimation_default_val),
@@ -33,7 +33,7 @@ namespace librealsense
                 throw invalid_value_exception(to_string()
                     << "Unsupported decimation factor value " << val << " is out of range.");
 
-            // The factor represent the 2's exponent
+            // The decimation factor represents the 2's exponent
             _decimation_factor = val;
             _patch_size = 0x1 << uint8_t(_decimation_factor - 1);
             _kernel_size = _patch_size*_patch_size;

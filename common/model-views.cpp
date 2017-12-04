@@ -684,7 +684,7 @@ namespace rs2
             temporal_filter = std::make_shared<processing_block_model>(
                 this, "Temporal Filter", temporal,
                 [=](rs2::frame f) { return temporal->proccess(f); }, error_message);
-            temporal_filter->enabled = false;
+            temporal_filter->enabled = true;
             post_processing.push_back(temporal_filter);
         }
 
@@ -3127,7 +3127,8 @@ namespace rs2
 
         if (last_points)
         {
-            glPointSize((float)viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width());
+            // Non-linear correspondence customized for non-flat surface exploration
+            glPointSize(std::sqrt(viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width()));
 
             if (selected_tex_source_uid >= 0)
             {
@@ -3140,7 +3141,6 @@ namespace rs2
             }
 
             //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
-
 
             glBegin(GL_POINTS);
 
