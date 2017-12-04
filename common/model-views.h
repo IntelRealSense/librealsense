@@ -607,7 +607,7 @@ namespace rs2
 
         void show_top_bar(ux_window& window, const rect& viewer_rect);
 
-        void render_3d_view(const rect& view_rect, float scale_factor, texture_buffer* texture, rs2::points points);
+        void render_3d_view(const rect& view_rect, texture_buffer* texture, rs2::points points);
 
         void render_2d_view(const rect& view_rect, ux_window& win, int output_height,
             ImFont *font1, ImFont *font2, size_t dev_model_num, const mouse_info &mouse, std::string& error_message);
