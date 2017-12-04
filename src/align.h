@@ -80,27 +80,85 @@ namespace librealsense
         stream_profile_interface* _depth_stream = nullptr;
     };
 
+    template <typename T>
+    class optional_value
+    {
+    public:
+        optional_value() : _valid(false) {}
+        explicit optional_value(const T& v) : _valid(true), _value(v) {}
+
+        operator bool() const
+        {
+            return has_value();
+        }
+        bool has_value() const
+        {
+            return _valid;
+        }
+        
+        T& operator=(const T& v)
+        {
+            _valid = true;
+            _value = v;
+            return _value;
+        }
+        
+        T& value() &
+        {
+            if (!_valid) throw std::runtime_error("bad optional access");
+            return _value;
+        }
+
+        T&& value() &&
+        {
+            if (!_valid) throw std::runtime_error("bad optional access");
+            return std::move(_value);
+        }
+
+        const T* operator->() const
+        {
+            return &_value;
+        }
+        T* operator->()
+        {
+            return &_value;
+        }
+        const T& operator*() const&
+        {
+            return _value;
+        }
+        T& operator*() &
+        {
+            return _value;
+        }
+        T&& operator*() &&
+        {
+            return std::move(_value);
+        }
+    private:
+        bool _valid;
+        T _value;
+    };
+
     class align : public processing_block
     {
     public:
-        align(rs2_stream stream);
+        align(rs2_stream align_to);
 
     private:
-        std::mutex              _mutex;
+        static void update_frame_info(const frame_interface* frame, optional_value<rs2_intrinsics>& intrin, std::shared_ptr<stream_profile_interface>& profile, bool register_extrin);
+        void update_align_info(const frame_interface* depth_frame);
 
-        const rs2_intrinsics*   _depth_intrinsics_ptr;
-        const float*            _depth_units_ptr;
-        const rs2_intrinsics*   _other_intrinsics_ptr;
-        const rs2_extrinsics*   _depth_to_other_extrinsics_ptr;
-
-        rs2_intrinsics          _depth_intrinsics;
-        rs2_intrinsics          _other_intrinsics;
-        float                   _depth_units;
-        rs2_extrinsics          _depth_to_other_extrinsics;
-        rs2_stream              _other_stream_type;
-        int                     _width, _height;
-        int                     _other_bytes_per_pixel;
-        int*                    _other_bytes_per_pixel_ptr;
-        std::shared_ptr<stream_profile_interface> _depth_stream_profile, _other_stream_profile;
+        std::mutex _mutex;
+        optional_value<rs2_intrinsics> _from_intrinsics;
+        optional_value<rs2_intrinsics> _to_intrinsics;
+        optional_value<rs2_extrinsics> _extrinsics;
+        optional_value<float> _depth_units;
+        optional_value<int> _to_bytes_per_pixel;
+        optional_value<rs2_stream> _from_stream_type;
+        rs2_stream _to_stream_type;
+        std::shared_ptr<stream_profile_interface> _from_stream_profile;
+        std::shared_ptr<stream_profile_interface> _to_stream_profile;
+        ;
     };
 }
