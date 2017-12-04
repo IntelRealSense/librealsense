@@ -184,8 +184,8 @@ namespace rs2
             result.plane_corners[2] = approximate_intersection(p, intrin, float(roi.max_x), float(roi.max_y));
             result.plane_corners[3] = approximate_intersection(p, intrin, float(roi.min_x), float(roi.max_y));
 
-            // Distance of origin (the camera) from the plane is encoded in parameter D of the plane
-            result.distance = is_valid(result.plane_corners) ? static_cast<float>(-p.d * 1000) : -1;
+            // Distance of origin (the camera) to the plane is the distance to the intersection point
+            result.distance = is_valid(result.plane_corners) ? plane_fit_pivot.length()*1000 : -1;
             // Angle can be calculated from param C
             result.angle = static_cast<float>(std::acos(std::abs(p.c)) / M_PI * 180.);
 
