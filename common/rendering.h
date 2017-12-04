@@ -819,7 +819,7 @@ namespace rs2
             case RS2_FORMAT_DISPARITY16:
                 if (frame.is<depth_frame>())
                 {
-                    if (auto rendered_frame = colorize->colorize(frame).as<video_frame>())
+                    if (rendered_frame = colorize->colorize(frame).as<video_frame>())
                     {
                         data = rendered_frame.get_data();
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
@@ -828,8 +828,6 @@ namespace rs2
                                      0, GL_RGB, GL_UNSIGNED_BYTE,
                                      rendered_frame.get_data());
                     }
-                    else
-                    { }
                 }
                 else glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
 
