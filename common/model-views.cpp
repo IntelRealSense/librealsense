@@ -3012,7 +3012,7 @@ namespace rs2
         }
     }
 
-    void viewer_model::render_3d_view(const rect& viewer_rect, float scale_factor, texture_buffer* texture, rs2::points points)
+    void viewer_model::render_3d_view(const rect& viewer_rect, texture_buffer* texture, rs2::points points)
     {
         if(!paused)
         {
@@ -3025,8 +3025,8 @@ namespace rs2
                 last_texture = texture;
             }
         }
-        glViewport(viewer_rect.x * scale_factor, 0,
-            viewer_rect.w * scale_factor, viewer_rect.h * scale_factor);
+        glViewport(viewer_rect.x, 0,
+            viewer_rect.w, viewer_rect.h);
 
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -4418,8 +4418,11 @@ namespace rs2
 
             update_3d_camera(viewer_rect, window.get_mouse());
 
-            auto ratio = (float)window.width() / window.framebuf_width();
-            render_3d_view(viewer_rect, window.get_scale_factor(), texture, points);
+			rect window_size{ 0, 0, (float)window.width(), (float)window.height() };
+			rect fb_size{ 0, 0, (float)window.framebuf_width(), (float)window.framebuf_height() };
+			rect new_rect = viewer_rect.normalize(window_size).unnormalize(fb_size);
+
+            render_3d_view(new_rect, texture, points);
         }
 
         if (ImGui::IsKeyPressed(' '))
