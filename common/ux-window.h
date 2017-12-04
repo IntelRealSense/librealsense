@@ -62,6 +62,8 @@ namespace rs2
         void add_on_load_message(const std::string& msg);
 
     private:
+        void open_window();
+
         GLFWwindow               *_win;
         int                      _width, _height, _output_height;
         int                     _fb_width, _fb_height;
@@ -86,5 +88,8 @@ namespace rs2
         bool                     _missing_device = false;
         int                      _hourglass_index = 0;
         std::string              _dev_stat_message;
+        bool                     _fullscreen_pressed = false;
+        bool                     _fullscreen = false;
+        std::string              _title;
     };
 }
