@@ -571,6 +571,7 @@ namespace rs2
 
         float get_output_height() const { return (is_output_collapsed ? default_log_h : 20); }
 
+        void handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
         viewer_model()
             : ppf(*this),
               synchronization_enable(true)

@@ -409,8 +409,6 @@ namespace rs2
 
         void tool_model::render(ux_window& win)
         {
-            win.begin_viewport();
-
             rect viewer_rect = { _viewer_model.panel_width,
                 _viewer_model.panel_y, win.width() -
                 _viewer_model.panel_width,
@@ -424,7 +422,6 @@ namespace rs2
 
             _viewer_model.show_top_bar(win, viewer_rect);
             _viewer_model.roi_rect = _metrics_model.get_plane();
-            _viewer_model.draw_viewport(viewer_rect, win, 1, _error_message, _last_texture, _last_points);
 
             bool distance_guide = false;
             bool orientation_guide = false;
@@ -672,37 +669,12 @@ namespace rs2
                 if (_pipe.poll_for_frames(&f))
                 {
                     _viewer_model.ppf.frames_queue.enqueue(f);
-                    if(_viewer_model.ppf.resulting_queue.poll_for_frame(&f))
-                    {
-
-                        for (auto&& frame : f.as<rs2::frameset>())
-                        {
-                            auto points = frame.as<rs2::points>();
-                            if(points)
-                            {
-                                _last_points = points;
-                                continue;
-                            }
-
-                            if (frame.is<depth_frame>() && !_viewer_model.paused)
-                            {
-                                _metrics_model.begin_process_frame(frame);
-                            }
-                            if (!_viewer_model.is_3d_view)
-                            {
-                                _last_texture =_viewer_model.upload_frame(std::move(frame));
-                            }
-                            if(_viewer_model.selected_tex_source_uid == -1 || _viewer_model.selected_tex_source_uid == frame.get_profile().unique_id())
-                                _last_texture =_viewer_model.upload_frame(std::move(frame));
-                        }
-                    }
 
                 }
+                 _viewer_model.handle_ready_frames(viewer_rect, win, 1, _error_message);
             }
             catch (...){} // on device disconnect
 
-            _viewer_model.gc_streams();
-            _viewer_model.popup_if_error(win.get_font(), _error_message);
         }
 
         void tool_model::update_configuration()

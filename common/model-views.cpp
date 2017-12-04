@@ -2712,14 +2712,18 @@ namespace rs2
         auto new_uid = filtered.get_profile().unique_id();
         viewer.streams_origin[new_uid] = uid;
 
-        if (filtered.get_profile().unique_id() == viewer.selected_depth_source_uid || viewer.streams_origin[filtered.get_profile().unique_id()] == viewer.selected_depth_source_uid)
+        if(viewer.is_3d_view)
         {
-            res.push_back(pc.calculate(filtered));
-        }
+            if (filtered.get_profile().unique_id() == viewer.selected_depth_source_uid || viewer.streams_origin[filtered.get_profile().unique_id()] == viewer.selected_depth_source_uid)
+            {
+                res.push_back(pc.calculate(filtered));
+            }
 
-        if (filtered.get_profile().unique_id() == viewer.selected_tex_source_uid || viewer.streams_origin[filtered.get_profile().unique_id()] == viewer.selected_tex_source_uid)
-        {
-            update_texture(filtered);
+            if (filtered.get_profile().unique_id() == viewer.selected_tex_source_uid || viewer.streams_origin[filtered.get_profile().unique_id()] == viewer.selected_tex_source_uid)
+            {
+                update_texture(filtered);
+            }
+
         }
 
         return res;
@@ -2908,6 +2912,67 @@ namespace rs2
         }
 
         return get_interpolated_layout(results);
+    }
+
+    void viewer_model::handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message)
+    {
+        texture_buffer* texture = nullptr;
+        points p;
+        try
+        {
+            frame f;
+
+            if (ppf.resulting_queue.poll_for_frame(&f))
+            {
+                frameset frames;
+                p = f.as<points>();
+                if (frames = f.as<frameset>())
+                {
+                    for (auto&& frame : frames)
+                    {
+                        if(!p)
+                        {
+                            if(p = frame.as<points>())
+                            {
+                                continue;
+                            }
+                        }
+                        if (!is_3d_view)
+                        {
+                            texture = upload_frame(std::move(frame));
+                        }
+                        else if (selected_tex_source_uid == -1 || frame.get_profile().format()!= RS2_FORMAT_ANY && (frame.get_profile().unique_id() == selected_tex_source_uid || streams_origin[frame.get_profile().unique_id()] == selected_tex_source_uid))
+                        {
+                            texture = upload_frame(std::move(frame));
+                        }
+
+                    }
+                }
+                else if(!p)
+                {
+                   upload_frame(std::move(f));
+                }
+            }
+        }
+        catch (const error& ex)
+        {
+            error_message = error_to_string(ex);
+        }
+        catch (const std::exception& ex)
+        {
+            error_message = ex.what();
+        }
+
+
+        gc_streams();
+
+        window.begin_viewport();
+
+        draw_viewport(viewer_rect, window, devices, error_message, texture, p);
+
+        not_model.draw(window.get_font(), window.width(), window.height());
+
+        popup_if_error(window.get_font(), error_message);
     }
 
     void viewer_model::reset_camera(float3 p)
