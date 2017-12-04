@@ -4217,169 +4217,172 @@ namespace rs2
                     }
                 }
 
-                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-                const ImVec2 pos = ImGui::GetCursorPos();
-                const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
-
-                draw_later.push_back([windows_width, &window, sub, pos, &viewer, this]() {
-                    if (sub->streaming) ImGui::SetCursorPos({ windows_width - 35, pos.y - 1 });
-                    else ImGui::SetCursorPos({ windows_width - 27, pos.y + 2 });
-                    ImGui::PushFont(window.get_font());
-
-                    ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
-
-                    if (!sub->streaming)
-                    {
-                        if (!sub->post_processing_enabled)
-                        {
-                            std::string label = to_string() << u8"\uf204";
-
-                            ImGui::PushStyleColor(ImGuiCol_Text, redish);
-                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-                            ImGui::TextDisabled(label.c_str());
-                        }
-                        else
-                        {
-                            std::string label = to_string() << u8"\uf205";
-                            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-                            ImGui::TextDisabled(label.c_str());
-                        }
-                    }
-                    else
-                    {
-                        if (!sub->post_processing_enabled)
-                        {
-                            std::string label = to_string() << u8" \uf204##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << ",post";
-
-                            ImGui::PushStyleColor(ImGuiCol_Text, redish);
-                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-
-                            if (ImGui::Button(label.c_str(), { 30,24 }))
-                            {
-                                sub->post_processing_enabled = true;
-                            }
-                            if (ImGui::IsItemHovered())
-                            {
-                                ImGui::SetTooltip("Enable post-processing filters");
-                            }
-                        }
-                        else
-                        {
-                            std::string label = to_string() << u8" \uf205##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << ",post";
-                            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-
-                            if (ImGui::Button(label.c_str(), { 30,24 }))
-                            {
-                                sub->post_processing_enabled = false;
-                            }
-                            if (ImGui::IsItemHovered())
-                            {
-                                ImGui::SetTooltip("Disable post-processing filters");
-                            }
-                        }
-                    }
-
-                    ImGui::PopStyleColor(5);
-                    ImGui::PopFont();
-                });
-
-                label = to_string() << "Post-Processing##" << id;
-                if (ImGui::TreeNode(label.c_str()))
+                if (sub->post_processing.size() > 0)
                 {
-                    for (auto&& pb : sub->post_processing)
-                    {
-                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+                    const ImVec2 pos = ImGui::GetCursorPos();
+                    const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
 
-                        const ImVec2 pos = ImGui::GetCursorPos();
-                        const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
+                    draw_later.push_back([windows_width, &window, sub, pos, &viewer, this]() {
+                        if (sub->streaming) ImGui::SetCursorPos({ windows_width - 35, pos.y - 1 });
+                        else ImGui::SetCursorPos({ windows_width - 27, pos.y + 2 });
+                        ImGui::PushFont(window.get_font());
 
-                        draw_later.push_back([windows_width, &window, sub, pos, &viewer, this, pb]() {
-                            if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 27, pos.y + 3 });
-                            else ImGui::SetCursorPos({ windows_width - 35, pos.y - 1 });
-                            ImGui::PushFont(window.get_font());
+                        ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
 
-                            ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
-                            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
-                            ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
-
-                            if (!sub->streaming || !sub->post_processing_enabled)
+                        if (!sub->streaming)
+                        {
+                            if (!sub->post_processing_enabled)
                             {
-                                if (!pb->enabled)
-                                {
-                                    std::string label = to_string() << u8"\uf204";
+                                std::string label = to_string() << u8"\uf204";
 
-                                    ImGui::PushStyleColor(ImGuiCol_Text, redish);
-                                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-                                    ImGui::TextDisabled(label.c_str());
-                                }
-                                else
+                                ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+                                ImGui::TextDisabled(label.c_str());
+                            }
+                            else
+                            {
+                                std::string label = to_string() << u8"\uf205";
+                                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+                                ImGui::TextDisabled(label.c_str());
+                            }
+                        }
+                        else
+                        {
+                            if (!sub->post_processing_enabled)
+                            {
+                                std::string label = to_string() << u8" \uf204##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << ",post";
+
+                                ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+
+                                if (ImGui::Button(label.c_str(), { 30,24 }))
                                 {
-                                    std::string label = to_string() << u8"\uf205";
-                                    ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-                                    ImGui::TextDisabled(label.c_str());
+                                    sub->post_processing_enabled = true;
+                                }
+                                if (ImGui::IsItemHovered())
+                                {
+                                    ImGui::SetTooltip("Enable post-processing filters");
                                 }
                             }
                             else
                             {
-                                if (!pb->enabled)
+                                std::string label = to_string() << u8" \uf205##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << ",post";
+                                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+
+                                if (ImGui::Button(label.c_str(), { 30,24 }))
                                 {
-                                    std::string label = to_string() << u8" \uf204##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
+                                    sub->post_processing_enabled = false;
+                                }
+                                if (ImGui::IsItemHovered())
+                                {
+                                    ImGui::SetTooltip("Disable post-processing filters");
+                                }
+                            }
+                        }
 
-                                    ImGui::PushStyleColor(ImGuiCol_Text, redish);
-                                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+                        ImGui::PopStyleColor(5);
+                        ImGui::PopFont();
+                    });
 
-                                    if (ImGui::Button(label.c_str(), { 30,24 }))
+                    label = to_string() << "Post-Processing##" << id;
+                    if (ImGui::TreeNode(label.c_str()))
+                    {
+                        for (auto&& pb : sub->post_processing)
+                        {
+                            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+                            const ImVec2 pos = ImGui::GetCursorPos();
+                            const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
+
+                            draw_later.push_back([windows_width, &window, sub, pos, &viewer, this, pb]() {
+                                if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 27, pos.y + 3 });
+                                else ImGui::SetCursorPos({ windows_width - 35, pos.y - 1 });
+                                ImGui::PushFont(window.get_font());
+
+                                ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+                                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+                                ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
+
+                                if (!sub->streaming || !sub->post_processing_enabled)
+                                {
+                                    if (!pb->enabled)
                                     {
-                                        pb->enabled = true;
+                                        std::string label = to_string() << u8"\uf204";
+
+                                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+                                        ImGui::TextDisabled(label.c_str());
                                     }
-                                    if (ImGui::IsItemHovered())
+                                    else
                                     {
-                                        label = to_string() << "Enable " << pb->get_name() << " post-processing filter";
-                                        ImGui::SetTooltip(label.c_str());
+                                        std::string label = to_string() << u8"\uf205";
+                                        ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+                                        ImGui::TextDisabled(label.c_str());
                                     }
                                 }
                                 else
                                 {
-                                    std::string label = to_string() << u8" \uf205##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
-                                    ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+                                    if (!pb->enabled)
+                                    {
+                                        std::string label = to_string() << u8" \uf204##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
 
-                                    if (ImGui::Button(label.c_str(), { 30,24 }))
-                                    {
-                                        pb->enabled = false;
+                                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+
+                                        if (ImGui::Button(label.c_str(), { 30,24 }))
+                                        {
+                                            pb->enabled = true;
+                                        }
+                                        if (ImGui::IsItemHovered())
+                                        {
+                                            label = to_string() << "Enable " << pb->get_name() << " post-processing filter";
+                                            ImGui::SetTooltip(label.c_str());
+                                        }
                                     }
-                                    if (ImGui::IsItemHovered())
+                                    else
                                     {
-                                        label = to_string() << "Disable " << pb->get_name() << " post-processing filter";
-                                        ImGui::SetTooltip(label.c_str());
+                                        std::string label = to_string() << u8" \uf205##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
+                                        ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+
+                                        if (ImGui::Button(label.c_str(), { 30,24 }))
+                                        {
+                                            pb->enabled = false;
+                                        }
+                                        if (ImGui::IsItemHovered())
+                                        {
+                                            label = to_string() << "Disable " << pb->get_name() << " post-processing filter";
+                                            ImGui::SetTooltip(label.c_str());
+                                        }
                                     }
                                 }
-                            }
 
-                            ImGui::PopStyleColor(5);
-                            ImGui::PopFont();
-                        });
+                                ImGui::PopStyleColor(5);
+                                ImGui::PopFont();
+                            });
 
-                        label = to_string() << pb->get_name() << "##" << id;
-                        if (ImGui::TreeNode(label.c_str()))
-                        {
-                            for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+                            label = to_string() << pb->get_name() << "##" << id;
+                            if (ImGui::TreeNode(label.c_str()))
                             {
-                                auto opt = static_cast<rs2_option>(i);
-                                pb->get_option(opt).draw_option(
-                                    dev.is<playback>() || update_read_only_options,
-                                    false, error_message, viewer.not_model);
-                            }
+                                for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+                                {
+                                    auto opt = static_cast<rs2_option>(i);
+                                    pb->get_option(opt).draw_option(
+                                        dev.is<playback>() || update_read_only_options,
+                                        false, error_message, viewer.not_model);
+                                }
 
-                            ImGui::TreePop();
+                                ImGui::TreePop();
+                            }
                         }
+                        ImGui::TreePop();
                     }
-                    ImGui::TreePop();
                 }
 
                 ImGui::TreePop();
