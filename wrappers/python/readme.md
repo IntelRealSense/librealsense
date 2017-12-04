@@ -21,14 +21,13 @@
 `-DPYTHON_EXECUTABLE=[full path to the exact python executable]`
 
 ### Windows Installation
-1. Install Python 2 or 3 for windows
-  * You can find the downloads on the official Python website [here](https://www.python.org/downloads/windows/)
-2. When running cmake, select the BUILD_PYTHON_BINDINGS option
-> `-DBUILD_PYTHON_BINDINGS=true`
-3. If you have multiple python installations on your machine you can use:
-> `-DPYTHON_EXECUTABLE=<path to python executable`
+1. Install Python 2 or 3 for windows. You can find the downloads on the official Python website [here](https://www.python.org/downloads/windows/)
+2. When running `cmake-gui`, select the `BUILD_PYTHON_BINDINGS` option
+3. If you have multiple python installations on your machine you can use: `-DPYTHON_EXECUTABLE=<path to python executable>`
+For example: `-DPYTHON_EXECUTABLE=C:/Python27/python.exe`
 
-  For example: `-DPYTHON_EXECUTABLE=C:/Python27/python.exe`
+> The precompiled binaries shipped with [the installer](https://github.com/IntelRealSense/librealsense/releases/download/v2.8.2/Intel.RealSense.SDK.exe) assume **python2.7**.
+>The error `ImportError: DLL load failed: The specified module could not be found` might indicate versions mismatch or architecture (x86 vs x64) mismatch. 
 
 ## Examples
 

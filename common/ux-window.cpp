@@ -10,17 +10,17 @@
 
 namespace rs2
 {
-    ux_window::ux_window(const char* title) :
-        _win(nullptr), _width(0), _height(0), _output_height(0),
-        _font_14(nullptr), _font_18(nullptr), _app_ready(false),
-        _first_frame(true), _query_devices(true), _missing_device(false),
-        _hourglass_index(0), _dev_stat_message{}, _keep_alive(true)
+    void ux_window::open_window()
     {
-        if (!glfwInit())
-            exit(1);
+        if (_win)
+        {
+            ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
+            ImGui_ImplGlfw_Shutdown();
+            glfwDestroyWindow(_win);
+        }
 
         rs2_error* e = nullptr;
-        _title_str = to_string() << title << " v" << api_version_to_string(rs2_get_api_version(&e));
+        _title_str = to_string() << _title << " v" << api_version_to_string(rs2_get_api_version(&e));
 
         _width = 1024;
         _height = 768;
@@ -30,12 +30,21 @@ namespace rs2
         if (primary)
         {
             const auto mode = glfwGetVideoMode(primary);
-            _width = int(mode->width * 0.7f);
-            _height = int(mode->height * 0.7f);
+            if (_fullscreen)
+            {
+                _width = mode->width;
+                _height = mode->height;
+            }
+            else
+            {
+                _width = int(mode->width * 0.7f);
+                _height = int(mode->height * 0.7f);
+            }
         }
 
         // Create GUI Windows
-        _win = glfwCreateWindow(_width, _height, _title_str.c_str(), nullptr, nullptr);
+        _win = glfwCreateWindow(_width, _height, _title_str.c_str(), 
+            (_fullscreen ? primary : nullptr), nullptr);
         glfwMakeContextCurrent(_win);
         ImGui_ImplGlfw_Init(_win, true);
 
@@ -75,6 +84,18 @@ namespace rs2
                 data->on_file_drop(paths[i]);
             }
         });
+    }
+
+    ux_window::ux_window(const char* title) :
+        _win(nullptr), _width(0), _height(0), _output_height(0),
+        _font_14(nullptr), _font_18(nullptr), _app_ready(false),
+        _first_frame(true), _query_devices(true), _missing_device(false),
+        _hourglass_index(0), _dev_stat_message{}, _keep_alive(true), _title(title)
+    {
+        if (!glfwInit())
+            exit(1);
+
+        open_window();
 
         // Prepare the splash screen and do some initialization in the background
         int x, y, comp;
@@ -234,14 +255,56 @@ namespace rs2
     void ux_window::begin_frame()
     {
         glfwPollEvents();
+
+        int state = glfwGetKey(_win, GLFW_KEY_F8);
+        if (state == GLFW_PRESS)
+        {
+            _fullscreen_pressed = true;
+        }
+        else
+        {
+            if (_fullscreen_pressed)
+            {
+                _fullscreen = !_fullscreen;
+                open_window();
+            }
+            _fullscreen_pressed = false;
+        }
+
+		int w = _width; int h = _height;
+
         glfwGetWindowSize(_win, &_width, &_height);
+
+		int fw = _fb_width; 
+		int fh = _fb_height;
+
         glfwGetFramebufferSize(_win, &_fb_width, &_fb_height);
+
+		if (fw != _fb_width || fh != _fb_height)
+		{
+			std::string msg = to_string() << "Framebuffer size changed to " << _fb_width << " x " << _fb_height;
+			rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
+		}
+
+		auto sf = _scale_factor;
 
         // Update the scale factor each frame
         // based on resolution and physical display size
         _scale_factor = pick_scale_factor(_win);
         _width = _width / _scale_factor;
         _height = _height / _scale_factor;
+
+		if (w != _width || h != _height)
+		{
+			std::string msg = to_string() << "Window size changed to " << _width << " x " << _height;
+			rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
+		}
+
+		if (_scale_factor != sf)
+		{
+			std::string msg = to_string() << "Scale Factor is now " << _scale_factor;
+			rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
+		}
 
         // Reset ImGui state
         glMatrixMode(GL_PROJECTION);
