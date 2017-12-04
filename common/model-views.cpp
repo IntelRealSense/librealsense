@@ -2914,14 +2914,13 @@ namespace rs2
         return get_interpolated_layout(results);
     }
 
-    void viewer_model::handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message)
+    rs2::frame viewer_model::handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message)
     {
         texture_buffer* texture = nullptr;
         points p;
+        frame f{}, res{};
         try
         {
-            frame f;
-
             if (ppf.resulting_queue.poll_for_frame(&f))
             {
                 frameset frames;
@@ -2937,6 +2936,9 @@ namespace rs2
                                 continue;
                             }
                         }
+                        if (frame.is<depth_frame>() && !paused)
+                            res = frame;
+
                         if (!is_3d_view)
                         {
                             texture = upload_frame(std::move(frame));
@@ -2963,7 +2965,6 @@ namespace rs2
             error_message = ex.what();
         }
 
-
         gc_streams();
 
         window.begin_viewport();
@@ -2973,6 +2974,8 @@ namespace rs2
         not_model.draw(window.get_font(), window.width(), window.height());
 
         popup_if_error(window.get_font(), error_message);
+
+        return res;
     }
 
     void viewer_model::reset_camera(float3 p)

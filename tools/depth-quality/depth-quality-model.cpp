@@ -662,16 +662,16 @@ namespace rs2
             ImGui::PopStyleVar();
             ImGui::PopStyleColor();
 
-
             try
             {
                 frameset f;
                 if (_pipe.poll_for_frames(&f))
                 {
                     _viewer_model.ppf.frames_queue.enqueue(f);
-
                 }
-                 _viewer_model.handle_ready_frames(viewer_rect, win, 1, _error_message);
+                frame dpt = _viewer_model.handle_ready_frames(viewer_rect, win, 1, _error_message);
+                if (dpt)
+                    _metrics_model.begin_process_frame(dpt);
             }
             catch (...){} // on device disconnect
 

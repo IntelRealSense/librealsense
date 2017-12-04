@@ -454,8 +454,7 @@ int main(int argv, const char** argc) try
         ImGui::PopStyleVar();
         ImGui::PopStyleColor();
 
-
-        // Fetch frames from queue
+        // Fetch and process frames from queue
         viewer_model.handle_ready_frames(viewer_rect, window, device_models.size(), error_message);
     }
 
