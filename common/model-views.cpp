@@ -4419,7 +4419,7 @@ namespace rs2
             update_3d_camera(viewer_rect, window.get_mouse());
 
             auto ratio = (float)window.width() / window.framebuf_width();
-            render_3d_view(viewer_rect, window.get_scale_factor() / ratio, texture, points);
+            render_3d_view(viewer_rect, window.get_scale_factor(), texture, points);
         }
 
         if (ImGui::IsKeyPressed(' '))

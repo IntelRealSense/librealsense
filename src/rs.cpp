@@ -1684,3 +1684,32 @@ rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
     return environment::get_instance().get_time_service()->get_time();
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
+
+void rs2_log(rs2_log_severity severity, const char * message, rs2_error ** error) BEGIN_API_CALL
+{
+	VALIDATE_ENUM(severity);
+	VALIDATE_NOT_NULL(message);
+	switch (severity)
+	{
+	case RS2_LOG_SEVERITY_DEBUG:
+		LOG_DEBUG(message);
+		break;
+	case RS2_LOG_SEVERITY_INFO:
+		LOG_INFO(message);
+		break;
+	case RS2_LOG_SEVERITY_WARN:
+		LOG_WARNING(message);
+		break;
+	case RS2_LOG_SEVERITY_ERROR:
+		LOG_ERROR(message);
+		break;
+	case RS2_LOG_SEVERITY_FATAL:
+		LOG_FATAL(message);
+		break;
+	case RS2_LOG_SEVERITY_NONE:
+		break;
+	default:
+		LOG_INFO(message);
+	}
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, severity, message)
