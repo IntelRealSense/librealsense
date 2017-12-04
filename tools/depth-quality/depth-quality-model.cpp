@@ -663,8 +663,6 @@ namespace rs2
             ImGui::PopStyleColor();
 
 
-
-
             try
             {
                 frameset f;

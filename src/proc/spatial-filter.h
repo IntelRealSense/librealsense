@@ -23,13 +23,10 @@ namespace librealsense
 
         bool dxf_smooth(uint16_t * frame_data, float alpha, float delta, int iterations);
 
-    private:
-
         void recursive_filter_horizontal(uint16_t *frame_data, float alpha, float deltaZ);
         void recursive_filter_vertical(uint16_t *frame_data, float alpha, float deltaZ);
-        // Alternative implementation
-        void recursive_filter_horizontal_v2(uint16_t *frame_data, float alpha, float deltaZ);
-        void recursive_filter_vertical_v2(uint16_t *frame_data, float alpha, float deltaZ);
+
+    private:
 
         float                   _spatial_alpha_param;
         uint8_t                 _spatial_delta_param;
@@ -38,8 +35,5 @@ namespace librealsense
         size_t                  _current_frm_size_pixels;
         rs2::stream_profile     _source_stream_profile;
         rs2::stream_profile     _target_stream_profile;
-        std::map < size_t, std::vector<uint16_t> > _sandbox;    // Depth Z16-specialized container for intermediate results
-        uint16_t                _range_from;                    // The minimum depth to use the filer
-        uint16_t                _range_to;                      // The max depth to use filter
     };
 }

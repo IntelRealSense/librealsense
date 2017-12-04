@@ -10,19 +10,6 @@
 #include "proc/synthetic-stream.h"
 #include "proc/spatial-filter.h"
 
-#ifndef DO_LEFT_TO_RIGHT
-#define DO_LEFT_TO_RIGHT
-#endif
-#ifndef DO_RIGHT_TO_LEFT
-#define DO_RIGHT_TO_LEFT
-#endif
-
-#ifndef DO_TOP_TO_BOTTOM
-#define DO_TOP_TO_BOTTOM
-#endif
-#ifndef DO_BOTTOM_TO_TOP
-#define DO_BOTTOM_TO_TOP
-#endif
 
 namespace librealsense
 {
@@ -46,8 +33,7 @@ namespace librealsense
         _spatial_alpha_param(alpha_default_val),
         _spatial_delta_param(delta_default_val),
         _spatial_iterations(filter_iter_def),
-        _width(0), _height(0),
-        _range_from(1), _range_to(0xFFFF)
+        _width(0), _height(0)
     {
         auto spatial_filter_alpha = std::make_shared<ptr_option<float>>(
             alpha_min_val,
@@ -119,11 +105,6 @@ namespace librealsense
             _width = vp.width();
             _height = vp.height();
             _current_frm_size_pixels = _width * _height;
-
-            // Allocate intermediate results buffer, if needed
-            auto it = _sandbox.find(_current_frm_size_pixels);
-            if (it == _sandbox.end())
-                _sandbox.emplace(_current_frm_size_pixels, std::vector<uint16_t>(_current_frm_size_pixels));
         }
     }
 
@@ -146,283 +127,13 @@ namespace librealsense
     {
         for (int i = 0; i < iterations; i++)
         {
-            if (true)
-            {
-                recursive_filter_horizontal(frame_data, alpha, delta);
-                recursive_filter_vertical(frame_data, alpha, delta);
-            }
-            else // Used 
-            {
-                recursive_filter_horizontal_v2(frame_data, alpha, delta);
-                recursive_filter_vertical_v2(frame_data, alpha, delta);
-            }
+            recursive_filter_horizontal(frame_data, alpha, delta);
+            recursive_filter_vertical(frame_data, alpha, delta);
         }
         return true;
     }
 
-    void spatial_filter::recursive_filter_horizontal(uint16_t *frame_data, float alpha, float deltaZ)
-    {
-        int32_t v{}, u{};
-        static const float z_to_meter = 0.001f;      // TODO - retrieve from stream profile
-        static const float meter_to_z = 1.f / z_to_meter;
-
-        for (v = 0; v < _height;) {
-            // left to right
-            uint16_t *im = frame_data + v * _width;
-            float state = (*im)*z_to_meter;
-            float previousInnovation = state;
-# ifdef DO_LEFT_TO_RIGHT
-            im++;
-            float innovation = (*im)*z_to_meter;
-            u = _width - 1;
-            if (!(*(int*)&previousInnovation > 0))
-                goto CurrentlyInvalidLR;
-            // else fall through
-
-        CurrentlyValidLR:
-            for (;;) {
-                if (*(int*)&innovation > 0) {
-                    float delta = previousInnovation - innovation;
-                    bool smallDifference = delta < deltaZ && delta > -deltaZ;
-
-                    if (smallDifference) {
-                        float filtered = innovation * alpha + state * (1.0f - alpha);
-                        *im = static_cast<uint16_t>((state = filtered) * meter_to_z);
-                    }
-                    else {
-                        state = innovation;
-                    }
-                    u--;
-                    if (u <= 0)
-                        goto DoneLR;
-                    previousInnovation = innovation;
-                    im += 1;
-                    innovation = (*im)*z_to_meter;
-                }
-                else {  // switch to CurrentlyInvalid state
-                    u--;
-                    if (u <= 0)
-                        goto DoneLR;
-                    previousInnovation = innovation;
-                    im += 1;
-                    innovation = (*im)*z_to_meter;
-                    goto CurrentlyInvalidLR;
-                }
-            }
-
-        CurrentlyInvalidLR:
-            for (;;) {
-                u--;
-                if (u <= 0)
-                    goto DoneLR;
-                if (*(int*)&innovation > 0) { // switch to CurrentlyValid state
-                    previousInnovation = state = innovation;
-                    im += 1;
-                    innovation = (*im)*z_to_meter;
-                    goto CurrentlyValidLR;
-                }
-                else {
-                    im += 1;
-                    innovation = (*im)*z_to_meter;
-                }
-            }
-        DoneLR:
-# endif
-# ifdef DO_RIGHT_TO_LEFT
-            // right to left
-            im = frame_data + (v + 1) * _width - 2;  // end of row - two pixels
-            previousInnovation = state = (im[1]) * z_to_meter;
-            u = _width - 1;
-            innovation = (*im)*z_to_meter;
-            if (!(*(int*)&previousInnovation > 0))
-                goto CurrentlyInvalidRL;
-            // else fall through
-        CurrentlyValidRL:
-            for (;;) {
-                if (*(int*)&innovation > 0) {
-                    float delta = previousInnovation - innovation;
-                    bool smallDifference = delta < deltaZ && delta > -deltaZ;
-
-                    if (smallDifference) {
-                        float filtered = innovation * alpha + state * (1.0f - alpha);
-                        *im = static_cast<uint16_t>((state = filtered) * meter_to_z);
-                    }
-                    else {
-                        state = innovation;
-                    }
-                    u--;
-                    if (u <= 0)
-                        goto DoneRL;
-                    previousInnovation = innovation;
-                    im -= 1;
-                    innovation = (*im)*z_to_meter;
-                }
-                else {  // switch to CurrentlyInvalid state
-                    u--;
-                    if (u <= 0)
-                        goto DoneRL;
-                    previousInnovation = innovation;
-                    im -= 1;
-                    innovation = (*im)*z_to_meter;
-                    goto CurrentlyInvalidRL;
-                }
-            }
-
-        CurrentlyInvalidRL:
-            for (;;) {
-                u--;
-                if (u <= 0)
-                    goto DoneRL;
-                if (*(int*)&innovation > 0) { // switch to CurrentlyValid state
-                    previousInnovation = state = innovation;
-                    im -= 1;
-                    innovation = (*im)*z_to_meter;
-                    goto CurrentlyValidRL;
-                }
-                else {
-                    im -= 1;
-                    innovation = (*im)*z_to_meter;
-                }
-            }
-        DoneRL:
-            v++;
-        }
-    }
-    void spatial_filter::recursive_filter_vertical(uint16_t *frame_data, float alpha, float deltaZ)
-    {
-        int32_t v{}, u{};
-        static const float z_to_meter = 0.001f;
-        static const float meter_to_z = 1.f / z_to_meter;
-
-        // we'll do one column at a time, top to bottom, bottom to top, left to right, 
-
-        for (u = 0; u < _width;) {
-
-            uint16_t *im = frame_data + u;
-            float state = im[0] * z_to_meter;
-            float previousInnovation = state;
-# ifdef DO_TOP_TO_BOTTOM
-            v = _height - 1;
-            im += _width;
-            float innovation = (*im)*z_to_meter;
-
-            if (!(*(int*)&previousInnovation > 0))
-                goto CurrentlyInvalidTB;
-            // else fall through
-
-        CurrentlyValidTB:
-            for (;;) {
-                if (*(int*)&innovation > 0) {
-                    float delta = previousInnovation - innovation;
-                    bool smallDifference = delta < deltaZ && delta > -deltaZ;
-
-                    if (smallDifference) {
-                        float filtered = innovation * alpha + state * (1.0f - alpha);
-                        *im = static_cast<uint16_t>((state = filtered) * meter_to_z);
-                    }
-                    else {
-                        state = innovation;
-                    }
-                    v--;
-                    if (v <= 0)
-                        goto DoneTB;
-                    previousInnovation = innovation;
-                    im += _width;
-                    innovation = (*im)*z_to_meter;
-                }
-                else {  // switch to CurrentlyInvalid state
-                    v--;
-                    if (v <= 0)
-                        goto DoneTB;
-                    previousInnovation = innovation;
-                    im += _width;
-                    innovation = (*im)*z_to_meter;
-                    goto CurrentlyInvalidTB;
-                }
-            }
-
-        CurrentlyInvalidTB:
-            for (;;) {
-                v--;
-                if (v <= 0)
-                    goto DoneTB;
-                if (*(int*)&innovation > 0) { // switch to CurrentlyValid state
-                    previousInnovation = state = innovation;
-                    im += _width;
-                    innovation = (*im)*z_to_meter;
-                    goto CurrentlyValidTB;
-                }
-                else {
-                    im += _width;
-                    innovation = (*im)*z_to_meter;
-                }
-            }
-        DoneTB:
-# endif
-# ifdef DO_BOTTOM_TO_TOP
-            im = frame_data + u + (_height - 2) * _width;
-            state = (im[_width]) * z_to_meter;
-            previousInnovation = state;
-            innovation = (*im)*z_to_meter;
-            v = _height - 1;
-            if (!(*(int*)&previousInnovation > 0))
-                goto CurrentlyInvalidBT;
-            // else fall through
-        CurrentlyValidBT:
-            for (;;) {
-                if (*(int*)&innovation > 0) {
-                    float delta = previousInnovation - innovation;
-                    bool smallDifference = delta < deltaZ && delta > -deltaZ;
-
-                    if (smallDifference) {
-                        float filtered = innovation * alpha + state * (1.0f - alpha);
-                        *im = static_cast<uint16_t>((state = filtered) * meter_to_z);
-                    }
-                    else {
-                        state = innovation;
-                    }
-                    v--;
-                    if (v <= 0)
-                        goto DoneBT;
-                    previousInnovation = innovation;
-                    im -= _width;
-                    innovation = (*im)*z_to_meter;
-                }
-                else {  // switch to CurrentlyInvalid state
-                    v--;
-                    if (v <= 0)
-                        goto DoneBT;
-                    previousInnovation = innovation;
-                    im -= _width;
-                    innovation = (*im)*z_to_meter;
-                    goto CurrentlyInvalidBT;
-                }
-            }
-
-        CurrentlyInvalidBT:
-            for (;;) {
-                v--;
-                if (v <= 0)
-                    goto DoneBT;
-                if (*(int*)&innovation > 0) { // switch to CurrentlyValid state
-                    previousInnovation = state = innovation;
-                    im -= _width;
-                    innovation = (*im)*z_to_meter;
-                    goto CurrentlyValidBT;
-                }
-                else {
-                    im -= _width;
-                    innovation = (*im)*z_to_meter;
-                }
-            }
-        DoneBT:
-            u++;
-# endif
-        }
-    }
-#endif
-
-    void  spatial_filter::recursive_filter_horizontal_v2(uint16_t *image, float alpha, float deltaZ)
+    void  spatial_filter::recursive_filter_horizontal(uint16_t *image, float alpha, float deltaZ)
     {
         int32_t v{}, u{};
 
@@ -456,7 +167,8 @@ namespace librealsense
             }
         }
     }
-    void spatial_filter::recursive_filter_vertical_v2(uint16_t *image, float alpha, float deltaZ)
+
+    void spatial_filter::recursive_filter_vertical(uint16_t *image, float alpha, float deltaZ)
     {
         int32_t v{}, u{};
 
