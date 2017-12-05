@@ -23,7 +23,8 @@ then
 fi
 
 # Step 2
-make -j 8
+CPU_NUM=`grep -c ^processor /proc/cpuinfo`
+make -j $CPU_NUM
 if [ "$?" -gt 0 ]
 then
 	echo 'Failed to build librealsense'
