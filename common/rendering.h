@@ -385,6 +385,67 @@ namespace rs2
         return res;
     }
 
+    // return the distance between p and the line created by p1 and p2
+    inline float point_to_line_dist(float2 p1, float2 p2, float2 p)
+    {
+        float d = abs((p2.x - p1.x)*(p1.y - p.y) - (p1.x - p.x)*(p2.y - p1.y)) / sqrt((p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y));
+        return d;
+    }
+
+    inline std::vector<float2> simplify_line(const std::vector<float2>& points)
+    {
+        std::vector<float2> res;
+        std::vector<float2> res_second_half;
+        float max_distance = 0.0f;
+        int max_distance_index = 0;
+        float distance_limit = 0.01f; //1 centimeter
+        // Find the point with the maximum distance from the 2 end points of the vector
+        for (int i = 1; i < points.size() - 1; i++)
+        {
+            float d = point_to_line_dist(points[0], points.back(), points[i]);
+            if (d > max_distance)
+            {
+                max_distance = d;
+                max_distance_index = i;
+            }
+        }
+        // If max distance is greater than the limit, recursively simplify
+        if (max_distance > distance_limit)
+        {
+            // Recursive call
+            std::vector<float2> first_half(points.begin(), points.begin() + max_distance_index + 1);
+            std::vector<float2> second_half(points.begin() + max_distance_index, points.end());
+            res = simplify_line(first_half);
+            res_second_half = simplify_line(second_half);
+
+            res.insert(res.end(), res_second_half.begin(), res_second_half.end());
+        }
+        else
+        {
+            res.push_back(points[0]);
+            res.push_back(points.back());
+        }
+
+        return res;
+    }
+
+    inline bool point_in_polygon_2D(const std::vector<float2>& polygon, float2 point)
+    {
+        bool inside = false;
+        int i = 0, j = 0;
+        for (i = 0, j = polygon.size() - 1; i < polygon.size(); j = i++) 
+        {
+            if (((polygon[i].y > point.y) != (polygon[j].y > point.y)) &&
+                (point.x < (polygon[j].x - polygon[i].x) * (point.y - polygon[i].y) / (polygon[j].y - polygon[i].y) + polygon[i].x))
+            {
+                inside = !inside;
+            }
+                
+        }
+        return inside;
+    }
+
+    
     struct mouse_info
     {
         float2 cursor;
@@ -1307,12 +1368,14 @@ namespace rs2
             float model[16];
             pose_trans.to_column_major(model);
 
+            // set the pose transformation as the model matrix to draw the axis
             glMatrixMode(GL_MODELVIEW);
             glPushMatrix();
             glLoadMatrixf(model);
 
             draw_axis(0.3, 2);
 
+            // remove model matrix from the rest of the render
             glPopMatrix();
 
             const auto canvas_size = 230;

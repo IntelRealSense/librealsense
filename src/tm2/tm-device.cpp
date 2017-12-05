@@ -630,7 +630,7 @@ namespace librealsense
         {
             throw io_exception("Failed to get device info");
         }
-        register_info(RS2_CAMERA_INFO_NAME, "RealSense Tracking Module 2");
+        register_info(RS2_CAMERA_INFO_NAME, "Intel RealSense T260");
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, to_string() << info.serialNumber);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, to_string() << info.fw.major << "." << info.fw.minor << "." << info.fw.patch << "." << info.fw.build);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, to_string() << info.usbDescriptor.idProduct);

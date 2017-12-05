@@ -550,6 +550,35 @@ namespace rs2
         int last_stream_id = 0;
     };
 
+    class press_button_model
+    {
+    public:
+        press_button_model(char* icon_default, char* icon_pressed, std::string tooltip_default, std::string tooltip_pressed)            
+        {
+            tooltip[unpressed] = tooltip_default;
+            tooltip[pressed] = tooltip_pressed;
+            icon[unpressed] = icon_default;
+            icon[pressed] = icon_pressed;
+        }
+
+        void toggle_button() { state_pressed = !state_pressed; }            
+        void set_button_pressed(bool p) { state_pressed = p; }            
+        bool is_pressed() { return state_pressed; }
+        std::string get_tooltip() { return(state_pressed ? tooltip[pressed]: tooltip[unpressed]); }
+        std::string get_icon() { return(state_pressed ? icon[pressed] : icon[unpressed]); }
+
+    private:
+        enum button_state
+        {
+            unpressed, //default
+            pressed
+        };
+
+        bool state_pressed = false;
+        std::string tooltip[2];        
+        std::string icon[2];
+    };
+
     using color = std::array<float, 3>;
     using face = std::array<float3, 4>;
     using colored_cube = std::array<std::pair<face, color>, 6>;
@@ -560,10 +589,11 @@ namespace rs2
     public:
         void draw_pose_object();
         void draw_trajectory(tracked_point& p);
-        void toggle_trajectory();
-        bool is_trajectory_on() { return trajectory_on; } 
-        void draw_camera_box(bool on) { draw_camera = on; }
-        bool is_draw_camera_on() { return draw_camera;  }
+        void draw_boundary(tracked_point& p);
+
+        press_button_model trajectory_button{ u8"\uf1b0", u8"\uf1b0","Draw trajectory", "Stop drawing trajectory" };
+        press_button_model camera_object_button{ u8"\uf047", u8"\uf083",  "Draw pose axis", "Draw camera pose" };
+        press_button_model boundary_button{ u8"\uf278", u8"\uf278", "Set trajectory as boundary", "Discard boundary" };
 
     private:
         void add_to_trajectory(tracked_point& p);
@@ -609,8 +639,8 @@ namespace rs2
         float3 center_right{ v6.x - len_x / 3, v6.y - len_y / 3, v5.z };
                 
         std::vector<tracked_point> trajectory;
-        bool trajectory_on = false;
-        bool draw_camera = true;
+        std::vector<tracked_point> boundary;
+        std::vector<float2> simple_boundary;
     };
 
     class viewer_model

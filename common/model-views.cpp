@@ -1430,7 +1430,7 @@ namespace rs2
                         auto x_margin = (int)size.x / 8;
                         auto y_margin = (int)size.y / 8;
 
-                        // Default ROI behaviour is center 3/4 of the screen:
+                        // Default ROI behavior is center 3/4 of the screen:
                         if (sensor->is<roi_sensor>())
                         {
                             sensor->as<roi_sensor>().set_region_of_interest({ x_margin, y_margin,
@@ -1607,7 +1607,9 @@ namespace rs2
         {
             if (s.second.is_stream_visible() &&
                 s.second.texture->get_last_frame() &&
-                s.second.profile.stream_type() != RS2_STREAM_DEPTH)
+                (s.second.profile.stream_type() == RS2_STREAM_COLOR ||
+                 s.second.profile.stream_type() == RS2_STREAM_INFRARED ||
+                 s.second.profile.stream_type() == RS2_STREAM_FISHEYE))
             {
                 if (selected_tex_source_uid == -1)
                 {
@@ -1639,21 +1641,7 @@ namespace rs2
             ImGui::SetCursorPosY(7);
             ImGui::PushItemWidth(200);
             draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
-
-            i = 0;
-            for (auto&& s : streams)
-            {
-                if (s.second.is_stream_visible() &&
-                    s.second.texture->get_last_frame() &&
-                    s.second.profile.stream_type() != RS2_STREAM_DEPTH)
-                {
-                    if (i == selected_tex_source)
-                    {
-                        selected_tex_source_uid = s.second.profile.unique_id();
-                    }
-                    i++;
-                }
-            }
+            selected_tex_source_uid = tex_sources[selected_tex_source];
             ImGui::PopItemWidth();
         }
 
@@ -1805,7 +1793,7 @@ namespace rs2
         if (render_pose)
         {
             total_top_bar_height += top_bar_height; // add additional bar height for pose
-            const int num_of_pose_buttons = 2; // trajectory button and draw camera button
+            const int num_of_pose_buttons = 3; // trajectory, draw camera, boundary selection
 
             ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + top_bar_height });
             ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
@@ -1815,51 +1803,51 @@ namespace rs2
             // Draw selection buttons on the pose header
             ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_pose_buttons - 5, 0 });
             
-            // Draw camera button
-            if (tm2.is_draw_camera_on())
+            // Draw camera object button
+            if (ImGui::Button(tm2.camera_object_button.get_icon().c_str(), { 24, top_bar_height }))
             {
-                if (ImGui::Button(u8"\uf047", { 24, top_bar_height }))
-                {
-                    tm2.draw_camera_box(false);
-                }
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Draw pose axis");
-            }
-            else
-            {
-                if (ImGui::Button(u8"\uf083", { 24, top_bar_height }))
-                {
-                    tm2.draw_camera_box(true);
-                }
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Draw camera pose");
-            }
+                tm2.camera_object_button.toggle_button();
+            }            
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip(tm2.camera_object_button.get_tooltip().c_str());
 
             // Draw trajectory button            
             ImGui::SameLine();
-            if (tm2.is_trajectory_on())
+            bool color_icon = tm2.trajectory_button.is_pressed(); //draw trajectory is on - color the icon
+            if (color_icon) 
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            }
+            if (ImGui::Button(tm2.trajectory_button.get_icon().c_str(), { 24, top_bar_height }))
+            {
+                tm2.trajectory_button.toggle_button();
+            }
+            if (color_icon)
+            {
+                ImGui::PopStyleColor(2);
+            }            
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip(tm2.trajectory_button.get_tooltip().c_str());
 
-                if (ImGui::Button(u8"\uf1b0", { 24, top_bar_height }))
-                {
-                    tm2.toggle_trajectory();
-                }
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Stop drawing trajectory");
-
+            // Draw boundary selection button
+            ImGui::SameLine();
+            color_icon = tm2.boundary_button.is_pressed(); //draw boundary is on - color the icon
+            if (color_icon)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            }
+            if (ImGui::Button(tm2.boundary_button.get_icon().c_str(), { 24, top_bar_height }))
+            {
+                tm2.boundary_button.toggle_button();
+            }
+            if (color_icon)
+            {
                 ImGui::PopStyleColor(2);
             }
-            else
-            {
-                if (ImGui::Button(u8"\uf1b0", { 24, top_bar_height }))
-                {
-                    tm2.toggle_trajectory();
-                }
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Draw trajectory");
-            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip(tm2.boundary_button.get_tooltip().c_str());
 
             ImGui::End();
         }
@@ -3125,6 +3113,7 @@ namespace rs2
                 float model[16];
                 pose_trans.to_column_major(model);
                 
+                // set the pose transformation as the model matrix to draw the axis
                 glMatrixMode(GL_MODELVIEW);
                 glPushMatrix();
                 glLoadMatrixf(view);
@@ -3132,11 +3121,13 @@ namespace rs2
 
                 tm2.draw_pose_object();
 
+                // remove model matrix from the rest of the render
                 glPopMatrix();
 
                 rs2_vector translation{ pose_trans.mat[0][3], pose_trans.mat[1][3], pose_trans.mat[2][3] };
                 tracked_point p{ translation , pose_data.confidence };
                 tm2.draw_trajectory(p);
+                tm2.draw_boundary(p);
             }
         }
         if (auto points = pc.get_points())
@@ -4534,7 +4525,7 @@ namespace rs2
 
     void tm2_model::draw_pose_object()
     {
-        if (draw_camera)
+        if (!camera_object_button.is_pressed()) // draw camera box
         {
             glBegin(GL_QUADS);
             for (auto&& colored_face : camera_box)
@@ -4551,7 +4542,7 @@ namespace rs2
             texture_buffer::draw_circle(1, 0, 0, 0, 1, 0, lens_radius, center_left, 1.0f);
             texture_buffer::draw_circle(1, 0, 0, 0, 1, 0, lens_radius, center_right, 1.0f);
         }
-        else
+        else //draw axis
         {
             texture_buffer::draw_axis(0.1f, 1.f);
         }        
@@ -4559,8 +4550,13 @@ namespace rs2
     
     void tm2_model::draw_trajectory(tracked_point& p)
     {
-        if (!trajectory_on)
+        if (!trajectory_button.is_pressed())
         {
+            if (trajectory.size() > 0)
+            {
+                //cleanup last trajectory
+                trajectory.clear();
+            }
             return;
         }
         add_to_trajectory(p);
@@ -4619,14 +4615,64 @@ namespace rs2
             }
         }
     }
-
-    void tm2_model::toggle_trajectory()
+    
+    void tm2_model::draw_boundary(tracked_point& p)
     {
-        trajectory_on = !trajectory_on;
-        if(!trajectory_on)
+        if (!boundary_button.is_pressed())
         {
-            trajectory.clear();
+            //TODO - separate button
+            if (boundary.size() > 0)
+            {
+                //cleanup last boundary
+                boundary.clear();
+            }
+            return;
+        }       
+
+        // if new boundary - grab from trajectory
+        if (boundary.size() == 0)
+        {
+            std::vector<float2> new_boundary;
+            //create the boundary from the trajectory
+            //TODO
+            for (auto&& v : trajectory)
+            {
+                // project the trajectory on XZ plane - ignore y coordinate of the point
+                float2 p{ v.first.x, v.first.z };
+                new_boundary.push_back(p);
+                simple_boundary = simplify_line(new_boundary);
+            }
+            boundary = trajectory;
         }
+        // check if there is any boundary to render
+        if (boundary.size() == 0)
+        {
+            return;
+        }
+        // check if the current position is inside or outside the boundary, to color it accordingly
+        float2 point{ p.first.x, p.first.z };
+        bool inside = point_in_polygon_2D(simple_boundary, point);
+
+        glLineWidth(3.0f);
+        glBegin(GL_LINE_STRIP);
+        if(inside)
+        {
+            glColor3f(0.0f, 1.0f, 0.0f);
+        }
+        else
+        {
+            glColor3f(1.0f, 0.0f, 0.0f);
+        }
+        
+        for (auto&& v : simple_boundary)
+        {
+            glVertex3f(v.x, 0, v.y);
+        }
+        glVertex3f(simple_boundary[0].x, 0, simple_boundary[0].y);
+
+        glEnd();
     }
+      
+
 
 }
