@@ -518,11 +518,11 @@ namespace librealsense
                         continue;
 
                     // Transfer between the pixels and the pixels inside the rectangle on the other image
-                    for (int y = to_y0; y <= to_y1; ++y)
+                    for (int i = to_y0; i <= to_y1; ++i)
                     {
-                        for (int x = to_x0; x <= to_x1; ++x)
+                        for (int j = to_x0; j <= to_x1; ++j)
                         {
-                            transfer_pixel(pixel_index, y * to_intrin.width + x);
+                            transfer_pixel(pixel_index, i * to_intrin.width + j);
                         }
                     }
                 }
@@ -614,10 +614,10 @@ namespace librealsense
             update_frame_info((frame_interface*)to.get(), _to_intrinsics, _to_stream_profile, true);
             update_align_info((frame_interface*)depth_frame.get());
 
-            if (!_to_bytes_per_pixel)
+            if (!_from_bytes_per_pixel)
             {
-                auto vid_frame = to.as<rs2::video_frame>();
-                _to_bytes_per_pixel = vid_frame.get_bytes_per_pixel();
+                auto vid_frame = from.as<rs2::video_frame>();
+                _from_bytes_per_pixel = vid_frame.get_bytes_per_pixel();
             }
 
             if (_from_intrinsics && _to_intrinsics && _extrinsics && _depth_units && _from_stream_profile && _to_stream_profile)
@@ -633,16 +633,17 @@ namespace librealsense
                 auto from_frame = (frame_interface*)from.get();
 
                 // Create a new frame which will transform the "from" frame
+                int output_image_bytes_per_pixel = _from_bytes_per_pixel.value();
                 frame_holder out_frame = get_source().allocate_video_frame(_from_stream_profile, from_frame,
-                    _to_bytes_per_pixel.value(), _to_intrinsics->width, _to_intrinsics->height, 0, from_depth ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME);
+                    output_image_bytes_per_pixel, _to_intrinsics->width, _to_intrinsics->height, 0, from_depth ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME);
 
                 //Clear the new image buffer
-                auto p_out_frame = reinterpret_cast<uint16_t*>(((frame*)(out_frame.frame))->data.data());
+                auto p_out_frame = reinterpret_cast<uint8_t*>(((frame*)(out_frame.frame))->data.data());
                 int blank_color = (_from_stream_profile->get_format() == RS2_FORMAT_DISPARITY16) ? 0xFF : 0x00;
-                memset(p_out_frame, blank_color, _to_intrinsics->height * _to_intrinsics->width * _to_bytes_per_pixel.value());
+                memset(p_out_frame, blank_color, _to_intrinsics->height * _to_intrinsics->width * output_image_bytes_per_pixel);
 
                 auto p_depth_frame = reinterpret_cast<const uint16_t*>(depth_frame.get_data());
-                auto p_from_frame = reinterpret_cast<const uint16_t*>(from.get_data());
+                auto p_from_frame = reinterpret_cast<const uint8_t*>(from.get_data());
                 
                 lock.unlock();
                 float depth_units = _depth_units.value();
@@ -655,11 +656,17 @@ namespace librealsense
                     }
                     return 1;
                 },
-                    [p_out_frame, p_from_frame](int from_pixel_index, int out_pixel_index)
+                    [p_out_frame, p_from_frame, output_image_bytes_per_pixel](int from_pixel_index, int out_pixel_index)
                 {
-                    p_out_frame[out_pixel_index] = p_out_frame[out_pixel_index] ?
-                        std::min((int)(p_out_frame[out_pixel_index]), (int)(p_from_frame[from_pixel_index]))
-                        : p_from_frame[from_pixel_index];
+                    //Tranfer n-bit pixel to n-bit pixel
+                    for (int i = 0; i < output_image_bytes_per_pixel; i++)
+                    {
+                        const auto out_offset = out_pixel_index * output_image_bytes_per_pixel + i;
+                        const auto from_offset = from_pixel_index * output_image_bytes_per_pixel + i;
+                        p_out_frame[out_offset] = p_out_frame[out_offset] ?
+                            std::min((int)(p_out_frame[out_offset]), (int)(p_from_frame[from_offset]))
+                            : p_from_frame[from_offset];
+                    }
                 });
                 frames[1] = std::move(out_frame);
                 auto composite = get_source().allocate_composite_frame(std::move(frames));

@@ -94,7 +94,7 @@ namespace librealsense
         optional_value<rs2_intrinsics> _to_intrinsics;
         optional_value<rs2_extrinsics> _extrinsics;
         optional_value<float> _depth_units;
-        optional_value<int> _to_bytes_per_pixel;
+        optional_value<int> _from_bytes_per_pixel;
         optional_value<rs2_stream> _from_stream_type;
         rs2_stream _to_stream_type;
         std::shared_ptr<stream_profile_interface> _from_stream_profile;
