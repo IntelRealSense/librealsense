@@ -69,7 +69,7 @@ describe('Context test', function() {
   });
 
   it('testing method - destroy, call 2 times', () => {
-    assert.throws(() => {
+    assert.doesNotThrow(() => {
       const context = new librealsense2.Context();
       context.destroy();
       context.destroy();

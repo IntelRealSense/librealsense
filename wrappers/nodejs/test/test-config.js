@@ -36,6 +36,7 @@ describe('Config test', function() {
   });
 
   after(function() {
+    pipeline.destroy();
     rs2.cleanup();
   });
 

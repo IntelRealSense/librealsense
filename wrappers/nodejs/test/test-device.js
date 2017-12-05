@@ -37,9 +37,6 @@ describe('Device test', function() {
     assert.doesNotThrow(() => {
       dev.destroy();
     });
-    setTimeout(() => {
-      assert.equal(dev, undefined);
-    }, 100);
   });
 
   it('Testing method getCameraInfo - without argument', () => {
@@ -50,11 +47,10 @@ describe('Device test', function() {
 
   it('Testing method getCameraInfo - return value', () => {
     let rtn = dev.getCameraInfo();
-    // assert.equal(typeof rtn.deviceName, 'string'); // skip deviceName checking
-    // assert.equal(typeof rtn.moduleName, 'string'); // skip moduleName checking
+    assert.equal(typeof rtn.name, 'string');
     assert.equal(typeof rtn.serialNumber, 'string');
     assert.equal(typeof rtn.firmwareVersion, 'string');
-    assert.equal(typeof rtn.location, 'string');
+    assert.equal(typeof rtn.physicalPort, 'string');
     assert.equal(typeof rtn.debugOpCode, 'string');
     assert.equal(typeof rtn.advancedMode, 'string');
     assert.equal(typeof rtn.productId, 'string');

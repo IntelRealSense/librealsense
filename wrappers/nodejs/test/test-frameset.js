@@ -14,9 +14,10 @@ try {
 }
 
 let frameset;
+let pipeline;
 describe('FrameSet test', function() {
   before(function() {
-    const pipeline = new rs2.Pipeline();
+    pipeline = new rs2.Pipeline();
     pipeline.start();
     while (frameset === undefined) {
       const f = pipeline.waitForFrames();
@@ -27,6 +28,7 @@ describe('FrameSet test', function() {
   });
 
   after(function() {
+    pipeline.destroy();
     rs2.cleanup();
   });
 
@@ -49,7 +51,7 @@ describe('FrameSet test', function() {
   });
 
   it('Testing method at - 0 argument', () => {
-    assert.doesNotThrow(() => {
+    assert.throws(() => {
       frameset.at();
     });
   });
@@ -57,7 +59,7 @@ describe('FrameSet test', function() {
   it('Testing method at - invalid argument', () => {
     const len = frameset.size;
     let f;
-    assert.doesNotThrow(() => {
+    assert.throws(() => {
       f = frameset.at(len + 1);
     });
     assert.equal(f, undefined);
