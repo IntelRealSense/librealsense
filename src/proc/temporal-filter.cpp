@@ -13,32 +13,41 @@
 
 namespace librealsense
 {
+
     //alpha the weight with default value 0.25, between 1 and 0 -- 1 means all the current image
+    const uint8_t cred_min = 0;
+    const uint8_t cred_max = 15;
+    const uint8_t cred_default = 0;
+    const uint8_t cred_step = 1;
+
+    //alpha -  the weight with default value 0.25, between 1 and 0 -- 1 means all the current image
     const float temp_alpha_min = 0.f;
     const float temp_alpha_max = 1.f;
     const float temp_alpha_default = 0.25f;
     const float temp_alpha_step = 0.01f;
 
-    //delta the threashold for valid range with default value 50.0 for depth map and 15 for disparity map
+    //delta -  the threashold for valid range with default value 50.0 for depth map and 15 for disparity map
     const uint8_t temp_delta_min = 1;
     const uint8_t temp_delta_max = 100;
     const uint8_t temp_delta_default = 50;
     const uint8_t temp_delta_step = 1;
 
-    temporal_filter::temporal_filter() : _confidence_param(5),
+    temporal_filter::temporal_filter() : _creadability_param(cred_default),
         _alpha_param(temp_alpha_default),
         _one_minus_alpha(1- _alpha_param),
         _delta_param(temp_delta_default),
         _width(0), _height(0),
         _current_frm_size_pixels(0)
     {
-        auto temporal_confidence_control = std::make_shared<ptr_option<uint8_t>>(1, 15, 1, 5, &_confidence_param, "Confidence map");
-        temporal_confidence_control->on_set([this](float val)
+        auto temporal_creadable_control = std::make_shared<ptr_option<uint8_t>>(cred_min, cred_max, cred_step, cred_default,
+            &_creadability_param, "Threshold of previous frames with valid data");
+
+        temporal_creadable_control->on_set([this](float val)
         {
             on_set_confidence_control(static_cast<uint8_t>(val));
         });
 
-        register_option(RS2_OPTION_FILTER_MAGNITUDE, temporal_confidence_control);
+        register_option(RS2_OPTION_FILTER_MAGNITUDE, temporal_creadable_control);
 
         // between 1 and 0 -- 1 means all the current image
         auto temporal_filter_alpha = std::make_shared<ptr_option<float>>(
@@ -46,14 +55,22 @@ namespace librealsense
             temp_alpha_max,
             temp_alpha_step,
             temp_alpha_default,
-            &_alpha_param, "Normalized weight");
+            &_alpha_param, "The normalized weight of the current pixel");
+        temporal_filter_alpha->on_set([this](float val)
+        {
+            on_set_alpha(val);
+        });
 
         auto temporal_filter_delta = std::make_shared<ptr_option<uint8_t>>(
             temp_delta_min,
             temp_delta_max,
             temp_delta_step,
             temp_delta_default,
-            &_delta_param, "Valid range threshold");
+            &_delta_param, "Depth range threshold");
+        temporal_filter_delta->on_set([this](float val)
+        {
+            on_set_delta(val);
+        });
 
         register_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, temporal_filter_alpha);
         register_option(RS2_OPTION_FILTER_SMOOTH_DELTA, temporal_filter_delta);
@@ -92,8 +109,21 @@ namespace librealsense
     void temporal_filter::on_set_confidence_control(uint8_t val)
     {
         std::lock_guard<std::mutex> lock(_mutex);
-        _confidence_param = val;
-        recalc_confidence_map();
+        _creadability_param = val;
+        recalc_creadability_map();
+    }
+
+    void temporal_filter::on_set_alpha(float val)
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _alpha_param = val;
+        _one_minus_alpha = 1 - _alpha_param;
+    }
+
+    void temporal_filter::on_set_delta(float val)
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _delta_param = val;
     }
 
     void  temporal_filter::update_configuration(const rs2::frame& f)
@@ -138,9 +168,9 @@ namespace librealsense
         return tgt;
     }
 
-    void temporal_filter::recalc_confidence_map()
+    void temporal_filter::recalc_creadability_map()
     {
-        _confidence_map.fill(0);
+        _creadability_map.fill(0);
 
         for (size_t phase = 0; phase < 8; phase++)
         {
@@ -148,7 +178,7 @@ namespace librealsense
             //int ephase = (phase + 7) % 8;
             uint8_t mask = 1 << phase;
 
-            for (size_t i = 0; i < _confidence_map.size(); i++) {
+            for (size_t i = 0; i < _creadability_map.size(); i++) {
                 unsigned short bits = (unsigned short)((i << (8 - phase)) | (i >> phase));
                 //unsigned char last_7 = !!(bits & 1);  // old
                 //unsigned char last_6 = !!(bits & 2);
@@ -161,10 +191,10 @@ namespace librealsense
 
                 uint8_t sum = lastFrame + last_1 + last_2 + last_3; // valid in the last three frames
                 if (sum >= 2)  // valid in two of the last four frames
-                    _confidence_map[i] |= mask;
+                    _creadability_map[i] |= mask;
             }
 
-            for (size_t i = 0; i < _confidence_map.size(); i++)
+            for (size_t i = 0; i < _creadability_map.size(); i++)
             {
                 unsigned char last_7 = !!(i & 1);  // old
                 unsigned char last_6 = !!(i & 2);
@@ -175,101 +205,101 @@ namespace librealsense
                 unsigned char last_1 = !!(i & 64);
                 unsigned char lastFrame = !!(i & 128); // new
 
-                if (_confidence_param == 1)
+                if (_creadability_param == 1)
                 {
                     int sum = lastFrame;
                     if (sum >= 1)  // valid in last frame
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
-                else if (_confidence_param == 2)
+                else if (_creadability_param == 2)
                 {
                     int sum = lastFrame + last_1;
                     if (sum >= 1)  // valid in one of the last two frames
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
-                else if (_confidence_param == 3)
+                else if (_creadability_param == 3)
                 {
                     int sum = lastFrame + last_1;
                     if (sum >= 2)  // valid in last two frames
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
-                else if (_confidence_param == 4)
+                else if (_creadability_param == 4)
                 {
                     int sum = lastFrame + last_1 + last_2;
                     if (sum >= 1)  // valid in one of the last three frames
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
-                else if (_confidence_param == 5)
+                else if (_creadability_param == 5)
                 {
                     int sum = lastFrame + last_1 + last_2;
                     if (sum >= 2)  // valid in two of the last three frames
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
-                else if (_confidence_param == 6)
+                else if (_creadability_param == 6)
                 {
                     int sum = lastFrame + last_1 + last_2;
                     if (sum >= 3)  // valid in last three frames
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
-                else if (_confidence_param == 7)
+                else if (_creadability_param == 7)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3;
                     if (sum >= 1)  // valid in one of the last four frames
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
-                else if (_confidence_param == 8)
+                else if (_creadability_param == 8)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3;
                     if (sum >= 3)  // valid in three of the last four frames
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
-                else if (_confidence_param == 9)
+                else if (_creadability_param == 9)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3 + last_4;
                     if (sum >= 2)  // valid in two of the last five frames
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
-                else if (_confidence_param == 10)
+                else if (_creadability_param == 10)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3 + last_4 + last_5;
                     if (sum >= 2)  // valid in two of the last six frames
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
-                else if (_confidence_param == 11)
+                else if (_creadability_param == 11)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3 + last_4 + last_6;
                     if (sum >= 2)  // valid in two of the last seven frames
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
-                else if (_confidence_param == 12)
+                else if (_creadability_param == 12)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3 + last_4 + last_6 + last_7;
                     if (sum >= 4)  // valid in four of the last eight frames
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
-                else if (_confidence_param == 13)
+                else if (_creadability_param == 13)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3 + last_4 + last_6 + last_7;
                     if (sum >= 3)  // valid in three of the last eight frames
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
-                else if (_confidence_param == 14)
+                else if (_creadability_param == 14)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3 + last_4 + last_6 + last_7;
                     if (sum >= 2)  // valid in two of the last eight frames
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
-                else if (_confidence_param == 15)
+                else if (_creadability_param == 15)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3 + last_4 + last_6 + last_7;
                     if (sum >= 1)  // valid in one of the last eight frames
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
                 else // default for param == 0 or out of range
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3; // valid in the last three frames
                     if (sum >= 2)  // valid in two of the last four frames
-                        _confidence_map[i] = 1;
+                        _creadability_map[i] = 1;
                 }
             }
         }
@@ -306,7 +336,7 @@ namespace librealsense
             else {  // no newVal
                 if (oldVal) { // only case we can help
                     unsigned char hist = history[i];
-                    unsigned char classification = _confidence_map[hist];
+                    unsigned char classification = _creadability_map[hist];
                     if (classification & mask) { // we have had enough samples lately
                         frame[i] = oldVal;
                     }
