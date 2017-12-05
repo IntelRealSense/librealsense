@@ -1161,11 +1161,7 @@ namespace rs2
         try {
             s->start([&](frame f)
             {
-                auto index = f.get_profile().unique_id();
-                auto mapped_index = viewer.streams_origin[f.get_profile().unique_id()];
-
-                if (viewer.synchronization_enable &&
-                    (!viewer.is_3d_view || viewer.is_depth_frame(f) || viewer.is_texture_frame(f)))
+                if (viewer.synchronization_enable && (viewer.is_depth_frame(f) || viewer.is_texture_frame(f)))
                 {
                     viewer.s(f);
                 }
@@ -2713,16 +2709,14 @@ namespace rs2
 
         if(viewer.is_3d_view)
         {
-            if (filtered.get_profile().unique_id() == viewer.selected_depth_source_uid || viewer.streams_origin[filtered.get_profile().unique_id()] == viewer.selected_depth_source_uid)
+            if(viewer.is_depth_frame(f))
             {
                 res.push_back(pc.calculate(filtered));
             }
-
-            if (filtered.get_profile().unique_id() == viewer.selected_tex_source_uid || viewer.streams_origin[filtered.get_profile().unique_id()] == viewer.selected_tex_source_uid)
+            if(viewer.is_texture_frame(f))
             {
                 update_texture(filtered);
             }
-
         }
 
         return res;
@@ -2738,7 +2732,6 @@ namespace rs2
         {
             for (auto&& f : composite)
             {
-
                 auto res = handle_frame(f);
                 results.insert(results.end(), res.begin(), res.end());
             }
@@ -2915,7 +2908,7 @@ namespace rs2
 
     rs2::frame viewer_model::handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message)
     {
-        texture_buffer* texture = nullptr;
+        texture_buffer* texture_frame = nullptr;
         points p;
         frame f{}, res{};
         try
@@ -2938,13 +2931,12 @@ namespace rs2
                         if (frame.is<depth_frame>() && !paused)
                             res = frame;
 
-                        if (!is_3d_view)
+                        auto texture = upload_frame(std::move(frame));
+
+
+                        if ((selected_tex_source_uid == -1 && frame.get_profile().format() == RS2_FORMAT_Z16) || frame.get_profile().format()!= RS2_FORMAT_ANY && is_texture_frame(frame))
                         {
-                            texture = upload_frame(std::move(frame));
-                        }
-                        else if ((selected_tex_source_uid == -1 && frame.get_profile().format() == RS2_FORMAT_Z16) || frame.get_profile().format()!= RS2_FORMAT_ANY && is_texture_frame(frame))
-                        {
-                            texture = upload_frame(std::move(frame));
+                            texture_frame = texture;
                         }
 
                     }
@@ -2968,7 +2960,7 @@ namespace rs2
 
         window.begin_viewport();
 
-        draw_viewport(viewer_rect, window, devices, error_message, texture, p);
+        draw_viewport(viewer_rect, window, devices, error_message, texture_frame, p);
 
         not_model.draw(window.get_font(), window.width(), window.height());
 
@@ -4508,9 +4500,9 @@ namespace rs2
 
             update_3d_camera(viewer_rect, window.get_mouse());
 
-			rect window_size{ 0, 0, (float)window.width(), (float)window.height() };
-			rect fb_size{ 0, 0, (float)window.framebuf_width(), (float)window.framebuf_height() };
-			rect new_rect = viewer_rect.normalize(window_size).unnormalize(fb_size);
+            rect window_size{ 0, 0, (float)window.width(), (float)window.height() };
+            rect fb_size{ 0, 0, (float)window.framebuf_width(), (float)window.framebuf_height() };
+            rect new_rect = viewer_rect.normalize(window_size).unnormalize(fb_size);
 
             render_3d_view(new_rect, texture, points);
         }
