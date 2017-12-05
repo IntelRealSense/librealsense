@@ -6,7 +6,7 @@
 
 namespace librealsense
 {
-    const size_t confidence_map_size = 256;
+    const size_t CREDABILITY_MAP_SIZE = 256;
 
     class temporal_filter : public processing_block
     {
@@ -22,15 +22,16 @@ namespace librealsense
 
     private:
         void on_set_confidence_control(uint8_t val);
+        void on_set_alpha(float val);
+        void on_set_delta(float val);
 
-        void recalc_confidence_map();
+        void recalc_creadability_map();
         std::mutex _mutex;
-        uint8_t                 _confidence_param;
+        uint8_t                 _creadability_param;
 
         float                   _alpha_param;
         float                   _one_minus_alpha;
         uint8_t                 _delta_param;
-        uint8_t                 _spatial_iterations;
         size_t                  _width, _height;
         size_t                  _current_frm_size_pixels;
         rs2::stream_profile     _source_stream_profile;
@@ -38,6 +39,6 @@ namespace librealsense
         std::map < size_t, std::vector<uint16_t> > _last_frame_map; // Hold the last frame for eachsize
         std::map < size_t, std::vector<uint8_t> > _history;    // represents the history over the last 8 frames, 1 bit per frame
         uint8_t                 _cur_frame_index; // mod 8
-        std::array<uint8_t, confidence_map_size> _confidence_map;  // encodes whether a particular 8 bit history is good enough for all 8 phases of storage
+        std::array<uint8_t, CREDABILITY_MAP_SIZE> _creadability_map;  // encodes whether a particular 8 bit history is good enough for all 8 phases of storage
     };
 }
