@@ -1165,8 +1165,7 @@ namespace rs2
                 auto mapped_index = viewer.streams_origin[f.get_profile().unique_id()];
 
                 if (viewer.synchronization_enable &&
-                    (!viewer.is_3d_view || index == viewer.selected_depth_source_uid || index == viewer.selected_tex_source_uid ||
-                     mapped_index == viewer.selected_depth_source_uid || mapped_index == viewer.selected_tex_source_uid))
+                    (!viewer.is_3d_view || viewer.is_depth_frame(f) || viewer.is_texture_frame(f)))
                 {
                     viewer.s(f);
                 }
@@ -2943,7 +2942,7 @@ namespace rs2
                         {
                             texture = upload_frame(std::move(frame));
                         }
-                        else if (selected_tex_source_uid == -1 || frame.get_profile().format()!= RS2_FORMAT_ANY && (frame.get_profile().unique_id() == selected_tex_source_uid || streams_origin[frame.get_profile().unique_id()] == selected_tex_source_uid))
+                        else if ((selected_tex_source_uid == -1 && frame.get_profile().format() == RS2_FORMAT_Z16) || frame.get_profile().format()!= RS2_FORMAT_ANY && is_texture_frame(frame))
                         {
                             texture = upload_frame(std::move(frame));
                         }
@@ -3341,6 +3340,26 @@ namespace rs2
         }
 
         mouse.prev_cursor = mouse.cursor;
+    }
+
+    bool viewer_model::is_texture_frame(frame f)
+    {
+        auto index = f.get_profile().unique_id();
+        auto maped_index = streams_origin[index];
+
+        if(index == selected_tex_source_uid || maped_index  == selected_tex_source_uid)
+            return true;
+        return false;
+    }
+
+    bool viewer_model::is_depth_frame(frame f)
+    {
+        auto index = f.get_profile().unique_id();
+        auto maped_index = streams_origin[index];
+
+        if(index == selected_depth_source_uid || maped_index  == selected_depth_source_uid)
+            return true;
+        return false;
     }
 
     texture_buffer* viewer_model::upload_frame(frame&& f)

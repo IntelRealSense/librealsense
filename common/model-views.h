@@ -588,6 +588,10 @@ namespace rs2
             ppf.stop();
             streams.clear();
         }
+
+        bool is_texture_frame(frame f);
+        bool is_depth_frame(frame f);
+
         texture_buffer* upload_frame(frame&& f);
 
         std::map<int, rect> calc_layout(const rect& r);
