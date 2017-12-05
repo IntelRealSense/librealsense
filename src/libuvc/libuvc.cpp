@@ -629,9 +629,9 @@ namespace librealsense
             /* recieved a frame and call the callback. */
             void uvc_callback(uvc_frame_t *frame, frame_callback callback, stream_profile profile) {
                 frame_object fo{ frame->data_bytes,
-                                 0,
+                                 frame->metadata_bytes,
                                  frame->data,
-                                 nullptr };
+                                 frame->metadata };
 
                 callback(profile, fo,
                           []() mutable {} );
