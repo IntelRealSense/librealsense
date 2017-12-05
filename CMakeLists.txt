@@ -466,17 +466,17 @@ if(FORCE_LIBUVC)
     src/libuvc/init.c
     src/libuvc/misc.c
     src/libuvc/stream.c
-	src/libuvc/libuvc.cpp
-	)
-	
-	list(APPEND REALSENSE_HPP
+    src/libuvc/libuvc.cpp
+    )
+    
+    list(APPEND REALSENSE_HPP
     src/libuvc/libuvc.h
     src/libuvc/libuvc_internal.h
     src/libuvc/utlist.h
     src/libuvc/libuvc_config.h
-	)
-	
-	message( WARNING "Using libuvc!" )
+    )
+    
+    message( WARNING "Using libuvc!" )
 endif()
 
 if (MSVC)
