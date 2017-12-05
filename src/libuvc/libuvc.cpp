@@ -626,7 +626,7 @@ namespace librealsense
 
             std::string get_device_location() const override { return _device_path; }
 
-            /* recieved a frame and call the callback. */
+            /* received a frame and call the callback. */
             void uvc_callback(uvc_frame_t *frame, frame_callback callback, stream_profile profile) {
                 frame_object fo{ frame->data_bytes,
                                  frame->metadata_bytes,

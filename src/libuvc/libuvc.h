@@ -424,7 +424,7 @@ typedef struct uvc_frame {
     /** Metadata for this frame */
     void *metadata;
     /** Size of metadata */
-    size_t metadata_bytes;
+    uint8_t metadata_bytes;
     /** Width of image in pixels */
     uint32_t width;
     /** Height of image in pixels */
