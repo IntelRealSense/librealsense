@@ -1380,6 +1380,66 @@ namespace librealsense
         std::mutex m_mutex;
         std::map<int, std::function<void(Args...)>> m_subscribers;
     };
+
+    template <typename T>
+    class optional_value
+    {
+    public:
+        optional_value() : _valid(false) {}
+        explicit optional_value(const T& v) : _valid(true), _value(v) {}
+
+        operator bool() const
+        {
+            return has_value();
+        }
+        bool has_value() const
+        {
+            return _valid;
+        }
+
+        T& operator=(const T& v)
+        {
+            _valid = true;
+            _value = v;
+            return _value;
+        }
+
+        T& value() &
+        {
+            if (!_valid) throw std::runtime_error("bad optional access");
+            return _value;
+        }
+
+        T&& value() &&
+        {
+            if (!_valid) throw std::runtime_error("bad optional access");
+            return std::move(_value);
+        }
+
+        const T* operator->() const
+        {
+            return &_value;
+        }
+        T* operator->()
+        {
+            return &_value;
+        }
+        const T& operator*() const&
+        {
+            return _value;
+        }
+        T& operator*() &
+        {
+            return _value;
+        }
+        T&& operator*() &&
+        {
+            return std::move(_value);
+        }
+    private:
+        bool _valid;
+        T _value;
+    };
 }
 
 namespace std {
