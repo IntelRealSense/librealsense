@@ -243,9 +243,9 @@ namespace librealsense
                     const auto depth_data = reinterpret_cast<const uint16_t*>(depth.get_data());
                     auto rgb_data = reinterpret_cast<uint8_t*>(const_cast<void *>(rgb.get_data()));
 
-                    auto depth_frame = (frame_interface*)depth.get();
-                    auto sensor = depth_frame->get_sensor();
-                    auto depth_units = sensor->get_option(RS2_OPTION_DEPTH_UNITS).query();
+                    auto fi = (frame_interface*)depth.get();
+                    auto df = dynamic_cast<librealsense::depth_frame*>(fi);
+                    auto depth_units = df->get_units();
 
                     for (auto i = 0; i < w*h; ++i)
                     {

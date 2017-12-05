@@ -13,11 +13,10 @@
 
 namespace librealsense
 {
-
-    //alpha the weight with default value 0.25, between 1 and 0 -- 1 means all the current image
+    // The credibility map
     const uint8_t cred_min = 0;
     const uint8_t cred_max = 15;
-    const uint8_t cred_default = 0;
+    const uint8_t cred_default = 5;
     const uint8_t cred_step = 1;
 
     //alpha -  the weight with default value 0.25, between 1 and 0 -- 1 means all the current image
@@ -118,12 +117,14 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_mutex);
         _alpha_param = val;
         _one_minus_alpha = 1 - _alpha_param;
+        _cur_frame_index = 0;
     }
 
     void temporal_filter::on_set_delta(float val)
     {
         std::lock_guard<std::mutex> lock(_mutex);
         _delta_param = val;
+        _cur_frame_index = 0;
     }
 
     void  temporal_filter::update_configuration(const rs2::frame& f)
