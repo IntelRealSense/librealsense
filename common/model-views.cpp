@@ -3318,7 +3318,7 @@ namespace rs2
     {
         auto now = std::chrono::high_resolution_clock::now();
         static auto view_clock = std::chrono::high_resolution_clock::now();
-        auto sec_since_update = std::chrono::duration<double, std::milli>(now - view_clock).count() / 1000;
+        auto sec_since_update = std::chrono::duration<float, std::milli>(now - view_clock).count() / 1000;
         view_clock = now;
 
         if (viewer_rect.contains(mouse.cursor) || force)
@@ -4632,44 +4632,57 @@ namespace rs2
         // if new boundary - grab from trajectory
         if (boundary.size() == 0)
         {
-            std::vector<float2> new_boundary;
+            std::vector<float2> trajectory_projection;
             //create the boundary from the trajectory
-            //TODO
             for (auto&& v : trajectory)
             {
                 // project the trajectory on XZ plane - ignore y coordinate of the point
                 float2 p{ v.first.x, v.first.z };
-                new_boundary.push_back(p);
-                simple_boundary = simplify_line(new_boundary);
-            }
-            boundary = trajectory;
+                trajectory_projection.push_back(p);                
+            }            
+            boundary = simplify_line(trajectory_projection);
         }
         // check if there is any boundary to render
         if (boundary.size() == 0)
         {
             return;
         }
+
         // check if the current position is inside or outside the boundary, to color it accordingly
         float2 point{ p.first.x, p.first.z };
-        bool inside = point_in_polygon_2D(simple_boundary, point);
-
-        glLineWidth(3.0f);
-        glBegin(GL_LINE_STRIP);
-        if(inside)
+        bool inside = point_in_polygon_2D(boundary, point);
+        color c;
+        if (inside)
         {
-            glColor3f(0.0f, 1.0f, 0.0f);
+            c = { 0.0f, 1.0f, 0.0f };
         }
         else
         {
-            glColor3f(1.0f, 0.0f, 0.0f);
+            c = { 1.0f, 0.0f, 0.0f };
         }
-        
-        for (auto&& v : simple_boundary)
+        // draw the boundary lines parallel to XZ plane
+        glLineWidth(1.0f);
+        for (float height = -1.0f; height < 1.0f; height += 0.2f)
         {
-            glVertex3f(v.x, 0, v.y);
-        }
-        glVertex3f(simple_boundary[0].x, 0, simple_boundary[0].y);
+            glBegin(GL_LINE_STRIP);
+            glColor3f(c[0], c[1], c[2]);
+            for (auto&& v : boundary)
+            {
+                glVertex3f(v.x, height, v.y);
+            }
+            glVertex3f(boundary[0].x, height, boundary[0].y);
+            glEnd();
+        }        
 
+        // draw vertical lines along the boundary
+        glLineWidth(1.0f);
+        glBegin(GL_LINES);
+        glColor3f(c[0], c[1], c[2]);
+        for (auto&& v : boundary)
+        {
+            glVertex3f(v.x, -1.0f, v.y);
+            glVertex3f(v.x, 1.0f, v.y);
+        }        
         glEnd();
     }
       

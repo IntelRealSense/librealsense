@@ -639,8 +639,8 @@ namespace rs2
         float3 center_right{ v6.x - len_x / 3, v6.y - len_y / 3, v5.z };
                 
         std::vector<tracked_point> trajectory;
-        std::vector<tracked_point> boundary;
-        std::vector<float2> simple_boundary;
+        std::vector<float2> boundary;
+        
     };
 
     class viewer_model

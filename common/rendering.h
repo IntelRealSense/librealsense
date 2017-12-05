@@ -395,7 +395,6 @@ namespace rs2
     inline std::vector<float2> simplify_line(const std::vector<float2>& points)
     {
         std::vector<float2> res;
-        std::vector<float2> res_second_half;
         float max_distance = 0.0f;
         int max_distance_index = 0;
         float distance_limit = 0.01f; //1 centimeter
@@ -413,12 +412,21 @@ namespace rs2
         if (max_distance > distance_limit)
         {
             // Recursive call
-            std::vector<float2> first_half(points.begin(), points.begin() + max_distance_index + 1);
+            std::vector<float2> first_half(points.begin(), points.begin() + max_distance_index);
             std::vector<float2> second_half(points.begin() + max_distance_index, points.end());
             res = simplify_line(first_half);
-            res_second_half = simplify_line(second_half);
-
-            res.insert(res.end(), res_second_half.begin(), res_second_half.end());
+            std::vector<float2> res_second_half = simplify_line(second_half);
+            //check if the connection points of the 2 halves are too close
+            float2 p1 = res.back();
+            float2 p2 = res_second_half[0];
+            if (sqrt(pow((p1.x - p2.x), 2) + pow((p1.y - p2.y), 2)) < 0.01)
+            {
+                res.insert(res.end(), res_second_half.begin() + 1, res_second_half.end());
+            }
+            else
+            {
+                res.insert(res.end(), res_second_half.begin(), res_second_half.end());
+            }            
         }
         else
         {
