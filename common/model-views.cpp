@@ -962,7 +962,7 @@ namespace rs2
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
 
                         label = to_string() << "##" << s->get_info(RS2_CAMERA_INFO_NAME)
-                            << s.get_info(RS2_CAMERA_INFO_NAME)
+                            << s->get_info(RS2_CAMERA_INFO_NAME)
                             << f.first << " fps";
 
                         if (streaming)
@@ -1221,6 +1221,11 @@ namespace rs2
                 draw_option(opt, update_read_only_options, error_message, notifications);
             }
         }
+    }
+    
+    int subdevice_model::num_supported_options() const
+    {
+        return std::count_if(std::begin(options_metadata), std::end(options_metadata), [](const std::pair<int, option_model>& p) {return p.second.supported; });
     }
 
     bool option_model::draw_option(bool update_read_only_options,
@@ -1670,19 +1675,7 @@ namespace rs2
         //}
         //ImGui::PopItemWidth();
 
-        if (selected_depth_source_uid >= 0) {
-            auto depth = streams[selected_depth_source_uid].texture->get_last_frame();
-            if (depth) pc.push_frame(depth);
-        }
 
-        frame tex;
-        if (selected_tex_source_uid >= 0)
-        {
-            tex = streams[selected_tex_source_uid].texture->get_last_frame();
-            if (tex) pc.update_texture(tex);
-        }
-        
-        // Draw the selection buttons on the right
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons - 5, 0 });
 
         if (paused)
@@ -1755,27 +1748,31 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if (syncronize)
+        if(support_non_syncronized_mode)
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            if (ImGui::Button(u8"\uf09c", { 24, top_bar_height }))
+            if (synchronization_enable)
             {
-                syncronize = false;
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                if (ImGui::Button(u8"\uf09c", { 24, top_bar_height }))
+                {
+                    synchronization_enable = false;
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Disable syncronization between the pointcloud and the texture");
+                ImGui::PopStyleColor(2);
             }
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Disable synchronization between the pointcloud and the texture");
-            ImGui::PopStyleColor(2);
-        }
-        else
-        {
-            if (ImGui::Button(u8"\uf023", { 24, top_bar_height }))
+            else
             {
-                syncronize = true;
+                if (ImGui::Button(u8"\uf023", { 24, top_bar_height }))
+                {
+                    synchronization_enable = true;
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Keep the pointcloud and the texture sycronized");
             }
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Keep the pointcloud and the texture synchronized");
         }
+
 
         ImGui::End();
 
@@ -3029,7 +3026,7 @@ namespace rs2
                 streams[kvp.first].show_metadata(mouse);
         }
     }
-    
+
     void viewer_model::render_3d_view(const rect& viewer_rect, float scale_factor)
     {
         glViewport(viewer_rect.x * scale_factor, 0,
@@ -3092,14 +3089,7 @@ namespace rs2
             glEnd();
         }
 
-        glColor4f(1.f, 1.f, 1.f, 1.f);
-
-        if (syncronize)
-        {
-            auto tex = streams[selected_tex_source_uid].texture->get_last_frame();
-            if (tex) s(tex);
-        }
-        for (auto&& stream : streams)
+		for (auto&& stream : streams)
         {
             if (stream.second.profile.stream_type() == RS2_STREAM_POSE)
             {
@@ -3130,30 +3120,24 @@ namespace rs2
                 tm2.draw_boundary(p);
             }
         }
-        if (auto points = pc.get_points())
+
+		glColor4f(1.f, 1.f, 1.f, 1.f);
+		
+        if(!paused)
         {
-            if (syncronize)
+            auto res = pc.get_points();
+
+            for (auto&& f : res)
             {
-                s(points);
-                rs2::frameset fs;
-                if (s.poll_for_frames(&fs))
-                    if (fs && fs.size() > 1)
-                    {
-                        for (auto&& f : fs)
-                        {
-                            if (f.is<rs2::points>()) last_points = f;
-                            else last_texture = f;
-                        }
-                    }
-            }
-            else
-            {
-                last_texture = streams[selected_tex_source_uid].texture->get_last_frame();
-                last_points = points;
+                if (f.is<rs2::points>())
+                    last_points = f;
+                else
+                    last_texture = f;
             }
 
-            if (draw_frustrum)
-            {
+        }
+        if (draw_frustrum && last_points)
+        {
                 glLineWidth(1.f);
                 glBegin(GL_LINES);
 

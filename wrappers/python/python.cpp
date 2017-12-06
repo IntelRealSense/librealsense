@@ -573,6 +573,10 @@ PYBIND11_PLUGIN(NAME) {
                                  return ss.str();
                              });
 
+    py::class_<rs2::motion_stream_profile, rs2::stream_profile> motion_stream_profile(m, "motion_stream_profile");
+    motion_stream_profile.def(py::init<const rs2::stream_profile&>(), "sp"_a)
+        .def("get_motion_intrinsics", &rs2::motion_stream_profile::get_motion_intrinsics, "Returns scale and bias of a motion stream.");
+
     py::class_<rs2::notification> notification(m, "notification");
     notification.def(py::init<>())
         .def("get_category", &rs2::notification::get_category,
@@ -605,8 +609,6 @@ PYBIND11_PLUGIN(NAME) {
           .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) { self.start(queue); })
           .def("stop", &rs2::sensor::stop, "Stop streaming.")
           .def("get_stream_profiles", &rs2::sensor::get_stream_profiles, "Check if physical sensor is supported.")
-          .def("get_motion_intrinsics", &rs2::sensor::get_motion_intrinsics, "Returns scale and bias of a motion stream.",
-               "stream"_a)
           .def(py::init<>())
           .def("__nonzero__", &rs2::sensor::operator bool)
           .def(BIND_DOWNCAST(sensor, roi_sensor))

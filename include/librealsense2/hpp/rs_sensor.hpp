@@ -362,11 +362,11 @@ namespace rs2
             return results;
         }
         
-        sensor& operator=(const std::shared_ptr<rs2_sensor> dev)
-        {  
-            options::operator=(dev);
+        sensor& operator=(const std::shared_ptr<rs2_sensor> other)
+        {
+            options::operator=(other);
             _sensor.reset();
-            _sensor = dev;
+            _sensor = other;
             return *this;
         }
 

@@ -274,13 +274,11 @@ void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error**
 
 
 /**
-* When called on Pose frame type, this method returns the translation represented by thw pose data
-* Each coordinate represent a (u,v) pair within [0,1] range, to be mapped to texture image
+* When called on Pose frame type, this method returns the translation represented by the pose data
 * \param[in] frame       Pose frame
 * \param[out] pose       Pointer to a user allocated struct, which contains the pose info after a successful return
 * \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-
 void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_error** error);
 
 

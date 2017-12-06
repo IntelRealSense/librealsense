@@ -36,7 +36,6 @@ add_library(${PROJECT_NAME} STATIC
 )
 
 target_link_libraries(${PROJECT_NAME}
-	realsense-core
 	libtm
 )
 

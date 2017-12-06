@@ -161,7 +161,7 @@ namespace rs2
         */
         rs2_motion_device_intrinsic get_motion_intrinsics() 
         {
-            rs2_error *e = nullptr;
+            rs2_error* e = nullptr;
             rs2_motion_device_intrinsic intrin;
             rs2_get_motion_intrinsics(_profile, &intrin, &e);
             error::handle(e);
@@ -513,7 +513,7 @@ namespace rs2
         rs2_pose get_pose_data()
         {
             rs2_pose pose_data;
-            rs2_error * e = nullptr;
+            rs2_error* e = nullptr;
             rs2_pose_frame_get_pose_data(get(), &pose_data, &e);
             error::handle(e);
             return pose_data;

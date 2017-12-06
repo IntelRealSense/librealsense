@@ -68,8 +68,62 @@ option(BUILD_WITH_TM2 "Build with support for Intel TM2 tracking device" OFF)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
 set(REALSENSE_CPP
+    src/environment.cpp
+    src/device_hub.cpp
+    src/pipeline.cpp
+    src/archive.cpp
+    src/context.cpp
+    src/device.cpp
+    src/sensor.cpp
+    src/algo.cpp
+    src/sync.cpp
+    src/stream.cpp
+    src/option.cpp
+    src/error-handling.cpp
+    src/hw-monitor.cpp
+    src/image.cpp
+    src/ivcam/ivcam-private.cpp
+    src/log.cpp
     src/rs.cpp
+    src/ivcam/sr300.cpp
+    src/types.cpp
+    src/linux/backend-v4l2.cpp
+    src/linux/backend-hid.cpp
+    src/backend.cpp
     src/verify.c
+    src/align.cpp
+    src/colorizer.cpp
+    src/source.cpp
+    src/ds5/ds5-options.cpp
+    src/ds5/ds5-timestamp.cpp
+    src/ds5/ds5-private.cpp
+    src/ds5/ds5-motion.cpp
+    src/ds5/ds5-rolling-shutter.cpp
+    src/ds5/ds5-device.cpp
+    src/ds5/ds5-color.cpp
+    src/ds5/ds5-active.cpp
+    src/ds5/ds5-factory.cpp
+    src/win/win-helpers.cpp
+    src/win/win-uvc.cpp
+    src/win/win-usb.cpp
+    src/win/win-hid.cpp
+    src/win/win-backend.cpp
+
+
+    src/ds5/advanced_mode/rs_advanced_mode.cpp
+    src/ds5/advanced_mode/presets.cpp
+    src/ds5/advanced_mode/advanced_mode.cpp
+
+    third-party/easyloggingpp/src/easylogging++.cc
+    third-party/sqlite/sqlite3.c
+
+    src/mock/sql.cpp
+    src/mock/recorder.cpp
+
+    src/media/record/record_device.cpp
+    src/media/record/record_sensor.cpp
+    src/media/playback/playback_device.cpp
+    src/media/playback/playback_sensor.cpp
     )
 
 set(REALSENSE_HPP
@@ -103,76 +157,7 @@ set(REALSENSE_HPP
     include/librealsense2/h/rs_advanced_mode_command.h
 
     src/res/resource.h
-)
 
-# librealsense Depth Cameras
-set(DEPTH_CAMERAS_CPP
-    src/ivcam/ivcam-private.cpp
-    src/ivcam/sr300.cpp
-    src/ds5/ds5-options.cpp
-    src/ds5/ds5-timestamp.cpp
-    src/ds5/ds5-private.cpp
-    src/ds5/ds5-motion.cpp
-    src/ds5/ds5-rolling-shutter.cpp
-    src/ds5/ds5-device.cpp
-    src/ds5/ds5-color.cpp
-    src/ds5/ds5-active.cpp
-    src/ds5/ds5-factory.cpp
-
-    src/ds5/advanced_mode/rs_advanced_mode.cpp
-    src/ds5/advanced_mode/presets.cpp
-    src/ds5/advanced_mode/advanced_mode.cpp
-    )
-
-set(DEPTH_CAMERAS_HPP
-    include/librealsense2/rs_advanced_mode.h
-    include/librealsense2/rs_advanced_mode.hpp
-    include/librealsense2/h/rs_advanced_mode_command.h
-
-    src/res/resource.h
-    src/ivcam/ivcam-private.h
-    src/ivcam/sr300.h
-    src/ds5/ds5-factory.h
-    src/ds5/ds5-device.h
-    src/ds5/ds5-options.h
-    src/ds5/ds5-private.h
-    src/ds5/ds5-timestamp.h
-    src/ds5/ds5-active.h
-    src/ds5/ds5-motion.h
-    src/ds5/ds5-rolling-shutter.h
-    src/ds5/ds5-color.h
-
-    src/ds5/advanced_mode/json_loader.hpp
-    src/ds5/advanced_mode/presets.h
-)
-
-
-# librealsense Core
-set(CORE_CPP
-    src/environment.cpp
-    src/device_hub.cpp
-    src/pipeline.cpp
-    src/archive.cpp
-    src/context.cpp
-    src/device.cpp
-    src/sensor.cpp
-    src/algo.cpp
-    src/sync.cpp
-    src/stream.cpp
-    src/option.cpp
-    src/error-handling.cpp
-    src/hw-monitor.cpp
-    src/image.cpp
-    src/align.cpp
-    src/colorizer.cpp
-    src/source.cpp
-    src/media/record/record_device.cpp
-    src/media/record/record_sensor.cpp
-    src/media/playback/playback_device.cpp
-    src/media/playback/playback_sensor.cpp
-    )
-
-set(CORE_HPP
     src/core/streaming.h
     src/core/debug.h
     src/core/advanced_mode.h
@@ -205,7 +190,27 @@ set(CORE_HPP
     src/hw-monitor.h
     src/image.h
     src/source.h
+    src/ivcam/ivcam-private.h
+    src/types.h
+    src/backend.h
     src/device.h
+    src/ivcam/sr300.h
+    src/ds5/ds5-factory.h
+    src/ds5/ds5-device.h
+    src/ds5/ds5-options.h
+    src/ds5/ds5-private.h
+    src/ds5/ds5-timestamp.h
+    src/ds5/ds5-active.h
+    src/ds5/ds5-motion.h
+    src/ds5/ds5-rolling-shutter.h
+    src/ds5/ds5-color.h
+    src/linux/backend-v4l2.h
+    src/linux/backend-hid.h
+    src/win/win-helpers.h
+    src/win/win-uvc.h
+    src/win/win-usb.h
+    src/win/win-hid.h
+    src/win/win-backend.h
     src/api.h
     src/core/serialization.h
 
@@ -216,45 +221,16 @@ set(CORE_HPP
     src/media/ros/ros_reader.h
     src/media/ros/ros_writer.h
 
-    src/media/ros/ros_file_format.h
-)
+    src/ds5/advanced_mode/json_loader.hpp
+    src/ds5/advanced_mode/presets.h
 
-# librealsense Backend
-set(BACKEND_CPP
-    src/log.cpp
-    src/types.cpp
-    src/linux/backend-v4l2.cpp
-    src/linux/backend-hid.cpp
-    src/backend.cpp
-    src/win/win-helpers.cpp
-    src/win/win-uvc.cpp
-    src/win/win-usb.cpp
-    src/win/win-hid.cpp
-    src/win/win-backend.cpp
-
-    third-party/easyloggingpp/src/easylogging++.cc
-    third-party/sqlite/sqlite3.c
-
-    src/mock/sql.cpp
-    src/mock/recorder.cpp
-	)
-
-set(BACKEND_HPP
-    src/types.h
-    src/backend.h
-    src/linux/backend-v4l2.h
-    src/linux/backend-hid.h
-    src/win/win-helpers.h
-    src/win/win-uvc.h
-    src/win/win-usb.h
-    src/win/win-hid.h
-    src/win/win-backend.h
-    
     third-party/easyloggingpp/src/easylogging++.h
     third-party/sqlite/sqlite3.h
     src/mock/sql.h
     src/mock/recorder.h
-    )
+
+    src/media/ros/ros_file_format.h
+)
 
 if(WIN32)
     source_group("Source Files\\Backend" FILES
@@ -466,17 +442,17 @@ if(FORCE_LIBUVC)
     src/libuvc/init.c
     src/libuvc/misc.c
     src/libuvc/stream.c
-	src/libuvc/libuvc.cpp
-	)
-	
-	list(APPEND REALSENSE_HPP
+    src/libuvc/libuvc.cpp
+    )
+    
+    list(APPEND REALSENSE_HPP
     src/libuvc/libuvc.h
     src/libuvc/libuvc_internal.h
     src/libuvc/utlist.h
     src/libuvc/libuvc_config.h
-	)
-	
-	message( WARNING "Using libuvc!" )
+    )
+    
+    message( WARNING "Using libuvc!" )
 endif()
 
 if (MSVC)
@@ -549,36 +525,6 @@ endif()
 
 add_subdirectory(third-party/realsense-file)
 
-add_library(realsense-backend STATIC ${BACKEND_CPP} ${BACKEND_HPP})
-install(TARGETS realsense-backend
-    EXPORT realsense2Targets
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
-set_target_properties (realsense-backend PROPERTIES FOLDER Library)
-
-
-add_library(realsense-core STATIC ${CORE_CPP} ${CORE_HPP})
-install(TARGETS realsense-core
-    EXPORT realsense2Targets
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
-set_target_properties (realsense-core PROPERTIES FOLDER Library)
-target_link_libraries(realsense-core realsense-backend realsense-file ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-
-add_library(realsense-depth-cameras STATIC ${DEPTH_CAMERAS_CPP} ${DEPTH_CAMERAS_HPP})
-install(TARGETS realsense-depth-cameras
-    EXPORT realsense2Targets
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
-set_target_properties (realsense-depth-cameras PROPERTIES FOLDER Library)
-target_link_libraries(realsense-depth-cameras realsense-core)
-
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
     if(WIN32)
@@ -600,26 +546,23 @@ endif()
 
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
-target_link_libraries(realsense2 realsense-depth-cameras
-								 realsense-backend 
-							     realsense-file 
-								 ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(realsense2 PRIVATE realsense-file ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 add_definitions(-DELPP_THREAD_SAFE)
 add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
 if (BUILD_WITH_TM2)
-	find_package(libtm REQUIRED)
-	add_definitions(-DWITH_TRACKING -DBUILD_STATIC)
-	add_subdirectory(src/tm2)
-	target_link_libraries(realsense2 realsense-tracking libtm)
-
-	install(TARGETS libtm
-		EXPORT realsense2Targets
-		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-	)
+    message(STATUS "Building with TM2")
+    find_package(libtm REQUIRED)
+    add_definitions(-DWITH_TRACKING -DBUILD_STATIC)
+    add_subdirectory(src/tm2)
+    target_link_libraries(realsense2 PRIVATE realsense-tracking libtm)
+    install(TARGETS libtm
+        EXPORT realsense2Targets
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
 endif()
 
 list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
@@ -642,9 +585,6 @@ target_include_directories(realsense2 PRIVATE
         )
 
 target_include_directories(realsense2 PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                                            $<INSTALL_INTERFACE:include>
-                                     PRIVATE ${LIBUSB1_INCLUDE_DIRS})
-target_include_directories(realsense-core PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                             $<INSTALL_INTERFACE:include>
                                      PRIVATE ${LIBUSB1_INCLUDE_DIRS})
 

@@ -1057,9 +1057,8 @@ namespace rs2
                 break;
             case RS2_FORMAT_MOTION_XYZ32F:
             {
-                if (frame.is<motion_frame>())
+                if (auto motion = frame.as<motion_frame>())
                 {
-                    auto motion = frame.as<motion_frame>();
                     auto axes = motion.get_motion_data();
                     draw_motion_data(axes.x, axes.y, axes.z);
                 }
@@ -1079,9 +1078,8 @@ namespace rs2
                 break;
             case RS2_FORMAT_6DOF:
             {
-                if (frame.is<pose_frame>())
+                if (auto pose = frame.as<pose_frame>())
                 {
-                    auto pose = frame.as<pose_frame>();
                     rs2_pose pose_data = pose.get_pose_data();
                     draw_pose_data(pose_data, frame.get_profile().unique_id());
                 }
@@ -1167,7 +1165,7 @@ namespace rs2
             // Y axis - Green
             glColor3f(0.0f, 1.0f, 0.0f);
             glVertex3f(0.0f, 0.0f, 0.0f);
-            glVertex3f(0.0f, -axis_size, 0.0f); 
+            glVertex3f(0.0f, -axis_size, 0.0f);
 
             // Z axis - Blue
             glColor3f(0.0f, 0.0f, 1.0f);
@@ -1197,7 +1195,7 @@ namespace rs2
             }
 
             glEnd();
-        }       
+        }
 
         void multiply_vector_by_matrix(GLfloat vec[], GLfloat mat[], GLfloat* result)
         {
@@ -1322,16 +1320,6 @@ namespace rs2
             glPopMatrix();
         }
 
-        static inline float3 transform_by_pose(const rs2_pose& p, const float3& vi)
-        {
-            float w = p.rotation.w, x = p.rotation.x, y = p.rotation.y, z = p.rotation.z;
-            auto T = p.translation;
-            return {
-                vi.x * (1 - 2 * (y*y + z*z)) + vi.y * (2 * (x*y - w*z))     + vi.z * (2 * (x*z + w*y))     + T.x,
-                vi.x * (2 * (x*y + w*z))     + vi.y * (1 - 2 * (x*x + z*z)) + vi.z * (2 * (y*z - w*x))     + T.y,
-                vi.x * (2 * (x*z - w*y))     + vi.y * (2 * (y*z + w*x))     + vi.z * (1 - 2 * (x*x + y*y)) + T.z
-            };
-        }
 
         void draw_grid()
         {
