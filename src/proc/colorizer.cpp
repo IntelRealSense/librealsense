@@ -215,6 +215,7 @@ namespace librealsense
 
                     for (auto i = 0; i < w*h; ++i) ++histogram[depth_data[i]];
                     for (auto i = 2; i < max_depth; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+                    auto cm = _maps[_map_index];
                     for (auto i = 0; i < w*h; ++i)
                     {
                         auto d = depth_data[i];
@@ -223,7 +224,7 @@ namespace librealsense
                         {
                             auto f = histogram[d] / (float)histogram[0xFFFF]; // 0-255 based on histogram location
 
-                            auto c = _maps[_map_index]->get(f);
+                            auto c = cm->get(f);
                             rgb_data[i * 3 + 0] = (uint8_t)c.x;
                             rgb_data[i * 3 + 1] = (uint8_t)c.y;
                             rgb_data[i * 3 + 2] = (uint8_t)c.z;
