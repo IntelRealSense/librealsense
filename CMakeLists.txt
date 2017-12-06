@@ -605,6 +605,8 @@ target_link_libraries(realsense2 realsense-depth-cameras
 							     realsense-file 
 								 ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
+add_definitions(-DELPP_THREAD_SAFE)
+add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
 if (BUILD_WITH_TM2)
 	find_package(libtm REQUIRED)
@@ -622,8 +624,6 @@ endif()
 
 list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
 
-add_definitions(-DELPP_THREAD_SAFE)
-add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
 include_directories(realsense2 src)
 
