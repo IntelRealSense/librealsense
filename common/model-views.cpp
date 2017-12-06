@@ -1868,6 +1868,10 @@ namespace rs2
             }
         }
         for (auto&& i : streams_to_remove) {
+            if(selected_depth_source_uid == i)
+                selected_depth_source_uid = -1;
+            if(selected_tex_source_uid == i)
+                selected_tex_source_uid = -1;
             streams.erase(i);
         }
     }
