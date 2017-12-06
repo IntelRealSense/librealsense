@@ -100,9 +100,10 @@ namespace librealsense
             source.frame_ready(res);
         };
 
-
         auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
         processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
+
+        on_set_confidence_control(_creadability_param);
     }
 
     void temporal_filter::on_set_confidence_control(uint8_t val)
