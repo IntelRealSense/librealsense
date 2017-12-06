@@ -15,14 +15,14 @@ namespace librealsense {
 
     // Enhancement for debug mode that incurs performance penalty with STL
     template< typename T>
-    inline T clamp_val(T d, T min, T max)
+    inline T clamp_val(T val, T min, T max)
     {
         static_assert((std::is_arithmetic<T>::value), "clamping supports arithmetic built-in types only");
 #ifdef _DEBUG
-        const T t = d < min ? min : d;
+        const T t = val < min ? min : val;
         return t > max ? max : t;
 #else
-        return std::min(std::max(t, min), max);
+        return std::min(std::max(val, min), max);
 #endif
     }
 
