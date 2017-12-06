@@ -31,24 +31,23 @@ namespace librealsense
     const uint8_t temp_delta_default = 50;
     const uint8_t temp_delta_step = 1;
 
-    temporal_filter::temporal_filter() : _creadability_param(cred_default),
+    temporal_filter::temporal_filter() : _credibility_param(cred_default),
         _alpha_param(temp_alpha_default),
         _one_minus_alpha(1- _alpha_param),
         _delta_param(temp_delta_default),
         _width(0), _height(0),
         _current_frm_size_pixels(0)
     {
-        auto temporal_creadable_control = std::make_shared<ptr_option<uint8_t>>(cred_min, cred_max, cred_step, cred_default,
-            &_creadability_param, "Threshold of previous frames with valid data");
+        auto temporal_creadibility_control = std::make_shared<ptr_option<uint8_t>>(cred_min, cred_max, cred_step, cred_default,
+            &_credibility_param, "Threshold of previous frames with valid data");
 
-        temporal_creadable_control->on_set([this](float val)
+        temporal_creadibility_control->on_set([this](float val)
         {
             on_set_confidence_control(static_cast<uint8_t>(val));
         });
 
-        register_option(RS2_OPTION_FILTER_MAGNITUDE, temporal_creadable_control);
+        register_option(RS2_OPTION_FILTER_MAGNITUDE, temporal_creadibility_control);
 
-        // between 1 and 0 -- 1 means all the current image
         auto temporal_filter_alpha = std::make_shared<ptr_option<float>>(
             temp_alpha_min,
             temp_alpha_max,
@@ -65,7 +64,7 @@ namespace librealsense
             temp_delta_max,
             temp_delta_step,
             temp_delta_default,
-            &_delta_param, "Depth range threshold");
+            &_delta_param, "Depth range (gradient) threshold");
         temporal_filter_delta->on_set([this](float val)
         {
             on_set_delta(val);
@@ -103,14 +102,14 @@ namespace librealsense
         auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
         processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
 
-        on_set_confidence_control(_creadability_param);
+        on_set_confidence_control(_credibility_param);
     }
 
     void temporal_filter::on_set_confidence_control(uint8_t val)
     {
         std::lock_guard<std::mutex> lock(_mutex);
-        _creadability_param = val;
-        recalc_creadability_map();
+        _credibility_param = val;
+        recalc_creadibility_map();
     }
 
     void temporal_filter::on_set_alpha(float val)
@@ -170,9 +169,9 @@ namespace librealsense
         return tgt;
     }
 
-    void temporal_filter::recalc_creadability_map()
+    void temporal_filter::recalc_creadibility_map()
     {
-        _creadability_map.fill(0);
+        _credibility_map.fill(0);
 
         for (size_t phase = 0; phase < 8; phase++)
         {
@@ -180,7 +179,7 @@ namespace librealsense
             //int ephase = (phase + 7) % 8;
             uint8_t mask = 1 << phase;
 
-            for (size_t i = 0; i < _creadability_map.size(); i++) {
+            for (size_t i = 0; i < _credibility_map.size(); i++) {
                 unsigned short bits = (unsigned short)((i << (8 - phase)) | (i >> phase));
                 //unsigned char last_7 = !!(bits & 1);  // old
                 //unsigned char last_6 = !!(bits & 2);
@@ -193,10 +192,10 @@ namespace librealsense
 
                 uint8_t sum = lastFrame + last_1 + last_2 + last_3; // valid in the last three frames
                 if (sum >= 2)  // valid in two of the last four frames
-                    _creadability_map[i] |= mask;
+                    _credibility_map[i] |= mask;
             }
 
-            for (size_t i = 0; i < _creadability_map.size(); i++)
+            for (size_t i = 0; i < _credibility_map.size(); i++)
             {
                 unsigned char last_7 = !!(i & 1);  // old
                 unsigned char last_6 = !!(i & 2);
@@ -207,101 +206,101 @@ namespace librealsense
                 unsigned char last_1 = !!(i & 64);
                 unsigned char lastFrame = !!(i & 128); // new
 
-                if (_creadability_param == 1)
+                if (_credibility_param == 1)
                 {
                     int sum = lastFrame;
                     if (sum >= 1)  // valid in last frame
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
-                else if (_creadability_param == 2)
+                else if (_credibility_param == 2)
                 {
                     int sum = lastFrame + last_1;
                     if (sum >= 1)  // valid in one of the last two frames
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
-                else if (_creadability_param == 3)
+                else if (_credibility_param == 3)
                 {
                     int sum = lastFrame + last_1;
                     if (sum >= 2)  // valid in last two frames
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
-                else if (_creadability_param == 4)
+                else if (_credibility_param == 4)
                 {
                     int sum = lastFrame + last_1 + last_2;
                     if (sum >= 1)  // valid in one of the last three frames
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
-                else if (_creadability_param == 5)
+                else if (_credibility_param == 5)
                 {
                     int sum = lastFrame + last_1 + last_2;
                     if (sum >= 2)  // valid in two of the last three frames
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
-                else if (_creadability_param == 6)
+                else if (_credibility_param == 6)
                 {
                     int sum = lastFrame + last_1 + last_2;
                     if (sum >= 3)  // valid in last three frames
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
-                else if (_creadability_param == 7)
+                else if (_credibility_param == 7)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3;
                     if (sum >= 1)  // valid in one of the last four frames
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
-                else if (_creadability_param == 8)
+                else if (_credibility_param == 8)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3;
                     if (sum >= 3)  // valid in three of the last four frames
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
-                else if (_creadability_param == 9)
+                else if (_credibility_param == 9)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3 + last_4;
                     if (sum >= 2)  // valid in two of the last five frames
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
-                else if (_creadability_param == 10)
+                else if (_credibility_param == 10)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3 + last_4 + last_5;
                     if (sum >= 2)  // valid in two of the last six frames
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
-                else if (_creadability_param == 11)
+                else if (_credibility_param == 11)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3 + last_4 + last_6;
                     if (sum >= 2)  // valid in two of the last seven frames
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
-                else if (_creadability_param == 12)
+                else if (_credibility_param == 12)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3 + last_4 + last_6 + last_7;
                     if (sum >= 4)  // valid in four of the last eight frames
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
-                else if (_creadability_param == 13)
+                else if (_credibility_param == 13)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3 + last_4 + last_6 + last_7;
                     if (sum >= 3)  // valid in three of the last eight frames
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
-                else if (_creadability_param == 14)
+                else if (_credibility_param == 14)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3 + last_4 + last_6 + last_7;
                     if (sum >= 2)  // valid in two of the last eight frames
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
-                else if (_creadability_param == 15)
+                else if (_credibility_param == 15)
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3 + last_4 + last_6 + last_7;
                     if (sum >= 1)  // valid in one of the last eight frames
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
                 else // default for param == 0 or out of range
                 {
                     int sum = lastFrame + last_1 + last_2 + last_3; // valid in the last three frames
                     if (sum >= 2)  // valid in two of the last four frames
-                        _creadability_map[i] = 1;
+                        _credibility_map[i] = 1;
                 }
             }
         }
@@ -338,7 +337,7 @@ namespace librealsense
             else {  // no newVal
                 if (oldVal) { // only case we can help
                     unsigned char hist = history[i];
-                    unsigned char classification = _creadability_map[hist];
+                    unsigned char classification = _credibility_map[hist];
                     if (classification & mask) { // we have had enough samples lately
                         frame[i] = oldVal;
                     }

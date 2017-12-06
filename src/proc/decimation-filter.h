@@ -9,14 +9,6 @@
 namespace librealsense
 {
 
-    enum rs2_filter_kernel : unsigned char
-    {
-        rs2_fixed_pick = 0,
-        rs2_median,
-        rs2_median_nz,
-        rs2_mean,
-    };
-
     class decimation_filter : public processing_block
     {
     public:
@@ -31,7 +23,6 @@ namespace librealsense
     private:
         void    update_output_profile(const rs2::frame& f);
 
-        rs2_filter_kernel       _decimation_filter;
         uint8_t                 _decimation_factor;
         uint8_t                 _patch_size;
         uint8_t                 _kernel_size;

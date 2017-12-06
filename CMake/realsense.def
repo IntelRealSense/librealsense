@@ -100,7 +100,7 @@ EXPORTS
     rs2_extension_type_to_string
     rs2_playback_status_to_string
     rs2_log_severity_to_string
-	rs2_log
+    rs2_log
 
     rs2_stream_to_string
     rs2_format_to_string

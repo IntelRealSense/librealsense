@@ -25,9 +25,9 @@ namespace librealsense
         void on_set_alpha(float val);
         void on_set_delta(float val);
 
-        void recalc_creadability_map();
+        void recalc_creadibility_map();
         std::mutex _mutex;
-        uint8_t                 _creadability_param;
+        uint8_t                 _credibility_param;
 
         float                   _alpha_param;
         float                   _one_minus_alpha;
@@ -39,6 +39,6 @@ namespace librealsense
         std::map < size_t, std::vector<uint16_t> > _last_frame_map; // Hold the last frame for eachsize
         std::map < size_t, std::vector<uint8_t> > _history;    // represents the history over the last 8 frames, 1 bit per frame
         uint8_t                 _cur_frame_index; // mod 8
-        std::array<uint8_t, CREDIBILITY_MAP_SIZE> _creadability_map;  // encodes whether a particular 8 bit history is good enough for all 8 phases of storage
+        std::array<uint8_t, CREDIBILITY_MAP_SIZE> _credibility_map;  // encodes whether a particular 8 bit history is good enough for all 8 phases of storage
     };
 }
