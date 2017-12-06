@@ -65,35 +65,8 @@ describe('Pipeline test', function() {
       pipeline.start();
       pipeline.destroy();
     });
-    setTimeout(() => {
-      assert.equal(pipeline, undefined);
-    }, 100);
   });
 
-  it('Testing method start', () => {
-    let pipeline;
-    assert.doesNotThrow(() => {
-      pipeline = new rs2.Pipeline();
-      pipeline.start();
-    });
-    assert.notEqual(pipeline, undefined);
-    assert.doesNotThrow(() => {
-      pipeline.start();
-      pipeline.destroy();
-    });
-  });
-
-  it('Testing method stop', () => {
-    let pipeline;
-    pipeline = new rs2.Pipeline();
-    pipeline.start();
-    assert.notEqual(pipeline, undefined);
-    assert.doesNotThrow(() => {
-      pipeline.start();
-      pipeline.stop();
-      pipeline.destroy();
-   });
-  });
 
   it('Testing method waitForFrames', () => {
     let pipeline;
@@ -120,5 +93,29 @@ describe('Pipeline test', function() {
       }
     }
     pipeline.destroy();
+  });
+
+  it('Testing method start', () => {
+    let pipeline;
+    assert.doesNotThrow(() => {
+      pipeline = new rs2.Pipeline();
+      pipeline.start();
+    });
+    assert.notEqual(pipeline, undefined);
+    assert.doesNotThrow(() => {
+      pipeline.start();
+      pipeline.destroy();
+    });
+  });
+
+  it('Testing method stop', () => {
+    let pipeline;
+    pipeline = new rs2.Pipeline();
+    assert.notEqual(pipeline, undefined);
+    assert.doesNotThrow(() => {
+      pipeline.start();
+      pipeline.stop();
+      pipeline.destroy();
+   });
   });
 });

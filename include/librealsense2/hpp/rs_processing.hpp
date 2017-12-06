@@ -298,9 +298,21 @@ namespace rs2
         frame_queue _results;
     };
 
+    /**
+        Auxiliary processing block that performs image alignment using depth data and camera calibration
+    */
     class align
     {
     public:
+        /**
+            Create align processing block 
+            Alignment is performed between a depth image and another image. 
+            To perform alignment of a depth image to the other, set the align_to parameter with the other stream type.
+            To perform alignment of a non depth image to a depth image, set the align_to parameter to RS2_STREAM_DEPTH
+            Camera calibration and frame's stream type are determined on the fly, according to the first valid frameset passed to proccess()
+
+            * \param[in] align_to      The stream type to which alignment should be made.
+        */
         align(rs2_stream align_to) :_queue(1)
         {
             rs2_error* e = nullptr;
@@ -313,6 +325,12 @@ namespace rs2
             _block->start(_queue);
         }
 
+        /**
+        * Run the alignment process on the given frames to get an aligned set of frames
+        *
+        * \param[in] frame      A pair of images, where at least one of which is a depth frame
+        * \return Input frames aligned to one another
+        */
         frameset proccess(frameset frame)
         {
             (*_block)(frame);

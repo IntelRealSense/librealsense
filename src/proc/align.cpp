@@ -57,138 +57,146 @@ namespace librealsense
         }
     }
 
-    align::align(rs2_stream to_stream)
-       : _depth_intrinsics_ptr(nullptr),
-        _depth_units_ptr(nullptr),
-        _other_intrinsics_ptr(nullptr),
-        _depth_to_other_extrinsics_ptr(nullptr),
-        _other_bytes_per_pixel_ptr(nullptr),
-        _other_stream_type(to_stream)
+    void align::update_frame_info(const frame_interface* frame, optional_value<rs2_intrinsics>& intrin,
+        std::shared_ptr<stream_profile_interface>& profile, bool register_extrin)
     {
-        auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
+        if (!frame)
+            return;
+
+        // Get profile
+        if (!profile)
         {
-            auto inspect_depth_frame = [this, &source](const rs2::frame& depth, const rs2::frame& other)
+            profile = frame->get_stream();
+            if (register_extrin)
+                environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*profile, *profile);
+        }
+
+        // Get intrinsics
+        if (!intrin)
+        {
+            if (auto video = As<video_stream_profile_interface>(profile))
             {
-                auto depth_frame = (frame_interface*)depth.get();
-                std::lock_guard<std::mutex> lock(_mutex);
+                intrin = video->get_intrinsics();
+            }
+        }
+    }
+    void align::update_align_info(const frame_interface* depth_frame)
+    {
+        // Get depth units
+        if (!_depth_units)
+        {
+            auto sensor = depth_frame->get_sensor();
+            _depth_units = sensor->get_option(RS2_OPTION_DEPTH_UNITS).query();
+        }
 
-                bool found_depth_intrinsics = false;
-                bool found_depth_units = false;
+        // Get extrinsics
+        if (!_extrinsics && _from_stream_profile && _to_stream_profile)
+        {
+            rs2_extrinsics ex;
+            if (environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics(*_from_stream_profile, *_to_stream_profile, &ex))
+            {
+                _extrinsics = ex;
+            }
+        }
+    }
 
-                if (!_depth_intrinsics_ptr)
+    align::align(rs2_stream to_stream)
+    {
+        auto on_frame = [this, to_stream](rs2::frame f, const rs2::frame_source& source)
+        {
+            auto composite = f.as<rs2::frameset>();
+            if (!composite)
+                return;
+
+            std::unique_lock<std::mutex> lock(_mutex);
+
+            assert(composite.size() >= 2);
+            if (!_from_stream_type)
+            {
+                _from_stream_type = RS2_STREAM_DEPTH;
+                _to_stream_type = to_stream;
+                if (to_stream == RS2_STREAM_DEPTH) //Align other to depth
                 {
-                    auto stream_profile = depth_frame->get_stream();
-                    if (auto video = dynamic_cast<video_stream_profile_interface*>(stream_profile.get()))
+                    for (auto&& f : composite)
                     {
-                        _depth_intrinsics = video->get_intrinsics();
-                        _depth_intrinsics_ptr = &_depth_intrinsics;
-                        found_depth_intrinsics = true;
+                        rs2_stream other_stream_type = f.get_profile().stream_type();
+                        if (other_stream_type != RS2_STREAM_DEPTH)
+                        {
+                            _from_stream_type = other_stream_type;
+                            break; //Take first matching stream type that is not depth
+                        }
                     }
+                    if (!_from_stream_type)
+                        _from_stream_type = RS2_STREAM_DEPTH; //If we only have depth frames, align them to one another
                 }
+            }
 
-                if (!_depth_units_ptr)
-                {
-                    auto sensor = depth_frame->get_sensor();
-                    _depth_units = sensor->get_option(RS2_OPTION_DEPTH_UNITS).query();
-                    _depth_units_ptr = &_depth_units;
-                    found_depth_units = true;
-                }
+            rs2::frame from = composite.first_or_default(*_from_stream_type);
+            rs2::depth_frame depth_frame = composite.get_depth_frame();
+            rs2::frame to = composite.first_or_default(_to_stream_type);
 
-                if (found_depth_units != found_depth_intrinsics)
-                {
-                    throw wrong_api_call_sequence_exception("Received depth frame that doesn't provide either intrinsics or depth units!");
-                }
+            // align_frames(source, from, to)
+            update_frame_info((frame_interface*)from.get(), _from_intrinsics, _from_stream_profile, false);
+            update_frame_info((frame_interface*)to.get(), _to_intrinsics, _to_stream_profile, true);
+            update_align_info((frame_interface*)depth_frame.get());
 
-                if (!_depth_stream_profile.get())
-                {
-                    _depth_stream_profile = depth_frame->get_stream();
-                     environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream_profile, *depth_frame->get_stream());
-                    auto vid_frame = depth.as<rs2::video_frame>();
-                    _width = vid_frame.get_width();
-                    _height = vid_frame.get_height();
-                }
-
-                if (!_depth_to_other_extrinsics_ptr && _depth_stream_profile && _other_stream_profile)
-                {
-                     environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics(*_depth_stream_profile, *_other_stream_profile, &_depth_to_other_extrinsics);
-                    _depth_to_other_extrinsics_ptr = &_depth_to_other_extrinsics;
-                }
-
-                if (_depth_intrinsics_ptr && _depth_units_ptr && _depth_stream_profile && _other_bytes_per_pixel_ptr &&
-                    _depth_to_other_extrinsics_ptr && _other_intrinsics_ptr && _other_stream_profile && other)
-                {
-                    std::vector<frame_holder> frames(2);
-
-                    auto other_frame = (frame_interface*)other.get();
-                    other_frame->acquire();
-                    frames[0] = frame_holder{ other_frame };
-
-                    frame_holder out_frame = get_source().allocate_video_frame(_depth_stream_profile, depth_frame,
-                        _other_bytes_per_pixel / 8, _other_intrinsics.width, _other_intrinsics.height, 0, RS2_EXTENSION_DEPTH_FRAME);
-                    auto p_out_frame = reinterpret_cast<uint16_t*>(((frame*)(out_frame.frame))->data.data());
-                    memset(p_out_frame, _depth_stream_profile->get_format() == RS2_FORMAT_DISPARITY16 ? 0xFF : 0x00, _other_intrinsics.height * _other_intrinsics.width * sizeof(uint16_t));
-                    auto p_depth_frame = reinterpret_cast<const uint16_t*>(((frame*)(depth_frame))->get_frame_data());
-
-                    align_images(*_depth_intrinsics_ptr, *_depth_to_other_extrinsics_ptr, *_other_intrinsics_ptr,
-                        [p_depth_frame, this](int z_pixel_index)
-                    {
-                        return _depth_units * p_depth_frame[z_pixel_index];
-                    },
-                        [p_out_frame, p_depth_frame/*, p_out_other_frame, other_bytes_per_pixel*/](int z_pixel_index, int other_pixel_index)
-                    {
-                        p_out_frame[other_pixel_index] = p_out_frame[other_pixel_index] ?
-                                                            std::min( (int)(p_out_frame[other_pixel_index]), (int)(p_depth_frame[z_pixel_index]) )
-                                                          : p_depth_frame[z_pixel_index];
-                    });
-                    frames[1] = std::move(out_frame);
-                    auto composite = get_source().allocate_composite_frame(std::move(frames));
-                    get_source().frame_ready(std::move(composite));
-                }
-            };
-
-            auto inspect_other_frame = [this, &source](const rs2::frame& other)
+            if (!_from_bytes_per_pixel)
             {
-                auto other_frame = (frame_interface*)other.get();
-                std::lock_guard<std::mutex> lock(_mutex);
+                auto vid_frame = from.as<rs2::video_frame>();
+                _from_bytes_per_pixel = vid_frame.get_bytes_per_pixel();
+            }
 
-                if (_other_stream_type != other_frame->get_stream()->get_stream_type())
-                    return;
+            if (_from_intrinsics && _to_intrinsics && _extrinsics && _depth_units && _from_stream_profile && _to_stream_profile)
+            {
+                std::vector<frame_holder> frames(2);
+                bool from_depth = (*_from_stream_type == RS2_STREAM_DEPTH);
 
-                if (!_other_stream_profile.get())
+                // Save the target ("to") frame as is
+                auto to_frame = (frame_interface*)to.get();
+                to_frame->acquire();
+                frames[0] = frame_holder{ to_frame };
+
+                auto from_frame = (frame_interface*)from.get();
+
+                // Create a new frame which will transform the "from" frame
+                int output_image_bytes_per_pixel = _from_bytes_per_pixel.value();
+                frame_holder out_frame = get_source().allocate_video_frame(_from_stream_profile, from_frame,
+                    output_image_bytes_per_pixel, _to_intrinsics->width, _to_intrinsics->height, 0, from_depth ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME);
+
+                //Clear the new image buffer
+                auto p_out_frame = reinterpret_cast<uint8_t*>(((frame*)(out_frame.frame))->data.data());
+                int blank_color = (_from_stream_profile->get_format() == RS2_FORMAT_DISPARITY16) ? 0xFF : 0x00;
+                memset(p_out_frame, blank_color, _to_intrinsics->height * _to_intrinsics->width * output_image_bytes_per_pixel);
+
+                auto p_depth_frame = reinterpret_cast<const uint16_t*>(depth_frame.get_data());
+                auto p_from_frame = reinterpret_cast<const uint8_t*>(from.get_data());
+
+                lock.unlock();
+                float depth_units = _depth_units.value();
+                align_images(*_from_intrinsics, *_extrinsics, *_to_intrinsics,
+                    [p_depth_frame, depth_units, from_depth](int z_pixel_index) -> float
                 {
-                    _other_stream_profile = other_frame->get_stream();
-                }
-
-                if (!_other_bytes_per_pixel_ptr)
-                {
-                    auto vid_frame = other.as<rs2::video_frame>();
-                    _other_bytes_per_pixel = vid_frame.get_bytes_per_pixel();
-                    _other_bytes_per_pixel_ptr = &_other_bytes_per_pixel;
-                }
-
-                if (!_other_intrinsics_ptr)
-                {
-                    if (auto video = dynamic_cast<video_stream_profile_interface*>(_other_stream_profile.get()))
+                    if (from_depth)
                     {
-                        _other_intrinsics = video->get_intrinsics();
-                        _other_intrinsics_ptr = &_other_intrinsics;
+                        return depth_units * p_depth_frame[z_pixel_index];
                     }
-                }
-                //source.frame_ready(other);
-            };
-
-            if (auto composite = f.as<rs2::frameset>())
-            {
-                auto depth = composite.first_or_default(RS2_STREAM_DEPTH);
-                auto other = composite.first_or_default(_other_stream_type);
-                if (other)
+                    return 1;
+                },
+                    [p_out_frame, p_from_frame, output_image_bytes_per_pixel](int from_pixel_index, int out_pixel_index)
                 {
-                    inspect_other_frame(other);
-                }
-                if (depth)
-                {
-                    inspect_depth_frame(depth, other);
-                }
+                    //Tranfer n-bit pixel to n-bit pixel
+                    for (int i = 0; i < output_image_bytes_per_pixel; i++)
+                    {
+                        const auto out_offset = out_pixel_index * output_image_bytes_per_pixel + i;
+                        const auto from_offset = from_pixel_index * output_image_bytes_per_pixel + i;
+                        p_out_frame[out_offset] = p_out_frame[out_offset] ?
+                            std::min((int)(p_out_frame[out_offset]), (int)(p_from_frame[from_offset]))
+                            : p_from_frame[from_offset];
+                    }
+                });
+                frames[1] = std::move(out_frame);
+                auto composite = get_source().allocate_composite_frame(std::move(frames));
+                get_source().frame_ready(std::move(composite));
             }
         };
         auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
