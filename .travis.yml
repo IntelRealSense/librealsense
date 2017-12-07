@@ -102,7 +102,7 @@ script:
 
       export LRS_LOG_LEVEL="DEBUG";
 
-      url_records_path="http://realsense-hw-public.s3.amazonaws.com/rs-tests/1/";
+      url_records_path="http://realsense-hw-public.s3.amazonaws.com/rs-tests/lrs_2.8.3/";
       records_name="records.txt";
       url_records_list=$url_records_path$records_name;
       wget $url_records_path$records_name;

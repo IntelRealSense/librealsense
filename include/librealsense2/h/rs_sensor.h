@@ -389,6 +389,7 @@ void rs2_get_extrinsics(const rs2_stream_profile* from,
  */
 void rs2_get_video_stream_intrinsics(const rs2_stream_profile* from, rs2_intrinsics* intrinsics, rs2_error** error);
 
+
 #ifdef __cplusplus
 }
 #endif

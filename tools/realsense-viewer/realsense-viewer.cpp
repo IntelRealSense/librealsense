@@ -91,7 +91,8 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
     }
     if (failed && was_loaded)
     {
-        try { ctx.unload_device(file); } catch (...){ }
+        try { ctx.unload_device(file); }
+        catch (...) {}
     }
 }
 
@@ -99,13 +100,13 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
 // If between the frames there was an asyncronous connect/disconnect event
 // the function will pick up on this and add the device to the viewer
 void refresh_devices(std::mutex& m,
-                     context& ctx,
-                     device_changes& devices_connection_changes,
-                     std::vector<device>& current_connected_devices,
-                     std::vector<std::pair<std::string, std::string>>& device_names,
-                     std::vector<device_model>& device_models,
-                     viewer_model& viewer_model,
-                     std::string& error_message)
+    context& ctx,
+    device_changes& devices_connection_changes,
+    std::vector<device>& current_connected_devices,
+    std::vector<std::pair<std::string, std::string>>& device_names,
+    std::vector<device_model>& device_models,
+    viewer_model& viewer_model,
+    std::string& error_message)
 {
     event_information info({}, {});
     if (devices_connection_changes.try_get_next_changes(info))
@@ -116,7 +117,7 @@ void refresh_devices(std::mutex& m,
 
             //Remove disconnected
             auto dev_itr = begin(current_connected_devices);
-            while(dev_itr != end(current_connected_devices))
+            while (dev_itr != end(current_connected_devices))
             {
                 auto dev = *dev_itr;
                 if (info.was_removed(dev))
@@ -125,7 +126,7 @@ void refresh_devices(std::mutex& m,
                     viewer_model.not_model.add_notification({ get_device_name(dev).first + " Disconnected\n",
                         0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
-                    viewer_model.pc.depth_stream_active = false;
+                    viewer_model.ppf.depth_stream_active = false;
 
                     //Remove from devices
                     auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
@@ -154,7 +155,7 @@ void refresh_devices(std::mutex& m,
             {
                 auto dev_descriptor = get_device_name(dev);
                 device_names.push_back(dev_descriptor);
-                if(!initial_refresh)
+                if (!initial_refresh)
                     viewer_model.not_model.add_notification({ dev_descriptor.first + " Connected\n",
                         0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
@@ -289,7 +290,7 @@ int main(int argv, const char** argc) try
         for (auto&& dev_model : device_models)
         {
             auto connected_devs_itr = std::find_if(begin(connected_devs), end(connected_devs),
-                    [&](const device& d) { return get_device_name(d) == get_device_name(dev_model.dev); });
+                [&](const device& d) { return get_device_name(d) == get_device_name(dev_model.dev); });
 
             if (connected_devs_itr != end(connected_devs) || dev_model.dev.is<playback>())
                 new_devices_count--;
@@ -347,13 +348,13 @@ int main(int argv, const char** argc) try
 
             if (ImGui::Selectable("Load Recorded Sequence", false, ImGuiSelectableFlags_SpanAllColumns))
             {
-                if (auto ret = file_dialog_open(open_file,"ROS-bag\0*.bag\0", NULL, NULL))
+                if (auto ret = file_dialog_open(open_file, "ROS-bag\0*.bag\0", NULL, NULL))
                 {
                     add_playback_device(ctx, device_models, error_message, viewer_model, ret);
                 }
             }
             ImGui::NextColumn();
-            ImGui::Text("%s","");
+            ImGui::Text("%s", "");
             ImGui::NextColumn();
 
             ImGui::PopStyleColor();
@@ -389,17 +390,16 @@ int main(int argv, const char** argc) try
 
         if (device_models.size() > 0)
         {
-            std::map<subdevice_model*, float> model_to_y;
-            std::map<subdevice_model*, float> model_to_abs_y;
+            std::vector<std::function<void()>> draw_later;
             auto windows_width = ImGui::GetContentRegionMax().x;
 
             for (auto&& dev_model : device_models)
             {
                 dev_model.draw_controls(viewer_model.panel_width, viewer_model.panel_y,
-                    window.get_font(), window.get_large_font(), window.get_mouse(),
+                    window,
                     error_message, device_to_remove, viewer_model, windows_width,
                     update_read_only_options,
-                    model_to_y, model_to_abs_y);
+                    draw_later);
             }
 
             if (device_to_remove)
@@ -425,117 +425,19 @@ int main(int argv, const char** argc) try
                 ImGui::GetWindowDrawList()->AddRectFilled(bb.GetTL(), bb.GetBR(), ImColor(dark_window_background));
             }
 
-            for (auto&& dev_model : device_models)
+            for (auto&& lambda : draw_later)
             {
-                bool stop_recording = false;
-                for (auto&& sub : dev_model.subdevices)
+                try
                 {
-                    try
-                    {
-                        ImGui::SetCursorPos({ windows_width - 35, model_to_y[sub.get()] + 3 });
-                        ImGui::PushFont(window.get_font());
-
-                        ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
-                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
-                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
-
-                        if (!sub->streaming)
-                        {
-                            label = to_string() << u8"  \uf204\noff   ##" << dev_model.id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
-
-                            ImGui::PushStyleColor(ImGuiCol_Text, redish);
-                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-
-                            if (sub->is_selected_combination_supported())
-                            {
-                                if (ImGui::Button(label.c_str(), { 30,30 }))
-                                {
-                                    auto profiles = sub->get_selected_profiles();
-                                    sub->play(profiles, viewer_model);
-
-                                    for (auto&& profile : profiles)
-                                    {
-                                        viewer_model.streams[profile.unique_id()].begin_stream(sub, profile);
-                                    }
-                                }
-                                if (ImGui::IsItemHovered())
-                                {
-                                    ImGui::SetTooltip("Start streaming data from this sensor");
-                                }
-                            }
-                            else
-                            {
-                                ImGui::TextDisabled(u8"  \uf204\noff   ");
-                                if (std::any_of(sub->stream_enabled.begin(), sub->stream_enabled.end(), [](std::pair<int, bool> const& s) { return s.second; }))
-                                {
-                                    if (ImGui::IsItemHovered())
-                                    {
-                                        ImGui::SetTooltip("Selected configuration (FPS, Resolution) is not supported");
-                                    }
-                                }
-                                else
-                                {
-                                    if (ImGui::IsItemHovered())
-                                    {
-                                        ImGui::SetTooltip("No stream selected");
-                                    }
-                                }
-
-                            }
-                        }
-                        else
-                        {
-                            label = to_string() << u8"  \uf205\n    on##" << dev_model.id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
-                            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-
-                            if (ImGui::Button(label.c_str(), { 30,30 }))
-                            {
-                                sub->stop();
-
-                                if (!std::any_of(dev_model.subdevices.begin(), dev_model.subdevices.end(),
-                                    [](const std::shared_ptr<subdevice_model>& sm)
-                                {
-                                    return sm->streaming;
-                                }))
-                                {
-                                    stop_recording = true;
-                                }
-                            }
-                            if (ImGui::IsItemHovered())
-                            {
-                                ImGui::SetTooltip("Stop streaming data from selected sub-device");
-                            }
-                        }
-                    }
-                    catch (const error& e)
-                    {
-                        error_message = error_to_string(e);
-                    }
-                    catch (const std::exception& e)
-                    {
-                        error_message = e.what();
-                    }
-
-                    ImGui::PopStyleColor(5);
-                    ImGui::PopFont();
+                    lambda();
                 }
-
-                if (dev_model.is_recording && stop_recording)
+                catch (const error& e)
                 {
-                    dev_model.stop_recording();
-                    for (auto&& sub : dev_model.subdevices)
-                    {
-                        //TODO: Fix case where sensor X recorded stream 0, then stopped, and then started recording stream 1 (need 2 sensors for this to happen)
-                        if (sub->is_selected_combination_supported())
-                        {
-                            auto profiles = sub->get_selected_profiles();
-                            for (auto&& profile : profiles)
-                            {
-                                viewer_model.streams[profile.unique_id()].dev = sub;
-                            }
-                        }
-                    }
+                    error_message = error_to_string(e);
+                }
+                catch (const std::exception& e)
+                {
+                    error_message = e.what();
                 }
             }
         }
@@ -552,50 +454,12 @@ int main(int argv, const char** argc) try
         ImGui::PopStyleVar();
         ImGui::PopStyleColor();
 
-        frameset f;
-        if(viewer_model.s.poll_for_frames(&f))
-            viewer_model.syncer_queue.enqueue(std::move(f));
-
-        // Fetch frames from queues
-        for (auto&& device_model : device_models)
-           for (auto&& sub : device_model.subdevices)
-            {
-                sub->queues.foreach([&](frame_queue& queue)
-                {
-                    try
-                    {
-                        frame f;
-                        if (queue.poll_for_frame(&f))
-                        {
-                           viewer_model.upload_frame(std::move(f));
-                        }
-                    }
-                    catch (const error& ex)
-                    {
-                        error_message = error_to_string(ex);
-                        sub->stop();
-                    }
-                    catch (const std::exception& ex)
-                    {
-                        error_message = ex.what();
-                        sub->stop();
-                    }
-                });
-            }
-
-        viewer_model.gc_streams();
-
-        window.begin_viewport();
-
-        viewer_model.draw_viewport(viewer_rect, window, device_models.size(), error_message);
-
-        viewer_model.not_model.draw(window.get_font(), window.width(), window.height());
-
-        viewer_model.popup_if_error(window.get_font(), error_message);
+        // Fetch and process frames from queue
+        viewer_model.handle_ready_frames(viewer_rect, window, device_models.size(), error_message);
     }
 
     // Stop calculating 3D model
-    viewer_model.pc.stop();
+    viewer_model.ppf.stop();
 
     // Stop all subdevices
     for (auto&& device_model : device_models)

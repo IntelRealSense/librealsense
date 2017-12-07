@@ -14,13 +14,21 @@
 #include <media/ros/ros_writer.h>
 #include <media/ros/ros_reader.h>
 #include "core/advanced_mode.h"
-#include "align.h"
-#include "colorizer.h"
+#include "source.h"
+#include "core/processing.h"
+#include "proc/synthetic-stream.h"
+#include "proc/align.h"
+#include "proc/colorizer.h"
+#include "proc/pointcloud.h"
+#include "proc/syncer-processing-block.h"
+#include "proc/decimation-filter.h"
+#include "proc/spatial-filter.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"
 #include "../include/librealsense2/h/rs_types.h"
 #include "pipeline.h"
 #include "environment.h"
+#include "proc/temporal-filter.h"
 
 ////////////////////////
 // API implementation //
@@ -1622,6 +1630,32 @@ rs2_processing_block* rs2_create_colorizer(rs2_error** error) BEGIN_API_CALL
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
+
+rs2_processing_block* rs2_create_decimation_filter_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::decimation_filter>();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+rs2_processing_block* rs2_create_temporal_filter_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::temporal_filter>();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+rs2_processing_block* rs2_create_spatial_filter_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::spatial_filter>();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
@@ -1650,3 +1684,32 @@ rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
     return environment::get_instance().get_time_service()->get_time();
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
+
+void rs2_log(rs2_log_severity severity, const char * message, rs2_error ** error) BEGIN_API_CALL
+{
+	VALIDATE_ENUM(severity);
+	VALIDATE_NOT_NULL(message);
+	switch (severity)
+	{
+	case RS2_LOG_SEVERITY_DEBUG:
+		LOG_DEBUG(message);
+		break;
+	case RS2_LOG_SEVERITY_INFO:
+		LOG_INFO(message);
+		break;
+	case RS2_LOG_SEVERITY_WARN:
+		LOG_WARNING(message);
+		break;
+	case RS2_LOG_SEVERITY_ERROR:
+		LOG_ERROR(message);
+		break;
+	case RS2_LOG_SEVERITY_FATAL:
+		LOG_FATAL(message);
+		break;
+	case RS2_LOG_SEVERITY_NONE:
+		break;
+	default:
+		LOG_INFO(message);
+	}
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, severity, message)

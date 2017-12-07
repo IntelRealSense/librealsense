@@ -620,17 +620,22 @@ namespace rs2
     processing_block_model::processing_block_model(subdevice_model* owner,
         const std::string& name,
         std::shared_ptr<options> block,
+        std::function<rs2::frame(rs2::frame)> invoker,
         std::string& error_message)
-        : _name(name), _block(block)
+        : _name(name), _block(block), _invoker(invoker)
     {
         subdevice_model::populate_options(options_metadata,
             owner->dev, *owner->s, &owner->options_invalidated, owner, block, error_message);
     }
 
     subdevice_model::subdevice_model(device& dev,
-                                     std::shared_ptr<sensor> s, std::string& error_message)
+        std::shared_ptr<sensor> s, std::string& error_message)
         : s(s), dev(dev), ui(), last_valid_ui(),
-          streaming(false), _pause(false), depth_colorizer(std::make_shared<rs2::colorizer>())
+        streaming(false), _pause(false),
+        depth_colorizer(std::make_shared<rs2::colorizer>()),
+        decimation_filter(),
+        spatial_filter(),
+        temporal_filter()
     {
         try
         {
@@ -655,8 +660,32 @@ namespace rs2
         if (s->is<depth_sensor>())
         {
             auto colorizer = std::make_shared<processing_block_model>(
-                this, "Depth Visualization", depth_colorizer, error_message);
-            post_processing.push_back(colorizer);
+                this, "Depth Visualization", depth_colorizer, 
+                [=](rs2::frame f) { return depth_colorizer->colorize(f); }, error_message);
+            const_effects.push_back(colorizer);
+
+            auto decimate = std::make_shared<rs2::decimation_filter>();
+            decimation_filter = std::make_shared<processing_block_model>(
+                this, "Decimation Filter", decimate,
+                [=](rs2::frame f) { return decimate->proccess(f); },
+                error_message);
+            decimation_filter->enabled = true;
+            post_processing.push_back(decimation_filter);
+
+            auto spatial = std::make_shared<rs2::spatial_filter>();
+            spatial_filter = std::make_shared<processing_block_model>(
+                this, "Spatial Filter", spatial, 
+                [=](rs2::frame f) { return spatial->proccess(f); },
+                error_message);
+            spatial_filter->enabled = true;
+            post_processing.push_back(spatial_filter);
+
+            auto temporal = std::make_shared<rs2::temporal_filter>();
+            temporal_filter = std::make_shared<processing_block_model>(
+                this, "Temporal Filter", temporal,
+                [=](rs2::frame f) { return temporal->proccess(f); }, error_message);
+            temporal_filter->enabled = true;
+            post_processing.push_back(temporal_filter);
         }
 
         populate_options(options_metadata, dev, *s, &options_invalidated, this, s, error_message);
@@ -1128,18 +1157,21 @@ namespace rs2
     void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer)
     {
         s->open(profiles);
+
         try {
-            s->start([&](frame f) {
-                auto index = f.get_profile().unique_id();
-                if (viewer.synchronization_enable)
+            s->start([&](frame f)
+            {
+                if (viewer.synchronization_enable && (viewer.is_3d_depth_source(f) || viewer.is_3d_texture_source(f)))
                 {
-                    if (index == viewer.selected_depth_source_uid || index ==  viewer.selected_tex_source_uid)
-                        viewer.s(f);
+                    viewer.s(f);
                 }
-                queues.at(index).enqueue(f);
+                else
+                {
+                    viewer.ppf.frames_queue.enqueue(f);
+                }
             });
 
-        }
+            }
 
         catch (...)
         {
@@ -1241,9 +1273,9 @@ namespace rs2
         _stream_not_alive(std::chrono::milliseconds(1500))
     {}
 
-    void stream_model::upload_frame(frame&& f)
+    texture_buffer* stream_model::upload_frame(frame&& f)
     {
-        if (dev && dev->is_paused()) return;
+        if (dev && dev->is_paused()) return nullptr;
 
         last_frame = std::chrono::high_resolution_clock::now();
 
@@ -1269,6 +1301,7 @@ namespace rs2
         }
 
         texture->upload(f);
+        return texture.get();
     }
 
     void outline_rect(const rect& r)
@@ -1344,7 +1377,7 @@ namespace rs2
     void stream_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p)
     {
         dev = d;
-        profile = p;
+        original_profile = p;
         profile = p;
         texture->colorize = d->depth_colorizer;
 
@@ -1547,9 +1580,9 @@ namespace rs2
             {
                 if (selected_depth_source_uid == -1)
                 {
-                    selected_depth_source_uid = s.second.profile.unique_id();
+                    selected_depth_source_uid = streams_origin[s.second.profile.unique_id()];
                 }
-                if (s.second.profile.unique_id() == selected_depth_source_uid)
+                if (streams_origin[s.second.profile.unique_id()] == selected_depth_source_uid)
                 {
                     selected_depth_source = i;
                 }
@@ -1582,7 +1615,7 @@ namespace rs2
                 {
                     if (i == selected_depth_source)
                     {
-                        selected_depth_source_uid = s.second.profile.unique_id();
+                        selected_depth_source_uid =  streams_origin[s.second.profile.unique_id()];
                     }
                     i++;
                 }
@@ -1599,14 +1632,13 @@ namespace rs2
         for (auto&& s : streams)
         {
             if (s.second.is_stream_visible() &&
-                s.second.texture->get_last_frame() &&
-                s.second.profile.stream_type() != RS2_STREAM_DEPTH)
+                s.second.texture->get_last_frame())
             {
                 if (selected_tex_source_uid == -1)
                 {
-                    selected_tex_source_uid = s.second.profile.unique_id();
+                    selected_tex_source_uid = streams_origin[s.second.profile.unique_id()];
                 }
-                if (s.second.profile.unique_id() == selected_tex_source_uid)
+                if (streams_origin[s.second.profile.unique_id()] == selected_tex_source_uid)
                 {
                     selected_tex_source = i;
                 }
@@ -1623,8 +1655,9 @@ namespace rs2
             }
         }
 
+        if (!allow_3d_source_change) ImGui::SetCursorPos({ 7, 7 });
         // Only allow to change texture if we have something to put it on:
-        if (tex_sources_str.size() > 0 && depth_sources_str.size() > 0 && allow_3d_source_change)
+        if (tex_sources_str.size() > 0 && depth_sources_str.size() > 0)
         {
             ImGui::SetCursorPosY(7);
             ImGui::Text("Texture Source:"); ImGui::SameLine();
@@ -1637,12 +1670,12 @@ namespace rs2
             for (auto&& s : streams)
             {
                 if (s.second.is_stream_visible() &&
-                    s.second.texture->get_last_frame() &&
-                    s.second.profile.stream_type() != RS2_STREAM_DEPTH)
+                    s.second.texture->get_last_frame())
                 {
                     if (i == selected_tex_source)
                     {
-                        selected_tex_source_uid = s.second.profile.unique_id();
+                        selected_tex_source_uid = streams_origin[s.second.profile.unique_id()];
+                        texture.colorize = s.second.texture->colorize;
                     }
                     i++;
                 }
@@ -1720,13 +1753,13 @@ namespace rs2
         {
             if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
             {
-                auto model = pc.get_points();
+                auto model = ppf.get_points();
 
                 frame tex;
                 if (selected_tex_source_uid >= 0)
                 {
-                    tex = streams[selected_tex_source_uid].texture->get_last_frame();
-                    if (tex) pc.update_texture(tex);
+                    tex = streams[selected_tex_source_uid].texture->get_last_frame(true);
+                    if (tex) ppf.update_texture(tex);
                 }
 
                 std::string fname(ret);
@@ -1748,13 +1781,13 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if(support_non_syncronized_mode)
+        if (support_non_syncronized_mode)
         {
             if (synchronization_enable)
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-                if (ImGui::Button(u8"\uf09c", { 24, top_bar_height }))
+                if (ImGui::Button(u8"\uf023", { 24, top_bar_height }))
                 {
                     synchronization_enable = false;
                 }
@@ -1764,7 +1797,7 @@ namespace rs2
             }
             else
             {
-                if (ImGui::Button(u8"\uf023", { 24, top_bar_height }))
+                if (ImGui::Button(u8"\uf09c", { 24, top_bar_height }))
                 {
                     synchronization_enable = true;
                 }
@@ -1828,14 +1861,18 @@ namespace rs2
             if (!kvp.second.is_stream_visible() &&
                 (!kvp.second.dev || (!kvp.second.dev->is_paused() && !kvp.second.dev->streaming)))
             {
-                if(kvp.first == selected_depth_source_uid)
+                if (kvp.first == selected_depth_source_uid)
                 {
-                    pc.depth_stream_active = false;
+                    ppf.depth_stream_active = false;
                 }
                 streams_to_remove.push_back(kvp.first);
             }
         }
         for (auto&& i : streams_to_remove) {
+            if(selected_depth_source_uid == i)
+                selected_depth_source_uid = -1;
+            if(selected_tex_source_uid == i)
+                selected_tex_source_uid = -1;
             streams.erase(i);
         }
     }
@@ -1953,7 +1990,7 @@ namespace rs2
                 std::string filename = ret;
                 if (!ends_with(to_lower(filename), ".png")) filename += ".png";
 
-                auto frame = texture->get_last_frame().as<video_frame>();
+                auto frame = texture->get_last_frame(true).as<video_frame>();
                 if (frame)
                 {
                     save_to_png(filename.data(), frame.get_width(), frame.get_height(), frame.get_bytes_per_pixel(), frame.get_data(), frame.get_width() * frame.get_bytes_per_pixel());
@@ -2626,95 +2663,111 @@ namespace rs2
         show_icon(font_18, "recording_icon", u8"\uf111", x, y, id, from_rgba(255, 46, 54, alpha_delta * 255));
     }
 
-    void async_pointclound_mapper::proccess(rs2::frame f, const rs2::frame_source& source)
+    rs2::frame post_processing_filters::apply_filters(rs2::frame f)
     {
 
-        points p;
-        std::vector<frame> results;
-
-
-        if(viewer.synchronization_enable)
+        if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
         {
-            if (auto composite = f.as<rs2::frameset>())
+            for (auto&& s : viewer.streams)
             {
-                for(auto&& f: composite)
-                {
-                    if(f.get_profile().unique_id() == viewer.selected_depth_source_uid)
-                    {
-                        p = pc.calculate(f);
-                        results.push_back(std::move(p));
+                if(!s.second.dev) continue;
+                auto dev = s.second.dev;
 
-                    }
-                    if(f.get_profile().unique_id() == viewer.selected_tex_source_uid)
+                if(s.second.original_profile.unique_id() == f.get_profile().unique_id())
+                {
+                    if (dev->post_processing_enabled)
                     {
-                        update_texture(f);
-                        results.push_back(std::move(f));
+                        auto dec_filter = s.second.dev->decimation_filter;
+                        auto spatial_filter = s.second.dev->spatial_filter;
+                        auto temp_filter = s.second.dev->temporal_filter;
+
+                        if (dec_filter->enabled)
+                            f = dec_filter->invoke(f);
+
+                        if (spatial_filter->enabled)
+                            f = spatial_filter->invoke(f);
+
+                        if (temp_filter->enabled)
+                            f = temp_filter->invoke(f);
+
+                        return f;
                     }
                 }
             }
+        }
+        return f;
+    }
 
+    std::vector<rs2::frame> post_processing_filters::handle_frame(rs2::frame f)
+    {
+        std::vector<rs2::frame> res;
+        auto filtered = apply_filters(f);
+        res.push_back(filtered);
 
-            auto res = source.allocate_composite_frame(results);
-            source.frame_ready(std::move(res));
+        auto uid = f.get_profile().unique_id();
+        auto new_uid = filtered.get_profile().unique_id();
+        viewer.streams_origin[new_uid] = uid;
 
+        if(viewer.is_3d_view)
+        {
+            if(viewer.is_3d_depth_source(f))
+            {
+                res.push_back(pc.calculate(filtered));
+            }
+            if(viewer.is_3d_texture_source(f))
+            {
+                update_texture(filtered);
+            }
+        }
+
+        return res;
+    }
+
+    void post_processing_filters::proccess(rs2::frame f, const rs2::frame_source& source)
+    {
+        points p;
+        std::vector<frame> results;
+        frame res;
+
+        if (auto composite = f.as<rs2::frameset>())
+        {
+            for (auto&& f : composite)
+            {
+                auto res = handle_frame(f);
+                results.insert(results.end(), res.begin(), res.end());
+            }
 
         }
         else
         {
-            if(f.get_profile().unique_id() == viewer.selected_depth_source_uid)
-            {
-
-                if(last_tex_frame)
-                    results.push_back(last_tex_frame);
-                p = pc.calculate(f);
-                results.push_back(std::move(p));
-
-                auto res = source.allocate_composite_frame(results);
-                source.frame_ready(std::move(res));
-            }
-
+             auto res = handle_frame(f);
+             results.insert(results.end(), res.begin(), res.end());
         }
+
+        res = source.allocate_composite_frame(results);
+        source.frame_ready(std::move(res));
     }
 
-    void async_pointclound_mapper::render_loop()
-    {
-        while (keep_calculating_pointcloud)
-        {
-            if(depth_stream_active)
-            {
-                try
-                {
-                    if(viewer.synchronization_enable)
-                    {
-                        frameset frames;
-                        if (viewer.syncer_queue.poll_for_frame(&frames))
-                        {
-                            processing_block.invoke(frames);
-                        }
-                    }
-                    else
-                    {
-                        std::lock_guard<std::mutex> lock(viewer.streams_mutex);
-                        for (auto&& s : viewer.streams)
-                        {
-                            if(s.first == viewer.selected_tex_source_uid)
-                            {
-                                update_texture(s.second.texture->get_last_frame());
-                                last_tex_frame = s.second.texture->get_last_frame();
-                            }
-                            if(s.first == viewer.selected_depth_source_uid)
-                            {
-                                processing_block.invoke(s.second.texture->get_last_frame());
-                            }
-                        }
-                    }
-                }
-                catch (...) {}
-            }
 
-            // There is no practical reason to re-calculate the 3D model
-            // at higher frequency then 100 FPS
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    void post_processing_filters::render_loop()
+    {
+        while (keep_calculating)
+        {
+
+            try
+            {
+                frame frm;
+                if (frames_queue.poll_for_frame(&frm))
+                {
+                    processing_block.invoke(frm);
+                }
+                else
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                }
+            }
+            catch (...) {}
+
         }
     }
 
@@ -2850,6 +2903,68 @@ namespace rs2
         return get_interpolated_layout(results);
     }
 
+    rs2::frame viewer_model::handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message)
+    {
+        texture_buffer* texture_frame = nullptr;
+        points p;
+        frame f{}, res{};
+        try
+        {
+            if (ppf.resulting_queue.poll_for_frame(&f))
+            {
+                frameset frames;
+                p = f.as<points>();
+
+                if (frames = f.as<frameset>())
+                {
+                    for (auto&& frame : frames)
+                    {
+                        if(!p)
+                        {
+                            if(p = frame.as<points>())  // find and store the 3d points frame for later use
+                            {
+                                continue;
+                            }
+                        }
+                        if (frame.is<depth_frame>() && !paused)
+                            res = frame;
+
+                        auto texture = upload_frame(std::move(frame));
+
+                        if ((selected_tex_source_uid == -1 && frame.get_profile().format() == RS2_FORMAT_Z16) || frame.get_profile().format()!= RS2_FORMAT_ANY && is_3d_texture_source(frame))
+                        {
+                            texture_frame = texture;
+                        }
+                    }
+                }
+                else if(!p)
+                {
+                   upload_frame(std::move(f));
+                }
+            }
+        }
+        catch (const error& ex)
+        {
+            error_message = error_to_string(ex);
+        }
+        catch (const std::exception& ex)
+        {
+            error_message = ex.what();
+        }
+
+        gc_streams();
+
+        window.begin_viewport();
+
+        draw_viewport(viewer_rect, window, devices, error_message, texture_frame, p);
+
+        not_model.draw(window.get_font(), window.width(), window.height());
+
+        popup_if_error(window.get_font(), error_message);
+
+        return res;
+    }
+
     void viewer_model::reset_camera(float3 p)
     {
         target = { 0.0f, 0.0f, 0.0f };
@@ -2891,7 +3006,7 @@ namespace rs2
         float alpha = icon_visible ? 1.f : 0.2f;
 
         glViewport(0, 0,
-                   win.framebuf_width(), win.framebuf_height());
+            win.framebuf_width(), win.framebuf_height());
         glLoadIdentity();
         glOrtho(0, win.width(), win.height(), 0, -1, +1);
 
@@ -2952,10 +3067,21 @@ namespace rs2
         }
     }
 
-    void viewer_model::render_3d_view(const rect& viewer_rect, float scale_factor)
+    void viewer_model::render_3d_view(const rect& viewer_rect, texture_buffer* texture, rs2::points points)
     {
-        glViewport(viewer_rect.x * scale_factor, 0,
-            viewer_rect.w * scale_factor, viewer_rect.h * scale_factor);
+        if(!paused)
+        {
+            if(points)
+            {
+                last_points = points;
+            }
+            if(texture)
+            {
+                last_texture = texture;
+            }
+        }
+        glViewport(viewer_rect.x, 0,
+            viewer_rect.w, viewer_rect.h);
 
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -3017,93 +3143,78 @@ namespace rs2
         glColor4f(1.f, 1.f, 1.f, 1.f);
 
 
-        if(!paused)
-        {
-            auto res = pc.get_points();
-
-            for (auto&& f : res)
-            {
-                if (f.is<rs2::points>())
-                    last_points = f;
-                else
-                    last_texture = f;
-            }
-
-        }
         if (draw_frustrum && last_points)
         {
-                glLineWidth(1.f);
-                glBegin(GL_LINES);
+            glLineWidth(1.f);
+            glBegin(GL_LINES);
 
-                auto intrin = last_points.get_profile().as<video_stream_profile>().get_intrinsics();
+            auto intrin = last_points.get_profile().as<video_stream_profile>().get_intrinsics();
 
-                glColor4f(sensor_bg.x, sensor_bg.y, sensor_bg.z, 0.5f);
+            glColor4f(sensor_bg.x, sensor_bg.y, sensor_bg.z, 0.5f);
 
-                for (float d = 1; d < 6; d += 2)
-                {
-                    auto get_point = [&](float x, float y) -> float3
-                    {
-                        float point[3];
-                        float pixel[2]{ x, y };
-                        rs2_deproject_pixel_to_point(point, &intrin, pixel, d);
-                        glVertex3f(0.f, 0.f, 0.f);
-                        glVertex3fv(point);
-                        return{ point[0], point[1], point[2] };
-                    };
-
-                    auto top_left = get_point(0, 0);
-                    auto top_right = get_point(intrin.width, 0);
-                    auto bottom_right = get_point(intrin.width, intrin.height);
-                    auto bottom_left = get_point(0, intrin.height);
-
-                    glVertex3fv(&top_left.x); glVertex3fv(&top_right.x);
-                    glVertex3fv(&top_right.x); glVertex3fv(&bottom_right.x);
-                    glVertex3fv(&bottom_right.x); glVertex3fv(&bottom_left.x);
-                    glVertex3fv(&bottom_left.x); glVertex3fv(&top_left.x);
-                }
-
-                glEnd();
-
-                glColor4f(1.f, 1.f, 1.f, 1.f);
-            }
-
-            if ( last_points && last_texture)
+            for (float d = 1; d < 6; d += 2)
             {
-                texture.upload(last_texture);
-
-                glPointSize((float)viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width());
-
-                if (selected_tex_source_uid >= 0)
+                auto get_point = [&](float x, float y) -> float3
                 {
-                    auto tex = texture.get_gl_handle();
-                    glBindTexture(GL_TEXTURE_2D, tex);
-                    glEnable(GL_TEXTURE_2D);
+                    float point[3];
+                    float pixel[2]{ x, y };
+                    rs2_deproject_pixel_to_point(point, &intrin, pixel, d);
+                    glVertex3f(0.f, 0.f, 0.f);
+                    glVertex3fv(point);
+                    return{ point[0], point[1], point[2] };
+                };
 
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
-                }
+                auto top_left = get_point(0, 0);
+                auto top_right = get_point(intrin.width, 0);
+                auto bottom_right = get_point(intrin.width, intrin.height);
+                auto bottom_left = get_point(0, intrin.height);
 
-                //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
-
-
-                    glBegin(GL_POINTS);
-
-                    auto vertices = last_points.get_vertices();
-                    auto tex_coords = last_points.get_texture_coordinates();
-
-                    for (int i = 0; i < last_points.size(); i++)
-                    {
-                        if (vertices[i].z)
-                        {
-                            glVertex3fv(vertices[i]);
-                            glTexCoord2fv(tex_coords[i]);
-                        }
-
-                    }
-                    glEnd();
-
+                glVertex3fv(&top_left.x); glVertex3fv(&top_right.x);
+                glVertex3fv(&top_right.x); glVertex3fv(&bottom_right.x);
+                glVertex3fv(&bottom_right.x); glVertex3fv(&bottom_left.x);
+                glVertex3fv(&bottom_left.x); glVertex3fv(&top_left.x);
             }
 
+            glEnd();
+
+            glColor4f(1.f, 1.f, 1.f, 1.f);
+        }
+
+        if (last_points)
+        {
+            // Non-linear correspondence customized for non-flat surface exploration
+            glPointSize(std::sqrt(viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width()));
+
+            if (selected_tex_source_uid >= 0)
+            {
+                auto tex = last_texture->get_gl_handle();
+                glBindTexture(GL_TEXTURE_2D, tex);
+                glEnable(GL_TEXTURE_2D);
+
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
+            }
+
+            //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+
+            glBegin(GL_POINTS);
+
+            auto vertices = last_points.get_vertices();
+            auto tex_coords = last_points.get_texture_coordinates();
+
+            for (int i = 0; i < last_points.size(); i++)
+            {
+                if (vertices[i].z)
+                {
+                    glVertex3fv(vertices[i]);
+                    glTexCoord2fv(tex_coords[i]);
+                }
+
+            }
+            glEnd();
+
+
+        }
 
         glDisable(GL_DEPTH_TEST);
 
@@ -3219,13 +3330,34 @@ namespace rs2
         mouse.prev_cursor = mouse.cursor;
     }
 
-    void viewer_model::upload_frame(frame&& f)
+    bool viewer_model::is_3d_texture_source(frame f)
     {
-        if(f.get_profile().stream_type() == RS2_STREAM_DEPTH)
-            pc.depth_stream_active = true;
+        auto index = f.get_profile().unique_id();
+        auto mapped_index = streams_origin[index];
+
+        if(index == selected_tex_source_uid || mapped_index  == selected_tex_source_uid)
+            return true;
+        return false;
+    }
+
+    bool viewer_model::is_3d_depth_source(frame f)
+    {
+        auto index = f.get_profile().unique_id();
+        auto mapped_index = streams_origin[index];
+
+        if(index == selected_depth_source_uid || mapped_index  == selected_depth_source_uid)
+            return true;
+        return false;
+    }
+
+    texture_buffer* viewer_model::upload_frame(frame&& f)
+    {
+        if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+            ppf.depth_stream_active = true;
 
         auto index = f.get_profile().unique_id();
-        streams[index].upload_frame(std::move(f));
+
+        return streams[streams_origin[index]].upload_frame(std::move(f));
     }
 
     void device_model::start_recording(const std::string& path, std::string& error_message)
@@ -3721,19 +3853,17 @@ namespace rs2
     }
 
     void device_model::draw_controls(float panel_width, float panel_height,
-        ImFont *font1, ImFont *font2,
-        const mouse_info &mouse,
+        ux_window& window,
         std::string& error_message,
         device_model*& device_to_remove,
         viewer_model& viewer, float windows_width,
         bool update_read_only_options,
-        std::map<subdevice_model*, float>& model_to_y,
-        std::map<subdevice_model*, float>& model_to_abs_y)
+        std::vector<std::function<void()>>& draw_later)
     {
         auto header_h = panel_height;
         if (dev.is<playback>()) header_h += 15;
 
-        ImGui::PushFont(font1);
+        ImGui::PushFont(window.get_font());
         auto pos = ImGui::GetCursorScreenPos();
         ImGui::GetWindowDrawList()->AddRectFilled(pos, { pos.x + panel_width, pos.y + header_h }, ImColor(sensor_header_light_blue));
         ImGui::GetWindowDrawList()->AddLine({ pos.x,pos.y }, { pos.x + panel_width,pos.y }, ImColor(black));
@@ -3779,7 +3909,7 @@ namespace rs2
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
 
-        ImGui::PushFont(font2);
+        ImGui::PushFont(window.get_large_font());
         label = to_string() << "device_menu" << id;
         std::string settings_button_name = to_string() << u8"\uf0c9##" << id;
 
@@ -3787,7 +3917,7 @@ namespace rs2
             ImGui::OpenPopup(label.c_str());
         ImGui::PopFont();
 
-        ImGui::PushFont(font1);
+        ImGui::PushFont(window.get_font());
 
         if (ImGui::BeginPopup(label.c_str()))
         {
@@ -3923,7 +4053,7 @@ namespace rs2
 
             auto playback_panel_pos = ImVec2{ 0, pos.y + panel_height + 18 };
             ImGui::SetCursorPos(playback_panel_pos);
-            playback_panel_pos.y = draw_playback_panel(font1, viewer);
+            playback_panel_pos.y = draw_playback_panel(window.get_font(), viewer);
             playback_control_panel_height += (int)playback_panel_pos.y;
         }
 
@@ -3970,11 +4100,11 @@ namespace rs2
         ImGui::PopFont();
 
         auto sensor_top_y = ImGui::GetCursorPosY();
-        if (!show_depth_only) ImGui::SetContentRegionWidth(windows_width - 36);
+        ImGui::SetContentRegionWidth(windows_width - 36);
 
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
-        ImGui::PushFont(font1);
+        ImGui::PushFont(window.get_font());
 
         // Draw menu foreach subdevice with its properties
         for (auto&& sub : subdevices)
@@ -3983,8 +4113,113 @@ namespace rs2
 
             const ImVec2 pos = ImGui::GetCursorPos();
             const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
-            model_to_y[sub.get()] = pos.y;
-            model_to_abs_y[sub.get()] = abs_pos.y;
+            //model_to_y[sub.get()] = pos.y;
+            //model_to_abs_y[sub.get()] = abs_pos.y;
+
+            if (!show_depth_only)
+            {
+                draw_later.push_back([windows_width, &window, sub, pos, &viewer, this]()
+                {
+                    bool stop_recording = false;
+
+                    ImGui::SetCursorPos({ windows_width - 35, pos.y + 3 });
+                    ImGui::PushFont(window.get_font());
+
+                    ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
+
+                    if (!sub->streaming)
+                    {
+                        std::string label = to_string() << u8"  \uf204\noff   ##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
+
+                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+
+                        if (sub->is_selected_combination_supported())
+                        {
+                            if (ImGui::Button(label.c_str(), { 30,30 }))
+                            {
+                                auto profiles = sub->get_selected_profiles();
+                                sub->play(profiles, viewer);
+
+                                for (auto&& profile : profiles)
+                                {
+                                    viewer.streams[profile.unique_id()].begin_stream(sub, profile);
+                                }
+                            }
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Start streaming data from this sensor");
+                            }
+                        }
+                        else
+                        {
+                            ImGui::TextDisabled(u8"  \uf204\noff   ");
+                            if (std::any_of(sub->stream_enabled.begin(), sub->stream_enabled.end(), [](std::pair<int, bool> const& s) { return s.second; }))
+                            {
+                                if (ImGui::IsItemHovered())
+                                {
+                                    ImGui::SetTooltip("Selected configuration (FPS, Resolution) is not supported");
+                                }
+                            }
+                            else
+                            {
+                                if (ImGui::IsItemHovered())
+                                {
+                                    ImGui::SetTooltip("No stream selected");
+                                }
+                            }
+
+                        }
+                    }
+                    else
+                    {
+                        std::string label = to_string() << u8"  \uf205\n    on##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
+                        ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+
+                        if (ImGui::Button(label.c_str(), { 30,30 }))
+                        {
+                            sub->stop();
+
+                            if (!std::any_of(subdevices.begin(), subdevices.end(),
+                                [](const std::shared_ptr<subdevice_model>& sm)
+                            {
+                                return sm->streaming;
+                            }))
+                            {
+                                stop_recording = true;
+                            }
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Stop streaming data from selected sub-device");
+                        }
+                    }
+
+                    ImGui::PopStyleColor(5);
+                    ImGui::PopFont();
+
+                    if (is_recording && stop_recording)
+                    {
+                        this->stop_recording();
+                        for (auto&& sub : subdevices)
+                        {
+                            //TODO: Fix case where sensor X recorded stream 0, then stopped, and then started recording stream 1 (need 2 sensors for this to happen)
+                            if (sub->is_selected_combination_supported())
+                            {
+                                auto profiles = sub->get_selected_profiles();
+                                for (auto&& profile : profiles)
+                                {
+                                    viewer.streams[profile.unique_id()].dev = sub;
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
             ImGui::GetWindowDrawList()->AddLine({ abs_pos.x, abs_pos.y - 1 },
             { abs_pos.x + panel_width, abs_pos.y - 1 },
                 ImColor(black), 1.f);
@@ -4038,11 +4273,13 @@ namespace rs2
                 if (dev.is<advanced_mode>() && sub->s->is<depth_sensor>())
                     draw_advanced_mode_tab();
 
-                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+                
 
-                for (auto&& pb : sub->post_processing)
+                for (auto&& pb : sub->const_effects)
                 {
-                    label = to_string() << pb->get_name() << "##" << id;;
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+                    label = to_string() << pb->get_name() << "##" << id;
                     if (ImGui::TreeNode(label.c_str()))
                     {
                         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
@@ -4057,7 +4294,173 @@ namespace rs2
                     }
                 }
 
-                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+                if (sub->post_processing.size() > 0)
+                {
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+                    const ImVec2 pos = ImGui::GetCursorPos();
+                    const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
+
+                    draw_later.push_back([windows_width, &window, sub, pos, &viewer, this]() {
+                        if (sub->streaming) ImGui::SetCursorPos({ windows_width - 35, pos.y - 1 });
+                        else ImGui::SetCursorPos({ windows_width - 27, pos.y + 2 });
+                        ImGui::PushFont(window.get_font());
+
+                        ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
+
+                        if (!sub->streaming)
+                        {
+                            if (!sub->post_processing_enabled)
+                            {
+                                std::string label = to_string() << u8"\uf204";
+
+                                ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+                                ImGui::TextDisabled(label.c_str());
+                            }
+                            else
+                            {
+                                std::string label = to_string() << u8"\uf205";
+                                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+                                ImGui::TextDisabled(label.c_str());
+                            }
+                        }
+                        else
+                        {
+                            if (!sub->post_processing_enabled)
+                            {
+                                std::string label = to_string() << u8" \uf204##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << ",post";
+
+                                ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+
+                                if (ImGui::Button(label.c_str(), { 30,24 }))
+                                {
+                                    sub->post_processing_enabled = true;
+                                }
+                                if (ImGui::IsItemHovered())
+                                {
+                                    ImGui::SetTooltip("Enable post-processing filters");
+                                }
+                            }
+                            else
+                            {
+                                std::string label = to_string() << u8" \uf205##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << ",post";
+                                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+
+                                if (ImGui::Button(label.c_str(), { 30,24 }))
+                                {
+                                    sub->post_processing_enabled = false;
+                                }
+                                if (ImGui::IsItemHovered())
+                                {
+                                    ImGui::SetTooltip("Disable post-processing filters");
+                                }
+                            }
+                        }
+
+                        ImGui::PopStyleColor(5);
+                        ImGui::PopFont();
+                    });
+
+                    label = to_string() << "Post-Processing##" << id;
+                    if (ImGui::TreeNode(label.c_str()))
+                    {
+                        for (auto&& pb : sub->post_processing)
+                        {
+                            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+                            const ImVec2 pos = ImGui::GetCursorPos();
+                            const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
+
+                            draw_later.push_back([windows_width, &window, sub, pos, &viewer, this, pb]() {
+                                if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 27, pos.y + 3 });
+                                else ImGui::SetCursorPos({ windows_width - 35, pos.y - 1 });
+                                ImGui::PushFont(window.get_font());
+
+                                ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+                                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+                                ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
+
+                                if (!sub->streaming || !sub->post_processing_enabled)
+                                {
+                                    if (!pb->enabled)
+                                    {
+                                        std::string label = to_string() << u8"\uf204";
+
+                                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+                                        ImGui::TextDisabled(label.c_str());
+                                    }
+                                    else
+                                    {
+                                        std::string label = to_string() << u8"\uf205";
+                                        ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+                                        ImGui::TextDisabled(label.c_str());
+                                    }
+                                }
+                                else
+                                {
+                                    if (!pb->enabled)
+                                    {
+                                        std::string label = to_string() << u8" \uf204##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
+
+                                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+
+                                        if (ImGui::Button(label.c_str(), { 30,24 }))
+                                        {
+                                            pb->enabled = true;
+                                        }
+                                        if (ImGui::IsItemHovered())
+                                        {
+                                            label = to_string() << "Enable " << pb->get_name() << " post-processing filter";
+                                            ImGui::SetTooltip(label.c_str());
+                                        }
+                                    }
+                                    else
+                                    {
+                                        std::string label = to_string() << u8" \uf205##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
+                                        ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+
+                                        if (ImGui::Button(label.c_str(), { 30,24 }))
+                                        {
+                                            pb->enabled = false;
+                                        }
+                                        if (ImGui::IsItemHovered())
+                                        {
+                                            label = to_string() << "Disable " << pb->get_name() << " post-processing filter";
+                                            ImGui::SetTooltip(label.c_str());
+                                        }
+                                    }
+                                }
+
+                                ImGui::PopStyleColor(5);
+                                ImGui::PopFont();
+                            });
+
+                            label = to_string() << pb->get_name() << "##" << id;
+                            if (ImGui::TreeNode(label.c_str()))
+                            {
+                                for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+                                {
+                                    auto opt = static_cast<rs2_option>(i);
+                                    pb->get_option(opt).draw_option(
+                                        dev.is<playback>() || update_read_only_options,
+                                        false, error_message, viewer.not_model);
+                                }
+
+                                ImGui::TreePop();
+                            }
+                        }
+                        ImGui::TreePop();
+                    }
+                }
 
                 ImGui::TreePop();
             }
@@ -4065,6 +4468,8 @@ namespace rs2
             ImGui::PopStyleVar();
             ImGui::PopStyleVar();
             ImGui::PopStyleColor();
+
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2);
         }
 
         for (auto&& sub : subdevices)
@@ -4076,7 +4481,7 @@ namespace rs2
         ImGui::PopFont();
     }
 
-    void viewer_model::draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message)
+    void viewer_model::draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message, texture_buffer* texture, points points)
     {
         if (!is_3d_view)
         {
@@ -4093,8 +4498,11 @@ namespace rs2
 
             update_3d_camera(viewer_rect, window.get_mouse());
 
-            auto ratio = (float)window.width() / window.framebuf_width();
-            render_3d_view(viewer_rect, window.get_scale_factor() / ratio);
+            rect window_size{ 0, 0, (float)window.width(), (float)window.height() };
+            rect fb_size{ 0, 0, (float)window.framebuf_width(), (float)window.framebuf_height() };
+            rect new_rect = viewer_rect.normalize(window_size).unnormalize(fb_size);
+
+            render_3d_view(new_rect, texture, points);
         }
 
         if (ImGui::IsKeyPressed(' '))

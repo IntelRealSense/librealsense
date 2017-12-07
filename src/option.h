@@ -61,27 +61,66 @@ namespace librealsense
         std::string _desc;
     };
 
+    class option_base : public option
+    {
+    public:
+        option_base(const option_range& opt_range)
+            : _opt_range(opt_range)
+        {}
+
+        bool is_valid(float value) const
+        {
+            if (!std::isnormal(_opt_range.step))
+                throw invalid_value_exception(to_string() << "is_valid(...) failed! step is not properly defined. (" << _opt_range.step << ")");
+
+            if ((value < _opt_range.min) || (value > _opt_range.max))
+                return false;
+
+            auto n = (value - _opt_range.min)/_opt_range.step;
+            return (fabs(fmod(n, 1)) < std::numeric_limits<float>::min());
+        }
+
+        option_range get_range() const override
+        {
+            return _opt_range;
+        }
+        virtual void enable_recording(std::function<void(const option&)> recording_action) override
+        {
+            _recording_function = recording_action;
+        }
+     protected:
+        const option_range _opt_range;
+        std::function<void(const option&)> _recording_function = [](const option&) {};
+
+    };
+
     template<class T>
-    class ptr_option : public option
+    class ptr_option : public option_base
     {
     public:
         ptr_option(T min, T max, T step, T def, T* value, const std::string& desc)
-            : _min(min), _max(max), _step(step), _def(def), _value(value), _desc(desc)
+            : option_base({ static_cast<float>(min),
+                            static_cast<float>(max),
+                            static_cast<float>(step),
+                            static_cast<float>(def), }),
+            _min(min), _max(max), _step(step), _def(def), _value(value), _desc(desc)
         {
+            static_assert((std::is_arithmetic<T>::value),  "ptr_option class supports arithmetic built-in types only");
             _on_set = [](float x) {};
         }
 
         void set(float value) override
-        { 
-            if (_max < value || _min > value)
-                throw invalid_value_exception("Given value is outside valid range!");
-            *_value = value;
+        {
+            T val = static_cast<T>(value);
+            if ((_max < val) || (_min > val))
+                throw invalid_value_exception(to_string() << "Given value " << value << "is outside valid range!");
+            *_value = val;
             _on_set(value);
         }
 
         float query() const override
         {
-            return *_value;
+            return static_cast<float>(*_value);
         }
 
         option_range get_range() const override {
@@ -425,38 +464,5 @@ namespace librealsense
        std::vector<float>      _move_to_manual_values;
        float                   _manual_value;
        std::function<void(const option&)> _recording_function = [](const option&) {};
-   };
-
-   class option_base : public option
-   {
-   public:
-       option_base(const option_range& opt_range)
-           : _opt_range(opt_range)
-       {}
-
-       bool is_valid(float value) const
-       {
-           if (!std::isnormal(_opt_range.step))
-               throw invalid_value_exception(to_string() << "is_valid(...) failed! step is not properly defined. (" << _opt_range.step << ")");
-
-           if ((value < _opt_range.min) || (value > _opt_range.max))
-               return false;
-
-           auto n = (value - _opt_range.min)/_opt_range.step;
-           return (fabs(fmod(n, 1)) < std::numeric_limits<float>::min());
-       }
-
-       option_range get_range() const override
-       {
-           return _opt_range;
-       }
-       virtual void enable_recording(std::function<void(const option&)> recording_action) override
-       {
-           _recording_function = recording_action;
-       }
-    protected:
-       const option_range _opt_range;
-       std::function<void(const option&)> _recording_function = [](const option&) {};
-
    };
 }

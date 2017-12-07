@@ -89,8 +89,14 @@ set(REALSENSE_CPP
     src/linux/backend-hid.cpp
     src/backend.cpp
     src/verify.c
-    src/align.cpp
-    src/colorizer.cpp
+    src/proc/align.cpp
+    src/proc/colorizer.cpp
+    src/proc/pointcloud.cpp
+    src/proc/synthetic-stream.cpp
+    src/proc/syncer-processing-block.cpp
+    src/proc/decimation-filter.cpp
+    src/proc/spatial-filter.cpp
+    src/proc/temporal-filter.cpp
     src/source.cpp
     src/ds5/ds5-options.cpp
     src/ds5/ds5-timestamp.cpp
@@ -178,8 +184,14 @@ set(REALSENSE_HPP
     src/sync.h
     src/sensor.h
     src/stream.h
-    src/align.h
-    src/colorizer.h
+    src/proc/align.h
+    src/proc/colorizer.h
+    src/proc/pointcloud.h
+    src/proc/synthetic-stream.h
+    src/proc/decimation-filter.h
+    src/proc/spatial-filter.h
+    src/proc/temporal-filter.h
+    src/proc/syncer-processing-block.h
     src/algo.h
     src/option.h
     src/metadata.h
@@ -388,11 +400,25 @@ if(WIN32)
         )
 
     source_group("Source Files\\Processing Blocks" FILES
-        src/colorizer.cpp
+        src/proc/colorizer.cpp
+        src/proc/synthetic-stream.cpp
+        src/proc/align.cpp
+        src/proc/pointcloud.cpp
+        src/proc/decimation-filter.cpp
+        src/proc/spatial-filter.cpp
+        src/proc/temporal-filter.cpp
+        src/proc/syncer-processing-block.cpp
         )
 
     source_group("Header Files\\Processing Blocks" FILES
-        src/colorizer.h
+        src/proc/colorizer.h
+        src/proc/align.h
+        src/proc/pointcloud.h
+        src/proc/synthetic-stream.h
+        src/proc/decimation-filter.h
+        src/proc/spatial-filter.h
+        src/proc/temporal-filter.h
+        src/proc/syncer-processing-block.h
         )
 
     foreach(flag_var
@@ -440,17 +466,17 @@ if(FORCE_LIBUVC)
     src/libuvc/init.c
     src/libuvc/misc.c
     src/libuvc/stream.c
-	src/libuvc/libuvc.cpp
-	)
-	
-	list(APPEND REALSENSE_HPP
+    src/libuvc/libuvc.cpp
+    )
+    
+    list(APPEND REALSENSE_HPP
     src/libuvc/libuvc.h
     src/libuvc/libuvc_internal.h
     src/libuvc/utlist.h
     src/libuvc/libuvc_config.h
-	)
-	
-	message( WARNING "Using libuvc!" )
+    )
+    
+    message( WARNING "Using libuvc!" )
 endif()
 
 if (MSVC)

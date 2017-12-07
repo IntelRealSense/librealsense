@@ -125,6 +125,25 @@ void rs2_enqueue_frame(rs2_frame* frame, void* queue);
 */
 rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error);
 
+/**
+* Creates Depth post-processing filter block. This block accepts depth frames, applies decimation filter and plots modified prames
+* Note that due to the modifiedframe size, the decimated frame repaces the original one
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_decimation_filter_block(rs2_error** error);
+
+/**
+* Creates Depth post-processing filter block. This block accepts depth frames, applies temporal filter
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_temporal_filter_block(rs2_error** error);
+
+/**
+* Creates Depth post-processing spatial filter block. This block accepts depth frames, applies spatial filters and plots modified prames
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_spatial_filter_block(rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

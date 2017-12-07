@@ -68,6 +68,9 @@ namespace rs2
         void release() override { delete this; }
     };
 
+    class pipeline;
+    class device_hub;
+
     /**
     * default librealsense context class
     * includes realsense API version as provided by RS2_API_VERSION macro
@@ -164,8 +167,8 @@ namespace rs2
         }
 
 protected:
-        friend class pipeline;
-        friend class device_hub;
+        friend class rs2::pipeline;
+        friend class rs2::device_hub;
 
         context(std::shared_ptr<rs2_context> ctx)
             : _context(ctx)
