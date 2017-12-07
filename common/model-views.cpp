@@ -1377,6 +1377,7 @@ namespace rs2
     void stream_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p)
     {
         dev = d;
+        original_profile = p;
         profile = p;
         texture->colorize = d->depth_colorizer;
 
@@ -2672,26 +2673,24 @@ namespace rs2
                 if(!s.second.dev) continue;
                 auto dev = s.second.dev;
 
-                if (dev->post_processing_enabled)
+                if(s.second.original_profile.unique_id() == f.get_profile().unique_id())
                 {
-                    for (auto&& p : dev->profiles)
+                    if (dev->post_processing_enabled)
                     {
-                        if (p.stream_type() == RS2_STREAM_DEPTH)
-                        {
-                            auto dec_filter = s.second.dev->decimation_filter;
-                            if (dec_filter->enabled)
-                                f = dec_filter->invoke(f);
+                        auto dec_filter = s.second.dev->decimation_filter;
+                        auto spatial_filter = s.second.dev->spatial_filter;
+                        auto temp_filter = s.second.dev->temporal_filter;
 
-                            auto spatial_filter = s.second.dev->spatial_filter;
-                            if (spatial_filter->enabled)
-                                f = spatial_filter->invoke(f);
+                        if (dec_filter->enabled)
+                            f = dec_filter->invoke(f);
 
-                            auto temp_filter = s.second.dev->temporal_filter;
-                            if (temp_filter->enabled)
-                                f = temp_filter->invoke(f);
+                        if (spatial_filter->enabled)
+                            f = spatial_filter->invoke(f);
 
-                            return f;
-                        }
+                        if (temp_filter->enabled)
+                            f = temp_filter->invoke(f);
+
+                        return f;
                     }
                 }
             }

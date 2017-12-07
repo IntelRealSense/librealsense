@@ -751,7 +751,7 @@ namespace rs2
 
                 for (auto&& profile : profiles)
                 {
-                    _viewer_model.streams[profile.unique_id()].dev = sub;
+                    _viewer_model.streams[profile.unique_id()].begin_stream(sub, profile);
                     _viewer_model.streams[profile.unique_id()].texture->colorize = sub->depth_colorizer;
 
                     if (profile.stream_type() == RS2_STREAM_DEPTH)
