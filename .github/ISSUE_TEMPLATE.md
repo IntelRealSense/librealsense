@@ -4,3 +4,5 @@
 | Firmware Version |   | 
 | Operating System & Version |   |
 | Kernel Version (Linux Only)  |   |
+| SDK Version | |
+
