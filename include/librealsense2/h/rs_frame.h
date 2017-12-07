@@ -274,7 +274,7 @@ void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error**
 
 
 /**
-* When called on Pose frame type, this method returns the translation represented by the pose data
+* When called on Pose frame type, this method returns the transformation represented by the pose data
 * \param[in] frame       Pose frame
 * \param[out] pose       Pointer to a user allocated struct, which contains the pose info after a successful return
 * \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored

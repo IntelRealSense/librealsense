@@ -1,41 +1,31 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #pragma once
-
-#include "context.h"
 
 #include <memory>
 #include <vector>
 
+#include "context.h"
+#include "tm-device.h"
+#include "tm-context.h"
 namespace perc
 {
-	class TrackingManager;
-	class TrackingDevice;
+    class TrackingManager;
+    class TrackingDevice;
 }
 
 namespace librealsense
 {
-	class tm2_info : public device_info
-	{
-	public:
-		std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx,
-			bool register_device_notifications) const override;
-
-		tm2_info(std::shared_ptr<perc::TrackingManager> manager,
-			     perc::TrackingDevice* dev, 
-			     std::shared_ptr<context> ctx)
-			: device_info(ctx), _dev(dev), _manager(manager) {}
-
-		static std::vector<std::shared_ptr<device_info>> pick_tm2_devices(
-			std::shared_ptr<context> ctx,
-			platform::backend_device_group& gproup);
-
-		platform::backend_device_group get_device_data() const override
-		{
-			return platform::backend_device_group({}, {}, {});
-		}
-	private:
-		std::shared_ptr<perc::TrackingManager> _manager;
-		perc::TrackingDevice* _dev;
-	};
+    class tm2_info : public device_info
+    {
+    public:
+        tm2_info(std::shared_ptr<perc::TrackingManager> manager, perc::TrackingDevice* dev, std::shared_ptr<context> ctx);
+        std::shared_ptr<device_interface> tm2_info::create(std::shared_ptr<context> ctx, bool register_device_notifications) const override;
+        platform::backend_device_group get_device_data() const override;
+        
+        static std::vector<std::shared_ptr<device_info>> pick_tm2_devices(std::shared_ptr<context> ctx, platform::backend_device_group& group);
+    private:
+        std::shared_ptr<perc::TrackingManager> _manager;
+        perc::TrackingDevice* _dev;
+    };
 }

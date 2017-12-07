@@ -4,7 +4,10 @@ project(realsense-tracking)
 set(LIBTM_DIR ${CMAKE_CURRENT_LIST_DIR}/libtm)
 
 FILE(GLOB_RECURSE AllSources
-	tm-device.h
+	tm-context.h
+	tm-context.cpp
+    tm-conversions.h
+    tm-device.h
     tm-device.cpp
 	tm-factory.h
     tm-factory.cpp

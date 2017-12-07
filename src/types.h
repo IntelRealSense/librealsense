@@ -53,6 +53,31 @@ namespace librealsense
         operator std::string() const { return ss.str(); }
     };
 
+    template<typename T, size_t size>
+    inline size_t copy_array(T(&dst)[size], const T(&src)[size])
+    {
+        assert(dst != nullptr && src != nullptr);
+        for (size_t i = 0; i < size; i++)
+        {
+            dst[i] = src[i];
+        }
+        return size;
+    }
+
+    template<typename T, size_t sizem, size_t sizen>
+    inline size_t copy_2darray(T(&dst)[sizem][sizen], const T(&src)[sizem][sizen])
+    {
+        assert(dst != nullptr && src != nullptr);
+        for (size_t i = 0; i < sizem; i++)
+        {
+            for (size_t j = 0; j < sizen; j++)
+            {
+                dst[i][j] = src[i][j];
+            }
+        }
+        return sizem * sizen;
+    }
+
     void copy(void* dst, void const* src, size_t size);
 
     std::string make_less_screamy(const char* str);
