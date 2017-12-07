@@ -2,7 +2,6 @@
 #include "depth-quality-model.h"
 #include <librealsense2/rs_advanced_mode.hpp>
 #include "model-views.h"
-#include <imgui_internal.h>
 
 namespace rs2
 {
@@ -476,6 +475,7 @@ namespace rs2
                         _error_message = e.what();
                     }
                 }
+                // Restore the cursor position after invoking lambdas
                 ImGui::SetCursorScreenPos(pos);
 
                 if (_depth_sensor_model.get())

@@ -466,7 +466,7 @@ namespace rs2
             if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_COMPOSITE_FRAME, &e) == 0 && !e))
             {
                 reset();
-                // TODO - exception anticipated
+                // TODO - consider explicit constructor to move resultion to compile time
             }
             error::handle(e);
 

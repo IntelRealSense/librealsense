@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-#include "../include/librealsense2/rs.hpp"
+
+#include "../include/librealsense2/hpp/rs_sensor.hpp"
+#include "../include/librealsense2/hpp/rs_processing.hpp"
 
 #include "option.h"
 #include "context.h"

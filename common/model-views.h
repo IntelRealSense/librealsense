@@ -589,8 +589,8 @@ namespace rs2
             streams.clear();
         }
 
-        bool is_texture_frame(frame f);
-        bool is_depth_frame(frame f);
+        bool is_3d_texture_source(frame f);
+        bool is_3d_depth_source(frame f);
 
         texture_buffer* upload_frame(frame&& f);
 

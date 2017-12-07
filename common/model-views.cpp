@@ -1161,7 +1161,7 @@ namespace rs2
         try {
             s->start([&](frame f)
             {
-                if (viewer.synchronization_enable && (viewer.is_depth_frame(f) || viewer.is_texture_frame(f)))
+                if (viewer.synchronization_enable && (viewer.is_3d_depth_source(f) || viewer.is_3d_texture_source(f)))
                 {
                     viewer.s(f);
                 }
@@ -2667,37 +2667,35 @@ namespace rs2
 
         if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
         {
-            //std::lock_guard<std::mutex> lock(streams_mutex);
             for (auto&& s : viewer.streams)
             {
                 if(!s.second.dev) continue;
                 auto dev = s.second.dev;
-                //lock.unlock();
 
                 if (dev->post_processing_enabled)
+                {
                     for (auto&& p : dev->profiles)
                     {
-                        if (p.stream_type() == RS2_STREAM_DEPTH )
+                        if (p.stream_type() == RS2_STREAM_DEPTH)
                         {
                             auto dec_filter = s.second.dev->decimation_filter;
-                            auto spatial_filter = s.second.dev->spatial_filter;
-                            auto temp_filter = s.second.dev->temporal_filter;
-
                             if (dec_filter->enabled)
                                 f = dec_filter->invoke(f);
 
+                            auto spatial_filter = s.second.dev->spatial_filter;
                             if (spatial_filter->enabled)
                                 f = spatial_filter->invoke(f);
 
+                            auto temp_filter = s.second.dev->temporal_filter;
                             if (temp_filter->enabled)
                                 f = temp_filter->invoke(f);
 
                             return f;
                         }
                     }
+                }
             }
         }
-       
         return f;
     }
 
@@ -2713,11 +2711,11 @@ namespace rs2
 
         if(viewer.is_3d_view)
         {
-            if(viewer.is_depth_frame(f))
+            if(viewer.is_3d_depth_source(f))
             {
                 res.push_back(pc.calculate(filtered));
             }
-            if(viewer.is_texture_frame(f))
+            if(viewer.is_3d_texture_source(f))
             {
                 update_texture(filtered);
             }
@@ -2759,10 +2757,10 @@ namespace rs2
 
             try
             {
-                frame frames;
-                if (frames_queue.poll_for_frame(&frames))
+                frame frm;
+                if (frames_queue.poll_for_frame(&frm))
                 {
-                    processing_block.invoke(frames);
+                    processing_block.invoke(frm);
                 }
                 else
                 {
@@ -2770,10 +2768,6 @@ namespace rs2
                 }
             }
             catch (...) {}
-
-
-//            // There is no practical reason to re-calculate the 3D model
-//            // at higher frequency then 100 FPS
 
         }
     }
@@ -2921,13 +2915,14 @@ namespace rs2
             {
                 frameset frames;
                 p = f.as<points>();
+
                 if (frames = f.as<frameset>())
                 {
                     for (auto&& frame : frames)
                     {
                         if(!p)
                         {
-                            if(p = frame.as<points>())
+                            if(p = frame.as<points>())  // find and store the 3d points frame for later use
                             {
                                 continue;
                             }
@@ -2937,12 +2932,10 @@ namespace rs2
 
                         auto texture = upload_frame(std::move(frame));
 
-
-                        if ((selected_tex_source_uid == -1 && frame.get_profile().format() == RS2_FORMAT_Z16) || frame.get_profile().format()!= RS2_FORMAT_ANY && is_texture_frame(frame))
+                        if ((selected_tex_source_uid == -1 && frame.get_profile().format() == RS2_FORMAT_Z16) || frame.get_profile().format()!= RS2_FORMAT_ANY && is_3d_texture_source(frame))
                         {
                             texture_frame = texture;
                         }
-
                     }
                 }
                 else if(!p)
@@ -3338,22 +3331,22 @@ namespace rs2
         mouse.prev_cursor = mouse.cursor;
     }
 
-    bool viewer_model::is_texture_frame(frame f)
+    bool viewer_model::is_3d_texture_source(frame f)
     {
         auto index = f.get_profile().unique_id();
-        auto maped_index = streams_origin[index];
+        auto mapped_index = streams_origin[index];
 
-        if(index == selected_tex_source_uid || maped_index  == selected_tex_source_uid)
+        if(index == selected_tex_source_uid || mapped_index  == selected_tex_source_uid)
             return true;
         return false;
     }
 
-    bool viewer_model::is_depth_frame(frame f)
+    bool viewer_model::is_3d_depth_source(frame f)
     {
         auto index = f.get_profile().unique_id();
-        auto maped_index = streams_origin[index];
+        auto mapped_index = streams_origin[index];
 
-        if(index == selected_depth_source_uid || maped_index  == selected_depth_source_uid)
+        if(index == selected_depth_source_uid || mapped_index  == selected_depth_source_uid)
             return true;
         return false;
     }
@@ -4124,107 +4117,109 @@ namespace rs2
             //model_to_y[sub.get()] = pos.y;
             //model_to_abs_y[sub.get()] = abs_pos.y;
 
-            if (!show_depth_only) draw_later.push_back([windows_width,
-                    &window, sub, pos, &viewer, this
-                ]() {
-                bool stop_recording = false;
-
-                ImGui::SetCursorPos({ windows_width - 35, pos.y + 3 });
-                ImGui::PushFont(window.get_font());
-
-                ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
-                ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
-
-                if (!sub->streaming)
+            if (!show_depth_only)
+            {
+                draw_later.push_back([windows_width, &window, sub, pos, &viewer, this]()
                 {
-                    std::string label = to_string() << u8"  \uf204\noff   ##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
+                    bool stop_recording = false;
 
-                    ImGui::PushStyleColor(ImGuiCol_Text, redish);
-                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+                    ImGui::SetCursorPos({ windows_width - 35, pos.y + 3 });
+                    ImGui::PushFont(window.get_font());
 
-                    if (sub->is_selected_combination_supported())
+                    ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
+
+                    if (!sub->streaming)
                     {
-                        if (ImGui::Button(label.c_str(), { 30,30 }))
-                        {
-                            auto profiles = sub->get_selected_profiles();
-                            sub->play(profiles, viewer);
+                        std::string label = to_string() << u8"  \uf204\noff   ##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
 
-                            for (auto&& profile : profiles)
+                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+
+                        if (sub->is_selected_combination_supported())
+                        {
+                            if (ImGui::Button(label.c_str(), { 30,30 }))
                             {
-                                viewer.streams[profile.unique_id()].begin_stream(sub, profile);
+                                auto profiles = sub->get_selected_profiles();
+                                sub->play(profiles, viewer);
+
+                                for (auto&& profile : profiles)
+                                {
+                                    viewer.streams[profile.unique_id()].begin_stream(sub, profile);
+                                }
                             }
-                        }
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Start streaming data from this sensor");
-                        }
-                    }
-                    else
-                    {
-                        ImGui::TextDisabled(u8"  \uf204\noff   ");
-                        if (std::any_of(sub->stream_enabled.begin(), sub->stream_enabled.end(), [](std::pair<int, bool> const& s) { return s.second; }))
-                        {
                             if (ImGui::IsItemHovered())
                             {
-                                ImGui::SetTooltip("Selected configuration (FPS, Resolution) is not supported");
+                                ImGui::SetTooltip("Start streaming data from this sensor");
                             }
                         }
                         else
                         {
-                            if (ImGui::IsItemHovered())
+                            ImGui::TextDisabled(u8"  \uf204\noff   ");
+                            if (std::any_of(sub->stream_enabled.begin(), sub->stream_enabled.end(), [](std::pair<int, bool> const& s) { return s.second; }))
                             {
-                                ImGui::SetTooltip("No stream selected");
+                                if (ImGui::IsItemHovered())
+                                {
+                                    ImGui::SetTooltip("Selected configuration (FPS, Resolution) is not supported");
+                                }
+                            }
+                            else
+                            {
+                                if (ImGui::IsItemHovered())
+                                {
+                                    ImGui::SetTooltip("No stream selected");
+                                }
+                            }
+
+                        }
+                    }
+                    else
+                    {
+                        std::string label = to_string() << u8"  \uf205\n    on##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
+                        ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+
+                        if (ImGui::Button(label.c_str(), { 30,30 }))
+                        {
+                            sub->stop();
+
+                            if (!std::any_of(subdevices.begin(), subdevices.end(),
+                                [](const std::shared_ptr<subdevice_model>& sm)
+                            {
+                                return sm->streaming;
+                            }))
+                            {
+                                stop_recording = true;
                             }
                         }
-
-                    }
-                }
-                else
-                {
-                    std::string label = to_string() << u8"  \uf205\n    on##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
-                    ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-
-                    if (ImGui::Button(label.c_str(), { 30,30 }))
-                    {
-                        sub->stop();
-
-                        if (!std::any_of(subdevices.begin(), subdevices.end(),
-                            [](const std::shared_ptr<subdevice_model>& sm)
+                        if (ImGui::IsItemHovered())
                         {
-                            return sm->streaming;
-                        }))
-                        {
-                            stop_recording = true;
+                            ImGui::SetTooltip("Stop streaming data from selected sub-device");
                         }
                     }
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Stop streaming data from selected sub-device");
-                    }
-                }
 
-                ImGui::PopStyleColor(5);
-                ImGui::PopFont();
+                    ImGui::PopStyleColor(5);
+                    ImGui::PopFont();
 
-                if (is_recording && stop_recording)
-                {
-                    this->stop_recording();
-                    for (auto&& sub : subdevices)
+                    if (is_recording && stop_recording)
                     {
-                        //TODO: Fix case where sensor X recorded stream 0, then stopped, and then started recording stream 1 (need 2 sensors for this to happen)
-                        if (sub->is_selected_combination_supported())
+                        this->stop_recording();
+                        for (auto&& sub : subdevices)
                         {
-                            auto profiles = sub->get_selected_profiles();
-                            for (auto&& profile : profiles)
+                            //TODO: Fix case where sensor X recorded stream 0, then stopped, and then started recording stream 1 (need 2 sensors for this to happen)
+                            if (sub->is_selected_combination_supported())
                             {
-                                viewer.streams[profile.unique_id()].dev = sub;
+                                auto profiles = sub->get_selected_profiles();
+                                for (auto&& profile : profiles)
+                                {
+                                    viewer.streams[profile.unique_id()].dev = sub;
+                                }
                             }
                         }
                     }
-                }
-            });
+                });
+            }
 
             ImGui::GetWindowDrawList()->AddLine({ abs_pos.x, abs_pos.y - 1 },
             { abs_pos.x + panel_width, abs_pos.y - 1 },
