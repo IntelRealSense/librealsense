@@ -525,6 +525,63 @@ endif()
 
 add_subdirectory(third-party/realsense-file)
 
+
+if (BUILD_WITH_TM2)
+    message(STATUS "Building with TM2")
+
+    if(WIN32)
+        source_group("Source Files\\Devices\\Tracking" FILES
+            src/tm2/tm-context.cpp
+            src/tm2/tm-factory.cpp
+            src/tm2/tm-device.cpp
+            )
+
+        source_group("Header Files\\Devices\\Tracking" FILES
+            src/tm2/tm-context.h
+            src/tm2/tm-factory.h
+            src/tm2/tm-device.h
+            src/tm2/tm-conversions.h
+            )
+    endif()
+    add_definitions(-DWITH_TRACKING -DBUILD_STATIC)
+
+    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
+    find_package(libtm REQUIRED)
+
+    foreach(flag_var
+            CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+            CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
+            CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+            CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+        if(${flag_var} MATCHES "/MD")
+            string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+        endif(${flag_var} MATCHES "/MD")
+    endforeach(flag_var)
+
+    list(APPEND REALSENSE_HPP
+    src/tm2/tm-context.h
+    src/tm2/tm-device.h
+    src/tm2/tm-factory.h
+    src/tm2/tm-conversions.h
+    )
+    
+    list(APPEND REALSENSE_CPP
+    src/tm2/tm-context.cpp
+    src/tm2/tm-device.cpp
+    src/tm2/tm-factory.cpp
+    )
+
+    include_directories(${LIBTM_INCLUDE_DIR})
+    set(TRACKING_DEVICE_LIBS libtm)
+
+    install(TARGETS libtm
+        EXPORT realsense2Targets
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+endif()
+
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
     if(WIN32)
@@ -546,24 +603,11 @@ endif()
 
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
-target_link_libraries(realsense2 PRIVATE realsense-file ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(realsense2 PRIVATE realsense-file ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
 
 add_definitions(-DELPP_THREAD_SAFE)
 add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
-if (BUILD_WITH_TM2)
-    message(STATUS "Building with TM2")
-    find_package(libtm REQUIRED)
-    add_definitions(-DWITH_TRACKING -DBUILD_STATIC)
-    add_subdirectory(src/tm2)
-    target_link_libraries(realsense2 PRIVATE realsense-tracking libtm)
-    install(TARGETS libtm
-        EXPORT realsense2Targets
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    )
-endif()
 
 list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
 

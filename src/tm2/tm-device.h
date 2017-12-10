@@ -51,10 +51,15 @@ namespace librealsense
         void onControllerDisconnectedEventFrame(perc::TrackingData::ControllerDisconnectedEventFrame& frame) override;
         void onControllerFrame(perc::TrackingData::ControllerFrame& frame) override;
 
-        void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
+        void enable_loopback(std::shared_ptr<playback_device> input);
+        void disable_loopback();
     private:
+        void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
+        void pass_frames_to_fw(frame_holder fref);
+
         perc::TrackingDevice* _tm_dev;
         std::mutex _configure_lock;
+        std::shared_ptr<playback_device> _loopback;
         perc::TrackingData::Profile _tm_supported_profiles;
         perc::TrackingData::Profile _tm_active_profiles;
     };

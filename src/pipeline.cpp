@@ -385,21 +385,6 @@ namespace librealsense
         | _|      |__| | _|      |_______||_______||__| |__| \__| |_______|
     */
 
-    template<class T>
-    class internal_frame_callback : public rs2_frame_callback
-    {
-        T on_frame_function;
-    public:
-        explicit internal_frame_callback(T on_frame) : on_frame_function(on_frame) {}
-
-        void on_frame(rs2_frame* fref) override
-        {
-            on_frame_function((frame_interface*)(fref));
-        }
-
-        void release() override { delete this; }
-    };
-
     pipeline::pipeline(std::shared_ptr<librealsense::context> ctx)
         :_ctx(ctx), _hub(ctx)
     {}

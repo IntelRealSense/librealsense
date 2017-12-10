@@ -7,6 +7,8 @@
 #include "TrackingData.h"
 #include "stream.h"
 #include "tm-conversions.h"
+#include "media/playback/playback_device.h"
+#include "media/ros/ros_reader.h"
 
 using namespace perc;
 using namespace std::chrono;
@@ -229,16 +231,24 @@ namespace librealsense
         //TODO - TM2_API currently supports a single profile is supported per stream. 
         // this function uses stream index to determine stream profile, and just validates the requested profile.
         // need to fix this to search among supported profiles per stream. ( use sensor_base::resolve_requests?)
-
+        if (_loopback)
+        {
+            auto& loopback_sensor = _loopback->get_sensor(0);
+            //TODO: Future work: filter out raw streams according to requested output.
+            loopback_sensor.open(loopback_sensor.get_stream_profiles());
+            _tm_active_profiles.playbackEnabled = true;
+        }
         for (auto&& r : requests)
         {
             auto sp = to_profile(r.get());
             int stream_index = sp.index - 1;
-
+            
             switch (r->get_stream_type())
             {
             case RS2_STREAM_FISHEYE:
             {
+                //TODO: check bound for _tm_supported_profiles.___[]
+
                 auto tm_profile = _tm_supported_profiles.video[stream_index];
                 if (tm_profile.fps == sp.fps &&
                     tm_profile.profile.height == sp.height &&
@@ -297,12 +307,111 @@ namespace librealsense
         else if (!_is_opened)
             throw wrong_api_call_sequence_exception("close() failed. TM2 device was not opened!");
 
+        if (_loopback)
+        {
+            auto& loopback_sensor = _loopback->get_sensor(0);
+            loopback_sensor.close();
+        }
         //reset active profiles
         _tm_active_profiles.reset();
 
         _is_opened = false;
     }
 
+    void tm2_sensor::pass_frames_to_fw(frame_holder fref)
+    {
+        auto to_nanos = [](rs2_time_t t) { return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<rs2_time_t, std::milli>(t)).count(); };
+        auto frame_ptr = fref.frame;
+        auto get_md_or_default = [frame_ptr](rs2_frame_metadata_value md) {
+            rs2_metadata_type v = 0;
+            if (frame_ptr->supports_frame_metadata(md))
+                v = frame_ptr->get_frame_metadata(md);
+            return v;
+        };
+
+
+        int stream_index = fref.frame->get_stream()->get_stream_index() - 1;
+        auto lrs_stream = fref.frame->get_stream()->get_stream_type();
+        SensorType tm_stream;
+        if (!try_convert(lrs_stream, tm_stream))
+        {
+            LOG_ERROR("Failed to convert lrs stream " << lrs_stream << " to tm stream");
+            return;
+        }
+        auto tm_sensor_id = SET_SENSOR_ID(tm_stream, stream_index);
+        auto time_of_arrival = get_md_or_default(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
+
+
+        //Pass frames to firmeware
+        if (auto vframe = As<video_frame>(fref.frame))
+        {
+            TrackingData::VideoFrame f = {};
+            f.sensorIndex = stream_index;
+            f.frameId = vframe->additional_data.frame_number;
+            f.profile.set(vframe->get_width(), vframe->get_height(), vframe->get_stride(), convertToTm2PixelFormat(vframe->get_stream()->get_format()));
+            f.exposuretime = get_md_or_default(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+            f.frameLength = vframe->get_height()*vframe->get_stride()* (vframe->get_bpp() / 8);
+            f.data = vframe->data.data();
+            f.timestamp = to_nanos(vframe->additional_data.timestamp);
+            f.systemTimestamp = to_nanos(vframe->additional_data.system_time);
+            f.arrivalTimeStamp = time_of_arrival;
+            auto sts = _tm_dev->SendFrame(f);
+            if (sts != Status::SUCCESS)
+            {
+                LOG_ERROR("Failed to send video frame to TM");
+            }
+        }
+        else if (auto mframe = As<motion_frame>(fref.frame))
+        {
+            auto st = mframe->get_stream()->get_stream_type();
+            if (st == RS2_STREAM_ACCEL)
+            {
+                TrackingData::AccelerometerFrame f{};
+                auto mdata = reinterpret_cast<float*>(mframe->data.data());
+                f.acceleration.set(mdata[0], mdata[1], mdata[2]);
+                f.frameId = mframe->additional_data.frame_number;
+                f.sensorIndex = stream_index;
+                f.temperature = get_md_or_default(RS2_FRAME_METADATA_TEMPERATURE);
+                f.timestamp = to_nanos(mframe->additional_data.timestamp);
+                f.systemTimestamp = to_nanos(mframe->additional_data.system_time);
+                f.arrivalTimeStamp = time_of_arrival;
+                auto sts = _tm_dev->SendFrame(f);
+                if (sts != Status::SUCCESS)
+                {
+                    LOG_ERROR("Failed to send video frame to TM");
+                }
+            }
+            else if(st == RS2_STREAM_GYRO)
+            {
+                TrackingData::GyroFrame f{};
+                auto mdata = reinterpret_cast<float*>(mframe->data.data());
+                f.angularVelocity.set(mdata[0], mdata[1], mdata[2]);
+                f.frameId = mframe->additional_data.frame_number;
+                f.sensorIndex = stream_index;
+                f.temperature = get_md_or_default(RS2_FRAME_METADATA_TEMPERATURE);
+                f.timestamp = to_nanos(mframe->additional_data.timestamp);
+                f.systemTimestamp = to_nanos(mframe->additional_data.system_time);
+                f.arrivalTimeStamp = time_of_arrival;
+                auto sts = _tm_dev->SendFrame(f);
+                if (sts != Status::SUCCESS)
+                {
+                    LOG_ERROR("Failed to send video frame to TM");
+                }
+            }
+            else if (auto mframe = As<pose_frame>(fref.frame))
+            {
+                //Ignore
+            }
+            else
+            {
+                LOG_ERROR("Unhandled motion frame type");
+            }
+        }
+        else
+        {
+            LOG_ERROR("Unhandled frame type");
+        }
+    }
     void tm2_sensor::start(frame_callback_ptr callback)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
@@ -318,6 +427,19 @@ namespace librealsense
         {
             throw io_exception("Failed to start TM2 camera");
         }
+        if (_loopback)
+        {
+            auto& loopback_sensor = _loopback->get_sensor(0);
+            auto handle_file_frames = [&](frame_holder fref)
+            {
+                pass_frames_to_fw(std::move(fref));
+            };
+
+            frame_callback_ptr file_frames_callback = { new internal_frame_callback<decltype(handle_file_frames)>(handle_file_frames),
+                [](rs2_frame_callback* p) { p->release(); } };
+            loopback_sensor.start(file_frames_callback);
+        }
+
         _is_streaming = true;
     }
 
@@ -326,7 +448,11 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_configure_lock);
         if (!_is_streaming)
             throw wrong_api_call_sequence_exception("stop_streaming() failed. TM2 device is not streaming!");
-
+        if (_loopback)
+        {
+            auto& loopback_sensor = _loopback->get_sensor(0);
+            loopback_sensor.stop();
+        }
         auto status = _tm_dev->Stop();
         if (status != Status::SUCCESS)
         {
@@ -546,15 +672,29 @@ namespace librealsense
 
     void tm2_sensor::onControllerDiscoveryEventFrame(perc::TrackingData::ControllerDiscoveryEventFrame& frame)
     {
-
+        //TODO
     }
     void tm2_sensor::onControllerDisconnectedEventFrame(perc::TrackingData::ControllerDisconnectedEventFrame& frame)
     {
-
+        //TODO
     }
+
     void tm2_sensor::onControllerFrame(perc::TrackingData::ControllerFrame& frame)
     {
+        //TODO
+    }
 
+    void tm2_sensor::enable_loopback(std::shared_ptr<playback_device> input)
+    {
+        std::lock_guard<std::mutex> lock(_configure_lock);
+        if (_is_streaming || _is_opened)
+            throw wrong_api_call_sequence_exception("Cannot enter loopback mode while device is open or streaming");
+        _loopback = input;
+    }
+    void tm2_sensor::disable_loopback()
+    {
+        std::lock_guard<std::mutex> lock(_configure_lock);
+        _loopback.reset();
     }
 
     void tm2_sensor::handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature)
@@ -634,26 +774,35 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, device_path);
 
         add_sensor(std::make_shared<tm2_sensor>(this, _dev));
-
+        enable_loopback("C:\\dev\\recording\\tm2.bag");
     }
 
+    /**
+    * Enable loopback will replace the input and ouput of the tm2 sensor
+    */
     void tm2_device::enable_loopback(const std::string& source_file)
     {
         auto ctx = get_context();
+        std::shared_ptr<playback_device> raw_streams;
         try
         {
-            //playback_device d(ctx, std::make_shared<ros_reader>(file, ctx));
+            raw_streams = std::make_shared<playback_device>(ctx, std::make_shared<ros_reader>(source_file, ctx));
         }
         catch (const std::exception& e)
         {
             LOG_ERROR("Failed to create playback device from given file. File = \"" << source_file << "\". Exception: " << e.what());
             throw librealsense::invalid_value_exception("Failed to enable loopback");
         }
-        //auto sensor = get_sensor(0);
+        auto& sensor = get_sensor(0);
+        auto& tm_sensor = dynamic_cast<tm2_sensor&>(sensor);
+        tm_sensor.enable_loopback(raw_streams);
+        register_info(RS2_CAMERA_INFO_NAME, to_string() << " (Loopback - " << source_file << ")");
     }
 
     void tm2_device::disble_loopback()
     {
-
+        auto& sensor = get_sensor(0);
+        auto& tm_sensor = dynamic_cast<tm2_sensor&>(sensor);
+        tm_sensor.disable_loopback();
     }
 }

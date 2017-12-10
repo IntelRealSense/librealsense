@@ -725,6 +725,21 @@ namespace librealsense
         void release() override { delete this; }
     };
 
+    template<class T>
+    class internal_frame_callback : public rs2_frame_callback
+    {
+        T on_frame_function; //Callable of type: void(frame_interface* frame)
+    public:
+        explicit internal_frame_callback(T on_frame) : on_frame_function(on_frame) {}
+
+        void on_frame(rs2_frame* fref) override
+        {
+            on_frame_function((frame_interface*)(fref));
+        }
+
+        void release() override { delete this; }
+    };
+
     typedef void(*notifications_callback_function_ptr)(rs2_notification * notification, void * user);
 
     class notifications_callback : public rs2_notifications_callback

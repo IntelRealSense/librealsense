@@ -49,6 +49,20 @@ namespace librealsense
         throw invalid_value_exception("No matching TM2 pixel format");
     }
 
+    inline bool try_convert(rs2_stream stream, perc::SensorType& out)
+    {
+        switch (stream) {
+            case RS2_STREAM_DEPTH    : out = perc::SensorType::Depth;          return true;
+            case RS2_STREAM_COLOR    : out = perc::SensorType::Color;          return true;
+            case RS2_STREAM_INFRARED : out = perc::SensorType::IR;             return true;
+            case RS2_STREAM_FISHEYE  : out = perc::SensorType::Fisheye;        return true;
+            case RS2_STREAM_GYRO     : out = perc::SensorType::Gyro;           return true;
+            case RS2_STREAM_ACCEL    : out = perc::SensorType::Accelerometer;  return true;
+            case RS2_STREAM_POSE     : out = perc::SensorType::Controller;     return true;
+            default:
+                return false;
+        }
+    }
     inline rs2_distortion convertTm2CameraModel(int model)
     {
         switch (model)
