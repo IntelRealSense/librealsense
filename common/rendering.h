@@ -799,7 +799,7 @@ namespace rs2
             auto data = frame.get_data();
 
             auto image = frame.as<video_frame>();
-            auto rendered_frame = image; 
+            auto rendered_frame = image;
 
             if (image)
             {

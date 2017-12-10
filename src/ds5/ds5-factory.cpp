@@ -141,7 +141,7 @@ namespace librealsense
                             public ds5_advanced_mode_base
     {
     public:
-        rs430_mm_device(std::shared_ptr<context> ctx, 
+        rs430_mm_device(std::shared_ptr<context> ctx,
                         const platform::backend_device_group group,
                         bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
@@ -159,7 +159,7 @@ namespace librealsense
                          public ds5_advanced_mode_base
     {
     public:
-        rs435_device(std::shared_ptr<context> ctx, 
+        rs435_device(std::shared_ptr<context> ctx,
                      const platform::backend_device_group group,
                      bool register_device_notifications)
             : device(ctx, group, register_device_notifications),

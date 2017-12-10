@@ -660,7 +660,7 @@ namespace rs2
         if (s->is<depth_sensor>())
         {
             auto colorizer = std::make_shared<processing_block_model>(
-                this, "Depth Visualization", depth_colorizer, 
+                this, "Depth Visualization", depth_colorizer,
                 [=](rs2::frame f) { return depth_colorizer->colorize(f); }, error_message);
             const_effects.push_back(colorizer);
 
@@ -674,7 +674,7 @@ namespace rs2
 
             auto spatial = std::make_shared<rs2::spatial_filter>();
             spatial_filter = std::make_shared<processing_block_model>(
-                this, "Spatial Filter", spatial, 
+                this, "Spatial Filter", spatial,
                 [=](rs2::frame f) { return spatial->proccess(f); },
                 error_message);
             spatial_filter->enabled = true;
@@ -4305,8 +4305,6 @@ namespace rs2
 
                 if (dev.is<advanced_mode>() && sub->s->is<depth_sensor>())
                     draw_advanced_mode_tab();
-
-                
 
                 for (auto&& pb : sub->const_effects)
                 {

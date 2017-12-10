@@ -305,8 +305,8 @@ namespace rs2
     {
     public:
         /**
-            Create align processing block 
-            Alignment is performed between a depth image and another image. 
+            Create align processing block
+            Alignment is performed between a depth image and another image.
             To perform alignment of a depth image to the other, set the align_to parameter with the other stream type.
             To perform alignment of a non depth image to a depth image, set the align_to parameter to RS2_STREAM_DEPTH
             Camera calibration and frame's stream type are determined on the fly, according to the first valid frameset passed to proccess()
