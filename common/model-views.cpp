@@ -3115,7 +3115,7 @@ namespace rs2
                 glPopMatrix();
 
                 rs2_vector translation{ pose_trans.mat[0][3], pose_trans.mat[1][3], pose_trans.mat[2][3] };
-                tracked_point p{ translation , pose_data.confidence };
+                tracked_point p{ translation , pose_data.tracker_confidence }; //TODO: Osnat - use tracker_confidence or mapper_confidence ?
                 tm2.draw_trajectory(p);
                 tm2.draw_boundary(p);
             }
@@ -3927,7 +3927,24 @@ namespace rs2
                         ImGui::SetTooltip("Stop streaming to enable recording");
                 }
             }
-
+            if (auto loopback = dev.as<rs2::loopback>())
+            {
+                if (!loopback.enabled() && ImGui::Selectable("Enable loopback..."))
+                {
+                    if(const char* ret = file_dialog_open(file_dialog_mode::open_file, "ROS-bag\0*.bag\0", NULL, NULL))
+                    {
+                        loopback.enable(ret);
+                    }
+                }
+                if (loopback.enabled() && ImGui::Selectable("Disable loopback..."))
+                {
+                    loopback.disable();
+                }
+            }
+            if (show_device_info && ImGui::Selectable("Hide Device Details..."))
+            {
+                show_device_info = false;
+            }
             if (auto adv = dev.as<advanced_mode>())
             {
                 try

@@ -1042,7 +1042,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
         case RS2_EXTENSION_OPTIONS :       return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::options_interface) != nullptr;
         case RS2_EXTENSION_VIDEO :         return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::video_sensor_interface) != nullptr;
         case RS2_EXTENSION_ROI :           return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::roi_sensor_interface) != nullptr;
-        case RS2_EXTENSION_DEPTH_SENSOR :  return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_sensor) != nullptr;
+        case RS2_EXTENSION_DEPTH_SENSOR:  return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_sensor) != nullptr;
         default:
             return false;
     }
@@ -1064,6 +1064,7 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, 
         case RS2_EXTENSION_ADVANCED_MODE : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::ds5_advanced_mode_interface) != nullptr;
         case RS2_EXTENSION_RECORD        : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::record_device)               != nullptr;
         case RS2_EXTENSION_PLAYBACK      : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::playback_device)             != nullptr;
+        case RS2_EXTENSION_LOOPBACK      : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::loopback_interface)          != nullptr;
         default:
             return false;
     }
@@ -1671,7 +1672,8 @@ void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_er
     const float3 aa = pf->get_angular_acceleration();
     pose->angular_acceleration = { aa.x, aa.y, aa.z };
 
-    pose->confidence = pf->get_confidence();
+    pose->tracker_confidence = pf->get_tracker_confidence();
+    pose->mapper_confidence = pf->get_mapper_confidence();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame, pose)
 
@@ -1680,3 +1682,32 @@ rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
     return environment::get_instance().get_time_service()->get_time();
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
+
+void rs2_loopback_enable(const rs2_device* device, const char* from_file, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(from_file);
+
+    auto loopback = VALIDATE_INTERFACE(device->device, librealsense::loopback_interface);
+    loopback->enable_loopback(from_file);
+
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, from_file)
+
+void rs2_loopback_disable(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+
+    auto loopback = VALIDATE_INTERFACE(device->device, librealsense::loopback_interface);
+    loopback->disable_loopback();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+int rs2_loopback_is_enabled(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+
+    auto loopback = VALIDATE_INTERFACE(device->device, librealsense::loopback_interface);
+    return loopback->is_enabled() ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)

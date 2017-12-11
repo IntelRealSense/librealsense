@@ -11,17 +11,21 @@
 
 namespace librealsense
 {
-    class tm2_device : public virtual device
+    class tm2_device : public virtual device, public loopback_interface
     {
     public:
         tm2_device(std::shared_ptr<perc::TrackingManager> manager,
             perc::TrackingDevice* dev,
             std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
-        void enable_loopback(const std::string& source_file);
-        void disble_loopback();
-
+        void enable_loopback(const std::string& source_file) override;
+        void disable_loopback() override;
+        bool is_enabled() const override;
     private:
+        static const char* tm2_device_name()
+        {
+            return "Intel RealSense T260";
+        }
         std::shared_ptr<perc::TrackingManager> _manager;
         perc::TrackingDevice* _dev;
     };
@@ -53,6 +57,8 @@ namespace librealsense
 
         void enable_loopback(std::shared_ptr<playback_device> input);
         void disable_loopback();
+        bool is_loopback_enabled() const;
+
     private:
         void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
         void pass_frames_to_fw(frame_holder fref);

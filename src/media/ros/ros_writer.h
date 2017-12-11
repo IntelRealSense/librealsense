@@ -265,10 +265,15 @@ namespace librealsense
             // Write the pose confidence as metadata for the pose frame
             std::string md_topic = ros_topic::frame_metadata_topic(stream_id);
             
-            diagnostic_msgs::KeyValue confidence_msg;
-            confidence_msg.key = "confidence"; //TODO: use constant
-            confidence_msg.value = std::to_string(pose->get_confidence());
-            write_message(md_topic, timestamp, confidence_msg);
+            diagnostic_msgs::KeyValue tracker_confidence_msg;
+            tracker_confidence_msg.key = "Tracker Confidence"; //TODO: use constant
+            tracker_confidence_msg.value = std::to_string(pose->get_tracker_confidence());
+            write_message(md_topic, timestamp, tracker_confidence_msg);
+
+            diagnostic_msgs::KeyValue mapper_confidence_msg;
+            mapper_confidence_msg.key = "Mapper Confidence"; //TODO: use constant
+            mapper_confidence_msg.value = std::to_string(pose->get_mapper_confidence());
+            write_message(md_topic, timestamp, mapper_confidence_msg);
 
             //Write frame's timestamp as metadata
             diagnostic_msgs::KeyValue frame_timestamp_msg;

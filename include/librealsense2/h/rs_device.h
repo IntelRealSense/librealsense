@@ -106,6 +106,11 @@ int rs2_is_device_extendable_to(const rs2_device* device, rs2_extension extensio
 * \return               The list of sensors, should be released by rs2_delete_sensor_list
 */
 rs2_sensor_list* rs2_query_sensors(const rs2_device* device, rs2_error** error);
+//TODO: add documentation
+void rs2_loopback_enable(const rs2_device* device, const char* from_file, rs2_error** error);
+void rs2_loopback_disable(const rs2_device* device, rs2_error** error);
+int rs2_loopback_is_enabled(const rs2_device* device, rs2_error** error);
+
 
 #ifdef __cplusplus
 }

@@ -15,76 +15,94 @@ using namespace std::chrono;
 
 namespace librealsense
 {
-    struct frame_metadata
-    {
-        int64_t arrival_ts;
-    };
-
     struct video_frame_metadata
     {
-        frame_metadata frame_md;
+        int64_t arrival_ts;
         uint32_t exposure_time;
     };
 
     struct motion_frame_metadata
     {
-        frame_metadata frame_md;
+        int64_t arrival_ts;
         float temperature;
     };
 
-
-    class md_tm2_exposure_time_parser : public md_attribute_parser_base
+    struct pose_frame_metadata
     {
-    public:
-        rs2_metadata_type get(const frame& frm) const override
-        {
-            if (auto* vf = dynamic_cast<const video_frame*>(&frm))
-            {
-                const video_frame_metadata* video_md = reinterpret_cast<const video_frame_metadata*>(frm.additional_data.metadata_blob.data());
-                return (rs2_metadata_type)(video_md->exposure_time);
-            }
-            return 0;
-        }
-
-        bool supports(const frame& frm) const override
-        {
-            if (auto* vf = dynamic_cast<const video_frame*>(&frm))
-            {
-                return true;
-            }
-            return false;
-        }
+        int64_t arrival_ts;
     };
 
-    class md_tm2_temperature_parser : public md_attribute_parser_base
+    class md_tm2_parser : public md_attribute_parser_base
     {
     public:
-        //TODO: move the md creation here
+        md_tm2_parser(rs2_frame_metadata_value type) : _type(type) {}
         rs2_metadata_type get(const frame& frm) const override
         {
-            if (auto* mf = dynamic_cast<const motion_frame*>(&frm))
+            if(_type == RS2_FRAME_METADATA_ACTUAL_EXPOSURE)
             {
-                const motion_frame_metadata* motion_md = reinterpret_cast<const motion_frame_metadata*>(frm.additional_data.metadata_blob.data());
-                return (rs2_metadata_type)(motion_md->temperature);
+                if (auto* vf = dynamic_cast<const video_frame*>(&frm))
+                {
+                    const video_frame_metadata* md = reinterpret_cast<const video_frame_metadata*>(frm.additional_data.metadata_blob.data());
+                    return (rs2_metadata_type)(md->exposure_time);
+                }
+            }
+            if(_type == RS2_FRAME_METADATA_TIME_OF_ARRIVAL)
+            {
+                if (auto* vf = dynamic_cast<const video_frame*>(&frm))
+                {
+                    const video_frame_metadata* md = reinterpret_cast<const video_frame_metadata*>(frm.additional_data.metadata_blob.data());
+                    return (rs2_metadata_type)(md->arrival_ts);
+                }
+                
+                if (auto* mf = dynamic_cast<const motion_frame*>(&frm))
+                {
+                    const motion_frame_metadata* md = reinterpret_cast<const motion_frame_metadata*>(frm.additional_data.metadata_blob.data());
+                    return (rs2_metadata_type)(md->arrival_ts);
+                }
+                if (auto* pf = dynamic_cast<const pose_frame*>(&frm))
+                {
+                    const pose_frame_metadata* md = reinterpret_cast<const pose_frame_metadata*>(frm.additional_data.metadata_blob.data());
+                    return (rs2_metadata_type)(md->arrival_ts);
+                }
+            }
+            if (_type == RS2_FRAME_METADATA_TEMPERATURE)
+            {
+                if (auto* mf = dynamic_cast<const motion_frame*>(&frm))
+                {
+                    const motion_frame_metadata* md = reinterpret_cast<const motion_frame_metadata*>(frm.additional_data.metadata_blob.data());
+                    return (rs2_metadata_type)(md->temperature);
+                }
             }
             return 0;
         }
 
         bool supports(const frame& frm) const override
         {
-            if (auto* mf = dynamic_cast<const motion_frame*>(&frm))
+            if (_type == RS2_FRAME_METADATA_ACTUAL_EXPOSURE)
             {
-                return true;
+                return dynamic_cast<const video_frame*>(&frm) != nullptr;
+            }
+            if (_type == RS2_FRAME_METADATA_TEMPERATURE)
+            {
+                return dynamic_cast<const motion_frame*>(&frm) != nullptr;
+            }
+            if (_type == RS2_FRAME_METADATA_TIME_OF_ARRIVAL)
+            {
+                return dynamic_cast<const video_frame*>(&frm) != nullptr || dynamic_cast<const motion_frame*>(&frm) != nullptr;
             }
             return false;
         }
+    private:
+        rs2_frame_metadata_value _type;
     };
 
     tm2_sensor::tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev)
         : sensor_base("Tracking Module", owner), _tm_dev(dev)
     {
-        register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, std::make_shared<md_tm2_exposure_time_parser>());
-        register_metadata(RS2_FRAME_METADATA_TEMPERATURE, std::make_shared<md_tm2_temperature_parser>());
+        register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_ACTUAL_EXPOSURE));
+        register_metadata(RS2_FRAME_METADATA_TEMPERATURE    , std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TEMPERATURE));
+        //Replacing md parser for RS2_FRAME_METADATA_TIME_OF_ARRIVAL
+        _metadata_parsers->operator[](RS2_FRAME_METADATA_TIME_OF_ARRIVAL) = std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
     }
 
     tm2_sensor::~tm2_sensor()
@@ -237,6 +255,59 @@ namespace librealsense
             //TODO: Future work: filter out raw streams according to requested output.
             loopback_sensor.open(loopback_sensor.get_stream_profiles());
             _tm_active_profiles.playbackEnabled = true;
+            for (auto&& r : loopback_sensor.get_stream_profiles())
+            {
+                auto sp = to_profile(r.get());
+                int stream_index = sp.index - 1;
+
+                switch (r->get_stream_type())
+                {
+                case RS2_STREAM_FISHEYE:
+                {
+                    //TODO: check bound for _tm_supported_profiles.___[]
+
+                    auto tm_profile = _tm_supported_profiles.video[stream_index];
+                    if (tm_profile.fps == sp.fps &&
+                        tm_profile.profile.height == sp.height &&
+                        tm_profile.profile.width == sp.width &&
+                        tm_profile.profile.pixelFormat == convertToTm2PixelFormat(sp.format))
+                    {
+                        _tm_active_profiles.set(tm_profile, true, false);
+
+                        // need to set both L & R streams profile, due to TM2 FW limitation
+                        //int pair_stream_index = (stream_index % 2) == 0 ? stream_index + 1 : stream_index - 1;
+                        //auto tm_profile_pair = _tm_supported_profiles.video[pair_stream_index];
+                        //// no need to get the pair stream output, but make sure not to disable a previously enabled stream
+                        //_tm_active_profiles.set(tm_profile_pair, true, _tm_active_profiles.video[pair_stream_index].outputEnabled);
+                    }
+                    break;
+                }
+                case RS2_STREAM_GYRO:
+                {
+                    auto tm_profile = _tm_supported_profiles.gyro[stream_index];
+                    if (tm_profile.fps == sp.fps)
+                    {
+                        _tm_active_profiles.set(tm_profile, true, false);
+                    }
+                    break;
+                }
+                case RS2_STREAM_ACCEL:
+                {
+                    auto tm_profile = _tm_supported_profiles.accelerometer[stream_index];
+                    if (tm_profile.fps == sp.fps)
+                    {
+                        _tm_active_profiles.set(tm_profile, true, false);
+                    }
+                    break;
+                }
+                case RS2_STREAM_POSE:
+                {
+                    break; //ignored - not a raw stream
+                }
+                default:
+                    throw invalid_value_exception("Invalid stream type");
+                }
+            }
         }
         for (auto&& r : requests)
         {
@@ -338,7 +409,6 @@ namespace librealsense
             LOG_ERROR("Failed to convert lrs stream " << lrs_stream << " to tm stream");
             return;
         }
-        auto tm_sensor_id = SET_SENSOR_ID(tm_stream, stream_index);
         auto time_of_arrival = get_md_or_default(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
 
 
@@ -536,7 +606,7 @@ namespace librealsense
         auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame.systemTimestamp);
         duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
         video_frame_metadata video_md = { 0 };
-        video_md.frame_md.arrival_ts = tm_frame.arrivalTimeStamp;
+        video_md.arrival_ts = tm_frame.arrivalTimeStamp;
         video_md.exposure_time = tm_frame.exposuretime;
 
         frame_additional_data additional_data(ts_ms.count(), tm_frame.frameId, system_ts_ms.count(), sizeof(video_md), (uint8_t*)&video_md);
@@ -620,7 +690,7 @@ namespace librealsense
         duration<double, std::milli> ts_ms(ts_double_nanos);
         auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame.systemTimestamp);
         duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
-        frame_metadata frame_md = { 0 };
+        pose_frame_metadata frame_md = { 0 };
         frame_md.arrival_ts = tm_frame.arrivalTimeStamp;
 
         frame_additional_data additional_data(ts_ms.count(), frame_num++, system_ts_ms.count(), sizeof(frame_md), (uint8_t*)&frame_md);
@@ -660,7 +730,8 @@ namespace librealsense
             info->rotation = toFloat4(tm_frame.rotation);
             info->angular_velocity = toFloat3(tm_frame.angularVelocity);
             info->angular_acceleration = toFloat3(tm_frame.angularAcceleration);
-            info->confidence = tm_frame.confidence;
+            info->tracker_confidence = tm_frame.trackerConfidence;
+            info->mapper_confidence = tm_frame.mapperConfidence;
         }
         else
         {
@@ -696,7 +767,10 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_configure_lock);
         _loopback.reset();
     }
-
+    bool tm2_sensor::is_loopback_enabled() const
+    {
+        return _loopback != nullptr;
+    }
     void tm2_sensor::handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature)
     {
         auto ts_double_nanos = duration<double, std::nano>(tm_frame_ts.timestamp);
@@ -704,7 +778,7 @@ namespace librealsense
         auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame_ts.systemTimestamp);
         duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
         motion_frame_metadata motion_md = { 0 };
-        motion_md.frame_md.arrival_ts = tm_frame_ts.arrivalTimeStamp;
+        motion_md.arrival_ts = tm_frame_ts.arrivalTimeStamp;
         motion_md.temperature = temperature;
 
         frame_additional_data additional_data(ts_ms.count(), frame_number, system_ts_ms.count(), sizeof(motion_md), (uint8_t*)&motion_md);
@@ -762,7 +836,7 @@ namespace librealsense
         {
             throw io_exception("Failed to get device info");
         }
-        register_info(RS2_CAMERA_INFO_NAME, "Intel RealSense T260");
+        register_info(RS2_CAMERA_INFO_NAME, tm2_device_name());
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, to_string() << info.serialNumber);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, to_string() << info.fw.major << "." << info.fw.minor << "." << info.fw.patch << "." << info.fw.build);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, to_string() << info.usbDescriptor.idProduct);
@@ -774,7 +848,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, device_path);
 
         add_sensor(std::make_shared<tm2_sensor>(this, _dev));
-        enable_loopback("C:\\dev\\recording\\tm2.bag");
+        //For manual testing: enable_loopback("C:\\dev\\recording\\tm2.bag");
     }
 
     /**
@@ -796,13 +870,21 @@ namespace librealsense
         auto& sensor = get_sensor(0);
         auto& tm_sensor = dynamic_cast<tm2_sensor&>(sensor);
         tm_sensor.enable_loopback(raw_streams);
-        register_info(RS2_CAMERA_INFO_NAME, to_string() << " (Loopback - " << source_file << ")");
+        update_info(RS2_CAMERA_INFO_NAME, to_string() << tm2_device_name() << " (Loopback - " << source_file << ")");
     }
 
-    void tm2_device::disble_loopback()
+    void tm2_device::disable_loopback()
     {
         auto& sensor = get_sensor(0);
         auto& tm_sensor = dynamic_cast<tm2_sensor&>(sensor);
         tm_sensor.disable_loopback();
+        update_info(RS2_CAMERA_INFO_NAME, tm2_device_name());
+    }
+
+    bool tm2_device::is_enabled() const
+    {
+        auto& sensor = get_sensor(0);
+        auto& tm_sensor = dynamic_cast<const tm2_sensor&>(sensor);
+        return tm_sensor.is_loopback_enabled();
     }
 }

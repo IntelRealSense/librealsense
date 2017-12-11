@@ -551,7 +551,14 @@ namespace librealsense
             _camera_info[info] = std::move(val);
         }
     }
-
+    
+    void info_container::update_info(rs2_camera_info info, const std::string& val)
+    {
+        if (info_container::supports_info(info))
+        {
+            _camera_info[info] = std::move(val);
+        }
+    }
     const std::string& info_container::get_info(rs2_camera_info info) const
     {
         auto it = _camera_info.find(info);

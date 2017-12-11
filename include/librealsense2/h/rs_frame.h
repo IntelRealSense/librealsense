@@ -74,7 +74,8 @@ typedef struct rs2_pose
     rs2_quaternion  rotation;             /**< Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position) */
     rs2_vector      angular_velocity;     /**< X, Y, Z values of angular velocity, in radians/sec                                                         */
     rs2_vector      angular_acceleration; /**< X, Y, Z values of angular acceleration, in radians/sec^2                                                   */
-    unsigned int    confidence;           /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                      */
+    unsigned int    tracker_confidence;   /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                     */
+    unsigned int    mapper_confidence;    /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                     */
 } rs2_pose;
 
 

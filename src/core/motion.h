@@ -22,4 +22,16 @@ namespace librealsense
     };
 
     MAP_EXTENSION(RS2_EXTENSION_POSE_PROFILE, librealsense::pose_stream_profile_interface);
+
+    
+    class loopback_interface
+    {
+    public:
+        //Empty for now
+        virtual void enable_loopback(const std::string& input) = 0;
+        virtual void disable_loopback() = 0;
+        virtual bool is_enabled() const = 0;
+        virtual ~loopback_interface() = default;
+    };
+    MAP_EXTENSION(RS2_EXTENSION_LOOPBACK, librealsense::loopback_interface);
 }

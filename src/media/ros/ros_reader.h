@@ -574,16 +574,20 @@ namespace librealsense
                 auto remaining = get_frame_metadata(m_file, info_topic, stream_id, msg, additional_data);
                 for (auto&& kvp : remaining)
                 {
-                    if (kvp.first == "confidence")
+                    if (kvp.first == "Mapper Confidence")
                     {
-                        pose.confidence = std::stoul(kvp.second);
+                        pose.mapper_confidence = std::stoul(kvp.second);
                     }
-                    if (kvp.first == "frame_timestamp")
+                    else if (kvp.first == "frame_timestamp")
                     {
                         double ts;
                         std::istringstream iss(kvp.second);
                         iss >> std::hexfloat >> ts;
                         timestamp_ms = std::chrono::duration<double, std::milli>(ts);
+                    }
+                    else if (kvp.first == "Tracker Confidence")
+                    {
+                        pose.tracker_confidence = std::stoul(kvp.second);
                     }
                 }
             }

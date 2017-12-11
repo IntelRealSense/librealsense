@@ -280,5 +280,40 @@ namespace rs2
     private:
         std::shared_ptr<rs2_device_list> _list;
     };
+
+    class loopback : public device
+    {
+    public:
+        loopback(device d)
+            : device(d.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_LOOPBACK, &e) == 0 && !e)
+            {
+                _dev = nullptr;
+            }
+            error::handle(e);
+        }
+        void enable(const std::string& from_file)
+        {
+            rs2_error* e = nullptr;
+            rs2_loopback_enable(_dev.get(), from_file.c_str(), &e);
+            error::handle(e);
+        }
+
+        void disable()
+        {
+            rs2_error* e = nullptr;
+            rs2_loopback_disable(_dev.get(), &e);
+            error::handle(e);
+        }
+        bool enabled() const
+        {
+            rs2_error* e = nullptr;
+            int is_enabled = rs2_loopback_is_enabled(_dev.get(), &e);
+            error::handle(e);
+            return is_enabled != 0;
+        }
+    };
 }
 #endif // LIBREALSENSE_RS2_DEVICE_HPP

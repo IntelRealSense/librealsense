@@ -335,7 +335,8 @@ namespace librealsense
             float4   rotation;             /**< Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position) */
             float3   angular_velocity;     /**< X, Y, Z values of angular velocity, in radians/sec                                                         */
             float3   angular_acceleration; /**< X, Y, Z values of angular acceleration, in radians/sec^2                                                   */
-            uint32_t confidence;           /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                     */
+            uint32_t tracker_confidence;   /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                     */
+            uint32_t mapper_confidence;    /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                     */
         };
 
         pose_frame() : frame() {}
@@ -346,7 +347,8 @@ namespace librealsense
         float4   get_rotation()             const { return reinterpret_cast<const pose_info*>(data.data())->rotation; }
         float3   get_angular_velocity()     const { return reinterpret_cast<const pose_info*>(data.data())->angular_velocity; }
         float3   get_angular_acceleration() const { return reinterpret_cast<const pose_info*>(data.data())->angular_acceleration; }
-        uint32_t get_confidence()           const { return reinterpret_cast<const pose_info*>(data.data())->confidence; }
+        uint32_t get_tracker_confidence()   const { return reinterpret_cast<const pose_info*>(data.data())->tracker_confidence; }
+        uint32_t get_mapper_confidence()    const { return reinterpret_cast<const pose_info*>(data.data())->mapper_confidence; }
     };
 
     MAP_EXTENSION(RS2_EXTENSION_POSE_FRAME, librealsense::pose_frame);

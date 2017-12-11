@@ -110,6 +110,7 @@ typedef enum rs2_extension
     RS2_EXTENSION_MOTION_PROFILE,
     RS2_EXTENSION_POSE_FRAME,
     RS2_EXTENSION_POSE_PROFILE,
+    RS2_EXTENSION_LOOPBACK,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);
