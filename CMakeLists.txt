@@ -63,6 +63,14 @@ if(BUILD_WITH_OPENMP)
     endif()
 endif()
 
+option(BUILD_EASYLOGGINGPP "Build EasyLogging++ as a part of the build" ON)
+
+if (BUILD_EASYLOGGINGPP)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_EASYLOGGINGPP=1")
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_EASYLOGGINGPP=0")
+endif()
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
 set(REALSENSE_CPP
@@ -118,7 +126,6 @@ set(REALSENSE_CPP
     src/ds5/advanced_mode/presets.cpp
     src/ds5/advanced_mode/advanced_mode.cpp
 
-    third-party/easyloggingpp/src/easylogging++.cc
     third-party/sqlite/sqlite3.c
 
     src/mock/sql.cpp
@@ -129,6 +136,10 @@ set(REALSENSE_CPP
     src/media/playback/playback_device.cpp
     src/media/playback/playback_sensor.cpp
     )
+
+if(BUILD_EASYLOGGINGPP)
+    list(APPEND REALSENSE_CPP third-party/easyloggingpp/src/easylogging++.cc)
+endif()
 
 set(REALSENSE_HPP
     include/librealsense2/rs.hpp
@@ -234,13 +245,16 @@ set(REALSENSE_HPP
     src/ds5/advanced_mode/json_loader.hpp
     src/ds5/advanced_mode/presets.h
 
-    third-party/easyloggingpp/src/easylogging++.h
     third-party/sqlite/sqlite3.h
     src/mock/sql.h
     src/mock/recorder.h
 
     src/media/ros/ros_file_format.h
 )
+
+if(BUILD_EASYLOGGINGPP)
+    list(APPEND REALSENSE_HPP third-party/easyloggingpp/src/easylogging++.h)
+endif()
 
 if(WIN32)
     source_group("Source Files\\Backend" FILES

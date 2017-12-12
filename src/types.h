@@ -18,6 +18,7 @@
 #include <sstream>                          // For ostringstream
 #include <mutex>                            // For mutex, unique_lock
 #include <memory>                           // For unique_ptr
+#include <iostream>
 #include <map>
 #include <limits>
 #include <algorithm>
@@ -27,7 +28,9 @@
 
 #include "concurrency.h"
 
+#if BUILD_EASYLOGGINGPP
 #include "../third-party/easyloggingpp/src/easylogging++.h"
+#endif // BUILD_EASYLOGGINGPP
 
 typedef unsigned char byte;
 
@@ -64,12 +67,23 @@ namespace librealsense
     void log_to_console(rs2_log_severity min_severity);
     void log_to_file(rs2_log_severity min_severity, const char * file_path);
 
+#if BUILD_EASYLOGGINGPP
+
 #define LOG_DEBUG(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
 #define LOG_INFO(...)    do { CLOG(INFO    ,"librealsense") << __VA_ARGS__; } while(false)
 #define LOG_WARNING(...) do { CLOG(WARNING ,"librealsense") << __VA_ARGS__; } while(false)
 #define LOG_ERROR(...)   do { CLOG(ERROR   ,"librealsense") << __VA_ARGS__; } while(false)
 #define LOG_FATAL(...)   do { CLOG(FATAL   ,"librealsense") << __VA_ARGS__; } while(false)
 
+#else // BUILD_EASYLOGGINGPP
+
+#define LOG_DEBUG(...)   do { ; } while(false)
+#define LOG_INFO(...)    do { ; } while(false)
+#define LOG_WARNING(...) do { ; } while(false)
+#define LOG_ERROR(...)   do { ; } while(false)
+#define LOG_FATAL(...)   do { ; } while(false)
+
+#endif // BUILD_EASYLOGGINGPP
 
     //////////////////////////
     // Exceptions mechanism //
