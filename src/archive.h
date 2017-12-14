@@ -239,13 +239,19 @@ namespace librealsense
             case 2: pixel = reinterpret_cast<const uint16_t*>(get_frame_data())[y*get_width() + x]; break;
             case 4: pixel = reinterpret_cast<const uint32_t*>(get_frame_data())[y*get_width() + x]; break;
             case 8: pixel = reinterpret_cast<const uint64_t*>(get_frame_data())[y*get_width() + x]; break;
-            default: throw std::runtime_error("Unrecognized depth format");
+            default: throw std::runtime_error(to_string() << "Unrecognized depth format " << int(get_bpp() / 8) << " bytes per pixel");
             }
 
             return pixel * get_units();
         }
 
         float get_units() const { return query_units(this->get_sensor()); }
+
+        float get_focal_length(void) const
+        {
+            // TBD Evgeni
+            return 0.f;
+        }
 
         const frame_interface* get_original_depth() const
         {
@@ -270,7 +276,7 @@ namespace librealsense
             }, get_frame_data()));
         }
 
-    private:
+    protected:
         static float query_units(const std::shared_ptr<sensor_interface>& sensor)
         {
             if (sensor != nullptr)
@@ -313,6 +319,82 @@ namespace librealsense
     };
 
     MAP_EXTENSION(RS2_EXTENSION_DEPTH_FRAME, librealsense::depth_frame);
+
+    class disparity_frame : public depth_frame
+    {
+    public:
+        disparity_frame() : depth_frame()
+        {
+        }
+
+        float get_baseline(void) { return 0.f; } // TODO Evgeni
+
+        //const frame_interface* get_original_depth() const
+        //{
+        //    auto res = _original.frame;
+        //    auto df = dynamic_cast<depth_frame*>(res);
+        //    if (df)
+        //    {
+        //        auto prev = df->get_original_depth();
+        //        if (prev) return prev;
+        //    }
+        //    return res;
+        //}
+
+        //void set_original(frame_holder h)
+        //{
+        //    _original = std::move(h);
+        //    attach_continuation(frame_continuation([this]() {
+        //        if (_original)
+        //        {
+        //            _original = {};
+        //        }
+        //    }, get_frame_data()));
+        //}
+
+    //private:
+    //    static float query_units(const std::shared_ptr<sensor_interface>& sensor)
+    //    {
+    //        if (sensor != nullptr)
+    //        {
+    //            try
+    //            {
+    //                auto depth_sensor = As<librealsense::depth_sensor>(sensor);
+    //                if (depth_sensor != nullptr)
+    //                {
+    //                    return depth_sensor->get_depth_scale();
+    //                }
+    //                else
+    //                {
+    //                    //For playback sensors
+    //                    auto extendable = As<librealsense::extendable_interface>(sensor);
+    //                    if (extendable && extendable->extend_to(TypeToExtension<librealsense::depth_sensor>::value, (void**)(&depth_sensor)))
+    //                    {
+    //                        return depth_sensor->get_depth_scale();
+    //                    }
+    //                }
+    //            }
+    //            catch (const std::exception& e)
+    //            {
+    //                LOG_ERROR("Failed to query depth units from sensor. " << e.what());
+    //            }
+    //            catch (...)
+    //            {
+    //                LOG_ERROR("Failed to query depth units from sensor");
+    //            }
+    //        }
+    //        else
+    //        {
+    //            LOG_WARNING("sensor was nullptr");
+    //        }
+
+    //        return 0;
+    //    }
+
+    //    frame_holder _original;
+    };
+
+    MAP_EXTENSION(RS2_EXTENSION_DISPARITY_FRAME, librealsense::disparity_frame);
 
     //TODO: Define Motion Frame
 

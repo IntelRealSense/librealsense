@@ -103,6 +103,7 @@ set(REALSENSE_CPP
     src/proc/decimation-filter.cpp
     src/proc/spatial-filter.cpp
     src/proc/temporal-filter.cpp
+    src/proc/disparity-transform.cpp
     src/source.cpp
     src/ds5/ds5-options.cpp
     src/ds5/ds5-timestamp.cpp
@@ -197,6 +198,7 @@ set(REALSENSE_HPP
     src/proc/spatial-filter.h
     src/proc/temporal-filter.h
     src/proc/syncer-processing-block.h
+    src/proc/disparity-transform.h
     src/algo.h
     src/option.h
     src/metadata.h
@@ -417,6 +419,7 @@ if(WIN32)
         src/proc/spatial-filter.cpp
         src/proc/temporal-filter.cpp
         src/proc/syncer-processing-block.cpp
+        src/proc/disparity-transform.cpp
         )
 
     source_group("Header Files\\Processing Blocks" FILES
@@ -428,6 +431,7 @@ if(WIN32)
         src/proc/spatial-filter.h
         src/proc/temporal-filter.h
         src/proc/syncer-processing-block.h
+        src/proc/disparity-transform.h
         )
 
     foreach(flag_var

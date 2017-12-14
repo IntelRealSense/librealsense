@@ -167,6 +167,8 @@ namespace librealsense
             CASE(RECORD)
             CASE(VIDEO_PROFILE)
             CASE(PLAYBACK)
+            CASE(DEPTH_STEREO_SENSOR)
+            CASE(DISPARITY_FRAME)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
@@ -247,6 +249,7 @@ namespace librealsense
         CASE(FILTER_MAGNITUDE)
         CASE(FILTER_SMOOTH_ALPHA)
         CASE(FILTER_SMOOTH_DELTA)
+        CASE(STREAM_TRANSFORM)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE

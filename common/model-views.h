@@ -299,6 +299,8 @@ namespace rs2
         std::shared_ptr<processing_block_model> decimation_filter;
         std::shared_ptr<processing_block_model> spatial_filter;
         std::shared_ptr<processing_block_model> temporal_filter;
+        std::shared_ptr<processing_block_model> depth_to_disparity;
+        std::shared_ptr<processing_block_model> disparity_to_depth;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
         bool post_processing_enabled = false;

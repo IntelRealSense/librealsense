@@ -144,6 +144,12 @@ rs2_processing_block* rs2_create_temporal_filter_block(rs2_error** error);
 */
 rs2_processing_block* rs2_create_spatial_filter_block(rs2_error** error);
 
+/**
+* Creates a post processing block that provides for depth<->disparity domain transformation for stereo-based depth modules
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_disparity_transform_block(rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

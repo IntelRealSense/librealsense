@@ -36,7 +36,7 @@ namespace librealsense
                     << "Unsupported decimation factor value " << val << " is out of range.");
 
             // The decimation factor represents the 2's exponent
-            _decimation_factor = val;
+            _decimation_factor = static_cast<uint8_t>(val);
             _patch_size = 0x1 << uint8_t(_decimation_factor - 1);
             _kernel_size = _patch_size*_patch_size;
             _recalc_profile = true;

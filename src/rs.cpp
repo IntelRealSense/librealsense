@@ -20,6 +20,7 @@
 #include "proc/align.h"
 #include "proc/colorizer.h"
 #include "proc/pointcloud.h"
+#include "proc/disparity-transform.h"
 #include "proc/syncer-processing-block.h"
 #include "proc/decimation-filter.h"
 #include "proc/spatial-filter.h"
@@ -1091,6 +1092,7 @@ int rs2_is_frame_extendable_to(const rs2_frame* f, rs2_extension extension_type,
     case RS2_EXTENSION_COMPOSITE_FRAME: return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::composite_frame) != nullptr;
     case RS2_EXTENSION_POINTS:          return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::points) != nullptr;
     case RS2_EXTENSION_DEPTH_FRAME:      return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::depth_frame) != nullptr;
+    case RS2_EXTENSION_DISPARITY_FRAME:  return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::disparity_frame) != nullptr;
         //case RS2_EXTENSION_MOTION_FRAME :  return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::motion_frame) != nullptr;
 
     default:
@@ -1655,6 +1657,13 @@ rs2_processing_block* rs2_create_spatial_filter_block(rs2_error** error) BEGIN_A
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
+rs2_processing_block* rs2_create_disparity_transform_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::disparity_transform>();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {
@@ -1678,6 +1687,23 @@ float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2
     return df->get_distance(x, y);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref, x, y)
+
+float rs2_depth_stereo_frame_get_baseline(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame_ref);
+    auto df = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::disparity_frame);
+    return df->get_baseline();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
+
+float rs2_disparity_frame_get_focal_length(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame_ref);
+    auto df = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::depth_frame);
+    return df->get_focal_length();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
+
 
 rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
 {
