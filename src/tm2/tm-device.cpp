@@ -96,6 +96,17 @@ namespace librealsense
         rs2_frame_metadata_value _type;
     };
 
+    inline std::ostream&  operator<<(std::ostream& os, const uint8_t(&mac)[6])
+    {
+        std::ostringstream oss;
+        oss << std::hex << (int)mac[0] << ":";
+        oss << std::hex << (int)mac[1] << ":";
+        oss << std::hex << (int)mac[2] << ":";
+        oss << std::hex << (int)mac[3] << ":";
+        oss << std::hex << (int)mac[4] << ":";
+        oss << std::hex << (int)mac[5];
+        return os << oss.str();
+    }
     tm2_sensor::tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev)
         : sensor_base("Tracking Module", owner), _tm_dev(dev)
     {
@@ -743,16 +754,23 @@ namespace librealsense
 
     void tm2_sensor::onControllerDiscoveryEventFrame(perc::TrackingData::ControllerDiscoveryEventFrame& frame)
     {
-        //TODO
+        std::string msg = to_string() << "Controller Discovered : " << frame.macAddress;
+        raise_controller_event(msg, frame.timestamp);
+
     }
     void tm2_sensor::onControllerDisconnectedEventFrame(perc::TrackingData::ControllerDisconnectedEventFrame& frame)
     {
-        //TODO
+        std::string msg = to_string() << "Controller Disconnected : " << frame.controllerId;
+        raise_controller_event(msg, frame.timestamp);
     }
 
     void tm2_sensor::onControllerFrame(perc::TrackingData::ControllerFrame& frame)
     {
-        //TODO
+        std::string msg = to_string() << "[" << frame.arrivalTimeStamp << "] Controller Event :\n"
+            << "Controller #" << frame.sensorIndex << "\n"
+            << "Button Type " << frame.eventId << " #"         << frame.instanceId << "\n"
+            << "Data: "       << frame.sensorData << "\n";
+        raise_controller_event(msg, frame.timestamp);
     }
 
     void tm2_sensor::enable_loopback(std::shared_ptr<playback_device> input)
@@ -821,6 +839,16 @@ namespace librealsense
         }
         _source.invoke_callback(std::move(frame));
     }
+    void tm2_sensor::raise_controller_event(const std::string& msg, double timestamp)
+    {
+        notification discoverd{ RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT, 0, RS2_LOG_SEVERITY_INFO, msg };
+        discoverd.timestamp = timestamp;
+        get_notifications_proccessor()->raise_notification(discoverd);
+    }
+
+
+    ///////////////
+    // Device
 
     tm2_device::tm2_device(
         std::shared_ptr<perc::TrackingManager> manager,

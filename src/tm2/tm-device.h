@@ -62,6 +62,7 @@ namespace librealsense
     private:
         void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
         void pass_frames_to_fw(frame_holder fref);
+        void raise_controller_event(const std::string& msg, double timestamp);
 
         perc::TrackingDevice* _tm_dev;
         std::mutex _configure_lock;

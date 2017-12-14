@@ -357,6 +357,7 @@ namespace librealsense
         CASE(FRAMES_TIMEOUT)
         CASE(FRAME_CORRUPTED)
         CASE(HARDWARE_ERROR)
+        CASE(HARDWARE_EVENT)
         CASE(UNKNOWN_ERROR)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }

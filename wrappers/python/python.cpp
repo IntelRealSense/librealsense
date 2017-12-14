@@ -143,6 +143,7 @@ PYBIND11_PLUGIN(NAME) {
     notification_category.value("frames_timeout", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT)
                          .value("frame_corrupted", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED)
                          .value("hardware_error", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR)
+                         .value("hardware_event", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT)
                          .value("unknown_error", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR)
                          .value("count", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_COUNT);
 
