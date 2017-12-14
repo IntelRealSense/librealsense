@@ -706,7 +706,8 @@ namespace rs2
             }
             if (!any_stream_enabled)
             {
-                stream_enabled[uvc_profiles[uvc_profiles.size()-1].unique_id()] = true;
+                if(uvc_profiles.size() > 0)
+                    stream_enabled[uvc_profiles[uvc_profiles.size()-1].unique_id()] = true;
             }
 
             for (auto&& fps_list : fps_values_per_stream)
@@ -3906,9 +3907,9 @@ namespace rs2
             {
                 show_device_info = false;
             }
+            bool is_device_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& s) { return s->streaming; });
             if (!is_recording && !dev.is<playback>())
             {
-                bool is_device_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& s) { return s->streaming; });
                 if (ImGui::Selectable("Record to File...", false, is_device_streaming ? ImGuiSelectableFlags_Disabled : 0))
                 {
                     auto ret = file_dialog_open(save_file, "ROS-bag\0*.bag\0", NULL, NULL);
@@ -3929,16 +3930,34 @@ namespace rs2
             }
             if (auto loopback = dev.as<rs2::loopback>())
             {
-                if (!loopback.enabled() && ImGui::Selectable("Enable loopback..."))
+                try
                 {
-                    if(const char* ret = file_dialog_open(file_dialog_mode::open_file, "ROS-bag\0*.bag\0", NULL, NULL))
+                    if (!loopback.enabled() && ImGui::Selectable("Enable loopback...", false, is_device_streaming ? ImGuiSelectableFlags_Disabled : 0))
                     {
-                        loopback.enable(ret);
+                        if (const char* ret = file_dialog_open(file_dialog_mode::open_file, "ROS-bag\0*.bag\0", NULL, NULL))
+                        {
+                            loopback.enable(ret);
+                        }
+                    }
+                    if (loopback.enabled() && ImGui::Selectable("Disable loopback...", false, is_device_streaming ? ImGuiSelectableFlags_Disabled : 0))
+                    {
+                        loopback.disable();
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        if (is_device_streaming)
+                            ImGui::SetTooltip("Stop streaming to use loopback functionality");
+                        else
+                            ImGui::SetTooltip("Enter the device to loopback mode (inject frames from file to FW)");
                     }
                 }
-                if (loopback.enabled() && ImGui::Selectable("Disable loopback..."))
+                catch (const rs2::error& e)
                 {
-                    loopback.disable();
+                    error_message = error_to_string(e);
+                }
+                catch (const std::exception& e)
+                {
+                    error_message = e.what();
                 }
             }
             if (show_device_info && ImGui::Selectable("Hide Device Details..."))

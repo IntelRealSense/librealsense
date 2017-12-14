@@ -111,7 +111,15 @@ namespace librealsense
         }
     }
 
+    inline void convert(const std::string& source, double& target)
+    {
+        target = std::stod(source);
+    }
 
+    inline void convert(const std::string& source, long long& target)
+    {
+        target = std::stoll(source);
+    }
     /*
     quat2rot(), rot2quat()
     ------------------

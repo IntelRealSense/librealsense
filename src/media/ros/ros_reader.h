@@ -320,6 +320,21 @@ namespace librealsense
             }
         }
         
+        template <typename T>
+        static bool safe_convert(const std::string& key, T& val)
+        {
+            try
+            {
+                convert(key, val);
+            }
+            catch (const std::exception& e)
+            {
+                LOG_ERROR(e.what());
+                return false;
+            }
+            return true;
+        }
+
         static std::map<std::string, std::string> get_frame_metadata(const rosbag::Bag& bag, 
             const std::string& topic,
             const device_serializer::stream_identifier& stream_id, 
@@ -329,33 +344,39 @@ namespace librealsense
             uint32_t total_md_size = 0;
             std::map<std::string, std::string> remaining;
             rosbag::View frame_metadata_view(bag, rosbag::TopicQuery(topic), msg.getTime(), msg.getTime());
+
             for (auto message_instance : frame_metadata_view)
             {
                 auto key_val_msg = instantiate_msg<diagnostic_msgs::KeyValue>(message_instance);
-
                 if (key_val_msg->key == "timestamp_domain") //TODO: use constants
                 {
-                    convert(key_val_msg->value, additional_data.timestamp_domain);
+                    if (!safe_convert(key_val_msg->value, additional_data.timestamp_domain))
+                    {
+                        remaining[key_val_msg->key] = key_val_msg->value;
+                    }
                 }
                 else if (key_val_msg->key == "system_time") //TODO: use constants
                 {
-                    additional_data.system_time = std::stod(key_val_msg->value);
+                    if (!safe_convert(key_val_msg->value, additional_data.system_time))
+                    {
+                        remaining[key_val_msg->key] = key_val_msg->value;
+                    }
                 }
                 else
                 {
                     rs2_frame_metadata_value type;
-                    try
+                    if (!safe_convert(key_val_msg->key, type))
                     {
-                        convert(key_val_msg->key, type);
+                        remaining[key_val_msg->key] = key_val_msg->value;
+                        continue;
                     }
-                    catch (const std::exception& e)
+                    rs2_metadata_type md;
+                    if (!safe_convert(key_val_msg->value, md))
                     {
-                        LOG_ERROR(e.what());
                         remaining[key_val_msg->key] = key_val_msg->value;
                         continue;
                     }
                     auto size_of_enum = sizeof(rs2_frame_metadata_value);
-                    rs2_metadata_type md = static_cast<rs2_metadata_type>(std::stoll(key_val_msg->value));
                     auto size_of_data = sizeof(rs2_metadata_type);
                     if (total_md_size + size_of_enum + size_of_data > 255)
                     {
@@ -374,16 +395,7 @@ namespace librealsense
         frame_holder create_image_from_message(const rosbag::MessageInstance &image_data) const
         {
             LOG_DEBUG("Trying to create an image frame from message");
-            auto msg = image_data.instantiate<sensor_msgs::Image>();
-            if (msg == nullptr)
-            {
-                throw io_exception(to_string()
-                    << "Invalid file format, expected "
-                    << ros::message_traits::DataType<sensor_msgs::Image>::value()
-                    << " message but got: " << image_data.getDataType()
-                    << "(Topic: " << image_data.getTopic() << ")");
-            }
-
+            auto msg = instantiate_msg<sensor_msgs::Image>(image_data);
             frame_additional_data additional_data{};
             std::chrono::duration<double, std::milli> timestamp_ms(std::chrono::duration<double>(msg->header.stamp.toSec()));
             additional_data.timestamp = timestamp_ms.count();
