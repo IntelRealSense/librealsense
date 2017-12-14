@@ -950,10 +950,11 @@ class RSFrame : public Nan::ObjectWrap {
   static Nan::Persistent<v8::Function> constructor_;
   rs2_frame* frame_;
   rs2_error* error_;
-  friend class RSFrameQueue;
-  friend class RSSyncer;
   friend class RSColorizer;
+  friend class RSFilter;
+  friend class RSFrameQueue;
   friend class RSPointCloud;
+  friend class RSSyncer;
 };
 
 Nan::Persistent<v8::Function> RSFrame::constructor_;
@@ -2407,12 +2408,24 @@ class RSPointCloud : public Nan::ObjectWrap {
   static NAN_METHOD(MapTo) {
     auto me = Nan::ObjectWrap::Unwrap<RSPointCloud>(info.Holder());
     auto frame = Nan::ObjectWrap::Unwrap<RSFrame>(info[0]->ToObject());
-    if (me && frame) {
-      // rs2_process_frame will release the input frame, so we need to addref
-      rs2_frame_add_ref(frame->frame_, &me->error_);
-      rs2_process_frame(me->processing_block_, frame->frame_, &me->error_);
-    }
     info.GetReturnValue().Set(Nan::Undefined());
+    if (!me || !frame) return;
+
+    const rs2_stream_profile* profile = rs2_get_frame_stream_profile(
+        frame->frame_, &me->error_);
+    if (!profile) return;
+
+    StreamProfileExtrator extrator(profile);
+    rs2_set_option(
+        reinterpret_cast<rs2_options*>(me->processing_block_),
+        RS2_OPTION_TEXTURE_SOURCE,
+        static_cast<float>(extrator.unique_id_),
+        &me->error_);
+    if (extrator.stream_ == RS2_STREAM_DEPTH) return;
+
+    // rs2_process_frame will release the input frame, so we need to addref
+    rs2_frame_add_ref(frame->frame_, &me->error_);
+    rs2_process_frame(me->processing_block_, frame->frame_, &me->error_);
   }
 
  private:
@@ -3528,7 +3541,7 @@ class RSColorizer : public Nan::ObjectWrap, Options {
 
   static NAN_METHOD(IsOptionReadonly) {
     auto me = Nan::ObjectWrap::Unwrap<RSColorizer>(info.Holder());
-    if (me) me->IsOptionReadonlyInternal(info);
+    if (me) return me->IsOptionReadonlyInternal(info);
 
     info.GetReturnValue().Set(Nan::False());
   }
@@ -3639,6 +3652,162 @@ class RSAlign : public Nan::ObjectWrap {
 
 Nan::Persistent<v8::Function> RSAlign::constructor_;
 
+class RSFilter : public Nan::ObjectWrap, Options {
+ public:
+  enum FilterType {
+    kFilterDecimation = 0,
+    kFilterTemporal,
+    kFilterSpatial,
+  };
+  static void Init(v8::Local<v8::Object> exports) {
+    v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
+    tpl->SetClassName(Nan::New("RSFilter").ToLocalChecked());
+    tpl->InstanceTemplate()->SetInternalFieldCount(1);
+
+    Nan::SetPrototypeMethod(tpl, "destroy", Destroy);
+    Nan::SetPrototypeMethod(tpl, "process", Process);
+    Nan::SetPrototypeMethod(tpl, "supportsOption", SupportsOption);
+    Nan::SetPrototypeMethod(tpl, "getOption", GetOption);
+    Nan::SetPrototypeMethod(tpl, "setOption", SetOption);
+    Nan::SetPrototypeMethod(tpl, "getOptionRange", GetOptionRange);
+    Nan::SetPrototypeMethod(tpl, "isOptionReadonly", IsOptionReadonly);
+    Nan::SetPrototypeMethod(tpl, "getOptionDescription", GetOptionDescription);
+    Nan::SetPrototypeMethod(tpl, "getOptionValueDescription",
+        GetOptionValueDescription);
+
+    constructor_.Reset(tpl->GetFunction());
+    exports->Set(Nan::New("RSFilter").ToLocalChecked(), tpl->GetFunction());
+  }
+
+  rs2_options* GetOptionsPointer() override {
+    return reinterpret_cast<rs2_options*>(block_);
+  }
+
+ private:
+  RSFilter() : block_(nullptr), frame_queue_(nullptr), error_(nullptr),
+      type_(kFilterDecimation) {}
+
+  ~RSFilter() {
+    DestroyMe();
+  }
+
+  void DestroyMe() {
+    if (error_) rs2_free_error(error_);
+    error_ = nullptr;
+    if (block_) rs2_delete_processing_block(block_);
+    block_ = nullptr;
+    if (frame_queue_) rs2_delete_frame_queue(frame_queue_);
+    frame_queue_ = nullptr;
+  }
+
+  static NAN_METHOD(Destroy) {
+    auto me = Nan::ObjectWrap::Unwrap<RSFilter>(info.Holder());
+    if (me) me->DestroyMe();
+
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static void New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+    if (!info.IsConstructCall()) return;
+
+    v8::String::Utf8Value type_str(info[0]);
+    std::string type = std::string(*type_str);
+    RSFilter* obj = new RSFilter();
+    if (!(type.compare("decimation"))) {
+      obj->type_ = kFilterDecimation;
+      obj->block_ = rs2_create_decimation_filter_block(&obj->error_);
+    } else if (!(type.compare("temporal"))) {
+      obj->type_ = kFilterTemporal;
+      obj->block_ = rs2_create_temporal_filter_block(&obj->error_);
+    } else if (!(type.compare("spatial"))) {
+      obj->type_ = kFilterSpatial;
+      obj->block_ = rs2_create_spatial_filter_block(&obj->error_);
+    }
+    obj->frame_queue_ = rs2_create_frame_queue(1, &obj->error_);
+    auto callback = new FrameCallbackForFrameQueue(obj->frame_queue_);
+    rs2_start_processing(obj->block_, callback, &obj->error_);
+    obj->Wrap(info.This());
+    info.GetReturnValue().Set(info.This());
+  }
+
+  static NAN_METHOD(Process) {
+    auto me = Nan::ObjectWrap::Unwrap<RSFilter>(info.Holder());
+    auto input_frame = Nan::ObjectWrap::Unwrap<RSFrame>(info[0]->ToObject());
+    auto out_frame = Nan::ObjectWrap::Unwrap<RSFrame>(info[1]->ToObject());
+    info.GetReturnValue().Set(Nan::False());
+    if (!me || !input_frame || !out_frame) return;
+
+    // rs2_process_frame will release the input frame, so we need to addref
+    rs2_frame_add_ref(input_frame->frame_, &me->error_);
+    rs2_process_frame(me->block_, input_frame->frame_, &me->error_);
+    rs2_frame* frame = nullptr;
+    auto ret_code = rs2_poll_for_frame(me->frame_queue_, &frame, &me->error_);
+    if (ret_code) {
+      out_frame->Replace(frame);
+      info.GetReturnValue().Set(Nan::True());
+    }
+  }
+
+  static NAN_METHOD(SupportsOption) {
+    auto me = Nan::ObjectWrap::Unwrap<RSFilter>(info.Holder());
+    if (me) return me->SupportsOptionInternal(info);
+
+    info.GetReturnValue().Set(Nan::False());
+  }
+
+  static NAN_METHOD(GetOption) {
+    auto me = Nan::ObjectWrap::Unwrap<RSFilter>(info.Holder());
+    if (me) return me->GetOptionInternal(info);
+
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(GetOptionDescription) {
+    auto me = Nan::ObjectWrap::Unwrap<RSFilter>(info.Holder());
+    if (me) return me->GetOptionDescriptionInternal(info);
+
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(GetOptionValueDescription) {
+    auto me = Nan::ObjectWrap::Unwrap<RSFilter>(info.Holder());
+    if (me) return me->GetOptionValueDescriptionInternal(info);
+
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(SetOption) {
+    auto me = Nan::ObjectWrap::Unwrap<RSFilter>(info.Holder());
+    if (me) return me->SetOptionInternal(info);
+
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(GetOptionRange) {
+    auto me = Nan::ObjectWrap::Unwrap<RSFilter>(info.Holder());
+    if (me) return me->GetOptionRangeInternal(info);
+
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(IsOptionReadonly) {
+    auto me = Nan::ObjectWrap::Unwrap<RSFilter>(info.Holder());
+    if (me) return me->IsOptionReadonlyInternal(info);
+
+    info.GetReturnValue().Set(Nan::False());
+  }
+
+ private:
+  static Nan::Persistent<v8::Function> constructor_;
+
+  rs2_processing_block* block_;
+  rs2_frame_queue* frame_queue_;
+  rs2_error* error_;
+  FilterType type_;
+};
+
+Nan::Persistent<v8::Function> RSFilter::constructor_;
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -3696,6 +3865,7 @@ void InitModule(v8::Local<v8::Object> exports) {
   RSFrame::Init(exports);
   RSSyncer::Init(exports);
   RSAlign::Init(exports);
+  RSFilter::Init(exports);
 
   // rs2_exception_type
   _FORCE_SET_ENUM(RS2_EXCEPTION_TYPE_UNKNOWN);
@@ -3794,6 +3964,10 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED);
   _FORCE_SET_ENUM(RS2_OPTION_MIN_DISTANCE);
   _FORCE_SET_ENUM(RS2_OPTION_MAX_DISTANCE);
+  _FORCE_SET_ENUM(RS2_OPTION_TEXTURE_SOURCE);
+  _FORCE_SET_ENUM(RS2_OPTION_FILTER_MAGNITUDE);
+  _FORCE_SET_ENUM(RS2_OPTION_FILTER_SMOOTH_ALPHA);
+  _FORCE_SET_ENUM(RS2_OPTION_FILTER_SMOOTH_DELTA);
   _FORCE_SET_ENUM(RS2_OPTION_COUNT);
 
   // rs2_camera_info
