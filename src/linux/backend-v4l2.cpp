@@ -557,15 +557,12 @@ namespace librealsense
                                 ss >> std::hex >> id;
                                 fourcc = (const big_endian<int> &)id;
 
-                                auto format_str = fourcc_to_string(id);
-
                                 if (fourcc == profile.format)
                                 {
-                                    throw linux_backend_exception(to_string() <<
-                                                                  "Requested pixel format is not natively supported by the Linux kernel and likely requires a patch for fourcc code " <<
-                                                                  format_str << "!\nAlternatively please upgrade to kernel 4.12 or later.");
+                                    throw linux_backend_exception(to_string() << "The requested pixel format '"  << fourcc_to_string(id)
+                                                                  << "' is not natively supported by the Linux kernel and likely requires a patch"
+                                                                  <<  "!\nAlternatively please upgrade to kernel 4.12 or later.");
                                 }
-
                             }
                         }
                     }

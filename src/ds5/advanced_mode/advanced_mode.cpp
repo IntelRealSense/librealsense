@@ -460,7 +460,7 @@ namespace librealsense
     void ds5_advanced_mode_base::set_depth_auto_white_balance(const auto_white_balance_control& val)
     {
         if (val.was_set)
-            _depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE).set(val.auto_white_balance);
+            _depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE).set(float(val.auto_white_balance));
     }
 
     void ds5_advanced_mode_base::set_color_exposure(const exposure_control& val)

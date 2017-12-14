@@ -49,11 +49,13 @@ namespace rs2
                         const std::string& units, const std::string& description,
                         const bool with_plane_fit)
                 : _idx(0), _first_idx(0),_vals(), _min(min), _max(max), _id("##" + name),
-                  _label(name + " = "), _name(name),
-                  _units(units), _description(description),
-                _visible(true), _requires_plane_fit(with_plane_fit),
-                  _trending_up(std::chrono::milliseconds(700)),
-                  _trending_down(std::chrono::milliseconds(700))
+                _label(name + " = "), _name(name),
+                _units(units), _description(description),
+                _enabled(true),
+                _requires_plane_fit(with_plane_fit),
+                _trending_up(std::chrono::milliseconds(700)),
+                _trending_down(std::chrono::milliseconds(700)),
+                _persistent_visibility(std::chrono::milliseconds(2000)) // The metric's status will be absorbed to make the UI persistent
             {
                 for (int i = 0; i < MAX_RANGE; i++) ranges[i] = { 0.f, 0.f };
             }
@@ -74,9 +76,20 @@ namespace rs2
             void visible(bool is_visible)
             {
                 std::lock_guard<std::mutex> lock(_m);
-                _visible = is_visible;
+                _persistent_visibility.add_value(is_visible);
             }
 
+            void enable(bool enable)
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                if (enable != _enabled)
+                {
+                    _persistent_visibility.reset();
+                    _enabled = enable;
+                }
+            }
+
+            bool enabled() const { return _enabled; }
             bool requires_plane_fit() const { return _requires_plane_fit; }
 
         private:
@@ -89,12 +102,13 @@ namespace rs2
             std::array<double, SIZE> _timestamps;
             float _min, _max;
             std::string _id, _label, _units, _name, _description;
-            bool _visible;
+            bool _enabled;
             const bool _requires_plane_fit;
 
             timer _model_timer;
             temporal_event _trending_up;
             temporal_event _trending_down;
+            temporal_event _persistent_visibility;  // Control the metric visualization
 
             float2 ranges[MAX_RANGE];
 
@@ -123,10 +137,11 @@ namespace rs2
                 _stereo_baseline_mm = baseline;
             };
 
-            void update_frame_attributes(const region_of_interest& roi)
+            void update_roi_attributes(const region_of_interest& roi, float roi_percent)
             {
                 std::lock_guard<std::mutex> lock(_m);
                 _roi = roi;
+                _roi_percentage = roi_percent;
             }
 
             region_of_interest get_roi()
@@ -162,8 +177,11 @@ namespace rs2
                 _plane_fit = found;
                 for (auto&& plot : _plots)
                 {
-                    if (plot->requires_plane_fit())
-                        plot->visible(found);
+                    if (plot->enabled())
+                    {
+                        bool val = plot->requires_plane_fit() ? found : true;
+                        plot->visible(val);
+                    }
                 }
             }
 
@@ -199,6 +217,7 @@ namespace rs2
             bool                    _use_gt;
             bool                    _plane_fit;
             region_of_interest      _roi;
+            float                   _roi_percentage;
             snapshot_metrics        _latest_metrics;
             bool                    _active;
 
@@ -242,6 +261,8 @@ namespace rs2
             pipeline                        _pipe;
             std::shared_ptr<device_model>   _device_model;
             viewer_model                    _viewer_model;
+            rs2::points                     _last_points;
+            texture_buffer*                  _last_texture;
             std::shared_ptr<subdevice_model> _depth_sensor_model;
             metrics_model                   _metrics_model;
             std::string                     _error_message;

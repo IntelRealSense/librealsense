@@ -10,16 +10,37 @@
 
 #include <iostream>
 #include <list>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
 
 class MainThreadCallbackInfo {
  public:
-  MainThreadCallbackInfo() {}
-  virtual ~MainThreadCallbackInfo() {}
+  MainThreadCallbackInfo() : consumed_(false) {
+    pending_infos_.push_back(this);
+  }
+  virtual ~MainThreadCallbackInfo() {
+    pending_infos_.erase(
+        std::find(pending_infos_.begin(), pending_infos_.end(), this));
+  }
   virtual void Run() {}
+  virtual void Release() {}
+  void SetConsumed() { consumed_ = true; }
+  static bool InfoExist(MainThreadCallbackInfo* info) {
+    auto result = std::find(pending_infos_.begin(), pending_infos_.end(), info);
+    return (result != pending_infos_.end());
+  }
+  static void ReleasePendingInfos() {
+    while (pending_infos_.size()) { delete *(pending_infos_.begin()); }
+  }
+
+ protected:
+  static std::list<MainThreadCallbackInfo*> pending_infos_;
+  bool consumed_;
 };
+
+std::list<MainThreadCallbackInfo*> MainThreadCallbackInfo::pending_infos_;
 
 class MainThreadCallback {
  public:
@@ -31,6 +52,7 @@ class MainThreadCallback {
     if (singleton_) {
       delete singleton_;
       singleton_ = nullptr;
+      MainThreadCallbackInfo::ReleasePendingInfos();
     }
   }
   ~MainThreadCallback() {
@@ -53,12 +75,16 @@ class MainThreadCallback {
   }
 
   static void AsyncProc(uv_async_t* async) {
-    if (async->data) {
-      MainThreadCallbackInfo* info =
-        reinterpret_cast<MainThreadCallbackInfo*>(async->data);
-      info->Run();
-      delete info;
-    }
+    if (!(async->data))
+      return;
+
+    MainThreadCallbackInfo* info =
+      reinterpret_cast<MainThreadCallbackInfo*>(async->data);
+    info->Run();
+    // As the above info->Run() enters js world and during that, any code
+    // such as cleanup() could be called to release everything. So this info
+    // may has been released, we need to check before releasing it.
+    if (MainThreadCallbackInfo::InfoExist(info)) delete info;
   }
   static MainThreadCallback* singleton_;
   uv_async_t* async_;
@@ -1070,8 +1096,16 @@ class FrameCallbackInfo : public MainThreadCallbackInfo {
  public:
   FrameCallbackInfo(rs2_frame* frame,  void* data) :
       frame_(frame), sensor_(static_cast<RSSensor*>(data)) {}
-  virtual ~FrameCallbackInfo() {}
+  virtual ~FrameCallbackInfo() { if (!consumed_) Release(); }
   virtual void Run();
+  virtual void Release() {
+    if (frame_) {
+      rs2_release_frame(frame_);
+      frame_ = nullptr;
+    }
+  }
+
+ private:
   rs2_frame* frame_;
   RSSensor* sensor_;
 };
@@ -1087,6 +1121,8 @@ class NotificationCallbackInfo : public MainThreadCallbackInfo {
       category_(category), sensor_(s) {}
   virtual ~NotificationCallbackInfo() {}
   virtual void Run();
+
+ private:
   const char* desc_;
   rs2_time_t time_;
   rs2_log_severity severity_;
@@ -1152,6 +1188,33 @@ class FrameCallbackForProcessingBlock : public rs2_frame_callback {
   void release() override { delete this; }
   rs2_processing_block* block_;
   rs2_error* error_;
+};
+
+class PlaybackStatusCallbackInfo : public MainThreadCallbackInfo {
+ public:
+  PlaybackStatusCallbackInfo(rs2_playback_status status, RSDevice* dev) :
+      status_(status), dev_(dev), error_(nullptr) {}
+  virtual ~PlaybackStatusCallbackInfo() {}
+  virtual void Run();
+
+ private:
+  rs2_playback_status status_;
+  RSDevice* dev_;
+  rs2_error* error_;
+};
+
+class PlaybackStatusCallback : public rs2_playback_status_changed_callback {
+ public:
+  explicit PlaybackStatusCallback(RSDevice* dev) : error_(nullptr), dev_(dev) {}
+  void on_playback_status_changed(rs2_playback_status status) override {
+    MainThreadCallback::NotifyMainThread(new PlaybackStatusCallbackInfo(status,
+        dev_));
+  }
+  void release() override { delete this; }
+
+ private:
+  rs2_error* error_;
+  RSDevice* dev_;
 };
 
 class StreamProfileExtrator {
@@ -1952,6 +2015,11 @@ void RSSensor::RegisterNotificationCallbackMethod() {
 
 class RSDevice : public Nan::ObjectWrap {
  public:
+  enum DeviceType {
+    kNormalDevice = 0,
+    kRecorderDevice,
+    kPlaybackDevice,
+  };
   static void Init(v8::Local<v8::Object> exports) {
     v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
     tpl->SetClassName(Nan::New("RSDevice").ToLocalChecked());
@@ -1963,12 +2031,32 @@ class RSDevice : public Nan::ObjectWrap {
     Nan::SetPrototypeMethod(tpl, "reset", Reset);
     Nan::SetPrototypeMethod(tpl, "querySensors", QuerySensors);
     Nan::SetPrototypeMethod(tpl, "triggerErrorForTest", TriggerErrorForTest);
+    Nan::SetPrototypeMethod(tpl, "spawnRecorderDevice", SpawnRecorderDevice);
+
+    // Methods for record
+    Nan::SetPrototypeMethod(tpl, "pauseRecord", PauseRecord);
+    Nan::SetPrototypeMethod(tpl, "resumeRecord", ResumeRecord);
+
+    // Methods for playback
+    Nan::SetPrototypeMethod(tpl, "pausePlayback", PausePlayback);
+    Nan::SetPrototypeMethod(tpl, "resumePlayback", ResumePlayback);
+    Nan::SetPrototypeMethod(tpl, "stopPlayback", StopPlayback);
+    Nan::SetPrototypeMethod(tpl, "getPosition", GetPosition);
+    Nan::SetPrototypeMethod(tpl, "getDuration", GetDuration);
+    Nan::SetPrototypeMethod(tpl, "seek", Seek);
+    Nan::SetPrototypeMethod(tpl, "isRealTime", IsRealTime);
+    Nan::SetPrototypeMethod(tpl, "setIsRealTime", SetIsRealTime);
+    Nan::SetPrototypeMethod(tpl, "setPlaybackSpeed", SetPlaybackSpeed);
+    Nan::SetPrototypeMethod(tpl, "getCurrentStatus", GetCurrentStatus);
+    Nan::SetPrototypeMethod(tpl, "setStatusChangedCallbackMethodName",
+        SetStatusChangedCallbackMethodName);
 
     constructor_.Reset(tpl->GetFunction());
     exports->Set(Nan::New("RSDevice").ToLocalChecked(), tpl->GetFunction());
   }
 
-  static v8::Local<v8::Object> NewInstance(rs2_device* dev) {
+  static v8::Local<v8::Object> NewInstance(rs2_device* dev,
+      DeviceType type = kNormalDevice) {
     Nan::EscapableHandleScope scope;
 
     v8::Local<v8::Function> cons = Nan::New<v8::Function>(constructor_);
@@ -1980,12 +2068,14 @@ class RSDevice : public Nan::ObjectWrap {
 
     auto me = Nan::ObjectWrap::Unwrap<RSDevice>(instance);
     me->dev_ = dev;
+    me->type_ = type;
 
     return scope.Escape(instance);
   }
 
  private:
-  RSDevice() : dev_(nullptr), error_(nullptr) {}
+  explicit RSDevice(DeviceType type = kNormalDevice) : dev_(nullptr),
+      error_(nullptr), type_(type) {}
 
   ~RSDevice() {
     DestroyMe();
@@ -2047,23 +2137,24 @@ class RSDevice : public Nan::ObjectWrap {
   }
 
   static NAN_METHOD(QuerySensors) {
-    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
-    if (me) {
-      rs2_sensor_list* list = rs2_query_sensors(me->dev_, &me->error_);
-      if (list) {
-        auto size = rs2_get_sensors_count(list, &me->error_);
-        if (size) {
-          v8::Local<v8::Array> array = Nan::New<v8::Array>();
-          for (int32_t i = 0; i < size; i++) {
-            rs2_sensor* sensor = rs2_create_sensor(list, i, &me->error_);
-            array->Set(i, RSSensor::NewInstance(sensor));
-          }
-          info.GetReturnValue().Set(array);
-          return;
-        }
-      }
-    }
     info.GetReturnValue().Set(Nan::Undefined());
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    if (!me) return;
+
+    std::shared_ptr<rs2_sensor_list> list(
+        rs2_query_sensors(me->dev_, &me->error_),
+        rs2_delete_sensor_list);
+    if (!list) return;
+
+    auto size = rs2_get_sensors_count(list.get(), &me->error_);
+    if (!size) return;
+
+    v8::Local<v8::Array> array = Nan::New<v8::Array>();
+    for (int32_t i = 0; i < size; i++) {
+      rs2_sensor* sensor = rs2_create_sensor(list.get(), i, &me->error_);
+      array->Set(i, RSSensor::NewInstance(sensor));
+    }
+    info.GetReturnValue().Set(array);
   }
 
   static NAN_METHOD(TriggerErrorForTest) {
@@ -2081,21 +2172,142 @@ class RSDevice : public Nan::ObjectWrap {
     info.GetReturnValue().Set(Nan::Undefined());
   }
 
+  static NAN_METHOD(SpawnRecorderDevice) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me) return;
+
+    v8::String::Utf8Value file(info[0]->ToString());
+    auto dev = rs2_create_record_device(me->dev_, *file, &me->error_);
+    auto obj = RSDevice::NewInstance(dev, kRecorderDevice);
+    info.GetReturnValue().Set(obj);
+  }
+
+  static NAN_METHOD(PauseRecord) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    if (me) rs2_record_device_pause(me->dev_, &me->error_);
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(ResumeRecord) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    if (me) rs2_record_device_resume(me->dev_, &me->error_);
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(PausePlayback) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    if (me) rs2_playback_device_pause(me->dev_, &me->error_);
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(ResumePlayback) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    if (me) rs2_playback_device_resume(me->dev_, &me->error_);
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(StopPlayback) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    if (me) rs2_playback_device_stop(me->dev_, &me->error_);
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(GetPosition) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me) return;
+
+    auto pos = static_cast<uint32_t>(rs2_playback_get_position(
+        me->dev_, &me->error_)/1000000);
+    info.GetReturnValue().Set(Nan::New(pos));
+  }
+
+  static NAN_METHOD(GetDuration) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me) return;
+
+    auto duration = static_cast<uint32_t>(
+        rs2_playback_get_duration(me->dev_, &me->error_)/1000000);
+    info.GetReturnValue().Set(Nan::New(duration));
+  }
+
+  static NAN_METHOD(Seek) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me) return;
+
+    uint64_t time = info[0]->IntegerValue();
+    rs2_playback_seek(me->dev_, time*1000000, &me->error_);
+  }
+
+  static NAN_METHOD(IsRealTime) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me) return;
+
+    auto val = rs2_playback_device_is_real_time(me->dev_, &me->error_);
+    info.GetReturnValue().Set(val ? Nan::True() : Nan::False());
+  }
+
+  static NAN_METHOD(SetIsRealTime) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me) return;
+
+    auto val = info[0]->BooleanValue();
+    rs2_playback_device_set_real_time(me->dev_, val, &me->error_);
+  }
+
+  static NAN_METHOD(SetPlaybackSpeed) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me) return;
+
+    auto speed = info[0]->NumberValue();
+    rs2_playback_device_set_playback_speed(me->dev_, speed, &me->error_);
+  }
+
+  static NAN_METHOD(GetCurrentStatus) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me) return;
+
+    auto status = rs2_playback_device_get_current_status(me->dev_, &me->error_);
+    info.GetReturnValue().Set(Nan::New(status));
+  }
+
+  static NAN_METHOD(SetStatusChangedCallbackMethodName) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me) return;
+
+    v8::String::Utf8Value method(info[0]->ToString());
+    me->status_changed_callback_method_name_ = std::string(*method);
+    rs2_playback_device_set_status_changed_callback(me->dev_,
+        new PlaybackStatusCallback(me), &me->error_);
+  }
+
  private:
   static Nan::Persistent<v8::Function> constructor_;
   rs2_device* dev_;
   rs2_error* error_;
+  DeviceType type_;
+  std::string status_changed_callback_method_name_;
   friend class RSContext;
   friend class DevicesChangedCallbackInfo;
   friend class FrameCallbackInfo;
   friend class RSPipeline;
   friend class RSDeviceList;
   friend class RSDeviceHub;
+  friend class PlaybackStatusCallbackInfo;
 };
 
 Nan::Persistent<v8::Function> RSDevice::constructor_;
 
 void FrameCallbackInfo::Run() {
+  SetConsumed();
   Nan::HandleScope scope;
   // save the rs2_frame to the sensor
   sensor_->ReplaceFrame(frame_);
@@ -2104,12 +2316,21 @@ void FrameCallbackInfo::Run() {
 }
 
 void NotificationCallbackInfo::Run() {
+  SetConsumed();
   Nan::HandleScope scope;
   v8::Local<v8::Value> args[1] = {
     RSNotification(desc_, time_, severity_, category_).GetObject()
   };
   Nan::MakeCallback(sensor_->handle(),
       sensor_->notification_callback_name_.c_str(), 1, args);
+}
+
+void PlaybackStatusCallbackInfo::Run() {
+  SetConsumed();
+  Nan::HandleScope scope;
+  v8::Local<v8::Value> args[1] = { Nan::New(status_) };
+  Nan::MakeCallback(dev_->handle(),
+      dev_->status_changed_callback_method_name_.c_str(), 1, args);
 }
 
 class RSPointCloud : public Nan::ObjectWrap {
@@ -2203,16 +2424,6 @@ class RSPointCloud : public Nan::ObjectWrap {
 };
 
 Nan::Persistent<v8::Function> RSPointCloud::constructor_;
-
-// TODO(shaoting) implement playback status
-// class PlaybackStatusChangedCallback :
-//     public rs2_playback_status_changed_callback {
-//   virtual void on_playback_status_changed(rs2_playback_status status) {
-//     // TODO(tingshao): add more logic here.
-//   }
-//   virtual void release() { delete this; }
-//   virtual ~PlaybackStatusChangedCallback() {}
-// };
 
 class RSDeviceList : public Nan::ObjectWrap {
  public:
@@ -2349,6 +2560,7 @@ class RSContext : public Nan::ObjectWrap {
     Nan::SetPrototypeMethod(tpl, "setDevicesChangedCallback",
         SetDevicesChangedCallback);
     Nan::SetPrototypeMethod(tpl, "loadDeviceFile", LoadDeviceFile);
+    Nan::SetPrototypeMethod(tpl, "unloadDeviceFile", UnloadDeviceFile);
     Nan::SetPrototypeMethod(tpl, "createDeviceFromSensor",
         CreateDeviceFromSensor);
 
@@ -2465,12 +2677,22 @@ class RSContext : public Nan::ObjectWrap {
       v8::String::Utf8Value value(device_file);
       auto dev = rs2_context_add_device(me->ctx_, *value, &me->error_);
       if (dev) {
-        auto jsobj = RSDevice::NewInstance(dev);
+        auto jsobj = RSDevice::NewInstance(dev, RSDevice::kPlaybackDevice);
         info.GetReturnValue().Set(jsobj);
         return;
       }
     }
     info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(UnloadDeviceFile) {
+    auto me = Nan::ObjectWrap::Unwrap<RSContext>(info.Holder());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me) return;
+
+    auto device_file = info[0]->ToString();
+    v8::String::Utf8Value value(device_file);
+    rs2_context_remove_device(me->ctx_, *value, &me->error_);
   }
 
   static NAN_METHOD(CreateDeviceFromSensor) {
@@ -2522,8 +2744,9 @@ class DevicesChangedCallbackInfo : public MainThreadCallbackInfo {
   DevicesChangedCallbackInfo(rs2_device_list* r,
       rs2_device_list* a, RSContext* ctx) :
       removed_(r), added_(a), ctx_(ctx) {}
-  virtual ~DevicesChangedCallbackInfo() {}
+  virtual ~DevicesChangedCallbackInfo() { if (!consumed_) Release(); }
   virtual void Run() {
+    SetConsumed();
     Nan::HandleScope scope;
     v8::Local<v8::Value> rmlist;
     v8::Local<v8::Value> addlist;
@@ -2541,6 +2764,19 @@ class DevicesChangedCallbackInfo : public MainThreadCallbackInfo {
     Nan::MakeCallback(ctx_->handle(),
         ctx_->device_changed_callback_name_.c_str(), 2, args);
   }
+  virtual void Release() {
+    if (removed_) {
+      rs2_delete_device_list(removed_);
+      removed_ = nullptr;
+    }
+
+    if (added_) {
+      rs2_delete_device_list(added_);
+      added_ = nullptr;
+    }
+  }
+
+ private:
   rs2_device_list* removed_;
   rs2_device_list* added_;
   RSContext* ctx_;
@@ -3597,6 +3833,13 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_RECORDING_MODE_COMPRESSED);
   _FORCE_SET_ENUM(RS2_RECORDING_MODE_BEST_QUALITY);
   _FORCE_SET_ENUM(RS2_RECORDING_MODE_COUNT);
+
+  // rs2_playback_status
+  _FORCE_SET_ENUM(RS2_PLAYBACK_STATUS_UNKNOWN);
+  _FORCE_SET_ENUM(RS2_PLAYBACK_STATUS_PLAYING);
+  _FORCE_SET_ENUM(RS2_PLAYBACK_STATUS_PAUSED);
+  _FORCE_SET_ENUM(RS2_PLAYBACK_STATUS_STOPPED);
+  _FORCE_SET_ENUM(RS2_PLAYBACK_STATUS_COUNT);
 }
 
 NODE_MODULE(node_librealsense, InitModule);

@@ -81,7 +81,7 @@ namespace helper
                     {
                         try
                         {
-                            renderer.render(colorize(frame), { 0, 0, view_width, view_height });
+                            renderer.render(colorize(decimate.proccess(frame)), { 0, 0, view_width, view_height });
                         }
                         catch (const std::exception& e)
                         {
@@ -99,6 +99,7 @@ namespace helper
     private:
         texture renderer;
         rs2::colorizer colorize;
+        rs2::decimation_filter decimate;
         std::string _window_title;
         rs2::frame_queue _frames;
         rs2::frame _last_frame;

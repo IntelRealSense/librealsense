@@ -7,18 +7,17 @@
 #endif
 
 #include <array>
-
+#include <chrono>
 #include "ivcam/sr300.h"
 #include "ds5/ds5-factory.h"
 #include "ds5/ds5-timestamp.h"
 #include "backend.h"
 #include "mock/recorder.h"
-#include <chrono>
 #include <media/ros/ros_reader.h>
 #include "types.h"
-#include "context.h"
 #include "stream.h"
 #include "environment.h"
+#include "context.h"
 
 #ifdef WITH_TRACKING
 #include "tm2/tm-factory.h"

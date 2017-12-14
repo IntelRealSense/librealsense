@@ -10,18 +10,11 @@
 #include <vector>
 #include <mutex>
 #include <memory>
-#include "align.h"
 
 namespace librealsense
 {
 
     typedef int stream_id;
-    inline std::string generate_matcher_name(rs2_stream stream_type, stream_id stream)
-    {
-        std::stringstream s;
-        s<<rs2_stream_to_string(stream_type) << " "/*<<stream*/;
-        return s.str();
-    }
 
     template<class T>
     class internal_frame_processor_callback : public rs2_frame_processor_callback
@@ -75,6 +68,8 @@ namespace librealsense
     };
     //sync_lock::ref = 0;
 
+    class synthetic_source_interface;
+
     struct syncronization_environment
     {
         synthetic_source_interface* source;
@@ -82,6 +77,7 @@ namespace librealsense
         single_consumer_queue<frame_holder>& matches;
     };
 
+    typedef int stream_id;
     typedef std::function<void(frame_holder, syncronization_environment)> sync_callback;
 
     class matcher_interface
@@ -186,21 +182,6 @@ namespace librealsense
     private:
         bool are_equivalent(double a, double b, int fps);
         std::map<matcher*, double> _last_arrived;
-
-    };
-
-    class syncer_proccess_unit : public processing_block
-    {
-    public:
-        syncer_proccess_unit();
-
-        ~syncer_proccess_unit()
-        {
-            _matcher.reset();
-        }
-    private:
-        std::unique_ptr<timestamp_composite_matcher> _matcher;
-        std::mutex _mutex;
 
     };
 }

@@ -1,16 +1,16 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
-#include "device.h"
-#include "image.h"
-#include "algo.h"
-#include "metadata-parser.h"
-#include "stream.h"
-
 #include <array>
 #include <set>
 #include <unordered_set>
-#include "environment.h"
+
+#include "source.h"
+#include "proc/synthetic-stream.h"
+#include <iomanip>
+
+#include "device.h"
+#include "stream.h"
+#include "sensor.h"
 
 namespace librealsense
 {
@@ -295,6 +295,24 @@ namespace librealsense
     const device_interface& sensor_base::get_device()
     {
         return *_owner;
+    }
+
+    void sensor_base::register_pixel_format(native_pixel_format pf)
+    {
+        if (_pixel_formats.end() == std::find_if(_pixel_formats.begin(), _pixel_formats.end(),
+            [&pf](const native_pixel_format& cur) { return cur.fourcc == pf.fourcc; }))
+            _pixel_formats.push_back(pf);
+        else
+            throw invalid_value_exception(to_string()
+                << "Pixel format " << std::hex << std::setw(8) << std::setfill('0') << pf.fourcc
+                << " has been already registered with the sensor " << get_info(RS2_CAMERA_INFO_NAME));
+    }
+
+    void sensor_base::remove_pixel_format(native_pixel_format pf)
+    {
+        auto it = std::find_if(_pixel_formats.begin(), _pixel_formats.end(), [&pf](const native_pixel_format& cur) { return cur.fourcc == pf.fourcc; });
+        if (it != _pixel_formats.end())
+            _pixel_formats.erase(it);
     }
 
     void uvc_sensor::open(const stream_profiles& requests)

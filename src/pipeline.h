@@ -3,14 +3,16 @@
 
 #pragma once
 
-#include "device_hub.h"
-#include "sync.h"
-#include "config.h"
 #include <map>
 #include <utility>
 
+#include "device_hub.h"
+#include "sync.h"
+#include "config.h"
+
 namespace librealsense
 {
+    class processing_block;
     class pipeline_processing_block : public processing_block
     {
         std::map<stream_id, frame_holder> _last_set;
@@ -18,7 +20,7 @@ namespace librealsense
         std::vector<int> _streams_ids;
         void handle_frame(frame_holder frame, synthetic_source_interface* source);
     public:
-        pipeline_processing_block(const std::vector<int>& streams_to_aggragate);
+        pipeline_processing_block(const std::vector<int>& streams_to_aggregate);
         bool dequeue(frame_holder* item, unsigned int timeout_ms = 5000);
         bool try_dequeue(frame_holder* item);
     };

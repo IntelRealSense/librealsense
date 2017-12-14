@@ -39,6 +39,21 @@ namespace librealsense
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     };
 
+    // DS5U_S
+    class rs405_device : public ds5u_device,
+        public ds5_advanced_mode_base
+    {
+    public:
+        rs405_device(std::shared_ptr<context> ctx,
+            const platform::backend_device_group& group,
+            bool register_device_notifications)
+            : device(ctx, group, register_device_notifications),
+            ds5u_device(ctx, group),
+            ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+    };
+
     // ASR
     class rs410_device : public ds5_rolling_shutter,
                          public ds5_active, public ds5_advanced_mode_base
@@ -190,6 +205,8 @@ namespace librealsense
         {
         case RS400_PID:
             return std::make_shared<rs400_device>(ctx, group, register_device_notifications);
+        case RS405_PID:
+            return std::make_shared<rs405_device>(ctx, group, register_device_notifications);
         case RS410_PID:
         case RS460_PID:
             return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
@@ -210,7 +227,8 @@ namespace librealsense
         case RS_USB2_PID:
             return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
         default:
-            throw std::runtime_error("Unsupported RS400 model!");
+            throw std::runtime_error(to_string() << "Unsupported RS400 model! 0x"
+                << std::hex << std::setw(4) << std::setfill('0') <<(int)pid);
         }
     }
 
@@ -286,6 +304,11 @@ namespace librealsense
     std::shared_ptr<matcher> rs400_device::create_matcher(const frame_holder& frame) const
     {
         return create_composite_matcher({ds5_device::create_matcher(frame)});
+    }
+
+    std::shared_ptr<matcher> rs405_device::create_matcher(const frame_holder& frame) const
+    {
+        return create_composite_matcher({ ds5_device::create_matcher(frame) });
     }
 
     std::shared_ptr<matcher> rs410_device::create_matcher(const frame_holder& frame) const

@@ -1,3 +1,8 @@
+From 0473259d92fe1a908ca4305de3fad371279de320 Mon Sep 17 00:00:00 2001
+From: icarpis <itay.carpis@intel.com>
+Date: Mon, 30 Oct 2017 10:14:04 +0200
+Subject: [PATCH] Added W10 format
+
 From 2fb29ac45b298b1dbea7fca174b6e8b7d22e4fb3 Mon Sep 17 00:00:00 2001
 From: administrator <evgeni.raikhel@intel.com>
 Date: Sun, 4 Jun 2017 17:30:59 +0300
@@ -6,11 +11,11 @@ Subject: [PATCH] RS4xx and ZR300 Pixel formats patch
 Signed-off-by: administrator <evgeni.raikhel@intel.com>
 ---
  drivers/media/usb/uvc/Makefile       |  1 +
- drivers/media/usb/uvc/uvc_driver.c   | 55 ++++++++++++++++++++++++++++++++++++
- drivers/media/usb/uvc/uvcvideo.h     | 35 ++++++++++++++++++++++-
- drivers/media/v4l2-core/v4l2-ioctl.c |  5 ++++
- include/uapi/linux/videodev2.h       |  6 ++++
- 5 files changed, 101 insertions(+), 1 deletion(-)
+ drivers/media/usb/uvc/uvc_driver.c   | 65 ++++++++++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvcvideo.h     | 41 ++++++++++++++++++++++-
+ drivers/media/v4l2-core/v4l2-ioctl.c |  6 ++++
+ include/uapi/linux/videodev2.h       |  7 ++++
+ 5 files changed, 119 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/media/usb/uvc/Makefile b/drivers/media/usb/uvc/Makefile
 index c26d12f..d86cf22 100644
@@ -22,10 +27,10 @@ index c26d12f..d86cf22 100644
  		  uvc_status.o uvc_isight.o uvc_debugfs.o
  ifeq ($(CONFIG_MEDIA_CONTROLLER),y)
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 9b8ac20..9d44f8e 100644
+index 9b8ac20..92eded4 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -168,6 +168,66 @@ static struct uvc_format_desc uvc_fmts[] = {
+@@ -168,6 +168,71 @@ static struct uvc_format_desc uvc_fmts[] = {
  		.guid		= UVC_GUID_FORMAT_RW10,
  		.fcc		= V4L2_PIX_FMT_SRGGB10P,
  	},
@@ -89,11 +94,16 @@ index 9b8ac20..9d44f8e 100644
 +		.guid		= UVC_GUID_FORMAT_BAYER16,
 +		.fcc		= V4L2_PIX_FMT_SBGGR16,
 +	},
++	{
++		.name		= "Packed raw data 10-bit",
++		.guid		= UVC_GUID_FORMAT_W10,
++		.fcc		= V4L2_PIX_FMT_W10,
++	},
  };
  
  /* ------------------------------------------------------------------------
 diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
-index 7e4d3ee..020dbb7 100644
+index 7e4d3ee..1bc3bc3 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
 @@ -115,7 +115,6 @@
@@ -104,7 +114,7 @@ index 7e4d3ee..020dbb7 100644
  #define UVC_GUID_FORMAT_H264 \
  	{ 'H',  '2',  '6',  '4', 0x00, 0x00, 0x10, 0x00, \
  	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
-@@ -131,6 +130,43 @@
+@@ -131,6 +130,46 @@
  #define UVC_GUID_FORMAT_RW10 \
  	{ 'R',  'W',  '1',  '0', 0x00, 0x00, 0x10, 0x00, \
  	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
@@ -144,15 +154,18 @@ index 7e4d3ee..020dbb7 100644
 +#define UVC_GUID_FORMAT_BAYER16 \
 +    { 'R',  'W',  '1',  '6', 0x66, 0x1a, 0x42, 0xa2, \
 +     0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
++#define UVC_GUID_FORMAT_W10 \
++    { 'W',  '1',  '0',  ' ', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
 +
  
  /* ------------------------------------------------------------------------
   * Driver specific constants.
 diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2-ioctl.c
-index 7486af2..124dd35 100644
+index 7486af2..8c500e1 100644
 --- a/drivers/media/v4l2-core/v4l2-ioctl.c
 +++ b/drivers/media/v4l2-core/v4l2-ioctl.c
-@@ -1229,6 +1229,11 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+@@ -1229,6 +1229,12 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
  	case V4L2_SDR_FMT_CS8:		descr = "Complex S8"; break;
  	case V4L2_SDR_FMT_CS14LE:	descr = "Complex S14LE"; break;
  	case V4L2_SDR_FMT_RU12LE:	descr = "Real U12LE"; break;
@@ -161,14 +174,15 @@ index 7486af2..124dd35 100644
 +	case V4L2_PIX_FMT_Z16:		descr = "16-bit Depth data"; break;
 +	case V4L2_PIX_FMT_RW16:		descr = "16-bit Raw data"; break;
 +	case V4L2_PIX_FMT_INZI:		descr = "32-bit IR:Depth 10:16"; break;
++	case V4L2_PIX_FMT_W10:		descr = "10-bit packed 8888[2222]"; break;
  
  	default:
  		/* Compressed formats */
 diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
-index 421d274..c41b5c0 100644
+index 421d274..374ca95 100644
 --- a/include/uapi/linux/videodev2.h
 +++ b/include/uapi/linux/videodev2.h
-@@ -624,6 +624,12 @@ struct v4l2_pix_format {
+@@ -624,6 +624,13 @@ struct v4l2_pix_format {
  #define V4L2_PIX_FMT_Y8I      v4l2_fourcc('Y', '8', 'I', ' ') /* Greyscale 8-bit L/R interleaved */
  #define V4L2_PIX_FMT_Y12I     v4l2_fourcc('Y', '1', '2', 'I') /* Greyscale 12-bit L/R interleaved */
  #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
@@ -178,6 +192,7 @@ index 421d274..c41b5c0 100644
 +#define V4L2_PIX_FMT_INVR     v4l2_fourcc('I', 'N', 'V', 'R') /* 16 Depth */
 +#define V4L2_PIX_FMT_INRI     v4l2_fourcc('I', 'N', 'R', 'I') /* 24 Depth/IR 16:8 */
 +#define V4L2_PIX_FMT_RELI     v4l2_fourcc('R', 'E', 'L', 'I') /* 8 IR alternating on off illumination */
++#define V4L2_PIX_FMT_W10      v4l2_fourcc('W', '1', '0', ' ') /* Packed raw data 10-bit */
  
  /* SDR formats - used only for Software Defined Radio devices */
  #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */

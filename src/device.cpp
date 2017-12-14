@@ -1,10 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "device.h"
-#include "image.h"
-#include "stream.h"
 #include "environment.h"
+#include "device.h"
 
 using namespace librealsense;
 
@@ -47,6 +45,19 @@ int device::add_sensor(std::shared_ptr<sensor_interface> sensor_base)
 {
     _sensors.push_back(sensor_base);
     return (int)_sensors.size() - 1;
+}
+
+int device::assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t idx)
+{
+    try
+    {
+        _sensors[idx] = sensor_base;
+        return (int)_sensors.size() - 1;
+    }
+    catch (std::out_of_range)
+    {
+        throw invalid_value_exception(to_string() << "Cannot assign sensor - invalid subdevice value" << idx);
+    }
 }
 
 uvc_sensor& device::get_uvc_sensor(int sub)
@@ -120,7 +131,7 @@ std::pair<uint32_t, rs2_extrinsics> librealsense::device::get_extrinsics(const s
 
 void librealsense::device::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t groupd_index)
 {
-    auto iter = std::find_if(_extrinsics.begin(), 
+    auto iter = std::find_if(_extrinsics.begin(),
                            _extrinsics.end(),
                            [groupd_index](const std::pair<int, std::pair<uint32_t, std::shared_ptr<const stream_interface>>>& p) { return p.second.first == groupd_index; });
     if (iter == _extrinsics.end())

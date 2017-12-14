@@ -1,12 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/rs.hpp"
+#include "../include/librealsense2/hpp/rs_sensor.hpp"
+#include "../include/librealsense2/hpp/rs_processing.hpp"
 
+#include "proc/synthetic-stream.h"
 #include "context.h"
-#include "colorizer.h"
 #include "environment.h"
 #include "option.h"
+#include "colorizer.h"
 
 namespace librealsense
 {
@@ -214,6 +216,7 @@ namespace librealsense
 
                     for (auto i = 0; i < w*h; ++i) ++histogram[depth_data[i]];
                     for (auto i = 2; i < max_depth; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+                    auto cm = _maps[_map_index];
                     for (auto i = 0; i < w*h; ++i)
                     {
                         auto d = depth_data[i];
@@ -222,7 +225,7 @@ namespace librealsense
                         {
                             auto f = histogram[d] / (float)histogram[0xFFFF]; // 0-255 based on histogram location
 
-                            auto c = _maps[_map_index]->get(f);
+                            auto c = cm->get(f);
                             rgb_data[i * 3 + 0] = (uint8_t)c.x;
                             rgb_data[i * 3 + 1] = (uint8_t)c.y;
                             rgb_data[i * 3 + 2] = (uint8_t)c.z;
@@ -242,9 +245,9 @@ namespace librealsense
                     const auto depth_data = reinterpret_cast<const uint16_t*>(depth.get_data());
                     auto rgb_data = reinterpret_cast<uint8_t*>(const_cast<void *>(rgb.get_data()));
 
-                    auto depth_frame = (frame_interface*)depth.get();
-                    auto sensor = depth_frame->get_sensor();
-                    auto depth_units = sensor->get_option(RS2_OPTION_DEPTH_UNITS).query();
+                    auto fi = (frame_interface*)depth.get();
+                    auto df = dynamic_cast<librealsense::depth_frame*>(fi);
+                    auto depth_units = df->get_units();
 
                     for (auto i = 0; i < w*h; ++i)
                     {

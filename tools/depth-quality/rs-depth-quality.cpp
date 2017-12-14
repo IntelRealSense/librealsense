@@ -23,20 +23,23 @@ int main(int argc, const char * argv[]) try
 
     metric z_accuracy = model.make_metric(
                 "Z Accuracy", -10, 10, true, "%",
-                "Z Accuracy given Ground Truth\n"
-                "Realign the Plane Fit with GT plane\n"
-                "Calculate the depth-errors map\n"
-                "GT-aligned Z values - GT (signed).\n"
-                "Calculate the median of the depth-errors\n"
-                "Positive value indicates the Plane Fit\n"
-                "is further than the Ground Truth\n"
-                "Negative value indicates the Plane Fit\n"
-                "is in front of Ground Truth\n");
+                "Z-Accuracy given Ground Truth (GT)\n"
+                " as percentage of the range.\n"
+                "Algorithm:\n"
+                "1. Transpose Z values from the Fitted to the GT plane\n"
+                "2. Calculate depth errors:\n"
+                " err= signed(Transposed Z - GT).\n"
+                "3. Retrieve the median of the depth errors:\n"
+                "4. Interpret results:\n"
+                " - Positive value indicates that the Plane Fit\n"
+                "is further than the Ground Truth (overshot)\n"
+                " - Negative value indicates the Plane Fit\n"
+                "is in front of Ground Truth (undershot)\n");
 
     metric plane_fit_rms_error = model.make_metric(
                 "Plane Fit RMS Error", 0.f, 5.f, true, "(mm)",
                 "Plane Fit RMS Error .\n"
-                "This metric calculates RMS of Z-Error (Spatial Noise)\n"
+                "This metric provides RMS of Z-Error (Spatial Noise)\n"
                 "and is calculated as follows:\n"
                 "Zi - depth range of i-th pixel (mm)\n"
                 "Zpi -depth of Zi projection onto plane fit (mm)\n"
@@ -119,7 +122,7 @@ int main(int argc, const char * argv[]) try
         }
 
         // Show Z accuracy metric only when Ground Truth is available
-        z_accuracy->visible(ground_truth_mm > 0);
+        z_accuracy->enable(ground_truth_mm > 0);
         if (ground_truth_mm)
         {
             std::sort(begin(gt_errors), end(gt_errors));
@@ -137,7 +140,7 @@ int main(int argc, const char * argv[]) try
         auto rms_subpixel_val = static_cast<float>(std::sqrt(total_sq_disparity_diff / disparities.size()));
         sub_pixel_rms_error->add_value(rms_subpixel_val);
 
-        // calculate Plane Fit RMS  (Spatial Noise) mm
+        // Calculate Plane Fit RMS  (Spatial Noise) mm
         double plane_fit_err_sqr_sum = std::inner_product(distances.begin(), distances.end(), distances.begin(), 0.);
         auto rms_error_val = static_cast<float>(std::sqrt(plane_fit_err_sqr_sum / distances.size()));
         plane_fit_rms_error->add_value(rms_error_val);
