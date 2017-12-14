@@ -348,14 +348,14 @@ namespace librealsense
             for (auto message_instance : frame_metadata_view)
             {
                 auto key_val_msg = instantiate_msg<diagnostic_msgs::KeyValue>(message_instance);
-                if (key_val_msg->key == "timestamp_domain") //TODO: use constants
+                if (key_val_msg->key == TIMESTAMP_DOMAIN_MD_STR)
                 {
                     if (!safe_convert(key_val_msg->value, additional_data.timestamp_domain))
                     {
                         remaining[key_val_msg->key] = key_val_msg->value;
                     }
                 }
-                else if (key_val_msg->key == "system_time") //TODO: use constants
+                else if (key_val_msg->key == SYSTEM_TIME_MD_STR)
                 {
                     if (!safe_convert(key_val_msg->value, additional_data.system_time))
                     {
@@ -586,18 +586,18 @@ namespace librealsense
                 auto remaining = get_frame_metadata(m_file, info_topic, stream_id, msg, additional_data);
                 for (auto&& kvp : remaining)
                 {
-                    if (kvp.first == "Mapper Confidence")
+                    if (kvp.first == MAPPER_CONFIDENCE_MD_STR)
                     {
                         pose.mapper_confidence = std::stoul(kvp.second);
                     }
-                    else if (kvp.first == "frame_timestamp")
+                    else if (kvp.first == FRAME_TIMESTAMP_MD_STR)
                     {
                         double ts;
                         std::istringstream iss(kvp.second);
                         iss >> std::hexfloat >> ts;
                         timestamp_ms = std::chrono::duration<double, std::milli>(ts);
                     }
-                    else if (kvp.first == "Tracker Confidence")
+                    else if (kvp.first == TRACKER_CONFIDENCE_MD_STR)
                     {
                         pose.tracker_confidence = std::stoul(kvp.second);
                     }

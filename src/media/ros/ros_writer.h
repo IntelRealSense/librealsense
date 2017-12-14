@@ -93,12 +93,12 @@ namespace librealsense
         {
             auto metadata_topic = ros_topic::frame_metadata_topic(stream_id);
             diagnostic_msgs::KeyValue system_time;
-            system_time.key = "system_time";
+            system_time.key = SYSTEM_TIME_MD_STR;
             system_time.value = std::to_string(frame->get_frame_system_time());
             write_message(metadata_topic, timestamp, system_time);
 
             diagnostic_msgs::KeyValue timestamp_domain;
-            timestamp_domain.key = "timestamp_domain";
+            timestamp_domain.key = TIMESTAMP_DOMAIN_MD_STR;
             timestamp_domain.value = to_string() << frame->get_frame_timestamp_domain();
             write_message(metadata_topic, timestamp, timestamp_domain);
 
@@ -266,18 +266,18 @@ namespace librealsense
             std::string md_topic = ros_topic::frame_metadata_topic(stream_id);
             
             diagnostic_msgs::KeyValue tracker_confidence_msg;
-            tracker_confidence_msg.key = "Tracker Confidence"; //TODO: use constant
+            tracker_confidence_msg.key = TRACKER_CONFIDENCE_MD_STR;
             tracker_confidence_msg.value = std::to_string(pose->get_tracker_confidence());
             write_message(md_topic, timestamp, tracker_confidence_msg);
 
             diagnostic_msgs::KeyValue mapper_confidence_msg;
-            mapper_confidence_msg.key = "Mapper Confidence"; //TODO: use constant
+            mapper_confidence_msg.key = MAPPER_CONFIDENCE_MD_STR;
             mapper_confidence_msg.value = std::to_string(pose->get_mapper_confidence());
             write_message(md_topic, timestamp, mapper_confidence_msg);
 
             //Write frame's timestamp as metadata
             diagnostic_msgs::KeyValue frame_timestamp_msg;
-            frame_timestamp_msg.key = "frame_timestamp"; //TODO: use constant
+            frame_timestamp_msg.key = FRAME_TIMESTAMP_MD_STR;
             frame_timestamp_msg.value = to_string() << std::hexfloat << pose->get_frame_timestamp();
             write_message(md_topic, timestamp, frame_timestamp_msg);
             

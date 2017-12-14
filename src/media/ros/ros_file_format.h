@@ -169,6 +169,12 @@ namespace librealsense
         rot2quat(source.rotation, target.rotation);
     }
 
+    constexpr const char* TIMESTAMP_DOMAIN_MD_STR = "timestamp_domain";
+    constexpr const char* SYSTEM_TIME_MD_STR = "system_time";
+    constexpr const char* MAPPER_CONFIDENCE_MD_STR = "Mapper Confidence";
+    constexpr const char* FRAME_TIMESTAMP_MD_STR = "frame_timestamp";
+    constexpr const char* TRACKER_CONFIDENCE_MD_STR = "Tracker Confidence";
+
     class md_constant_parser : public md_attribute_parser_base
     {
     public:
