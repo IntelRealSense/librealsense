@@ -123,9 +123,6 @@ namespace librealsense
 
         void dispatch(frame_holder f, syncronization_environment env) override;
 
-
-    private:
-        rs2_stream _streams_type;
     };
 
     class composite_matcher : public matcher
