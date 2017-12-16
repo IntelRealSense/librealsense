@@ -4317,14 +4317,14 @@ namespace rs2
 
                                 ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-                                ImGui::TextDisabled(label.c_str());
+                                ImGui::TextDisabled("%s", label.c_str());
                             }
                             else
                             {
                                 std::string label = to_string() << u8"\uf205";
                                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-                                ImGui::TextDisabled(label.c_str());
+                                ImGui::TextDisabled("%s", label.c_str());
                             }
                         }
                         else
@@ -4393,14 +4393,14 @@ namespace rs2
 
                                         ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-                                        ImGui::TextDisabled(label.c_str());
+                                        ImGui::TextDisabled("%s", label.c_str());
                                     }
                                     else
                                     {
                                         std::string label = to_string() << u8"\uf205";
                                         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-                                        ImGui::TextDisabled(label.c_str());
+                                        ImGui::TextDisabled("%s", label.c_str());
                                     }
                                 }
                                 else
@@ -4419,7 +4419,7 @@ namespace rs2
                                         if (ImGui::IsItemHovered())
                                         {
                                             label = to_string() << "Enable " << pb->get_name() << " post-processing filter";
-                                            ImGui::SetTooltip(label.c_str());
+                                            ImGui::SetTooltip("%s", label.c_str());
                                         }
                                     }
                                     else
@@ -4435,7 +4435,7 @@ namespace rs2
                                         if (ImGui::IsItemHovered())
                                         {
                                             label = to_string() << "Disable " << pb->get_name() << " post-processing filter";
-                                            ImGui::SetTooltip(label.c_str());
+                                            ImGui::SetTooltip("%s", label.c_str());
                                         }
                                     }
                                 }
