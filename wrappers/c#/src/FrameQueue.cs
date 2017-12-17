@@ -2,38 +2,40 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Intel.RealSense
 {
     public class FrameQueue : IDisposable, IEnumerable<Frame>
     {
-        internal IntPtr m_instance;
-
-        /// <summary>
-        /// Avoid getting GC'ed 
-        /// see http://stackoverflow.com/questions/6193711/call-has-been-made-on-garbage-collected-delegate-in-c
-        /// </summary>
-        internal frame_callback enqueue;
+        internal HandleRef m_instance;
 
         public FrameQueue(int capacity = 10)
         {
             object error;
-            m_instance = NativeMethods.rs2_create_frame_queue(capacity, out error);
-            enqueue = NativeMethods.rs2_enqueue_frame;
+            m_instance = new HandleRef(this, NativeMethods.rs2_create_frame_queue(capacity, out error));
         }
 
         public bool PollForFrame(out Frame frame)
         {
             object error;
-            return NativeMethods.rs2_poll_for_frame(m_instance, out frame, out error) > 0;
+            return NativeMethods.rs2_poll_for_frame(m_instance.Handle, out frame, out error) > 0;
         }
 
         public Frame WaitForFrame()
         {
             object error;
-            var ptr = NativeMethods.rs2_wait_for_frame(m_instance, 5000, out error);
+            var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, 5000, out error);
             var frame = new Frame(ptr);
+            return frame;
+        }
+
+        public FrameSet WaitForFrames()
+        {
+            object error;
+            var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, 5000, out error);
+            var frame = new FrameSet(ptr);
             return frame;
         }
 
@@ -51,7 +53,7 @@ namespace Intel.RealSense
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
                 // TODO: set large fields to null.
-                NativeMethods.rs2_delete_frame_queue(m_instance);
+                NativeMethods.rs2_delete_frame_queue(m_instance.Handle);
 
                 disposedValue = true;
             }

@@ -728,7 +728,7 @@ namespace Intel.RealSense
 
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void rs2_config_enable_stream(IntPtr config, int stream, int index, int width, int height, int format, int framerate, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
+        internal static extern void rs2_config_enable_stream(IntPtr config, Stream stream, int index, int width, int height, Format format, int framerate, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
 
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
@@ -752,7 +752,7 @@ namespace Intel.RealSense
 
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void rs2_config_disable_indexed_stream(IntPtr config, int stream, int index, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
+        internal static extern void rs2_config_disable_indexed_stream(IntPtr config, Stream stream, int index, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
 
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]

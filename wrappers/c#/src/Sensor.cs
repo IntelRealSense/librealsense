@@ -304,7 +304,7 @@ namespace Intel.RealSense
         public void Start(FrameQueue queue)
         {
             object error;
-            NativeMethods.rs2_start_queue(m_instance, queue.m_instance, out error);
+            NativeMethods.rs2_start_queue(m_instance, queue.m_instance.Handle, out error);
         }
 
         //public delegate void FrameCallback<Frame, T>(Frame frame, T user_data);

@@ -7,7 +7,7 @@ namespace Intel.RealSense
 {
     public class FrameSet : IDisposable, IEnumerable<Frame>
     {
-        HandleRef m_instance;
+        internal HandleRef m_instance;
 
         public IEnumerator<Frame> GetEnumerator()
         {

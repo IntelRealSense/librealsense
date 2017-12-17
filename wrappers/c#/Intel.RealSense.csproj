@@ -86,12 +86,16 @@
     <Compile Include="src\FrameQueue.cs" />
     <Compile Include="src\NativeMethods.cs" />
     <Compile Include="src\Pipeline.cs" />
+    <Compile Include="src\Processing.cs" />
     <Compile Include="src\Sensor.cs" />
     <Compile Include="src\StreamProfile.cs" />
     <Compile Include="src\Types.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="copy_dependencies.bat" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

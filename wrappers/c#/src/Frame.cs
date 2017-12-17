@@ -5,7 +5,7 @@ namespace Intel.RealSense
 {
     public class Frame : IDisposable
     {
-        HandleRef m_instance;
+        internal HandleRef m_instance;
 
         public Frame(IntPtr ptr)
         {
@@ -59,6 +59,8 @@ namespace Intel.RealSense
 
         public Frame Clone()
         {
+            object error;
+            NativeMethods.rs2_frame_add_ref(m_instance.Handle, out error);
             return new Frame(m_instance.Handle);
         }
 
