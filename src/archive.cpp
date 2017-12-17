@@ -21,6 +21,11 @@ namespace librealsense
         return xyz;
     }
 
+	void points::export_to_ply(const std::string& fname) 
+	{
+        std::cout << "export file here" << std::endl;
+	}
+
     size_t points::get_vertex_count() const
     {
         return data.size() / (sizeof(float3) + sizeof(int2));

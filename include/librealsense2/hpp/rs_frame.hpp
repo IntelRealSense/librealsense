@@ -416,6 +416,13 @@ namespace rs2
             return (const vertex*)res;
         }
 
+		void export_to_ply(const std::string& fname) 
+		{
+		    rs2_error* e = nullptr;
+		    rs2_export_to_ply(get(), fname.c_str(), &e);
+		    error::handle(e);
+		}
+
         const texture_coordinate* get_texture_coordinates() const
         {
             rs2_error* e = nullptr;

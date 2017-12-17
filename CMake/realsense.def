@@ -235,3 +235,5 @@ EXPORTS
     rs2_device_hub_is_device_connected
     rs2_device_hub_wait_for_device
     rs2_delete_device_hub
+
+    rs2_export_to_ply

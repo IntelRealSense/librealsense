@@ -124,6 +124,7 @@ namespace librealsense
     {
     public:
         float3* get_vertices();
+        void export_to_ply(const std::string& fname);
         size_t get_vertex_count() const;
         float2* get_texture_coordinates();
     };
