@@ -1022,8 +1022,8 @@ namespace rs2
             auto format = frame.get_profile().format();
             auto data = frame.get_data();
 
+            auto rendered_frame = frame;
             auto image = frame.as<video_frame>();
-            auto rendered_frame = image; 
 
             if (image)
             {
@@ -1043,14 +1043,15 @@ namespace rs2
             case RS2_FORMAT_DISPARITY16:
                 if (frame.is<depth_frame>())
                 {
-                    if (rendered_frame = colorize->colorize(frame).as<video_frame>())
+                    if (auto colorized_frame = colorize->colorize(frame).as<video_frame>())
                     {
-                        data = rendered_frame.get_data();
+                        data = colorized_frame.get_data();
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                                     rendered_frame.get_width(),
-                                     rendered_frame.get_height(),
+                                     colorized_frame.get_width(),
+                                     colorized_frame.get_height(),
                                      0, GL_RGB, GL_UNSIGNED_BYTE,
-                                     rendered_frame.get_data());
+                                     colorized_frame.get_data());
+                        rendered_frame = colorized_frame;
                     }
                 }
                 else glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
