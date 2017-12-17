@@ -5,7 +5,7 @@ namespace Intel.RealSense
 {
     public class Context : IDisposable
     {
-        HandleRef m_instance;
+        internal HandleRef m_instance;
 
         public readonly int api_version;
         public string Version

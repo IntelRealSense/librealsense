@@ -1,10 +1,7 @@
-﻿using Intel.RealSense;
-using System;
-using System.Runtime.InteropServices;
-using System.Threading;
+﻿using System;
 using System.Linq;
 
-namespace ConsoleApplication1
+namespace Intel.RealSense
 {
     class Program
     {
@@ -34,13 +31,7 @@ namespace ConsoleApplication1
                 depth_sensor.Open(sp);
                 depth_sensor.Start(q);
 
-
-                //            object error;
-                //            float depth_scale = NativeMethods.rs_get_device_depth_scale(dev.m_instance, out error);
-                //            int one_meter = (int)(1f / depth_scale);
                 int one_meter = (int)(1f / depth_sensor.DepthScale);
-
-                //var depth = new ushort[640 * 480];
 
                 var run = true;
                 Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e)
