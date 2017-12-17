@@ -17,7 +17,10 @@ namespace Intel.RealSense
             for (int i = 0; i < deviceCount; i++)
             {
                 var ptr = NativeMethods.rs2_extract_frame(m_instance.Handle, i, out error);
-                yield return new Frame(ptr);
+                if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.DepthFrame, out error) > 0)
+                    yield return new DepthFrame(ptr);
+                else
+                    yield return new Frame(ptr);
             }
         }
 
@@ -36,13 +39,16 @@ namespace Intel.RealSense
             }
         }
 
-        public Device this[int index]
+        public Frame this[int index]
         {
             get
             {
                 object error;
                 var ptr = NativeMethods.rs2_extract_frame(m_instance.Handle, index, out error);
-                return new Device(ptr);
+                if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.DepthFrame, out error) > 0)
+                    return new DepthFrame(ptr);
+                else
+                    return new Frame(ptr);
             }
         }
 

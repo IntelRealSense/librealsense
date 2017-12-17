@@ -168,6 +168,18 @@ namespace Intel.RealSense
 
     }
 
+    public class DepthFrame : Frame
+    {
+        public DepthFrame(IntPtr ptr) : base(ptr)
+        {
+        }
+
+        public float GetDistance(int x, int y)
+        {
+            object error;
+            return NativeMethods.rs2_depth_frame_get_distance(m_instance.Handle, x, y, out error);
+        }
+    }
 
     class FrameMarshaler : ICustomMarshaler
     {
