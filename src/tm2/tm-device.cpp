@@ -754,9 +754,9 @@ namespace librealsense
     {
         std::string msg = to_string() << "Controller discovered with MAC " << frame.macAddress;
         raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
-        std::array<uint8_t, 6> mac;
-        std::copy(std::begin(frame.macAddress), std::end(frame.macAddress), std::begin(mac));
-        attach_controller(mac);
+        //std::array<uint8_t, 6> mac;
+        //std::copy(std::begin(frame.macAddress), std::end(frame.macAddress), std::begin(mac));
+        //attach_controller(mac);
     }
 
     void tm2_sensor::onControllerDisconnectedEventFrame(perc::TrackingData::ControllerDisconnectedEventFrame& frame)
@@ -767,10 +767,7 @@ namespace librealsense
 
     void tm2_sensor::onControllerFrame(perc::TrackingData::ControllerFrame& frame)
     {
-        std::string msg = to_string() << "Controller Event :\n"
-            << "Controller #" << (int)frame.sensorIndex << "\n"
-            << "Button Type " << (int)frame.eventId << " #" 
-            << (int)frame.instanceId << "\n";
+        std::string msg = to_string() << "Controller #" << frame.sensorIndex << " button ["<< (int)frame.eventId << ", " << (int)frame.instanceId << "]";
         raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
     }
 
@@ -884,6 +881,7 @@ namespace librealsense
             error.timestamp = std::chrono::high_resolution_clock::now().time_since_epoch().count();
             get_notifications_proccessor()->raise_notification(error);
         }
+        //else onControllerDisconnectedEventFrame will be raised
     }
 
     ///////////////
