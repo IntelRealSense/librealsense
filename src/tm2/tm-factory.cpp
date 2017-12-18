@@ -36,7 +36,7 @@ namespace librealsense
         std::shared_ptr<context> ctx,
         platform::backend_device_group& group)
     {
-        static tm2_context context;
+        static tm2_context context; //TODO: not use static
 
         std::vector<std::shared_ptr<device_info>> results;
 

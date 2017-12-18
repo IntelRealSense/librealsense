@@ -277,6 +277,13 @@ rs2_log_severity rs2_get_notification_severity(rs2_notification* notification, r
 rs2_notification_category rs2_get_notification_category(rs2_notification* notification, rs2_error** error);
 
 /**
+* retrieve serizlied data from notification handle
+* \param[in] notification      handle returned from a callback
+* \return            the serizlied data (in JSON format)
+*/
+const char* rs2_get_notification_serizlied_data(rs2_notification* notification, rs2_error** error);
+
+/**
 * check if physical subdevice is supported
 * \param[in] device  input RealSense device
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored

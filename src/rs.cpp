@@ -739,6 +739,12 @@ rs2_notification_category rs2_get_notification_category(rs2_notification* notifi
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, notification)
 
+const char* rs2_get_notification_serizlied_data(rs2_notification* notification, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(notification);
+    return notification->_notification->serialized_data.c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, notification)
 
 
 int rs2_device_list_contains(const rs2_device_list* info_list, const rs2_device* device, rs2_error** error) BEGIN_API_CALL

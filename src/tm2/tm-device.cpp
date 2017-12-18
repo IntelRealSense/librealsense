@@ -9,6 +9,7 @@
 #include "tm-conversions.h"
 #include "media/playback/playback_device.h"
 #include "media/ros/ros_reader.h"
+#include "controller_event_serializer.h"
 
 using namespace perc;
 using namespace std::chrono;
@@ -98,17 +99,11 @@ namespace librealsense
 
     inline std::ostream&  operator<<(std::ostream& os, const uint8_t(&mac)[6])
     {
-        std::ostringstream oss;
-        oss << std::hex << (int)mac[0] << ":";
-        oss << std::hex << (int)mac[1] << ":";
-        oss << std::hex << (int)mac[2] << ":";
-        oss << std::hex << (int)mac[3] << ":";
-        oss << std::hex << (int)mac[4] << ":";
-        oss << std::hex << (int)mac[5];
-        return os << oss.str();
+        return os << buffer_to_string(mac, ':', true);
     }
+
     tm2_sensor::tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev)
-        : sensor_base("Tracking Module", owner), _tm_dev(dev)
+        : sensor_base("Tracking Module", owner), _tm_dev(dev), _dispatcher(10)
     {
         register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_ACTUAL_EXPOSURE));
         register_metadata(RS2_FRAME_METADATA_TEMPERATURE    , std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TEMPERATURE));
@@ -501,8 +496,8 @@ namespace librealsense
         else if (!_is_opened)
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. TM2 device was not opened!");
 
+        _dispatcher.start();
         _source.set_callback(callback);
-
         auto status = _tm_dev->Start(this, &_tm_active_profiles);
         if (status != Status::SUCCESS)
         {
@@ -529,6 +524,9 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_configure_lock);
         if (!_is_streaming)
             throw wrong_api_call_sequence_exception("stop_streaming() failed. TM2 device is not streaming!");
+        
+        _dispatcher.stop();
+        
         if (_loopback)
         {
             auto& loopback_sensor = _loopback->get_sensor(0);
@@ -754,23 +752,26 @@ namespace librealsense
 
     void tm2_sensor::onControllerDiscoveryEventFrame(perc::TrackingData::ControllerDiscoveryEventFrame& frame)
     {
-        std::string msg = to_string() << "Controller Discovered : " << frame.macAddress;
-        raise_controller_event(msg, frame.timestamp);
-
+        std::string msg = to_string() << "Controller discovered with MAC " << frame.macAddress;
+        raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
+        std::array<uint8_t, 6> mac;
+        std::copy(std::begin(frame.macAddress), std::end(frame.macAddress), std::begin(mac));
+        attach_controller(mac);
     }
+
     void tm2_sensor::onControllerDisconnectedEventFrame(perc::TrackingData::ControllerDisconnectedEventFrame& frame)
     {
-        std::string msg = to_string() << "Controller Disconnected : " << frame.controllerId;
-        raise_controller_event(msg, frame.timestamp);
+        std::string msg = to_string() << "Controller #" << (int)frame.controllerId << " disconnected";
+        raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
     }
 
     void tm2_sensor::onControllerFrame(perc::TrackingData::ControllerFrame& frame)
     {
-        std::string msg = to_string() << "[" << frame.arrivalTimeStamp << "] Controller Event :\n"
-            << "Controller #" << frame.sensorIndex << "\n"
-            << "Button Type " << frame.eventId << " #"         << frame.instanceId << "\n"
-            << "Data: "       << frame.sensorData << "\n";
-        raise_controller_event(msg, frame.timestamp);
+        std::string msg = to_string() << "Controller Event :\n"
+            << "Controller #" << (int)frame.sensorIndex << "\n"
+            << "Button Type " << (int)frame.eventId << " #" 
+            << (int)frame.instanceId << "\n";
+        raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
     }
 
     void tm2_sensor::enable_loopback(std::shared_ptr<playback_device> input)
@@ -780,15 +781,18 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("Cannot enter loopback mode while device is open or streaming");
         _loopback = input;
     }
+
     void tm2_sensor::disable_loopback()
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
         _loopback.reset();
     }
+
     bool tm2_sensor::is_loopback_enabled() const
     {
         return _loopback != nullptr;
     }
+
     void tm2_sensor::handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature)
     {
         auto ts_double_nanos = duration<double, std::nano>(tm_frame_ts.timestamp);
@@ -839,24 +843,60 @@ namespace librealsense
         }
         _source.invoke_callback(std::move(frame));
     }
-    void tm2_sensor::raise_controller_event(const std::string& msg, double timestamp)
+    
+    void tm2_sensor::raise_controller_event(const std::string& msg, const std::string& json_data, double timestamp)
     {
-        notification discoverd{ RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT, 0, RS2_LOG_SEVERITY_INFO, msg };
-        discoverd.timestamp = timestamp;
-        get_notifications_proccessor()->raise_notification(discoverd);
+        notification controller_event{ RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT, 0, RS2_LOG_SEVERITY_INFO, msg };
+        controller_event.serialized_data = json_data;
+        controller_event.timestamp = timestamp;
+        get_notifications_proccessor()->raise_notification(controller_event);
     }
-
+    
+    void tm2_sensor::attach_controller(const std::array<uint8_t, 6>& mac_addr)
+    {
+        perc::TrackingData::ControllerDeviceConnect c(const_cast<uint8_t*>(mac_addr.data()), 15000);
+        _dispatcher.invoke([this, c](dispatcher::cancellable_timer ct)
+        {
+            uint8_t controller_id = 0;
+            auto status = _tm_dev->ControllerConnect(c, controller_id);
+            if (status != Status::SUCCESS)
+            {
+                std::string msg = to_string() << "Failed to connect to controller " << c.macAddress << "(Status: " << (int)status << ")";
+                notification error{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, 0, RS2_LOG_SEVERITY_ERROR, msg };
+                error.timestamp = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+                get_notifications_proccessor()->raise_notification(error);
+            }
+            else
+            {
+                std::string msg = to_string() << "Connected to controller #" << (int)controller_id << "[MAC: " << c.macAddress << "]";
+                raise_controller_event(msg, controller_event_serializer::serialized_data(c, controller_id), std::chrono::high_resolution_clock::now().time_since_epoch().count());
+            }
+        });
+    }
+    
+    void tm2_sensor::detach_controller(int id)
+    {
+        perc::Status status = _tm_dev->ControllerDisconnect(id);
+        if (status != Status::SUCCESS)
+        {
+            std::string msg = to_string() << "Failed to disconnect to controller " << id << "(Status: " << (int)status << ")";
+            notification error{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, 0, RS2_LOG_SEVERITY_ERROR, msg };
+            error.timestamp = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+            get_notifications_proccessor()->raise_notification(error);
+        }
+    }
 
     ///////////////
     // Device
 
     tm2_device::tm2_device(
-        std::shared_ptr<perc::TrackingManager> manager,
-        perc::TrackingDevice* dev,
-        std::shared_ptr<context> ctx,
-        const platform::backend_device_group& group)
-        : device(ctx, group),
-        _dev(dev), _manager(manager)
+            std::shared_ptr<perc::TrackingManager> manager,
+            perc::TrackingDevice* dev,
+            std::shared_ptr<context> ctx,
+            const platform::backend_device_group& group) :
+        device(ctx, group),
+        _dev(dev), 
+        _manager(manager)
     {
         TrackingData::DeviceInfo info;
         auto status = _dev->GetDeviceInfo(info);

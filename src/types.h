@@ -827,6 +827,7 @@ namespace librealsense
         rs2_log_severity severity;
         std::string description;
         double timestamp;
+        std::string serialized_data;
     };
 
 

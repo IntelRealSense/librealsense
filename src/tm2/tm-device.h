@@ -58,12 +58,15 @@ namespace librealsense
         void enable_loopback(std::shared_ptr<playback_device> input);
         void disable_loopback();
         bool is_loopback_enabled() const;
+        void attach_controller(const std::array<uint8_t, 6>& mac_addr);
+        void detach_controller(int id);
 
     private:
         void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
         void pass_frames_to_fw(frame_holder fref);
-        void raise_controller_event(const std::string& msg, double timestamp);
+        void raise_controller_event(const std::string& msg, const std::string& serizlied_data, double timestamp);
 
+        dispatcher _dispatcher;
         perc::TrackingDevice* _tm_dev;
         std::mutex _configure_lock;
         std::shared_ptr<playback_device> _loopback;

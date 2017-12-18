@@ -23,6 +23,7 @@ namespace librealsense
         if (_manager == nullptr)
         {
             LOG_ERROR("Failed to create TrackingManager");
+            throw std::runtime_error("Failed to create TrackingManager");
         }
         auto version = _manager->version();
         LOG_INFO("LibTm version 0x" << std::hex << version);
