@@ -1651,7 +1651,7 @@ namespace rs2
                  s.second.profile.stream_type() == RS2_STREAM_INFRARED ||
                  s.second.profile.stream_type() == RS2_STREAM_FISHEYE))
             {
-                if (selected_tex_source_uid == -1)
+                if (selected_tex_source_uid == -1 && selected_depth_source_uid != -1)
                 {
                     selected_tex_source_uid = streams_origin[s.second.profile.unique_id()];
                 }
@@ -4429,7 +4429,6 @@ namespace rs2
                 }
 
                 label = to_string() << "Controls ##" << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << id;
-                int count_supported = 0;
                 if (ImGui::TreeNode(label.c_str()))
                 {
                     if (sub->num_supported_options() == 0)
