@@ -1168,16 +1168,16 @@ namespace rs2
         try {
             s->start([&](frame f)
             {
-                if (viewer.synchronization_enable && (viewer.is_3d_depth_source(f) || viewer.is_3d_texture_source(f)))
+                if (viewer.synchronization_enable && (!viewer.is_3d_view || viewer.is_3d_depth_source(f) || viewer.is_3d_texture_source(f)))
                 {
                     viewer.s(f);
                 }
                 else
                 {
-                    viewer.ppf.frames_queue.enqueue(f);
+                    auto id = f.get_profile().unique_id();
+                    viewer.ppf.frames_queue[id].enqueue(f);
                 }
             });
-
             }
 
         catch (...)
@@ -1400,6 +1400,7 @@ namespace rs2
                 static_cast<float>(vd.height()) };
         };
         _stream_not_alive.reset();
+
     }
 
     void stream_model::update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message)
@@ -1951,6 +1952,11 @@ namespace rs2
             if(selected_tex_source_uid == i)
                 selected_tex_source_uid = -1;
             streams.erase(i);
+
+            if(ppf.frames_queue.find(i) != ppf.frames_queue.end())
+            {
+                ppf.frames_queue.erase(i);
+            }
         }
     }
 
@@ -2508,7 +2514,8 @@ namespace rs2
 
                 for (auto&& profile : profiles)
                 {
-                    viewer.streams[profile.unique_id()].begin_stream(sub, profile);
+                    viewer.begin_stream(sub, profile);
+
                 }
             }
         }
@@ -2813,7 +2820,6 @@ namespace rs2
                 auto res = handle_frame(f);
                 results.insert(results.end(), res.begin(), res.end());
             }
-
         }
         else
         {
@@ -2834,13 +2840,29 @@ namespace rs2
             try
             {
                 frame frm;
-                if (frames_queue.poll_for_frame(&frm))
+                if(viewer.synchronization_enable)
                 {
-                    processing_block.invoke(frm);
+                    while(syncer_queue.poll_for_frame(&frm))
+                    {
+                        processing_block.invoke(frm);
+                    }
                 }
                 else
                 {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    std::map<int, rs2::frame_queue> frames_queue_local;
+                    {
+                        std::lock_guard<std::mutex> lock(viewer.streams_mutex);
+                        frames_queue_local = frames_queue;
+                    }
+                    for(auto&& q :  frames_queue_local)
+                    {
+
+                        frame frm;
+                        if (q.second.poll_for_frame(&frm))
+                        {
+                            processing_block.invoke(frm);
+                        }
+                    }
                 }
             }
             catch (...) {}
@@ -2987,22 +3009,20 @@ namespace rs2
         frame f{}, res{};
         try
         {
-            if (ppf.resulting_queue.poll_for_frame(&f))
+            while (ppf.resulting_queue.poll_for_frame(&f))
             {
                 frameset frames;
-                p = f.as<points>();
-
                 if (frames = f.as<frameset>())
                 {
                     for (auto&& frame : frames)
                     {
-                        if(!p)
+
+                        if(frame.is<points>())  // find and store the 3d points frame for later use
                         {
-                            if(p = frame.as<points>())  // find and store the 3d points frame for later use
-                            {
-                                continue;
-                            }
+                            p = frame.as<points>();
+                            continue;
                         }
+
                         if (frame.is<depth_frame>() && !paused)
                             res = frame;
 
@@ -3016,9 +3036,13 @@ namespace rs2
                 }
                 else if(!p)
                 {
-                   upload_frame(std::move(f));
+                    upload_frame(std::move(f));
                 }
+
+
             }
+
+
         }
         catch (const error& ex)
         {
@@ -3028,6 +3052,7 @@ namespace rs2
         {
             error_message = ex.what();
         }
+
 
         gc_streams();
 
@@ -3438,12 +3463,18 @@ namespace rs2
         mouse.prev_cursor = mouse.cursor;
     }
 
+    void viewer_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p)
+    {
+        streams[p.unique_id()].begin_stream(d, p);
+        ppf.frames_queue.emplace(p.unique_id(), rs2::frame_queue(5));
+    }
+
     bool viewer_model::is_3d_texture_source(frame f)
     {
         auto index = f.get_profile().unique_id();
         auto mapped_index = streams_origin[index];
 
-        if(index == selected_tex_source_uid || mapped_index  == selected_tex_source_uid)
+        if(index == selected_tex_source_uid || mapped_index  == selected_tex_source_uid || selected_tex_source_uid == -1)
             return true;
         return false;
     }
@@ -3453,7 +3484,8 @@ namespace rs2
         auto index = f.get_profile().unique_id();
         auto mapped_index = streams_origin[index];
 
-        if(index == selected_depth_source_uid || mapped_index  == selected_depth_source_uid)
+        if(index == selected_depth_source_uid || mapped_index  == selected_depth_source_uid
+                ||(selected_depth_source_uid == -1 && f.get_profile().stream_type() == RS2_STREAM_DEPTH))
             return true;
         return false;
     }
@@ -3465,6 +3497,7 @@ namespace rs2
 
         auto index = f.get_profile().unique_id();
 
+        std::lock_guard<std::mutex> lock(streams_mutex);
         return streams[streams_origin[index]].upload_frame(std::move(f));
     }
 
@@ -4288,7 +4321,7 @@ namespace rs2
 
                                 for (auto&& profile : profiles)
                                 {
-                                    viewer.streams[profile.unique_id()].begin_stream(sub, profile);
+                                    viewer.begin_stream(sub, profile);
                                 }
                             }
                             if (ImGui::IsItemHovered())
@@ -4468,14 +4501,14 @@ namespace rs2
 
                                 ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-                                ImGui::TextDisabled(label.c_str());
+                                ImGui::TextDisabled("%s", label.c_str());
                             }
                             else
                             {
                                 std::string label = to_string() << u8"\uf205";
                                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-                                ImGui::TextDisabled(label.c_str());
+                                ImGui::TextDisabled("%s", label.c_str());
                             }
                         }
                         else
@@ -4544,14 +4577,14 @@ namespace rs2
 
                                         ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-                                        ImGui::TextDisabled(label.c_str());
+                                        ImGui::TextDisabled("%s", label.c_str());
                                     }
                                     else
                                     {
                                         std::string label = to_string() << u8"\uf205";
                                         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-                                        ImGui::TextDisabled(label.c_str());
+                                        ImGui::TextDisabled("%s", label.c_str());
                                     }
                                 }
                                 else
@@ -4570,7 +4603,7 @@ namespace rs2
                                         if (ImGui::IsItemHovered())
                                         {
                                             label = to_string() << "Enable " << pb->get_name() << " post-processing filter";
-                                            ImGui::SetTooltip(label.c_str());
+                                            ImGui::SetTooltip("%s", label.c_str());
                                         }
                                     }
                                     else
@@ -4586,7 +4619,7 @@ namespace rs2
                                         if (ImGui::IsItemHovered())
                                         {
                                             label = to_string() << "Disable " << pb->get_name() << " post-processing filter";
-                                            ImGui::SetTooltip(label.c_str());
+                                            ImGui::SetTooltip("%s", label.c_str());
                                         }
                                     }
                                 }

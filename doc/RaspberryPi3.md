@@ -2,7 +2,7 @@
 
 This document describes how to use the Intel RealSense D400 cameras on Raspberry PI 3 Model B (which offers only USB2 interface).
 
-> **Note:** Both Raspberry Pi platform and USB2 support in general are experimental features and are **not** officially supported by Intel RealSense group at this point. Camera capabilities are severely reduced when connected to USB2 port due to lack of bandwidth.
+> **Note:** Both Raspberry Pi platform and USB2 support in general are experimental features and are **not** officially supported by Intel RealSense group at this point. Camera capabilities are severely reduced when connected to USB2 port due to lack of bandwidth.<br />USB2 interface over D400 cameras is supported from FW 5.08.14.0 and on.
 
 <p align="center"><img src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/RaspberryPi3Model-B.png" /></p>
 
