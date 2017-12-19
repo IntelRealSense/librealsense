@@ -21,26 +21,26 @@ namespace Intel.RealSense
                 Console.WriteLine("    Serial number: {0}", dev.Info[CameraInfo.SerialNumber]);
                 Console.WriteLine("    Firmware version: {0}", dev.Info[CameraInfo.FirmwareVersion]);
 
-                var depth_sensor = dev.Sensors[0];
+                var depthSensor = dev.Sensors[0];
 
-                var sp = depth_sensor.VideoStreamProfiles
-                                     .Where(p => p.Stream == Stream.Depth)
-                                     .OrderByDescending(p => p.Framerate)
-                                     .Where(p => p.Width == 640 && p.Height == 480)
-                                     .First();
-                depth_sensor.Open(sp);
-                depth_sensor.Start(q);
+                var sp = depthSensor.VideoStreamProfiles
+                                    .Where(p => p.Stream == Stream.Depth)
+                                    .OrderByDescending(p => p.Framerate)
+                                    .Where(p => p.Width == 640 && p.Height == 480)
+                                    .First();
+                depthSensor.Open(sp);
+                depthSensor.Start(q);
 
-                int one_meter = (int)(1f / depth_sensor.DepthScale);
+                int one_meter = (int)(1f / depthSensor.DepthScale);
 
                 var run = true;
-                Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e)
+                Console.CancelKeyPress += (s, e) =>
                 {
                     e.Cancel = true;
                     run = false;
                 };
 
-                ushort[] depth = new ushort[640 * 480];
+                ushort[] depth = new ushort[sp.Width * sp.Height];
 
                 while (run)
                 {
@@ -78,8 +78,8 @@ namespace Intel.RealSense
                     Console.Write(buffer);
                 }
 
-                depth_sensor.Stop();
-                depth_sensor.Close();
+                depthSensor.Stop();
+                depthSensor.Close();
             }
 
         }

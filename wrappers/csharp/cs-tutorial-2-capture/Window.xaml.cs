@@ -23,7 +23,7 @@ namespace Intel.RealSense
     {
         private Pipeline  pipeline;
         private Colorizer colorizer;
-        private bool      alive = true;
+        private CancellationTokenSource tokenSource = new CancellationTokenSource();
 
         private void UploadImage(Image img, Frame frame)
         {
@@ -41,7 +41,6 @@ namespace Intel.RealSense
                                   bytes,
                                   frame.Stride);
 
-                frame.Release();
                 var imgSrc = bs as ImageSource;
 
                 img.Source = imgSrc;
@@ -50,50 +49,53 @@ namespace Intel.RealSense
 
         public CaptureWindow()
         {
-            pipeline = new Pipeline();
-            colorizer = new Colorizer();
-
-            var cfg = new Config();
-            cfg.EnableStream(Stream.Depth, 640, 480);
-            cfg.EnableStream(Stream.Color, Format.Rgb8);
-
-            pipeline.Start(cfg);
-
-            Thread t = new Thread(() =>
+            try
             {
-                while (alive)
+                pipeline = new Pipeline();
+                colorizer = new Colorizer();
+
+                var cfg = new Config();
+                cfg.EnableStream(Stream.Depth, 640, 480);
+                cfg.EnableStream(Stream.Color, Format.Rgb8);
+
+                pipeline.Start(cfg);
+
+                var token = tokenSource.Token;
+
+                var t = Task.Factory.StartNew(() =>
                 {
-                    using (var frames = pipeline.WaitForFrames())
+                    while (!token.IsCancellationRequested)
                     {
+                        var frames = pipeline.WaitForFrames();
+
                         var depth = frames.FirstOrDefault(x => x.Profile.Stream == Stream.Depth);
                         var color = frames.FirstOrDefault(x => x.Profile.Stream == Stream.Color);
 
                         if (depth != null)
                         {
                             var colorized_depth = colorizer.Colorize(depth);
-
                             UploadImage(imgDepth, colorized_depth);
-
-                            depth.Release();
                         }
 
                         if (color != null)
                         {
                             UploadImage(imgColor, color);
-                            color.Release();
                         }
                     }
-                }
-            });
-            t.IsBackground = true;
-            t.Start();
+                }, token);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                Application.Current.Shutdown();
+            }
 
             InitializeComponent();
         }
 
         private void control_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            alive = false;
+            tokenSource.Cancel();
         }
     }
 }
