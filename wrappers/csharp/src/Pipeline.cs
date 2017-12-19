@@ -24,15 +24,19 @@ namespace Intel.RealSense
         public PipelineProfile Start()
         {
             object error;
-            var res = NativeMethods.rs2_pipeline_start(m_instance.Handle, out error); 
-            return new PipelineProfile(res);
+            var res = NativeMethods.rs2_pipeline_start(m_instance.Handle, out error);
+            var prof = new PipelineProfile(res);
+            foreach (var s in prof.Device.Sensors) s.Options[Option.FramesQueueSize].Value = 0;
+            return prof;
         }
 
         public PipelineProfile Start(Config cfg)
         {
             object error;
             var res = NativeMethods.rs2_pipeline_start_with_config(m_instance.Handle, cfg.m_instance.Handle, out error);
-            return new PipelineProfile(res);
+            var prof = new PipelineProfile(res);
+            foreach (var s in prof.Device.Sensors) s.Options[Option.FramesQueueSize].Value = 0;
+            return prof;
         }
 
         public void Stop()

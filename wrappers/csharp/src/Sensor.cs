@@ -303,6 +303,7 @@ namespace Intel.RealSense
 
         public void Start(FrameQueue queue)
         {
+            Options[Option.FramesQueueSize].Value = 0;
             object error;
             NativeMethods.rs2_start_queue(m_instance, queue.m_instance.Handle, out error);
         }
@@ -312,6 +313,7 @@ namespace Intel.RealSense
 
         public void Start(FrameCallback cb)
         {
+            Options[Option.FramesQueueSize].Value = 0;
             object error;
             frame_callback cb2 = (IntPtr f, IntPtr u) =>
             {

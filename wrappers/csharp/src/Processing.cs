@@ -6,7 +6,16 @@ namespace Intel.RealSense
 {
     public class ProcessingBlock : IDisposable
     {
-        internal HandleRef m_instance;        
+        internal HandleRef m_instance;
+
+        Sensor.SensorOptions m_options;
+        public Sensor.SensorOptions Options
+        {
+            get
+            {
+                return m_options = m_options ?? new Sensor.SensorOptions(m_instance.Handle);
+            }
+        }
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
@@ -59,6 +68,7 @@ namespace Intel.RealSense
             object error;
             m_instance = new HandleRef(this, NativeMethods.rs2_create_colorizer(out error));
             queue = new FrameQueue();
+            Options[Option.FramesQueueSize].Value = 0;
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
@@ -79,6 +89,8 @@ namespace Intel.RealSense
         {
             object error;
             m_instance = new HandleRef(this, NativeMethods.rs2_create_align(align_to, out error));
+            queue = new FrameQueue();
+            Options[Option.FramesQueueSize].Value = 0;
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
