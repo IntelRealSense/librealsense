@@ -1667,7 +1667,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0.f, sensor)
 rs2_device* rs2_create_device_from_sensor(const rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
-    return new rs2_device { sensor->parent };
+    return new rs2_device(sensor->parent);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
 
