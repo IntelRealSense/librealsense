@@ -218,10 +218,10 @@ namespace librealsense
     class ros_topic
     {
     public:
-        static constexpr const char* elements_separator = "/";
-        static constexpr const char* ros_image_type_str = "image";
-        static constexpr const char* ros_imu_type_str = "imu";
-        static constexpr const char* ros_pose_type_str = "pose";
+        static constexpr const char* elements_separator() { return "/"; }
+        static constexpr const char* ros_image_type_str() { return "image"; }
+        static constexpr const char* ros_imu_type_str() { return "imu"; }
+        static constexpr const char* ros_pose_type_str() { return "pose"; }
 
         static uint32_t get_device_index(const std::string& topic)
         {
@@ -356,8 +356,8 @@ namespace librealsense
             size_t current_pos = 0;
             std::string value_copy = value;
             uint32_t elements_iterator = 0;
-            const auto seperator_length = std::string(elements_separator).length();
-            while ((current_pos = value_copy.find(elements_separator)) != std::string::npos)
+            const auto seperator_length = std::string(elements_separator()).length();
+            while ((current_pos = value_copy.find(elements_separator())) != std::string::npos)
             {
                 auto token = value_copy.substr(0, current_pos);
                 if (elements_iterator == index)
@@ -382,24 +382,24 @@ namespace librealsense
             case RS2_STREAM_COLOR:
             case RS2_STREAM_INFRARED:
             case RS2_STREAM_FISHEYE:
-                return ros_image_type_str;
+                return ros_image_type_str();
 
             case RS2_STREAM_GYRO:
             case RS2_STREAM_ACCEL:
-                return ros_imu_type_str;
+                return ros_imu_type_str();
 
             case RS2_STREAM_POSE:
-                return ros_pose_type_str;
+                return ros_pose_type_str();
             }
             throw io_exception(to_string() << "Unknown stream type when resolving ros type: " << type);
         }
         static std::string create_from(const std::vector<std::string>& parts)
         {
             std::ostringstream oss;
-            oss << elements_separator;
+            oss << elements_separator();
             if (parts.empty() == false)
             {
-                std::copy(parts.begin(), parts.end() - 1, std::ostream_iterator<std::string>(oss, elements_separator));
+                std::copy(parts.begin(), parts.end() - 1, std::ostream_iterator<std::string>(oss, elements_separator()));
                 oss << parts.back();
             }
             return oss.str();
@@ -466,7 +466,7 @@ namespace librealsense
 
         static std::string data_msg_types()
         {   //Either "image" or "imu" or "pose/transform"
-            return to_string() << ros_topic::ros_image_type_str << "|" << ros_topic::ros_imu_type_str << "|" << ros_topic::ros_pose_type_str << "/transform";
+            return to_string() << ros_topic::ros_image_type_str() << "|" << ros_topic::ros_imu_type_str() << "|" << ros_topic::ros_pose_type_str() << "/transform";
         }
 
         static std::string stream_prefix(const device_serializer::stream_identifier& stream_id)
