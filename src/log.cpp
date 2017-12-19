@@ -1,8 +1,8 @@
 #include "types.h"
 
 #include <fstream>
-#include <iostream>
 
+#if BUILD_EASYLOGGINGPP
 INITIALIZE_EASYLOGGINGPP
 
 namespace librealsense
@@ -147,3 +147,16 @@ void librealsense::log_to_file(rs2_log_severity min_severity, const char * file_
 {
     logger.log_to_file(min_severity, file_path);
 }
+
+#else // BUILD_EASYLOGGINGPP
+
+void librealsense::log_to_console(rs2_log_severity min_severity)
+{
+}
+
+void librealsense::log_to_file(rs2_log_severity min_severity, const char * file_path)
+{
+}
+
+#endif // BUILD_EASYLOGGINGPP
+
