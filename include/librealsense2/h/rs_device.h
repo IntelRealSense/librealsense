@@ -106,11 +106,45 @@ int rs2_is_device_extendable_to(const rs2_device* device, rs2_extension extensio
 * \return               The list of sensors, should be released by rs2_delete_sensor_list
 */
 rs2_sensor_list* rs2_query_sensors(const rs2_device* device, rs2_error** error);
-//TODO: add documentation
-void rs2_loopback_enable(const rs2_device* device, const char* from_file, rs2_error** error);
+
+/**
+* Enter the given device into loopback operation mode that uses the given file as input for raw data
+* \param[in]  device     Device to enter into loopback operation mode
+* \param[in]  from_file  Path to bag file with raw data for loopback
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_loopback_enable(const rs2_device* device, const char* from_file, rs2_error** error); 
+
+/**
+* Restores the given device into normal operation mode
+* \param[in]  device     Device to restore to normal operation mode
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 void rs2_loopback_disable(const rs2_device* device, rs2_error** error);
+
+/**
+* Checks if the device is in loopback mode or not
+* \param[in]  device     Device to check for operation mode
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return true if the device is in loopback operation mode
+*/
 int rs2_loopback_is_enabled(const rs2_device* device, rs2_error** error);
 
+/**
+* Connects to a given tm2 controller
+* \param[in]  device     Device to connect to the controller
+* \param[in]  mac_addr   The MAC address of the desired controller
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_connect_tm2_controller(const rs2_device* device, const unsigned char* mac_addr, rs2_error** error);
+
+/**
+* Disconnects a given tm2 controller
+* \param[in]  device     Device to disconnect the controller from
+* \param[in]  id         The ID of the desired controller
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error** error);
 
 #ifdef __cplusplus
 }

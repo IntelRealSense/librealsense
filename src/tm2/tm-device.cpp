@@ -767,7 +767,7 @@ namespace librealsense
 
     void tm2_sensor::onControllerFrame(perc::TrackingData::ControllerFrame& frame)
     {
-        std::string msg = to_string() << "Controller #" << frame.sensorIndex << " button ["<< (int)frame.eventId << ", " << (int)frame.instanceId << "]";
+        std::string msg = to_string() << "Controller #" << (int)frame.sensorIndex << " button ["<< (int)frame.eventId << ", " << (int)frame.instanceId << "]";
         raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
     }
 
@@ -881,6 +881,13 @@ namespace librealsense
             error.timestamp = std::chrono::high_resolution_clock::now().time_since_epoch().count();
             get_notifications_proccessor()->raise_notification(error);
         }
+        else
+        {
+            std::string msg = to_string() << "Disconnected from controller #" << id;
+            perc::TrackingData::ControllerDisconnectedEventFrame f;
+            f.controllerId = id;
+            raise_controller_event(msg, controller_event_serializer::serialized_data(f), std::chrono::high_resolution_clock::now().time_since_epoch().count());
+        }
         //else onControllerDisconnectedEventFrame will be raised
     }
 
@@ -913,7 +920,8 @@ namespace librealsense
             std::string(" port_") + std::to_string(info.usbDescriptor.port);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, device_path);
 
-        add_sensor(std::make_shared<tm2_sensor>(this, _dev));
+        _sensor = std::make_shared<tm2_sensor>(this, _dev);
+        add_sensor(_sensor);
         //For manual testing: enable_loopback("C:\\dev\\recording\\tm2.bag");
     }
 
@@ -933,24 +941,28 @@ namespace librealsense
             LOG_ERROR("Failed to create playback device from given file. File = \"" << source_file << "\". Exception: " << e.what());
             throw librealsense::invalid_value_exception("Failed to enable loopback");
         }
-        auto& sensor = get_sensor(0);
-        auto& tm_sensor = dynamic_cast<tm2_sensor&>(sensor);
-        tm_sensor.enable_loopback(raw_streams);
+        _sensor->enable_loopback(raw_streams);
         update_info(RS2_CAMERA_INFO_NAME, to_string() << tm2_device_name() << " (Loopback - " << source_file << ")");
     }
 
     void tm2_device::disable_loopback()
     {
-        auto& sensor = get_sensor(0);
-        auto& tm_sensor = dynamic_cast<tm2_sensor&>(sensor);
-        tm_sensor.disable_loopback();
+        _sensor->disable_loopback();
         update_info(RS2_CAMERA_INFO_NAME, tm2_device_name());
     }
 
     bool tm2_device::is_enabled() const
     {
-        auto& sensor = get_sensor(0);
-        auto& tm_sensor = dynamic_cast<const tm2_sensor&>(sensor);
-        return tm_sensor.is_loopback_enabled();
+        return _sensor->is_loopback_enabled();
+    }
+
+    void tm2_device::connect_controller(const std::array<uint8_t, 6>& mac_address)
+    {
+        _sensor->attach_controller(mac_address);
+    }
+
+    void tm2_device::disconnect_controller(int id)
+    {
+        _sensor->detach_controller(id);
     }
 }

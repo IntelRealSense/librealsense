@@ -385,6 +385,8 @@ namespace rs2
             viewer_model& viewer, float windows_width,
             bool update_read_only_options,
             std::vector<std::function<void()>>& draw_later);
+        void handle_harware_events(const std::string& serialized_data);
+
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
 
         bool metadata_supported = false;
@@ -401,7 +403,8 @@ namespace rs2
         bool allow_remove = true;
         bool show_depth_only = false;
         bool show_stream_selection = true;
-
+        std::map<int, std::array<uint8_t, 6>> controllers;
+        std::set<std::array<uint8_t, 6>> available_controllers;
         std::vector<std::pair<std::string, std::string>> infos;
         std::vector<std::string> restarting_device_info;
     private:
@@ -409,6 +412,7 @@ namespace rs2
         int draw_playback_controls(ImFont* font, viewer_model& view);
         advanced_mode_control amc;
         std::string pretty_time(std::chrono::nanoseconds duration);
+        void draw_controllers_panel(ImFont* font, bool is_device_streaming);
 
         void play_defaults(viewer_model& view);
 

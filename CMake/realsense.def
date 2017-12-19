@@ -241,3 +241,5 @@ EXPORTS
     rs2_loopback_enable
     rs2_loopback_disable
     rs2_loopback_is_enabled
+    rs2_connect_tm2_controller
+    rs2_disconnect_tm2_controller

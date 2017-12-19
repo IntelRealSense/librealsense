@@ -1078,7 +1078,7 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, 
         case RS2_EXTENSION_ADVANCED_MODE : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::ds5_advanced_mode_interface) != nullptr;
         case RS2_EXTENSION_RECORD        : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::record_device)               != nullptr;
         case RS2_EXTENSION_PLAYBACK      : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::playback_device)             != nullptr;
-        case RS2_EXTENSION_LOOPBACK      : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::loopback_interface)          != nullptr;
+        case RS2_EXTENSION_TM2           : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::tm2_extensions)          != nullptr;
         default:
             return false;
     }
@@ -1757,7 +1757,7 @@ void rs2_loopback_enable(const rs2_device* device, const char* from_file, rs2_er
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(from_file);
 
-    auto loopback = VALIDATE_INTERFACE(device->device, librealsense::loopback_interface);
+    auto loopback = VALIDATE_INTERFACE(device->device, librealsense::tm2_extensions);
     loopback->enable_loopback(from_file);
 
 }
@@ -1767,7 +1767,7 @@ void rs2_loopback_disable(const rs2_device* device, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
 
-    auto loopback = VALIDATE_INTERFACE(device->device, librealsense::loopback_interface);
+    auto loopback = VALIDATE_INTERFACE(device->device, librealsense::tm2_extensions);
     loopback->disable_loopback();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
@@ -1776,7 +1776,26 @@ int rs2_loopback_is_enabled(const rs2_device* device, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
 
-    auto loopback = VALIDATE_INTERFACE(device->device, librealsense::loopback_interface);
+    auto loopback = VALIDATE_INTERFACE(device->device, librealsense::tm2_extensions);
     return loopback->is_enabled() ? 1 : 0;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+
+void rs2_connect_tm2_controller(const rs2_device* device, const unsigned char* mac, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(mac);
+
+    auto tm2 = VALIDATE_INTERFACE(device->device, librealsense::tm2_extensions);
+    tm2->connect_controller({ mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] });
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+
+    auto tm2 = VALIDATE_INTERFACE(device->device, librealsense::tm2_extensions);
+    tm2->disconnect_controller(id);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)

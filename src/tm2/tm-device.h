@@ -11,7 +11,9 @@
 
 namespace librealsense
 {
-    class tm2_device : public virtual device, public loopback_interface
+    class tm2_sensor;
+
+    class tm2_device : public virtual device, public tm2_extensions
     {
     public:
         tm2_device(std::shared_ptr<perc::TrackingManager> manager,
@@ -21,6 +23,8 @@ namespace librealsense
         void enable_loopback(const std::string& source_file) override;
         void disable_loopback() override;
         bool is_enabled() const override;
+        void connect_controller(const std::array<uint8_t, 6>& mac_address) override;
+        void disconnect_controller(int id) override;
     private:
         static const char* tm2_device_name()
         {
@@ -28,6 +32,7 @@ namespace librealsense
         }
         std::shared_ptr<perc::TrackingManager> _manager;
         perc::TrackingDevice* _dev;
+        std::shared_ptr<tm2_sensor> _sensor;
     };
 
     class tm2_sensor : public sensor_base, public video_sensor_interface, public perc::TrackingDevice::Listener

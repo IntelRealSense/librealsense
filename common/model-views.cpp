@@ -4,6 +4,7 @@
 #include <regex>
 #include <thread>
 #include <algorithm>
+#include <regex>
 
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <librealsense2/rsutil.h>
@@ -305,6 +306,56 @@ namespace rs2
         std::vector<const char*> res;
         for (auto&& s : vec) res.push_back(s.c_str());
         return res;
+    }
+
+    inline std::string get_event_type(const std::string& data)
+    {
+        std::regex event_type(R"REGX("Event Type"\s*:\s*"([^"]+)")REGX");
+        std::smatch m;
+        if (std::regex_search(data, m, event_type))
+        {
+            return m[1];
+        }
+        throw std::runtime_error(std::string("Failed to match Event Type in string: ") + data);
+    }
+
+    inline std::string get_subtype(const std::string& data)
+    {
+        std::regex subtype(R"REGX("Sub Type"\s*:\s*"([^"]+)")REGX");
+        std::smatch m;
+        if (std::regex_search(data, m, subtype))
+        {
+            return m[1];
+        }
+        throw std::runtime_error(std::string("Failed to match Sub Type in string: ") + data);
+    }
+
+    inline int get_id(const std::string& data)
+    {
+        std::regex id_regex(R"REGX("ID" : (\d+))REGX");
+        std::smatch match;
+        if (std::regex_search(data, match, id_regex))
+        {
+            return std::stoi(match[1].str());
+        }
+        throw std::runtime_error(std::string("Failed to match ID in string: ") + data);
+    }
+
+    inline std::array<uint8_t, 6> get_mac(const std::string& data)
+    {
+        std::regex mac_addr_regex(R"REGX("MAC" : \[(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\])REGX");
+        std::smatch match;
+
+        std::array<uint8_t, 6> mac_addr;
+        if (std::regex_search(data, match, mac_addr_regex))
+        {
+            for (size_t i = 1; i < match.size(); i++)
+            {
+                mac_addr[i - 1] = static_cast<uint8_t>(std::stol(match[i].str()));
+            }
+            return mac_addr;
+        }
+        throw std::runtime_error(std::string("Failed to match MAC in string: ") + data);
     }
 
     bool option_model::draw(std::string& error_message)
@@ -3822,6 +3873,68 @@ namespace rs2
 
     }
 
+    void device_model::draw_controllers_panel(ImFont* font, bool is_device_streaming)
+    {
+        if (!is_device_streaming)
+        {
+            controllers.clear();
+            available_controllers.clear();
+            return;
+        }
+
+        if (controllers.size() > 0 || available_controllers.size() > 0)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
+            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+            ImGui::PushFont(font);
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 10,0 });
+            const float button_dim = 30.f;
+            for (auto&& c : available_controllers)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                std::string action = "Attach controller";
+                std::string mac = to_string() << (int)c[0] << ":" << (int)c[1] << ":" << (int)c[2] << ":" << (int)c[3] << ":" << (int)c[4] << ":" << (int)c[5];
+                std::string label = to_string() << u8"\uf11b" << "##" << action << mac;
+                if (ImGui::ButtonEx(label.c_str(), { button_dim , button_dim })) //ImGuiButtonFlags_Disabled
+                {
+                    dev.as<tm2>().connect_controller(c);
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", action.c_str());
+                }
+                ImGui::SameLine();
+                ImGui::Text("%s", mac.c_str());
+                ImGui::PopStyleColor(2);
+            }
+            for (auto&& c : controllers)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                std::string action = "Detach controller";
+                std::string label = to_string() << u8"\uf11b" << "##" << action << c.first;
+                if (ImGui::ButtonEx(label.c_str(), { button_dim , button_dim })) //ImGuiButtonFlags_Disabled
+                {
+                    dev.as<tm2>().disconnect_controller(c.first);
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", action.c_str());
+                }
+                ImGui::SameLine();
+                ImGui::Text("Controller #%d (connected)", c.first);
+                ImGui::PopStyleColor(2);
+            }
+            ImGui::PopStyleVar();
+            ImGui::PopFont();
+            ImGui::PopStyleColor(5);
+        }
+    }
+
     std::vector<std::string> get_device_info(const device& dev, bool include_location)
     {
         std::vector<std::string> res;
@@ -4060,6 +4173,7 @@ namespace rs2
 
         ImGui::PushFont(window.get_font());
 
+        bool is_device_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& s) { return s->streaming; });
         if (ImGui::BeginPopup(label.c_str()))
         {
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
@@ -4071,7 +4185,6 @@ namespace rs2
             {
                 show_device_info = false;
             }
-            bool is_device_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& s) { return s->streaming; });
             if (!is_recording && !dev.is<playback>())
             {
                 if (ImGui::Selectable("Record to File...", false, is_device_streaming ? ImGuiSelectableFlags_Disabled : 0))
@@ -4092,20 +4205,20 @@ namespace rs2
                         ImGui::SetTooltip("Stop streaming to enable recording");
                 }
             }
-            if (auto loopback = dev.as<rs2::loopback>())
+            if (auto loopback = dev.as<rs2::tm2>())
             {
                 try
                 {
-                    if (!loopback.enabled() && ImGui::Selectable("Enable loopback...", false, is_device_streaming ? ImGuiSelectableFlags_Disabled : 0))
+                    if (!loopback.is_loopback_enabled() && ImGui::Selectable("Enable loopback...", false, is_device_streaming ? ImGuiSelectableFlags_Disabled : 0))
                     {
                         if (const char* ret = file_dialog_open(file_dialog_mode::open_file, "ROS-bag\0*.bag\0", NULL, NULL))
                         {
-                            loopback.enable(ret);
+                            loopback.enable_loopback(ret);
                         }
                     }
-                    if (loopback.enabled() && ImGui::Selectable("Disable loopback...", false, is_device_streaming ? ImGuiSelectableFlags_Disabled : 0))
+                    if (loopback.is_loopback_enabled() && ImGui::Selectable("Disable loopback...", false, is_device_streaming ? ImGuiSelectableFlags_Disabled : 0))
                     {
-                        loopback.disable();
+                        loopback.disable_loopback();
                     }
                     if (ImGui::IsItemHovered())
                     {
@@ -4234,8 +4347,11 @@ namespace rs2
         }
 
         ImGui::SetCursorPos({ 0, pos.y + header_h + playback_control_panel_height });
+        
+        draw_controllers_panel(window.get_font(), is_device_streaming);
+        
         pos = ImGui::GetCursorPos();
-
+        
         int info_control_panel_height = 0;
         if (show_device_info)
         {
@@ -4663,6 +4779,34 @@ namespace rs2
         ImGui::PopStyleColor(2);
         ImGui::PopFont();
     }
+
+    void device_model::handle_harware_events(const std::string& serialized_data)
+    {
+        //TODO: Move under hour glass
+        std::string event_type = get_event_type(serialized_data);
+        if (event_type == "Controller Event")
+        {
+            std::string subtype = get_subtype(serialized_data);
+            if (subtype == "Connection")
+            {
+                std::array<uint8_t, 6> mac_addr = get_mac(serialized_data);
+                int id = get_id(serialized_data);
+                controllers[id] = mac_addr;
+                available_controllers.erase(mac_addr);
+            }
+            else if (subtype == "Discovery")
+            {
+                std::array<uint8_t, 6> mac_addr = get_mac(serialized_data);
+                available_controllers.insert(mac_addr);
+            }
+            else if (subtype == "Disconnection")
+            {
+                int id = get_id(serialized_data);
+                controllers.erase(id);
+            }
+        }
+    }
+
 
     void viewer_model::draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message, texture_buffer* texture, points points)
     {
