@@ -634,20 +634,20 @@ namespace rs2
         float3 v6{  len_x/2,  len_y/2, -len_z/2 };
         float3 v7{ -len_x/2, -len_y/2, -len_z/2 };
         float3 v8{  len_x/2, -len_y/2, -len_z/2 };
-        face f1{ v1,v2,v3,v4 }; //Back
-        face f2{ v2,v8,v6,v3 }; //Right side
-        face f3{ v4,v3,v6,v5 }; //Top side
-        face f4{ v1,v4,v5,v7 }; //Left side
-        face f5{ v7,v8,v6,v5 }; //Front
-        face f6{ v1,v2,v8,v7 }; //Bottom side
+        face f1{ { v1,v2,v3,v4 } }; //Back
+        face f2{ { v2,v8,v6,v3 } }; //Right side
+        face f3{ { v4,v3,v6,v5 } }; //Top side
+        face f4{ { v1,v4,v5,v7 } }; //Left side
+        face f5{ { v7,v8,v6,v5 } }; //Front
+        face f6{ { v1,v2,v8,v7 } }; //Bottom side
 
         std::array<color, 6> colors{ {
-            { 0.5f, 0.5f, 0.5f }, //Back
-            { 0.7f, 0.7f, 0.7f }, //Right side
-            { 1.0f, 0.7f, 0.7f }, //Top side
-            { 0.7f, 0.7f, 0.7f }, //Left side
-            { 0.4f, 0.4f, 0.4f }, //Front
-            { 0.7f, 0.7f, 0.7f }  //Bottom side
+            {{ 0.5f, 0.5f, 0.5f }}, //Back
+            {{ 0.7f, 0.7f, 0.7f }}, //Right side
+            {{ 1.0f, 0.7f, 0.7f }}, //Top side
+            {{ 0.7f, 0.7f, 0.7f }}, //Left side
+            {{ 0.4f, 0.4f, 0.4f }}, //Front
+            {{ 0.7f, 0.7f, 0.7f }}  //Bottom side
             } };
 
         colored_cube camera_box{ { { f1,colors[0] },{ f2,colors[1] },{ f3,colors[2] },{ f4,colors[3] },{ f5,colors[4] },{ f6,colors[5] } } };

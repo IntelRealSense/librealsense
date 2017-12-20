@@ -3,7 +3,7 @@
 #pragma once
 
 #include "device.h"
-#include "core\motion.h"
+#include "../core/motion.h"
 #include "TrackingManager.h"
 
 #include <memory>

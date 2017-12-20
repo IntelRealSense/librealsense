@@ -31,14 +31,14 @@ namespace librealsense
         {
             std::string serizlied_data = to_string() 
                 << "\"MAC\" : [" << buffer_to_string(frame.macAddress) << "]";
-            return to_json(event_type_discovery, serizlied_data);
+            return to_json(event_type_discovery(), serizlied_data);
         }
 
         static std::string serialized_data(const perc::TrackingData::ControllerDisconnectedEventFrame& frame)
         {
             std::string serizlied_data = to_string()
                 << "\"ID\" : " << (int)frame.controllerId;
-            return to_json(event_type_disconnection, serizlied_data);
+            return to_json(event_type_disconnection(), serizlied_data);
         }
 
         static std::string serialized_data(const perc::TrackingData::ControllerFrame& frame)
@@ -49,7 +49,7 @@ namespace librealsense
                 "\"eventId\": " << (int)frame.eventId << ","
                 "\"instanceId\": " << (int)frame.instanceId << ","
                 "\"sensorData\": [" << buffer_to_string(frame.sensorData) << "]";
-            return to_json(event_type_frame, serizlied_data);
+            return to_json(event_type_frame(), serizlied_data);
         }
 
         static std::string serialized_data(const perc::TrackingData::ControllerDeviceConnect& c, uint8_t controller_id)
@@ -57,23 +57,23 @@ namespace librealsense
             std::string serizlied_data = to_string() 
                 << "\"MAC\" : [" << buffer_to_string(c.macAddress) << "] ,"
                    "\"ID\" : " << (int)controller_id;
-            return to_json(event_type_connection, serizlied_data);
+            return to_json(event_type_connection(), serizlied_data);
         }
     private:
-        static constexpr const char* prefix = R"JSON({"Event Type":"Controller Event", "Data" : {)JSON";
-        static constexpr const char* suffix = "}}";
-        static constexpr const char* event_type_frame = "Frame";
-        static constexpr const char* event_type_connection = "Connection";
-        static constexpr const char* event_type_disconnection = "Disconnection";
-        static constexpr const char* event_type_discovery = "Discovery";
+        static constexpr const char* prefix() { return R"JSON({"Event Type":"Controller Event", "Data" : {)JSON"; }
+        static constexpr const char* suffix() { return "}}"; }
+        static constexpr const char* event_type_frame() { return "Frame"; }
+        static constexpr const char* event_type_connection() { return "Connection"; }
+        static constexpr const char* event_type_disconnection() { return "Disconnection"; }
+        static constexpr const char* event_type_discovery() { return "Discovery"; }
 
         static std::string to_json(const char* sub_type, const std::string& data)
         {
             return to_string()
-                << prefix
+                << prefix()
                 << "\"Sub Type\" : " << "\"" << sub_type << "\","
                 << "\"Data\" : {" << data << "}"
-                << suffix;
+                << suffix();
         }
     };
 }

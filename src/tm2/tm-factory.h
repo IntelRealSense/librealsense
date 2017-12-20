@@ -20,7 +20,7 @@ namespace librealsense
     {
     public:
         tm2_info(std::shared_ptr<perc::TrackingManager> manager, perc::TrackingDevice* dev, std::shared_ptr<context> ctx);
-        std::shared_ptr<device_interface> tm2_info::create(std::shared_ptr<context> ctx, bool register_device_notifications) const override;
+        std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx, bool register_device_notifications) const override;
         platform::backend_device_group get_device_data() const override;
         
         static std::vector<std::shared_ptr<device_info>> pick_tm2_devices(std::shared_ptr<context> ctx, platform::backend_device_group& group);

@@ -61,7 +61,7 @@ namespace librealsense
             // Need to clarify if the device pointer has value
             break;
         }
-    };
+    }
 
     void tm2_context::onError(TrackingManager::Error error, TrackingDevice* dev)
     {
