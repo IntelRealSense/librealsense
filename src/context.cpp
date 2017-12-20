@@ -101,6 +101,19 @@ namespace librealsense
        environment::get_instance().set_time_service(_backend->create_time_service());
 
        _device_watcher = _backend->create_device_watcher();
+#if WITH_TRACKING
+       _tm2_context = std::make_shared<tm2_context>(this);
+       _tm2_context->on_device_changed += [this](std::shared_ptr<tm2_info> removed, std::shared_ptr<tm2_info> added)-> void
+       {
+           std::vector<rs2_device_info> rs2_devices_info_added;
+           std::vector<rs2_device_info> rs2_devices_info_removed;
+           if(removed) 
+               rs2_devices_info_removed.push_back({ shared_from_this(), removed });
+           if (added) 
+               rs2_devices_info_added.push_back({ shared_from_this(), added });
+           raise_devices_changed(rs2_devices_info_removed, rs2_devices_info_added);
+       };
+#endif
     }
 
 
@@ -289,7 +302,7 @@ namespace librealsense
         auto ctx = t->shared_from_this();
 
 #ifdef WITH_TRACKING
-        auto tm2_devices = tm2_info::pick_tm2_devices(ctx, devices);
+        auto tm2_devices = tm2_info::pick_tm2_devices(ctx, _tm2_context->get_manager(), _tm2_context->query_devices());
         std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
 #endif
 
@@ -361,21 +374,24 @@ namespace librealsense
                 }
             }
 
-            if (_devices_changed_callback)
+            raise_devices_changed(rs2_devices_info_removed, rs2_devices_info_added);
+        }
+    }
+    void context::raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added)
+    {
+        if (_devices_changed_callback)
+        {
+            try
             {
-                try
-                {
-                    _devices_changed_callback->on_devices_changed(new rs2_device_list({ shared_from_this(), rs2_devices_info_removed }),
-                        new rs2_device_list({ shared_from_this(), rs2_devices_info_added }));
-                }
-                catch (...)
-                {
-                    LOG_ERROR("Exception thrown from user callback handler");
-                }
+                _devices_changed_callback->on_devices_changed(new rs2_device_list({ shared_from_this(), removed }),
+                    new rs2_device_list({ shared_from_this(), added }));
+            }
+            catch (...)
+            {
+                LOG_ERROR("Exception thrown from user callback handler");
             }
         }
     }
-
     uint64_t context::register_internal_device_callback(devices_changed_callback_ptr callback)
     {
         std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);

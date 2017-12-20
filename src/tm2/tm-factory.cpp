@@ -10,7 +10,6 @@
 
 #include "tm-factory.h"
 #include "tm-device.h"
-#include "tm-context.h"
 
 using namespace perc;
 
@@ -29,41 +28,18 @@ namespace librealsense
 
     platform::backend_device_group tm2_info::get_device_data() const
     {
-        return platform::backend_device_group({}, {}, {}); //TODO: return correct
+        auto bdg = platform::backend_device_group();
+        bdg.tm2_devices.push_back({ _dev });
+        return bdg;
     }
 
     std::vector<std::shared_ptr<device_info>> tm2_info::pick_tm2_devices(
-        std::shared_ptr<context> ctx,
-        platform::backend_device_group& group)
+        std::shared_ptr<context> ctx, std::shared_ptr<perc::TrackingManager> manager, const std::vector<perc::TrackingDevice*>& tm_devices)
     {
-        static tm2_context context; //TODO: not use static
-
         std::vector<std::shared_ptr<device_info>> results;
-
-        int wait_sec = 10;
-        while (wait_sec > 0)
+        for(auto&& dev : tm_devices)
         {
-            auto tm_devices = context.query_devices();
-
-            if (tm_devices.size() == 0)
-            {
-                //wait for device FW load for a few seconds
-                wait_sec--;
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-            }
-            else
-            {
-                wait_sec = 0;
-                if (tm_devices.size() == 1)
-                {
-                    auto result = std::make_shared<tm2_info>(context.get_manager(), tm_devices.front(), ctx);
-                    results.push_back(result);
-                }
-                else
-                {
-                    LOG_WARNING("At the moment only single TM2 device is supported");
-                }
-            }
+            results.push_back(std::make_shared<tm2_info>(manager, dev, ctx));
         }
         return results;
     }

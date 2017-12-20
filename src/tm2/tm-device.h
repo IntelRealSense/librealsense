@@ -2,12 +2,14 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "device.h"
-#include "../core/motion.h"
-#include "TrackingManager.h"
-
 #include <memory>
 #include <vector>
+
+#include "../device.h"
+#include "../core/motion.h"
+#include "TrackingManager.h"
+#include "../media/playback/playback_device.h"
+
 
 namespace librealsense
 {
@@ -20,6 +22,7 @@ namespace librealsense
             perc::TrackingDevice* dev,
             std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
+        ~tm2_device();
         void enable_loopback(const std::string& source_file) override;
         void disable_loopback() override;
         bool is_enabled() const override;
@@ -65,12 +68,12 @@ namespace librealsense
         bool is_loopback_enabled() const;
         void attach_controller(const std::array<uint8_t, 6>& mac_addr);
         void detach_controller(int id);
-
+        void dispose();
     private:
         void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
         void pass_frames_to_fw(frame_holder fref);
         void raise_controller_event(const std::string& msg, const std::string& serizlied_data, double timestamp);
-
+        
         dispatcher _dispatcher;
         perc::TrackingDevice* _tm_dev;
         std::mutex _configure_lock;

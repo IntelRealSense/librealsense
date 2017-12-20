@@ -287,6 +287,24 @@ namespace librealsense
             return (a.file_path == b.file_path);
         }
 
+        struct tm2_device_info
+        {
+            void* device_ptr;
+
+            operator std::string()
+            {
+                std::ostringstream oss;
+                oss << device_ptr;
+                return oss.str();
+            }
+        };
+
+        inline bool operator==(const tm2_device_info& a,
+            const tm2_device_info& b)
+        {
+            return (a.device_ptr == b.device_ptr);
+        }
+
         struct hid_sensor
         {
             std::string name;
@@ -544,6 +562,7 @@ namespace librealsense
             std::vector<usb_device_info> usb_devices;
             std::vector<hid_device_info> hid_devices;
             std::vector<playback_device_info> playback_devices;
+            std::vector<tm2_device_info> tm2_devices;
 
             bool operator == (const backend_device_group& other)
             {

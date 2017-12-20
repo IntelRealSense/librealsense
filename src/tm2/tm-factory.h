@@ -5,9 +5,9 @@
 #include <memory>
 #include <vector>
 
-#include "context.h"
+#include "../context.h"
 #include "tm-device.h"
-#include "tm-context.h"
+
 namespace perc
 {
     class TrackingManager;
@@ -23,7 +23,10 @@ namespace librealsense
         std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx, bool register_device_notifications) const override;
         platform::backend_device_group get_device_data() const override;
         
-        static std::vector<std::shared_ptr<device_info>> pick_tm2_devices(std::shared_ptr<context> ctx, platform::backend_device_group& group);
+        static std::vector<std::shared_ptr<device_info>> pick_tm2_devices(
+            std::shared_ptr<context> ctx, 
+            std::shared_ptr<perc::TrackingManager> manager, 
+            const std::vector<perc::TrackingDevice*>& tm_devices);
     private:
         std::shared_ptr<perc::TrackingManager> _manager;
         perc::TrackingDevice* _dev;

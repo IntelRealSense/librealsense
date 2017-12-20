@@ -113,6 +113,9 @@ namespace librealsense
 
     tm2_sensor::~tm2_sensor()
     {
+        if (!_tm_dev)
+            return;
+
         try
         {
             if (_is_streaming)
@@ -126,6 +129,12 @@ namespace librealsense
             LOG_ERROR("An error has occurred while stop_streaming()!");
         }
     }
+
+    void tm2_sensor::dispose()
+    {
+        _tm_dev = nullptr;
+    }
+
     //sensor
     ////////
     stream_profiles tm2_sensor::init_stream_profiles()
@@ -498,6 +507,7 @@ namespace librealsense
 
         _dispatcher.start();
         _source.set_callback(callback);
+
         auto status = _tm_dev->Start(this, &_tm_active_profiles);
         if (status != Status::SUCCESS)
         {
@@ -900,11 +910,11 @@ namespace librealsense
             std::shared_ptr<context> ctx,
             const platform::backend_device_group& group) :
         device(ctx, group),
-        _dev(dev), 
+        _dev(dev),
         _manager(manager)
     {
         TrackingData::DeviceInfo info;
-        auto status = _dev->GetDeviceInfo(info);
+        auto status = dev->GetDeviceInfo(info);
         if (status != Status::SUCCESS)
         {
             throw io_exception("Failed to get device info");
@@ -920,11 +930,25 @@ namespace librealsense
             std::string(" port_") + std::to_string(info.usbDescriptor.port);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, device_path);
 
-        _sensor = std::make_shared<tm2_sensor>(this, _dev);
+        _sensor = std::make_shared<tm2_sensor>(this, dev);
         add_sensor(_sensor);
         //For manual testing: enable_loopback("C:\\dev\\recording\\tm2.bag");
     }
 
+    tm2_device::~tm2_device()
+    {
+        for (auto&& d : get_context()->query_devices())
+        {
+            for (auto&& tmd : d->get_device_data().tm2_devices)
+            {
+                if (_dev == tmd.device_ptr)
+                {
+                    return;
+                }
+            }
+        }
+        _sensor->dispose();
+    }
     /**
     * Enable loopback will replace the input and ouput of the tm2 sensor
     */

@@ -16,10 +16,11 @@ using namespace perc;
 
 namespace librealsense
 {
-    tm2_context::tm2_context()
-        : _t(&tm2_context::thread_proc, this)
+    tm2_context::tm2_context(context* ctx)
+        : _is_disposed(false), _t(&tm2_context::thread_proc, this), _ctx(ctx)
     {
-        _manager = std::shared_ptr<TrackingManager>(perc::TrackingManager::CreateInstance(this));
+        _manager = std::shared_ptr<TrackingManager>(perc::TrackingManager::CreateInstance(this), 
+            [](perc::TrackingManager* ptr) { perc::TrackingManager::ReleaseInstance(ptr); });
         if (_manager == nullptr)
         {
             LOG_ERROR("Failed to create TrackingManager");
@@ -44,23 +45,31 @@ namespace librealsense
         _is_disposed = true;
         if (_t.joinable())
             _t.join();
+        
     }
 
     void tm2_context::onStateChanged(TrackingManager::EventType state, TrackingDevice* dev)
     {
+        std::shared_ptr<tm2_info> added;
+        std::shared_ptr<tm2_info> removed;
         switch (state)
         {
-        case TrackingManager::ATTACH:
-            _devices.push_back(dev);
-            LOG_INFO("TM2 Device Attached - " << dev);
-            break;
-
-        case TrackingManager::DETACH:
-            LOG_INFO("TM2 Device Detached");
-            // TODO: Sergey
-            // Need to clarify if the device pointer has value
-            break;
+            case TrackingManager::ATTACH:
+            {
+                _devices.push_back(dev);
+                LOG_INFO("TM2 Device Attached - " << dev);
+                added = std::make_shared<tm2_info>(get_manager(), dev, _ctx->shared_from_this());
+                break;
+            }
+            case TrackingManager::DETACH:
+            {
+                LOG_INFO("TM2 Device Detached");
+                removed = std::make_shared<tm2_info>(get_manager(), dev, _ctx->shared_from_this());
+                _devices.clear();
+                break;
+            }
         }
+        on_device_changed(removed, added);
     }
 
     void tm2_context::onError(TrackingManager::Error error, TrackingDevice* dev)
