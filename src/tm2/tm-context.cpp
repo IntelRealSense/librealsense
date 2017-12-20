@@ -65,7 +65,8 @@ namespace librealsense
             {
                 LOG_INFO("TM2 Device Detached");
                 removed = std::make_shared<tm2_info>(get_manager(), dev, _ctx->shared_from_this());
-                _devices.clear();
+                auto itr = std::find_if(_devices.begin(), _devices.end(), [dev](TrackingDevice* d) { return dev == d; });
+                _devices.erase(itr);
                 break;
             }
         }
