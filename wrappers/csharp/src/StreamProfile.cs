@@ -133,6 +133,14 @@ namespace Intel.RealSense
 
         public int UniqueID { get; private set; }
 
+        public Extrinsics GetExtrinsicsTo(StreamProfile other)
+        {
+            object error;
+            Extrinsics extrinsics;
+            NativeMethods.rs2_get_extrinsics(m_instance.Handle, other.m_instance.Handle, out extrinsics, out error);
+            return extrinsics;
+        }
+
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
@@ -189,6 +197,14 @@ namespace Intel.RealSense
 
             Width = width;
             Height = height;
+        }
+
+        public Intrinsics GetIntrinsics()
+        {
+            object error;
+            Intrinsics intrinsics;
+            NativeMethods.rs2_get_video_stream_intrinsics(m_instance.Handle, out intrinsics, out error);
+            return intrinsics;
         }
 
         public int Width { get; private set; }
