@@ -30,23 +30,24 @@ namespace librealsense
         const int w = ptr->get_width(), h = ptr->get_height();
         int x = std::min(std::max(int(u*w + .5f), 0), w - 1);
         int y = std::min(std::max(int(v*h + .5f), 0), h - 1);
-        int idx = x * ptr->get_bpp() + y * ptr->get_stride();
+        int idx = x * ptr->get_bpp() / 8 + y * ptr->get_stride();
         const auto texture_data = reinterpret_cast<const uint8_t*>(ptr->get_frame_data());
         return std::tuple<uint8_t, uint8_t, uint8_t>(
             texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
     }
 
-	void points::export_to_ply(const std::string& fname, frame_holder texture) 
+	void points::export_to_ply(const std::string& fname, const frame_holder& texture) 
 	{
         const auto vertices = get_vertices();
         const auto texcoords = get_texture_coordinates();
-//        const auto tex = reinterpret_cast<const uint8_t*>(texture.get_data());
+        //const auto tex = reinterpret_cast<const uint8_t*>(texture.get_data());
         std::vector<float3> new_vertices;
         //std::vector<texture_coordinate> new_texcoords;
         std::vector<std::tuple<uint8_t, uint8_t, uint8_t>> new_tex;
         new_vertices.reserve(get_vertex_count());
         //new_texcoords.reserve(points.size());
         new_tex.reserve(get_vertex_count());
+      //  LOG_INFO("Vertex count: " << get_vertex_count());
         assert(get_vertex_count());
         for (size_t i = 0; i < get_vertex_count(); ++i)
             if (std::abs(vertices[i].x) >= 1e-6 || std::abs(vertices[i].y) >= 1e-6 || std::abs(vertices[i].z) >= 1e-6)
@@ -55,10 +56,10 @@ namespace librealsense
                 if (texture)
                 {
                     //new_texcoords.push_back(texcoords[i]);
-                    auto color = get_texcolor(texture, texcoords->x, texcoords->y);
+                    auto color = get_texcolor(texture, texcoords[i].x, texcoords[i].y);
+                    //LOG_INFO("i: " << i << "Color: " << (int)std::get<0>(color) << ", " << (int)std::get<1>(color) << ", " << (int)std::get<2>(color));
                     new_tex.push_back(color);
                 }
-                
             }
 
         std::ofstream out(fname);
