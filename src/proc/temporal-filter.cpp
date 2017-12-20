@@ -24,7 +24,7 @@ namespace librealsense
     const float temp_alpha_default = 0.25f;
     const float temp_alpha_step = 0.01f;
 
-    //delta -  the threashold for valid range with default value 50.0 for depth map and 15 for disparity map
+    //delta -  the threashold for valid range with default value 50.0 for depth map
     const uint8_t temp_delta_min = 1;
     const uint8_t temp_delta_max = 100;
     const uint8_t temp_delta_default = 50;
@@ -34,7 +34,8 @@ namespace librealsense
         _alpha_param(temp_alpha_default),
         _one_minus_alpha(1- _alpha_param),
         _delta_param(temp_delta_default),
-        _width(0), _height(0),
+        _width(0), _height(0), _stride(0), _bpp(0),
+        _extension_type(RS2_EXTENSION_DEPTH_FRAME),
         _current_frm_size_pixels(0)
     {
         auto temporal_creadibility_control = std::make_shared<ptr_option<uint8_t>>(cred_min, cred_max, cred_step, cred_default,
@@ -64,8 +65,12 @@ namespace librealsense
             temp_delta_step,
             temp_delta_default,
             &_delta_param, "Depth range (gradient) threshold");
-        temporal_filter_delta->on_set([this](float val)
+        temporal_filter_delta->on_set([this, temporal_filter_delta](float val)
         {
+            if (!temporal_filter_delta->is_valid(val))
+                throw invalid_value_exception(to_string()
+                    << "Unsupported temporal delta: " << val << " is out of range.");
+
             on_set_delta(val);
         });
 
@@ -88,9 +93,10 @@ namespace librealsense
                 tgt = prepare_target_frame(depth, source);
 
                 // Spatial smooth with domain transform filter
-                temp_jw_smooth(static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),   // current frame data
-                    _last_frame_map[_current_frm_size_pixels].data(),                       // previous frame
-                    _history[_current_frm_size_pixels].data());                             // history map
+                if (_extension_type == RS2_EXTENSION_DISPARITY_FRAME)
+                    temp_jw_smooth<float>(const_cast<void*>(tgt.get_data()), _last_frame.data(), _history.data());
+                else
+                    temp_jw_smooth<uint16_t>(const_cast<void*>(tgt.get_data()), _last_frame.data(), _history.data());
             }
 
             res = composite ? source.allocate_composite_frame({ tgt }) : tgt;
@@ -102,6 +108,8 @@ namespace librealsense
         processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
 
         on_set_confidence_control(_credibility_param);
+        on_set_delta(_delta_param);
+        on_set_alpha(_alpha_param);
     }
 
     void temporal_filter::on_set_confidence_control(uint8_t val)
@@ -109,21 +117,27 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_mutex);
         _credibility_param = val;
         recalc_creadibility_map();
+        _last_frame.clear();
+        _history.clear();
     }
 
     void temporal_filter::on_set_alpha(float val)
     {
         std::lock_guard<std::mutex> lock(_mutex);
         _alpha_param = val;
-        _one_minus_alpha = 1 - _alpha_param;
+        _one_minus_alpha = 1.f - _alpha_param;
         _cur_frame_index = 0;
+        _last_frame.clear();
+        _history.clear();
     }
 
     void temporal_filter::on_set_delta(float val)
     {
         std::lock_guard<std::mutex> lock(_mutex);
-        _delta_param = val;
+        _delta_param = static_cast<uint8_t>(val);
         _cur_frame_index = 0;
+        _last_frame.clear();
+        _history.clear();
     }
 
     void  temporal_filter::update_configuration(const rs2::frame& f)
@@ -131,40 +145,36 @@ namespace librealsense
         if (f.get_profile().get() != _source_stream_profile.get())
         {
             _source_stream_profile = f.get_profile();
-            _target_stream_profile = _source_stream_profile.clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16);
+            _target_stream_profile = _source_stream_profile.clone(RS2_STREAM_DEPTH, 0, _source_stream_profile.format());
 
             environment::get_instance().get_extrinsics_graph().register_same_extrinsics(
                 *(stream_interface*)(f.get_profile().get()->profile),
                 *(stream_interface*)(_target_stream_profile.get()->profile));
 
+            //TODO - reject any frame other than depth/disparity
+            _extension_type = f.is<rs2::disparity_frame>() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
+            _bpp = (_extension_type == RS2_EXTENSION_DISPARITY_FRAME) ? sizeof(float) : sizeof(uint16_t);
             auto vp = _target_stream_profile.as<rs2::video_stream_profile>();
             _width = vp.width();
             _height = vp.height();
+            _stride = _width*_bpp;
             _current_frm_size_pixels = _width * _height;
 
-            // Allocate internal calc buffers, if needed
-            auto lf_it = _last_frame_map.find(_current_frm_size_pixels);
-            if (lf_it == _last_frame_map.end())
-                _last_frame_map.emplace(_current_frm_size_pixels, std::vector<uint16_t>(_current_frm_size_pixels));
+            _last_frame.clear();
+            _last_frame.resize(_current_frm_size_pixels*_bpp);
 
-            auto hist_it = _history.find(_current_frm_size_pixels);
-            if (hist_it == _history.end())
-                _history.emplace(_current_frm_size_pixels, std::vector<uint8_t>(_current_frm_size_pixels));
+            _history.clear();
+            _history.resize(_current_frm_size_pixels*_bpp);
+
         }
     }
 
     rs2::frame temporal_filter::prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source)
     {
-        // Allocate and copy the content of the original Depth frame to the target
-        auto vf = f.as<rs2::video_frame>();
-        rs2::frame tgt = source.allocate_video_frame(_target_stream_profile, f,
-            vf.get_bytes_per_pixel(),
-            vf.get_width(),
-            vf.get_height(),
-            vf.get_stride_in_bytes(),
-            RS2_EXTENSION_DEPTH_FRAME);
+        // Allocate and copy the content of the original Depth data to the target
+        rs2::frame tgt = source.allocate_video_frame(_target_stream_profile, f, (int)_bpp, (int)_width, (int)_height, (int)_stride, _extension_type);
 
-        memmove(const_cast<void*>(tgt.get_data()), f.get_data(), _current_frm_size_pixels * 2); // Z16-specific
+        memmove(const_cast<void*>(tgt.get_data()), f.get_data(), _current_frm_size_pixels * _bpp);
         return tgt;
     }
 
@@ -303,48 +313,5 @@ namespace librealsense
                 }
             }
         }
-    }
-
-    void temporal_filter::temp_jw_smooth(uint16_t * frame, uint16_t * _last_frame, uint8_t *history)
-    {
-        unsigned char mask = 1 << _cur_frame_index;
-
-        // pass one -- go through image and update all
-        for (size_t i = 0; i < _current_frm_size_pixels; i++) {
-            unsigned short newVal = frame[i];
-            unsigned short oldVal = _last_frame[i];
-            if (newVal) {
-                if (!oldVal) {
-                    _last_frame[i] = newVal;
-                    history[i] = mask;
-                }
-                else {  // old and new val
-                    int diff = newVal - oldVal;
-                    if (diff < _delta_param && diff > -_delta_param) {  // old and new val agree
-                        history[i] |= mask;
-                        float filtered = _alpha_param * newVal + _one_minus_alpha * oldVal;
-                        unsigned short result = (unsigned short)filtered;
-                        frame[i] = result;
-                        _last_frame[i] = result;
-                    }
-                    else {
-                        _last_frame[i] = newVal;
-                        history[i] = mask;
-                    }
-                }
-            }
-            else {  // no newVal
-                if (oldVal) { // only case we can help
-                    unsigned char hist = history[i];
-                    unsigned char classification = _credibility_map[hist];
-                    if (classification & mask) { // we have had enough samples lately
-                        frame[i] = oldVal;
-                    }
-                }
-                history[i] &= ~mask;
-            }
-        }
-
-        _cur_frame_index = (_cur_frame_index + 1) % 8;  // at end of cycle
     }
 }

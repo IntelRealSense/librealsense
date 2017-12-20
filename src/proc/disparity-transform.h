@@ -19,17 +19,26 @@ namespace librealsense
     protected:
         rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source);
 
-        template<typename T1, typename T2>
+        template<typename Tin, typename Tout>
         void convert(const void* in_data, void* out_data)
         {
-            auto in = reinterpret_cast<const T1*>(in_data);
-            auto out = reinterpret_cast<T2*>(out_data);
-            const float d2d_convert_factor = _focal_lenght_mm * _stereo_baseline_mm;
+            static_assert((std::is_arithmetic<Tin>::value), "disparity transform requires numeric type for input data");
+            static_assert((std::is_arithmetic<Tout>::value), "disparity transform requires numeric type for output data");
+
+            auto in = reinterpret_cast<const Tin*>(in_data);
+            auto out = reinterpret_cast<Tout*>(out_data);
 
             //TODO SSE optimize
             for (auto i = 0; i < _height; i++)
                 for (auto j = 0; j < _width; j++)
-                    *out++ = static_cast<T2>(d2d_convert_factor / (*in++));
+                {
+                    float input = *in;
+                    if (std::isnormal(input))
+                        *out++ = static_cast<Tout>(_d2d_convert_factor / input);
+                    else
+                        *out++ = 0;
+                    in++;
+                }
         }
 
     private:
@@ -44,6 +53,7 @@ namespace librealsense
         bool                    _stereoscopic_depth;
         float                   _focal_lenght_mm;
         float                   _stereo_baseline_mm;
+        float                   _d2d_convert_factor;
         size_t                  _width, _height;
         size_t                  _bpp;
     };

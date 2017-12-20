@@ -697,12 +697,13 @@ namespace rs2
             post_processing.push_back(temporal_filter);
 
             auto disparity_2_depth = std::make_shared<rs2::disparity_transform>();
+            disparity_2_depth->set_option(RS2_OPTION_STREAM_TRANSFORM, 0.f);
             disparity_to_depth = std::make_shared<processing_block_model>(
                 this, "Disparity->Depth", disparity_2_depth,
                 [=](rs2::frame f) { return disparity_2_depth->proccess(f); }, error_message);
             disparity_to_depth->enabled = true;
-            //disparity_to_depth->get_option(RS2_OPTION_STREAM_TRANSFORM).draw("sdf");
-            post_processing.push_back(disparity_to_depth);
+            // the block will be internally available, but removed from UI
+            //post_processing.push_back(disparity_to_depth);
 
         }
 

@@ -263,6 +263,7 @@ namespace librealsense
         CASE(ANY)
         CASE(Z16)
         CASE(DISPARITY16)
+        CASE(DISPARITY32)
         CASE(XYZ32F)
         CASE(YUYV)
         CASE(RGB8)

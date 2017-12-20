@@ -91,7 +91,7 @@ namespace librealsense
                 throw invalid_value_exception(to_string() << "Unsupported decimation patch: " << _patch_size
                     << " for frame size [" << vp.width() << "," << vp.height() << "]");
 
-            _target_stream_profile = _source_stream_profile.clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_Z16);
+            _target_stream_profile = _source_stream_profile.clone(RS2_STREAM_DEPTH, 0, _source_stream_profile.format());
             environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*(stream_interface*)(_source_stream_profile.get()->profile), *(stream_interface*)(_target_stream_profile.get()->profile));
             auto src_vspi = dynamic_cast<video_stream_profile_interface*>(_source_stream_profile.get()->profile);
             auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(_target_stream_profile.get()->profile);
@@ -114,12 +114,13 @@ namespace librealsense
     rs2::frame decimation_filter::prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source)
     {
         auto vf = f.as<rs2::video_frame>();
+        rs2_extension tgt_type = f.is<rs2::disparity_frame>() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
         return source.allocate_video_frame(_target_stream_profile, f,
             vf.get_bytes_per_pixel(),
             vf.get_width() / _patch_size,
             vf.get_height() / _patch_size,
             vf.get_stride_in_bytes() / _patch_size,
-            RS2_EXTENSION_DEPTH_FRAME);
+            tgt_type);
     }
 
 

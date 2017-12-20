@@ -832,6 +832,9 @@ namespace rs2
                 else glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
 
                 break;
+            case RS2_FORMAT_DISPARITY32:
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, data);
+                break;
             case RS2_FORMAT_XYZ32F:
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
                 break;
@@ -1111,6 +1114,12 @@ namespace rs2
             {
                 auto ptr = (const uint16_t*)image.get_data();
                 *result = ptr[y * (image.get_stride_in_bytes() / sizeof(uint16_t)) + x];
+                return true;
+            }
+            case RS2_FORMAT_DISPARITY32:
+            {
+                auto ptr = (const float*)image.get_data();
+                *result = ptr[y * (image.get_stride_in_bytes() / sizeof(float)) + x];
                 return true;
             }
             case RS2_FORMAT_RAW8:
