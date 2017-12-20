@@ -403,6 +403,7 @@ PYBIND11_PLUGIN(NAME) {
                    return BufData(const_cast<rs2::texture_coordinate*>(self.get_texture_coordinates()),
                                           sizeof(rs2::texture_coordinate), std::string("@ff"), self.size());
                }, py::keep_alive<0, 1>())
+          .def("export_to_ply", &rs2::points::export_to_ply)
           .def("size", &rs2::points::size);
 
     py::class_<rs2::frameset, rs2::frame> frameset(m, "composite_frame");
