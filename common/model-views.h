@@ -496,8 +496,8 @@ namespace rs2
             viewer(viewer),
             keep_calculating(true),
             depth_stream_active(false),
-            resulting_queue(3),
-            frames_queue(4),
+            resulting_queue(20),
+//            frames_queue(4),
             t([this]() {render_loop(); })
         {
             processing_block.start(resulting_queue);
@@ -531,13 +531,15 @@ namespace rs2
         {
             rs2::frame f{};
             model = f;
-            while (resulting_queue.poll_for_frame(&f));
+            while(resulting_queue.poll_for_frame(&f));
         }
 
         std::atomic<bool> depth_stream_active;
 
-        rs2::frame_queue frames_queue;
-        frame_queue resulting_queue;
+        std::map<int, rs2::frame_queue> frames_queue;
+        rs2::frame_queue syncer_queue;
+        rs2::frame_queue resulting_queue;
+
 
     private:
         viewer_model& viewer;
@@ -577,7 +579,7 @@ namespace rs2
             : ppf(*this),
               synchronization_enable(true)
         {
-            s.start(ppf.frames_queue);
+            s.start(ppf.syncer_queue);
             reset_camera();
             rs2_error* e = nullptr;
             not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
@@ -588,6 +590,8 @@ namespace rs2
             ppf.stop();
             streams.clear();
         }
+
+        void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p);
 
         bool is_3d_texture_source(frame f);
         bool is_3d_depth_source(frame f);

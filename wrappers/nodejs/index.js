@@ -24,7 +24,7 @@ class Device {
    * Check if everything is OK, e.g. if the device object is connected to underlying hardware
    * @return {Boolean}
    */
-  isValid() {
+  get isValid() {
     return (this.cxxDev !== null);
   }
 
@@ -50,6 +50,18 @@ class Device {
   }
 
   /**
+   * Get the first sensor
+   * @return {Sensor|undefined}
+   */
+  get first() {
+    let sensors = this.querySensors();
+    if (sensors && sensors.length > 0) {
+      return sensors[0];
+    }
+    return undefined;
+  }
+
+  /**
    * Information that can be queried from the device.
    * Not all information attributes are available on all camera types.
    * This information is mainly available for camera debug and troubleshooting and should not be
@@ -65,7 +77,7 @@ class Device {
    * connected to (platform specific). <br> undefined is not supported.
    * @property {String|undefined} debugOpCode - If device supports firmware logging, this is the
    * command to send to get logs from firmware. <br> undefined is not supported.
-   * @property {String|undefined} advancedMode - True iff the device is in advanced mode.
+   * @property {String|undefined} advancedMode - True if the device is in advanced mode.
    * <br> undefined is not supported.
    * @property {String|undefined} productId - Product ID as reported in the USB descriptor.
    * <br> undefined is not supported.
@@ -331,6 +343,25 @@ class DeviceList {
   get size() {
     return this.cxxList.size();
   }
+
+  /**
+   * Get the first device
+   * @return {Device|undefined}
+   */
+  get front() {
+    return this.getDevice(0);
+  }
+
+  /**
+   * Get the last device
+   * @return {Device|undefined}
+   */
+  get back() {
+    if (this.size > 0) {
+      return this.getDevice(this.size - 1);
+    }
+    return undefined;
+  }
 }
 
 class VideoStreamProfile extends StreamProfile {
@@ -556,7 +587,7 @@ class Sensor extends Options {
    * Check if everything is OK, e.g. if the device object is connected to underlying hardware
    * @return {Boolean}
    */
-  isValid() {
+  get isValid() {
     return (this.cxxSensor !== null);
   }
 
@@ -596,6 +627,42 @@ class Sensor extends Options {
       }
       this.cxxSensor.openStream(streamProfile.cxxProfile);
     }
+  }
+
+  /**
+   * Check if specific camera info is supported
+   * @param {String|Integer} info - info type to query. See {@link camera_info} for available values
+   * @return {Boolean|undefined} Returns undefined if an invalid info type was specified.
+   * @see enum {@link camera_info}
+   */
+  supportsCameraInfo(info) {
+    if (arguments.length !== 1) {
+      throw new TypeError('Sensor.supportsCameraInfo(info) expects 1 argument');
+    }
+
+    let i = checkStringNumber(arguments[0],
+        constants.camera_info.CAMERA_INFO_NAME, constants.camera_info.CAMERA_INFO_COUNT,
+        cameraInfo2Int,
+        'Sensor.supportsCameraInfo(info) expects a number or string as the 1st argument',
+        'Sensor.supportsCameraInfo(info) expects a valid value as the 1st argument');
+    return this.cxxSensor.supportsCameraInfo(i);
+  }
+
+  /**
+   * Get camera information of the sensor
+   *
+   * @param {String|Integer} info - the camera_info type, see {@link camera_info} for available
+   * values
+   * @return {String|undefined}
+   */
+  getCameraInfo(info) {
+    let i = checkStringNumber(arguments[0],
+        constants.camera_info.CAMERA_INFO_NAME,
+        constants.camera_info.CAMERA_INFO_COUNT,
+        cameraInfo2Int,
+        'Sensor.getCameraInfo(info) expects a number or string as the 1st argument',
+        'Sensor.getCameraInfo(info) expects a valid value as the 1st argument');
+    return this.cxxSensor.getCameraInfo(i);
   }
 
   /**
@@ -1469,9 +1536,15 @@ class Colorizer extends Options {
 }
 
 /**
- * The Align allows to perform aliment of depth frames to other frames
+ * This class can be used to perform alignment between a depth frame and another frame.
  */
 class Align {
+  /**
+   * @param {Integer|String} stream the stream type to be aligned to. see {@link stream} for
+   * avaiable values. To perform alignment of a depth frame to the other frame, set the stream
+   * argument to the other stream type. To perform alignment of a non depth frame to a depth frame,
+   * set the stream argument to stream type of depth.
+   */
   constructor(stream) {
     let s = checkStringNumber(stream,
             constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
@@ -1483,6 +1556,11 @@ class Align {
     this.frameSet = new FrameSet();
   }
 
+  /**
+   * Run the alignment process on the given frameset to get an aligned set of frames
+   * @param {FrameSet} frameSet the frames which at least has a depth frame
+   * @return {FrameSet}
+   */
   process(frameSet) {
     if (arguments.length === 1 && frameSet) {
       this.frameSet.release(); // Destroy all attached-frames (depth/color/etc.)
@@ -1526,8 +1604,6 @@ class Align {
  * @property {Number} timestamp - The timestamp of the frame.
  * @property {Integer} streamType - The stream type of the frame.
  * see <code>enum {@link stream}</code>
- * @property {Integer} dataByteLength - Get the byte length of the buffer data.
- * @property {Integer} strideInBytes - The stride of the frame. The unit is number of bytes.
  * @property {Integer} bitsPerPixel - The number of bits per pixel
  * @property {string} timestampDomain - Get the domain (clock name) of timestamp value.
  *
@@ -1722,7 +1798,8 @@ class Frame {
    *   see {@link Frame#data};
    *  if syntax 2 is used, return value is not used (<code>undefined</code>).
    *
-   * @see [Frame.dataByteLength]{@link Frame#dataByteLength} to determine the buffer size in bytes.
+   * @see [VideoFrame.dataByteLength]{@link VideoFrame#dataByteLength} to determine the buffer size
+   * in bytes.
    */
   getData(buffer) {
     if (arguments.length === 0) return this.data;
@@ -1732,23 +1809,6 @@ class Frame {
     }
 
     throw new TypeError('Frame.getData() expects 1 ArrayBuffer as a argument, or no argument');
-  }
-
-  /**
-   * Get the data length in bytes
-   * @return {Integer}
-   */
-  get dataByteLength() {
-    return this.strideInBytes * this.height;
-  }
-
-  /**
-   * Retrieve frame stride, meaning the actual line width in memory in bytes (not the logical image
-   * width)
-   * @return {Integer}
-   */
-  get strideInBytes() {
-    return this.cxxFrame.getStrideInBytes();
   }
 }
 
@@ -1784,7 +1844,23 @@ class VideoFrame extends Frame {
   }
 
   /**
-   * Retrieve bits per pixel
+   * Get the data length in bytes
+   * @return {Integer}
+   */
+  get dataByteLength() {
+    return this.strideInBytes * this.height;
+  }
+
+  /**
+   * Retrieve frame stride, the actual line width in bytes (not the logical image width)
+   * @return {Integer}
+   */
+  get strideInBytes() {
+    return this.cxxFrame.getStrideInBytes();
+  }
+
+  /**
+   * Retrieve count of bits per pixel
    * @return {Integer}
    */
   get bitsPerPixel() {
@@ -1955,6 +2031,21 @@ class FrameSet {
       throw new TypeError('FrameSet.at(index) expects a valid integer argument');
     }
     return this.getFrame(this.cxxFrameSet.indexToStream(index));
+  }
+
+  /**
+   * Run the provided callback function with each Frame inside the FrameSet
+   * @param {FrameCallback} callback the callback function to process each frame
+   * @return {undefined}
+   */
+  forEach(callback) {
+    if (!callback) {
+      throw new TypeError('FrameSet.forEach expects a FrameCallback argument');
+    }
+    const size = this.size;
+    for (let i = 0; i < size; i++) {
+      callback(this.at(i));
+    }
   }
 
   __internalAssembleFrame(cxxFrame) {
@@ -2221,6 +2312,14 @@ class PipelineProfile {
   }
 
   /**
+   * Check if the object is valid
+   * @return {Boolean}
+   */
+  get isValid() {
+    return (this.cxxPipelineProfile != null);
+  }
+
+  /**
    * Return the selected streams profiles, which are enabled in this profile.
    *
    * @return {StreamProfile[]} an array of StreamProfile
@@ -2238,6 +2337,36 @@ class PipelineProfile {
       }
     });
     return array;
+  }
+
+  /**
+   * Return the selected stream profile, which are enabled in this profile.
+   * @param {Integer|String} streamType the stream type of the desired profile,
+   * see {@link stream} for avaiable values
+   * @param {Integer} streamIndex stream index of the desired profile, -1 for any matching
+   * @return {StreamProfile} the first matching stream profile
+   */
+  getStream(streamType, streamIndex = -1) {
+    let s = checkStringNumber(arguments[0],
+        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+        stream2Int,
+        'pipelineProfile.getStream() expects a number or string to specify the stream',
+        'pipelineProfile.getStream() expects a valid value to specify the stream');
+    if (!isNumber(streamIndex)) {
+      throw new TypeError('pipelineProfile.getStream() expects a number to be the second argument');
+    }
+
+    let profiles = this.getStreams();
+    if (!profiles) {
+      return undefined;
+    }
+    for (let i = 0; i < profiles.length; i++) {
+      if (profiles[i].streamType === streamType &&
+          (streamIndex === -1 || (streamIndex === profiles[i].indexValue))) {
+        return profiles[i];
+      }
+    }
+    return undefined;
   }
 
   /**
@@ -2284,6 +2413,7 @@ class PipelineProfile {
 class Config {
   constructor() {
     this.cxxConfig = new RS2.RSConfig();
+    internal.addObject(this);
   }
 
  /**
@@ -2441,6 +2571,16 @@ class Config {
       return this.cxxConfig.canResolve(arguments[0].cxxPipeline);
     }
   }
+
+  /**
+   * Release resources associated with the object
+   */
+  destroy() {
+    if (this.cxxConfig) {
+      this.cxxConfig.destroy();
+      this.cxxConfig = null;
+    }
+  }
 }
 
 /**
@@ -2511,6 +2651,7 @@ class DeviceHub {
   constructor(context) {
     this.context = context;
     this.cxxHub = new RS2.RSDeviceHub(context.cxxCtx);
+    internal.addObject(this);
   }
 
   /**
@@ -2539,6 +2680,71 @@ class DeviceHub {
       this.cxxHub.destroy();
       this.cxxHub = undefined;
     }
+  }
+}
+
+/**
+ * Base class of specific filter classes, see {@link DecimationFilter}.
+ * Don't create Filter objects directly from this class, use child classes,
+ */
+class Filter extends Options {
+  constructor(type) {
+    super(new RS2.RSFilter(type));
+    this.frame = new DepthFrame();
+    internal.addObject(this);
+  }
+
+  /**
+   * Apply the filter processing on the frame and return the processed frame
+   * @param {Frame} frame the depth frame to be processed
+   * @return {Frame}
+   */
+  process(frame) {
+    if (!frame || !(frame instanceof Frame)) {
+      throw new TypeError('Filter.process expects a Frame as the argument');
+    }
+    if (this.cxxObj && this.cxxObj.process(frame.cxxFrame, this.frame.cxxFrame)) {
+      this.frame.updateProfile();
+      return this.frame;
+    }
+    return undefined;
+  }
+
+  /**
+   * Release resources associated with the object
+   */
+  destroy() {
+    if (this.cxxObj) {
+      this.cxxObj.destroy();
+      this.cxxObj = null;
+    }
+  }
+}
+
+/**
+ * Depth post-processing filter block. This block can apply decimation filter on depth frame.
+ */
+class DecimationFilter extends Filter {
+  constructor() {
+    super('decimation');
+  }
+}
+
+/**
+ * Depth post-processing filter block. This block can apply temporal filter on depth frame.
+ */
+class TemporalFilter extends Filter {
+  constructor() {
+    super('temporal');
+  }
+}
+
+/**
+ * Depth post-processing filter block. This block can apply spatial filter on depth frame.
+ */
+class SpatialFilter extends Filter {
+  constructor() {
+    super('spatial');
   }
 }
 
@@ -2833,6 +3039,31 @@ util.writeFrameToFileAsync = function(path, frame, fileFormat) {
   } else {
     throw new TypeError('util.writeFrameToFileAsync expects a string as the 3rd argument and only \'png\' is supported now.'); // eslint-disable-line
   }
+};
+
+/**
+ * Field of view (FOV) info:
+ * @typedef {Object} FOVObject
+ * @property {Float32} h - horizontal field of view
+ * @property {Float32} v - vertical field of view
+ * @see [util.fov]{@link util#fov}
+ */
+
+/**
+ * Get the field of view from an IntrinsicsObject
+ * @param {IntrinsicsObject} intrinsics the intrinsics to calculate field of view.
+ * @return {FOVObject}
+ */
+util.fov = function(intrinsics) {
+  let ppx = intrinsics.ppx;
+  let ppy = intrinsics.ppy;
+  let width = intrinsics.width;
+  let height = intrinsics.height;
+  let fx = intrinsics.fx;
+  let fy = intrinsics.fy;
+  let h = (Math.atan(ppx + 0.5, fx) + Math.atan(width - ppx - 0.5, fx)) * 57.2957795;
+  let v = (Math.atan(ppy + 0.5, fy) + Math.atan(height - ppy - 0.5, fy)) * 57.2957795;
+  return {h: h, v: v};
 };
 
 /**
@@ -3563,6 +3794,28 @@ const option = {
    */
   option_max_distance: 'max-distance',
   /**
+   * Texture mapping stream unique ID <br> Equivalent to its lowercase counterpart.
+   * @type {Integer}
+   */
+  option_texture_source: 'texture-source',
+  /**
+   * The 2D-filter effect. The specific interpretation is given within the context of the filter
+   * <br> Equivalent to its lowercase counterpart.
+   * @type {Integer}
+   */
+  option_filter_magnitude: 'filter-magnitude',
+  /**
+   * 2D-filter parameter controls the weight/radius for smoothing.
+   * <br> Equivalent to its lowercase counterpart.
+   * @type {Integer}
+   */
+  option_filter_smooth_alpha: 'filter-smooth-alpha',
+  /**
+   * 2D-filter range/validity threshold<br> Equivalent to its lowercase counterpart.
+   * @type {Integer}
+   */
+  option_filter_smooth_delta: 'filter-smooth-delta',
+  /**
    * Enable / disable color backlight compensatio.<br>Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
@@ -3756,6 +4009,24 @@ const option = {
    */
   OPTION_MAX_DISTANCE: RS2.RS2_OPTION_MAX_DISTANCE,
   /**
+   * Texture mapping stream unique ID <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_TEXTURE_SOURCE: RS2.RS2_OPTION_TEXTURE_SOURCE,
+  /**
+   * The 2D-filter effect. The specific interpretation is given within the context of the filter
+   * <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_FILTER_MAGNITUDE: RS2.RS2_OPTION_FILTER_MAGNITUDE,
+  /**
+   * 2D-filter parameter controls the weight/radius for smoothing.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_FILTER_SMOOTH_ALPHA: RS2.RS2_OPTION_FILTER_SMOOTH_ALPHA,
+  /**
+   * 2D-filter range/validity threshold<br>Equivalent to its uppercase counterpart
+   */
+  OPTION_FILTER_SMOOTH_DELTA: RS2.RS2_OPTION_FILTER_SMOOTH_DELTA,
+  /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
    */
@@ -3846,6 +4117,14 @@ const option = {
           return this.option_min_distance;
         case this.OPTION_MAX_DISTANCE:
           return this.option_max_distance;
+        case this.OPTION_TEXTURE_SOURCE:
+          return this.option_texture_source;
+        case this.OPTION_FILTER_MAGNITUDE:
+          return this.option_filter_magnitude;
+        case this.OPTION_FILTER_SMOOTH_ALPHA:
+          return this.option_filter_smooth_alpha;
+        case this.OPTION_FILTER_SMOOTH_DELTA:
+          return this.option_filter_smooth_delta;
         default:
           throw new TypeError(
               'option.optionToString(option) expects a valid value as the 1st argument');
@@ -4695,6 +4974,10 @@ module.exports = {
   Syncer: Syncer,
   RecorderDevice: RecorderDevice,
   PlaybackDevice: PlaybackDevice,
+  DecimationFilter: DecimationFilter,
+  TemporalFilter: TemporalFilter,
+  SpatialFilter: SpatialFilter,
+
 
   stream: stream,
   format: format,
