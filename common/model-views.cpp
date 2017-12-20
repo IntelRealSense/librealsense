@@ -1893,7 +1893,7 @@ namespace rs2
                 tm2.camera_object_button.toggle_button();
             }            
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip(tm2.camera_object_button.get_tooltip().c_str());
+                ImGui::SetTooltip("%s", tm2.camera_object_button.get_tooltip().c_str());
 
             // Draw trajectory button            
             ImGui::SameLine();
@@ -1912,7 +1912,7 @@ namespace rs2
                 ImGui::PopStyleColor(2);
             }            
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip(tm2.trajectory_button.get_tooltip().c_str());
+                ImGui::SetTooltip("%s", tm2.trajectory_button.get_tooltip().c_str());
 
             // Draw boundary selection button
             ImGui::SameLine();
@@ -1931,7 +1931,7 @@ namespace rs2
                 ImGui::PopStyleColor(2);
             }
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip(tm2.boundary_button.get_tooltip().c_str());
+                ImGui::SetTooltip("%s", tm2.boundary_button.get_tooltip().c_str());
 
             ImGui::End();
         }

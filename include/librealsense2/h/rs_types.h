@@ -47,7 +47,7 @@ typedef enum rs2_distortion
     RS2_DISTORTION_INVERSE_BROWN_CONRADY , /**< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
     RS2_DISTORTION_FTHETA                , /**< F-Theta fish-eye distortion model */
     RS2_DISTORTION_BROWN_CONRADY         , /**< Unmodified Brown-Conrady distortion model */
-    RS2_DISTORTION_COUNT                 , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    RS2_DISTORTION_COUNT                   /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_distortion;
 const char* rs2_distortion_to_string(rs2_distortion distortion);
 
@@ -71,10 +71,10 @@ typedef struct rs2_motion_device_intrinsic
     * Scale X       cross axis  cross axis  Bias X \n
     * cross axis    Scale Y     cross axis  Bias Y \n
     * cross axis    cross axis  Scale Z     Bias Z */
-    float data[3][4];          //!< Interpret data array values
+    float data[3][4];          /**< Interpret data array values */
 
-    float noise_variances[3];  //!< Variance of noise for X, Y, and Z axis
-    float bias_variances[3];   //!< Variance of bias for X, Y, and Z axis
+    float noise_variances[3];  /**< Variance of noise for X, Y, and Z axis */
+    float bias_variances[3];   /**< Variance of bias for X, Y, and Z axis */
 } rs2_motion_device_intrinsic;
 
 /** \brief Severity of the librealsense logger */

@@ -569,7 +569,7 @@ namespace rs2
     class press_button_model
     {
     public:
-        press_button_model(char* icon_default, char* icon_pressed, std::string tooltip_default, std::string tooltip_pressed)            
+        press_button_model(const char* icon_default, const char* icon_pressed, std::string tooltip_default, std::string tooltip_pressed)
         {
             tooltip[unpressed] = tooltip_default;
             tooltip[pressed] = tooltip_pressed;
