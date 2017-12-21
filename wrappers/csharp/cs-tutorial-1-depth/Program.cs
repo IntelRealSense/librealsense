@@ -44,7 +44,7 @@ namespace Intel.RealSense
 
                 while (run)
                 {
-                    using (var f = q.WaitForFrame())
+                    using (var f = q.WaitForFrame() as VideoFrame)
                     {
                         f.CopyTo(depth);
                     }

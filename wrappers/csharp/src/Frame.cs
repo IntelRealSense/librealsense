@@ -9,8 +9,6 @@ namespace Intel.RealSense
 
         public Frame(IntPtr ptr)
         {
-            //if (ptr == IntPtr.Zero)
-            //    throw new ArgumentNullException("ptr");
             m_instance = new HandleRef(this, ptr);
         }
 
@@ -64,26 +62,6 @@ namespace Intel.RealSense
             return new Frame(m_instance.Handle);
         }
 
-        public int Width
-        {
-            get
-            {
-                object error;
-                var w = NativeMethods.rs2_get_frame_width(m_instance.Handle, out error);
-                return w;
-            }
-        }
-
-        public int Height
-        {
-            get
-            {
-                object error;
-                var w = NativeMethods.rs2_get_frame_height(m_instance.Handle, out error);
-                return w;
-            }
-        }
-
         public IntPtr Data
         {
             get
@@ -132,6 +110,33 @@ namespace Intel.RealSense
                 return timestampDomain;
             }
         }
+    }
+
+    public class VideoFrame : Frame
+    {
+        public VideoFrame(IntPtr ptr) : base(ptr)
+        {
+        }
+
+        public int Width
+        {
+            get
+            {
+                object error;
+                var w = NativeMethods.rs2_get_frame_width(m_instance.Handle, out error);
+                return w;
+            }
+        }
+
+        public int Height
+        {
+            get
+            {
+                object error;
+                var h = NativeMethods.rs2_get_frame_height(m_instance.Handle, out error);
+                return h;
+            }
+        }
 
         public int Stride
         {
@@ -143,6 +148,15 @@ namespace Intel.RealSense
             }
         }
 
+        public int BitsPerPixel
+        {
+            get
+            {
+                object error;
+                var bpp = NativeMethods.rs2_get_frame_bits_per_pixel(m_instance.Handle, out error);
+                return bpp;
+            }
+        }
 
         /// <summary>
         /// Copy frame data to managed typed array
@@ -165,10 +179,9 @@ namespace Intel.RealSense
                 handle.Free();
             }
         }
-
     }
 
-    public class DepthFrame : Frame
+    public class DepthFrame : VideoFrame
     {
         public DepthFrame(IntPtr ptr) : base(ptr)
         {

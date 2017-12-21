@@ -25,7 +25,7 @@ namespace Intel.RealSense
         private Colorizer colorizer;
         private CancellationTokenSource tokenSource = new CancellationTokenSource();
 
-        private void UploadImage(Image img, Frame frame)
+        private void UploadImage(Image img, VideoFrame frame)
         {
             Dispatcher.Invoke(new Action(() =>
             {
@@ -68,19 +68,10 @@ namespace Intel.RealSense
                     {
                         var frames = pipeline.WaitForFrames();
 
-                        var depth = frames.FirstOrDefault(x => x.Profile.Stream == Stream.Depth);
-                        var color = frames.FirstOrDefault(x => x.Profile.Stream == Stream.Color);
+                        var colorized_depth = colorizer.Colorize(frames.DepthFrame);
+                        UploadImage(imgDepth, colorized_depth);
 
-                        if (depth != null)
-                        {
-                            var colorized_depth = colorizer.Colorize(depth);
-                            UploadImage(imgDepth, colorized_depth);
-                        }
-
-                        if (color != null)
-                        {
-                            UploadImage(imgColor, color);
-                        }
+                        UploadImage(imgColor, frames.ColorFrame);
                     }
                 }, token);
             }

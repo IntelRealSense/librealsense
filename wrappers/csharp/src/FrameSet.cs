@@ -2,12 +2,40 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Linq;
 
 namespace Intel.RealSense
 {
     public class FrameSet : IDisposable, IEnumerable<Frame>
     {
         internal HandleRef m_instance;
+
+        internal static Frame CreateFrame(IntPtr ptr)
+        {
+            object error;
+            if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.DepthFrame, out error) > 0)
+                return new DepthFrame(ptr);
+            else if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.VideoFrame, out error) > 0)
+                return new VideoFrame(ptr);
+            else
+                return new Frame(ptr);
+        }
+
+        public DepthFrame DepthFrame
+        {
+            get
+            {
+                return this.FirstOrDefault(x => x.Profile.Stream == Stream.Depth) as DepthFrame;
+            }
+        }
+
+        public VideoFrame ColorFrame
+        {
+            get
+            {
+                return this.FirstOrDefault(x => x.Profile.Stream == Stream.Color) as VideoFrame;
+            }
+        }
 
         public IEnumerator<Frame> GetEnumerator()
         {
@@ -17,10 +45,7 @@ namespace Intel.RealSense
             for (int i = 0; i < deviceCount; i++)
             {
                 var ptr = NativeMethods.rs2_extract_frame(m_instance.Handle, i, out error);
-                if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.DepthFrame, out error) > 0)
-                    yield return new DepthFrame(ptr);
-                else
-                    yield return new Frame(ptr);
+                yield return CreateFrame(ptr);
             }
         }
 
@@ -45,10 +70,7 @@ namespace Intel.RealSense
             {
                 object error;
                 var ptr = NativeMethods.rs2_extract_frame(m_instance.Handle, index, out error);
-                if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.DepthFrame, out error) > 0)
-                    return new DepthFrame(ptr);
-                else
-                    return new Frame(ptr);
+                return CreateFrame(ptr);
             }
         }
 

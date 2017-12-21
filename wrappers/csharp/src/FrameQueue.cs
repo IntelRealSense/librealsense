@@ -27,7 +27,7 @@ namespace Intel.RealSense
         {
             object error;
             var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, 5000, out error);
-            var frame = new Frame(ptr);
+            var frame = FrameSet.CreateFrame(ptr);
             return frame;
         }
 

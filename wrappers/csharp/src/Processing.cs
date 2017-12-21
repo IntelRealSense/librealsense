@@ -72,12 +72,12 @@ namespace Intel.RealSense
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
-        public Frame Colorize(Frame original)
+        public VideoFrame Colorize(VideoFrame original)
         {
             object error;
             NativeMethods.rs2_frame_add_ref(original.m_instance.Handle, out error);
             NativeMethods.rs2_process_frame(m_instance.Handle, original.m_instance.Handle, out error);
-            return queue.WaitForFrame();
+            return queue.WaitForFrame() as VideoFrame;
         }
 
         FrameQueue queue;
