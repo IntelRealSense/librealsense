@@ -65,6 +65,12 @@ endif()
 
 option(BUILD_WITH_TM2 "Build with support for Intel TM2 tracking device" OFF)
 
+option(BUILD_EASYLOGGINGPP "Build EasyLogging++ as a part of the build" ON)
+
+if (BUILD_EASYLOGGINGPP)
+    add_definitions(-DBUILD_EASYLOGGINGPP)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
 set(REALSENSE_CPP
@@ -120,7 +126,6 @@ set(REALSENSE_CPP
     src/ds5/advanced_mode/presets.cpp
     src/ds5/advanced_mode/advanced_mode.cpp
 
-    third-party/easyloggingpp/src/easylogging++.cc
     third-party/sqlite/sqlite3.c
 
     src/mock/sql.cpp
@@ -236,13 +241,17 @@ set(REALSENSE_HPP
     src/ds5/advanced_mode/json_loader.hpp
     src/ds5/advanced_mode/presets.h
 
-    third-party/easyloggingpp/src/easylogging++.h
     third-party/sqlite/sqlite3.h
     src/mock/sql.h
     src/mock/recorder.h
 
     src/media/ros/ros_file_format.h
 )
+
+if(BUILD_EASYLOGGINGPP)
+    list(APPEND REALSENSE_CPP third-party/easyloggingpp/src/easylogging++.cc)
+    list(APPEND REALSENSE_HPP third-party/easyloggingpp/src/easylogging++.h)
+endif()
 
 if(WIN32)
     source_group("Source Files\\Backend" FILES
