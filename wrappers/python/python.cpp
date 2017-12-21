@@ -26,8 +26,8 @@
 namespace py = pybind11;
 using namespace pybind11::literals;
 
-PYBIND11_PLUGIN(NAME) {
-    py::module m(SNAME, "Library for accessing Intel RealSenseTM cameras");
+PYBIND11_MODULE(NAME, m) {
+    m.doc() = "Library for accessing Intel RealSenseTM cameras";
 
     class BufData {
     public:
@@ -415,21 +415,24 @@ PYBIND11_PLUGIN(NAME) {
     vertex.def_readwrite("x", &rs2::vertex::x)
           .def_readwrite("y", &rs2::vertex::y)
           .def_readwrite("z", &rs2::vertex::z)
-          .def("__init__", [](rs2::vertex &instance) { new (&instance) rs2::vertex;})
-          .def("__init__", [](rs2::vertex &instance, float x, float y, float z)
-               {
-                    new (&instance) rs2::vertex{x,y,z};
-               }, "x"_a, "y"_a, "z"_a);
+          .def(py::init([]() { return rs2::vertex { }; }))
+          .def(py::init([](float x, float y, float z) { return rs2::vertex{ x,y,z }; }))
+          .def("__repr__", [](const rs2::vertex& v) {
+              std::ostringstream oss;
+              oss << v.x << ", " << v.y << ", " << v.z;
+              return oss.str();
+            });
 
     py::class_<rs2::texture_coordinate> texture_coordinate(m, "texture_coordinate");
     texture_coordinate.def_readwrite("u", &rs2::texture_coordinate::u)
                       .def_readwrite("v", &rs2::texture_coordinate::v)
-                      .def("__init__", [](rs2::texture_coordinate &instance) { new (&instance) rs2::vertex; })
-                      .def("__init__", [](rs2::texture_coordinate &instance, float u, float v)
-                           {
-                                new (&instance) rs2::texture_coordinate{ u,v };
-                           }, "u"_a, "v"_a);
-
+                      .def(py::init([]() { return rs2::texture_coordinate{}; }))
+                      .def(py::init([](float u, float v) { return rs2::texture_coordinate{ u, v }; }))
+                      .def("__repr__", [](const rs2::texture_coordinate& t) {
+                          std::ostringstream oss;
+                          oss << t.u << ", " << t.v;
+                          return oss.str();
+                      });
     py::class_<rs2::points, rs2::frame> points(m, "points");
     points.def(py::init<>())
           .def(py::init<rs2::frame>())
@@ -687,7 +690,8 @@ PYBIND11_PLUGIN(NAME) {
 
 
     py::class_<rs2::pipeline> pipeline(m, "pipeline");
-    pipeline.def(py::init<rs2::context>(), "ctx"_a = rs2::context())
+    pipeline.def(py::init([](rs2::context ctx) { return rs2::pipeline(ctx); }))
+    .def(py::init([]() { return rs2::pipeline(rs2::context()); }))
     .def("start", (rs2::pipeline_profile (rs2::pipeline::*)(const rs2::config&)) &rs2::pipeline::start, "config")
     .def("start", (rs2::pipeline_profile (rs2::pipeline::*)() ) &rs2::pipeline::start)
     .def("stop", &rs2::pipeline::stop)
@@ -701,7 +705,7 @@ PYBIND11_PLUGIN(NAME) {
     };
 
     py::class_<pipeline_wrapper>(m, "pipeline_wrapper")
-        .def("__init__", [](pipeline_wrapper &pw, rs2::pipeline p) { new (&pw) pipeline_wrapper{ p }; });
+        .def(py::init([](rs2::pipeline p) { return pipeline_wrapper{ p }; }));
 
     py::implicitly_convertible<rs2::pipeline, pipeline_wrapper>();
 
@@ -971,9 +975,5 @@ PYBIND11_PLUGIN(NAME) {
     /* rs2.hpp */
     m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);
     m.def("log_to_file", &rs2::log_to_file, "min_severity"_a, "file_path"_a);
-
-    return m.ptr();
-
-
 
 }
