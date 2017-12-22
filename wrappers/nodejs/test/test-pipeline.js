@@ -14,13 +14,11 @@ try {
 }
 
 let ctx;
-let dev;
 describe('Pipeline test', function() {
   before(function() {
     ctx = new rs2.Context();
     const devices = ctx.queryDevices().devices;
     assert(devices.length > 0); // Device must be connected
-    dev = devices[0];
   });
 
   after(function() {
@@ -48,13 +46,6 @@ describe('Pipeline test', function() {
   it('Testing constructor - 1 context option', () => {
     assert.doesNotThrow(() => {
       new rs2.Pipeline(ctx);
-    });
-  });
-
-  // Not supported
-  it.skip('Testing constructor - 1 device option', () => {
-    assert.doesNotThrow(() => {
-      new rs2.Pipeline(dev);
     });
   });
 

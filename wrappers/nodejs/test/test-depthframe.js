@@ -15,7 +15,7 @@ try {
 
 let frame;
 let pipeline;
-describe('Frame test', function() {
+describe('DepthFrame test', function() {
   before(function() {
     pipeline = new rs2.Pipeline();
     pipeline.start();
@@ -32,7 +32,7 @@ describe('Frame test', function() {
 
   it('Testing constructor', () => {
     assert.doesNotThrow(() => {
-      new rs2.Frame();
+      new rs2.DepthFrame();
     });
   });
 
@@ -76,6 +76,11 @@ describe('Frame test', function() {
 
   it('Testing property bitsPerPixel', () => {
     assert.equal(typeof frame.bitsPerPixel, 'number');
+  });
+
+  it('Testing property bytesPerPixel', () => {
+    assert.equal(typeof frame.bytesPerPixel, 'number');
+    assert.equal(frame.bytesPerPixel, frame.bitsPerPixel/8);
   });
 
   it('Testing property timestampDomain', () => {
@@ -124,6 +129,7 @@ describe('Frame test', function() {
   it('Testing method getData - buffer argument', () => {
     const len = frame.dataByteLength;
     let buf = new ArrayBuffer(len);
+    console.log(typeof buf);
     assert.doesNotThrow(() => {
       frame.getData(buf);
     });
@@ -166,6 +172,14 @@ describe('Frame test', function() {
         ), '[object Boolean]');
       }
     }
+  });
+
+  it('Testing method getDistance - valid argument', () => {
+    let d;
+    assert.doesNotThrow(() => {
+      d = frame.getDistance(1, 2);
+    });
+    assert.equal(typeof d, 'number');
   });
 
   it('Testing method destroy', () => {
