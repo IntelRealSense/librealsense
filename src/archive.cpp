@@ -46,8 +46,8 @@ namespace librealsense
         new_tex.reserve(get_vertex_count());
         assert(get_vertex_count());
         for (size_t i = 0; i < get_vertex_count(); ++i)
-            if (std::abs(vertices[i].x) >= MIN_DISTANCE || std::abs(vertices[i].y) >= MIN_DISTANCE ||
-                std::abs(vertices[i].z) >= MIN_DISTANCE)
+            if (fabs(vertices[i].x) >= MIN_DISTANCE || fabs(vertices[i].y) >= MIN_DISTANCE ||
+                fabs(vertices[i].z) >= MIN_DISTANCE)
             {
                 new_vertices.push_back(vertices[i]);
                 if (texture)
