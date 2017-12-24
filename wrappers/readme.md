@@ -6,5 +6,5 @@
 * [LabVIEW](./labview) - integration with National Instruments LabVIEW
 * [OpenCV](./opencv) - integration with OpenCV computer-vision library
 * [PCL](./pcl) - basic integration with the Point-Cloud Library
-* .NET - TBD
+* [.NET](./csharp) - support for .NET languages with examples in C#
 * Matlab - TBD

@@ -122,7 +122,10 @@ namespace librealsense
                 }
                 lock.unlock();
 
-                published_frames.deallocate(f);
+                if (f->is_fixed())
+                    published_frames.deallocate(f);
+                else
+                    delete f;
             }
         }
 
@@ -130,12 +133,17 @@ namespace librealsense
         {
             auto f = (T*)frame;
 
-            if (published_frames_count >= *max_frame_queue_size)
+            unsigned int max_frames = *max_frame_queue_size;
+
+            if (published_frames_count >= max_frames
+                && max_frames)
             {
                 LOG_DEBUG("User didn't release frame resource.");
                 return nullptr;
             }
-            auto new_frame = published_frames.allocate();
+            auto new_frame = (max_frames ? published_frames.allocate() : new T());
+            if (max_frames) new_frame->mark_fixed();
+
             if (new_frame)
             {
                 ++published_frames_count;
