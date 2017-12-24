@@ -5,6 +5,6 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "node-librealsense": "^0.281.0"
+    "node-librealsense": "^0.282.1"
   }
 }

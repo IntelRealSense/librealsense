@@ -8,7 +8,7 @@ In this example, we align depth frames to their corresponding color frames. Then
 
 Using this information, we "remove" the background of the color frame that is further (away from the camera) than some user-define distance.
 
-The example display a GUI for controlling the max distance to show from the original color image.
+The example displays a GUI for controlling the maximum distance to show from the original color image.
 
 ## Expected Output
 
@@ -117,8 +117,9 @@ rs2_stream align_to = find_stream_to_align(profile.get_streams());
 rs2::align align(align_to);
 ```
 
-`rs2::align` is a utility class that performs image alignment (registration) of 2 frames. Basically, each pixel from the first image will be transformed so that it matches its corresponding pixel in the second image.
-A `rs2::align` object always transforms depth images to some target image which, in this example, is specified with the `RS2_STREAM_COLOR` parameter.
+`rs2::align` is a utility class that performs image alignment (registration) of 2 frames. 
+Basically, each pixel from the first image will be transformed so that it matches its corresponding pixel in the second image.
+A `rs2::align` object transforms between two input images, from a source image to some target image which is specified with the `align_to` parameter.
 
 Now comes the interesting part of the application. We start our main loop, which breaks only when the window is closed:
 

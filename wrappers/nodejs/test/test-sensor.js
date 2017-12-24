@@ -12,7 +12,6 @@ try {
 } catch (e) {
   rs2 = require('../index.js');
 }
-const RS2 = require('bindings')('node_librealsense');
 
 let ctx;
 let sensors;
@@ -31,7 +30,6 @@ describe('Sensor test', function() {
       rs2.option.option_enable_auto_exposure,
       'enable_auto_exposure',
       rs2.option.OPTION_ENABLE_AUTO_WHITE_BALANCE,
-      RS2.RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE,
     ];
 
   it.skip('Testing method getMotionIntrinsics', () => {

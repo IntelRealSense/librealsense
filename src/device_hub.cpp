@@ -2,9 +2,10 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp>
-
+#include "source.h"
+#include "core/processing.h"
+#include "proc/synthetic-stream.h"
 #include "device_hub.h"
-
 
 namespace librealsense
 {

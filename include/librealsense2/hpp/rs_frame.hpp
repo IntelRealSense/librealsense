@@ -8,6 +8,15 @@
 
 namespace rs2
 {
+    class frame_source;
+    class frame_queue;
+    class syncer;
+    class processing_block;
+    class pointcloud;
+    class sensor;
+    class frame;
+    class pipeline_profile;
+
     class stream_profile
     {
     public:
@@ -70,9 +79,9 @@ namespace rs2
         }
 
     protected:
-        friend class sensor;
-        friend class frame;
-        friend class pipeline_profile;
+        friend class rs2::sensor;
+        friend class rs2::frame;
+        friend class rs2::pipeline_profile;
 
         explicit stream_profile(const rs2_stream_profile* profile) : _profile(profile)
         {
@@ -292,13 +301,13 @@ namespace rs2
             frame_ref = nullptr;
         }
 
-        friend class frame_queue;
-        friend class syncer;
-        friend class frame_source;
-        friend class processing_block;
-        friend class pointcloud_block;
-
     private:
+        friend class rs2::frame_source;
+        friend class rs2::frame_queue;
+        friend class rs2::syncer;
+        friend class rs2::processing_block;
+        friend class rs2::pointcloud;
+
         rs2_frame* frame_ref;
     };
 
@@ -457,6 +466,7 @@ namespace rs2
             if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_COMPOSITE_FRAME, &e) == 0 && !e))
             {
                 reset();
+                // TODO - consider explicit constructor to move resultion to compile time
             }
             error::handle(e);
 

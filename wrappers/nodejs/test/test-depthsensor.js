@@ -15,13 +15,14 @@ try {
 
 let ctx;
 let depthSensor;
+let pipeline;
 describe('Device test', function() {
   before(function() {
     ctx = new rs2.Context();
     const devices = ctx.queryDevices().devices;
     assert(devices.length > 0); // Device must be connected
     const dev = devices[0];
-    const pipeline = new rs2.Pipeline();
+    pipeline = new rs2.Pipeline();
     pipeline.start();
     while (!depthSensor) {
       const sensors = dev.querySensors();
@@ -34,6 +35,7 @@ describe('Device test', function() {
   });
 
   after(function() {
+    pipeline.destroy();
     rs2.cleanup();
   });
 

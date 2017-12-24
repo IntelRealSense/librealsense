@@ -111,12 +111,16 @@ namespace librealsense
         void log_callback_start(rs2_time_t timestamp) override;
         void log_callback_end(rs2_time_t timestamp) const override;
 
+        void mark_fixed() override { _fixed = true; }
+        bool is_fixed() const override { return _fixed; }
+
     private:
         // TODO: check boost::intrusive_ptr or an alternative
         std::atomic<int> ref_count; // the reference count is on how many times this placeholder has been observed (not lifetime, not content)
         std::shared_ptr<archive_interface> owner; // pointer to the owner to be returned to by last observe
         std::weak_ptr<sensor_interface> sensor;
         frame_continuation on_release;
+        bool _fixed = false;
         std::shared_ptr<stream_profile_interface> stream;
     };
 

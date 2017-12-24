@@ -142,7 +142,7 @@ namespace rs2
 
             std::vector<rs2::float3> roi_pixels;
 
-#pragma omp parallel for
+//#pragma omp parallel for - TODO optimization envisaged
             for (int y = roi.min_y; y < roi.max_y; ++y)
                 for (int x = roi.min_x; x < roi.max_x; ++x)
                 {
@@ -177,15 +177,15 @@ namespace rs2
             // Find the distance between the "rectified" fit and the ground truth planes.
             float plane_fit_to_gt_dist_mm = (ground_truth_mm > 0.f) ? (plane_fit_pivot.z * 1000 - ground_truth_mm): 0;
 
-            callback(roi_pixels, p, roi, baseline_mm, intrin->fx, ground_truth_mm, (plane_fit_present > 0), plane_fit_to_gt_dist_mm);
+            callback(roi_pixels, p, roi, baseline_mm, intrin->fx, ground_truth_mm, plane_fit_present, plane_fit_to_gt_dist_mm);
             result.p = p;
             result.plane_corners[0] = approximate_intersection(p, intrin, float(roi.min_x), float(roi.min_y));
             result.plane_corners[1] = approximate_intersection(p, intrin, float(roi.max_x), float(roi.min_y));
             result.plane_corners[2] = approximate_intersection(p, intrin, float(roi.max_x), float(roi.max_y));
             result.plane_corners[3] = approximate_intersection(p, intrin, float(roi.min_x), float(roi.max_y));
 
-            // Distance of origin (the camera) from the plane is encoded in parameter D of the plane
-            result.distance = is_valid(result.plane_corners) ? static_cast<float>(-p.d * 1000) : -1;
+            // Distance of origin (the camera) to the plane is the distance to the intersection point
+            result.distance = is_valid(result.plane_corners) ? plane_fit_pivot.length()*1000 : -1;
             // Angle can be calculated from param C
             result.angle = static_cast<float>(std::acos(std::abs(p.c)) / M_PI * 180.);
 

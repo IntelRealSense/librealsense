@@ -20,21 +20,21 @@ Information about the Intel® RealSense™ technology at [realsense.intel.com](h
 > Don't have access to a RealSense camera? Check-out [sample data](./doc/sample-data.md)
 
 ## What’s included in the SDK:
-**[Tools for harnessing your depth camera’s capabilities](https://github.com/IntelRealSense/librealsense/tree/development/tools)** Including:
+**[Tools for harnessing your depth camera’s capabilities](./tools)** Including:
 
-- **[Intel® RealSense™ Viewer](https://github.com/IntelRealSense/librealsense/tree/development/tools/realsense-viewer)**
+- **[Intel® RealSense™ Viewer](./tools/realsense-viewer)**
    With this application, you can quickly access your Intel® RealSense™ Depth Camera to view the depth stream, visualize point clouds, record and playback streams, configure your camera settings and much more.
 
-- **[Depth Quality Tool](https://github.com/IntelRealSense/librealsense/tree/development/tools/depth-quality)**
+- **[Depth Quality Tool](./tools/depth-quality)**
    This application allows you to test the camera’s depth quality, including: standard deviation from plane fit, normalized RMS – the subpixel accuracy, distance accuracy and fill rate. You should be able to easily get and interpret several of the depth quality metrics and record and save the data for offline analysis.
    
  - **Other Debug Tools** as can be seen in the tools directory
 
-**[Code Samples to Start Prototyping Quickly](https://github.com/IntelRealSense/librealsense/tree/development/examples)**
+**[Code Samples to Start Prototyping Quickly](./examples)**
    These simple examples demonstrate how to easily use the SDK to include code snippets that access the camera into your applications.
 
 **[Wrappers](https://github.com/IntelRealSense/librealsense/tree/development/wrappers)**
-  We provide a C, C++, [Python](./wrappers/python), [Node.js](./wrappers/nodejs) API, as well as integration with the following 3rd-party technologies: [ROS](https://github.com/intel-ros/realsense/releases), [LabVIEW](./wrappers/labview), [OpenCV](./wrappers/opencv), [PCL](./wrappers/pcl) and more to come, including C#, Unity and Matlab.
+  We provide a C, C++, [Python](./wrappers/python), [.NET](./wrappers/csharp), [Node.js](./wrappers/nodejs) API, as well as integration with the following 3rd-party technologies: [ROS](https://github.com/intel-ros/realsense/releases), [LabVIEW](./wrappers/labview), [OpenCV](./wrappers/opencv), [PCL](./wrappers/pcl) and more to come, including C#, Unity and Matlab.
 
 ## Quick Start
 

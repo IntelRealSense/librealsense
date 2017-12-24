@@ -215,7 +215,9 @@ namespace rs2
 
         void map_to(frame mapped)
         {
-            _block->invoke(std::move(mapped));
+            _block->set_option(RS2_OPTION_TEXTURE_SOURCE, float(mapped.get_profile().unique_id()));
+            if (mapped.get_profile().stream_type() != RS2_STREAM_DEPTH)
+                _block->invoke(std::move(mapped));
         }
     private:
         friend class context;
@@ -296,9 +298,21 @@ namespace rs2
         frame_queue _results;
     };
 
+    /**
+        Auxiliary processing block that performs image alignment using depth data and camera calibration
+    */
     class align
     {
     public:
+        /**
+            Create align processing block 
+            Alignment is performed between a depth image and another image. 
+            To perform alignment of a depth image to the other, set the align_to parameter with the other stream type.
+            To perform alignment of a non depth image to a depth image, set the align_to parameter to RS2_STREAM_DEPTH
+            Camera calibration and frame's stream type are determined on the fly, according to the first valid frameset passed to proccess()
+
+            * \param[in] align_to      The stream type to which alignment should be made.
+        */
         align(rs2_stream align_to) :_queue(1)
         {
             rs2_error* e = nullptr;
@@ -311,6 +325,12 @@ namespace rs2
             _block->start(_queue);
         }
 
+        /**
+        * Run the alignment process on the given frames to get an aligned set of frames
+        *
+        * \param[in] frame      A pair of images, where at least one of which is a depth frame
+        * \return Input frames aligned to one another
+        */
         frameset proccess(frameset frame)
         {
             (*_block)(frame);
@@ -365,5 +385,115 @@ namespace rs2
          frame_queue _queue;
      };
 
+    class decimation_filter : public options
+    {
+    public:
+        decimation_filter() :_queue(1)
+        {
+            rs2_error* e = nullptr;
+            auto pb = std::shared_ptr<rs2_processing_block>(
+                rs2_create_decimation_filter_block(&e),
+                rs2_delete_processing_block);
+            _block = std::make_shared<processing_block>(pb);
+            error::handle(e);
+
+            // Redirect options API to the processing block
+            options::operator=(pb);
+
+            _block->start(_queue);
+        }
+
+        rs2::frame proccess(rs2::frame frame)
+        {
+            (*_block)(frame);
+            rs2::frame f;
+            _queue.poll_for_frame(&f);
+            return f;
+        }
+
+        void operator()(frame f) const
+        {
+            (*_block)(std::move(f));
+        }
+    private:
+        friend class context;
+
+        std::shared_ptr<processing_block> _block;
+        frame_queue _queue;
+    };
+
+    class temporal_filter : public options
+    {
+    public:
+        temporal_filter() :_queue(1)
+        {
+            rs2_error* e = nullptr;
+            auto pb = std::shared_ptr<rs2_processing_block>(
+                rs2_create_temporal_filter_block(&e),
+                rs2_delete_processing_block);
+            _block = std::make_shared<processing_block>(pb);
+            error::handle(e);
+
+            // Redirect options API to the processing block
+            options::operator=(pb);
+
+            _block->start(_queue);
+        }
+
+        rs2::frame proccess(rs2::frame frame)
+        {
+            (*_block)(frame);
+            rs2::frame f;
+            _queue.poll_for_frame(&f);
+            return f;
+        }
+
+        void operator()(frame f) const
+        {
+            (*_block)(std::move(f));
+        }
+    private:
+        friend class context;
+
+        std::shared_ptr<processing_block> _block;
+        frame_queue _queue;
+    };
+
+    class spatial_filter : public options
+    {
+    public:
+        spatial_filter() :_queue(1)
+        {
+            rs2_error* e = nullptr;
+            auto pb = std::shared_ptr<rs2_processing_block>(
+                rs2_create_spatial_filter_block(&e),
+                rs2_delete_processing_block);
+            _block = std::make_shared<processing_block>(pb);
+            error::handle(e);
+
+            // Redirect options API to the processing block
+            options::operator=(pb);
+
+            _block->start(_queue);
+        }
+
+        rs2::frame proccess(rs2::frame frame)
+        {
+            (*_block)(frame);
+            rs2::frame f;
+            _queue.poll_for_frame(&f);
+            return f;
+        }
+
+        void operator()(frame f) const
+        {
+            (*_block)(std::move(f));
+        }
+    private:
+        friend class context;
+
+        std::shared_ptr<processing_block> _block;
+        frame_queue _queue;
+    };
 }
 #endif // LIBREALSENSE_RS2_PROCESSING_HPP

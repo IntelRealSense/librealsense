@@ -763,10 +763,15 @@ void _uvc_process_payload(uvc_stream_handle_t *strmh, uint8_t *payload, size_t p
   } else {
     header_len = payload[0];
 
-    if (header_len > payload_len) {
-      UVC_DEBUG("bogus packet: actual_len=%zd, header_len=%zd\n", payload_len, header_len);
-      return;
-    }
+        if (header_len > payload_len) {
+            UVC_DEBUG("bogus packet: actual_len=%zd, header_len=%zd\n", payload_len, header_len);
+            return;
+        }
+
+        if (header_len <= strmh->metadata_size) {
+            memcpy( strmh->metadata_buf, payload, header_len);
+            strmh->metadata_bytes = header_len;
+        }
 
     if (strmh->devh->is_isight)
       data_len = 0;
@@ -1020,11 +1025,14 @@ uvc_error_t uvc_stream_open_ctrl(uvc_device_handle_t *devh, uvc_stream_handle_t 
   if (ret != UVC_SUCCESS)
     goto fail;
 
-  // Set up the streaming status and data space
-  strmh->running = 0;
-  /** @todo take only what we need */
-  strmh->outbuf = (uint8_t *)malloc( LIBUVC_XFER_BUF_SIZE );
-  strmh->holdbuf = (uint8_t *)malloc( LIBUVC_XFER_BUF_SIZE );
+    // Set up the streaming status and data space
+    strmh->running = 0;
+    /** @todo take only what we need */
+    strmh->outbuf = (uint8_t *)malloc( LIBUVC_XFER_BUF_SIZE );
+    strmh->holdbuf = (uint8_t *)malloc( LIBUVC_XFER_BUF_SIZE );
+
+    strmh->metadata_buf = (uint8_t *)malloc( 2048 );
+    strmh->metadata_size = 2048;
 
   DL_APPEND(devh->streams, strmh);
 
@@ -1237,8 +1245,14 @@ void _uvc_populate_frame(uvc_stream_handle_t *strmh) {
   frame->data_bytes = strmh->hold_bytes;
   memcpy(frame->data, strmh->holdbuf, frame->data_bytes);
 
+    /* copy the header data from the buffer to the frame */
 
+    if (frame->metadata_bytes < strmh->metadata_bytes) {
+        frame->metadata = (uint8_t *)realloc(frame->metadata, strmh->metadata_bytes);
+    }
 
+    frame->metadata_bytes = strmh->metadata_bytes;
+    memcpy(frame->metadata, strmh->metadata_buf, frame->metadata_bytes);
 }
 
 /** Poll for a frame
@@ -1314,7 +1328,12 @@ uvc_error_t uvc_stream_get_frame(uvc_stream_handle_t *strmh,
 
               //TODO: How should we handle EINVAL?
               switch (err) {
-              case std::cv_status::timeout:
+#ifdef __APPLE__
+                  case std::cv_status::timeout:
+#else
+                  case EINVAL:
+                  case ETIMEDOUT:
+#endif
                   *frame = NULL;
                   return UVC_ERROR_TIMEOUT;
               }
@@ -1423,8 +1442,12 @@ void uvc_stream_close(uvc_stream_handle_t *strmh) {
   if (strmh->frame.data)
     free(strmh->frame.data);
 
-  free(strmh->outbuf);
-  free(strmh->holdbuf);
+    if (strmh->frame.metadata)
+        free(strmh->frame.metadata);
+
+    free(strmh->outbuf);
+    free(strmh->holdbuf);
+    free(strmh->metadata_buf);
 
   DL_DELETE(strmh->devh->streams, strmh);
   free(strmh);

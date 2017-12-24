@@ -17,7 +17,6 @@ const fs = require('fs');
 class Device {
   constructor(dev) {
     this.cxxDev = dev;
-    this._events = new EventEmitter();
     internal.addObject(this);
   }
 
@@ -25,7 +24,7 @@ class Device {
    * Check if everything is OK, e.g. if the device object is connected to underlying hardware
    * @return {Boolean}
    */
-  isValid() {
+  get isValid() {
     return (this.cxxDev !== null);
   }
 
@@ -51,6 +50,18 @@ class Device {
   }
 
   /**
+   * Get the first sensor
+   * @return {Sensor|undefined}
+   */
+  get first() {
+    let sensors = this.querySensors();
+    if (sensors && sensors.length > 0) {
+      return sensors[0];
+    }
+    return undefined;
+  }
+
+  /**
    * Information that can be queried from the device.
    * Not all information attributes are available on all camera types.
    * This information is mainly available for camera debug and troubleshooting and should not be
@@ -66,7 +77,7 @@ class Device {
    * connected to (platform specific). <br> undefined is not supported.
    * @property {String|undefined} debugOpCode - If device supports firmware logging, this is the
    * command to send to get logs from firmware. <br> undefined is not supported.
-   * @property {String|undefined} advancedMode - True iff the device is in advanced mode.
+   * @property {String|undefined} advancedMode - True if the device is in advanced mode.
    * <br> undefined is not supported.
    * @property {String|undefined} productId - Product ID as reported in the USB descriptor.
    * <br> undefined is not supported.
@@ -332,6 +343,25 @@ class DeviceList {
   get size() {
     return this.cxxList.size();
   }
+
+  /**
+   * Get the first device
+   * @return {Device|undefined}
+   */
+  get front() {
+    return this.getDevice(0);
+  }
+
+  /**
+   * Get the last device
+   * @return {Device|undefined}
+   */
+  get back() {
+    if (this.size > 0) {
+      return this.getDevice(this.size - 1);
+    }
+    return undefined;
+  }
 }
 
 class VideoStreamProfile extends StreamProfile {
@@ -557,7 +587,7 @@ class Sensor extends Options {
    * Check if everything is OK, e.g. if the device object is connected to underlying hardware
    * @return {Boolean}
    */
-  isValid() {
+  get isValid() {
     return (this.cxxSensor !== null);
   }
 
@@ -581,13 +611,15 @@ class Sensor extends Options {
           'Sensor.open() expects a streamProfile object or an array of streamProfile objects');
     }
     if (Array.isArray(streamProfile) && streamProfile.length > 0) {
+      let cxxStreamProfiles = [];
       for (let i = 0; i < streamProfile.length; i++) {
         if (!(streamProfile[i] instanceof StreamProfile)) {
           throw new TypeError(
               'Sensor.open() expects a streamProfile object or an array of streamProfile objects'); // eslint-disable-line
         }
+        cxxStreamProfiles.push(streamProfile[i].cxxProfile);
       }
-      this.cxxSensor.openMultipleStream(streamProfile);
+      this.cxxSensor.openMultipleStream(cxxStreamProfiles);
     } else {
       if (!(streamProfile instanceof StreamProfile)) {
         throw new TypeError(
@@ -595,6 +627,42 @@ class Sensor extends Options {
       }
       this.cxxSensor.openStream(streamProfile.cxxProfile);
     }
+  }
+
+  /**
+   * Check if specific camera info is supported
+   * @param {String|Integer} info - info type to query. See {@link camera_info} for available values
+   * @return {Boolean|undefined} Returns undefined if an invalid info type was specified.
+   * @see enum {@link camera_info}
+   */
+  supportsCameraInfo(info) {
+    if (arguments.length !== 1) {
+      throw new TypeError('Sensor.supportsCameraInfo(info) expects 1 argument');
+    }
+
+    let i = checkStringNumber(arguments[0],
+        constants.camera_info.CAMERA_INFO_NAME, constants.camera_info.CAMERA_INFO_COUNT,
+        cameraInfo2Int,
+        'Sensor.supportsCameraInfo(info) expects a number or string as the 1st argument',
+        'Sensor.supportsCameraInfo(info) expects a valid value as the 1st argument');
+    return this.cxxSensor.supportsCameraInfo(i);
+  }
+
+  /**
+   * Get camera information of the sensor
+   *
+   * @param {String|Integer} info - the camera_info type, see {@link camera_info} for available
+   * values
+   * @return {String|undefined}
+   */
+  getCameraInfo(info) {
+    let i = checkStringNumber(arguments[0],
+        constants.camera_info.CAMERA_INFO_NAME,
+        constants.camera_info.CAMERA_INFO_COUNT,
+        cameraInfo2Int,
+        'Sensor.getCameraInfo(info) expects a number or string as the 1st argument',
+        'Sensor.getCameraInfo(info) expects a valid value as the 1st argument');
+    return this.cxxSensor.getCameraInfo(i);
   }
 
   /**
@@ -1053,7 +1121,10 @@ class Context {
    * @return {PlaybackDevice}
    */
   loadDevice(file) {
-    return new PlaybackDevice(this.cxxCtx.loadDeviceFile(file));
+    if (arguments.length === 0 || !isString(file)) {
+      throw new TypeError('Context.loadDevice expects a string argument');
+    }
+    return new PlaybackDevice(this.cxxCtx.loadDeviceFile(file), file);
   }
 
   /**
@@ -1062,7 +1133,10 @@ class Context {
    * @param {String} file The file name that was loaded to create the playback device
    */
   unloadDevice(file) {
-    // TODO (Shaoting) support this method
+    if (arguments.length === 0 || !isString(file)) {
+      throw new TypeError('Context.unloadDevice expects a string argument');
+    }
+    this.cxxCtx.unloadDeviceFile(file);
   }
 }
 
@@ -1112,17 +1186,247 @@ class PlaybackContext extends Context {
   }
 }
 
-class RecordDevice extends Device {
-  constructor(file, cxxDevice) {
-    super(cxxDevice);
-    this.file = file;
+/**
+ * This class provides the ability to record a live session of streaming to a file
+ * Here is an examples:
+ * <pre><code>
+ * let ctx = new rs2.Context();
+ * let dev = ctx.queryDevices().devices[0];
+ * // record to file record.bag
+ * let recorder = new rs2.RecorderDevice('record.bag', dev);
+ * let sensors = recorder.querySensors();
+ * let sensor = sensors[0];
+ * let profiles = sensor.getStreamProfiles();
+ *
+ * for (let i =0; i < profiles.length; i++) {
+ *   if (profiles[i].streamType === rs2.stream.STREAM_DEPTH &&
+ *       profiles[i].fps === 30 &&
+ *       profiles[i].width === 640 &&
+ *       profiles[i].height === 480 &&
+ *       profiles[i].format === rs2.format.FORMAT_Z16) {
+ *     sensor.open(profiles[i]);
+ *   }
+ * }
+ *
+ * // record 10 frames
+ * let cnt = 0;
+ * sensor.start((frame) => {
+ *   cnt++;
+ *   if (cnt === 10) {
+ *     // stop recording
+ *     recorder.reset();
+ *     rs2.cleanup();
+ *     console.log('Recorded ', cnt, ' frames');
+ *   }
+ * })
+ * </code></pre>
+ * @extends Device
+ */
+class RecorderDevice extends Device {
+  /**
+   * @param {String} file the file name to store the recorded data
+   * @param {Device} device the actual device to be recorded
+   */
+  constructor(file, device) {
+    if (arguments.length != 2) {
+      throw new TypeError('RecorderDevice constructor expects 2 arguments');
+    }
+    if (!isString(file) || !(device instanceof Device)) {
+      throw new TypeError('Invalid argument types provided to RecorderDevice constructor');
+    }
+    super(device.cxxDev.spawnRecorderDevice(file));
+  }
+  /**
+   * Pause the recording device without stopping the actual device from streaming.
+   */
+  pause() {
+    this.cxxDev.pauseRecord();
+  }
+  /**
+   * Resume the recording
+   */
+  resume() {
+    this.cxxDev.resumeRecord();
   }
 }
 
+/**
+ * This class is used to playback the file recorded by RecorderDevice
+ * Here is an example:
+ * <pre><code>
+ * let ctx = new rs2.Context();
+ * // load the recorded file
+ * let dev = ctx.loadDevice('record.bag');
+ * let sensors = dev.querySensors();
+ * let sensor = sensors[0];
+ * let profiles = sensor.getStreamProfiles();
+ * let cnt = 0;
+ *
+ * // when received 'stopped' status, stop playback
+ * dev.setStatusChangedCallback((status) => {
+ *   console.log('playback status: ', status);
+ *   if (status.description === 'stopped') {
+ *     dev.stop();
+ *     ctx.unloadDevice('record.bag');
+ *     rs2.cleanup();
+ *     console.log('Playback ', cnt, ' frames');
+ *   }
+ * });
+ *
+ * // start playback
+ * sensor.open(profiles);
+ * sensor.start((frame) => {
+ *   cnt ++;
+ * });
+ * <pre><code>
+ * @extends Device
+ * @see [Context.loadDevice]{@link Context#loadDevice}
+ */
 class PlaybackDevice extends Device {
-  constructor(file, cxxDevice) {
-    super(cxxDevice);
+  constructor(cxxdevice, file) {
+    super(cxxdevice);
     this.file = file;
+    this._events = new EventEmitter();
+  }
+  /**
+   * Pauses the playback
+   * Calling pause() in "paused" status does nothing
+   * If pause() is called while playback status is "playing" or "stopped", the playback will not
+   * play until resume() is called
+   * @return {undefined}
+   */
+  pause() {
+    this.cxxDev.pausePlayback();
+  }
+  /**
+   * Resumes the playback
+   * Calling resume() while playback status is "playing" or "stopped" does nothing
+   * @return {undefined}
+   */
+  resume() {
+    this.cxxDev.resumePlayback();
+  }
+  /**
+   * Stops playback
+   * @return {undefined}
+   */
+  stop() {
+    this.cxxDev.stopPlayback();
+  }
+  /**
+   * Retrieves the name of the playback file
+   * @return {String}
+   */
+  get fileName() {
+    return this.file;
+  }
+  /**
+   * Retrieves the current position of the playback in the file in terms of time. Unit is
+   * millisecond
+   * @return {Integer}
+   */
+  get position() {
+    return this.cxxDev.getPosition();
+  }
+  /**
+   * Retrieves the total duration of the file, unit is millisecond.
+   * @return {Integer}
+   */
+  get duration() {
+    return this.cxxDev.getDuration();
+  }
+  /**
+   * Sets the playback to a specified time point of the played data
+   * @param {time} time the target time to seek to, unit is millisecond
+   * @return {undefined}
+   */
+  seek(time) {
+    if (arguments.length === 0 || !isNumber(time)) {
+      throw new TypeError('PlaybackDevice.seek(time) expects a number argument');
+    }
+    this.cxxDev.seek(time);
+  }
+  /**
+   * Indicates if playback is in real time mode or non real time
+   * In real time mode, playback will play the same way the file was recorded. If the application
+   * takes too long to handle the callback, frames may be dropped.
+   * In non real time mode, playback will wait for each callback to finish handling the data before
+   * reading the next frame. In this mode no frames will be dropped, and the application controls
+   * the frame rate of the playback (according to the callback handler duration).
+   * @return {Boolean}
+   */
+  get isRealTime() {
+    return this.cxxDev.isRealTime();
+  }
+  /**
+   * Set the playback to work in real time or non real time
+   * @param {boolean} val whether real time mode is used
+   * @return {undefined}
+   */
+  set isRealTime(val) {
+    if (arguments.length === 0 || (typeof val !== 'boolean')) {
+      throw new TypeError('PlaybackDevice.isRealTime(val) expects a boolean argument');
+    }
+    this.cxxDev.setIsRealTime(val);
+  }
+  /**
+   * Set the playing speed
+   * @param {Float} speed indicates a multiplication of the speed to play (e.g: 1 = normal,
+   * 0.5 half normal speed)
+   */
+  setPlaybackSpeed(speed) {
+    if (arguments.length === 0 || !isNumber(speed)) {
+      throw new TypeError('PlaybackDevice.setPlaybackSpeed(speed) expects a number argument');
+    }
+    this.cxxDev.setPlaybackSpeed(speed);
+  }
+
+  /**
+   * @typedef {Object} PlaybackStatusObject
+   * @property {Integer} status - The status of the notification, see {@link playback_status}
+   * for details
+   * @property {String} description - The human readable literal description of the status
+   */
+
+  /**
+   * This callback is called when the status of the playback device changed
+   * @callback StatusChangedCallback
+   * @param {PlaybackStatusObject} status
+   *
+   * @see [PlaybackDevice.setStatusChangedCallback]{@link PlaybackDevice#setStatusChangedCallback}
+   */
+
+  /**
+   * Returns the current state of the playback device
+   * @return {PlaybackStatusObject}
+   */
+  get currentStatus() {
+    let cxxStatus = this.cxxDev.getCurrentStatus();
+    if (!cxxStatus) {
+      return undefined;
+    }
+    return {status: cxxStatus, description: playback_status.playbackStatusToString(cxxStatus)};
+  }
+
+  /**
+   * Register a callback to receive the playback device's status changes
+   * @param {StatusChangedCallback} callback the callback method
+   * @return {undefined}
+   */
+  setStatusChangedCallback(callback) {
+    if (arguments.length === 0) {
+      throw new TypeError('PlaybackDevice.setStatusChangedCallback expects an argument as callback'); // eslint-disable-line
+    }
+    this._events.on('status-changed', (status) => {
+      callback({status: status, description: playback_status.playbackStatusToString(status)});
+    });
+    let inst = this;
+    if (!this.cxxDev.statusChangedCallback) {
+      this.cxxDev.statusChangedCallback = (status) => {
+        inst._events.emit('status-changed', status);
+      };
+      this.cxxDev.setStatusChangedCallbackMethodName('statusChangedCallback');
+    }
   }
 }
 
@@ -1232,9 +1536,15 @@ class Colorizer extends Options {
 }
 
 /**
- * The Align allows to perform aliment of depth frames to other frames
+ * This class can be used to perform alignment between a depth frame and another frame.
  */
 class Align {
+  /**
+   * @param {Integer|String} stream the stream type to be aligned to. see {@link stream} for
+   * avaiable values. To perform alignment of a depth frame to the other frame, set the stream
+   * argument to the other stream type. To perform alignment of a non depth frame to a depth frame,
+   * set the stream argument to stream type of depth.
+   */
   constructor(stream) {
     let s = checkStringNumber(stream,
             constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
@@ -1246,6 +1556,11 @@ class Align {
     this.frameSet = new FrameSet();
   }
 
+  /**
+   * Run the alignment process on the given frameset to get an aligned set of frames
+   * @param {FrameSet} frameSet the frames which at least has a depth frame
+   * @return {FrameSet}
+   */
   process(frameSet) {
     if (arguments.length === 1 && frameSet) {
       this.frameSet.release(); // Destroy all attached-frames (depth/color/etc.)
@@ -1289,8 +1604,6 @@ class Align {
  * @property {Number} timestamp - The timestamp of the frame.
  * @property {Integer} streamType - The stream type of the frame.
  * see <code>enum {@link stream}</code>
- * @property {Integer} dataByteLength - Get the byte length of the buffer data.
- * @property {Integer} strideInBytes - The stride of the frame. The unit is number of bytes.
  * @property {Integer} bitsPerPixel - The number of bits per pixel
  * @property {string} timestampDomain - Get the domain (clock name) of timestamp value.
  *
@@ -1485,7 +1798,8 @@ class Frame {
    *   see {@link Frame#data};
    *  if syntax 2 is used, return value is not used (<code>undefined</code>).
    *
-   * @see [Frame.dataByteLength]{@link Frame#dataByteLength} to determine the buffer size in bytes.
+   * @see [VideoFrame.dataByteLength]{@link VideoFrame#dataByteLength} to determine the buffer size
+   * in bytes.
    */
   getData(buffer) {
     if (arguments.length === 0) return this.data;
@@ -1495,23 +1809,6 @@ class Frame {
     }
 
     throw new TypeError('Frame.getData() expects 1 ArrayBuffer as a argument, or no argument');
-  }
-
-  /**
-   * Get the data length in bytes
-   * @return {Integer}
-   */
-  get dataByteLength() {
-    return this.strideInBytes * this.height;
-  }
-
-  /**
-   * Retrieve frame stride, meaning the actual line width in memory in bytes (not the logical image
-   * width)
-   * @return {Integer}
-   */
-  get strideInBytes() {
-    return this.cxxFrame.getStrideInBytes();
   }
 }
 
@@ -1547,7 +1844,23 @@ class VideoFrame extends Frame {
   }
 
   /**
-   * Retrieve bits per pixel
+   * Get the data length in bytes
+   * @return {Integer}
+   */
+  get dataByteLength() {
+    return this.strideInBytes * this.height;
+  }
+
+  /**
+   * Retrieve frame stride, the actual line width in bytes (not the logical image width)
+   * @return {Integer}
+   */
+  get strideInBytes() {
+    return this.cxxFrame.getStrideInBytes();
+  }
+
+  /**
+   * Retrieve count of bits per pixel
    * @return {Integer}
    */
   get bitsPerPixel() {
@@ -1718,6 +2031,21 @@ class FrameSet {
       throw new TypeError('FrameSet.at(index) expects a valid integer argument');
     }
     return this.getFrame(this.cxxFrameSet.indexToStream(index));
+  }
+
+  /**
+   * Run the provided callback function with each Frame inside the FrameSet
+   * @param {FrameCallback} callback the callback function to process each frame
+   * @return {undefined}
+   */
+  forEach(callback) {
+    if (!callback) {
+      throw new TypeError('FrameSet.forEach expects a FrameCallback argument');
+    }
+    const size = this.size;
+    for (let i = 0; i < size; i++) {
+      callback(this.at(i));
+    }
   }
 
   __internalAssembleFrame(cxxFrame) {
@@ -1984,6 +2312,14 @@ class PipelineProfile {
   }
 
   /**
+   * Check if the object is valid
+   * @return {Boolean}
+   */
+  get isValid() {
+    return (this.cxxPipelineProfile != null);
+  }
+
+  /**
    * Return the selected streams profiles, which are enabled in this profile.
    *
    * @return {StreamProfile[]} an array of StreamProfile
@@ -2001,6 +2337,36 @@ class PipelineProfile {
       }
     });
     return array;
+  }
+
+  /**
+   * Return the selected stream profile, which are enabled in this profile.
+   * @param {Integer|String} streamType the stream type of the desired profile,
+   * see {@link stream} for avaiable values
+   * @param {Integer} streamIndex stream index of the desired profile, -1 for any matching
+   * @return {StreamProfile} the first matching stream profile
+   */
+  getStream(streamType, streamIndex = -1) {
+    let s = checkStringNumber(arguments[0],
+        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
+        stream2Int,
+        'pipelineProfile.getStream() expects a number or string to specify the stream',
+        'pipelineProfile.getStream() expects a valid value to specify the stream');
+    if (!isNumber(streamIndex)) {
+      throw new TypeError('pipelineProfile.getStream() expects a number to be the second argument');
+    }
+
+    let profiles = this.getStreams();
+    if (!profiles) {
+      return undefined;
+    }
+    for (let i = 0; i < profiles.length; i++) {
+      if (profiles[i].streamType === streamType &&
+          (streamIndex === -1 || (streamIndex === profiles[i].indexValue))) {
+        return profiles[i];
+      }
+    }
+    return undefined;
   }
 
   /**
@@ -2047,6 +2413,7 @@ class PipelineProfile {
 class Config {
   constructor() {
     this.cxxConfig = new RS2.RSConfig();
+    internal.addObject(this);
   }
 
  /**
@@ -2204,6 +2571,16 @@ class Config {
       return this.cxxConfig.canResolve(arguments[0].cxxPipeline);
     }
   }
+
+  /**
+   * Release resources associated with the object
+   */
+  destroy() {
+    if (this.cxxConfig) {
+      this.cxxConfig.destroy();
+      this.cxxConfig = null;
+    }
+  }
 }
 
 /**
@@ -2274,6 +2651,7 @@ class DeviceHub {
   constructor(context) {
     this.context = context;
     this.cxxHub = new RS2.RSDeviceHub(context.cxxCtx);
+    internal.addObject(this);
   }
 
   /**
@@ -2302,6 +2680,71 @@ class DeviceHub {
       this.cxxHub.destroy();
       this.cxxHub = undefined;
     }
+  }
+}
+
+/**
+ * Base class of specific filter classes, see {@link DecimationFilter}.
+ * Don't create Filter objects directly from this class, use child classes,
+ */
+class Filter extends Options {
+  constructor(type) {
+    super(new RS2.RSFilter(type));
+    this.frame = new DepthFrame();
+    internal.addObject(this);
+  }
+
+  /**
+   * Apply the filter processing on the frame and return the processed frame
+   * @param {Frame} frame the depth frame to be processed
+   * @return {Frame}
+   */
+  process(frame) {
+    if (!frame || !(frame instanceof Frame)) {
+      throw new TypeError('Filter.process expects a Frame as the argument');
+    }
+    if (this.cxxObj && this.cxxObj.process(frame.cxxFrame, this.frame.cxxFrame)) {
+      this.frame.updateProfile();
+      return this.frame;
+    }
+    return undefined;
+  }
+
+  /**
+   * Release resources associated with the object
+   */
+  destroy() {
+    if (this.cxxObj) {
+      this.cxxObj.destroy();
+      this.cxxObj = null;
+    }
+  }
+}
+
+/**
+ * Depth post-processing filter block. This block can apply decimation filter on depth frame.
+ */
+class DecimationFilter extends Filter {
+  constructor() {
+    super('decimation');
+  }
+}
+
+/**
+ * Depth post-processing filter block. This block can apply temporal filter on depth frame.
+ */
+class TemporalFilter extends Filter {
+  constructor() {
+    super('temporal');
+  }
+}
+
+/**
+ * Depth post-processing filter block. This block can apply spatial filter on depth frame.
+ */
+class SpatialFilter extends Filter {
+  constructor() {
+    super('spatial');
   }
 }
 
@@ -2596,6 +3039,31 @@ util.writeFrameToFileAsync = function(path, frame, fileFormat) {
   } else {
     throw new TypeError('util.writeFrameToFileAsync expects a string as the 3rd argument and only \'png\' is supported now.'); // eslint-disable-line
   }
+};
+
+/**
+ * Field of view (FOV) info:
+ * @typedef {Object} FOVObject
+ * @property {Float32} h - horizontal field of view
+ * @property {Float32} v - vertical field of view
+ * @see [util.fov]{@link util#fov}
+ */
+
+/**
+ * Get the field of view from an IntrinsicsObject
+ * @param {IntrinsicsObject} intrinsics the intrinsics to calculate field of view.
+ * @return {FOVObject}
+ */
+util.fov = function(intrinsics) {
+  let ppx = intrinsics.ppx;
+  let ppy = intrinsics.ppy;
+  let width = intrinsics.width;
+  let height = intrinsics.height;
+  let fx = intrinsics.fx;
+  let fy = intrinsics.fy;
+  let h = (Math.atan(ppx + 0.5, fx) + Math.atan(width - ppx - 0.5, fx)) * 57.2957795;
+  let v = (Math.atan(ppy + 0.5, fy) + Math.atan(height - ppy - 0.5, fy)) * 57.2957795;
+  return {h: h, v: v};
 };
 
 /**
@@ -3326,6 +3794,28 @@ const option = {
    */
   option_max_distance: 'max-distance',
   /**
+   * Texture mapping stream unique ID <br> Equivalent to its lowercase counterpart.
+   * @type {Integer}
+   */
+  option_texture_source: 'texture-source',
+  /**
+   * The 2D-filter effect. The specific interpretation is given within the context of the filter
+   * <br> Equivalent to its lowercase counterpart.
+   * @type {Integer}
+   */
+  option_filter_magnitude: 'filter-magnitude',
+  /**
+   * 2D-filter parameter controls the weight/radius for smoothing.
+   * <br> Equivalent to its lowercase counterpart.
+   * @type {Integer}
+   */
+  option_filter_smooth_alpha: 'filter-smooth-alpha',
+  /**
+   * 2D-filter range/validity threshold<br> Equivalent to its lowercase counterpart.
+   * @type {Integer}
+   */
+  option_filter_smooth_delta: 'filter-smooth-delta',
+  /**
    * Enable / disable color backlight compensatio.<br>Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
@@ -3519,6 +4009,24 @@ const option = {
    */
   OPTION_MAX_DISTANCE: RS2.RS2_OPTION_MAX_DISTANCE,
   /**
+   * Texture mapping stream unique ID <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_TEXTURE_SOURCE: RS2.RS2_OPTION_TEXTURE_SOURCE,
+  /**
+   * The 2D-filter effect. The specific interpretation is given within the context of the filter
+   * <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_FILTER_MAGNITUDE: RS2.RS2_OPTION_FILTER_MAGNITUDE,
+  /**
+   * 2D-filter parameter controls the weight/radius for smoothing.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  OPTION_FILTER_SMOOTH_ALPHA: RS2.RS2_OPTION_FILTER_SMOOTH_ALPHA,
+  /**
+   * 2D-filter range/validity threshold<br>Equivalent to its uppercase counterpart
+   */
+  OPTION_FILTER_SMOOTH_DELTA: RS2.RS2_OPTION_FILTER_SMOOTH_DELTA,
+  /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
    */
@@ -3609,6 +4117,14 @@ const option = {
           return this.option_min_distance;
         case this.OPTION_MAX_DISTANCE:
           return this.option_max_distance;
+        case this.OPTION_TEXTURE_SOURCE:
+          return this.option_texture_source;
+        case this.OPTION_FILTER_MAGNITUDE:
+          return this.option_filter_magnitude;
+        case this.OPTION_FILTER_SMOOTH_ALPHA:
+          return this.option_filter_smooth_alpha;
+        case this.OPTION_FILTER_SMOOTH_DELTA:
+          return this.option_filter_smooth_delta;
         default:
           throw new TypeError(
               'option.optionToString(option) expects a valid value as the 1st argument');
@@ -4291,6 +4807,82 @@ const visual_preset = {
   VISUAL_PRESET_COUNT: RS2.RS2_VISUAL_PRESET_COUNT,
 };
 
+
+const playback_status = {
+  /**
+   * String literal of <code>'unknown'</code>. <br>Unknown state
+   * <br>Equivalent to its uppercase counterpart
+   */
+  playback_status_unknown: 'unknown',
+  /**
+   * String literal of <code>'playing'</code>. <br>One or more sensors were
+   * started, playback is reading and raising data
+   * <br>Equivalent to its uppercase counterpart
+   */
+  playback_status_playing: 'playing',
+  /**
+   * String literal of <code>'paused'</code>. <br>One or more sensors were
+   * started, but playback paused reading and paused raising data
+   * <br>Equivalent to its uppercase counterpart
+   */
+  playback_status_paused: 'paused',
+  /**
+   * String literal of <code>'stopped'</code>. <br>All sensors were stopped, or playback has
+   * ended (all data was read). This is the initial playback status
+   * <br>Equivalent to its uppercase counterpart
+   */
+  playback_status_stopped: 'stopped',
+  /**
+   * Unknown state
+   */
+  PLAYBACK_STATUS_UNKNOWN: RS2.RS2_PLAYBACK_STATUS_UNKNOWN,
+  /**
+   * One or more sensors were started, playback is reading and raising data
+   */
+  PLAYBACK_STATUS_PLAYING: RS2.RS2_PLAYBACK_STATUS_PLAYING,
+  /**
+   * One or more sensors were started, but playback paused reading and paused raising dat
+   */
+  PLAYBACK_STATUS_PAUSED: RS2.RS2_PLAYBACK_STATUS_PAUSED,
+  /**
+   * All sensors were stopped, or playback has ended (all data was read). This is the initial
+   * playback statu
+   */
+  PLAYBACK_STATUS_STOPPED: RS2.RS2_PLAYBACK_STATUS_STOPPED,
+  /**
+   * Number of enumeration values. Not a valid input: intended to be used in for-loops.
+   * @type {Integer}
+   */
+  PLAYBACK_STATUS_COUNT: RS2.RS2_PLAYBACK_STATUS_COUNT,
+  /**
+   * Get the string representation out of the integer playback_status type
+   * @param {Integer} status the playback_status type
+   * @return {String}
+   */
+  playbackStatusToString: function(status) {
+    if (arguments.length !== 1) {
+      throw new TypeError('playback_status.playbackStatusToString() expects 1 argument');
+    }
+    let i = checkStringNumber(arguments[0],
+        this.PLAYBACK_STATUS_UNKNOWN, this.PLAYBACK_STATUS_COUNT,
+        playbackStatus2Int,
+        'playback_status.playbackStatusToString() expects a number or string as the 1st argument', // eslint-disable-line
+        'playback_status.playbackStatusToString() expects a valid value as the 1st argument');
+    switch (i) {
+      case this.PLAYBACK_STATUS_UNKNOWN:
+        return this.playback_status_unknown;
+      case this.PLAYBACK_STATUS_PLAYING:
+        return this.playback_status_playing;
+      case this.PLAYBACK_STATUS_PAUSED:
+        return this.playback_status_paused;
+      case this.PLAYBACK_STATUS_STOPPED:
+        return this.playback_status_stopped;
+      default:
+        throw new TypeError('playback_status.playbackStatusToString() expects a valid value as the 1st argument'); // eslint-disable-line
+    }
+  },
+};
+
 // e.g. str2Int('enable_motion_correction', 'option')
 function str2Int(str, category) {
   const name = 'RS2_' + category.toUpperCase() + '_' + str.toUpperCase().replace(/-/g, '_');
@@ -4298,41 +4890,43 @@ function str2Int(str, category) {
 }
 
 function stream2Int(str) {
- return str2Int(str, 'stream');
+  return str2Int(str, 'stream');
 }
 function format2Int(str) {
- return str2Int(str, 'format');
+  return str2Int(str, 'format');
 }
 function option2Int(str) {
- return str2Int(str, 'option');
+  return str2Int(str, 'option');
 }
 function cameraInfo2Int(str) {
- return str2Int(str, 'camera_info');
+  return str2Int(str, 'camera_info');
 }
 function recordingMode2Int(str) {
- return str2Int(str, 'recording_mode');
+  return str2Int(str, 'recording_mode');
 }
 function timestampDomain2Int(str) {
- return str2Int(str, 'timestamp_domain');
+  return str2Int(str, 'timestamp_domain');
 }
 function NotificationCategory2Int(str) {
- return str2Int(str, 'notification_category');
+  return str2Int(str, 'notification_category');
 }
 function logSeverity2Int(str) {
- return str2Int(str, 'log_severity');
+  return str2Int(str, 'log_severity');
 }
 function distortion2Int(str) {
- return str2Int(str, 'distortion');
+  return str2Int(str, 'distortion');
 }
 function frameMetadata2Int(str) {
- return str2Int(str, 'frame_metadata');
+  return str2Int(str, 'frame_metadata');
 }
 function visualPreset2Int(str) {
- return str2Int(str, 'visual_preset');
+  return str2Int(str, 'visual_preset');
 }
-
+function playbackStatus2Int(str) {
+  return str2Int(str, 'playback_status');
+}
 function isArrayBuffer(value) {
-    return value && value instanceof ArrayBuffer && value.byteLength !== undefined;
+  return value && (value instanceof ArrayBuffer) && (value.byteLength !== undefined);
 }
 
 const constants = {
@@ -4378,6 +4972,12 @@ module.exports = {
   PointCloud: PointCloud,
   Points: Points,
   Syncer: Syncer,
+  RecorderDevice: RecorderDevice,
+  PlaybackDevice: PlaybackDevice,
+  DecimationFilter: DecimationFilter,
+  TemporalFilter: TemporalFilter,
+  SpatialFilter: SpatialFilter,
+
 
   stream: stream,
   format: format,
@@ -4390,6 +4990,7 @@ module.exports = {
   distortion: distortion,
   frame_metadata: frame_metadata,
   visual_preset: visual_preset,
+  playback_status: playback_status,
 
   util: util,
   internal: internal,

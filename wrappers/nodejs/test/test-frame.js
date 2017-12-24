@@ -14,9 +14,10 @@ try {
 }
 
 let frame;
+let pipeline;
 describe('Frame test', function() {
   before(function() {
-    const pipeline = new rs2.Pipeline();
+    pipeline = new rs2.Pipeline();
     pipeline.start();
     while (!frame) {
       const frameset = pipeline.waitForFrames();
@@ -25,6 +26,7 @@ describe('Frame test', function() {
   });
 
   after(function() {
+    pipeline.destroy();
     rs2.cleanup();
   });
 
@@ -171,8 +173,5 @@ describe('Frame test', function() {
     assert.doesNotThrow(() => {
       frame.destroy();
     });
-    setTimeout(() => {
-      assert.equal(frame, undefined);
-    }, 100);
   });
 });

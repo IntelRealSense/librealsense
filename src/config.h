@@ -150,6 +150,9 @@ namespace librealsense
                 {
                     for (auto request : others)
                     {
+                        // Patch for DS5U_S that allows different resolutions on multi-pin device
+                        if ((vid_a->get_height() == vid_a->get_width()) && (request.height == request.width))
+                            return false;
                         if (vid_a->get_width() != 0 && request.width != 0 && (vid_a->get_width() != request.width))
                             return true;
                         if (vid_a->get_height() != 0 && request.height != 0 && (vid_a->get_height() != request.height))

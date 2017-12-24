@@ -161,6 +161,65 @@ namespace librealsense
 #endif
     }
 
+    // Unpack luminocity 8 bit from 10-bit packed macro-pixels (4 pixels in 5 bytes):
+    // The first four bytes store the 8 MSB of each pixel, and the last byte holds the 2 LSB for each pixel :8888[2222]
+    void unpack_y8_from_rw10(byte *  const d[], const byte * s, int n)
+    {
+#ifdef __SSSE3__
+        assert(!(n % 48));  //We process 12 macro-pixels simultaneously to achieve performance boost
+        auto src = reinterpret_cast<const uint8_t *>(s);
+        auto dst = reinterpret_cast<uint8_t *>(d[0]);
+
+        const __m128i * blk_0_in = reinterpret_cast<const __m128i *>(src);
+        const __m128i * blk_1_in = reinterpret_cast<const __m128i *>(src+15);
+        const __m128i * blk_2_in = reinterpret_cast<const __m128i *>(src+30);
+        const __m128i * blk_3_in = reinterpret_cast<const __m128i *>(src+45);
+
+        auto blk_0_out = reinterpret_cast<__m128i *>(dst);
+        auto blk_1_out = reinterpret_cast<__m128i *>(dst + 12);
+        auto blk_2_out = reinterpret_cast<__m128i *>(dst + 24);
+        auto blk_3_out = reinterpret_cast<__m128i *>(dst + 36);
+
+        __m128i res[4];
+        // The mask will reorder the input so the 12 bytes with pixels' MSB values will come first
+        static const __m128i mask =_mm_setr_epi8(0x0, 0x1, 0x2, 0x3, 0x5, 0x6, 0x7, 0x8, 0xa, 0xb, 0xc, 0xd, -1, -1, -1, -1);
+
+
+        for (int i = 0; (i+48) < n; i += 48, src +=60, dst+=48)
+        {
+            blk_0_in = reinterpret_cast<const __m128i *>(src);
+            blk_1_in = reinterpret_cast<const __m128i *>(src + 15);
+            blk_2_in = reinterpret_cast<const __m128i *>(src + 30);
+            blk_3_in = reinterpret_cast<const __m128i *>(src + 45);
+
+            blk_0_out = reinterpret_cast<__m128i *>(dst);
+            blk_1_out = reinterpret_cast<__m128i *>(dst + 12);
+            blk_2_out = reinterpret_cast<__m128i *>(dst + 24);
+            blk_3_out = reinterpret_cast<__m128i *>(dst + 36);
+
+            res[0] = _mm_shuffle_epi8(_mm_loadu_si128(blk_0_in), mask);
+            res[1] = _mm_shuffle_epi8(_mm_loadu_si128(blk_1_in), mask);
+            res[2] = _mm_shuffle_epi8(_mm_loadu_si128(blk_2_in), mask);
+            res[3] = _mm_shuffle_epi8(_mm_loadu_si128(blk_3_in), mask);
+
+            _mm_storeu_si128(blk_0_out, res[0]);
+            _mm_storeu_si128(blk_1_out, res[1]);
+            _mm_storeu_si128(blk_2_out, res[2]);
+            _mm_storeu_si128(blk_3_out, res[3]);
+        }
+#else  // Generic code for when SSSE3 is not available.
+        auto from = reinterpret_cast<const uint8_t *>(s);
+        uint8_t* tgt = d[0];
+
+        for (int i = 0; i < n; i+=4, from+=5)
+        {
+            *tgt++ = from[0];
+            *tgt++ = from[1];
+            *tgt++ = from[2];
+            *tgt++ = from[3];
+        }
+#endif
+    }
     /////////////////////////////
     // YUY2 unpacking routines //
     /////////////////////////////
@@ -770,6 +829,8 @@ namespace librealsense
     const native_pixel_format pf_rw16       = { 'RW16', 1, 2,{  { false, &copy_pixels<2>,                                { { RS2_STREAM_COLOR,    RS2_FORMAT_RAW16 } } } } };
     const native_pixel_format pf_bayer16    = { 'BYR2', 1, 2,{  { false, &copy_pixels<2>,                                { { RS2_STREAM_COLOR,    RS2_FORMAT_RAW16 } } } } };
     const native_pixel_format pf_rw10       = { 'pRAA', 1, 1,{  { false, &copy_raw10,                                    { { RS2_STREAM_COLOR,    RS2_FORMAT_RAW10 } } } } };
+    // W10 development format will be exposed to the user via Y8
+    const native_pixel_format pf_w10        = { 'W10 ', 1, 1,{  { true,  &unpack_y8_from_rw10,                         { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8 } } } } };
 
     const native_pixel_format pf_yuy2       = { 'YUY2', 1, 2,{  { true,  &unpack_yuy2<RS2_FORMAT_RGB8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_Y16>,                    { { RS2_STREAM_COLOR,    RS2_FORMAT_Y16 } } },
@@ -778,11 +839,11 @@ namespace librealsense
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGR8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGRA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGRA8 } } } } };
 
-    const native_pixel_format pf_y8         = { 'GREY', 1, 1,{  { false, &copy_pixels<1>,                                { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8  } } } } };
+    const native_pixel_format pf_y8         = { 'GREY', 1, 1,{  { true, &copy_pixels<1>,                                { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8  } } } } };
     const native_pixel_format pf_y16        = { 'Y16 ', 1, 2,{  { true,  &unpack_y16_from_y16_10,                        { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y16 } } } } };
     const native_pixel_format pf_y8i        = { 'Y8I ', 1, 2,{  { true,  &unpack_y8_y8_from_y8i,                         { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8  },{ { RS2_STREAM_INFRARED, 2 }, RS2_FORMAT_Y8 } } } } };
     const native_pixel_format pf_y12i       = { 'Y12I', 1, 3,{  { true,  &unpack_y16_y16_from_y12i_10,                   { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y16 },{ { RS2_STREAM_INFRARED, 2 }, RS2_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_z16        = { 'Z16 ', 1, 2,{  { false, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 } } },
+    const native_pixel_format pf_z16        = { 'Z16 ', 1, 2,{  { true, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 } } },
                                                                 // The Disparity_Z is not applicable for D4XX. TODO - merge with INVZ when confirmed
                                                                 /*{ false, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH,    RS2_FORMAT_DISPARITY16 } } }*/ } };
     const native_pixel_format pf_invz       = { 'Z16 ', 1, 2, { { false, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16 } } } } };
