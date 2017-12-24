@@ -17,5 +17,7 @@ You can get RealSense Viewer in form of a binary package on Windows and Linux, o
 
 ## Advanced Mode
 Please note that some of the Viewer features are only available in Advanced Mode.
-It's easy to enable Advanced Mode, and once done it is saved in flash, so there's no need to perfrom this again, even after the camera reset. Please see the picture
+It's easy to enable Advanced Mode, and once done it is saved in flash, so there's no need to perfrom this again, even after the camera reset:
+<p align="center"><img src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/viewer-advanced-mode.png" width="50%" /></p>
+
 For further information please refer to [D400 Advanced Mode](https://github.com/IntelRealSense/librealsense/blob/master/doc/rs400_advanced_mode.md)
