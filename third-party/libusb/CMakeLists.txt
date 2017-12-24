@@ -5,7 +5,6 @@ cmake_minimum_required(VERSION 2.8.3)
 
 project(usb)
 
-if(WIN32)
   set(LIBUSB_C
   libusb/core.c
   libusb/descriptor.c
@@ -13,44 +12,30 @@ if(WIN32)
   libusb/io.c
   libusb/strerror.c
   libusb/sync.c
+  )
+
+if(WIN32)
+  LIST(APPEND LIBUSB_C
   libusb/os/threads_windows.c
   libusb/os/poll_windows.c
   libusb/os/windows_winusb.c
   libusb/os/windows_nt_common.c
   )
 elseif (APPLE)
-set(LIBUSB_C
-  libusb/descriptor.c
-  libusb/core.c
-  libusb/hotplug.c
-  libusb/io.c
-  libusb/sync.c
-  libusb/strerror.c
+  LIST(APPEND LIBUSB_C
   libusb/os/poll_posix.c
   libusb/os/threads_posix.c
   libusb/os/darwin_usb.c
   )
 elseif(ANDROID)
-    set(LIBUSB_C
-      libusb/descriptor.c
-      libusb/core.c
-      libusb/hotplug.c
-      libusb/io.c
-      libusb/sync.c
-      libusb/strerror.c
-      libusb/os/linux_usbfs.c
-      libusb/os/poll_posix.c
-      libusb/os/threads_posix.c
-      libusb/os/linux_netlink.c
-      )
+  LIST(APPEND LIBUSB_C
+  libusb/os/linux_usbfs.c
+  libusb/os/poll_posix.c
+  libusb/os/threads_posix.c
+  libusb/os/linux_netlink.c
+  )
 else()
-set(LIBUSB_C
-  libusb/descriptor.c
-  libusb/core.c
-  libusb/hotplug.c
-  libusb/io.c
-  libusb/sync.c
-  libusb/strerror.c
+  LIST(APPEND LIBUSB_C
   libusb/os/linux_usbfs.c
   libusb/os/poll_posix.c
   libusb/os/threads_posix.c

@@ -12,33 +12,33 @@ namespace std
     template <typename T>
     inline std::string to_string(T value)
     {
-        std::ostringstream os ;
-        os << value ;
-        return os.str() ;
+        std::ostringstream os;
+        os << value;
+        return os.str();
+    }
+
+    template <typename T>
+    inline T stoT(const std::string& value)
+    {
+        char* endptr;
+        auto x = strtoimax(value.c_str(), &endptr, 10);
+
+        return static_cast<T>(x);
     }
 
     inline long long stoll(const std::string& value)
     {
-    char* endptr;
-        auto x = strtoimax(value.c_str(), &endptr, 10);
-
-        return static_cast<long long>(x);
+        return stoT<long long>(value);
     }
 
     inline unsigned long stoul(const std::string& value)
     {
-        char* endptr;
-        auto x = strtoimax(value.c_str(), &endptr, 10);
-
-        return static_cast<unsigned long>(x);
+        return stoT<unsigned long>(value);
     }
 
     inline int stoi(const std::string& value)
     {
-        char* endptr;
-        auto x = strtoimax(value.c_str(), &endptr, 10);
-
-        return static_cast<int>(x);
+        return stoT<int>(value);
     }
 
     inline float stof(const std::string& value)

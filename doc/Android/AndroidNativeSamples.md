@@ -1,14 +1,8 @@
-#  Build Intel&reg; RealSense&trade; SDK 2.0 for Android OS
-This document describes how to build the [Intel&reg; RealSense&trade; SDK 2.0](https://github.com/IntelRealSense/librealsense) including headless tools and examples for Android devices.
+#  Build RealSense SDK Samples for Android OS
+This document describes how to build the Intel® RealSense™ SDK 2.0 including headless tools and examples for Android devices.
 
 > **Disclaimer:** Intel&reg; RealSense&trade; SDK 2.0 for Android devices is an experimental capability and is **not** officially supported by Intel RealSense group at this point. Pay attention that your target Android device should be [rooted](https://en.wikipedia.org/wiki/Rooting_(Android)) in order to run RealSense SDK tools/examples and to access the RealSense cameras.
 * **Doing this tutorial is on your own risk.**
-
-## Ingredients
-Before jumping to the instructions section please ensure you have all the required accessories. 
-1. Linux host machine with Ubuntu 16.04.
-2. [Rooted Android target device](https://en.wikipedia.org/wiki/Rooting_(Android)).
-3. [USB OTG](https://en.wikipedia.org/wiki/USB_On-The-Go) cable.
 
 ## Instructions
 1. [Root](https://www.wikihow.tech/Root-Android-Phones) your Android device.
@@ -71,4 +65,4 @@ cd /data/lrs_binaries
 
 ## Expected Output
 * Streaming Depth data using [rs-depth sample](https://github.com/IntelRealSense/librealsense/tree/master/examples/C/depth).
-<p align="center"><img width=90% src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/rs-depth_android.png" /></p>
+<p align="center"><img width=90% src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/android/rs-depth_android.png" /></p>

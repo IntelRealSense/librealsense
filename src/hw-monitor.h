@@ -100,13 +100,13 @@ namespace librealsense
         struct hwmon_cmd
         {
             uint8_t     cmd;
-            int         Param1;
-            int         Param2;
-            int         Param3;
-            int         Param4;
+            int         param1;
+            int         param2;
+            int         param3;
+            int         param4;
             uint8_t     data[HW_MONITOR_BUFFER_SIZE];
             int         sizeOfSendCommandData;
-            long        TimeOut;
+            long        timeOut;
             bool        oneDirection;
             uint8_t     receivedCommandData[HW_MONITOR_BUFFER_SIZE];
             size_t      receivedCommandDataLength;
@@ -114,12 +114,12 @@ namespace librealsense
 
             explicit hwmon_cmd(uint8_t cmd_id)
                 : cmd(cmd_id),
-                  Param1(0),
-                  Param2(0),
-                  Param3(0),
-                  Param4(0),
+                  param1(0),
+                  param2(0),
+                  param3(0),
+                  param4(0),
                   sizeOfSendCommandData(0),
-                  TimeOut(5000),
+                  timeOut(5000),
                   oneDirection(false),
                   receivedCommandDataLength(0)
             {}
@@ -127,12 +127,12 @@ namespace librealsense
 
             explicit hwmon_cmd(const command& cmd)
                 : cmd(cmd.cmd),
-                  Param1(cmd.param1),
-                  Param2(cmd.param2),
-                  Param3(cmd.param3),
-                  Param4(cmd.param4),
+                  param1(cmd.param1),
+                  param2(cmd.param2),
+                  param3(cmd.param3),
+                  param4(cmd.param4),
                   sizeOfSendCommandData(std::min((uint16_t)cmd.data.size(), HW_MONITOR_BUFFER_SIZE)),
-                  TimeOut(cmd.timeout_ms),
+                  timeOut(cmd.timeout_ms),
                   oneDirection(!cmd.require_response),
                   receivedCommandDataLength(0)
             {
@@ -142,13 +142,13 @@ namespace librealsense
 
         struct hwmon_cmd_details
         {
-            bool        oneDirection;
-            uint8_t     sendCommandData[HW_MONITOR_COMMAND_SIZE];
-            int         sizeOfSendCommandData;
-            long        TimeOut;
-            uint8_t     receivedOpcode[4];
-            uint8_t     receivedCommandData[HW_MONITOR_BUFFER_SIZE];
-            size_t      receivedCommandDataLength;
+            bool                                         oneDirection;
+            std::array<uint8_t, HW_MONITOR_COMMAND_SIZE> sendCommandData;
+            int                                          sizeOfSendCommandData;
+            long                                         timeOut;
+            std::array<uint8_t, 4>                       receivedOpcode;
+            std::array<uint8_t, HW_MONITOR_BUFFER_SIZE>  receivedCommandData;
+            size_t                                       receivedCommandDataLength;
         };
 
         static void fill_usb_buffer(int opCodeNumber, int p1, int p2, int p3, int p4, uint8_t* data, int dataLength, uint8_t* bufferToSend, int& length);

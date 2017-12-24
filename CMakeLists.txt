@@ -58,7 +58,6 @@ option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 option(BUILD_WITH_OPENMP "Use OpenMP" ON)
 
 if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
-    cmake_minimum_required(VERSION 3.6.1)
     unset(WIN32)
     unset(UNIX)
     unset(APPLE)

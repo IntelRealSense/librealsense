@@ -11,7 +11,7 @@
 
 #ifdef ANDROID
 #include "android_helpers.h"
-#endif()
+#endif
 
 #include "../third-party/rapidxml/rapidxml.hpp"
 
