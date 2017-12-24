@@ -419,7 +419,7 @@ namespace rs2
             return (const vertex*)res;
         }
 
-		void export_to_ply(const std::string& fname, video_frame texture) 
+        void export_to_ply(const std::string& fname, video_frame texture) 
 		{
             rs2_frame* ptr = nullptr;
             std::swap(texture.frame_ref, ptr);

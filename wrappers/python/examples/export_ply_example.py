@@ -2,7 +2,7 @@
 ## Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #####################################################
-##              Align Depth to Color               ##
+##                  Export to PLY                  ##
 #####################################################
 
 # First import the library
@@ -19,25 +19,22 @@ pipe = rs.pipeline()
 #Start streaming with default recommended configuration
 pipe.start();
 
-c = rs.colorizer()
-
-# Streaming loop
 try:
-    while True:
-        # Wait for the next set of frames from the camera
-        frames = pipe.wait_for_frames();
+    # Wait for the next set of frames from the camera
+    frames = pipe.wait_for_frames()
 
-        depth = frames.get_depth_frame();
+    # Fetch color and depth frames
+    depth = frames.get_depth_frame()
+    color = frames.get_color_frame()
 
-        # Generate the pointcloud and texture mappings
-        points = pc.calculate(depth);
+    # Tell pointcloud object to map to this color frame
+    pc.map_to(color)
 
-        color = c.colorize(depth);
+    # Generate the pointcloud and texture mappings
+    points = pc.calculate(depth)
 
-        # Tell pointcloud object to map to this color frame
-        pc.map_to(color);
-
-        export_to_ply("1.ply", color)
-
+    print("Saving to 1.ply...")
+    points.export_to_ply("1.ply", color)
+    print("Done")
 finally:
-    pipeline.stop()
+    pipe.stop()

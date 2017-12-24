@@ -1,5 +1,6 @@
 #include "metadata-parser.h"
 #include "archive.h"
+#define MIN_DISTANCE 1e-6
 
 namespace librealsense
 {
@@ -32,32 +33,26 @@ namespace librealsense
         int y = std::min(std::max(int(v*h + .5f), 0), h - 1);
         int idx = x * ptr->get_bpp() / 8 + y * ptr->get_stride();
         const auto texture_data = reinterpret_cast<const uint8_t*>(ptr->get_frame_data());
-        return std::tuple<uint8_t, uint8_t, uint8_t>(
-            texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
+        return std::make_tuple(texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
     }
 
 	void points::export_to_ply(const std::string& fname, const frame_holder& texture) 
 	{
         const auto vertices = get_vertices();
         const auto texcoords = get_texture_coordinates();
-        //const auto tex = reinterpret_cast<const uint8_t*>(texture.get_data());
         std::vector<float3> new_vertices;
-        //std::vector<texture_coordinate> new_texcoords;
         std::vector<std::tuple<uint8_t, uint8_t, uint8_t>> new_tex;
         new_vertices.reserve(get_vertex_count());
-        //new_texcoords.reserve(points.size());
         new_tex.reserve(get_vertex_count());
-      //  LOG_INFO("Vertex count: " << get_vertex_count());
         assert(get_vertex_count());
         for (size_t i = 0; i < get_vertex_count(); ++i)
-            if (std::abs(vertices[i].x) >= 1e-6 || std::abs(vertices[i].y) >= 1e-6 || std::abs(vertices[i].z) >= 1e-6)
+            if (std::abs(vertices[i].x) >= MIN_DISTANCE || std::abs(vertices[i].y) >= MIN_DISTANCE ||
+                std::abs(vertices[i].z) >= MIN_DISTANCE)
             {
                 new_vertices.push_back(vertices[i]);
                 if (texture)
                 {
-                    //new_texcoords.push_back(texcoords[i]);
                     auto color = get_texcolor(texture, texcoords[i].x, texcoords[i].y);
-                    //LOG_INFO("i: " << i << "Color: " << (int)std::get<0>(color) << ", " << (int)std::get<1>(color) << ", " << (int)std::get<2>(color));
                     new_tex.push_back(color);
                 }
             }
@@ -66,15 +61,12 @@ namespace librealsense
         out << "ply\n";
         out << "format binary_little_endian 1.0\n" /*"format ascii 1.0\n"*/;
         out << "comment pointcloud saved from Realsense Viewer\n";
-        //if (texture) out << "comment TextureFile " << get_file_name(texfname) << "\n";
         out << "element vertex " << new_vertices.size() << "\n";
         out << "property float" << sizeof(float) * 8 << " x\n";
         out << "property float" << sizeof(float) * 8 << " y\n";
         out << "property float" << sizeof(float) * 8 << " z\n";
         if (texture)
         {
-            //out << "property float" << sizeof(float) * 8 << " u\n";
-            //out << "property float" << sizeof(float) * 8 << " v\n";
             out << "property uchar red\n";
             out << "property uchar green\n";
             out << "property uchar blue\n";
@@ -89,21 +81,16 @@ namespace librealsense
             out.write(reinterpret_cast<const char*>(&(new_vertices[i].x)), sizeof(float));
             out.write(reinterpret_cast<const char*>(&(new_vertices[i].y)), sizeof(float));
             out.write(reinterpret_cast<const char*>(&(new_vertices[i].z)), sizeof(float));
-            //                out << new_vertices[i].x << ' ' << new_vertices[i].y << ' ' << new_vertices[i].z;
+
             if (texture)
             {
-                //out.write(reinterpret_cast<const char*>(&(new_texcoords[i].u)), sizeof(float));
-                //out.write(reinterpret_cast<const char*>(&(new_texcoords[i].v)), sizeof(float));
-                out.write(reinterpret_cast<const char*>(&(std::get<0>(new_tex[i]))), sizeof(uint8_t));
-                out.write(reinterpret_cast<const char*>(&(std::get<1>(new_tex[i]))), sizeof(uint8_t));
-                out.write(reinterpret_cast<const char*>(&(std::get<2>(new_tex[i]))), sizeof(uint8_t));
-                //                    out << std::hex << ' ' << std::get<0>(new_tex[i]) << ' ' << std::get<1>(new_tex[i]) << ' ' << std::get<2>(new_tex[i]);
+                uint8_t x, y, z;
+                std::tie(x, y, z) = new_tex[i];
+                out.write(reinterpret_cast<const char*>(&x), sizeof(uint8_t));
+                out.write(reinterpret_cast<const char*>(&y), sizeof(uint8_t));
+                out.write(reinterpret_cast<const char*>(&z), sizeof(uint8_t));
             }
-            //                out << '\n';
         }
-
-        /* save texture to texfname */
-        //if (texture) stbi_write_png(texfname.data(), texture.get_width(), texture.get_height(), texture.get_bytes_per_pixel(), texture.get_data(), texture.get_width() * texture.get_bytes_per_pixel())
 	}
 
     size_t points::get_vertex_count() const
