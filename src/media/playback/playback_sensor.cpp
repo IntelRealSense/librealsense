@@ -24,7 +24,6 @@ std::string profile_to_string(std::shared_ptr<stream_profile_interface> s)
 }
 
 playback_sensor::playback_sensor(const device_interface& parent_device, const device_serializer::sensor_snapshot& sensor_description):
-    m_user_notification_callback(nullptr, [](rs2_notifications_callback* n) {}),
     m_is_started(false),
     m_sensor_description(sensor_description),
     m_sensor_id(sensor_description.get_sensor_index()),
@@ -94,7 +93,7 @@ void playback_sensor::close()
 void playback_sensor::register_notifications_callback(notifications_callback_ptr callback)
 {
     LOG_DEBUG("register_notifications_callback for sensor " << m_sensor_id);
-    m_user_notification_callback = std::move(callback);
+    _notifications_proccessor.set_callback(std::move(callback));
 }
 
 void playback_sensor::start(frame_callback_ptr callback)
@@ -251,4 +250,9 @@ void playback_sensor::register_sensor_options(const device_serializer::sensor_sn
 void playback_sensor::update(const device_serializer::sensor_snapshot& sensor_snapshot)
 {
     register_sensor_options(sensor_snapshot);
+}
+
+void playback_sensor::raise_notification(const notification& n)
+{
+    _notifications_proccessor.raise_notification(n);
 }

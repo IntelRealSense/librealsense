@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <condition_variable>
 #include <functional>
+#include <utility>                          // For std::forward
 #include "backend.h"
 
 #include "concurrency.h"
@@ -1418,7 +1419,7 @@ namespace librealsense
             {
                 for (auto func : functions)
                 {
-                    func(args...);
+                    func(std::forward<Args>(args)...);
                 }
 
                 retVal = true;

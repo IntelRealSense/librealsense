@@ -99,7 +99,7 @@ namespace librealsense
 
             diagnostic_msgs::KeyValue timestamp_domain;
             timestamp_domain.key = TIMESTAMP_DOMAIN_MD_STR;
-            timestamp_domain.value = to_string() << frame->get_frame_timestamp_domain();
+            timestamp_domain.value = librealsense::get_string(frame->get_frame_timestamp_domain());
             write_message(metadata_topic, timestamp, timestamp_domain);
 
             for (int i = 0; i < static_cast<rs2_frame_metadata_value>(rs2_frame_metadata_value::RS2_FRAME_METADATA_COUNT); i++)
@@ -109,7 +109,7 @@ namespace librealsense
                 {
                     auto md = frame->get_frame_metadata(type);
                     diagnostic_msgs::KeyValue md_msg;
-                    md_msg.key = to_string() << type;
+                    md_msg.key = librealsense::get_string(type);
                     md_msg.value = std::to_string(md);
                     write_message(metadata_topic, timestamp, md_msg);
                 }
@@ -130,6 +130,24 @@ namespace librealsense
             convert(ext, tf_msg);
             write_message(ros_topic::stream_extrinsic_topic(stream_id, reference_id), get_static_file_info_timestamp(), tf_msg);
             m_extrinsics_msgs[stream_id] = tf_msg;
+        }
+
+        realsense_msgs::Notification to_notification_msg(const notification& n)
+        {
+            realsense_msgs::Notification noti_msg;
+            noti_msg.category = n.category;
+            noti_msg.severity = n.severity;
+            noti_msg.description = n.description;
+            auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::duration<double, std::nano>(n.timestamp));
+            noti_msg.timestamp = ros::Time(secs.count());
+            noti_msg.serizlied_data = n.serialized_data;
+            return noti_msg;
+        }
+
+        void write_notification(const sensor_identifier& sensor_id, const nanoseconds& timestamp, const notification& n)
+        {
+            realsense_msgs::Notification noti_msg = to_notification_msg(n);
+            write_message(ros_topic::notification_topic({ sensor_id.device_index, sensor_id.sensor_index}, n.category), timestamp, noti_msg);
         }
 
         void write_additional_frame_messages(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_interface* frame)
@@ -425,7 +443,7 @@ namespace librealsense
                 break;
             }
             default:
-                throw invalid_value_exception(to_string() << "Failed to Write Extension Snapshot: Unsupported extension \"" << type << "\"");
+                throw invalid_value_exception(to_string() << "Failed to Write Extension Snapshot: Unsupported extension \"" << librealsense::get_string(type) << "\"");
             }
         }
 
@@ -448,7 +466,7 @@ namespace librealsense
         {
             float value = option.query();
             const char* str = option.get_description();
-            std::string description = str ? std::string(str) : (to_string() << "Read only option of " << type);
+            std::string description = str ? std::string(str) : (to_string() << "Read only option of " << librealsense::get_string(type));
 
             //One message for value
             std_msgs::Float32 option_msg;

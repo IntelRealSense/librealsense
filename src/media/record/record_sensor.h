@@ -18,13 +18,8 @@ namespace librealsense
                           public options_container
     {
     public:
-        using frame_interface_callback_t = std::function<void(frame_holder, std::function<void(const std::string&)>)>;
-        using snapshot_callback_t = std::function<void(rs2_extension, const std::shared_ptr<extension_snapshot>&, std::function<void(const std::string&)>)>;
-
         record_sensor(const device_interface& device,
-                      sensor_interface& sensor,
-                      frame_interface_callback_t on_frame,
-                      snapshot_callback_t on_snapshot);
+                      sensor_interface& sensor);
         virtual ~record_sensor();
 
         stream_profiles get_stream_profiles() const override;
@@ -41,20 +36,20 @@ namespace librealsense
         bool is_streaming() const override;
         bool extend_to(rs2_extension extension_type, void** ext) override;
         const device_interface& get_device() override;
-        
+        signal<record_sensor, const notification&> on_notification;
+        signal<record_sensor, frame_holder> on_frame;
+        signal<record_sensor, rs2_extension, std::shared_ptr<extension_snapshot>> on_extension_change;
+        void stop_with_error(const std::string& message);
     private /*methods*/:
         void raise_user_notification(const std::string& str);
         template <typename T> void record_snapshot(rs2_extension extension_type, const T& snapshot);
         template <rs2_extension E, typename P> bool extend_to_aux(P* p, void** ext);
-        void stop_with_error(const std::string& basic_string);
         void record_frame(frame_holder holder);
         
     private /*members*/:
-        snapshot_callback_t m_device_record_snapshot_handler;
         sensor_interface& m_sensor;
         std::set<rs2_option> m_recording_options;
         librealsense::notifications_callback_ptr m_user_notification_callback;
-        frame_interface_callback_t m_record_callback;
         std::atomic_bool m_is_recording;
         bool m_is_pause;
         frame_callback_ptr m_frame_callback;

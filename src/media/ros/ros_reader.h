@@ -70,6 +70,15 @@ namespace librealsense
                     auto option = create_option(m_file, next_msg);
                     return std::make_shared<serialized_option>(timestamp, sensor_id, option.first, option.second);
                 }
+
+                if (next_msg.isType<realsense_msgs::Notification>())
+                {
+                    LOG_DEBUG("Next message is a notification");
+                    auto timestamp = to_nanoseconds(next_msg.getTime());
+                    auto sensor_id = ros_topic::get_sensor_identifier(next_msg.getTopic());
+                    auto notification = create_notification(m_file, next_msg);
+                    return std::make_shared<serialized_notification>(timestamp, sensor_id, notification);
+                }
             }
 
             std::string err_msg = to_string() << "Unknown message type: " << next_msg.getDataType() << "(Topic: " << next_msg.getTopic() << ")";
@@ -121,6 +130,7 @@ namespace librealsense
             {
                 m_samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file, FalseQuery()));
                 m_samples_view->addQuery(m_file, OptionsQuery(), start_time);
+                m_samples_view->addQuery(m_file, NotificationsQuery(), start_time);
                 m_samples_itrator = m_samples_view->begin();
             }
             else //Already streaming
@@ -1122,6 +1132,22 @@ namespace librealsense
             float value = option_value_msg->data;
             std::string description = read_option_description(file, ros_topic::option_description_topic(sensor_id, id));
             return std::make_pair(id, std::make_shared<const_value_option>(description, value));
+        }
+
+        static notification create_notification(const rosbag::Bag& file, const rosbag::MessageInstance& message_instance)
+        {
+            auto notification_msg = instantiate_msg<realsense_msgs::Notification>(message_instance);
+            rs2_notification_category category;
+            rs2_log_severity severity;
+            convert(notification_msg->category, category);
+            convert(notification_msg->severity, severity);
+            int type = 0; //TODO: what is this for?
+            notification n(category, type, severity, notification_msg->description);
+            auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::duration<double, std::nano>(n.timestamp));
+            n.timestamp = to_nanoseconds(notification_msg->timestamp).count();
+            n.serialized_data = n.serialized_data;
+
+            return n;
         }
 
         static std::shared_ptr<options_container> read_sensor_options(const rosbag::Bag& file, device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, uint32_t file_version)

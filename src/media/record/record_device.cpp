@@ -37,17 +37,11 @@ std::vector<std::shared_ptr<record_sensor>> record_device::create_record_sensors
     for (size_t sensor_index = 0; sensor_index < device->get_sensors_count(); sensor_index++)
     {
         auto& live_sensor = device->get_sensor(sensor_index);
-        auto sensor_frame_handler = [this, sensor_index](frame_holder f, std::function<void(std::string const&)> on_error)
-        {
-            write_data(sensor_index, std::move(f), on_error);
-        };
-
-        auto sensor_snapshot_changes_handler = [this, sensor_index](rs2_extension ext, const std::shared_ptr<extension_snapshot>& snapshot, std::function<void(std::string const&)> on_error)
-        {
-            write_sensor_extension_snapshot(sensor_index, ext, snapshot, on_error);
-        };
-
-        auto recording_sensor = std::make_shared<record_sensor>(*this, live_sensor, sensor_frame_handler, sensor_snapshot_changes_handler);
+        auto recording_sensor = std::make_shared<record_sensor>(*this, live_sensor);
+        recording_sensor->on_notification += [this, recording_sensor, sensor_index](const notification& n) { write_notification(sensor_index, n); };
+        auto on_error = [recording_sensor](const std::string& s) {recording_sensor->stop_with_error(s); };
+        recording_sensor->on_frame += [this, recording_sensor, sensor_index, on_error](frame_holder f) { write_data(sensor_index, std::move(f), on_error); };
+        recording_sensor->on_extension_change += [this, recording_sensor, sensor_index, on_error](rs2_extension ext, std::shared_ptr<extension_snapshot> snapshot) { write_sensor_extension_snapshot(sensor_index, ext, snapshot, on_error); };
         record_sensors.emplace_back(recording_sensor);
     }
     return record_sensors;
@@ -279,7 +273,7 @@ void librealsense::record_device::write_device_extension_changes(const T& ext)
 
 void record_device::write_sensor_extension_snapshot(size_t sensor_index,
     rs2_extension ext,
-    const std::shared_ptr<extension_snapshot>& snapshot,
+    std::shared_ptr<extension_snapshot> snapshot,
     std::function<void(std::string const&)> on_error)
 {
     auto capture_time = get_capture_time();
@@ -295,6 +289,24 @@ void record_device::write_sensor_extension_snapshot(size_t sensor_index,
             on_error(e.what());
         }
     });
+}
+
+void librealsense::record_device::write_notification(size_t sensor_index, const notification& n)
+{
+    auto capture_time = get_capture_time();
+    (*m_write_thread)->invoke([this, sensor_index, capture_time, n](dispatcher::cancellable_timer t)
+    {
+        try
+        {
+            const uint32_t device_index = 0;
+            m_ros_writer->write_notification({ device_index, static_cast<uint32_t>(sensor_index) }, capture_time, n);
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR(e.what());
+        }
+    });
+
 }
 
 template <rs2_extension E, typename P>

@@ -528,6 +528,12 @@ void playback_device::try_looping()
             m_sensors.at(option_data->sensor_id.sensor_index)->update_option(option_data->option_id, option_data->option);
             return true;
         }
+
+        if (auto notification_data = data->as<serialized_notification>())
+        {
+            m_sensors.at(notification_data->sensor_id.sensor_index)->raise_notification(notification_data->notif);
+            return true;
+        }
         return false;
     };
     do_loop(read_action);

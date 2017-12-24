@@ -6,13 +6,9 @@
 #include "stream.h"
 
 librealsense::record_sensor::record_sensor(const device_interface& device,
-                                            sensor_interface& sensor,
-                                            frame_interface_callback_t on_frame,
-                                            snapshot_callback_t on_snapshot) :
-    m_device_record_snapshot_handler(on_snapshot),
+                                            sensor_interface& sensor) :
     m_sensor(sensor),
     m_user_notification_callback(nullptr, [](rs2_notifications_callback* n) {}),
-    m_record_callback(on_frame),
     m_is_recording(false),
     m_is_pause(false),
     m_parent_device(device)
@@ -52,7 +48,7 @@ void librealsense::record_sensor::open(const stream_profiles& requests)
         else if (Is<librealsense::pose_stream_profile_interface>(request))
             extension_type = RS2_EXTENSION_POSE_PROFILE;
      
-        m_device_record_snapshot_handler(extension_type, std::dynamic_pointer_cast<extension_snapshot>(snapshot), [this](const std::string& err) { stop_with_error(err); });
+        on_extension_change(extension_type, std::dynamic_pointer_cast<extension_snapshot>(snapshot));
     }
 }
 
@@ -100,6 +96,8 @@ void librealsense::record_sensor::register_notifications_callback(notifications_
     m_user_notification_callback = std::move(callback);
     std::unique_ptr<rs2_notifications_callback, void(*)(rs2_notifications_callback*)> cb(new notification_callback([&](rs2_notification* n)
     {
+        on_notification(*(n->_notification));
+
         if(m_user_notification_callback)
             m_user_notification_callback->on_notification(n);
     }), [](rs2_notifications_callback* p) { p->release(); });
@@ -204,12 +202,7 @@ void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, 
     if(m_is_recording)
     {    
         //Send to recording thread
-        m_device_record_snapshot_handler(extension_type, 
-                                        ext_snapshot, 
-                                        [this](const std::string& err)
-                                        { 
-                                            stop_with_error(err); 
-                                        });
+        on_extension_change(extension_type, ext_snapshot);
     }
 }
 
@@ -218,11 +211,12 @@ void record_sensor::stop_with_error(const std::string& error_msg)
     m_is_recording = false;
     raise_user_notification(to_string() << "Stopping recording for sensor (streaming will continue). (Error: " << error_msg << ")");
 }
+
 void record_sensor::record_frame(frame_holder frame)
 {
     if(m_is_recording)
     {
         //Send to recording thread
-        m_record_callback(std::move(frame), [this](const std::string& err){ stop_with_error(err); });
+        on_frame(std::move(frame));
     }
 }

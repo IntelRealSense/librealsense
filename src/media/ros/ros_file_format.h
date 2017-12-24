@@ -14,6 +14,7 @@
 #include "std_msgs/String.h"
 #include "realsense_msgs/StreamInfo.h"
 #include "realsense_msgs/ImuIntrinsic.h"
+#include "realsense_msgs/Notification.h"
 #include "realsense_legacy_msgs/legacy_headers.h"
 #include "sensor_msgs/CameraInfo.h"
 #include "geometry_msgs/Transform.h"
@@ -108,6 +109,22 @@ namespace librealsense
         if (!try_parse(source, target))
         {
             throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_timestamp_domain");
+        }
+    }
+
+    inline void convert(const std::string& source, rs2_notification_category& target)
+    {
+        if (!try_parse(source, target))
+        {
+            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_notification_category");
+        }
+    }
+
+    inline void convert(const std::string& source, rs2_log_severity& target)
+    {
+        if (!try_parse(source, target))
+        {
+            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_log_severity");
         }
     }
 
@@ -350,6 +367,12 @@ namespace librealsense
         {
             return create_from({ device_prefix(stream_id.device_index), sensor_prefix(stream_id.sensor_index), stream_prefix(stream_id.stream_type, stream_id.stream_index) }).substr(1); //substr(1) to remove the first "/"
         }
+
+        static std::string notification_topic(const device_serializer::sensor_identifier& sensor_id, rs2_notification_category nc)
+        {
+            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "notification", rs2_notification_category_to_string(nc)});
+        }
+
         template<uint32_t index>
         static std::string get(const std::string& value)
         {
@@ -519,6 +542,12 @@ namespace librealsense
             RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/option/.*/value)RRR") {}
     };
 
+    class NotificationsQuery : public RegexTopicQuery
+    {
+    public:
+        NotificationsQuery() :
+            RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/notification/.*/)RRR") {}
+    };
     /**
     * Incremental number of the RealSense file format version
     * Since we maintain backward compatability, changes to topics/messages are reflected by the version
