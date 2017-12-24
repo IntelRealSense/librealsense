@@ -162,6 +162,15 @@ void rs2_release_frame(rs2_frame* frame);
 rs2_vertex* rs2_get_frame_vertices(const rs2_frame* frame, rs2_error** error);
 
 /**
+* When called on Points frame type, this method creates a ply file of the model with the given file name.
+* \param[in] frame       Points frame
+* \param[in] fname       The name for the ply file
+* \param[in] texture     Texture frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_export_to_ply(const rs2_frame* frame, const char* fname, rs2_frame* texture, rs2_error** error); 
+
+/**
 * When called on Points frame type, this method returns a pointer to an array of texture coordinates per vertex
 * Each coordinate represent a (u,v) pair within [0,1] range, to be mapped to texture image
 * \param[in] frame       Points frame

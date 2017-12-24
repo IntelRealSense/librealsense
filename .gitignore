@@ -79,8 +79,6 @@ librealsense-log.txt
 *.check_cache
 *.dll
 *.list
-*.txt
-!CMakeLists.txt
 *.json
 *.ini
 *.cxx
