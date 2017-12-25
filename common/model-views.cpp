@@ -2864,17 +2864,23 @@ namespace rs2
         texture_buffer* texture_frame = nullptr;
         points p;
         frame f{}, res{};
+
+        std::map<int, frame> last_frames;
         try
         {
             while (ppf.resulting_queue.poll_for_frame(&f))
             {
+                last_frames[f.get_profile().unique_id()] = std::move(f);
+            }
+            for(auto&& frame : last_frames)
+            {
+                auto f = frame.second;
                 frameset frames;
                 if (frames = f.as<frameset>())
                 {
                     for (auto&& frame : frames)
                     {
-
-                        if(frame.is<points>())  // find and store the 3d points frame for later use
+                        if (frame.is<points>())  // find and store the 3d points frame for later use
                         {
                             p = frame.as<points>();
                             continue;
@@ -2885,21 +2891,17 @@ namespace rs2
 
                         auto texture = upload_frame(std::move(frame));
 
-                        if ((selected_tex_source_uid == -1 && frame.get_profile().format() == RS2_FORMAT_Z16) || frame.get_profile().format()!= RS2_FORMAT_ANY && is_3d_texture_source(frame))
+                        if ((selected_tex_source_uid == -1 && frame.get_profile().format() == RS2_FORMAT_Z16) || frame.get_profile().format() != RS2_FORMAT_ANY && is_3d_texture_source(frame))
                         {
                             texture_frame = texture;
                         }
                     }
                 }
-                else if(!p)
+                else if (!p)
                 {
                     upload_frame(std::move(f));
                 }
-
-
             }
-
-
         }
         catch (const error& ex)
         {
