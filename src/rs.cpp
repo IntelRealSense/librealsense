@@ -1692,18 +1692,9 @@ float rs2_depth_stereo_frame_get_baseline(const rs2_frame* frame_ref, rs2_error*
 {
     VALIDATE_NOT_NULL(frame_ref);
     auto df = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::disparity_frame);
-    return df->get_baseline();
+    return df->get_stereo_baseline();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
-
-float rs2_disparity_frame_get_focal_length(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(frame_ref);
-    auto df = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::depth_frame);
-    return df->get_focal_length();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
-
 
 rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
 {

@@ -52,7 +52,6 @@ namespace librealsense
                     {  // old and new val
                         T diff = static_cast<T>(fabs(cur_val - prev_val));
 
-                        //if (diff > noise && diff < max_radius)
                         if (diff > noise && (diff/cur_val) < max_radius)
                         {  // old and new val agree
                             history[i] |= mask;

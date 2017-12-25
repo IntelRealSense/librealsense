@@ -247,12 +247,6 @@ namespace librealsense
 
         float get_units() const { return query_units(this->get_sensor()); }
 
-        float get_focal_length(void) const
-        {
-            // TBD Evgeni
-            return 0.f;
-        }
-
         const frame_interface* get_original_depth() const
         {
             auto res = _original.frame;
@@ -327,71 +321,48 @@ namespace librealsense
         {
         }
 
-        float get_baseline(void) { return 0.f; } // TODO Evgeni
+        // TODO Refactor to framemetadata
+        float get_stereo_baseline(void) const { return query_stereo_baseline(this->get_sensor()); }
 
-        //const frame_interface* get_original_depth() const
-        //{
-        //    auto res = _original.frame;
-        //    auto df = dynamic_cast<depth_frame*>(res);
-        //    if (df)
-        //    {
-        //        auto prev = df->get_original_depth();
-        //        if (prev) return prev;
-        //    }
-        //    return res;
-        //}
+    protected:
 
-        //void set_original(frame_holder h)
-        //{
-        //    _original = std::move(h);
-        //    attach_continuation(frame_continuation([this]() {
-        //        if (_original)
-        //        {
-        //            _original = {};
-        //        }
-        //    }, get_frame_data()));
-        //}
+        static float query_stereo_baseline(const std::shared_ptr<sensor_interface>& sensor)
+        {
+            if (sensor != nullptr)
+            {
+                try
+                {
+                    auto stereo_sensor = As<librealsense::depth_stereo_sensor>(sensor);
+                    if (stereo_sensor != nullptr)
+                    {
+                        return stereo_sensor->get_stereo_baseline_mm();
+                    }
+                    else
+                    {
+                        //For playback sensors
+                        auto extendable = As<librealsense::extendable_interface>(sensor);
+                        if (extendable && extendable->extend_to(TypeToExtension<librealsense::depth_stereo_sensor>::value, (void**)(&stereo_sensor)))
+                        {
+                            return stereo_sensor->get_stereo_baseline_mm();
+                        }
+                    }
+                }
+                catch (const std::exception& e)
+                {
+                    LOG_ERROR("Failed to query stereo baseline from sensor. " << e.what());
+                }
+                catch (...)
+                {
+                    LOG_ERROR("Failed to query stereo baseline from sensor");
+                }
+            }
+            else
+            {
+                LOG_WARNING("sensor was nullptr");
+            }
 
-    //private:
-    //    static float query_units(const std::shared_ptr<sensor_interface>& sensor)
-    //    {
-    //        if (sensor != nullptr)
-    //        {
-    //            try
-    //            {
-    //                auto depth_sensor = As<librealsense::depth_sensor>(sensor);
-    //                if (depth_sensor != nullptr)
-    //                {
-    //                    return depth_sensor->get_depth_scale();
-    //                }
-    //                else
-    //                {
-    //                    //For playback sensors
-    //                    auto extendable = As<librealsense::extendable_interface>(sensor);
-    //                    if (extendable && extendable->extend_to(TypeToExtension<librealsense::depth_sensor>::value, (void**)(&depth_sensor)))
-    //                    {
-    //                        return depth_sensor->get_depth_scale();
-    //                    }
-    //                }
-    //            }
-    //            catch (const std::exception& e)
-    //            {
-    //                LOG_ERROR("Failed to query depth units from sensor. " << e.what());
-    //            }
-    //            catch (...)
-    //            {
-    //                LOG_ERROR("Failed to query depth units from sensor");
-    //            }
-    //        }
-    //        else
-    //        {
-    //            LOG_WARNING("sensor was nullptr");
-    //        }
-
-    //        return 0;
-    //    }
-
-    //    frame_holder _original;
+            return 0;
+        }
     };
 
     MAP_EXTENSION(RS2_EXTENSION_DISPARITY_FRAME, librealsense::disparity_frame);

@@ -477,14 +477,6 @@ namespace rs2
             error::handle(e);
             return r;
         }
-
-        float get_focal_length(void) const
-        {
-            rs2_error * e = nullptr;
-            auto r = rs2_disparity_frame_get_focal_length(get(), &e);
-            error::handle(e);
-            return r;
-        }
     };
 
     class frameset : public frame

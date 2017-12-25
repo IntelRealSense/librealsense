@@ -214,7 +214,7 @@ namespace librealsense
 
         void create_snapshot(std::shared_ptr<depth_stereo_sensor>& snapshot) const
         {
-            // TODO Evgeni snapshot = std::make_shared<depth_stereo_sensor_snapshot>(*this);
+            snapshot = std::make_shared<depth_stereo_sensor_snapshot>(*this);
         }
 
         void enable_recording(std::function<void(const depth_stereo_sensor&)> recording_function) override

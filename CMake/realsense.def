@@ -156,7 +156,6 @@ EXPORTS
     rs2_extract_frame
     rs2_depth_frame_get_distance
     rs2_depth_stereo_frame_get_baseline
-    rs2_disparity_frame_get_focal_length
 
     rs2_set_depth_control
     rs2_get_depth_control

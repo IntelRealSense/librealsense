@@ -24,10 +24,6 @@ namespace librealsense
 
         rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source);
 
-        //bool dxf_smooth(uint16_t * frame_data, float alpha, float delta, int iterations);
-        //void recursive_filter_horizontal(uint16_t *frame_data, float alpha, float deltaZ);
-        //void recursive_filter_vertical(uint16_t *frame_data, float alpha, float deltaZ);
-
         template <typename T>
         void dxf_smooth(void *frame_data, float alpha, float delta, int iterations)
         {
@@ -50,7 +46,9 @@ namespace librealsense
 
             // Filtering integer values requires round-up to the nearest discrete value
             const float round = fp ? 0.f : 0.5f;
-            const T noise = fp ? static_cast<T>(0.001f) : static_cast<T>(4); // Evgeni
+            // Disparity value of 0.001 corresponds to 0.5 mm at 0.5 meter to 5 mm at 5m
+            // For Depth values the smoothing will take effect when the gradient is more than 4 level (~0.4mm)
+            const T noise = fp ? static_cast<T>(0.001f) : static_cast<T>(4);
             const T max_radius = static_cast<T>(fp ? 2.f : deltaZ);
 
             auto image = reinterpret_cast<T*>(image_data);
@@ -66,7 +64,7 @@ namespace librealsense
 
                     if (val0 >= noise && val1 >= noise)
                     {
-                        T diff = fabs(val1 - val0);
+                        T diff = static_cast<T>(fabs(val1 - val0));
 
                         if (diff >= noise && diff <= max_radius)
                         {
@@ -92,7 +90,7 @@ namespace librealsense
 
                     if (val1 >= noise && val0> noise)
                     {
-                        T diff = fabs(val1 - val0);
+                        T diff = static_cast<T>(fabs(val1 - val0));
 
                         if (diff >= noise && diff <= max_radius)
                         {
@@ -121,7 +119,9 @@ namespace librealsense
 
             // Filtering integer values requires round-up to the nearest discrete value
             const float round = fp ? 0.f : 0.5f;
-            const T noise = fp ? static_cast<T>(0.001f) : static_cast<T>(4); // Evgeni
+            // Disparity value of 0.001 corresponds to 0.5 mm at 0.5 meter to 5 mm at 5m
+            // For Depth values the smoothing will take effect when the gradient is more than 4 level (~0.4mm)
+            const T noise = fp ? static_cast<T>(0.001f) : static_cast<T>(4);
             const T max_radius = static_cast<T>(fp ? 2.f : deltaZ);
 
             auto image = reinterpret_cast<T*>(image_data);
