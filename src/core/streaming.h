@@ -92,6 +92,9 @@ namespace librealsense
 
         virtual archive_interface* get_owner() const = 0;
 
+        virtual void mark_fixed() = 0;
+        virtual bool is_fixed() const = 0;
+
         virtual ~frame_interface() = default;
     };
 

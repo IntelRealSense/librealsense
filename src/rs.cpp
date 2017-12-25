@@ -1573,7 +1573,7 @@ int rs2_embedded_frames_count(rs2_frame* composite, rs2_error** error) BEGIN_API
 {
     VALIDATE_NOT_NULL(composite)
 
-        auto cf = VALIDATE_INTERFACE((frame_interface*)composite, librealsense::composite_frame);
+    auto cf = VALIDATE_INTERFACE((frame_interface*)composite, librealsense::composite_frame);
 
     return static_cast<int>(cf->get_embedded_frames_count());
 }
@@ -1586,6 +1586,15 @@ rs2_vertex* rs2_get_frame_vertices(const rs2_frame* frame, rs2_error** error) BE
     return (rs2_vertex*)points->get_vertices();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
+
+void rs2_export_to_ply(const rs2_frame* frame, const char* fname, rs2_frame* texture, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame);
+    VALIDATE_NOT_NULL(fname);
+    auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::points);
+    points->export_to_ply(fname, (frame_interface*)texture);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, frame, fname)
 
 rs2_pixel* rs2_get_frame_texture_coordinates(const rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
 {
@@ -1607,7 +1616,7 @@ rs2_processing_block* rs2_create_pointcloud(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::pointcloud>();
 
-    return new rs2_processing_block{ block };
+    return new rs2_processing_block { block };
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
@@ -1676,7 +1685,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0.f, sensor)
 rs2_device* rs2_create_device_from_sensor(const rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
-    return new rs2_device{ sensor->parent };
+    return new rs2_device(sensor->parent);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
 

@@ -77,8 +77,6 @@ namespace librealsense
         register_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, temporal_filter_alpha);
         register_option(RS2_OPTION_FILTER_SMOOTH_DELTA, temporal_filter_delta);
 
-        unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
-
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
             std::lock_guard<std::mutex> lock(_mutex);

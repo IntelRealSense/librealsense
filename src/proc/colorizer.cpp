@@ -195,7 +195,6 @@ namespace librealsense
         });
         register_option(RS2_OPTION_VISUAL_PRESET, preset_opt);
 
-        unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
         auto hist_opt = std::make_shared<ptr_option<bool>>(false, true, true, true, &_equalize, "Perform histogram equalization");
         register_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, hist_opt);
 

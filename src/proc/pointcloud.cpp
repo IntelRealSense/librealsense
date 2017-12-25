@@ -52,42 +52,45 @@ namespace librealsense
 
 
 
-        if (!_stream.get() || _depth_stream != depth_frame->get_stream().get() || stream_changed(_depth_stream,depth_frame->get_stream().get()))
+        if (!_output_stream.get() || _depth_stream != depth_frame->get_stream().get() || stream_changed(_depth_stream,depth_frame->get_stream().get()))
         {
-            _stream = depth_frame->get_stream()->clone();
+            _output_stream = depth_frame->get_stream()->clone();
             _depth_stream = depth_frame->get_stream().get();
-            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_stream, *depth_frame->get_stream());
-            _depth_intrinsics_ptr = nullptr;
-            _depth_units_ptr = nullptr;
+            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_output_stream, *depth_frame->get_stream());
+            _depth_intrinsics = optional_value<rs2_intrinsics>();
+            _depth_units = optional_value<float>();
+            _extrinsics = optional_value<rs2_extrinsics>();
         }
 
         bool found_depth_intrinsics = false;
         bool found_depth_units = false;
 
-        if (!_depth_intrinsics_ptr)
+        if (!_depth_intrinsics)
         {
             auto stream_profile = depth_frame->get_stream();
             if (auto video = dynamic_cast<video_stream_profile_interface*>(stream_profile.get()))
             {
                 _depth_intrinsics = video->get_intrinsics();
-                _depth_intrinsics_ptr = &_depth_intrinsics;
                 found_depth_intrinsics = true;
             }
         }
 
-        if (!_depth_units_ptr)
+        if (!_depth_units)
         {
             auto sensor = depth_frame->get_sensor();
             _depth_units = sensor->get_option(RS2_OPTION_DEPTH_UNITS).query();
-            _depth_units_ptr = &_depth_units;
             found_depth_units = true;
         }
 
-//                if (found_depth_units != found_depth_intrinsics)
-//                {
-//                    throw wrong_api_call_sequence_exception("Received depth frame that doesn't provide either intrinsics or depth units!");
-//                }
-
+        if (_other_stream && !_extrinsics)
+        {    
+            rs2_extrinsics ex;
+            if (environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics(
+                *_depth_stream, *_other_stream, &ex))
+            {
+                _extrinsics = ex;
+            }
+        }
     }
 
     void pointcloud::inspect_other_frame(const rs2::frame& other)
@@ -95,50 +98,48 @@ namespace librealsense
         auto other_frame = (frame_interface*)other.get();
         std::lock_guard<std::mutex> lock(_mutex);
 
-        if (_mapped && _invalidate_mapped)
+        if (_other_stream && _invalidate_mapped)
         {
-            _mapped = nullptr;
+            _other_stream = nullptr;
             _invalidate_mapped = false;
         }
 
-        if (!_mapped.get())
+        if (!_other_stream.get())
         {
-            _mapped = other_frame->get_stream();
-            _mapped_intrinsics_ptr = nullptr;
-            _extrinsics_ptr = nullptr;
+            _other_stream = other_frame->get_stream();
+            _other_intrinsics = optional_value<rs2_intrinsics>();
+            _extrinsics = optional_value<rs2_extrinsics>();
         }
 
-        if (!_mapped_intrinsics_ptr)
+        if (!_other_intrinsics)
         {
-            if (auto video = dynamic_cast<video_stream_profile_interface*>(_mapped.get()))
+            if (auto video = dynamic_cast<video_stream_profile_interface*>(_other_stream.get()))
             {
-                _mapped_intrinsics = video->get_intrinsics();
-                _mapped_intrinsics_ptr = &_mapped_intrinsics;
+                _other_intrinsics = video->get_intrinsics();
             }
         }
 
-        if (_stream && !_extrinsics_ptr)
+        if (_output_stream && !_extrinsics)
         {
+            rs2_extrinsics ex;
             if (environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics(
-                *_stream, *other_frame->get_stream(), &_extrinsics
+                *_output_stream, *other_frame->get_stream(), &ex
             ))
             {
-                _extrinsics_ptr = &_extrinsics;
+                _extrinsics = ex;
             }
         }
     }
 
     void pointcloud::process_depth_frame(const rs2::depth_frame& depth)
     {
-        frame_holder res = get_source().allocate_points(_stream, (frame_interface*)depth.get());
+        frame_holder res = get_source().allocate_points(_output_stream, (frame_interface*)depth.get());
 
         auto pframe = (points*)(res.frame);
 
         auto depth_data = (const uint16_t*)depth.get_data();
-        //auto original_depth = ((depth_frame*)depth.get())->get_original_depth();
-        //if (original_depth) depth_data = (const uint16_t*)original_depth->get_frame_data();
 
-        auto points = depth_to_points((uint8_t*)pframe->get_vertices(), *_depth_intrinsics_ptr, depth_data, *_depth_units_ptr);
+        auto points = depth_to_points((uint8_t*)pframe->get_vertices(), *_depth_intrinsics, depth_data, *_depth_units);
 
         auto vid_frame = depth.as<rs2::video_frame>();
         float2* tex_ptr = pframe->get_texture_coordinates();
@@ -148,10 +149,10 @@ namespace librealsense
         bool map_texture = false;
         {
             std::lock_guard<std::mutex> lock(_mutex);
-            if (_extrinsics_ptr && _mapped_intrinsics_ptr)
+            if (_extrinsics && _other_intrinsics)
             {
-                mapped_intr = *_mapped_intrinsics_ptr;
-                extr = *_extrinsics_ptr;
+                mapped_intr = *_other_intrinsics;
+                extr = *_extrinsics;
                 map_texture = true;
             }
         }
@@ -186,16 +187,13 @@ namespace librealsense
     }
 
     pointcloud::pointcloud()
-        :_depth_intrinsics_ptr(nullptr),
-        _depth_units_ptr(nullptr),
-        _mapped_intrinsics_ptr(nullptr),
-        _extrinsics_ptr(nullptr),
-        _mapped(nullptr), _invalidate_mapped(false)
+        :
+        _other_stream(nullptr), _invalidate_mapped(false)
     {
 
-        auto mapped_opt = std::make_shared<ptr_option<int>>(0, std::numeric_limits<int>::max(), 1, -1, &_mapped_stream_id, "Mapped stream ID");
+        auto mapped_opt = std::make_shared<ptr_option<int>>(0, std::numeric_limits<int>::max(), 1, -1, &_other_stream_id, "Mapped stream ID");
         register_option(RS2_OPTION_TEXTURE_SOURCE, mapped_opt);
-        float old_value = _mapped_stream_id;
+        float old_value = _other_stream_id;
         mapped_opt->on_set([this, old_value](float x) mutable {
             if (fabs(old_value - x) > 1e-6)
             {
@@ -217,7 +215,7 @@ namespace librealsense
                 }
 
                 composite.foreach([&](const rs2::frame& f) {
-                    if (f.get_profile().unique_id() == _mapped_stream_id)
+                    if (f.get_profile().unique_id() == _other_stream_id)
                     {
                         inspect_other_frame(f);
                     }
@@ -230,7 +228,7 @@ namespace librealsense
                     inspect_depth_frame(f);
                     process_depth_frame(f);
                 }
-                if (f.get_profile().unique_id() == _mapped_stream_id)
+                if (f.get_profile().unique_id() == _other_stream_id)
                 {
                     inspect_other_frame(f);
                 }

@@ -43,7 +43,6 @@ namespace librealsense
         });
 
         register_option(RS2_OPTION_FILTER_MAGNITUDE, decimation_control);
-        unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
