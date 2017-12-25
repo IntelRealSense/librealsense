@@ -499,11 +499,11 @@ namespace rs2
     class disparity_transform : public options
     {
     public:
-        disparity_transform() :_queue(1)
+        disparity_transform(bool transform_to_disparity=true) :_queue(1)
         {
             rs2_error* e = nullptr;
             auto pb = std::shared_ptr<rs2_processing_block>(
-                rs2_create_disparity_transform_block(&e),
+                rs2_create_disparity_transform_block(uint8_t(transform_to_disparity),&e),
                 rs2_delete_processing_block);
             _block = std::make_shared<processing_block>(pb);
             error::handle(e);

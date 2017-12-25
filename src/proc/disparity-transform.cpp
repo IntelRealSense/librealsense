@@ -13,8 +13,8 @@
 
 namespace librealsense
 {
-    disparity_transform::disparity_transform() :
-        _transform_to_disparity(true),
+    disparity_transform::disparity_transform(bool transform_to_disparity):
+        _transform_to_disparity(transform_to_disparity),
         _update_target(false),
         _stereoscopic_depth(false),
         _focal_lenght_mm(0.f),
@@ -36,7 +36,6 @@ namespace librealsense
             on_set_mode(static_cast<bool>(!!int(val)));
         });
 
-        register_option(RS2_OPTION_STREAM_TRANSFORM, transform_opt);
         unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
@@ -122,7 +121,7 @@ namespace librealsense
 
     rs2::frame disparity_transform::prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source)
     {
-        return source.allocate_video_frame(_target_stream_profile, f, (int)_bpp, (int)_width, (int)_height, (int)_width*_bpp,
+        return source.allocate_video_frame(_target_stream_profile, f, int(_bpp), int(_width), int(_height), int(_width*_bpp),
             _transform_to_disparity ? RS2_EXTENSION_DISPARITY_FRAME :RS2_EXTENSION_DEPTH_FRAME);
     }
 }

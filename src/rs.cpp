@@ -1657,13 +1657,13 @@ rs2_processing_block* rs2_create_spatial_filter_block(rs2_error** error) BEGIN_A
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-rs2_processing_block* rs2_create_disparity_transform_block(rs2_error** error) BEGIN_API_CALL
+rs2_processing_block* rs2_create_disparity_transform_block(unsigned char transform_to_disparity, rs2_error** error) BEGIN_API_CALL
 {
-    auto block = std::make_shared<librealsense::disparity_transform>();
+    auto block = std::make_shared<librealsense::disparity_transform>(transform_to_disparity > 0);
 
     return new rs2_processing_block{ block };
 }
-NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr, transform_to_disparity)
 
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {

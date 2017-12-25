@@ -303,7 +303,7 @@ namespace rs2
         std::shared_ptr<processing_block_model> disparity_to_depth;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
-        bool post_processing_enabled = false;
+        bool post_processing_enabled = true;
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
     };
 

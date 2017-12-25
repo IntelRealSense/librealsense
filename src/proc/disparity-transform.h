@@ -14,7 +14,7 @@ namespace librealsense
     class disparity_transform : public processing_block
     {
     public:
-        disparity_transform();
+        disparity_transform(bool transform_to_disparity);
 
     protected:
         rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source);

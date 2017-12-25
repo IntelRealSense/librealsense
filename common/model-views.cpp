@@ -696,8 +696,7 @@ namespace rs2
             temporal_filter->enabled = true;
             post_processing.push_back(temporal_filter);
 
-            auto disparity_2_depth = std::make_shared<rs2::disparity_transform>();
-            disparity_2_depth->set_option(RS2_OPTION_STREAM_TRANSFORM, 0.f);
+            auto disparity_2_depth = std::make_shared<rs2::disparity_transform>(false);
             disparity_to_depth = std::make_shared<processing_block_model>(
                 this, "Disparity->Depth", disparity_2_depth,
                 [=](rs2::frame f) { return disparity_2_depth->proccess(f); }, error_message);
