@@ -1,8 +1,7 @@
 #  Build RealSense SDK Samples for Android OS
 This document describes how to build the Intel® RealSense™ SDK 2.0 including headless tools and examples for Android devices.
 
-> **Disclaimer:** Intel&reg; RealSense&trade; SDK 2.0 for Android devices is an experimental capability and is **not** officially supported by Intel RealSense group at this point. Pay attention that your target Android device should be [rooted](https://en.wikipedia.org/wiki/Rooting_(Android)) in order to run RealSense SDK tools/examples and to access the RealSense cameras.
-* **Doing this tutorial is on your own risk.**
+> Read about Android support [here](./Android.md).
 
 ## Instructions
 1. [Root](https://www.wikihow.tech/Root-Android-Phones) your Android device.
