@@ -240,7 +240,7 @@ namespace rs2
         return res;
     }
 
-    bool option_model::draw(std::string& error_message)
+    bool option_model::draw(std::string& error_message, notifications_model& model)
     {
         auto res = false;
         if (supported)
@@ -256,6 +256,8 @@ namespace rs2
                     value = bool_value ? 1.0f : 0.0f;
                     try
                     {
+                        model.add_log(to_string() << "Setting " << opt << " to " 
+                            << value << " (" << (bool_value? "ON" : "OFF") << ")");
                         endpoint->set_option(opt, value);
                         *invalidate_flag = true;
                     }
@@ -317,6 +319,7 @@ namespace rs2
                             {
                                 // TODO: Round to step?
                                 value = static_cast<float>(int_value);
+                                model.add_log(to_string() << "Setting " << opt << " to " << value);
                                 endpoint->set_option(opt, value);
                                 *invalidate_flag = true;
                                 res = true;
@@ -327,6 +330,7 @@ namespace rs2
                             if (ImGui::SliderFloat(id.c_str(), &value,
                                 range.min, range.max, "%.4f"))
                             {
+                                model.add_log(to_string() << "Setting " << opt << " to " << value);
                                 endpoint->set_option(opt, value);
                                 *invalidate_flag = true;
                                 res = true;
@@ -372,6 +376,8 @@ namespace rs2
                             static_cast<int>(labels.size())))
                         {
                             value = range.min + range.step * selected;
+                            model.add_log(to_string() << "Setting " << opt << " to " 
+                                << value << " (" << labels[selected] << ")");
                             endpoint->set_option(opt, value);
                             *invalidate_flag = true;
                             res = true;
@@ -1056,8 +1062,10 @@ namespace rs2
         return results;
     }
 
-    void subdevice_model::stop()
+    void subdevice_model::stop(viewer_model& viewer)
     {
+        viewer.not_model.add_log("Stopping streaming");
+
         streaming = false;
         _pause = false;
 
@@ -1089,6 +1097,16 @@ namespace rs2
 
     void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer)
     {
+        std::stringstream ss;
+        ss << "Starting streaming of ";
+        for (int i = 0; i < profiles.size(); i++)
+        {
+            ss << profiles[i].stream_type();
+            if (i < profiles.size() - 1) ss << ", ";
+        }
+        ss << "...";
+        viewer.not_model.add_log(ss.str());
+
         s->open(profiles);
 
         try {
@@ -1199,7 +1217,7 @@ namespace rs2
                 }
             }
         }
-        return draw(error_message);
+        return draw(error_message, model);
     }
 
     stream_model::stream_model()
@@ -2025,7 +2043,7 @@ namespace rs2
             label = to_string() << u8"\uf00d" << "##Stop " << profile.unique_id();
             if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
             {
-                dev->stop();
+                dev->stop(viewer);
             }
             if (ImGui::IsItemHovered())
             {
@@ -2377,109 +2395,6 @@ namespace rs2
             }
         }
     }
-    void device_model::draw_device_details(device& dev, context& ctx)
-    {
-        for (auto i = 0; i < RS2_CAMERA_INFO_COUNT; i++)
-        {
-            auto info = static_cast<rs2_camera_info>(i);
-            if (dev.supports(info))
-            {
-                // retrieve info property
-                std::stringstream ss;
-                ss << rs2_camera_info_to_string(info) << ":";
-                auto line = ss.str();
-                ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 1.0f, 0.5f });
-                ImGui::Text("%s", line.c_str());
-                ImGui::PopStyleColor();
-
-                // retrieve property value
-                ImGui::SameLine();
-                auto value = dev.get_info(info);
-                ImGui::Text("%s", value);
-
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("%s", value);
-                }
-            }
-        }
-        if (dev.is<playback>())
-        {
-            auto p = dev.as<playback>();
-            if (ImGui::SmallButton("Remove Device"))
-            {
-                for (auto&& subdevice : subdevices)
-                {
-                    subdevice->stop();
-                }
-                ctx.unload_device(p.file_name());
-            }
-            else
-            {
-                int64_t total_duration = p.get_duration().count();
-                static int seek_pos = 0;
-                static int64_t progress = 0;
-                progress = p.get_position();
-
-                double part = (1.0 * progress) / total_duration;
-                seek_pos = static_cast<int>(std::max(0.0, std::min(part, 1.0)) * 100);
-
-                if (seek_pos != 0 && p.current_status() == RS2_PLAYBACK_STATUS_STOPPED)
-                {
-                    seek_pos = 0;
-                }
-                int prev_seek_progress = seek_pos;
-
-                ImGui::SeekSlider("Seek Bar", &seek_pos);
-                if (prev_seek_progress != seek_pos)
-                {
-                    //Seek was dragged
-                    auto duration_db =
-                        std::chrono::duration_cast<std::chrono::duration<double,
-                        std::nano>>(p.get_duration());
-                    auto single_percent = duration_db.count() / 100;
-                    auto seek_time = std::chrono::duration<double, std::nano>(seek_pos * single_percent);
-                    p.seek(std::chrono::duration_cast<std::chrono::nanoseconds>(seek_time));
-                }
-                if (ImGui::CollapsingHeader("Playback Options"))
-                {
-                    static bool is_paused = p.current_status() == RS2_PLAYBACK_STATUS_PAUSED;
-                    if (!is_paused)
-                    {
-                        if (ImGui::Button("Pause"))
-                        {
-                            p.pause();
-                            for (auto&& sub : subdevices)
-                            {
-                                if (sub->streaming) sub->pause();
-                            }
-                            is_paused = !is_paused;
-                        }
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Pause playback");
-                        }
-                    }
-                    if (is_paused)
-                    {
-                        if (ImGui::Button("Resume"))
-                        {
-                            p.resume();
-                            for (auto&& sub : subdevices)
-                            {
-                                if (sub->streaming) sub->resume();
-                            }
-                            is_paused = !is_paused;
-                        }
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Continue playback");
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     void viewer_model::show_event_log(ImFont* font_14, float x, float y, float w, float h)
     {
@@ -2493,11 +2408,33 @@ namespace rs2
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         is_output_collapsed = ImGui::Begin("Output", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_ShowBorders);
-        auto log = not_model.get_log();
-        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-        ImGui::InputTextMultiline("##Log", const_cast<char*>(log.c_str()),
-            log.size() + 1, { w, h - 20 }, ImGuiInputTextFlags_ReadOnly);
-        ImGui::PopStyleColor();
+
+        int i = 0;
+        not_model.foreach_log([&](const std::string& line) {
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+
+            auto rc = ImGui::GetCursorPos();
+            ImGui::SetCursorPos({ rc.x + 10, rc.y + 4 });
+
+            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+            ImGui::Text(u8"\uf068"); ImGui::SameLine();
+            ImGui::PopStyleColor();
+
+            rc = ImGui::GetCursorPos();
+            ImGui::SetCursorPos({ rc.x, rc.y - 4 });
+
+            std::string label = to_string() << "##log_entry" << i++;
+            ImGui::InputText(label.c_str(),
+                        (char*)line.data(),
+                        line.size() + 1,
+                        ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+            ImGui::PopStyleColor(2);
+
+            rc = ImGui::GetCursorPos();
+            ImGui::SetCursorPos({ rc.x, rc.y - 6 });
+        });
+
         ImGui::End();
         ImGui::PopStyleVar();
         ImGui::PopFont();
@@ -3721,7 +3658,7 @@ namespace rs2
         return clicked;
     }
 
-    void device_model::draw_advanced_mode_tab()
+    void device_model::draw_advanced_mode_tab(viewer_model& view)
     {
         using namespace rs400;
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.9f, 0.9f, 0.9f, 1 });
@@ -3763,6 +3700,7 @@ namespace rs2
                                 {
                                     advanced.toggle_advanced_mode(false);
                                     restarting_device_info = get_device_info(dev, false);
+                                    view.not_model.add_log("Switching out of advanced mode...");
                                 }
                                 show_dialog = false;
                             }
@@ -3799,6 +3737,7 @@ namespace rs2
                                 {
                                     advanced.toggle_advanced_mode(true);
                                     restarting_device_info = get_device_info(dev, false);
+                                    view.not_model.add_log("Switching into advanced mode...");
                                 }
                                 show_dialog = false;
                             }
@@ -3931,6 +3870,7 @@ namespace rs2
                         if (ret)
                         {
                             std::ifstream t(ret);
+                            viewer.not_model.add_log(to_string() << "Loading settings from \"" << ret << "\"...");
                             std::string str((std::istreambuf_iterator<char>(t)),
                                 std::istreambuf_iterator<char>());
 
@@ -3948,6 +3888,7 @@ namespace rs2
                             std::string filename = ret;
                             if (!ends_with(to_lower(filename), ".json")) filename += ".json";
 
+                            viewer.not_model.add_log(to_string() << "Saving settings to \"" << filename << "\"...");
                             std::ofstream out(filename);
                             out << adv.serialize_json();
                             out.close();
@@ -3992,7 +3933,7 @@ namespace rs2
                     for (auto&& sub : subdevices)
                     {
                         if (sub->streaming)
-                            sub->stop();
+                            sub->stop(viewer);
                     }
                     device_to_remove = this;
                 }
@@ -4148,7 +4089,7 @@ namespace rs2
 
                         if (ImGui::Button(label.c_str(), { 30,30 }))
                         {
-                            sub->stop();
+                            sub->stop(viewer);
 
                             if (!std::any_of(subdevices.begin(), subdevices.end(),
                                 [](const std::shared_ptr<subdevice_model>& sm)
@@ -4239,7 +4180,7 @@ namespace rs2
                 }
 
                 if (dev.is<advanced_mode>() && sub->s->is<depth_sensor>())
-                    draw_advanced_mode_tab();
+                    draw_advanced_mode_tab(viewer);
 
                 
 
