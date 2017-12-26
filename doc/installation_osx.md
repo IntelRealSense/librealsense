@@ -20,6 +20,4 @@
 * The Viewer, Depth-Quality Tool and most of the examples should work
 
 ## What are the known issues?
-* Camera options are not yet supported (WIP)
-* Playback and record functionality is not yet supported
 * Changing configurations will often result in a crash or the new configuration not being applied (WIP)
