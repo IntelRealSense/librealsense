@@ -166,11 +166,6 @@ namespace librealsense
 
     std::shared_ptr<matcher> ds5_color::create_matcher(const frame_holder& frame) const
     {
-        if(!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
-        {
-            return device::create_matcher(frame);
-        }
-
         return std::make_shared<identity_matcher>( _color_stream->get_unique_id(), _color_stream->get_stream_type());
     }
 }
