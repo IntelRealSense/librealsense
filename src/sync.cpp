@@ -515,7 +515,7 @@ namespace librealsense
         }
 
         //next expected of the missing stream didn't updated yet
-        if((*synced_frame)->get_frame_timestamp() > next_expected && std::abs((*synced_frame)->get_frame_timestamp()- next_expected)<MAX_GAP)
+        if((*synced_frame)->get_frame_timestamp() > next_expected && abs((*synced_frame)->get_frame_timestamp()- next_expected)<MAX_GAP)
         {
             return false;
         }
