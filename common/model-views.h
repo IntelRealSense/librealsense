@@ -507,7 +507,7 @@ namespace rs2
             viewer(viewer),
             keep_calculating(true),
             depth_stream_active(false),
-            resulting_queue(20),
+            resulting_queue(resulting_queue_max_size),
 //            frames_queue(4),
             t([this]() {render_loop(); })
         {
@@ -550,7 +550,7 @@ namespace rs2
         std::map<int, rs2::frame_queue> frames_queue;
         rs2::frame_queue syncer_queue;
         rs2::frame_queue resulting_queue;
-
+        const size_t resulting_queue_max_size = 20;
 
     private:
         viewer_model& viewer;

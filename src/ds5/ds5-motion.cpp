@@ -416,11 +416,6 @@ namespace librealsense
 
     std::shared_ptr<matcher> ds5_motion::create_matcher(const frame_holder& frame) const
     {
-        if(!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
-        {
-            return device::create_matcher(frame);
-        }
-
         std::set<stream_interface*> streams = { _fisheye_stream.get() , _accel_stream.get() , _gyro_stream.get()};
         std::vector<std::shared_ptr<matcher>> mm_matchers;
 
