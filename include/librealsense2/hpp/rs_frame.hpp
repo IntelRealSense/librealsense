@@ -167,7 +167,15 @@ namespace rs2
                 profile = stream_profile(s);
 #endif
         }
-        frame(frame&& other) noexcept : frame_ref(other.frame_ref) { other.frame_ref = nullptr; }
+
+        frame(frame&& other) noexcept : frame_ref(other.frame_ref)
+        {
+            other.frame_ref = nullptr;
+#ifdef _DEBUG
+            frame_number = other.frame_number;
+            profile = other.profile;
+#endif
+        }
         frame& operator=(frame other)
         {
             swap(other);
@@ -181,6 +189,11 @@ namespace rs2
         void swap(frame& other)
         {
             std::swap(frame_ref, other.frame_ref);
+
+#ifdef _DEBUG
+            std::swap(frame_number, other.frame_number);
+            std::swap(profile, other.profile);
+#endif
         }
 
         /**
