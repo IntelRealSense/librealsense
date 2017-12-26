@@ -111,7 +111,7 @@ namespace rs2
     {
     public:
         explicit video_stream_profile(const stream_profile& sp)
-        : stream_profile(sp)
+            : stream_profile(sp)
         {
             rs2_error* e = nullptr;
             if ((rs2_stream_profile_is(sp.get(), RS2_EXTENSION_VIDEO_PROFILE, &e) == 0 && !e))
@@ -155,7 +155,18 @@ namespace rs2
     {
     public:
         frame() : frame_ref(nullptr) {}
-        frame(rs2_frame* frame_ref) : frame_ref(frame_ref) {}
+        frame(rs2_frame* frame_ref) : frame_ref(frame_ref)
+        {
+#ifdef _DEBUG
+            rs2_error* e = nullptr;
+            auto r = rs2_get_frame_number(frame_ref, &e);
+            if (!e)
+                frame_number = r;
+            auto s = rs2_get_frame_stream_profile(frame_ref, &e);
+            if (!e)
+                profile = stream_profile(s);
+#endif
+        }
         frame(frame&& other) noexcept : frame_ref(other.frame_ref) { other.frame_ref = nullptr; }
         frame& operator=(frame other)
         {
@@ -311,6 +322,11 @@ namespace rs2
         friend class rs2::points;
 
         rs2_frame* frame_ref;
+
+#ifdef _DEBUG
+        stream_profile profile;
+        unsigned long long frame_number = 0;
+#endif
     };
 
     class video_frame : public frame
@@ -320,7 +336,7 @@ namespace rs2
             : frame(f)
         {
             rs2_error* e = nullptr;
-            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_VIDEO_FRAME, &e) == 0 && !e))
+            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_VIDEO_FRAME, &e) == 0 && !e))
             {
                 reset();
             }
@@ -394,10 +410,10 @@ namespace rs2
         points() : frame(), _size(0) {}
 
         points(const frame& f)
-                : frame(f), _size(0)
+            : frame(f), _size(0)
         {
             rs2_error* e = nullptr;
-            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_POINTS, &e) == 0 && !e))
+            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_POINTS, &e) == 0 && !e))
             {
                 reset();
             }
@@ -419,14 +435,14 @@ namespace rs2
             return (const vertex*)res;
         }
 
-        void export_to_ply(const std::string& fname, video_frame texture) 
-		{
+        void export_to_ply(const std::string& fname, video_frame texture)
+        {
             rs2_frame* ptr = nullptr;
             std::swap(texture.frame_ref, ptr);
-		    rs2_error* e = nullptr;
-		    rs2_export_to_ply(get(), fname.c_str(), ptr, &e);
-		    error::handle(e);
-		}
+            rs2_error* e = nullptr;
+            rs2_export_to_ply(get(), fname.c_str(), ptr, &e);
+            error::handle(e);
+        }
 
         const texture_coordinate* get_texture_coordinates() const
         {
@@ -470,12 +486,12 @@ namespace rs2
     class frameset : public frame
     {
     public:
-        frameset():_size(0) {};
+        frameset() :_size(0) {};
         frameset(const frame& f)
             : frame(f), _size(0)
         {
             rs2_error* e = nullptr;
-            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_COMPOSITE_FRAME, &e) == 0 && !e))
+            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_COMPOSITE_FRAME, &e) == 0 && !e))
             {
                 reset();
                 // TODO - consider explicit constructor to move resultion to compile time
@@ -493,7 +509,7 @@ namespace rs2
         frame first_or_default(rs2_stream s) const
         {
             frame result;
-            foreach([&result, s](frame f){
+            foreach([&result, s](frame f) {
                 if (!result && f.get_profile().stream_type() == s)
                 {
                     result = std::move(f);
@@ -549,11 +565,11 @@ namespace rs2
         frame operator[](size_t index) const
         {
             rs2_error* e = nullptr;
-            if(index < size())
+            if (index < size())
             {
-                 auto fref = rs2_extract_frame(get(), (int)index, &e);
-                 error::handle(e);
-                 return frame(fref);
+                auto fref = rs2_extract_frame(get(), (int)index, &e);
+                error::handle(e);
+                return frame(fref);
             }
 
             throw error("Requested index is out of range!");
