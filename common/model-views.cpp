@@ -2685,7 +2685,9 @@ namespace rs2
         }
 
         res = source.allocate_composite_frame(results);
-        source.frame_ready(std::move(res));
+
+        if(res)
+            source.frame_ready(std::move(res));
     }
 
 
@@ -2868,7 +2870,8 @@ namespace rs2
         std::map<int, frame> last_frames;
         try
         {
-            while (ppf.resulting_queue.poll_for_frame(&f))
+            auto index = 0;
+            while (ppf.resulting_queue.poll_for_frame(&f) && ++index < ppf.resulting_queue_max_size)
             {
                 last_frames[f.get_profile().unique_id()] = std::move(f);
             }
@@ -4087,7 +4090,7 @@ namespace rs2
 
             if (!show_depth_only)
             {
-                draw_later.push_back([windows_width, &window, sub, pos, &viewer, this]()
+                draw_later.push_back([&error_message, windows_width, &window, sub, pos, &viewer, this]()
                 {
                     bool stop_recording = false;
 
@@ -4110,7 +4113,18 @@ namespace rs2
                             if (ImGui::Button(label.c_str(), { 30,30 }))
                             {
                                 auto profiles = sub->get_selected_profiles();
-                                sub->play(profiles, viewer);
+                                try
+                                {
+                                    sub->play(profiles, viewer);
+                                }
+                                catch (const error& e)
+                                {
+                                    error_message = error_to_string(e);
+                                }
+                                catch (const std::exception& e)
+                                {
+                                    error_message = e.what();
+                                }
 
                                 for (auto&& profile : profiles)
                                 {
