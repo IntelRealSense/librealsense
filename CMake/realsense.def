@@ -238,6 +238,8 @@ EXPORTS
     rs2_device_hub_wait_for_device
     rs2_delete_device_hub
 
+    rs2_export_to_ply
+    
     rs2_loopback_enable
     rs2_loopback_disable
     rs2_loopback_is_enabled

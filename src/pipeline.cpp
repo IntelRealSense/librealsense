@@ -12,7 +12,7 @@
 namespace librealsense
 {
     pipeline_processing_block::pipeline_processing_block(const std::vector<int>& streams_to_aggregate) :
-        _queue(new single_consumer_queue<frame_holder>()),
+        _queue(new single_consumer_queue<frame_holder>(1)),
         _streams_ids(streams_to_aggregate)
     {
         auto processing_callback = [&](frame_holder frame, synthetic_source_interface* source)

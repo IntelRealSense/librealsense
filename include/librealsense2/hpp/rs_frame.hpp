@@ -16,6 +16,7 @@ namespace rs2
     class sensor;
     class frame;
     class pipeline_profile;
+    class points;
 
     class stream_profile
     {
@@ -335,6 +336,7 @@ namespace rs2
         friend class rs2::syncer;
         friend class rs2::processing_block;
         friend class rs2::pointcloud;
+        friend class rs2::points;
 
         rs2_frame* frame_ref;
     };
@@ -352,6 +354,7 @@ namespace rs2
             }
             error::handle(e);
         }
+
 
         /**
         * returns image width in pixels
@@ -443,6 +446,15 @@ namespace rs2
             error::handle(e);
             return (const vertex*)res;
         }
+
+        void export_to_ply(const std::string& fname, video_frame texture) 
+		{
+            rs2_frame* ptr = nullptr;
+            std::swap(texture.frame_ref, ptr);
+		    rs2_error* e = nullptr;
+		    rs2_export_to_ply(get(), fname.c_str(), ptr, &e);
+		    error::handle(e);
+		}
 
         const texture_coordinate* get_texture_coordinates() const
         {

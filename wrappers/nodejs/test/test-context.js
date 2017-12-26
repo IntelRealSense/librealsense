@@ -24,6 +24,36 @@ describe('Context test', function() {
   after(function() {
     librealsense2.cleanup();
   });
+
+  function createRrdFile() {
+    const ctx = new librealsense2.Context();
+    let dev = ctx.queryDevices().devices[0];
+    // record to file record.bag
+    let recorder = new librealsense2.RecorderDevice('record.bag', dev);
+    let sensors = recorder.querySensors();
+    let sensor = sensors[0];
+    let profiles = sensor.getStreamProfiles();
+    for (let i =0; i < profiles.length; i++) {
+      if (profiles[i].streamType === librealsense2.stream.STREAM_DEPTH &&
+          profiles[i].fps === 30 &&
+          profiles[i].width === 640 &&
+          profiles[i].height === 480 &&
+          profiles[i].format === librealsense2.format.FORMAT_Z16) {
+        sensor.open(profiles[i]);
+      }
+    }
+    // record 10 frames
+    let cnt = 0;
+    sensor.start((frame) => {
+      cnt++;
+      if (cnt === 10) {
+        // stop recording
+        recorder.reset();
+        librealsense2.cleanup();
+      }
+    });
+  }
+
   it('testing constructor', () => {
     assert.doesNotThrow(() => {
       new librealsense2.Context();
@@ -76,25 +106,6 @@ describe('Context test', function() {
     });
   });
 
-  // getTime is removed
-  it.skip('testing method - getTime, should get number value', () => {
-    const context = new librealsense2.Context();
-    assert.doesNotThrow(() => {
-      context.getTime();
-    });
-    assert.equal(typeof context.getTime(), 'number');
-  });
-
-  it.skip('testing method - getTime, should get current system time', () => {
-    const context = new librealsense2.Context();
-    assert.doesNotThrow(() => {
-      context.getTime();
-    });
-    const currentTime = new Date();
-    assert(context.getTime() - currentTime > 0 &&
-      context.getTime() - currentTime < 5);
-  });
-
   it('testing method - queryDevices, should get array', () => {
     const context = new librealsense2.Context();
     assert.doesNotThrow(() => {
@@ -140,46 +151,12 @@ describe('Context test', function() {
     });
   });
 
-  // isDeviceConnected is no more a method of Context
-  it.skip('testing method - isDeviceConnected', () => {
-    const context = new librealsense2.Context();
-    const devs = context.queryDevices().devices;
-    assert(devs[0]);
-    const dev = devs[0];
-    assert.doesNotThrow(() => {
-      context.isDeviceConnected(dev);
-    });
-  });
-
-  // isDeviceConnected is no more a method of Context
-  it.skip('testing method - isDeviceConnected, return value', () => {
-    const context = new librealsense2.Context();
-    const devs = context.queryDevices().devices;
-    assert(devs[0]);
-    const dev = devs[0];
-    assert.equal(typeof context.isDeviceConnected(dev), 'boolean');
-    assert.equal(context.isDeviceConnected(dev), true);
-  });
-
-  it('testing method - isDeviceConnected, with invalid options', () => {
-    const context = new librealsense2.Context();
-    let opt;
-    assert.throws(() => {
-      context.isDeviceConnected();
-    });
-    assert.throws(() => {
-      context.isDeviceConnected(opt);
-    });
-    assert.throws(() => {
-      context.isDeviceConnected(null);
-    });
-  });
-
   it('testing method - loadDevice, return playbackDevice', () => {
+    createRrdFile();
     const context = new librealsense2.Context();
     let pbd;
     assert.doesNotThrow(() => {
-      pbd = context.loadDevice();
+      pbd = context.loadDevice('record.bag');
     });
     assert(pbd instanceof librealsense2.Device);
   });

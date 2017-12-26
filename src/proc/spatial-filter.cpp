@@ -61,8 +61,6 @@ namespace librealsense
         register_option(RS2_OPTION_FILTER_SMOOTH_DELTA, spatial_filter_delta);
         register_option(RS2_OPTION_FILTER_MAGNITUDE, spatial_filter_iterations);
 
-        unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
-
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
             rs2::frame out = f, tgt, depth;

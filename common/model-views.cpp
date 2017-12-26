@@ -200,8 +200,6 @@ namespace rs2
     void export_to_ply(const std::string& fname, notifications_model& ns, frameset frames, video_frame texture)
     {
         std::thread([&ns, frames, texture, fname]() mutable {
-            std::string texfname(fname);
-            texfname += ".png";
 
             points p;
 
@@ -215,72 +213,7 @@ namespace rs2
 
             if (p)
             {
-                const auto vertices = p.get_vertices();
-                const auto texcoords = p.get_texture_coordinates();
-                const auto tex = reinterpret_cast<const uint8_t*>(texture.get_data());
-                std::vector<vertex> new_vertices;
-                //std::vector<texture_coordinate> new_texcoords;
-                std::vector<std::tuple<uint8_t, uint8_t, uint8_t>> new_tex;
-                new_vertices.reserve(p.size());
-                //new_texcoords.reserve(points.size());
-                new_tex.reserve(p.size());
-                assert(p.size());
-                for (size_t i = 0; i < p.size(); ++i)
-                    if (std::abs(vertices[i].x) >= 1e-6 || std::abs(vertices[i].y) >= 1e-6 || std::abs(vertices[i].z) >= 1e-6)
-                    {
-                        new_vertices.push_back(vertices[i]);
-                        if (texture)
-                        {
-                            //new_texcoords.push_back(texcoords[i]);
-                            auto color = get_texcolor(texture, texcoords[i]);
-                            new_tex.push_back(color);
-                        }
-
-                    }
-
-                std::ofstream out(fname);
-                out << "ply\n";
-                out << "format binary_little_endian 1.0\n" /*"format ascii 1.0\n"*/;
-                out << "comment pointcloud saved from Realsense Viewer\n";
-                //if (texture) out << "comment TextureFile " << get_file_name(texfname) << "\n";
-                out << "element vertex " << new_vertices.size() << "\n";
-                out << "property float" << sizeof(float) * 8 << " x\n";
-                out << "property float" << sizeof(float) * 8 << " y\n";
-                out << "property float" << sizeof(float) * 8 << " z\n";
-                if (texture)
-                {
-                    //out << "property float" << sizeof(float) * 8 << " u\n";
-                    //out << "property float" << sizeof(float) * 8 << " v\n";
-                    out << "property uchar red\n";
-                    out << "property uchar green\n";
-                    out << "property uchar blue\n";
-                }
-                out << "end_header\n";
-                out.close();
-
-                out.open(fname, std::ios_base::app | std::ios_base::binary);
-                for (int i = 0; i < new_vertices.size(); ++i)
-                {
-                    // we assume little endian architecture on your device
-                    out.write(reinterpret_cast<const char*>(&(new_vertices[i].x)), sizeof(float));
-                    out.write(reinterpret_cast<const char*>(&(new_vertices[i].y)), sizeof(float));
-                    out.write(reinterpret_cast<const char*>(&(new_vertices[i].z)), sizeof(float));
-                    //                out << new_vertices[i].x << ' ' << new_vertices[i].y << ' ' << new_vertices[i].z;
-                    if (texture)
-                    {
-                        //out.write(reinterpret_cast<const char*>(&(new_texcoords[i].u)), sizeof(float));
-                        //out.write(reinterpret_cast<const char*>(&(new_texcoords[i].v)), sizeof(float));
-                        out.write(reinterpret_cast<const char*>(&(std::get<0>(new_tex[i]))), sizeof(uint8_t));
-                        out.write(reinterpret_cast<const char*>(&(std::get<1>(new_tex[i]))), sizeof(uint8_t));
-                        out.write(reinterpret_cast<const char*>(&(std::get<2>(new_tex[i]))), sizeof(uint8_t));
-                        //                    out << std::hex << ' ' << std::get<0>(new_tex[i]) << ' ' << std::get<1>(new_tex[i]) << ' ' << std::get<2>(new_tex[i]);
-                    }
-                    //                out << '\n';
-                }
-
-                /* save texture to texfname */
-                //if (texture) stbi_write_png(texfname.data(), texture.get_width(), texture.get_height(), texture.get_bytes_per_pixel(), texture.get_data(), texture.get_width() * texture.get_bytes_per_pixel());
-
+                p.export_to_ply(fname, texture);
                 ns.add_notification({ to_string() << "Finished saving 3D view " << (texture ? "to " : "without texture to ") << fname,
                     std::chrono::duration_cast<std::chrono::duration<double,std::micro>>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(),
                     RS2_LOG_SEVERITY_INFO,
@@ -1300,6 +1233,7 @@ namespace rs2
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
         {
             auto opt = static_cast<rs2_option>(i);
+            if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
             {
                 draw_option(opt, update_read_only_options, error_message, notifications);
@@ -4556,6 +4490,7 @@ namespace rs2
                         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                         {
                             auto opt = static_cast<rs2_option>(i);
+                            if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
                             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
                                 if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
@@ -4584,6 +4519,7 @@ namespace rs2
                         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                         {
                             auto opt = static_cast<rs2_option>(i);
+                            if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
                             pb->get_option(opt).draw_option(
                                 dev.is<playback>() || update_read_only_options,
                                 false, error_message, viewer.not_model);
@@ -4749,6 +4685,7 @@ namespace rs2
                                 for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                                 {
                                     auto opt = static_cast<rs2_option>(i);
+                                    if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
                                     pb->get_option(opt).draw_option(
                                         dev.is<playback>() || update_read_only_options,
                                         false, error_message, viewer.not_model);
