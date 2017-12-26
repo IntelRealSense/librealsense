@@ -15,13 +15,13 @@ try {
 
 let frame;
 let pipeline;
-describe('Frame test', function() {
+describe('VideoFrame test', function() {
   before(function() {
     pipeline = new rs2.Pipeline();
     pipeline.start();
     while (!frame) {
       const frameset = pipeline.waitForFrames();
-      frame = frameset.at(0);
+      frame = frameset.at(1);
     }
   });
 
@@ -32,7 +32,7 @@ describe('Frame test', function() {
 
   it('Testing constructor', () => {
     assert.doesNotThrow(() => {
-      new rs2.Frame();
+      new rs2.VideoFrame();
     });
   });
 
@@ -76,6 +76,11 @@ describe('Frame test', function() {
 
   it('Testing property bitsPerPixel', () => {
     assert.equal(typeof frame.bitsPerPixel, 'number');
+  });
+
+  it('Testing property bytesPerPixel', () => {
+    assert.equal(typeof frame.bytesPerPixel, 'number');
+    assert.equal(frame.bytesPerPixel, frame.bitsPerPixel/8);
   });
 
   it('Testing property timestampDomain', () => {

@@ -33,6 +33,14 @@ describe('Device test', function() {
     });
   });
 
+  it('Testing member - first', () => {
+    assert(dev.first instanceof rs2.Sensor);
+  });
+
+  it('Testing member - isValid', () => {
+    assert.equal(typeof dev.isValid, 'boolean');
+  });
+
   it('Testing method destroy', () => {
     assert.doesNotThrow(() => {
       dev.destroy();
@@ -76,13 +84,6 @@ describe('Device test', function() {
     assert.throws(() => {
       dev.getCameraInfo('dummy');
     });
-  });
-
-  it('Testing method isValid', () => {
-    assert.doesNotThrow(() => {
-      dev.isValid();
-    });
-    assert.equal(typeof dev.isValid(), 'boolean');
   });
 
   it('Testing method querySensors - return value', () => {

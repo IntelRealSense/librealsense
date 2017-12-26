@@ -14,19 +14,11 @@ try {
 }
 
 let config;
-let frameset;
 let pipeline;
 let serial;
 describe('Config test', function() {
   before(function() {
     pipeline = new rs2.Pipeline();
-    pipeline.start();
-    while (frameset === undefined) {
-      const f = pipeline.waitForFrames();
-      if (f.size > 1) {
-        frameset = f;
-      }
-    }
     config = new rs2.Config();
     const ctx = new rs2.Context();
     const devices = ctx.queryDevices().devices;
@@ -103,18 +95,6 @@ describe('Config test', function() {
     }
   });
 
-  it('Testing method enableAllStreams - 0 argument', () => {
-    assert.doesNotThrow(() => {
-      config.enableAllStreams();
-    });
-  });
-
-  it('Testing method enableAllStreams - 1 argument', () => {
-    assert.doesNotThrow(() => {
-      config.enableAllStreams(1);
-    });
-  });
-
   it('Testing method enableDevice - 0 argument', () => {
     assert.doesNotThrow(() => {
       config.enableDevice();
@@ -176,11 +156,23 @@ describe('Config test', function() {
     });
   });
 
-  it.skip('Testing method resolve - valid argument', () => {
+  it('Testing method resolve - valid argument', () => {
     let pp;
     assert.doesNotThrow(() => {
       pp = config.resolve(pipeline);
     });
     assert(pp instanceof rs2.PipelineProfile);
+  });
+
+  it('Testing method enableAllStreams - 0 argument', () => {
+    assert.doesNotThrow(() => {
+      config.enableAllStreams();
+    });
+  });
+
+  it('Testing method enableAllStreams - 1 argument', () => {
+    assert.doesNotThrow(() => {
+      config.enableAllStreams(1);
+    });
   });
 });
