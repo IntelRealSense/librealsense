@@ -10374,8 +10374,11 @@ basic_json_parser_66:
         */
         long double str_to_float_t(long double* /* type */, char** endptr) const
         {
-            using namespace std;
-            return strtold(reinterpret_cast<typename string_t::const_pointer>(m_start), endptr);
+#ifdef ANDROID
+            return strtold(reinterpret_cast<typename string_t::const_pointer>(m_start), endptr); // call to strtold defined in stdlib.h
+#else
+            return std::strtold(reinterpret_cast<typename string_t::const_pointer>(m_start), endptr);
+#endif
         }
 
         /*!
@@ -10411,8 +10414,11 @@ basic_json_parser_66:
         */
         float str_to_float_t(float* /* type */, char** endptr) const
         {
-            using namespace std;
-            return strtof(reinterpret_cast<typename string_t::const_pointer>(m_start), endptr);
+#ifdef ANDROID
+            return strtof(reinterpret_cast<typename string_t::const_pointer>(m_start), endptr); // call to strtof defined in stdlib.h
+#else
+            return std::strtof(reinterpret_cast<typename string_t::const_pointer>(m_start), endptr);
+#endif
         }
 
         /*!

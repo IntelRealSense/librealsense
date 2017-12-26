@@ -1329,14 +1329,9 @@ uvc_error_t uvc_stream_get_frame(uvc_stream_handle_t *strmh,
 
               //TODO: How should we handle EINVAL?
               switch (err) {
-#ifdef __APPLE__
                   case std::cv_status::timeout:
-#else
-                  case EINVAL:
-                  case ETIMEDOUT:
-#endif
-                  *frame = NULL;
-                  return UVC_ERROR_TIMEOUT;
+                      *frame = NULL;
+                      return UVC_ERROR_TIMEOUT;
               }
           }
 
