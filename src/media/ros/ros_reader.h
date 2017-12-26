@@ -282,11 +282,27 @@ namespace librealsense
 
                 if(key_val_msg->key == "timestamp_domain") //TODO: use constants
                 {
-                    convert(key_val_msg->value, additional_data.timestamp_domain);
+                    try
+                    {
+                        convert(key_val_msg->value, additional_data.timestamp_domain);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        LOG_ERROR(e.what());
+                        continue;
+                    }
                 }
                 else if (key_val_msg->key == "system_time") //TODO: use constants
                 {
-                    additional_data.system_time = std::stod(key_val_msg->value);
+                    try
+                    {
+                        additional_data.system_time = std::stod(key_val_msg->value);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        LOG_ERROR(e.what());
+                        continue;
+                    }
                 }
                 else
                 {
