@@ -158,7 +158,7 @@ namespace librealsense
             }
             catch (std::exception const& e)
             {
-                LOG_WARNING("Failed to write motion metadata for " << stream_id << ". Exception: " << e.what());
+                LOG_WARNING("Failed to write frame metadata for " << stream_id << ". Exception: " << e.what());
             }
 
             try
