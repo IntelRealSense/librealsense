@@ -2842,7 +2842,8 @@ namespace rs2
             auto index = 0;
             while (ppf.resulting_queue.poll_for_frame(&f) && ++index < ppf.resulting_queue_max_size)
             {
-                last_frames[f.get_profile().unique_id()] = std::move(f);
+                auto id = f.get_profile().unique_id();
+                last_frames[id] = std::move(f);
             }
             for(auto&& frame : last_frames)
             {
