@@ -70,7 +70,7 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
                             {
                                 if (sub->streaming)
                                 {
-                                    sub->stop();
+                                    sub->stop(viewer_model);
                                 }
                             }
                         }
@@ -208,6 +208,8 @@ void refresh_devices(std::mutex& m,
 
 int main(int argv, const char** argc) try
 {
+    rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
+
     ux_window window("Intel RealSense Viewer");
 
     // Create RealSense Context
@@ -480,7 +482,7 @@ int main(int argv, const char** argc) try
         for (auto&& sub : device_model.subdevices)
         {
             if (sub->streaming)
-                sub->stop();
+                sub->stop(viewer_model);
         }
 
     return EXIT_SUCCESS;
