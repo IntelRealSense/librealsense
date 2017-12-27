@@ -4350,18 +4350,18 @@ namespace rs2
                     bool stop_recording = false;
 
                     ImGui::SetCursorPos({ windows_width - 35, pos.y + 3 });
-                    ImGui::PushFont(window.get_font());
+                    ImGui_ScopePushFont(window.get_font());
 
-                    ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
+                    ImGui_ScopePushStyleColor(ImGuiCol_Button, sensor_bg);
+                    ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+                    ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
 
                     if (!sub->streaming)
                     {
                         std::string label = to_string() << u8"  \uf204\noff   ##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
 
-                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
-                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+                        ImGui_ScopePushStyleColor(ImGuiCol_Text, redish);
+                        ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
 
                         if (sub->is_selected_combination_supported())
                         {
@@ -4403,8 +4403,8 @@ namespace rs2
                     else
                     {
                         std::string label = to_string() << u8"  \uf205\n    on##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
-                        ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+                        ImGui_ScopePushStyleColor(ImGuiCol_Text, light_blue);
+                        ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 
                         if (ImGui::Button(label.c_str(), { 30,30 }))
                         {
@@ -4424,9 +4424,6 @@ namespace rs2
                             ImGui::SetTooltip("Stop streaming data from selected sub-device");
                         }
                     }
-
-                    ImGui::PopStyleColor(5);
-                    ImGui::PopFont();
 
                     if (is_recording && stop_recording)
                     {
