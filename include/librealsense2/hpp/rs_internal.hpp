@@ -86,6 +86,33 @@ namespace rs2
         {
 
         }
+
+        void add_sensor(std::string name)
+        {
+            rs2_error* e = nullptr;
+            rs2_bypass_add_sensor(_dev.get(), name.c_str(), &e);
+            error::handle(e);
+        }
+
+        void on_video_frame(int sensor, 
+            void* pixels, void(*deleter)(void*),
+            rs2_time_t timestamp, rs2_timestamp_domain domain,
+            int frame_number, stream_profile profile)
+        {
+            rs2_error* e = nullptr;
+            rs2_bypass_on_video_frame(_dev.get(), sensor, 
+                pixels, deleter, timestamp, domain, frame_number, profile.get(), &e);
+            error::handle(e);
+        }
+
+        void add_video_stream(int sensor, rs2_stream type, int index, 
+            int uid, int width, int height, int bpp, rs2_format fmt)
+        {
+            rs2_error* e = nullptr;
+            rs2_bypass_add_video_stream(_dev.get(), sensor,
+                type, index, uid, width, height, bpp, fmt, &e);
+            error::handle(e);
+        }
     };
 
 }

@@ -169,6 +169,7 @@ namespace librealsense
             CASE(PLAYBACK)
             CASE(DEPTH_STEREO_SENSOR)
             CASE(DISPARITY_FRAME)
+            CASE(BYPASS_DEVICE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE

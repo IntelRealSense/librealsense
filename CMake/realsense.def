@@ -240,3 +240,6 @@ EXPORTS
 
     rs2_export_to_ply
     rs2_create_bypass_device
+    rs2_bypass_add_sensor
+    rs2_bypass_on_video_frame
+    rs2_bypass_add_video_stream

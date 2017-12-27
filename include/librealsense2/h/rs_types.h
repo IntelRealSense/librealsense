@@ -97,6 +97,7 @@ typedef enum rs2_extension
     RS2_EXTENSION_PLAYBACK,
     RS2_EXTENSION_DEPTH_STEREO_SENSOR,
     RS2_EXTENSION_DISPARITY_FRAME,
+    RS2_EXTENSION_BYPASS_DEVICE,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);
