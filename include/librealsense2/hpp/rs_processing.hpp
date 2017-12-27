@@ -133,7 +133,7 @@ namespace rs2
         * to help developers who are not using async APIs
         * param[in] capacity size of the frame queue
         */
-        explicit frame_queue(unsigned int capacity)
+        explicit frame_queue(unsigned int capacity): _capacity(capacity)
         {
             rs2_error* e = nullptr;
             _queue = std::shared_ptr<rs2_frame_queue>(
@@ -186,8 +186,11 @@ namespace rs2
             enqueue(std::move(f));
         }
 
+        size_t capacity() const { return _capacity; }
+
     private:
         std::shared_ptr<rs2_frame_queue> _queue;
+        size_t _capacity;
     };
 
     class pointcloud

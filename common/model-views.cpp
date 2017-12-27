@@ -2677,7 +2677,9 @@ namespace rs2
                 frame frm;
                 if(viewer.synchronization_enable)
                 {
-                    while(syncer_queue.poll_for_frame(&frm))
+                    auto index = 0;
+                    while (syncer_queue.poll_for_frame(&frm) && ++index <= syncer_queue.capacity())
+                    //while(syncer_queue.poll_for_frame(&frm))
                     {
                         processing_block.invoke(frm);
                     }
