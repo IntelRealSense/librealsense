@@ -89,13 +89,6 @@ void rs2_log(rs2_log_severity severity, const char * message, rs2_error ** error
 float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2_error** error);
 
 /**
-* Retrieve the stereoscopic baseline value. Applicable to stereo-based depth modules
-* \param[out] float  Stereoscopic baseline in millimeters
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-float rs2_depth_stereo_frame_get_baseline(const rs2_frame* frame_ref, rs2_error** error);
-
-/**
 * return the time at specific time point
 * \param context     Object representing librealsense session
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored

@@ -128,10 +128,24 @@ namespace librealsense
             // Check if the new frame originated from stereo-based depth sensor
             // retrieve the stereo baseline parameter
             // TODO refactor disparity parameters into the frame's metadata
-            auto snr = ((frame_interface*)f.get())->get_sensor();
-            _stereoscopic_depth = Is<librealsense::depth_stereo_sensor>(snr);
+            auto snr = ((frame_interface*)f.get())->get_sensor().get();
+            librealsense::depth_stereo_sensor* dss;
+
+            // Playback sensor
+            if (auto a = As<librealsense::extendable_interface>(snr))
+            {
+                librealsense::depth_stereo_sensor* ptr;
+                if (_stereoscopic_depth = a->extend_to(TypeToExtension<librealsense::depth_stereo_sensor>::value, (void**)&ptr))
+                    dss = ptr;
+            }
+            else // Live sensor
+            {
+                _stereoscopic_depth = Is<librealsense::depth_stereo_sensor>(snr);
+                dss = As<librealsense::depth_stereo_sensor>(snr);
+            }
+
             if (_stereoscopic_depth)
-                _stereo_baseline_mm = As<librealsense::depth_stereo_sensor>(snr)->get_stereo_baseline_mm();
+                _stereo_baseline_mm = dss->get_stereo_baseline_mm();
 
             _spatial_radius = (_extension_type == RS2_EXTENSION_DISPARITY_FRAME )?
                                     (_focal_lenght_mm * _stereo_baseline_mm) / float(_spatial_delta_param) : _spatial_delta_param;

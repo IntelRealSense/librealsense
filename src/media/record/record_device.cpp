@@ -188,7 +188,8 @@ void librealsense::record_device::hardware_reset()
 template <typename T, typename Ext>
 void librealsense::record_device::try_add_snapshot(T* extendable, snapshot_collection& snapshots)
 {
-    auto api = dynamic_cast<Ext*>(extendable);
+    auto api = dynamic_cast<recordable<Ext>*>(extendable);
+
     if (api != nullptr)
     {
         std::shared_ptr<Ext> p;
@@ -236,6 +237,7 @@ snapshot_collection librealsense::record_device::get_extensions_snapshots(T* ext
             //case RS2_EXTENSION_VIDEO           : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_VIDEO          >::type>(extendable, snapshots);
             //case RS2_EXTENSION_ROI             : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_ROI            >::type>(extendable, snapshots);
             case RS2_EXTENSION_DEPTH_SENSOR    : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEPTH_SENSOR   >::type>(extendable, snapshots);
+            case RS2_EXTENSION_DEPTH_STEREO_SENSOR: try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEPTH_STEREO_SENSOR   >::type>(extendable, snapshots);
             //case RS2_EXTENSION_ADVANCED_MODE   : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_ADVANCED_MODE  >::type>(extendable, snapshots);
             case RS2_EXTENSION_VIDEO_FRAME     : break;
             case RS2_EXTENSION_MOTION_FRAME    : break;

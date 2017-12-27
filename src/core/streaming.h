@@ -147,6 +147,8 @@ namespace librealsense
 
     };
 
+    class depth_stereo_sensor;
+
     class depth_sensor : public recordable<depth_sensor>
     {
     public:
@@ -180,6 +182,7 @@ namespace librealsense
         {
             //empty
         }
+
     protected:
         float m_depth_units;
     };

@@ -88,11 +88,25 @@ namespace librealsense
 
             // Check if the new frame originated from stereo-based depth sensor
             // and retrieve the stereo baseline parameter that will be used in transformations
-            auto snr = ((frame_interface*)f.get())->get_sensor();
-            _stereoscopic_depth = Is<librealsense::depth_stereo_sensor>(snr);
+            auto snr = ((frame_interface*)f.get())->get_sensor().get();
+            librealsense::depth_stereo_sensor* dss;
+
+            // Playback sensor
+            if (auto a = As<librealsense::extendable_interface>(snr))
+            {
+                librealsense::depth_stereo_sensor* ptr;
+                if (_stereoscopic_depth = a->extend_to(TypeToExtension<librealsense::depth_stereo_sensor>::value, (void**)&ptr))
+                    dss = ptr;
+            }
+            else // Live sensor
+            {
+                _stereoscopic_depth = Is<librealsense::depth_stereo_sensor>(snr);
+                dss = As<librealsense::depth_stereo_sensor>(snr);
+            }
+
             if (_stereoscopic_depth)
             {
-                _stereo_baseline_mm = As<librealsense::depth_stereo_sensor>(snr)->get_stereo_baseline_mm();
+                _stereo_baseline_mm = dss->get_stereo_baseline_mm();
                 auto vp = _source_stream_profile.as<rs2::video_stream_profile>();
                 _focal_lenght_mm    = vp.get_intrinsics().fx;
                 _d2d_convert_factor = _stereo_baseline_mm * _focal_lenght_mm;

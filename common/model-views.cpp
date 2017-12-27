@@ -587,10 +587,14 @@ namespace rs2
             if (s->supports(RS2_OPTION_DEPTH_UNITS))
                 depth_units = s->get_option(RS2_OPTION_DEPTH_UNITS);
         }
-        catch (...)
-        {
+        catch (...){}
 
+        try
+        {
+            if (s->supports(RS2_OPTION_STEREO_BASELINE))
+                stereo_baseline = s->get_option(RS2_OPTION_STEREO_BASELINE);
         }
+        catch (...) {}
 
         if (s->is<depth_sensor>())
         {
@@ -611,7 +615,7 @@ namespace rs2
             depth_to_disparity = std::make_shared<processing_block_model>(
                 this, "Depth->Disparity", depth_2_disparity,
                 [=](rs2::frame f) { return depth_2_disparity->proccess(f); }, error_message);
-            depth_to_disparity->enabled = true;
+            depth_to_disparity->enabled = s->is<depth_stereo_sensor>();
             post_processing.push_back(depth_to_disparity);
 
             auto spatial = std::make_shared<rs2::spatial_filter>();
@@ -633,10 +637,9 @@ namespace rs2
             disparity_to_depth = std::make_shared<processing_block_model>(
                 this, "Disparity->Depth", disparity_2_depth,
                 [=](rs2::frame f) { return disparity_2_depth->proccess(f); }, error_message);
-            disparity_to_depth->enabled = true;
+            disparity_to_depth->enabled = s->is<depth_stereo_sensor>();
             // the block will be internally available, but removed from UI
             //post_processing.push_back(disparity_to_depth);
-
         }
 
         populate_options(options_metadata, dev, *s, &options_invalidated, this, s, error_message);
@@ -1176,6 +1179,9 @@ namespace rs2
             {
                 opt_md.dev->depth_units = opt_md.value;
             }
+
+            if (next_option == RS2_OPTION_STEREO_BASELINE)
+                opt_md.dev->stereo_baseline = opt_md.value;
 
             next_option++;
         }

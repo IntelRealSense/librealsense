@@ -148,12 +148,12 @@ namespace librealsense
 
         float get_stereo_baseline_mm() const override { return _owner->get_stereo_baseline_mm(); }
 
-        void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const override
+        void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const
         {
             snapshot = std::make_shared<depth_sensor_snapshot>(get_depth_scale());
         }
 
-        void create_snapshot(std::shared_ptr<depth_stereo_sensor>& snapshot) const override
+        void create_snapshot(std::shared_ptr<depth_stereo_sensor>& snapshot) const
         {
             snapshot = std::make_shared<depth_stereo_sensor_snapshot>(get_depth_scale(), get_stereo_baseline_mm());
         }
@@ -417,6 +417,9 @@ namespace librealsense
         }
 
         depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
+
+        depth_ep.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
+            lazy<float>([this]() { return get_stereo_baseline_mm(); })));
 
         if (advanced_mode && _fw_version >= firmware_version("5.6.3.0"))
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<depth_scale_option>(*_hw_monitor));

@@ -1053,6 +1053,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_VIDEO:         return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::video_sensor_interface) != nullptr;
     case RS2_EXTENSION_ROI:           return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::roi_sensor_interface) != nullptr;
     case RS2_EXTENSION_DEPTH_SENSOR:  return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_sensor) != nullptr;
+    case RS2_EXTENSION_DEPTH_STEREO_SENSOR :  return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_stereo_sensor) != nullptr;
     default:
         return false;
     }
@@ -1072,6 +1073,7 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, 
     case RS2_EXTENSION_VIDEO: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::video_sensor_interface) != nullptr;
     case RS2_EXTENSION_ROI: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::roi_sensor_interface) != nullptr;
     case RS2_EXTENSION_DEPTH_SENSOR: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_sensor) != nullptr;
+    case RS2_EXTENSION_DEPTH_STEREO_SENSOR:  return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_stereo_sensor) != nullptr;
     case RS2_EXTENSION_ADVANCED_MODE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::ds5_advanced_mode_interface) != nullptr;
     case RS2_EXTENSION_RECORD: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::record_device) != nullptr;
     case RS2_EXTENSION_PLAYBACK: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::playback_device) != nullptr;
@@ -1679,6 +1681,14 @@ float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
     VALIDATE_NOT_NULL(sensor);
     auto ds = VALIDATE_INTERFACE(sensor->sensor, librealsense::depth_sensor);
     return ds->get_depth_scale();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0.f, sensor)
+
+float rs2_get_stereo_baseline(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    auto ds = VALIDATE_INTERFACE(sensor->sensor, librealsense::depth_stereo_sensor);
+    return ds->get_stereo_baseline_mm();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0.f, sensor)
 
