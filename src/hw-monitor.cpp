@@ -8,7 +8,7 @@ namespace librealsense
 {
 
     void hw_monitor::fill_usb_buffer(int opCodeNumber, int p1, int p2, int p3, int p4,
-        uint8_t * data, int dataLength, uint8_t * bufferToSend, int & length)
+        uint8_t* data, int dataLength, uint8_t* bufferToSend, int& length)
     {
         auto preHeaderData = IVCAM_MONITOR_MAGIC_NUMBER;
 
@@ -16,17 +16,17 @@ namespace librealsense
         auto header_size = 4;
 
         auto cur_index = 2;
-        *reinterpret_cast<uint16_t *>(writePtr + cur_index) = preHeaderData;
+        *(reinterpret_cast<uint16_t *>(writePtr + cur_index)) = preHeaderData;
         cur_index += sizeof(uint16_t);
-        *reinterpret_cast<int *>(writePtr + cur_index) = opCodeNumber;
+        *(reinterpret_cast<uint32_t *>(writePtr + cur_index)) = opCodeNumber;
         cur_index += sizeof(uint32_t);
-        *reinterpret_cast<int *>(writePtr + cur_index) = p1;
+        *(reinterpret_cast<uint32_t *>(writePtr + cur_index)) = p1;
         cur_index += sizeof(uint32_t);
-        *reinterpret_cast<int *>(writePtr + cur_index) = p2;
+        *(reinterpret_cast<uint32_t *>(writePtr + cur_index)) = p2;
         cur_index += sizeof(uint32_t);
-        *reinterpret_cast<int *>(writePtr + cur_index) = p3;
+        *(reinterpret_cast<uint32_t *>(writePtr + cur_index)) = p3;
         cur_index += sizeof(uint32_t);
-        *reinterpret_cast<int *>(writePtr + cur_index) = p4;
+        *(reinterpret_cast<uint32_t *>(writePtr + cur_index)) = p4;
         cur_index += sizeof(uint32_t);
 
         if (dataLength)
@@ -36,7 +36,7 @@ namespace librealsense
         }
 
         length = cur_index;
-        *reinterpret_cast<uint16_t *>(bufferToSend) = static_cast<uint16_t>(length - header_size); // Length doesn't include header
+        *(reinterpret_cast<uint16_t *>(bufferToSend)) = static_cast<uint16_t>(length - header_size); // Length doesn't include header
     }
 
 
@@ -73,10 +73,10 @@ namespace librealsense
             throw invalid_value_exception("received incomplete response to usb command");
 
         details.receivedCommandDataLength -= 4;
-        librealsense::copy(details.receivedOpcode, outputBuffer, 4);
+        librealsense::copy(details.receivedOpcode.data(), outputBuffer, 4);
 
         if (details.receivedCommandDataLength > 0)
-            librealsense::copy(details.receivedCommandData, outputBuffer + 4, details.receivedCommandDataLength);
+            librealsense::copy(details.receivedCommandData.data(), outputBuffer + 4, details.receivedCommandDataLength);
     }
 
     void hw_monitor::send_hw_monitor_command(hwmon_cmd_details& details) const
@@ -86,7 +86,7 @@ namespace librealsense
         uint32_t op{};
         size_t receivedCmdLen = HW_MONITOR_BUFFER_SIZE;
 
-        execute_usb_command(details.sendCommandData, details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
+        execute_usb_command(details.sendCommandData.data(), details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
         update_cmd_details(details, receivedCmdLen, outputBuffer);
     }
 
@@ -102,16 +102,16 @@ namespace librealsense
 
         hwmon_cmd_details details;
         details.oneDirection = newCommand.oneDirection;
-        details.TimeOut = newCommand.TimeOut;
+        details.timeOut = newCommand.timeOut;
 
         fill_usb_buffer(opCodeXmit,
-            newCommand.Param1,
-            newCommand.Param2,
-            newCommand.Param3,
-            newCommand.Param4,
+            newCommand.param1,
+            newCommand.param2,
+            newCommand.param3,
+            newCommand.param4,
             newCommand.data,
             newCommand.sizeOfSendCommandData,
-            details.sendCommandData,
+            details.sendCommandData.data(),
             details.sizeOfSendCommandData);
 
         send_hw_monitor_command(details);
@@ -120,8 +120,8 @@ namespace librealsense
         if (newCommand.oneDirection)
             return std::vector<uint8_t>();
 
-        librealsense::copy(newCommand.receivedOpcode, details.receivedOpcode, 4);
-        librealsense::copy(newCommand.receivedCommandData, details.receivedCommandData, details.receivedCommandDataLength);
+        librealsense::copy(newCommand.receivedOpcode, details.receivedOpcode.data(), 4);
+        librealsense::copy(newCommand.receivedCommandData, details.receivedCommandData.data(), details.receivedCommandDataLength);
         newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
 
         // endian?

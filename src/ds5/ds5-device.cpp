@@ -88,11 +88,13 @@ namespace librealsense
                 ds::calibration_table_id::coefficients_table_id,
                 profile.width, profile.height);
         }
+
         void open(const stream_profiles& requests) override
         {
             _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
             uvc_sensor::open(requests);
         }
+
         stream_profiles init_stream_profiles() override
         {
             auto lock = environment::get_instance().get_extrinsics_graph().lock();
@@ -242,7 +244,7 @@ namespace librealsense
     }
 
     std::shared_ptr<uvc_sensor> ds5_device::create_depth_device(std::shared_ptr<context> ctx,
-                                                                  const std::vector<platform::uvc_device_info>& all_device_infos)
+                                                                const std::vector<platform::uvc_device_info>& all_device_infos)
     {
         using namespace ds;
 

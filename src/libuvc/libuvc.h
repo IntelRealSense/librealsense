@@ -7,7 +7,13 @@ extern "C" {
 
 #include <stdio.h> // FILE
 #include <stdint.h>
+
+#ifdef WIN32
+#include <winsock.h>
+#else
 #include <sys/time.h>
+#endif
+
 #include <libuvc/libuvc_config.h>
 
 struct libusb_context;

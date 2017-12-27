@@ -163,10 +163,14 @@ public:
                     item(time);
                 }
 
+#ifndef ANDROID
                 std::unique_lock<std::mutex> lock(_was_flushed_mutex);
+#endif
                 _was_flushed = true;
                 _was_flushed_cv.notify_all();
+#ifndef ANDROID
                 lock.unlock();
+#endif
             }
         });
     }

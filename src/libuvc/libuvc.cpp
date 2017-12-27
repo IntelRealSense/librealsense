@@ -23,16 +23,11 @@
 #include <thread>
 #include <atomic>
 
-#include <dirent.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <limits.h>
 #include <cmath>
 #include <errno.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <fts.h>
 #include <regex>
 #include <list>
 
@@ -42,7 +37,7 @@
 #include "libuvc_internal.h"
 
 #pragma GCC diagnostic ignored "-Wpedantic"
-#include <libusb.h>
+#include "../third-party/libusb/libusb/libusb.h"
 #pragma GCC diagnostic pop
 
 #pragma GCC diagnostic ignored "-Woverflow"
@@ -120,7 +115,7 @@ namespace librealsense
                 if(status < 0)
                     throw linux_backend_exception(to_string() << "libusb_get_device_list(...) returned " << libusb_error_name(status));
 
-                for(int i=0; list[i]; ++i)
+                for(int i=0; i < status; ++i)
                 {
                     libusb_device * usb_device = list[i];
                     libusb_config_descriptor *config;
