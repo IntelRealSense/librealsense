@@ -576,9 +576,9 @@ if (BUILD_WITH_TM2)
             src/tm2/tm-factory.h
             src/tm2/tm-device.h
             src/tm2/tm-conversions.h
+            src/tm2/controller_event_serializer.h
             )
     endif()
-    add_definitions(-DWITH_TRACKING -DBUILD_STATIC)
 
     list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
     find_package(libtm REQUIRED)
@@ -598,6 +598,7 @@ if (BUILD_WITH_TM2)
     src/tm2/tm-device.h
     src/tm2/tm-factory.h
     src/tm2/tm-conversions.h
+    src/tm2/controller_event_serializer.h
     )
     
     list(APPEND REALSENSE_CPP
@@ -636,6 +637,9 @@ else()
     add_library(realsense2 STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
 endif()
 
+if(BUILD_WITH_TM2)
+    target_compile_definitions(realsense2 PRIVATE WITH_TRACKING=1 BUILD_STATIC=1)
+endif()
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
 target_link_libraries(realsense2 PRIVATE realsense-file ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})

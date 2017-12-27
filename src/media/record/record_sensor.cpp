@@ -26,6 +26,8 @@ librealsense::record_sensor::~record_sensor()
         auto& option = m_sensor.get_option(id);
         option.enable_recording([](const librealsense::option& snapshot) {});
     }
+    if(m_user_notification_callback)
+        m_sensor.register_notifications_callback(m_user_notification_callback);
 }
 
 stream_profiles record_sensor::get_stream_profiles() const
@@ -58,7 +60,7 @@ void librealsense::record_sensor::open(const stream_profiles& requests)
 void librealsense::record_sensor::close()
 {
     m_sensor.close();
-    m_is_recording = false;
+    disable_recording();
 }
 
 librealsense::option& librealsense::record_sensor::get_option(rs2_option id)
@@ -99,8 +101,10 @@ void librealsense::record_sensor::register_notifications_callback(notifications_
     m_user_notification_callback = std::move(callback);
     auto from_live_sensor = notifications_callback_ptr(new notification_callback([&](rs2_notification* n)
     {
-        on_notification(*(n->_notification));
-
+        if (m_is_recording)
+        {
+            on_notification(*(n->_notification));
+        }
         if (m_user_notification_callback)
         {
             m_user_notification_callback->on_notification(n);
@@ -203,7 +207,7 @@ void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, 
     ext.create_snapshot(snapshot);
     auto ext_snapshot = As<extension_snapshot>(snapshot);
     if(m_is_recording)
-    {    
+    {
         //Send to recording thread
         on_extension_change(extension_type, ext_snapshot);
     }
@@ -211,7 +215,7 @@ void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, 
 
 void record_sensor::stop_with_error(const std::string& error_msg)
 {
-    m_is_recording = false;
+    disable_recording();
     if (m_user_notification_callback)
     {
         std::string msg = to_string() << "Stopping recording for sensor (streaming will continue). (Error: " << error_msg << ")";
@@ -219,6 +223,11 @@ void record_sensor::stop_with_error(const std::string& error_msg)
         rs2_notification rs2_noti(&noti);
         m_user_notification_callback->on_notification(&rs2_noti);
     }
+}
+
+void record_sensor::disable_recording()
+{
+    m_is_recording = false;
 }
 
 void record_sensor::record_frame(frame_holder frame)
