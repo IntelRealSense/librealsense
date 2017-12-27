@@ -96,4 +96,40 @@ describe('Points test', function() {
     frameSet.destroy();
     pipeline.destroy();
   });
+
+  it('Testing member size', () => {
+    let pipeline;
+    let frameSet;
+    let pointcloud;
+    assert.doesNotThrow(() => {
+      pipeline = new rs2.Pipeline();
+      pointcloud = new rs2.PointCloud();
+      pipeline.start();
+    });
+    let endTest = false;
+    let n = 0;
+    while (!endTest) {
+      frameSet = pipeline.waitForFrames();
+      n++;
+      console.log(`retring left ...${10 - n} times`);
+      if (frameSet !== undefined && frameSet.colorFrame !== undefined &&
+        frameSet.depthFrame !== undefined) {
+        let points;
+        let arr;
+        assert.doesNotThrow(() => { // jshint ignore:line
+          points = pointcloud.calculate(frameSet.depthFrame);
+          arr = points.size;
+        });
+        assert.equal(typeof arr, 'number');
+        assert.equal(Object.prototype.toString.call(arr), '[object Number]');
+        pointcloud.destroy();
+        endTest = true;
+      }
+      if (n >= 10) {
+        assert(false, 'could not get colorFrame or depthFrame, try to reset camera');
+      }
+    }
+    frameSet.destroy();
+    pipeline.destroy();
+  });
 });

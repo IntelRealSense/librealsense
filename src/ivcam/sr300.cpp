@@ -301,14 +301,7 @@ namespace librealsense
 
     std::shared_ptr<matcher> sr300_camera::create_matcher(const frame_holder& frame) const
     {
-        if(!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
-        {
-            return device::create_matcher(frame);
-        }
         std::vector<std::shared_ptr<matcher>> depth_matchers;
-
-
-
 
         std::vector<stream_interface*> streams = { _depth_stream.get(), _ir_stream.get()};
 
@@ -317,7 +310,15 @@ namespace librealsense
             depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type()));
         }
         std::vector<std::shared_ptr<matcher>> matchers;
-        matchers.push_back( std::make_shared<frame_number_composite_matcher>(depth_matchers));
+        if (!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            matchers.push_back(std::make_shared<timestamp_composite_matcher>(depth_matchers));
+        }
+        else
+        {
+            matchers.push_back(std::make_shared<frame_number_composite_matcher>(depth_matchers));
+        }
+        
 
         auto color_matcher = std::make_shared<identity_matcher>( _color_stream->get_unique_id(), _color_stream->get_stream_type());
         matchers.push_back(color_matcher);

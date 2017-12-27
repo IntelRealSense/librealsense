@@ -32,17 +32,22 @@ describe('Sensor test', function() {
       rs2.option.OPTION_ENABLE_AUTO_WHITE_BALANCE,
     ];
 
-  it.skip('Testing method getMotionIntrinsics', () => {
+  it('Testing member - isValid', () => {
+    sensors.forEach((sensor) => {
+      assert.equal(typeof sensor.isValid, 'boolean');
+    });
+  });
+  it('Testing method getMotionIntrinsics', () => {
     sensors.forEach((sensor) => {
       Object.keys(rs2.stream).forEach((o) => {
         if (o === 'STREAM_COUNT' || o === 'streamToString') return;
         const m = sensor.getMotionIntrinsics(rs2.stream[o]);
         assert.equal(typeof m, 'object');
-        assert.equal(Object.prototype.toString.call(m.data), '[object Float32Array]');
+        assert.equal(Object.prototype.toString.call(m.data), '[object Array]');
         assert.equal(m.data.length, 12);
-        assert.equal(Object.prototype.toString.call(m.noiseVariances), '[object Float32Array]');
+        assert.equal(Object.prototype.toString.call(m.noiseVariances), '[object Array]');
         assert.equal(m.noiseVariances.length, 3);
-        assert.equal(Object.prototype.toString.call(m.biasVariances), '[object Float32Array]');
+        assert.equal(Object.prototype.toString.call(m.biasVariances), '[object Array]');
         assert.equal(m.biasVariances.length, 3);
       });
     });
@@ -190,59 +195,42 @@ describe('Sensor test', function() {
         if (o === 'OPTION_COUNT' || o === 'optionToString') return;
         // retrun if sensor does not support option
         if (!sensor.supportsOption(rs2.option[o])) return;
-        if (rs2.option[o] === 'visual-preset' ||
-          rs2.option[o] === 'error-polling-enabled' ||
-          rs2.option[o] === 'output-trigger-enabled' ||
-          rs2.option[o] === 'depth-units' ||
-          rs2.option[o] === 12 ||
-          rs2.option[o] === 24 ||
-          rs2.option[o] === 26 ||
-          rs2.option[o] === 28 ||
-          rs2.option[o] === 'backlight-compensation' ||
-          rs2.option[o] === 'white-balance' ||
-          rs2.option[o] === 'enable-auto-white-balance' ||
-          rs2.option[o] === 'power-line-frequency' ||
-          rs2.option[o] === 0 ||
-          rs2.option[o] === 9 ||
-          rs2.option[o] === 11 ||
-          rs2.option[o] === 22 ||
-          rs2.option[o] === 19
-          ) return;
         const v = sensor.getOption(rs2.option[o]);
-        sensor.setOption(rs2.option[o], v + 1);
+        let vSet;
+        const r = sensor.getOptionRange(rs2.option[o]);
+        if ((v - r.step) < r.minValue) {
+          vSet = v + r.step;
+        } else {
+          vSet = v - r.step;
+        }
+        sensor.setOption(rs2.option[o], vSet);
         const vNew = sensor.getOption(rs2.option[o]);
-        assert.equal(vNew, v + 1);
+        if (o.toUpperCase() === 'OPTION_DEPTH_UNITS') {
+          assert.equal(Math.round(vNew * 100000)/100000, Math.round(vSet * 100000)/100000);
+        } else {
+          assert.equal(vNew, vSet);
+        }
       });
     });
   }).timeout(20 * 1000);
 
-  it.skip('Testing method getOptionDescription', () => {
+  it('Testing method getOptionDescription', () => {
     sensors.forEach((sensor) => {
       optionsTestArray.forEach((o) => {
-        assert.equal(typeof sensor.getOptionDescription(o), 'string');
+        assert(typeof sensor.getOptionDescription(o) === 'string' ||
+          typeof sensor.getOptionDescription(o) === 'undefined'
+        );
       });
     });
   });
 
-  it.skip('Testing method getOptionValueDescription', () => {
+  it('Testing method getOptionValueDescription', () => {
     sensors.forEach((sensor) => {
       optionsTestArray.forEach((o) => {
-        assert.equal(typeof sensor.getOptionValueDescription(o), 'string');
+        assert(typeof sensor.getOptionValueDescription(o) === 'string' ||
+          typeof sensor.getOptionValueDescription(o) === 'undefined'
+        );
       });
-    });
-  });
-
-  it('Testing method isValid', () => {
-    sensors.forEach((sensor) => {
-      assert.doesNotThrow(() => {
-        sensor.isValid();
-      });
-    });
-  });
-
-  it('Testing method isValid, return boolean', () => {
-    sensors.forEach((sensor) => {
-      assert.equal(typeof sensor.isValid(), 'boolean');
     });
   });
 
@@ -275,27 +263,16 @@ describe('Sensor test', function() {
     });
   });
 
-  it.skip('Testing method open, profileArray', () => {
+  it('Testing method open, profileArray', () => {
     sensors.forEach((sensor) => {
       const profiles = sensor.getStreamProfiles();
-      for (let i in profiles) {
-        const format = profiles[i].format;
-        const fps = profiles[i].fps;
-        const isDefault = profiles[i].isDefault;
-        const streamIndex = profiles[i].streamIndex;
-        const streamType = profiles[i].streamType;
-        const uniqueID = profiles[i].uniqueID;
-        console.log(profiles[i]);
-        console.log(format, fps, isDefault, streamIndex, streamType, uniqueID);
         assert.doesNotThrow(() => { // jshint ignore:line
-          sensor.open([format, fps, isDefault, streamIndex,
-            streamType, uniqueID]);
+          sensor.open(profiles);
         });
-      }
     });
   });
 
-  it.skip('Testing method start, with callback', () => {
+  it('Testing method start, with callback', () => {
     sensors.forEach((sensor) => {
       const profiles = sensor.getStreamProfiles();
       for (let i in profiles) {

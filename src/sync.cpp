@@ -6,6 +6,8 @@
 
 namespace librealsense
 {
+    const int MAX_GAP = 1000;
+
     matcher::matcher(std::vector<stream_id> streams_id)
         : _streams_id(streams_id){}
 
@@ -293,6 +295,15 @@ namespace librealsense
                         synced_frames.clear();
                         break;
                     }
+                    else
+                    {
+                        std::stringstream s;
+                        s << "skipped missing stream: " << _name<<" ";
+                        for (auto&& stream : i->get_streams())
+                            s << stream;
+
+                        LOG_DEBUG(s.str());
+                    }
                 }
             }
 
@@ -316,7 +327,7 @@ namespace librealsense
 
 
                 std::stringstream s;
-                s<<"MATCHED: ";
+                s<<"MATCHED: "<<_name;
                 for(auto&& f: match)
                 {
                     auto composite = dynamic_cast<composite_frame*>(f.frame);
@@ -325,11 +336,11 @@ namespace librealsense
                         for (int i = 0; i < composite->get_embedded_frames_count(); i++)
                         {
                             auto matched = composite->get_frame(i);
-                            s << matched->get_stream()->get_stream_type()<<" "<<f->get_frame_number()<<" "<<matched->get_frame_timestamp()<<" ";
+                            s << matched->get_stream()->get_stream_type()<<" "<<f->get_frame_number()<<" "<<std::fixed << matched->get_frame_timestamp()<<" ";
                         }
                     }
                     else {
-                         s<<f->get_stream()->get_stream_type()<<" "<<f->get_frame_number()<<" "<<(double)f->get_frame_timestamp()<<" ";
+                         s<<f->get_stream()->get_stream_type()<<" "<<f->get_frame_number()<<" "<<std::fixed <<(double)f->get_frame_timestamp()<<" ";
                     }
 
 
@@ -504,7 +515,7 @@ namespace librealsense
         }
 
         //next expected of the missing stream didn't updated yet
-        if((*synced_frame)->get_frame_timestamp() > next_expected)
+        if((*synced_frame)->get_frame_timestamp() > next_expected && abs((*synced_frame)->get_frame_timestamp()- next_expected)<MAX_GAP)
         {
             return false;
         }
