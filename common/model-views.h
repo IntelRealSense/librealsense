@@ -444,6 +444,7 @@ namespace rs2
         double get_age_in_ms() const;
         void draw(int w, int y, notification_model& selected);
         void set_color_scheme(float t) const;
+        void clear_color_scheme() const;
 
         static const int MAX_LIFETIME_MS = 10000;
         int height = 40;

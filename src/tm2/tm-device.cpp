@@ -764,9 +764,6 @@ namespace librealsense
     {
         std::string msg = to_string() << "Controller discovered with MAC " << frame.macAddress;
         raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
-        //std::array<uint8_t, 6> mac;
-        //std::copy(std::begin(frame.macAddress), std::end(frame.macAddress), std::begin(mac));
-        //attach_controller(mac);
     }
 
     void tm2_sensor::onControllerDisconnectedEventFrame(perc::TrackingData::ControllerDisconnectedEventFrame& frame)

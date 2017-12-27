@@ -3815,9 +3815,10 @@ namespace rs2
             available_controllers.clear();
             return;
         }
-
+        
         if (controllers.size() > 0 || available_controllers.size() > 0)
         {
+            int flags = dev.is<playback>() ? ImGuiButtonFlags_Disabled : 0;
             ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
             ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
@@ -3833,7 +3834,7 @@ namespace rs2
                 std::string action = "Attach controller";
                 std::string mac = to_string() << (int)c[0] << ":" << (int)c[1] << ":" << (int)c[2] << ":" << (int)c[3] << ":" << (int)c[4] << ":" << (int)c[5];
                 std::string label = to_string() << u8"\uf11b" << "##" << action << mac;
-                if (ImGui::ButtonEx(label.c_str(), { button_dim , button_dim })) //ImGuiButtonFlags_Disabled
+                if (ImGui::ButtonEx(label.c_str(), { button_dim , button_dim }, flags))
                 {
                     dev.as<tm2>().connect_controller(c);
                 }
@@ -3851,7 +3852,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
                 std::string action = "Detach controller";
                 std::string label = to_string() << u8"\uf11b" << "##" << action << c.first;
-                if (ImGui::ButtonEx(label.c_str(), { button_dim , button_dim })) //ImGuiButtonFlags_Disabled
+                if (ImGui::ButtonEx(label.c_str(), { button_dim , button_dim }, flags))
                 {
                     dev.as<tm2>().disconnect_controller(c.first);
                 }
@@ -4886,6 +4887,10 @@ namespace rs2
         return std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - created_time).count();
     }
 
+    void notification_model::clear_color_scheme() const
+    {
+        ImGui::PopStyleColor(3);
+    }
     void notification_model::set_color_scheme(float t) const
     {
         if (severity == RS2_LOG_SEVERITY_ERROR ||
@@ -4937,13 +4942,9 @@ namespace rs2
         }
 
         ImGui::End();
-
+        ImGui::PopStyleColor();
+        clear_color_scheme();
         ImGui::PopStyleVar();
-
-        ImGui::PopStyleColor();
-        ImGui::PopStyleColor();
-        ImGui::PopStyleColor();
-        ImGui::PopStyleColor();
     }
 
     void notifications_model::add_notification(const notification_data& n)
@@ -5031,8 +5032,8 @@ namespace rs2
         }
 
         ImGui::PopStyleVar(2);
-        ImGui::PopStyleColor(6);
-
+        ImGui::PopStyleColor(3);
+        selected.clear_color_scheme();
         ImGui::End();
 
         ImGui::PopStyleColor();
