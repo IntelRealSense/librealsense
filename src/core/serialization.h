@@ -83,6 +83,7 @@ namespace librealsense
                     case end_of_file:
                     case frame:
                     case option:
+                    case notificaion:
                         return std::static_pointer_cast<T>(std::const_pointer_cast<serialized_data>(shared_from_this()));
                 }
                 return nullptr;
@@ -182,7 +183,7 @@ namespace librealsense
             }
             serialized_data_type type() const override
             {
-                return serialized_option::get_type();
+                return serialized_notification::get_type();
             }
         };
 

@@ -43,6 +43,8 @@ namespace librealsense
         }
 
         void register_notifications_callback(notifications_callback_ptr callback) override;
+        notifications_callback_ptr get_notifications_callback() const override;
+
         std::shared_ptr<notifications_proccessor> get_notifications_proccessor();
 
         bool is_streaming() const override

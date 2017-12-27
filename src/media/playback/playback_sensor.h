@@ -33,6 +33,7 @@ namespace librealsense
         void open(const stream_profiles& requests) override;
         void close() override;
         void register_notifications_callback(notifications_callback_ptr callback) override;
+        notifications_callback_ptr get_notifications_callback() const override;
         void start(frame_callback_ptr callback) override;
         void stop() override;
         bool is_streaming() const override;

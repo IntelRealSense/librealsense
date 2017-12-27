@@ -31,6 +31,7 @@ namespace librealsense
         bool supports_info(rs2_camera_info info) const override;
         bool supports_option(rs2_option id) const override;
         void register_notifications_callback(notifications_callback_ptr callback) override;
+        notifications_callback_ptr get_notifications_callback() const override;
         void start(frame_callback_ptr callback) override;
         void stop() override;
         bool is_streaming() const override;
@@ -41,7 +42,6 @@ namespace librealsense
         signal<record_sensor, rs2_extension, std::shared_ptr<extension_snapshot>> on_extension_change;
         void stop_with_error(const std::string& message);
     private /*methods*/:
-        void raise_user_notification(const std::string& str);
         template <typename T> void record_snapshot(rs2_extension extension_type, const T& snapshot);
         template <rs2_extension E, typename P> bool extend_to_aux(P* p, void** ext);
         void record_frame(frame_holder holder);

@@ -531,6 +531,10 @@ namespace librealsense
         _callback = std::move(callback);
         _dispatcher.start();
     }
+    notifications_callback_ptr notifications_proccessor::get_callback() const
+    {
+        return _callback;
+    }
 
     void copy(void* dst, void const* src, size_t size)
     {

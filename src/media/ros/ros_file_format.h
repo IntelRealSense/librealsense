@@ -546,7 +546,7 @@ namespace librealsense
     {
     public:
         NotificationsQuery() :
-            RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/notification/.*/)RRR") {}
+            RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/notification/.*)RRR") {}
     };
     /**
     * Incremental number of the RealSense file format version

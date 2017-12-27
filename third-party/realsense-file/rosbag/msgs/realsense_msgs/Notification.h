@@ -28,14 +28,14 @@ struct Notification_
     , category()
     , severity()
     , description()
-    , serizlied_data()  {
+    , serialized_data()  {
     }
   Notification_(const ContainerAllocator& _alloc)
     : timestamp()
     , category(_alloc)
     , severity(_alloc)
     , description(_alloc)
-    , serizlied_data(_alloc)  {
+    , serialized_data(_alloc)  {
   (void)_alloc;
     }
 
@@ -53,8 +53,8 @@ struct Notification_
    typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _description_type;
   _description_type description;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _serizlied_data_type;
-  _serizlied_data_type serizlied_data;
+   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _serialized_data_type;
+  _serialized_data_type serialized_data;
 
 
 
@@ -133,12 +133,12 @@ struct MD5Sum< ::realsense_msgs::Notification_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "fb8fc417a9b9745f3a52bf42edf0510c";
+    return "cdb7a97a510446301f8e6fb67d8cccb0";
   }
 
   static const char* value(const ::realsense_msgs::Notification_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0xfb8fc417a9b9745fULL;
-  static const uint64_t static_value2 = 0x3a52bf42edf0510cULL;
+  static const uint64_t static_value1 = 0xcdb7a97a51044630ULL;
+  static const uint64_t static_value2 = 0x1f8e6fb67d8cccb0ULL;
 };
 
 template<class ContainerAllocator>
@@ -163,7 +163,7 @@ time   timestamp          # The time of occurance \n\
 string category           # The category of the notification\n\
 string severity           # The severity of the notification\n\
 string description        # Human readable description of the notification\n\
-string serizlied_data     # JSON string with additional data\n\
+string serialized_data     # JSON string with additional data\n\
 ";
   }
 
@@ -186,7 +186,7 @@ namespace serialization
       stream.next(m.category);
       stream.next(m.severity);
       stream.next(m.description);
-      stream.next(m.serizlied_data);
+      stream.next(m.serialized_data);
     }
 
     ROS_DECLARE_ALLINONE_SERIALIZER
@@ -213,8 +213,8 @@ struct Printer< ::realsense_msgs::Notification_<ContainerAllocator> >
     Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.severity);
     s << indent << "description: ";
     Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.description);
-    s << indent << "serizlied_data: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.serizlied_data);
+    s << indent << "serialized_data: ";
+    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.serialized_data);
   }
 };
 

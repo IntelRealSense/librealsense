@@ -806,7 +806,7 @@ namespace librealsense
     typedef std::unique_ptr<rs2_log_callback, void(*)(rs2_log_callback*)> log_callback_ptr;
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
     typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback_ptr;
-    typedef std::unique_ptr<rs2_notifications_callback, void(*)(rs2_notifications_callback*)> notifications_callback_ptr;
+    typedef std::shared_ptr<rs2_notifications_callback> notifications_callback_ptr;
     typedef std::shared_ptr<rs2_devices_changed_callback> devices_changed_callback_ptr;
 
     using internal_callback = std::function<void(rs2_device_list* removed, rs2_device_list* added)>;
@@ -860,6 +860,7 @@ namespace librealsense
         ~notifications_proccessor();
 
         void set_callback(notifications_callback_ptr callback);
+        notifications_callback_ptr get_callback() const;
         void raise_notification(const notification);
 
     private:

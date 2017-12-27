@@ -32,7 +32,7 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
     {
         auto dev = ctx.load_device(file);
         was_loaded = true;
-        device_models.emplace_back(dev, error_message, viewer_model);
+        device_models.emplace_back(dev, error_message, viewer_model); //Will cause the new device to appear in the left panel
         if (auto p = dev.as<playback>())
         {
             auto filename = p.file_name();

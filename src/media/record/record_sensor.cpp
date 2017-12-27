@@ -13,6 +13,9 @@ librealsense::record_sensor::record_sensor(const device_interface& device,
     m_is_pause(false),
     m_parent_device(device)
 {
+    //override_notification_callback
+    m_user_notification_callback = sensor.get_notifications_callback();
+    register_notifications_callback(m_user_notification_callback);
     LOG_DEBUG("Created record_sensor");
 }
 
@@ -94,14 +97,21 @@ bool librealsense::record_sensor::supports_option(rs2_option id) const
 void librealsense::record_sensor::register_notifications_callback(notifications_callback_ptr callback)
 {
     m_user_notification_callback = std::move(callback);
-    std::unique_ptr<rs2_notifications_callback, void(*)(rs2_notifications_callback*)> cb(new notification_callback([&](rs2_notification* n)
+    auto from_live_sensor = notifications_callback_ptr(new notification_callback([&](rs2_notification* n)
     {
         on_notification(*(n->_notification));
 
-        if(m_user_notification_callback)
+        if (m_user_notification_callback)
+        {
             m_user_notification_callback->on_notification(n);
+        }
     }), [](rs2_notifications_callback* p) { p->release(); });
-    m_sensor.register_notifications_callback(std::move(cb));
+    m_sensor.register_notifications_callback(std::move(from_live_sensor));
+}
+
+notifications_callback_ptr librealsense::record_sensor::get_notifications_callback() const
+{
+    return m_sensor.get_notifications_callback();
 }
 
 void librealsense::record_sensor::start(frame_callback_ptr callback)
@@ -186,13 +196,6 @@ const device_interface& record_sensor::get_device()
     return m_parent_device;
 }
 
-void record_sensor::raise_user_notification(const std::string& str)
-{
-    notification noti(RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, 0, RS2_LOG_SEVERITY_ERROR, str);
-    rs2_notification rs2_noti(&noti);
-    if(m_user_notification_callback) m_user_notification_callback->on_notification(&rs2_noti);
-}
-
 template <typename T>
 void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, const T& ext)
 {
@@ -209,7 +212,13 @@ void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, 
 void record_sensor::stop_with_error(const std::string& error_msg)
 {
     m_is_recording = false;
-    raise_user_notification(to_string() << "Stopping recording for sensor (streaming will continue). (Error: " << error_msg << ")");
+    if (m_user_notification_callback)
+    {
+        std::string msg = to_string() << "Stopping recording for sensor (streaming will continue). (Error: " << error_msg << ")";
+        notification noti(RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, 0, RS2_LOG_SEVERITY_ERROR, msg);
+        rs2_notification rs2_noti(&noti);
+        m_user_notification_callback->on_notification(&rs2_noti);
+    }
 }
 
 void record_sensor::record_frame(frame_holder frame)

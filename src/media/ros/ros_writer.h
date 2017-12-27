@@ -135,12 +135,12 @@ namespace librealsense
         realsense_msgs::Notification to_notification_msg(const notification& n)
         {
             realsense_msgs::Notification noti_msg;
-            noti_msg.category = n.category;
-            noti_msg.severity = n.severity;
+            noti_msg.category = get_string(n.category);
+            noti_msg.severity = get_string(n.severity);
             noti_msg.description = n.description;
             auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::duration<double, std::nano>(n.timestamp));
             noti_msg.timestamp = ros::Time(secs.count());
-            noti_msg.serizlied_data = n.serialized_data;
+            noti_msg.serialized_data = n.serialized_data;
             return noti_msg;
         }
 

@@ -52,6 +52,12 @@ namespace librealsense
         _notifications_proccessor->set_callback(std::move(callback));
     }
 
+    notifications_callback_ptr sensor_base::get_notifications_callback() const
+    {
+        return _notifications_proccessor->get_callback();
+    }
+
+
     std::shared_ptr<notifications_proccessor> sensor_base::get_notifications_proccessor()
     {
         return _notifications_proccessor;

@@ -96,6 +96,12 @@ void playback_sensor::register_notifications_callback(notifications_callback_ptr
     _notifications_proccessor.set_callback(std::move(callback));
 }
 
+notifications_callback_ptr playback_sensor::get_notifications_callback() const
+{
+    return _notifications_proccessor.get_callback();
+}
+
+
 void playback_sensor::start(frame_callback_ptr callback)
 {
     LOG_DEBUG("Start sensor " << m_sensor_id);

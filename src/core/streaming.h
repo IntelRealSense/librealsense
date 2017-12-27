@@ -109,7 +109,7 @@ namespace librealsense
         virtual void close() = 0;
 
         virtual void register_notifications_callback(notifications_callback_ptr callback) = 0;
-
+        virtual notifications_callback_ptr get_notifications_callback() const = 0;
         virtual void start(frame_callback_ptr callback) = 0;
         virtual void stop() = 0;
 

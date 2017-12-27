@@ -1143,10 +1143,8 @@ namespace librealsense
             convert(notification_msg->severity, severity);
             int type = 0; //TODO: what is this for?
             notification n(category, type, severity, notification_msg->description);
-            auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::duration<double, std::nano>(n.timestamp));
             n.timestamp = to_nanoseconds(notification_msg->timestamp).count();
-            n.serialized_data = n.serialized_data;
-
+            n.serialized_data = notification_msg->serialized_data;
             return n;
         }
 
