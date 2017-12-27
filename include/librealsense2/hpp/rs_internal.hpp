@@ -5,6 +5,7 @@
 #define LIBREALSENSE_RS2_INTERNAL_HPP
 
 #include "rs_types.hpp"
+#include "rs_device.hpp"
 #include "../h/rs_internal.h"
 
 namespace rs2
@@ -66,6 +67,26 @@ namespace rs2
             return time;
         }
     }
+
+    class bypass_device : public device
+    {
+        static std::shared_ptr<rs2_device> create_device_ptr()
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_device> dev(
+                rs2_create_bypass_device(&e),
+                rs2_delete_device);
+            error::handle(e);
+            return dev;
+        }
+
+    public:
+        bypass_device()
+            : device(create_device_ptr())
+        {
+
+        }
+    };
 
 }
 #endif // LIBREALSENSE_RS2_INTERNAL_HPP

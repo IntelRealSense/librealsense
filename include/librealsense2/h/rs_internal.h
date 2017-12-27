@@ -49,6 +49,11 @@ rs2_context* rs2_create_recording_context(int api_version, const char* filename,
  */
 rs2_context* rs2_create_mock_context(int api_version, const char* filename, const char* section, rs2_error** error);
 
+/**
+ TODO
+**/
+rs2_device* rs2_create_bypass_device(rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

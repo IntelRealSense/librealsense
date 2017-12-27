@@ -239,3 +239,4 @@ EXPORTS
     rs2_delete_device_hub
 
     rs2_export_to_ply
+    rs2_create_bypass_device

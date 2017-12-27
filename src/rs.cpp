@@ -30,6 +30,7 @@
 #include "pipeline.h"
 #include "environment.h"
 #include "proc/temporal-filter.h"
+#include "bypass-device.h"
 
 ////////////////////////
 // API implementation //
@@ -1718,6 +1719,13 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
 {
     return environment::get_instance().get_time_service()->get_time();
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
+
+rs2_device* rs2_create_bypass_device(rs2_error** error) BEGIN_API_CALL
+{
+    auto dev = std::make_shared<bypass_device>();
+    return new rs2_device{ dev->get_context(), std::make_shared<readonly_device_info>(dev), dev };
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
 
