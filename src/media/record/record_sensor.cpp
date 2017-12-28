@@ -163,8 +163,8 @@ bool librealsense::record_sensor::extend_to_aux(P* p, void** ext)
 
     if (auto recordable = As<librealsense::recordable<EXT_TYPE>>(p))
     {
-        recordable->enable_recording([this](const EXT_TYPE& ext) {
-            record_snapshot(E, ext);
+        recordable->enable_recording([this](const EXT_TYPE& ext1) {
+            record_snapshot<EXT_TYPE>(E, ext1);
         });
     }
 
@@ -188,6 +188,7 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
         *ext = this;
         return true;
     case RS2_EXTENSION_DEPTH_SENSOR    : return extend_to_aux<RS2_EXTENSION_DEPTH_SENSOR   >(&m_sensor, ext);
+    case RS2_EXTENSION_DEPTH_STEREO_SENSOR: return extend_to_aux<RS2_EXTENSION_DEPTH_STEREO_SENSOR   >(&m_sensor, ext);
     //Other extensions are not expected to be extensions of a sensor
     default:
         LOG_WARNING("Extensions type is unhandled: " << extension_type);
@@ -201,7 +202,7 @@ const device_interface& record_sensor::get_device()
 }
 
 template <typename T>
-void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, const T& ext)
+void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, const recordable<T>& ext)
 {
     std::shared_ptr<T> snapshot;
     ext.create_snapshot(snapshot);

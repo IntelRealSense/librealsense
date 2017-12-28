@@ -31,6 +31,7 @@ namespace librealsense
         {
         case RS2_FORMAT_Z16: return  16;
         case RS2_FORMAT_DISPARITY16: return 16;
+        case RS2_FORMAT_DISPARITY32: return 32;
         case RS2_FORMAT_XYZ32F: return 12 * 8;
         case RS2_FORMAT_YUYV:  return 16;
         case RS2_FORMAT_RGB8: return 24;

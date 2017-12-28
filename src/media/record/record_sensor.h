@@ -43,10 +43,10 @@ namespace librealsense
         void stop_with_error(const std::string& message);
         void disable_recording();
     private /*methods*/:
-        template <typename T> void record_snapshot(rs2_extension extension_type, const T& snapshot);
+        template <typename T> void record_snapshot(rs2_extension extension_type, const recordable<T>& snapshot);
         template <rs2_extension E, typename P> bool extend_to_aux(P* p, void** ext);
         void record_frame(frame_holder holder);
-        
+
     private /*members*/:
         sensor_interface& m_sensor;
         std::set<rs2_option> m_recording_options;

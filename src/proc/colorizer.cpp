@@ -134,7 +134,7 @@ namespace librealsense
         auto max_opt = std::make_shared<ptr_option<float>>(0.f, 16.f, 0.1f, 6.f, &_max, "Max range in meters");
         register_option(RS2_OPTION_MAX_DISTANCE, max_opt);
 
-        auto color_map = std::make_shared<ptr_option<int>>(0, _maps.size() - 1, 1, 0, &_map_index, "Color map");
+        auto color_map = std::make_shared<ptr_option<int>>(0, (int)_maps.size() - 1, 1, 0, &_map_index, "Color map");
         color_map->set_description(0.f, "Jet");
         color_map->set_description(1.f, "Classic");
         color_map->set_description(2.f, "White to Black");
@@ -274,8 +274,8 @@ namespace librealsense
                 if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
                 {
                     auto vf = f.as<rs2::video_frame>();
-
-                    ret = source.allocate_video_frame(*_stream, f, 3, vf.get_width(), vf.get_height(), vf.get_width() * 3, RS2_EXTENSION_DEPTH_FRAME);
+                    rs2_extension ext = f.is<rs2::disparity_frame>() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
+                    ret = source.allocate_video_frame(*_stream, f, 3, vf.get_width(), vf.get_height(), vf.get_width() * 3, ext);
 
                     if (_equalize) make_equalized_histogram(f, ret);
                     else make_value_cropped_frame(f, ret);

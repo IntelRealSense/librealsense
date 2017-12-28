@@ -111,6 +111,8 @@ namespace librealsense
             GET_MAX = 2,
         };
 
+        const std::string DEPTH_STEREO = "Stereo Module";
+
         struct table_header
         {
             big_endian<uint16_t>    version;        // major.minor. Big-endian

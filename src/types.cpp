@@ -168,6 +168,8 @@ namespace librealsense
             CASE(RECORD)
             CASE(VIDEO_PROFILE)
             CASE(PLAYBACK)
+            CASE(DEPTH_STEREO_SENSOR)
+            CASE(DISPARITY_FRAME)
             CASE(MOTION_PROFILE)
             CASE(POSE_FRAME)
             CASE(POSE_PROFILE)
@@ -252,6 +254,7 @@ namespace librealsense
         CASE(FILTER_MAGNITUDE)
         CASE(FILTER_SMOOTH_ALPHA)
         CASE(FILTER_SMOOTH_DELTA)
+        CASE(STEREO_BASELINE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
@@ -265,6 +268,7 @@ namespace librealsense
         CASE(ANY)
         CASE(Z16)
         CASE(DISPARITY16)
+        CASE(DISPARITY32)
         CASE(XYZ32F)
         CASE(YUYV)
         CASE(RGB8)

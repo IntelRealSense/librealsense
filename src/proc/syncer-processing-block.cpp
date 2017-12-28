@@ -45,4 +45,4 @@ namespace librealsense
         set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
             new internal_frame_processor_callback<decltype(f)>(f)));
     }
-} 
+}

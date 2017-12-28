@@ -284,6 +284,8 @@ namespace rs2
         rect roi_rect;
         bool auto_exposure_enabled = false;
         float depth_units = 1.f;
+        float stereo_baseline = -1.f;
+
 
         bool roi_checked = false;
 
@@ -299,9 +301,11 @@ namespace rs2
         std::shared_ptr<processing_block_model> decimation_filter;
         std::shared_ptr<processing_block_model> spatial_filter;
         std::shared_ptr<processing_block_model> temporal_filter;
+        std::shared_ptr<processing_block_model> depth_to_disparity;
+        std::shared_ptr<processing_block_model> disparity_to_depth;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
-        bool post_processing_enabled = false;
+        bool post_processing_enabled = true;
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
     };
 
