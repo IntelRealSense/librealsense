@@ -217,7 +217,7 @@ namespace rs2
         void draw_options(const std::vector<rs2_option>& drawing_order,
                           bool update_read_only_options, std::string& error_message,
                           notifications_model& model);
-        int num_supported_options() const;
+        int num_supported_non_default_options() const;
         bool draw_option(rs2_option opt, bool update_read_only_options,
             std::string& error_message, notifications_model& model)
         {

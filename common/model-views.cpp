@@ -1259,9 +1259,12 @@ namespace rs2
         }
     }
     
-    int subdevice_model::num_supported_options() const
+    int subdevice_model::num_supported_non_default_options() const
     {
-        return std::count_if(std::begin(options_metadata), std::end(options_metadata), [](const std::pair<int, option_model>& p) {return p.second.supported; });
+        return std::count_if(
+            std::begin(options_metadata), 
+            std::end(options_metadata), 
+            [](const std::pair<int, option_model>& p) {return p.second.supported && p.second.opt != RS2_OPTION_FRAMES_QUEUE_SIZE; });
     }
 
     bool option_model::draw_option(bool update_read_only_options,
@@ -4433,14 +4436,10 @@ namespace rs2
                     }
                 }
 
-                label = to_string() << "Controls ##" << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << id;
-                if (ImGui::TreeNode(label.c_str()))
+                if (sub->num_supported_non_default_options())
                 {
-                    if (sub->num_supported_options() == 0)
-                    {
-                        ImGui::Text("No supported controls");
-                    }
-                    else
+                    label = to_string() << "Controls ##" << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << id;
+                    if (ImGui::TreeNode(label.c_str()))
                     {
                         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                         {
@@ -4454,11 +4453,10 @@ namespace rs2
                                 }
                             }
                         }
+
+                        ImGui::TreePop();
                     }
-
-                    ImGui::TreePop();
                 }
-
                 if (dev.is<advanced_mode>() && sub->s->is<depth_sensor>())
                     draw_advanced_mode_tab(viewer);
 
