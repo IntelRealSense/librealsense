@@ -41,6 +41,8 @@ namespace librealsense
 
         bool is_camera_in_advanced_mode() const;
 
+        float get_stereo_baseline_mm() const;
+
         void init(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 

@@ -133,7 +133,7 @@ namespace rs2
         * to help developers who are not using async APIs
         * param[in] capacity size of the frame queue
         */
-        explicit frame_queue(unsigned int capacity)
+        explicit frame_queue(unsigned int capacity): _capacity(capacity)
         {
             rs2_error* e = nullptr;
             _queue = std::shared_ptr<rs2_frame_queue>(
@@ -186,8 +186,11 @@ namespace rs2
             enqueue(std::move(f));
         }
 
+        size_t capacity() const { return _capacity; }
+
     private:
         std::shared_ptr<rs2_frame_queue> _queue;
+        size_t _capacity;
     };
 
     class pointcloud
@@ -305,8 +308,8 @@ namespace rs2
     {
     public:
         /**
-            Create align processing block 
-            Alignment is performed between a depth image and another image. 
+            Create align processing block
+            Alignment is performed between a depth image and another image.
             To perform alignment of a depth image to the other, set the align_to parameter with the other stream type.
             To perform alignment of a non depth image to a depth image, set the align_to parameter to RS2_STREAM_DEPTH
             Camera calibration and frame's stream type are determined on the fly, according to the first valid frameset passed to proccess()
@@ -467,6 +470,43 @@ namespace rs2
             rs2_error* e = nullptr;
             auto pb = std::shared_ptr<rs2_processing_block>(
                 rs2_create_spatial_filter_block(&e),
+                rs2_delete_processing_block);
+            _block = std::make_shared<processing_block>(pb);
+            error::handle(e);
+
+            // Redirect options API to the processing block
+            options::operator=(pb);
+
+            _block->start(_queue);
+        }
+
+        rs2::frame proccess(rs2::frame frame)
+        {
+            (*_block)(frame);
+            rs2::frame f;
+            _queue.poll_for_frame(&f);
+            return f;
+        }
+
+        void operator()(frame f) const
+        {
+            (*_block)(std::move(f));
+        }
+    private:
+        friend class context;
+
+        std::shared_ptr<processing_block> _block;
+        frame_queue _queue;
+    };
+
+    class disparity_transform : public options
+    {
+    public:
+        disparity_transform(bool transform_to_disparity=true) :_queue(1)
+        {
+            rs2_error* e = nullptr;
+            auto pb = std::shared_ptr<rs2_processing_block>(
+                rs2_create_disparity_transform_block(uint8_t(transform_to_disparity),&e),
                 rs2_delete_processing_block);
             _block = std::make_shared<processing_block>(pb);
             error::handle(e);

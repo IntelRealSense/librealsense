@@ -29,6 +29,5 @@ namespace librealsense
         rs2_stream _to_stream_type;
         std::shared_ptr<stream_profile_interface> _from_stream_profile;
         std::shared_ptr<stream_profile_interface> _to_stream_profile;
-        ;
     };
 }

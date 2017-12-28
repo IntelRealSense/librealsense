@@ -500,5 +500,32 @@ namespace rs2
 
         operator bool() const { return _sensor.get() != nullptr; }
     };
+
+    class depth_stereo_sensor : public depth_sensor
+    {
+    public:
+        depth_stereo_sensor(sensor s): depth_sensor(s)
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_DEPTH_STEREO_SENSOR, &e) == 0 && !e)
+            {
+                _sensor = nullptr;
+            }
+            error::handle(e);
+        }
+
+        /** Retrieves mapping between the units of the depth image and meters
+        * \return depth in meters corresponding to a depth value of 1
+        */
+        float get_stereo_baseline() const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_depth_scale(_sensor.get(), &e);
+            error::handle(e);
+            return res;
+        }
+
+        operator bool() const { return _sensor.get() != nullptr; }
+    };
 }
 #endif // LIBREALSENSE_RS2_SENSOR_HPP

@@ -574,7 +574,9 @@ namespace rs2
         depth_colorizer(std::make_shared<rs2::colorizer>()),
         decimation_filter(),
         spatial_filter(),
-        temporal_filter()
+        temporal_filter(),
+        depth_to_disparity(),
+        disparity_to_depth()
     {
         try
         {
@@ -591,15 +593,19 @@ namespace rs2
             if (s->supports(RS2_OPTION_DEPTH_UNITS))
                 depth_units = s->get_option(RS2_OPTION_DEPTH_UNITS);
         }
-        catch (...)
-        {
+        catch (...){}
 
+        try
+        {
+            if (s->supports(RS2_OPTION_STEREO_BASELINE))
+                stereo_baseline = s->get_option(RS2_OPTION_STEREO_BASELINE);
         }
+        catch (...) {}
 
         if (s->is<depth_sensor>())
         {
             auto colorizer = std::make_shared<processing_block_model>(
-                this, "Depth Visualization", depth_colorizer, 
+                this, "Depth Visualization", depth_colorizer,
                 [=](rs2::frame f) { return depth_colorizer->colorize(f); }, error_message);
             const_effects.push_back(colorizer);
 
@@ -611,9 +617,19 @@ namespace rs2
             decimation_filter->enabled = true;
             post_processing.push_back(decimation_filter);
 
+            auto depth_2_disparity = std::make_shared<rs2::disparity_transform>();
+            depth_to_disparity = std::make_shared<processing_block_model>(
+                this, "Depth->Disparity", depth_2_disparity,
+                [=](rs2::frame f) { return depth_2_disparity->proccess(f); }, error_message);
+            if (s->is<depth_stereo_sensor>())
+            {
+                depth_to_disparity->enabled = true;
+                post_processing.push_back(depth_to_disparity);
+            }
+
             auto spatial = std::make_shared<rs2::spatial_filter>();
             spatial_filter = std::make_shared<processing_block_model>(
-                this, "Spatial Filter", spatial, 
+                this, "Spatial Filter", spatial,
                 [=](rs2::frame f) { return spatial->proccess(f); },
                 error_message);
             spatial_filter->enabled = true;
@@ -625,6 +641,18 @@ namespace rs2
                 [=](rs2::frame f) { return temporal->proccess(f); }, error_message);
             temporal_filter->enabled = true;
             post_processing.push_back(temporal_filter);
+
+            auto disparity_2_depth = std::make_shared<rs2::disparity_transform>(false);
+            disparity_to_depth = std::make_shared<processing_block_model>(
+                this, "Disparity->Depth", disparity_2_depth,
+                [=](rs2::frame f) { return disparity_2_depth->proccess(f); }, error_message);
+            disparity_to_depth->enabled = s->is<depth_stereo_sensor>();
+            if (s->is<depth_stereo_sensor>())
+            {
+                disparity_to_depth->enabled = true;
+                // the block will be internally available, but removed from UI
+                //post_processing.push_back(disparity_to_depth);
+            }
         }
 
         populate_options(options_metadata, dev, *s, &options_invalidated, this, s, error_message);
@@ -1176,6 +1204,9 @@ namespace rs2
             {
                 opt_md.dev->depth_units = opt_md.value;
             }
+
+            if (next_option == RS2_OPTION_STEREO_BASELINE)
+                opt_md.dev->stereo_baseline = opt_md.value;
 
             next_option++;
         }
@@ -2556,17 +2587,25 @@ namespace rs2
                     if (dev->post_processing_enabled)
                     {
                         auto dec_filter = s.second.dev->decimation_filter;
+                        auto depth_2_disparity = s.second.dev->depth_to_disparity;
                         auto spatial_filter = s.second.dev->spatial_filter;
                         auto temp_filter = s.second.dev->temporal_filter;
+                        auto disparity_2_depth = s.second.dev->disparity_to_depth;
 
                         if (dec_filter->enabled)
                             f = dec_filter->invoke(f);
+
+                        if (depth_2_disparity->enabled)
+                            f = depth_2_disparity->invoke(f);
 
                         if (spatial_filter->enabled)
                             f = spatial_filter->invoke(f);
 
                         if (temp_filter->enabled)
                             f = temp_filter->invoke(f);
+
+                        if (disparity_2_depth->enabled)
+                            f = disparity_2_depth->invoke(f);
 
                         return f;
                     }
@@ -2638,7 +2677,8 @@ namespace rs2
                 frame frm;
                 if(viewer.synchronization_enable)
                 {
-                    while(syncer_queue.poll_for_frame(&frm))
+                    auto index = 0;
+                    while (syncer_queue.poll_for_frame(&frm) && ++index <= syncer_queue.capacity())
                     {
                         processing_block.invoke(frm);
                     }
@@ -2810,8 +2850,9 @@ namespace rs2
             auto index = 0;
             while (ppf.resulting_queue.poll_for_frame(&f) && ++index < ppf.resulting_queue_max_size)
             {
-                last_frames[f.get_profile().unique_id()] = std::move(f);
+                last_frames[f.get_profile().unique_id()] = f;
             }
+
             for(auto&& frame : last_frames)
             {
                 auto f = frame.second;
@@ -4197,8 +4238,6 @@ namespace rs2
 
                 if (dev.is<advanced_mode>() && sub->s->is<depth_sensor>())
                     draw_advanced_mode_tab(viewer);
-
-                
 
                 for (auto&& pb : sub->const_effects)
                 {

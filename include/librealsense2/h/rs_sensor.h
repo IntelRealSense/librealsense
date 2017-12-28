@@ -54,6 +54,7 @@ typedef enum rs2_format
     RS2_FORMAT_ANY             , /**< When passed to enable stream, librealsense will try to provide best suited format */
     RS2_FORMAT_Z16             , /**< 16-bit linear depth values. The depth is meters is equal to depth scale * pixel value. */
     RS2_FORMAT_DISPARITY16     , /**< 16-bit linear disparity values. The depth in meters is equal to depth scale / pixel value. */
+    RS2_FORMAT_DISPARITY32     , /**< 32-bit float-point disparity values. Depth->Disparity conversion : Disparity = Baseline*FocalLength/Depth */
     RS2_FORMAT_XYZ32F          , /**< 32-bit floating point 3D coordinates. */
     RS2_FORMAT_YUYV            , /**< Standard YUV pixel format as described in https://en.wikipedia.org/wiki/YUV */
     RS2_FORMAT_RGB8            , /**< 8-bit red, green and blue channels */
@@ -148,6 +149,13 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
 * \return                the number of meters represented by a single depth unit
 */
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error);
+
+/**
+* Retrieve the stereoscopic baseline value. Applicable to stereo-based depth modules
+* \param[out] float  Stereoscopic baseline in millimeters
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+float rs2_depth_stereo_frame_get_baseline(const rs2_frame* frame_ref, rs2_error** error);
 
 /**
  * \brief sets the active region of interest to be used by auto-exposure algorithm

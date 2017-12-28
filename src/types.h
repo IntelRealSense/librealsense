@@ -18,7 +18,6 @@
 #include <sstream>                          // For ostringstream
 #include <mutex>                            // For mutex, unique_lock
 #include <memory>                           // For unique_ptr
-#include <iostream>
 #include <map>
 #include <limits>
 #include <algorithm>
@@ -86,6 +85,20 @@ namespace librealsense
 #define LOG_FATAL(...)   do { ; } while(false)
 
 #endif // BUILD_EASYLOGGINGPP
+
+    // Enhancement for debug mode that incurs performance penalty with STL
+    // std::clamp to be introduced with c++17
+    template< typename T>
+    inline T clamp_val(T val, const T& min, const T& max)
+    {
+        static_assert((std::is_arithmetic<T>::value), "clamping supports arithmetic built-in types only");
+#ifdef _DEBUG
+        const T t = val < min ? min : val;
+        return t > max ? max : t;
+#else
+        return std::min(std::max(val, min), max);
+#endif
+    }
 
     //////////////////////////
     // Exceptions mechanism //

@@ -496,6 +496,30 @@ namespace rs2
             return r;
         }
     };
+
+    class disparity_frame : public depth_frame
+    {
+    public:
+        disparity_frame(const frame& f)
+            : depth_frame(f)
+        {
+            rs2_error* e = nullptr;
+            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_DISPARITY_FRAME, &e) == 0 && !e))
+            {
+                reset();
+            }
+            error::handle(e);
+        }
+
+        float get_baseline(void) const
+        {
+            rs2_error * e = nullptr;
+            auto r = rs2_depth_stereo_frame_get_baseline(get(), &e);
+            error::handle(e);
+            return r;
+        }
+    };
+
     class frameset : public frame
     {
     public:

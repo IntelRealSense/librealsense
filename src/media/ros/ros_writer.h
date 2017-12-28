@@ -260,13 +260,9 @@ namespace librealsense
             }
             case RS2_EXTENSION_VIDEO:
             case RS2_EXTENSION_ROI:
-                break;
             case RS2_EXTENSION_DEPTH_SENSOR:
-            {
-                auto dpt = SnapshotAs<RS2_EXTENSION_DEPTH_SENSOR>(snapshot);
-                //write_depth_sensor(ros_topic::property_topic({ device_id, sensor_id }), timestamp, dpt);
+            case RS2_EXTENSION_DEPTH_STEREO_SENSOR:
                 break;
-            }
             case RS2_EXTENSION_VIDEO_PROFILE:
             {
                 auto profile = SnapshotAs<RS2_EXTENSION_VIDEO_PROFILE>(snapshot);
