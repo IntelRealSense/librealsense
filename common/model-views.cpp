@@ -3184,7 +3184,14 @@ namespace rs2
                 glLoadMatrixf(view);
                 glMultMatrixf(model); // = view x model
 
-                tm2.draw_pose_object();
+                if (stream.second.profile.stream_index() > 1) //TODO: use a more robust way to identfy this
+                {
+                    tm2.draw_controller_pose_object();
+                }
+                else
+                {
+                    tm2.draw_pose_object();
+                }
 
                 // remove model matrix from the rest of the render
                 glPopMatrix();
@@ -5008,6 +5015,15 @@ namespace rs2
         removed_and_connected = std::move(_changes.front());
         _changes.pop();
         return true;
+    }
+    void tm2_model::draw_controller_pose_object()
+    {
+        const float sphere_radius = 0.02f;
+        const float controller_height = 0.2f;
+        //TODO: Draw controller holder as cylinder
+        texture_buffer::draw_circle(1, 0, 0, 0, 1, 0, sphere_radius, { 0.0, controller_height + sphere_radius, 0.0 }, 1.0f);
+        texture_buffer::draw_circle(0, 1, 0, 0, 0, 1, sphere_radius, { 0.0, controller_height + sphere_radius, 0.0 }, 1.0f);
+        texture_buffer::draw_circle(1, 0, 0, 0, 0, 1, sphere_radius, { 0.0, controller_height + sphere_radius, 0.0 }, 1.0f);
     }
 
     void tm2_model::draw_pose_object()

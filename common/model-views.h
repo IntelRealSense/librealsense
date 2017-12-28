@@ -615,6 +615,7 @@ namespace rs2
     class tm2_model
     {
     public:
+        void draw_controller_pose_object();
         void draw_pose_object();
         void draw_trajectory(tracked_point& p);
         void draw_boundary(tracked_point& p);
