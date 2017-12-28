@@ -112,6 +112,15 @@ PYBIND11_PLUGIN(NAME) {
         .value("depth_units", RS2_OPTION_DEPTH_UNITS)
         .value("enable_motion_correction", RS2_OPTION_ENABLE_MOTION_CORRECTION)
         .value("auto_exposure_priority", RS2_OPTION_AUTO_EXPOSURE_PRIORITY)
+        .value("color_scheme", RS2_OPTION_COLOR_SCHEME)
+        .value("histogram_equalization_enabled", RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED)
+        .value("min_distance", RS2_OPTION_MIN_DISTANCE)
+        .value("max_distance", RS2_OPTION_MAX_DISTANCE)
+        .value("texture_source", RS2_OPTION_TEXTURE_SOURCE)
+        .value("filter_magnitude", RS2_OPTION_FILTER_MAGNITUDE)
+        .value("filter_smooth_alpha", RS2_OPTION_FILTER_SMOOTH_ALPHA)
+        .value("filter_smooth_delta", RS2_OPTION_FILTER_SMOOTH_DELTA)
+        .value("stereo_baseline", RS2_OPTION_STEREO_BASELINE)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");
