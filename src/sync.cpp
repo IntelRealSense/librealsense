@@ -382,8 +382,16 @@ namespace librealsense
         std::vector<stream_id> inactive_matchers;
         for(auto m: _matchers)
         {
-            if(_last_arrived[m.second.get()] && (f->get_frame_number() - _last_arrived[m.second.get()]) > 5)
+            if (_last_arrived[m.second.get()] && (fabs((long long)f->get_frame_number() - (long long)_last_arrived[m.second.get()])) > 5)
             {
+                std::stringstream s;
+                s << "clean inactive stream in "<<_name;
+                for (auto stream : m.second->get_streams_types())
+                {
+                    s << stream << " ";
+                }
+                LOG_DEBUG(s.str());
+
                 inactive_matchers.push_back(m.first);
                 m.second->set_active(false);
             }
@@ -482,6 +490,14 @@ namespace librealsense
         {
             if(_last_arrived[m.second.get()] && (now - _last_arrived[m.second.get()]) > 500)
             {
+                std::stringstream s;
+                s << "clean inactive stream in "<<_name;
+                for (auto stream : m.second->get_streams_types())
+                {
+                    s << stream << " ";
+                }
+                LOG_DEBUG(s.str());
+
                 dead_matchers.push_back(m.first);
                 m.second->set_active(false);
             }
