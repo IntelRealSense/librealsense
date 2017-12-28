@@ -26,9 +26,7 @@
 #include <functional>
 #include <utility>                          // For std::forward
 #include "backend.h"
-
 #include "concurrency.h"
-
 #if BUILD_EASYLOGGINGPP
 #include "../third-party/easyloggingpp/src/easylogging++.h"
 #endif // BUILD_EASYLOGGINGPP
@@ -42,6 +40,10 @@ const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+D
 #endif
 
 #pragma warning(disable: 4250)
+
+#ifdef ANDROID
+#include "../common/android_helpers.h"
+#endif
 
 namespace librealsense
 {

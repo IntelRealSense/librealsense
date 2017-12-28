@@ -9,6 +9,10 @@
 #include <functional>
 #include <cstring>
 
+#ifdef ANDROID
+#include "android_helpers.h"
+#endif
+
 #include "../third-party/rapidxml/rapidxml.hpp"
 
 #define MAX_PARAMS 4

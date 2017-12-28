@@ -9,9 +9,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <pthread.h>
+#include <stdint.h>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 #include <signal.h>
-#include <libusb.h>
+#include "../third-party/libusb/libusb/libusb.h"
 #include "utlist.h"
 
 /** Converts an unaligned four-byte little-endian integer into an int32 */
@@ -256,9 +259,9 @@ struct uvc_stream_handle {
     size_t metadata_bytes,metadata_size;
     size_t got_bytes, hold_bytes;
     uint8_t *outbuf, *holdbuf;
-    pthread_mutex_t cb_mutex;
-    pthread_cond_t cb_cond;
-    pthread_t cb_thread;
+    std::mutex cb_mutex;
+    std::condition_variable cb_cond;
+    std::thread cb_thread;
     uint32_t last_polled_seq;
     uvc_frame_callback_t *user_cb;
     void *user_ptr;
@@ -300,7 +303,7 @@ struct uvc_context {
     uint8_t own_usb_ctx;
     /** List of open devices in this context */
     uvc_device_handle_t *open_devices;
-    pthread_t handler_thread;
+    std::thread handler_thread;
     int kill_handler_thread;
 };
 

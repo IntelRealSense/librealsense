@@ -27,7 +27,7 @@ add_executable(rs-fw-logger rs-fw-logger.cpp fw-log-data.cpp
     fw-logs-xml-helper.h
     string-formatter.cpp
     string-formatter.h)
-if(WIN32)
+if(WIN32 OR ANDROID)
     target_link_libraries(rs-fw-logger ${DEPENDENCIES})
 else()
     target_link_libraries(rs-fw-logger -lpthread ${DEPENDENCIES})

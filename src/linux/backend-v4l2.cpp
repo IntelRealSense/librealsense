@@ -52,6 +52,8 @@ const size_t MAX_DEV_PARENT_DIR = 10;
 
 #ifdef ANDROID
 
+#include <sys/sysmacros.h> // minor(...), major(...)
+
 // https://android.googlesource.com/platform/bionic/+/master/libc/include/bits/lockf.h
 #define F_ULOCK 0
 #define F_LOCK 1
