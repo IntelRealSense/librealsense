@@ -17,7 +17,7 @@ int main(int argc, char * argv[]) try
     const int BPP = 2;
 
     bypass_device dev;
-    dev.add_sensor("DS5u");
+    dev.add_sensor("Software Only Device");
     dev.add_video_stream(0, RS2_STREAM_DEPTH, 0, 0, W, H, BPP, RS2_FORMAT_Z16);
     dev.add_video_stream(0, RS2_STREAM_INFRARED, 1, 1, W, H, BPP, RS2_FORMAT_Y8);
 
