@@ -682,9 +682,9 @@ namespace rs2
 
         try
         {
-            auto uvc_profiles = s->get_stream_profiles();
-            reverse(begin(uvc_profiles), end(uvc_profiles));
-            for (auto&& profile : uvc_profiles)
+            auto sensor_profiles = s->get_stream_profiles();
+            reverse(begin(sensor_profiles), end(sensor_profiles));
+            for (auto&& profile : sensor_profiles)
             {
                 std::stringstream res;
                 if (auto vid_prof = profile.as<video_stream_profile>())
@@ -710,23 +710,15 @@ namespace rs2
                 if (profile.is_default())
                 {
                     stream_enabled[profile.unique_id()] = true;
-                }               
+                }
 
                 profiles.push_back(profile);
             }
-            auto any_stream_enabled = false;
-            for (auto it : stream_enabled)
-            {
-                if (it.second)
-                {
-                    any_stream_enabled = true;
-                    break;
-                }
-            }
+            auto any_stream_enabled = std::any_of(std::begin(stream_enabled), std::end(stream_enabled), [](const std::pair<int, bool>& p) { return p.second; });
             if (!any_stream_enabled)
             {
-                if(uvc_profiles.size() > 0)
-                    stream_enabled[uvc_profiles[uvc_profiles.size()-1].unique_id()] = true;
+                if(sensor_profiles.size() > 0)
+                    stream_enabled[sensor_profiles.rbegin()->unique_id()] = true;
             }
 
             for (auto&& fps_list : fps_values_per_stream)
@@ -1689,6 +1681,7 @@ namespace rs2
             ImGui::PushItemWidth(200);
             draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
             selected_tex_source_uid = tex_sources[selected_tex_source];
+            texture.colorize = streams[selected_tex_source].texture->colorize;
             ImGui::PopItemWidth();
         }
 
@@ -2763,7 +2756,6 @@ namespace rs2
     {
         while (keep_calculating)
         {
-
             try
             {
                 frame frm;
@@ -2781,7 +2773,7 @@ namespace rs2
                         std::lock_guard<std::mutex> lock(viewer.streams_mutex);
                         frames_queue_local = frames_queue;
                     }
-                    for(auto&& q :  frames_queue_local)
+                    for (auto&& q : frames_queue_local)
                     {
 
                         frame frm;
@@ -2793,7 +2785,6 @@ namespace rs2
                 }
             }
             catch (...) {}
-
         }
     }
 
@@ -2941,7 +2932,8 @@ namespace rs2
             auto index = 0;
             while (ppf.resulting_queue.poll_for_frame(&f) && ++index < ppf.resulting_queue_max_size)
             {
-                last_frames[f.get_profile().unique_id()] = std::move(f);
+                auto id = f.get_profile().unique_id();
+                last_frames[id] = std::move(f);
             }
             for(auto&& frame : last_frames)
             {
@@ -3179,7 +3171,7 @@ namespace rs2
                 auto f = stream.second.texture->get_last_frame();
                 auto pose = f.as<pose_frame>();
                 if (!pose)
-                    continue;               
+                    continue;
                 
                 rs2_pose pose_data = pose.get_pose_data();
                 matrix4 pose_trans = tm2_pose_to_world_transformation(pose_data);
@@ -3404,7 +3396,7 @@ namespace rs2
         auto index = f.get_profile().unique_id();
         auto mapped_index = streams_origin[index];
 
-        if(index == selected_tex_source_uid || mapped_index  == selected_tex_source_uid || selected_tex_source_uid == -1)
+        if (index == selected_tex_source_uid || mapped_index == selected_tex_source_uid || selected_tex_source_uid == -1)
             return true;
         return false;
     }

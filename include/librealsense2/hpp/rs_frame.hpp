@@ -213,6 +213,10 @@ namespace rs2
             : frame_ref(other.frame_ref)
         {
             if (frame_ref) add_ref();
+#ifdef _DEBUG
+            frame_number = other.frame_number;
+            profile =  other.profile;
+#endif
         }
         void swap(frame& other)
         {
