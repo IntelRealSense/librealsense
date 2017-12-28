@@ -101,6 +101,7 @@ namespace librealsense
         CASE(WRONG_API_CALL_SEQUENCE)
         CASE(NOT_IMPLEMENTED)
         CASE(DEVICE_IN_RECOVERY_MODE)
+        CASE(IO)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
