@@ -43,6 +43,7 @@ namespace librealsense
 
         void on_video_frame(void* pixels, 
             void(*deleter)(void*),
+            int stride, int bpp,
             rs2_time_t ts, rs2_timestamp_domain domain,
             int frame_number,
             stream_profile_interface* profile);

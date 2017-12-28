@@ -1739,13 +1739,14 @@ HANDLE_EXCEPTIONS_AND_RETURN(, dev, sensor_name)
 
 void rs2_bypass_on_video_frame(rs2_device* dev, int sensor, void* pixels, 
     void(*deleter)(void*),
+    int stride, int bpp,
     rs2_time_t ts, rs2_timestamp_domain domain,
     int frame_number,
     const rs2_stream_profile* profile, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     auto df = VALIDATE_INTERFACE(dev->device, librealsense::bypass_device);
-    return df->get_bypass_sensor(sensor).on_video_frame(pixels, deleter, ts, domain, frame_number, profile->profile);
+    return df->get_bypass_sensor(sensor).on_video_frame(pixels, deleter, stride, bpp, ts, domain, frame_number, profile->profile);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, sensor, pixels)
 

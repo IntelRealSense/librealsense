@@ -9,7 +9,7 @@ namespace librealsense
     bypass_device::bypass_device()
         : device(std::make_shared<context>(backend_type::standard), {})
     {
-        
+        register_info(RS2_CAMERA_INFO_NAME, "Bypass-Sensor");
     }
 
     void bypass_device::add_bypass_sensor(const std::string& name)
@@ -83,6 +83,7 @@ namespace librealsense
 
     void bypass_sensor::on_video_frame(void * pixels, 
         void(*deleter)(void*),
+        int stride, int bpp,
         rs2_time_t ts, rs2_timestamp_domain domain,
         int frame_number,
         stream_profile_interface* profile)
@@ -92,6 +93,11 @@ namespace librealsense
         data.timestamp_domain = domain;
         data.frame_number = frame_number;
         auto frame = _source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, 0, data, false);
+
+        auto vid_profile = dynamic_cast<video_stream_profile_interface*>(profile);
+        auto vid_frame = dynamic_cast<video_frame*>(frame);
+        vid_frame->assign(vid_profile->get_width(), vid_profile->get_height(), stride, bpp);
+
         frame->set_stream(std::dynamic_pointer_cast<stream_profile_interface>(profile->shared_from_this()));
         frame->attach_continuation(frame_continuation{ [=]() {
             deleter(pixels);

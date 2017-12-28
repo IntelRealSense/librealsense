@@ -96,12 +96,13 @@ namespace rs2
 
         void on_video_frame(int sensor, 
             void* pixels, void(*deleter)(void*),
+            int stride, int bpp,
             rs2_time_t timestamp, rs2_timestamp_domain domain,
             int frame_number, stream_profile profile)
         {
             rs2_error* e = nullptr;
             rs2_bypass_on_video_frame(_dev.get(), sensor, 
-                pixels, deleter, timestamp, domain, frame_number, profile.get(), &e);
+                pixels, deleter, stride, bpp, timestamp, domain, frame_number, profile.get(), &e);
             error::handle(e);
         }
 
