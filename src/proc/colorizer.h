@@ -32,13 +32,13 @@ namespace librealsense {
 
         color_map() {}
 
-        inline float3 get(float value) const;
-        /*{
+        inline float3 get(float value) const
+        {
             if (_max == _min) return *_data;
             auto t = (value - _min) / (_max - _min);
             t = clamp_val(t, 0.f, 1.f);
             return _data[(int)(t * (_size - 1))];
-        }*/
+        }
 
         float min_key() const { return _min; }
         float max_key() const { return _max; }

@@ -319,6 +319,8 @@ namespace librealsense
 
     MAP_EXTENSION(RS2_EXTENSION_DEPTH_FRAME, librealsense::depth_frame);
 
+    // Disparity frame provides an alternative representation of the depth data for stereo-based depth sensors
+    // In addition for the depth frame API it allows to query the stereoscopic baseline required to transform depth to disparity and vice versa
     class disparity_frame : public depth_frame
     {
     public:

@@ -78,7 +78,8 @@ namespace librealsense
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
-            rs2::frame out = f, tgt, depth;
+            rs2::frame out = f;
+            rs2::frame tgt, depth;
 
             bool composite = f.is<rs2::frameset>();
 

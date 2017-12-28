@@ -123,14 +123,6 @@ namespace librealsense
         { 0, 0, 0 },
         } };
 
-    float3 color_map::get(float value) const
-    {
-        if (_max == _min) return *_data;
-        auto t = (value - _min) / (_max - _min);
-        t = clamp_val(t, 0.f, 1.f);
-        return _data[(int)(t * (_size - 1))];
-    }
-
     colorizer::colorizer()
         : _min(0.f), _max(6.f), _equalize(true), _stream()
     {

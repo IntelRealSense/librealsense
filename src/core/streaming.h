@@ -191,7 +191,6 @@ namespace librealsense
     {
     public:
         virtual float get_stereo_baseline_mm() const = 0;
-        virtual ~depth_stereo_sensor() = default;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_DEPTH_STEREO_SENSOR, librealsense::depth_stereo_sensor);

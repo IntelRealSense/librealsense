@@ -2679,7 +2679,6 @@ namespace rs2
                 {
                     auto index = 0;
                     while (syncer_queue.poll_for_frame(&frm) && ++index <= syncer_queue.capacity())
-                    //while(syncer_queue.poll_for_frame(&frm))
                     {
                         processing_block.invoke(frm);
                     }
@@ -2851,9 +2850,9 @@ namespace rs2
             auto index = 0;
             while (ppf.resulting_queue.poll_for_frame(&f) && ++index < ppf.resulting_queue_max_size)
             {
-                auto id = f.get_profile().unique_id();
-                last_frames[id] = std::move(f);
+                last_frames[f.get_profile().unique_id()] = f;
             }
+
             for(auto&& frame : last_frames)
             {
                 auto f = frame.second;
