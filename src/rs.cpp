@@ -1116,8 +1116,8 @@ int rs2_stream_profile_is(const rs2_stream_profile* f, rs2_extension extension_t
     switch (extension_type)
     {
     case RS2_EXTENSION_VIDEO_PROFILE    : return VALIDATE_INTERFACE_NO_THROW(f->profile, librealsense::video_stream_profile_interface)  != nullptr;
-    case RS2_EXTENSION_MOTION_PROFILE:  : return VALIDATE_INTERFACE_NO_THROW(f->profile, librealsense::motion_stream_profile_interface) != nullptr;
-    case RS2_EXTENSION_POSE_PROFILE:    : return VALIDATE_INTERFACE_NO_THROW(f->profile, librealsense::pose_stream_profile_interface)   != nullptr;
+    case RS2_EXTENSION_MOTION_PROFILE   : return VALIDATE_INTERFACE_NO_THROW(f->profile, librealsense::motion_stream_profile_interface) != nullptr;
+    case RS2_EXTENSION_POSE_PROFILE     : return VALIDATE_INTERFACE_NO_THROW(f->profile, librealsense::pose_stream_profile_interface)   != nullptr;
     default:
         return false;
     }
