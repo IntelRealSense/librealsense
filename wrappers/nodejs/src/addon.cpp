@@ -1638,7 +1638,6 @@ class RSSensor : public Nan::ObjectWrap, Options {
     Nan::SetPrototypeMethod(tpl, "getOptionDescription", GetOptionDescription);
     Nan::SetPrototypeMethod(tpl, "getOptionValueDescription",
         GetOptionValueDescription);
-    Nan::SetPrototypeMethod(tpl, "getMotionIntrinsics", GetMotionIntrinsics);
     Nan::SetPrototypeMethod(tpl, "stop", Stop);
     Nan::SetPrototypeMethod(tpl, "supportsCameraInfo", SupportsCameraInfo);
     Nan::SetPrototypeMethod(tpl, "getStreamProfiles", GetStreamProfiles);
@@ -1839,19 +1838,6 @@ class RSSensor : public Nan::ObjectWrap, Options {
         profs.data(),
         len,
         &me->error_);
-    }
-    info.GetReturnValue().Set(Nan::Undefined());
-  }
-
-  static NAN_METHOD(GetMotionIntrinsics) {
-    auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
-    if (me) {
-      rs2_stream stream = (rs2_stream)(info[0]->IntegerValue());
-      rs2_motion_device_intrinsic output;
-      rs2_get_motion_intrinsics(me->sensor_, stream, &output, &me->error_);
-      RSMotionIntrinsics intrinsics(&output);
-      info.GetReturnValue().Set(intrinsics.GetObject());
-      return;
     }
     info.GetReturnValue().Set(Nan::Undefined());
   }
