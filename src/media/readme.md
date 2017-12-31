@@ -24,10 +24,10 @@ rs2::context ctx;
 auto devices = ctx.query_devices();
 if (devices.size() > 0)
 {
-	//Create a rs2::recorder from the first device, and desired file name
-	//'.bag' is the common extension for rosbag files
-	rs2::recorder device("my_file_name.bag", devices[0]); 	
-	//recorder "is a" device, so just use it like any other device now
+    //Create a rs2::recorder from the first device, and desired file name
+    //'.bag' is the common extension for rosbag files
+    rs2::recorder device("my_file_name.bag", devices[0]); 	
+    //recorder "is a" device, so just use it like any other device now
 }
 ```
 A `recorder` has the same functionality as a "real" device, with additional control for recording, such as pausing and resuming record.
@@ -49,7 +49,7 @@ The above code creates a playback device, which can be used as any device, but h
 Playback devices can be used to query information on the device and it sensors, and can be extended to which ever extension the "real" device could.
 A `playback` provides additional functionalities such as seek, pause, resume and playback speed.
 
-#### Using `rs2::config` with `rs2::pipeline`
+### Using `rs2::config` with `rs2::pipeline`
 
 The `rs2::pipeline` can be configured to record or play a streaming session by providing it with a `rs2::config` of your choice:
 
@@ -61,8 +61,8 @@ rs2::pipeline pipe;
 pipe.start(cfg); //File will be opened in write mode at this point
 for (int i = 0; i < 30; i++)
 {
-		auto frames = pipe.wait_for_frames();
-		//use frames here
+    auto frames = pipe.wait_for_frames();
+    //use frames here
 }
 pipe.stop(); //File will be closed at this point
 ```
@@ -75,15 +75,15 @@ rs2::pipeline pipe;
 pipe.start(cfg); //File will be opened in read mode at this point
 for (int i = 0; i < 30; i++)
 {
-		rs2::frameset frames;
-		if (pipe.poll_for_frames(&frames))
-		{
-				//use frames here
-		}
-		//Note that we use poll_for_frames instead of wait_for_frames
-		//This is because the file only contains a finite amount of frames
-		// and if we use wait_for_frames then after reading the entire file
-		// we will fail to wait for the next frame (and get an exception)
+    rs2::frameset frames;
+    if (pipe.poll_for_frames(&frames))
+    {
+        //use frames here
+    }
+    //Note that we use poll_for_frames instead of wait_for_frames
+    //This is because the file only contains a finite amount of frames
+    // and if we use wait_for_frames then after reading the entire file
+    // we will fail to wait for the next frame (and get an exception)
 }
 pipe.stop(); //File will be closed at this point
 ```
@@ -306,18 +306,18 @@ The following table depicts the Topics that are supported by RealSense file form
     <td><a href="http://docs.ros.org/jade/api/geometry_msgs/html/msg/Transform.html">geometry_msgs/Transform Message</a></td>
     <td>Extrinsic transformation between some point of reference (indexed by group_index) to the stream in the topic</td>
   </tr>
-	<tr>
+  <tr>
     <td>Additional Info</td>
     <td>/additional_info</td>
     <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue</a></td>
     <td>Additinal information of any kind. Can be useful for application that require additional metadata on the recorded file (such as program name, version etc...)</td>
   </tr>
-	<tr>
-		<td>Sensor Notification</td>
-		<td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/notification/&lt;rs2_notification_category&gt;</td>
-		<td><a href="#notification">realsense_msgs/Notification</td>
-		<td>Additinal information of any kind. Can be useful for application that require additional metadata on the recorded file (such as program name, version etc...)</td>
-	</tr>
+  <tr>
+    <td>Sensor Notification</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/notification/&lt;rs2_notification_category&gt;</td>
+    <td><a href="#notification">realsense_msgs/Notification</td>
+    <td>Additinal information of any kind. Can be useful for application that require additional metadata on the recorded file (such as program name, version etc...)</td>
+  </tr>
 </table>
 
 ##### [1] Pose frames
@@ -447,36 +447,31 @@ This message defines a notification
          <th>Description</th>
          <th>Format</th>
       </tr>
-
       <tr>
          <td>timestamp</td>
-				 <td>The time of occurrence</td>
+                 <td>The time of occurrence</td>
          <td><a href="http://docs.ros.org/api/std_msgs/html/msg/Time.html">std_msgs/Time</a></td>
       </tr>
-
       <tr>
          <td>category</td>
          <td>Category of the notification, matching an rs2_notification_category</td>
          <td><a href="http://docs.ros.org/api/std_msgs/html/msg/String.html">std_msgs/String</a></td>
       </tr>
-
-			<tr>
+            <tr>
          <td>severity</td>
          <td>Severity of the notification, matching an rs2_log_severity</td>
          <td><a href="http://docs.ros.org/api/std_msgs/html/msg/String.html">std_msgs/String</a></td>
       </tr>
-
-			<tr>
-				 <td>description</td>
-				 <td>Human readable description of the notification</td>
-				 <td><a href="http://docs.ros.org/api/std_msgs/html/msg/String.html">std_msgs/String</a></td>
-			</tr>
-
-			<tr>
-				 <td>serialized_data</td>
-				 <td>JSON string with additional data</td>
-				 <td><a href="http://docs.ros.org/api/std_msgs/html/msg/String.html">std_msgs/String</a></td>
-			</tr>
+            <tr>
+                 <td>description</td>
+                 <td>Human readable description of the notification</td>
+                 <td><a href="http://docs.ros.org/api/std_msgs/html/msg/String.html">std_msgs/String</a></td>
+            </tr>
+            <tr>
+                 <td>serialized_data</td>
+                 <td>JSON string with additional data</td>
+                 <td><a href="http://docs.ros.org/api/std_msgs/html/msg/String.html">std_msgs/String</a></td>
+            </tr>
    </tbody>
 </table>
 
@@ -492,9 +487,9 @@ Changes from previous versions will appear at the end of this section.
 Changes from previous version:
 
 - Removed:
-	- ***Property*** topic
+    - ***Property*** topic
 - Added:
-	- ***Options*** topic
+    - ***Options*** topic
 
 
 
@@ -522,11 +517,11 @@ A `librealsense::record_device` is constructed with a "live" device and a `devic
 When constructing a `ros_writer` the requested file is created if it does not exist, and then opened for writing. In addition, a single message containing the realsense file format version is written to the file.
 The `ros_writer` implements the `device_serializer::writer` interface which has only 4 functions:
  - write_device_description
-	 - Used to record the initial state of the device. This includes writing all of the device's and sensor's extensions.
+     - Used to record the initial state of the device. This includes writing all of the device's and sensor's extensions.
  - write_frame
-	 - Used to record a single frame to file
+     - Used to record a single frame to file
  - write_snapshot (2 overloads)
-	 - Used to record a snapshot of an extension to file.
+     - Used to record a snapshot of an extension to file.
 
 #### Recording device description
 A device description (or device snapshot) is the set of data that is available for any `librealsense::device`. It contains all of the device's extensions snapshots, and a collection of each  of the device's sensors' extensions snapshots. In addition it holds a mapping of extrinsic information for all streams of the device.
