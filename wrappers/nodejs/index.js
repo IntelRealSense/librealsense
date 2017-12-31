@@ -748,7 +748,9 @@ class Sensor extends Options {
    * @return {undefined} No return value
    */
   stop() {
-    this.cxxSensor.stop();
+    if (this.cxxSensor) {
+      this.cxxSensor.stop();
+    }
     if (this.frame) this.frame.release();
     if (this.videoFrame) this.videoFrame.release();
     if (this.depthFrame) this.depthFrame.release();
@@ -1655,7 +1657,7 @@ class Frame {
    * @return {Integer} see {@link stream} for avaiable values
    */
   get streamType() {
-    return this.streamProfile.stream;
+    return this.streamProfile.streamType;
   }
 
   get profile() {

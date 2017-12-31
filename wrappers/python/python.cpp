@@ -107,16 +107,34 @@ PYBIND11_MODULE(NAME, m) {
 
     py::enum_<rs2_extension> extension(m, "extension");
     extension.value("unknown", RS2_EXTENSION_UNKNOWN)
-             .value("video_frame", RS2_EXTENSION_VIDEO_FRAME)
-             .value("depth_frame", RS2_EXTENSION_DEPTH_FRAME)
-             .value("motion_frame", RS2_EXTENSION_MOTION_FRAME)
-             .value("pose_frame", RS2_EXTENSION_POSE_FRAME)
-             .value("count", RS2_EXTENSION_COUNT);
+        .value("debug", RS2_EXTENSION_DEBUG)
+        .value("info", RS2_EXTENSION_INFO)
+        .value("options", RS2_EXTENSION_OPTIONS)
+        .value("video", RS2_EXTENSION_VIDEO)
+        .value("roi", RS2_EXTENSION_ROI)
+        .value("depth_sensor", RS2_EXTENSION_DEPTH_SENSOR)
+        .value("video_frame", RS2_EXTENSION_VIDEO_FRAME)
+        .value("motion_frame", RS2_EXTENSION_MOTION_FRAME)
+        .value("composite_frame", RS2_EXTENSION_COMPOSITE_FRAME)
+        .value("points", RS2_EXTENSION_POINTS)
+        .value("depth_frame", RS2_EXTENSION_DEPTH_FRAME)
+        .value("advanced_mode", RS2_EXTENSION_ADVANCED_MODE)
+        .value("record", RS2_EXTENSION_RECORD)
+        .value("video_profile", RS2_EXTENSION_VIDEO_PROFILE)
+        .value("playback", RS2_EXTENSION_PLAYBACK)
+        .value("depth_stereo_sensor", RS2_EXTENSION_DEPTH_STEREO_SENSOR)
+        .value("disparity_frame", RS2_EXTENSION_DISPARITY_FRAME)
+        .value("motion_profile", RS2_EXTENSION_MOTION_PROFILE)
+        .value("pose_frame", RS2_EXTENSION_POSE_FRAME)
+        .value("pose_profile", RS2_EXTENSION_POSE_PROFILE)
+        .value("tm2", RS2_EXTENSION_TM2)
+        .value("count", RS2_EXTENSION_COUNT);
 
     py::enum_<rs2_format> format(m, "format");
     format.value("any", RS2_FORMAT_ANY)
           .value("z16", RS2_FORMAT_Z16)
           .value("disparity16", RS2_FORMAT_DISPARITY16)
+          .value("disparity32", RS2_FORMAT_DISPARITY32)
           .value("xyz32f", RS2_FORMAT_XYZ32F)
           .value("yuyv", RS2_FORMAT_YUYV)
           .value("rgb8", RS2_FORMAT_RGB8)
@@ -214,7 +232,7 @@ PYBIND11_MODULE(NAME, m) {
           .value("filter_magnitude", RS2_OPTION_FILTER_MAGNITUDE)
           .value("filter_smooth_alpha", RS2_OPTION_FILTER_SMOOTH_ALPHA)
           .value("filter_smooth_delta", RS2_OPTION_FILTER_SMOOTH_DELTA)
-          .value("stereo_baseline ",RS2_OPTION_STEREO_BASELINE)
+          .value("stereo_baseline",RS2_OPTION_STEREO_BASELINE)
           .value("count", RS2_OPTION_COUNT);
 
     py::class_<rs2_motion_device_intrinsic> motion_device_inrinsic(m, "motion_device_intrinsic");

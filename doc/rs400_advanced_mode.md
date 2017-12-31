@@ -1,4 +1,4 @@
-# RS400 Advanced Mode
+# D400 Advanced Mode
 
 ## Overview
 RS400 is the newest in the series of stereo-based RealSense devices. It is provided in a number distinct models, all sharing the same depth-from-stereo ASIC. The models differ in optics, global vs. rolling shutter, and the projector capabilities. In addition, different use-cases may introduce different lighting conditions, aim at different range, etc...
