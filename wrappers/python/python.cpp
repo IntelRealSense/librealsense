@@ -18,6 +18,7 @@
 #define NAME pyrealsense2
 #define SNAME "pyrealsense2"
 #define BIND_RAW_ARRAY(class, name, type, size) #name, [](const class &c) -> const std::array<type, size>& { return reinterpret_cast<const std::array<type, size>&>(c.name); }
+#define BIND_RAW_2D_ARRAY(class_name, member_name, type, nsize, msize) #member_name, [](const class_name &c) -> const std::array<std::array<type, msize>, nsize>& { return reinterpret_cast<const std::array<std::array<type, msize>, nsize>&>(c.member_name); }
 // hacky little bit of half-functions to make .def(BIND_DOWNCAST) look nice for binding as/is functions
 #define BIND_DOWNCAST(class, downcast) "is_"#downcast, &rs2::class::is<rs2::downcast>).def("as_"#downcast, &rs2::class::as<rs2::downcast>
 
@@ -89,6 +90,7 @@ PYBIND11_MODULE(NAME, m) {
                   .value("auto_exposure", RS2_FRAME_METADATA_AUTO_EXPOSURE)
                   .value("white_balance", RS2_FRAME_METADATA_WHITE_BALANCE)
                   .value("time_of_arrival", RS2_FRAME_METADATA_TIME_OF_ARRIVAL)
+                  .value("temprature", RS2_FRAME_METADATA_TEMPERATURE)
                   .value("count", RS2_FRAME_METADATA_COUNT);
 
     py::enum_<rs2_stream> stream(m, "stream");
@@ -100,12 +102,15 @@ PYBIND11_MODULE(NAME, m) {
         .value("gyro", RS2_STREAM_GYRO)
         .value("accel", RS2_STREAM_ACCEL)
         .value("gpio", RS2_STREAM_GPIO)
+        .value("pose", RS2_STREAM_POSE)
         .value("count", RS2_STREAM_COUNT);
 
     py::enum_<rs2_extension> extension(m, "extension");
     extension.value("unknown", RS2_EXTENSION_UNKNOWN)
              .value("video_frame", RS2_EXTENSION_VIDEO_FRAME)
              .value("depth_frame", RS2_EXTENSION_DEPTH_FRAME)
+             .value("motion_frame", RS2_EXTENSION_MOTION_FRAME)
+             .value("pose_frame", RS2_EXTENSION_POSE_FRAME)
              .value("count", RS2_EXTENSION_COUNT);
 
     py::enum_<rs2_format> format(m, "format");
@@ -127,6 +132,7 @@ PYBIND11_MODULE(NAME, m) {
           .value("motion_raw", RS2_FORMAT_MOTION_RAW)
           .value("motion_xyz32f", RS2_FORMAT_MOTION_XYZ32F)
           .value("gpio_raw", RS2_FORMAT_GPIO_RAW)
+          .value("6dof", RS2_FORMAT_6DOF)
           .value("count", RS2_FORMAT_COUNT);
 
     py::class_<rs2_intrinsics> intrinsics(m, "intrinsics");
@@ -204,12 +210,17 @@ PYBIND11_MODULE(NAME, m) {
           .value("histogram_equalization_enabled", RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED)
           .value("min_distance", RS2_OPTION_MIN_DISTANCE)
           .value("max_distance", RS2_OPTION_MAX_DISTANCE)
+          .value("texture_source", RS2_OPTION_TEXTURE_SOURCE)
+          .value("filter_magnitude", RS2_OPTION_FILTER_MAGNITUDE)
+          .value("filter_smooth_alpha", RS2_OPTION_FILTER_SMOOTH_ALPHA)
+          .value("filter_smooth_delta", RS2_OPTION_FILTER_SMOOTH_DELTA)
+          .value("stereo_baseline ",RS2_OPTION_STEREO_BASELINE)
           .value("count", RS2_OPTION_COUNT);
 
-    // Multi-dimensional c-array rs2_motion_device_instrinc::data causing trouble
-    //py::class_<rs2_motion_device_intrinsic> motion_device_inrinsic(m, "motion_device_intrinsic");
-    //motion_device_inrinsic.def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, noise_variances, float, 3))
-    //                      .def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, bias_variances, float, 3));
+    py::class_<rs2_motion_device_intrinsic> motion_device_inrinsic(m, "motion_device_intrinsic");
+    motion_device_inrinsic.def_property_readonly(BIND_RAW_2D_ARRAY(rs2_motion_device_intrinsic, data, float, 3, 4))
+                          .def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, noise_variances, float, 3))
+                          .def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, bias_variances, float, 3));
 
     py::enum_<rs2_timestamp_domain> ts_domain(m, "timestamp_domain");
     ts_domain.value("hardware_clock", RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
