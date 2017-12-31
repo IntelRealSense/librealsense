@@ -2,93 +2,36 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
-#include <librealsense2/hpp/rs_internal.hpp> // Include RealSense Cross Platform API
 #include "example.hpp"          // Include short list of convenience functions for rendering
 
 // Capture Example demonstrates how to
 // capture depth and color video streams and render them to the screen
 int main(int argc, char * argv[]) try
 {
-    using namespace rs2;
-    //log_to_console(RS2_LOG_SEVERITY_DEBUG);
+    // Create a simple OpenGL window for rendering:
+    window app(1280, 720, "RealSense Capture Example");
+    // Declare two textures on the GPU, one for color and one for depth
+    texture depth_image, color_image;
 
-    const int W = 640;
-    const int H = 480;
-    const int BPP = 2;
+    // Declare depth colorizer for pretty visualization of depth data
+    rs2::colorizer color_map;
 
-    bypass_device dev;
-    dev.add_sensor("Software Only Device");
-    dev.add_video_stream(0, RS2_STREAM_DEPTH, 0, 0, W, H, BPP, RS2_FORMAT_Z16);
-    dev.add_video_stream(0, RS2_STREAM_INFRARED, 1, 1, W, H, BPP, RS2_FORMAT_Y8);
+    // Declare RealSense pipeline, encapsulating the actual device and sensors
+    rs2::pipeline pipe;
+    // Start streaming with default recommended configuration
+    pipe.start();
 
-    recorder rec("1.bag", dev);
-
-    frame_queue q;
-    auto s = rec.query_sensors().front();
-
-    auto profiles = s.get_stream_profiles();
-    auto depth = profiles[0];
-    auto ir = profiles[1];
-
-    s.open(profiles);
-
-    syncer sync;
-    s.start(sync);
-
-    std::vector<uint8_t> pixels(W * H * BPP, 0);
-
-    std::thread t([&]() {
-        for (auto& p : pixels) p = rand() % 256;
-        dev.on_video_frame(0, pixels.data(), [](void*) {}, W*BPP, BPP, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth);
-
-        for (auto& p : pixels) p = rand() % 256;
-        dev.on_video_frame(0, pixels.data(), [](void*) {}, W*BPP, BPP, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir);
-        std::this_thread::sleep_for(std::chrono::milliseconds(30));
-
-        for (auto& p : pixels) p = rand() % 256;
-        dev.on_video_frame(0, pixels.data(), [](void*) {}, W*BPP, BPP, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth);
-        for (auto& p : pixels) p = rand() % 256;
-        dev.on_video_frame(0, pixels.data(), [](void*) {}, W*BPP, BPP, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir);
-        std::this_thread::sleep_for(std::chrono::milliseconds(30));
-
-        for (auto& p : pixels) p = rand() % 256;
-        dev.on_video_frame(0, pixels.data(), [](void*) {}, W*BPP, BPP, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 9, depth);
-        for (auto& p : pixels) p = rand() % 256;
-        dev.on_video_frame(0, pixels.data(), [](void*) {}, W*BPP, BPP, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, ir);
-        std::this_thread::sleep_for(std::chrono::milliseconds(30));
-
-        for (auto& p : pixels) p = rand() % 256;
-        dev.on_video_frame(0, pixels.data(), [](void*) {}, W*BPP, BPP, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 10, depth);
-        for (auto& p : pixels) p = rand() % 256;
-        dev.on_video_frame(0, pixels.data(), [](void*) {}, W*BPP, BPP, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, ir);
-        std::this_thread::sleep_for(std::chrono::milliseconds(30));
-
-        for (auto& p : pixels) p = rand() % 256;
-        dev.on_video_frame(0, pixels.data(), [](void*) {}, W*BPP, BPP, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 11, depth);
-        for (auto& p : pixels) p = rand() % 256;
-        dev.on_video_frame(0, pixels.data(), [](void*) {}, W*BPP, BPP, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 9, ir);
-        std::this_thread::sleep_for(std::chrono::milliseconds(30));
-    });
-
-    try
+    while(app) // Application still alive?
     {
-        while (true)
-        {
-            auto fs = sync.wait_for_frames(5000);
-            std::cout << "Matched: " << std::endl;
-            for (auto&& f : fs)
-            {
-                std::cout << "\t" << f.get_profile().stream_type() << " #" << f.get_frame_number() << std::endl;
-            }
-        }
+        rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
 
-    }
-    catch (...)
-    {
+        rs2::frame depth = color_map(data.get_depth_frame()); // Find and colorize the depth data
+        rs2::frame color = data.get_color_frame();            // Find the color data
 
+        // Render depth on to the first half of the screen and color on to the second
+        depth_image.render(depth, { 0,               0, app.width() / 2, app.height() });
+        color_image.render(color, { app.width() / 2, 0, app.width() / 2, app.height() });
     }
-    
-    t.join();
 
     return EXIT_SUCCESS;
 }
