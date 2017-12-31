@@ -594,13 +594,13 @@ if (BUILD_WITH_TM2)
     if(WIN32)
         source_group("Source Files\\Devices\\Tracking" FILES
             src/tm2/tm-context.cpp
-            src/tm2/tm-factory.cpp
+            src/tm2/tm-info.cpp
             src/tm2/tm-device.cpp
             )
 
         source_group("Header Files\\Devices\\Tracking" FILES
             src/tm2/tm-context.h
-            src/tm2/tm-factory.h
+            src/tm2/tm-info.h
             src/tm2/tm-device.h
             src/tm2/tm-conversions.h
             src/tm2/controller_event_serializer.h
@@ -623,7 +623,7 @@ if (BUILD_WITH_TM2)
     list(APPEND REALSENSE_HPP
     src/tm2/tm-context.h
     src/tm2/tm-device.h
-    src/tm2/tm-factory.h
+    src/tm2/tm-info.h
     src/tm2/tm-conversions.h
     src/tm2/controller_event_serializer.h
     )
@@ -631,7 +631,7 @@ if (BUILD_WITH_TM2)
     list(APPEND REALSENSE_CPP
     src/tm2/tm-context.cpp
     src/tm2/tm-device.cpp
-    src/tm2/tm-factory.cpp
+    src/tm2/tm-info.cpp
     )
 
     include_directories(${LIBTM_INCLUDE_DIR})

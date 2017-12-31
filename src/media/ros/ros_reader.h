@@ -757,7 +757,8 @@ namespace librealsense
         {
             if (version == legacy_file_format::file_version())
             {
-                return; //TODO: Implement
+                LOG_DEBUG("Not updating options from legacy files");
+                return; 
             }
             auto sensor_options = read_sensor_options(file, { get_device_index(), sensor_index }, time, file_version);
             sensor_extensions[RS2_EXTENSION_OPTIONS] = sensor_options;

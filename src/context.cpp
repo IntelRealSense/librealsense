@@ -20,7 +20,7 @@
 #include "context.h"
 
 #ifdef WITH_TRACKING
-#include "tm2/tm-factory.h"
+#include "tm2/tm-info.h"
 #endif
 
 template<unsigned... Is> struct seq{};
