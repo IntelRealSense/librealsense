@@ -8,7 +8,7 @@
 #include <cstddef>
 #include <thread>
 
-#include "tm-factory.h"
+#include "tm-info.h"
 #include "tm-device.h"
 
 using namespace perc;
