@@ -1,0 +1,3 @@
+include *.txt *.rst
+recursive-include docs *.txt *.rst *.md
+recursive-include pyrealsense2 *.pyd *.pdb *.so *.dll
