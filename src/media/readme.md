@@ -45,10 +45,48 @@ rs2::context ctx;
 rs2::playback device = ctx.load_device("my_file_name.bag");
 //playback "is a" device, so just use it like any other device now
 ```
-The above code creates a playback device, which can be used as any device, but has the obvious limitation of only playing the recorded streams. 
+The above code creates a playback device, which can be used as any device, but has the obvious limitation of only playing the recorded streams.
 Playback devices can be used to query information on the device and it sensors, and can be extended to which ever extension the "real" device could.
 A `playback` provides additional functionalities such as seek, pause, resume and playback speed.
 
+#### Using `rs2::config` with `rs2::pipeline`
+
+The `rs2::pipeline` can be configured to record or play a streaming session by providing it with a `rs2::config` of your choice:
+
+Recording to file:
+```cpp
+rs2::config cfg;
+cfg.enable_record_to_file("path_to_output_file.bag");
+rs2::pipeline pipe;
+pipe.start(cfg); //File will be opened in write mode at this point
+for (int i = 0; i < 30; i++)
+{
+		auto frames = pipe.wait_for_frames();
+		//use frames here
+}
+pipe.stop(); //File will be closed at this point
+```
+
+Playing from file:
+```cpp
+rs2::config cfg;
+cfg.enable_device_from_file("path_to_input_file.bag");
+rs2::pipeline pipe;
+pipe.start(cfg); //File will be opened in read mode at this point
+for (int i = 0; i < 30; i++)
+{
+		rs2::frameset frames;
+		if (pipe.poll_for_frames(&frames))
+		{
+				//use frames here
+		}
+		//Note that we use poll_for_frames instead of wait_for_frames
+		//This is because the file only contains a finite amount of frames
+		// and if we use wait_for_frames then after reading the entire file
+		// we will fail to wait for the next frame (and get an exception)
+}
+pipe.stop(); //File will be closed at this point
+```
 
 
 Playback and Record in RealSense Viewer
@@ -78,9 +116,9 @@ Under the Hood
 #### Basics Terminology
 
 A **Device** is a container of Sensors with some correlation between them (e.g - all sensors are on a single board, sensors are mounted on a robot and share calibration information, etc.). A **Sensor** is a data streaming object, that provides one or more Streams.
-**Stream** is a sequence of data items of a single data type, which are ordered according to their time of creation or arrival. The Sensor provides the Streams frames to the user. 
+**Stream** is a sequence of data items of a single data type, which are ordered according to their time of creation or arrival. The Sensor provides the Streams frames to the user.
 
-We call the device's sensors and stream, the **topology** of the device. 
+We call the device's sensors and stream, the **topology** of the device.
 
 Devices and Sensors can have **Extensions** that provide additional functionalities. A **Snapshot** of an Extension is a snapshot of the data that is available by the extension at some point of time, it is a sort of "read-only" version of the extension. For example, say we have a `DigitalClockExtension`, that can set and show the time. If we take a snapshot of that extension at noon, then whenever we ask the snapshot to show the time it will show "12:00", and trying to set its time will fail.
 
@@ -101,8 +139,8 @@ A bag file consists of a list of records, each record can be one of the followin
 - Index data. Stores an index of messages in a single connection of the preceding chunk.
 - Chunk info. Stores information about messages in a chunk.
 
-Each message that we write is stored in a chunk, each chunk consists of a number of messages based on the chunk size. In addition to the message data, the chunk stores also the connections of the messages, the connection describes the topic name and message definition to be able to serialize the message data. 
-The flow to find a message on topic “A”: 
+Each message that we write is stored in a chunk, each chunk consists of a number of messages based on the chunk size. In addition to the message data, the chunk stores also the connections of the messages, the connection describes the topic name and message definition to be able to serialize the message data.
+The flow to find a message on topic “A”:
 
 - Check in all chunk info’s what kind of connections can be found in the chunk.
 - Access the chunk with the wanted connection, chunk info contains an offset to the paired chunk.
@@ -268,22 +306,28 @@ The following table depicts the Topics that are supported by RealSense file form
     <td><a href="http://docs.ros.org/jade/api/geometry_msgs/html/msg/Transform.html">geometry_msgs/Transform Message</a></td>
     <td>Extrinsic transformation between some point of reference (indexed by group_index) to the stream in the topic</td>
   </tr>
-  <tr>
+	<tr>
     <td>Additional Info</td>
     <td>/additional_info</td>
     <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue</a></td>
     <td>Additinal information of any kind. Can be useful for application that require additional metadata on the recorded file (such as program name, version etc...)</td>
   </tr>
+	<tr>
+		<td>Sensor Notification</td>
+		<td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/notification/&lt;rs2_notification_category&gt;</td>
+		<td><a href="#notification">realsense_msgs/Notification</td>
+		<td>Additinal information of any kind. Can be useful for application that require additional metadata on the recorded file (such as program name, version etc...)</td>
+	</tr>
 </table>
 
 ##### [1] Pose frames
 
 As you might have noticed, pose data is split into three messages, each under a different topic.
-The reasons for this choice is so that we expose only standard ros messages instead of creating a proprietary message. 
+The reasons for this choice is so that we expose only standard ros messages instead of creating a proprietary message.
 This choice allows any common tool that uses rosbag to read the content of a pose frame (and most of the rest of the messages we save).
 
 When reading a file using the SDK's playback, the reader will only iterate over `pose/transform` messages and for each of those messages, will match the corresponding `pose/accel` and `pose/twist` message to form a single pose frame.
-This matching of messages adds an overhead of searching the file for a single message, each frame. 
+This matching of messages adds an overhead of searching the file for a single message, each frame.
 But, this overhead should have minor performance impact even for huge files since it is merely a tree search (See [ros/ros_comm: PR #1223 - Performance improvement for lower/upper bound](https://github.com/ros/ros_comm/pull/1223))
 
 
@@ -304,6 +348,9 @@ The following are the new messages created by the SDK:
 --------------
 ##### **Stream Info**
 
+This message defines meta information for a stream
+The stream type is expressed in the topic name
+
 <table>
   <tr>
     <th>Name</th>
@@ -322,7 +369,7 @@ The following are the new messages created by the SDK:
   </tr>
   <tr>
     <td>encoding</td>
-    <td>Stream's data format. 
+    <td>Stream's data format.
     Supported encodings are listed below</td>
     <td>string</td>
   </tr>
@@ -336,6 +383,8 @@ For video streams, the supported encoding types can be found at <a href="http://
 
 ##### Motion Intrinsic
 
+This message defines a Motion device's intrinsic: scale, bias, and variances
+
 <table>
    <tbody>
       <tr>
@@ -344,7 +393,7 @@ For video streams, the supported encoding types can be found at <a href="http://
          <th>Format</th>
       </tr>
       <tr>
-         <td>&nbsp;data</td>
+         <td>data</td>
          <td>
             <p>Interpret data array values. <br>3x4 Row-major matrix:</p>
             <table>
@@ -387,6 +436,50 @@ For video streams, the supported encoding types can be found at <a href="http://
 
 ----------
 
+##### Notification
+
+This message defines a notification
+
+<table>
+   <tbody>
+      <tr>
+         <th>Name</th>
+         <th>Description</th>
+         <th>Format</th>
+      </tr>
+
+      <tr>
+         <td>timestamp</td>
+				 <td>The time of occurrence</td>
+         <td><a href="http://docs.ros.org/api/std_msgs/html/msg/Time.html">std_msgs/Time</a></td>
+      </tr>
+
+      <tr>
+         <td>category</td>
+         <td>Category of the notification, matching an rs2_notification_category</td>
+         <td><a href="http://docs.ros.org/api/std_msgs/html/msg/String.html">std_msgs/String</a></td>
+      </tr>
+
+			<tr>
+         <td>severity</td>
+         <td>Severity of the notification, matching an rs2_log_severity</td>
+         <td><a href="http://docs.ros.org/api/std_msgs/html/msg/String.html">std_msgs/String</a></td>
+      </tr>
+
+			<tr>
+				 <td>description</td>
+				 <td>Human readable description of the notification</td>
+				 <td><a href="http://docs.ros.org/api/std_msgs/html/msg/String.html">std_msgs/String</a></td>
+			</tr>
+
+			<tr>
+				 <td>serialized_data</td>
+				 <td>JSON string with additional data</td>
+				 <td><a href="http://docs.ros.org/api/std_msgs/html/msg/String.html">std_msgs/String</a></td>
+			</tr>
+   </tbody>
+</table>
+
 ### Versioning
 
 Each bag file recorded using this SDK should contains a version message.
@@ -411,11 +504,11 @@ Changes from previous version:
 Recording
 ----------
 Recording is performed at the Device level, meaning that the device, its sensors, their streams' data (frames) and all extensions are saved to file.
-To allow for a seamless experience when switching between a live device and a record or playback device we save the device's topology and all of the extensions' snapshots to the file, in addition to the streaming frames. 
+To allow for a seamless experience when switching between a live device and a record or playback device we save the device's topology and all of the extensions' snapshots to the file, in addition to the streaming frames.
 
-A record device is like a wrapper around a real device, that delegates actions to the device and sensors while recording new data in between actions. 
-When a record device is created, a record sensor is created per real sensor of the real device. 
-A record sensor will record newly arriving frames for each of its streams, and changes to extensions' data (snapshots). 
+A record device is like a wrapper around a real device, that delegates actions to the device and sensors while recording new data in between actions.
+When a record device is created, a record sensor is created per real sensor of the real device.
+A record sensor will record newly arriving frames for each of its streams, and changes to extensions' data (snapshots).
 
 Recording related files are:
  - [record/record_device.cpp](record/record_device.cpp)
@@ -426,10 +519,10 @@ Recording related files are:
 
 A `librealsense::record_device` is constructed with a "live" device and a `device_serializer::writer`. At the moment the only `device_serializer::writer` we use is a `ros_writer` which writes device information to a rosbag file.
 
-When constructing a `ros_writer` the requested file is created if it does not exist, and then opened for writing. In addition, a single message containing the realsense file format version is written to the file. 
+When constructing a `ros_writer` the requested file is created if it does not exist, and then opened for writing. In addition, a single message containing the realsense file format version is written to the file.
 The `ros_writer` implements the `device_serializer::writer` interface which has only 4 functions:
  - write_device_description
-	 - Used to record the initial state of the device. This includes writing all of the device's and sensor's extensions. 
+	 - Used to record the initial state of the device. This includes writing all of the device's and sensor's extensions.
  - write_frame
 	 - Used to record a single frame to file
  - write_snapshot (2 overloads)
@@ -445,9 +538,9 @@ Each frame in the SDK implements the  `librealsense::frame_interface` interface.
 Frames are recorded to file with all of their additional information (such as metadata, timestamp, etc...), and the time that they arrived from the backend to the sensor.
 
 
-#### Recording Snapshots 
+#### Recording Snapshots
 Upon creation, the record device goes over all of the extensions of the real device and its sensors, and saves snapshots of those extensions to the file (This is the data that is passed to `write_device_description(..)`) . These snapshots will allow the playback device to recreate the topology of the recorded device, and will serve as the initial data of their extensions.
-To allow record sensors to save changes to extensions' data over the life time of the program, when a user asks a record sensor for an extension, a record-able extension is provided. 
+To allow record sensors to save changes to extensions' data over the life time of the program, when a user asks a record sensor for an extension, a record-able extension is provided.
 A record-able version of an extension holds an action to perform whenever the extension's data changes. This action is provided by the record device (or sensor), and requires extensions to pass a reference of themselves to the device, which will usually create a snapshot from them and record them to file with the time at which they occurred.
 
 ----------
@@ -455,12 +548,12 @@ A record-able version of an extension holds an action to perform whenever the ex
 
 ## Playback
 
-Playback device is an implementation of device interface which reads from a 
+Playback device is an implementation of device interface which reads from a
 file to simulate a real device.                                              
-                                                                          
+
 Playback device holds playback sensors which simulate real sensors.         
-                                                                          
-When creating the playback device, it will read the initial device snapshot from the file in order to map itself and 
+
+When creating the playback device, it will read the initial device snapshot from the file in order to map itself and
 its sensors in matters of functionality and data provided.                              
 When creating each sensor, the device will create a sensor from the         
 sensor's initial snapshot.                            

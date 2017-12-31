@@ -159,7 +159,7 @@ struct Definition< ::realsense_msgs::Notification_<ContainerAllocator> >
   {
     return "# This message defines a notification\n\
 \n\
-time   timestamp          # The time of occurance \n\
+time   timestamp          # The time of occurrence \n\
 string category           # The category of the notification\n\
 string severity           # The severity of the notification\n\
 string description        # Human readable description of the notification\n\
