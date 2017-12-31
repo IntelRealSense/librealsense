@@ -260,7 +260,8 @@ namespace rs2
     class syncer
     {
     public:
-        syncer()
+        syncer(int queue_size = 1)
+            :_results(queue_size)
         {
             _sync.start(_results);
 

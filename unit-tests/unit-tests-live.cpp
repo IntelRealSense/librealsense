@@ -4069,3 +4069,196 @@ TEST_CASE("Pipeline record and playback", "[live]") {
         }
     }
 }
+
+TEST_CASE("Syncer sanity with bypass device", "[live]") {
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+       
+        const int W = 640;
+        const int H = 480;
+        const int BPP = 2;
+
+        std::shared_ptr<bypass_device> dev = std::make_shared<bypass_device>();
+        dev->add_sensor("DS5u");
+        dev->add_video_stream(0, RS2_STREAM_DEPTH, 0, 0, W, H, BPP, RS2_FORMAT_Z16);
+        dev->add_video_stream(0, RS2_STREAM_INFRARED, 1, 1, W, H, BPP, RS2_FORMAT_Y8);
+        
+        //recorder rec("1.bag", dev);
+
+        frame_queue q;
+        auto s = dev->query_sensors().front();
+
+        auto profiles = s.get_stream_profiles();
+        auto depth = profiles[0];
+        auto ir = profiles[1];
+
+        syncer sync;
+        s.start(sync);
+       
+        std::vector<uint8_t> pixels(W * H * BPP, 0);
+        std::weak_ptr<rs2::bypass_device> weak_dev(dev);
+
+        std::thread t([weak_dev, pixels, depth, ir]() mutable {
+            
+            auto shared_dev = weak_dev.lock();
+            if (shared_dev == nullptr)
+                return;
+            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth);
+            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir);
+              
+            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth);
+            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir);
+
+            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, ir);
+        });
+        t.detach();
+
+        std::vector<std::vector<std::pair<rs2_stream, int>>> expected =
+        {
+            { { RS2_STREAM_DEPTH , 7}},
+            { { RS2_STREAM_INFRARED , 5 } },
+            { { RS2_STREAM_INFRARED , 6 } },
+            { { RS2_STREAM_DEPTH , 8 },{ RS2_STREAM_INFRARED , 8 } }
+        };
+
+        std::vector<std::vector<std::pair<rs2_stream, int>>> results;
+
+        for (auto i = 0; i < expected.size(); i++)
+        {
+            frameset fs;
+            REQUIRE_NOTHROW(fs = sync.wait_for_frames(5000));
+            std::vector < std::pair<rs2_stream, int>> curr;
+
+            for (auto f : fs)
+            {
+                curr.push_back({ f.get_profile().stream_type(), f.get_frame_number() });
+            }
+            results.push_back(curr);
+        }
+
+        CAPTURE(results.size());
+        CAPTURE(expected.size());
+        REQUIRE(results.size() == expected.size());
+
+        for (auto i = 0; i < expected.size(); i++)
+        {
+            auto exp = expected[i];
+            auto curr = results[i];
+            CAPTURE(i);
+            CAPTURE(exp.size());
+            CAPTURE(curr.size());
+            REQUIRE(exp.size() == curr.size());
+
+            for (auto j = 0; j < exp.size(); j++)
+            {
+                CAPTURE(j);
+                CAPTURE(exp[j].first);
+                CAPTURE(exp[j].second);
+                CAPTURE(curr[j].first);
+                CAPTURE(curr[j].second);
+                REQUIRE(std::find(curr.begin(), curr.end(), exp[j]) != curr.end());
+            }
+        }
+    }
+}
+
+TEST_CASE("Syncer clean_inactive_streams by frame number with bypass device", "[live]") {
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        log_to_file(RS2_LOG_SEVERITY_DEBUG);
+        const int W = 640;
+        const int H = 480;
+        const int BPP = 2;
+
+        std::shared_ptr<bypass_device> dev = std::make_shared<bypass_device>();
+        dev->add_sensor("DS5u");
+        dev->add_video_stream(0, RS2_STREAM_DEPTH, 0, 0, W, H, BPP, RS2_FORMAT_Z16);
+        dev->add_video_stream(0, RS2_STREAM_INFRARED, 1, 1, W, H, BPP, RS2_FORMAT_Y8);
+
+        //recorder rec("1.bag", dev);
+        frame_queue q;
+        auto s = dev->query_sensors().front();
+
+        auto profiles = s.get_stream_profiles();
+        auto depth = profiles[0];
+        auto ir = profiles[1];
+
+        syncer sync(10);
+        s.start(sync);
+
+        std::vector<uint8_t> pixels(W * H * BPP, 0);
+        std::weak_ptr<rs2::bypass_device> weak_dev(dev);
+        std::thread t([weak_dev, pixels, depth, ir]() mutable {
+            auto shared_dev = weak_dev.lock();
+            if (shared_dev == nullptr)
+                return;
+            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 1, depth);
+            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 1, ir);
+
+            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 3, depth);
+
+            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 4, depth);
+
+            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, depth);
+
+            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, depth);
+
+            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth);
+        });
+
+        t.detach();
+
+        std::vector<std::vector<std::pair<rs2_stream, int>>> expected =
+        {
+            { { RS2_STREAM_DEPTH , 1 } },
+            { { RS2_STREAM_INFRARED , 1 } },
+            { { RS2_STREAM_DEPTH , 3 } },
+            { { RS2_STREAM_DEPTH , 4 } },
+            { { RS2_STREAM_DEPTH , 5 } },
+            { { RS2_STREAM_DEPTH , 6 } },
+            { { RS2_STREAM_DEPTH , 7 } },
+        };
+
+        std::vector<std::vector<std::pair<rs2_stream, int>>> results;
+
+        for (auto i = 0; i < expected.size(); i++)
+        {
+            frameset fs;
+            CAPTURE(i);
+            REQUIRE_NOTHROW(fs = sync.wait_for_frames(5000));
+            std::vector < std::pair<rs2_stream, int>> curr;
+
+            for (auto f : fs)
+            {
+                curr.push_back({ f.get_profile().stream_type(), f.get_frame_number() });
+            } 
+            results.push_back(curr);
+        }
+
+        CAPTURE(results.size());
+        CAPTURE(expected.size());
+        REQUIRE(results.size() == expected.size());
+
+        for (auto i = 0; i < expected.size(); i++)
+        {
+            auto exp = expected[i];
+            auto curr = results[i];
+            CAPTURE(i);
+            CAPTURE(exp.size());
+            CAPTURE(curr.size());
+            REQUIRE(exp.size() == exp.size());
+
+            for (auto j = 0; j < exp.size(); j++)
+            {
+                CAPTURE(j);
+                CAPTURE(exp[j].first);
+                CAPTURE(exp[j].second);
+                CAPTURE(curr[j].first);
+                CAPTURE(curr[j].second);
+                REQUIRE(std::find(curr.begin(), curr.end(), exp[j]) != curr.end());
+            }
+        }
+    }
+}
