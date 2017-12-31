@@ -27,13 +27,7 @@ namespace rs2
             error::handle(e);
         }
 
-        notification()
-            : _description(""),
-              _timestamp(-1),
-              _severity(RS2_LOG_SEVERITY_COUNT),
-              _category(RS2_NOTIFICATION_CATEGORY_COUNT),
-              _serizlied_data("")
-        {}
+        notification() = default;
 
         /**
         * retrieve the notification category
@@ -81,9 +75,9 @@ namespace rs2
 
     private:
         std::string _description;
-        double _timestamp;
-        rs2_log_severity _severity;
-        rs2_notification_category _category;
+        double _timestamp = -1;
+        rs2_log_severity _severity = RS2_LOG_SEVERITY_COUNT;
+        rs2_notification_category _category = RS2_NOTIFICATION_CATEGORY_COUNT;
         std::string _serizlied_data;
     };
 
