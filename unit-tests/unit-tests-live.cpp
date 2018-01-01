@@ -4070,7 +4070,7 @@ TEST_CASE("Pipeline record and playback", "[live]") {
     }
 }
 
-TEST_CASE("Syncer sanity with bypass device", "[live]") {
+TEST_CASE("Syncer sanity with bypass device", "[live][bypass]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -4163,7 +4163,7 @@ TEST_CASE("Syncer sanity with bypass device", "[live]") {
     }
 }
 
-TEST_CASE("Syncer clean_inactive_streams by frame number with bypass device", "[live]") {
+TEST_CASE("Syncer clean_inactive_streams by frame number with bypass device", "[live][bypass]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
