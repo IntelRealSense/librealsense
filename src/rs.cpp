@@ -740,7 +740,7 @@ rs2_notification_category rs2_get_notification_category(rs2_notification* notifi
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, notification)
 
-const char* rs2_get_notification_serizlied_data(rs2_notification* notification, rs2_error** error) BEGIN_API_CALL
+const char* rs2_get_notification_serialized_data(rs2_notification* notification, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(notification);
     return notification->_notification->serialized_data.c_str();

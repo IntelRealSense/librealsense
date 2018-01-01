@@ -23,7 +23,7 @@ namespace rs2
             error::handle(e);
             _category = rs2_get_notification_category(notification, &e);
             error::handle(e);
-            _serizlied_data = rs2_get_notification_serizlied_data(notification, &e);
+            _serialized_data = rs2_get_notification_serialized_data(notification, &e);
             error::handle(e);
         }
 
@@ -65,12 +65,12 @@ namespace rs2
         }
 
         /**
-        * retrieve the notification's serizlied data
+        * retrieve the notification's serialized data
         * \return            the serialized data (in JSON format)
         */
         std::string get_serialized_data() const
         {
-            return _serizlied_data;
+            return _serialized_data;
         }
 
     private:
@@ -78,7 +78,7 @@ namespace rs2
         double _timestamp = -1;
         rs2_log_severity _severity = RS2_LOG_SEVERITY_COUNT;
         rs2_notification_category _category = RS2_NOTIFICATION_CATEGORY_COUNT;
-        std::string _serizlied_data;
+        std::string _serialized_data;
     };
 
     template<class T>

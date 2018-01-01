@@ -45,7 +45,7 @@ EXPORTS
     rs2_get_notification_timestamp
     rs2_get_notification_severity
     rs2_get_notification_category
-    rs2_get_notification_serizlied_data
+    rs2_get_notification_serialized_data
 
     rs2_get_frame_metadata
     rs2_supports_frame_metadata

@@ -29,35 +29,35 @@ namespace librealsense
     public:
         static std::string serialized_data(const perc::TrackingData::ControllerDiscoveryEventFrame& frame)
         {
-            std::string serizlied_data = to_string() 
+            std::string serialized_data = to_string() 
                 << "\"MAC\" : [" << buffer_to_string(frame.macAddress) << "]";
-            return to_json(event_type_discovery(), serizlied_data);
+            return to_json(event_type_discovery(), serialized_data);
         }
 
         static std::string serialized_data(const perc::TrackingData::ControllerDisconnectedEventFrame& frame)
         {
-            std::string serizlied_data = to_string()
+            std::string serialized_data = to_string()
                 << "\"ID\" : " << (int)frame.controllerId;
-            return to_json(event_type_disconnection(), serizlied_data);
+            return to_json(event_type_disconnection(), serialized_data);
         }
 
         static std::string serialized_data(const perc::TrackingData::ControllerFrame& frame)
         {
-            std::string serizlied_data = to_string() <<
+            std::string serialized_data = to_string() <<
                 "\"sensorIndex\": " << (int)frame.sensorIndex << ","
                 "\"frameId\": " << (int)frame.frameId << ","
                 "\"eventId\": " << (int)frame.eventId << ","
                 "\"instanceId\": " << (int)frame.instanceId << ","
                 "\"sensorData\": [" << buffer_to_string(frame.sensorData) << "]";
-            return to_json(event_type_frame(), serizlied_data);
+            return to_json(event_type_frame(), serialized_data);
         }
 
         static std::string serialized_data(const perc::TrackingData::ControllerDeviceConnect& c, uint8_t controller_id)
         {
-            std::string serizlied_data = to_string() 
+            std::string serialized_data = to_string() 
                 << "\"MAC\" : [" << buffer_to_string(c.macAddress) << "] ,"
                    "\"ID\" : " << (int)controller_id;
-            return to_json(event_type_connection(), serizlied_data);
+            return to_json(event_type_connection(), serialized_data);
         }
     private:
         static constexpr const char* prefix() { return R"JSON({"Event Type":"Controller Event", "Data" : {)JSON"; }
