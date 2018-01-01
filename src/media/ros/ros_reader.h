@@ -261,7 +261,7 @@ namespace librealsense
 
             if (frame.frame == nullptr)
             {
-                return std::make_shared<serialized_bad_frame>(timestamp, stream_id);
+                return std::make_shared<serialized_invalid_frame>(timestamp, stream_id);
             }
             return std::make_shared<serialized_frame>(timestamp, stream_id, std::move(frame));
         }

@@ -54,7 +54,7 @@ namespace librealsense
                 end_of_file,
                 frame,
                 option,
-                bad_frame,
+                invalid_frame,
                 notificaion,
                 max
             };
@@ -120,17 +120,17 @@ namespace librealsense
             }
         };
 
-        class serialized_bad_frame : public serialized_frame
+        class serialized_invalid_frame : public serialized_frame
         {
         public:
-            serialized_bad_frame(device_serializer::nanoseconds time, stream_identifier id) : serialized_frame(time, id, nullptr) {}
+            serialized_invalid_frame(device_serializer::nanoseconds time, stream_identifier id) : serialized_frame(time, id, nullptr) {}
             static serialized_data_type get_type()
             {
-                return serialized_data_type::bad_frame;
+                return serialized_data_type::invalid_frame;
             }
             serialized_data_type type() const override
             {
-                return serialized_bad_frame::get_type();
+                return serialized_invalid_frame::get_type();
             }
         };
 

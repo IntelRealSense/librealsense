@@ -513,7 +513,7 @@ void playback_device::try_looping()
             }
             LOG_DEBUG("Dispatching frame " << frame->stream_id);
 
-            if (data->is<serialized_bad_frame>())
+            if (data->is<serialized_invalid_frame>())
             {
                 LOG_WARNING("Bad frame from reader, ignoring");
                  return true;

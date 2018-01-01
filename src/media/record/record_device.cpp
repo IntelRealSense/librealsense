@@ -55,7 +55,7 @@ librealsense::record_device::~record_device()
     }
     (*m_write_thread)->stop();
     //Just in case someone still holds a reference to the sensors, 
-    // we make sure that they will not try to record anythin
+    // we make sure that they will not try to record anything
     for (auto&& s : m_sensors)
     {
         s->on_notification += [](const notification& n) { };
