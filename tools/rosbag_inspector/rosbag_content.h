@@ -118,7 +118,7 @@ namespace rosbag_inspector
         std::string path;
         std::string version;
         double size;
-        compression_info compression_info;
+        rosbag_inspector::compression_info compression_info;
         std::map<std::string, std::vector<std::string>> topics_to_message_types;
         rosbag::Bag bag;
     };

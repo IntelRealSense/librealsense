@@ -12,6 +12,7 @@
 #include <chrono>
 #include <mutex>
 #include <regex>
+#include <thread>
 
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
@@ -252,7 +253,8 @@ void draw_bag_content(rosbag_content& bag, int flags)
             {
                 rosbag::View messages(bag.bag, rosbag::TopicQuery(topic));
                 uint64_t count = 0;
-                num_topics_to_show[topic] = std::max(num_topics_to_show[topic], 10ull);
+                constexpr uint64_t num_next_items_to_show = 10;
+                num_topics_to_show[topic] = std::max(num_topics_to_show[topic], num_next_items_to_show);
                 uint64_t max = num_topics_to_show[topic];
                 auto win_pos = ImGui::GetWindowPos();
                 ImGui::SetWindowPos({ win_pos.x + 20, win_pos.y });
@@ -264,8 +266,8 @@ void draw_bag_content(rosbag_content& bag, int flags)
                     ImGui::Text("Timestamp"); ImGui::NextColumn();
                     ImGui::Text("Content"); ImGui::NextColumn();
                     ImGui::Separator();
-                    ImGui::Text(pretty_time(std::chrono::nanoseconds(m.getTime().toNSec())).c_str()); ImGui::NextColumn();
-                    ImGui::Text(bag.instanciate_and_cache(m, count).c_str());
+                    ImGui::Text("%s", pretty_time(std::chrono::nanoseconds(m.getTime().toNSec())).c_str()); ImGui::NextColumn();
+                    ImGui::Text("%s", bag.instanciate_and_cache(m, count).c_str());
                     ImGui::Columns(1);
                     ImGui::Separator();
                     if (count >= max)
@@ -296,7 +298,7 @@ void draw_bag_content(rosbag_content& bag, int flags)
                 {
                     ImGui::BeginTooltip();
                     ImGui::PushTextWrapPos(450.0f);
-                    ImGui::TextUnformatted(topic.c_str());
+                    ImGui::Text("%s", topic.c_str());
                     ImGui::PopTextWrapPos();
                     ImGui::EndTooltip();
                 }
@@ -319,7 +321,7 @@ void draw_error_modal()
         if (ImGui::BeginPopupModal("Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
         {
             std::string msg = tmpstringstream() << "Error: " << files.get_last_error();
-            ImGui::TextWrapped(msg.c_str());
+            ImGui::TextWrapped("%s", msg.c_str());
             ImGui::Separator();
 
             if (ImGui::Button("OK", ImVec2(120, 0)))
