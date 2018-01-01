@@ -7,6 +7,7 @@
 #include <sstream>
 #include <chrono>
 #include <iomanip>
+#include <array>
 
 #include "../../third-party/realsense-file/rosbag/rosbag_storage/include/rosbag/bag.h"
 #include "../../third-party/realsense-file/rosbag/msgs/sensor_msgs/Imu.h"
