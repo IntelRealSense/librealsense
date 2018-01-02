@@ -42,8 +42,11 @@ namespace librealsense
             return *_profiles;
         }
 
+        stream_profiles get_active_streams() const override;
+
         void register_notifications_callback(notifications_callback_ptr callback) override;
         std::shared_ptr<notifications_proccessor> get_notifications_proccessor();
+        virtual frame_callback_ptr get_frames_callback() const override;
 
         bool is_streaming() const override
         {
@@ -74,6 +77,7 @@ namespace librealsense
         bool supports_info(rs2_camera_info info) const override;
 
     protected:
+        void set_active_streams(const stream_profiles& requests);
         bool try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const;
 
         void assign_stream(const std::shared_ptr<stream_interface>& stream,
@@ -95,6 +99,7 @@ namespace librealsense
 
     private:
         lazy<stream_profiles> _profiles;
+        stream_profiles _active_profiles;
         std::vector<native_pixel_format> _pixel_formats;
     };
 

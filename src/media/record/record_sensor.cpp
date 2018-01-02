@@ -17,16 +17,17 @@ librealsense::record_sensor::record_sensor(const device_interface& device,
     m_is_pause(false),
     m_parent_device(device)
 {
+    wrap_sensor_callbacks();
+    wrap_sensor_options();
+    wrap_streams();
+
     LOG_DEBUG("Created record_sensor");
 }
 
 librealsense::record_sensor::~record_sensor()
 {
-    for (auto id : m_recording_options)
-    {
-        auto& option = m_sensor.get_option(id);
-        option.enable_recording([](const librealsense::option& snapshot) {});
-    }
+    unwrap_sensor_options();
+    m_is_recording = false;
 }
 
 stream_profiles record_sensor::get_stream_profiles() const
@@ -37,15 +38,8 @@ stream_profiles record_sensor::get_stream_profiles() const
 void librealsense::record_sensor::open(const stream_profiles& requests)
 {
     m_sensor.open(requests);
-
+    wrap_streams();
     m_is_recording = true;
-    for (auto request : requests)
-    {
-        std::shared_ptr<stream_profile_interface> snapshot;
-        request->create_snapshot(snapshot);
-        //TODO: handle non video profiles
-        m_device_record_snapshot_handler(RS2_EXTENSION_VIDEO_PROFILE, std::dynamic_pointer_cast<extension_snapshot>(snapshot), [this](const std::string& err) { stop_with_error(err); });
-    }
 }
 
 void librealsense::record_sensor::close()
@@ -56,23 +50,11 @@ void librealsense::record_sensor::close()
 
 librealsense::option& librealsense::record_sensor::get_option(rs2_option id)
 {
-    auto& option = m_sensor.get_option(id);
-    if (m_recording_options.find(id) == m_recording_options.end())
-    {
-        option.enable_recording([this, id](const librealsense::option& option) {
-            options_container options;
-            std::shared_ptr<librealsense::option> option_snapshot;
-            option.create_snapshot(option_snapshot);
-            options.register_option(id, option_snapshot);
-            record_snapshot<options_interface>(RS2_EXTENSION_OPTIONS, options);
-        });
-        m_recording_options.insert(id);
-    }
-    return option;
+    return m_sensor.get_option(id);
 }
 const librealsense::option& librealsense::record_sensor::get_option(rs2_option id) const
 {
-    return const_cast<librealsense::option&>(const_cast<librealsense::record_sensor*>(this)->get_option(id));
+    return m_sensor.get_option(id);
 }
 const std::string& librealsense::record_sensor::get_info(rs2_camera_info info) const
 {
@@ -89,6 +71,7 @@ bool librealsense::record_sensor::supports_option(rs2_option id) const
 
 void librealsense::record_sensor::register_notifications_callback(notifications_callback_ptr callback)
 {
+    //TODO: Wrap notification callback (copy from future)
     m_user_notification_callback = std::move(callback);
     std::unique_ptr<rs2_notifications_callback, void(*)(rs2_notifications_callback*)> cb(new notification_callback([&](rs2_notification* n)
     {
@@ -100,25 +83,9 @@ void librealsense::record_sensor::register_notifications_callback(notifications_
 
 void librealsense::record_sensor::start(frame_callback_ptr callback)
 {
-    if (m_frame_callback != nullptr)
-    {
-        return; //already started
-    }
-
-    //TODO: Also handle case where live sensor is already streaming
-
-    auto record_cb = [this, callback](frame_holder frame)
-    {
-        record_frame(frame.clone());
-
-        //Raise to user callback
-        frame_interface* ref = nullptr;
-        std::swap(frame.frame, ref);
-        callback->on_frame((rs2_frame*)ref);
-    };
-
-    m_frame_callback = std::make_shared<frame_holder_callback>(record_cb);
-    m_sensor.start(m_frame_callback);
+    auto recording_cb = wrap_frame_callback(callback);
+    m_sensor.start(recording_cb);
+    m_frame_callback = recording_cb;
 }
 
 void librealsense::record_sensor::stop()
@@ -195,6 +162,16 @@ const device_interface& record_sensor::get_device()
     return m_parent_device;
 }
 
+frame_callback_ptr record_sensor::get_frames_callback() const
+{
+    return m_frame_callback;
+}
+
+stream_profiles record_sensor::get_active_streams() const
+{
+    return m_sensor.get_active_streams();
+}
+
 void record_sensor::raise_user_notification(const std::string& str)
 {
     notification noti(RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, 0, RS2_LOG_SEVERITY_ERROR, str);
@@ -225,11 +202,91 @@ void record_sensor::stop_with_error(const std::string& error_msg)
     m_is_recording = false;
     raise_user_notification(to_string() << "Stopping recording for sensor (streaming will continue). (Error: " << error_msg << ")");
 }
+
 void record_sensor::record_frame(frame_holder frame)
 {
     if(m_is_recording)
     {
         //Send to recording thread
         m_record_callback(std::move(frame), [this](const std::string& err){ stop_with_error(err); });
+    }
+}
+
+frame_callback_ptr librealsense::record_sensor::wrap_frame_callback(frame_callback_ptr callback)
+{
+    auto record_cb = [this, callback](frame_holder frame)
+    {
+        record_frame(frame.clone());
+
+        //Raise to user callback
+        frame_interface* ref = nullptr;
+        std::swap(frame.frame, ref);
+        if (callback)
+        {
+            callback->on_frame((rs2_frame*)ref);
+        }
+    };
+
+    return std::make_shared<frame_holder_callback>(record_cb);
+}
+
+void record_sensor::wrap_sensor_callbacks()
+{
+    //TODO: wrap_notification_callback (copy from future)
+    m_frame_callback = wrap_frame_callback(nullptr);
+}
+
+void record_sensor::wrap_sensor_options()
+{
+    for (int i = 0; i < static_cast<int>(RS2_OPTION_COUNT); i++)
+    {
+        rs2_option id = static_cast<rs2_option>(i);
+        if (!m_sensor.supports_option(id))
+        {
+            continue;
+        }
+
+        if (m_recording_options.find(id) != m_recording_options.end())
+        {
+            continue;
+        }
+
+        try
+        {
+            auto& opt = m_sensor.get_option(id);
+            opt.enable_recording([this, id](const librealsense::option& option) {
+                options_container options;
+                std::shared_ptr<librealsense::option> option_snapshot;
+                option.create_snapshot(option_snapshot);
+                options.register_option(id, option_snapshot);
+                record_snapshot<options_interface>(RS2_EXTENSION_OPTIONS, options);
+            });
+            m_recording_options.insert(id);
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR("Failed to enable recording for option " << get_string(id));
+        }
+    }
+}
+
+void record_sensor::unwrap_sensor_options()
+{
+    for (auto id : m_recording_options)
+    {
+        auto& option = m_sensor.get_option(id);
+        option.enable_recording([](const librealsense::option& snapshot) {});
+    }
+}
+
+void record_sensor::wrap_streams()
+{
+    auto streams = m_sensor.get_active_streams();
+    for (auto stream : streams)
+    {
+        std::shared_ptr<stream_profile_interface> snapshot;
+        stream->create_snapshot(snapshot);
+        //TODO: handle non video profiles
+        m_device_record_snapshot_handler(RS2_EXTENSION_VIDEO_PROFILE, std::dynamic_pointer_cast<extension_snapshot>(snapshot), [this](const std::string& err) { stop_with_error(err); });
     }
 }
