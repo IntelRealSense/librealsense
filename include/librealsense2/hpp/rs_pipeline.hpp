@@ -343,7 +343,6 @@ namespace rs2
         * \param[in] ctx   The context allocated by the application. Using the platform context by default.
         */
         pipeline(context ctx = context())
-            : _ctx(ctx)
         {
             rs2_error* e = nullptr;
             _pipeline = std::shared_ptr<rs2_pipeline>(
@@ -509,9 +508,9 @@ namespace rs2
         {
             return _pipeline;
         }
+        explicit pipeline(std::shared_ptr<rs2_pipeline> ptr) : _pipeline(ptr) {}
 
     private:
-        context _ctx;
         std::shared_ptr<rs2_pipeline> _pipeline;
         friend class config;
     };

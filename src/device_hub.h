@@ -41,6 +41,8 @@ namespace librealsense
         */
         bool is_connected(const device_interface& dev);
 
+        std::shared_ptr<librealsense::context> get_context();
+
         ~device_hub()
         {
             _ctx->stop();

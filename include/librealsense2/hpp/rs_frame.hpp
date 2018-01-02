@@ -169,12 +169,7 @@ namespace rs2
             error::handle(e);
         }
 
-    protected:
-        friend class rs2::sensor;
-        friend class rs2::frame;
-        friend class rs2::pipeline_profile;
-        friend class software_sensor;
-
+        bool is_cloned() { return bool(_clone); }
         explicit stream_profile(const rs2_stream_profile* profile) : _profile(profile)
         {
             rs2_error* e = nullptr;
@@ -185,6 +180,14 @@ namespace rs2
             error::handle(e);
 
         }
+        explicit operator const rs2_stream_profile*() { return _profile; }
+        explicit operator std::shared_ptr<rs2_stream_profile>() { return _clone; }
+
+    protected:
+        friend class rs2::sensor;
+        friend class rs2::frame;
+        friend class rs2::pipeline_profile;
+        friend class software_sensor;
 
         const rs2_stream_profile* _profile;
         std::shared_ptr<rs2_stream_profile> _clone;
@@ -493,6 +496,7 @@ namespace rs2
         * \return  rs2_frame - internal frame handle.
         */
         rs2_frame* get() const { return frame_ref; }
+        explicit operator rs2_frame*() { return frame_ref; }
 
     protected:
         /**

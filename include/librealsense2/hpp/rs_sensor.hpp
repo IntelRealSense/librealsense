@@ -9,6 +9,7 @@
 
 namespace rs2
 {
+
     class notification
     {
     public:
@@ -411,6 +412,12 @@ namespace rs2
             return extension;
         }
 
+        explicit sensor(std::shared_ptr<rs2_sensor> dev)
+            :options((rs2_options*)dev.get()), _sensor(dev)
+        {
+        }
+        explicit operator std::shared_ptr<rs2_sensor>() { return _sensor; }
+
     protected:
         friend context;
         friend device_list;
@@ -420,10 +427,7 @@ namespace rs2
 
         std::shared_ptr<rs2_sensor> _sensor;
 
-        explicit sensor(std::shared_ptr<rs2_sensor> dev)
-            :options((rs2_options*)dev.get()),  _sensor(dev)
-        {
-        }
+
     };
 
     inline bool operator==(const sensor& lhs, const sensor& rhs)
@@ -467,6 +471,7 @@ namespace rs2
         }
 
         operator bool() const { return _sensor.get() != nullptr; }
+        explicit roi_sensor(std::shared_ptr<rs2_sensor> dev) : roi_sensor(sensor(dev)) {}
     };
 
     class depth_sensor : public sensor
@@ -495,6 +500,7 @@ namespace rs2
         }
 
         operator bool() const { return _sensor.get() != nullptr; }
+        explicit depth_sensor(std::shared_ptr<rs2_sensor> dev) : depth_sensor(sensor(dev)) {}
     };
 
     class depth_stereo_sensor : public depth_sensor
