@@ -52,11 +52,21 @@ namespace librealsense
         _notifications_proccessor->set_callback(std::move(callback));
     }
 
+    frame_callback_ptr sensor_base::get_frames_callback() const
+    {
+        return _source.get_callback();
+    }
+
     std::shared_ptr<notifications_proccessor> sensor_base::get_notifications_proccessor()
     {
         return _notifications_proccessor;
     }
 
+    void sensor_base::set_active_streams(const stream_profiles& requests)
+    {
+        _active_profiles = requests;
+    }
+    
     bool sensor_base::try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const
     {
         auto it = std::find_if(begin(_pixel_formats), end(_pixel_formats),
@@ -477,6 +487,7 @@ namespace librealsense
             _is_opened = false;
             throw;
         }
+        set_active_streams(requests);
     }
 
     void uvc_sensor::close()
@@ -494,6 +505,7 @@ namespace librealsense
         reset_streaming();
         _power.reset();
         _is_opened = false;
+        set_active_streams({});
     }
 
     void uvc_sensor::register_xu(platform::extension_unit xu)
@@ -742,6 +754,7 @@ namespace librealsense
         }
         _hid_device->open(configured_hid_profiles);
         _is_opened = true;
+        set_active_streams(requests);
     }
 
     void hid_sensor::close()
@@ -758,6 +771,7 @@ namespace librealsense
         _is_configured_stream.resize(RS2_STREAM_COUNT);
         _hid_mapping.clear();
         _is_opened = false;
+        set_active_streams({});
     }
 
     // TODO:

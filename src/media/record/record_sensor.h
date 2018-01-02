@@ -41,6 +41,8 @@ namespace librealsense
         bool is_streaming() const override;
         bool extend_to(rs2_extension extension_type, void** ext) override;
         const device_interface& get_device() override;
+        frame_callback_ptr get_frames_callback() const override;
+        stream_profiles get_active_streams() const override;
 
     private /*methods*/:
         void raise_user_notification(const std::string& str);
@@ -48,6 +50,12 @@ namespace librealsense
         template <rs2_extension E, typename P> bool extend_to_aux(P* p, void** ext);
         void stop_with_error(const std::string& basic_string);
         void record_frame(frame_holder holder);
+        void wrap_sensor_callbacks();
+        void wrap_sensor_options();
+        void unwrap_sensor_options();
+        void wrap_streams();
+
+        frame_callback_ptr wrap_frame_callback(frame_callback_ptr callback);
 
     private /*members*/:
         snapshot_callback_t m_device_record_snapshot_handler;
