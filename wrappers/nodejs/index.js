@@ -100,6 +100,8 @@ class Device {
    * If a camera_info is provided, the specific camera info value is returned.
    */
   getCameraInfo(info) {
+    const funcName = 'Device.getCameraInfo()';
+    checkArgumentLength(0, 1, arguments.length, funcName);
     if (arguments.length === 0) {
       let result = {};
       if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_NAME)) {
@@ -129,13 +131,8 @@ class Device {
       }
       return result;
     } else {
-      let info = checkStringNumber(arguments[0],
-          constants.camera_info.CAMERA_INFO_NAME,
-          constants.camera_info.CAMERA_INFO_COUNT,
-          cameraInfo2Int,
-          'Device.getCameraInfo(info) expects a number or string as the 1st argument',
-          'Device.getCameraInfo(info) expects a valid value as the 1st argument');
-      return this.cxxDev.getCameraInfo(info);
+      const val = checkArgumentType(arguments, constants.camera_info, 0, funcName);
+      return this.cxxDev.getCameraInfo(val);
     }
   }
 
@@ -154,15 +151,9 @@ class Device {
    * device.supportsCameraInfo(realsense2.camera_info.CAMERA_INFO_NAME);
    */
   supportsCameraInfo(info) {
-    if (arguments.length !== 1) {
-      throw new TypeError('Device.supportsCameraInfo(info) expects 1 argument');
-    }
-
-    let i = checkStringNumber(arguments[0],
-        constants.camera_info.CAMERA_INFO_NAME, constants.camera_info.CAMERA_INFO_COUNT,
-        cameraInfo2Int,
-        'Device.supportsCameraInfo(info) expects a number or string as the 1st argument',
-        'Device.supportsCameraInfo(info) expects a valid value as the 1st argument');
+    const funcName = 'Device.supportsCameraInfo()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const i = checkArgumentType(arguments, constants.camera_info, 0, funcName);
     return this.cxxDev.supportsCameraInfo(i);
   }
 
@@ -270,6 +261,9 @@ class StreamProfile {
    * @return {ExtrinsicsObject}
    */
   getExtrinsicsTo(toProfile) {
+    const funcName = 'StreamProfile.getExtrinsicsTo()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, StreamProfile, 0, funcName);
     return this.cxxProfile.getExtrinsicsTo(toProfile.cxxProfile);
   }
 
@@ -307,9 +301,9 @@ class DeviceList {
    * @return {Boolean} true if the camera is contained in the list, otherwise false
    */
   contains(device) {
-    if (!(device instanceof Device)) {
-      throw new TypeError('DeviceList.contains expects a Device object as the argument!');
-    }
+    const funcName = 'DeviceList.contains()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, Device, 0, funcName);
     return this.cxxList.contains(device.cxxDev);
   }
 
@@ -321,6 +315,9 @@ class DeviceList {
    * @return {Device|undefined}
    */
   getDevice(index) {
+    const funcName = 'DeviceList.getDevice()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'number', 0, funcName, 0, this.size);
     let dev = this.cxxList.getDevice(index);
     return dev ? new Device(dev) : undefined;
   }
@@ -434,12 +431,12 @@ class Options {
   * @return {Boolean|undefined} true if option is read-only and undefined if not supported
   */
   isOptionReadOnly(option) {
-    let o = checkStringNumber(arguments[0],
-        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-        option2Int,
-        'Sensor.isOptionReadOnly(option) expects a number or string as the 1st argument',
-        'Sensor.isOptionReadOnly(option) expects a valid value as the 1st argument');
-    if (!this.cxxObj.supportsOption(o)) return undefined;
+    const funcName = 'Options.isOptionReadOnly()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const o = checkArgumentType(arguments, constants.option, 0, funcName);
+    if (!this.cxxObj.supportsOption(o)) {
+      return undefined;
+    }
 
     return this.cxxObj.isOptionReadonly(o);
   }
@@ -452,12 +449,12 @@ class Options {
    * @see {@link option}
    */
   getOption(option) {
-    let o = checkStringNumber(arguments[0],
-        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-        option2Int,
-        'Sensor.getOption(option) expects a number or string as the 1st argument',
-        'Sensor.getOption(option) expects a valid value as the 1st argument');
-    if (!this.cxxObj.supportsOption(o)) return undefined;
+    const funcName = 'Options.getOption()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const o = checkArgumentType(arguments, constants.option, 0, funcName);
+    if (!this.cxxObj.supportsOption(o)) {
+      return undefined;
+    }
 
     return this.cxxObj.getOption(o);
   }
@@ -486,13 +483,12 @@ class Options {
    * Sensor.getOptionRange(realsense2.option.OPTION_BACKLIGHT_COMPENSATION);
    */
   getOptionRange(option) {
-    let o = checkStringNumber(arguments[0],
-        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-        option2Int,
-        'Sensor.getOptionRange(option) expects a number or string as the 1st argument',
-        'Sensor.getOptionRange(option) expects a valid value as the 1st argument');
-    if (!this.cxxObj.supportsOption(o)) return undefined;
-
+    const funcName = 'Options.getOptionRange()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const o = checkArgumentType(arguments, constants.option, 0, funcName);
+    if (!this.cxxObj.supportsOption(o)) {
+      return undefined;
+    }
     return this.cxxObj.getOptionRange(o);
   }
 
@@ -505,13 +501,13 @@ class Options {
    * @return {undefined}
    */
   setOption(option, value) {
-    let o = checkStringNumber(arguments[0],
-        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-        option2Int,
-        'Sensor.getOptionRange(option) expects a number or string as the 1st argument',
-        'Sensor.getOptionRange(option) expects a valid value as the 1st argument');
-    if (!this.cxxObj.supportsOption(o) || this.cxxObj.isOptionReadonly(o)) return undefined;
-
+    const funcName = 'Options.setOption()';
+    checkArgumentLength(2, 2, arguments.length, funcName);
+    const o = checkArgumentType(arguments, constants.option, 0, funcName);
+    checkArgumentType(arguments, 'number', 1, funcName);
+    if (!this.cxxObj.supportsOption(o) || this.cxxObj.isOptionReadonly(o)) {
+      return undefined;
+    }
     this.cxxObj.setOption(o, value);
   }
 
@@ -523,11 +519,9 @@ class Options {
    * @see {@link option}
    */
   supportsOption(option) {
-    let o = checkStringNumber(arguments[0],
-        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-        option2Int,
-        'Sensor.supportsOption(option) expects a number or string as the 1st argument',
-        'Sensor.supportsOption(option) expects a valid value as the 1st argument');
+    const funcName = 'Options.supportsOption()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const o = checkArgumentType(arguments, constants.option, 0, funcName);
     return this.cxxObj.supportsOption(o);
   }
 
@@ -540,12 +534,12 @@ class Options {
    * @see {@link option}
    */
   getOptionDescription(option) {
-    let o = checkStringNumber(arguments[0],
-        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-        option2Int,
-        'Sensor.supportsOption(option) expects a number or string as the 1st argument',
-        'Sensor.supportsOption(option) expects a valid value as the 1st argument');
-    if (!this.cxxObj.supportsOption(o)) return undefined;
+    const funcName = 'Options.getOptionDescription()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const o = checkArgumentType(arguments, constants.option, 0, funcName);
+    if (!this.cxxObj.supportsOption(o)) {
+      return undefined;
+    }
     return this.cxxObj.getOptionDescription(o);
   }
 
@@ -558,13 +552,13 @@ class Options {
    * @see {@link option}
    */
   getOptionValueDescription(option, value) {
-    let o = checkStringNumber(arguments[0],
-        constants.option.OPTION_BACKLIGHT_COMPENSATION, constants.option.OPTION_COUNT,
-        option2Int,
-        'Sensor.supportsOption(option) expects a number or string as the 1st argument',
-        'Sensor.supportsOption(option) expects a valid value as the 1st argument');
-    if (!this.cxxObj.supportsOption(o)) return undefined;
-
+    const funcName = 'Options.getOptionValueDescription()';
+    checkArgumentLength(2, 2, arguments.length, funcName);
+    const o = checkArgumentType(arguments, constants.option, 0, funcName);
+    checkArgumentType(arguments, 'number', 1, funcName);
+    if (!this.cxxObj.supportsOption(o)) {
+      return undefined;
+    }
     return this.cxxObj.getOptionValueDescription(o, value);
   }
 }
@@ -606,10 +600,8 @@ class Sensor extends Options {
    * stream profiles
    */
   open(streamProfile) {
-    if (arguments.length != 1) {
-      throw new TypeError(
-          'Sensor.open() expects a streamProfile object or an array of streamProfile objects');
-    }
+    const funcName = 'Sensor.open()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
     if (Array.isArray(streamProfile) && streamProfile.length > 0) {
       let cxxStreamProfiles = [];
       for (let i = 0; i < streamProfile.length; i++) {
@@ -621,10 +613,7 @@ class Sensor extends Options {
       }
       this.cxxSensor.openMultipleStream(cxxStreamProfiles);
     } else {
-      if (!(streamProfile instanceof StreamProfile)) {
-        throw new TypeError(
-            'Sensor.open() expects a streamProfile object or an array of streamProfile objects'); // eslint-disable-line
-      }
+      checkArgumentType(arguments, StreamProfile, 0, funcName);
       this.cxxSensor.openStream(streamProfile.cxxProfile);
     }
   }
@@ -636,15 +625,9 @@ class Sensor extends Options {
    * @see enum {@link camera_info}
    */
   supportsCameraInfo(info) {
-    if (arguments.length !== 1) {
-      throw new TypeError('Sensor.supportsCameraInfo(info) expects 1 argument');
-    }
-
-    let i = checkStringNumber(arguments[0],
-        constants.camera_info.CAMERA_INFO_NAME, constants.camera_info.CAMERA_INFO_COUNT,
-        cameraInfo2Int,
-        'Sensor.supportsCameraInfo(info) expects a number or string as the 1st argument',
-        'Sensor.supportsCameraInfo(info) expects a valid value as the 1st argument');
+    const funcName = 'Sensor.supportsCameraInfo()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const i = checkArgumentType(arguments, constants.camera_info, 0, funcName);
     return this.cxxSensor.supportsCameraInfo(i);
   }
 
@@ -656,12 +639,9 @@ class Sensor extends Options {
    * @return {String|undefined}
    */
   getCameraInfo(info) {
-    let i = checkStringNumber(arguments[0],
-        constants.camera_info.CAMERA_INFO_NAME,
-        constants.camera_info.CAMERA_INFO_COUNT,
-        cameraInfo2Int,
-        'Sensor.getCameraInfo(info) expects a number or string as the 1st argument',
-        'Sensor.getCameraInfo(info) expects a valid value as the 1st argument');
+    const funcName = 'Sensor.getCameraInfo()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const i = checkArgumentType(arguments, constants.camera_info, 0, funcName);
     return this.cxxSensor.getCameraInfo(i);
   }
 
@@ -712,12 +692,12 @@ class Sensor extends Options {
    *
    */
   start(callback) {
-    if (arguments.length != 1) {
-      throw new TypeError('Sensor.start expects 1 argument');
-    }
+    const funcName = 'Sensor.start()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
     if (arguments[0] instanceof Syncer) {
       this.cxxSensor.startWithSyncer(arguments[0].cxxSyncer, false, 0);
     } else {
+      checkArgumentType(arguments, 'function', 0, funcName);
       // create object to hold frames generated from native.
       this.frame = new Frame();
       this.depthFrame = new DepthFrame();
@@ -796,7 +776,9 @@ class Sensor extends Options {
    * @return {undefined}
    */
   setNotificationsCallback(callback) {
-    if (!callback) return undefined;
+    const funcName = 'Sensor.setNotificationsCallback()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'function', 0, funcName);
 
     this._events.on('notification', (info) => {
       callback(info);
@@ -852,11 +834,9 @@ class Sensor extends Options {
    * @return {MotionIntrinsics} {@link MotionIntrinsics}
    */
   getMotionIntrinsics(stream) {
-    let s = checkStringNumber(stream,
-        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-        stream2Int,
-        'Sensor.getMotionIntrinsics() expects a number or string to specify the stream',
-        'Sensor.getMotionIntrinsics() expects a valid value to specify the stream');
+    const funcName = 'Sensor.getMotionIntrinsics()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const s = checkArgumentType(arguments, constants.stream, 0, funcName);
     return this.cxxSensor.getMotionIntrinsics(s);
   }
 }
@@ -911,16 +891,23 @@ class ROISensor extends Sensor {
    * @param {Float32} maxY - see {@link RegionOfInterestObject} for details.
    */
   setRegionOfInterest(region) {
+    const funcName = 'ROISensor.setRegionOfInterest()';
+    checkArgumentLength(1, 4, arguments.length, funcName);
     let minX;
     let minY;
     let maxX;
     let maxY;
-    if (arguments.length === 1 && typeof region === 'object') {
+    if (arguments.length === 1) {
+      checkArgumentType(arguments, 'object', 0, funcName);
       minX = region.minX;
       minY = region.minY;
       maxX = region.maxX;
       maxY = region.maxY;
-    } else if (arguments.length >= 4) {
+    } else if (arguments.length === 4) {
+      checkArgumentType(arguments, 'number', 0, funcName);
+      checkArgumentType(arguments, 'number', 1, funcName);
+      checkArgumentType(arguments, 'number', 2, funcName);
+      checkArgumentType(arguments, 'number', 3, funcName);
       minX = arguments[0];
       minY = arguments[1];
       maxX = arguments[2];
@@ -993,21 +980,30 @@ const internal = {
  * Default librealsense context class,
  */
 class Context {
+  /**
+   * There are only one acceptable form of syntax to create a Context for users:
+   * <pre><code>
+   *  new Context();
+   * </code></pre>
+   * other forms are reserved for internal use only.
+   */
   constructor(cxxCtx) {
+    const funcName = 'Context.constructor()';
+    // Internal code will create Context with cxxObject or other params
+    checkDiscreteArgumentLength([0, 1, 3, 4], arguments.length, funcName);
     this._events = new EventEmitter();
     if (arguments.length === 0) {
       this.cxxCtx = new RS2.RSContext();
       this.cxxCtx.create();
+    } else if (arguments.length === 1) {
+      checkArgumentType(arguments, RS2.RSContext, 0, funcName);
+      this.cxxCtx = cxxCtx;
     } else {
-      if (arguments[0] === 'recording' || arguments[0] === 'playback') {
-        this.cxxCtx = new (Function.prototype.bind.apply(
-            RS2.RSContext, [null].concat(Array.from(arguments))))();
-        this.cxxCtx.create();
-      } else if (arguments[0] instanceof RS2.RSContext) {
-        this.cxxCtx = cxxCtx;
-      } else {
-        throw new TypeError('Invalid arguement for Context.constructor()');
-      }
+      checkArgumentType(arguments, 'string', 0, funcName);
+      checkDiscreteArgumentValue(arguments, 0, ['recording', 'playback'], funcName);
+      this.cxxCtx = new (Function.prototype.bind.apply(
+          RS2.RSContext, [null].concat(Array.from(arguments))))();
+      this.cxxCtx.create();
     }
     this.cxxCtx._events = this._events;
     internal.addContext(this);
@@ -1072,6 +1068,10 @@ class Context {
    * @return {Device|undefined}
    */
   getSensorParent(sensor) {
+    const funcName = 'Context.getSensorParent()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, Sensor, 0, funcName);
+
     let cxxDev = this.cxxCtx.createDeviceFromSensor(sensor.cxxSensor);
     if (!cxxDev) {
       return undefined;
@@ -1100,7 +1100,9 @@ class Context {
    * @param {devicesChangedCallback} callback - devices changed callback
    */
   setDevicesChangedCallback(callback) {
-    if (!callback) return;
+    const funcName = 'Context.setDevicesChangedCallback()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'function', 0, funcName);
 
     this._events.on('device-changed', (removed, added) => {
       callback(removed, added);
@@ -1123,9 +1125,9 @@ class Context {
    * @return {PlaybackDevice}
    */
   loadDevice(file) {
-    if (arguments.length === 0 || !isString(file)) {
-      throw new TypeError('Context.loadDevice expects a string argument');
-    }
+    const funcName = 'Context.loadDevice()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'string', 0, funcName);
     return new PlaybackDevice(this.cxxCtx.loadDeviceFile(file), file);
   }
 
@@ -1135,9 +1137,9 @@ class Context {
    * @param {String} file The file name that was loaded to create the playback device
    */
   unloadDevice(file) {
-    if (arguments.length === 0 || !isString(file)) {
-      throw new TypeError('Context.unloadDevice expects a string argument');
-    }
+    const funcName = 'Context.unloadDevice()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'string', 0, funcName);
     this.cxxCtx.unloadDeviceFile(file);
   }
 }
@@ -1155,15 +1157,12 @@ class RecordingContext extends Context {
    * @see [enum recording_mode]{@link recording_mode}
    */
   constructor(fileName, section = '', mode = 'blank-frames') {
-    if (!isString(fileName) || !isString(section)) {
-      throw new TypeError('RecordingContext constructor\'s argument type is invalid');
-    }
-    let m = checkStringNumber(mode,
-        constants.recording_mode.RECORDING_MODE_BLANK_FRAMES,
-        constants.recording_mode.RECORDING_MODE_STREAM_COUNT,
-        recordingMode2Int,
-        'RecordingContext constructor expects a string or an integer for the 3rd argument',
-        'RecordingContext constructor\'s 3rd argument value is invalid');
+    const funcName = 'RecordingContext.constructor()';
+    checkArgumentLength(1, 3, arguments.length, funcName);
+    checkArgumentType(arguments, 'string', 0, funcName);
+    checkArgumentType(arguments, 'string', 1, funcName);
+    let m = checkArgumentType(arguments, constants.recording_mode, 2, funcName);
+    m = (m === undefined ? recordingMode2Int(mode) : m);
     super('recording', fileName, section, m);
   }
 }
@@ -1181,9 +1180,10 @@ class PlaybackContext extends Context {
    * @param {String} section The section name used in recording
    */
   constructor(fileName, section = '') {
-    if (!isString(fileName) || !isString(section)) {
-      throw new TypeError('PlaybackContext constructor\'s argument type is invalid');
-    }
+    const funcName = 'PlaybackContext.constructor()';
+    checkArgumentLength(1, 2, arguments.length, funcName);
+    checkArgumentType(arguments, 'string', 0, funcName);
+    checkArgumentType(arguments, 'string', 1, funcName);
     super('playback', fileName, section);
   }
 }
@@ -1230,12 +1230,10 @@ class RecorderDevice extends Device {
    * @param {Device} device the actual device to be recorded
    */
   constructor(file, device) {
-    if (arguments.length != 2) {
-      throw new TypeError('RecorderDevice constructor expects 2 arguments');
-    }
-    if (!isString(file) || !(device instanceof Device)) {
-      throw new TypeError('Invalid argument types provided to RecorderDevice constructor');
-    }
+    const funcName = 'RecorderDevice.constructor()';
+    checkArgumentLength(2, 2, arguments.length, funcName);
+    checkArgumentType(arguments, 'string', 0, funcName);
+    checkArgumentType(arguments, Device, 1, funcName);
     super(device.cxxDev.spawnRecorderDevice(file));
   }
   /**
@@ -1343,9 +1341,9 @@ class PlaybackDevice extends Device {
    * @return {undefined}
    */
   seek(time) {
-    if (arguments.length === 0 || !isNumber(time)) {
-      throw new TypeError('PlaybackDevice.seek(time) expects a number argument');
-    }
+    const funcName = 'PlaybackDevice.seek()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'number', 0, funcName);
     this.cxxDev.seek(time);
   }
   /**
@@ -1366,9 +1364,9 @@ class PlaybackDevice extends Device {
    * @return {undefined}
    */
   set isRealTime(val) {
-    if (arguments.length === 0 || (typeof val !== 'boolean')) {
-      throw new TypeError('PlaybackDevice.isRealTime(val) expects a boolean argument');
-    }
+    const funcName = 'PlaybackDevice.isRealTime()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'boolean', 0, funcName);
     this.cxxDev.setIsRealTime(val);
   }
   /**
@@ -1377,9 +1375,9 @@ class PlaybackDevice extends Device {
    * 0.5 half normal speed)
    */
   setPlaybackSpeed(speed) {
-    if (arguments.length === 0 || !isNumber(speed)) {
-      throw new TypeError('PlaybackDevice.setPlaybackSpeed(speed) expects a number argument');
-    }
+    const funcName = 'PlaybackDevice.setPlaybackSpeed()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'number', 0, funcName);
     this.cxxDev.setPlaybackSpeed(speed);
   }
 
@@ -1416,9 +1414,9 @@ class PlaybackDevice extends Device {
    * @return {undefined}
    */
   setStatusChangedCallback(callback) {
-    if (arguments.length === 0) {
-      throw new TypeError('PlaybackDevice.setStatusChangedCallback expects an argument as callback'); // eslint-disable-line
-    }
+    const funcName = 'PlaybackDevice.setStatusChangedCallback()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'function', 0, funcName);
     this._events.on('status-changed', (status) => {
       callback({status: status, description: playback_status.playbackStatusToString(status)});
     });
@@ -1452,14 +1450,14 @@ class PointCloud {
    * @return {Points|undefined}
    */
   calculate(depthFrame) {
-    if (arguments.length === 1 && depthFrame && depthFrame instanceof DepthFrame) {
-      this.pointsFrame.release();
-      if (this.cxxPointCloud.calculate(depthFrame.cxxFrame, this.pointsFrame.cxxFrame)) {
-        return this.pointsFrame;
-      }
-      return undefined;
+    const funcName = 'PointCloud.calculate()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, DepthFrame, 0, funcName);
+    this.pointsFrame.release();
+    if (this.cxxPointCloud.calculate(depthFrame.cxxFrame, this.pointsFrame.cxxFrame)) {
+      return this.pointsFrame;
     }
-    throw new TypeError('PointCloud.calculate() expects a frame argument.');
+    return undefined;
   }
 
   /**
@@ -1468,11 +1466,10 @@ class PointCloud {
    * @return {undefined}
    */
   mapTo(mappedFrame) {
-    if (mappedFrame) {
-      this.cxxPointCloud.mapTo(mappedFrame.cxxFrame);
-    } else {
-      throw new TypeError('PointCloud.mapTo() expects a frame argument');
-    }
+    const funcName = 'PointCloud.mapTo()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, Frame, 0, funcName);
+    this.cxxPointCloud.mapTo(mappedFrame.cxxFrame);
   }
 
   release() {
@@ -1527,13 +1524,12 @@ class Colorizer extends Options {
    * @return {VideoFrame|undefined}
    */
   colorize(depthFrame) {
-    if (arguments.length === 1 && depthFrame instanceof DepthFrame) {
-      const success = this.cxxColorizer.colorize(depthFrame.cxxFrame, this.depthRGB.cxxFrame);
-      this.depthRGB.updateProfile();
-      return success ? this.depthRGB : undefined;
-    } else {
-      throw new TypeError('Colorizer.colorize() expects a frame argument');
-    }
+    const funcName = 'Colorizer.colorize()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, DepthFrame, 0, funcName);
+    const success = this.cxxColorizer.colorize(depthFrame.cxxFrame, this.depthRGB.cxxFrame);
+    this.depthRGB.updateProfile();
+    return success ? this.depthRGB : undefined;
   }
 }
 
@@ -1548,12 +1544,9 @@ class Align {
    * set the stream argument to stream type of depth.
    */
   constructor(stream) {
-    let s = checkStringNumber(stream,
-            constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-            stream2Int,
-            'Align constructor expects a string or an integer argument',
-            'Align constructor\'s argument value is invalid');
-
+    const funcName = 'Align.constructor()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const s = checkArgumentType(arguments, constants.stream, 0, funcName);
     this.cxxAlign = new RS2.RSAlign(s);
     this.frameSet = new FrameSet();
   }
@@ -1564,16 +1557,15 @@ class Align {
    * @return {FrameSet}
    */
   process(frameSet) {
-    if (arguments.length === 1 && frameSet) {
-      this.frameSet.release(); // Destroy all attached-frames (depth/color/etc.)
-      if (this.cxxAlign.process(frameSet.cxxFrameSet, this.frameSet.cxxFrameSet)) {
-        this.frameSet.__update();
-        return this.frameSet;
-      }
-      return undefined;
+    const funcName = 'Align.process()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, FrameSet, 0, funcName);
+    this.frameSet.release(); // Destroy all attached-frames (depth/color/etc.)
+    if (this.cxxAlign.process(frameSet.cxxFrameSet, this.frameSet.cxxFrameSet)) {
+      this.frameSet.__update();
+      return this.frameSet;
     }
-
-    throw new TypeError('Align.process() expects a frameset argument');
+    return undefined;
   }
 
   release() {
@@ -1707,13 +1699,10 @@ class Frame {
    * @return {Uint8Array} The metadata value, 8 bytes, byte order is bigendian.
    */
   frameMetadata(metadata) {
-    let m = checkStringNumber(metadata,
-        constants.frame_metadata.FRAME_METADATA_FRAME_COUNTER,
-        constants.frame_metadata.FRAME_METADATA_COUNT,
-        frameMetadata2Int,
-        'Frame.frameMetadata(metadata) expects a number or string as the 1st argument',
-        'Frame.frameMetadata(metadata) expects a valid value as the 1st argument');
-    let array = new Uint8Array(8);
+    const funcName = 'Frame.frameMetadata()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const m = checkArgumentType(arguments, constants.frame_metadata, 0, funcName);
+    const array = new Uint8Array(8);
     return this.cxxFrame.getFrameMetadata(m, array) ? array : undefined;
   }
 
@@ -1723,12 +1712,9 @@ class Frame {
    * @return {Boolean} true if supported, and false if not
    */
   supportsFrameMetadata(metadata) {
-    let m = checkStringNumber(metadata,
-        constants.frame_metadata.FRAME_METADATA_FRAME_COUNTER,
-        constants.frame_metadata.FRAME_METADATA_COUNT,
-        frameMetadata2Int,
-        'Frame.supportsFrameMetadata(metadata) expects a number or string as the 1st argument',
-        'Frame.supportsFrameMetadata(metadata) expects a valid value as the 1st argument');
+    const funcName = 'Frame.supportsFrameMetadata()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const m = checkArgumentType(arguments, constants.frame_metadata, 0, funcName);
     return this.cxxFrame.supportsFrameMetadata(m);
   }
 
@@ -1804,13 +1790,14 @@ class Frame {
    * in bytes.
    */
   getData(buffer) {
-    if (arguments.length === 0) return this.data;
-
-    if (arguments.length === 1 && isArrayBuffer(buffer)) {
+    const funcName = 'Frame.supportsFrameMetadata()';
+    checkArgumentLength(0, 1, arguments.length, funcName);
+    if (arguments.length === 0) {
+      return this.data;
+    } else if (arguments.length === 1) {
+      checkArgumentType(arguments, 'ArrayBuffer', 0, funcName);
       return this.cxxFrame.writeData(buffer);
     }
-
-    throw new TypeError('Frame.getData() expects 1 ArrayBuffer as a argument, or no argument');
   }
 }
 
@@ -1972,10 +1959,10 @@ class DepthFrame extends VideoFrame {
    * @return {Float}
    */
   getDistance(x, y) {
-    if ((arguments.length != 2) || (typeof x !== 'number') || (typeof y !== 'number')) {
-      throw new TypeError('DepthFrame.getDistance(x, y) expects 2 integer arguments.');
-    }
-
+    const funcName = 'DepthFrame.getDistance()';
+    checkArgumentLength(2, 2, arguments.length, funcName);
+    checkArgumentType(arguments, 'number', 0, funcName);
+    checkArgumentType(arguments, 'number', 1, funcName);
     return this.cxxFrame.getDistance(x, y);
   }
 }
@@ -2028,10 +2015,9 @@ class FrameSet {
    * @return {DepthFrame|VideoFrame|Frame|undefined}
    */
   at(index) {
-    if ((arguments.length !== 1) || (typeof index !== 'number') ||
-        (parseInt(index) >= this.size)) {
-      throw new TypeError('FrameSet.at(index) expects a valid integer argument');
-    }
+    const funcName = 'FrameSet.at()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'number', 0, 'FrameSet.at()', 0, this.size);
     return this.getFrame(this.cxxFrameSet.indexToStream(index));
   }
 
@@ -2041,9 +2027,9 @@ class FrameSet {
    * @return {undefined}
    */
   forEach(callback) {
-    if (!callback) {
-      throw new TypeError('FrameSet.forEach expects a FrameCallback argument');
-    }
+    const funcName = 'FrameSet.forEach()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'function', 0, funcName);
     const size = this.size;
     for (let i = 0; i < size; i++) {
       callback(this.at(i));
@@ -2058,12 +2044,7 @@ class FrameSet {
   }
 
   __internalGetFrame(stream) {
-    let s = checkStringNumber(stream,
-        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-        stream2Int,
-        'FrameSet.getFrame() expects the argument to be string or integer',
-        'FrameSet.getFrame()\'s argument value is invalid');
-    return this.__internalAssembleFrame(this.cxxFrameSet.getFrame(s));
+    return this.__internalAssembleFrame(this.cxxFrameSet.getFrame(stream));
   }
 
   __internalGetFrameCache(stream, callback) {
@@ -2088,7 +2069,10 @@ class FrameSet {
    * @return {DepthFrame|VideoFrame|Frame|undefined}
    */
   getFrame(stream) {
-    return this.__internalGetFrameCache(stream, this.__internalGetFrame.bind(this));
+    const funcName = 'FrameSet.getFrame()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const s = checkArgumentType(arguments, constants.stream, 0, funcName);
+    return this.__internalGetFrameCache(s, this.__internalGetFrame.bind(this));
   }
 
   __update() {
@@ -2137,20 +2121,15 @@ class Pipeline {
    * @param {Context} [context] - the {@link Context} that is being used by the pipeline
    */
   constructor(context) {
-    if (arguments.length > 1) {
-      throw new TypeError('new Pipeline() can only accept at most 1 argument');
-    }
-
+    const funcName = 'Pipeline.constructor()';
+    checkArgumentLength(0, 1, arguments.length, funcName);
     let ownCtx = true;
     let ctx;
 
     if (arguments.length === 1) {
-      if (arguments[0] instanceof Context) {
-        ownCtx = false;
-        this.ctx = arguments[0];
-      } else {
-        throw new TypeError('new Pipeline() expects a Context argument');
-      }
+      checkArgumentType(arguments, Context, 0, funcName);
+      ownCtx = false;
+      this.ctx = arguments[0];
     }
 
     if (ownCtx === true) {
@@ -2203,19 +2182,18 @@ class Pipeline {
    * @return {@link PipelineProfile}
    */
   start() {
+    const funcName = 'Pipeline.start()';
+    checkArgumentLength(0, 1, arguments.length, funcName);
     if (this.started === true) return undefined;
 
     if (arguments.length === 0) {
       this.started = true;
       return new PipelineProfile(this.cxxPipeline.start());
     } else {
-      if (!(arguments[0] instanceof Config)) {
-        throw new TypeError('Invalid argument for Pipeline.start()');
-      }
+      checkArgumentType(arguments, Config, 0, funcName);
       this.started = true;
       return new PipelineProfile(this.cxxPipeline.startWithConfig(arguments[0].cxxConfig));
     }
-    return undefined;
   }
 
   /**
@@ -2247,17 +2225,16 @@ class Pipeline {
    * @return {FrameSet|undefined} a FrameSet object or Undefined
    * @see See [Pipeline.latestFrame]{@link Pipeline#latestFrame}
    */
-  waitForFrames() {
-    if ((arguments.length === 1 && isNumber(arguments[0])) || arguments.length === 0) {
-      const timeout = arguments[0] || 5000;
-      this.frameSet.release();
-      if (this.cxxPipeline.waitForFrames(this.frameSet.cxxFrameSet, timeout)) {
-        this.frameSet.__update();
-        return this.frameSet;
-      }
-      return undefined;
+  waitForFrames(timeout = 5000) {
+    const funcName = 'Pipeline.waitForFrames()';
+    checkArgumentLength(0, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'number', 0, funcName);
+    this.frameSet.release();
+    if (this.cxxPipeline.waitForFrames(this.frameSet.cxxFrameSet, timeout)) {
+      this.frameSet.__update();
+      return this.frameSet;
     }
-    throw new TypeError('Pipeline.waitForFrames() expects an integer timeout argument');
+    return undefined;
   }
 
   get latestFrame() {
@@ -2349,21 +2326,16 @@ class PipelineProfile {
    * @return {StreamProfile} the first matching stream profile
    */
   getStream(streamType, streamIndex = -1) {
-    let s = checkStringNumber(arguments[0],
-        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-        stream2Int,
-        'pipelineProfile.getStream() expects a number or string to specify the stream',
-        'pipelineProfile.getStream() expects a valid value to specify the stream');
-    if (!isNumber(streamIndex)) {
-      throw new TypeError('pipelineProfile.getStream() expects a number to be the second argument');
-    }
-
+    const funcName = 'PipelineProfile.getStream()';
+    checkArgumentLength(1, 2, arguments.length, funcName);
+    const s = checkArgumentType(arguments, constants.stream, 0, funcName);
+    checkArgumentType(arguments, 'number', 1, funcName);
     let profiles = this.getStreams();
     if (!profiles) {
       return undefined;
     }
     for (let i = 0; i < profiles.length; i++) {
-      if (profiles[i].streamType === streamType &&
+      if (profiles[i].streamType === s &&
           (streamIndex === -1 || (streamIndex === profiles[i].indexValue))) {
         return profiles[i];
       }
@@ -2443,18 +2415,14 @@ class Config {
   * @param {Integer} fps stream frames per second. 0 indicates any.
   */
   enableStream(stream, index, width, height, format, fps) {
-    let s = checkStringNumber(stream,
-        constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-        stream2Int,
-        'Config.enableStream() expects a number or string to specify the stream',
-        'Config.enableStream() expects a valid value to specify the stream');
-
-    let f = checkStringNumber(format,
-      constants.format.FORMAT_ANY, constants.format.FORMAT_COUNT,
-      format2Int,
-      'Config.enableStream() expects a property \'format\' to be string or integer',
-      'Config.enableStream() expects a valid value to specify the format');
-
+    const funcName = 'Config.enableStream()';
+    checkArgumentLength(6, 6, arguments.length, funcName);
+    const s = checkArgumentType(arguments, constants.stream, 0, funcName);
+    checkArgumentType(arguments, 'number', 1, funcName);
+    checkArgumentType(arguments, 'number', 2, funcName);
+    checkArgumentType(arguments, 'number', 3, funcName);
+    const f = checkArgumentType(arguments, constants.format, 4, funcName);
+    checkArgumentType(arguments, 'number', 5, funcName);
     this.cxxConfig.enableStream(s, index, width, height, f, fps);
   }
 
@@ -2462,12 +2430,9 @@ class Config {
    * Disable a device stream explicitly, to remove any requests on this stream profile.
    */
   disableStream(stream) {
-    let s = checkStringNumber(stream,
-    constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-    stream2Int,
-    'Config.enableStream() expects a number or string to specify the stream',
-    'Config.enableStream() expects a valid value to specify the stream');
-
+    const funcName = 'Config.disableStream()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const s = checkArgumentType(arguments, constants.stream, 0, funcName);
     this.cxxConfig.disableStream(s);
   }
 
@@ -2495,6 +2460,9 @@ class Config {
    * Device.getCameraInfo(camera_info.CAMERA_INFO_SERIAL_NUMBER).
    */
   enableDevice(serial) {
+    const funcName = 'Config.enableDevice()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'string', 0, funcName);
     this.cxxConfig.enableDevice(serial);
   }
 
@@ -2508,6 +2476,9 @@ class Config {
    * @param {String} filename the playback file of the device
    */
   enableDeviceFromFile(filename) {
+    const funcName = 'Config.enableDeviceFromFile()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'string', 0, funcName);
     this.cxxConfig.enableDeviceFromFile(filename);
   }
 
@@ -2519,6 +2490,9 @@ class Config {
    * @param {String} filename the desired file for the output record
    */
   enableRecordToFile(filename) {
+    const funcName = 'Config.enableRecordToFile()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'string', 0, funcName);
     this.cxxConfig.enableRecordToFile(filename);
   }
 
@@ -2544,15 +2518,10 @@ class Config {
    * filters and pipeline requests.
    */
   resolve(pipeline) {
-    if (arguments.length === 0) {
-        throw new TypeError('Invalid argument for Config.resolve()');
-    } else {
-      if (!(arguments[0] instanceof Pipeline)) {
-        throw new TypeError('Invalid argument for Config.resolve()');
-      }
-      return new PipelineProfile(this.cxxConfig.resolve(arguments[0].cxxPipeline));
-    }
-    return undefined;
+    const funcName = 'Config.resolve()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, Pipeline, 0, funcName);
+    return new PipelineProfile(this.cxxConfig.resolve(arguments[0].cxxPipeline));
   }
 
   /**
@@ -2564,14 +2533,10 @@ class Config {
    * under the config filters and the available devices.
    */
   canResolve(pipeline) {
-    if (arguments.length === 0) {
-        throw new TypeError('Invalid argument for Config.canResolve()');
-    } else {
-      if (!(arguments[0] instanceof Pipeline)) {
-        throw new TypeError('Invalid argument for Config.canResolve()');
-      }
-      return this.cxxConfig.canResolve(arguments[0].cxxPipeline);
-    }
+    const funcName = 'Config.canResolve()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, Pipeline, 0, funcName);
+    return this.cxxConfig.canResolve(arguments[0].cxxPipeline);
   }
 
   /**
@@ -2599,17 +2564,16 @@ class Syncer {
    * @param {Number} timeout Max time in milliseconds to wait until an exception will be thrown
    * @return {Frame[]|undefined} Set of coherent frames or undefined if no frames.
    */
-  waitForFrames(timeout) {
-    if ((arguments.length === 1 && isNumber(arguments[0])) || arguments.length === 0) {
-      const timeout = arguments[0] || 5000;
-      this.frameSet.release();
-      if (this.cxxSyncer.waitForFrames(this.frameSet.cxxFrameSet, timeout)) {
-        this.frameSet.__update();
-        return this.frameSet;
-      }
-      return undefined;
+  waitForFrames(timeout = 5000) {
+    const funcName = 'Syncer.waitForFrames()';
+    checkArgumentLength(0, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'number', 0, funcName);
+    this.frameSet.release();
+    if (this.cxxSyncer.waitForFrames(this.frameSet.cxxFrameSet, timeout)) {
+      this.frameSet.__update();
+      return this.frameSet;
     }
-    throw new TypeError('Syncer.waitForFrames() expects an integer timeout argument');
+    return undefined;
   }
 
   /**
@@ -2651,6 +2615,9 @@ class DeviceHub {
    * @param {Context} context - a librealsense2 Context
    */
   constructor(context) {
+    const funcName = 'DeviceHub.constructor()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, Context, 0, funcName);
     this.context = context;
     this.cxxHub = new RS2.RSDeviceHub(context.cxxCtx);
     internal.addObject(this);
@@ -2671,6 +2638,9 @@ class DeviceHub {
    * @return {Boolean}
    */
   isConnected(device) {
+    const funcName = 'DeviceHub.isConnected()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, Device, 0, funcName);
     return this.cxxHub.isConnected(device.cxxDev);
   }
 
@@ -2702,9 +2672,9 @@ class Filter extends Options {
    * @return {Frame}
    */
   process(frame) {
-    if (!frame || !(frame instanceof Frame)) {
-      throw new TypeError('Filter.process expects a Frame as the argument');
-    }
+    const funcName = 'Filter.process()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, Frame, 0, funcName);
     if (this.cxxObj && this.cxxObj.process(frame.cxxFrame, this.frame.cxxFrame)) {
       this.frame.updateProfile();
       return this.frame;
@@ -2857,53 +2827,163 @@ function checkStringNumber(v, rangeStart, rangeEnd, convertFunc, typeErrMsg, ran
   return r;
 }
 
-function range(start, end, step) {
-  let a = [];
-  step = parseInt(step) || 1;
-  if (arguments.length === 1) {
-    start = 0;
-    end = parseInt(arguments[0]); // Count
-  } else {
-    start = parseInt(start);
-    end = parseInt(end);
+function checkArgumentLength(minLengh, maxLength, actualLength, funcName) {
+  if (actualLength >= minLengh && actualLength <= maxLength) {
+    return;
   }
 
-  for (let i = start; i< end; i += step) {
-    a.push(i);
+  if (minLengh === maxLength) {
+    throw new TypeError(funcName + ' expects ' + minLengh + ' arguments');
+  } else {
+    throw new TypeError(funcName + ' expects ' + minLengh + '~' + maxLength + ' arguments');
   }
-  return a;
 }
 
-function checkStreamProfileObject(profile) {
-  if (typeof profile !== 'object') {
-    throw new TypeError('The stream profile object is not an valid object');
+function checkArgumentType(args, expectedType, argIndex, funcName, start, end) {
+  if (argIndex >= args.length) {
+    return undefined;
   }
-  let stream = checkStringNumber(profile.stream,
-    constants.stream.STREAM_ANY, constants.stream.STREAM_COUNT,
-    stream2Int,
-    'StreamProfileObject expects a property \'stream\' to be string or integer',
-    'StreamProfileObject\'s \'stream\' property value is invalid');
-  if (!isNumber(profile.width)) {
-    throw new TypeError('StreamProfileObject expects a property \'width\' to be an integer');
+  let arg = args[argIndex];
+  let errMsgPrefix = 'argument ' + argIndex + ' of ' + funcName;
+  let wrongTypeErrMsgPrefix = errMsgPrefix + ' should be a/an ';
+  let unsupportedErrMsg = errMsgPrefix + ' is an unsupported type';
+  let rangeErrMsg = errMsgPrefix + ' has an invalid value';
+
+  switch (expectedType) {
+    case 'number':
+    case 'string':
+    case 'object':
+    case 'boolean':
+    case 'function':
+      if (typeof arg !== expectedType) {
+        throw new TypeError(wrongTypeErrMsgPrefix + expectedType);
+      }
+      if (expectedType === 'number' && (start !== undefined) && (end !== undefined)) {
+        if (arg < start || arg > end) {
+          throw new TypeError(rangeErrMsg);
+        }
+      }
+      break;
+    case 'ArrayBuffer':
+      if (!(isArrayBuffer(arg))) {
+        throw new TypeError(wrongTypeErrMsgPrefix + expectedType);
+      }
+      break;
+    default:
+      if (typeof expectedType === 'function') {
+        if (!(arg instanceof expectedType)) {
+          throw new TypeError(wrongTypeErrMsgPrefix + expectedType.name);
+        }
+      } else if (typeof expectedType === 'object') {
+        switch (expectedType) {
+          case constants.stream:
+          case constants.format:
+          case constants.option:
+          case constants.camera_info:
+          case constants.recording_mode:
+          case constants.frame_metadata:
+          case constants.distortion:
+          case constants.timestamp_domain:
+          case constants.playback_status:
+            return checkEnumObjectArgument(args, expectedType, argIndex, funcName, start, end);
+          default:
+            throw new TypeError(unsupportedErrMsg);
+        }
+      } else {
+        throw new TypeError(unsupportedErrMsg);
+      }
+      break;
   }
-  if (!isNumber(profile.height)) {
-    throw new TypeError('StreamProfileObject expects a property \'height\' to be an integer');
+}
+
+function checkEnumObjectArgument(args, expectedType, argIndex, funcName, start, end) {
+  let rangeStart;
+  let rangeEnd;
+  let convertFunc;
+  let errMsgPrefix = 'argument ' + argIndex + ' of ' + funcName;
+  let wrongTypeErrMsgPrefix = errMsgPrefix + ' should be a/an ';
+  let unsupportedErrMsg = errMsgPrefix + ' is an unsupported type';
+  let rangeErrMsg = errMsgPrefix + ' has an invalid value';
+  let typeErrMsg;
+
+  switch (expectedType) {
+    case constants.stream:
+      rangeStart = constants.stream.STREAM_ANY;
+      rangeEnd = constants.stream.STREAM_COUNT;
+      convertFunc = stream2Int;
+      typeErrMsg = wrongTypeErrMsgPrefix + 'stream';
+      break;
+    case constants.format:
+      rangeStart = constants.format.FORMAT_ANY;
+      rangeEnd = constants.format.FORMAT_COUNT;
+      convertFunc = format2Int;
+      typeErrMsg = wrongTypeErrMsgPrefix + 'format';
+      break;
+    case constants.option:
+      rangeStart = constants.option.OPTION_BACKLIGHT_COMPENSATION;
+      rangeEnd = constants.option.OPTION_COUNT;
+      convertFunc = option2Int;
+      typeErrMsg = wrongTypeErrMsgPrefix + 'option';
+      break;
+    case constants.camera_info:
+      rangeStart = constants.camera_info.CAMERA_INFO_NAME;
+      rangeEnd = constants.camera_info.CAMERA_INFO_COUNT;
+      convertFunc = cameraInfo2Int;
+      typeErrMsg = wrongTypeErrMsgPrefix + 'camera_info';
+      break;
+    case constants.recording_mode:
+      rangeStart = constants.recording_mode.RECORDING_MODE_BLANK_FRAMES;
+      rangeEnd = constants.recording_mode.RECORDING_MODE_COUNT;
+      convertFunc = recordingMode2Int;
+      typeErrMsg = wrongTypeErrMsgPrefix + 'recording_mode';
+      break;
+    case constants.frame_metadata:
+      rangeStart = constants.frame_metadata.FRAME_METADATA_FRAME_COUNTER;
+      rangeEnd = constants.frame_metadata.FRAME_METADATA_COUNT;
+      convertFunc = frameMetadata2Int;
+      typeErrMsg = wrongTypeErrMsgPrefix + 'frame_metadata';
+      break;
+    case constants.distortion:
+      rangeStart = constants.distortion.DISTORTION_NONE;
+      rangeEnd = constants.distortion.DISTORTION_COUNT;
+      convertFunc = distortion2Int;
+      typeErrMsg = wrongTypeErrMsgPrefix + 'distortion';
+      break;
+    case constants.timestamp_domain:
+      rangeStart = constants.timestamp_domain.TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
+      rangeEnd = constants.timestamp_domain.TIMESTAMP_DOMAIN_COUNT;
+      convertFunc = timestampDomain2Int;
+      typeErrMsg = wrongTypeErrMsgPrefix + 'timestamp_domain';
+      break;
+    case constants.playback_status:
+      rangeStart = constants.playback_status.PLAYBACK_STATUS_UNKNOWN;
+      rangeEnd = constants.playback_status.PLAYBACK_STATUS_COUNT;
+      convertFunc = playbackStatus2Int;
+      typeErrMsg = wrongTypeErrMsgPrefix + 'playback_status';
+      break;
+    default:
+      throw new TypeError(unsupportedErrMsg);
   }
-  if (!isNumber(profile.fps)) {
-    throw new TypeError('StreamProfileObject expects a property \'fps\' to be an integer');
+  return checkStringNumber(
+      args[argIndex], rangeStart, rangeEnd, convertFunc, typeErrMsg, rangeErrMsg);
+}
+
+function checkNumberRange(arg, start, end, argIndex, funcName) {
+  if (arg < start || arg > end) {
+    throw new TypeError('argument ' + argIndex + ' of ' + funcName + ' is invalid');
   }
-  let format = checkStringNumber(profile.format,
-      constants.format.FORMAT_ANY, constants.format.FORMAT_COUNT,
-      format2Int,
-      'StreamProfileObject expects a property \'format\' to be string or integer',
-      'StreamProfileObject\'s \'format\' property value is invalid');
-  return {
-    stream: stream,
-    width: profile.width,
-    height: profile.height,
-    fps: profile.fps,
-    format: format,
-  };
+}
+
+function checkDiscreteArgumentValue(args, argIndex, valueArray, funcName) {
+  if (valueArray.indexOf(args[argIndex]) === -1) {
+    throw new TypeError('argument ' + argIndex + ' of ' + funcName + ' is invalid');
+  }
+}
+
+function checkDiscreteArgumentLength(lenthArray, actualLength, funcName) {
+  if (lenthArray.indexOf(actualLength) === -1) {
+    throw new TypeError(funcName + ' expects ' + lenthArray.toString() + ' arguments');
+  }
 }
 
 function equalsToEither(arg, strConst, numConst) {
@@ -2919,6 +2999,10 @@ function equalsToEither(arg, strConst, numConst) {
  * @return {Object} like {x: 0, y:0}.
  */
 util.projectPointToPixel = function(intrinsics, pointCoordinate) {
+  const funcName = 'util.projectPointToPixel';
+  checkArgumentLength(2, 2, arguments.length, funcName);
+  checkArgumentType(arguments, 'object', 0, funcName);
+  checkArgumentType(arguments, 'object', 1, funcName);
   if (equalsToEither(intrinsics.model,
       distortion.distortion_inverse_brown_conrady,
       distortion.DISTORTION_INVERSE_BROWN_CONRADY)) {
@@ -2963,6 +3047,11 @@ util.projectPointToPixel = function(intrinsics, pointCoordinate) {
  * @return {Object} like {x: 0, y:0, z:0}.
  */
 util.deprojectPixelToPoint = function(intrinsics, pixelCoordinate, depth) {
+  const funcName = 'util.deprojectPixelToPoint';
+  checkArgumentLength(3, 3, arguments.length, funcName);
+  checkArgumentType(arguments, 'object', 0, funcName);
+  checkArgumentType(arguments, 'object', 1, funcName);
+  checkArgumentType(arguments, 'number', 2, funcName);
   if (equalsToEither(intrinsics.model,
       distortion.distortion_modified_brown_conrady,
       distortion.DISTORTION_MODIFIED_BROWN_CONRADY)) {
@@ -3002,6 +3091,10 @@ util.deprojectPixelToPoint = function(intrinsics, pixelCoordinate, depth) {
  * @return {Object} The tranformed 3D coordinate, like {x:0, y:0, z:0}.
  */
 util.transformPointToPoint = function(extrinsics, pointCoordinate) {
+  const funcName = 'util.transformPointToPoint';
+  checkArgumentLength(2, 2, arguments.length, funcName);
+  checkArgumentType(arguments, 'object', 0, funcName);
+  checkArgumentType(arguments, 'object', 1, funcName);
   const x = extrinsics.rotation[0] * pointCoordinate.x +
             extrinsics.rotation[3] * pointCoordinate.y +
             extrinsics.rotation[6] * pointCoordinate.z +
@@ -3020,13 +3113,18 @@ util.transformPointToPoint = function(extrinsics, pointCoordinate) {
 /**
  * Save the frame to a file asynchronously
  *
- * @param {path} target file path
- * @param {frame} frame to be saved
- * @param {fileFormat} the target file format, currently only 'png' is supported
+ * @param {string} path target file path
+ * @param {Frame} frame frame to be saved
+ * @param {string} fileFormat the target file format, currently only 'png' is supported
  * @return {Promise}
  */
-util.writeFrameToFileAsync = function(path, frame, fileFormat) {
-  if (typeof fileFormat === 'string' && fileFormat.toLowerCase() === 'png') {
+util.writeFrameToFileAsync = function(path, frame, fileFormat = 'png') {
+  const funcName = 'util.writeFrameToFileAsync';
+  checkArgumentLength(3, 3, arguments.length, funcName);
+  checkArgumentType(arguments, 'string', 0, funcName);
+  checkArgumentType(arguments, Frame, 1, funcName);
+  checkArgumentType(arguments, 'string', 2, funcName);
+  if (fileFormat.toLowerCase() === 'png') {
     let png = new PNG({
       width: frame.width,
       height: frame.height,
@@ -3057,6 +3155,9 @@ util.writeFrameToFileAsync = function(path, frame, fileFormat) {
  * @return {FOVObject}
  */
 util.fov = function(intrinsics) {
+  const funcName = 'util.fov';
+  checkArgumentLength(1, 1, arguments.length, funcName);
+  checkArgumentType(arguments, 'object', 0, funcName);
   let ppx = intrinsics.ppx;
   let ppy = intrinsics.ppy;
   let width = intrinsics.width;
@@ -3071,13 +3172,18 @@ util.fov = function(intrinsics) {
 /**
  * Save the frame to a file synchronously
  *
- * @param {path} target file path
- * @param {frame} frame to be saved
- * @param {fileFormat} the target file format, currently only 'png' is supported
+ * @param {string} path target file path
+ * @param {Frame} frame frame to be saved
+ * @param {string} fileFormat the target file format, currently only 'png' is supported
  * @return {undefined}
  */
-util.writeFrameToFile = function(path, frame, fileFormat) {
-  if (typeof fileFormat === 'string' && fileFormat.toLowerCase() === 'png') {
+util.writeFrameToFile = function(path, frame, fileFormat = 'png') {
+  const funcName = 'util.writeFrameToFile';
+  checkArgumentLength(3, 3, arguments.length, funcName);
+  checkArgumentType(arguments, 'string', 0, funcName);
+  checkArgumentType(arguments, Frame, 1, funcName);
+  checkArgumentType(arguments, 'string', 2, funcName);
+  if (fileFormat.toLowerCase() === 'png') {
     const opt = {
       width: frame.width,
       height: frame.height,
@@ -3095,10 +3201,13 @@ util.writeFrameToFile = function(path, frame, fileFormat) {
 /**
  * Get all the frame metadata representation as a string
  *
- * @param {frame} frame to be saved
+ * @param {frame} frame frame to be saved
  * @return {String} the string representation of all supported frame metadata.
  */
 function frameMetadataContent(frame) {
+  const funcName = 'frameMetadataContent';
+  checkArgumentLength(1, 1, arguments.length, funcName);
+  checkArgumentType(arguments, Frame, 0, funcName);
   let content = 'Stream,' + stream.streamToString(frame.profile.streamType)+'\nMetadata Attribute,Value\n'; // eslint-disable-line
   for (let i = 0; i < frame_metadata.FRAME_METADATA_COUNT; i++) {
     if (frame.supportsFrameMetadata(i)) {
@@ -3111,11 +3220,15 @@ function frameMetadataContent(frame) {
 /**
  * Save the frame metadata string representation to a file asynchronously
  *
- * @param {path} target file path
- * @param {frame} frame to extract metadata from
+ * @param {string} path target file path
+ * @param {Frame} frame frame to extract metadata from
  * @return {undefined}
  */
 util.writeFrameMetadataToFileAsync = function(path, frame) {
+  const funcName = 'util.writeFrameMetadataToFileAsync';
+  checkArgumentLength(2, 2, arguments.length, funcName);
+  checkArgumentType(arguments, 'string', 0, funcName);
+  checkArgumentType(arguments, Frame, 1, funcName);
   return new Promise((resolve, reject) => {
     const content = frameMetadataContent(frame);
     fs.writeFile(path, content, (err) => {
@@ -3136,6 +3249,10 @@ util.writeFrameMetadataToFileAsync = function(path, frame) {
  * @return {undefined}
  */
 util.writeFrameMetadataToFile = function(path, frame) {
+  const funcName = 'util.writeFrameMetadataToFile';
+  checkArgumentLength(2, 2, arguments.length, funcName);
+  checkArgumentType(arguments, 'string', 0, funcName);
+  checkArgumentType(arguments, Frame, 1, funcName);
   const content = frameMetadataContent(frame);
   const fd = fs.openSync(path, 'w');
   fs.writeSync(fd, content);
@@ -3354,52 +3471,46 @@ const format = {
    * @return {String}
    */
   formatToString: function(format) {
-    if (arguments.length !== 1) {
-      throw new TypeError('format.formatToString(format) expects 1 argument');
-    } else {
-      let i = checkStringNumber(arguments[0],
-          this.FORMAT_ANY, this.FORMAT_COUNT,
-          format2Int,
-          'format.formatToString(format) expects a number or string as the 1st argument',
-          'format.formatToString(format) expects a valid value as the 1st argument');
-      switch (i) {
-        case this.FORMAT_ANY:
-          return this.format_any;
-        case this.FORMAT_Z16:
-          return this.format_z16;
-        case this.FORMAT_DISPARITY16:
-          return this.format_disparity16;
-        case this.FORMAT_XYZ32F:
-          return this.format_xyz32f;
-        case this.FORMAT_YUYV:
-          return this.format_yuyv;
-        case this.FORMAT_RGB8:
-          return this.format_rgb8;
-        case this.FORMAT_BGR8:
-          return this.format_bgr8;
-        case this.FORMAT_RGBA8:
-          return this.format_rgba8;
-        case this.FORMAT_BGRA8:
-          return this.format_bgra8;
-        case this.FORMAT_Y8:
-          return this.format_y8;
-        case this.FORMAT_Y16:
-          return this.format_y16;
-        case this.FORMAT_RAW10:
-          return this.format_raw10;
-        case this.FORMAT_RAW16:
-          return this.format_raw16;
-        case this.FORMAT_RAW8:
-          return this.format_raw8;
-        case this.FORMAT_UYVY:
-          return this.format_uyvy;
-        case this.FORMAT_MOTION_RAW:
-          return this.format_motion_raw;
-        case this.FORMAT_MOTION_XYZ32F:
-          return this.format_motion_xyz32f;
-        case this.FORMAT_GPIO_RAW:
-          return this.format_gpio_raw;
-      }
+    const funcName = 'format.formatToString()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const i = checkArgumentType(arguments, constants.format, 0, funcName);
+    switch (i) {
+      case this.FORMAT_ANY:
+        return this.format_any;
+      case this.FORMAT_Z16:
+        return this.format_z16;
+      case this.FORMAT_DISPARITY16:
+        return this.format_disparity16;
+      case this.FORMAT_XYZ32F:
+        return this.format_xyz32f;
+      case this.FORMAT_YUYV:
+        return this.format_yuyv;
+      case this.FORMAT_RGB8:
+        return this.format_rgb8;
+      case this.FORMAT_BGR8:
+        return this.format_bgr8;
+      case this.FORMAT_RGBA8:
+        return this.format_rgba8;
+      case this.FORMAT_BGRA8:
+        return this.format_bgra8;
+      case this.FORMAT_Y8:
+        return this.format_y8;
+      case this.FORMAT_Y16:
+        return this.format_y16;
+      case this.FORMAT_RAW10:
+        return this.format_raw10;
+      case this.FORMAT_RAW16:
+        return this.format_raw16;
+      case this.FORMAT_RAW8:
+        return this.format_raw8;
+      case this.FORMAT_UYVY:
+        return this.format_uyvy;
+      case this.FORMAT_MOTION_RAW:
+        return this.format_motion_raw;
+      case this.FORMAT_MOTION_XYZ32F:
+        return this.format_motion_xyz32f;
+      case this.FORMAT_GPIO_RAW:
+        return this.format_gpio_raw;
     }
   },
 };
@@ -3512,32 +3623,26 @@ const stream = {
      * @return {String}
      */
     streamToString: function(stream) {
-      if (arguments.length !== 1) {
-        throw new TypeError('stream.streamToString(stream) expects 1 argument');
-      } else {
-        let i = checkStringNumber(arguments[0],
-            this.STREAM_ANY, this.STREAM_COUNT,
-            stream2Int,
-            'stream.streamToString(stream) expects a number or string as the 1st argument',
-            'stream.streamToString(stream) expects a valid value as the 1st argument');
-        switch (i) {
-          case this.STREAM_ANY:
-            return this.stream_any;
-          case this.STREAM_DEPTH:
-            return this.stream_depth;
-          case this.STREAM_COLOR:
-            return this.stream_color;
-          case this.STREAM_INFRARED:
-            return this.stream_infrared;
-          case this.STREAM_FISHEYE:
-            return this.stream_fisheye;
-          case this.STREAM_GYRO:
-            return this.stream_gyro;
-          case this.STREAM_ACCEL:
-            return this.stream_accel;
-          case this.STREAM_GPIO:
-            return this.stream_gpio;
-        }
+      const funcName = 'stream.streamToString()';
+      checkArgumentLength(1, 1, arguments.length, funcName);
+      const i = checkArgumentType(arguments, constants.stream, 0, funcName);
+      switch (i) {
+        case this.STREAM_ANY:
+          return this.stream_any;
+        case this.STREAM_DEPTH:
+          return this.stream_depth;
+        case this.STREAM_COLOR:
+          return this.stream_color;
+        case this.STREAM_INFRARED:
+          return this.stream_infrared;
+        case this.STREAM_FISHEYE:
+          return this.stream_fisheye;
+        case this.STREAM_GYRO:
+          return this.stream_gyro;
+        case this.STREAM_ACCEL:
+          return this.stream_accel;
+        case this.STREAM_GPIO:
+          return this.stream_gpio;
       }
     },
 };
@@ -4040,97 +4145,91 @@ const option = {
    * @return {String}
    */
   optionToString: function(option) {
-    if (arguments.length !== 1) {
-      throw new TypeError('option.optionToString(option) expects 1 argument');
-    } else {
-      let i = checkStringNumber(arguments[0],
-          this.OPTION_BACKLIGHT_COMPENSATION, this.OPTION_COUNT,
-          option2Int,
-          'option.optionToString(option) expects a number or string as the 1st argument',
-          'option.optionToString(option) expects a valid value as the 1st argument');
-      switch (i) {
-        case this.OPTION_BACKLIGHT_COMPENSATION:
-          return this.option_backlight_compensation;
-        case this.OPTION_BRIGHTNESS:
-          return this.option_brightness;
-        case this.OPTION_CONTRAST:
-          return this.option_contrast;
-        case this.OPTION_EXPOSURE:
-          return this.option_exposure;
-        case this.OPTION_GAIN:
-          return this.option_gain;
-        case this.OPTION_GAMMA:
-          return this.option_gamma;
-        case this.OPTION_HUE:
-          return this.option_hue;
-        case this.OPTION_SATURATION:
-          return this.option_saturation;
-        case this.OPTION_SHARPNESS:
-          return this.option_sharpness;
-        case this.OPTION_WHITE_BALANCE:
-          return this.option_white_balance;
-        case this.OPTION_ENABLE_AUTO_EXPOSURE:
-          return this.option_enable_auto_exposure;
-        case this.OPTION_ENABLE_AUTO_WHITE_BALANCE:
-          return this.option_enable_auto_white_balance;
-        case this.OPTION_VISUAL_PRESET:
-          return this.option_visual_preset;
-        case this.OPTION_LASER_POWER:
-          return this.option_laser_power;
-        case this.OPTION_ACCURACY:
-          return this.option_accuracy;
-        case this.OPTION_MOTION_RANGE:
-          return this.option_motion_range;
-        case this.OPTION_FILTER_OPTION:
-          return this.option_filter_option;
-        case this.OPTION_CONFIDENCE_THRESHOLD:
-          return this.option_confidence_threshold;
-        case this.OPTION_EMITTER_ENABLED:
-          return this.option_emitter_enabled;
-        case this.OPTION_FRAMES_QUEUE_SIZE:
-          return this.option_frames_queue_size;
-        case this.OPTION_TOTAL_FRAME_DROPS:
-          return this.option_total_frame_drops;
-        case this.OPTION_AUTO_EXPOSURE_MODE:
-          return this.option_auto_exposure_mode;
-        case this.OPTION_POWER_LINE_FREQUENCY:
-          return this.option_power_line_frequency;
-        case this.OPTION_ASIC_TEMPERATURE:
-          return this.option_asic_temperature;
-        case this.OPTION_ERROR_POLLING_ENABLED:
-          return this.option_error_polling_enabled;
-        case this.OPTION_PROJECTOR_TEMPERATURE:
-          return this.option_projector_temperature;
-        case this.OPTION_OUTPUT_TRIGGER_ENABLED:
-          return this.option_output_trigger_enabled;
-        case this.OPTION_MOTION_MODULE_TEMPERATURE:
-          return this.option_motion_module_temperature;
-        case this.OPTION_DEPTH_UNITS:
-          return this.option_depth_units;
-        case this.OPTION_ENABLE_MOTION_CORRECTION:
-          return this.option_enable_motion_correction;
-        case this.OPTION_AUTO_EXPOSURE_PRIORITY:
-          return this.option_auto_exposure_priority;
-        case this.OPTION_COLOR_SCHEME:
-          return this.option_color_scheme;
-        case this.OPTION_HISTOGRAM_EQUALIZATION_ENABLED:
-          return this.option_histogram_equalization_enabled;
-        case this.OPTION_MIN_DISTANCE:
-          return this.option_min_distance;
-        case this.OPTION_MAX_DISTANCE:
-          return this.option_max_distance;
-        case this.OPTION_TEXTURE_SOURCE:
-          return this.option_texture_source;
-        case this.OPTION_FILTER_MAGNITUDE:
-          return this.option_filter_magnitude;
-        case this.OPTION_FILTER_SMOOTH_ALPHA:
-          return this.option_filter_smooth_alpha;
-        case this.OPTION_FILTER_SMOOTH_DELTA:
-          return this.option_filter_smooth_delta;
-        default:
-          throw new TypeError(
-              'option.optionToString(option) expects a valid value as the 1st argument');
-      }
+    const funcName = 'option.optionToString()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const i = checkArgumentType(arguments, constants.option, 0, funcName);
+    switch (i) {
+      case this.OPTION_BACKLIGHT_COMPENSATION:
+        return this.option_backlight_compensation;
+      case this.OPTION_BRIGHTNESS:
+        return this.option_brightness;
+      case this.OPTION_CONTRAST:
+        return this.option_contrast;
+      case this.OPTION_EXPOSURE:
+        return this.option_exposure;
+      case this.OPTION_GAIN:
+        return this.option_gain;
+      case this.OPTION_GAMMA:
+        return this.option_gamma;
+      case this.OPTION_HUE:
+        return this.option_hue;
+      case this.OPTION_SATURATION:
+        return this.option_saturation;
+      case this.OPTION_SHARPNESS:
+        return this.option_sharpness;
+      case this.OPTION_WHITE_BALANCE:
+        return this.option_white_balance;
+      case this.OPTION_ENABLE_AUTO_EXPOSURE:
+        return this.option_enable_auto_exposure;
+      case this.OPTION_ENABLE_AUTO_WHITE_BALANCE:
+        return this.option_enable_auto_white_balance;
+      case this.OPTION_VISUAL_PRESET:
+        return this.option_visual_preset;
+      case this.OPTION_LASER_POWER:
+        return this.option_laser_power;
+      case this.OPTION_ACCURACY:
+        return this.option_accuracy;
+      case this.OPTION_MOTION_RANGE:
+        return this.option_motion_range;
+      case this.OPTION_FILTER_OPTION:
+        return this.option_filter_option;
+      case this.OPTION_CONFIDENCE_THRESHOLD:
+        return this.option_confidence_threshold;
+      case this.OPTION_EMITTER_ENABLED:
+        return this.option_emitter_enabled;
+      case this.OPTION_FRAMES_QUEUE_SIZE:
+        return this.option_frames_queue_size;
+      case this.OPTION_TOTAL_FRAME_DROPS:
+        return this.option_total_frame_drops;
+      case this.OPTION_AUTO_EXPOSURE_MODE:
+        return this.option_auto_exposure_mode;
+      case this.OPTION_POWER_LINE_FREQUENCY:
+        return this.option_power_line_frequency;
+      case this.OPTION_ASIC_TEMPERATURE:
+        return this.option_asic_temperature;
+      case this.OPTION_ERROR_POLLING_ENABLED:
+        return this.option_error_polling_enabled;
+      case this.OPTION_PROJECTOR_TEMPERATURE:
+        return this.option_projector_temperature;
+      case this.OPTION_OUTPUT_TRIGGER_ENABLED:
+        return this.option_output_trigger_enabled;
+      case this.OPTION_MOTION_MODULE_TEMPERATURE:
+        return this.option_motion_module_temperature;
+      case this.OPTION_DEPTH_UNITS:
+        return this.option_depth_units;
+      case this.OPTION_ENABLE_MOTION_CORRECTION:
+        return this.option_enable_motion_correction;
+      case this.OPTION_AUTO_EXPOSURE_PRIORITY:
+        return this.option_auto_exposure_priority;
+      case this.OPTION_COLOR_SCHEME:
+        return this.option_color_scheme;
+      case this.OPTION_HISTOGRAM_EQUALIZATION_ENABLED:
+        return this.option_histogram_equalization_enabled;
+      case this.OPTION_MIN_DISTANCE:
+        return this.option_min_distance;
+      case this.OPTION_MAX_DISTANCE:
+        return this.option_max_distance;
+      case this.OPTION_TEXTURE_SOURCE:
+        return this.option_texture_source;
+      case this.OPTION_FILTER_MAGNITUDE:
+        return this.option_filter_magnitude;
+      case this.OPTION_FILTER_SMOOTH_ALPHA:
+        return this.option_filter_smooth_alpha;
+      case this.OPTION_FILTER_SMOOTH_DELTA:
+        return this.option_filter_smooth_delta;
+      default:
+        throw new TypeError(
+            'option.optionToString(option) expects a valid value as the 1st argument');
     }
   },
 };
@@ -4244,32 +4343,26 @@ const camera_info = {
    * @return {String}
    */
   cameraInfoToString: function(info) {
-    if (arguments.length !== 1) {
-      throw new TypeError('camera_info.cameraInfoToString(info) expects 1 argument');
-    } else {
-      let i = checkStringNumber(arguments[0],
-          this.CAMERA_INFO_NAME, this.CAMERA_INFO_COUNT,
-          cameraInfo2Int,
-          'camera_info.cameraInfoToString(info) expects a number or string as the 1st argument',
-          'camera_info.cameraInfoToString(info) expects a valid value as the 1st argument');
-      switch (i) {
-        case this.CAMERA_INFO_NAME:
-          return this.camera_info_name;
-        case this.CAMERA_INFO_SERIAL_NUMBER:
-          return this.camera_info_serial_number;
-        case this.CAMERA_INFO_FIRMWARE_VERSION:
-          return this.camera_info_firmware_version;
-        case this.CAMERA_INFO_PHYSICAL_PORT:
-          return this.camera_info_physical_port;
-        case this.CAMERA_INFO_DEBUG_OP_CODE:
-          return this.camera_info_debug_op_code;
-        case this.CAMERA_INFO_ADVANCED_MODE:
-          return this.camera_info_advanced_mode;
-        case this.CAMERA_INFO_PRODUCT_ID:
-          return this.camera_info_product_id;
-        case this.CAMERA_INFO_CAMERA_LOCKED:
-          return this.camera_info_camera_locked;
-      }
+    const funcName = 'camera_info.cameraInfoToString()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const i = checkArgumentType(arguments, constants.camera_info, 0, funcName);
+    switch (i) {
+      case this.CAMERA_INFO_NAME:
+        return this.camera_info_name;
+      case this.CAMERA_INFO_SERIAL_NUMBER:
+        return this.camera_info_serial_number;
+      case this.CAMERA_INFO_FIRMWARE_VERSION:
+        return this.camera_info_firmware_version;
+      case this.CAMERA_INFO_PHYSICAL_PORT:
+        return this.camera_info_physical_port;
+      case this.CAMERA_INFO_DEBUG_OP_CODE:
+        return this.camera_info_debug_op_code;
+      case this.CAMERA_INFO_ADVANCED_MODE:
+        return this.camera_info_advanced_mode;
+      case this.CAMERA_INFO_PRODUCT_ID:
+        return this.camera_info_product_id;
+      case this.CAMERA_INFO_CAMERA_LOCKED:
+        return this.camera_info_camera_locked;
     }
   },
 };
@@ -4384,32 +4477,26 @@ const frame_metadata = {
      * @return {String}
      */
     frameMetadataToString: function(metadata) {
-      if (arguments.length !== 1) {
-        throw new TypeError('frame_metadata.frameMetadataToString() expects 1 argument');
-      } else {
-        let i = checkStringNumber(arguments[0],
-            this.FRAME_METADATA_FRAME_COUNTER, this.FRAME_METADATA_COUNT,
-            frameMetadata2Int,
-            'frame_metadata.frameMetadataToString() expects a number or string as the 1st argument',
-            'frame_metadata.frameMetadataToString() expects a valid value as the 1st argument');
-        switch (i) {
-          case this.FRAME_METADATA_FRAME_COUNTER:
-            return this.frame_metadata_frame_counter;
-          case this.FRAME_METADATA_FRAME_TIMESTAMP:
-            return this.frame_metadata_frame_timestamp;
-          case this.FRAME_METADATA_SENSOR_TIMESTAMP:
-            return this.frame_metadata_sensor_timestamp;
-          case this.FRAME_METADATA_ACTUAL_EXPOSURE:
-            return this.frame_metadata_actual_exposure;
-          case this.FRAME_METADATA_GAIN_LEVEL:
-            return this.frame_metadata_gain_level;
-          case this.FRAME_METADATA_AUTO_EXPOSURE:
-            return this.frame_metadata_auto_exposure;
-          case this.FRAME_METADATA_WHITE_BALANCE:
-            return this.frame_metadata_white_balance;
-          case this.FRAME_METADATA_TIME_OF_ARRIVAL:
-            return this.frame_metadata_time_of_arrival;
-        }
+      const funcName = 'frame_metadata.frameMetadataToString()';
+      checkArgumentLength(1, 1, arguments.length, funcName);
+      const i = checkArgumentType(arguments, constants.frame_metadata, 0, funcName);
+      switch (i) {
+        case this.FRAME_METADATA_FRAME_COUNTER:
+          return this.frame_metadata_frame_counter;
+        case this.FRAME_METADATA_FRAME_TIMESTAMP:
+          return this.frame_metadata_frame_timestamp;
+        case this.FRAME_METADATA_SENSOR_TIMESTAMP:
+          return this.frame_metadata_sensor_timestamp;
+        case this.FRAME_METADATA_ACTUAL_EXPOSURE:
+          return this.frame_metadata_actual_exposure;
+        case this.FRAME_METADATA_GAIN_LEVEL:
+          return this.frame_metadata_gain_level;
+        case this.FRAME_METADATA_AUTO_EXPOSURE:
+          return this.frame_metadata_auto_exposure;
+        case this.FRAME_METADATA_WHITE_BALANCE:
+          return this.frame_metadata_white_balance;
+        case this.FRAME_METADATA_TIME_OF_ARRIVAL:
+          return this.frame_metadata_time_of_arrival;
       }
     },
   };
@@ -4483,26 +4570,20 @@ const distortion = {
      * @return {String}
      */
     distortionToString: function(distortionVal) {
-      if (arguments.length !== 1) {
-        throw new TypeError('distortion.distortionToString() expects 1 argument');
-      } else {
-        let i = checkStringNumber(arguments[0],
-            this.DISTORTION_NONE, this.DISTORTION_COUNT,
-            distortion2Int,
-            'distortion.distortionToString() expects a number or string as the 1st argument',
-            'distortion.distortionToString() expects a valid value as the 1st argument');
-        switch (i) {
-          case this.DISTORTION_NONE:
-            return this.distortion_none;
-          case this.DISTORTION_MODIFIED_BROWN_CONRADY:
-            return this.distortion_modified_brown_conrady;
-          case this.DISTORTION_INVERSE_BROWN_CONRADY:
-            return this.distortion_inverse_brown_conrady;
-          case this.DISTORTION_FTHETA:
-            return this.distortion_ftheta;
-          case this.DISTORTION_BROWN_CONRADY:
-            return this.distortion_brown_conrady;
-        }
+      const funcName = 'distortion.distortionToString()';
+      checkArgumentLength(1, 1, arguments.length, funcName);
+      const i = checkArgumentType(arguments, constants.distortion, 0, funcName);
+      switch (i) {
+        case this.DISTORTION_NONE:
+          return this.distortion_none;
+        case this.DISTORTION_MODIFIED_BROWN_CONRADY:
+          return this.distortion_modified_brown_conrady;
+        case this.DISTORTION_INVERSE_BROWN_CONRADY:
+          return this.distortion_inverse_brown_conrady;
+        case this.DISTORTION_FTHETA:
+          return this.distortion_ftheta;
+        case this.DISTORTION_BROWN_CONRADY:
+          return this.distortion_brown_conrady;
       }
     },
 };
@@ -4665,14 +4746,9 @@ const timestamp_domain = {
      * @return {String}
      */
     timestampDomainToString: function(domainVal) {
-      if (arguments.length !== 1) {
-        throw new TypeError('timestamp_domain.timestampDomainToString() expects 1 argument');
-      }
-      let i = checkStringNumber(arguments[0],
-          this.TIMESTAMP_DOMAIN_HARDWARE_CLOCK, this.TIMESTAMP_DOMAIN_COUNT,
-          timestampDomain2Int,
-          'timestamp_domain.timestampDomainToString() expects a number or string as the 1st argument', // eslint-disable-line
-          'timestamp_domain.timestampDomainToString() expects a valid value as the 1st argument');
+      const funcName = 'timestamp_domain.timestampDomainToString()';
+      checkArgumentLength(1, 1, arguments.length, funcName);
+      const i = checkArgumentType(arguments, constants.timestamp_domain, 0, funcName);
       switch (i) {
         case this.TIMESTAMP_DOMAIN_HARDWARE_CLOCK:
           return this.timestamp_domain_hardware_clock;
@@ -4862,14 +4938,9 @@ const playback_status = {
    * @return {String}
    */
   playbackStatusToString: function(status) {
-    if (arguments.length !== 1) {
-      throw new TypeError('playback_status.playbackStatusToString() expects 1 argument');
-    }
-    let i = checkStringNumber(arguments[0],
-        this.PLAYBACK_STATUS_UNKNOWN, this.PLAYBACK_STATUS_COUNT,
-        playbackStatus2Int,
-        'playback_status.playbackStatusToString() expects a number or string as the 1st argument', // eslint-disable-line
-        'playback_status.playbackStatusToString() expects a valid value as the 1st argument');
+    const funcName = 'playback_status.playbackStatusToString()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const i = checkArgumentType(arguments, constants.playback_status, 0, funcName);
     switch (i) {
       case this.PLAYBACK_STATUS_UNKNOWN:
         return this.playback_status_unknown;
@@ -4943,6 +5014,7 @@ const constants = {
   distortion: distortion,
   frame_metadata: frame_metadata,
   visual_preset: visual_preset,
+  playback_status: playback_status,
 };
 
 function cleanup() {
