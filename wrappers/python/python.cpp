@@ -211,6 +211,7 @@ PYBIND11_PLUGIN(NAME) {
         .value("filter_magnitude", RS2_OPTION_FILTER_MAGNITUDE)
         .value("filter_smooth_alpha", RS2_OPTION_FILTER_SMOOTH_ALPHA)
         .value("filter_smooth_delta", RS2_OPTION_FILTER_SMOOTH_DELTA)
+        .value("filter_holes_fill", RS2_OPTION_HOLES_FILL)
         .value("stereo_baseline", RS2_OPTION_STEREO_BASELINE)
         .value("count", RS2_OPTION_COUNT);
 

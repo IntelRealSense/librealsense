@@ -36,8 +36,8 @@ namespace librealsense
         return std::make_tuple(texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
     }
 
-	void points::export_to_ply(const std::string& fname, const frame_holder& texture) 
-	{
+    void points::export_to_ply(const std::string& fname, const frame_holder& texture)
+    {
         const auto vertices = get_vertices();
         const auto texcoords = get_texture_coordinates();
         std::vector<float3> new_vertices;
@@ -91,7 +91,7 @@ namespace librealsense
                 out.write(reinterpret_cast<const char*>(&z), sizeof(uint8_t));
             }
         }
-	}
+    }
 
     size_t points::get_vertex_count() const
     {
@@ -214,11 +214,11 @@ namespace librealsense
                 return nullptr;
             }
             auto new_frame = (max_frames ? published_frames.allocate() : new T());
-            
+
             if (new_frame)
             {
                 if (max_frames) new_frame->mark_fixed();
-                
+
                 ++published_frames_count;
                 *new_frame = std::move(*f);
             }

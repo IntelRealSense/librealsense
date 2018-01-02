@@ -249,6 +249,7 @@ namespace librealsense
         CASE(FILTER_MAGNITUDE)
         CASE(FILTER_SMOOTH_ALPHA)
         CASE(FILTER_SMOOTH_DELTA)
+        CASE(HOLES_FILL)
         CASE(STEREO_BASELINE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
