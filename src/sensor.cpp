@@ -42,6 +42,11 @@ namespace librealsense
         return info_container::supports_info(info) || _owner->supports_info(info);
     }
 
+    stream_profiles sensor_base::get_active_streams() const
+    {
+        return _active_profiles;
+    }
+
     void sensor_base::register_notifications_callback(notifications_callback_ptr callback)
     {
         if (supports_option(RS2_OPTION_ERROR_POLLING_ENABLED))
