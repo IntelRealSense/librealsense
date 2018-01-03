@@ -61,7 +61,10 @@ namespace librealsense
     {
         return _source.get_callback();
     }
-
+    void sensor_base::set_frames_callback(frame_callback_ptr callback)
+    {
+        return _source.set_callback(callback);
+    }
     std::shared_ptr<notifications_proccessor> sensor_base::get_notifications_proccessor()
     {
         return _notifications_proccessor;

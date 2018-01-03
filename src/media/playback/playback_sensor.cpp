@@ -265,7 +265,10 @@ frame_callback_ptr playback_sensor::get_frames_callback() const
 {
     return m_user_callback;
 }
-
+void playback_sensor::set_frames_callback(frame_callback_ptr callback)
+{
+    m_user_callback = callback;
+}
 stream_profiles playback_sensor::get_active_streams() const
 {
     return m_active_streams;

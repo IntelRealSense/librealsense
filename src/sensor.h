@@ -47,6 +47,7 @@ namespace librealsense
         void register_notifications_callback(notifications_callback_ptr callback) override;
         std::shared_ptr<notifications_proccessor> get_notifications_proccessor();
         virtual frame_callback_ptr get_frames_callback() const override;
+        virtual void set_frames_callback(frame_callback_ptr callback) override;
 
         bool is_streaming() const override
         {
