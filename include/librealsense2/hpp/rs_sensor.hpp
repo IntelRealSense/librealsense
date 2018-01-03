@@ -67,7 +67,7 @@ namespace rs2
             return _severity;
         }
 
-    private:
+    public:
         std::string _description;
         double _timestamp;
         rs2_log_severity _severity;
