@@ -2973,7 +2973,7 @@ namespace rs2
             auto p = stream_mv.dev->dev.as<playback>();
             float pos = stream_rect.x + 5;
 
-            if (stream_mv.dev->dev.is<recorder>())
+            if (stream_mv.dev->_is_being_recorded)
             {
                 show_recording_icon(font2, pos, stream_rect.y + 5, stream_mv.profile.unique_id(), alpha);
                 pos += 23;
@@ -3322,6 +3322,10 @@ namespace rs2
         try
         {
             _recorder = std::make_shared<recorder>(path, dev);
+            for (auto&& sub_dev_model : subdevices)
+            {
+                sub_dev_model->_is_being_recorded = true;
+            }
             is_recording = true;
         }
         catch (const rs2::error& e)
@@ -3338,6 +3342,10 @@ namespace rs2
     {
         auto saved_to_filename = _recorder->filename();
         _recorder.reset();
+        for (auto&& sub_dev_model : subdevices)
+        {
+            sub_dev_model->_is_being_recorded = false;
+        }
         is_recording = false;
         notification_data nd{ to_string() << "Saved recording to: " << saved_to_filename,
             (double)std::chrono::high_resolution_clock::now().time_since_epoch().count(),
@@ -3820,7 +3828,7 @@ namespace rs2
         {
             return sm->streaming;
         });
-        textual_icon button_icon = is_recording ? textual_icons::square : textual_icons::circle;
+        textual_icon button_icon = is_recording ? textual_icons::stop : textual_icons::circle;
         const float icons_width = 75.0f;
         const ImVec2 device_panel_icons_size{ icons_width, 25 };
         std::string recorod_button_name = to_string() << button_icon << "##" << id;
@@ -3848,11 +3856,11 @@ namespace rs2
         // Draw Sync icon
         ////////////////////////////////////////
         std::string sync_button_name = to_string() << textual_icons::refresh << "##" << id;
-        bool is_sync_enabled = true; //TODO: use device's member
+        bool is_sync_enabled = false; //TODO: use device's member
         auto sync_button_color = is_sync_enabled ? light_blue : light_grey;
         ImGui::PushStyleColor(ImGuiCol_Text, sync_button_color);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, sync_button_color);
-        if (ImGui::Button(sync_button_name.c_str(), device_panel_icons_size))
+        if (ImGui::ButtonEx(sync_button_name.c_str(), device_panel_icons_size, ImGuiButtonFlags_Disabled))
         {
             is_sync_enabled = !is_sync_enabled;
         }
@@ -3980,7 +3988,7 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor(0,0,0,0));
         const ImVec2 device_panel_icons_text_size = { icons_width, 5 };
         ImGui::ButtonEx("Record", device_panel_icons_size, (!is_streaming ? ImGuiButtonFlags_Disabled : 0));
-        ImGui::SameLine();  ImGui::ButtonEx("Sync", device_panel_icons_size);
+        ImGui::SameLine();  ImGui::ButtonEx("Sync", device_panel_icons_size, ImGuiButtonFlags_Disabled);
         ImGui::SameLine(); ImGui::ButtonEx("Info", device_panel_icons_size);
         ImGui::SameLine(); ImGui::ButtonEx("More", device_panel_icons_size);
         ImGui::PopStyleColor(3);
