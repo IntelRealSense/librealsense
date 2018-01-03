@@ -1699,7 +1699,7 @@ namespace rs2
         {
             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            label = to_string() << u8"\uf04b" << "##Resume 3d";
+            label = to_string() << textual_icons::play << "##Resume 3d";
             if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
             {
                 paused = false;
@@ -1716,7 +1716,7 @@ namespace rs2
         }
         else
         {
-            label = to_string() << u8"\uf04c" << "##Pause 3d";
+            label = to_string() << textual_icons::pause << "##Pause 3d";
             if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
             {
                 paused = true;
@@ -1733,7 +1733,7 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if (ImGui::Button(u8"\uf0c7", { 24, top_bar_height }))
+        if (ImGui::Button(textual_icons::floppy, { 24, top_bar_height }))
         {
             if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
             {
@@ -1756,7 +1756,7 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if (ImGui::Button(u8"\uf021", { 24, top_bar_height }))
+        if (ImGui::Button(textual_icons::refresh, { 24, top_bar_height }))
         {
             reset_camera();
         }
@@ -1771,7 +1771,7 @@ namespace rs2
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-                if (ImGui::Button(u8"\uf023", { 24, top_bar_height }))
+                if (ImGui::Button(textual_icons::lock, { 24, top_bar_height }))
                 {
                     synchronization_enable = false;
                 }
@@ -1781,7 +1781,7 @@ namespace rs2
             }
             else
             {
-                if (ImGui::Button(u8"\uf09c", { 24, top_bar_height }))
+                if (ImGui::Button(textual_icons::unlock, { 24, top_bar_height }))
                 {
                     synchronization_enable = true;
                 }
@@ -1936,7 +1936,7 @@ namespace rs2
         {
             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            label = to_string() << u8"\uf04b" << "##Resume " << profile.unique_id();
+            label = to_string() << textual_icons::play << "##Resume " << profile.unique_id();
             if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
             {
                 if (p)
@@ -1953,7 +1953,7 @@ namespace rs2
         }
         else
         {
-            label = to_string() << u8"\uf04c" << "##Pause " << profile.unique_id();
+            label = to_string() << textual_icons::pause << "##Pause " << profile.unique_id();
             if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
             {
                 if (p)
@@ -1969,7 +1969,7 @@ namespace rs2
         }
         ImGui::SameLine();
 
-        label = to_string() << u8"\uf030" << "##Snapshot " << profile.unique_id();
+        label = to_string() << textual_icons::camera << "##Snapshot " << profile.unique_id();
         if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
         {
             auto ret = file_dialog_open(save_file, "Portable Network Graphics (PNG)\0*.png\0", NULL, NULL);
@@ -1996,7 +1996,7 @@ namespace rs2
         }
         ImGui::SameLine();
 
-        label = to_string() << u8"\uf05a" << "##Info " << profile.unique_id();
+        label = to_string() << textual_icons::info_circle << "##Info " << profile.unique_id();
         if (show_stream_details)
         {
             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
@@ -2030,7 +2030,7 @@ namespace rs2
         {
             if (!viewer.fullscreen)
             {
-                label = to_string() << u8"\uf2d0" << "##Maximize " << profile.unique_id();
+                label = to_string() << textual_icons::window_maximize << "##Maximize " << profile.unique_id();
 
                 if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
                 {
@@ -2049,7 +2049,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
 
-                label = to_string() << u8"\uf2d2" << "##Restore " << profile.unique_id();
+                label = to_string() << textual_icons::window_restore << "##Restore " << profile.unique_id();
 
                 if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
                 {
@@ -2071,7 +2071,7 @@ namespace rs2
 
         if (viewer.allow_stream_close)
         {
-            label = to_string() << u8"\uf00d" << "##Stop " << profile.unique_id();
+            label = to_string() << textual_icons::times << "##Stop " << profile.unique_id();
             if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
             {
                 dev->stop(viewer);
@@ -2449,7 +2449,7 @@ namespace rs2
             ImGui::SetCursorPos({ rc.x + 10, rc.y + 4 });
 
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-            ImGui::Text(u8"\uf068"); ImGui::SameLine();
+            ImGui::Text("%s", textual_icons::minus); ImGui::SameLine();
             ImGui::PopStyleColor();
 
             rc = ImGui::GetCursorPos();
@@ -2492,7 +2492,7 @@ namespace rs2
             return std::regex_replace(s, e, "address");
         };
 
-        std::string name = u8"\uf071 Oops, something went wrong!";
+        std::string name = std::string(textual_icons::exclamation_triangle) + " Oops, something went wrong!";
 
         if (error_message != "")
         {
@@ -2565,11 +2565,11 @@ namespace rs2
     }
     void viewer_model::show_paused_icon(ImFont* font_18, int x, int y, int id)
     {
-        show_icon(font_18, "paused_icon", u8"\uf04c", x, y, id, white);
+        show_icon(font_18, "paused_icon", textual_icons::pause, x, y, id, white);
     }
     void viewer_model::show_recording_icon(ImFont* font_18, int x, int y, int id, float alpha_delta)
     {
-        show_icon(font_18, "recording_icon", u8"\uf111", x, y, id, from_rgba(255, 46, 54, alpha_delta * 255));
+        show_icon(font_18, "recording_icon", textual_icons::circle, x, y, id, from_rgba(255, 46, 54, alpha_delta * 255));
     }
 
     rs2::frame post_processing_filters::apply_filters(rs2::frame f)
@@ -2720,7 +2720,8 @@ namespace rs2
         ImGui::Begin("nostreaming_popup", nullptr, flags);
 
         ImGui::PushStyleColor(ImGuiCol_Text, sensor_header_light_blue);
-        ImGui::Text(u8"Nothing is streaming! Toggle \uf204 to start");
+        std::string text = to_string() << "Nothing is streaming! Toggle " << textual_icons::toggle_off << " to start";
+        ImGui::Text("%s", text.c_str());
         ImGui::PopStyleColor();
 
         ImGui::End();
@@ -2980,7 +2981,8 @@ namespace rs2
 
             if (!stream_mv.is_stream_alive())
             {
-                show_icon(font2, "warning_icon", u8"\uf071  No Frames Received!",
+                std::string message = to_string() << textual_icons::exclamation_triangle << " No Frames Received!";
+                show_icon(font2, "warning_icon", message.c_str(),
                     stream_rect.center().x - 100,
                     stream_rect.center().y - 25,
                     stream_mv.profile.unique_id(),
@@ -3220,7 +3222,7 @@ namespace rs2
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
 
-        //if (ImGui::Button(u8"\uf013\uf0d7", { panel_y,panel_y }))
+        //if (ImGui::Button(u8"\uf013textual_icons::caret_down", { panel_y,panel_y }))
         //    ImGui::OpenPopup("global_menu");
 
         //ImGui::PushFont(font_14);
@@ -3386,7 +3388,7 @@ namespace rs2
 
 
         //////////////////// Step Backwards Button ////////////////////
-        std::string label = to_string() << u8"\uf048" << "##Step Backwards " << id;
+        std::string label = to_string() << textual_icons::step_backward << "##Step Backwards " << id;
 
         if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, supports_playback_step ? 0 : ImGuiButtonFlags_Disabled))
         {
@@ -3404,7 +3406,7 @@ namespace rs2
 
 
         //////////////////// Stop Button ////////////////////
-        label = to_string() << u8"\uf04d" << "##Stop Playback " << id;
+        label = to_string() << textual_icons::stop << "##Stop Playback " << id;
 
         if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }))
         {
@@ -3426,7 +3428,7 @@ namespace rs2
         //////////////////// Pause/Play Button ////////////////////
         if (current_playback_status == RS2_PLAYBACK_STATUS_PAUSED || current_playback_status == RS2_PLAYBACK_STATUS_STOPPED)
         {
-            label = to_string() << u8"\uf04b" << "##Play " << id;
+            label = to_string() << textual_icons::play << "##Play " << id;
             if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }))
             {
                 if (current_playback_status == RS2_PLAYBACK_STATUS_STOPPED)
@@ -3451,7 +3453,7 @@ namespace rs2
         }
         else
         {
-            label = to_string() << u8"\uf04c" << "##Pause Playback " << id;
+            label = to_string() << textual_icons::pause << "##Pause Playback " << id;
             if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }))
             {
                 p.pause();
@@ -3474,7 +3476,7 @@ namespace rs2
 
 
         //////////////////// Step Forward Button ////////////////////
-        label = to_string() << u8"\uf051" << "##Step Forward " << id;
+        label = to_string() << textual_icons::step_forward << "##Step Forward " << id;
         if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, supports_playback_step ? 0 : ImGuiButtonFlags_Disabled))
         {
             //p.skip_frames(-1);
@@ -3501,7 +3503,7 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_Text, white);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         }
-        label = to_string() << u8"\uf0e2" << "##Repeat " << id;
+        label = to_string() << textual_icons::repeat << "##Repeat " << id;
         if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }))
         {
             _playback_repeat = !_playback_repeat;
@@ -3828,7 +3830,7 @@ namespace rs2
         if (is_recording)
         {
             ImGui::PushStyleColor(ImGuiCol_Text, redish);
-            label = to_string() << u8"\uf111";
+            label = to_string() << textual_icons::circle;
             ImGui::Text("%s", label.c_str());
             ImGui::PopStyleColor();
             if (ImGui::IsItemHovered())
@@ -3838,12 +3840,12 @@ namespace rs2
         }
         else if (dev.is<playback>())
         {
-            label = to_string() << u8" \uf008";
+            label = to_string() << " " << textual_icons::file_movie;
             ImGui::Text("%s", label.c_str());
         }
         else
         {
-            label = to_string() << u8" \uf03d";
+            label = to_string() << " " << textual_icons::video_camera;
             ImGui::Text("%s", label.c_str());
         }
         ImGui::SameLine();
@@ -3863,7 +3865,7 @@ namespace rs2
 
         ImGui::PushFont(window.get_large_font());
         label = to_string() << "device_menu" << id;
-        std::string settings_button_name = to_string() << u8"\uf0c9##" << id;
+        std::string settings_button_name = to_string() << textual_icons::bars << "##" << id;
 
         if (ImGui::Button(settings_button_name.c_str(), { 33,35 }))
             ImGui::OpenPopup(label.c_str());
@@ -4085,7 +4087,7 @@ namespace rs2
 
                     if (!sub->streaming)
                     {
-                        std::string label = to_string() << u8"  \uf204\noff   ##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
+                        std::string label = to_string() << "  " << textual_icons::toggle_off <<"\noff   ##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
 
                         ImGui::PushStyleColor(ImGuiCol_Text, redish);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
@@ -4120,7 +4122,9 @@ namespace rs2
                         }
                         else
                         {
-                            ImGui::TextDisabled(u8"  \uf204\noff   ");
+                            
+                            std::string text = to_string() << "  " << textual_icons::toggle_off << "\noff   ";
+                            ImGui::TextDisabled("%s", text.c_str());
                             if (std::any_of(sub->stream_enabled.begin(), sub->stream_enabled.end(), [](std::pair<int, bool> const& s) { return s.second; }))
                             {
                                 if (ImGui::IsItemHovered())
@@ -4140,7 +4144,7 @@ namespace rs2
                     }
                     else
                     {
-                        std::string label = to_string() << u8"  \uf205\n    on##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
+                        std::string label = to_string() << "  " << textual_icons::toggle_on << "\n    on##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
                         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 
@@ -4278,7 +4282,7 @@ namespace rs2
                         {
                             if (!sub->post_processing_enabled)
                             {
-                                std::string label = to_string() << u8"\uf204";
+                                std::string label = to_string() << textual_icons::toggle_off;
 
                                 ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
@@ -4286,7 +4290,7 @@ namespace rs2
                             }
                             else
                             {
-                                std::string label = to_string() << u8"\uf205";
+                                std::string label = to_string() << textual_icons::toggle_on;
                                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
                                 ImGui::TextDisabled("%s", label.c_str());
@@ -4296,7 +4300,7 @@ namespace rs2
                         {
                             if (!sub->post_processing_enabled)
                             {
-                                std::string label = to_string() << u8" \uf204##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << ",post";
+                                std::string label = to_string() << " " << textual_icons::toggle_off << "##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << ",post";
 
                                 ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
@@ -4312,7 +4316,7 @@ namespace rs2
                             }
                             else
                             {
-                                std::string label = to_string() << u8" \uf205##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << ",post";
+                                std::string label = to_string() << " " << textual_icons::toggle_on << "##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << ",post";
                                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 
@@ -4354,7 +4358,7 @@ namespace rs2
                                 {
                                     if (!pb->enabled)
                                     {
-                                        std::string label = to_string() << u8"\uf204";
+                                        std::string label = to_string() << textual_icons::toggle_off;
 
                                         ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
@@ -4362,7 +4366,7 @@ namespace rs2
                                     }
                                     else
                                     {
-                                        std::string label = to_string() << u8"\uf205";
+                                        std::string label = to_string() << textual_icons::toggle_on;
                                         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
                                         ImGui::TextDisabled("%s", label.c_str());
@@ -4372,7 +4376,7 @@ namespace rs2
                                 {
                                     if (!pb->enabled)
                                     {
-                                        std::string label = to_string() << u8" \uf204##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
+                                        std::string label = to_string() << " " << textual_icons::toggle_off << "##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
 
                                         ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
@@ -4389,7 +4393,7 @@ namespace rs2
                                     }
                                     else
                                     {
-                                        std::string label = to_string() << u8" \uf205##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
+                                        std::string label = to_string() << " " << textual_icons::toggle_on << "##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
                                         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 
