@@ -3899,6 +3899,10 @@ namespace rs2
         {
             ImGui::OpenPopup(label.c_str());
         }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("%s", "Click for more");
+        }
         ImGui::PopFont();
         ImGui::PushFont(window.get_font());
         if (ImGui::BeginPopup(label.c_str()))
@@ -4031,6 +4035,7 @@ namespace rs2
         auto pos = ImGui::GetCursorPos();
         ImGui::PushFont(window.get_font());
         ImGui::PushStyleColor(ImGuiCol_Button, device_header_background_color);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, device_header_background_color);
         const ImVec2 icon_pos = { pos.x + 8, pos.y + 17 };
         ImGui::SetCursorPos(icon_pos);
         ////////////////////////////////////////
@@ -4062,7 +4067,7 @@ namespace rs2
         }
 
         ImGui::PopFont();
-        ImGui::PopStyleColor(3);
+        ImGui::PopStyleColor(4);
         ImGui::PopStyleVar();
 
         ////////////////////////////////////////
@@ -4272,8 +4277,9 @@ namespace rs2
             //    ImColor(black), 1.f);
 
             std::string label = to_string() << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "##" << id;
-            ImGui::PushStyleColor(ImGuiCol_Header, sensor_header_light_blue);
-
+            ImGui::PushStyleColor(ImGuiCol_Header, sensor_bg);
+            ImGui::PushStyleColor(ImGuiCol_HeaderActive, sensor_bg);
+            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 10, 10 });
             ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, { 0, 0 });
             ImGuiTreeNodeFlags flags{};
@@ -4515,7 +4521,7 @@ namespace rs2
 
             ImGui::PopStyleVar();
             ImGui::PopStyleVar();
-            ImGui::PopStyleColor();
+            ImGui::PopStyleColor(3);
 
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2);
         }
