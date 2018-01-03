@@ -57,6 +57,54 @@ inline ImVec4 blend(const ImVec4& c, float a)
 
 namespace rs2
 {
+    struct textual_icon
+    {
+        explicit constexpr textual_icon(const char* unicode_icon) :
+            _icon{ unicode_icon[0], unicode_icon[1], unicode_icon[2], unicode_icon[3] }
+        {
+        }
+        operator const char*() const
+        {
+            return _icon.data();
+        }
+    private:
+        std::array<char, 5> _icon;
+    };
+
+    inline std::ostream& operator<<(std::ostream& os, const textual_icon& i)
+    {
+        return os << static_cast<const char*>(i);
+    }
+
+    namespace textual_icons
+    {
+        static const textual_icon video_camera             {u8"\uf03d"};
+        static const textual_icon file_movie               {u8"\uf008"};
+        static const textual_icon circle                   {u8"\uf111"};
+        static const textual_icon square                   {u8"\uf0c8"};
+        static const textual_icon refresh                  {u8"\uf021"};
+        static const textual_icon info_circle              {u8"\uf05a"};
+        static const textual_icon bars                     {u8"\uf0c9"};
+        static const textual_icon times                    {u8"\uf00d"};
+        static const textual_icon lock                     {u8"\uf023"};
+        static const textual_icon camera                   {u8"\uf030"};
+        static const textual_icon step_backward            {u8"\uf048"};
+        static const textual_icon play                     {u8"\uf04b"};
+        static const textual_icon pause                    {u8"\uf04c"};
+        static const textual_icon stop                     {u8"\uf04d"};
+        static const textual_icon step_forward             {u8"\uf051"};
+        static const textual_icon minus                    {u8"\uf068"};
+        static const textual_icon exclamation_triangle     {u8"\uf071"};
+        static const textual_icon unlock                   {u8"\uf09c"};
+        static const textual_icon floppy                   {u8"\uf0c7"};
+        static const textual_icon caret_down               {u8"\uf0d7"};
+        static const textual_icon repeat                   {u8"\uf0e2"};
+        static const textual_icon toggle_off               {u8"\uf204"};
+        static const textual_icon toggle_on                {u8"\uf205"};
+        static const textual_icon window_maximize          {u8"\uf2d0"};
+        static const textual_icon window_restore           {u8"\uf2d2"};
+    }
+
     class subdevice_model;
     struct notifications_model;
 
