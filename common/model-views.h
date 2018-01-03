@@ -350,6 +350,7 @@ namespace rs2
         bool roi_checked = false;
 
         std::atomic<bool> _pause;
+        std::atomic<bool> _is_being_recorded{ false };
 
         bool draw_streams_selector = true;
         bool draw_fps_selector = true;
