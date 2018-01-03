@@ -26,8 +26,8 @@ librealsense::record_device::record_device(std::shared_ptr<librealsense::device_
 
     m_device = device;
     m_ros_writer = serializer;
+    (*m_write_thread)->start(); //Start thread before creating the sensors (since they might write right away)
     m_sensors = create_record_sensors(m_device);
-    (*m_write_thread)->start();
     LOG_DEBUG("Created record_device");
 }
 
@@ -60,6 +60,7 @@ librealsense::record_device::~record_device()
         LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
     }
     (*m_write_thread)->stop();
+    m_sensors.clear();
 }
 
 std::shared_ptr<context> librealsense::record_device::get_context() const
@@ -230,15 +231,15 @@ snapshot_collection librealsense::record_device::get_extensions_snapshots(T* ext
         rs2_extension ext = static_cast<rs2_extension>(i);
         switch (ext)
         {
-            case RS2_EXTENSION_DEBUG           : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEBUG          >::type>(extendable, snapshots);
-            case RS2_EXTENSION_INFO            : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_INFO           >::type>(extendable, snapshots);
-            case RS2_EXTENSION_OPTIONS         : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_OPTIONS        >::type>(extendable, snapshots);
-            //case RS2_EXTENSION_MOTION          : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_MOTION         >::type>(extendable, snapshots);
-            //case RS2_EXTENSION_VIDEO           : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_VIDEO          >::type>(extendable, snapshots);
-            //case RS2_EXTENSION_ROI             : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_ROI            >::type>(extendable, snapshots);
-            case RS2_EXTENSION_DEPTH_SENSOR    : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEPTH_SENSOR   >::type>(extendable, snapshots);
-            case RS2_EXTENSION_DEPTH_STEREO_SENSOR: try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEPTH_STEREO_SENSOR   >::type>(extendable, snapshots);
-            //case RS2_EXTENSION_ADVANCED_MODE   : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_ADVANCED_MODE  >::type>(extendable, snapshots);
+            case RS2_EXTENSION_DEBUG           : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEBUG          >::type>(extendable, snapshots); break;
+            case RS2_EXTENSION_INFO            : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_INFO           >::type>(extendable, snapshots); break;
+            case RS2_EXTENSION_OPTIONS         : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_OPTIONS        >::type>(extendable, snapshots); break;
+            //case RS2_EXTENSION_MOTION          : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_MOTION         >::type>(extendable, snapshots); break;
+            //case RS2_EXTENSION_VIDEO           : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_VIDEO          >::type>(extendable, snapshots); break;
+            //case RS2_EXTENSION_ROI             : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_ROI            >::type>(extendable, snapshots); break;
+            case RS2_EXTENSION_DEPTH_SENSOR    : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEPTH_SENSOR   >::type>(extendable, snapshots); break;
+            case RS2_EXTENSION_DEPTH_STEREO_SENSOR: try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEPTH_STEREO_SENSOR   >::type>(extendable, snapshots); break;
+            //case RS2_EXTENSION_ADVANCED_MODE   : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_ADVANCED_MODE  >::type>(extendable, snapshots); break;
             case RS2_EXTENSION_VIDEO_FRAME     : break;
             case RS2_EXTENSION_MOTION_FRAME    : break;
             case RS2_EXTENSION_COMPOSITE_FRAME : break;

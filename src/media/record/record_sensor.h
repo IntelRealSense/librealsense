@@ -42,6 +42,7 @@ namespace librealsense
         bool extend_to(rs2_extension extension_type, void** ext) override;
         const device_interface& get_device() override;
         frame_callback_ptr get_frames_callback() const override;
+        void set_frames_callback(frame_callback_ptr callback) override;
         stream_profiles get_active_streams() const override;
 
     private /*methods*/:
@@ -53,6 +54,7 @@ namespace librealsense
         void wrap_sensor_callbacks();
         void wrap_sensor_options();
         void unwrap_sensor_options();
+        void unwrap_sensor_callbacks();
         void wrap_streams();
 
         frame_callback_ptr wrap_frame_callback(frame_callback_ptr callback);
@@ -66,6 +68,7 @@ namespace librealsense
         std::atomic_bool m_is_recording;
         bool m_is_pause;
         frame_callback_ptr m_frame_callback;
+        frame_callback_ptr m_original_callback;
         const device_interface& m_parent_device;
 
     };

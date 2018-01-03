@@ -27,6 +27,7 @@ librealsense::record_sensor::record_sensor(const device_interface& device,
 librealsense::record_sensor::~record_sensor()
 {
     unwrap_sensor_options();
+    unwrap_sensor_callbacks();
     m_is_recording = false;
 }
 
@@ -167,6 +168,11 @@ frame_callback_ptr record_sensor::get_frames_callback() const
     return m_frame_callback;
 }
 
+void record_sensor::set_frames_callback(frame_callback_ptr callback)
+{
+    m_frame_callback = callback;
+}
+
 stream_profiles record_sensor::get_active_streams() const
 {
     return m_sensor.get_active_streams();
@@ -233,7 +239,13 @@ frame_callback_ptr librealsense::record_sensor::wrap_frame_callback(frame_callba
 void record_sensor::wrap_sensor_callbacks()
 {
     //TODO: wrap_notification_callback (copy from future)
-    m_frame_callback = wrap_frame_callback(nullptr);
+    m_original_callback = m_sensor.get_frames_callback();
+    if (m_original_callback)
+    {
+        m_frame_callback = wrap_frame_callback(m_original_callback);
+        m_sensor.set_frames_callback(m_frame_callback);
+        m_is_recording = true;
+    }
 }
 
 void record_sensor::wrap_sensor_options()
@@ -279,6 +291,11 @@ void record_sensor::unwrap_sensor_options()
     }
 }
 
+void record_sensor::unwrap_sensor_callbacks()
+{
+    if (m_original_callback)
+        m_sensor.set_frames_callback(m_original_callback);
+}
 void record_sensor::wrap_streams()
 {
     auto streams = m_sensor.get_active_streams();
