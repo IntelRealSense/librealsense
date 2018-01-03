@@ -80,7 +80,6 @@ size_t librealsense::record_device::get_sensors_count() const
 
 void librealsense::record_device::write_header()
 {
-
     auto device_extensions_md = get_extensions_snapshots(m_device.get());
     LOG_DEBUG("Created device snapshot with " << device_extensions_md.get_snapshots().size() << " snapshots");
 
@@ -389,6 +388,11 @@ void librealsense::record_device::resume_recording()
         LOG_DEBUG("Total pause time: " << m_record_pause_time.count());
         LOG_INFO("Record resumed");
     });
+}
+
+const std::string& librealsense::record_device::get_filename() const
+{
+    return m_ros_writer->get_file_name();
 }
 platform::backend_device_group record_device::get_device_data() const
 {
