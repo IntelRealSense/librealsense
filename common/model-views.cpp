@@ -3369,14 +3369,24 @@ namespace rs2
         auto p = dev.as<playback>();
         rs2_playback_status current_playback_status = p.current_status();
 
-        ImGui::PushFont(font);
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 10,0 });
-        ImVec2 button_dim = { 33.f, 33.f };
+        const int playback_control_height = 35;
+        const float combo_box_width = 90.f;
+        const float icon_width = 30;
+        const float line_width = ImGui::GetWindowWidth() - 35;
+        //Line looks like this ("-" == space, "[]" == icon, "[     ]" == combo_box):  |-[]-[]-[]-[]-[]-[     ]-[]-|
+        const int num_icons_in_line = 6;
+        const int num_combo_boxes_in_line = 1;
+        const int num_spaces_in_line = num_icons_in_line + num_combo_boxes_in_line + 1;
+        float space_width = (line_width - ((num_combo_boxes_in_line * combo_box_width) + (num_icons_in_line * icon_width))) / num_spaces_in_line;
+        ImVec2 button_dim = { icon_width, icon_width };
 
         const bool supports_playback_step = false;
 
+        ImGui::PushFont(font);
 
         //////////////////// Step Backwards Button ////////////////////
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + space_width);
+
         std::string label = to_string() << textual_icons::step_backward << "##Step Backwards " << id;
 
         if (ImGui::ButtonEx(label.c_str(), button_dim, supports_playback_step ? 0 : ImGuiButtonFlags_Disabled))
@@ -3395,6 +3405,7 @@ namespace rs2
 
 
         //////////////////// Stop Button ////////////////////
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + space_width);
         label = to_string() << textual_icons::stop << "##Stop Playback " << id;
 
         if (ImGui::ButtonEx(label.c_str(), button_dim))
@@ -3415,6 +3426,7 @@ namespace rs2
 
 
         //////////////////// Pause/Play Button ////////////////////
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + space_width);
         if (current_playback_status == RS2_PLAYBACK_STATUS_PAUSED || current_playback_status == RS2_PLAYBACK_STATUS_STOPPED)
         {
             label = to_string() << textual_icons::play << "##Play " << id;
@@ -3465,6 +3477,7 @@ namespace rs2
 
 
         //////////////////// Step Forward Button ////////////////////
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + space_width);
         label = to_string() << textual_icons::step_forward << "##Step Forward " << id;
         if (ImGui::ButtonEx(label.c_str(), button_dim, supports_playback_step ? 0 : ImGuiButtonFlags_Disabled))
         {
@@ -3482,6 +3495,7 @@ namespace rs2
 
 
         /////////////////// Repeat Button /////////////////////
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + space_width);
         if (_playback_repeat)
         {
             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
@@ -3503,23 +3517,21 @@ namespace rs2
             ImGui::SetTooltip("%s", tooltip.c_str());
         }
         ImGui::PopStyleColor(2);
-
         ImGui::SameLine();
         /////////////////// Repeat Button /////////////////////
 
 
-        ImGui::PopStyleVar();
-
         //////////////////// Speed combo box ////////////////////
         auto pos = ImGui::GetCursorPos();
-        ImGui::SetCursorPos({ 200.0f, pos.y + 3 });
-        ImGui::PushItemWidth(100);
+        const float speed_combo_box_v_alignment = 3.f;
+        ImGui::SetCursorPos({ pos.x + space_width, pos.y + speed_combo_box_v_alignment });
+        ImGui::PushItemWidth(combo_box_width);
 
         ImGui::PushStyleColor(ImGuiCol_FrameBg, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
 
         label = to_string() << "## " << id;
-        if (ImGui::Combo(label.c_str(), &playback_speed_index, "Speed: x0.25\0Speed: x0.5\0Speed: x1\0Speed: x1.5\0Speed: x2\0\0"))
+        if (ImGui::Combo(label.c_str(), &playback_speed_index, "Speed:   x0.25\0Speed:   x0.5\0Speed:   x1\0Speed:   x1.5\0Speed:   x2\0\0", -1, false))
         {
             float speed = 1;
             switch (playback_speed_index)
@@ -3534,13 +3546,25 @@ namespace rs2
             }
             p.set_playback_speed(speed);
         }
-
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Change playback speed rate");
+        }
         ImGui::PopStyleColor(2);
-
+        ImGui::SameLine();
+        //Restore Y movement
+        pos = ImGui::GetCursorPos();
+        ImGui::SetCursorPos({ pos.x, pos.y - speed_combo_box_v_alignment });
         //////////////////// Speed combo box ////////////////////
+
+        ////////////////////    Info Icon    ////////////////////
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + space_width);
+        draw_info_icon(button_dim);
+        ////////////////////    Info Icon    ////////////////////
+
         ImGui::PopFont();
 
-        return 35;
+        return playback_control_height;
     }
 
     std::string device_model::pretty_time(std::chrono::nanoseconds duration)
@@ -3577,7 +3601,7 @@ namespace rs2
         {
             seek_pos = 0;
         }
-        float seek_bar_width = 290.0f;
+        float seek_bar_width = 300.f;
         ImGui::PushItemWidth(seek_bar_width);
         std::string label1 = "## " + id;
         if (ImGui::SeekSlider(label1.c_str(), &seek_pos, ""))
@@ -3597,7 +3621,7 @@ namespace rs2
         ImGui::SameLine();
         float pos_y = ImGui::GetCursorPosY();
 
-        ImGui::SetCursorPos({ pos.x + seek_bar_width - 41 , pos_y });
+        ImGui::SetCursorPos({ pos.x + seek_bar_width - 45 , pos_y });
         ImGui::Text("%s", duration_str.c_str());
 
         return 50;
@@ -3614,7 +3638,8 @@ namespace rs2
 
         auto pos = ImGui::GetCursorPos();
         auto controls_height = draw_playback_controls(font, view);
-        ImGui::SetCursorPos({ pos.x + 4, pos.y + controls_height });
+        float seek_bar_left_alignment = 4.f;
+        ImGui::SetCursorPos({ pos.x + seek_bar_left_alignment, pos.y + controls_height });
         auto seek_bar_height = draw_seek_bar();
 
         ImGui::PopStyleColor(5);
@@ -3795,6 +3820,23 @@ namespace rs2
         ImGui::PopStyleColor();
     }
 
+    void device_model::draw_info_icon(const ImVec2& size)
+    {
+        std::string info_button_name = to_string() << textual_icons::info_circle << "##" << id;
+        auto info_button_color = show_device_info ? light_blue : light_grey;
+        ImGui::PushStyleColor(ImGuiCol_Text, info_button_color);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, info_button_color);
+        if (ImGui::Button(info_button_name.c_str(), size))
+        {
+            show_device_info = !show_device_info;
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("%s", show_device_info ? "Hide Device Details" : "Show Device Details");
+        }
+        ImGui::PopStyleColor(2);
+    }
+
     float device_model::draw_device_panel(float panel_width,
                                           ux_window& window,
                                           std::string& error_message,
@@ -3829,13 +3871,15 @@ namespace rs2
             return sm->streaming;
         });
         textual_icon button_icon = is_recording ? textual_icons::stop : textual_icons::circle;
-        const float icons_width = 75.0f;
+        const float icons_width = 78.0f;
         const ImVec2 device_panel_icons_size{ icons_width, 25 };
         std::string recorod_button_name = to_string() << button_icon << "##" << id;
+        auto record_button_color = is_recording ? light_blue : light_grey;
+        ImGui::PushStyleColor(ImGuiCol_Text, record_button_color);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, record_button_color);
         if (ImGui::ButtonEx(recorod_button_name.c_str(), device_panel_icons_size, (!is_streaming || is_playback_device) ? ImGuiButtonFlags_Disabled : 0))
         {
-            is_recording != is_recording;
-            if (is_recording)
+            if (is_recording) //is_recording is changed inside stop/start_recording
             {
                 stop_recording(viewer);
             }
@@ -3851,6 +3895,7 @@ namespace rs2
             ImGui::SetTooltip("%s", record_button_hover_text.c_str());
         }
 
+        ImGui::PopStyleColor(2);
         ImGui::SameLine();
         ////////////////////////////////////////
         // Draw Sync icon
@@ -3873,20 +3918,7 @@ namespace rs2
         ////////////////////////////////////////
         // Draw Info icon
         ////////////////////////////////////////
-
-        std::string info_button_name = to_string() << textual_icons::info_circle << "##" << id;
-        auto info_button_color = show_device_info ? light_blue : light_grey;
-        ImGui::PushStyleColor(ImGuiCol_Text, info_button_color);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, info_button_color);
-        if (ImGui::Button(info_button_name.c_str(), device_panel_icons_size))
-        {
-            show_device_info = !show_device_info;
-        }
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("%s", show_device_info ? "Hide Device Details" : "Show Device Details");
-        }
-        ImGui::PopStyleColor(2);
+        draw_info_icon(device_panel_icons_size);
         ImGui::SameLine();
 
         ////////////////////////////////////////
@@ -3907,9 +3939,11 @@ namespace rs2
         ImGui::PushFont(window.get_font());
         if (ImGui::BeginPopup(label.c_str()))
         {
+            bool something_to_show = false;
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
             if (auto adv = dev.as<advanced_mode>())
             {
+                something_to_show = true;
                 try
                 {
                     if (ImGui::Selectable("Load Settings", false, ImGuiSelectableFlags_SpanAllColumns))
@@ -3955,6 +3989,8 @@ namespace rs2
 
             if (allow_remove)
             {
+                something_to_show = true;
+
                 ImGui::Separator();
 
                 if (ImGui::Selectable("Hardware Reset"))
@@ -3973,8 +4009,12 @@ namespace rs2
                         error_message = e.what();
                     }
                 }
+            }
 
-                ImGui::Separator();
+
+            if (!something_to_show)
+            {
+                ImGui::Text("This device has no additional options");
             }
 
             ImGui::PopStyleColor();
@@ -3991,7 +4031,7 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor(0, 0, 0, 0));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor(0,0,0,0));
         const ImVec2 device_panel_icons_text_size = { icons_width, 5 };
-        ImGui::ButtonEx("Record", device_panel_icons_size, (!is_streaming ? ImGuiButtonFlags_Disabled : 0));
+        ImGui::ButtonEx(is_recording ? "Stop" : "Record", device_panel_icons_size, (!is_streaming ? ImGuiButtonFlags_Disabled : 0));
         ImGui::SameLine();  ImGui::ButtonEx("Sync", device_panel_icons_size, ImGuiButtonFlags_Disabled);
         ImGui::SameLine(); ImGui::ButtonEx("Info", device_panel_icons_size);
         ImGui::SameLine(); ImGui::ButtonEx("More", device_panel_icons_size);
@@ -4010,7 +4050,7 @@ namespace rs2
         device_model*& device_to_remove,
         viewer_model& viewer, float windows_width,
         bool update_read_only_options,
-        std::vector<std::function<void()>>& draw_later)
+        std::vector<std::function<void()>>& draw_later, bool draw_device_outline)
     {
         ////////////////////////////////////////
         // draw device header
@@ -4026,9 +4066,11 @@ namespace rs2
         const ImVec2 initial_screen_pos = ImGui::GetCursorScreenPos();
         //Upper Space
         ImGui::GetWindowDrawList()->AddRectFilled({ initial_screen_pos.x,initial_screen_pos.y }, { initial_screen_pos.x + panel_width,initial_screen_pos.y + upper_space }, ImColor(black));
-        //Upper Line
-        ImGui::GetWindowDrawList()->AddLine({ initial_screen_pos.x,initial_screen_pos.y + upper_space }, { initial_screen_pos.x + panel_width,initial_screen_pos.y + upper_space }, ImColor(header_color));
-        
+        if (draw_device_outline)
+        {
+            //Upper Line
+            ImGui::GetWindowDrawList()->AddLine({ initial_screen_pos.x,initial_screen_pos.y + upper_space }, { initial_screen_pos.x + panel_width,initial_screen_pos.y + upper_space }, ImColor(header_color));
+        }
         //Device Header area
         ImGui::GetWindowDrawList()->AddRectFilled({ initial_screen_pos.x + 1,initial_screen_pos.y + upper_space + 1 }, { initial_screen_pos.x + panel_width, initial_screen_pos.y + header_h + upper_space }, device_header_background_color);
 
@@ -4052,20 +4094,22 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
-        ImGui::Columns(1);
-        float horizontal_distance_from_right_side_of_panel = 50;
-        ImGui::SetCursorPos({ panel_width - horizontal_distance_from_right_side_of_panel, pos.y + 8 + (header_h - panel_height) / 2 });
-        std::string remove_source_button_label = to_string() << textual_icons::times << "##" << id;
-        if (ImGui::Button(remove_source_button_label.c_str(), { 33,35 }))
+        if (allow_remove)
         {
-            for (auto&& sub : subdevices)
+            ImGui::Columns(1);
+            float horizontal_distance_from_right_side_of_panel = 50;
+            ImGui::SetCursorPos({ panel_width - horizontal_distance_from_right_side_of_panel, pos.y + 8 + (header_h - panel_height) / 2 });
+            std::string remove_source_button_label = to_string() << textual_icons::times << "##" << id;
+            if (ImGui::Button(remove_source_button_label.c_str(), { 33,35 }))
             {
-                if (sub->streaming)
-                    sub->stop(viewer);
+                for (auto&& sub : subdevices)
+                {
+                    if (sub->streaming)
+                        sub->stop(viewer);
+                }
+                device_to_remove = this;
             }
-            device_to_remove = this;
         }
-
         ImGui::PopFont();
         ImGui::PopStyleColor(4);
         ImGui::PopStyleVar();
@@ -4083,16 +4127,20 @@ namespace rs2
                 ImGui::SetTooltip("%s", full_path.c_str());
         }
         ImGui::SetCursorPos({ 0, pos.y + header_h});
+        
         ////////////////////////////////////////
         // draw device control panel
         ////////////////////////////////////////
-        pos = ImGui::GetCursorPos();
-        float space_before_device_control = 10.0f;
-        auto device_panel_pos = ImVec2{ pos.x + 7, pos.y + space_before_device_control };
-        ImGui::SetCursorPos(device_panel_pos);
-        const float device_panel_height = draw_device_panel(panel_width, window, error_message, viewer);
-        ImGui::SetCursorPos({ device_panel_pos.x, device_panel_pos.y + device_panel_height });
-
+        if (!is_playback_device) //Not displaying these controls for playback devices (since only info is supported)
+        {
+            pos = ImGui::GetCursorPos();
+            const float vertical_space_before_device_control = 10.0f;
+            const float horizontal_space_before_device_control = 3.0f;
+            auto device_panel_pos = ImVec2{ pos.x + horizontal_space_before_device_control, pos.y + vertical_space_before_device_control };
+            ImGui::SetCursorPos(device_panel_pos);
+            const float device_panel_height = draw_device_panel(panel_width, window, error_message, viewer);
+            ImGui::SetCursorPos({ device_panel_pos.x, device_panel_pos.y + device_panel_height });
+        }
         ////////////////////////////////////////
         // draw playback control panel
         ////////////////////////////////////////
@@ -4535,17 +4583,20 @@ namespace rs2
         ImGui::PopFont();
 
         auto end_screen_pos = ImGui::GetCursorScreenPos();
-        //Left space
-        ImGui::GetWindowDrawList()->AddRectFilled({ initial_screen_pos.x,initial_screen_pos.y }, { end_screen_pos.x + left_space, end_screen_pos.y }, device_header_background_color);
-        //Left line
-        ImGui::GetWindowDrawList()->AddLine({ initial_screen_pos.x + left_space,initial_screen_pos.y + upper_space }, { end_screen_pos.x + left_space, end_screen_pos.y }, ImColor(header_color));
-        //Right line
-        const float compenstaion_right = 17.f;;
-        ImGui::GetWindowDrawList()->AddLine({ initial_screen_pos.x + panel_width - compenstaion_right, initial_screen_pos.y + upper_space }, { end_screen_pos.x + panel_width - compenstaion_right, end_screen_pos.y }, ImColor(header_color));
-        //Button line
-        const float compenstaion_button = 1.0f;
-        ImGui::GetWindowDrawList()->AddLine({ end_screen_pos.x + left_space, end_screen_pos.y - compenstaion_button }, { end_screen_pos.x + left_space + panel_width, end_screen_pos.y - compenstaion_button }, ImColor(header_color));
 
+        if (draw_device_outline)
+        {
+            //Left space
+            ImGui::GetWindowDrawList()->AddRectFilled({ initial_screen_pos.x,initial_screen_pos.y }, { end_screen_pos.x + left_space, end_screen_pos.y }, ImColor(black));
+            //Left line
+            ImGui::GetWindowDrawList()->AddLine({ initial_screen_pos.x + left_space,initial_screen_pos.y + upper_space }, { end_screen_pos.x + left_space, end_screen_pos.y }, ImColor(header_color));
+            //Right line
+            const float compenstaion_right = 17.f;;
+            ImGui::GetWindowDrawList()->AddLine({ initial_screen_pos.x + panel_width - compenstaion_right, initial_screen_pos.y + upper_space }, { end_screen_pos.x + panel_width - compenstaion_right, end_screen_pos.y }, ImColor(header_color));
+            //Button line
+            const float compenstaion_button = 1.0f;
+            ImGui::GetWindowDrawList()->AddLine({ end_screen_pos.x + left_space, end_screen_pos.y - compenstaion_button }, { end_screen_pos.x + left_space + panel_width, end_screen_pos.y - compenstaion_button }, ImColor(header_color));
+        }
     }
 
     void viewer_model::draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message, texture_buffer* texture, points points)
