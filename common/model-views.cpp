@@ -3640,8 +3640,9 @@ namespace rs2
         auto controls_height = draw_playback_controls(font, view);
         float seek_bar_left_alignment = 4.f;
         ImGui::SetCursorPos({ pos.x + seek_bar_left_alignment, pos.y + controls_height });
+        ImGui::PushFont(font);
         auto seek_bar_height = draw_seek_bar();
-
+        ImGui::PopFont();
         ImGui::PopStyleColor(5);
         return controls_height + seek_bar_height;
 
@@ -4075,20 +4076,22 @@ namespace rs2
         ImGui::GetWindowDrawList()->AddRectFilled({ initial_screen_pos.x + 1,initial_screen_pos.y + upper_space + 1 }, { initial_screen_pos.x + panel_width, initial_screen_pos.y + header_h + upper_space }, device_header_background_color);
 
         auto pos = ImGui::GetCursorPos();
-        ImGui::PushFont(window.get_font());
+        ImGui::PushFont(window.get_large_font());
         ImGui::PushStyleColor(ImGuiCol_Button, device_header_background_color);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, device_header_background_color);
-        const ImVec2 icon_pos = { pos.x + 8, pos.y + 17 };
-        ImGui::SetCursorPos(icon_pos);
+        
         ////////////////////////////////////////
-        // Draw Icon and name
+        // Draw device name
         ////////////////////////////////////////
-        auto device_icon = (is_playback_device ? textual_icons::file_movie : textual_icons::video_camera);
-        ImGui::Icon(device_icon);
-        ImGui::SameLine();
+        const ImVec2 name_pos = { pos.x + 8, pos.y + 17 };
+        ImGui::SetCursorPos(name_pos);
         ImGui::Text(" %s", dev.get_info(RS2_CAMERA_INFO_NAME));
+        ImGui::PopFont();
 
-        ImGui::PushFont(window.get_large_font());
+        ////////////////////////////////////////
+        // Draw X Button
+        ////////////////////////////////////////
+        ImGui::PushFont(window.get_font());
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
@@ -4098,7 +4101,7 @@ namespace rs2
         {
             ImGui::Columns(1);
             float horizontal_distance_from_right_side_of_panel = 50;
-            ImGui::SetCursorPos({ panel_width - horizontal_distance_from_right_side_of_panel, pos.y + 8 + (header_h - panel_height) / 2 });
+            ImGui::SetCursorPos({ panel_width - horizontal_distance_from_right_side_of_panel, pos.y + 9 + (header_h - panel_height) / 2 });
             std::string remove_source_button_label = to_string() << textual_icons::times << "##" << id;
             if (ImGui::Button(remove_source_button_label.c_str(), { 33,35 }))
             {
@@ -4110,24 +4113,27 @@ namespace rs2
                 device_to_remove = this;
             }
         }
-        ImGui::PopFont();
         ImGui::PopStyleColor(4);
         ImGui::PopStyleVar();
+        ImGui::PopFont();
 
         ////////////////////////////////////////
         // Draw playback file name
         ////////////////////////////////////////
-        ImGui::SetCursorPos({ 33, pos.y + panel_height - 9 });
+        ImGui::SetCursorPos({ pos.x + 10, pos.y + panel_height - 9 });
         if (auto p = dev.as<playback>())
         {
+            ImGui::PushFont(window.get_font());
             auto full_path = p.file_name();
             auto filename = get_file_name(full_path);
-            ImGui::Text("File: \"%s\"", filename.c_str());
+            std::string file_name_and_icon = to_string() << " " << textual_icons::file_movie << " File: \"" << filename << "\"";
+            ImGui::Text("%s", file_name_and_icon.c_str());
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("%s", full_path.c_str());
+            ImGui::PopFont();
         }
         ImGui::SetCursorPos({ 0, pos.y + header_h});
-        
+
         ////////////////////////////////////////
         // draw device control panel
         ////////////////////////////////////////
@@ -4159,6 +4165,7 @@ namespace rs2
         int info_control_panel_height = 0;
         if (show_device_info)
         {
+            ImGui::PushFont(window.get_font());
             int line_h = 22;
             info_control_panel_height = (int)infos.size() * line_h + 5;
 
@@ -4181,11 +4188,11 @@ namespace rs2
 
                 ImGui::SetCursorPos({ rc.x, rc.y + line_h });
             }
+            ImGui::PopFont();
         }
 
         ImGui::SetCursorPos({ 0, pos.y + info_control_panel_height });
         ImGui::PopStyleColor(2);
-        ImGui::PopFont();
 
         auto sensor_top_y = ImGui::GetCursorPosY();
         ImGui::SetContentRegionWidth(windows_width - 36);
