@@ -5213,6 +5213,11 @@ void ImGui::TextV(const char* fmt, va_list args)
     TextUnformatted(g.TempBuffer, text_end);
 }
 
+void ImGui::Icon(const char* icon)
+{
+    ImGui::Text("%s", icon);
+}
+
 void ImGui::Text(const char* fmt, ...)
 {
     va_list args;

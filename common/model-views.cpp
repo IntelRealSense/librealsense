@@ -2449,7 +2449,7 @@ namespace rs2
             ImGui::SetCursorPos({ rc.x + 10, rc.y + 4 });
 
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-            ImGui::Text("%s", textual_icons::minus); ImGui::SameLine();
+            ImGui::Icon(textual_icons::minus); ImGui::SameLine();
             ImGui::PopStyleColor();
 
             rc = ImGui::GetCursorPos();
@@ -3841,7 +3841,7 @@ namespace rs2
             }
             else
             {
-                auto path = rs2::get_folder_path(rs2::special_folder::user_videos) + rs2::get_timestamped_file_name() + ".bag";
+                auto path = rs2::get_folder_path(rs2::special_folder::user_documents) + rs2::get_timestamped_file_name() + ".bag";
                 start_recording(path, error_message);
             }
         }
@@ -4042,7 +4042,7 @@ namespace rs2
         // Draw Icon and name
         ////////////////////////////////////////
         auto device_icon = (is_playback_device ? textual_icons::file_movie : textual_icons::video_camera);
-        ImGui::Text(" %s", device_icon);
+        ImGui::Icon(device_icon);
         ImGui::SameLine();
         ImGui::Text(" %s", dev.get_info(RS2_CAMERA_INFO_NAME));
 

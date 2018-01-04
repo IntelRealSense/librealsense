@@ -260,6 +260,7 @@ namespace ImGui
     IMGUI_API ImGuiID       GetID(const void* ptr_id);
 
     // Widgets
+    IMGUI_API void          Icon(const char* icon);                                                 // Librealsense addition to allow type safe calling like: ImGui::Icon(textual_icon(u8"\uf118"))
     IMGUI_API void          Text(const char* fmt, ...) IM_PRINTFARGS(1);
     IMGUI_API void          TextV(const char* fmt, va_list args);
     IMGUI_API void          TextColored(const ImVec4& col, const char* fmt, ...) IM_PRINTFARGS(2);  // shortcut for PushStyleColor(ImGuiCol_Text, col); Text(fmt, ...); PopStyleColor();

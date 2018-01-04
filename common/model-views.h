@@ -71,7 +71,7 @@ namespace rs2
 {
     struct textual_icon
     {
-        explicit constexpr textual_icon(const char* unicode_icon) :
+        explicit constexpr textual_icon(const char (&unicode_icon)[4]) :
             _icon{ unicode_icon[0], unicode_icon[1], unicode_icon[2], unicode_icon[3] }
         {
         }
