@@ -335,10 +335,15 @@ void record_sensor::wrap_streams()
     auto streams = m_sensor.get_active_streams();
     for (auto stream : streams)
     {
-        std::shared_ptr<stream_profile_interface> snapshot;
-        stream->create_snapshot(snapshot);
-        //TODO: handle non video profiles
-        m_device_record_snapshot_handler(RS2_EXTENSION_VIDEO_PROFILE, std::dynamic_pointer_cast<extension_snapshot>(snapshot), [this](const std::string& err) { stop_with_error(err); });
+        auto id = stream->get_unique_id();
+        if (m_recorded_streams_ids.count(id) == 0)
+        {
+            std::shared_ptr<stream_profile_interface> snapshot;
+            stream->create_snapshot(snapshot);
+            //TODO: handle non video profiles
+           m_device_record_snapshot_handler(RS2_EXTENSION_VIDEO_PROFILE, std::dynamic_pointer_cast<extension_snapshot>(snapshot), [this](const std::string& err) { stop_with_error(err); });
+           m_recorded_streams_ids.insert(id);
+        }
     }
 }
 
