@@ -64,6 +64,7 @@ namespace librealsense
     private /*members*/:
         snapshot_callback_t m_device_record_snapshot_handler;
         sensor_interface& m_sensor;
+        std::set<int> m_recorded_streams_ids;
         std::set<rs2_option> m_recording_options;
         librealsense::notifications_callback_ptr m_user_notification_callback;
         frame_interface_callback_t m_record_callback;
