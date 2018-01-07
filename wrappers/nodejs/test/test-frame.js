@@ -62,7 +62,7 @@ describe('Frame test', function() {
     assert.equal(typeof frame.timestamp, 'number');
   });
 
-  it.skip('Testing property streamType', () => {
+  it('Testing property streamType', () => {
     assert.equal(typeof frame.streamType, 'number');
   });
 
@@ -121,10 +121,9 @@ describe('Frame test', function() {
     );
   });
 
-  it.skip('Testing method getData - buffer argument', () => {
+  it('Testing method getData - buffer argument', () => {
     const len = frame.dataByteLength;
     let buf = new ArrayBuffer(len);
-    console.log(typeof buf);
     assert.doesNotThrow(() => {
       frame.getData(buf);
     });

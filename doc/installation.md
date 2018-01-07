@@ -22,7 +22,7 @@
     * Complete the boot, login and verify that the required kernel version (4.4.0-79 or 4.8.0-54 as of June 17th 2017) is in place with `uname -r`
 
 2. Install the packages required for *librealsense* build:
-  * *libusb-1.0*, *pkg-config* and *libgtk-3*: `sudo apt-get install libusb-1.0-0-dev pkg-config libgtk-3-dev`.
+  * *libudev-dev*, *pkg-config* and *libgtk-3*: `sudo apt-get install libudev-dev pkg-config libgtk-3-dev`.
   * **Note:** glfw3 and gtk is only required if you plan to build the example code, not for the *librealsense* core library.
 
   * *glfw3*:
@@ -58,7 +58,7 @@
   **Note:** If you encounter the following error during compilation `gcc: internal compiler error` it might indicate that you do not have enough memory or swap space on your machine. Try closing memory consuming applications, and if you are running inside a VM increase available RAM to at least 2 GB.
 
 4. Install IDE (Optional):
-    We use QtCreator as an IDE for Linux development on Ubuntu    
+    We use QtCreator as an IDE for Linux development on Ubuntu
     * Follow the  [link](https://wiki.qt.io/Install_Qt_5_on_Ubuntu) for QtCreator5 installation
 
 ## Video4Linux backend preparation

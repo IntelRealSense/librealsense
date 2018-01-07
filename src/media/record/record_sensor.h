@@ -41,14 +41,14 @@ namespace librealsense
         bool is_streaming() const override;
         bool extend_to(rs2_extension extension_type, void** ext) override;
         const device_interface& get_device() override;
-        
+
     private /*methods*/:
         void raise_user_notification(const std::string& str);
-        template <typename T> void record_snapshot(rs2_extension extension_type, const T& snapshot);
+        template <typename T> void record_snapshot(rs2_extension extension_type, const  recordable<T>& snapshot);
         template <rs2_extension E, typename P> bool extend_to_aux(P* p, void** ext);
         void stop_with_error(const std::string& basic_string);
         void record_frame(frame_holder holder);
-        
+
     private /*members*/:
         snapshot_callback_t m_device_record_snapshot_handler;
         sensor_interface& m_sensor;

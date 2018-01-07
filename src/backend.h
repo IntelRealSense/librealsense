@@ -195,6 +195,11 @@ namespace librealsense
 
                 return s.str();
             }
+
+            bool operator <(const uvc_device_info& obj) const
+            {
+                return (std::make_tuple(id, vid, pid, mi, unique_id, device_path) < std::make_tuple(obj.id, obj.vid, obj.pid, obj.mi, obj.unique_id, obj.device_path));
+            }
         };
 
         inline bool operator==(const uvc_device_info& a,

@@ -4,7 +4,7 @@
 
 'use strict';
 
-/* global describe, it, before, after, afterEach, beforeEach */
+/* global describe, it, before, after, afterEach */
 const assert = require('assert');
 const fs = require('fs');
 let rs2;
@@ -168,7 +168,7 @@ describe('Frame test', function() {
 
   it('format/stream/width/height/frameNumber/timestamp/isValid test', () => {
     assert.equal(depth.format, rs2.format.FORMAT_Z16);
-    assert.equal(depth.streamType, rs2.format.STREAM_DEPTH);
+    assert.equal(depth.streamType, rs2.stream.STREAM_DEPTH);
     assert.equal(depth.isValid, true);
     assert.equal(depth.timestamp > 0, true);
     assert.equal(depth.frameNumber > 0, true);
@@ -178,7 +178,7 @@ describe('Frame test', function() {
     assert.equal(depth.strideInBytes > 0, true);
 
     assert.equal(color.format, rs2.format.FORMAT_RGB8);
-    assert.equal(color.streamType, rs2.format.STREAM_COLOR);
+    assert.equal(color.streamType, rs2.stream.STREAM_COLOR);
     assert.equal(color.isValid, true);
     assert.equal(color.timestamp > 0, true);
     assert.equal(color.frameNumber > 0, true);
@@ -260,7 +260,7 @@ describe('Colorizer test', function() {
       assert.equal((value === undefined) || (typeof value === 'number'), true);
       let des = colorizer.getOptionDescription(i);
       assert.equal((des === undefined) || (typeof des === 'string'), true);
-      des = colorizer.getOptionDescription(i, 1);
+      des = colorizer.getOptionValueDescription(i, 1);
       assert.equal((des === undefined) || (typeof des === 'string'), true);
 
       if (supports && !readonly) {
@@ -332,7 +332,8 @@ describe('Context tests', function() {
   it('Query devices', () => {
     const devList = ctx.queryDevices();
     assert.equal(devList instanceof rs2.DeviceList, true);
-    assert.equal(devList.size, 1);
+    // The platform's camera would also be counted, so size may > 1
+    assert.equal(devList.size >= 1, true);
     assert.equal(devList.devices[0] instanceof rs2.Device, true);
     assert.equal(devList.contains(devList.devices[0]), true);
     devList.destroy();
@@ -340,8 +341,8 @@ describe('Context tests', function() {
 
   it('Query sensors', () => {
     const sensors = ctx.querySensors();
-
-    assert.equal(sensors.length, 2);
+    // The platform's camera would also be counted, so size may > 2
+    assert.equal(sensors.length >= 2, true);
     assert.equal(sensors[0] instanceof rs2.Sensor, true);
     assert.equal(sensors[1] instanceof rs2.Sensor, true);
     sensors.forEach((sensor) => {
@@ -673,6 +674,12 @@ if (!(isRecord || isPlayback)) {
       rs2.cleanup();
     });
 
+    after(() => {
+      if (fs.existsSync(fileName)) {
+        fs.unlinkSync(fileName);
+      }
+    });
+
     function startRecording(file, cnt, callback) {
       return new Promise((resolve, reject) => {
         setTimeout(() => {
@@ -721,7 +728,6 @@ if (!(isRecord || isPlayback)) {
           if (status.description === 'stopped') {
             dev.stop();
             ctx.unloadDevice(file);
-            rs2.cleanup();
             resolve();
           }
         });
@@ -762,10 +768,7 @@ if (!(isRecord || isPlayback)) {
         startRecording(fileName, 1, null).then(() => {
           assert.equal(fs.existsSync(fileName), true);
           return startPlayback(fileName, (playbackDev, status) => {
-            if (status.description === 'stopped') {
-              fs.unlinkSync(fileName);
-              resolve();
-            } else if (status.description === 'playing') {
+            if (status.description === 'playing') {
               assert.equal(playbackDev.fileName, 'ut-record.bag');
               assert.equal(typeof playbackDev.duration, 'number');
               assert.equal(typeof playbackDev.position, 'number');
@@ -773,6 +776,8 @@ if (!(isRecord || isPlayback)) {
               assert.equal(playbackDev.currentStatus.description, 'playing');
             }
           });
+        }).then(() => {
+          resolve();
         });
       });
     }).timeout(5000);
@@ -824,7 +829,6 @@ describe('Device tests', function() {
 
 describe('filter tests', function() {
   let ctx;
-  let depthFrame;
   let decimationFilter;
   let temporalFilter;
   let spatialFilter;
@@ -838,31 +842,32 @@ describe('filter tests', function() {
     pipeline.start();
   });
 
-  beforeEach(function() {
-    let frameset = pipeline.waitForFrames();
-    depthFrame = frameset.depthFrame;
-  });
-
   after(function() {
     pipeline.stop();
     rs2.cleanup();
   });
 
-  it('decimation filter', () => {
-    let out = decimationFilter.process(depthFrame);
-    assert.equal(out instanceof rs2.DepthFrame, true);
-    assert.equal(typeof out.width, 'number');
-  });
-
   it('temppral filter', () => {
+    let frameset = pipeline.waitForFrames();
+    let depthFrame = frameset.depthFrame;
     let out = temporalFilter.process(depthFrame);
     assert.equal(out instanceof rs2.DepthFrame, true);
     assert.equal(typeof out.width, 'number');
-  });
+  }).timeout(10000); // change the threshold to be 10 seconds to avoid timeout.
 
   it('spatial filter', () => {
+    let frameset = pipeline.waitForFrames();
+    let depthFrame = frameset.depthFrame;
     let out = spatialFilter.process(depthFrame);
     assert.equal(out instanceof rs2.DepthFrame, true);
     assert.equal(typeof out.width, 'number');
-  });
+  }).timeout(10000); // change the threshold to be 10 seconds to avoid timeout.
+
+  it('decimation filter', () => {
+    let frameset = pipeline.waitForFrames();
+    let depthFrame = frameset.depthFrame;
+    let out = decimationFilter.process(depthFrame);
+    assert.equal(out instanceof rs2.DepthFrame, true);
+    assert.equal(typeof out.width, 'number');
+  }).timeout(10000); // change the threshold to be 10 seconds to avoid timeout.
 });

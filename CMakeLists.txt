@@ -51,7 +51,27 @@ elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
+# This parameter is meant for disabling graphical examples when building for
+# save-to-disk targets.
+option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
+
 option(BUILD_WITH_OPENMP "Use OpenMP" ON)
+
+if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
+    unset(WIN32)
+    unset(UNIX)
+    unset(APPLE)
+    set(BUILD_WITH_OPENMP OFF)
+    set(FORCE_LIBUVC ON)
+    set(BUILD_GRAPHICAL_EXAMPLES OFF)
+    set(ANDROID_STL "c++_static")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -g -D_BSD_SOURCE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -g -Wno-missing-field-initializers")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar")
+
+    message(STATUS "Prepare RealSense SDK for Android OS (${ANDROID_NDK_ABI_NAME})")
+endif()
+
 if(BUILD_WITH_OPENMP)
     find_package(OpenMP)
     if(NOT OPENMP_FOUND)
@@ -103,6 +123,7 @@ set(REALSENSE_CPP
     src/proc/decimation-filter.cpp
     src/proc/spatial-filter.cpp
     src/proc/temporal-filter.cpp
+    src/proc/disparity-transform.cpp
     src/source.cpp
     src/ds5/ds5-options.cpp
     src/ds5/ds5-timestamp.cpp
@@ -197,6 +218,7 @@ set(REALSENSE_HPP
     src/proc/spatial-filter.h
     src/proc/temporal-filter.h
     src/proc/syncer-processing-block.h
+    src/proc/disparity-transform.h
     src/algo.h
     src/option.h
     src/metadata.h
@@ -417,6 +439,7 @@ if(WIN32)
         src/proc/spatial-filter.cpp
         src/proc/temporal-filter.cpp
         src/proc/syncer-processing-block.cpp
+        src/proc/disparity-transform.cpp
         )
 
     source_group("Header Files\\Processing Blocks" FILES
@@ -428,6 +451,7 @@ if(WIN32)
         src/proc/spatial-filter.h
         src/proc/temporal-filter.h
         src/proc/syncer-processing-block.h
+        src/proc/disparity-transform.h
         )
 
     foreach(flag_var
@@ -467,24 +491,43 @@ if(FORCE_LIBUVC)
     set(BACKEND RS2_USE_LIBUVC_BACKEND)
     
     list(APPEND REALSENSE_CPP
-    src/libuvc/ctrl.c
-    src/libuvc/ctrl-gen.c
-    src/libuvc/device.c
-    src/libuvc/diag.c
-    src/libuvc/frame.c
-    src/libuvc/init.c
-    src/libuvc/misc.c
-    src/libuvc/stream.c
+    src/libuvc/ctrl.cpp
+    src/libuvc/ctrl-gen.cpp
+    src/libuvc/device.cpp
+    src/libuvc/diag.cpp
+    src/libuvc/frame.cpp
+    src/libuvc/init.cpp
+    src/libuvc/misc.cpp
+    src/libuvc/stream.cpp
     src/libuvc/libuvc.cpp
     )
-    
+
     list(APPEND REALSENSE_HPP
     src/libuvc/libuvc.h
     src/libuvc/libuvc_internal.h
     src/libuvc/utlist.h
     src/libuvc/libuvc_config.h
     )
-    
+
+    source_group("Header Files\\LibUvc" FILES
+    src/libuvc/libuvc.h
+    src/libuvc/libuvc_internal.h
+    src/libuvc/utlist.h
+    src/libuvc/libuvc_config.h
+    )
+
+    source_group("Source Files\\LibUvc" FILES
+        src/libuvc/ctrl.cpp
+        src/libuvc/ctrl-gen.cpp
+        src/libuvc/device.cpp
+        src/libuvc/diag.cpp
+        src/libuvc/frame.cpp
+        src/libuvc/init.cpp
+        src/libuvc/misc.cpp
+        src/libuvc/stream.cpp
+        src/libuvc/libuvc.cpp
+    )
+
     message( WARNING "Using libuvc!" )
 endif()
 
@@ -495,20 +538,7 @@ endif()
 
 add_definitions(-D${BACKEND} -DUNICODE)
 
-if(ANDROID)
-    set(ANDROID_STL "c++_static")
-
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -g -D_BSD_SOURCE")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -g -Wno-missing-field-initializers")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar")
-
-    set(LIBUSB1_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/libusb")
-    set(LIBUSB1_LIBRARY_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/android/libs/${ANDROID_NDK_ABI_NAME}")
-    set(LIBUSB1_LIBRARIES "usb1.0")
-
-    include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})
-    link_directories(${LIBUSB1_LIBRARY_DIRS})
-elseif(UNIX)
+if(UNIX)
     find_package(PkgConfig)
     if(NOT PKG_CONFIG_FOUND)
         message(FATAL_ERROR "\n\n PkgConfig package is missing!\n\n")
@@ -516,15 +546,6 @@ elseif(UNIX)
 
     find_package (Threads REQUIRED)
     list(APPEND librealsense_PKG_DEPS "Threads")
-
-    pkg_search_module(LIBUSB1 REQUIRED libusb-1.0)
-    if(LIBUSB1_FOUND)
-        include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})
-        link_directories(${LIBUSB1_LIBRARY_DIRS})
-        list(APPEND librealsense_PKG_DEPS "libusb-1.0")
-    else()
-        message( FATAL_ERROR "Failed to find libusb-1.0" )
-    endif(LIBUSB1_FOUND)
 
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -g -D_BSD_SOURCE")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -g -Wno-missing-field-initializers")
@@ -556,6 +577,12 @@ if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
 endif()
 
+if(NOT WIN32)
+    add_subdirectory(third-party/libusb/)
+elseif(FORCE_LIBUVC)
+    add_subdirectory(third-party/libusb/)
+endif()
+
 add_subdirectory(third-party/realsense-file)
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
@@ -579,8 +606,15 @@ endif()
 
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
-target_link_libraries(realsense2 PRIVATE realsense-file ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT})
 list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
+
+if(NOT WIN32)
+    target_link_libraries(realsense2 PRIVATE usb)
+elseif(FORCE_LIBUVC)
+    target_link_libraries(realsense2 PRIVATE usb)
+endif()
+
 
 add_definitions(-DELPP_THREAD_SAFE)
 add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
@@ -602,7 +636,7 @@ target_include_directories(realsense2 PRIVATE
 
 target_include_directories(realsense2 PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                             $<INSTALL_INTERFACE:include>
-                                     PRIVATE ${LIBUSB1_INCLUDE_DIRS})
+                                     PRIVATE ${USB_INCLUDE_DIRS})
 
 set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/realsense2")
 
@@ -636,10 +670,6 @@ option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
 option(BUILD_CV_EXAMPLES "Build OpenCV examples" OFF)
 option(BUILD_PCL_EXAMPLES "Build PCL examples" OFF)
 option(BUILD_NODEJS_BINDINGS "Build Node.js bindings" OFF)
-
-# This parameter is meant for disabling graphical examples when building for
-# save-to-disk targets.
-option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 
 if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) AND WIN32)
   add_subdirectory(third-party/glfw)

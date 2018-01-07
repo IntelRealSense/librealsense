@@ -72,13 +72,13 @@ namespace librealsense
         _hw_monitor->send(cmd);
     }
 
-    class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_sensor
+    class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_stereo_sensor
     {
     public:
         explicit ds5_depth_sensor(ds5_device* owner,
             std::shared_ptr<platform::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader)
-            : uvc_sensor("Stereo Module", uvc_device, move(timestamp_reader), owner), _owner(owner), _depth_units(0)
+            : uvc_sensor(ds::DEPTH_STEREO, uvc_device, move(timestamp_reader), owner), _owner(owner), _depth_units(0)
         {}
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -88,11 +88,13 @@ namespace librealsense
                 ds::calibration_table_id::coefficients_table_id,
                 profile.width, profile.height);
         }
+
         void open(const stream_profiles& requests) override
         {
             _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
             uvc_sensor::open(requests);
         }
+
         stream_profiles init_stream_profiles() override
         {
             auto lock = environment::get_instance().get_extrinsics_graph().lock();
@@ -146,17 +148,31 @@ namespace librealsense
 
         float get_depth_scale() const override { return _depth_units; }
 
-        void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const  override
+        float get_stereo_baseline_mm() const override { return _owner->get_stereo_baseline_mm(); }
+
+        void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const
         {
             snapshot = std::make_shared<depth_sensor_snapshot>(get_depth_scale());
         }
+
+        void create_snapshot(std::shared_ptr<depth_stereo_sensor>& snapshot) const
+        {
+            snapshot = std::make_shared<depth_stereo_sensor_snapshot>(get_depth_scale(), get_stereo_baseline_mm());
+        }
+
         void enable_recording(std::function<void(const depth_sensor&)> recording_function) override
+        {
+            //does not change over time
+        }
+
+        void enable_recording(std::function<void(const depth_stereo_sensor&)> recording_function) override
         {
             //does not change over time
         }
     protected:
         const ds5_device* _owner;
         float _depth_units;
+        float _stereo_baseline_mm;
     };
 
     class ds5u_depth_sensor : public ds5_depth_sensor
@@ -165,7 +181,6 @@ namespace librealsense
         explicit ds5u_depth_sensor(ds5u_device* owner,
             std::shared_ptr<platform::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader)
-            //: ds5_depth_sensor(dynamic_cast<ds5_device*>(owner), uvc_device, move(timestamp_reader)), _owner(owner)
             : ds5_depth_sensor(owner, uvc_device, move(timestamp_reader)), _owner(owner)
         {}
 
@@ -235,6 +250,13 @@ namespace librealsense
         return (0 != ret.front());
     }
 
+    float ds5_device::get_stereo_baseline_mm() const
+    {
+        using namespace ds;
+        auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
+        return fabs(table->baseline);
+    }
+
     std::vector<uint8_t> ds5_device::get_raw_calibration_table(ds::calibration_table_id table_id) const
     {
         command cmd(ds::GETINTCAL, table_id);
@@ -242,7 +264,7 @@ namespace librealsense
     }
 
     std::shared_ptr<uvc_sensor> ds5_device::create_depth_device(std::shared_ptr<context> ctx,
-                                                                  const std::vector<platform::uvc_device_info>& all_device_infos)
+                                                                const std::vector<platform::uvc_device_info>& all_device_infos)
     {
         using namespace ds;
 
@@ -277,74 +299,8 @@ namespace librealsense
         init(ctx, group);
     }
 
-    notification ds5_notification_decoder::decode(int value)
-    {
-        if (value == 0)
-            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Success" };
-        if (value == ds::ds5_notifications_types::hot_laser_power_reduce)
-            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Hot laser power reduce" };
-        if (value == ds::ds5_notifications_types::hot_laser_disable)
-            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Hot laser disable" };
-        if (value == ds::ds5_notifications_types::flag_B_laser_disable)
-            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Flag B laser disable" };
-
-        return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, "Unknown error!" };
-    }
-
-    void ds5_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
-    {
-        //TODO: Implement
-    }
-    void ds5_device::enable_recording(std::function<void(const debug_interface&)> record_action)
-    {
-        //TODO: Implement
-    }
-
-    std::shared_ptr<matcher> ds5_device::create_matcher(const frame_holder& frame) const
-    {
-        if(!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
-        {
-            return device::create_matcher(frame);
-        }
-
-        std::set<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get()};
-        std::vector<std::shared_ptr<matcher>> depth_matchers;
-
-        for (auto& s : streams)
-            depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type()));
-
-        return std::make_shared<frame_number_composite_matcher>(depth_matchers);
-    }
-
-    ds5u_device::ds5u_device(std::shared_ptr<context> ctx,
-        const platform::backend_device_group& group)
-        : ds5_device(ctx, group), device(ctx, group)
-    {
-        // Disable some ds5 basic functionality
-
-        // Override the basic ds5 sensor with the development version
-        _depth_device_idx = assign_sensor(create_ds5u_depth_device(ctx, group.uvc_devices), _depth_device_idx);
-
-        init(ctx, group);
-
-        auto& depth_ep = get_depth_sensor();
-
-        if (is_camera_in_advanced_mode())
-        {
-            depth_ep.remove_pixel_format(pf_y8i); // L+R
-            depth_ep.remove_pixel_format(pf_y12i); // L+R
-        }
-
-        // Inhibit specific unresolved options
-        depth_ep.unregister_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED);
-        depth_ep.unregister_option(RS2_OPTION_ERROR_POLLING_ENABLED);
-        depth_ep.unregister_option(RS2_OPTION_ASIC_TEMPERATURE);
-        depth_ep.unregister_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
-
-    }
-
     void ds5_device::init(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group)
+        const platform::backend_device_group& group)
     {
         using namespace ds;
 
@@ -464,6 +420,9 @@ namespace librealsense
 
         depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
 
+        depth_ep.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
+            lazy<float>([this]() { return get_stereo_baseline_mm(); })));
+
         if (advanced_mode && _fw_version >= firmware_version("5.6.3.0"))
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<depth_scale_option>(*_hw_monitor));
         else
@@ -515,6 +474,45 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
     }
 
+    notification ds5_notification_decoder::decode(int value)
+    {
+        if (value == 0)
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Success" };
+        if (value == ds::ds5_notifications_types::hot_laser_power_reduce)
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Hot laser power reduce" };
+        if (value == ds::ds5_notifications_types::hot_laser_disable)
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Hot laser disable" };
+        if (value == ds::ds5_notifications_types::flag_B_laser_disable)
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Flag B laser disable" };
+
+        return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, "Unknown error!" };
+    }
+
+    void ds5_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
+    {
+        //TODO: Implement
+    }
+    void ds5_device::enable_recording(std::function<void(const debug_interface&)> record_action)
+    {
+        //TODO: Implement
+    }
+
+    std::shared_ptr<matcher> ds5_device::create_matcher(const frame_holder& frame) const
+    {
+        std::set<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get()};
+        std::vector<std::shared_ptr<matcher>> depth_matchers;
+
+        for (auto& s : streams)
+            depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type()));
+
+        if(!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return device::create_matcher(frame);
+        }
+        return std::make_shared<frame_number_composite_matcher>(depth_matchers);
+    }
+
+
     std::shared_ptr<uvc_sensor> ds5u_device::create_ds5u_depth_device(std::shared_ptr<context> ctx,
         const std::vector<platform::uvc_device_info>& all_device_infos)
     {
@@ -538,4 +536,30 @@ namespace librealsense
 
         return depth_ep;
     }
+
+    ds5u_device::ds5u_device(std::shared_ptr<context> ctx,
+        const platform::backend_device_group& group)
+        : ds5_device(ctx, group), device(ctx, group)
+    {
+        // Override the basic ds5 sensor with the development version
+        _depth_device_idx = assign_sensor(create_ds5u_depth_device(ctx, group.uvc_devices), _depth_device_idx);
+
+        init(ctx, group);
+
+        auto& depth_ep = get_depth_sensor();
+
+        if (is_camera_in_advanced_mode())
+        {
+            depth_ep.remove_pixel_format(pf_y8i); // L+R
+            depth_ep.remove_pixel_format(pf_y12i); // L+R
+        }
+
+        // Inhibit specific unresolved options
+        depth_ep.unregister_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED);
+        depth_ep.unregister_option(RS2_OPTION_ERROR_POLLING_ENABLED);
+        depth_ep.unregister_option(RS2_OPTION_ASIC_TEMPERATURE);
+        depth_ep.unregister_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+
+    }
+
 }

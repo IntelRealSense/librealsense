@@ -43,7 +43,7 @@ namespace rs2
         }
 
         // Create GUI Windows
-        _win = glfwCreateWindow(_width, _height, _title_str.c_str(), 
+        _win = glfwCreateWindow(_width, _height, _title_str.c_str(),
             (_fullscreen ? primary : nullptr), nullptr);
         glfwMakeContextCurrent(_win);
         ImGui_ImplGlfw_Init(_win, true);
@@ -271,22 +271,22 @@ namespace rs2
             _fullscreen_pressed = false;
         }
 
-		int w = _width; int h = _height;
+        int w = _width; int h = _height;
 
         glfwGetWindowSize(_win, &_width, &_height);
 
-		int fw = _fb_width; 
-		int fh = _fb_height;
+        int fw = _fb_width;
+        int fh = _fb_height;
 
         glfwGetFramebufferSize(_win, &_fb_width, &_fb_height);
 
-		if (fw != _fb_width || fh != _fb_height)
-		{
-			std::string msg = to_string() << "Framebuffer size changed to " << _fb_width << " x " << _fb_height;
-			rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
-		}
+        if (fw != _fb_width || fh != _fb_height)
+        {
+            std::string msg = to_string() << "Framebuffer size changed to " << _fb_width << " x " << _fb_height;
+            rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
+        }
 
-		auto sf = _scale_factor;
+        auto sf = _scale_factor;
 
         // Update the scale factor each frame
         // based on resolution and physical display size
@@ -294,17 +294,17 @@ namespace rs2
         _width = _width / _scale_factor;
         _height = _height / _scale_factor;
 
-		if (w != _width || h != _height)
-		{
-			std::string msg = to_string() << "Window size changed to " << _width << " x " << _height;
-			rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
-		}
+        if (w != _width || h != _height)
+        {
+            std::string msg = to_string() << "Window size changed to " << _width << " x " << _height;
+            rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
+        }
 
-		if (_scale_factor != sf)
-		{
-			std::string msg = to_string() << "Scale Factor is now " << _scale_factor;
-			rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
-		}
+        if (_scale_factor != sf)
+        {
+            std::string msg = to_string() << "Scale Factor is now " << _scale_factor;
+            rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
+        }
 
         // Reset ImGui state
         glMatrixMode(GL_PROJECTION);

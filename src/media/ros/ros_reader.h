@@ -282,11 +282,27 @@ namespace librealsense
 
                 if(key_val_msg->key == "timestamp_domain") //TODO: use constants
                 {
-                    convert(key_val_msg->value, additional_data.timestamp_domain);
+                    try
+                    {
+                        convert(key_val_msg->value, additional_data.timestamp_domain);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        LOG_ERROR(e.what());
+                        continue;
+                    }
                 }
                 else if (key_val_msg->key == "system_time") //TODO: use constants
                 {
-                    additional_data.system_time = std::stod(key_val_msg->value);
+                    try
+                    {
+                        additional_data.system_time = std::stod(key_val_msg->value);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        LOG_ERROR(e.what());
+                        continue;
+                    }
                 }
                 else
                 {
@@ -370,10 +386,17 @@ namespace librealsense
         {
             auto sensor_options = read_sensor_options(file, { get_device_index(), sensor_index }, time, file_version);
             sensor_extensions[RS2_EXTENSION_OPTIONS] = sensor_options;
+
             if (sensor_options->supports_option(RS2_OPTION_DEPTH_UNITS))
             {
                 auto&& dpt_opt = sensor_options->get_option(RS2_OPTION_DEPTH_UNITS);
                 sensor_extensions[RS2_EXTENSION_DEPTH_SENSOR] = std::make_shared<depth_sensor_snapshot>(dpt_opt.query());
+
+                if (sensor_options->supports_option(RS2_OPTION_STEREO_BASELINE))
+                {
+                    auto&& bl_opt = sensor_options->get_option(RS2_OPTION_STEREO_BASELINE);
+                    sensor_extensions[RS2_EXTENSION_DEPTH_STEREO_SENSOR] = std::make_shared<depth_stereo_sensor_snapshot>(dpt_opt.query(), bl_opt.query());
+                }
             }
         }
 

@@ -213,7 +213,7 @@ namespace librealsense
         {
            return  to_string() << "/device_" << stream_id.device_index
                                << "/sensor_" << stream_id.sensor_index
-                               << "/" << stream_id.stream_type << "_" << stream_id.stream_index;
+                               << "/" << get_string(stream_id.stream_type) << "_" << stream_id.stream_index;
         }
 
     private:

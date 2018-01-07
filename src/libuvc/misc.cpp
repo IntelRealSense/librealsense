@@ -46,7 +46,7 @@ char *strndup(const char *s, size_t n) {
   if (src_n < n)
     n = src_n;
 
-  d = malloc(n + 1);
+  d = (char*)malloc(n + 1);
 
   memcpy(d, s, n);
   

@@ -143,8 +143,8 @@ bool librealsense::record_sensor::extend_to_aux(P* p, void** ext)
 
     if (auto recordable = As<librealsense::recordable<EXT_TYPE>>(p))
     {
-        recordable->enable_recording([this](const EXT_TYPE& ext) {
-            record_snapshot(E, ext);
+        recordable->enable_recording([this](const EXT_TYPE& ext1) {
+            record_snapshot<EXT_TYPE>(E, ext1);
         });
     }
 
@@ -174,6 +174,7 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
     //case RS2_EXTENSION_VIDEO           : return extend_to_aux<RS2_EXTENSION_VIDEO          >(&m_sensor, ext);
     //case RS2_EXTENSION_ROI             : return extend_to_aux<RS2_EXTENSION_ROI            >(&m_sensor, ext);
     case RS2_EXTENSION_DEPTH_SENSOR    : return extend_to_aux<RS2_EXTENSION_DEPTH_SENSOR   >(&m_sensor, ext);
+    case RS2_EXTENSION_DEPTH_STEREO_SENSOR: return extend_to_aux<RS2_EXTENSION_DEPTH_STEREO_SENSOR   >(&m_sensor, ext);
     //case RS2_EXTENSION_VIDEO_FRAME     : return extend_to_aux<RS2_EXTENSION_VIDEO_FRAME    >(&m_sensor, ext);
     //case RS2_EXTENSION_MOTION_FRAME    : return extend_to_aux<RS2_EXTENSION_MOTION_FRAME   >(&m_sensor, ext);
     //case RS2_EXTENSION_COMPOSITE_FRAME : return extend_to_aux<RS2_EXTENSION_COMPOSITE_FRAME>(&m_sensor, ext);
@@ -202,7 +203,7 @@ void record_sensor::raise_user_notification(const std::string& str)
 }
 
 template <typename T>
-void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, const T& ext)
+void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, const recordable<T>& ext)
 {
     std::shared_ptr<T> snapshot;
     ext.create_snapshot(snapshot);
@@ -210,11 +211,11 @@ void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, 
     if(m_is_recording)
     {    
         //Send to recording thread
-        m_device_record_snapshot_handler(extension_type, 
-                                        ext_snapshot, 
+        m_device_record_snapshot_handler(extension_type,
+                                        ext_snapshot,
                                         [this](const std::string& err)
-                                        { 
-                                            stop_with_error(err); 
+                                        {
+                                            stop_with_error(err);
                                         });
     }
 }

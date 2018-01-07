@@ -13,19 +13,6 @@ namespace rs2
 
 namespace librealsense {
 
-    // Enhancement for debug mode that incurs performance penalty with STL
-    template< typename T>
-    inline T clamp_val(T val, const T& min, const T& max)
-    {
-        static_assert((std::is_arithmetic<T>::value), "clamping supports arithmetic built-in types only");
-#ifdef _DEBUG
-        const T t = val < min ? min : val;
-        return t > max ? max : t;
-#else
-        return std::min(std::max(val, min), max);
-#endif
-    }
-
     class color_map
     {
     public:
@@ -45,7 +32,7 @@ namespace librealsense {
 
         color_map() {}
 
-        float3 get(float value) const
+        inline float3 get(float value) const
         {
             if (_max == _min) return *_data;
             auto t = (value - _min) / (_max - _min);

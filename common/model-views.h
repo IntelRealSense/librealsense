@@ -112,7 +112,7 @@ namespace rs2
     class option_model
     {
     public:
-        bool draw(std::string& error_message);
+        bool draw(std::string& error_message, notifications_model& model);
         void update_supported(std::string& error_message);
         void update_read_only_status(std::string& error_message);
         void update_all_fields(std::string& error_message, notifications_model& model);
@@ -211,7 +211,7 @@ namespace rs2
         bool draw_stream_selection();
         bool is_selected_combination_supported();
         std::vector<stream_profile> get_selected_profiles();
-        void stop();
+        void stop(viewer_model& viewer);
         void play(const std::vector<stream_profile>& profiles, viewer_model& viewer);
         void update(std::string& error_message, notifications_model& model);
         void draw_options(const std::vector<rs2_option>& drawing_order,
@@ -284,6 +284,8 @@ namespace rs2
         rect roi_rect;
         bool auto_exposure_enabled = false;
         float depth_units = 1.f;
+        float stereo_baseline = -1.f;
+
 
         bool roi_checked = false;
 
@@ -299,9 +301,11 @@ namespace rs2
         std::shared_ptr<processing_block_model> decimation_filter;
         std::shared_ptr<processing_block_model> spatial_filter;
         std::shared_ptr<processing_block_model> temporal_filter;
+        std::shared_ptr<processing_block_model> depth_to_disparity;
+        std::shared_ptr<processing_block_model> disparity_to_depth;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
-        bool post_processing_enabled = false;
+        bool post_processing_enabled = true;
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
     };
 
@@ -371,13 +375,12 @@ namespace rs2
     public:
         void reset();
         explicit device_model(device& dev, std::string& error_message, viewer_model& viewer);
-        void draw_device_details(device& dev, context& ctx);
         void start_recording(const std::string& path, std::string& error_message);
         void stop_recording();
         void pause_record();
         void resume_record();
         int draw_playback_panel(ImFont* font, viewer_model& view);
-        void draw_advanced_mode_tab();
+        void draw_advanced_mode_tab(viewer_model& view);
         void draw_controls(float panel_width, float panel_height,
             ux_window& window,
             std::string& error_message,
@@ -456,12 +459,22 @@ namespace rs2
         void add_notification(const notification_data& n);
         void draw(ImFont* font, int w, int h);
 
-        std::string get_log()
+        void foreach_log(std::function<void(const std::string& line)> action)
         {
-            std::string result;
             std::lock_guard<std::mutex> lock(m);
-            for (auto&& l : log) std::copy(l.begin(), l.end(), std::back_inserter(result));
-            return result;
+            for (auto&& l : log)
+            {
+                action(l);
+            }
+
+            auto rc = ImGui::GetCursorPos();
+            ImGui::SetCursorPos({ rc.x, rc.y + 5 });
+
+            if (new_log)
+            {
+                ImGui::SetScrollPosHere();
+                new_log = false;
+            }
         }
 
         void add_log(std::string line)
@@ -469,14 +482,16 @@ namespace rs2
             std::lock_guard<std::mutex> lock(m);
             if (!line.size()) return;
             if (line[line.size() - 1] != '\n') line += "\n";
-            line = "- " + line;
             log.push_back(line);
+            new_log = true;
         }
 
+    private:
         std::vector<notification_model> pending_notifications;
         int index = 1;
         const int MAX_SIZE = 6;
         std::mutex m;
+        bool new_log = false;
 
         std::vector<std::string> log;
         notification_model selected;
@@ -496,7 +511,8 @@ namespace rs2
             viewer(viewer),
             keep_calculating(true),
             depth_stream_active(false),
-            resulting_queue(20),
+            resulting_queue_max_size(20),
+            resulting_queue(resulting_queue_max_size),
 //            frames_queue(4),
             t([this]() {render_loop(); })
         {
@@ -536,10 +552,10 @@ namespace rs2
 
         std::atomic<bool> depth_stream_active;
 
+        const size_t resulting_queue_max_size;
         std::map<int, rs2::frame_queue> frames_queue;
         rs2::frame_queue syncer_queue;
         rs2::frame_queue resulting_queue;
-
 
     private:
         viewer_model& viewer;
@@ -569,7 +585,7 @@ namespace rs2
 
         const float panel_width = 340.f;
         const float panel_y = 50.f;
-        const float default_log_h = 80.f;
+        const float default_log_h = 110.f;
 
         float get_output_height() const { return (is_output_collapsed ? default_log_h : 20); }
 

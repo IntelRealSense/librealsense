@@ -62,7 +62,7 @@ uvc_error_t uvc_ensure_frame_size(uvc_frame_t *frame, size_t need_bytes) {
  * @return New frame, or NULL on error
  */
 uvc_frame_t *uvc_allocate_frame(size_t data_bytes) {
-  uvc_frame_t *frame = malloc(sizeof(*frame));
+  uvc_frame_t *frame = (uvc_frame_t *)malloc(sizeof(*frame));
 
   if (!frame)
     return NULL;
@@ -170,8 +170,8 @@ uvc_error_t uvc_yuyv2rgb(uvc_frame_t *in, uvc_frame_t *out) {
   out->capture_time = in->capture_time;
   out->source = in->source;
 
-  uint8_t *pyuv = in->data;
-  uint8_t *prgb = out->data;
+  uint8_t *pyuv = static_cast<uint8_t *>(in->data);
+  uint8_t *prgb = static_cast<uint8_t *>(out->data);
   uint8_t *prgb_end = prgb + out->data_bytes;
 
   while (prgb < prgb_end) {
@@ -220,8 +220,8 @@ uvc_error_t uvc_yuyv2bgr(uvc_frame_t *in, uvc_frame_t *out) {
   out->capture_time = in->capture_time;
   out->source = in->source;
 
-  uint8_t *pyuv = in->data;
-  uint8_t *pbgr = out->data;
+  uint8_t *pyuv = static_cast<uint8_t *>(in->data);
+  uint8_t *pbgr = static_cast<uint8_t *>(out->data);
   uint8_t *pbgr_end = pbgr + out->data_bytes;
 
   while (pbgr < pbgr_end) {
@@ -259,8 +259,8 @@ uvc_error_t uvc_yuyv2y(uvc_frame_t *in, uvc_frame_t *out) {
   out->capture_time = in->capture_time;
   out->source = in->source;
 
-  uint8_t *pyuv = in->data;
-  uint8_t *py = out->data;
+  uint8_t *pyuv = static_cast<uint8_t *>(in->data);
+  uint8_t *py = static_cast<uint8_t *>(out->data);
   uint8_t *py_end = py + out->data_bytes;
 
   while (py < py_end) {
@@ -298,8 +298,8 @@ uvc_error_t uvc_yuyv2uv(uvc_frame_t *in, uvc_frame_t *out) {
   out->capture_time = in->capture_time;
   out->source = in->source;
 
-  uint8_t *pyuv = in->data;
-  uint8_t *puv = out->data;
+  uint8_t *pyuv = static_cast<uint8_t *>(in->data);
+  uint8_t *puv = static_cast<uint8_t *>(out->data);
   uint8_t *puv_end = puv + out->data_bytes;
 
   while (puv < puv_end) {
@@ -347,8 +347,8 @@ uvc_error_t uvc_uyvy2rgb(uvc_frame_t *in, uvc_frame_t *out) {
   out->capture_time = in->capture_time;
   out->source = in->source;
 
-  uint8_t *pyuv = in->data;
-  uint8_t *prgb = out->data;
+  uint8_t *pyuv = static_cast<uint8_t *>(in->data);
+  uint8_t *prgb = static_cast<uint8_t *>(out->data);
   uint8_t *prgb_end = prgb + out->data_bytes;
 
   while (prgb < prgb_end) {
@@ -396,8 +396,8 @@ uvc_error_t uvc_uyvy2bgr(uvc_frame_t *in, uvc_frame_t *out) {
   out->capture_time = in->capture_time;
   out->source = in->source;
 
-  uint8_t *pyuv = in->data;
-  uint8_t *pbgr = out->data;
+  uint8_t *pyuv = static_cast<uint8_t *>(in->data);
+  uint8_t *pbgr = static_cast<uint8_t *>(out->data);
   uint8_t *pbgr_end = pbgr + out->data_bytes;
 
   while (pbgr < pbgr_end) {

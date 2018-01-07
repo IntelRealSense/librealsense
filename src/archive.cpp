@@ -1,5 +1,6 @@
 #include "metadata-parser.h"
 #include "archive.h"
+#define MIN_DISTANCE 1e-6
 
 namespace librealsense
 {
@@ -20,6 +21,77 @@ namespace librealsense
         auto xyz = (float3*)data.data();
         return xyz;
     }
+
+    std::tuple<uint8_t, uint8_t, uint8_t> get_texcolor(const frame_holder& texture, float u, float v)
+    {
+        auto ptr = dynamic_cast<video_frame*>(texture.frame);
+        if (ptr == nullptr) {
+            throw librealsense::invalid_value_exception("frame must be video frame");
+        }
+        const int w = ptr->get_width(), h = ptr->get_height();
+        int x = std::min(std::max(int(u*w + .5f), 0), w - 1);
+        int y = std::min(std::max(int(v*h + .5f), 0), h - 1);
+        int idx = x * ptr->get_bpp() / 8 + y * ptr->get_stride();
+        const auto texture_data = reinterpret_cast<const uint8_t*>(ptr->get_frame_data());
+        return std::make_tuple(texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
+    }
+
+	void points::export_to_ply(const std::string& fname, const frame_holder& texture) 
+	{
+        const auto vertices = get_vertices();
+        const auto texcoords = get_texture_coordinates();
+        std::vector<float3> new_vertices;
+        std::vector<std::tuple<uint8_t, uint8_t, uint8_t>> new_tex;
+        new_vertices.reserve(get_vertex_count());
+        new_tex.reserve(get_vertex_count());
+        assert(get_vertex_count());
+        for (size_t i = 0; i < get_vertex_count(); ++i)
+            if (fabs(vertices[i].x) >= MIN_DISTANCE || fabs(vertices[i].y) >= MIN_DISTANCE ||
+                fabs(vertices[i].z) >= MIN_DISTANCE)
+            {
+                new_vertices.push_back(vertices[i]);
+                if (texture)
+                {
+                    auto color = get_texcolor(texture, texcoords[i].x, texcoords[i].y);
+                    new_tex.push_back(color);
+                }
+            }
+
+        std::ofstream out(fname);
+        out << "ply\n";
+        out << "format binary_little_endian 1.0\n" /*"format ascii 1.0\n"*/;
+        out << "comment pointcloud saved from Realsense Viewer\n";
+        out << "element vertex " << new_vertices.size() << "\n";
+        out << "property float" << sizeof(float) * 8 << " x\n";
+        out << "property float" << sizeof(float) * 8 << " y\n";
+        out << "property float" << sizeof(float) * 8 << " z\n";
+        if (texture)
+        {
+            out << "property uchar red\n";
+            out << "property uchar green\n";
+            out << "property uchar blue\n";
+        }
+        out << "end_header\n";
+        out.close();
+
+        out.open(fname, std::ios_base::app | std::ios_base::binary);
+        for (int i = 0; i < new_vertices.size(); ++i)
+        {
+            // we assume little endian architecture on your device
+            out.write(reinterpret_cast<const char*>(&(new_vertices[i].x)), sizeof(float));
+            out.write(reinterpret_cast<const char*>(&(new_vertices[i].y)), sizeof(float));
+            out.write(reinterpret_cast<const char*>(&(new_vertices[i].z)), sizeof(float));
+
+            if (texture)
+            {
+                uint8_t x, y, z;
+                std::tie(x, y, z) = new_tex[i];
+                out.write(reinterpret_cast<const char*>(&x), sizeof(uint8_t));
+                out.write(reinterpret_cast<const char*>(&y), sizeof(uint8_t));
+                out.write(reinterpret_cast<const char*>(&z), sizeof(uint8_t));
+            }
+        }
+	}
 
     size_t points::get_vertex_count() const
     {
@@ -142,10 +214,11 @@ namespace librealsense
                 return nullptr;
             }
             auto new_frame = (max_frames ? published_frames.allocate() : new T());
-            if (max_frames) new_frame->mark_fixed();
-
+            
             if (new_frame)
             {
+                if (max_frames) new_frame->mark_fixed();
+                
                 ++published_frames_count;
                 *new_frame = std::move(*f);
             }
@@ -266,6 +339,9 @@ namespace librealsense
 
         case RS2_EXTENSION_DEPTH_FRAME:
             return std::make_shared<frame_archive<depth_frame>>(in_max_frame_queue_size, ts, parsers);
+
+        case RS2_EXTENSION_DISPARITY_FRAME:
+            return std::make_shared<frame_archive<disparity_frame>>(in_max_frame_queue_size, ts, parsers);
 
         default:
             throw std::runtime_error("Requested frame type is not supported!");
