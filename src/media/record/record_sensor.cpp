@@ -276,10 +276,7 @@ frame_callback_ptr librealsense::record_sensor::wrap_frame_callback(frame_callba
         //Raise to user callback
         frame_interface* ref = nullptr;
         std::swap(frame.frame, ref);
-        if (callback)
-        {
-            callback->on_frame((rs2_frame*)ref);
-        }
+        callback->on_frame((rs2_frame*)ref);
     };
 
     return std::make_shared<frame_holder_callback>(record_cb);
