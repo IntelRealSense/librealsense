@@ -260,7 +260,7 @@ describe('Colorizer test', function() {
       assert.equal((value === undefined) || (typeof value === 'number'), true);
       let des = colorizer.getOptionDescription(i);
       assert.equal((des === undefined) || (typeof des === 'string'), true);
-      des = colorizer.getOptionDescription(i, 1);
+      des = colorizer.getOptionValueDescription(i, 1);
       assert.equal((des === undefined) || (typeof des === 'string'), true);
 
       if (supports && !readonly) {

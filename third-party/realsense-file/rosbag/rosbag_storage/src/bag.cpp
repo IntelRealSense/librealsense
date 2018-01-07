@@ -38,7 +38,8 @@
 #include <signal.h>
 #include <assert.h>
 #include <iomanip>
-
+#include <map>
+#include <tuple>
 #include <boost/foreach.hpp>
 
 #include "console_bridge/console.h"
@@ -195,6 +196,48 @@ void Bag::setChunkThreshold(uint32_t chunk_threshold) {
 
 CompressionType Bag::getCompression() const { return compression_; }
 
+std::tuple<std::string, uint64_t, uint64_t> Bag::getCompressionInfo() const
+{
+    std::map<std::string, uint64_t> compression_counts;
+    std::map<std::string, uint64_t> compression_uncompressed;
+    std::map<std::string, uint64_t> compression_compressed;
+    auto compression = compression_;
+    uint64_t uncompressed = 0;
+    uint64_t compressed = 0;
+    ChunkInfo curr_chunk_info;
+    foreach(ChunkInfo const& chunk_info, chunks_) {
+        curr_chunk_info = chunk_info;
+
+        seek(curr_chunk_info.pos);
+
+        // Skip over the chunk data
+        ChunkHeader chunk_header;
+        readChunkHeader(chunk_header);
+        seek(chunk_header.compressed_size, std::ios::cur);
+
+        compression_counts[chunk_header.compression] += 1;
+        compression_uncompressed[chunk_header.compression] += chunk_header.uncompressed_size;
+        uncompressed += chunk_header.uncompressed_size;
+        compression_compressed[chunk_header.compression] += chunk_header.compressed_size;
+        compressed += chunk_header.compressed_size;
+    }
+
+    auto chunk_count = chunks_.size();
+    uint64_t main_compression_count = 0;
+    std::string main_compression;
+    for (auto&& kvp : compression_counts)
+    {
+        if (kvp.second > main_compression_count)
+        {
+            main_compression = kvp.first;
+            main_compression_count = kvp.second;
+        }
+    }
+    //auto main_compression_str = compression_counts.begin()->first;
+    //CompressionType main_compression = (main_compression_str == "Uncompressed") ? CompressionType::Uncompressed : (main_compression_str == "LZ4") ? CompressionType::LZ4 : CompressionType::BZ2;
+    //auto main_compression_count = compression_counts.begin()->second;
+    return std::make_tuple(main_compression, compressed, uncompressed);
+}
 void Bag::setCompression(CompressionType compression) {
     if (file_.isOpen() && chunk_open_)
         stopWritingChunk();
