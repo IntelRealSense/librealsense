@@ -7,13 +7,14 @@ This document describes how to build an Android application to stream Depth data
 1. [Root](https://www.wikihow.tech/Root-Android-Phones) your Android device.
 2. Install [Android Studio](https://developer.android.com/studio/install.html) IDE for Linux.
 
-3. Open Android Studio, click on `configure` and choose `SDK Manager`.
+3. Open Android Studio.
 ```shell
 ./android-studio/bin/studio.sh
 ```
 <p align="center"><img width=90% src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/android/AndroidStudio1.png" /></p>
 
-4. [Install NDK](https://developer.android.com/ndk/guides/index.html#download-ndk) for Android Studio. Do the section "Download the NDK and Tools" and skip to the third step (3. Check the boxes next to LLDB, CMake...).
+Click on `configure` and choose `SDK Manager`.
+[Install LLDB, CMake and NDK](https://developer.android.com/ndk/guides/index.html#download-ndk) for Android Studio. Go to section "Download the NDK and Tools" and start with the second step (2. Click the SDK Tools tab).
 
 5. Click on `Start a new Android Studio project`.
 
@@ -54,5 +55,5 @@ chmod 0777 /dev/bus/usb/<Bus number>/<Dev Number>
 17. Open the `realsense_app` application.
 
 ## Expected Output
-* Streaming Depth data using rooted Android S4 device.
+* Streaming Depth data using rooted Samsung Galaxy S4 device.
 <p align="center"><img width=50% src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/android/DepthApp.png" /></p>

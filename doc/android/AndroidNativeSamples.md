@@ -63,5 +63,5 @@ cd /data/lrs_binaries
 ```
 
 ## Expected Output
-* Streaming Depth data using [rs-depth sample](https://github.com/IntelRealSense/librealsense/tree/master/examples/C/depth).
+* Streaming Depth data using [rs-depth sample](https://github.com/IntelRealSense/librealsense/tree/master/examples/C/depth) on rooted Samsung Galaxy S4 device.
 <p align="center"><img width=90% src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/android/rs-depth_android.png" /></p>
