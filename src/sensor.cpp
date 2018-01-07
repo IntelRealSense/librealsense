@@ -57,6 +57,22 @@ namespace librealsense
         _notifications_proccessor->set_callback(std::move(callback));
     }
 
+    int sensor_base::register_before_streaming_changes_callback(std::function<void(bool)> callback)
+    {
+        int token = (on_before_streaming_changes += callback);
+        LOG_DEBUG("Registered token #" << token << " to \"on_before_streaming_changes\"");
+        return token;
+    }
+
+    void sensor_base::unregister_before_start_callback(int token)
+    {
+        bool successful_unregister = on_before_streaming_changes -= token;
+        if (!successful_unregister)
+        {
+            LOG_WARNING("Failed to unregister token #" << token << " from \"on_before_streaming_changes\"");
+        }
+    }
+
     frame_callback_ptr sensor_base::get_frames_callback() const
     {
         return _source.get_callback();
@@ -70,6 +86,10 @@ namespace librealsense
         return _notifications_proccessor;
     }
 
+    void sensor_base::raise_on_before_streaming_changes(bool streaming)
+    {
+        on_before_streaming_changes(streaming);
+    }
     void sensor_base::set_active_streams(const stream_profiles& requests)
     {
         _active_profiles = requests;
@@ -530,8 +550,8 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. UVC device was not opened!");
 
         _source.set_callback(callback);
-
         _is_streaming = true;
+        raise_on_before_streaming_changes(true); //Required to be just before actual start allow recording to work
         _device->start_callbacks();
     }
 
@@ -543,6 +563,7 @@ namespace librealsense
 
         _is_streaming = false;
         _device->stop_callbacks();
+        raise_on_before_streaming_changes(false);
     }
 
 
@@ -805,7 +826,7 @@ namespace librealsense
         _source.set_callback(callback);
         _source.init(_metadata_parsers);
         _source.set_sensor(this->shared_from_this());
-
+        raise_on_before_streaming_changes(true); //Required to be just before actual start allow recording to work
         _hid_device->start_capture([this](const platform::sensor_data& sensor_data)
         {
             auto system_time = environment::get_instance().get_time_service()->get_time();
@@ -899,6 +920,7 @@ namespace librealsense
         _source.reset();
         _hid_iio_timestamp_reader->reset();
         _custom_hid_timestamp_reader->reset();
+        raise_on_before_streaming_changes(false);
     }
 
     std::vector<uint8_t> hid_sensor::get_custom_report_data(const std::string& custom_sensor_name,

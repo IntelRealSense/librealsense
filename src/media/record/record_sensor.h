@@ -44,20 +44,22 @@ namespace librealsense
         frame_callback_ptr get_frames_callback() const override;
         void set_frames_callback(frame_callback_ptr callback) override;
         stream_profiles get_active_streams() const override;
-
+        int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
+        void unregister_before_start_callback(int token) override;
     private /*methods*/:
         void raise_user_notification(const std::string& str);
         template <typename T> void record_snapshot(rs2_extension extension_type, const  recordable<T>& snapshot);
         template <rs2_extension E, typename P> bool extend_to_aux(P* p, void** ext);
         void stop_with_error(const std::string& basic_string);
         void record_frame(frame_holder holder);
-        void wrap_sensor_callbacks();
-        void wrap_sensor_options();
-        void unwrap_sensor_options();
-        void unwrap_sensor_callbacks();
-        void wrap_streams();
-
+        void enable_sensor_hooks();
+        void disable_sensor_hooks();
+        void hook_sensor_callbacks();
         frame_callback_ptr wrap_frame_callback(frame_callback_ptr callback);
+        void unhook_sensor_callbacks();
+        void enable_sensor_options_recording();
+        void disable_sensor_options_recording();
+        void wrap_streams();
 
     private /*members*/:
         snapshot_callback_t m_device_record_snapshot_handler;
@@ -66,11 +68,12 @@ namespace librealsense
         librealsense::notifications_callback_ptr m_user_notification_callback;
         frame_interface_callback_t m_record_callback;
         std::atomic_bool m_is_recording;
-        bool m_is_pause;
         frame_callback_ptr m_frame_callback;
         frame_callback_ptr m_original_callback;
+        int m_before_start_callback_token;
         const device_interface& m_parent_device;
-
+        bool m_is_sensor_hooked;
+        std::mutex m_mutex;
     };
 
     class notification_callback : public rs2_notifications_callback

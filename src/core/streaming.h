@@ -110,7 +110,8 @@ namespace librealsense
         virtual void close() = 0;
 
         virtual void register_notifications_callback(notifications_callback_ptr callback) = 0;
-
+        virtual int register_before_streaming_changes_callback(std::function<void(bool)> callback) = 0;
+        virtual void unregister_before_start_callback(int token) = 0;
         virtual void start(frame_callback_ptr callback) = 0;
         virtual void stop() = 0;
         virtual frame_callback_ptr get_frames_callback() const = 0;

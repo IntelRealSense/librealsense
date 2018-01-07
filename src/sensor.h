@@ -45,6 +45,8 @@ namespace librealsense
         virtual stream_profiles get_active_streams() const override;
 
         void register_notifications_callback(notifications_callback_ptr callback) override;
+        int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
+        void unregister_before_start_callback(int token) override;
         std::shared_ptr<notifications_proccessor> get_notifications_proccessor();
         virtual frame_callback_ptr get_frames_callback() const override;
         virtual void set_frames_callback(frame_callback_ptr callback) override;
@@ -78,6 +80,7 @@ namespace librealsense
         bool supports_info(rs2_camera_info info) const override;
 
     protected:
+        void raise_on_before_streaming_changes(bool streaming);
         void set_active_streams(const stream_profiles& requests);
         bool try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const;
 
@@ -102,6 +105,7 @@ namespace librealsense
         lazy<stream_profiles> _profiles;
         stream_profiles _active_profiles;
         std::vector<native_pixel_format> _pixel_formats;
+        signal<sensor_base, bool> on_before_streaming_changes;
     };
 
     struct frame_timestamp_reader

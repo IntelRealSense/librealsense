@@ -166,13 +166,11 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
 
 const std::string& librealsense::record_device::get_info(rs2_camera_info info) const
 {
-    //info has no setter, it does not change - nothing to record
     return m_device->get_info(info);
 }
 
 bool librealsense::record_device::supports_info(rs2_camera_info info) const
 {
-    //info has no setter, it does not change - nothing to record
     return m_device->supports_info(info);
 }
 
