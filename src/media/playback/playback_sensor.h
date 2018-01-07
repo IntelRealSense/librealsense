@@ -46,6 +46,8 @@ namespace librealsense
         frame_callback_ptr get_frames_callback() const override;
         void set_frames_callback(frame_callback_ptr callback) override;
         stream_profiles get_active_streams() const override;
+        int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
+        void unregister_before_start_callback(int token) override;
     private:
         void register_sensor_streams(const stream_profiles& vector);
         void register_sensor_infos(const device_serializer::sensor_snapshot& sensor_snapshot);

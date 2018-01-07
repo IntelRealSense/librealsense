@@ -14,21 +14,39 @@ librealsense::record_sensor::record_sensor(const device_interface& device,
     m_user_notification_callback(nullptr, [](rs2_notifications_callback* n) {}),
     m_record_callback(on_frame),
     m_is_recording(false),
-    m_is_pause(false),
-    m_parent_device(device)
+    m_parent_device(device),
+    m_is_sensor_hooked(false),
+    m_before_start_callback_token(-1)
 {
-    wrap_sensor_callbacks();
-    wrap_sensor_options();
-    wrap_streams();
+    enable_sensor_options_recording();
+    m_before_start_callback_token = m_sensor.register_before_streaming_changes_callback([this](bool streaming)
+    {
+        if (streaming)
+        {
+            enable_sensor_hooks();
+        }
+        else
+        {
+            disable_sensor_hooks();
+        }
+    });
 
+    if (m_sensor.is_streaming())
+    {
+        //In case the sensor is already streaming, 
+        // we will not get the above callback (before start) so we hook it now
+        enable_sensor_hooks();
+    }
     LOG_DEBUG("Created record_sensor");
 }
 
 librealsense::record_sensor::~record_sensor()
 {
-    unwrap_sensor_options();
-    unwrap_sensor_callbacks();
+    m_sensor.unregister_before_start_callback(m_before_start_callback_token);
+    disable_sensor_options_recording();
+    disable_sensor_hooks();
     m_is_recording = false;
+    LOG_DEBUG("Destructed record_sensor");
 }
 
 stream_profiles record_sensor::get_stream_profiles() const
@@ -39,14 +57,11 @@ stream_profiles record_sensor::get_stream_profiles() const
 void librealsense::record_sensor::open(const stream_profiles& requests)
 {
     m_sensor.open(requests);
-    wrap_streams();
-    m_is_recording = true;
 }
 
 void librealsense::record_sensor::close()
 {
     m_sensor.close();
-    m_is_recording = false;
 }
 
 librealsense::option& librealsense::record_sensor::get_option(rs2_option id)
@@ -84,17 +99,12 @@ void librealsense::record_sensor::register_notifications_callback(notifications_
 
 void librealsense::record_sensor::start(frame_callback_ptr callback)
 {
-    auto recording_cb = wrap_frame_callback(callback);
-    m_sensor.start(recording_cb);
-    m_frame_callback = recording_cb;
+    m_sensor.start(callback);
 }
-
 void librealsense::record_sensor::stop()
 {
     m_sensor.stop();
-    m_frame_callback.reset();
 }
-
 bool librealsense::record_sensor::is_streaming() const
 {
     return m_sensor.is_streaming();
@@ -178,6 +188,17 @@ stream_profiles record_sensor::get_active_streams() const
     return m_sensor.get_active_streams();
 }
 
+int record_sensor::register_before_streaming_changes_callback(std::function<void(bool)> callback)
+{
+    throw librealsense::not_implemented_exception("playback_sensor::register_before_streaming_changes_callback");
+
+}
+
+void record_sensor::unregister_before_start_callback(int token)
+{
+    throw librealsense::not_implemented_exception("playback_sensor::unregister_before_start_callback");
+}
+
 void record_sensor::raise_user_notification(const std::string& str)
 {
     notification noti(RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, 0, RS2_LOG_SEVERITY_ERROR, str);
@@ -218,6 +239,34 @@ void record_sensor::record_frame(frame_holder frame)
     }
 }
 
+void record_sensor::enable_sensor_hooks()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_is_sensor_hooked)
+        return;
+    hook_sensor_callbacks();
+    wrap_streams();
+    m_is_sensor_hooked = true;
+}
+void record_sensor::disable_sensor_hooks()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (!m_is_sensor_hooked)
+        return;
+    unhook_sensor_callbacks();
+    m_is_sensor_hooked = false;
+}
+void record_sensor::hook_sensor_callbacks()
+{
+    //TODO: wrap_notification_callback (copy from future)
+    m_original_callback = m_sensor.get_frames_callback();
+    if (m_original_callback)
+    {
+        m_frame_callback = wrap_frame_callback(m_original_callback);
+        m_sensor.set_frames_callback(m_frame_callback);
+        m_is_recording = true;
+    }
+}
 frame_callback_ptr librealsense::record_sensor::wrap_frame_callback(frame_callback_ptr callback)
 {
     auto record_cb = [this, callback](frame_holder frame)
@@ -235,20 +284,15 @@ frame_callback_ptr librealsense::record_sensor::wrap_frame_callback(frame_callba
 
     return std::make_shared<frame_holder_callback>(record_cb);
 }
-
-void record_sensor::wrap_sensor_callbacks()
+void record_sensor::unhook_sensor_callbacks()
 {
-    //TODO: wrap_notification_callback (copy from future)
-    m_original_callback = m_sensor.get_frames_callback();
     if (m_original_callback)
     {
-        m_frame_callback = wrap_frame_callback(m_original_callback);
-        m_sensor.set_frames_callback(m_frame_callback);
-        m_is_recording = true;
+        m_sensor.set_frames_callback(m_original_callback);
+        m_original_callback.reset();
     }
 }
-
-void record_sensor::wrap_sensor_options()
+void record_sensor::enable_sensor_options_recording()
 {
     for (int i = 0; i < static_cast<int>(RS2_OPTION_COUNT); i++)
     {
@@ -281,20 +325,13 @@ void record_sensor::wrap_sensor_options()
         }
     }
 }
-
-void record_sensor::unwrap_sensor_options()
+void record_sensor::disable_sensor_options_recording()
 {
     for (auto id : m_recording_options)
     {
         auto& option = m_sensor.get_option(id);
         option.enable_recording([](const librealsense::option& snapshot) {});
     }
-}
-
-void record_sensor::unwrap_sensor_callbacks()
-{
-    if (m_original_callback)
-        m_sensor.set_frames_callback(m_original_callback);
 }
 void record_sensor::wrap_streams()
 {
@@ -307,3 +344,4 @@ void record_sensor::wrap_streams()
         m_device_record_snapshot_handler(RS2_EXTENSION_VIDEO_PROFILE, std::dynamic_pointer_cast<extension_snapshot>(snapshot), [this](const std::string& err) { stop_with_error(err); });
     }
 }
+

@@ -273,3 +273,14 @@ stream_profiles playback_sensor::get_active_streams() const
 {
     return m_active_streams;
 }
+
+int playback_sensor::register_before_streaming_changes_callback(std::function<void(bool)> callback)
+{
+    throw librealsense::not_implemented_exception("playback_sensor::register_before_streaming_changes_callback");
+
+}
+
+void playback_sensor::unregister_before_start_callback(int token)
+{
+    throw librealsense::not_implemented_exception("playback_sensor::unregister_before_start_callback");
+}
