@@ -117,6 +117,10 @@ void playback_sensor::stop(bool invoke_required)
     {
         stopped(m_sensor_id, invoke_required);
         m_is_started = false;
+        for (auto dispatcher : m_dispatchers)
+        {
+            dispatcher.second->stop();
+        }
         m_user_callback.reset();
     }
 }
