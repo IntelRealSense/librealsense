@@ -101,7 +101,12 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_callback_mutex);
         _callback = callback;
     }
-
+     
+    frame_callback_ptr frame_source::get_callback() const
+    {
+        std::lock_guard<std::mutex> lock(_callback_mutex);
+        return _callback;
+    }
     void frame_source::invoke_callback(frame_holder frame) const
     {
         if (frame)

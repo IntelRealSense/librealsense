@@ -192,6 +192,7 @@ EXPORTS
     rs2_create_record_device 
     rs2_record_device_pause
     rs2_record_device_resume
+    rs2_record_device_filename
 
     rs2_context_add_device
     rs2_context_remove_device

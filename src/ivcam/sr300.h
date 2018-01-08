@@ -401,7 +401,7 @@ namespace librealsense
                 "Set the filter to apply to each depth frame.\nEach one of the filter is optimized per the application requirements");
 
             depth_ep->register_option(RS2_OPTION_VISUAL_PRESET, std::make_shared<preset_option>(*this,
-                                                                                                option_range{0, RS2_SR300_VISUAL_PRESET_COUNT, 1, RS2_SR300_VISUAL_PRESET_DEFAULT}));
+                                                                                                option_range{0, RS2_SR300_VISUAL_PRESET_COUNT - 1, 1, RS2_SR300_VISUAL_PRESET_DEFAULT}));
 
             auto md_offset = offsetof(metadata_raw, mode);
 

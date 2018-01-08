@@ -67,8 +67,9 @@ void playback_sensor::open(const stream_profiles& requests)
         device_serializer::stream_identifier f{ get_device_index(), m_sensor_id, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) };
         opened_streams.push_back(f);
     }
-
+    m_active_streams = requests;
     opened(opened_streams);
+    
 }
 
 void playback_sensor::close()
@@ -87,6 +88,7 @@ void playback_sensor::close()
         }
     }
     m_dispatchers.clear();
+    m_active_streams.clear();
     closed(closed_streams);
 }
 
@@ -120,6 +122,11 @@ void playback_sensor::stop(bool invoke_required)
     {
         stopped(m_sensor_id, invoke_required);
         m_is_started = false;
+        for (auto dispatcher : m_dispatchers)
+        {
+            dispatcher.second->stop();
+        }
+        m_user_callback.reset();
     }
 }
 void playback_sensor::stop()
@@ -256,6 +263,30 @@ void playback_sensor::register_sensor_options(const device_serializer::sensor_sn
 void playback_sensor::update(const device_serializer::sensor_snapshot& sensor_snapshot)
 {
     register_sensor_options(sensor_snapshot);
+}
+
+frame_callback_ptr playback_sensor::get_frames_callback() const
+{
+    return m_user_callback;
+}
+void playback_sensor::set_frames_callback(frame_callback_ptr callback)
+{
+    m_user_callback = callback;
+}
+stream_profiles playback_sensor::get_active_streams() const
+{
+    return m_active_streams;
+}
+
+int playback_sensor::register_before_streaming_changes_callback(std::function<void(bool)> callback)
+{
+    throw librealsense::not_implemented_exception("playback_sensor::register_before_streaming_changes_callback");
+
+}
+
+void playback_sensor::unregister_before_start_callback(int token)
+{
+    throw librealsense::not_implemented_exception("playback_sensor::unregister_before_start_callback");
 }
 
 void playback_sensor::raise_notification(const notification& n)

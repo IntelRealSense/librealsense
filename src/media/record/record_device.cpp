@@ -26,8 +26,8 @@ librealsense::record_device::record_device(std::shared_ptr<librealsense::device_
 
     m_device = device;
     m_ros_writer = serializer;
+    (*m_write_thread)->start(); //Start thread before creating the sensors (since they might write right away)
     m_sensors = create_record_sensors(m_device);
-    (*m_write_thread)->start();
     LOG_DEBUG("Created record_device");
 }
 
@@ -63,6 +63,7 @@ librealsense::record_device::~record_device()
         s->on_extension_change += [](rs2_extension ext, std::shared_ptr<extension_snapshot> snapshot) { };
         s->disable_recording();
     }
+	m_sensors.clear();
 }
 
 std::shared_ptr<context> librealsense::record_device::get_context() const
@@ -82,7 +83,6 @@ size_t librealsense::record_device::get_sensors_count() const
 
 void librealsense::record_device::write_header()
 {
-
     auto device_extensions_md = get_extensions_snapshots(m_device.get());
     LOG_DEBUG("Created device snapshot with " << device_extensions_md.get_snapshots().size() << " snapshots");
 
@@ -169,13 +169,11 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
 
 const std::string& librealsense::record_device::get_info(rs2_camera_info info) const
 {
-    //info has no setter, it does not change - nothing to record
     return m_device->get_info(info);
 }
 
 bool librealsense::record_device::supports_info(rs2_camera_info info) const
 {
-    //info has no setter, it does not change - nothing to record
     return m_device->supports_info(info);
 }
 
@@ -233,14 +231,14 @@ snapshot_collection librealsense::record_device::get_extensions_snapshots(T* ext
         rs2_extension ext = static_cast<rs2_extension>(i);
         switch (ext)
         {
-            case RS2_EXTENSION_DEBUG           : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEBUG          >::type>(extendable, snapshots);
-            case RS2_EXTENSION_INFO            : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_INFO           >::type>(extendable, snapshots);
-            case RS2_EXTENSION_OPTIONS         : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_OPTIONS        >::type>(extendable, snapshots);
-            //case RS2_EXTENSION_VIDEO           : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_VIDEO          >::type>(extendable, snapshots);
-            //case RS2_EXTENSION_ROI             : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_ROI            >::type>(extendable, snapshots);
-            case RS2_EXTENSION_DEPTH_SENSOR    : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEPTH_SENSOR   >::type>(extendable, snapshots);
-            case RS2_EXTENSION_DEPTH_STEREO_SENSOR: try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEPTH_STEREO_SENSOR   >::type>(extendable, snapshots);
-            //case RS2_EXTENSION_ADVANCED_MODE   : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_ADVANCED_MODE  >::type>(extendable, snapshots);
+            case RS2_EXTENSION_DEBUG           : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEBUG          >::type>(extendable, snapshots); break;
+            case RS2_EXTENSION_INFO            : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_INFO           >::type>(extendable, snapshots); break;
+            case RS2_EXTENSION_OPTIONS         : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_OPTIONS        >::type>(extendable, snapshots); break;
+            //case RS2_EXTENSION_VIDEO           : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_VIDEO          >::type>(extendable, snapshots); break;
+            //case RS2_EXTENSION_ROI             : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_ROI            >::type>(extendable, snapshots); break;
+            case RS2_EXTENSION_DEPTH_SENSOR    : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEPTH_SENSOR   >::type>(extendable, snapshots); break;
+            case RS2_EXTENSION_DEPTH_STEREO_SENSOR: try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEPTH_STEREO_SENSOR   >::type>(extendable, snapshots); break;
+            //case RS2_EXTENSION_ADVANCED_MODE   : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_ADVANCED_MODE  >::type>(extendable, snapshots); break;
             case RS2_EXTENSION_VIDEO_FRAME     : break;
             case RS2_EXTENSION_MOTION_FRAME    : break;
             case RS2_EXTENSION_COMPOSITE_FRAME : break;
@@ -397,6 +395,11 @@ void librealsense::record_device::resume_recording()
         LOG_DEBUG("Total pause time: " << m_record_pause_time.count());
         LOG_INFO("Record resumed");
     });
+}
+
+const std::string& librealsense::record_device::get_filename() const
+{
+    return m_ros_writer->get_file_name();
 }
 platform::backend_device_group record_device::get_device_data() const
 {

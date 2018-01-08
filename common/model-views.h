@@ -21,6 +21,18 @@
 #include "imgui-fonts-fontawesome.hpp"
 
 #include "realsense-ui-advanced-mode.h"
+#ifdef _WIN32
+#include <windows.h>
+#include <wchar.h>
+#include <KnownFolders.h>
+#include <shlobj.h>
+#endif
+
+#if defined __linux__ || defined __APPLE__
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+#endif
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -57,6 +69,55 @@ inline ImVec4 blend(const ImVec4& c, float a)
 
 namespace rs2
 {
+    struct textual_icon
+    {
+        explicit constexpr textual_icon(const char (&unicode_icon)[4]) :
+            _icon{ unicode_icon[0], unicode_icon[1], unicode_icon[2], unicode_icon[3] }
+        {
+        }
+        operator const char*() const
+        {
+            return _icon.data();
+        }
+    private:
+        std::array<char, 5> _icon;
+    };
+
+    inline std::ostream& operator<<(std::ostream& os, const textual_icon& i)
+    {
+        return os << static_cast<const char*>(i);
+    }
+
+    namespace textual_icons
+    {
+        static const textual_icon video_camera             { u8"\uf03d" };
+        static const textual_icon file_movie               { u8"\uf008" };
+        static const textual_icon circle                   { u8"\uf111" };
+        static const textual_icon square                   { u8"\uf0c8" };
+        static const textual_icon refresh                  { u8"\uf021" };
+        static const textual_icon info_circle              { u8"\uf05a" };
+        static const textual_icon bars                     { u8"\uf0c9" };
+        static const textual_icon times                    { u8"\uf00d" };
+        static const textual_icon lock                     { u8"\uf023" };
+        static const textual_icon camera                   { u8"\uf030" };
+        static const textual_icon step_backward            { u8"\uf048" };
+        static const textual_icon play                     { u8"\uf04b" };
+        static const textual_icon pause                    { u8"\uf04c" };
+        static const textual_icon stop                     { u8"\uf04d" };
+        static const textual_icon step_forward             { u8"\uf051" };
+        static const textual_icon minus                    { u8"\uf068" };
+        static const textual_icon exclamation_triangle     { u8"\uf071" };
+        static const textual_icon unlock                   { u8"\uf09c" };
+        static const textual_icon floppy                   { u8"\uf0c7" };
+        static const textual_icon caret_down               { u8"\uf0d7" };
+        static const textual_icon repeat                   { u8"\uf0e2" };
+        static const textual_icon toggle_off               { u8"\uf204" };
+        static const textual_icon toggle_on                { u8"\uf205" };
+        static const textual_icon window_maximize          { u8"\uf2d0" };
+        static const textual_icon window_restore           { u8"\uf2d2" };
+        static const textual_icon plus_circle              { u8"\uf055" };
+    }
+
     class subdevice_model;
     struct notifications_model;
 
@@ -290,6 +351,7 @@ namespace rs2
         bool roi_checked = false;
 
         std::atomic<bool> _pause;
+        std::atomic<bool> _is_being_recorded{ false };
 
         bool draw_streams_selector = true;
         bool draw_fps_selector = true;
@@ -376,7 +438,7 @@ namespace rs2
         void reset();
         explicit device_model(device& dev, std::string& error_message, viewer_model& viewer);
         void start_recording(const std::string& path, std::string& error_message);
-        void stop_recording();
+        void stop_recording(viewer_model& viewer);
         void pause_record();
         void resume_record();
         int draw_playback_panel(ImFont* font, viewer_model& view);
@@ -387,7 +449,7 @@ namespace rs2
             device_model*& device_to_remove,
             viewer_model& viewer, float windows_width,
             bool update_read_only_options,
-            std::vector<std::function<void()>>& draw_later);
+            std::vector<std::function<void()>>& draw_later, bool draw_device_outline = true);
         void handle_harware_events(const std::string& serialized_data);
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
@@ -411,12 +473,16 @@ namespace rs2
         std::vector<std::pair<std::string, std::string>> infos;
         std::vector<std::string> restarting_device_info;
     private:
+        void draw_info_icon(const ImVec2& size);
         int draw_seek_bar();
         int draw_playback_controls(ImFont* font, viewer_model& view);
         advanced_mode_control amc;
         std::string pretty_time(std::chrono::nanoseconds duration);
         void draw_controllers_panel(ImFont* font, bool is_device_streaming);
-
+        float draw_device_panel(float panel_width,
+                                ux_window& window,
+                                std::string& error_message,
+                                viewer_model& viewer);
         void play_defaults(viewer_model& view);
 
         std::shared_ptr<recorder> _recorder;
@@ -825,4 +891,106 @@ namespace rs2
         std::queue<event_information> _changes;
         std::mutex _mtx;
     };
+
+    enum special_folder
+    {
+        user_desktop,
+        user_documents,
+        user_pictures,
+        user_videos,
+        temp_folder
+    };
+
+    inline std::string get_timestamped_file_name()
+    {
+        std::time_t now = std::time(NULL);
+        std::tm * ptm = std::localtime(&now);
+        char buffer[16];
+        // Format: 20170529_205500
+        std::strftime(buffer, 16, "%Y%m%d_%H%M%S", ptm);
+        return buffer;
+    }
+    inline std::string get_folder_path(special_folder f)
+    {
+        std::string res;
+#ifdef _WIN32
+        if (f == temp_folder)
+        {
+            TCHAR buf[MAX_PATH];
+            if (GetTempPath(MAX_PATH, buf) != 0)
+            {
+                char str[1024];
+                wcstombs(str, buf, 1023);
+                res = str;
+            }
+        }
+        else
+        {
+            GUID folder;
+            switch (f)
+            {
+            case user_desktop: folder = FOLDERID_Desktop;
+                break;
+            case user_documents: folder = FOLDERID_Documents;
+                break;
+            case user_pictures: folder = FOLDERID_Pictures;
+                break;
+            case user_videos: folder = FOLDERID_Videos;
+                break;
+            default:
+                throw std::invalid_argument(
+                    std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
+            }
+            PWSTR folder_path = NULL;
+            HRESULT hr = SHGetKnownFolderPath(folder, KF_FLAG_DEFAULT_PATH, NULL, &folder_path);
+            if (SUCCEEDED(hr))
+            {
+                char str[1024];
+                wcstombs(str, folder_path, 1023);
+                CoTaskMemFree(folder_path);
+                res = str;
+                res += "\\";
+            }
+            else
+            {
+                throw std::runtime_error("Failed to get requested special folder");
+            }
+        }
+#endif //_WIN32
+#if defined __linux__ || defined __APPLE__
+        if (f == special_folder::temp_folder)
+        {
+            const char* tmp_dir = getenv("TMPDIR");
+            res = tmp_dir ? tmp_dir : "/tmp/";
+        }
+        else
+        {
+            const char* home_dir = getenv("HOME");
+            if (!home_dir)
+            {
+                struct passwd* pw = getpwuid(getuid());
+                home_dir = (pw && pw->pw_dir) ? pw->pw_dir : "";
+            }
+            if (home_dir)
+            {
+                res = home_dir;
+                switch (f)
+                {
+                case user_desktop: res += "/Desktop/";
+                    break;
+                case user_documents: res += "/Documents/";
+                    break;
+                case user_pictures: res += "/Pictures/";
+                    break;
+                case user_videos: res += "/Videos/";
+                    break;
+                default:
+                    throw std::invalid_argument(
+                        std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
+                }
+            }
+        }
+#endif // defined __linux__ || defined __APPLE__
+        return res;
+    }
 }

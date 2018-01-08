@@ -44,6 +44,11 @@ namespace librealsense
         void stop(bool invoke_required);
         void flush_pending_frames();
         void update(const device_serializer::sensor_snapshot& sensor_snapshot);
+        frame_callback_ptr get_frames_callback() const override;
+        void set_frames_callback(frame_callback_ptr callback) override;
+        stream_profiles get_active_streams() const override;
+        int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
+        void unregister_before_start_callback(int token) override;
         void raise_notification(const notification& n);
     private:
         void register_sensor_streams(const stream_profiles& vector);
@@ -61,5 +66,6 @@ namespace librealsense
         std::map<std::pair<rs2_stream, uint32_t>, std::shared_ptr<stream_profile_interface>> m_streams;
         const device_interface& m_parent_device;
         stream_profiles m_available_profiles;
+        stream_profiles m_active_streams;
     };
 }

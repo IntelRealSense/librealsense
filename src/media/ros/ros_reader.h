@@ -107,6 +107,36 @@ namespace librealsense
             m_samples_itrator = m_samples_view->begin();
         }
 
+        std::vector<std::shared_ptr<serialized_data>> fetch_last_frames(const nanoseconds& seek_time) override
+        {
+            std::vector<std::shared_ptr<serialized_data>> result;
+            rosbag::View view(m_file, FalseQuery());
+            auto as_rostime = to_rostime(seek_time);
+            auto start_time = to_rostime(get_static_file_info_timestamp());
+            
+            for (auto topic : m_enabled_streams_topics)
+            {
+                view.addQuery(m_file, rosbag::TopicQuery(topic), start_time, as_rostime);
+            }
+            std::map<device_serializer::stream_identifier, ros::Time> last_frames;
+            for (auto&& m : view)
+            {
+                if (m.isType<sensor_msgs::Image>() || m.isType<sensor_msgs::Imu>())
+                {
+                    auto id = ros_topic::get_stream_identifier(m.getTopic());
+                    last_frames[id] = m.getTime();
+                }
+            }
+            for (auto&& kvp : last_frames)
+            {
+                auto topic = ros_topic::image_data_topic(kvp.first);
+                rosbag::View view(m_file, rosbag::TopicQuery(topic), kvp.second, kvp.second);
+                auto msg = view.begin();
+                auto new_frame = create_frame(*msg);
+                result.push_back(new_frame);
+            }
+            return result;
+        }
         nanoseconds query_duration() const override
         {
             return m_total_duration;

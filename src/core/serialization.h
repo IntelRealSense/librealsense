@@ -345,6 +345,7 @@ namespace librealsense
             virtual void enable_stream(const std::vector<device_serializer::stream_identifier>& stream_ids) = 0;
             virtual void disable_stream(const std::vector<device_serializer::stream_identifier>& stream_ids) = 0;
             virtual const std::string& get_file_name() const = 0;
+            virtual std::vector<std::shared_ptr<serialized_data>> fetch_last_frames(const nanoseconds& seek_time) = 0;
         };
     }
 }
