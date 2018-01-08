@@ -169,6 +169,8 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
 const device_interface& record_sensor::get_device()
 {
     return m_parent_device;
+}
+
 frame_callback_ptr record_sensor::get_frames_callback() const
 {
     return m_frame_callback;
@@ -187,14 +189,11 @@ stream_profiles record_sensor::get_active_streams() const
 int record_sensor::register_before_streaming_changes_callback(std::function<void(bool)> callback)
 {
     throw librealsense::not_implemented_exception("playback_sensor::register_before_streaming_changes_callback");
-
 }
 
 void record_sensor::unregister_before_start_callback(int token)
 {
     throw librealsense::not_implemented_exception("playback_sensor::unregister_before_start_callback");
-}
-
 }
 
 template <typename T>
@@ -315,7 +314,7 @@ void record_sensor::enable_sensor_options_recording()
         }
         catch (const std::exception& e)
         {
-            LOG_ERROR("Failed to enable recording for option " << get_string(id));
+            LOG_ERROR("Failed to enable recording for option " << get_string(id) << ", Error: " << e.what());
         }
     }
 }
@@ -338,11 +337,11 @@ void record_sensor::wrap_streams()
             std::shared_ptr<stream_profile_interface> snapshot;
             stream->create_snapshot(snapshot);
 	        rs2_extension extension_type;
-	        if (Is<librealsense::video_stream_profile_interface>(request))
+	        if (Is<librealsense::video_stream_profile_interface>(stream))
 	            extension_type = RS2_EXTENSION_VIDEO_PROFILE;
-	        else if (Is<librealsense::motion_stream_profile_interface>(request))
+	        else if (Is<librealsense::motion_stream_profile_interface>(stream))
 	            extension_type = RS2_EXTENSION_MOTION_PROFILE;
-	        else if (Is<librealsense::pose_stream_profile_interface>(request))
+	        else if (Is<librealsense::pose_stream_profile_interface>(stream))
 	            extension_type = RS2_EXTENSION_POSE_PROFILE;
      		else 
 				throw std::runtime_error("Unsupported stream");

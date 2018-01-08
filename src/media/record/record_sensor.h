@@ -46,11 +46,11 @@ namespace librealsense
         signal<record_sensor, frame_holder> on_frame;
         signal<record_sensor, rs2_extension, std::shared_ptr<extension_snapshot>> on_extension_change;
         void stop_with_error(const std::string& message);
+        void disable_recording();
     private /*methods*/:
         void raise_user_notification(const std::string& str);
         template <typename T> void record_snapshot(rs2_extension extension_type, const  recordable<T>& snapshot);
         template <rs2_extension E, typename P> bool extend_to_aux(P* p, void** ext);
-        void stop_with_error(const std::string& basic_string);
         void record_frame(frame_holder holder);
         void enable_sensor_hooks();
         void disable_sensor_hooks();

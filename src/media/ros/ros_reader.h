@@ -129,7 +129,7 @@ namespace librealsense
             }
             for (auto&& kvp : last_frames)
             {
-                auto topic = ros_topic::image_data_topic(kvp.first);
+                auto topic = ros_topic::frame_data_topic(kvp.first);
                 rosbag::View view(m_file, rosbag::TopicQuery(topic), kvp.second, kvp.second);
                 auto msg = view.begin();
                 auto new_frame = create_frame(*msg);

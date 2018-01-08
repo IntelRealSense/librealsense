@@ -4173,20 +4173,20 @@ namespace rs2
                 something_to_show = true;
                 try
                 {
-                    if (!loopback.is_loopback_enabled() && ImGui::Selectable("Enable loopback...", false, is_device_streaming ? ImGuiSelectableFlags_Disabled : 0))
+                    if (!loopback.is_loopback_enabled() && ImGui::Selectable("Enable loopback...", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))
                     {
                         if (const char* ret = file_dialog_open(file_dialog_mode::open_file, "ROS-bag\0*.bag\0", NULL, NULL))
                         {
                             loopback.enable_loopback(ret);
                         }
                     }
-                    if (loopback.is_loopback_enabled() && ImGui::Selectable("Disable loopback...", false, is_device_streaming ? ImGuiSelectableFlags_Disabled : 0))
+                    if (loopback.is_loopback_enabled() && ImGui::Selectable("Disable loopback...", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))
                     {
                         loopback.disable_loopback();
                     }
                     if (ImGui::IsItemHovered())
                     {
-                        if (is_device_streaming)
+                        if (is_streaming)
                             ImGui::SetTooltip("Stop streaming to use loopback functionality");
                         else
                             ImGui::SetTooltip("Enter the device to loopback mode (inject frames from file to FW)");
@@ -4419,8 +4419,11 @@ namespace rs2
             ImGui::SetCursorPos({ playback_panel_pos.x, playback_panel_pos.y + playback_panel_height });
         }
 
-        
-        draw_controllers_panel(window.get_font(), is_device_streaming);
+        bool is_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm)
+        {
+            return sm->streaming;
+        });
+        draw_controllers_panel(window.get_font(), is_streaming);
         
         pos = ImGui::GetCursorPos();
         
