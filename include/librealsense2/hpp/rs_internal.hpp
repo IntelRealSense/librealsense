@@ -67,10 +67,33 @@ namespace rs2
             return time;
         }
     }
+    class bypass_sensor : public sensor
+    {
+    public:
+        bypass_sensor(std::shared_ptr<rs2_sensor> s)
+            : rs2::sensor(s)
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_BYPASS_SENSOR, &e) == 0 && !e)
+            {
+                _sensor = nullptr;
+            }
+            rs2::error::handle(e);
+        }
+
+        void add_video_stream(rs2_stream type, int index,
+            int uid, int width, int height, int bpp, rs2_format fmt)
+        {
+            rs2_error* e = nullptr;
+            rs2_bypass_add_video_stream(_sensor.get(), 
+                type, index, uid, width, height, bpp, fmt, &e);
+            error::handle(e);
+        }
+    };
 
     class bypass_device : public device
     {
-        static std::shared_ptr<rs2_device> create_device_ptr()
+        std::shared_ptr<rs2_device> create_device_ptr()
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_device> dev(
@@ -87,11 +110,16 @@ namespace rs2
 
         }
 
-        void add_sensor(std::string name)
+        bypass_sensor add_sensor(std::string name)
         {
             rs2_error* e = nullptr;
-            rs2_bypass_add_sensor(_dev.get(), name.c_str(), &e);
+            std::shared_ptr<rs2_sensor> sensor(
+                rs2_bypass_add_sensor(_dev.get(), name.c_str(), &e),
+                rs2_delete_sensor);
             error::handle(e);
+
+            return bypass_sensor(sensor);
+            
         }
 
         void on_video_frame(int sensor, 
@@ -103,15 +131,6 @@ namespace rs2
             rs2_error* e = nullptr;
             rs2_bypass_on_video_frame(_dev.get(), sensor, 
                 pixels, deleter, stride, bpp, timestamp, domain, frame_number, profile.get(), &e);
-            error::handle(e);
-        }
-
-        void add_video_stream(int sensor, rs2_stream type, int index, 
-            int uid, int width, int height, int bpp, rs2_format fmt)
-        {
-            rs2_error* e = nullptr;
-            rs2_bypass_add_video_stream(_dev.get(), sensor,
-                type, index, uid, width, height, bpp, fmt, &e);
             error::handle(e);
         }
     };

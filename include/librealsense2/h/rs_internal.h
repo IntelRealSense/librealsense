@@ -52,7 +52,7 @@ rs2_context* rs2_create_mock_context(int api_version, const char* filename, cons
  TODO
 **/
 rs2_device* rs2_create_bypass_device(rs2_error** error);
-void rs2_bypass_add_sensor(rs2_device* dev, const char* sensor_name, rs2_error** error);
+rs2_sensor* rs2_bypass_add_sensor(rs2_device* dev, const char* sensor_name, rs2_error** error);
 void rs2_bypass_on_video_frame(rs2_device* dev, 
     int sensor, 
     void* pixels, 
@@ -62,8 +62,7 @@ void rs2_bypass_on_video_frame(rs2_device* dev,
     int frame_number,
     const rs2_stream_profile* profile, 
     rs2_error** error);
-void rs2_bypass_add_video_stream(rs2_device* dev, int sensor,
-    rs2_stream type, int index, int uid, int width, int height, int bpp, rs2_format fmt, rs2_error** error);
+void rs2_bypass_add_video_stream(rs2_sensor* sensor, rs2_stream type, int index, int uid, int width, int height, int bpp, rs2_format fmt, rs2_error** error);
 
 #ifdef __cplusplus
 }

@@ -4078,16 +4078,17 @@ TEST_CASE("Syncer sanity with bypass device", "[live][bypass]") {
         const int W = 640;
         const int H = 480;
         const int BPP = 2;
-
-        std::shared_ptr<bypass_device> dev = std::make_shared<bypass_device>();
-        dev->add_sensor("DS5u");
-        dev->add_video_stream(0, RS2_STREAM_DEPTH, 0, 0, W, H, BPP, RS2_FORMAT_Z16);
-        dev->add_video_stream(0, RS2_STREAM_INFRARED, 1, 1, W, H, BPP, RS2_FORMAT_Y8);
+        std::shared_ptr<bypass_device> dev = std::move(std::make_shared<bypass_device>());
+        auto s = dev->add_sensor("DS5u");
+        dev.reset();
+        dev = nullptr;
+        s.add_video_stream(RS2_STREAM_DEPTH, 0, 0, W, H, BPP, RS2_FORMAT_Z16);
+        s.add_video_stream(RS2_STREAM_INFRARED, 1, 1, W, H, BPP, RS2_FORMAT_Y8);
         
         //recorder rec("1.bag", dev);
 
         frame_queue q;
-        auto s = dev->query_sensors().front();
+       // auto s = dev->query_sensors().front();
 
         auto profiles = s.get_stream_profiles();
         auto depth = profiles[0];
@@ -4173,14 +4174,13 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with bypass device", "[
         const int BPP = 2;
 
         std::shared_ptr<bypass_device> dev = std::make_shared<bypass_device>();
-        dev->add_sensor("DS5u");
-        dev->add_video_stream(0, RS2_STREAM_DEPTH, 0, 0, W, H, BPP, RS2_FORMAT_Z16);
-        dev->add_video_stream(0, RS2_STREAM_INFRARED, 1, 1, W, H, BPP, RS2_FORMAT_Y8);
+        auto s = dev->add_sensor("DS5u");
+        s.add_video_stream(RS2_STREAM_DEPTH, 0, 0, W, H, BPP, RS2_FORMAT_Z16);
+        s.add_video_stream(RS2_STREAM_INFRARED, 1, 1, W, H, BPP, RS2_FORMAT_Y8);
 
         //recorder rec("1.bag", dev);
         frame_queue q;
-        auto s = dev->query_sensors().front();
-
+        
         auto profiles = s.get_stream_profiles();
         auto depth = profiles[0];
         auto ir = profiles[1];

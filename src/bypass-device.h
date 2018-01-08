@@ -17,7 +17,7 @@ namespace librealsense
     public:
         bypass_device();
 
-        void add_bypass_sensor(const std::string& name);
+        bypass_sensor& add_bypass_sensor(const std::string& name);
 
         bypass_sensor& get_bypass_sensor(int index);
 
@@ -52,6 +52,6 @@ namespace librealsense
         friend class bypass_device;
         stream_profiles _profiles;
     };
-
+    MAP_EXTENSION(RS2_EXTENSION_BYPASS_SENSOR, bypass_sensor);
     MAP_EXTENSION(RS2_EXTENSION_BYPASS_DEVICE, bypass_device);
 }

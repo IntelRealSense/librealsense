@@ -12,11 +12,12 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_NAME, "Bypass-Sensor");
     }
 
-    void bypass_device::add_bypass_sensor(const std::string& name)
+    bypass_sensor& bypass_device::add_bypass_sensor(const std::string& name)
     {
         auto sensor = std::make_shared<bypass_sensor>(name, this);
         add_sensor(sensor);
         _bypass_sensors.push_back(sensor);
+        return *sensor;
     }
 
     bypass_sensor& bypass_device::get_bypass_sensor(int index)
