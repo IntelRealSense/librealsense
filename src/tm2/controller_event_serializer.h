@@ -8,7 +8,7 @@
 namespace librealsense
 {
     template<size_t SIZE>
-    std::string buffer_to_string(const uint8_t(&buff)[SIZE], char separator = ',', bool as_hex = false)
+    inline std::string buffer_to_string(const uint8_t(&buff)[SIZE], char separator = ',', bool as_hex = false)
     {
         std::ostringstream oss;
         if (as_hex)
@@ -21,6 +21,46 @@ namespace librealsense
             oss << (int)buff[i];
         }
         return oss.str();
+    }
+
+    std::string get_string(perc::Status value)
+    {
+
+#define CASE_RETURN_STR(X) case perc::Status::##X: {\
+        static std::string s##X##_str = make_less_screamy(#X);\
+        return s##X##_str; }
+
+        switch (value)
+        {
+            CASE_RETURN_STR(SUCCESS)
+            CASE_RETURN_STR(COMMON_ERROR)
+            CASE_RETURN_STR(FEATURE_UNSUPPORTED)
+            CASE_RETURN_STR(ERROR_PARAMETER_INVALID)
+            CASE_RETURN_STR(INIT_FAILED)
+            CASE_RETURN_STR(ALLOC_FAILED)
+            CASE_RETURN_STR(ERROR_USB_TRANSFER)
+            CASE_RETURN_STR(ERROR_EEPROM_VERIFY_FAIL)
+            CASE_RETURN_STR(ERROR_FW_INTERNAL)
+            CASE_RETURN_STR(BUFFER_TOO_SMALL)
+            CASE_RETURN_STR(NOT_SUPPORTED_BY_FW)
+            CASE_RETURN_STR(DEVICE_BUSY)
+            CASE_RETURN_STR(TIMEOUT)
+            CASE_RETURN_STR(TABLE_NOT_EXIST)
+            CASE_RETURN_STR(TABLE_LOCKED)
+            CASE_RETURN_STR(DEVICE_STOPPED)
+            CASE_RETURN_STR(TEMPERATURE_WARNING)
+            CASE_RETURN_STR(TEMPERATURE_STOP)
+            CASE_RETURN_STR(CRC_ERROR)
+            CASE_RETURN_STR(INCOMPATIBLE)
+            CASE_RETURN_STR(SLAM_NO_DICTIONARY)
+        default: assert(!is_valid(value)); return to_string() << "Unknown (" << (int)value << ")";
+        }
+#undef CASE_RETURN_STR
+    }
+
+    inline std::ostream& operator<<(std::ostream& os, const perc::TrackingData::Version& v)
+    {
+        return os << v.major << "." << v.minor << "." << v.patch << "." << v.build;
     }
 
     //TODO: Use json library for class
@@ -51,7 +91,20 @@ namespace librealsense
                 "\"sensorData\": [" << buffer_to_string(frame.sensorData) << "]";
             return to_json(event_type_frame(), serialized_data);
         }
-
+        
+        static std::string serialized_data(const perc::TrackingData::ControllerConnectedEventFrame& frame)
+        {
+            std::string serialized_data = to_string() <<
+                "\"status\": \"" << get_string(frame.status) << "\","
+                "\"controllerId\": " << (int)frame.controllerId << ","
+                "\"manufacturerId\": " << (int)frame.manufacturerId << ","
+                "\"protocol\": \"" << frame.protocol << "\","
+                "\"app\": \"" << frame.app << "\","
+                "\"softDevice\": \"" << frame.softDevice << "\","
+                "\"bootLoader\": \"" << frame.bootLoader << "\"";
+            return to_json(event_type_frame(), serialized_data);
+        }
+        
         static std::string serialized_data(const perc::TrackingData::ControllerDeviceConnect& c, uint8_t controller_id)
         {
             std::string serialized_data = to_string() 

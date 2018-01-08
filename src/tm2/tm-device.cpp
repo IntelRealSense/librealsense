@@ -778,6 +778,19 @@ namespace librealsense
         raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
     }
 
+    void tm2_sensor::onControllerConnectedEventFrame(perc::TrackingData::ControllerConnectedEventFrame& frame)
+    {
+        std::string msg = to_string() << "Controller #" << (int)frame.controllerId << " connected";
+        if (frame.status == perc::Status::SUCCESS)
+        {
+            raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
+        }
+        else
+        {
+            raise_error_notification(to_string() << "Connection to controller " << (int)frame.controllerId << " failed. (Statue: " << frame.status << ")");
+        }
+    }
+
     void tm2_sensor::enable_loopback(std::shared_ptr<playback_device> input)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
@@ -856,6 +869,12 @@ namespace librealsense
         get_notifications_proccessor()->raise_notification(controller_event);
     }
     
+    void tm2_sensor::raise_error_notification(const std::string& msg)
+    {
+        notification error{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, 0, RS2_LOG_SEVERITY_ERROR, msg };
+        error.timestamp = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        get_notifications_proccessor()->raise_notification(error);
+    }
     void tm2_sensor::attach_controller(const std::array<uint8_t, 6>& mac_addr)
     {
         perc::TrackingData::ControllerDeviceConnect c(const_cast<uint8_t*>(mac_addr.data()), 15000);
@@ -865,15 +884,11 @@ namespace librealsense
             auto status = _tm_dev->ControllerConnect(c, controller_id);
             if (status != Status::SUCCESS)
             {
-                std::string msg = to_string() << "Failed to connect to controller " << c.macAddress << "(Status: " << (int)status << ")";
-                notification error{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, 0, RS2_LOG_SEVERITY_ERROR, msg };
-                error.timestamp = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-                get_notifications_proccessor()->raise_notification(error);
+                raise_error_notification(to_string() << "Failed to send connect to controller " << c.macAddress << "(Status: " << status << ")");
             }
             else
             {
-                std::string msg = to_string() << "Connected to controller #" << (int)controller_id << "[MAC: " << c.macAddress << "]";
-                raise_controller_event(msg, controller_event_serializer::serialized_data(c, controller_id), std::chrono::high_resolution_clock::now().time_since_epoch().count());
+                LOG_INFO("Successfully sent controller connect to " << buffer_to_string(c.macAddress));
             }
         });
     }
@@ -883,10 +898,7 @@ namespace librealsense
         perc::Status status = _tm_dev->ControllerDisconnect(id);
         if (status != Status::SUCCESS)
         {
-            std::string msg = to_string() << "Failed to disconnect to controller " << id << "(Status: " << (int)status << ")";
-            notification error{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, 0, RS2_LOG_SEVERITY_ERROR, msg };
-            error.timestamp = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-            get_notifications_proccessor()->raise_notification(error);
+            raise_error_notification(to_string() << "Failed to disconnect to controller " << id << "(Status: " << (int)status << ")");
         }
         else
         {
@@ -895,7 +907,6 @@ namespace librealsense
             f.controllerId = id;
             raise_controller_event(msg, controller_event_serializer::serialized_data(f), std::chrono::high_resolution_clock::now().time_since_epoch().count());
         }
-        //else onControllerDisconnectedEventFrame will be raised
     }
 
     ///////////////
