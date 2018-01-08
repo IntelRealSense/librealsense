@@ -82,11 +82,11 @@ namespace rs2
         }
 
         void add_video_stream(rs2_stream type, int index,
-            int uid, int width, int height, int bpp, rs2_format fmt)
+            int uid, int width, int height, int bpp, rs2_format fmt, rs2_intrinsics intrinsics)
         {
             rs2_error* e = nullptr;
             rs2_bypass_add_video_stream(_sensor.get(), 
-                type, index, uid, width, height, bpp, fmt, &e);
+                type, index, uid, width, height, bpp, fmt, intrinsics, &e);
             error::handle(e);
         }
     };

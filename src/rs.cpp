@@ -1754,10 +1754,10 @@ void rs2_bypass_on_video_frame(rs2_device* dev, int sensor, void* pixels,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, sensor, pixels)
 
-void rs2_bypass_add_video_stream(rs2_sensor* sensor, rs2_stream type, int index, int uid, int width, int height, int bpp, rs2_format fmt, rs2_error** error) BEGIN_API_CALL
+void rs2_bypass_add_video_stream(rs2_sensor* sensor, rs2_stream type, int index, int uid, int width, int height, int bpp, rs2_format fmt, rs2_intrinsics intrinsics, rs2_error** error) BEGIN_API_CALL
 {
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::bypass_sensor);
-    return bs->add_video_stream(type, index, uid, width, height, bpp, fmt);
+    return bs->add_video_stream(type, index, uid, width, height, bpp, fmt, intrinsics);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(,sensor, index, width, height, bpp, fmt)
 

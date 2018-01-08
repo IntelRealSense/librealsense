@@ -41,7 +41,7 @@ namespace librealsense
         return std::make_shared<frame_number_composite_matcher>(depth_matchers);
     }
 
-    void bypass_sensor::add_video_stream(rs2_stream type, int index, int uid, int width, int height, int fps, rs2_format fmt)
+    void bypass_sensor::add_video_stream(rs2_stream type, int index, int uid, int width, int height, int fps, rs2_format fmt, rs2_intrinsics intrinsics)
     {
         auto profile = std::make_shared<video_stream_profile>(
             platform::stream_profile{ (uint32_t)width, (uint32_t)height, (uint32_t)fps, 0 });
@@ -51,7 +51,7 @@ namespace librealsense
         profile->set_stream_index(index);
         profile->set_stream_type(type);
         profile->set_unique_id(uid);
-       
+        profile->set_intrinsics([=]() {return intrinsics; });
         _profiles.push_back(profile);
     }
 
