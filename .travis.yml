@@ -112,6 +112,13 @@ script:
       for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done;
       for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done;
 
+      echo "Build RealSense SDK for Android...";
+      cd ../;
+      wget https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip;
+      unzip android-ndk-r16b-linux-x86_64.zip -d ./;
+      mkdir build_android && cd build_android;
+      cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r16b/build/cmake/android.toolchain.cmake;
+      make -j $CPU_NUM;
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       mkdir build && cd build;
