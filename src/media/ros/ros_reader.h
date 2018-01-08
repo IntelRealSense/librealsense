@@ -326,7 +326,15 @@ namespace librealsense
                         total_md_size += static_cast<uint32_t>(size_of_data);
                     }
                 }
-                additional_data.timestamp_domain = legacy_file_format::convert(info->time_stamp_domain);
+                
+                try
+                {
+                    additional_data.timestamp_domain = legacy_file_format::convert(info->time_stamp_domain);
+                }
+                catch (const std::exception& e)
+                {
+                    LOG_WARNING("Failed to get timestamp_domain. Error: " << e.what());
+                }
             }
         }
         
