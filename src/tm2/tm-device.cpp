@@ -787,7 +787,7 @@ namespace librealsense
         }
         else
         {
-            raise_error_notification(to_string() << "Connection to controller " << (int)frame.controllerId << " failed. (Statue: " << frame.status << ")");
+            raise_error_notification(to_string() << "Connection to controller " << (int)frame.controllerId << " failed. (Statue: " << get_string(frame.status) << ")");
         }
     }
 
@@ -884,7 +884,7 @@ namespace librealsense
             auto status = _tm_dev->ControllerConnect(c, controller_id);
             if (status != Status::SUCCESS)
             {
-                raise_error_notification(to_string() << "Failed to send connect to controller " << c.macAddress << "(Status: " << status << ")");
+                raise_error_notification(to_string() << "Failed to send connect to controller " << c.macAddress << "(Status: " << get_string(status) << ")");
             }
             else
             {
@@ -898,7 +898,7 @@ namespace librealsense
         perc::Status status = _tm_dev->ControllerDisconnect(id);
         if (status != Status::SUCCESS)
         {
-            raise_error_notification(to_string() << "Failed to disconnect to controller " << id << "(Status: " << (int)status << ")");
+            raise_error_notification(to_string() << "Failed to disconnect to controller " << id << "(Status: " <<  get_string(status) << ")");
         }
         else
         {
