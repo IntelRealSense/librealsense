@@ -31,7 +31,7 @@ namespace librealsense
     public:
         bypass_sensor(std::string name, bypass_device* owner);
 
-        void add_video_stream(rs2_stream type, int index, int uid, int width, int height, int fps, rs2_format fmt, rs2_intrinsics intrinsics);
+        void add_video_stream(rs2_video_stream video_stream);
 
         stream_profiles init_stream_profiles() override;
 

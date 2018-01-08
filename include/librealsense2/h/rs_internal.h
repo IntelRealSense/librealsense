@@ -27,6 +27,39 @@ typedef enum rs2_recording_mode
     RS2_RECORDING_MODE_COUNT
 } rs2_recording_mode;
 
+/** TODO:
+* librealsense Recorder is intended for effective unit-testing
+* Currently supports three modes of operation:
+*/
+typedef struct rs2_video_stream
+{
+    rs2_stream type;
+    int index;
+    int uid;
+    int width;
+    int height;
+    int fps;
+    int bpp;
+    rs2_format fmt;
+    rs2_intrinsics intrinsics;
+} rs2_video_stream;
+
+/** TODO:
+* librealsense Recorder is intended for effective unit-testing
+* Currently supports three modes of operation:
+*/
+typedef struct rs2_video_frame
+{
+    void* pixels;
+    void(*deleter)(void*);
+    int stride;
+    int bpp;
+    rs2_time_t timestamp;
+    rs2_timestamp_domain domain;
+    int frame_number;
+    stream_profile profile;
+} rs2_video_frame;
+
 /**
  * Create librealsense context that will try to record all operations over librealsense into a file
  * \param[in] api_version realsense API version as provided by RS2_API_VERSION macro
@@ -62,7 +95,7 @@ void rs2_bypass_on_video_frame(rs2_device* dev,
     int frame_number,
     const rs2_stream_profile* profile, 
     rs2_error** error);
-void rs2_bypass_add_video_stream(rs2_sensor* sensor, rs2_stream type, int index, int uid, int width, int height, int bpp, rs2_format fmt, rs2_intrinsics intrinsics, rs2_error** error);
+void rs2_bypass_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stream, rs2_error** error);
 
 #ifdef __cplusplus
 }

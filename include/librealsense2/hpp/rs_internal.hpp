@@ -70,6 +70,18 @@ namespace rs2
     class bypass_sensor : public sensor
     {
     public:
+
+        void add_video_stream(rs2_video_stream video_stream)
+        {
+            rs2_error* e = nullptr;
+            rs2_bypass_add_video_stream(_sensor.get(), 
+                video_stream, &e);
+            error::handle(e);
+        }
+
+    private:
+        friend class bypass_device;
+
         bypass_sensor(std::shared_ptr<rs2_sensor> s)
             : rs2::sensor(s)
         {
@@ -79,15 +91,6 @@ namespace rs2
                 _sensor = nullptr;
             }
             rs2::error::handle(e);
-        }
-
-        void add_video_stream(rs2_stream type, int index,
-            int uid, int width, int height, int bpp, rs2_format fmt, rs2_intrinsics intrinsics)
-        {
-            rs2_error* e = nullptr;
-            rs2_bypass_add_video_stream(_sensor.get(), 
-                type, index, uid, width, height, bpp, fmt, intrinsics, &e);
-            error::handle(e);
         }
     };
 
