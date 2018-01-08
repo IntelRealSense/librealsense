@@ -218,6 +218,23 @@ void playback_device::seek_to_time(std::chrono::nanoseconds time)
         update_extensions(m_device_description);
         m_prev_timestamp = time; //Updating prev timestamp to make get_position return true indication even when playbakc is paused
         catch_up();
+        if (m_is_paused)
+        {
+            //raise_last_frames(time);
+            auto current_frames = m_reader->fetch_last_frames(time);
+            for (auto&& f : current_frames)
+            {
+                if (auto frame = f->as<serialized_frame>())
+                {
+                    if (frame->stream_id.device_index != get_device_index() || frame->stream_id.sensor_index >= m_sensors.size())
+                    {
+                        std::string error_msg = to_string() << "Unexpected sensor index while playing file (Read index = " << frame->stream_id.sensor_index << ")";
+                        LOG_ERROR(error_msg);
+                    }
+                    m_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time);
+                }
+            }
+        }
     });
     if ((*m_read_thread)->flush() == false)
     {

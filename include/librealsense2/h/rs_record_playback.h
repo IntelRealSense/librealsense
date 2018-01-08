@@ -53,6 +53,14 @@ void rs2_record_device_pause(const rs2_device* device, rs2_error** error);
 void rs2_record_device_resume(const rs2_device* device, rs2_error** error);
 
 /**
+* Gets the name of the file to which the recorder is writing
+* \param[in]  device    A recording device
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return The  name of the file to which the recorder is writing
+*/
+const char* rs2_record_device_filename(const rs2_device* device, rs2_error** error);
+
+/**
 * Creates a playback device to play the content of the given file
 * \param[in]  file      Path to the file to play
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
