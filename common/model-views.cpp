@@ -3596,8 +3596,8 @@ namespace rs2
         auto progress = p.get_position();
         double part = (1.0 * progress) / playback_total_duration;
         seek_pos = static_cast<int>(std::max(0.0, std::min(part, 1.0)) * 100);
-
-        if (seek_pos != 0 && p.current_status() == RS2_PLAYBACK_STATUS_STOPPED)
+        auto playback_status = p.current_status();
+        if (seek_pos != 0 && playback_status == RS2_PLAYBACK_STATUS_STOPPED)
         {
             seek_pos = 0;
         }
@@ -3607,10 +3607,13 @@ namespace rs2
         if (ImGui::SeekSlider(label1.c_str(), &seek_pos, ""))
         {
             //Seek was dragged
-            auto duration_db = std::chrono::duration_cast<std::chrono::duration<double, std::nano>>(p.get_duration());
-            auto single_percent = duration_db.count() / 100;
-            auto seek_time = std::chrono::duration<double, std::nano>(seek_pos * single_percent);
-            p.seek(std::chrono::duration_cast<std::chrono::nanoseconds>(seek_time));
+            if (playback_status != RS2_PLAYBACK_STATUS_STOPPED) //Ignore seek when playback is stopped
+            {
+                auto duration_db = std::chrono::duration_cast<std::chrono::duration<double, std::nano>>(p.get_duration());
+                auto single_percent = duration_db.count() / 100;
+                auto seek_time = std::chrono::duration<double, std::nano>(seek_pos * single_percent);
+                p.seek(std::chrono::duration_cast<std::chrono::nanoseconds>(seek_time));
+            }
         }
 
         ImGui::SetCursorPos({ pos.x, pos.y + 17 });
