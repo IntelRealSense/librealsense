@@ -3204,7 +3204,7 @@ namespace rs2
             glEnd();
         }
 
-		for (auto&& stream : streams)
+        for (auto&& stream : streams)
         {
             if (stream.second.profile.stream_type() == RS2_STREAM_POSE)
             {
@@ -3243,8 +3243,8 @@ namespace rs2
             }
         }
 
-		glColor4f(1.f, 1.f, 1.f, 1.f);
-		
+        glColor4f(1.f, 1.f, 1.f, 1.f);
+        
         if (draw_frustrum && last_points)
         {
             glLineWidth(1.f);
