@@ -489,7 +489,7 @@ endif()
 
 if(FORCE_LIBUVC)
     set(BACKEND RS2_USE_LIBUVC_BACKEND)
-    
+
     list(APPEND REALSENSE_CPP
     src/libuvc/ctrl.cpp
     src/libuvc/ctrl-gen.cpp
@@ -654,12 +654,15 @@ configure_package_config_file(CMake/realsense2Config.cmake.in realsense2Config.c
     INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
     INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
     PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
+write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/realsense2ConfigVersion.cmake"
+  VERSION ${REALSENSE_VERSION_STRING} COMPATIBILITY AnyNewerVersion)
 
 install(EXPORT realsense2Targets FILE realsense2Targets.cmake NAMESPACE realsense2::
     DESTINATION ${CMAKECONFIG_INSTALL_DIR})
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/realsense2Config.cmake"
     DESTINATION ${CMAKECONFIG_INSTALL_DIR})
-
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/realsense2ConfigVersion.cmake"
+    DESTINATION ${CMAKECONFIG_INSTALL_DIR})
 
 install(CODE "execute_process(COMMAND ldconfig)")
 
