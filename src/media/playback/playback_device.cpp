@@ -529,6 +529,12 @@ void playback_device::try_looping()
                 throw invalid_value_exception(error_msg);
             }
             LOG_DEBUG("Dispatching frame " << frame->stream_id);
+
+            if (data->is<serialized_invalid_frame>())
+            {
+                LOG_WARNING("Bad frame from reader, ignoring");
+                 return true;
+            }
             //Dispatch frame to the relevant sensor
             m_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time);
             return true;
@@ -537,6 +543,12 @@ void playback_device::try_looping()
         if (auto option_data = data->as<serialized_option>())
         {
             m_sensors.at(option_data->sensor_id.sensor_index)->update_option(option_data->option_id, option_data->option);
+            return true;
+        }
+
+        if (auto notification_data = data->as<serialized_notification>())
+        {
+            m_sensors.at(notification_data->sensor_id.sensor_index)->raise_notification(notification_data->notif);
             return true;
         }
         return false;
@@ -622,7 +634,6 @@ bool playback_device::try_extend_snapshot(std::shared_ptr<extension_snapshot>& e
     {
     case RS2_EXTENSION_DEBUG:   return try_extend<debug_interface>(e, ext);
     case RS2_EXTENSION_INFO:    return try_extend<info_interface>(e, ext);
-    case RS2_EXTENSION_MOTION:  return try_extend<motion_sensor_interface>(e, ext);
     case RS2_EXTENSION_OPTIONS: return try_extend<options_interface>(e, ext);
     case RS2_EXTENSION_VIDEO:   return try_extend<video_sensor_interface>(e, ext);
     case RS2_EXTENSION_ROI:     return try_extend<roi_sensor_interface>(e, ext);

@@ -101,6 +101,7 @@ namespace librealsense
         CASE(WRONG_API_CALL_SEQUENCE)
         CASE(NOT_IMPLEMENTED)
         CASE(DEVICE_IN_RECOVERY_MODE)
+        CASE(IO)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
@@ -119,6 +120,7 @@ namespace librealsense
         STRCASE(STREAM, GYRO)
         STRCASE(STREAM, ACCEL)
         STRCASE(STREAM, GPIO)
+        STRCASE(STREAM, POSE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
@@ -153,7 +155,6 @@ namespace librealsense
             CASE(UNKNOWN)
             CASE(DEBUG)
             CASE(INFO)
-            CASE(MOTION)
             CASE(OPTIONS)
             CASE(VIDEO)
             CASE(ROI)
@@ -169,6 +170,10 @@ namespace librealsense
             CASE(PLAYBACK)
             CASE(DEPTH_STEREO_SENSOR)
             CASE(DISPARITY_FRAME)
+            CASE(MOTION_PROFILE)
+            CASE(POSE_FRAME)
+            CASE(POSE_PROFILE)
+            CASE(TM2)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
@@ -279,6 +284,7 @@ namespace librealsense
         CASE(MOTION_RAW)
         CASE(MOTION_XYZ32F)
         CASE(GPIO_RAW)
+        CASE(6DOF)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
@@ -330,6 +336,7 @@ namespace librealsense
         CASE(AUTO_EXPOSURE)
         CASE(WHITE_BALANCE)
         CASE(TIME_OF_ARRIVAL)
+        CASE(TEMPERATURE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
@@ -355,6 +362,7 @@ namespace librealsense
         CASE(FRAMES_TIMEOUT)
         CASE(FRAME_CORRUPTED)
         CASE(HARDWARE_ERROR)
+        CASE(HARDWARE_EVENT)
         CASE(UNKNOWN_ERROR)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
@@ -527,6 +535,10 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_callback_mutex);
         _callback = std::move(callback);
         _dispatcher.start();
+    }
+    notifications_callback_ptr notifications_proccessor::get_callback() const
+    {
+        return _callback;
     }
 
     void copy(void* dst, void const* src, size_t size)

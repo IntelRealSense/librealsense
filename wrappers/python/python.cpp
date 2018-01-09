@@ -18,6 +18,7 @@
 #define NAME pyrealsense2
 #define SNAME "pyrealsense2"
 #define BIND_RAW_ARRAY(class, name, type, size) #name, [](const class &c) -> const std::array<type, size>& { return reinterpret_cast<const std::array<type, size>&>(c.name); }
+#define BIND_RAW_2D_ARRAY(class_name, member_name, type, nsize, msize) #member_name, [](const class_name &c) -> const std::array<std::array<type, msize>, nsize>& { return reinterpret_cast<const std::array<std::array<type, msize>, nsize>&>(c.member_name); }
 // hacky little bit of half-functions to make .def(BIND_DOWNCAST) look nice for binding as/is functions
 #define BIND_DOWNCAST(class, downcast) "is_"#downcast, &rs2::class::is<rs2::downcast>).def("as_"#downcast, &rs2::class::as<rs2::downcast>
 
@@ -26,8 +27,8 @@
 namespace py = pybind11;
 using namespace pybind11::literals;
 
-PYBIND11_PLUGIN(NAME) {
-    py::module m(SNAME, "Library for accessing Intel RealSenseTM cameras");
+PYBIND11_MODULE(NAME, m) {
+    m.doc() = "Library for accessing Intel RealSenseTM cameras";
 
     class BufData {
     public:
@@ -89,6 +90,7 @@ PYBIND11_PLUGIN(NAME) {
                   .value("auto_exposure", RS2_FRAME_METADATA_AUTO_EXPOSURE)
                   .value("white_balance", RS2_FRAME_METADATA_WHITE_BALANCE)
                   .value("time_of_arrival", RS2_FRAME_METADATA_TIME_OF_ARRIVAL)
+                  .value("temprature", RS2_FRAME_METADATA_TEMPERATURE)
                   .value("count", RS2_FRAME_METADATA_COUNT);
 
     py::enum_<rs2_stream> stream(m, "stream");
@@ -100,13 +102,13 @@ PYBIND11_PLUGIN(NAME) {
         .value("gyro", RS2_STREAM_GYRO)
         .value("accel", RS2_STREAM_ACCEL)
         .value("gpio", RS2_STREAM_GPIO)
+        .value("pose", RS2_STREAM_POSE)
         .value("count", RS2_STREAM_COUNT);
 
     py::enum_<rs2_extension> extension(m, "extension");
     extension.value("unknown", RS2_EXTENSION_UNKNOWN)
         .value("debug", RS2_EXTENSION_DEBUG)
         .value("info", RS2_EXTENSION_INFO)
-        .value("motion", RS2_EXTENSION_MOTION)
         .value("options", RS2_EXTENSION_OPTIONS)
         .value("video", RS2_EXTENSION_VIDEO)
         .value("roi", RS2_EXTENSION_ROI)
@@ -114,6 +116,7 @@ PYBIND11_PLUGIN(NAME) {
         .value("video_frame", RS2_EXTENSION_VIDEO_FRAME)
         .value("motion_frame", RS2_EXTENSION_MOTION_FRAME)
         .value("composite_frame", RS2_EXTENSION_COMPOSITE_FRAME)
+        .value("points", RS2_EXTENSION_POINTS)
         .value("depth_frame", RS2_EXTENSION_DEPTH_FRAME)
         .value("advanced_mode", RS2_EXTENSION_ADVANCED_MODE)
         .value("record", RS2_EXTENSION_RECORD)
@@ -121,6 +124,10 @@ PYBIND11_PLUGIN(NAME) {
         .value("playback", RS2_EXTENSION_PLAYBACK)
         .value("depth_stereo_sensor", RS2_EXTENSION_DEPTH_STEREO_SENSOR)
         .value("disparity_frame", RS2_EXTENSION_DISPARITY_FRAME)
+        .value("motion_profile", RS2_EXTENSION_MOTION_PROFILE)
+        .value("pose_frame", RS2_EXTENSION_POSE_FRAME)
+        .value("pose_profile", RS2_EXTENSION_POSE_PROFILE)
+        .value("tm2", RS2_EXTENSION_TM2)
         .value("count", RS2_EXTENSION_COUNT);
 
     py::enum_<rs2_format> format(m, "format");
@@ -143,6 +150,7 @@ PYBIND11_PLUGIN(NAME) {
           .value("motion_raw", RS2_FORMAT_MOTION_RAW)
           .value("motion_xyz32f", RS2_FORMAT_MOTION_XYZ32F)
           .value("gpio_raw", RS2_FORMAT_GPIO_RAW)
+          .value("6dof", RS2_FORMAT_6DOF)
           .value("count", RS2_FORMAT_COUNT);
 
     py::class_<rs2_intrinsics> intrinsics(m, "intrinsics");
@@ -153,12 +161,25 @@ PYBIND11_PLUGIN(NAME) {
               .def_readonly("fx", &rs2_intrinsics::fx)
               .def_readonly("fy", &rs2_intrinsics::fy)
               .def_readonly("model", &rs2_intrinsics::model)
-              .def_property_readonly(BIND_RAW_ARRAY(rs2_intrinsics, coeffs, float, 5));
+              .def_property_readonly(BIND_RAW_ARRAY(rs2_intrinsics, coeffs, float, 5))
+              .def("__repr__", [](const rs2_intrinsics& self)
+              {
+                  std::stringstream ss;
+                  ss << "width: " << self.width << ", ";
+                  ss << "height: " << self.height << ", ";
+                  ss << "ppx: " << self.ppx << ", ";
+                  ss << "ppy: " << self.ppy << ", ";
+                  ss << "fx: " << self.fx << ", ";
+                  ss << "fy: " << self.fy << ", ";
+                  ss << "model: " << self.model;
+                  return ss.str();
+              });
 
     py::enum_<rs2_notification_category> notification_category(m, "notification_category");
     notification_category.value("frames_timeout", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT)
                          .value("frame_corrupted", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED)
                          .value("hardware_error", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR)
+                         .value("hardware_event", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT)
                          .value("unknown_error", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR)
                          .value("count", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_COUNT);
 
@@ -173,51 +194,51 @@ PYBIND11_PLUGIN(NAME) {
 
     py::enum_<rs2_option> option(m, "option");
     option.value("backlight_compensation", RS2_OPTION_BACKLIGHT_COMPENSATION)
-        .value("brightness", RS2_OPTION_BRIGHTNESS)
-        .value("contrast", RS2_OPTION_CONTRAST)
-        .value("exposure", RS2_OPTION_EXPOSURE)
-        .value("gain", RS2_OPTION_GAIN)
-        .value("gamma", RS2_OPTION_GAMMA)
-        .value("hue", RS2_OPTION_HUE)
-        .value("saturation", RS2_OPTION_SATURATION)
-        .value("sharpness", RS2_OPTION_SHARPNESS)
-        .value("white_balance", RS2_OPTION_WHITE_BALANCE)
-        .value("enable_auto_exposure", RS2_OPTION_ENABLE_AUTO_EXPOSURE)
-        .value("enable_auto_white_balance", RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
-        .value("visual_preset", RS2_OPTION_VISUAL_PRESET)
-        .value("laser_power", RS2_OPTION_LASER_POWER)
-        .value("accuracy", RS2_OPTION_ACCURACY)
-        .value("motion_range", RS2_OPTION_MOTION_RANGE)
-        .value("filter_option", RS2_OPTION_FILTER_OPTION)
-        .value("confidence_threshold", RS2_OPTION_CONFIDENCE_THRESHOLD)
-        .value("emitter_enabled", RS2_OPTION_EMITTER_ENABLED)
-        .value("frames_queue_size", RS2_OPTION_FRAMES_QUEUE_SIZE)
-        .value("total_frame_drops", RS2_OPTION_TOTAL_FRAME_DROPS)
-        .value("auto_exposure_mode", RS2_OPTION_AUTO_EXPOSURE_MODE)
-        .value("power_line_frequency", RS2_OPTION_POWER_LINE_FREQUENCY)
-        .value("asic_temperature", RS2_OPTION_ASIC_TEMPERATURE)
-        .value("error_polling_enabled", RS2_OPTION_ERROR_POLLING_ENABLED)
-        .value("projector_temperature", RS2_OPTION_PROJECTOR_TEMPERATURE)
-        .value("output_trigger_enabled", RS2_OPTION_OUTPUT_TRIGGER_ENABLED)
-        .value("motion_module_temperature", RS2_OPTION_MOTION_MODULE_TEMPERATURE)
-        .value("depth_units", RS2_OPTION_DEPTH_UNITS)
-        .value("enable_motion_correction", RS2_OPTION_ENABLE_MOTION_CORRECTION)
-        .value("auto_exposure_priority", RS2_OPTION_AUTO_EXPOSURE_PRIORITY)
-        .value("color_scheme", RS2_OPTION_COLOR_SCHEME)
-        .value("histogram_equalization_enabled", RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED)
-        .value("min_distance", RS2_OPTION_MIN_DISTANCE)
-        .value("max_distance", RS2_OPTION_MAX_DISTANCE)
-        .value("texture_source", RS2_OPTION_TEXTURE_SOURCE)
-        .value("filter_magnitude", RS2_OPTION_FILTER_MAGNITUDE)
-        .value("filter_smooth_alpha", RS2_OPTION_FILTER_SMOOTH_ALPHA)
-        .value("filter_smooth_delta", RS2_OPTION_FILTER_SMOOTH_DELTA)
-        .value("stereo_baseline", RS2_OPTION_STEREO_BASELINE)
-        .value("count", RS2_OPTION_COUNT);
+          .value("brightness", RS2_OPTION_BRIGHTNESS)
+          .value("contrast", RS2_OPTION_CONTRAST)
+          .value("exposure", RS2_OPTION_EXPOSURE)
+          .value("gain", RS2_OPTION_GAIN)
+          .value("gamma", RS2_OPTION_GAMMA)
+          .value("hue", RS2_OPTION_HUE)
+          .value("saturation", RS2_OPTION_SATURATION)
+          .value("sharpness", RS2_OPTION_SHARPNESS)
+          .value("white_balance", RS2_OPTION_WHITE_BALANCE)
+          .value("enable_auto_exposure", RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+          .value("enable_auto_white_balance", RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
+          .value("visual_preset", RS2_OPTION_VISUAL_PRESET)
+          .value("laser_power", RS2_OPTION_LASER_POWER)
+          .value("accuracy", RS2_OPTION_ACCURACY)
+          .value("motion_range", RS2_OPTION_MOTION_RANGE)
+          .value("filter_option", RS2_OPTION_FILTER_OPTION)
+          .value("confidence_threshold", RS2_OPTION_CONFIDENCE_THRESHOLD)
+          .value("emitter_enabled", RS2_OPTION_EMITTER_ENABLED)
+          .value("frames_queue_size", RS2_OPTION_FRAMES_QUEUE_SIZE)
+          .value("total_frame_drops", RS2_OPTION_TOTAL_FRAME_DROPS)
+          .value("auto_exposure_mode", RS2_OPTION_AUTO_EXPOSURE_MODE)
+          .value("power_line_frequency", RS2_OPTION_POWER_LINE_FREQUENCY)
+          .value("asic_temperature", RS2_OPTION_ASIC_TEMPERATURE)
+          .value("error_polling_enabled", RS2_OPTION_ERROR_POLLING_ENABLED)
+          .value("projector_temperature", RS2_OPTION_PROJECTOR_TEMPERATURE)
+          .value("output_trigger_enabled", RS2_OPTION_OUTPUT_TRIGGER_ENABLED)
+          .value("motion_module_temperature", RS2_OPTION_MOTION_MODULE_TEMPERATURE)
+          .value("depth_units", RS2_OPTION_DEPTH_UNITS)
+          .value("enable_motion_correction", RS2_OPTION_ENABLE_MOTION_CORRECTION)
+          .value("auto_exposure_priority", RS2_OPTION_AUTO_EXPOSURE_PRIORITY)
+          .value("color_scheme", RS2_OPTION_COLOR_SCHEME)
+          .value("histogram_equalization_enabled", RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED)
+          .value("min_distance", RS2_OPTION_MIN_DISTANCE)
+          .value("max_distance", RS2_OPTION_MAX_DISTANCE)
+          .value("texture_source", RS2_OPTION_TEXTURE_SOURCE)
+          .value("filter_magnitude", RS2_OPTION_FILTER_MAGNITUDE)
+          .value("filter_smooth_alpha", RS2_OPTION_FILTER_SMOOTH_ALPHA)
+          .value("filter_smooth_delta", RS2_OPTION_FILTER_SMOOTH_DELTA)
+          .value("stereo_baseline",RS2_OPTION_STEREO_BASELINE)
+          .value("count", RS2_OPTION_COUNT);
 
-    // Multi-dimensional c-array rs2_motion_device_instrinc::data causing trouble
-    //py::class_<rs2_motion_device_intrinsic> motion_device_inrinsic(m, "motion_device_intrinsic");
-    //motion_device_inrinsic.def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, noise_variances, float, 3))
-    //                      .def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, bias_variances, float, 3));
+    py::class_<rs2_motion_device_intrinsic> motion_device_inrinsic(m, "motion_device_intrinsic");
+    motion_device_inrinsic.def_property_readonly(BIND_RAW_2D_ARRAY(rs2_motion_device_intrinsic, data, float, 3, 4))
+                          .def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, noise_variances, float, 3))
+                          .def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, bias_variances, float, 3));
 
     py::enum_<rs2_timestamp_domain> ts_domain(m, "timestamp_domain");
     ts_domain.value("hardware_clock", RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
@@ -262,7 +283,11 @@ PYBIND11_PLUGIN(NAME) {
     context.def(py::init<>())
            .def("query_devices", &rs2::context::query_devices, "Create a static"
                 " snapshot of all connected devices a the time of the call.")
+            .def_property_readonly("devices", &rs2::context::query_devices,
+                "Create a static snapshot of all connected devices a the time of the call.")
            .def("query_all_sensors", &rs2::context::query_all_sensors, "Generate a flat list of "
+                "all available sensors from all RealSense devices.")
+           .def_property_readonly("sensors", &rs2::context::query_all_sensors, "Generate a flat list of "
                 "all available sensors from all RealSense devices.")
            .def("get_sensor_parent", &rs2::context::get_sensor_parent, "s"_a)
            .def("set_devices_changed_callback", [](rs2::context& self, std::function<void(rs2::event_information)> &callback)
@@ -279,17 +304,20 @@ PYBIND11_PLUGIN(NAME) {
     py::class_<rs2::device> device(m, "device");
     device.def("query_sensors", &rs2::device::query_sensors, "Returns the list of adjacent devices, "
                "sharing the same physical parent composite device.")
+            .def_property_readonly("sensors", &rs2::device::query_sensors,"Returns the list of adjacent devices, "
+               "sharing the same physical parent composite device.")
           .def("first_depth_sensor", [](rs2::device& self){ return self.first<rs2::depth_sensor>(); })
           .def("first_roi_sensor", [](rs2::device& self) { return self.first<rs2::roi_sensor>(); })
           .def("supports", &rs2::device::supports, "Check if specific camera info is supported.", "info"_a)
           .def("get_info", &rs2::device::get_info, "Retrieve camera specific information, "
-               "like versions of various internal components", "info"_a)
+            "like versions of various internal components", "info"_a)
           .def("hardware_reset", &rs2::device::hardware_reset, "Send hardware reset request to the device")
           .def(py::init<>())
           .def("__nonzero__", &rs2::device::operator bool)
           .def(BIND_DOWNCAST(device, debug_protocol))
           .def(BIND_DOWNCAST(device, playback))
           .def(BIND_DOWNCAST(device, recorder))
+          .def(BIND_DOWNCAST(device, tm2))
           .def("__repr__", [](const rs2::device &self)
                {
                    std::stringstream ss;
@@ -339,7 +367,41 @@ PYBIND11_PLUGIN(NAME) {
                      .def("get_new_devices", &rs2::event_information::get_new_devices, "Returns a "
                           "list of all newly connected devices");
 
+    py::class_<rs2::tm2, rs2::device> tm2(m, "tm2");
+    tm2.def(py::init<rs2::device>(), "device"_a)
+        .def("enable_loopback", &rs2::tm2::enable_loopback, "filename"_a)
+        .def("disable_loopback", &rs2::tm2::disable_loopback)
+        .def("is_loopback_enabled", &rs2::tm2::is_loopback_enabled)
+        .def("connect_controller", &rs2::tm2::connect_controller, "mac_address"_a)
+        .def("disconnect_controller", &rs2::tm2::disconnect_controller, "id"_a);
+
+
     /* rs2_frame.hpp */
+
+    auto get_frame_data = [](const rs2::frame& self) ->  BufData
+    {
+        if (auto vf = self.as<rs2::video_frame>()) {
+            std::map<size_t, std::string> bytes_per_pixel_to_format = { { 1, std::string("@B") },{ 2, std::string("@H") },{ 3, std::string("@I") },{ 4, std::string("@I") } };
+            switch (vf.get_profile().format()) {
+            case RS2_FORMAT_RGB8: case RS2_FORMAT_BGR8:
+                return BufData(const_cast<void*>(vf.get_data()), 1, bytes_per_pixel_to_format[1], 3,
+                    { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()), 3 },
+                    { static_cast<size_t>(vf.get_stride_in_bytes()), static_cast<size_t>(vf.get_bytes_per_pixel()), 1 });
+                break;
+            case RS2_FORMAT_RGBA8: case RS2_FORMAT_BGRA8:
+                return BufData(const_cast<void*>(vf.get_data()), 1, bytes_per_pixel_to_format[1], 3,
+                    { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()), 4 },
+                    { static_cast<size_t>(vf.get_stride_in_bytes()), static_cast<size_t>(vf.get_bytes_per_pixel()), 1 });
+                break;
+            default:
+                return BufData(const_cast<void*>(vf.get_data()), static_cast<size_t>(vf.get_bytes_per_pixel()), bytes_per_pixel_to_format[vf.get_bytes_per_pixel()], 2,
+                    { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()) },
+                    { static_cast<size_t>(vf.get_stride_in_bytes()), static_cast<size_t>(vf.get_bytes_per_pixel()) });
+            }
+        }
+        else
+            return BufData(const_cast<void*>(self.get_data()), 1, std::string("@B"), 0); };
+
     py::class_<rs2::frame> frame(m, "frame");
     frame.def(py::init<>())
 //         .def(py::self = py::self) // can't overload assignment in python
@@ -347,37 +409,18 @@ PYBIND11_PLUGIN(NAME) {
          .def("swap", &rs2::frame::swap, "other"_a)
          .def("__nonzero__", &rs2::frame::operator bool)
          .def("get_timestamp", &rs2::frame::get_timestamp, "Retrieve the time at which the frame was captured")
-         .def("get_frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain,
-              "Retrieve the timestamp domain.")
-         .def("get_frame_metadata", &rs2::frame::get_frame_metadata, "Retrieve the current value "
-              "of a single frame_metadata.", "frame_metadata"_a)
-         .def("supports_frame_metadata", &rs2::frame::supports_frame_metadata, "Determine if the device "
-              "allows a specific metadata to be queried.", "frame_metadata"_a)
+         .def_property_readonly("timestamp", &rs2::frame::get_timestamp, "Retrieve the time at which the frame was captured")
+         .def("get_frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain, "Retrieve the timestamp domain.")
+         .def_property_readonly("frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain, "Retrieve the timestamp domain.")
+         .def("get_frame_metadata", &rs2::frame::get_frame_metadata, "Retrieve the current value of a single frame_metadata.", "frame_metadata"_a)
+         .def_property_readonly("frame_metadata", &rs2::frame::get_frame_metadata, "Retrieve the current value of a single frame_metadata.", "frame_metadata"_a)
+         .def("supports_frame_metadata", &rs2::frame::supports_frame_metadata, "Determine if the device allows a specific metadata to be queried.", "frame_metadata"_a)
          .def("get_frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
-         .def("get_data", [](const rs2::frame& self) ->  BufData
-              {
-                  if (auto vf = self.as<rs2::video_frame>()) {
-                      std::map<size_t,std::string> bytes_per_pixel_to_format = {{1, std::string("@B")}, {2, std::string("@H")}, {3, std::string("@I")}, {4, std::string("@I")}};
-                      switch (vf.get_profile().format()) {
-                        case RS2_FORMAT_RGB8: case RS2_FORMAT_BGR8:
-                          return BufData(const_cast<void*>(vf.get_data()), 1, bytes_per_pixel_to_format[1], 3,
-                                         { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()), 3 },
-                                         { static_cast<size_t>(vf.get_stride_in_bytes()), static_cast<size_t>(vf.get_bytes_per_pixel()), 1 });
-                          break;
-                        case RS2_FORMAT_RGBA8: case RS2_FORMAT_BGRA8:
-                          return BufData(const_cast<void*>(vf.get_data()), 1, bytes_per_pixel_to_format[1], 3,
-                                         { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()), 4 },
-                                         { static_cast<size_t>(vf.get_stride_in_bytes()), static_cast<size_t>(vf.get_bytes_per_pixel()), 1 });
-                          break;
-                        default:
-                          return BufData(const_cast<void*>(vf.get_data()), static_cast<size_t>(vf.get_bytes_per_pixel()), bytes_per_pixel_to_format[vf.get_bytes_per_pixel()], 2,
-                                         { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()) },
-                                         { static_cast<size_t>(vf.get_stride_in_bytes()), static_cast<size_t>(vf.get_bytes_per_pixel()) });
-                      }
-                  } else
-                      return BufData(const_cast<void*>(self.get_data()), 1, std::string("@B"), 0); },
-              "retrieve data from the frame handle.", py::keep_alive<0, 1>())
+         .def_property_readonly("frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
+         .def("get_data", get_frame_data,"retrieve data from the frame handle.", py::keep_alive<0, 1>())
+         .def_property_readonly("data", get_frame_data, "retrieve data from the frame handle.", py::keep_alive<0, 1>())
          .def("get_profile", &rs2::frame::get_profile)
+         .def_property_readonly("profile", &rs2::frame::get_profile)
          .def(BIND_DOWNCAST(frame, frame))
          .def(BIND_DOWNCAST(frame, points))
          .def(BIND_DOWNCAST(frame, frameset))
@@ -386,31 +429,39 @@ PYBIND11_PLUGIN(NAME) {
 
     py::class_<rs2::video_frame, rs2::frame> video_frame(m, "video_frame");
     video_frame.def(py::init<rs2::frame>())
-                .def("get_width", &rs2::video_frame::get_width, "Returns image width in pixels.")
-                .def("get_height", &rs2::video_frame::get_height, "Returns image height in pixels.")
-                .def("get_stride_in_bytes", &rs2::video_frame::get_stride_in_bytes, "Retrieve frame stride, meaning the actual line width in memory in bytes (not the logical image width).")
-                .def("get_bits_per_pixel", &rs2::video_frame::get_bits_per_pixel, "Retrieve bits per pixel.")
-                .def("get_bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Retrieve bytes per pixel.");
+        .def("get_width", &rs2::video_frame::get_width, "Returns image width in pixels.")
+        .def_property_readonly("width", &rs2::video_frame::get_width, "Returns image width in pixels.")
+        .def("get_height", &rs2::video_frame::get_height, "Returns image height in pixels.")
+        .def_property_readonly("height", &rs2::video_frame::get_height, "Returns image height in pixels.")
+        .def("get_stride_in_bytes", &rs2::video_frame::get_stride_in_bytes, "Retrieve frame stride, meaning the actual line width in memory in bytes (not the logical image width).")
+        .def_property_readonly("stride_in_bytes", &rs2::video_frame::get_stride_in_bytes, "Retrieve frame stride, meaning the actual line width in memory in bytes (not the logical image width).")
+        .def("get_bits_per_pixel", &rs2::video_frame::get_bits_per_pixel, "Retrieve bits per pixel.")
+        .def_property_readonly("bits_per_pixel", &rs2::video_frame::get_bits_per_pixel, "Retrieve bits per pixel.")
+        .def("get_bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Retrieve bytes per pixel.")
+        .def("get_bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Retrieve bytes per pixel.");
 
     py::class_<rs2::vertex> vertex(m, "vertex");
     vertex.def_readwrite("x", &rs2::vertex::x)
           .def_readwrite("y", &rs2::vertex::y)
           .def_readwrite("z", &rs2::vertex::z)
-          .def("__init__", [](rs2::vertex &instance) { new (&instance) rs2::vertex;})
-          .def("__init__", [](rs2::vertex &instance, float x, float y, float z)
-               {
-                    new (&instance) rs2::vertex{x,y,z};
-               }, "x"_a, "y"_a, "z"_a);
+          .def(py::init([]() { return rs2::vertex { }; }))
+          .def(py::init([](float x, float y, float z) { return rs2::vertex{ x,y,z }; }))
+          .def("__repr__", [](const rs2::vertex& v) {
+              std::ostringstream oss;
+              oss << v.x << ", " << v.y << ", " << v.z;
+              return oss.str();
+            });
 
     py::class_<rs2::texture_coordinate> texture_coordinate(m, "texture_coordinate");
     texture_coordinate.def_readwrite("u", &rs2::texture_coordinate::u)
                       .def_readwrite("v", &rs2::texture_coordinate::v)
-                      .def("__init__", [](rs2::texture_coordinate &instance) { new (&instance) rs2::vertex; })
-                      .def("__init__", [](rs2::texture_coordinate &instance, float u, float v)
-                           {
-                                new (&instance) rs2::texture_coordinate{ u,v };
-                           }, "u"_a, "v"_a);
-
+                      .def(py::init([]() { return rs2::texture_coordinate{}; }))
+                      .def(py::init([](float u, float v) { return rs2::texture_coordinate{ u, v }; }))
+                      .def("__repr__", [](const rs2::texture_coordinate& t) {
+                          std::ostringstream oss;
+                          oss << t.u << ", " << t.v;
+                          return oss.str();
+                      });
     py::class_<rs2::points, rs2::frame> points(m, "points");
     points.def(py::init<>())
           .def(py::init<rs2::frame>())
@@ -585,6 +636,7 @@ PYBIND11_PLUGIN(NAME) {
                         .def("width", &rs2::video_stream_profile::width)
                         .def("height", &rs2::video_stream_profile::height)
                         .def("get_intrinsics", &rs2::video_stream_profile::get_intrinsics)
+                        .def_property_readonly("intrinsics", &rs2::video_stream_profile::get_intrinsics)
                         .def("__repr__", [](const rs2::video_stream_profile& self)
                              {
                                  std::stringstream ss;
@@ -595,6 +647,10 @@ PYBIND11_PLUGIN(NAME) {
                                  return ss.str();
                              });
 
+    py::class_<rs2::motion_stream_profile, rs2::stream_profile> motion_stream_profile(m, "motion_stream_profile");
+    motion_stream_profile.def(py::init<const rs2::stream_profile&>(), "sp"_a)
+        .def("get_motion_intrinsics", &rs2::motion_stream_profile::get_motion_intrinsics, "Returns scale and bias of a motion stream.");
+
     py::class_<rs2::notification> notification(m, "notification");
     notification.def(py::init<>())
         .def("get_category", &rs2::notification::get_category,
@@ -604,7 +660,22 @@ PYBIND11_PLUGIN(NAME) {
         .def("get_timestamp", &rs2::notification::get_timestamp,
             "Retrieve the notification's arrival timestamp.")
         .def("get_severity", &rs2::notification::get_severity,
-            "Retrieve the notification's severity.");
+            "Retrieve the notification's severity.")
+        .def("get_serialized_data", &rs2::notification::get_severity,
+            "Retrieve the notification's serialized data.")
+        .def_property_readonly("category", &rs2::notification::get_category,
+            "Retrieve the notification's category.")
+        .def_property_readonly("description", &rs2::notification::get_description,
+            "Retrieve the notification's description.")
+        .def_property_readonly("timestamp", &rs2::notification::get_timestamp,
+            "Retrieve the notification's arrival timestamp.")
+        .def_property_readonly("severity", &rs2::notification::get_severity,
+            "Retrieve the notification's severity.")
+        .def_property_readonly("serialized_data", &rs2::notification::get_serialized_data,
+            "Retrieve the notification's serialized data.")
+        .def("__repr__", [](const rs2::notification &n) { 
+                return n.get_description(); 
+            });
 
     // not binding notifications_callback, templated
     py::class_<rs2::sensor, rs2::options> sensor(m, "sensor");
@@ -615,8 +686,8 @@ PYBIND11_PLUGIN(NAME) {
           .def("supports", (bool (rs2::sensor::*)(rs2_option) const) &rs2::options::supports,
             "Check if specific camera info is supported.", "info")
           .def("get_info", &rs2::sensor::get_info, "Retrieve camera specific information, "
-               "like versions of various internal components.", "info"_a)
-           .def("set_notifications_callback", [](const rs2::sensor& self, std::function<void(rs2::notification)> callback)
+            "like versions of various internal components.", "info"_a)
+          .def("set_notifications_callback", [](const rs2::sensor& self, std::function<void(rs2::notification)> callback)
                { self.set_notifications_callback(callback); }, "Register Notifications callback", "callback"_a)
           .def("open", (void (rs2::sensor::*)(const std::vector<rs2::stream_profile>&) const) &rs2::sensor::open,
                "Open sensor for exclusive access, by committing to a composite configuration, specifying one or "
@@ -627,8 +698,7 @@ PYBIND11_PLUGIN(NAME) {
           .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) { self.start(queue); })
           .def("stop", &rs2::sensor::stop, "Stop streaming.")
           .def("get_stream_profiles", &rs2::sensor::get_stream_profiles, "Check if physical sensor is supported.")
-          .def("get_motion_intrinsics", &rs2::sensor::get_motion_intrinsics, "Returns scale and bias of a motion stream.",
-               "stream"_a)
+          .def_property_readonly("profiles", &rs2::sensor::get_stream_profiles, "Check if physical sensor is supported.")
           .def(py::init<>())
           .def("__nonzero__", &rs2::sensor::operator bool)
           .def(BIND_DOWNCAST(sensor, roi_sensor))
@@ -650,7 +720,8 @@ PYBIND11_PLUGIN(NAME) {
 
 
     py::class_<rs2::pipeline> pipeline(m, "pipeline");
-    pipeline.def(py::init<rs2::context>(), "ctx"_a = rs2::context())
+    pipeline.def(py::init([](rs2::context ctx) { return rs2::pipeline(ctx); }))
+    .def(py::init([]() { return rs2::pipeline(rs2::context()); }))
     .def("start", (rs2::pipeline_profile (rs2::pipeline::*)(const rs2::config&)) &rs2::pipeline::start, "config")
     .def("start", (rs2::pipeline_profile (rs2::pipeline::*)() ) &rs2::pipeline::start)
     .def("stop", &rs2::pipeline::stop)
@@ -664,7 +735,7 @@ PYBIND11_PLUGIN(NAME) {
     };
 
     py::class_<pipeline_wrapper>(m, "pipeline_wrapper")
-        .def("__init__", [](pipeline_wrapper &pw, rs2::pipeline p) { new (&pw) pipeline_wrapper{ p }; });
+        .def(py::init([](rs2::pipeline p) { return pipeline_wrapper{ p }; }));
 
     py::implicitly_convertible<rs2::pipeline, pipeline_wrapper>();
 
@@ -934,9 +1005,5 @@ PYBIND11_PLUGIN(NAME) {
     /* rs2.hpp */
     m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);
     m.def("log_to_file", &rs2::log_to_file, "min_severity"_a, "file_path"_a);
-
-    return m.ptr();
-
-
 
 }

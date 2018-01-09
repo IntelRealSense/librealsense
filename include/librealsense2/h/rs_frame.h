@@ -36,6 +36,7 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_AUTO_EXPOSURE        , /**< Auto Exposure Mode indicator. Zero corresponds to AE switched off. */
     RS2_FRAME_METADATA_WHITE_BALANCE        , /**< White Balance setting as a color temperature. Kelvin degrees*/
     RS2_FRAME_METADATA_TIME_OF_ARRIVAL      , /**< Time of arrival in system clock */
+    RS2_FRAME_METADATA_TEMPERATURE          , /**< Temperature of the device, measured at the time of the frame capture. Celsius degrees */
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);
@@ -52,6 +53,30 @@ typedef struct rs2_pixel
 {
     int ij[2];
 } rs2_pixel;
+
+/** \brief 3D vector in Euclidean coordinate space */
+typedef struct rs2_vector
+{
+    float x, y, z;
+}rs2_vector;
+
+/** \brief Quaternion used to represent rotation  */
+typedef struct rs2_quaternion
+{
+    float x, y, z, w;
+}rs2_quaternion;
+
+typedef struct rs2_pose
+{
+    rs2_vector      translation;          /**< X, Y, Z values of translation, in meters (relative to initial position)                                    */
+    rs2_vector      velocity;             /**< X, Y, Z values of velocity, in meter/sec                                                                   */
+    rs2_vector      acceleration;         /**< X, Y, Z values of acceleration, in meter/sec^2                                                             */
+    rs2_quaternion  rotation;             /**< Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position) */
+    rs2_vector      angular_velocity;     /**< X, Y, Z values of angular velocity, in radians/sec                                                         */
+    rs2_vector      angular_acceleration; /**< X, Y, Z values of angular acceleration, in radians/sec^2                                                   */
+    unsigned int    tracker_confidence;   /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                     */
+    unsigned int    mapper_confidence;    /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                     */
+} rs2_pose;
 
 
 /**
@@ -256,6 +281,18 @@ int rs2_embedded_frames_count(rs2_frame* composite, rs2_error** error);
 * \param[in] frame       Frame to dispatch, frame ownership is passed to this function, so you don't have to call release_frame after it
 */
 void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error** error);
+
+
+/**
+* When called on Pose frame type, this method returns the transformation represented by the pose data
+* \param[in] frame       Pose frame
+* \param[out] pose       Pointer to a user allocated struct, which contains the pose info after a successful return
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_error** error);
+
+
+
 
 #ifdef __cplusplus
 }

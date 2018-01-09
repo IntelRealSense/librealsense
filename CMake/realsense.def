@@ -45,6 +45,7 @@ EXPORTS
     rs2_get_notification_timestamp
     rs2_get_notification_severity
     rs2_get_notification_category
+    rs2_get_notification_serialized_data
 
     rs2_get_frame_metadata
     rs2_supports_frame_metadata
@@ -62,7 +63,8 @@ EXPORTS
     rs2_get_frame_points_count
     rs2_release_frame
     rs2_frame_add_ref
-
+    rs2_pose_frame_get_pose_data
+    
     rs2_get_option
     rs2_set_option
     rs2_supports_option
@@ -240,3 +242,9 @@ EXPORTS
     rs2_delete_device_hub
 
     rs2_export_to_ply
+    
+    rs2_loopback_enable
+    rs2_loopback_disable
+    rs2_loopback_is_enabled
+    rs2_connect_tm2_controller
+    rs2_disconnect_tm2_controller

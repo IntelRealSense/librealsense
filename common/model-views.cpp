@@ -4,6 +4,7 @@
 #include <regex>
 #include <thread>
 #include <algorithm>
+#include <regex>
 
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <librealsense2/rsutil.h>
@@ -238,6 +239,56 @@ namespace rs2
         std::vector<const char*> res;
         for (auto&& s : vec) res.push_back(s.c_str());
         return res;
+    }
+
+    inline std::string get_event_type(const std::string& data)
+    {
+        std::regex event_type(R"REGX("Event Type"\s*:\s*"([^"]+)")REGX");
+        std::smatch m;
+        if (std::regex_search(data, m, event_type))
+        {
+            return m[1];
+        }
+        throw std::runtime_error(std::string("Failed to match Event Type in string: ") + data);
+    }
+
+    inline std::string get_subtype(const std::string& data)
+    {
+        std::regex subtype(R"REGX("Sub Type"\s*:\s*"([^"]+)")REGX");
+        std::smatch m;
+        if (std::regex_search(data, m, subtype))
+        {
+            return m[1];
+        }
+        throw std::runtime_error(std::string("Failed to match Sub Type in string: ") + data);
+    }
+
+    inline int get_id(const std::string& data)
+    {
+        std::regex id_regex(R"REGX("ID" : (\d+))REGX");
+        std::smatch match;
+        if (std::regex_search(data, match, id_regex))
+        {
+            return std::stoi(match[1].str());
+        }
+        throw std::runtime_error(std::string("Failed to match ID in string: ") + data);
+    }
+
+    inline std::array<uint8_t, 6> get_mac(const std::string& data)
+    {
+        std::regex mac_addr_regex(R"REGX("MAC" : \[(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\])REGX");
+        std::smatch match;
+
+        std::array<uint8_t, 6> mac_addr;
+        if (std::regex_search(data, match, mac_addr_regex))
+        {
+            for (size_t i = 1; i < match.size(); i++)
+            {
+                mac_addr[i - 1] = static_cast<uint8_t>(std::stol(match[i].str()));
+            }
+            return mac_addr;
+        }
+        throw std::runtime_error(std::string("Failed to match MAC in string: ") + data);
     }
 
     bool option_model::draw(std::string& error_message, notifications_model& model)
@@ -659,9 +710,9 @@ namespace rs2
 
         try
         {
-            auto uvc_profiles = s->get_stream_profiles();
-            reverse(begin(uvc_profiles), end(uvc_profiles));
-            for (auto&& profile : uvc_profiles)
+            auto sensor_profiles = s->get_stream_profiles();
+            reverse(begin(sensor_profiles), end(sensor_profiles));
+            for (auto&& profile : sensor_profiles)
             {
                 std::stringstream res;
                 if (auto vid_prof = profile.as<video_stream_profile>())
@@ -684,21 +735,18 @@ namespace rs2
                 push_back_if_not_exists(formats[profile.unique_id()], format);
                 push_back_if_not_exists(format_values[profile.unique_id()], profile.format());
 
-                auto any_stream_enabled = false;
-                for (auto it : stream_enabled)
-                {
-                    if (it.second)
-                    {
-                        any_stream_enabled = true;
-                        break;
-                    }
-                }
-                if (!any_stream_enabled)
+                if (profile.is_default())
                 {
                     stream_enabled[profile.unique_id()] = true;
                 }
 
                 profiles.push_back(profile);
+            }
+            auto any_stream_enabled = std::any_of(std::begin(stream_enabled), std::end(stream_enabled), [](const std::pair<int, bool>& p) { return p.second; });
+            if (!any_stream_enabled)
+            {
+                if(sensor_profiles.size() > 0)
+                    stream_enabled[sensor_profiles.rbegin()->unique_id()] = true;
             }
 
             for (auto&& fps_list : fps_values_per_stream)
@@ -912,9 +960,11 @@ namespace rs2
 
                 if (stream_enabled[f.first])
                 {
-                    ImGui::SameLine(); ImGui::SetCursorPosX(col1);
-
-                    //if (show_single_fps_list) ImGui::SameLine();
+                    if (show_single_fps_list)
+                    {
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosX(col1);
+                    }
 
                     label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
                         << s->get_info(RS2_CAMERA_INFO_NAME)
@@ -951,7 +1001,7 @@ namespace rs2
                         streaming_tooltip();
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
 
-                        label = to_string() << s->get_info(RS2_CAMERA_INFO_NAME)
+                        label = to_string() << "##" << s->get_info(RS2_CAMERA_INFO_NAME)
                             << s->get_info(RS2_CAMERA_INFO_NAME)
                             << f.first << " fps";
 
@@ -1231,6 +1281,14 @@ namespace rs2
             }
         }
     }
+    
+    int subdevice_model::num_supported_non_default_options() const
+    {
+        return std::count_if(
+            std::begin(options_metadata), 
+            std::end(options_metadata), 
+            [](const std::pair<int, option_model>& p) {return p.second.supported && p.second.opt != RS2_OPTION_FRAMES_QUEUE_SIZE; });
+    }
 
     bool option_model::draw_option(bool update_read_only_options,
         bool is_streaming,
@@ -1441,7 +1499,7 @@ namespace rs2
                         auto x_margin = (int)size.x / 8;
                         auto y_margin = (int)size.y / 8;
 
-                        // Default ROI behaviour is center 3/4 of the screen:
+                        // Default ROI behavior is center 3/4 of the screen:
                         if (sensor->is<roi_sensor>())
                         {
                             sensor->as<roi_sensor>().set_region_of_interest({ x_margin, y_margin,
@@ -1532,6 +1590,7 @@ namespace rs2
 
         const auto top_bar_height = 32.f;
         const auto num_of_buttons = 4;
+        auto total_top_bar_height = top_bar_height; // may include single bar or additional bar for pose
 
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -1616,9 +1675,12 @@ namespace rs2
         for (auto&& s : streams)
         {
             if (s.second.is_stream_visible() &&
-                s.second.texture->get_last_frame())
+                s.second.texture->get_last_frame() &&
+                (s.second.profile.stream_type() == RS2_STREAM_COLOR ||
+                 s.second.profile.stream_type() == RS2_STREAM_INFRARED ||
+                 s.second.profile.stream_type() == RS2_STREAM_FISHEYE))
             {
-                if (selected_tex_source_uid == -1)
+                if (selected_tex_source_uid == -1 && selected_depth_source_uid != -1)
                 {
                     selected_tex_source_uid = streams_origin[s.second.profile.unique_id()];
                 }
@@ -1641,7 +1703,7 @@ namespace rs2
 
         if (!allow_3d_source_change) ImGui::SetCursorPos({ 7, 7 });
         // Only allow to change texture if we have something to put it on:
-        if (tex_sources_str.size() > 0 && depth_sources_str.size() > 0)
+        if (tex_sources_str.size() > 0 && depth_sources_str.size() > 0 && allow_3d_source_change)
         {
             ImGui::SetCursorPosY(7);
             ImGui::Text("Texture Source:"); ImGui::SameLine();
@@ -1649,21 +1711,8 @@ namespace rs2
             ImGui::SetCursorPosY(7);
             ImGui::PushItemWidth(200);
             draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
-
-            i = 0;
-            for (auto&& s : streams)
-            {
-                if (s.second.is_stream_visible() &&
-                    s.second.texture->get_last_frame())
-                {
-                    if (i == selected_tex_source)
-                    {
-                        selected_tex_source_uid = streams_origin[s.second.profile.unique_id()];
-                        texture.colorize = s.second.texture->colorize;
-                    }
-                    i++;
-                }
-            }
+            selected_tex_source_uid = tex_sources[selected_tex_source];
+            texture.colorize = streams[selected_tex_source].texture->colorize;
             ImGui::PopItemWidth();
         }
 
@@ -1792,6 +1841,80 @@ namespace rs2
 
 
         ImGui::End();
+
+        // Draw pose header if pose stream exists
+        bool render_pose = false;
+
+        for (auto&& s : streams)
+        {
+            if (s.second.is_stream_visible() &&
+                s.second.profile.stream_type() == RS2_STREAM_POSE)
+            {
+                render_pose = true;                
+            }
+        }
+        if (render_pose)
+        {
+            total_top_bar_height += top_bar_height; // add additional bar height for pose
+            const int num_of_pose_buttons = 3; // trajectory, draw camera, boundary selection
+
+            ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + top_bar_height });
+            ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
+            std::string pose_label = to_string() << "header of 3dviewer - pose";
+            ImGui::Begin(pose_label.c_str(), nullptr, flags);
+
+            // Draw selection buttons on the pose header
+            ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_pose_buttons - 5, 0 });
+            
+            // Draw camera object button
+            if (ImGui::Button(tm2.camera_object_button.get_icon().c_str(), { 24, top_bar_height }))
+            {
+                tm2.camera_object_button.toggle_button();
+            }            
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", tm2.camera_object_button.get_tooltip().c_str());
+
+            // Draw trajectory button            
+            ImGui::SameLine();
+            bool color_icon = tm2.trajectory_button.is_pressed(); //draw trajectory is on - color the icon
+            if (color_icon) 
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            }
+            if (ImGui::Button(tm2.trajectory_button.get_icon().c_str(), { 24, top_bar_height }))
+            {
+                tm2.trajectory_button.toggle_button();
+            }
+            if (color_icon)
+            {
+                ImGui::PopStyleColor(2);
+            }            
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", tm2.trajectory_button.get_tooltip().c_str());
+
+            // Draw boundary selection button
+            ImGui::SameLine();
+            color_icon = tm2.boundary_button.is_pressed(); //draw boundary is on - color the icon
+            if (color_icon)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            }
+            if (ImGui::Button(tm2.boundary_button.get_icon().c_str(), { 24, top_bar_height }))
+            {
+                tm2.boundary_button.toggle_button();
+            }
+            if (color_icon)
+            {
+                ImGui::PopStyleColor(2);
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", tm2.boundary_button.get_tooltip().c_str());
+
+            ImGui::End();
+        }
+        
         ImGui::PopStyleColor(6);
         ImGui::PopStyleVar();
 
@@ -1804,7 +1927,8 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, dark_sensor_bg);
-        ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 265, stream_rect.y + top_bar_height + 5 });
+        
+        ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 265, stream_rect.y + total_top_bar_height + 5 });
         ImGui::SetNextWindowSize({ 260, 65 });
         ImGui::Begin("3D Info box", nullptr, flags);
 
@@ -2671,7 +2795,6 @@ namespace rs2
     {
         while (keep_calculating)
         {
-
             try
             {
                 frame frm;
@@ -2690,7 +2813,7 @@ namespace rs2
                         std::lock_guard<std::mutex> lock(viewer.streams_mutex);
                         frames_queue_local = frames_queue;
                     }
-                    for(auto&& q :  frames_queue_local)
+                    for (auto&& q : frames_queue_local)
                     {
 
                         frame frm;
@@ -2702,7 +2825,6 @@ namespace rs2
                 }
             }
             catch (...) {}
-
         }
     }
 
@@ -3084,9 +3206,47 @@ namespace rs2
             glEnd();
         }
 
+        for (auto&& stream : streams)
+        {
+            if (stream.second.profile.stream_type() == RS2_STREAM_POSE)
+            {
+                auto f = stream.second.texture->get_last_frame();
+                auto pose = f.as<pose_frame>();
+                if (!pose)
+                    continue;
+                
+                rs2_pose pose_data = pose.get_pose_data();
+                matrix4 pose_trans = tm2_pose_to_world_transformation(pose_data);
+                float model[16];
+                pose_trans.to_column_major(model);
+                
+                // set the pose transformation as the model matrix to draw the axis
+                glMatrixMode(GL_MODELVIEW);
+                glPushMatrix();
+                glLoadMatrixf(view);
+                glMultMatrixf(model); // = view x model
+
+                if (stream.second.profile.stream_index() > 1) //TODO: use a more robust way to identfy this
+                {
+                    tm2.draw_controller_pose_object();
+                }
+                else
+                {
+                    tm2.draw_pose_object();
+                }
+
+                // remove model matrix from the rest of the render
+                glPopMatrix();
+
+                rs2_vector translation{ pose_trans.mat[0][3], pose_trans.mat[1][3], pose_trans.mat[2][3] };
+                tracked_point p{ translation , pose_data.tracker_confidence }; //TODO: Osnat - use tracker_confidence or mapper_confidence ?
+                tm2.draw_trajectory(p);
+                tm2.draw_boundary(p);
+            }
+        }
+
         glColor4f(1.f, 1.f, 1.f, 1.f);
-
-
+        
         if (draw_frustrum && last_points)
         {
             glLineWidth(1.f);
@@ -3124,7 +3284,7 @@ namespace rs2
             glColor4f(1.f, 1.f, 1.f, 1.f);
         }
 
-        if (last_points)
+        if ( last_points && last_texture)
         {
             // Non-linear correspondence customized for non-flat surface exploration
             glPointSize(std::sqrt(viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width()));
@@ -3251,7 +3411,7 @@ namespace rs2
     {
         auto now = std::chrono::high_resolution_clock::now();
         static auto view_clock = std::chrono::high_resolution_clock::now();
-        auto sec_since_update = std::chrono::duration<double, std::milli>(now - view_clock).count() / 1000;
+        auto sec_since_update = std::chrono::duration<float, std::milli>(now - view_clock).count() / 1000;
         view_clock = now;
 
         if (viewer_rect.contains(mouse.cursor) || force)
@@ -3285,7 +3445,7 @@ namespace rs2
         auto index = f.get_profile().unique_id();
         auto mapped_index = streams_origin[index];
 
-        if(index == selected_tex_source_uid || mapped_index  == selected_tex_source_uid || selected_tex_source_uid == -1)
+        if (index == selected_tex_source_uid || mapped_index == selected_tex_source_uid || selected_tex_source_uid == -1)
             return true;
         return false;
     }
@@ -3651,6 +3811,69 @@ namespace rs2
 
     }
 
+    void device_model::draw_controllers_panel(ImFont* font, bool is_device_streaming)
+    {
+        if (!is_device_streaming)
+        {
+            controllers.clear();
+            available_controllers.clear();
+            return;
+        }
+        
+        if (controllers.size() > 0 || available_controllers.size() > 0)
+        {
+            int flags = dev.is<playback>() ? ImGuiButtonFlags_Disabled : 0;
+            ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
+            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+            ImGui::PushFont(font);
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 10,0 });
+            const float button_dim = 30.f;
+            for (auto&& c : available_controllers)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                std::string action = "Attach controller";
+                std::string mac = to_string() << (int)c[0] << ":" << (int)c[1] << ":" << (int)c[2] << ":" << (int)c[3] << ":" << (int)c[4] << ":" << (int)c[5];
+                std::string label = to_string() << u8"\uf11b" << "##" << action << mac;
+                if (ImGui::ButtonEx(label.c_str(), { button_dim , button_dim }, flags))
+                {
+                    dev.as<tm2>().connect_controller(c);
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", action.c_str());
+                }
+                ImGui::SameLine();
+                ImGui::Text("%s", mac.c_str());
+                ImGui::PopStyleColor(2);
+            }
+            for (auto&& c : controllers)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                std::string action = "Detach controller";
+                std::string label = to_string() << u8"\uf11b" << "##" << action << c.first;
+                if (ImGui::ButtonEx(label.c_str(), { button_dim , button_dim }, flags))
+                {
+                    dev.as<tm2>().disconnect_controller(c.first);
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", action.c_str());
+                }
+                ImGui::SameLine();
+                ImGui::Text("Controller #%d (connected)", c.first);
+                ImGui::PopStyleColor(2);
+            }
+            ImGui::PopStyleVar();
+            ImGui::PopFont();
+            ImGui::PopStyleColor(5);
+        }
+    }
+
     std::vector<std::string> get_device_info(const device& dev, bool include_location)
     {
         std::vector<std::string> res;
@@ -3945,6 +4168,39 @@ namespace rs2
         {
             bool something_to_show = false;
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
+            if (auto loopback = dev.as<rs2::tm2>())
+            {
+                something_to_show = true;
+                try
+                {
+                    if (!loopback.is_loopback_enabled() && ImGui::Selectable("Enable loopback...", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))
+                    {
+                        if (const char* ret = file_dialog_open(file_dialog_mode::open_file, "ROS-bag\0*.bag\0", NULL, NULL))
+                        {
+                            loopback.enable_loopback(ret);
+                        }
+                    }
+                    if (loopback.is_loopback_enabled() && ImGui::Selectable("Disable loopback...", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))
+                    {
+                        loopback.disable_loopback();
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        if (is_streaming)
+                            ImGui::SetTooltip("Stop streaming to use loopback functionality");
+                        else
+                            ImGui::SetTooltip("Enter the device to loopback mode (inject frames from file to FW)");
+                    }
+                }
+                catch (const rs2::error& e)
+                {
+                    error_message = error_to_string(e);
+                }
+                catch (const std::exception& e)
+                {
+                    error_message = e.what();
+                }
+            }
             if (auto adv = dev.as<advanced_mode>())
             {
                 something_to_show = true;
@@ -4163,8 +4419,14 @@ namespace rs2
             ImGui::SetCursorPos({ playback_panel_pos.x, playback_panel_pos.y + playback_panel_height });
         }
 
+        bool is_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm)
+        {
+            return sm->streaming;
+        });
+        draw_controllers_panel(window.get_font(), is_streaming);
+        
         pos = ImGui::GetCursorPos();
-
+        
         int info_control_panel_height = 0;
         if (show_device_info)
         {
@@ -4221,18 +4483,18 @@ namespace rs2
                     bool stop_recording = false;
 
                     ImGui::SetCursorPos({ windows_width - 35, pos.y + 3 });
-                    ImGui::PushFont(window.get_font());
+                    ImGui_ScopePushFont(window.get_font());
 
-                    ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
+                    ImGui_ScopePushStyleColor(ImGuiCol_Button, sensor_bg);
+                    ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+                    ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
 
                     if (!sub->streaming)
                     {
                         std::string label = to_string() << "  " << textual_icons::toggle_off <<"\noff   ##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
 
-                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
-                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+                        ImGui_ScopePushStyleColor(ImGuiCol_Text, redish);
+                        ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
 
                         if (sub->is_selected_combination_supported())
                         {
@@ -4286,8 +4548,8 @@ namespace rs2
                     else
                     {
                         std::string label = to_string() << "  " << textual_icons::toggle_on << "\n    on##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
-                        ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+                        ImGui_ScopePushStyleColor(ImGuiCol_Text, light_blue);
+                        ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 
                         if (ImGui::Button(label.c_str(), { 30,30 }))
                         {
@@ -4307,9 +4569,6 @@ namespace rs2
                             ImGui::SetTooltip("Stop streaming data from selected sub-device");
                         }
                     }
-
-                    ImGui::PopStyleColor(5);
-                    ImGui::PopFont();
 
                     if (is_recording && stop_recording)
                     {
@@ -4363,25 +4622,27 @@ namespace rs2
                     }
                 }
 
-                label = to_string() << "Controls ##" << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << id;;
-                if (ImGui::TreeNode(label.c_str()))
+                if (sub->num_supported_non_default_options())
                 {
-                    for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+                    label = to_string() << "Controls ##" << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << id;
+                    if (ImGui::TreeNode(label.c_str()))
                     {
-                        auto opt = static_cast<rs2_option>(i);
-                        if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
-                        if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
+                        for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                         {
-                            if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
+                            auto opt = static_cast<rs2_option>(i);
+                            if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
+                            if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
-                                get_curr_advanced_controls = true;
+                                if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
+                                {
+                                    get_curr_advanced_controls = true;
+                                }
                             }
                         }
+
+                        ImGui::TreePop();
                     }
-
-                    ImGui::TreePop();
                 }
-
                 if (dev.is<advanced_mode>() && sub->s->is<depth_sensor>())
                     draw_advanced_mode_tab(viewer);
 
@@ -4609,6 +4870,34 @@ namespace rs2
         }
     }
 
+    void device_model::handle_harware_events(const std::string& serialized_data)
+    {
+        //TODO: Move under hour glass
+        std::string event_type = get_event_type(serialized_data);
+        if (event_type == "Controller Event")
+        {
+            std::string subtype = get_subtype(serialized_data);
+            if (subtype == "Connection")
+            {
+                std::array<uint8_t, 6> mac_addr = get_mac(serialized_data);
+                int id = get_id(serialized_data);
+                controllers[id] = mac_addr;
+                available_controllers.erase(mac_addr);
+            }
+            else if (subtype == "Discovery")
+            {
+                std::array<uint8_t, 6> mac_addr = get_mac(serialized_data);
+                available_controllers.insert(mac_addr);
+            }
+            else if (subtype == "Disconnection")
+            {
+                int id = get_id(serialized_data);
+                controllers.erase(id);
+            }
+        }
+    }
+
+
     void viewer_model::draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message, texture_buffer* texture, points points)
     {
         if (!is_3d_view)
@@ -4750,6 +5039,10 @@ namespace rs2
         return std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - created_time).count();
     }
 
+    void notification_model::clear_color_scheme() const
+    {
+        ImGui::PopStyleColor(3);
+    }
     void notification_model::set_color_scheme(float t) const
     {
         if (severity == RS2_LOG_SEVERITY_ERROR ||
@@ -4801,13 +5094,9 @@ namespace rs2
         }
 
         ImGui::End();
-
+        ImGui::PopStyleColor();
+        clear_color_scheme();
         ImGui::PopStyleVar();
-
-        ImGui::PopStyleColor();
-        ImGui::PopStyleColor();
-        ImGui::PopStyleColor();
-        ImGui::PopStyleColor();
     }
 
     void notifications_model::add_notification(const notification_data& n)
@@ -4895,8 +5184,8 @@ namespace rs2
         }
 
         ImGui::PopStyleVar(2);
-        ImGui::PopStyleColor(6);
-
+        ImGui::PopStyleColor(3);
+        selected.clear_color_scheme();
         ImGui::End();
 
         ImGui::PopStyleColor();
@@ -4928,5 +5217,179 @@ namespace rs2
         _changes.pop();
         return true;
     }
+    void tm2_model::draw_controller_pose_object()
+    {
+        const float sphere_radius = 0.02f;
+        const float controller_height = 0.2f;
+        //TODO: Draw controller holder as cylinder
+        texture_buffer::draw_circle(1, 0, 0, 0, 1, 0, sphere_radius, { 0.0, controller_height + sphere_radius, 0.0 }, 1.0f);
+        texture_buffer::draw_circle(0, 1, 0, 0, 0, 1, sphere_radius, { 0.0, controller_height + sphere_radius, 0.0 }, 1.0f);
+        texture_buffer::draw_circle(1, 0, 0, 0, 0, 1, sphere_radius, { 0.0, controller_height + sphere_radius, 0.0 }, 1.0f);
+    }
+
+    void tm2_model::draw_pose_object()
+    {
+        if (!camera_object_button.is_pressed()) // draw camera box
+        {
+            glBegin(GL_QUADS);
+            for (auto&& colored_face : camera_box)
+            {
+                auto& c = colored_face.second;
+                glColor3f(c[0], c[1], c[2]);
+                for (auto&& v : colored_face.first)
+                {
+                    glVertex3f(v.x, v.y, v.z);
+                }
+            }
+            glEnd();
+
+            texture_buffer::draw_circle(1, 0, 0, 0, 1, 0, lens_radius, center_left, 1.0f);
+            texture_buffer::draw_circle(1, 0, 0, 0, 1, 0, lens_radius, center_right, 1.0f);
+        }
+        else //draw axis
+        {
+            texture_buffer::draw_axis(0.1f, 1.f);
+        }        
+    }
+    
+    void tm2_model::draw_trajectory(tracked_point& p)
+    {
+        if (!trajectory_button.is_pressed())
+        {
+            if (trajectory.size() > 0)
+            {
+                //cleanup last trajectory
+                trajectory.clear();
+            }
+            return;
+        }
+        add_to_trajectory(p);
+
+        glLineWidth(3.0f);
+        glBegin(GL_LINE_STRIP);
+        for (auto&& v : trajectory)
+        {
+            switch (v.second) //color the line according to confidence
+            {
+            case 3:
+                glColor3f(0.0f, 1.0f, 0.0f); //green
+                break;
+            case 2:
+                glColor3f(1.0f, 1.0f, 0.0f); //yellow
+                break;
+            case 1:
+                glColor3f(1.0f, 0.0f, 0.0f); //red
+                break;
+            case 0:
+                glColor3f(0.7f, 0.7f, 0.7f); //grey - failed pose
+                break;
+            default:
+                throw std::runtime_error("Invalid pose confidence value");
+            }
+            glVertex3f(v.first.x, v.first.y, v.first.z);
+        }
+        glEnd();
+    }
+
+    void tm2_model::add_to_trajectory(tracked_point& p)
+    {
+        //insert first element anyway
+        if (trajectory.size() == 0)
+        {
+            trajectory.push_back(p);
+        }
+        else
+        {
+            //check if new element is far enough - more than 1 mm
+            rs2_vector prev = trajectory.back().first;
+            rs2_vector curr = p.first;
+            if (sqrt(pow((curr.x - prev.x), 2) + pow((curr.y - prev.y), 2) + pow((curr.z - prev.z), 2)) < 0.001)
+            {
+                //if too close - check confidence and replace element
+                if (p.second > trajectory.back().second)
+                {
+                    trajectory.back() = p;
+                }
+                //else - discard this sample
+            }
+            else
+            {
+                //sample is far enough - keep it
+                trajectory.push_back(p);
+            }
+        }
+    }
+    
+    void tm2_model::draw_boundary(tracked_point& p)
+    {
+        if (!boundary_button.is_pressed())
+        {
+            //TODO - separate button
+            if (boundary.size() > 0)
+            {
+                //cleanup last boundary
+                boundary.clear();
+            }
+            return;
+        }       
+
+        // if new boundary - grab from trajectory
+        if (boundary.size() == 0)
+        {
+            std::vector<float2> trajectory_projection;
+            //create the boundary from the trajectory
+            for (auto&& v : trajectory)
+            {
+                // project the trajectory on XZ plane - ignore y coordinate of the point
+                float2 p{ v.first.x, v.first.z };
+                trajectory_projection.push_back(p);                
+            }            
+            boundary = simplify_line(trajectory_projection);
+        }
+        // check if there is any boundary to render
+        if (boundary.size() == 0)
+        {
+            return;
+        }
+
+        // check if the current position is inside or outside the boundary, to color it accordingly
+        float2 point{ p.first.x, p.first.z };
+        bool inside = point_in_polygon_2D(boundary, point);
+        color c;
+        if (inside)
+        {
+            c = { 0.0f, 1.0f, 0.0f };
+        }
+        else
+        {
+            c = { 1.0f, 0.0f, 0.0f };
+        }
+        // draw the boundary lines parallel to XZ plane
+        glLineWidth(1.0f);
+        for (float height = -1.0f; height < 1.0f; height += 0.2f)
+        {
+            glBegin(GL_LINE_STRIP);
+            glColor3f(c[0], c[1], c[2]);
+            for (auto&& v : boundary)
+            {
+                glVertex3f(v.x, height, v.y);
+            }
+            glVertex3f(boundary[0].x, height, boundary[0].y);
+            glEnd();
+        }        
+
+        // draw vertical lines along the boundary
+        glLineWidth(1.0f);
+        glBegin(GL_LINES);
+        glColor3f(c[0], c[1], c[2]);
+        for (auto&& v : boundary)
+        {
+            glVertex3f(v.x, -1.0f, v.y);
+            glVertex3f(v.x, 1.0f, v.y);
+        }        
+        glEnd();
+    }
+      
+
 
 }

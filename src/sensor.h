@@ -43,7 +43,7 @@ namespace librealsense
         }
 
         virtual stream_profiles get_active_streams() const override;
-
+        notifications_callback_ptr get_notifications_callback() const override;
         void register_notifications_callback(notifications_callback_ptr callback) override;
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
         void unregister_before_start_callback(int token) override;
@@ -85,7 +85,7 @@ namespace librealsense
         bool try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const;
 
         void assign_stream(const std::shared_ptr<stream_interface>& stream,
-                           std::shared_ptr<stream_profile_interface>& target) const;
+                           std::shared_ptr<stream_profile_interface> target) const;
 
         std::vector<request_mapping> resolve_requests(stream_profiles requests);
 

@@ -56,7 +56,12 @@ namespace librealsense
         }
         _notifications_proccessor->set_callback(std::move(callback));
     }
-
+	
+	notifications_callback_ptr sensor_base::get_notifications_callback() const
+    {
+        return _notifications_proccessor->get_callback();
+    }
+	
     int sensor_base::register_before_streaming_changes_callback(std::function<void(bool)> callback)
     {
         int token = (on_before_streaming_changes += callback);
@@ -110,7 +115,7 @@ namespace librealsense
         return false;
     }
 
-    void sensor_base::assign_stream(const std::shared_ptr<stream_interface>& stream, std::shared_ptr<stream_profile_interface>& target) const
+    void sensor_base::assign_stream(const std::shared_ptr<stream_interface>& stream, std::shared_ptr<stream_profile_interface> target) const
     {
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*stream, *target);
         target->set_unique_id(stream->get_unique_id());
@@ -610,7 +615,14 @@ namespace librealsense
             _camera_info[info] = std::move(val);
         }
     }
-
+    
+    void info_container::update_info(rs2_camera_info info, const std::string& val)
+    {
+        if (info_container::supports_info(info))
+        {
+            _camera_info[info] = std::move(val);
+        }
+    }
     const std::string& info_container::get_info(rs2_camera_info info) const
     {
         auto it = _camera_info.find(info);
@@ -730,7 +742,7 @@ namespace librealsense
             {
                 auto p = elem.second;
                 platform::stream_profile sp{ 1, 1, p.fps, stream_to_fourcc(p.stream) };
-                auto profile = std::make_shared<stream_profile_base>(sp);
+                auto profile = std::make_shared<motion_stream_profile>(sp);
                 profile->set_stream_type(p.stream);
                 profile->set_format(p.format);
                 profile->set_framerate(p.fps);

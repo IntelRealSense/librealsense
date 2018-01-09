@@ -108,6 +108,7 @@ namespace librealsense
         virtual stream_profiles get_active_streams() const = 0;
         virtual void open(const stream_profiles& requests) = 0;
         virtual void close() = 0;
+        virtual notifications_callback_ptr get_notifications_callback() const = 0;
 
         virtual void register_notifications_callback(notifications_callback_ptr callback) = 0;
         virtual int register_before_streaming_changes_callback(std::function<void(bool)> callback) = 0;
@@ -220,7 +221,7 @@ namespace librealsense
             }
         }
 
-        void create_snapshot(std::shared_ptr<depth_stereo_sensor>& snapshot) const
+        void create_snapshot(std::shared_ptr<depth_stereo_sensor>& snapshot) const override
         {
             snapshot = std::make_shared<depth_stereo_sensor_snapshot>(*this);
         }

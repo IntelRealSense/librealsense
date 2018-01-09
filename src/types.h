@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <condition_variable>
 #include <functional>
+#include <utility>                          // For std::forward
 #include "backend.h"
 #include "concurrency.h"
 #if BUILD_EASYLOGGINGPP
@@ -56,6 +57,31 @@ namespace librealsense
         template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
         operator std::string() const { return ss.str(); }
     };
+
+    template<typename T, size_t size>
+    inline size_t copy_array(T(&dst)[size], const T(&src)[size])
+    {
+        assert(dst != nullptr && src != nullptr);
+        for (size_t i = 0; i < size; i++)
+        {
+            dst[i] = src[i];
+        }
+        return size;
+    }
+
+    template<typename T, size_t sizem, size_t sizen>
+    inline size_t copy_2darray(T(&dst)[sizem][sizen], const T(&src)[sizem][sizen])
+    {
+        assert(dst != nullptr && src != nullptr);
+        for (size_t i = 0; i < sizem; i++)
+        {
+            for (size_t j = 0; j < sizen; j++)
+            {
+                dst[i][j] = src[i][j];
+            }
+        }
+        return sizem * sizen;
+    }
 
     void copy(void* dst, void const* src, size_t size);
 
@@ -729,6 +755,21 @@ namespace librealsense
         void release() override { delete this; }
     };
 
+    template<class T>
+    class internal_frame_callback : public rs2_frame_callback
+    {
+        T on_frame_function; //Callable of type: void(frame_interface* frame)
+    public:
+        explicit internal_frame_callback(T on_frame) : on_frame_function(on_frame) {}
+
+        void on_frame(rs2_frame* fref) override
+        {
+            on_frame_function((frame_interface*)(fref));
+        }
+
+        void release() override { delete this; }
+    };
+
     typedef void(*notifications_callback_function_ptr)(rs2_notification * notification, void * user);
 
     class notifications_callback : public rs2_notifications_callback
@@ -780,7 +821,7 @@ namespace librealsense
     typedef std::unique_ptr<rs2_log_callback, void(*)(rs2_log_callback*)> log_callback_ptr;
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
     typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback_ptr;
-    typedef std::unique_ptr<rs2_notifications_callback, void(*)(rs2_notifications_callback*)> notifications_callback_ptr;
+    typedef std::shared_ptr<rs2_notifications_callback> notifications_callback_ptr;
     typedef std::shared_ptr<rs2_devices_changed_callback> devices_changed_callback_ptr;
 
     using internal_callback = std::function<void(rs2_device_list* removed, rs2_device_list* added)>;
@@ -816,6 +857,7 @@ namespace librealsense
         rs2_log_severity severity;
         std::string description;
         double timestamp;
+        std::string serialized_data;
     };
 
 
@@ -833,6 +875,7 @@ namespace librealsense
         ~notifications_proccessor();
 
         void set_callback(notifications_callback_ptr callback);
+        notifications_callback_ptr get_callback() const;
         void raise_notification(const notification);
 
     private:
@@ -1392,7 +1435,7 @@ namespace librealsense
             {
                 for (auto func : functions)
                 {
-                    func(args...);
+                    func(std::forward<Args>(args)...);
                 }
 
                 retVal = true;

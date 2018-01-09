@@ -282,8 +282,8 @@ void View::updateQueries(BagQuery* q) {
 
         // lower_bound/upper_bound do a binary search to find the appropriate range of Index Entries given our time range
 
-        std::multiset<IndexEntry>::const_iterator begin = std::lower_bound(index.begin(), index.end(), q->query.getStartTime(), IndexEntryCompare());
-        std::multiset<IndexEntry>::const_iterator end   = std::upper_bound(index.begin(), index.end(), q->query.getEndTime(),   IndexEntryCompare());		
+        std::multiset<IndexEntry>::const_iterator begin = index.lower_bound({ q->query.getStartTime(), 0, 0 });
+        std::multiset<IndexEntry>::const_iterator end   = index.upper_bound({ q->query.getEndTime()  , 0, 0 });
 
         // Make sure we are at the right beginning
         while (begin != index.begin())

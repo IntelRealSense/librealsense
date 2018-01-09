@@ -16,19 +16,6 @@ extern "C" {
 #include "rs_types.h"
 #include "rs_sensor.h"
 
-/** \brief Motion device intrinsics: scale, bias, and variances */
-typedef struct rs2_motion_device_intrinsic
-{
-    /* \internal
-    * Scale X       cross axis  cross axis  Bias X \n
-    * cross axis    Scale Y     cross axis  Bias Y \n
-    * cross axis    cross axis  Scale Z     Bias Z */
-    float data[3][4];          //!< Interpret data array values
-
-    float noise_variances[3];  //!< Variance of noise for X, Y, and Z axis
-    float bias_variances[3];   //!< Variance of bias for X, Y, and Z axis
-} rs2_motion_device_intrinsic;
-
 /**
 * Determines number of devices in a list.
 * \param[in]  info_list The list of connected devices captured using rs2_query_devices
@@ -104,15 +91,6 @@ void rs2_hardware_reset(const rs2_device * device, rs2_error ** error);
 const rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error);
 
 /**
- * Obtain the intrinsics of a specific stream configuration from the device.
- * \param[in]  device       RealSense device to query
- * \param[in]  stream       Type of stream
- * \param[out] intrinsics   Pointer to the struct to store the data in
- * \param[out] error        If non-null, receives any error that occurs during this call, otherwise, errors are ignored
- */
-void rs2_get_motion_intrinsics(const rs2_sensor * device, rs2_stream stream, rs2_motion_device_intrinsic * intrinsics, rs2_error ** error);
-
-/**
 * Test if the given device can be extended to the requested extension.
 * \param[in]  device    Realsense device
 * \param[in]  extension The extension to which the device should be tested if it is extendable
@@ -128,6 +106,45 @@ int rs2_is_device_extendable_to(const rs2_device* device, rs2_extension extensio
 * \return               The list of sensors, should be released by rs2_delete_sensor_list
 */
 rs2_sensor_list* rs2_query_sensors(const rs2_device* device, rs2_error** error);
+
+/**
+* Enter the given device into loopback operation mode that uses the given file as input for raw data
+* \param[in]  device     Device to enter into loopback operation mode
+* \param[in]  from_file  Path to bag file with raw data for loopback
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_loopback_enable(const rs2_device* device, const char* from_file, rs2_error** error); 
+
+/**
+* Restores the given device into normal operation mode
+* \param[in]  device     Device to restore to normal operation mode
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_loopback_disable(const rs2_device* device, rs2_error** error);
+
+/**
+* Checks if the device is in loopback mode or not
+* \param[in]  device     Device to check for operation mode
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return true if the device is in loopback operation mode
+*/
+int rs2_loopback_is_enabled(const rs2_device* device, rs2_error** error);
+
+/**
+* Connects to a given tm2 controller
+* \param[in]  device     Device to connect to the controller
+* \param[in]  mac_addr   The MAC address of the desired controller
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_connect_tm2_controller(const rs2_device* device, const unsigned char* mac_addr, rs2_error** error);
+
+/**
+* Disconnects a given tm2 controller
+* \param[in]  device     Device to disconnect the controller from
+* \param[in]  id         The ID of the desired controller
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error** error);
 
 #ifdef __cplusplus
 }

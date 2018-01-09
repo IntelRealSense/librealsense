@@ -29,8 +29,8 @@ using namespace pybackend2;
 // Prevents expensive copies of pixel buffers into python
 PYBIND11_MAKE_OPAQUE(std::vector<uint8_t>)
 
-PYBIND11_PLUGIN(NAME) {
-    py::module m(SNAME, "Wrapper for the backend of librealsense");
+PYBIND11_MODULE(NAME, m) {
+    m.doc() = "Wrapper for the backend of librealsense";
 
     py::class_<platform::control_range> control_range(m, "control_range");
     control_range.def(py::init<>())
@@ -327,6 +327,4 @@ PYBIND11_PLUGIN(NAME) {
                 data[i] = l[i].cast<uint8_t>();
             return encode_command(static_cast<command>(opcode), p1, p2, p3, p4, data);
         }, "opcode"_a, "p1"_a=0, "p2"_a=0, "p3"_a=0, "p4"_a=0, "data"_a = py::list(0));
-
-    return m.ptr();
 }

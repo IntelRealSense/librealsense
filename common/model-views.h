@@ -278,7 +278,7 @@ namespace rs2
         void draw_options(const std::vector<rs2_option>& drawing_order,
                           bool update_read_only_options, std::string& error_message,
                           notifications_model& model);
-
+        int num_supported_non_default_options() const;
         bool draw_option(rs2_option opt, bool update_read_only_options,
             std::string& error_message, notifications_model& model)
         {
@@ -450,6 +450,8 @@ namespace rs2
             viewer_model& viewer, float windows_width,
             bool update_read_only_options,
             std::vector<std::function<void()>>& draw_later, bool draw_device_outline = true);
+        void handle_harware_events(const std::string& serialized_data);
+
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
 
         bool metadata_supported = false;
@@ -466,7 +468,8 @@ namespace rs2
         bool allow_remove = true;
         bool show_depth_only = false;
         bool show_stream_selection = true;
-
+        std::map<int, std::array<uint8_t, 6>> controllers;
+        std::set<std::array<uint8_t, 6>> available_controllers;
         std::vector<std::pair<std::string, std::string>> infos;
         std::vector<std::string> restarting_device_info;
     private:
@@ -475,6 +478,7 @@ namespace rs2
         int draw_playback_controls(ImFont* font, viewer_model& view);
         advanced_mode_control amc;
         std::string pretty_time(std::chrono::nanoseconds duration);
+        void draw_controllers_panel(ImFont* font, bool is_device_streaming);
         float draw_device_panel(float panel_width,
                                 ux_window& window,
                                 std::string& error_message,
@@ -509,6 +513,7 @@ namespace rs2
         double get_age_in_ms() const;
         void draw(int w, int y, notification_model& selected);
         void set_color_scheme(float t) const;
+        void clear_color_scheme() const;
 
         static const int MAX_LIFETIME_MS = 10000;
         int height = 40;
@@ -644,6 +649,100 @@ namespace rs2
         int last_stream_id = 0;
     };
 
+    class press_button_model
+    {
+    public:
+        press_button_model(const char* icon_default, const char* icon_pressed, std::string tooltip_default, std::string tooltip_pressed)
+        {
+            tooltip[unpressed] = tooltip_default;
+            tooltip[pressed] = tooltip_pressed;
+            icon[unpressed] = icon_default;
+            icon[pressed] = icon_pressed;
+        }
+
+        void toggle_button() { state_pressed = !state_pressed; }            
+        void set_button_pressed(bool p) { state_pressed = p; }            
+        bool is_pressed() { return state_pressed; }
+        std::string get_tooltip() { return(state_pressed ? tooltip[pressed]: tooltip[unpressed]); }
+        std::string get_icon() { return(state_pressed ? icon[pressed] : icon[unpressed]); }
+
+    private:
+        enum button_state
+        {
+            unpressed, //default
+            pressed
+        };
+
+        bool state_pressed = false;
+        std::string tooltip[2];        
+        std::string icon[2];
+    };
+
+    using color = std::array<float, 3>;
+    using face = std::array<float3, 4>;
+    using colored_cube = std::array<std::pair<face, color>, 6>;
+    using tracked_point = std::pair<rs2_vector, unsigned int>; // translation and confidence
+
+    class tm2_model
+    {
+    public:
+        void draw_controller_pose_object();
+        void draw_pose_object();
+        void draw_trajectory(tracked_point& p);
+        void draw_boundary(tracked_point& p);
+
+        press_button_model trajectory_button{ u8"\uf1b0", u8"\uf1b0","Draw trajectory", "Stop drawing trajectory" };
+        press_button_model camera_object_button{ u8"\uf047", u8"\uf083",  "Draw pose axis", "Draw camera pose" };
+        press_button_model boundary_button{ u8"\uf278", u8"\uf278", "Set trajectory as boundary", "Discard boundary" };
+
+    private:
+        void add_to_trajectory(tracked_point& p);
+
+        const float len_x = 0.1f;
+        const float len_y = 0.03f;
+        const float len_z = 0.01f;
+        const float lens_radius = 0.005f;
+        /*
+          4--------------------------3
+         /|                         /|
+        5-|------------------------6 |
+        | /1                       | /2
+        |/                         |/
+        7--------------------------8
+        */
+        float3 v1{ -len_x/2, -len_y/2,  len_z/2 };
+        float3 v2{  len_x/2, -len_y/2,  len_z/2 };
+        float3 v3{  len_x/2,  len_y/2,  len_z/2 };
+        float3 v4{ -len_x/2,  len_y/2,  len_z/2 };
+        float3 v5{ -len_x/2,  len_y/2, -len_z/2 };
+        float3 v6{  len_x/2,  len_y/2, -len_z/2 };
+        float3 v7{ -len_x/2, -len_y/2, -len_z/2 };
+        float3 v8{  len_x/2, -len_y/2, -len_z/2 };
+        face f1{ { v1,v2,v3,v4 } }; //Back
+        face f2{ { v2,v8,v6,v3 } }; //Right side
+        face f3{ { v4,v3,v6,v5 } }; //Top side
+        face f4{ { v1,v4,v5,v7 } }; //Left side
+        face f5{ { v7,v8,v6,v5 } }; //Front
+        face f6{ { v1,v2,v8,v7 } }; //Bottom side
+
+        std::array<color, 6> colors{ {
+            {{ 0.5f, 0.5f, 0.5f }}, //Back
+            {{ 0.7f, 0.7f, 0.7f }}, //Right side
+            {{ 1.0f, 0.7f, 0.7f }}, //Top side
+            {{ 0.7f, 0.7f, 0.7f }}, //Left side
+            {{ 0.4f, 0.4f, 0.4f }}, //Front
+            {{ 0.7f, 0.7f, 0.7f }}  //Bottom side
+            } };
+
+        colored_cube camera_box{ { { f1,colors[0] },{ f2,colors[1] },{ f3,colors[2] },{ f4,colors[3] },{ f5,colors[4] },{ f6,colors[5] } } };
+        float3 center_left{ v5.x + len_x / 3, v6.y - len_y / 3, v5.z };
+        float3 center_right{ v6.x - len_x / 3, v6.y - len_y / 3, v5.z };
+                
+        std::vector<tracked_point> trajectory;
+        std::vector<float2> boundary;
+        
+    };
+
     class viewer_model
     {
     public:
@@ -713,6 +812,7 @@ namespace rs2
         stream_model* selected_stream = nullptr;
 
         post_processing_filters ppf;
+        tm2_model tm2;
 
         notifications_model not_model;
         bool is_output_collapsed = false;

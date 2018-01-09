@@ -83,6 +83,8 @@ if(BUILD_WITH_OPENMP)
     endif()
 endif()
 
+option(BUILD_WITH_TM2 "Build with support for Intel TM2 tracking device" OFF)
+
 option(BUILD_EASYLOGGINGPP "Build EasyLogging++ as a part of the build" ON)
 
 if (BUILD_EASYLOGGINGPP)
@@ -585,6 +587,64 @@ endif()
 
 add_subdirectory(third-party/realsense-file)
 
+
+if (BUILD_WITH_TM2)
+    message(STATUS "Building with TM2")
+
+    if(WIN32)
+        source_group("Source Files\\Devices\\Tracking" FILES
+            src/tm2/tm-context.cpp
+            src/tm2/tm-info.cpp
+            src/tm2/tm-device.cpp
+            )
+
+        source_group("Header Files\\Devices\\Tracking" FILES
+            src/tm2/tm-context.h
+            src/tm2/tm-info.h
+            src/tm2/tm-device.h
+            src/tm2/tm-conversions.h
+            src/tm2/controller_event_serializer.h
+            )
+    endif()
+
+    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
+    find_package(libtm REQUIRED)
+
+    foreach(flag_var
+            CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+            CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
+            CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+            CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+        if(${flag_var} MATCHES "/MD")
+            string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+        endif(${flag_var} MATCHES "/MD")
+    endforeach(flag_var)
+
+    list(APPEND REALSENSE_HPP
+    src/tm2/tm-context.h
+    src/tm2/tm-device.h
+    src/tm2/tm-info.h
+    src/tm2/tm-conversions.h
+    src/tm2/controller_event_serializer.h
+    )
+    
+    list(APPEND REALSENSE_CPP
+    src/tm2/tm-context.cpp
+    src/tm2/tm-device.cpp
+    src/tm2/tm-info.cpp
+    )
+
+    include_directories(${LIBTM_INCLUDE_DIR})
+    set(TRACKING_DEVICE_LIBS libtm)
+
+    install(TARGETS libtm
+        EXPORT realsense2Targets
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+endif()
+
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
     if(WIN32)
@@ -604,10 +664,12 @@ else()
     add_library(realsense2 STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
 endif()
 
+if(BUILD_WITH_TM2)
+    target_compile_definitions(realsense2 PRIVATE WITH_TRACKING=1 BUILD_STATIC=1)
+endif()
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
-target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT})
-list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
 
 if(NOT WIN32)
     target_link_libraries(realsense2 PRIVATE usb)
@@ -618,6 +680,11 @@ endif()
 
 add_definitions(-DELPP_THREAD_SAFE)
 add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
+
+
+list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
+
+
 include_directories(realsense2 src)
 
 set_target_properties (realsense2 PROPERTIES

@@ -23,7 +23,7 @@
 #include "../../third-party/realsense-file/rosbag/msgs/geometry_msgs/Transform.h"
 #include "../../third-party/realsense-file/rosbag/msgs/geometry_msgs/Twist.h"
 #include "../../third-party/realsense-file/rosbag/msgs/geometry_msgs/Accel.h"
-//#include "../../third-party/realsense-file/rosbag/msgs/realsense_legacy_msgs/legacy_headers.h"
+#include "../../third-party/realsense-file/rosbag/msgs/realsense_legacy_msgs/legacy_headers.h"
 
 namespace rosbag_inspector
 {
@@ -212,105 +212,105 @@ namespace rosbag_inspector
         /*************************************************************/
         /*************************************************************/
 
-        //else if (auto data = try_instantiate<realsense_legacy_msgs::compressed_frame_info>(m))
-        //{
-        //    os << "encoding: " << data->encoding << '\n';
-        //    os << "frame_metadata: " << data->frame_metadata << '\n';
-        //    os << "height: " << data->height << '\n';
-        //    os << "step: " << data->step << '\n';
-        //    os << "system_time: " << data->system_time << '\n';
-        //    os << "time_stamp_domain: " << data->time_stamp_domain << '\n';
-        //    os << "width: " << data->width << '\n';
-        //}
-        //else if (auto data = try_instantiate<realsense_legacy_msgs::controller_command>(m))
-        //{
-        //    os << "controller_id : " << data->controller_id << '\n';
-        //    os << "mac_address : " << data->mac_address << '\n';
-        //    os << "type : " << data->type << '\n';
-        //}
-        //else if (auto data = try_instantiate<realsense_legacy_msgs::controller_event>(m))
-        //{
-        //    os << "controller_id : " << data->controller_id << '\n';
-        //    os << "mac_address : " << data->mac_address << '\n';
-        //    os << "type : " << data->type << '\n';
-        //    os << "timestamp : " << data->timestamp << '\n';
-        //}
-        //else if (auto data = try_instantiate<realsense_legacy_msgs::controller_vendor_data>(m))
-        //{
-        //    os << "controller_id : " << data->controller_id << '\n';
-        //    os << "data : " << data->data << '\n';
-        //    os << "timestamp : " << data->timestamp << '\n';
-        //    os << "vendor_data_source_index : " << data->vendor_data_source_index << '\n';
-        //    os << "vendor_data_source_type : " << data->vendor_data_source_type << '\n';
-        //}
-        //else if (auto data = try_instantiate<realsense_legacy_msgs::extrinsics>(m))
-        //{
-        //    os << "  Extrinsics : " << std::endl;
-        //    os << "    Rotation    : " << data->rotation << std::endl;
-        //    os << "    Translation : " << data->translation << std::endl;
-        //}
-        //else if (auto data = try_instantiate<realsense_legacy_msgs::frame_info>(m))
-        //{
-        //    os << "frame_metadata :" << data->frame_metadata << '\n';
-        //    os << "system_time :" << data->system_time << '\n';
-        //    os << "time_stamp_domain :" << data->time_stamp_domain << '\n';
-        //}
-        //else if (auto data = try_instantiate<realsense_legacy_msgs::metadata>(m))
-        //{
-        //    os << "type : " << data->type << '\n';
-        //    os << "data : " << data->data << '\n';
-        //}
-        //else if (auto data = try_instantiate<realsense_legacy_msgs::motion_intrinsics>(m))
-        //{
-        //    os << "bias_variances : " << data->bias_variances << '\n';
-        //    os << "data : " << data->data << '\n';
-        //    os << "noise_variances : " << data->noise_variances << '\n';
-        //}
-        //else if (auto data = try_instantiate<realsense_legacy_msgs::motion_stream_info>(m))
-        //{
-        //    os << "fps : " << data->fps << '\n';
-        //    os << "motion_type : " << data->motion_type << '\n';
-        //    os << "stream_extrinsics : " << data->stream_extrinsics << '\n';
-        //    os << "stream_intrinsics : " << data->stream_intrinsics << '\n';
-        //}
-        //else if (auto data = try_instantiate<realsense_legacy_msgs::occupancy_map>(m))
-        //{
-        //    os << "accuracy : " << data->accuracy << '\n';
-        //    os << "reserved : " << data->reserved << '\n';
-        //    os << "tiles : " << data->tiles << '\n';
-        //    os << "tile_count : " << data->tile_count << '\n';
-        //}
-        //else if (auto data = try_instantiate<realsense_legacy_msgs::pose>(m))
-        //{
-        //    os << "translation : " << data->translation << '\n';
-        //    os << "rotation : " << data->rotation << '\n';
-        //    os << "velocity : " << data->velocity << '\n';
-        //    os << "angular_velocity : " << data->angular_velocity << '\n';
-        //    os << "acceleration : " << data->acceleration << '\n';
-        //    os << "angular_acceleration : " << data->angular_acceleration << '\n';
-        //    os << "timestamp : " << data->timestamp << '\n';
-        //    os << "system_timestamp : " << data->system_timestamp << '\n';
-        //}
-        //else if (auto data = try_instantiate<realsense_legacy_msgs::stream_extrinsics>(m))
-        //{
-        //    os << "extrinsics : " << data->extrinsics << '\n';
-        //    os << "reference_point_id : " << data->reference_point_id << '\n';
-        //}
-        //else if (auto data = try_instantiate<realsense_legacy_msgs::stream_info>(m))
-        //{
-        //    os << "stream_type : " << data->stream_type << '\n';
-        //    os << "fps : " << data->fps << '\n';
-        //    os << "camera_info : " << data->camera_info << '\n';
-        //    os << "stream_extrinsics : " << data->stream_extrinsics << '\n';
-        //    os << "width : " << data->width << '\n';
-        //    os << "height : " << data->height << '\n';
-        //    os << "encoding : " << data->encoding << '\n';
-        //}
-        //else if (auto data = try_instantiate<realsense_legacy_msgs::vendor_data>(m))
-        //{
-        //    os << "name : " << data->name << '\n';
-        //    os << "value : " << data->value << '\n';
-        //}
+        else if (auto data = try_instantiate<realsense_legacy_msgs::compressed_frame_info>(m))
+        {
+            os << "encoding: " << data->encoding << '\n';
+            os << "frame_metadata: " << data->frame_metadata << '\n';
+            os << "height: " << data->height << '\n';
+            os << "step: " << data->step << '\n';
+            os << "system_time: " << data->system_time << '\n';
+            os << "time_stamp_domain: " << data->time_stamp_domain << '\n';
+            os << "width: " << data->width << '\n';
+        }
+        else if (auto data = try_instantiate<realsense_legacy_msgs::controller_command>(m))
+        {
+            os << "controller_id : " << data->controller_id << '\n';
+            os << "mac_address : " << data->mac_address << '\n';
+            os << "type : " << data->type << '\n';
+        }
+        else if (auto data = try_instantiate<realsense_legacy_msgs::controller_event>(m))
+        {
+            os << "controller_id : " << data->controller_id << '\n';
+            os << "mac_address : " << data->mac_address << '\n';
+            os << "type : " << data->type << '\n';
+            os << "timestamp : " << data->timestamp << '\n';
+        }
+        else if (auto data = try_instantiate<realsense_legacy_msgs::controller_vendor_data>(m))
+        {
+            os << "controller_id : " << data->controller_id << '\n';
+            os << "data : " << data->data << '\n';
+            os << "timestamp : " << data->timestamp << '\n';
+            os << "vendor_data_source_index : " << data->vendor_data_source_index << '\n';
+            os << "vendor_data_source_type : " << data->vendor_data_source_type << '\n';
+        }
+        else if (auto data = try_instantiate<realsense_legacy_msgs::extrinsics>(m))
+        {
+            os << "  Extrinsics : " << std::endl;
+            os << "    Rotation    : " << data->rotation << std::endl;
+            os << "    Translation : " << data->translation << std::endl;
+        }
+        else if (auto data = try_instantiate<realsense_legacy_msgs::frame_info>(m))
+        {
+            os << "frame_metadata :" << data->frame_metadata << '\n';
+            os << "system_time :" << data->system_time << '\n';
+            os << "time_stamp_domain :" << data->time_stamp_domain << '\n';
+        }
+        else if (auto data = try_instantiate<realsense_legacy_msgs::metadata>(m))
+        {
+            os << "type : " << data->type << '\n';
+            os << "data : " << data->data << '\n';
+        }
+        else if (auto data = try_instantiate<realsense_legacy_msgs::motion_intrinsics>(m))
+        {
+            os << "bias_variances : " << data->bias_variances << '\n';
+            os << "data : " << data->data << '\n';
+            os << "noise_variances : " << data->noise_variances << '\n';
+        }
+        else if (auto data = try_instantiate<realsense_legacy_msgs::motion_stream_info>(m))
+        {
+            os << "fps : " << data->fps << '\n';
+            os << "motion_type : " << data->motion_type << '\n';
+            os << "stream_extrinsics : " << data->stream_extrinsics << '\n';
+            os << "stream_intrinsics : " << data->stream_intrinsics << '\n';
+        }
+        else if (auto data = try_instantiate<realsense_legacy_msgs::occupancy_map>(m))
+        {
+            os << "accuracy : " << data->accuracy << '\n';
+            os << "reserved : " << data->reserved << '\n';
+            os << "tiles : " << data->tiles << '\n';
+            os << "tile_count : " << data->tile_count << '\n';
+        }
+        else if (auto data = try_instantiate<realsense_legacy_msgs::pose>(m))
+        {
+            os << "translation : " << data->translation << '\n';
+            os << "rotation : " << data->rotation << '\n';
+            os << "velocity : " << data->velocity << '\n';
+            os << "angular_velocity : " << data->angular_velocity << '\n';
+            os << "acceleration : " << data->acceleration << '\n';
+            os << "angular_acceleration : " << data->angular_acceleration << '\n';
+            os << "timestamp : " << data->timestamp << '\n';
+            os << "system_timestamp : " << data->system_timestamp << '\n';
+        }
+        else if (auto data = try_instantiate<realsense_legacy_msgs::stream_extrinsics>(m))
+        {
+            os << "extrinsics : " << data->extrinsics << '\n';
+            os << "reference_point_id : " << data->reference_point_id << '\n';
+        }
+        else if (auto data = try_instantiate<realsense_legacy_msgs::stream_info>(m))
+        {
+            os << "stream_type : " << data->stream_type << '\n';
+            os << "fps : " << data->fps << '\n';
+            os << "camera_info : " << data->camera_info << '\n';
+            os << "stream_extrinsics : " << data->stream_extrinsics << '\n';
+            os << "width : " << data->width << '\n';
+            os << "height : " << data->height << '\n';
+            os << "encoding : " << data->encoding << '\n';
+        }
+        else if (auto data = try_instantiate<realsense_legacy_msgs::vendor_data>(m))
+        {
+            os << "name : " << data->name << '\n';
+            os << "value : " << data->value << '\n';
+        }
         else
         {
             os << m.getDataType() << '\n';

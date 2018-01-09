@@ -1250,13 +1250,10 @@ TEST_CASE("Motion profiles sanity", "[live]")
 
                     CAPTURE(stream);
 
-                    if (stream != RS2_STREAM_ACCEL && stream != RS2_STREAM_GYRO)
+                    if (stream == RS2_STREAM_ACCEL || stream == RS2_STREAM_GYRO)
                     {
-                        REQUIRE_THROWS(dev.get_motion_intrinsics(stream));
-                    }
-                    else
-                    {
-                        REQUIRE_NOTHROW(mm_int = dev.get_motion_intrinsics(stream));
+                        auto motion = profile.as<motion_stream_profile>();
+                        REQUIRE_NOTHROW(mm_int = motion.get_motion_intrinsics());
 
                         for (int j = 0; j < 3; j++)
                         {
