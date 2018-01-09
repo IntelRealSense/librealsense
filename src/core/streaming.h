@@ -221,7 +221,7 @@ namespace librealsense
             }
         }
 
-        void create_snapshot(std::shared_ptr<depth_stereo_sensor>& snapshot) const
+        void create_snapshot(std::shared_ptr<depth_stereo_sensor>& snapshot) const override
         {
             snapshot = std::make_shared<depth_stereo_sensor_snapshot>(*this);
         }

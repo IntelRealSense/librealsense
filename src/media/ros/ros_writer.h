@@ -6,6 +6,7 @@
 #include <string>
 #include <memory>
 #include <iomanip>
+#include <ios>      //For std::hexfloat
 #include "core/debug.h"
 #include "core/serialization.h"
 #include "archive.h"
@@ -75,7 +76,7 @@ namespace librealsense
             write_extension_snapshot(sensor_id.device_index, sensor_id.sensor_index, timestamp, type, snapshot);
         }
 
-        const std::string& get_file_name() const
+        const std::string& get_file_name() const override
         {
             return m_file_path;
         }

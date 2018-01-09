@@ -38,10 +38,11 @@ std::vector<std::shared_ptr<record_sensor>> record_device::create_record_sensors
     {
         auto& live_sensor = device->get_sensor(sensor_index);
         auto recording_sensor = std::make_shared<record_sensor>(*this, live_sensor);
-        recording_sensor->on_notification += [this, recording_sensor, sensor_index](const notification& n) { write_notification(sensor_index, n); };
+        m_on_notification_token = recording_sensor->on_notification += [this, recording_sensor, sensor_index](const notification& n) { write_notification(sensor_index, n); };
         auto on_error = [recording_sensor](const std::string& s) {recording_sensor->stop_with_error(s); };
-        recording_sensor->on_frame += [this, recording_sensor, sensor_index, on_error](frame_holder f) { write_data(sensor_index, std::move(f), on_error); };
-        recording_sensor->on_extension_change += [this, recording_sensor, sensor_index, on_error](rs2_extension ext, std::shared_ptr<extension_snapshot> snapshot) { write_sensor_extension_snapshot(sensor_index, ext, snapshot, on_error); };
+        m_on_frame_token = recording_sensor->on_frame += [this, recording_sensor, sensor_index, on_error](frame_holder f) { write_data(sensor_index, std::move(f), on_error); };
+        m_on_extension_change_token = recording_sensor->on_extension_change += [this, recording_sensor, sensor_index, on_error](rs2_extension ext, std::shared_ptr<extension_snapshot> snapshot) { write_sensor_extension_snapshot(sensor_index, ext, snapshot, on_error); };
+        recording_sensor->init(); //Calling init AFTER register to the above events
         record_sensors.emplace_back(recording_sensor);
     }
     return record_sensors;
@@ -49,20 +50,20 @@ std::vector<std::shared_ptr<record_sensor>> record_device::create_record_sensors
 
 librealsense::record_device::~record_device()
 {
-    if((*m_write_thread)->flush() == false)
+    for (auto&& s : m_sensors)
+    {
+        s->on_notification -= m_on_notification_token;
+        s->on_frame -= m_on_frame_token;
+        s->on_extension_change -= m_on_extension_change_token;
+        s->disable_recording();
+    }
+    if ((*m_write_thread)->flush() == false)
     {
         LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
     }
     (*m_write_thread)->stop();
     //Just in case someone still holds a reference to the sensors, 
     // we make sure that they will not try to record anything
-    for (auto&& s : m_sensors)
-    {
-        s->on_notification += [](const notification& n) { };
-        s->on_frame += [](frame_holder f) { };
-        s->on_extension_change += [](rs2_extension ext, std::shared_ptr<extension_snapshot> snapshot) { };
-        s->disable_recording();
-    }
 	m_sensors.clear();
 }
 

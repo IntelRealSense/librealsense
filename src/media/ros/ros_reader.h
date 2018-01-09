@@ -5,6 +5,7 @@
 #include <chrono>
 #include <mutex>
 #include <regex>
+#include <ios>      //For std::hexfloat
 #include <core/serialization.h>
 #include "rosbag/view.h"
 #include "ros_file_format.h"

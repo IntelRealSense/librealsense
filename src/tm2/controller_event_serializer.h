@@ -53,7 +53,7 @@ namespace librealsense
             CASE_RETURN_STR(CRC_ERROR)
             CASE_RETURN_STR(INCOMPATIBLE)
             CASE_RETURN_STR(SLAM_NO_DICTIONARY)
-        default: assert(!is_valid(value)); return to_string() << "Unknown (" << (int)value << ")";
+        default: return to_string() << "Unknown (" << (int)value << ")";
         }
 #undef CASE_RETURN_STR
     }

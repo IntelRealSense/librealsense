@@ -8,15 +8,28 @@
 librealsense::record_sensor::record_sensor(const device_interface& device,
                                             sensor_interface& sensor) :
     m_sensor(sensor),
-    m_user_notification_callback(nullptr, [](rs2_notifications_callback* n) {}),
     m_is_recording(false),
     m_parent_device(device),
     m_is_sensor_hooked(false),
     m_before_start_callback_token(-1)
 {
-    //override_notification_callback
-    m_user_notification_callback = sensor.get_notifications_callback();
-    register_notifications_callback(m_user_notification_callback);
+    LOG_DEBUG("Created record_sensor");
+}
+
+librealsense::record_sensor::~record_sensor()
+{
+    m_sensor.unregister_before_start_callback(m_before_start_callback_token);
+    disable_sensor_options_recording();
+    disable_sensor_hooks();
+    m_is_recording = false;
+    LOG_DEBUG("Destructed record_sensor");
+}
+
+void librealsense::record_sensor::init()
+{
+    //Seperating init from the constructor since callbacks may be called from here, 
+    // and the only way to register to them is after creating the record sensor
+
     enable_sensor_options_recording();
     m_before_start_callback_token = m_sensor.register_before_streaming_changes_callback([this](bool streaming)
     {
@@ -36,21 +49,8 @@ librealsense::record_sensor::record_sensor(const device_interface& device,
         // we will not get the above callback (before start) so we hook it now
         enable_sensor_hooks();
     }
-    LOG_DEBUG("Created record_sensor");
-
+    LOG_DEBUG("Hooked to real sense");
 }
-
-librealsense::record_sensor::~record_sensor()
-{
-    m_sensor.unregister_before_start_callback(m_before_start_callback_token);
-    disable_sensor_options_recording();
-    disable_sensor_hooks();
-    m_is_recording = false;
-    LOG_DEBUG("Destructed record_sensor");
-    if(m_user_notification_callback)
-        m_sensor.register_notifications_callback(m_user_notification_callback);
-}
-
 stream_profiles record_sensor::get_stream_profiles() const
 {
     return m_sensor.get_stream_profiles();
@@ -254,7 +254,8 @@ void record_sensor::disable_sensor_hooks()
 }
 void record_sensor::hook_sensor_callbacks()
 {
-    //TODO: wrap_notification_callback (copy from future)
+    m_user_notification_callback = m_sensor.get_notifications_callback();
+    register_notifications_callback(m_user_notification_callback);
     m_original_callback = m_sensor.get_frames_callback();
     if (m_original_callback)
     {
@@ -279,6 +280,11 @@ frame_callback_ptr librealsense::record_sensor::wrap_frame_callback(frame_callba
 }
 void record_sensor::unhook_sensor_callbacks()
 {
+    if (m_user_notification_callback)
+    {
+        m_sensor.register_notifications_callback(m_user_notification_callback);
+    }
+
     if (m_original_callback)
     {
         m_sensor.set_frames_callback(m_original_callback);

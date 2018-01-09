@@ -21,7 +21,7 @@ namespace librealsense
         record_sensor(const device_interface& device,
                       sensor_interface& sensor);
         virtual ~record_sensor();
-
+        void init();
         stream_profiles get_stream_profiles() const override;
         void open(const stream_profiles& requests) override;
         void close() override;
@@ -48,7 +48,6 @@ namespace librealsense
         void stop_with_error(const std::string& message);
         void disable_recording();
     private /*methods*/:
-        void raise_user_notification(const std::string& str);
         template <typename T> void record_snapshot(rs2_extension extension_type, const  recordable<T>& snapshot);
         template <rs2_extension E, typename P> bool extend_to_aux(P* p, void** ext);
         void record_frame(frame_holder holder);
