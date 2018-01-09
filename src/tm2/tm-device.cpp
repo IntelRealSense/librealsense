@@ -383,6 +383,7 @@ namespace librealsense
             }
         }
         _is_opened = true;
+        set_active_streams(requests);
     }
 
     void tm2_sensor::close()
@@ -402,6 +403,7 @@ namespace librealsense
         _tm_active_profiles.reset();
 
         _is_opened = false;
+        set_active_streams({});
     }
 
     void tm2_sensor::pass_frames_to_fw(frame_holder fref)
@@ -507,7 +509,7 @@ namespace librealsense
 
         _dispatcher.start();
         _source.set_callback(callback);
-
+        raise_on_before_streaming_changes(true);
         auto status = _tm_dev->Start(this, &_tm_active_profiles);
         if (status != Status::SUCCESS)
         {
@@ -547,7 +549,7 @@ namespace librealsense
         {
             throw io_exception("Failed to stop TM2 camera");
         }
-
+        raise_on_before_streaming_changes(false);
         _is_streaming = false;
     }
 
