@@ -356,8 +356,8 @@ public:
             //  supported by the RealSense SDK
             // For example:
             //    * rs2_stream::RS2_STREAM_DEPTH describes a stream of depth images
-            //    * rs2_stream::rs2_stream::RS2_STREAM_COLOR describes a stream of color images
-            //    * rs2_stream::rs2_stream::RS2_STREAM_INFRARED describes a stream of infrared images
+            //    * rs2_stream::RS2_STREAM_COLOR describes a stream of color images
+            //    * rs2_stream::RS2_STREAM_INFRARED describes a stream of infrared images
 
             // As mentioned, a sensor can have multiple streams.
             // In order to distinguish between streams with the same
