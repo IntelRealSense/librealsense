@@ -1730,10 +1730,20 @@ rs2_device* rs2_create_bypass_device(rs2_error** error) BEGIN_API_CALL
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
 
+void rs2_bypass_create_matcher(rs2_device* dev, rs2_matchers matcher, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    auto df = VALIDATE_INTERFACE(dev->device, librealsense::bypass_device);
+
+
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(, dev, matcher)
+
 rs2_sensor* rs2_bypass_add_sensor(rs2_device* dev, const char* sensor_name, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     auto df = VALIDATE_INTERFACE(dev->device, librealsense::bypass_device);
+
     return new rs2_sensor(
         *dev,
         &df->add_bypass_sensor(sensor_name),
@@ -1741,18 +1751,13 @@ rs2_sensor* rs2_bypass_add_sensor(rs2_device* dev, const char* sensor_name, rs2_
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev, sensor_name)
 
-void rs2_bypass_on_video_frame(rs2_device* dev, int sensor, void* pixels, 
-    void(*deleter)(void*),
-    int stride, int bpp,
-    rs2_time_t ts, rs2_timestamp_domain domain,
-    int frame_number,
-    const rs2_stream_profile* profile, rs2_error** error) BEGIN_API_CALL
+void rs2_bypass_on_video_frame(rs2_sensor* sensor, rs2_bypass_video_frame frame, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(dev);
-    auto df = VALIDATE_INTERFACE(dev->device, librealsense::bypass_device);
-    return df->get_bypass_sensor(sensor).on_video_frame(pixels, deleter, stride, bpp, ts, domain, frame_number, profile->profile);
+    VALIDATE_NOT_NULL(sensor);
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::bypass_sensor);
+    return bs->on_video_frame(frame);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, dev, sensor, pixels)
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, frame.pixels)
 
 void rs2_bypass_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stream, rs2_error** error) BEGIN_API_CALL
 {

@@ -48,7 +48,7 @@ typedef struct rs2_video_stream
 * librealsense Recorder is intended for effective unit-testing
 * Currently supports three modes of operation:
 */
-typedef struct rs2_video_frame
+typedef struct rs2_bypass_video_frame
 {
     void* pixels;
     void(*deleter)(void*);
@@ -57,8 +57,8 @@ typedef struct rs2_video_frame
     rs2_time_t timestamp;
     rs2_timestamp_domain domain;
     int frame_number;
-    stream_profile profile;
-} rs2_video_frame;
+    const rs2_stream_profile* profile;
+} rs2_bypass_video_frame;
 
 /**
  * Create librealsense context that will try to record all operations over librealsense into a file
@@ -86,15 +86,8 @@ rs2_context* rs2_create_mock_context(int api_version, const char* filename, cons
 **/
 rs2_device* rs2_create_bypass_device(rs2_error** error);
 rs2_sensor* rs2_bypass_add_sensor(rs2_device* dev, const char* sensor_name, rs2_error** error);
-void rs2_bypass_on_video_frame(rs2_device* dev, 
-    int sensor, 
-    void* pixels, 
-    void(*deleter)(void*),
-    int stride, int bpp,
-    rs2_time_t ts, rs2_timestamp_domain domain,
-    int frame_number,
-    const rs2_stream_profile* profile, 
-    rs2_error** error);
+void rs2_bypass_on_video_frame(rs2_sensor* dev, rs2_bypass_video_frame frame, rs2_error** error);
+void rs2_bypass_create_matcher(rs2_device* dev, rs2_matchers matcher, rs2_error** error);
 void rs2_bypass_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stream, rs2_error** error);
 
 #ifdef __cplusplus

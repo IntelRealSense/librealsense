@@ -5,8 +5,8 @@
 #include "core/streaming.h"
 #include "core/video.h"
 #include "device.h"
-
-#include <string>
+#include "device.h"
+#include "context.h"
 
 namespace librealsense
 {
@@ -21,9 +21,12 @@ namespace librealsense
 
         bypass_sensor& get_bypass_sensor(int index);
 
+        void set_matcher_type(rs2_matchers matcher);
+
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     private:
         std::vector<std::shared_ptr<bypass_sensor>> _bypass_sensors;
+        rs2_matchers _matcher = DEFAULT;
     };
 
     class bypass_sensor : public sensor_base
@@ -41,12 +44,7 @@ namespace librealsense
         void start(frame_callback_ptr callback) override;
         void stop() override;
 
-        void on_video_frame(void* pixels, 
-            void(*deleter)(void*),
-            int stride, int bpp,
-            rs2_time_t ts, rs2_timestamp_domain domain,
-            int frame_number,
-            stream_profile_interface* profile);
+        void on_video_frame(rs2_bypass_video_frame frame);
 
     private:
         friend class bypass_device;

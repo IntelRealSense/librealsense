@@ -25,6 +25,11 @@ namespace librealsense
         return *_bypass_sensors[index];
     }
 
+    void bypass_device::set_matcher_type(rs2_matchers matcher)
+    {
+        _matcher = matcher;
+    }
+
     bypass_sensor::bypass_sensor(std::string name, bypass_device* owner)
         : sensor_base(name, owner)
     {
@@ -33,12 +38,12 @@ namespace librealsense
 
     std::shared_ptr<matcher> bypass_device::create_matcher(const frame_holder& frame) const
     {
-        std::vector<std::shared_ptr<matcher>> depth_matchers;
+        std::vector<stream_interface*> profiles;
 
-        for (auto& s : _bypass_sensors[0]->_profiles)
-            depth_matchers.push_back(std::make_shared<identity_matcher>(s->get_unique_id(), s->get_stream_type()));
+        for (auto& p : _bypass_sensors[0]->_profiles)
+            profiles.push_back(p.get());
 
-        return std::make_shared<frame_number_composite_matcher>(depth_matchers);
+        return matcher_factory::create(_matcher, profiles);
     }
 
     void bypass_sensor::add_video_stream(rs2_video_stream video_stream)
@@ -82,27 +87,22 @@ namespace librealsense
         _source.reset();
     }
 
-    void bypass_sensor::on_video_frame(void * pixels, 
-        void(*deleter)(void*),
-        int stride, int bpp,
-        rs2_time_t ts, rs2_timestamp_domain domain,
-        int frame_number,
-        stream_profile_interface* profile)
+    void bypass_sensor::on_video_frame(rs2_bypass_video_frame bypass_frame)
     {
         frame_additional_data data;
-        data.timestamp = ts;
-        data.timestamp_domain = domain;
-        data.frame_number = frame_number;
+        data.timestamp = bypass_frame.timestamp;
+        data.timestamp_domain = bypass_frame.domain;
+        data.frame_number = bypass_frame.frame_number;
         auto frame = _source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, 0, data, false);
 
-        auto vid_profile = dynamic_cast<video_stream_profile_interface*>(profile);
+        auto vid_profile = dynamic_cast<video_stream_profile_interface*>(bypass_frame.profile->profile);
         auto vid_frame = dynamic_cast<video_frame*>(frame);
-        vid_frame->assign(vid_profile->get_width(), vid_profile->get_height(), stride, bpp);
+        vid_frame->assign(vid_profile->get_width(), vid_profile->get_height(), bypass_frame.stride, bypass_frame.bpp);
 
-        frame->set_stream(std::dynamic_pointer_cast<stream_profile_interface>(profile->shared_from_this()));
+        frame->set_stream(std::dynamic_pointer_cast<stream_profile_interface>(bypass_frame.profile->profile->shared_from_this()));
         frame->attach_continuation(frame_continuation{ [=]() {
-            deleter(pixels);
-        }, pixels });
+            bypass_frame.deleter(bypass_frame.pixels);
+        }, bypass_frame.pixels });
         _source.invoke_callback(frame);
     }
 }

@@ -70,6 +70,10 @@ namespace rs2
 
         const rs2_stream_profile* get() const { return _profile; }
 
+        operator const rs2_stream_profile*()
+        {
+            return get();
+        }
         rs2_extrinsics get_extrinsics_to(const stream_profile& to) const
         {
             rs2_error* e = nullptr;

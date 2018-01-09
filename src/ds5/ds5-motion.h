@@ -22,8 +22,6 @@ namespace librealsense
         std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(uvc_sensor* uvc_ep,
                                                                                 const platform::extension_unit* fisheye_xu);
 
-        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
-
     private:
         friend class ds5_fisheye_sensor;
         friend class ds5_hid_sensor;
@@ -40,11 +38,6 @@ namespace librealsense
         std::vector<uint8_t> get_raw_fisheye_intrinsics_table() const;
         std::vector<uint8_t> get_raw_fisheye_extrinsics_table() const;
         ds::imu_calibration_table get_motion_module_calibration_table() const;
-
-        std::shared_ptr<stream_interface> _fisheye_stream;
-        std::shared_ptr<stream_interface> _accel_stream;
-        std::shared_ptr<stream_interface> _gyro_stream;
-        std::shared_ptr<stream_interface> _gpio_streams[4];
 
         std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_fisheye;
         std::shared_ptr<lazy<rs2_extrinsics>> _fisheye_to_imu;
@@ -77,5 +70,11 @@ namespace librealsense
                                                           {RS2_STREAM_GYRO,  {{200,  1},
                                                                               {400,  4},
                                                                               {1000, 10}}}};
+
+    protected:
+        std::shared_ptr<stream_interface> _fisheye_stream;
+        std::shared_ptr<stream_interface> _accel_stream;
+        std::shared_ptr<stream_interface> _gyro_stream;
+        std::shared_ptr<stream_interface> _gpio_streams[4];
     };
 }

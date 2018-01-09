@@ -6,6 +6,85 @@
 
 using namespace librealsense;
 
+std::shared_ptr<matcher> matcher_factory::create(rs2_matchers matcher, std::vector<stream_interface*> profiles)
+{
+    switch (matcher)
+    {
+    case DI_C:
+        if (profiles.size() < 3)
+        {
+            LOG_DEBUG("Created default matcher");
+            return create_default_matcher(profiles);
+        }
+        return create_DI_C_matcher(profiles);
+    case DLR_C:
+        if (profiles.size() < 4)
+        {
+            LOG_DEBUG("Created default matcher");
+            return create_default_matcher(profiles);
+        }
+        return create_DLR_C_matcher(profiles);
+    case DLR:
+        if (profiles.size() < 3)
+        {
+            LOG_DEBUG("Created default matcher");
+            return create_default_matcher(profiles);
+        }
+        return create_DLR_matcher(profiles);
+    case DEFAULT:default:
+        LOG_DEBUG("Created default matcher");
+        return create_default_matcher(profiles);
+        break;
+    }
+}
+std::shared_ptr<matcher> matcher_factory::create_DLR_C_matcher(std::vector<stream_interface*> profiles)
+{
+    return create_timestamp_composite_matcher({ create_DLR_matcher({ profiles[0], profiles[1], profiles[2] }),
+        create_identity_matcher(profiles[3]) });
+}
+std::shared_ptr<matcher> matcher_factory::create_DLR_matcher(std::vector<stream_interface*> profiles)
+{
+    std::vector<std::shared_ptr<matcher>> depth_matchers;
+
+    for (auto& p : profiles)
+        depth_matchers.push_back(std::make_shared<identity_matcher>(p->get_unique_id(), p->get_stream_type()));
+
+    return std::make_shared<frame_number_composite_matcher>(depth_matchers);
+}
+
+std::shared_ptr<matcher> matcher_factory::create_DI_C_matcher(std::vector<stream_interface*> profiles)
+{
+    return create_timestamp_composite_matcher({ create_DI_matcher({ profiles[0], profiles[1] }),
+        create_identity_matcher(profiles[2]) });
+}
+
+std::shared_ptr<matcher> matcher_factory::create_DI_matcher(std::vector<stream_interface*> profiles)
+{
+    std::vector<std::shared_ptr<matcher>> depth_matchers;
+
+    for (auto& p : profiles)
+        depth_matchers.push_back(std::make_shared<identity_matcher>(p->get_unique_id(), p->get_stream_type()));
+
+    return std::make_shared<frame_number_composite_matcher>(depth_matchers);
+}
+
+std::shared_ptr<matcher> matcher_factory::create_default_matcher(std::vector<stream_interface*> profiles)
+{
+    std::vector<std::shared_ptr<matcher>> matchers;
+    for (auto& p : profiles)
+        matchers.push_back(std::make_shared<identity_matcher>(p->get_unique_id(), p->get_stream_type()));
+
+    return create_timestamp_composite_matcher(matchers);
+}
+std::shared_ptr<matcher> matcher_factory::create_identity_matcher(stream_interface *profile)
+{
+    return std::make_shared<identity_matcher>(profile->get_unique_id(), profile->get_stream_type());
+}
+std::shared_ptr<matcher> matcher_factory::create_timestamp_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
+{
+    return std::make_shared<timestamp_composite_matcher>(matchers);
+}
+
 device::device(std::shared_ptr<context> ctx,
                const platform::backend_device_group group,
                bool device_changed_notifications)

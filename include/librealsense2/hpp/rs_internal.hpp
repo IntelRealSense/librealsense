@@ -78,7 +78,12 @@ namespace rs2
                 video_stream, &e);
             error::handle(e);
         }
-
+        void on_video_frame(rs2_bypass_video_frame frame)
+        {
+            rs2_error* e = nullptr;
+            rs2_bypass_on_video_frame(_sensor.get(), frame, &e);
+            error::handle(e);
+        }
     private:
         friend class bypass_device;
 
@@ -105,6 +110,12 @@ namespace rs2
             error::handle(e);
             return dev;
         }
+        void create_matcher(rs2_matchers matcher)
+        {
+            rs2_error* e = nullptr;
+            rs2_bypass_on_video_frame(_dev.get(), frame, &e);
+            error::handle(e);
+        }
 
     public:
         bypass_device()
@@ -125,17 +136,7 @@ namespace rs2
             
         }
 
-        void on_video_frame(int sensor, 
-            void* pixels, void(*deleter)(void*),
-            int stride, int bpp,
-            rs2_time_t timestamp, rs2_timestamp_domain domain,
-            int frame_number, stream_profile profile)
-        {
-            rs2_error* e = nullptr;
-            rs2_bypass_on_video_frame(_dev.get(), sensor, 
-                pixels, deleter, stride, bpp, timestamp, domain, frame_number, profile.get(), &e);
-            error::handle(e);
-        }
+       
     };
 
 }

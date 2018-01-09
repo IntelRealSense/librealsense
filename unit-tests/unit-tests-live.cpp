@@ -4105,13 +4105,13 @@ TEST_CASE("Syncer sanity with bypass device", "[live][bypass]") {
             auto shared_dev = weak_dev.lock();
             if (shared_dev == nullptr)
                 return;
-            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth);
-            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir);
+            shared_dev->on_video_frame({ pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
+            shared_dev->on_video_frame({ pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir });
               
-            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth);
-            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir);
+            shared_dev->on_video_frame({ pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth });
+            shared_dev->on_video_frame({ pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir });
 
-            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, ir);
+            shared_dev->on_video_frame({ pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, ir });
         });
         t.detach();
 

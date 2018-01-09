@@ -103,6 +103,16 @@ typedef enum rs2_extension
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);
 
+//TODO:
+/** \brief Specifies advanced interfaces (capabilities) objects may implement */
+typedef enum rs2_matchers
+{
+   DI_C, //depth, ir, color
+   DLR_C, //depth, left ir, right ir, color
+   DLR, //depth, left ir, right ir
+   DEFAULT //default
+}rs2_skus;
+
 typedef struct rs2_device_info rs2_device_info;
 typedef struct rs2_device rs2_device;
 typedef struct rs2_error rs2_error;
