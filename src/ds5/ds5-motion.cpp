@@ -75,7 +75,7 @@ namespace librealsense
                 if (p->get_stream_type() == RS2_STREAM_GYRO)
                     assign_stream(_owner->_gyro_stream, p);
                 if (p->get_stream_type() == RS2_STREAM_GPIO)
-                    assign_stream(_owner->_gpio_streams[p->get_stream_index()], p);
+                    assign_stream(_owner->_gpio_streams[p->get_stream_index()-1], p);
                 if (p->get_framerate() == 1000)
                     p->make_default();
 
@@ -84,8 +84,8 @@ namespace librealsense
                 {
                     auto motion = dynamic_cast<motion_stream_profile_interface*>(p.get()); 
                     assert(motion); //Expecting to succeed for motion stream (since we are under the "if")
-					auto intrinsics = get_motion_intrinsics(p->get_stream_type());
-                    motion->set_intrinsics([intrinsics]() { return intrinsics; });
+                    auto st = p->get_stream_type();
+                    motion->set_intrinsics([this, st]() { return get_motion_intrinsics(st); });
                 }
             }
 
