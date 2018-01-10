@@ -54,6 +54,8 @@ namespace librealsense
                 end_of_file,
                 frame,
                 option,
+                invalid_frame,
+                notificaion,
                 max
             };
         public:
@@ -81,6 +83,7 @@ namespace librealsense
                     case end_of_file:
                     case frame:
                     case option:
+                    case notificaion:
                         return std::static_pointer_cast<T>(std::const_pointer_cast<serialized_data>(shared_from_this()));
                 }
                 return nullptr;
@@ -116,6 +119,21 @@ namespace librealsense
                 return serialized_frame::get_type();
             }
         };
+
+        class serialized_invalid_frame : public serialized_frame
+        {
+        public:
+            serialized_invalid_frame(device_serializer::nanoseconds time, stream_identifier id) : serialized_frame(time, id, nullptr) {}
+            static serialized_data_type get_type()
+            {
+                return serialized_data_type::invalid_frame;
+            }
+            serialized_data_type type() const override
+            {
+                return serialized_invalid_frame::get_type();
+            }
+        };
+
         class serialized_option : public serialized_data
         {
         public:
@@ -135,6 +153,7 @@ namespace librealsense
                 return serialized_option::get_type();
             }
         };
+
         class serialized_end_of_file : public serialized_data
         {
         public:
@@ -146,6 +165,25 @@ namespace librealsense
             serialized_data_type type() const override
             {
                 return serialized_end_of_file::get_type();
+            }
+        };
+
+        class serialized_notification : public serialized_data
+        {
+        public:
+            serialized_notification(device_serializer::nanoseconds time, sensor_identifier id, const notification& n) :
+                serialized_data(time),
+                sensor_id(id), notif(n)
+            {}
+            sensor_identifier sensor_id;
+            notification notif;
+            static serialized_data_type get_type()
+            {
+                return serialized_data_type::notificaion;
+            }
+            serialized_data_type type() const override
+            {
+                return serialized_notification::get_type();
             }
         };
 
@@ -290,6 +328,7 @@ namespace librealsense
             virtual void write_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame) = 0;
             virtual void write_snapshot(uint32_t device_index, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot>& snapshot) = 0;
             virtual void write_snapshot(const sensor_identifier& sensor_id, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot>& snapshot) = 0;
+            virtual void write_notification(const sensor_identifier& stream_id, const nanoseconds& timestamp, const notification& n) = 0;
             virtual const std::string& get_file_name() const = 0;
             virtual ~writer() = default;
         };
@@ -306,6 +345,7 @@ namespace librealsense
             virtual void enable_stream(const std::vector<device_serializer::stream_identifier>& stream_ids) = 0;
             virtual void disable_stream(const std::vector<device_serializer::stream_identifier>& stream_ids) = 0;
             virtual const std::string& get_file_name() const = 0;
+            virtual std::vector<std::shared_ptr<serialized_data>> fetch_last_frames(const nanoseconds& seek_time) = 0;
         };
     }
 }

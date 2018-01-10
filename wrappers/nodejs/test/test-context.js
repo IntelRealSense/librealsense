@@ -160,4 +160,11 @@ describe('Context test', function() {
     });
     assert(pbd instanceof librealsense2.Device);
   });
+
+  it('testing method - getSensorParent', () => {
+    const context = new librealsense2.Context();
+    const devices = context.queryDevices().devices;
+    const sensors = devices[0].querySensors();
+    context.getSensorParent(sensors[0]);
+  });
 });

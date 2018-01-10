@@ -42,6 +42,11 @@ namespace librealsense
         return info_container::supports_info(info) || _owner->supports_info(info);
     }
 
+    stream_profiles sensor_base::get_active_streams() const
+    {
+        return _active_profiles;
+    }
+
     void sensor_base::register_notifications_callback(notifications_callback_ptr callback)
     {
         if (supports_option(RS2_OPTION_ERROR_POLLING_ENABLED))
@@ -51,12 +56,50 @@ namespace librealsense
         }
         _notifications_proccessor->set_callback(std::move(callback));
     }
+	
+	notifications_callback_ptr sensor_base::get_notifications_callback() const
+    {
+        return _notifications_proccessor->get_callback();
+    }
+	
+    int sensor_base::register_before_streaming_changes_callback(std::function<void(bool)> callback)
+    {
+        int token = (on_before_streaming_changes += callback);
+        LOG_DEBUG("Registered token #" << token << " to \"on_before_streaming_changes\"");
+        return token;
+    }
 
+    void sensor_base::unregister_before_start_callback(int token)
+    {
+        bool successful_unregister = on_before_streaming_changes -= token;
+        if (!successful_unregister)
+        {
+            LOG_WARNING("Failed to unregister token #" << token << " from \"on_before_streaming_changes\"");
+        }
+    }
+
+    frame_callback_ptr sensor_base::get_frames_callback() const
+    {
+        return _source.get_callback();
+    }
+    void sensor_base::set_frames_callback(frame_callback_ptr callback)
+    {
+        return _source.set_callback(callback);
+    }
     std::shared_ptr<notifications_proccessor> sensor_base::get_notifications_proccessor()
     {
         return _notifications_proccessor;
     }
 
+    void sensor_base::raise_on_before_streaming_changes(bool streaming)
+    {
+        on_before_streaming_changes(streaming);
+    }
+    void sensor_base::set_active_streams(const stream_profiles& requests)
+    {
+        _active_profiles = requests;
+    }
+    
     bool sensor_base::try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const
     {
         auto it = std::find_if(begin(_pixel_formats), end(_pixel_formats),
@@ -72,7 +115,7 @@ namespace librealsense
         return false;
     }
 
-    void sensor_base::assign_stream(const std::shared_ptr<stream_interface>& stream, std::shared_ptr<stream_profile_interface>& target) const
+    void sensor_base::assign_stream(const std::shared_ptr<stream_interface>& stream, std::shared_ptr<stream_profile_interface> target) const
     {
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*stream, *target);
         target->set_unique_id(stream->get_unique_id());
@@ -477,6 +520,7 @@ namespace librealsense
             _is_opened = false;
             throw;
         }
+        set_active_streams(requests);
     }
 
     void uvc_sensor::close()
@@ -494,6 +538,7 @@ namespace librealsense
         reset_streaming();
         _power.reset();
         _is_opened = false;
+        set_active_streams({});
     }
 
     void uvc_sensor::register_xu(platform::extension_unit xu)
@@ -510,8 +555,8 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. UVC device was not opened!");
 
         _source.set_callback(callback);
-
         _is_streaming = true;
+        raise_on_before_streaming_changes(true); //Required to be just before actual start allow recording to work
         _device->start_callbacks();
     }
 
@@ -523,6 +568,7 @@ namespace librealsense
 
         _is_streaming = false;
         _device->stop_callbacks();
+        raise_on_before_streaming_changes(false);
     }
 
 
@@ -569,7 +615,14 @@ namespace librealsense
             _camera_info[info] = std::move(val);
         }
     }
-
+    
+    void info_container::update_info(rs2_camera_info info, const std::string& val)
+    {
+        if (info_container::supports_info(info))
+        {
+            _camera_info[info] = std::move(val);
+        }
+    }
     const std::string& info_container::get_info(rs2_camera_info info) const
     {
         auto it = _camera_info.find(info);
@@ -689,7 +742,7 @@ namespace librealsense
             {
                 auto p = elem.second;
                 platform::stream_profile sp{ 1, 1, p.fps, stream_to_fourcc(p.stream) };
-                auto profile = std::make_shared<stream_profile_base>(sp);
+                auto profile = std::make_shared<motion_stream_profile>(sp);
                 profile->set_stream_type(p.stream);
                 profile->set_format(p.format);
                 profile->set_framerate(p.fps);
@@ -742,6 +795,7 @@ namespace librealsense
         }
         _hid_device->open(configured_hid_profiles);
         _is_opened = true;
+        set_active_streams(requests);
     }
 
     void hid_sensor::close()
@@ -758,6 +812,7 @@ namespace librealsense
         _is_configured_stream.resize(RS2_STREAM_COUNT);
         _hid_mapping.clear();
         _is_opened = false;
+        set_active_streams({});
     }
 
     // TODO:
@@ -783,7 +838,7 @@ namespace librealsense
         _source.set_callback(callback);
         _source.init(_metadata_parsers);
         _source.set_sensor(this->shared_from_this());
-
+        raise_on_before_streaming_changes(true); //Required to be just before actual start allow recording to work
         _hid_device->start_capture([this](const platform::sensor_data& sensor_data)
         {
             auto system_time = environment::get_instance().get_time_service()->get_time();
@@ -877,6 +932,7 @@ namespace librealsense
         _source.reset();
         _hid_iio_timestamp_reader->reset();
         _custom_hid_timestamp_reader->reset();
+        raise_on_before_streaming_changes(false);
     }
 
     std::vector<uint8_t> hid_sensor::get_custom_report_data(const std::string& custom_sensor_name,

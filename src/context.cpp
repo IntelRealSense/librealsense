@@ -19,6 +19,10 @@
 #include "environment.h"
 #include "context.h"
 
+#ifdef WITH_TRACKING
+#include "tm2/tm-info.h"
+#endif
+
 template<unsigned... Is> struct seq{};
 template<unsigned N, unsigned... Is>
 struct gen_seq : gen_seq<N-1, N-1, Is...>{};
@@ -66,6 +70,20 @@ bool contains(const std::shared_ptr<librealsense::device_info>& first,
             second_data.hid_devices.end())
             return false;
     }
+    for (auto&& pd : first_data.playback_devices)
+    {
+        if (std::find(second_data.playback_devices.begin(),
+            second_data.playback_devices.end(), pd) ==
+            second_data.playback_devices.end())
+            return false;
+    }
+    for (auto&& tm : first_data.tm2_devices)
+    {
+        if (std::find(second_data.tm2_devices.begin(),
+            second_data.tm2_devices.end(), tm) ==
+            second_data.tm2_devices.end())
+            return false;
+    }
     return true;
 }
 
@@ -97,6 +115,19 @@ namespace librealsense
        environment::get_instance().set_time_service(_backend->create_time_service());
 
        _device_watcher = _backend->create_device_watcher();
+#if WITH_TRACKING
+       _tm2_context = std::make_shared<tm2_context>(this);
+       _tm2_context->on_device_changed += [this](std::shared_ptr<tm2_info> removed, std::shared_ptr<tm2_info> added)-> void
+       {
+           std::vector<rs2_device_info> rs2_devices_info_added;
+           std::vector<rs2_device_info> rs2_devices_info_removed;
+           if(removed) 
+               rs2_devices_info_removed.push_back({ shared_from_this(), removed });
+           if (added) 
+               rs2_devices_info_added.push_back({ shared_from_this(), added });
+           raise_devices_changed(rs2_devices_info_removed, rs2_devices_info_added);
+       };
+#endif
     }
 
 
@@ -284,6 +315,11 @@ namespace librealsense
         // to allow them to modify context later on
         auto ctx = t->shared_from_this();
 
+#ifdef WITH_TRACKING
+        auto tm2_devices = tm2_info::pick_tm2_devices(ctx, _tm2_context->get_manager(), _tm2_context->query_devices());
+        std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
+#endif
+
         auto ds5_devices = ds5_info::pick_ds5_devices(ctx, devices);
         std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
 
@@ -315,7 +351,6 @@ namespace librealsense
 
         if (librealsense::list_changed<std::shared_ptr<device_info>>(old_list, new_list, [](std::shared_ptr<device_info> first, std::shared_ptr<device_info> second) {return *first == *second; }))
         {
-
             std::vector<rs2_device_info> rs2_devices_info_added;
             std::vector<rs2_device_info> rs2_devices_info_removed;
 
@@ -353,21 +388,24 @@ namespace librealsense
                 }
             }
 
-            if (_devices_changed_callback)
+            raise_devices_changed(rs2_devices_info_removed, rs2_devices_info_added);
+        }
+    }
+    void context::raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added)
+    {
+        if (_devices_changed_callback)
+        {
+            try
             {
-                try
-                {
-                    _devices_changed_callback->on_devices_changed(new rs2_device_list({ shared_from_this(), rs2_devices_info_removed }),
-                        new rs2_device_list({ shared_from_this(), rs2_devices_info_added }));
-                }
-                catch (...)
-                {
-                    LOG_ERROR("Exception thrown from user callback handler");
-                }
+                _devices_changed_callback->on_devices_changed(new rs2_device_list({ shared_from_this(), removed }),
+                    new rs2_device_list({ shared_from_this(), added }));
+            }
+            catch (...)
+            {
+                LOG_ERROR("Exception thrown from user callback handler");
             }
         }
     }
-
     uint64_t context::register_internal_device_callback(devices_changed_callback_ptr callback)
     {
         std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
@@ -404,6 +442,18 @@ namespace librealsense
         }
         return result;
     }
+
+	// TODO: Make template
+	std::vector<platform::usb_device_info> filter_by_product(const std::vector<platform::usb_device_info>& devices, const std::set<uint16_t>& pid_list)
+	{
+		std::vector<platform::usb_device_info> result;
+		for (auto&& info : devices)
+		{
+			if (pid_list.count(info.pid))
+				result.push_back(info);
+		}
+		return result;
+	}
 
     std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> group_devices_and_hids_by_unique_id(
         const std::vector<std::vector<platform::uvc_device_info>>& devices,
@@ -465,6 +515,20 @@ namespace librealsense
             result.push_back(kvp.second);
         }
         return result;
+    }
+
+	// TODO: Sergey
+	// Make template
+	void trim_device_list(std::vector<platform::usb_device_info>& devices, const std::vector<platform::usb_device_info>& chosen)
+    {
+        if (chosen.empty())
+            return;
+
+        auto was_chosen = [&chosen](const platform::usb_device_info& info)
+        {
+            return find(chosen.begin(), chosen.end(), info) != chosen.end();
+        };
+        devices.erase(std::remove_if(devices.begin(), devices.end(), was_chosen), devices.end());
     }
 
     void trim_device_list(std::vector<platform::uvc_device_info>& devices, const std::vector<platform::uvc_device_info>& chosen)

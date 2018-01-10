@@ -33,6 +33,7 @@ namespace librealsense
         void open(const stream_profiles& requests) override;
         void close() override;
         void register_notifications_callback(notifications_callback_ptr callback) override;
+        notifications_callback_ptr get_notifications_callback() const override;
         void start(frame_callback_ptr callback) override;
         void stop() override;
         bool is_streaming() const override;
@@ -43,13 +44,19 @@ namespace librealsense
         void stop(bool invoke_required);
         void flush_pending_frames();
         void update(const device_serializer::sensor_snapshot& sensor_snapshot);
+        frame_callback_ptr get_frames_callback() const override;
+        void set_frames_callback(frame_callback_ptr callback) override;
+        stream_profiles get_active_streams() const override;
+        int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
+        void unregister_before_start_callback(int token) override;
+        void raise_notification(const notification& n);
     private:
         void register_sensor_streams(const stream_profiles& vector);
         void register_sensor_infos(const device_serializer::sensor_snapshot& sensor_snapshot);
         void register_sensor_options(const device_serializer::sensor_snapshot& sensor_snapshot);
 
         frame_callback_ptr m_user_callback;
-        librealsense::notifications_callback_ptr m_user_notification_callback;
+        notifications_proccessor _notifications_proccessor;
         using stream_unique_id = int;
         std::map<stream_unique_id, std::shared_ptr<dispatcher>> m_dispatchers;
         std::atomic<bool> m_is_started;
@@ -59,5 +66,6 @@ namespace librealsense
         std::map<std::pair<rs2_stream, uint32_t>, std::shared_ptr<stream_profile_interface>> m_streams;
         const device_interface& m_parent_device;
         stream_profiles m_available_profiles;
+        stream_profiles m_active_streams;
     };
 }

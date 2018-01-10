@@ -1,5 +1,5 @@
 /*
-    pybind11/pybind11.h: Infrastructure for processing custom
+    pybind11/attr.h: Infrastructure for processing custom
     type and function attributes
 
     Copyright (c) 2016 Wenzel Jakob <wenzel.jakob@epfl.ch>
@@ -12,7 +12,10 @@
 
 #include "cast.h"
 
-NAMESPACE_BEGIN(pybind11)
+NAMESPACE_BEGIN(PYBIND11_NAMESPACE)
+
+/// \addtogroup annotations
+/// @{
 
 /// Annotation for methods
 struct is_method { handle class_; is_method(const handle &c) : class_(c) { } };
@@ -39,7 +42,7 @@ template <typename T> struct base {
 };
 
 /// Keep patient alive while nurse lives
-template <int Nurse, int Patient> struct keep_alive { };
+template <size_t Nurse, size_t Patient> struct keep_alive { };
 
 /// Annotation indicating that a class is involved in a multiple inheritance relationship
 struct multiple_inheritance { };
@@ -51,10 +54,61 @@ struct dynamic_attr { };
 struct buffer_protocol { };
 
 /// Annotation which requests that a special metaclass is created for a type
-struct metaclass { };
+struct metaclass {
+    handle value;
+
+    PYBIND11_DEPRECATED("py::metaclass() is no longer required. It's turned on by default now.")
+    metaclass() {}
+
+    /// Override pybind11's default metaclass
+    explicit metaclass(handle value) : value(value) { }
+};
+
+/// Annotation that marks a class as local to the module:
+struct module_local { const bool value; constexpr module_local(bool v = true) : value(v) { } };
 
 /// Annotation to mark enums as an arithmetic type
 struct arithmetic { };
+
+/** \rst
+    A call policy which places one or more guard variables (``Ts...``) around the function call.
+
+    For example, this definition:
+
+    .. code-block:: cpp
+
+        m.def("foo", foo, py::call_guard<T>());
+
+    is equivalent to the following pseudocode:
+
+    .. code-block:: cpp
+
+        m.def("foo", [](args...) {
+            T scope_guard;
+            return foo(args...); // forwarded arguments
+        });
+ \endrst */
+template <typename... Ts> struct call_guard;
+
+template <> struct call_guard<> { using type = detail::void_type; };
+
+template <typename T>
+struct call_guard<T> {
+    static_assert(std::is_default_constructible<T>::value,
+                  "The guard type must be default constructible");
+
+    using type = T;
+};
+
+template <typename T, typename... Ts>
+struct call_guard<T, Ts...> {
+    struct type {
+        T guard{}; // Compose multiple guard types with left-to-right default-constructor order
+        typename call_guard<Ts...>::type next{};
+    };
+};
+
+/// @} annotations
 
 NAMESPACE_BEGIN(detail)
 /* Forward declarations */
@@ -62,25 +116,25 @@ enum op_id : int;
 enum op_type : int;
 struct undefined_t;
 template <op_id id, op_type ot, typename L = undefined_t, typename R = undefined_t> struct op_;
-template <typename... Args> struct init;
-template <typename... Args> struct init_alias;
-inline void keep_alive_impl(int Nurse, int Patient, handle args, handle ret);
+inline void keep_alive_impl(size_t Nurse, size_t Patient, function_call &call, handle ret);
 
 /// Internal data structure which holds metadata about a keyword argument
 struct argument_record {
     const char *name;  ///< Argument name
     const char *descr; ///< Human-readable version of the argument value
     handle value;      ///< Associated Python object
+    bool convert : 1;  ///< True if the argument is allowed to convert when loading
+    bool none : 1;     ///< True if None is allowed when loading
 
-    argument_record(const char *name, const char *descr, handle value)
-        : name(name), descr(descr), value(value) { }
+    argument_record(const char *name, const char *descr, handle value, bool convert, bool none)
+        : name(name), descr(descr), value(value), convert(convert), none(none) { }
 };
 
 /// Internal data structure which holds metadata about a bound function (signature, overloads, etc.)
 struct function_record {
     function_record()
-        : is_constructor(false), is_stateless(false), is_operator(false),
-          has_args(false), has_kwargs(false), is_method(false) { }
+        : is_constructor(false), is_new_style_constructor(false), is_stateless(false),
+          is_operator(false), has_args(false), has_kwargs(false), is_method(false) { }
 
     /// Function name
     char *name = nullptr; /* why no C++ strings? They generate heavier code.. */
@@ -95,7 +149,7 @@ struct function_record {
     std::vector<argument_record> args;
 
     /// Pointer to lambda function which converts arguments and performs the actual call
-    handle (*impl) (function_record *, handle, handle, handle) = nullptr;
+    handle (*impl) (function_call &) = nullptr;
 
     /// Storage for the wrapped function pointer and captured data, if any
     void *data[3] = { };
@@ -108,6 +162,9 @@ struct function_record {
 
     /// True if name == '__init__'
     bool is_constructor : 1;
+
+    /// True if this is a new-style `__init__` defined in `detail/init.h`
+    bool is_new_style_constructor : 1;
 
     /// True if this is a stateless function pointer
     bool is_stateless : 1;
@@ -124,8 +181,8 @@ struct function_record {
     /// True if this is a method
     bool is_method : 1;
 
-    /// Number of arguments
-    uint16_t nargs;
+    /// Number of arguments (including py::args and/or py::kwargs, if present)
+    std::uint16_t nargs;
 
     /// Python method object
     PyMethodDef *def = nullptr;
@@ -143,8 +200,7 @@ struct function_record {
 /// Special data structure which (temporarily) holds metadata about a bound class
 struct type_record {
     PYBIND11_NOINLINE type_record()
-        : multiple_inheritance(false), dynamic_attr(false),
-          buffer_protocol(false), metaclass(false) { }
+        : multiple_inheritance(false), dynamic_attr(false), buffer_protocol(false), module_local(false) { }
 
     /// Handle to the parent scope
     handle scope;
@@ -158,20 +214,26 @@ struct type_record {
     /// How large is the underlying C++ type?
     size_t type_size = 0;
 
-    /// How large is pybind11::instance<type>?
-    size_t instance_size = 0;
+    /// How large is the type's holder?
+    size_t holder_size = 0;
 
-    /// Function pointer to class_<..>::init_holder
-    void (*init_holder)(PyObject *, const void *) = nullptr;
+    /// The global operator new can be overridden with a class-specific variant
+    void *(*operator_new)(size_t) = ::operator new;
+
+    /// Function pointer to class_<..>::init_instance
+    void (*init_instance)(instance *, const void *) = nullptr;
 
     /// Function pointer to class_<..>::dealloc
-    void (*dealloc)(PyObject *) = nullptr;
+    void (*dealloc)(detail::value_and_holder &) = nullptr;
 
     /// List of base classes of the newly created type
     list bases;
 
     /// Optional docstring
     const char *doc = nullptr;
+
+    /// Custom metaclass (optional)
+    handle metaclass;
 
     /// Multiple inheritance marker
     bool multiple_inheritance : 1;
@@ -182,16 +244,28 @@ struct type_record {
     /// Does the class implement the buffer protocol?
     bool buffer_protocol : 1;
 
-    /// Does the class require its own metaclass?
-    bool metaclass : 1;
+    /// Is the default (unique_ptr) holder type used?
+    bool default_holder : 1;
 
-    PYBIND11_NOINLINE void add_base(const std::type_info *base, void *(*caster)(void *)) {
-        auto base_info = detail::get_type_info(*base, false);
+    /// Is the class definition local to the module shared object?
+    bool module_local : 1;
+
+    PYBIND11_NOINLINE void add_base(const std::type_info &base, void *(*caster)(void *)) {
+        auto base_info = detail::get_type_info(base, false);
         if (!base_info) {
-            std::string tname(base->name());
+            std::string tname(base.name());
             detail::clean_type_id(tname);
             pybind11_fail("generic_type: type \"" + std::string(name) +
                           "\" referenced unknown base type \"" + tname + "\"");
+        }
+
+        if (default_holder != base_info->default_holder) {
+            std::string tname(base.name());
+            detail::clean_type_id(tname);
+            pybind11_fail("generic_type: type \"" + std::string(name) + "\" " +
+                    (default_holder ? "does not have" : "has") +
+                    " a non-default holder type while its base \"" + tname + "\" " +
+                    (base_info->default_holder ? "does not" : "does"));
         }
 
         bases.append((PyObject *) base_info->type);
@@ -200,9 +274,18 @@ struct type_record {
             dynamic_attr = true;
 
         if (caster)
-            base_info->implicit_casts.push_back(std::make_pair(type, caster));
+            base_info->implicit_casts.emplace_back(type, caster);
     }
 };
+
+inline function_call::function_call(function_record &f, handle p) :
+        func(f), parent(p) {
+    args.reserve(f.nargs);
+    args_convert.reserve(f.nargs);
+}
+
+/// Tag for a new-style `__init__` defined in `detail/init.h`
+struct is_new_style_constructor { };
 
 /**
  * Partial template specializations to process custom attributes provided to
@@ -216,8 +299,8 @@ template <typename T> struct process_attribute_default {
     /// Default implementation: do nothing
     static void init(const T &, function_record *) { }
     static void init(const T &, type_record *) { }
-    static void precall(handle) { }
-    static void postcall(handle, handle) { }
+    static void precall(function_call &) { }
+    static void postcall(function_call &, handle) { }
 };
 
 /// Process an attribute specifying the function's name
@@ -262,12 +345,16 @@ template <> struct process_attribute<is_operator> : process_attribute_default<is
     static void init(const is_operator &, function_record *r) { r->is_operator = true; }
 };
 
+template <> struct process_attribute<is_new_style_constructor> : process_attribute_default<is_new_style_constructor> {
+    static void init(const is_new_style_constructor &, function_record *r) { r->is_new_style_constructor = true; }
+};
+
 /// Process a keyword argument attribute (*without* a default value)
 template <> struct process_attribute<arg> : process_attribute_default<arg> {
     static void init(const arg &a, function_record *r) {
         if (r->is_method && r->args.empty())
-            r->args.emplace_back("self", nullptr, handle());
-        r->args.emplace_back(a.name, nullptr, handle());
+            r->args.emplace_back("self", nullptr, handle(), true /*convert*/, false /*none not allowed*/);
+        r->args.emplace_back(a.name, nullptr, handle(), !a.flag_noconvert, a.flag_none);
     }
 };
 
@@ -275,32 +362,34 @@ template <> struct process_attribute<arg> : process_attribute_default<arg> {
 template <> struct process_attribute<arg_v> : process_attribute_default<arg_v> {
     static void init(const arg_v &a, function_record *r) {
         if (r->is_method && r->args.empty())
-            r->args.emplace_back("self", nullptr, handle());
+            r->args.emplace_back("self", nullptr /*descr*/, handle() /*parent*/, true /*convert*/, false /*none not allowed*/);
 
         if (!a.value) {
 #if !defined(NDEBUG)
-            auto descr = "'" + std::string(a.name) + ": " + a.type + "'";
+            std::string descr("'");
+            if (a.name) descr += std::string(a.name) + ": ";
+            descr += a.type + "'";
             if (r->is_method) {
                 if (r->name)
                     descr += " in method '" + (std::string) str(r->scope) + "." + (std::string) r->name + "'";
                 else
                     descr += " in method of '" + (std::string) str(r->scope) + "'";
             } else if (r->name) {
-                descr += " in function named '" + (std::string) r->name + "'";
+                descr += " in function '" + (std::string) r->name + "'";
             }
-            pybind11_fail("arg(): could not convert default keyword argument "
+            pybind11_fail("arg(): could not convert default argument "
                           + descr + " into a Python object (type not registered yet?)");
 #else
-            pybind11_fail("arg(): could not convert default keyword argument "
+            pybind11_fail("arg(): could not convert default argument "
                           "into a Python object (type not registered yet?). "
                           "Compile in debug mode for more information.");
 #endif
         }
-        r->args.emplace_back(a.name, a.descr, a.value.inc_ref());
+        r->args.emplace_back(a.name, a.descr, a.value.inc_ref(), !a.flag_noconvert, a.flag_none);
     }
 };
 
-/// Process a parent class attribute
+/// Process a parent class attribute.  Single inheritance only (class_ itself already guarantees that)
 template <typename T>
 struct process_attribute<T, enable_if_t<is_pyobject<T>::value>> : process_attribute_default<handle> {
     static void init(const handle &h, type_record *r) { r->bases.append(h); }
@@ -309,7 +398,7 @@ struct process_attribute<T, enable_if_t<is_pyobject<T>::value>> : process_attrib
 /// Process a parent class attribute (deprecated, does not support multiple inheritance)
 template <typename T>
 struct process_attribute<base<T>> : process_attribute_default<base<T>> {
-    static void init(const base<T> &, type_record *r) { r->add_base(&typeid(T), nullptr); }
+    static void init(const base<T> &, type_record *r) { r->add_base(typeid(T), nullptr); }
 };
 
 /// Process a multiple inheritance attribute
@@ -330,28 +419,35 @@ struct process_attribute<buffer_protocol> : process_attribute_default<buffer_pro
 
 template <>
 struct process_attribute<metaclass> : process_attribute_default<metaclass> {
-    static void init(const metaclass &, type_record *r) { r->metaclass = true; }
+    static void init(const metaclass &m, type_record *r) { r->metaclass = m.value; }
 };
 
+template <>
+struct process_attribute<module_local> : process_attribute_default<module_local> {
+    static void init(const module_local &l, type_record *r) { r->module_local = l.value; }
+};
 
 /// Process an 'arithmetic' attribute for enums (does nothing here)
 template <>
 struct process_attribute<arithmetic> : process_attribute_default<arithmetic> {};
 
-/***
+template <typename... Ts>
+struct process_attribute<call_guard<Ts...>> : process_attribute_default<call_guard<Ts...>> { };
+
+/**
  * Process a keep_alive call policy -- invokes keep_alive_impl during the
  * pre-call handler if both Nurse, Patient != 0 and use the post-call handler
  * otherwise
  */
-template <int Nurse, int Patient> struct process_attribute<keep_alive<Nurse, Patient>> : public process_attribute_default<keep_alive<Nurse, Patient>> {
-    template <int N = Nurse, int P = Patient, enable_if_t<N != 0 && P != 0, int> = 0>
-    static void precall(handle args) { keep_alive_impl(Nurse, Patient, args, handle()); }
-    template <int N = Nurse, int P = Patient, enable_if_t<N != 0 && P != 0, int> = 0>
-    static void postcall(handle, handle) { }
-    template <int N = Nurse, int P = Patient, enable_if_t<N == 0 || P == 0, int> = 0>
-    static void precall(handle) { }
-    template <int N = Nurse, int P = Patient, enable_if_t<N == 0 || P == 0, int> = 0>
-    static void postcall(handle args, handle ret) { keep_alive_impl(Nurse, Patient, args, ret); }
+template <size_t Nurse, size_t Patient> struct process_attribute<keep_alive<Nurse, Patient>> : public process_attribute_default<keep_alive<Nurse, Patient>> {
+    template <size_t N = Nurse, size_t P = Patient, enable_if_t<N != 0 && P != 0, int> = 0>
+    static void precall(function_call &call) { keep_alive_impl(Nurse, Patient, call, handle()); }
+    template <size_t N = Nurse, size_t P = Patient, enable_if_t<N != 0 && P != 0, int> = 0>
+    static void postcall(function_call &, handle) { }
+    template <size_t N = Nurse, size_t P = Patient, enable_if_t<N == 0 || P == 0, int> = 0>
+    static void precall(function_call &) { }
+    template <size_t N = Nurse, size_t P = Patient, enable_if_t<N == 0 || P == 0, int> = 0>
+    static void postcall(function_call &call, handle ret) { keep_alive_impl(Nurse, Patient, call, ret); }
 };
 
 /// Recursively iterate over variadic template arguments
@@ -364,23 +460,30 @@ template <typename... Args> struct process_attributes {
         int unused[] = { 0, (process_attribute<typename std::decay<Args>::type>::init(args, r), 0) ... };
         ignore_unused(unused);
     }
-    static void precall(handle fn_args) {
-        int unused[] = { 0, (process_attribute<typename std::decay<Args>::type>::precall(fn_args), 0) ... };
+    static void precall(function_call &call) {
+        int unused[] = { 0, (process_attribute<typename std::decay<Args>::type>::precall(call), 0) ... };
         ignore_unused(unused);
     }
-    static void postcall(handle fn_args, handle fn_ret) {
-        int unused[] = { 0, (process_attribute<typename std::decay<Args>::type>::postcall(fn_args, fn_ret), 0) ... };
+    static void postcall(function_call &call, handle fn_ret) {
+        int unused[] = { 0, (process_attribute<typename std::decay<Args>::type>::postcall(call, fn_ret), 0) ... };
         ignore_unused(unused);
     }
 };
+
+template <typename T>
+using is_call_guard = is_instantiation<call_guard, T>;
+
+/// Extract the ``type`` from the first `call_guard` in `Extras...` (or `void_type` if none found)
+template <typename... Extra>
+using extract_guard_t = typename exactly_one_t<is_call_guard, call_guard<>, Extra...>::type;
 
 /// Check the number of named arguments at compile time
 template <typename... Extra,
           size_t named = constexpr_sum(std::is_base_of<arg, Extra>::value...),
           size_t self  = constexpr_sum(std::is_same<is_method, Extra>::value...)>
-constexpr bool expected_num_args(size_t nargs) {
-    return named == 0 || (self + named) == nargs;
+constexpr bool expected_num_args(size_t nargs, bool has_args, bool has_kwargs) {
+    return named == 0 || (self + named + has_args + has_kwargs) == nargs;
 }
 
 NAMESPACE_END(detail)
-NAMESPACE_END(pybind11)
+NAMESPACE_END(PYBIND11_NAMESPACE)

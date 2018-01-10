@@ -7,6 +7,9 @@
 #include "backend.h"
 #include "mock/recorder.h"
 #include "core/streaming.h"
+#if WITH_TRACKING
+    #include "tm2/tm-context.h"
+#endif
 
 #include <vector>
 #include <media/playback/playback_device.h>
@@ -128,13 +131,18 @@ namespace librealsense
         void remove_device(const std::string& file);
 
     private:
-        void on_device_changed(platform::backend_device_group old, platform::backend_device_group curr, const std::map<std::string, std::shared_ptr<device_info>>& old_playback_devices, const std::map<std::string, std::shared_ptr<device_info>>& new_playback_devices);
-
+        void on_device_changed(platform::backend_device_group old, 
+                               platform::backend_device_group curr, 
+                               const std::map<std::string, std::shared_ptr<device_info>>& old_playback_devices, 
+                               const std::map<std::string, std::shared_ptr<device_info>>& new_playback_devices);
+        void raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added);
         int find_stream_profile(const stream_interface& p);
         std::shared_ptr<lazy<rs2_extrinsics>> fetch_edge(int from, int to);
 
         std::shared_ptr<platform::backend> _backend;
-
+#if WITH_TRACKING
+        std::shared_ptr<tm2_context> _tm2_context;
+#endif
         std::shared_ptr<platform::device_watcher> _device_watcher;
         std::map<std::string, std::shared_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
@@ -174,4 +182,6 @@ namespace librealsense
     platform::uvc_device_info get_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
     std::vector<platform::uvc_device_info> filter_by_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
 
+	std::vector<platform::usb_device_info> filter_by_product(const std::vector<platform::usb_device_info>& devices, const std::set<uint16_t>& pid_list);
+	void trim_device_list(std::vector<platform::usb_device_info>& devices, const std::vector<platform::usb_device_info>& chosen);
 }

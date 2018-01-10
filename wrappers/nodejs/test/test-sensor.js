@@ -297,4 +297,20 @@ describe('Sensor test', function() {
       }
     });
   });
+
+  it('Testing method close', () => {
+    sensors.forEach((sensor) => {
+      assert.doesNotThrow(() => {
+        sensor.close();
+      });
+    });
+  });
+
+  it('Testing method setNotificationsCallback', () => {
+    sensors.forEach((sensor) => {
+      assert.doesNotThrow(() => {
+        sensor.setNotificationsCallback();
+      });
+    });
+  });
 });

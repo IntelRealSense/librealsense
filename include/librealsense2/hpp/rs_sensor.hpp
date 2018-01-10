@@ -23,14 +23,11 @@ namespace rs2
             error::handle(e);
             _category = rs2_get_notification_category(notification, &e);
             error::handle(e);
+            _serialized_data = rs2_get_notification_serialized_data(notification, &e);
+            error::handle(e);
         }
 
-        notification()
-            : _description(""),
-              _timestamp(-1),
-              _severity(RS2_LOG_SEVERITY_COUNT),
-              _category(RS2_NOTIFICATION_CATEGORY_COUNT)
-        {}
+        notification() = default;
 
         /**
         * retrieve the notification category
@@ -67,11 +64,21 @@ namespace rs2
             return _severity;
         }
 
+        /**
+        * retrieve the notification's serialized data
+        * \return            the serialized data (in JSON format)
+        */
+        std::string get_serialized_data() const
+        {
+            return _serialized_data;
+        }
+
     private:
         std::string _description;
-        double _timestamp;
-        rs2_log_severity _severity;
-        rs2_notification_category _category;
+        double _timestamp = -1;
+        rs2_log_severity _severity = RS2_LOG_SEVERITY_COUNT;
+        rs2_notification_category _category = RS2_NOTIFICATION_CATEGORY_COUNT;
+        std::string _serialized_data;
     };
 
     template<class T>
@@ -361,19 +368,7 @@ namespace rs2
 
             return results;
         }
-
-        /**
-         * returns scale and bias of a motion stream
-         * \param stream    Motion stream type (Gyro / Accel / ...)
-         */
-        rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) {
-            rs2_error *e = nullptr;
-            rs2_motion_device_intrinsic intrin;
-            rs2_get_motion_intrinsics(_sensor.get(), stream, &intrin, &e);
-            error::handle(e);
-            return intrin;
-        }
-
+        
         sensor& operator=(const std::shared_ptr<rs2_sensor> other)
         {
             options::operator=(other);
@@ -507,7 +502,7 @@ namespace rs2
         depth_stereo_sensor(sensor s): depth_sensor(s)
         {
             rs2_error* e = nullptr;
-            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_DEPTH_STEREO_SENSOR, &e) == 0 && !e)
+            if (_sensor && rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_DEPTH_STEREO_SENSOR, &e) == 0 && !e)
             {
                 _sensor = nullptr;
             }

@@ -15,7 +15,7 @@ namespace librealsense
     class frame_source
     {
     public:
-        frame_source();
+        frame_source(uint32_t max_publish_list_size = 16);
 
         void init(std::shared_ptr<metadata_parser_map> metadata_parsers);
 
@@ -28,6 +28,7 @@ namespace librealsense
         frame_interface* alloc_frame(rs2_extension type, size_t size, frame_additional_data additional_data, bool requires_memory) const;
 
         void set_callback(frame_callback_ptr callback);
+        frame_callback_ptr get_callback() const;
 
         void invoke_callback(frame_holder frame) const;
 
@@ -42,7 +43,7 @@ namespace librealsense
     private:
         friend class syncer_proccess_unit;
 
-        std::mutex _callback_mutex;
+        mutable std::mutex _callback_mutex;
 
         std::map<rs2_extension, std::shared_ptr<archive_interface>> _archive;
 
