@@ -117,6 +117,7 @@ typedef enum rs2_extension
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);
+const char* rs2_extension_to_string(rs2_extension type);
 
 typedef struct rs2_device_info rs2_device_info;
 typedef struct rs2_device rs2_device;
