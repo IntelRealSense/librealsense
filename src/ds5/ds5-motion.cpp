@@ -75,7 +75,7 @@ namespace librealsense
                 if (p->get_stream_type() == RS2_STREAM_GYRO)
                     assign_stream(_owner->_gyro_stream, p);
                 if (p->get_stream_type() == RS2_STREAM_GPIO)
-                    assign_stream(_owner->_gpio_streams[p->get_stream_index()], p);
+                    assign_stream(_owner->_gpio_streams[p->get_stream_index()-1], p);
                 if (p->get_framerate() == 1000)
                     p->make_default();
 

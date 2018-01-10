@@ -748,8 +748,8 @@ namespace librealsense
                 auto p = elem.second;
                 platform::stream_profile sp{ 1, 1, p.fps, stream_to_fourcc(p.stream) };
                 auto profile = std::make_shared<motion_stream_profile>(sp);
+                profile->set_stream_index(p.index);
                 profile->set_stream_type(p.stream);
-                profile->set_stream_index(0);
                 profile->set_format(p.format);
                 profile->set_framerate(p.fps);
                 profiles.push_back(profile);
