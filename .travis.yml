@@ -15,6 +15,7 @@ before_install:
       source ~/.bashrc;
       nvm install 6 && nvm use 6;
       npm install -g node-gyp;
+      npm install -g mocha;
     fi
     # Remove duplicated python 2.x, only leave python2.7; Otherwise node-gyp will complain and stop
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
@@ -124,4 +125,10 @@ script:
       mkdir build && cd build;
       cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false;
       make -j $CPU_NUM;
+    fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      cd ../wrappers/nodejs/test;
+      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/nodejs_record.rec;
+      mocha test-functional.js --playback nodejs_record.rec;
+      cd ../../..;
     fi
