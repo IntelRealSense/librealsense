@@ -868,30 +868,34 @@ namespace rs2
 
         // Draw combo-box with all resolution options for this device
         auto res_chars = get_string_pointers(resolutions);
-        ImGui::Text("Resolution:");
-        streaming_tooltip();
-        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
-
-        label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
-            << s->get_info(RS2_CAMERA_INFO_NAME) << " resolution";
-        if (streaming)
+        if (res_chars.size() > 0)
         {
-            ImGui::Text("%s", res_chars[ui.selected_res_id]);
+            ImGui::Text("Resolution:");
             streaming_tooltip();
-        }
-        else
-        {
-            ImGui::PushItemWidth(-1);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-            if (ImGui::Combo(label.c_str(), &ui.selected_res_id, res_chars.data(),
-                static_cast<int>(res_chars.size())))
+            ImGui::SameLine(); ImGui::SetCursorPosX(col1);
+
+            label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
+                << s->get_info(RS2_CAMERA_INFO_NAME) << " resolution";
+
+            if (streaming)
             {
-                res = true;
+                ImGui::Text("%s", res_chars[ui.selected_res_id]);
+                streaming_tooltip();
             }
-            ImGui::PopStyleColor();
-            ImGui::PopItemWidth();
+            else
+            {
+                ImGui::PushItemWidth(-1);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
+                if (ImGui::Combo(label.c_str(), &ui.selected_res_id, res_chars.data(),
+                    static_cast<int>(res_chars.size())))
+                {
+                    res = true;
+                }
+                ImGui::PopStyleColor();
+                ImGui::PopItemWidth();
+            }
+            ImGui::SetCursorPosX(col0);
         }
-        ImGui::SetCursorPosX(col0);
 
         if (draw_fps_selector)
         {
@@ -1047,11 +1051,8 @@ namespace rs2
         for (auto&& f : formats)
         {
             auto stream = f.first;
-            if (stream_enabled[stream] && res_values.size() > 0)
+            if (stream_enabled[stream])
             {
-                auto width = res_values[ui.selected_res_id].first;
-                auto height = res_values[ui.selected_res_id].second;
-
                 auto fps = 0;
                 if (show_single_fps_list)
                     fps = shared_fps_values[ui.selected_shared_fps_id];
@@ -1064,12 +1065,18 @@ namespace rs2
                 {
                     if (auto vid_prof = p.as<video_stream_profile>())
                     {
-                        if (vid_prof.width() == width &&
-                            vid_prof.height() == height &&
-                            p.unique_id() == stream &&
-                            p.fps() == fps &&
-                            p.format() == format)
-                            results.push_back(p);
+                        if (res_values.size() > 0)
+                        {
+                            auto width = res_values[ui.selected_res_id].first;
+                            auto height = res_values[ui.selected_res_id].second;
+
+                            if (vid_prof.width() == width &&
+                                vid_prof.height() == height &&
+                                p.unique_id() == stream &&
+                                p.fps() == fps &&
+                                p.format() == format)
+                                results.push_back(p);
+                        }
                     }
                     else
                     {
@@ -1097,8 +1104,6 @@ namespace rs2
             auto stream = f.first;
             if (stream_enabled[stream])
             {
-                auto width = res_values[ui.selected_res_id].first;
-                auto height = res_values[ui.selected_res_id].second;
                 auto format = format_values[stream][ui.selected_format_id[stream]];
 
                 auto fps = 0;
@@ -1107,23 +1112,32 @@ namespace rs2
                 else
                     fps = fps_values_per_stream[stream][ui.selected_fps_id[stream]];
 
-                error_message << "\n{" << stream_display_names[stream] << ","
-                    << width << "x" << height << " at " << fps << "Hz, "
-                    << rs2_format_to_string(format) << "} ";
-
                 for (auto&& p : profiles)
                 {
                     if (auto vid_prof = p.as<video_stream_profile>())
                     {
-                        if (vid_prof.width() == width &&
-                            vid_prof.height() == height &&
-                            p.unique_id() == stream &&
-                            p.fps() == fps &&
-                            p.format() == format)
-                            results.push_back(p);
+                        if (res_values.size() > 0)
+                        {
+                            auto width = res_values[ui.selected_res_id].first;
+                            auto height = res_values[ui.selected_res_id].second;
+
+                            error_message << "\n{" << stream_display_names[stream] << ","
+                                << width << "x" << height << " at " << fps << "Hz, "
+                                << rs2_format_to_string(format) << "} ";
+
+                            if (vid_prof.width() == width &&
+                                vid_prof.height() == height &&
+                                p.unique_id() == stream &&
+                                p.fps() == fps &&
+                                p.format() == format)
+                                results.push_back(p);
+                        }
                     }
                     else
                     {
+                        error_message << "\n{" << stream_display_names[stream] << ", at " << fps << "Hz, "
+                            << rs2_format_to_string(format) << "} ";
+
                         if (p.fps() == fps &&
                             p.unique_id() == stream &&
                             p.format() == format)

@@ -190,14 +190,19 @@ namespace librealsense
                 if (best_unpacker->satisfies(to_profile(r.get())) && legal_fourccs[r->get_stream_index()].count(best_pf->fourcc))
                 {
                     auto request = dynamic_cast<const video_stream_profile*>(r.get());
-                    if (!request) {
-                        // TODO: Log error?
-                        return false;
-                    }
+
                     request_mapping mapping;
-                    mapping.profile = { request->get_width(), request->get_height(), request->get_framerate(), best_pf->fourcc };
                     mapping.unpacker = best_unpacker;
                     mapping.pf = best_pf;
+
+                    if (!request) {
+
+                        mapping.profile = { 0, 0, r->get_framerate(), best_pf->fourcc };
+                    }
+                    else
+                    {
+                        mapping.profile = { request->get_width(), request->get_height(), request->get_framerate(), best_pf->fourcc };
+                    }
 
                     results.insert(mapping);
 
@@ -744,6 +749,7 @@ namespace librealsense
                 platform::stream_profile sp{ 1, 1, p.fps, stream_to_fourcc(p.stream) };
                 auto profile = std::make_shared<motion_stream_profile>(sp);
                 profile->set_stream_type(p.stream);
+                profile->set_stream_index(0);
                 profile->set_format(p.format);
                 profile->set_framerate(p.fps);
                 profiles.push_back(profile);
@@ -896,12 +902,12 @@ namespace librealsense
                       << ",TS_Domain," << rs2_timestamp_domain_to_string(additional_data.timestamp_domain));
 
             auto frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, data_size, additional_data, true);
-            frame->set_stream(request);
             if (!frame)
             {
                 LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
                 return;
             }
+            frame->set_stream(request);
 
             std::vector<byte*> dest{const_cast<byte*>(frame->get_frame_data())};
             mode.unpacker->unpack(dest.data(),(const byte*)sensor_data.fo.pixels, (int)data_size);
