@@ -29,6 +29,11 @@ namespace librealsense
     const uint8_t filter_iter_def = 2;
     const uint8_t filter_iter_step = 1;
 
+    // The holes filling mode
+    const uint8_t holes_fill_min = 0;  // Disabled
+    const uint8_t holes_fill_max = 5;  // Unlimited
+    const uint8_t holes_fill_step = 1; // In-between the boundaries the holes filling ("smearing") range is 2^val pixels
+    const uint8_t holes_fill_def = 0;  // disabled on start due to its artefactory nature
 
     spatial_filter::spatial_filter() :
         _spatial_alpha_param(alpha_default_val),
@@ -39,7 +44,9 @@ namespace librealsense
         _current_frm_size_pixels(0),
         _stereoscopic_depth(false),
         _focal_lenght_mm(0.f),
-        _stereo_baseline_mm(0.f)
+        _stereo_baseline_mm(0.f),
+        _holes_filling_mode(holes_fill_def),
+        _holes_filling_radius(0)
     {
         auto spatial_filter_alpha = std::make_shared<ptr_option<float>>(
             alpha_min_val,
@@ -70,11 +77,48 @@ namespace librealsense
             filter_iter_max,
             filter_iter_step,
             filter_iter_def,
-            &_spatial_iterations, "Smoothing passes");
+            &_spatial_iterations, "Filtering iterations");
+
+
+        auto holes_filling_mode = std::make_shared<ptr_option<uint8_t>>(
+            holes_fill_min,
+            holes_fill_max,
+            holes_fill_step,
+            holes_fill_def,
+            &_holes_filling_mode, "Holes filling mode");
+
+        holes_filling_mode->set_description(0, "Disabled");
+        holes_filling_mode->set_description(1, "2-pixel radius");
+        holes_filling_mode->set_description(2, "4-pixel radius");
+        holes_filling_mode->set_description(3, "8-pixel radius");
+        holes_filling_mode->set_description(4, "16-pixel radius");
+        holes_filling_mode->set_description(5, "Unlimited");
+
+        holes_filling_mode->on_set([this, holes_filling_mode](float val)
+        {
+            if (!holes_filling_mode->is_valid(val))
+                throw invalid_value_exception(to_string()
+                    << "Unsupported mode for holes filling selected: value " << val << " is out of range.");
+
+            _holes_filling_mode = static_cast<uint8_t>(val);
+            switch (_holes_filling_mode)
+            {
+            case holes_fill_min:
+                _holes_filling_radius = 0;      // disabled
+                break;
+            case holes_fill_max:
+                _holes_filling_radius = 0xff;   // The maximul smearing is not particulary useful
+                break;
+            default:
+                _holes_filling_radius = 0x1 << _holes_filling_mode; // exponential radius
+                break;
+            }
+        });
 
         register_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, spatial_filter_alpha);
         register_option(RS2_OPTION_FILTER_SMOOTH_DELTA, spatial_filter_delta);
         register_option(RS2_OPTION_FILTER_MAGNITUDE, spatial_filter_iterations);
+        register_option(RS2_OPTION_HOLES_FILL, holes_filling_mode);
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
@@ -116,7 +160,6 @@ namespace librealsense
                 *(stream_interface*)(f.get_profile().get()->profile),
                 *(stream_interface*)(_target_stream_profile.get()->profile));
 
-            //TODO - reject non- depth/disparity frames
             _extension_type = f.is<rs2::disparity_frame>() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
             _bpp        = (_extension_type == RS2_EXTENSION_DISPARITY_FRAME) ? sizeof(float) : sizeof(uint16_t);
             auto vp = _target_stream_profile.as<rs2::video_stream_profile>();

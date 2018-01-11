@@ -307,7 +307,7 @@ namespace rs2
                     value = bool_value ? 1.0f : 0.0f;
                     try
                     {
-                        model.add_log(to_string() << "Setting " << opt << " to " 
+                        model.add_log(to_string() << "Setting " << opt << " to "
                             << value << " (" << (bool_value? "ON" : "OFF") << ")");
                         endpoint->set_option(opt, value);
                         *invalidate_flag = true;
@@ -427,7 +427,7 @@ namespace rs2
                             static_cast<int>(labels.size())))
                         {
                             value = range.min + range.step * selected;
-                            model.add_log(to_string() << "Setting " << opt << " to " 
+                            model.add_log(to_string() << "Setting " << opt << " to "
                                 << value << " (" << labels[selected] << ")");
                             endpoint->set_option(opt, value);
                             *invalidate_flag = true;
