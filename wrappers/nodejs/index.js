@@ -4654,8 +4654,8 @@ const notification_category = {
      */
     notification_category_hardware_error: 'hardware-error',
     /**
-     * String literal of <code>'hardware-event'</code>. <br>General hardware notification reported from the sensor
-     * <br>Equivalent to its uppercase counterpart.
+     * String literal of <code>'hardware-event'</code>. <br>General hardware notification reported
+     * from the sensor <br>Equivalent to its uppercase counterpart.
      */
     notification_category_hardware_event: 'hardware-event',
     /**
@@ -4680,7 +4680,8 @@ const notification_category = {
      */
     NOTIFICATION_CATEGORY_HARDWARE_ERROR: RS2.RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
     /**
-     * General hardware notification reported from the sensor <br>Equivalent to its lowercase counterpart
+     * General hardware notification reported from the sensor <br>Equivalent to its lowercase
+     * counterpart
      * @type {Integer}
      */
     NOTIFICATION_CATEGORY_HARDWARE_EVENT: RS2.NOTIFICATION_CATEGORY_HARDWARE_EVENT,
