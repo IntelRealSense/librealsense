@@ -1692,6 +1692,7 @@ namespace rs2
                 s.second.texture->get_last_frame() &&
                 (s.second.profile.stream_type() == RS2_STREAM_COLOR ||
                  s.second.profile.stream_type() == RS2_STREAM_INFRARED ||
+                 s.second.profile.stream_type() == RS2_STREAM_DEPTH ||
                  s.second.profile.stream_type() == RS2_STREAM_FISHEYE))
             {
                 if (selected_tex_source_uid == -1 && selected_depth_source_uid != -1)
@@ -2761,7 +2762,7 @@ namespace rs2
 
         auto uid = f.get_profile().unique_id();
         auto new_uid = filtered.get_profile().unique_id();
-        viewer.streams_origin[new_uid] = uid;
+        viewer.streams_origin[uid] = new_uid;
 
         if(viewer.is_3d_view)
         {
