@@ -22,43 +22,28 @@
 // hacky little bit of half-functions to make .def(BIND_DOWNCAST) look nice for binding as/is functions
 #define BIND_DOWNCAST(class, downcast) "is_"#downcast, &rs2::class::is<rs2::downcast>).def("as_"#downcast, &rs2::class::as<rs2::downcast>
 const std::string rs2_prefix{ "rs2_" };
-std::string make_pythonic_str(const std::string& str)
+std::string make_pythonic_str(std::string str)
 {
-    const auto to_lower = [](const std::string& str) -> std::string
+    std::transform(begin(str), end(str), begin(str), ::tolower); //Make lower case
+    std::replace(begin(str), end(str), ' ', '_'); //replace spaces with underscore
+    if (str == "6dof") //Currently this is the only enum that starts with a digit
     {
-        std::string tmpstr(str);
-        std::transform(tmpstr.begin(), tmpstr.end(), tmpstr.begin(), ::tolower);
-        return tmpstr;
-    };
-    const auto replace = [](std::string& str, char from, char to) -> std::string
-    {
-        std::replace(begin(str), end(str), from, to); // replace all 'x' to 'y'
-        return str;
-    };
-
-    const auto replace_prefix_numbers = [](std::string& str) ->std::string
-    {
-        //TODO: Make generic. for now only replacing 6dof with six_dox
-        if (str[0] == '6')
-        {
-            return "six_" + str.substr(1);
-        }
-        return str;
-    };
-    auto python_name = replace_prefix_numbers(replace(to_lower(str), ' ', '_'));
-    return python_name;
+        return "six_dof";
+    }
+    return str;
 }
-#define BIND_ENUM(module, rs2_enum_type,RS2_ENUM_COUNT)                                                                   \
-    auto rs2_enum_type##pyclass_name = std::string(#rs2_enum_type).substr(rs2_prefix.length());                           \
-    py::enum_<rs2_enum_type> py_##rs2_enum_type(module, rs2_enum_type##pyclass_name.c_str());                             \
-    /*std::cout << std::endl << "Mapping " << rs2_enum_type##pyclass_name  << ":" << std::endl; */                        \
-    for (int i = 0; i < static_cast<int>(RS2_ENUM_COUNT); i++)                                                            \
-    {                                                                                                                     \
-        rs2_enum_type v = static_cast<rs2_enum_type>(i);                                                                  \
-        const char* enum_name = rs2_enum_type##_to_string(v);                                                             \
-        auto python_name = make_pythonic_str(enum_name);                                                                  \
-        py_##rs2_enum_type.value(python_name.c_str(), v);                                                                 \
-        /* std::cout << enum_name << "   <=====>   " << python_name << std::endl; */                                      \
+#define BIND_ENUM(module, rs2_enum_type,RS2_ENUM_COUNT)                                                                     \
+    static std::string rs2_enum_type##pyclass_name = std::string(#rs2_enum_type).substr(rs2_prefix.length());               \
+    /* Above 'static' is required in order to keep the string alive since py::class_ does not copy it */                    \
+    py::enum_<rs2_enum_type> py_##rs2_enum_type(module, rs2_enum_type##pyclass_name.c_str());                               \
+    /* std::cout << std::endl << "## " << rs2_enum_type##pyclass_name  << ":" << std::endl; */                              \
+    for (int i = 0; i < static_cast<int>(RS2_ENUM_COUNT); i++)                                                              \
+    {                                                                                                                       \
+        rs2_enum_type v = static_cast<rs2_enum_type>(i);                                                                    \
+        const char* enum_name = rs2_enum_type##_to_string(v);                                                               \
+        auto python_name = make_pythonic_str(enum_name);                                                                    \
+        py_##rs2_enum_type.value(python_name.c_str(), v);                                                                   \
+        /* std::cout << " - " << python_name << std::endl;    */                                                            \
     }
 
 /*PYBIND11_MAKE_OPAQUE(std::vector<rs2::stream_profile>)*/
