@@ -12,25 +12,26 @@ function require_package {
 }
 
 #Based on the current kernel version select the branch name to fetch the kernel source code
+# The reference name are pulled here : http://kernel.ubuntu.com/git/ubuntu/ubuntu-xenial.git/
 function choose_kernel_branch {
 
 	# Split the kernel version string
 	IFS='.' read -a kernel_version <<< "$1"
 
 	case "${kernel_version[1]}" in
-    "4")									# Kernel 4.4. is managed on master branch
-        echo master
-        ;;
-    "8")								 	# kernel 4.8 is available via explicit tags. Currently on 4.8.0-58
-        echo Ubuntu-hwe-4.8.0-58.63_16.04.1
-        ;;
-    "10")								 	# kernel 4.10 is managed on branch hwe
-        echo hwe
-        ;;
-    *)
-        echo -e "\e[31mUnsupported kernel version $1 . The patchs supports Ubuntu LTS kernels 4.4,4.8 and 4.10 only\e[0m"
+	"4")									# Kernel 4.4. is managed on master branch
+		echo master
+		;;
+	"8")								 	# kernel 4.8 is available via explicit tags. Currently on 4.8.0-58
+		echo Ubuntu-hwe-4.8.0-58.63_16.04.1
+		;;
+	"10")								 	# kernel 4.10 is managed on branch hwe-zesty as of 1.1.2018
+		echo hwe-zesty
+		;;
+	*)
+		echo -e "\e[31mUnsupported kernel version $1 . The provide patches currently supports Ubuntu LTS kernels 4.4, 4.8 and 4.10 only\e[0m"
 		exit 1
-        ;;
+		;;
 	esac
 }
 
