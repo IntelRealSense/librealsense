@@ -925,6 +925,17 @@ void rs2_get_extrinsics(const rs2_stream_profile* from,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, from, to, extrin)
 
+void rs2_register_extrinsics(const rs2_stream_profile* from,
+    const rs2_stream_profile* to,
+    rs2_extrinsics extrin, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(from);
+    VALIDATE_NOT_NULL(to);
+
+    environment::get_instance().get_extrinsics_graph().register_extrinsics(*from->profile, *to->profile, extrin);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, from, to)
+
 void rs2_get_motion_intrinsics(const rs2_sensor* sensor, rs2_stream stream, rs2_motion_device_intrinsic* intrinsics, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
@@ -1734,8 +1745,7 @@ void rs2_bypass_create_matcher(rs2_device* dev, rs2_matchers matcher, rs2_error*
 {
     VALIDATE_NOT_NULL(dev);
     auto df = VALIDATE_INTERFACE(dev->device, librealsense::bypass_device);
-
-
+    df->set_matcher_type(matcher);
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(, dev, matcher)
 
@@ -1765,6 +1775,20 @@ void rs2_bypass_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stre
     return bs->add_video_stream(video_stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(,sensor, video_stream.type, video_stream.index, video_stream.fmt, video_stream.width, video_stream.height, video_stream.uid)
+
+void rs2_bypass_add_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error) BEGIN_API_CALL
+{
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::bypass_sensor);
+    return bs->add_read_only_option(option, val);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, val)
+
+void rs2_bypass_update_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error) BEGIN_API_CALL
+{
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::bypass_sensor);
+    return bs->update_read_only_option(option, val);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, val)
 
 void rs2_log(rs2_log_severity severity, const char * message, rs2_error ** error) BEGIN_API_CALL
 {

@@ -84,6 +84,18 @@ namespace rs2
             rs2_bypass_on_video_frame(_sensor.get(), frame, &e);
             error::handle(e);
         }
+        void add_read_only_option(rs2_option option, float val)
+        {
+            rs2_error* e = nullptr;
+            rs2_bypass_add_read_only_option(_sensor.get(), option, val, &e);
+            error::handle(e);
+        }
+        void set_read_only_option(rs2_option option, float val)
+        {
+            rs2_error* e = nullptr;
+            rs2_bypass_update_read_only_option(_sensor.get(), option, val, &e);
+            error::handle(e);
+        }
     private:
         friend class bypass_device;
 
@@ -110,19 +122,12 @@ namespace rs2
             error::handle(e);
             return dev;
         }
-        void create_matcher(rs2_matchers matcher)
-        {
-            rs2_error* e = nullptr;
-            rs2_bypass_on_video_frame(_dev.get(), frame, &e);
-            error::handle(e);
-        }
+       
 
     public:
         bypass_device()
             : device(create_device_ptr())
-        {
-
-        }
+        {}
 
         bypass_sensor add_sensor(std::string name)
         {
@@ -135,7 +140,12 @@ namespace rs2
             return bypass_sensor(sensor);
             
         }
-
+        void create_matcher(rs2_matchers matcher)
+        {
+            rs2_error* e = nullptr;
+            rs2_bypass_create_matcher(_dev.get(), matcher, &e);
+            error::handle(e);
+        }
        
     };
 

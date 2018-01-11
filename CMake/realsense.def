@@ -22,6 +22,7 @@ EXPORTS
     rs2_delete_sensor
     
     rs2_get_extrinsics
+    rs2_register_extrinsics
     rs2_get_motion_intrinsics
 
     rs2_get_stream_profiles
@@ -242,4 +243,7 @@ EXPORTS
     rs2_create_bypass_device
     rs2_bypass_add_sensor
     rs2_bypass_on_video_frame
+    rs2_bypass_create_matcher
     rs2_bypass_add_video_stream
+    rs2_bypass_add_read_only_option
+    rs2_bypass_update_read_only_option

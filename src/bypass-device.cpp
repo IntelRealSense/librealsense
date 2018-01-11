@@ -17,6 +17,7 @@ namespace librealsense
         auto sensor = std::make_shared<bypass_sensor>(name, this);
         add_sensor(sensor);
         _bypass_sensors.push_back(sensor);
+
         return *sensor;
     }
 
@@ -40,8 +41,9 @@ namespace librealsense
     {
         std::vector<stream_interface*> profiles;
 
-        for (auto& p : _bypass_sensors[0]->_profiles)
-            profiles.push_back(p.get());
+        for (auto&& s : _bypass_sensors)
+            for (auto&& p : s->get_stream_profiles())
+                profiles.push_back(p.get());
 
         return matcher_factory::create(_matcher, profiles);
     }
@@ -93,7 +95,11 @@ namespace librealsense
         data.timestamp = bypass_frame.timestamp;
         data.timestamp_domain = bypass_frame.domain;
         data.frame_number = bypass_frame.frame_number;
-        auto frame = _source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, 0, data, false);
+
+        rs2_extension extension = bypass_frame.profile->profile->get_stream_type() == RS2_STREAM_DEPTH? 
+            RS2_EXTENSION_DEPTH_FRAME: RS2_EXTENSION_VIDEO_FRAME;
+       
+       auto frame = _source.alloc_frame(extension, 0, data, false);
 
         auto vid_profile = dynamic_cast<video_stream_profile_interface*>(bypass_frame.profile->profile);
         auto vid_frame = dynamic_cast<video_frame*>(frame);
@@ -104,6 +110,17 @@ namespace librealsense
             bypass_frame.deleter(bypass_frame.pixels);
         }, bypass_frame.pixels });
         _source.invoke_callback(frame);
+    }
+
+    void bypass_sensor::add_read_only_option(rs2_option option, float val)
+    {
+        register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("bypass sensor read only option",
+            lazy<float>([=]() { return val; })));
+    }
+
+    void bypass_sensor::update_read_only_option(rs2_option option, float val)
+    {
+        get_option(option).set(val);
     }
 }
 

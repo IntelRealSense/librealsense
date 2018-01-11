@@ -107,6 +107,7 @@ const char* rs2_extension_type_to_string(rs2_extension type);
 /** \brief Specifies advanced interfaces (capabilities) objects may implement */
 typedef enum rs2_matchers
 {
+   DI, //depth, ir
    DI_C, //depth, ir, color
    DLR_C, //depth, left ir, right ir, color
    DLR, //depth, left ir, right ir

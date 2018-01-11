@@ -4080,11 +4080,12 @@ TEST_CASE("Syncer sanity with bypass device", "[live][bypass]") {
         const int BPP = 2;
         std::shared_ptr<bypass_device> dev = std::move(std::make_shared<bypass_device>());
         auto s = dev->add_sensor("DS5u");
+       
         rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
 
-        s.add_video_stream(RS2_STREAM_DEPTH, 0, 0, W, H, BPP, RS2_FORMAT_Z16, intrinsics);
-        s.add_video_stream(RS2_STREAM_INFRARED, 1, 1, W, H, BPP, RS2_FORMAT_Y8, intrinsics);
-        
+        s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
+        s.add_video_stream({ RS2_STREAM_INFRARED, 1, 1, W, H,60, BPP, RS2_FORMAT_Y8, intrinsics });
+        dev->create_matcher(DI);
         //recorder rec("1.bag", dev);
 
         frame_queue q;
@@ -4099,19 +4100,19 @@ TEST_CASE("Syncer sanity with bypass device", "[live][bypass]") {
        
         std::vector<uint8_t> pixels(W * H * BPP, 0);
         std::weak_ptr<rs2::bypass_device> weak_dev(dev);
-
-        std::thread t([weak_dev, pixels, depth, ir]() mutable {
+      
+        std::thread t([&s, weak_dev, pixels, depth, ir]() mutable {
             
             auto shared_dev = weak_dev.lock();
             if (shared_dev == nullptr)
                 return;
-            shared_dev->on_video_frame({ pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
-            shared_dev->on_video_frame({ pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir });
+            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
+            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir });
               
-            shared_dev->on_video_frame({ pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth });
-            shared_dev->on_video_frame({ pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir });
+            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth });
+            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir });
 
-            shared_dev->on_video_frame({ pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, ir });
+            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, ir });
         });
         t.detach();
 
@@ -4175,10 +4176,11 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with bypass device", "[
 
         std::shared_ptr<bypass_device> dev = std::make_shared<bypass_device>();
         auto s = dev->add_sensor("DS5u");
+        
         rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
-        s.add_video_stream(RS2_STREAM_DEPTH, 0, 0, W, H, BPP, RS2_FORMAT_Z16, intrinsics);
-        s.add_video_stream(RS2_STREAM_INFRARED, 1, 1, W, H, BPP, RS2_FORMAT_Y8, intrinsics);
-
+        s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
+        s.add_video_stream({ RS2_STREAM_INFRARED, 1, 1, W, H,60,  BPP, RS2_FORMAT_Y8, intrinsics });
+        dev->create_matcher(DI);
         //recorder rec("1.bag", dev);
         frame_queue q;
         
@@ -4191,22 +4193,22 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with bypass device", "[
 
         std::vector<uint8_t> pixels(W * H * BPP, 0);
         std::weak_ptr<rs2::bypass_device> weak_dev(dev);
-        std::thread t([weak_dev, pixels, depth, ir]() mutable {
+        std::thread t([s, weak_dev, pixels, depth, ir]() mutable {
             auto shared_dev = weak_dev.lock();
             if (shared_dev == nullptr)
                 return;
-            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 1, depth);
-            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 1, ir);
+            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 1, depth });
+            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 1, ir });
 
-            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 3, depth);
+            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 3, depth });
 
-            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 4, depth);
+            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 4, depth });
 
-            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, depth);
+            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, depth });
 
-            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, depth);
+            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, depth });
 
-            shared_dev->on_video_frame(0, pixels.data(), [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth);
+            s.on_video_frame({ pixels.data(), [](void*) {}, 0, 0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
         });
 
         t.detach();

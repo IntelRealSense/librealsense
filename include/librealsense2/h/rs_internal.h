@@ -89,7 +89,8 @@ rs2_sensor* rs2_bypass_add_sensor(rs2_device* dev, const char* sensor_name, rs2_
 void rs2_bypass_on_video_frame(rs2_sensor* dev, rs2_bypass_video_frame frame, rs2_error** error);
 void rs2_bypass_create_matcher(rs2_device* dev, rs2_matchers matcher, rs2_error** error);
 void rs2_bypass_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stream, rs2_error** error);
-
+void rs2_bypass_add_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error);
+void rs2_bypass_update_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error);
 #ifdef __cplusplus
 }
 #endif

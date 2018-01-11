@@ -45,6 +45,8 @@ namespace librealsense
         void stop() override;
 
         void on_video_frame(rs2_bypass_video_frame frame);
+        void add_read_only_option(rs2_option option, float val);
+        void update_read_only_option(rs2_option option, float val);
 
     private:
         friend class bypass_device;

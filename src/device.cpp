@@ -10,6 +10,13 @@ std::shared_ptr<matcher> matcher_factory::create(rs2_matchers matcher, std::vect
 {
     switch (matcher)
     {
+    case DI:
+        if (profiles.size() < 2)
+        {
+            LOG_DEBUG("Created default matcher");
+            return create_default_matcher(profiles);
+        }
+        return create_DI_matcher(profiles);
     case DI_C:
         if (profiles.size() < 3)
         {

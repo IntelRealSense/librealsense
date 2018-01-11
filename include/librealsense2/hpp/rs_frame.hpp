@@ -82,6 +82,12 @@ namespace rs2
             error::handle(e);
             return res;
         }
+        void register_extrinsics_to(const stream_profile& to, rs2_extrinsics extrinsics)
+        {
+            rs2_error* e = nullptr;
+            rs2_register_extrinsics(get(), to.get(), extrinsics, &e);
+            error::handle(e);
+        }
 
     protected:
         friend class rs2::sensor;
@@ -101,7 +107,7 @@ namespace rs2
 
         const rs2_stream_profile* _profile;
         std::shared_ptr<rs2_stream_profile> _clone;
-
+        
         int _index = 0;
         int _uid = 0;
         int _framerate = 0;
