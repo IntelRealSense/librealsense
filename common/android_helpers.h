@@ -6,6 +6,7 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <sstream>
+#include <ios>
 
 namespace std
 {
@@ -51,5 +52,11 @@ namespace std
     {
         char* pEnd;
         return strtod(value.c_str(), &pEnd);
+    }
+
+    inline std::ios_base& hexfloat(std::ios_base& str)
+    {
+        str.setf(std::ios_base::fixed | std::ios_base::scientific, std::ios_base::floatfield);
+        return str;
     }
 }

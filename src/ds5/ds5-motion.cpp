@@ -44,7 +44,7 @@ namespace librealsense
         region_of_interest _roi{};
     };
 
-    class ds5_hid_sensor : public hid_sensor, public motion_sensor_interface
+    class ds5_hid_sensor : public hid_sensor
     {
     public:
         explicit ds5_hid_sensor(ds5_motion* owner, std::shared_ptr<platform::hid_device> hid_device,
@@ -57,7 +57,7 @@ namespace librealsense
         {
         }
 
-        rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) const override
+        rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) const 
         {
             return _owner->get_motion_intrinsics(stream);
         }
@@ -75,10 +75,18 @@ namespace librealsense
                 if (p->get_stream_type() == RS2_STREAM_GYRO)
                     assign_stream(_owner->_gyro_stream, p);
                 if (p->get_stream_type() == RS2_STREAM_GPIO)
-                    assign_stream(_owner->_gpio_streams[p->get_stream_index()], p);
+                    assign_stream(_owner->_gpio_streams[p->get_stream_index()-1], p);
                 if (p->get_framerate() == 1000)
                     p->make_default();
 
+                //set motion intrinsics
+                if (p->get_stream_type() == RS2_STREAM_ACCEL || p->get_stream_type() == RS2_STREAM_GYRO)
+                {
+                    auto motion = dynamic_cast<motion_stream_profile_interface*>(p.get()); 
+                    assert(motion); //Expecting to succeed for motion stream (since we are under the "if")
+                    auto st = p->get_stream_type();
+                    motion->set_intrinsics([this, st]() { return get_motion_intrinsics(st); });
+                }
             }
 
             return results;

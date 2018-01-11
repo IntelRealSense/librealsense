@@ -46,6 +46,7 @@ EXPORTS
     rs2_get_notification_timestamp
     rs2_get_notification_severity
     rs2_get_notification_category
+    rs2_get_notification_serialized_data
 
     rs2_get_frame_metadata
     rs2_supports_frame_metadata
@@ -63,7 +64,8 @@ EXPORTS
     rs2_get_frame_points_count
     rs2_release_frame
     rs2_frame_add_ref
-
+    rs2_pose_frame_get_pose_data
+    
     rs2_get_option
     rs2_set_option
     rs2_supports_option
@@ -191,6 +193,7 @@ EXPORTS
     rs2_create_record_device 
     rs2_record_device_pause
     rs2_record_device_resume
+    rs2_record_device_filename
 
     rs2_context_add_device
     rs2_context_remove_device
@@ -247,3 +250,9 @@ EXPORTS
     rs2_bypass_add_video_stream
     rs2_bypass_add_read_only_option
     rs2_bypass_update_read_only_option
+
+    rs2_loopback_enable
+    rs2_loopback_disable
+    rs2_loopback_is_enabled
+    rs2_connect_tm2_controller
+    rs2_disconnect_tm2_controller

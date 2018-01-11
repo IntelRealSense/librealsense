@@ -44,6 +44,7 @@ typedef enum rs2_stream
     RS2_STREAM_GYRO                             , /**< Native stream of gyroscope motion data produced by RealSense device */
     RS2_STREAM_ACCEL                            , /**< Native stream of accelerometer motion data produced by RealSense device */
     RS2_STREAM_GPIO                             , /**< Signals from external device connected through GPIO */
+    RS2_STREAM_POSE                             , /**< 6 Degrees of Freedom pose data, calculated by RealSense device */ 
     RS2_STREAM_COUNT
 } rs2_stream;
 const char* rs2_stream_to_string(rs2_stream stream);
@@ -70,6 +71,7 @@ typedef enum rs2_format
     RS2_FORMAT_MOTION_RAW      , /**< Raw data from the motion sensor */
     RS2_FORMAT_MOTION_XYZ32F   , /**< Motion data packed as 3 32-bit float values, for X, Y, and Z axis */
     RS2_FORMAT_GPIO_RAW        , /**< Raw data from the external sensors hooked to one of the GPIO's */
+    RS2_FORMAT_6DOF            , /**< Pose data packed as floats array, containing translation vector, rotation quaternion and prediction velocities and accelerations vectors */
     RS2_FORMAT_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_format;
 const char* rs2_format_to_string(rs2_format format);
@@ -283,6 +285,13 @@ rs2_log_severity rs2_get_notification_severity(rs2_notification* notification, r
 rs2_notification_category rs2_get_notification_category(rs2_notification* notification, rs2_error** error);
 
 /**
+* retrieve serialized data from notification handle
+* \param[in] notification      handle returned from a callback
+* \return            the serialized data (in JSON format)
+*/
+const char* rs2_get_notification_serialized_data(rs2_notification* notification, rs2_error** error);
+
+/**
 * check if physical subdevice is supported
 * \param[in] device  input RealSense device
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -354,7 +363,15 @@ int rs2_stream_profile_is(const rs2_stream_profile* mode, rs2_extension type, rs
 * \param[out] height     height in pixels of the video stream
 * \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_get_video_stream_resolution(const rs2_stream_profile* from, int* width, int* height, rs2_error** error);
+void rs2_get_video_stream_resolution(const rs2_stream_profile* mode, int* width, int* height, rs2_error** error);
+
+/**
+* Obtain the intrinsics of a specific stream configuration from the device.
+* \param[in] mode          input stream profile
+* \param[out] intrinsics   Pointer to the struct to store the data in
+* \param[out] error        If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_get_motion_intrinsics(const rs2_stream_profile* mode, rs2_motion_device_intrinsic * intrinsics, rs2_error ** error);
 
 /**
 * Returns non-zero if selected profile is recommended for the sensor
@@ -363,7 +380,7 @@ void rs2_get_video_stream_resolution(const rs2_stream_profile* from, int* width,
 * \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return                non-zero if selected profile is recommended for the sensor
 */
-int rs2_is_stream_profile_default(const rs2_stream_profile* profile, rs2_error** error);
+int rs2_is_stream_profile_default(const rs2_stream_profile* mode, rs2_error** error);
 
 /**
 * get the number of supported stream profiles
@@ -401,11 +418,11 @@ void rs2_register_extrinsics(const rs2_stream_profile* from,
 
 /**
  * When called on a video profile, returns the intrinsics of specific stream configuration
- * \param[in] from          input stream profile
+ * \param[in] mode          input stream profile
  * \param[out] intrinsics   resulting intrinsics for the video profile
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_get_video_stream_intrinsics(const rs2_stream_profile* from, rs2_intrinsics* intrinsics, rs2_error** error);
+void rs2_get_video_stream_intrinsics(const rs2_stream_profile* mode, rs2_intrinsics* intrinsics, rs2_error** error);
 
 
 #ifdef __cplusplus

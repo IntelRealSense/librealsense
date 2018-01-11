@@ -218,6 +218,23 @@ void playback_device::seek_to_time(std::chrono::nanoseconds time)
         update_extensions(m_device_description);
         m_prev_timestamp = time; //Updating prev timestamp to make get_position return true indication even when playbakc is paused
         catch_up();
+        if (m_is_paused)
+        {
+            //raise_last_frames(time);
+            auto current_frames = m_reader->fetch_last_frames(time);
+            for (auto&& f : current_frames)
+            {
+                if (auto frame = f->as<serialized_frame>())
+                {
+                    if (frame->stream_id.device_index != get_device_index() || frame->stream_id.sensor_index >= m_sensors.size())
+                    {
+                        std::string error_msg = to_string() << "Unexpected sensor index while playing file (Read index = " << frame->stream_id.sensor_index << ")";
+                        LOG_ERROR(error_msg);
+                    }
+                    m_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time);
+                }
+            }
+        }
     });
     if ((*m_read_thread)->flush() == false)
     {
@@ -512,6 +529,12 @@ void playback_device::try_looping()
                 throw invalid_value_exception(error_msg);
             }
             LOG_DEBUG("Dispatching frame " << frame->stream_id);
+
+            if (data->is<serialized_invalid_frame>())
+            {
+                LOG_WARNING("Bad frame from reader, ignoring");
+                 return true;
+            }
             //Dispatch frame to the relevant sensor
             m_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time);
             return true;
@@ -520,6 +543,12 @@ void playback_device::try_looping()
         if (auto option_data = data->as<serialized_option>())
         {
             m_sensors.at(option_data->sensor_id.sensor_index)->update_option(option_data->option_id, option_data->option);
+            return true;
+        }
+
+        if (auto notification_data = data->as<serialized_notification>())
+        {
+            m_sensors.at(notification_data->sensor_id.sensor_index)->raise_notification(notification_data->notif);
             return true;
         }
         return false;
@@ -605,7 +634,6 @@ bool playback_device::try_extend_snapshot(std::shared_ptr<extension_snapshot>& e
     {
     case RS2_EXTENSION_DEBUG:   return try_extend<debug_interface>(e, ext);
     case RS2_EXTENSION_INFO:    return try_extend<info_interface>(e, ext);
-    case RS2_EXTENSION_MOTION:  return try_extend<motion_sensor_interface>(e, ext);
     case RS2_EXTENSION_OPTIONS: return try_extend<options_interface>(e, ext);
     case RS2_EXTENSION_VIDEO:   return try_extend<video_sensor_interface>(e, ext);
     case RS2_EXTENSION_ROI:     return try_extend<roi_sensor_interface>(e, ext);

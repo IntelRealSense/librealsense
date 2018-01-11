@@ -5213,6 +5213,11 @@ void ImGui::TextV(const char* fmt, va_list args)
     TextUnformatted(g.TempBuffer, text_end);
 }
 
+void ImGui::Icon(const char* icon)
+{
+    ImGui::Text("%s", icon);
+}
+
 void ImGui::Text(const char* fmt, ...)
 {
     va_list args;
@@ -8409,14 +8414,14 @@ static bool Items_SingleStringGetter(void* data, int idx, const char** out_text)
 }
 
 // Combo box helper allowing to pass an array of strings.
-bool ImGui::Combo(const char* label, int* current_item, const char** items, int items_count, int height_in_items)
+bool ImGui::Combo(const char* label, int* current_item, const char** items, int items_count, int height_in_items, bool show_arrow_down)
 {
     const bool value_changed = Combo(label, current_item, Items_ArrayGetter, (void*)items, items_count, height_in_items);
     return value_changed;
 }
 
 // Combo box helper allowing to pass all items in a single string.
-bool ImGui::Combo(const char* label, int* current_item, const char* items_separated_by_zeros, int height_in_items)
+bool ImGui::Combo(const char* label, int* current_item, const char* items_separated_by_zeros, int height_in_items, bool show_arrow_down)
 {
     int items_count = 0;
     const char* p = items_separated_by_zeros;       // FIXME-OPT: Avoid computing this, or at least only when combo is open
@@ -8425,12 +8430,12 @@ bool ImGui::Combo(const char* label, int* current_item, const char* items_separa
         p += strlen(p) + 1;
         items_count++;
     }
-    bool value_changed = Combo(label, current_item, Items_SingleStringGetter, (void*)items_separated_by_zeros, items_count, height_in_items);
+    bool value_changed = Combo(label, current_item, Items_SingleStringGetter, (void*)items_separated_by_zeros, items_count, height_in_items, show_arrow_down);
     return value_changed;
 }
 
 // Combo box function.
-bool ImGui::Combo(const char* label, int* current_item, bool (*items_getter)(void*, int, const char**), void* data, int items_count, int height_in_items)
+bool ImGui::Combo(const char* label, int* current_item, bool (*items_getter)(void*, int, const char**), void* data, int items_count, int height_in_items, bool show_arrow_down)
 {
     ImGuiWindow* window = GetCurrentWindow();
     if (window->SkipItems)
@@ -8448,16 +8453,18 @@ bool ImGui::Combo(const char* label, int* current_item, bool (*items_getter)(voi
     if (!ItemAdd(total_bb, &id))
         return false;
 
-    const float arrow_size = (g.FontSize + style.FramePadding.x * 2.0f);
+    const float arrow_size = show_arrow_down ? (g.FontSize + style.FramePadding.x * 2.0f) : 0;
     const bool hovered = IsHovered(frame_bb, id);
     bool popup_open = IsPopupOpen(id);
     bool popup_opened_now = false;
 
     const ImRect value_bb(frame_bb.Min, frame_bb.Max - ImVec2(arrow_size, 0.0f));
-    RenderFrame(frame_bb.Min, frame_bb.Max, GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
-    RenderFrame(ImVec2(frame_bb.Max.x-arrow_size, frame_bb.Min.y), frame_bb.Max, GetColorU32(popup_open || hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button), true, style.FrameRounding); // FIXME-ROUNDING
-    RenderCollapseTriangle(ImVec2(frame_bb.Max.x-arrow_size, frame_bb.Min.y) + style.FramePadding, true);
-
+    if (show_arrow_down)
+    {
+        RenderFrame(frame_bb.Min, frame_bb.Max, GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
+        RenderFrame(ImVec2(frame_bb.Max.x - arrow_size, frame_bb.Min.y), frame_bb.Max, GetColorU32(popup_open || hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button), true, style.FrameRounding); // FIXME-ROUNDING
+        RenderCollapseTriangle(ImVec2(frame_bb.Max.x - arrow_size, frame_bb.Min.y) + style.FramePadding, true);
+    }
     if (*current_item >= 0 && *current_item < items_count)
     {
         const char* item_text;

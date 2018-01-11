@@ -238,6 +238,18 @@ namespace rs2
             rs2_record_device_resume(_dev.get(), &e);
             error::handle(e);
         }
+
+        /**
+        * Gets the name of the file to which the recorder is writing
+        * \return The  name of the file to which the recorder is writing
+        */
+        std::string filename() const
+        {
+            rs2_error* e = nullptr;
+            std::string filename = rs2_record_device_filename(_dev.get(), &e);
+            error::handle(e);
+            return filename;
+        }
     protected:
         explicit recorder(std::shared_ptr<rs2_device> dev) : device(dev)
         {
