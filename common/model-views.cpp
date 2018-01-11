@@ -663,7 +663,7 @@ namespace rs2
             auto decimate = std::make_shared<rs2::decimation_filter>();
             decimation_filter = std::make_shared<processing_block_model>(
                 this, "Decimation Filter", decimate,
-                [=](rs2::frame f) { return decimate->proccess(f); },
+                [=](rs2::frame f) { return decimate->process(f); },
                 error_message);
             decimation_filter->enabled = true;
             post_processing.push_back(decimation_filter);
@@ -671,7 +671,7 @@ namespace rs2
             auto depth_2_disparity = std::make_shared<rs2::disparity_transform>();
             depth_to_disparity = std::make_shared<processing_block_model>(
                 this, "Depth->Disparity", depth_2_disparity,
-                [=](rs2::frame f) { return depth_2_disparity->proccess(f); }, error_message);
+                [=](rs2::frame f) { return depth_2_disparity->process(f); }, error_message);
             if (s->is<depth_stereo_sensor>())
             {
                 depth_to_disparity->enabled = true;
@@ -681,7 +681,7 @@ namespace rs2
             auto spatial = std::make_shared<rs2::spatial_filter>();
             spatial_filter = std::make_shared<processing_block_model>(
                 this, "Spatial Filter", spatial,
-                [=](rs2::frame f) { return spatial->proccess(f); },
+                [=](rs2::frame f) { return spatial->process(f); },
                 error_message);
             spatial_filter->enabled = true;
             post_processing.push_back(spatial_filter);
@@ -689,14 +689,14 @@ namespace rs2
             auto temporal = std::make_shared<rs2::temporal_filter>();
             temporal_filter = std::make_shared<processing_block_model>(
                 this, "Temporal Filter", temporal,
-                [=](rs2::frame f) { return temporal->proccess(f); }, error_message);
+                [=](rs2::frame f) { return temporal->process(f); }, error_message);
             temporal_filter->enabled = true;
             post_processing.push_back(temporal_filter);
 
             auto disparity_2_depth = std::make_shared<rs2::disparity_transform>(false);
             disparity_to_depth = std::make_shared<processing_block_model>(
                 this, "Disparity->Depth", disparity_2_depth,
-                [=](rs2::frame f) { return disparity_2_depth->proccess(f); }, error_message);
+                [=](rs2::frame f) { return disparity_2_depth->process(f); }, error_message);
             disparity_to_depth->enabled = s->is<depth_stereo_sensor>();
             if (s->is<depth_stereo_sensor>())
             {
@@ -2778,7 +2778,7 @@ namespace rs2
         return res;
     }
 
-    void post_processing_filters::proccess(rs2::frame f, const rs2::frame_source& source)
+    void post_processing_filters::process(rs2::frame f, const rs2::frame_source& source)
     {
         points p;
         std::vector<frame> results;

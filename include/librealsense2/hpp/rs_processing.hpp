@@ -312,7 +312,7 @@ namespace rs2
             Alignment is performed between a depth image and another image.
             To perform alignment of a depth image to the other, set the align_to parameter with the other stream type.
             To perform alignment of a non depth image to a depth image, set the align_to parameter to RS2_STREAM_DEPTH
-            Camera calibration and frame's stream type are determined on the fly, according to the first valid frameset passed to proccess()
+            Camera calibration and frame's stream type are determined on the fly, according to the first valid frameset passed to process()
 
             * \param[in] align_to      The stream type to which alignment should be made.
         */
@@ -334,7 +334,7 @@ namespace rs2
         * \param[in] frame      A pair of images, where at least one of which is a depth frame
         * \return Input frames aligned to one another
         */
-        frameset proccess(frameset frame)
+        frameset process(frameset frame)
         {
             (*_block)(frame);
             rs2::frame f;
@@ -406,7 +406,7 @@ namespace rs2
             _block->start(_queue);
         }
 
-        rs2::frame proccess(rs2::frame frame)
+        rs2::frame process(rs2::frame frame)
         {
             (*_block)(frame);
             rs2::frame f;
@@ -443,7 +443,7 @@ namespace rs2
             _block->start(_queue);
         }
 
-        rs2::frame proccess(rs2::frame frame)
+        rs2::frame process(rs2::frame frame)
         {
             (*_block)(frame);
             rs2::frame f;
@@ -480,7 +480,7 @@ namespace rs2
             _block->start(_queue);
         }
 
-        rs2::frame proccess(rs2::frame frame)
+        rs2::frame process(rs2::frame frame)
         {
             (*_block)(frame);
             rs2::frame f;
@@ -517,7 +517,7 @@ namespace rs2
             _block->start(_queue);
         }
 
-        rs2::frame proccess(rs2::frame frame)
+        rs2::frame process(rs2::frame frame)
         {
             (*_block)(frame);
             rs2::frame f;

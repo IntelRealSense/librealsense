@@ -56,7 +56,7 @@ namespace librealsense
         void register_sensor_options(const device_serializer::sensor_snapshot& sensor_snapshot);
 
         frame_callback_ptr m_user_callback;
-        notifications_proccessor _notifications_proccessor;
+        notifications_processor _notifications_processor;
         using stream_unique_id = int;
         std::map<stream_unique_id, std::shared_ptr<dispatcher>> m_dispatchers;
         std::atomic<bool> m_is_started;

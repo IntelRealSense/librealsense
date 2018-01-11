@@ -577,7 +577,7 @@ namespace rs2
         post_processing_filters(viewer_model& viewer)
             : processing_block([&](rs2::frame f, const rs2::frame_source& source)
             {
-                proccess(std::move(f),source);
+                process(std::move(f),source);
             }),
             viewer(viewer),
             keep_calculating(true),
@@ -632,7 +632,7 @@ namespace rs2
         viewer_model& viewer;
 
         void render_loop();
-        void proccess(rs2::frame f, const rs2::frame_source& source);
+        void process(rs2::frame f, const rs2::frame_source& source);
         std::vector<rs2::frame> handle_frame(rs2::frame f);
 
         rs2::frame apply_filters(rs2::frame f);
