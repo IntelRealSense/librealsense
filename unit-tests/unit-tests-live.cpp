@@ -4068,54 +4068,37 @@ TEST_CASE("Pipeline record and playback", "[live]") {
 }
 
 #define ADD_ENUM_TEST_CASE(rs2_enum_type, RS2_ENUM_COUNT)                                  \
- TEST_CASE(#rs2_enum_type " enum test", "[live]") {                                        \
-    using namespace librealsense;                                                          \
-    std::cout << #rs2_enum_type << " values:" << std::endl;                                \
-    for (int i = 0; i < static_cast<int>(RS2_ENUM_COUNT); i++)                             \
+TEST_CASE(#rs2_enum_type " enum test", "[live]") {                                         \
+    int last_item_index = static_cast<int>(RS2_ENUM_COUNT);                                \
+    for (int i = 0; i < last_item_index; i++)                                              \
     {                                                                                      \
         rs2_enum_type enum_value = static_cast<rs2_enum_type>(i);                          \
-        REQUIRE(is_valid(enum_value));                                                     \
-        std::string pretty_str1 = get_string(enum_value);                                  \
-        std::string pretty_str2 = get_string(enum_value, true);                            \
-        REQUIRE(pretty_str1 == pretty_str2);                                               \
-        rs2_enum_type enum_value_from_str = RS2_ENUM_COUNT;                                \
-        REQUIRE(try_parse(pretty_str1, enum_value));                                       \
-        REQUIRE(enum_value == enum_value_from_str);                                        \
-        std::string str = get_string(enum_value, false);                                   \
-        const std::string prefix = std::string(#rs2_enum_type) + "_";                      \
-        std::string full_name = prefix + str;                                              \
-        std::transform(begin(full_name), end(full_name), begin(full_name), ::toupper);     \
-        std::cout << "\t" << full_name << std::endl;                                       \
+        std::string str;                                                                   \
+        REQUIRE_NOTHROW(str = rs2_enum_type##_to_string(enum_value));                      \
+        REQUIRE(str.empty() == false);                                                     \
+        REQUIRE(str != "UNKNOWN");                                                         \
+    }                                                                                      \
+    /* Test for false positive*/                                                           \
+    for (int i = last_item_index; i < last_item_index + 1; i++)                            \
+    {                                                                                      \
+        rs2_enum_type enum_value = static_cast<rs2_enum_type>(i);                          \
+        std::string str;                                                                   \
+        REQUIRE_NOTHROW(str = rs2_enum_type##_to_string(enum_value));                      \
+        REQUIRE(str == "UNKNOWN");                                                         \
     }                                                                                      \
 }
 
-//ADD_ENUM_TEST_CASE(rs2_camera_info, RS2_CAMERA_INFO_COUNT);
-//ADD_ENUM_TEST_CASE(rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT);
-//ADD_ENUM_TEST_CASE(rs2_stream, RS2_STREAM_COUNT);
-//ADD_ENUM_TEST_CASE(rs2_extension, RS2_EXTENSION_COUNT);
-//ADD_ENUM_TEST_CASE(rs2_format, RS2_FORMAT_COUNT);
-//ADD_ENUM_TEST_CASE(rs2_notification_category, RS2_NOTIFICATION_CATEGORY_COUNT);
-//ADD_ENUM_TEST_CASE(rs2_log_severity, RS2_LOG_SEVERITY_COUNT);
-//ADD_ENUM_TEST_CASE(rs2_option, RS2_OPTION_COUNT);
-//ADD_ENUM_TEST_CASE(rs2_timestamp_domain, RS2_TIMESTAMP_DOMAIN_COUNT);
-//ADD_ENUM_TEST_CASE(rs2_distortion, RS2_DISTORTION_COUNT);
-
-TEST_CASE("rs2_stream enum test", "[live]") {
-    std::cout << "rs2_stream values:" << std::endl;
-    for (int i = 0; i < static_cast<int>(RS2_STREAM_COUNT); i++)
-    {
-        rs2_stream enum_value = static_cast<rs2_stream>(i);
-        //REQUIRE(librealsense::is_valid(enum_value));
-        std::string pretty_str1 = rs2_stream_to_string(enum_value);
-        std::string pretty_str2 = rs2_stream_to_string(enum_value);
-        REQUIRE(pretty_str1 == pretty_str2);
-        //rs2_stream enum_value_from_str = RS2_STREAM_COUNT;
-        //REQUIRE(librealsense::try_parse(pretty_str1, enum_value));
-        //REQUIRE(enum_value == enum_value_from_str);
-        std::string str = rs2_stream_to_string(enum_value);
-        const std::string prefix = std::string("rs2_stream") + "_";
-        std::string full_name = prefix + str;
-        std::transform(begin(full_name), end(full_name), begin(full_name), ::toupper);
-        std::cout << "\t" << full_name << std::endl;
-    }
-}
+ADD_ENUM_TEST_CASE(rs2_stream, RS2_STREAM_COUNT)
+ADD_ENUM_TEST_CASE(rs2_format, RS2_FORMAT_COUNT)
+ADD_ENUM_TEST_CASE(rs2_distortion, RS2_DISTORTION_COUNT)
+ADD_ENUM_TEST_CASE(rs2_option, RS2_OPTION_COUNT)
+ADD_ENUM_TEST_CASE(rs2_camera_info, RS2_CAMERA_INFO_COUNT)
+ADD_ENUM_TEST_CASE(rs2_timestamp_domain, RS2_TIMESTAMP_DOMAIN_COUNT)
+ADD_ENUM_TEST_CASE(rs2_notification_category, RS2_NOTIFICATION_CATEGORY_COUNT)
+ADD_ENUM_TEST_CASE(rs2_sr300_visual_preset, RS2_SR300_VISUAL_PRESET_COUNT)
+ADD_ENUM_TEST_CASE(rs2_log_severity, RS2_LOG_SEVERITY_COUNT)
+ADD_ENUM_TEST_CASE(rs2_exception_type, RS2_EXCEPTION_TYPE_COUNT)
+ADD_ENUM_TEST_CASE(rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT)
+ADD_ENUM_TEST_CASE(rs2_extension, RS2_EXTENSION_COUNT)
+ADD_ENUM_TEST_CASE(rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT)
+ADD_ENUM_TEST_CASE(rs2_rs400_visual_preset, RS2_RS400_VISUAL_PRESET_COUNT)
