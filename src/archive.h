@@ -228,13 +228,21 @@ namespace librealsense
     class depth_frame : public video_frame
     {
     public:
-        depth_frame() : video_frame()
+        depth_frame() : video_frame(), _depth_units()
         {
+        }
+
+        frame_interface* publish(std::shared_ptr<archive_interface> new_owner) override
+        {
+            _depth_units = optional_value<float>();
+            return video_frame::publish(new_owner);
         }
 
         float get_distance(int x, int y) const
         {
-            if (_original)
+            // If this frame does not itself contain Z16 depth data,
+            // fall back to the original frame it was created from
+            if (_original && get_stream()->get_format() != RS2_FORMAT_Z16)
                 return((depth_frame*)_original.frame)->get_distance(x, y);
 
             uint64_t pixel = 0;
@@ -250,7 +258,12 @@ namespace librealsense
             return pixel * get_units();
         }
 
-        float get_units() const { return query_units(this->get_sensor()); }
+        float get_units() const 
+        { 
+            if (!_depth_units)
+                _depth_units = query_units(get_sensor());
+            return _depth_units.value();
+        }
 
         const frame_interface* get_original_depth() const
         {
@@ -315,6 +328,7 @@ namespace librealsense
         }
 
         frame_holder _original;
+        mutable optional_value<float> _depth_units;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_DEPTH_FRAME, librealsense::depth_frame);
