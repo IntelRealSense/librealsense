@@ -171,13 +171,15 @@ namespace rs2
         * \param[out] f - frame handle
         * \return true if new frame was stored to f
         */
-        bool poll_for_frame(frame* f) const
+        template<typename T>
+        typename std::enable_if<std::is_base_of<rs2::frame, T>::value, bool>::type poll_for_frame(T* output) const
         {
             rs2_error* e = nullptr;
             rs2_frame* frame_ref = nullptr;
             auto res = rs2_poll_for_frame(_queue.get(), &frame_ref, &e);
             error::handle(e);
-            if (res) *f = { frame_ref };
+            frame f{ frame_ref };
+            if (res) *output = f;
             return res > 0;
         }
 
