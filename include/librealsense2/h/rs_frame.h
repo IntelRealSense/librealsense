@@ -40,6 +40,7 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);
+const char* rs2_frame_metadata_value_to_string(rs2_frame_metadata_value metadata);
 
 /** \brief 3D coordinates with origin at topmost left corner of the lense,
      with positive Z pointing away from the camera, positive X pointing camera right and positive Y pointing camera down */

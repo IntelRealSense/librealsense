@@ -1,3 +1,6 @@
+/* License: Apache 2.0. See LICENSE file in root directory.
+Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+
 #include <pybind11/pybind11.h>
 
 // convenience functions
@@ -21,6 +24,30 @@
 #define BIND_RAW_2D_ARRAY(class_name, member_name, type, nsize, msize) #member_name, [](const class_name &c) -> const std::array<std::array<type, msize>, nsize>& { return reinterpret_cast<const std::array<std::array<type, msize>, nsize>&>(c.member_name); }
 // hacky little bit of half-functions to make .def(BIND_DOWNCAST) look nice for binding as/is functions
 #define BIND_DOWNCAST(class, downcast) "is_"#downcast, &rs2::class::is<rs2::downcast>).def("as_"#downcast, &rs2::class::as<rs2::downcast>
+const std::string rs2_prefix{ "rs2_" };
+std::string make_pythonic_str(std::string str)
+{
+    std::transform(begin(str), end(str), begin(str), ::tolower); //Make lower case
+    std::replace(begin(str), end(str), ' ', '_'); //replace spaces with underscore
+    if (str == "6dof") //Currently this is the only enum that starts with a digit
+    {
+        return "six_dof";
+    }
+    return str;
+}
+#define BIND_ENUM(module, rs2_enum_type,RS2_ENUM_COUNT)                                                                     \
+    static std::string rs2_enum_type##pyclass_name = std::string(#rs2_enum_type).substr(rs2_prefix.length());               \
+    /* Above 'static' is required in order to keep the string alive since py::class_ does not copy it */                    \
+    py::enum_<rs2_enum_type> py_##rs2_enum_type(module, rs2_enum_type##pyclass_name.c_str());                               \
+    /* std::cout << std::endl << "## " << rs2_enum_type##pyclass_name  << ":" << std::endl; */                              \
+    for (int i = 0; i < static_cast<int>(RS2_ENUM_COUNT); i++)                                                              \
+    {                                                                                                                       \
+        rs2_enum_type v = static_cast<rs2_enum_type>(i);                                                                    \
+        const char* enum_name = rs2_enum_type##_to_string(v);                                                               \
+        auto python_name = make_pythonic_str(enum_name);                                                                    \
+        py_##rs2_enum_type.value(python_name.c_str(), v);                                                                   \
+        /* std::cout << " - " << python_name << std::endl;    */                                                            \
+    }
 
 /*PYBIND11_MAKE_OPAQUE(std::vector<rs2::stream_profile>)*/
 
@@ -70,88 +97,17 @@ PYBIND11_MODULE(NAME, m) {
                   return ss.str();
               });
 
-    py::enum_<rs2_camera_info> camera_info(m, "camera_info");
-    camera_info.value("name", RS2_CAMERA_INFO_NAME)
-               .value("serial_number", RS2_CAMERA_INFO_SERIAL_NUMBER)
-               .value("firmware_version", RS2_CAMERA_INFO_FIRMWARE_VERSION)
-               .value("location", RS2_CAMERA_INFO_PHYSICAL_PORT)
-               .value("debug_op_code", RS2_CAMERA_INFO_DEBUG_OP_CODE)
-               .value("advanced_mode", RS2_CAMERA_INFO_ADVANCED_MODE)
-               .value("product_id", RS2_CAMERA_INFO_PRODUCT_ID)
-               .value("camera_locked", RS2_CAMERA_INFO_CAMERA_LOCKED)
-               .value("count", RS2_CAMERA_INFO_COUNT);
-
-    py::enum_<rs2_frame_metadata_value> frame_metadata(m, "frame_metadata");
-    frame_metadata.value("frame counter", RS2_FRAME_METADATA_FRAME_COUNTER)
-                  .value("frame_timestamp", RS2_FRAME_METADATA_FRAME_TIMESTAMP)
-                  .value("sensor_timestamp", RS2_FRAME_METADATA_SENSOR_TIMESTAMP)
-                  .value("actual_exposure", RS2_FRAME_METADATA_ACTUAL_EXPOSURE)
-                  .value("gain_level", RS2_FRAME_METADATA_GAIN_LEVEL)
-                  .value("auto_exposure", RS2_FRAME_METADATA_AUTO_EXPOSURE)
-                  .value("white_balance", RS2_FRAME_METADATA_WHITE_BALANCE)
-                  .value("time_of_arrival", RS2_FRAME_METADATA_TIME_OF_ARRIVAL)
-                  .value("temprature", RS2_FRAME_METADATA_TEMPERATURE)
-                  .value("count", RS2_FRAME_METADATA_COUNT);
-
-    py::enum_<rs2_stream> stream(m, "stream");
-    stream.value("any", RS2_STREAM_ANY)
-        .value("depth", RS2_STREAM_DEPTH)
-        .value("color", RS2_STREAM_COLOR)
-        .value("infrared", RS2_STREAM_INFRARED)
-        .value("fisheye", RS2_STREAM_FISHEYE)
-        .value("gyro", RS2_STREAM_GYRO)
-        .value("accel", RS2_STREAM_ACCEL)
-        .value("gpio", RS2_STREAM_GPIO)
-        .value("pose", RS2_STREAM_POSE)
-        .value("count", RS2_STREAM_COUNT);
-
-    py::enum_<rs2_extension> extension(m, "extension");
-    extension.value("unknown", RS2_EXTENSION_UNKNOWN)
-        .value("debug", RS2_EXTENSION_DEBUG)
-        .value("info", RS2_EXTENSION_INFO)
-        .value("options", RS2_EXTENSION_OPTIONS)
-        .value("video", RS2_EXTENSION_VIDEO)
-        .value("roi", RS2_EXTENSION_ROI)
-        .value("depth_sensor", RS2_EXTENSION_DEPTH_SENSOR)
-        .value("video_frame", RS2_EXTENSION_VIDEO_FRAME)
-        .value("motion_frame", RS2_EXTENSION_MOTION_FRAME)
-        .value("composite_frame", RS2_EXTENSION_COMPOSITE_FRAME)
-        .value("points", RS2_EXTENSION_POINTS)
-        .value("depth_frame", RS2_EXTENSION_DEPTH_FRAME)
-        .value("advanced_mode", RS2_EXTENSION_ADVANCED_MODE)
-        .value("record", RS2_EXTENSION_RECORD)
-        .value("video_profile", RS2_EXTENSION_VIDEO_PROFILE)
-        .value("playback", RS2_EXTENSION_PLAYBACK)
-        .value("depth_stereo_sensor", RS2_EXTENSION_DEPTH_STEREO_SENSOR)
-        .value("disparity_frame", RS2_EXTENSION_DISPARITY_FRAME)
-        .value("motion_profile", RS2_EXTENSION_MOTION_PROFILE)
-        .value("pose_frame", RS2_EXTENSION_POSE_FRAME)
-        .value("pose_profile", RS2_EXTENSION_POSE_PROFILE)
-        .value("tm2", RS2_EXTENSION_TM2)
-        .value("count", RS2_EXTENSION_COUNT);
-
-    py::enum_<rs2_format> format(m, "format");
-    format.value("any", RS2_FORMAT_ANY)
-          .value("z16", RS2_FORMAT_Z16)
-          .value("disparity16", RS2_FORMAT_DISPARITY16)
-          .value("disparity32", RS2_FORMAT_DISPARITY32)
-          .value("xyz32f", RS2_FORMAT_XYZ32F)
-          .value("yuyv", RS2_FORMAT_YUYV)
-          .value("rgb8", RS2_FORMAT_RGB8)
-          .value("bgr8", RS2_FORMAT_BGR8)
-          .value("rgba8", RS2_FORMAT_RGBA8)
-          .value("bgra8", RS2_FORMAT_BGRA8)
-          .value("y8", RS2_FORMAT_Y8)
-          .value("y16", RS2_FORMAT_Y16)
-          .value("raw10", RS2_FORMAT_RAW10)
-          .value("raw16", RS2_FORMAT_RAW16)
-          .value("raw8", RS2_FORMAT_RAW8)
-          .value("uyvy", RS2_FORMAT_UYVY)
-          .value("motion_raw", RS2_FORMAT_MOTION_RAW)
-          .value("motion_xyz32f", RS2_FORMAT_MOTION_XYZ32F)
-          .value("gpio_raw", RS2_FORMAT_GPIO_RAW)
-          .value("6dof", RS2_FORMAT_6DOF)
-          .value("count", RS2_FORMAT_COUNT);
+    BIND_ENUM(m, rs2_camera_info, RS2_CAMERA_INFO_COUNT)
+    BIND_ENUM(m, rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT)
+    BIND_ENUM(m, rs2_stream, RS2_STREAM_COUNT)
+    BIND_ENUM(m, rs2_extension, RS2_EXTENSION_COUNT)
+    BIND_ENUM(m, rs2_format, RS2_FORMAT_COUNT)
+    BIND_ENUM(m, rs2_notification_category, RS2_NOTIFICATION_CATEGORY_COUNT)
+    BIND_ENUM(m, rs2_log_severity, RS2_LOG_SEVERITY_COUNT)
+    BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT)
+    BIND_ENUM(m, rs2_timestamp_domain, RS2_TIMESTAMP_DOMAIN_COUNT)
+    BIND_ENUM(m, rs2_distortion, RS2_DISTORTION_COUNT)
+    BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT)
 
     py::class_<rs2_intrinsics> intrinsics(m, "intrinsics");
     intrinsics.def_readonly("width", &rs2_intrinsics::width)
@@ -175,83 +131,10 @@ PYBIND11_MODULE(NAME, m) {
                   return ss.str();
               });
 
-    py::enum_<rs2_notification_category> notification_category(m, "notification_category");
-    notification_category.value("frames_timeout", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT)
-                         .value("frame_corrupted", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED)
-                         .value("hardware_error", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR)
-                         .value("hardware_event", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT)
-                         .value("unknown_error", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR)
-                         .value("count", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_COUNT);
-
-    py::enum_<rs2_log_severity> log_severity(m, "log_severity");
-    log_severity.value("debug", RS2_LOG_SEVERITY_DEBUG)
-                .value("info", RS2_LOG_SEVERITY_INFO)
-                .value("warn", RS2_LOG_SEVERITY_WARN)
-                .value("error", RS2_LOG_SEVERITY_ERROR)
-                .value("fatal", RS2_LOG_SEVERITY_FATAL)
-                .value("none", RS2_LOG_SEVERITY_NONE)
-                .value("count", RS2_LOG_SEVERITY_COUNT);
-
-    py::enum_<rs2_option> option(m, "option");
-    option.value("backlight_compensation", RS2_OPTION_BACKLIGHT_COMPENSATION)
-          .value("brightness", RS2_OPTION_BRIGHTNESS)
-          .value("contrast", RS2_OPTION_CONTRAST)
-          .value("exposure", RS2_OPTION_EXPOSURE)
-          .value("gain", RS2_OPTION_GAIN)
-          .value("gamma", RS2_OPTION_GAMMA)
-          .value("hue", RS2_OPTION_HUE)
-          .value("saturation", RS2_OPTION_SATURATION)
-          .value("sharpness", RS2_OPTION_SHARPNESS)
-          .value("white_balance", RS2_OPTION_WHITE_BALANCE)
-          .value("enable_auto_exposure", RS2_OPTION_ENABLE_AUTO_EXPOSURE)
-          .value("enable_auto_white_balance", RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
-          .value("visual_preset", RS2_OPTION_VISUAL_PRESET)
-          .value("laser_power", RS2_OPTION_LASER_POWER)
-          .value("accuracy", RS2_OPTION_ACCURACY)
-          .value("motion_range", RS2_OPTION_MOTION_RANGE)
-          .value("filter_option", RS2_OPTION_FILTER_OPTION)
-          .value("confidence_threshold", RS2_OPTION_CONFIDENCE_THRESHOLD)
-          .value("emitter_enabled", RS2_OPTION_EMITTER_ENABLED)
-          .value("frames_queue_size", RS2_OPTION_FRAMES_QUEUE_SIZE)
-          .value("total_frame_drops", RS2_OPTION_TOTAL_FRAME_DROPS)
-          .value("auto_exposure_mode", RS2_OPTION_AUTO_EXPOSURE_MODE)
-          .value("power_line_frequency", RS2_OPTION_POWER_LINE_FREQUENCY)
-          .value("asic_temperature", RS2_OPTION_ASIC_TEMPERATURE)
-          .value("error_polling_enabled", RS2_OPTION_ERROR_POLLING_ENABLED)
-          .value("projector_temperature", RS2_OPTION_PROJECTOR_TEMPERATURE)
-          .value("output_trigger_enabled", RS2_OPTION_OUTPUT_TRIGGER_ENABLED)
-          .value("motion_module_temperature", RS2_OPTION_MOTION_MODULE_TEMPERATURE)
-          .value("depth_units", RS2_OPTION_DEPTH_UNITS)
-          .value("enable_motion_correction", RS2_OPTION_ENABLE_MOTION_CORRECTION)
-          .value("auto_exposure_priority", RS2_OPTION_AUTO_EXPOSURE_PRIORITY)
-          .value("color_scheme", RS2_OPTION_COLOR_SCHEME)
-          .value("histogram_equalization_enabled", RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED)
-          .value("min_distance", RS2_OPTION_MIN_DISTANCE)
-          .value("max_distance", RS2_OPTION_MAX_DISTANCE)
-          .value("texture_source", RS2_OPTION_TEXTURE_SOURCE)
-          .value("filter_magnitude", RS2_OPTION_FILTER_MAGNITUDE)
-          .value("filter_smooth_alpha", RS2_OPTION_FILTER_SMOOTH_ALPHA)
-          .value("filter_smooth_delta", RS2_OPTION_FILTER_SMOOTH_DELTA)
-          .value("stereo_baseline",RS2_OPTION_STEREO_BASELINE)
-          .value("count", RS2_OPTION_COUNT);
-
     py::class_<rs2_motion_device_intrinsic> motion_device_inrinsic(m, "motion_device_intrinsic");
     motion_device_inrinsic.def_property_readonly(BIND_RAW_2D_ARRAY(rs2_motion_device_intrinsic, data, float, 3, 4))
                           .def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, noise_variances, float, 3))
                           .def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, bias_variances, float, 3));
-
-    py::enum_<rs2_timestamp_domain> ts_domain(m, "timestamp_domain");
-    ts_domain.value("hardware_clock", RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
-             .value("system_time", RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
-             .value("count", RS2_TIMESTAMP_DOMAIN_COUNT);
-
-    py::enum_<rs2_distortion> distortion(m, "distortion");
-    distortion.value("none", RS2_DISTORTION_NONE)
-              .value("modified_brown_conrady", RS2_DISTORTION_MODIFIED_BROWN_CONRADY)
-              .value("inverse_brown_conrady", RS2_DISTORTION_INVERSE_BROWN_CONRADY)
-              .value("ftheta", RS2_DISTORTION_FTHETA)
-              .value("brown_conrady", RS2_DISTORTION_BROWN_CONRADY)
-              .value("count", RS2_DISTORTION_COUNT);
 
     /* rs2_types.hpp */
     // TODO: error types
