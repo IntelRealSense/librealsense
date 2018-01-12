@@ -87,6 +87,13 @@ namespace rs2
             error::handle(e);
         }
 
+        template<class S>
+        S& operator>>(S on_frame)
+        {
+            start(on_frame);
+            return on_frame;
+        }
+
         void invoke(frame f) const
         {
             rs2_frame* ptr = nullptr;
