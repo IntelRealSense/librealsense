@@ -100,6 +100,7 @@ EXPORTS
     rs2_get_librealsense_exception_type
     rs2_exception_type_to_string
     rs2_extension_type_to_string
+    rs2_extension_to_string
     rs2_playback_status_to_string
     rs2_log_severity_to_string
     rs2_log
@@ -110,6 +111,7 @@ EXPORTS
     rs2_option_to_string
     rs2_camera_info_to_string
     rs2_frame_metadata_to_string
+    rs2_frame_metadata_value_to_string
     rs2_timestamp_domain_to_string
     rs2_sr300_visual_preset_to_string
     rs2_notification_category_to_string

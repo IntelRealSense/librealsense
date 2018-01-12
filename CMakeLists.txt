@@ -57,6 +57,11 @@ option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 
 option(BUILD_WITH_OPENMP "Use OpenMP" ON)
 
+option(ENABLE_ZERO_COPY "Enable zero copy functionality" OFF)
+if (ENABLE_ZERO_COPY)
+    add_definitions(-DZERO_COPY)
+endif()
+
 if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
     unset(WIN32)
     unset(UNIX)
