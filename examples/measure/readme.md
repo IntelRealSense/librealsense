@@ -172,7 +172,7 @@ float dist_3d(const rs2_intrinsics& intr, const rs2::depth_frame& frame, pixel u
 
 ### Running Processing on a Background Thread
 
-Both the post-processing and the shortest-path calculations in this example can be relatively slow. To not block the main (UI) thread, we are going to have a dedicate thread for both the post-processing and the algorithm. 
+Both the post-processing and the shortest-path calculations in this example can be relatively slow. To not block the main (UI) thread, we are going to have a dedicated thread for both the post-processing and the algorithm. 
 
 
 #### Post-Processing Thread
@@ -215,16 +215,16 @@ while (alive)
 	if (pipe.poll_for_frames(&fs)) frame_processor.invoke(fs);
 }
 ```
-The main thread can now poll on the `postprocessed_frames` queue to get framesets for rendering:
-```cpp
-postprocessed_frames.poll_for_frame(&current_frameset);
-```
 
-In addition, the processing block will send individual post-processed depth frames to `pathfinding_queue` to be picked-up by the Shortest-Path thread. 
+In addition, the processing block will send individual post-processed depth frames to `pathfinding_queue` to be picked-up by the Shortest-Path thread.
+```cpp
+// Send the post-processed depth for path-finding
+pathfinding_queue.enqueue(depth);
+```
 
 #### Shortest-Path Thread
 
-This thread will consume depth frames from `pathfinding_queue` and will update global `path` variable with the shortest path.
+This thread will consume depth frames from `pathfinding_queue` and will update a global `path` variable with the shortest path.
 We don't need to define a processing block since no new frames are being created. 
 
 ```cpp
@@ -254,7 +254,7 @@ std::thread shortest_path_thread([&]() {
 
 The main thread is the only one allowed to render to the screen.
 
-It polls on the `postprocessed_frames` queue and just displays the results:
+It polls from the `postprocessed_frames` queue and just displays the results:
 
 ```cpp
 while(app) // Application still alive?
@@ -299,7 +299,7 @@ while(app) // Application still alive?
 ```
 We use `glBlendFunc` to overlay aligned-color on top of depth using colors alpha channel (the stream must be of format `RGBA` for this to work).
 
-
+----------------------------------
 
 This example demonstrates a short yet complex processing flow. Each thread has somewhat different rate and they all need to synchronize but not block one another. 
 This is achieved using thread-safe `frame_queue`s as synchronization primitives and `rs2::frame` reference counting for object lifetime management across threads.
