@@ -814,31 +814,6 @@ class Sensor extends Options {
       return array;
     }
   }
-
-  /**
-   * Motion Sensor intrinsics: scale, bias, and variances.
-   * @typedef {Object} MotionIntrinsics
-   * @property {Float32[]} data - Array(12), Interpret data array values. Indices are:
-   *   <br>[0 - Scale X, 1 - cross axis, 2 - cross axis, 3 - Bias X,
-   *   <br> 4 - cross axis, 5 - Scale Y, 6 - cross axis, 7 - Bias Y,
-   *   <br> 8 - cross axis, 9 - cross axis, 10 - Scale Z, 11 - Bias Z]
-   * @property {Float32[]} noiseVariances - Array(3), Variance of noise for X, Y, and Z axis
-   * @property {Float32[]} biasVariances - Array(3), Variance of bias for X, Y, and Z axis
-   * @see [Sensor.getMotionIntrinsics()]{@link Sensor#getMotionIntrinsics}
-   */
-
-  /**
-   * Returns scale and bias of a motion stream.
-   * @param {String|Integer} stream - type of stream, see [enum stream]{@link stream} for available
-   * stream value
-   * @return {MotionIntrinsics} {@link MotionIntrinsics}
-   */
-  getMotionIntrinsics(stream) {
-    const funcName = 'Sensor.getMotionIntrinsics()';
-    checkArgumentLength(1, 1, arguments.length, funcName);
-    const s = checkArgumentType(arguments, constants.stream, 0, funcName);
-    return this.cxxSensor.getMotionIntrinsics(s);
-  }
 }
 
 /**
