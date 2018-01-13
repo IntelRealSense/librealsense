@@ -1797,7 +1797,7 @@ void rs2_log(rs2_log_severity severity, const char * message, rs2_error ** error
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, severity, message)
 
-void rs2_loopback_enable(const rs2_device* device, const char* from_file, rs2_error** error) try
+void rs2_loopback_enable(const rs2_device* device, const char* from_file, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(from_file);
@@ -1808,7 +1808,7 @@ void rs2_loopback_enable(const rs2_device* device, const char* from_file, rs2_er
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, from_file)
 
-void rs2_loopback_disable(const rs2_device* device, rs2_error** error) try
+void rs2_loopback_disable(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
 
@@ -1817,7 +1817,7 @@ void rs2_loopback_disable(const rs2_device* device, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-int rs2_loopback_is_enabled(const rs2_device* device, rs2_error** error) try
+int rs2_loopback_is_enabled(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
 
@@ -1826,7 +1826,7 @@ int rs2_loopback_is_enabled(const rs2_device* device, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
-void rs2_connect_tm2_controller(const rs2_device* device, const unsigned char* mac, rs2_error** error) try
+void rs2_connect_tm2_controller(const rs2_device* device, const unsigned char* mac, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(mac);
@@ -1836,7 +1836,7 @@ void rs2_connect_tm2_controller(const rs2_device* device, const unsigned char* m
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error** error) try
+void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
 
