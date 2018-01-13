@@ -2763,6 +2763,7 @@ namespace rs2
         auto uid = f.get_profile().unique_id();
         auto new_uid = filtered.get_profile().unique_id();
         viewer.streams_origin[uid] = new_uid;
+        viewer.streams_origin[new_uid] = uid;
 
         if(viewer.is_3d_view)
         {

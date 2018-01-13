@@ -11,6 +11,7 @@
 #include <queue>
 #include <unordered_set>
 #include <unordered_map>
+#include <thread>
 
 using pixel = std::pair<int, int>;
 
@@ -173,7 +174,7 @@ int main(int argc, char * argv[]) try
     rs2::frame_queue pathfinding_queue; 
 
     // Alive boolean will signal the worker threads to finish-up
-    std::atomic_bool alive = true;
+    std::atomic_bool alive{ true };
 
     // The pathfinding thread will write its output to this memory:
     std::vector<pixel> path;
@@ -337,7 +338,7 @@ int main(int argc, char * argv[]) try
             depth_image.render(depth, { 0, 0, app.width(), app.height() });
             // Next, set global alpha for the color image to 90%
             // (to make it slightly translucent)
-            glColor4f(1.f, 1.f, 1.f, 0.9f);
+            //glColor4f(1.f, 1.f, 1.f, 0.9f);
             // Render the color frame (since we have selected RGBA format
             // pixels out of FOV will appear transparent)
             color_image.render(color, { 0, 0, app.width(), app.height() });
@@ -457,7 +458,7 @@ void render_simple_distance(const rs2::depth_frame& depth,
     glPushAttrib(GL_ENABLE_BIT);
     glLineStipple(1, 0x00ff);
     glEnable(GL_LINE_STIPPLE);
-    glLineWidth(2);
+    glLineWidth(5);
     glBegin(GL_LINE_STRIP);
     glVertex2f(s.ruler_start.x * app.width(),
                s.ruler_start.y * app.height());
@@ -488,7 +489,7 @@ void render_shortest_path(const rs2::depth_frame& depth,
 {
     pixel center;
     glColor3f(0.f, 1.0f, 0.0f);
-    glLineWidth(2);
+    glLineWidth(5);
     glBegin(GL_LINE_STRIP);
 
     for (int i = 0; i < path.size(); i++)
