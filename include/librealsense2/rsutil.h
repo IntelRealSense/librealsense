@@ -4,7 +4,8 @@
 #ifndef LIBREALSENSE_RSUTIL2_H
 #define LIBREALSENSE_RSUTIL2_H
 
-#include "librealsense2/h/rs_types.h"
+#include "h/rs_types.h"
+#include "h/rs_sensor.h"
 #include "assert.h"
 
 #include <math.h>
@@ -32,9 +33,9 @@ static void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsi
     if (intrin->model == RS2_DISTORTION_FTHETA)
     {
         float r = sqrt(x*x + y*y);
-            auto rd = (1.0f / intrin->coeffs[0] * atan(2 * r* tan(intrin->coeffs[0] / 2.0f)));
-            x *= rd / r;
-            y *= rd / r;
+        float rd = (1.0f / intrin->coeffs[0] * atan(2 * r* tan(intrin->coeffs[0] / 2.0f)));
+        x *= rd / r;
+        y *= rd / r;
     }
 
     pixel[0] = x * intrin->fx + intrin->ppx;
