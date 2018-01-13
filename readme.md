@@ -6,10 +6,12 @@ Linux | Windows |
 -------- | ------------ |
 [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=development)](https://travis-ci.org/IntelRealSense/librealsense) | [![Build status](https://ci.appveyor.com/api/projects/status/6u04bgmpwfejpgo8?svg=true)](https://ci.appveyor.com/project/dorodnic/librealsense-s4xnv) |
 
+-----------------
+
 ## Overview
 **Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras (D400 series and the SR300). 
 
-> For other Intel® RealSense™ devices (F200, R200, LR200 and ZR300), please refer to the [latest legacy release](https://github.com/IntelRealSense/librealsense/tree/v1.12.1).
+> :pushpin: For other Intel® RealSense™ devices (F200, R200, LR200 and ZR300), please refer to the [latest legacy release](https://github.com/IntelRealSense/librealsense/tree/v1.12.1).
 
 The SDK allows depth and color streaming, and provides intrinsic and extrinsic calibration information.
 The library also offers synthetic streams (pointcloud, depth aligned to color and vise-versa), and a built-in support for [record and playback](./src/media/readme.md) of streaming sessions.
@@ -17,7 +19,7 @@ The library also offers synthetic streams (pointcloud, depth aligned to color an
 Developer kits containing the necessary hardware to use this library are available for purchase at [realsense.intel.com/buy](https://realsense.intel.com/buy).
 Information about the Intel® RealSense™ technology at [realsense.intel.com](https://realsense.intel.com)
 
-> Don't have access to a RealSense camera? Check-out [sample data](./doc/sample-data.md)
+> :open_file_folder: Don't have access to a RealSense camera? Check-out [sample data](./doc/sample-data.md)
 
 ## What’s included in the SDK:
 **[Tools for harnessing your depth camera’s capabilities](./tools)** Including:
@@ -28,7 +30,7 @@ Information about the Intel® RealSense™ technology at [realsense.intel.com](h
 - **[Depth Quality Tool](./tools/depth-quality)**
    This application allows you to test the camera’s depth quality, including: standard deviation from plane fit, normalized RMS – the subpixel accuracy, distance accuracy and fill rate. You should be able to easily get and interpret several of the depth quality metrics and record and save the data for offline analysis.
    
- - **Other Debug Tools** as can be seen in the tools directory
+ - **[Other Debug Tools](./tools/)** as can be seen in the tools directory
 
 **[Code Samples to Start Prototyping Quickly](./examples)**
    These simple examples demonstrate how to easily use the SDK to include code snippets that access the camera into your applications.
