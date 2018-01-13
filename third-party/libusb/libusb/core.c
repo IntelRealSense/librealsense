@@ -2342,7 +2342,7 @@ static void usbi_log_str(struct libusb_context *ctx,
 	}
 	syslog(syslog_level, "%s", str);
 #else /* All of gcc, Clang, XCode seem to use #warning */
-#warning System logging is not supported on this platform. Logging to stderr will be used instead.
+//#warning System logging is not supported on this platform. Logging to stderr will be used instead.
 	fputs(str, stderr);
 #endif
 #else
