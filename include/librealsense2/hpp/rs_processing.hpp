@@ -88,7 +88,7 @@ namespace rs2
         }
 
         template<class S>
-        S& operator>>(S on_frame)
+        S& operator>>(S& on_frame)
         {
             start(on_frame);
             return on_frame;

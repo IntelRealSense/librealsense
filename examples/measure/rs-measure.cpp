@@ -10,7 +10,7 @@
 #include <math.h>
 #include <queue>
 #include <unordered_set>
-#include <unordered_map>
+#include <map>
 #include <thread>
 
 using pixel = std::pair<int, int>;
@@ -251,9 +251,9 @@ int main(int argc, char * argv[]) try
                 pixel token{ -1, -1 }; // When we see this value we know we reached source
 
                 // Dist holds distances of every pixel from source
-                std::unordered_map<pixel, float> dist;
+                std::map<pixel, float> dist;
                 // Parent map is used to reconsturct the shortest-path
-                std::unordered_map<pixel, pixel> parent;
+                std::map<pixel, pixel> parent;
                 // Priority queue holds pixels (ordered by their distance)
                 std::priority_queue<dv, std::vector<dv>, std::greater<dv>> q;
 
