@@ -42,6 +42,15 @@ namespace rs2
             return res;
         }
 
+        bool operator==(const stream_profile& rhs)
+        {
+            return
+             stream_index() == rhs.stream_index()&&
+             stream_type()  == rhs.stream_type()&&
+             format()   == rhs.format()&&
+             fps()  == rhs.fps();
+        }
+
         template<class T>
         bool is() const
         {
@@ -72,7 +81,7 @@ namespace rs2
 
         operator const rs2_stream_profile*()
         {
-            return get();
+            return _profile;
         }
         rs2_extrinsics get_extrinsics_to(const stream_profile& to) const
         {

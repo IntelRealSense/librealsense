@@ -158,27 +158,17 @@ synthetic_frame create_synthetic_texture()
 
     return frame;
 }
-synthetic_frame create_synthetic_depth(float wave_base)
+
+void fill_synthetic_depth_data(void* data, int w, int h, int bpp, float wave_base)
 {
-    synthetic_frame frame;
-
-    frame.x = 640;
-    frame.y = 480;
-    frame.bpp = 2;
-
-    std::vector<uint8_t> pixels_depth(frame.x * frame.y * frame.bpp, 0);
-    
-    for (int i = 0; i < frame.y; i++)
+    for (int i = 0; i < h; i++)
     {
-        for (int j = 0; j < frame.x; j++)
+        for (int j = 0; j < w; j++)
         {
             auto d = 2 + 0.2 * 0.5 * (1 + sin(wave_base + j / 50.f));
-            ((uint16_t*)pixels_depth.data())[i*frame.x + j] = (int)(d * 0xff);
+            ((uint16_t*)data)[i*w + j] = (int)(d * 0xff);
         }
     }
-    frame.frame = pixels_depth;
-
-    return frame;
 }
 
 int main(int argc, char * argv[]) try
@@ -244,10 +234,12 @@ int main(int argc, char * argv[]) try
     points p;
     int ind = 0;
 
+    std::vector<uint8_t> pixels_depth(W * H * BPP_D, 0);
+
     while (app) // Application still alive?
     {
         draw_text(50, 50, "This point-cloud is generated from a synthetic device:");
-        auto depth = create_synthetic_depth(wave_base);
+        fill_synthetic_depth_data((void*)pixels_depth.data(), W , H , BPP_D, wave_base);
 
         auto now = std::chrono::high_resolution_clock::now();
         if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count() > 1)
@@ -257,7 +249,7 @@ int main(int argc, char * argv[]) try
             last = now;
         }
 
-        depth_s.on_video_frame({ depth.frame.data(), // Frame pixels from capture API
+        depth_s.on_video_frame({ pixels_depth.data(), // Frame pixels from capture API
             [](void*) {}, // Custom deleter (if required)
             W*BPP_D, BPP_D, // Stride and Bytes-per-pixel
             (rs2_time_t)ind * 16, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, ind, // Timestamp, Frame# for potential sync services

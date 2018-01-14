@@ -1788,13 +1788,13 @@ rs2_device* rs2_create_bypass_device(rs2_error** error) BEGIN_API_CALL
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
 
-void rs2_bypass_create_matcher(rs2_device* dev, rs2_matchers matcher, rs2_error** error)BEGIN_API_CALL
+void rs2_bypass_create_matcher(rs2_device* dev, rs2_matchers m, rs2_error** error)BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     auto df = VALIDATE_INTERFACE(dev->device, librealsense::bypass_device);
-    df->set_matcher_type(matcher);
+    df->set_matcher_type(m);
 }
-NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(, dev, matcher)
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, m)
 
 rs2_sensor* rs2_bypass_add_sensor(rs2_device* dev, const char* sensor_name, rs2_error** error) BEGIN_API_CALL
 {
