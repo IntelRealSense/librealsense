@@ -6,30 +6,56 @@
 
 #include <imgui.h>
 #include "imgui_impl_glfw.h"
-#include <algorithm>            // std::min, std::max
 
-void render_slider_int(rect location, char* name, char* label, int* slider_param,
-                       int min, int max, ImGuiWindowFlags flags, char* description);
-void render_slider_float(rect location, char* name, char* label, float* slider_param,
-                         float min, float max, ImGuiWindowFlags flags, char* description);
-void render_checkbox(rect location, bool* checkbox_param, ImGuiWindowFlags flags, char* label);
+// a time interval which must pass between movement of the pointcloud
+#define ROTATION_DELTA 1e7
 
-/*
-// Struct for managing rotation of pointcloud view
+// maximum angle for the rotation of the pointcloud
+#define MAX_ANGLE 90
+
+// for the interface: distance between checkbox and slider
+#define DIST 120
+
+
+// Struct for managing the pointcloud view
 struct state {
-    state() : yaw(0.0), pitch(0.0), last_x(0.0), last_y(0.0),
-        ml(false), offset_x(0.0f), offset_y(0.0f), tex() {}
-    double yaw, pitch, last_x, last_y; bool ml; float offset_x, offset_y; texture tex;
+    state() : yaw(0.0), pitch(0.0), offset_x(0.0f), offset_y(0.0f), tex() {}
+    double yaw, pitch; float offset_x, offset_y; texture tex;
 };
 
-// Helper functions
-void register_glfw_callbacks(window& app, state& app_state);
-void draw_pointcloud(window& app, state& app_state, rs2::points& points);
-*/
+// Struct of parameters controled by the user
+struct params {
+    bool do_decimate, do_spatial, do_temporal, do_disparity;
+    int decimate_magnitude, temporal_magnitude, spatial_magnitude, temp_smooth_delta, spat_smooth_delta;
+    float temp_smooth_alpha, spat_smooth_alpha;
+};
+
+struct filter_ranges {
+    rs2::option_range dec_magnitude_range, spat_magnitude_range, spat_smooth_alpha_range,
+        spat_smooth_delta_range, temp_smooth_alpha_range, temp_smooth_delta_range, temp_magnitude_range;
+};
+
+
+// helper functions for rendering the ui
+void render_slider_int(float3 location, char* name, char* label, int* slider_param,
+    int min, int max, char* description);
+void render_slider_float(float3 location, char* name, char* label, float* slider_param,
+    float min, float max, char* description);
+void render_checkbox(float2 location, bool* checkbox_param, char* label);
+void render_ui(float w, float h, params& params, filter_ranges& ranges);
+
+// helper functions to handle filter options
+void get_filter_ranges(filter_ranges& ranges, rs2::decimation_filter& dec_filter,
+    rs2::spatial_filter& spat_filter, rs2::temporal_filter& temp_filter);
+void set_defaults(params& params, filter_ranges& ranges);
+void set_filter_options(params& params, rs2::decimation_filter& dec_filter,
+    rs2::spatial_filter& spat_filter, rs2::temporal_filter& temp_filter);
+
+// A function that draws the 3D-display
+void draw_pointcloud(const rect& viewer_rect, state& app_state, rs2::points& points);
 
 int main(int argc, char * argv[]) try
 {
-
     // Create a simple OpenGL window for rendering:
     window app(1280, 720, "RealSense Post Processing Example");
     ImGui_ImplGlfw_Init(app, false);
@@ -38,146 +64,121 @@ int main(int argc, char * argv[]) try
     float w = static_cast<float>(app.width());
     float h = static_cast<float>(app.height());
 
-    /* Declare two textures on the GPU, one for the original depth image 
-    and one for the filtered depth image */
-    texture original_image, filtered_image;
+    // Construct objects to manage view state
+    state app_state;
+    state app_state_filtered;
+
+    /* Declare pointcloud objects, for calculating pointclouds and texture mappings
+    one is for the original frames and the second is for the filtered ones */
+    rs2::pointcloud pc;
+    rs2::pointcloud pc_filtered;
 
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
 
-    /*
-    // Construct an object to manage view state
-    state app_state;
-    // register callbacks to allow manipulation of the pointcloud
-    register_glfw_callbacks(app, app_state);
-
-    // Declare pointcloud object, for calculating pointclouds and texture mappings
-    rs2::pointcloud pc;
-    // We want the points object to be persistent so we can display the last cloud when a frame drops
-    rs2::points points;
-    */
+    /* Declare objects that will hold the calculated pointclouds, one is for the
+    original and one for filtered */
+    rs2::points depth_points;
+    rs2::points filtered_points;
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
     // Start streaming with default recommended configuration
     pipe.start();
 
+    /* save the the time of current frame's arrival in last_time
+    curr will hold the next frame's arrival time */
+    long long last_time = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    long long curr;
+    
+    // we'll use velocity to rotate the pointcloud for a better view of the filters effects
+    float velocity = 0.3;
 
-    // decalre filters
+    // Decalre filters: decimation, temporal and spatial
+    // decimation - reduces depth frame density;
+    // spatial - edge-preserving spatial smoothing
+    // temporal - reduces temporal noise
     rs2::decimation_filter dec_filter;
-
-    rs2::temporal_filter tem_filter;
     rs2::spatial_filter spat_filter;
+    rs2::temporal_filter temp_filter;
 
-    rs2::option_range dec_magnitude_range = dec_filter.get_option_range(RS2_OPTION_FILTER_MAGNITUDE);
-    rs2::option_range tem_smooth_alpha_range = tem_filter.get_option_range(RS2_OPTION_FILTER_SMOOTH_ALPHA);
-    rs2::option_range tem_smooth_delta_range = tem_filter.get_option_range(RS2_OPTION_FILTER_SMOOTH_DELTA);
-    rs2::option_range spat_smooth_alpha_range = spat_filter.get_option_range(RS2_OPTION_FILTER_SMOOTH_ALPHA);
-    rs2::option_range spat_smooth_delta_range = spat_filter.get_option_range(RS2_OPTION_FILTER_SMOOTH_DELTA);
-    rs2::option_range tem_magnitude_range = tem_filter.get_option_range(RS2_OPTION_FILTER_MAGNITUDE);
-    rs2::option_range spat_magnitude_range = spat_filter.get_option_range(RS2_OPTION_FILTER_MAGNITUDE);
+    // Declare disparity transform from depth to disparity and vice versa
+    rs2::disparity_transform depth_to_disparity;
+    rs2::disparity_transform disparity_to_depth(false);
 
-    bool do_decimate = false;
-    bool do_temporal = false;
-    bool do_spatial = false;
-    bool disparity = false;
+    filter_ranges ranges;
+    params params;
 
-    int decimate_magnitude = dec_magnitude_range.min;
-    int temporal_magnitude = tem_magnitude_range.min;    
-    int spatial_magnitude = spat_magnitude_range.min;
-    float tem_smooth_alpha = tem_smooth_alpha_range.min;
-    float tem_smooth_delta = tem_smooth_delta_range.min;
-    float spat_smooth_alpha = spat_smooth_alpha_range.min;
-    float spat_smooth_delta = spat_smooth_delta_range.min;
+    // get ranges of all filters
+    get_filter_ranges(ranges, dec_filter, spat_filter, temp_filter);
 
+    // set filters to defaults values
+    set_defaults(params, ranges);
 
     while (app) // Application still alive?
     {
-        ImGui_ImplGlfw_NewFrame(1);
+        // render the user interface: sliders, checkboxes
+        render_ui(w, h, params, ranges);
 
-        // flags for displaying ImGui windows
-        static const int flags = ImGuiWindowFlags_NoCollapse
-            | ImGuiWindowFlags_NoScrollbar
-            | ImGuiWindowFlags_NoSavedSettings
-            | ImGuiWindowFlags_NoTitleBar
-            | ImGuiWindowFlags_NoResize
-            | ImGuiWindowFlags_NoMove;
-
-        // Using ImGui library to provide slide controllers for adjusting the filter options
-        render_slider_int({ w / 4, h / 2, w / 4, h / 20 }, "slider_dec_mag", "magnitude", &decimate_magnitude, 
-                          dec_magnitude_range.min, dec_magnitude_range.max , flags, "Set decimation magnitude");
-
-        render_slider_float({ w / 4, h / 2 + h / 6, w / 4, h / 20 }, "slider_spat_smooth_alpha", "smooth alpha",
-                            &spat_smooth_alpha, spat_smooth_alpha_range.min, spat_smooth_alpha_range.max, flags,
-                            "Control the weight/radius for smoothing");
-
-        render_slider_float({ w / 4, h / 2 + h / 6 + 50, w / 4, h / 20 }, "slider_spat_smooth_delta", "smooth delta",
-            &spat_smooth_delta, spat_smooth_delta_range.min, spat_smooth_delta_range.max, flags,
-            "Set filter range/validity threshold");
-        
-        render_slider_float({ w / 4, h / 2 + h / 3, w / 4, h / 20 }, "slider_tem_smooth_alpha", "smooth alpha",
-            &tem_smooth_alpha, tem_smooth_alpha_range.min, tem_smooth_alpha_range.max, flags,
-            "Control the weight/radius for smoothing");
-
-        render_slider_float({ w / 4, h / 2 + h / 3 + 50, w / 4, h / 20 }, "slider_tem_smooth_delta", "smooth delta",
-            &tem_smooth_delta, tem_smooth_delta_range.min, tem_smooth_delta_range.max, flags,
-            "Set filter range/validity threshold");
-
-        // Using Imgui to provide checkboxes for choosing a filter
-        render_checkbox({ w / 10, h / 2, w / 10, h / 20 }, &do_decimate, flags, "decimate");
-        render_checkbox({ w / 10, h / 2 + h / 6, w / 10, h / 20 }, &do_spatial, flags, "spatial");
-        render_checkbox({ w / 10, h / 2 + h / 3, w / 10, h / 20 }, &do_temporal, flags, "temporal");
-
-        render_checkbox({ w / 10, h / 2 + 30, w / 10, h / 20 }, &disparity, flags, "disparity");
-        
-        ImGui::Render();
-
-        // set the filter options as chosen by the user
-        dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, decimate_magnitude);
-       // tem_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, temporal_magnitude);
-       // spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, spatial_magnitude);
-        tem_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, tem_smooth_delta);
-        tem_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, tem_smooth_alpha);
-        spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, spat_smooth_delta);
-        spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, spat_smooth_alpha);
+        // Set the filter options as chosen by the user (or by default)
+        set_filter_options(params, dec_filter, spat_filter, temp_filter);
 
         rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
         rs2::frame depth_frame = data.get_depth_frame(); // find depth frame
-        rs2::frame depth = color_map(depth_frame); // colorize the depth data
+        rs2::frame filtered = depth_frame; // declare frame to apply filters on, while preserving the original depth data
 
-        // apply filters
+        /* Apply filters. The implemented flow of the filters pipeline is in the following order: apply decimation filter,
+        transform the scence into disparity domain, apply spatial filter, apply temporal filter, revert the results back
+        to depth domain (each post processing block is optional and can be applied independantly).
+        */
+        if (params.do_decimate)
+            filtered = dec_filter.proccess(filtered);
+
+        if (params.do_disparity)
+            filtered = depth_to_disparity.proccess(filtered);
+       
+        if (params.do_spatial)
+            filtered = spat_filter.proccess(filtered);
+
+        if (params.do_temporal)
+            filtered = temp_filter.proccess(filtered);  
         
-        if (do_decimate)
-            depth_frame = dec_filter.proccess(depth_frame);
-       
-        if (do_temporal)
-            depth_frame = tem_filter.proccess(depth_frame);
-       
-        if (do_spatial)
-            depth_frame = spat_filter.proccess(depth_frame);
-        /*
-        if (disparity)
+        if (params.do_disparity)
+            filtered = disparity_to_depth.proccess(filtered);
 
-        */
-        /*
         // Generate the pointcloud and texture mappings
-        points = pc.calculate(depth);
+        depth_points = pc.calculate(depth_frame);
+        filtered_points = pc_filtered.calculate(filtered);
+       
+       // Colorize frames to map to the pointclouds
+        rs2::frame colored_depth = color_map(depth_frame);
+        rs2::frame colored_filtered = color_map(filtered);
+        
+        // Tell each pointcloud object to map to to the colorized frame
+        pc.map_to(colored_depth);
+        pc_filtered.map_to(colored_filtered);
 
-        auto color = data.get_color_frame();
+        // Upload the colorized frames to OpenGL
+        app_state.tex.upload(colored_depth);
+        app_state_filtered.tex.upload(colored_filtered);
 
-        // Tell pointcloud object to map to this color frame
-        pc.map_to(color);
+        // Draw the pointclouds of the original and the filtered frames    
+        draw_pointcloud({ 0, h / 2, w / 2, h / 2 }, app_state, depth_points);
+        draw_pointcloud({ w / 2, h / 2, w / 2, h / 2 }, app_state_filtered, filtered_points);
 
-        // Upload the color frame to OpenGL
-        app_state.tex.upload(color);
+        // Update time of current frame's arrival
+        curr = std::chrono::high_resolution_clock::now().time_since_epoch().count();
 
-        // Draw the pointcloud
-        draw_pointcloud(app, app_state, points);
-        */
-
-        // Render depth on to the first half of the screen and filtered on to the second
-        original_image.render(depth, { 0, 0, w / 2, h / 2 });
-        filtered_image.render(color_map(depth_frame), { w / 2, 0, w / 2, h / 2 });
+        /* In order to calibrate the velocity of the rotation to the actual displaying speed, rotate
+        pointcloud only when enough time has passed between frames */
+        if (curr - last_time > ROTATION_DELTA)
+        {
+            if (std::abs(app_state_filtered.yaw) > MAX_ANGLE)
+                velocity = -velocity;
+            app_state.yaw += velocity;
+            app_state_filtered.yaw += velocity;
+            last_time = curr;
+        }
     }
 
     return EXIT_SUCCESS;
@@ -194,103 +195,172 @@ catch (const std::exception& e)
 }
 
 
-void render_slider_int(rect location,char* name, char* label, int* slider_param,
-                       int min, int max, ImGuiWindowFlags flags, char* description) {
-    ImGui::SetNextWindowPos({ location.x, location.y });
-    ImGui::SetNextWindowSize({ location.w, location.h });
-    ImGui::Begin(name, nullptr, flags);
-    ImGui::SliderInt("", slider_param, min, max, "", true);
-    ImGui::End();
-    ImGui::SetNextWindowPos({ location.x + location.w , location.y });
-    ImGui::SetNextWindowSize({ location.w, 20 });
-    ImGui::Begin(label, nullptr, flags);
-    ImGui::TextUnformatted(label);
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip(description);
-    ImGui::End();
+/* Get the range of each filter option, which contains minimum, maximum and
+default values for that option, as well as the step */
+void get_filter_ranges(filter_ranges& ranges, rs2::decimation_filter& dec_filter, 
+        rs2::spatial_filter& spat_filter, rs2::temporal_filter& temp_filter) {
+    ranges.dec_magnitude_range = dec_filter.get_option_range(RS2_OPTION_FILTER_MAGNITUDE);
+    ranges.spat_magnitude_range = spat_filter.get_option_range(RS2_OPTION_FILTER_MAGNITUDE);
+    ranges.spat_smooth_alpha_range = spat_filter.get_option_range(RS2_OPTION_FILTER_SMOOTH_ALPHA);
+    ranges.spat_smooth_delta_range = spat_filter.get_option_range(RS2_OPTION_FILTER_SMOOTH_DELTA);
+    ranges.temp_smooth_alpha_range = temp_filter.get_option_range(RS2_OPTION_FILTER_SMOOTH_ALPHA);
+    ranges.temp_smooth_delta_range = temp_filter.get_option_range(RS2_OPTION_FILTER_SMOOTH_DELTA);
+    ranges.temp_magnitude_range = temp_filter.get_option_range(RS2_OPTION_FILTER_MAGNITUDE);
+}
+
+void set_defaults(params& params, filter_ranges& ranges) {
+    // Enable all filters by default
+    params.do_decimate = true;
+    params.do_temporal = true;
+    params.do_spatial = true;
+    params.do_disparity = true;
+
+    // Set default values for all filters
+    params.decimate_magnitude = ranges.dec_magnitude_range.def;
+    params.temporal_magnitude = ranges.temp_magnitude_range.def;
+    params.spatial_magnitude = ranges.spat_magnitude_range.def;
+    params.temp_smooth_alpha = ranges.temp_smooth_alpha_range.def;
+    params.temp_smooth_delta = ranges.temp_smooth_delta_range.def;
+    params.spat_smooth_alpha = ranges.spat_smooth_alpha_range.def;
+    params.spat_smooth_delta = ranges.spat_smooth_delta_range.def;
 }
 
 
-void render_slider_float(rect location, char* name, char* label, float* slider_param,
-                         float min, float max, ImGuiWindowFlags flags, char* description) {
-    ImGui::SetNextWindowPos({ location.x, location.y });
-    ImGui::SetNextWindowSize({ location.w, location.h });
-    ImGui::Begin(name, nullptr, flags);
-    ImGui::SliderFloat("", slider_param, min, max, "%.3f", 1.0f, true);
+void set_filter_options(params& params, rs2::decimation_filter& dec_filter,
+    rs2::spatial_filter& spat_filter, rs2::temporal_filter& temp_filter) {
+    dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, params.decimate_magnitude);
+    spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, params.spatial_magnitude);
+    spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, params.spat_smooth_alpha);
+    spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, params.spat_smooth_delta);
+    temp_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, params.temporal_magnitude);
+    temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, params.temp_smooth_alpha);
+    temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, params.temp_smooth_delta);
+}
+
+void render_ui(float w, float h, params& params, filter_ranges& ranges) {
+    // Flags for displaying ImGui window
+    static const int flags = ImGuiWindowFlags_NoCollapse
+        | ImGuiWindowFlags_NoScrollbar
+        | ImGuiWindowFlags_NoSavedSettings
+        | ImGuiWindowFlags_NoTitleBar
+        | ImGuiWindowFlags_NoResize
+        | ImGuiWindowFlags_NoMove;
+
+    ImGui_ImplGlfw_NewFrame(1);
+    ImGui::Begin("app", nullptr, flags);
+
+    // Using ImGui library to provide slide controllers for adjusting the filter options
+    render_slider_int({ w / 4 + DIST, h / 2 + 10, w / 4 }, "slider_dec_mag", "Magnitude", &params.decimate_magnitude,
+        ranges.dec_magnitude_range.min, ranges.dec_magnitude_range.max, "Decimation filter magnitude");
+
+    render_slider_int({ w / 4 + DIST, h / 2 + 70, w / 4 }, "slider_spat_mag", "Magnitude",
+        &params.spatial_magnitude, ranges.spat_magnitude_range.min, ranges.spat_magnitude_range.max,
+        "Spatial filter magnitude");
+
+    render_slider_float({ w / 4 + DIST, h / 2 + 110, w / 4 }, "slider_spat_smooth_alpha", "Smooth Alpha",
+        &params.spat_smooth_alpha, ranges.spat_smooth_alpha_range.min, ranges.spat_smooth_alpha_range.max,
+        "Current pixel weight");
+
+    render_slider_int({ w / 4 + DIST, h / 2 + 150, w / 4 }, "slider_spat_smooth_delta", "Smooth Delta",
+        &params.spat_smooth_delta, ranges.spat_smooth_delta_range.min, ranges.spat_smooth_delta_range.max,
+        "Convolution radius");
+
+    render_slider_int({ w / 4 + DIST, h / 2 + 210, w / 4 }, "slider_tem_mag", "Magnitude",
+         &params.temporal_magnitude, ranges.temp_magnitude_range.min, ranges.temp_magnitude_range.max,
+        "Temporal filter magnitude");
+
+    render_slider_float({ w / 4 + DIST, h / 2 + 250, w / 4 }, "slider_tem_smooth_alpha", "Smooth Alpha",
+        &params.temp_smooth_alpha, ranges.temp_smooth_alpha_range.min, ranges.temp_smooth_alpha_range.max,
+        "The normalized weight of the current pixel");
+
+    render_slider_int({ w / 4 + DIST, h / 2 + 290, w / 4 }, "slider_tem_smooth_delta", "Smooth Delta",
+        &params.temp_smooth_delta, ranges.temp_smooth_delta_range.min, ranges.temp_smooth_delta_range.max,
+        "Depth range (gradient) threshold");
+
+    // Using Imgui to provide checkboxes for choosing a filter
+    render_checkbox({ w / 4, h / 2 + 10 }, &params.do_decimate, "Decimate");
+    render_checkbox({ w / 4, h / 2 + 40 }, &params.do_disparity, "Disparity");
+    render_checkbox({ w / 4, h / 2 + 70 }, &params.do_spatial, "Spatial");
+    render_checkbox({ w / 4, h / 2 + 210 }, &params.do_temporal, "Temporal");
+
+    // Adding before and after labels
+    ImGui::SetCursorPosX(20);
+    ImGui::SetCursorPosY(10);
+    ImGui::TextUnformatted("Before");
+
+    ImGui::SetCursorPosX(w / 2 + 20);
+    ImGui::SetCursorPosY(10);
+    ImGui::TextUnformatted("After");
+
     ImGui::End();
-    ImGui::SetNextWindowPos({ location.x + location.w , location.y });
-    ImGui::SetNextWindowSize({ location.w, 20 });
+    ImGui::Render();
+}
+
+/* 
+Function that renders the slider. Parameter: location: x, y - coordinates for the text, z - width of the slider,
+name: used as a unique id for the slider, label: the text to display next to the slider,
+slider_param: pointer to the parameter controled by the slider, min, max: lower and upper bounds of the slider,
+description: text to display when mouse is hovered on the slider label.
+*/
+void render_slider_int(float3 location,char* name, char* label, int* slider_param,
+                       int min, int max, char* description) {
+    ImGui::PushItemWidth(location.z);
+    ImGui::SetCursorPosX(location.x + 100);
+    ImGui::SetCursorPosY(location.y);
     std::string s(name);
-    ImGui::Begin((s + "2").c_str(), nullptr, flags);
+    ImGui::SliderInt(("##" + s).c_str(), slider_param, min, max, "%.0f");
+    ImGui::PopItemWidth();
+    ImGui::SetCursorPosX(location.x);
+    ImGui::SetCursorPosY(location.y + 3);
     ImGui::TextUnformatted(label);
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip(description);
-    ImGui::End();
 }
 
 
-void render_checkbox(rect location, bool* checkbox_param, ImGuiWindowFlags flags, char* label) {
-    ImGui::SetNextWindowPos({ location.x, location.y });
-    ImGui::SetNextWindowSize({ location.w, location.h });
-    ImGui::Begin(label, nullptr, flags);
-    ImGui::Checkbox(label, checkbox_param);
-    ImGui::End();
+void render_slider_float(float3 location, char* name, char* label, float* slider_param,
+                         float min, float max, char* description) {
+    ImGui::PushItemWidth(location.z);
+    ImGui::SetCursorPosX(location.x + 100);
+    ImGui::SetCursorPosY(location.y);
+    std::string s(name);
+    ImGui::SliderFloat(("##" + s).c_str(), slider_param, min, max, "%.3f", 1.0f);
+    ImGui::PopItemWidth();
+    ImGui::SetCursorPosX(location.x);
+    ImGui::SetCursorPosY(location.y + 3);
+    ImGui::TextUnformatted(label);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip(description);
 }
-
 
 /*
-// Registers the state variable and callbacks to allow mouse control of the pointcloud
-void register_glfw_callbacks(window& app, state& app_state)
-{
-    app.on_left_mouse = [&](bool pressed)
-    {
-        app_state.ml = pressed;
-    };
-
-    app.on_mouse_scroll = [&](double xoffset, double yoffset)
-    {
-        app_state.offset_x += static_cast<float>(xoffset);
-        app_state.offset_y += static_cast<float>(yoffset);
-    };
-
-    app.on_mouse_move = [&](double x, double y)
-    {
-        if (app_state.ml)
-        {
-            app_state.yaw -= (x - app_state.last_x);
-            app_state.yaw = std::max(app_state.yaw, -120.0);
-            app_state.yaw = std::min(app_state.yaw, +120.0);
-            app_state.pitch += (y - app_state.last_y);
-            app_state.pitch = std::max(app_state.pitch, -80.0);
-            app_state.pitch = std::min(app_state.pitch, +80.0);
-        }
-        app_state.last_x = x;
-        app_state.last_y = y;
-    };
-
-    app.on_key_release = [&](int key)
-    {
-        if (key == 32) // Escape
-        {
-            app_state.yaw = app_state.pitch = 0; app_state.offset_x = app_state.offset_y = 0.0;
-        }
-    };
+Function that renders the checkbox.Parameters: location: x, y coordinates for the checkbox,
+checkbox_param: pointer to the parameter controled by the checkbox,
+label: a string that appears next to the checkbox.
+*/
+void render_checkbox(float2 location, bool* checkbox_param, char* label) {
+    ImGui::SetCursorPosX(location.x);
+    ImGui::SetCursorPosY(location.y);
+    ImGui::Checkbox(label, checkbox_param);
 }
 
+
 // Handles all the OpenGL calls needed to display the point cloud
-void draw_pointcloud(window& app, state& app_state, rs2::points& points)
+void draw_pointcloud(const rect& viewer_rect, state& app_state, rs2::points& points)
 {
     if (!points)
         return;
+
+    glViewport(viewer_rect.x, viewer_rect.y,
+        viewer_rect.w, viewer_rect.h);
 
     // OpenGL commands that prep screen for the pointcloud
     glPopMatrix();
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-    float width = app.width(), height = app.height();
+    float width = viewer_rect.w, height = viewer_rect.h;
 
-    glClearColor(153.f / 255, 153.f / 255, 153.f / 255, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
 
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -304,7 +374,7 @@ void draw_pointcloud(window& app, state& app_state, rs2::points& points)
     glRotated(app_state.pitch, 1, 0, 0);
     glRotated(app_state.yaw, 0, 1, 0);
     glTranslatef(0, 0, -0.5f);
-
+    
     glPointSize(width / 640);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_TEXTURE_2D);
@@ -314,10 +384,10 @@ void draw_pointcloud(window& app, state& app_state, rs2::points& points)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F); // GL_CLAMP_TO_EDGE
     glBegin(GL_POINTS);
-    */
+    
 
     /* this segment actually prints the pointcloud */
-/*
+
     auto vertices = points.get_vertices();              // get vertices
     auto tex_coords = points.get_texture_coordinates(); // and texture coordinates
     for (int i = 0; i < points.size(); i++)
@@ -338,4 +408,4 @@ void draw_pointcloud(window& app, state& app_state, rs2::points& points)
     glPopAttrib();
     glPushMatrix();
 }
-*/
+
