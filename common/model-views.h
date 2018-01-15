@@ -94,6 +94,8 @@ namespace rs2
         static const textual_icon file_movie               { u8"\uf008" };
         static const textual_icon circle                   { u8"\uf111" };
         static const textual_icon square                   { u8"\uf0c8" };
+        static const textual_icon square_o                 { u8"\uf096" };
+        static const textual_icon check_square_o           { u8"\uf046" };
         static const textual_icon refresh                  { u8"\uf021" };
         static const textual_icon info_circle              { u8"\uf05a" };
         static const textual_icon bars                     { u8"\uf0c9" };
@@ -116,6 +118,8 @@ namespace rs2
         static const textual_icon window_maximize          { u8"\uf2d0" };
         static const textual_icon window_restore           { u8"\uf2d2" };
         static const textual_icon plus_circle              { u8"\uf055" };
+        static const textual_icon download                 { u8"\uf019" };
+        static const textual_icon upload                   { u8"\uf093" };
     }
 
     class subdevice_model;
@@ -464,6 +468,7 @@ namespace rs2
         bool _playback_repeat = true;
         bool _should_replay = false;
         bool show_device_info = false;
+        bool show_advanced_mode_panel = false;
 
         bool allow_remove = true;
         bool show_depth_only = false;
@@ -472,6 +477,7 @@ namespace rs2
         std::set<std::array<uint8_t, 6>> available_controllers;
         std::vector<std::pair<std::string, std::string>> infos;
         std::vector<std::string> restarting_device_info;
+        std::set<std::string> advanced_mode_settings_file_names;
     private:
         void draw_info_icon(const ImVec2& size);
         int draw_seek_bar();
@@ -484,6 +490,10 @@ namespace rs2
                                 std::string& error_message,
                                 viewer_model& viewer);
         void play_defaults(viewer_model& view);
+        float draw_advanced_mode_panel(float panel_width,
+            ux_window& window,
+            std::string& error_message,
+            viewer_model& viewer);
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
