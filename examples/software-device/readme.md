@@ -4,7 +4,7 @@
 
 This sample demonstrates usage of the `software_device` object, which allows users to create and control custom SDK device not dependent on Intel RealSense hardware. 
 
-`software_device` can be used to generate SDK frames from synthetic or external sources and pass them into SDK processing functionality: 
+`software_device` can be used to generate frames from synthetic or external sources and pass them into SDK processing functionality: 
 * Record and playback services
 * Post-processing filters
 * Spatial alignment of streams
@@ -13,8 +13,8 @@ This sample demonstrates usage of the `software_device` object, which allows use
 
 In this example we will show how to:
 * Create synthetic depth and texture frames
-* Synchronize them using SDK `syncer` class
-* Generate a 3D-model using SDK `pointcloud` class
+* Synchronize them using the `syncer` class
+* Generate a 3D-model using the `pointcloud` class
 
 ## Expected Output
 
@@ -87,7 +87,7 @@ In order to use `syncer` class with the synthetic streams, we must specify the s
 ```cpp
 dev.create_matcher(DLR_C);
 ```
-The last thing we need to provide to use `pointcloud` with our synthetic data is extrinsic calibration between the two sensors. In this example, we will define the extrinsics to be identity (sensors share the same 3D location): 
+The last thing we need to provide in order to use `pointcloud` with our synthetic data is the extrinsic calibration between the two sensors. In this example, we will define the extrinsics to be identity (sensors share the same 3D location): 
 ```cpp
 depth_stream.register_extrinsics_to(color_stream, { { 1,0,0,0,1,0,0,0,1 },{ 0,0,0 } });
 ```
@@ -97,7 +97,7 @@ We will update `wave_base` every 1 millisecond and re-generate the depth data:
 fill_synthetic_depth_data((void*)pixels_depth.data(), W , H , BPP_D, wave_base);
 ```
 
-After we created the depth frame we injects it into the depth sensor:
+After we created the depth frame we inject it into the depth sensor:
 ```cpp
 depth_s.on_video_frame({ pixels_depth.data(), // Frame pixels from capture API
             [](void*) {}, // Custom deleter (if required)
@@ -105,7 +105,7 @@ depth_s.on_video_frame({ pixels_depth.data(), // Frame pixels from capture API
             (rs2_time_t)ind * 16, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, ind, // Timestamp, Frame# for potential sync services
             depth_stream });
 ```
-We do the same for color stream: 
+We do the same for color sensor: 
 ```cpp
 color_s.on_video_frame({ texture.frame.data(), // Frame pixels from capture API
             [](void*) {}, // Custom deleter (if required)
@@ -114,7 +114,7 @@ color_s.on_video_frame({ texture.frame.data(), // Frame pixels from capture API
             color_stream });
 
 ```
-Now we can wait for synchronized pair from the `syncer`:
+Now we can wait for synchronized pairs from the `syncer`:
 ```cpp
 auto fset = sync.wait_for_frames();
 ```
@@ -135,3 +135,4 @@ if (d && c)
 draw_pointcloud(app, app_state, p);
 ```
 
+Putting everything together you will get an interactive textured point-cloud visualization using SDK algorithms. 
