@@ -67,43 +67,43 @@ namespace rs2
             return time;
         }
     }
-    class bypass_sensor : public sensor
+    class software_sensor : public sensor
     {
     public:
 
         void add_video_stream(rs2_video_stream video_stream)
         {
             rs2_error* e = nullptr;
-            rs2_bypass_add_video_stream(_sensor.get(), 
+            rs2_software_add_video_stream(_sensor.get(),
                 video_stream, &e);
             error::handle(e);
         }
-        void on_video_frame(rs2_bypass_video_frame frame)
+        void on_video_frame(rs2_software_video_frame frame)
         {
             rs2_error* e = nullptr;
-            rs2_bypass_on_video_frame(_sensor.get(), frame, &e);
+            rs2_software_on_video_frame(_sensor.get(), frame, &e);
             error::handle(e);
         }
         void add_read_only_option(rs2_option option, float val)
         {
             rs2_error* e = nullptr;
-            rs2_bypass_add_read_only_option(_sensor.get(), option, val, &e);
+            rs2_software_add_read_only_option(_sensor.get(), option, val, &e);
             error::handle(e);
         }
         void set_read_only_option(rs2_option option, float val)
         {
             rs2_error* e = nullptr;
-            rs2_bypass_update_read_only_option(_sensor.get(), option, val, &e);
+            rs2_software_update_read_only_option(_sensor.get(), option, val, &e);
             error::handle(e);
         }
     private:
-        friend class bypass_device;
+        friend class software_device;
 
-        bypass_sensor(std::shared_ptr<rs2_sensor> s)
+        software_sensor(std::shared_ptr<rs2_sensor> s)
             : rs2::sensor(s)
         {
             rs2_error* e = nullptr;
-            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_BYPASS_SENSOR, &e) == 0 && !e)
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_SOFTWARE_SENSOR, &e) == 0 && !e)
             {
                 _sensor = nullptr;
             }
@@ -111,13 +111,13 @@ namespace rs2
         }
     };
 
-    class bypass_device : public device
+    class software_device : public device
     {
         std::shared_ptr<rs2_device> create_device_ptr()
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_device> dev(
-                rs2_create_bypass_device(&e),
+                rs2_create_software_device(&e),
                 rs2_delete_device);
             error::handle(e);
             return dev;
@@ -125,25 +125,25 @@ namespace rs2
        
 
     public:
-        bypass_device()
+        software_device()
             : device(create_device_ptr())
         {}
 
-        bypass_sensor add_sensor(std::string name)
+        software_sensor add_sensor(std::string name)
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_sensor> sensor(
-                rs2_bypass_add_sensor(_dev.get(), name.c_str(), &e),
+                rs2_software_add_sensor(_dev.get(), name.c_str(), &e),
                 rs2_delete_sensor);
             error::handle(e);
 
-            return bypass_sensor(sensor);
+            return software_sensor(sensor);
             
         }
         void create_matcher(rs2_matchers matcher)
         {
             rs2_error* e = nullptr;
-            rs2_bypass_create_matcher(_dev.get(), matcher, &e);
+            rs2_software_create_matcher(_dev.get(), matcher, &e);
             error::handle(e);
         }
        

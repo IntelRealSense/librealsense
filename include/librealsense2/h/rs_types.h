@@ -114,8 +114,8 @@ typedef enum rs2_extension
     RS2_EXTENSION_POSE_FRAME,
     RS2_EXTENSION_POSE_PROFILE,
     RS2_EXTENSION_TM2,
-    RS2_EXTENSION_BYPASS_DEVICE,
-    RS2_EXTENSION_BYPASS_SENSOR,
+    RS2_EXTENSION_SOFTWARE_DEVICE,
+    RS2_EXTENSION_SOFTWARE_SENSOR,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);

@@ -30,7 +30,7 @@
 #include "pipeline.h"
 #include "environment.h"
 #include "proc/temporal-filter.h"
-#include "bypass-device.h"
+#include "software-device.h"
 
 ////////////////////////
 // API implementation //
@@ -1071,7 +1071,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_ROI                 : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::roi_sensor_interface)   != nullptr;
     case RS2_EXTENSION_DEPTH_SENSOR        : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_sensor)           != nullptr;
     case RS2_EXTENSION_DEPTH_STEREO_SENSOR : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_stereo_sensor)    != nullptr;
-    case RS2_EXTENSION_BYPASS_SENSOR:  return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::bypass_sensor) != nullptr;
+    case RS2_EXTENSION_SOFTWARE_SENSOR:  return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::software_sensor) != nullptr;
     default:
         return false;
     }
@@ -1781,58 +1781,58 @@ rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
 
-rs2_device* rs2_create_bypass_device(rs2_error** error) BEGIN_API_CALL
+rs2_device* rs2_create_software_device(rs2_error** error) BEGIN_API_CALL
 {
-    auto dev = std::make_shared<bypass_device>();
+    auto dev = std::make_shared<software_device>();
     return new rs2_device{ dev->get_context(), std::make_shared<readonly_device_info>(dev), dev };
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
 
-void rs2_bypass_create_matcher(rs2_device* dev, rs2_matchers m, rs2_error** error)BEGIN_API_CALL
+void rs2_software_create_matcher(rs2_device* dev, rs2_matchers m, rs2_error** error)BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
-    auto df = VALIDATE_INTERFACE(dev->device, librealsense::bypass_device);
+    auto df = VALIDATE_INTERFACE(dev->device, librealsense::software_device);
     df->set_matcher_type(m);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, m)
 
-rs2_sensor* rs2_bypass_add_sensor(rs2_device* dev, const char* sensor_name, rs2_error** error) BEGIN_API_CALL
+rs2_sensor* rs2_software_add_sensor(rs2_device* dev, const char* sensor_name, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
-    auto df = VALIDATE_INTERFACE(dev->device, librealsense::bypass_device);
+    auto df = VALIDATE_INTERFACE(dev->device, librealsense::software_device);
 
     return new rs2_sensor(
         *dev,
-        &df->add_bypass_sensor(sensor_name),
+        &df->add_software_sensor(sensor_name),
         0);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev, sensor_name)
 
-void rs2_bypass_on_video_frame(rs2_sensor* sensor, rs2_bypass_video_frame frame, rs2_error** error) BEGIN_API_CALL
+void rs2_software_on_video_frame(rs2_sensor* sensor, rs2_software_video_frame frame, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
-    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::bypass_sensor);
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
     return bs->on_video_frame(frame);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, frame.pixels)
 
-void rs2_bypass_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stream, rs2_error** error) BEGIN_API_CALL
+void rs2_software_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stream, rs2_error** error) BEGIN_API_CALL
 {
-    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::bypass_sensor);
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
     return bs->add_video_stream(video_stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(,sensor, video_stream.type, video_stream.index, video_stream.fmt, video_stream.width, video_stream.height, video_stream.uid)
 
-void rs2_bypass_add_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error) BEGIN_API_CALL
+void rs2_software_add_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error) BEGIN_API_CALL
 {
-    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::bypass_sensor);
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
     return bs->add_read_only_option(option, val);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, val)
 
-void rs2_bypass_update_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error) BEGIN_API_CALL
+void rs2_software_update_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error) BEGIN_API_CALL
 {
-    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::bypass_sensor);
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
     return bs->update_read_only_option(option, val);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, val)

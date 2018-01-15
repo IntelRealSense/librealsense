@@ -174,7 +174,7 @@ namespace librealsense
             CASE(POSE_FRAME)
             CASE(POSE_PROFILE)
             CASE(TM2)
-            CASE(BYPASS_DEVICE)
+            CASE(SOFTWARE_DEVICE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE

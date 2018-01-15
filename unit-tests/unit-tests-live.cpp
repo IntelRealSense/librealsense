@@ -4075,7 +4075,7 @@ TEST_CASE("Syncer sanity with bypass device", "[live][bypass]") {
         const int W = 640;
         const int H = 480;
         const int BPP = 2;
-        std::shared_ptr<bypass_device> dev = std::move(std::make_shared<bypass_device>());
+        std::shared_ptr<software_device> dev = std::move(std::make_shared<software_device>());
         auto s = dev->add_sensor("DS5u");
        
         rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
@@ -4096,7 +4096,7 @@ TEST_CASE("Syncer sanity with bypass device", "[live][bypass]") {
         s.start(sync);
        
         std::vector<uint8_t> pixels(W * H * BPP, 0);
-        std::weak_ptr<rs2::bypass_device> weak_dev(dev);
+        std::weak_ptr<rs2::software_device> weak_dev(dev);
       
         std::thread t([&s, weak_dev, pixels, depth, ir]() mutable {
             
@@ -4171,7 +4171,7 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with bypass device", "[
         const int H = 480;
         const int BPP = 2;
 
-        std::shared_ptr<bypass_device> dev = std::make_shared<bypass_device>();
+        std::shared_ptr<software_device> dev = std::make_shared<software_device>();
         auto s = dev->add_sensor("DS5u");
         
         rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
@@ -4189,7 +4189,7 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with bypass device", "[
         s.start(sync);
 
         std::vector<uint8_t> pixels(W * H * BPP, 0);
-        std::weak_ptr<rs2::bypass_device> weak_dev(dev);
+        std::weak_ptr<rs2::software_device> weak_dev(dev);
         std::thread t([s, weak_dev, pixels, depth, ir]() mutable {
             auto shared_dev = weak_dev.lock();
             if (shared_dev == nullptr)
