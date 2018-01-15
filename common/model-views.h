@@ -400,6 +400,8 @@ namespace rs2
         void show_stream_footer(const rect& stream_rect,const mouse_info& mouse);
         void show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer);
 
+        void snapshot_frame(const char* filename,viewer_model& viewer) const;
+
         void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p);
         rect layout;
         std::unique_ptr<texture_buffer> texture;
@@ -880,6 +882,12 @@ namespace rs2
     int save_to_png(const char* filename,
         size_t pixel_width, size_t pixels_height, size_t bytes_per_pixel,
         const void* raster_data, size_t stride_bytes);
+
+    // Auxillary function to save stream data in its internal (raw) format
+    bool save_frame_raw_data(const std::string& filename, rs2::frame frame);
+
+    // Auxillary function to store frame attributes
+    bool save_frame_meta_data(const std::string& filename, rs2::frame frame);
 
     class device_changes
     {
