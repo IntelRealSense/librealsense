@@ -174,6 +174,7 @@ float dist_3d(const rs2_intrinsics& intr, const rs2::depth_frame& frame, pixel u
 
 Both the post-processing and the shortest-path calculations in this example can be relatively slow. To not block the main (UI) thread, we are going to have a dedicated thread for both the post-processing and the algorithm. 
 
+<p align="center"><img src="https://user-images.githubusercontent.com/6958867/34941961-8843ff5c-f9fe-11e7-9ff4-470620db1329.png" /></p>
 
 #### Post-Processing Thread
 
