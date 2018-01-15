@@ -32,7 +32,7 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
     {
         auto dev = ctx.load_device(file);
         was_loaded = true;
-        device_models.emplace_back(dev, error_message, viewer_model);
+        device_models.emplace_back(dev, error_message, viewer_model); //Will cause the new device to appear in the left panel
         if (auto p = dev.as<playback>())
         {
             auto filename = p.file_name();
@@ -162,8 +162,22 @@ void refresh_devices(std::mutex& m,
                 current_connected_devices.push_back(dev);
                 for (auto&& s : dev.query_sensors())
                 {
-                    s.set_notifications_callback([&](const notification& n)
+                    s.set_notifications_callback([&, dev_descriptor](const notification& n)
                     {
+                        if (n.get_category() == RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT)
+                        {
+                            auto data = n.get_serialized_data();
+                            if (!data.empty())
+                            {
+                                auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
+                                    [&](const device_model& other) { return get_device_name(other.dev) == dev_descriptor; });
+
+                                if (dev_model_itr == end(device_models))
+                                    return;
+
+                                dev_model_itr->handle_harware_events(data);
+                            }
+                        }
                         viewer_model.not_model.add_notification({ n.get_description(), n.get_timestamp(), n.get_severity(), n.get_category() });
                     });
                 }
@@ -285,7 +299,8 @@ int main(int argv, const char** argc) try
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         ImGui::SetNextWindowPos({ 0, viewer_model.panel_y });
 
-        if (ImGui::Button(u8"Add Source\t\t\t\t\t\t\t\t\t\t\t\t\uf0d7", { viewer_model.panel_width - 1, viewer_model.panel_y }))
+        std::string add_source_button_text = to_string() << " " << textual_icons::plus_circle << "  Add Source\t\t\t\t\t\t\t\t\t\t\t";
+        if (ImGui::Button(add_source_button_text.c_str(), { viewer_model.panel_width - 1, viewer_model.panel_y }))
             ImGui::OpenPopup("select");
 
         auto new_devices_count = device_names.size() + 1;

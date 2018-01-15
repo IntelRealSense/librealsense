@@ -38,6 +38,7 @@ namespace librealsense
 
         void pause_recording();
         void resume_recording();
+        const std::string& get_filename() const;
         platform::backend_device_group get_device_data() const override;
         std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
         bool is_valid() const override;
@@ -49,7 +50,8 @@ namespace librealsense
         void write_header();
         std::chrono::nanoseconds get_capture_time() const;
         void write_data(size_t sensor_index, frame_holder f, std::function<void(std::string const&)> on_error);
-        void write_sensor_extension_snapshot(size_t sensor_index, rs2_extension ext, const std::shared_ptr<extension_snapshot>& snapshot, std::function<void(std::string const&)> on_error);
+        void write_sensor_extension_snapshot(size_t sensor_index, rs2_extension ext, std::shared_ptr<extension_snapshot> snapshot, std::function<void(std::string const&)> on_error);
+        void write_notification(size_t sensor_index, const notification& n);
         std::vector<std::shared_ptr<record_sensor>> create_record_sensors(std::shared_ptr<device_interface> m_device);
         template <typename T> device_serializer::snapshot_collection get_extensions_snapshots(T* extendable);
         template <typename T, typename Ext> void try_add_snapshot(T* extendable, device_serializer::snapshot_collection& snapshots);
@@ -66,7 +68,9 @@ namespace librealsense
         std::mutex m_mutex;
         bool m_is_recording;
         std::once_flag m_first_frame_flag;
-
+        int m_on_notification_token;
+        int m_on_frame_token;
+        int m_on_extension_change_token;
         uint64_t m_cached_data_size;
         std::once_flag m_first_call_flag;
         void initialize_recording();

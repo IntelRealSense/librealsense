@@ -5,6 +5,7 @@
 #define LIBREALSENSE_RS2_INTERNAL_HPP
 
 #include "rs_types.hpp"
+#include "rs_context.hpp"
 #include "../h/rs_internal.h"
 
 namespace rs2

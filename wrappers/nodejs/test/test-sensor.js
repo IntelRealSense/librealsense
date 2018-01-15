@@ -37,21 +37,6 @@ describe('Sensor test', function() {
       assert.equal(typeof sensor.isValid, 'boolean');
     });
   });
-  it('Testing method getMotionIntrinsics', () => {
-    sensors.forEach((sensor) => {
-      Object.keys(rs2.stream).forEach((o) => {
-        if (o === 'STREAM_COUNT' || o === 'streamToString') return;
-        const m = sensor.getMotionIntrinsics(rs2.stream[o]);
-        assert.equal(typeof m, 'object');
-        assert.equal(Object.prototype.toString.call(m.data), '[object Array]');
-        assert.equal(m.data.length, 12);
-        assert.equal(Object.prototype.toString.call(m.noiseVariances), '[object Array]');
-        assert.equal(m.noiseVariances.length, 3);
-        assert.equal(Object.prototype.toString.call(m.biasVariances), '[object Array]');
-        assert.equal(m.biasVariances.length, 3);
-      });
-    });
-  });
 
   it('Testing method isOptionReadOnly', () => {
     sensors.forEach((sensor) => {
@@ -295,6 +280,22 @@ describe('Sensor test', function() {
         });
         sensor.stop();
       }
+    });
+  });
+
+  it('Testing method close', () => {
+    sensors.forEach((sensor) => {
+      assert.doesNotThrow(() => {
+        sensor.close();
+      });
+    });
+  });
+
+  it('Testing method setNotificationsCallback', () => {
+    sensors.forEach((sensor) => {
+      assert.doesNotThrow(() => {
+        sensor.setNotificationsCallback();
+      });
     });
   });
 });

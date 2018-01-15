@@ -39,11 +39,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 #set_target_properties(${PROJECT_NAME} PROPERTIES VERSION "${LIBVERSION}" SOVERSION "${LIBSOVERSION}")
 
-target_link_libraries(${PROJECT_NAME}
-#  ${Boost_SYSTEM_LIBRARY}
-#  liblz4_x64
-)
-
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Library)
 
 set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/../cmake/realsense2")

@@ -24,7 +24,6 @@ std::string profile_to_string(std::shared_ptr<stream_profile_interface> s)
 }
 
 playback_sensor::playback_sensor(const device_interface& parent_device, const device_serializer::sensor_snapshot& sensor_description):
-    m_user_notification_callback(nullptr, [](rs2_notifications_callback* n) {}),
     m_is_started(false),
     m_sensor_description(sensor_description),
     m_sensor_id(sensor_description.get_sensor_index()),
@@ -68,8 +67,9 @@ void playback_sensor::open(const stream_profiles& requests)
         device_serializer::stream_identifier f{ get_device_index(), m_sensor_id, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) };
         opened_streams.push_back(f);
     }
-
+    m_active_streams = requests;
     opened(opened_streams);
+    
 }
 
 void playback_sensor::close()
@@ -88,14 +88,21 @@ void playback_sensor::close()
         }
     }
     m_dispatchers.clear();
+    m_active_streams.clear();
     closed(closed_streams);
 }
 
 void playback_sensor::register_notifications_callback(notifications_callback_ptr callback)
 {
     LOG_DEBUG("register_notifications_callback for sensor " << m_sensor_id);
-    m_user_notification_callback = std::move(callback);
+    _notifications_proccessor.set_callback(std::move(callback));
 }
+
+notifications_callback_ptr playback_sensor::get_notifications_callback() const
+{
+    return _notifications_proccessor.get_callback();
+}
+
 
 void playback_sensor::start(frame_callback_ptr callback)
 {
@@ -115,6 +122,11 @@ void playback_sensor::stop(bool invoke_required)
     {
         stopped(m_sensor_id, invoke_required);
         m_is_started = false;
+        for (auto dispatcher : m_dispatchers)
+        {
+            dispatcher.second->stop();
+        }
+        m_user_callback.reset();
     }
 }
 void playback_sensor::stop()
@@ -151,11 +163,6 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
         frame->set_stream(m_streams[std::make_pair(type, index)]);
         frame->set_sensor(shared_from_this());
         auto stream_id = frame.frame->get_stream()->get_unique_id();
-        //TODO: remove this once filter is implemented (which will only read streams that were 'open'ed
-        if(m_dispatchers.find(stream_id) == m_dispatchers.end())
-        {
-            return;
-        }
         //TODO: Ziv, remove usage of shared_ptr when frame_holder is cpoyable
         auto pf = std::make_shared<frame_holder>(std::move(frame));
         m_dispatchers.at(stream_id)->invoke([this, pf](dispatcher::cancellable_timer t)
@@ -256,4 +263,33 @@ void playback_sensor::register_sensor_options(const device_serializer::sensor_sn
 void playback_sensor::update(const device_serializer::sensor_snapshot& sensor_snapshot)
 {
     register_sensor_options(sensor_snapshot);
+}
+
+frame_callback_ptr playback_sensor::get_frames_callback() const
+{
+    return m_user_callback;
+}
+void playback_sensor::set_frames_callback(frame_callback_ptr callback)
+{
+    m_user_callback = callback;
+}
+stream_profiles playback_sensor::get_active_streams() const
+{
+    return m_active_streams;
+}
+
+int playback_sensor::register_before_streaming_changes_callback(std::function<void(bool)> callback)
+{
+    throw librealsense::not_implemented_exception("playback_sensor::register_before_streaming_changes_callback");
+
+}
+
+void playback_sensor::unregister_before_start_callback(int token)
+{
+    throw librealsense::not_implemented_exception("playback_sensor::unregister_before_start_callback");
+}
+
+void playback_sensor::raise_notification(const notification& n)
+{
+    _notifications_proccessor.raise_notification(n);
 }

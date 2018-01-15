@@ -6,6 +6,7 @@
 
 #include "rs_types.hpp"
 #include "rs_sensor.hpp"
+#include <array>
 
 namespace rs2
 {
@@ -284,6 +285,76 @@ namespace rs2
 
     private:
         std::shared_ptr<rs2_device_list> _list;
+    };
+
+    class tm2 : public device //TODO: add to wrappers
+    {
+    public:
+        tm2(device d)
+            : device(d.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_TM2, &e) == 0 && !e)
+            {
+                _dev = nullptr;
+            }
+            error::handle(e);
+        }
+
+        /**
+        * Enter the given device into loopback operation mode that uses the given file as input for raw data
+        * \param[in]  from_file  Path to bag file with raw data for loopback
+        */
+        void enable_loopback(const std::string& from_file)
+        {
+            rs2_error* e = nullptr;
+            rs2_loopback_enable(_dev.get(), from_file.c_str(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Restores the given device into normal operation mode
+        */
+        void disable_loopback()
+        {
+            rs2_error* e = nullptr;
+            rs2_loopback_disable(_dev.get(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Checks if the device is in loopback mode or not
+        * \return true if the device is in loopback operation mode
+        */
+        bool is_loopback_enabled() const
+        {
+            rs2_error* e = nullptr;
+            int is_enabled = rs2_loopback_is_enabled(_dev.get(), &e);
+            error::handle(e);
+            return is_enabled != 0;
+        }
+
+        /**
+        * Connects to a given tm2 controller
+        * \param[in]  mac_addr   The MAC address of the desired controller
+        */
+        void connect_controller(const std::array<uint8_t, 6>& mac_addr)
+        {
+            rs2_error* e = nullptr;
+            rs2_connect_tm2_controller(_dev.get(), mac_addr.data(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Disconnects a given tm2 controller
+        * \param[in]  id         The ID of the desired controller
+        */
+        void disconnect_controller(int id)
+        {
+            rs2_error* e = nullptr;
+            rs2_disconnect_tm2_controller(_dev.get(), id, &e);
+            error::handle(e);
+        }
     };
 }
 #endif // LIBREALSENSE_RS2_DEVICE_HPP

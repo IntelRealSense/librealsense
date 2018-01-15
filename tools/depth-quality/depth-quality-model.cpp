@@ -455,7 +455,7 @@ namespace rs2
                     win,
                     _error_message, device_to_remove, _viewer_model, windows_width,
                     _update_readonly_options_timer,
-                    draw_later);
+                    draw_later, false);
 
                 ImGui::SetContentRegionWidth(windows_width);
                 auto pos = ImGui::GetCursorScreenPos();
@@ -1108,7 +1108,7 @@ namespace rs2
             csv << std::endl;
 
             // Populate metrics data using the fill-rate persistent metric as pivot
-            for (size_t i = _plots[0]->_first_idx, rec = 0; i != _plots[0]->_idx; i = (++i) % metric_plot::SIZE)
+            for (size_t i = _plots[0]->_first_idx, rec = 0; i != _plots[0]->_idx; i = (1+i) % metric_plot::SIZE)
             {
                 csv << ++rec << "," << std::fixed << std::setprecision(4) << _plots[0]->_timestamps[i] << ",";
                 for (auto&& plot : _plots)

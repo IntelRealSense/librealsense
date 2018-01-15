@@ -26,6 +26,7 @@ namespace librealsense
         bool supports_info(rs2_camera_info info) const override;
 
         void register_info(rs2_camera_info info, const std::string& val);
+        void update_info(rs2_camera_info info, const std::string& val);
         void create_snapshot(std::shared_ptr<info_interface>& snapshot) const override;
         void enable_recording(std::function<void(const info_interface&)> record_action) override;
         void update(std::shared_ptr<extension_snapshot> ext) override;
