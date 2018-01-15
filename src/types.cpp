@@ -156,6 +156,7 @@ namespace librealsense
             CASE(DEBUG)
             CASE(INFO)
             CASE(OPTIONS)
+            CASE(MOTION)
             CASE(VIDEO)
             CASE(ROI)
             CASE(DEPTH_SENSOR)

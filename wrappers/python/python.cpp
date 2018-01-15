@@ -303,6 +303,7 @@ PYBIND11_MODULE(NAME, m) {
          .def("get_data", get_frame_data,"retrieve data from the frame handle.", py::keep_alive<0, 1>())
          .def_property_readonly("data", get_frame_data, "retrieve data from the frame handle.", py::keep_alive<0, 1>())
          .def("get_profile", &rs2::frame::get_profile)
+         .def("keep", &rs2::frame::keep)
          .def_property_readonly("profile", &rs2::frame::get_profile)
          .def(BIND_DOWNCAST(frame, frame))
          .def(BIND_DOWNCAST(frame, points))

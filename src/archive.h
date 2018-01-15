@@ -53,10 +53,10 @@ namespace librealsense
         std::vector<byte> data;
         frame_additional_data additional_data;
 
-        explicit frame() : ref_count(0), owner(nullptr), on_release() {}
+        explicit frame() : ref_count(0), _kept(false), owner(nullptr), on_release() {}
         frame(const frame& r) = delete;
         frame(frame&& r)
-            : ref_count(r.ref_count.exchange(0)),
+            : ref_count(r.ref_count.exchange(0)), _kept(r._kept.exchange(false)),
               owner(r.owner), on_release()
         {
             *this = std::move(r);
@@ -68,6 +68,7 @@ namespace librealsense
             data = move(r.data);
             owner = r.owner;
             ref_count = r.ref_count.exchange(0);
+            _kept = r._kept.exchange(false);
             on_release = std::move(r.on_release);
             additional_data = std::move(r.additional_data);
             r.owner.reset();
@@ -98,6 +99,8 @@ namespace librealsense
 
         void acquire() override { ref_count.fetch_add(1); }
         void release() override;
+        void keep() override;
+
         frame_interface* publish(std::shared_ptr<archive_interface> new_owner) override;
         void attach_continuation(frame_continuation&& continuation) override { on_release = std::move(continuation); }
         void disable_continuation() override { on_release.reset(); }
@@ -121,6 +124,7 @@ namespace librealsense
         std::weak_ptr<sensor_interface> sensor;
         frame_continuation on_release;
         bool _fixed = false;
+        std::atomic_bool _kept;
         std::shared_ptr<stream_profile_interface> stream;
     };
 
@@ -155,6 +159,14 @@ namespace librealsense
         frame_interface* first()
         {
             return get_frame(0);
+        }
+
+        void keep() override
+        {
+            auto frames = get_frames();
+            for (int i = 0; i < get_embedded_frames_count(); i++)
+                if (frames[i]) frames[i]->keep();
+            frame::keep();
         }
 
         size_t get_embedded_frames_count() const { return data.size() / sizeof(rs2_frame*); }
@@ -230,6 +242,12 @@ namespace librealsense
     public:
         depth_frame() : video_frame()
         {
+        }
+
+        void keep() override
+        {
+            if (_original) _original->keep();
+            video_frame::keep();
         }
 
         float get_distance(int x, int y) const
@@ -427,6 +445,7 @@ namespace librealsense
 
         virtual frame_interface* publish_frame(frame_interface* frame) = 0;
         virtual void unpublish_frame(frame_interface* frame) = 0;
+        virtual void keep_frame(frame_interface* frame) = 0;
 
         virtual ~archive_interface() = default;
 
