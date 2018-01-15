@@ -2406,7 +2406,7 @@ namespace rs2
             save_to_png(filename_png.data(), colorized_frame.get_width(), colorized_frame.get_height(), colorized_frame.get_bytes_per_pixel(),
                 colorized_frame.get_data(), colorized_frame.get_width() * colorized_frame.get_bytes_per_pixel());
 
-            ss << " PNG snapshot was saved to " << filename_png;
+            ss << "PNG snapshot was saved to " << filename_png << std::endl;
         }
 
         auto original_frame = texture->get_last_frame(false).as<video_frame>();
@@ -2415,16 +2415,26 @@ namespace rs2
         if (original_frame && val_in_range(original_frame.get_profile().stream_type(), { RS2_STREAM_DEPTH , RS2_STREAM_INFRARED }))
         {
             stream_desc = rs2_stream_to_string(original_frame.get_profile().stream_type());
+
+            //Capture raw frame
             auto filename = filename_base + "_" + stream_desc + ".bin";
-            save_frame_raw_data(filename, original_frame);
-            ss << ", Raw data is captured into " << filename;
+            if (save_frame_raw_data(filename, original_frame))
+                ss << "Raw data is captured into " << filename << std::endl;
+            else
+                viewer.not_model.add_notification({ to_string() << "Failed to save frame raw data  " << filename,
+                    0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+
+            // And the frame's attributes
             filename = filename_base + "_" + stream_desc + "_metadata.csv";
-            frame_metadata_to_csv(filename, original_frame);
-            ss << ", metadata in " << filename;
+            if (frame_metadata_to_csv(filename, original_frame))
+                ss << "The frame attributes are saved into " << filename;
+            else
+                viewer.not_model.add_notification({ to_string() << "Failed to save frame metadata file " << filename,
+                    0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
         }
 
         if (ss.str().size())
-            viewer.not_model.add_notification({ ss.str().c_str(), 0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+            viewer.not_model.add_notification({ ss.str().c_str(), 0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT });
 
     }
 
@@ -2675,9 +2685,10 @@ namespace rs2
             ImGui::SetCursorPos({ rc.x, rc.y - 4 });
 
             std::string label = to_string() << "##log_entry" << i++;
-            ImGui::InputText(label.c_str(),
+            ImGui::InputTextMultiline(label.c_str(),
                         (char*)line.data(),
                         line.size() + 1,
+                        ImVec2(-1, ImGui::GetTextLineHeight() * 1.5 *float(std::max(1,(int)std::count(line.begin(),line.end(), '\n')))),
                         ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             ImGui::PopStyleColor(2);
 
