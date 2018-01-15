@@ -22,7 +22,6 @@
     <BuildPlatform Condition="'$(BuildPlatform)' == 'AnyCPU'">x86</BuildPlatform>
     <InstallPath>C:\Program Files (x86)\Intel RealSense SDK 2.0\bin</InstallPath>
     <BuildPath>..\..\..\build\$(Configuration)\realsense2.dll</BuildPath>
-    <Description>.NET Wrapper for Intel RealSense SDK 2.0</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,8 +36,8 @@
   <Target Name="IncludeDependencies" BeforeTargets="Build" Condition="'$(IsCrossTargetingBuild)' == 'true'">
     <CallTarget Targets="BuildLib" ContinueOnError="true" />
     <Error Condition="!Exists('$(BuildPath)') and !Exists('$(InstallPath)')" Text="realsense2.dll NOT FOUND! Please build it from source using CMake or install Intel RealSense SDK 2.0 from GitHub releases." />
-    <CallTarget Targets="IncludeLocalBuild" Condition="Exists('$(BuildPath)')" />
-    <CallTarget Targets="IncludeInstalledSDK" Condition="!Exists('$(BuildPath)') and Exists('$(InstallPath)')" />
+    <CallTarget Condition="Exists('$(BuildPath)')" Targets="IncludeLocalBuild" />
+    <CallTarget Condition="!Exists('$(BuildPath)') and Exists('$(InstallPath)')" Targets="IncludeInstalledSDK" />
     <ItemGroup>
       <None Include="$(OutputPath)\runtimes\**" PackagePath="runtimes" Pack="true" />
       <None Include=".nuget/*.targets" PackagePath="build" Pack="true" />
@@ -58,13 +57,15 @@
   <Target Name="BuildLib">
     <PropertyGroup>
       <CMakeInstalled>-1</CMakeInstalled>
-      <RootDirectory>../../..</RootDirectory>
+      <BuildDirectory>../../../build</BuildDirectory>
     </PropertyGroup>
     <Exec Command="CMake --version">
       <Output TaskParameter="ExitCode" PropertyName="CMakeInstalled" />
     </Exec>
-    <Exec Command="cd $(RootDirectory) &amp;&amp; if not exist build mkdir build" Condition="$(CMakeInstalled)==0" />
-    <Exec Command="cd $(RootDirectory)/build  &amp;&amp; cmake -D BUILD_GRAPHICAL_EXAMPLES=OFF -D BUILD_EXAMPLES=OFF .. &amp;&amp; cmake --build ./ --config $(Configuration)" Condition="$(CMakeInstalled)==0" />
+    <Error Condition="$(CMakeInstalled)!=0" Text="CMake not found therefore librealsense could not be built from source" />
+    <Exec Command="if not exist $(BuildDirectory) mkdir $(BuildDirectory)" />
+    <Exec Condition="!Exists('$(BuildDirectory)/CMakeCache.txt')" Command="cd $(BuildDirectory) &amp;&amp; cmake -D BUILD_GRAPHICAL_EXAMPLES=OFF -D BUILD_EXAMPLES=OFF .." />
+    <Exec Command="cd $(BuildDirectory) &amp;&amp; cmake --build ./ --config $(Configuration)" />
   </Target>
 
 </Project>
