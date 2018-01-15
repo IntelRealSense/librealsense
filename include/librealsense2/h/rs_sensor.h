@@ -15,7 +15,6 @@ extern "C" {
 #endif
 
 #include "rs_types.h"
-#include "rs_device.h"
 
 /** \brief Read-only strings that can be queried from the device.
    Not all information attributes are available on all camera types.

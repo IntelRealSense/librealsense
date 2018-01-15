@@ -205,7 +205,6 @@ namespace librealsense
             CASE(ERROR)
             CASE(FATAL)
             CASE(NONE)
-            CASE(COUNT)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE

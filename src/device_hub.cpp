@@ -80,7 +80,7 @@ namespace librealsense
 
         // Advance the internal selection when appropriate
         if (res && cycle_devices)
-            _camera_index = ++_camera_index % _device_list.size();
+            _camera_index = (1+_camera_index) % _device_list.size();
 
         return res;
     }

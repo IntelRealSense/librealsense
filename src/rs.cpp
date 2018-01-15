@@ -1029,22 +1029,22 @@ const char* rs2_get_failed_args(const rs2_error* error) { return error ? error->
 const char* rs2_get_error_message(const rs2_error* error) { return error ? error->message.c_str() : nullptr; }
 rs2_exception_type rs2_get_librealsense_exception_type(const rs2_error* error) { return error ? error->exception_type : RS2_EXCEPTION_TYPE_UNKNOWN; }
 
-const char* rs2_stream_to_string(rs2_stream stream) { return librealsense::get_string(stream); }
-const char* rs2_format_to_string(rs2_format format) { return librealsense::get_string(format); }
-const char* rs2_distortion_to_string(rs2_distortion distortion) { return librealsense::get_string(distortion); }
-const char* rs2_option_to_string(rs2_option option) { return librealsense::get_string(option); }
-const char* rs2_camera_info_to_string(rs2_camera_info info) { return librealsense::get_string(info); }
+const char* rs2_stream_to_string(rs2_stream stream)                                       { return librealsense::get_string(stream);       }
+const char* rs2_format_to_string(rs2_format format)                                       { return librealsense::get_string(format);       }
+const char* rs2_distortion_to_string(rs2_distortion distortion)                           { return librealsense::get_string(distortion);   }
+const char* rs2_option_to_string(rs2_option option)                                       { return librealsense::get_string(option);       }
+const char* rs2_camera_info_to_string(rs2_camera_info info)                               { return librealsense::get_string(info);         }
+const char* rs2_timestamp_domain_to_string(rs2_timestamp_domain info)                     { return librealsense::get_string(info);         }
+const char* rs2_notification_category_to_string(rs2_notification_category category)       { return librealsense::get_string(category);     }
+const char* rs2_sr300_visual_preset_to_string(rs2_sr300_visual_preset preset)             { return librealsense::get_string(preset);       }
+const char* rs2_log_severity_to_string(rs2_log_severity severity)                         { return librealsense::get_string(severity);     }
+const char* rs2_exception_type_to_string(rs2_exception_type type)                         { return librealsense::get_string(type);         }
+const char* rs2_playback_status_to_string(rs2_playback_status status)                     { return librealsense::get_string(status);       }
+const char* rs2_extension_type_to_string(rs2_extension type)                              { return librealsense::get_string(type);         }
+const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata)               { return librealsense::get_string(metadata);     }
+const char* rs2_extension_to_string(rs2_extension type)                                   { return rs2_extension_type_to_string(type);     }
+const char* rs2_frame_metadata_value_to_string(rs2_frame_metadata_value metadata)         { return rs2_frame_metadata_to_string(metadata); }
 
-const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata) { return librealsense::get_string(metadata); }
-const char* rs2_timestamp_domain_to_string(rs2_timestamp_domain info) { return librealsense::get_string(info); }
-
-const char* rs2_notification_category_to_string(rs2_notification_category category) { return librealsense::get_string(category); }
-
-const char* rs2_sr300_visual_preset_to_string(rs2_sr300_visual_preset preset) { return librealsense::get_string(preset); }
-const char* rs2_log_severity_to_string(rs2_log_severity severity) { return librealsense::get_string(severity); }
-const char* rs2_exception_type_to_string(rs2_exception_type type) { return librealsense::get_string(type); }
-const char* rs2_extension_type_to_string(rs2_extension type) { return librealsense::get_string(type); }
-const char* rs2_playback_status_to_string(rs2_playback_status status) { return librealsense::get_string(status); }
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error** error) BEGIN_API_CALL
 {
@@ -1866,7 +1866,7 @@ void rs2_log(rs2_log_severity severity, const char * message, rs2_error ** error
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, severity, message)
 
-void rs2_loopback_enable(const rs2_device* device, const char* from_file, rs2_error** error) try
+void rs2_loopback_enable(const rs2_device* device, const char* from_file, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(from_file);
@@ -1877,7 +1877,7 @@ void rs2_loopback_enable(const rs2_device* device, const char* from_file, rs2_er
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, from_file)
 
-void rs2_loopback_disable(const rs2_device* device, rs2_error** error) try
+void rs2_loopback_disable(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
 
@@ -1886,7 +1886,7 @@ void rs2_loopback_disable(const rs2_device* device, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-int rs2_loopback_is_enabled(const rs2_device* device, rs2_error** error) try
+int rs2_loopback_is_enabled(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
 
@@ -1895,7 +1895,7 @@ int rs2_loopback_is_enabled(const rs2_device* device, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
-void rs2_connect_tm2_controller(const rs2_device* device, const unsigned char* mac, rs2_error** error) try
+void rs2_connect_tm2_controller(const rs2_device* device, const unsigned char* mac, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(mac);
@@ -1905,7 +1905,7 @@ void rs2_connect_tm2_controller(const rs2_device* device, const unsigned char* m
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error** error) try
+void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
 
