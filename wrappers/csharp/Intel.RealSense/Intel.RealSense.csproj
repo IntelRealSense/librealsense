@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net40;net461</TargetFrameworks>
+    <AssemblyName>Intel.RealSense</AssemblyName>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Intel</Authors>
+    <Company>Intel</Company>
+    <PackageId>Intel.RealSense</PackageId>
+    <Copyright>Copyright ©  2017 Intel Corporation</Copyright>
+    <Description>.NET Wrapper for Intel RealSense SDK 2.0</Description>
+    <PackageProjectUrl>https://github.com/IntelRealSense/librealsense</PackageProjectUrl>
+    <PackageIconUrl>https://github.com/IntelRealSense/librealsense/blob/master/doc/img/realsense.png</PackageIconUrl>
+    <RepositoryUrl>https://github.com/IntelRealSense/librealsense</RepositoryUrl>
+    <PackageTags>3d;vision;robotics;depth;realsense;perception</PackageTags>
+    <PackageLicenseUrl>https://github.com/IntelRealSense/librealsense/blob/master/LICENSE</PackageLicenseUrl>
+    <Configurations>Debug;Release</Configurations>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <BuildPlatform>$(Platform)</BuildPlatform>
+    <BuildPlatform Condition="'$(BuildPlatform)' == 'AnyCPU'">x86</BuildPlatform>
+    <InstallPath>C:\Program Files (x86)\Intel RealSense SDK 2.0\bin</InstallPath>
+    <BuildPath>..\..\..\build\$(Configuration)\realsense2.dll</BuildPath>
+    <Description>.NET Wrapper for Intel RealSense SDK 2.0</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include=".nuget\Intel.RealSense.targets" />
+  </ItemGroup>
+
+  <Target Name="CopyLocalDependencies" BeforeTargets="Build" Condition="'$(IsCrossTargetingBuild)' != 'true'">
+    <Copy Condition="Exists('$(BuildPath)')" SourceFiles="$(BuildPath)" DestinationFolder="$(OutputPath)" />
+    <Copy Condition="!Exists('$(BuildPath)') and Exists('$(InstallPath)')" SourceFiles="$(InstallPath)\$(BuildPlatform)\realsense2.dll" DestinationFolder="$(OutputPath)" />
+  </Target>
+
+  <Target Name="IncludeDependencies" BeforeTargets="Build" Condition="'$(IsCrossTargetingBuild)' == 'true'">
+    <CallTarget Targets="BuildLib" ContinueOnError="true" />
+    <Error Condition="!Exists('$(BuildPath)') and !Exists('$(InstallPath)')" Text="realsense2.dll NOT FOUND! Please build it from source using CMake or install Intel RealSense SDK 2.0 from GitHub releases." />
+    <CallTarget Targets="IncludeLocalBuild" Condition="Exists('$(BuildPath)')" />
+    <CallTarget Targets="IncludeInstalledSDK" Condition="!Exists('$(BuildPath)') and Exists('$(InstallPath)')" />
+    <ItemGroup>
+      <None Include="$(OutputPath)\runtimes\**" PackagePath="runtimes" Pack="true" />
+      <None Include=".nuget/*.targets" PackagePath="build" Pack="true" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="IncludeLocalBuild">
+    <Copy SourceFiles="$(BuildPath)" DestinationFolder="$(BaseOutputPath)\$(Configuration)\runtimes\win-x86\native" />
+    <Copy SourceFiles="$(BuildPath)" DestinationFolder="$(BaseOutputPath)\$(Configuration)\runtimes\win-x64\native" />
+  </Target>
+
+  <Target Name="IncludeInstalledSDK">
+    <Copy SourceFiles="$(InstallPath)\x86\realsense2.dll" DestinationFolder="$(BaseOutputPath)\$(Configuration)\runtimes\win-x86\native" />
+    <Copy SourceFiles="$(InstallPath)\x64\realsense2.dll" DestinationFolder="$(BaseOutputPath)\$(Configuration)\runtimes\win-x64\native" />
+  </Target>
+
+  <Target Name="BuildLib">
+    <PropertyGroup>
+      <CMakeInstalled>-1</CMakeInstalled>
+      <RootDirectory>../../..</RootDirectory>
+    </PropertyGroup>
+    <Exec Command="CMake --version">
+      <Output TaskParameter="ExitCode" PropertyName="CMakeInstalled" />
+    </Exec>
+    <Exec Command="cd $(RootDirectory) &amp;&amp; if not exist build mkdir build" Condition="$(CMakeInstalled)==0" />
+    <Exec Command="cd $(RootDirectory)/build  &amp;&amp; cmake -D BUILD_GRAPHICAL_EXAMPLES=OFF -D BUILD_EXAMPLES=OFF .. &amp;&amp; cmake --build ./ --config $(Configuration)" Condition="$(CMakeInstalled)==0" />
+  </Target>
+
+</Project>

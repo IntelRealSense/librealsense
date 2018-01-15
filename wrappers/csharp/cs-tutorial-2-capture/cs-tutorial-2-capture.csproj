@@ -95,12 +95,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Intel.RealSense.csproj">
-      <Project>{E488694F-F2FA-45AD-B1B8-8D4FABE34E86}</Project>
-      <Name>Intel.RealSense</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
@@ -111,6 +105,12 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Intel.RealSense\Intel.RealSense.csproj">
+      <Project>{36f6a7f8-e54a-4bdb-9685-b10475fcef6d}</Project>
+      <Name>Intel.RealSense</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
