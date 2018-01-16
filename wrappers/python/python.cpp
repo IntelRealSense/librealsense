@@ -98,18 +98,18 @@ PYBIND11_MODULE(NAME, m) {
     });
 
     BIND_ENUM(m, rs2_camera_info, RS2_CAMERA_INFO_COUNT)
-        BIND_ENUM(m, rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT)
-        BIND_ENUM(m, rs2_stream, RS2_STREAM_COUNT)
-        BIND_ENUM(m, rs2_extension, RS2_EXTENSION_COUNT)
-        BIND_ENUM(m, rs2_format, RS2_FORMAT_COUNT)
-        BIND_ENUM(m, rs2_notification_category, RS2_NOTIFICATION_CATEGORY_COUNT)
-        BIND_ENUM(m, rs2_log_severity, RS2_LOG_SEVERITY_COUNT)
-        BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT)
-        BIND_ENUM(m, rs2_timestamp_domain, RS2_TIMESTAMP_DOMAIN_COUNT)
-        BIND_ENUM(m, rs2_distortion, RS2_DISTORTION_COUNT)
-        BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT)
+    BIND_ENUM(m, rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT)
+    BIND_ENUM(m, rs2_stream, RS2_STREAM_COUNT)
+    BIND_ENUM(m, rs2_extension, RS2_EXTENSION_COUNT)
+    BIND_ENUM(m, rs2_format, RS2_FORMAT_COUNT)
+    BIND_ENUM(m, rs2_notification_category, RS2_NOTIFICATION_CATEGORY_COUNT)
+    BIND_ENUM(m, rs2_log_severity, RS2_LOG_SEVERITY_COUNT)
+    BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT)
+    BIND_ENUM(m, rs2_timestamp_domain, RS2_TIMESTAMP_DOMAIN_COUNT)
+    BIND_ENUM(m, rs2_distortion, RS2_DISTORTION_COUNT)
+    BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT)
 
-        py::class_<rs2_intrinsics> intrinsics(m, "intrinsics");
+    py::class_<rs2_intrinsics> intrinsics(m, "intrinsics");
     intrinsics.def_readonly("width", &rs2_intrinsics::width)
         .def_readonly("height", &rs2_intrinsics::height)
         .def_readonly("ppx", &rs2_intrinsics::ppx)

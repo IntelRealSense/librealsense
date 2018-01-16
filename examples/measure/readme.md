@@ -3,7 +3,7 @@
 ## Overview
 
 This tutorial is designed to explain some of the more advanced SDK topics by writing a simple "Ruler" app. 
-> **Note:** Measuring dimentions of real-world objects is one of the obvious applications of a depth camera. This sample is not intented to be a proper measurement tool, but rather to showcase critical concepts.
+> **Note:** Measuring dimensions of real-world objects is one of the obvious applications of a depth camera. This sample is not indented to be a proper measurement tool, but rather to showcase critical concepts.
 > Both the algorithm and the performance of this app can be considerably improved
 
 In this tutorial you will learn how to:
@@ -44,7 +44,7 @@ rs2::disparity_transform disparity2depth(false);
 // Define spatial filter (edge-preserving)
 rs2::spatial_filter spat;
 // Enable hole-filling
-// Hole filling is an agressive heuristic and it gets the depth wrong many times
+// Hole filling is an aggressive heuristic and it gets the depth wrong many times
 // However, this demo is not built to handle holes 
 // (the shortest-path will always prefer to "cut" through the holes since they have zero 3D distance)
 spat.set_option(RS2_OPTION_HOLES_FILL, 5); // 5 = fill all the zero pixels
@@ -69,7 +69,7 @@ cfg.enable_stream(RS2_STREAM_COLOR, RS2_FORMAT_RGBA8);
 auto profile = pipe.start(cfg);
 ```
 
-Our goal is to generate depth without any holes, since these are going to pose an immidiate problem to our algorithm.
+Our goal is to generate depth without any holes, since these are going to pose an immediate problem to our algorithm.
 The best way to reduce the number of missing pixels is by letting the hardware do it.
 The D400 cameras have a **High Density** preset we can take advantage of.
 Until the presets are finalized, the way to apply this preset is by name:
@@ -133,7 +133,7 @@ auto intrinsics = stream.get_intrinsics(); // Calibration data
 
 Distance in meters can be acquired using `get_distance` function of `depth_frame` class. 
 
-> Calling `get_distance` excessively can result in bad performance, since the compiler can't optimize accross module boundaries, so it could be benefitial to read the `DEPTH_UNITS` option directly from the `depth_sensor` and use it to convert raw depth pixels to meters.
+> Calling `get_distance` excessively can result in bad performance, since the compiler can't optimize across module boundaries, so it could be beneficial to read the `DEPTH_UNITS` option directly from the `depth_sensor` and use it to convert raw depth pixels to meters.
 
 Putting everything together results in rather verbose `dist_3d` function:
 ```cpp
@@ -176,7 +176,7 @@ Both the post-processing and the shortest-path calculations in this example can 
 
 <p align="center"><img src="https://user-images.githubusercontent.com/6958867/34941961-8843ff5c-f9fe-11e7-9ff4-470620db1329.png" /></p>
 
-#### Post-Processing Thread
+#### Video-Processing Thread
 
 This thread will consume full frame-sets from the camera, and will produce:
 
@@ -229,7 +229,7 @@ This thread will consume depth frames from `pathfinding_queue` and will update a
 We don't need to define a processing block since no new frames are being created. 
 
 ```cpp
-// Shortest-path thread is recieving depth frame and
+// Shortest-path thread is receiving depth frame and
 // runs classic Dijkstra on it to find the shortest path (in 3D)
 // between the two points the user have chosen
 std::thread shortest_path_thread([&]() {
