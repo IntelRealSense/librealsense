@@ -195,7 +195,7 @@ namespace rs2
         std::string label = "";
         std::string id = "";
         subdevice_model* dev;
-
+        std::function<bool(option_model&, std::string&, notifications_model&)> custom_draw_method = nullptr;
     private:
         bool is_all_integers() const;
         bool is_enum() const;
@@ -478,6 +478,7 @@ namespace rs2
         std::vector<std::pair<std::string, std::string>> infos;
         std::vector<std::string> restarting_device_info;
         std::set<std::string> advanced_mode_settings_file_names;
+        std::string selected_file_preset;
     private:
         void draw_info_icon(const ImVec2& size);
         int draw_seek_bar();
@@ -493,7 +494,8 @@ namespace rs2
         float draw_advanced_mode_panel(float panel_width,
             ux_window& window,
             std::string& error_message,
-            viewer_model& viewer);
+            viewer_model& viewer,
+            bool update_read_only_options);
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;

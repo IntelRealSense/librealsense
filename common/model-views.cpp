@@ -1320,7 +1320,10 @@ namespace rs2
                 }
             }
         }
-        return draw(error_message, model);
+        if (custom_draw_method)
+            return custom_draw_method(*this, error_message, model);
+        else
+            return draw(error_message, model);
     }
 
     stream_model::stream_model()
@@ -4154,11 +4157,6 @@ namespace rs2
                     error_message = e.what();
                 }
             }
-            if (auto adv = dev.as<advanced_mode>())
-            {
-                something_to_show = true;
-                ImGui::MenuItem("Advanced Mode Panel", nullptr, &show_advanced_mode_panel);
-            }
 
             if (allow_remove)
             {
@@ -4217,15 +4215,35 @@ namespace rs2
         return device_panel_height;
     }
 
+    template <typename T>
+    std::string safe_call(T t)
+    {
+        try
+        {
+            t();
+            return "";
+        }
+        catch (const error& e)
+        {
+            return error_to_string(e);
+        }
+        catch (const std::exception& e)
+        {
+            return e.what();
+        }
+        catch (...)
+        {
+            return "Unknown error occurred";
+        }
+    }
+
     float device_model::draw_advanced_mode_panel(float panel_width,
         ux_window& window,
         std::string& error_message,
-        viewer_model& viewer)
+        viewer_model& viewer,
+        bool update_read_only_options)
     {
-        ////////////////////////////////////////
-        // 
-        ////////////////////////////////////////
-        const float panel_height = 90.f;
+        const float panel_height = 40.f;
         auto panel_pos = ImGui::GetCursorPos();
         ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
@@ -4236,54 +4254,144 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
 
-        const bool is_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm)
-        {
-            return sm->streaming;
-        });
         const bool is_advanced_enabled = dev.as<advanced_mode>().is_enabled();
-        const float icons_width = 57.0f;
-        const ImVec2 icons_size{ icons_width, 25 };
         ImGui::PushFont(window.get_font());
-        ImGui::Separator();
-        ImGui::SetCursorPos({ panel_pos.x, ImGui::GetCursorPosY() });
-        ImGui::Text("  Advanced Mode");
-        ImGui::PopFont();
-        ImGui::SetCursorPos({ panel_pos.x, ImGui::GetCursorPosY() + 10 });
-        ImGui::PushFont(window.get_large_font());
-        std::string enable_button_name = to_string() << (is_advanced_enabled ? textual_icons::check_square_o : textual_icons::square_o) << "##" << id;
-        auto enable_button_color = is_advanced_enabled ? light_blue : light_grey;
-        ImGui::PushStyleColor(ImGuiCol_Text, enable_button_color);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, enable_button_color);
-        static bool show_dialog = false;
-        static bool approved = true;
-        if (ImGui::ButtonEx(enable_button_name.c_str(), icons_size, allow_remove ? 0 : ImGuiButtonFlags_Disabled))
-        {
-            show_dialog = true;
-            approved = false;
-        }
-        if (ImGui::IsItemHovered())
-        {
-            std::string tooltip = to_string() << (allow_remove ? (is_advanced_enabled ? "Disable advanced mode" : "Enable advanced mode") : "Toggling advanced mode is not allowed");
-            ImGui::SetTooltip("%s", tooltip.c_str());
-        }
-        ImGui::SameLine();
-        ImGui::PopStyleColor(2);
+        ImGui::SetCursorPos({ panel_pos.x + 10, ImGui::GetCursorPosY() + 10 });
 
+        const auto load_json = [&](const std::string f) {
+            std::ifstream t(f);
+            viewer.not_model.add_log(to_string() << "Loading settings from \"" << f << "\"...");
+            std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+            dev.as<advanced_mode>().load_json(str);
+            get_curr_advanced_controls = true;
+            advanced_mode_settings_file_names.insert(f);
+            selected_file_preset = f;
+        };
+
+        const auto save_to_json = [&](std::string full_filename)
+        {
+            if (!ends_with(to_lower(full_filename), ".json")) full_filename += ".json";
+            viewer.not_model.add_log(to_string() << "Saving settings to \"" << full_filename << "\"...");
+            std::ofstream out(full_filename);
+            out << dev.as<advanced_mode>().serialize_json();
+            out.close();
+            advanced_mode_settings_file_names.insert(full_filename);
+            selected_file_preset = full_filename;
+        };
+
+        ////////////////////////////////////////
+        // Draw Combo Box
+        ////////////////////////////////////////
+        for (auto&& sub : subdevices)
+        {
+            if (auto dpt = sub->s->as<depth_sensor>())
+            {
+                //TODO: set this once!
+                const auto draw_preset_panel = [&](option_model& opt_model, std::string& error_message, notifications_model& model)
+                {
+                    bool is_clicked = false;
+                    assert(opt_model.opt == RS2_OPTION_VISUAL_PRESET);
+                    ImGui::Text("Presets: ");
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Select a preset configuration (or use the load button)");
+                    }
+
+                    ImGui::SameLine();
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10);
+                    ImGui::PushItemWidth(170);
+
+                    ///////////////////////////////////////////
+                    //TODO: make this a member function
+                    std::vector<const char*> labels;
+                    auto selected = 0, counter = 0;
+                    for (auto i = opt_model.range.min; i <= opt_model.range.max; i += opt_model.range.step, counter++)
+                    {
+                        if (std::fabs(i - opt_model.value) < 0.001f)
+                        {
+                            selected = counter;
+                        }
+                        labels.push_back(opt_model.endpoint->get_option_value_description(opt_model.opt, i));
+                    }
+                    ///////////////////////////////////////////
+
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
+
+                    ///////////////////////////////////////////
+                    // Go over the loaded files and add them to the combo box
+                    std::vector<std::string> full_files_names(advanced_mode_settings_file_names.begin(), advanced_mode_settings_file_names.end());
+                    std::vector<std::string> files_labels;
+                    int i = labels.size();
+                    for (auto&& file : full_files_names)
+                    {
+                        files_labels.push_back(get_file_name(file));
+                        if (selected_file_preset == file)
+                        {
+                            selected = i;
+                        }
+                        i++;
+                    }
+                    std::transform(files_labels.begin(), files_labels.end(), std::back_inserter(labels), [](const std::string& s) { return s.c_str(); });
+                    
+                    ///////////////////////////////////////////
+
+                    try
+                    {
+                        //std::string label = "##" + ;
+                        if (ImGui::Combo(opt_model.id.c_str(), &selected, labels.data(),
+                            static_cast<int>(labels.size())))
+                        {
+                            if (selected < static_cast<int>(labels.size() - files_labels.size()))
+                            {
+                                //Known preset was chosen
+                                opt_model.value = opt_model.range.min + opt_model.range.step * selected;
+                                model.add_log(to_string() << "Setting " << opt_model.opt << " to "
+                                    << opt_model.value << " (" << labels[selected] << ")");
+                                opt_model.endpoint->set_option(opt_model.opt, opt_model.value);
+                                *opt_model.invalidate_flag = true;
+                                is_clicked = true;
+                                selected_file_preset = "";
+                            }
+                            else
+                            {
+                                //File was chosen
+                                auto f = full_files_names[selected - static_cast<int>(labels.size() - files_labels.size())];
+                                error_message = safe_call([&]() { load_json(f); });
+                                selected_file_preset = f;
+                            }
+                        }
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+
+                    ImGui::PopStyleColor();
+                    ImGui::PopItemWidth();
+                    return is_clicked;
+                };
+                sub->options_metadata[RS2_OPTION_VISUAL_PRESET].custom_draw_method = draw_preset_panel;
+                if (sub->draw_option(RS2_OPTION_VISUAL_PRESET, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
+                {
+                    get_curr_advanced_controls = true;
+                }
+            }
+        }
+
+        ImGui::SameLine();
+        const ImVec2 icons_size{ 20, 20 };
+        ////////////////////////////////////////
+        // Draw Load Icon
+        ////////////////////////////////////////
         std::string upload_button_name = to_string() << textual_icons::upload << "##" << id;
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
-        if (ImGui::ButtonEx(upload_button_name.c_str(), icons_size, (is_streaming || !is_advanced_enabled) ? ImGuiButtonFlags_Disabled : 0))
+        if (ImGui::ButtonEx(upload_button_name.c_str(), icons_size))
         {
             auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
             if (ret)
             {
-                std::ifstream t(ret);
-                viewer.not_model.add_log(to_string() << "Loading settings from \"" << ret << "\"...");
-                std::string str((std::istreambuf_iterator<char>(t)),
-                    std::istreambuf_iterator<char>());
-                dev.as<advanced_mode>().load_json(str);
-                get_curr_advanced_controls = true;
-                advanced_mode_settings_file_names.insert(ret);
+                error_message = safe_call([&]() { load_json(ret); });
             }
         }
         if (ImGui::IsItemHovered())
@@ -4292,21 +4400,17 @@ namespace rs2
         }
         ImGui::SameLine();
 
+        ////////////////////////////////////////
+        // Draw Save Icon
+        ////////////////////////////////////////
         std::string save_button_name = to_string() << textual_icons::download << "##" << id;
-        if (ImGui::ButtonEx(save_button_name.c_str(), icons_size, (is_streaming || !is_advanced_enabled) ? ImGuiButtonFlags_Disabled : 0))
+        if (ImGui::ButtonEx(save_button_name.c_str(), icons_size))
         {
             auto ret = file_dialog_open(save_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
 
             if (ret)
             {
-                std::string full_filename = ret;
-                if (!ends_with(to_lower(full_filename), ".json")) full_filename += ".json";
-
-                viewer.not_model.add_log(to_string() << "Saving settings to \"" << full_filename << "\"...");
-                std::ofstream out(full_filename);
-                out << dev.as<advanced_mode>().serialize_json();
-                out.close();
-                advanced_mode_settings_file_names.insert(full_filename);
+                error_message = safe_call([&]() { save_to_json(ret); });
             }
         }
         if (ImGui::IsItemHovered())
@@ -4314,71 +4418,12 @@ namespace rs2
             ImGui::SetTooltip("Save current settings to file");
         }
         ImGui::PopStyleColor(2);
-
         ImGui::SameLine();
 
-        //ImGui::PushStyleColor(ImGuiCol_FrameBg, sensor_bg);
-        //ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
         ImGui::PopFont();
-        ImGui::PushFont(window.get_font());
-        std::string label = to_string() << "## " << id;
-        std::vector<std::string> full_file_names(advanced_mode_settings_file_names.begin(), advanced_mode_settings_file_names.end());
-        full_file_names.push_back("User Defined");
-        std::vector<std::string> file_names_copy;
-        std::transform(full_file_names.begin(), full_file_names.end(), std::back_inserter(file_names_copy), [](const std::string& s) { return get_file_name(s); });
-        std::vector<const char*> labels;
-        std::transform(file_names_copy.begin(), file_names_copy.end(), std::back_inserter(labels), [](const std::string& s) { return s.c_str(); });
-        int selected = 0;
-        ImGui::PushItemWidth(120);
-        if (ImGui::Combo(label.c_str(), &selected, labels.data(), static_cast<int>(labels.size())))
-        {
-            viewer.not_model.add_log(to_string() << "Setting configuration according to file \"" << labels[selected] << "\"");
-            std::ofstream out(full_file_names[selected]);
-            out << dev.as<advanced_mode>().serialize_json();
-            out.close();
-        }
-        //ImGui::PopStyleColor(2);
-
-        ImGui::SetCursorPos({ panel_pos.x, ImGui::GetCursorPosY()});
-
-        //Using transparent-non-actionable buttons to have the same locations
-        ImGui::PushStyleColor(ImGuiCol_Button, ImColor(0, 0, 0, 0));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor(0, 0, 0, 0));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor(0, 0, 0, 0));
-        const ImVec2 text_size = { icons_width, 5 };
-        
-        ImGui::Text(is_advanced_enabled ? " Enabled " : " Disabled");
-        ImGui::SameLine(); ImGui::Text("    Save");
-        ImGui::SameLine(); ImGui::Text("       Load");
-        ImGui::SameLine(); ImGui::Text("     Current settings");
-        ImGui::PopStyleColor(3);
-        ImGui::PopFont();
-
         ImGui::PopStyleVar();
         ImGui::PopStyleColor(7);
 
-        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
-        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-
-        std::string question_text = is_advanced_enabled ? "Disable Advanced Mode" : "Enable Advanced Mode";
-        if (show_dialog && yes_no_dialog("Advanced Mode", "Disable Advanced Mode", approved))
-        {
-            if (approved)
-            {
-                try
-                {
-                    dev.as<advanced_mode>().toggle_advanced_mode(!is_advanced_enabled);
-                    restarting_device_info = get_device_info(dev, false);
-                    viewer.not_model.add_log("Switching out of advanced mode...");
-                }
-                catch (const std::exception& ex)
-                {
-                    error_message = ex.what();
-                }
-            }
-            show_dialog = false;
-        }
-        ImGui::PopStyleColor(2);
         return panel_height;
     }
 
@@ -4488,14 +4533,14 @@ namespace rs2
         ////////////////////////////////////////
         // draw advanced mode panel
         ////////////////////////////////////////
-        if (show_advanced_mode_panel)
+        if (dev.is<advanced_mode>())
         {
             pos = ImGui::GetCursorPos();
             const float vertical_space_before_advanced_mode_control = 10.0f;
             const float horizontal_space_before_device_control = 3.0f;
             auto advanced_mode_pos = ImVec2{ pos.x + horizontal_space_before_device_control, pos.y + vertical_space_before_advanced_mode_control };
             ImGui::SetCursorPos(advanced_mode_pos);
-            const float advanced_mode_panel_height = draw_advanced_mode_panel(panel_width, window, error_message, viewer);
+            const float advanced_mode_panel_height = draw_advanced_mode_panel(panel_width, window, error_message, viewer, update_read_only_options);
             ImGui::SetCursorPos({ advanced_mode_pos.x, advanced_mode_pos.y + advanced_mode_panel_height });
         }
 
@@ -4703,7 +4748,7 @@ namespace rs2
                     sub->draw_stream_selection();
 
                 static const std::vector<rs2_option> drawing_order{
-                    RS2_OPTION_VISUAL_PRESET,
+                    //RS2_OPTION_VISUAL_PRESET,
                     RS2_OPTION_EMITTER_ENABLED,
                     RS2_OPTION_ENABLE_AUTO_EXPOSURE };
 
