@@ -3933,16 +3933,24 @@ namespace rs2
         return device_names;
     }
 
-    bool yes_no_dialog(const std::string& title, const std::string& do_what, bool& approved)
+    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window)
     {
+        ImGui_ScopePushFont(window.get_font());
+        ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
+        ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_header_light_blue); //TODO: Change color?
+        ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, regular_blue); //TODO: Change color?
+        ImGui_ScopePushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+        ImGui_ScopePushStyleColor(ImGuiCol_TitleBg, header_color);
+        ImGui_ScopePushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+        ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         auto clicked = false;
         ImGui::OpenPopup(title.c_str());
         if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            std::string msg = to_string() << "\t\tAre you sure you want to " << do_what << "?\t\t\n";
-            ImGui::Text("\n%s\n", msg.c_str());
-            ImGui::Separator();
+            ImGui::Text("\n%s\n\n", message_text.c_str());
             auto width = ImGui::GetWindowWidth();
+            ImGui::Dummy(ImVec2(0, 0));
             ImGui::Dummy(ImVec2(width / 4.f, 0));
             ImGui::SameLine();
             if (ImGui::Button("Yes", ImVec2(60, 30)))
@@ -3963,32 +3971,53 @@ namespace rs2
         }
         return clicked;
     }
-
-    void device_model::draw_advanced_mode_tab(viewer_model& view)
+    bool device_model::prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text, std::vector<std::string>& restarting_device_info, viewer_model& view, ux_window& window)
+    {
+        bool keep_showing = true;
+        bool yes_was_chosen = false;
+        if (yes_no_dialog("Advanced Mode", message_text, yes_was_chosen, window))
+        {
+            if (yes_was_chosen)
+            {
+                dev.as<advanced_mode>().toggle_advanced_mode(enable_advanced_mode);
+                restarting_device_info = get_device_info(dev, false);
+                view.not_model.add_log(enable_advanced_mode ? "Turning on advanced mode..." : "Turning off  advanced mode...");
+            }
+            keep_showing = false;
+        }
+        return keep_showing;
+    }
+    void device_model::draw_advanced_mode_tab(viewer_model& view, ux_window& window)
     {
         using namespace rs400;
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.9f, 0.9f, 0.9f, 1 });
 
         auto is_advanced_mode = dev.is<advanced_mode>();
-        if (ImGui::TreeNode("Advanced Mode"))
+        if (is_advanced_mode && ImGui::TreeNode("Advanced Controls"))
         {
             try
             {
-                if (!is_advanced_mode)
+                auto advanced = dev.as<advanced_mode>();
+                if (advanced.is_enabled())
                 {
-                    // TODO: Why are we showing the tab then??
-                    ImGui::TextColored(redish, "Selected device does not offer\nany advanced settings");
+                    draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
                 }
                 else
                 {
-                    auto advanced = dev.as<advanced_mode>();
-                    if (advanced.is_enabled())
+                    ImGui::TextColored(redish, "Device is not in advanced mode");
+                    std::string button_text = to_string() << "Turn on Advanced Mode" << "##" << id;
+                    static bool show_yes_no_modal = false;
+                    if (ImGui::Button(button_text.c_str(), ImVec2{ 226, 0 }))
                     {
-                        draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
+                        show_yes_no_modal = true;
                     }
-                    else
+                    if (ImGui::IsItemHovered())
                     {
-                        ImGui::TextColored(redish, "Device is not in advanced mode!\nTo access advanced functionality\nclick \"Enable Advanced Mode\"");
+                        ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
+                    }
+                    if (show_yes_no_modal)
+                    {
+                        show_yes_no_modal = prompt_toggle_advanced_mode(true, "\t\tAre you sure you want to turn on Advanced Mode?\t\t", restarting_device_info, view, window);
                     }
                 }
             }
@@ -4120,6 +4149,7 @@ namespace rs2
         }
         ImGui::PopFont();
         ImGui::PushFont(window.get_font());
+        static bool keep_showing_advanced_mode_modal = false;
         if (ImGui::BeginPopup(label.c_str()))
         {
             bool something_to_show = false;
@@ -4162,6 +4192,16 @@ namespace rs2
             {
                 something_to_show = true;
 
+                if (auto adv = dev.as<advanced_mode>())
+                {
+                    const bool is_advanced_mode_enabled = adv.is_enabled();
+                    bool selected = is_advanced_mode_enabled;
+                    if (ImGui::MenuItem("Advanced Mode", nullptr, &selected))
+                    {
+                        keep_showing_advanced_mode_modal = true;
+                    }
+                }
+
                 ImGui::Separator();
 
                 if (ImGui::Selectable("Hardware Reset"))
@@ -4192,6 +4232,12 @@ namespace rs2
             ImGui::EndPopup();
         }
 
+        if (keep_showing_advanced_mode_modal)
+        {
+            const bool is_advanced_mode_enabled = dev.as<advanced_mode>().is_enabled();
+            std::string msg = to_string() << "\t\tAre you sure you want to " << (is_advanced_mode_enabled ? "turn off Advanced mode" : "turn on Advanced mode") << "\t\t";
+            keep_showing_advanced_mode_modal = prompt_toggle_advanced_mode(!is_advanced_mode_enabled, msg, restarting_device_info, viewer, window);
+        }
         ////////////////////////////////////////
         // Draw icons names
         ////////////////////////////////////////
@@ -4237,7 +4283,7 @@ namespace rs2
         }
     }
 
-    float device_model::draw_advanced_mode_panel(float panel_width,
+    float device_model::draw_preset_panel(float panel_width,
         ux_window& window,
         std::string& error_message,
         viewer_model& viewer,
@@ -4253,23 +4299,25 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
-
-        const bool is_advanced_enabled = dev.as<advanced_mode>().is_enabled();
         ImGui::PushFont(window.get_font());
         ImGui::SetCursorPos({ panel_pos.x + 10, ImGui::GetCursorPosY() + 10 });
 
         const auto load_json = [&](const std::string f) {
-            std::ifstream t(f);
             viewer.not_model.add_log(to_string() << "Loading settings from \"" << f << "\"...");
+            auto advanced = dev.as<advanced_mode>();
+            std::ifstream t(f);
             std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-            dev.as<advanced_mode>().load_json(str);
+            advanced.load_json(str);
+
             get_curr_advanced_controls = true;
             advanced_mode_settings_file_names.insert(f);
             selected_file_preset = f;
+            //TODO: add support here for loading the rest of the json data (regarding viewer configurations)
         };
 
         const auto save_to_json = [&](std::string full_filename)
         {
+            auto advanced = dev.as<advanced_mode>();
             if (!ends_with(to_lower(full_filename), ".json")) full_filename += ".json";
             viewer.not_model.add_log(to_string() << "Saving settings to \"" << full_filename << "\"...");
             std::ofstream out(full_filename);
@@ -4278,7 +4326,7 @@ namespace rs2
             advanced_mode_settings_file_names.insert(full_filename);
             selected_file_preset = full_filename;
         };
-
+        const std::string popup_message = "\t\tTo use this feature, the device must be in Advanced Mode.\t\t\n\n\t\tWould you like to turn Advanced Mode?\t\t";
         ////////////////////////////////////////
         // Draw Combo Box
         ////////////////////////////////////////
@@ -4337,28 +4385,43 @@ namespace rs2
 
                     try
                     {
-                        //std::string label = "##" + ;
+                        static bool keep_showing_popup = false;
                         if (ImGui::Combo(opt_model.id.c_str(), &selected, labels.data(),
                             static_cast<int>(labels.size())))
                         {
-                            if (selected < static_cast<int>(labels.size() - files_labels.size()))
+                            auto advanced = dev.as<advanced_mode>();
+                            if (advanced)
                             {
-                                //Known preset was chosen
-                                opt_model.value = opt_model.range.min + opt_model.range.step * selected;
-                                model.add_log(to_string() << "Setting " << opt_model.opt << " to "
-                                    << opt_model.value << " (" << labels[selected] << ")");
-                                opt_model.endpoint->set_option(opt_model.opt, opt_model.value);
-                                *opt_model.invalidate_flag = true;
-                                is_clicked = true;
-                                selected_file_preset = "";
+                                if (advanced.is_enabled())
+                                {
+                                    if (selected < static_cast<int>(labels.size() - files_labels.size()))
+                                    {
+                                        //Known preset was chosen
+                                        opt_model.value = opt_model.range.min + opt_model.range.step * selected;
+                                        model.add_log(to_string() << "Setting " << opt_model.opt << " to "
+                                            << opt_model.value << " (" << labels[selected] << ")");
+                                        opt_model.endpoint->set_option(opt_model.opt, opt_model.value);
+                                        *opt_model.invalidate_flag = true;
+                                        is_clicked = true;
+                                        selected_file_preset = "";
+                                    }
+                                    else
+                                    {
+                                        //File was chosen
+                                        auto f = full_files_names[selected - static_cast<int>(labels.size() - files_labels.size())];
+                                        error_message = safe_call([&]() { load_json(f); });
+                                        selected_file_preset = f;
+                                    }
+                                }
+                                else
+                                {
+                                    keep_showing_popup = true;
+                                }
                             }
-                            else
-                            {
-                                //File was chosen
-                                auto f = full_files_names[selected - static_cast<int>(labels.size() - files_labels.size())];
-                                error_message = safe_call([&]() { load_json(f); });
-                                selected_file_preset = f;
-                            }
+                        }
+                        if (keep_showing_popup)
+                        {
+                            keep_showing_popup = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window);
                         }
                     }
                     catch (const error& e)
@@ -4380,18 +4443,35 @@ namespace rs2
 
         ImGui::SameLine();
         const ImVec2 icons_size{ 20, 20 };
+        //TODO: Change this once we have support for loading jsons with more data than only advanced controls
+        const int buttons_flags = dev.is<advanced_mode>() ? 0 : ImGuiButtonFlags_Disabled;
+        static bool require_advanced_mode_enable_prompt = false;
+        auto advanced_dev = dev.as<advanced_mode>();
+        bool is_advanced_mode_enabled = false;
+        if (advanced_dev)
+        {
+            is_advanced_mode_enabled = advanced_dev.is_enabled();
+        }
         ////////////////////////////////////////
         // Draw Load Icon
         ////////////////////////////////////////
         std::string upload_button_name = to_string() << textual_icons::upload << "##" << id;
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
-        if (ImGui::ButtonEx(upload_button_name.c_str(), icons_size))
+
+        if (ImGui::ButtonEx(upload_button_name.c_str(), icons_size, buttons_flags))
         {
-            auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
-            if (ret)
+            if (is_advanced_mode_enabled)
             {
-                error_message = safe_call([&]() { load_json(ret); });
+                auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+                if (ret)
+                {
+                    error_message = safe_call([&]() { load_json(ret); });
+                }
+            }
+            else
+            {
+                require_advanced_mode_enable_prompt = true;
             }
         }
         if (ImGui::IsItemHovered())
@@ -4404,14 +4484,21 @@ namespace rs2
         // Draw Save Icon
         ////////////////////////////////////////
         std::string save_button_name = to_string() << textual_icons::download << "##" << id;
-        if (ImGui::ButtonEx(save_button_name.c_str(), icons_size))
+        if (ImGui::ButtonEx(save_button_name.c_str(), icons_size, buttons_flags))
         {
-            auto ret = file_dialog_open(save_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
-
-            if (ret)
+            if (is_advanced_mode_enabled)
             {
-                error_message = safe_call([&]() { save_to_json(ret); });
+                auto ret = file_dialog_open(save_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+                if (ret)
+                {
+                    error_message = safe_call([&]() { save_to_json(ret); });
+                }
             }
+            else
+            {
+                require_advanced_mode_enable_prompt = true;
+            }
+
         }
         if (ImGui::IsItemHovered())
         {
@@ -4419,6 +4506,11 @@ namespace rs2
         }
         ImGui::PopStyleColor(2);
         ImGui::SameLine();
+
+        if (require_advanced_mode_enable_prompt)
+        {
+            require_advanced_mode_enable_prompt = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window);
+        }
 
         ImGui::PopFont();
         ImGui::PopStyleVar();
@@ -4442,7 +4534,7 @@ namespace rs2
         auto header_h = panel_height;
         if (is_playback_device) header_h += 15;
 
-        ImColor device_header_background_color = ImColor(from_rgba(27, 33, 38, 255));
+        ImColor device_header_background_color = title_color;
         const float left_space = 3.f;
         const float upper_space = 3.f;
 
@@ -4540,7 +4632,7 @@ namespace rs2
             const float horizontal_space_before_device_control = 3.0f;
             auto advanced_mode_pos = ImVec2{ pos.x + horizontal_space_before_device_control, pos.y + vertical_space_before_advanced_mode_control };
             ImGui::SetCursorPos(advanced_mode_pos);
-            const float advanced_mode_panel_height = draw_advanced_mode_panel(panel_width, window, error_message, viewer, update_read_only_options);
+            const float advanced_mode_panel_height = draw_preset_panel(panel_width, window, error_message, viewer, update_read_only_options);
             ImGui::SetCursorPos({ advanced_mode_pos.x, advanced_mode_pos.y + advanced_mode_panel_height });
         }
 
@@ -4782,7 +4874,7 @@ namespace rs2
                     }
                 }
                 if (dev.is<advanced_mode>() && sub->s->is<depth_sensor>())
-                    draw_advanced_mode_tab(viewer);
+                    draw_advanced_mode_tab(viewer, window);
 
                 for (auto&& pb : sub->const_effects)
                 {

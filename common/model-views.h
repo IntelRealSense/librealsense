@@ -446,7 +446,7 @@ namespace rs2
         void pause_record();
         void resume_record();
         int draw_playback_panel(ImFont* font, viewer_model& view);
-        void draw_advanced_mode_tab(viewer_model& view);
+        void draw_advanced_mode_tab(viewer_model& view, ux_window& window);
         void draw_controls(float panel_width, float panel_height,
             ux_window& window,
             std::string& error_message,
@@ -468,7 +468,6 @@ namespace rs2
         bool _playback_repeat = true;
         bool _should_replay = false;
         bool show_device_info = false;
-        bool show_advanced_mode_panel = false;
 
         bool allow_remove = true;
         bool show_depth_only = false;
@@ -491,11 +490,15 @@ namespace rs2
                                 std::string& error_message,
                                 viewer_model& viewer);
         void play_defaults(viewer_model& view);
-        float draw_advanced_mode_panel(float panel_width,
+        float draw_preset_panel(float panel_width,
             ux_window& window,
             std::string& error_message,
             viewer_model& viewer,
             bool update_read_only_options);
+        bool prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text,
+            std::vector<std::string>& restarting_device_info, 
+            viewer_model& view, 
+            ux_window& window);
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
