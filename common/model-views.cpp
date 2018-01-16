@@ -234,6 +234,57 @@ namespace rs2
         return stbi_write_png(filename, (int)pixel_width, (int)pixels_height, bytes_per_pixel, raster_data, stride_bytes);
     }
 
+    bool save_frame_raw_data(const std::string& filename, rs2::frame frame)
+    {
+        bool ret = false;
+        auto image = frame.as<video_frame>();
+        if (image)
+        {
+            std::ofstream outfile(filename.data(), std::ofstream::binary);
+            outfile.write(static_cast<const char*>(image.get_data()), image.get_height()*image.get_stride_in_bytes());
+
+            outfile.close();
+            ret = true;
+        }
+
+        return ret;
+    }
+
+    bool frame_metadata_to_csv(const std::string& filename, rs2::frame frame)
+    {
+        bool ret = false;
+        auto image = frame.as<video_frame>();
+        if (image)
+        {
+            std::ofstream csv;
+            csv.open(filename);
+
+            auto profile = image.get_profile();
+            csv << "Frame Info: " << std::endl << "Type," << profile.stream_name() << std::endl;
+            csv << "Format," << rs2_format_to_string(profile.format()) << std::endl;
+            csv << "Frame Number," << image.get_frame_number() << std::endl;
+            csv << "Timestamp (ms)," << std::fixed << std::setprecision(2) << image.get_timestamp() << std::endl;
+            csv << "Resolution x," << (int)image.get_width() << std::endl;
+            csv << "Resolution y," << (int)image.get_height() << std::endl;
+            csv << "Bytes per pixel," << (int)image.get_bytes_per_pixel() << std::endl;
+
+            if (auto vsp = profile.as<video_stream_profile>())
+            {
+                csv << std::endl << "Intrinsic:," << std::fixed << std::setprecision(6) <<std::endl;
+                csv << "Fx," << vsp.get_intrinsics().fx << std::endl;
+                csv << "Fy," << vsp.get_intrinsics().fy << std::endl;
+                csv << "PPx,"<< vsp.get_intrinsics().ppx << std::endl;
+                csv << "PPy,"<< vsp.get_intrinsics().ppy << std::endl;
+                csv << "Distorsion," <<rs2_distortion_to_string(vsp.get_intrinsics().model) << std::endl;
+            }
+
+            csv.close();
+            ret = true;
+        }
+
+        return ret;
+    }
+
     std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec)
     {
         std::vector<const char*> res;
@@ -2110,22 +2161,11 @@ namespace rs2
         label = to_string() << textual_icons::camera << "##Snapshot " << profile.unique_id();
         if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
         {
-            auto ret = file_dialog_open(save_file, "Portable Network Graphics (PNG)\0*.png\0", NULL, NULL);
+            auto filename = file_dialog_open(save_file, "Portable Network Graphics (PNG)\0*.png\0", NULL, NULL);
 
-            if (ret)
+            if (filename)
             {
-                std::string filename = ret;
-                if (!ends_with(to_lower(filename), ".png")) filename += ".png";
-
-                auto frame = texture->get_last_frame(true).as<video_frame>();
-                if (frame)
-                {
-                    save_to_png(filename.data(), frame.get_width(), frame.get_height(), frame.get_bytes_per_pixel(), frame.get_data(), frame.get_width() * frame.get_bytes_per_pixel());
-
-                    viewer.not_model.add_notification({ to_string() << "Snapshot was saved to " << filename,
-                        0, RS2_LOG_SEVERITY_INFO,
-                        RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
-                }
+                snapshot_frame(filename,viewer);
             }
         }
         if (ImGui::IsItemHovered())
@@ -2345,6 +2385,57 @@ namespace rs2
         ImGui::End();
         ImGui::PopStyleColor();
         ImGui::PopFont();
+    }
+
+    void stream_model::snapshot_frame(const char* filename, viewer_model& viewer) const
+    {
+        std::stringstream ss;
+        std::string stream_desc{};
+        std::string filename_base(filename);
+
+        // Trim the file extension when provided. Note that this may amend user-provided file name in case it uses the "." character, e.g. "my.file.name"
+        auto loc = filename_base.find_last_of(".");
+        if (loc  != std::string::npos)
+            filename_base.erase(loc, std::string::npos);
+
+       // Snapshot the color-augmented version of the frame
+        if (auto colorized_frame = texture->get_last_frame(true).as<video_frame>())
+        {
+            stream_desc = rs2_stream_to_string(colorized_frame.get_profile().stream_type());
+            auto filename_png = filename_base + "_" + stream_desc + ".png";
+            save_to_png(filename_png.data(), colorized_frame.get_width(), colorized_frame.get_height(), colorized_frame.get_bytes_per_pixel(),
+                colorized_frame.get_data(), colorized_frame.get_width() * colorized_frame.get_bytes_per_pixel());
+
+            ss << "PNG snapshot was saved to " << filename_png << std::endl;
+        }
+
+        auto original_frame = texture->get_last_frame(false).as<video_frame>();
+
+        // For Depth-originated streams also provide a copy of the raw data accompanied by sensor-specific metadata
+        if (original_frame && val_in_range(original_frame.get_profile().stream_type(), { RS2_STREAM_DEPTH , RS2_STREAM_INFRARED }))
+        {
+            stream_desc = rs2_stream_to_string(original_frame.get_profile().stream_type());
+
+            //Capture raw frame
+            auto filename = filename_base + "_" + stream_desc + ".bin";
+            if (save_frame_raw_data(filename, original_frame))
+                ss << "Raw data is captured into " << filename << std::endl;
+            else
+                viewer.not_model.add_notification({ to_string() << "Failed to save frame raw data  " << filename,
+                    0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+
+            // And the frame's attributes
+            filename = filename_base + "_" + stream_desc + "_metadata.csv";
+            if (frame_metadata_to_csv(filename, original_frame))
+                ss << "The frame attributes are saved into " << filename;
+            else
+                viewer.not_model.add_notification({ to_string() << "Failed to save frame metadata file " << filename,
+                    0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+        }
+
+        if (ss.str().size())
+            viewer.not_model.add_notification({ ss.str().c_str(), 0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT });
+
     }
 
     rect stream_model::get_normalized_zoom(const rect& stream_rect, const mouse_info& g, bool is_middle_clicked, float zoom_val)
@@ -2594,9 +2685,10 @@ namespace rs2
             ImGui::SetCursorPos({ rc.x, rc.y - 4 });
 
             std::string label = to_string() << "##log_entry" << i++;
-            ImGui::InputText(label.c_str(),
+            ImGui::InputTextMultiline(label.c_str(),
                         (char*)line.data(),
                         line.size() + 1,
+                        ImVec2(-1, ImGui::GetTextLineHeight() * 1.5 *float(std::max(1,(int)std::count(line.begin(),line.end(), '\n')))),
                         ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             ImGui::PopStyleColor(2);
 
