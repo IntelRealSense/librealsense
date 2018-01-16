@@ -44,11 +44,10 @@ namespace rs2
 
         bool operator==(const stream_profile& rhs)
         {
-            return
-             stream_index() == rhs.stream_index()&&
-             stream_type()  == rhs.stream_type()&&
-             format()   == rhs.format()&&
-             fps()  == rhs.fps();
+            return  stream_index() == rhs.stream_index()&&
+                    stream_type() == rhs.stream_type()&&
+                    format() == rhs.format()&&
+                    fps() == rhs.fps();
         }
 
         template<class T>
@@ -102,6 +101,7 @@ namespace rs2
         friend class rs2::sensor;
         friend class rs2::frame;
         friend class rs2::pipeline_profile;
+        friend class software_sensor;
 
         explicit stream_profile(const rs2_stream_profile* profile) : _profile(profile)
         {
@@ -116,7 +116,7 @@ namespace rs2
 
         const rs2_stream_profile* _profile;
         std::shared_ptr<rs2_stream_profile> _clone;
-        
+
         int _index = 0;
         int _uid = 0;
         int _framerate = 0;

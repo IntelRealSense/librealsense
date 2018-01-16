@@ -15,8 +15,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <../third-party/stb_image.h>
 
-using namespace rs2;
-
 struct synthetic_frame
 {
     int x, y, bpp;
@@ -26,11 +24,11 @@ struct synthetic_frame
 synthetic_frame create_synthetic_texture()
 {
     synthetic_frame frame;
-    auto r = stbi_load_from_memory(splash, (int)splash_size, &frame.x, &frame.y, &frame.bpp, false);
+    auto realsense_logo = stbi_load_from_memory(splash, (int)splash_size, &frame.x, &frame.y, &frame.bpp, false);
 
     std::vector<uint8_t> pixels_color(frame.x * frame.y * frame.bpp, 0);
     
-    memcpy(pixels_color.data(), r, frame.x*frame.y * 4);
+    memcpy(pixels_color.data(), realsense_logo, frame.x*frame.y * 4);
 
     for (auto i = 0; i< frame.y; i++)
         for (auto j = 0; j < frame.x * 4; j += 4)
@@ -61,6 +59,8 @@ void fill_synthetic_depth_data(void* data, int w, int h, int bpp, float wave_bas
 
 int main(int argc, char * argv[]) try
 {
+    const auto wave_time = std::chrono::milliseconds(1);
+
     const int W = 640;
     const int H = 480;
     const int BPP_D = 2;
@@ -79,34 +79,33 @@ int main(int argc, char * argv[]) try
     //           Declare Software-Only Device           //
     //==================================================//
     
-    software_device dev; // Create software-only device
+    rs2::software_device dev; // Create software-only device
 
     auto depth_s = dev.add_sensor("Depth"); // Define single sensor 
     auto color_s = dev.add_sensor("Color"); // Define single sensor 
 
-
-    depth_s.add_video_stream({  RS2_STREAM_DEPTH, 0, 0, 
+    auto depth_stream = depth_s.add_video_stream({  RS2_STREAM_DEPTH, 0, 0,
                                 W, H, 60, BPP_D, 
                                 RS2_FORMAT_Z16, depth_intrinsics });
 
     depth_s.add_read_only_option(RS2_OPTION_DEPTH_UNITS, 0.001f);
 
 
-    color_s.add_video_stream({  RS2_STREAM_COLOR, 0, 1, texture.x, 
+    auto color_stream = color_s.add_video_stream({  RS2_STREAM_COLOR, 0, 1, texture.x,
                                 texture.y, 60, texture.bpp, 
                                 RS2_FORMAT_RGBA8, color_intrinsics });
 
-    dev.create_matcher(DLR_C);
-    syncer sync;
+    dev.create_matcher(RS2_MATCHER_DLR_C);
+    rs2::syncer sync;
 
     depth_s.start(sync);
     color_s.start(sync);
 
-    auto depth_stream = depth_s.get_stream_profiles().front();
-    auto color_stream = color_s.get_stream_profiles().front();
-
     depth_stream.register_extrinsics_to(color_stream, { { 1,0,0,0,1,0,0,0,1 },{ 0,0,0 } });
 
+    //==================================================//
+    //         End of Software-Only Device Declaration  //
+    //==================================================//
 
     window app(1280, 1500, "RealSense Capture Example");
     state app_state;
@@ -118,9 +117,9 @@ int main(int argc, char * argv[]) try
     auto last = std::chrono::high_resolution_clock::now();
 
     float wave_base = 0.f;
-    pointcloud pc;
-    points p;
-    int ind = 0;
+    rs2::pointcloud pc;
+    rs2::points points;
+    int frame_number = 0;
 
     std::vector<uint8_t> pixels_depth(W * H * BPP_D, 0);
 
@@ -130,7 +129,7 @@ int main(int argc, char * argv[]) try
         fill_synthetic_depth_data((void*)pixels_depth.data(), W , H , BPP_D, wave_base);
 
         auto now = std::chrono::high_resolution_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count() > 1)
+        if (now - last > wave_time)
         {
             app_state.yaw -= 1;
             wave_base += 0.1;
@@ -140,32 +139,32 @@ int main(int argc, char * argv[]) try
         depth_s.on_video_frame({ pixels_depth.data(), // Frame pixels from capture API
             [](void*) {}, // Custom deleter (if required)
             W*BPP_D, BPP_D, // Stride and Bytes-per-pixel
-            (rs2_time_t)ind * 16, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, ind, // Timestamp, Frame# for potential sync services
+            (rs2_time_t)frame_number * 16, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, frame_number, // Timestamp, Frame# for potential sync services
             depth_stream });
 
 
         color_s.on_video_frame({ texture.frame.data(), // Frame pixels from capture API
             [](void*) {}, // Custom deleter (if required)
             texture.x*texture.bpp, texture.bpp, // Stride and Bytes-per-pixel
-            (rs2_time_t)ind * 16, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, ind, // Timestamp, Frame# for potential sync services
+            (rs2_time_t)frame_number * 16, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, frame_number, // Timestamp, Frame# for potential sync services
             color_stream });
 
-        ++ind;
+        ++frame_number;
 
-        auto fset = sync.wait_for_frames();
-        auto d = fset.first_or_default(RS2_STREAM_DEPTH);
-        auto c = fset.first_or_default(RS2_STREAM_COLOR);
+        rs2::frameset fset = sync.wait_for_frames();
+        rs2::frame depth = fset.first_or_default(RS2_STREAM_DEPTH);
+        rs2::frame color = fset.first_or_default(RS2_STREAM_COLOR);
 
-        if (d && c)
+        if (depth && color)
         {
-            if (d.is<depth_frame>())
-                p = pc.calculate(d.as<depth_frame>());
-            pc.map_to(c);
+            if (auto as_depth = depth.as<rs2::depth_frame>())
+                points = pc.calculate(as_depth);
+            pc.map_to(color);
 
             // Upload the color frame to OpenGL
-            app_state.tex.upload(c);
+            app_state.tex.upload(color);
         }
-        draw_pointcloud(app, app_state, p);
+        draw_pointcloud(app, app_state, points);
     }
 
     return EXIT_SUCCESS;

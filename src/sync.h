@@ -160,7 +160,6 @@ namespace librealsense
         bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) override;
         void clean_inactive_streams(frame_holder& f) override;
         void update_next_expected(const frame_holder& f) override;
-        bool is_gap_big(frame_holder& f, std::shared_ptr<matcher> m);
 
     private:
          std::map<matcher*,unsigned long long> _last_arrived;

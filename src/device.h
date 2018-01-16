@@ -19,6 +19,8 @@
 
 namespace librealsense
 {
+    stream_interface* find_profile(rs2_stream stream, int index, std::vector<stream_interface*> profiles);
+
     class matcher_factory
     {
     public:
@@ -29,10 +31,13 @@ namespace librealsense
         static std::shared_ptr<matcher> create_DLR_matcher(std::vector<stream_interface*> profiles);
         static std::shared_ptr<matcher> create_DI_C_matcher(std::vector<stream_interface*> profiles);
         static std::shared_ptr<matcher> create_DI_matcher(std::vector<stream_interface*> profiles);
-        static std::shared_ptr<matcher> create_default_matcher(std::vector<stream_interface*> profiles);
 
         static std::shared_ptr<matcher> create_identity_matcher(stream_interface* profiles);
+        static std::shared_ptr<matcher> create_frame_number_matcher(std::vector<stream_interface*> profiles);
+        static std::shared_ptr<matcher> create_timestamp_matcher(std::vector<stream_interface*> profiles);
+
         static std::shared_ptr<matcher> create_timestamp_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers);
+        static std::shared_ptr<matcher> create_frame_number_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers);
     };
 
     class device : public virtual device_interface, public info_container

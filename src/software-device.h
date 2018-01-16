@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2018 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include "core/streaming.h"
@@ -26,7 +26,7 @@ namespace librealsense
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     private:
         std::vector<std::shared_ptr<software_sensor>> _software_sensors;
-        rs2_matchers _matcher = DEFAULT;
+        rs2_matchers _matcher = RS2_MATCHER_DEFAULT;
     };
 
     class software_sensor : public sensor_base
@@ -34,7 +34,7 @@ namespace librealsense
     public:
         software_sensor(std::string name, software_device* owner);
 
-        void add_video_stream(rs2_video_stream video_stream);
+        std::shared_ptr<stream_profile_interface> add_video_stream(rs2_video_stream video_stream);
 
         stream_profiles init_stream_profiles() override;
 

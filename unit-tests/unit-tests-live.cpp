@@ -4068,7 +4068,7 @@ TEST_CASE("Pipeline record and playback", "[live]") {
 }
 
 
-TEST_CASE("Syncer sanity with bypass device", "[live][bypass]") {
+TEST_CASE("Syncer sanity with software-device device", "[live][software-device]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -4077,17 +4077,15 @@ TEST_CASE("Syncer sanity with bypass device", "[live][bypass]") {
         const int H = 480;
         const int BPP = 2;
         std::shared_ptr<software_device> dev = std::move(std::make_shared<software_device>());
-        auto s = dev->add_sensor("DS5u");
+        auto s = dev->add_sensor("software_sensor");
        
         rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
 
         s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
         s.add_video_stream({ RS2_STREAM_INFRARED, 1, 1, W, H,60, BPP, RS2_FORMAT_Y8, intrinsics });
-        dev->create_matcher(DI);
-        //recorder rec("1.bag", dev);
+        dev->create_matcher(RS2_MATCHER_DI);
 
         frame_queue q;
-       // auto s = dev->query_sensors().front();
 
         auto profiles = s.get_stream_profiles();
         auto depth = profiles[0];
@@ -4163,7 +4161,7 @@ TEST_CASE("Syncer sanity with bypass device", "[live][bypass]") {
     }
 }
 
-TEST_CASE("Syncer clean_inactive_streams by frame number with bypass device", "[live][bypass]") {
+TEST_CASE("Syncer clean_inactive_streams by frame number with software-device device", "[live][software-device]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -4173,13 +4171,12 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with bypass device", "[
         const int BPP = 2;
 
         std::shared_ptr<software_device> dev = std::make_shared<software_device>();
-        auto s = dev->add_sensor("DS5u");
+        auto s = dev->add_sensor("software_sensor");
         
         rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
         s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
         s.add_video_stream({ RS2_STREAM_INFRARED, 1, 1, W, H,60,  BPP, RS2_FORMAT_Y8, intrinsics });
-        dev->create_matcher(DI);
-        //recorder rec("1.bag", dev);
+        dev->create_matcher(RS2_MATCHER_DI);
         frame_queue q;
         
         auto profiles = s.get_stream_profiles();

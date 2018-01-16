@@ -215,7 +215,14 @@ private:
 struct state {
     state() : yaw(15.0), pitch(15.0), last_x(0.0), last_y(0.0),
         ml(false), offset_x(2.f), offset_y(2.f), tex() {}
-    double yaw, pitch, last_x, last_y; bool ml; float offset_x, offset_y; texture tex;
+    double yaw;
+    double pitch;
+    double last_x;
+    double last_y;
+    bool ml; 
+    float offset_x;
+    float offset_y; 
+    texture tex;
 };
 
 
@@ -230,7 +237,6 @@ void draw_pointcloud(window& app, state& app_state, rs2::points& points)
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     float width = app.width(), height = app.height();
-    //glViewport(0, 0, width, height);
 
     glClearColor(153.f / 255, 153.f / 255, 153.f / 255, 1);
     glClear(GL_DEPTH_BUFFER_BIT);

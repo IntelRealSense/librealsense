@@ -13,8 +13,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "../rs.h"
-
+#include "rs_types.h"
+#include "rs_context.h"
+#include "rs_sensor.h"
+#include "rs_frame.h"
+#include "rs_option.h"
 /**
  * librealsense Recorder is intended for effective unit-testing
  * Currently supports three modes of operation:
@@ -27,7 +30,7 @@ typedef enum rs2_recording_mode
     RS2_RECORDING_MODE_COUNT
 } rs2_recording_mode;
 
-/** \brief All the parameters that requaired to define video stream*/
+/** \brief All the parameters that requaired to defind video stream*/
 typedef struct rs2_video_stream
 {
     rs2_stream type;
@@ -90,7 +93,7 @@ rs2_device* rs2_create_software_device(rs2_error** error);
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            software sensor object, should be released by rs2_delete_sensor
  */
-rs2_sensor* rs2_software_add_sensor(rs2_device* dev, const char* sensor_name, rs2_error** error);
+rs2_sensor* rs2_software_device_add_sensor(rs2_device* dev, const char* sensor_name, rs2_error** error);
 
 /**
  * Inject frame to software sonsor
@@ -98,7 +101,7 @@ rs2_sensor* rs2_software_add_sensor(rs2_device* dev, const char* sensor_name, rs
  * \param[in] frame all the frame components
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_software_on_video_frame(rs2_sensor* sensor, rs2_software_video_frame frame, rs2_error** error);
+void rs2_software_sensor_on_video_frame(rs2_sensor* sensor, rs2_software_video_frame frame, rs2_error** error);
 
 /**
  * Set the wanted matcher type that will be used by the syncer
@@ -106,7 +109,7 @@ void rs2_software_on_video_frame(rs2_sensor* sensor, rs2_software_video_frame fr
  * \param[in] matcher matcher type
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_software_create_matcher(rs2_device* dev, rs2_matchers matcher, rs2_error** error);
+void rs2_software_device_create_matcher(rs2_device* dev, rs2_matchers matcher, rs2_error** error);
 
 /**
  * Add video stream to sensor
@@ -114,7 +117,7 @@ void rs2_software_create_matcher(rs2_device* dev, rs2_matchers matcher, rs2_erro
  * \param[in] video_stream all the stream components
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_software_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stream, rs2_error** error);
+rs2_stream_profile* rs2_software_sensor_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stream, rs2_error** error);
 
 /**
  * Add read only option to sensor
@@ -123,7 +126,7 @@ void rs2_software_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_st
  * \param[in] val the initial value
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_software_add_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error);
+void rs2_software_sensor_add_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error);
 
 /**
  * Update the read only option added to sensor
@@ -132,7 +135,7 @@ void rs2_software_add_read_only_option(rs2_sensor* sensor, rs2_option option, fl
  * \param[in] val the wanted value
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_software_update_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error);
+void rs2_software_sensor_update_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error);
 #ifdef __cplusplus
 }
 #endif

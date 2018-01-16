@@ -427,11 +427,6 @@ namespace librealsense
         _next_expected[matcher.get()] = f.frame->get_frame_number()+1.;
     }
 
-    bool frame_number_composite_matcher::is_gap_big(frame_holder & f, std::shared_ptr<matcher> m)
-    {
-        return fabs((long long)f->get_frame_number() - (long long)_last_arrived[m.get()]) > 5;
-    }
-
     std::pair<double, double> extract_timestamps(frame_holder & a, frame_holder & b)
     {
         if (a->get_frame_timestamp_domain() == b->get_frame_timestamp_domain())

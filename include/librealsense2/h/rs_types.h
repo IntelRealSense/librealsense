@@ -121,16 +121,16 @@ typedef enum rs2_extension
 const char* rs2_extension_type_to_string(rs2_extension type);
 const char* rs2_extension_to_string(rs2_extension type);
 
-//TODO:
-/** \brief Specifies advanced interfaces (capabilities) objects may implement */
+/** \brief Specifies types of different matchers */
 typedef enum rs2_matchers
 {
-   DI, //depth, ir
-   DI_C, //depth, ir, color
-   DLR_C, //depth, left ir, right ir, color
-   DLR, //depth, left ir, right ir
-   DEFAULT //default
-}rs2_skus;
+   RS2_MATCHER_DI, //depth, ir
+   RS2_MATCHER_DI_C, //depth, ir, color
+   RS2_MATCHER_DLR_C, //depth, left ir, right ir, color
+   RS2_MATCHER_DLR, //depth, left ir, right ir
+   RS2_MATCHER_DEFAULT, //default matcher
+   RS2_MATCHER_COUNT
+}rs2_matchers;
 
 typedef struct rs2_device_info rs2_device_info;
 typedef struct rs2_device rs2_device;

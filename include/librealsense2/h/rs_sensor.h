@@ -405,7 +405,7 @@ void rs2_get_extrinsics(const rs2_stream_profile* from,
                         const rs2_stream_profile* to,
                         rs2_extrinsics* extrin, rs2_error** error);
 
-/**TODO:
+/**
 * \param[in] from          origin stream profile
 * \param[in] to            target stream profile
 * \param[out] extrin       extrinsics from origin to target
