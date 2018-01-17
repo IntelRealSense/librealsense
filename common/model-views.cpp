@@ -3395,15 +3395,12 @@ namespace rs2
             // Non-linear correspondence customized for non-flat surface exploration
             glPointSize(std::sqrt(viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width()));
 
-            if (selected_tex_source_uid >= 0)
-            {
-                auto tex = last_texture->get_gl_handle();
-                glBindTexture(GL_TEXTURE_2D, tex);
-                glEnable(GL_TEXTURE_2D);
+            auto tex = last_texture->get_gl_handle();
+            glBindTexture(GL_TEXTURE_2D, tex);
+            glEnable(GL_TEXTURE_2D);
 
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
-            }
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
 
             //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
 
