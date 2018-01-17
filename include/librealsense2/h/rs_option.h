@@ -87,7 +87,7 @@ const char* rs2_sr300_visual_preset_to_string(rs2_sr300_visual_preset preset);
 typedef enum rs2_rs400_visual_preset
 {
     RS2_RS400_VISUAL_PRESET_CUSTOM,
-    RS2_RS400_VISUAL_PRESET_SHORT_RANGE,
+    RS2_RS400_VISUAL_PRESET_DEFAULT,
     RS2_RS400_VISUAL_PRESET_HAND,
     RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY,
     RS2_RS400_VISUAL_PRESET_HIGH_DENSITY,
