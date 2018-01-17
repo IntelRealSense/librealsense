@@ -3987,9 +3987,8 @@ namespace rs2
         }
         return keep_showing;
     }
-    void device_model::draw_advanced_mode_tab(viewer_model& view, ux_window& window)
+    void device_model::draw_advanced_controls(viewer_model& view, ux_window& window)
     {
-        using namespace rs400;
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.9f, 0.9f, 0.9f, 1 });
 
         auto is_advanced_mode = dev.is<advanced_mode>();
@@ -4305,13 +4304,35 @@ namespace rs2
         const auto load_json = [&](const std::string f) {
             viewer.not_model.add_log(to_string() << "Loading settings from \"" << f << "\"...");
             auto advanced = dev.as<advanced_mode>();
-            std::ifstream t(f);
-            std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+            std::ifstream file(f);
+            if (!file.good())
+            {
+                //Failed to read file, removing it from the available ones
+                advanced_mode_settings_file_names.erase(f);
+                selected_file_preset.clear();
+                throw std::runtime_error(to_string() << "Failed to read configuration file:\n\"" << f << "\"\nRemoving it from presets.");
+            }
+            std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
             advanced.load_json(str);
-
             get_curr_advanced_controls = true;
             advanced_mode_settings_file_names.insert(f);
             selected_file_preset = f;
+
+            for (auto&& sub : subdevices)
+            {
+                //If json was loaded correctly, we want the presets combo box to show the name of the configuration file 
+                // And as a workaround, set the current preset to "custom", so that if the file is removed the preset will show "custom"
+                if (auto dpt = sub->s->as<depth_sensor>())
+                {
+                    auto itr = sub->options_metadata.find(RS2_OPTION_VISUAL_PRESET);
+                    if (itr != sub->options_metadata.end())
+                    {
+                        //TODO: Update to work with SR300 when the load json will update viewer configurations
+                        itr->second.endpoint->set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_CUSTOM);
+                        *(itr->second.invalidate_flag) = true;
+                    }
+                }
+            }
             //TODO: add support here for loading the rest of the json data (regarding viewer configurations)
         };
 
@@ -4874,7 +4895,7 @@ namespace rs2
                     }
                 }
                 if (dev.is<advanced_mode>() && sub->s->is<depth_sensor>())
-                    draw_advanced_mode_tab(viewer, window);
+                    draw_advanced_controls(viewer, window);
 
                 for (auto&& pb : sub->const_effects)
                 {
