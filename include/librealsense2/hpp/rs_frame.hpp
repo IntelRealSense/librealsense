@@ -258,6 +258,8 @@ namespace rs2
             }
         }
 
+        void keep() { rs2_keep_frame(frame_ref); }
+
         operator bool() const { return frame_ref != nullptr; }
 
         /**

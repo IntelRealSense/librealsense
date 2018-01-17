@@ -68,7 +68,6 @@ namespace Intel.RealSense
             object error;
             m_instance = new HandleRef(this, NativeMethods.rs2_create_colorizer(out error));
             queue = new FrameQueue();
-            Options[Option.FramesQueueSize].Value = 0;
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
@@ -90,7 +89,6 @@ namespace Intel.RealSense
             object error;
             m_instance = new HandleRef(this, NativeMethods.rs2_create_align(align_to, out error));
             queue = new FrameQueue();
-            Options[Option.FramesQueueSize].Value = 0;
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 

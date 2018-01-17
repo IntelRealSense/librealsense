@@ -92,7 +92,7 @@ namespace librealsense
     const char* get_string(rs2_exception_type value)
     {
 #define CASE(X) STRCASE(EXCEPTION_TYPE, X)
-        switch (value)
+        switch(value)
         {
             CASE(UNKNOWN)
                 CASE(CAMERA_DISCONNECTED)
@@ -156,6 +156,7 @@ namespace librealsense
                 CASE(DEBUG)
                 CASE(INFO)
                 CASE(OPTIONS)
+            CASE(MOTION)
                 CASE(VIDEO)
                 CASE(ROI)
                 CASE(DEPTH_SENSOR)

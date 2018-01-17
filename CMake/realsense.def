@@ -63,6 +63,7 @@ EXPORTS
     rs2_get_frame_texture_coordinates
     rs2_get_frame_points_count
     rs2_release_frame
+    rs2_keep_frame
     rs2_frame_add_ref
     rs2_pose_frame_get_pose_data
     
