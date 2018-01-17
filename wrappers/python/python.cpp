@@ -287,29 +287,33 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::frame> frame(m, "frame");
     frame.def(py::init<>())
-        //         .def(py::self = py::self) // can't overload assignment in python
-        .def(py::init<rs2::frame>())
-        .def("swap", &rs2::frame::swap, "other"_a)
-        .def("__nonzero__", &rs2::frame::operator bool)
-        .def("get_timestamp", &rs2::frame::get_timestamp, "Retrieve the time at which the frame was captured")
-        .def_property_readonly("timestamp", &rs2::frame::get_timestamp, "Retrieve the time at which the frame was captured")
-        .def("get_frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain, "Retrieve the timestamp domain.")
-        .def_property_readonly("frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain, "Retrieve the timestamp domain.")
-        .def("get_frame_metadata", &rs2::frame::get_frame_metadata, "Retrieve the current value of a single frame_metadata.", "frame_metadata"_a)
-        .def_property_readonly("frame_metadata", &rs2::frame::get_frame_metadata, "Retrieve the current value of a single frame_metadata.", "frame_metadata"_a)
-        .def("supports_frame_metadata", &rs2::frame::supports_frame_metadata, "Determine if the device allows a specific metadata to be queried.", "frame_metadata"_a)
-        .def("get_frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
-        .def_property_readonly("frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
-        .def("get_data", get_frame_data, "retrieve data from the frame handle.", py::keep_alive<0, 1>())
-        .def_property_readonly("data", get_frame_data, "retrieve data from the frame handle.", py::keep_alive<0, 1>())
-        .def("get_profile", &rs2::frame::get_profile)
-        .def_property_readonly("profile", &rs2::frame::get_profile)
-        .def(BIND_DOWNCAST(frame, frame))
-        .def(BIND_DOWNCAST(frame, points))
-        .def(BIND_DOWNCAST(frame, frameset))
-        .def(BIND_DOWNCAST(frame, video_frame))
-        .def(BIND_DOWNCAST(frame, depth_frame));
+//         .def(py::self = py::self) // can't overload assignment in python
+         .def(py::init<rs2::frame>())
+         .def("swap", &rs2::frame::swap, "other"_a)
+         .def("__nonzero__", &rs2::frame::operator bool)
+         .def("get_timestamp", &rs2::frame::get_timestamp, "Retrieve the time at which the frame was captured")
+         .def_property_readonly("timestamp", &rs2::frame::get_timestamp, "Retrieve the time at which the frame was captured")
+         .def("get_frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain, "Retrieve the timestamp domain.")
+         .def_property_readonly("frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain, "Retrieve the timestamp domain.")
+         .def("get_frame_metadata", &rs2::frame::get_frame_metadata, "Retrieve the current value of a single frame_metadata.", "frame_metadata"_a)
+         .def_property_readonly("frame_metadata", &rs2::frame::get_frame_metadata, "Retrieve the current value of a single frame_metadata.", "frame_metadata"_a)
+         .def("supports_frame_metadata", &rs2::frame::supports_frame_metadata, "Determine if the device allows a specific metadata to be queried.", "frame_metadata"_a)
+         .def("get_frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
+         .def_property_readonly("frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
+         .def("get_data", get_frame_data,"retrieve data from the frame handle.", py::keep_alive<0, 1>())
+         .def_property_readonly("data", get_frame_data, "retrieve data from the frame handle.", py::keep_alive<0, 1>())
+         .def("get_profile", &rs2::frame::get_profile)
+         .def("keep", &rs2::frame::keep)
+         .def_property_readonly("profile", &rs2::frame::get_profile)
+         .def(BIND_DOWNCAST(frame, frame))
+         .def(BIND_DOWNCAST(frame, points))
+         .def(BIND_DOWNCAST(frame, frameset))
+         .def(BIND_DOWNCAST(frame, video_frame))
+         .def(BIND_DOWNCAST(frame, depth_frame));
 
+  
+  
+  
     py::class_<rs2::video_frame, rs2::frame> video_frame(m, "video_frame");
     video_frame.def(py::init<rs2::frame>())
         .def("get_width", &rs2::video_frame::get_width, "Returns image width in pixels.")

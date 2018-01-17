@@ -820,23 +820,7 @@ namespace rs2
                 // Save depth/ir images
                 for (auto const &stream : _viewer_model.streams)
                 {
-                    if (auto frame = stream.second.texture->get_last_frame().as<video_frame>())
-                    {
-                        // Use the colorizer to get an rgb image for the depth stream
-                        if (frame.is<rs2::depth_frame>())
-                        {
-                            rs2::colorizer color_map;
-                            frame = color_map(frame);
-                        }
-
-                        std::string stream_desc = rs2_stream_to_string(frame.get_profile().stream_type());
-                        std::string filename = filename_base + "_" + stream_desc + ".png";
-                        save_to_png(filename.data(), frame.get_width(), frame.get_height(), frame.get_bytes_per_pixel(), frame.get_data(), frame.get_width() * frame.get_bytes_per_pixel());
-
-                        _viewer_model.not_model.add_notification({ to_string() << stream_desc << " snapshot was saved to " << filename,
-                            0, RS2_LOG_SEVERITY_INFO,
-                            RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
-                    }
+                    stream.second.snapshot_frame(ret, _viewer_model);
                 }
 
                 // Export 3d view in PLY format
@@ -1108,7 +1092,7 @@ namespace rs2
             csv << std::endl;
 
             // Populate metrics data using the fill-rate persistent metric as pivot
-            for (size_t i = _plots[0]->_first_idx, rec = 0; i != _plots[0]->_idx; i = (++i) % metric_plot::SIZE)
+            for (size_t i = _plots[0]->_first_idx, rec = 0; i != _plots[0]->_idx; i = (1+i) % metric_plot::SIZE)
             {
                 csv << ++rec << "," << std::fixed << std::setprecision(4) << _plots[0]->_timestamps[i] << ",";
                 for (auto&& plot : _plots)
