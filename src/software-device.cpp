@@ -54,13 +54,14 @@ namespace librealsense
 
     std::shared_ptr<stream_profile_interface> software_sensor::add_video_stream(rs2_video_stream video_stream)
     {
-        auto exist = std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
+        auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
         {
             if (profile->get_unique_id() == video_stream.uid)
             {
                 return true;
             }
-        } ) != _profiles.end();
+            return false;
+        } ) != _profiles.end());
 
         if (exist)
         {

@@ -75,7 +75,7 @@ namespace rs2
         /**
         * Add video stream to software sensor
         *
-        * \param[in] video_stream   all the parameters that requaired to defind video stream
+        * \param[in] video_stream   all the parameters that required to defind video stream
         */
         stream_profile add_video_stream(rs2_video_stream video_stream)
         {
@@ -90,7 +90,7 @@ namespace rs2
         /**
         * Inject frame into the sensor
         *
-        * \param[in] frame   all the parameters that requaired to define video frame
+        * \param[in] frame   all the parameters that required to define video frame
         */
         void on_video_frame(rs2_software_video_frame frame)
         {

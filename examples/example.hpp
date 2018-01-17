@@ -297,8 +297,8 @@ void register_glfw_callbacks(window& app, state& app_state)
 
     app.on_mouse_scroll = [&](double xoffset, double yoffset)
     {
-        app_state.offset_x += static_cast<float>(xoffset);
-        app_state.offset_y += static_cast<float>(yoffset);
+        app_state.offset_x -= static_cast<float>(xoffset);
+        app_state.offset_y -= static_cast<float>(yoffset);
     };
 
     app.on_mouse_move = [&](double x, double y)
