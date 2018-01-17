@@ -30,7 +30,7 @@ typedef enum rs2_recording_mode
     RS2_RECORDING_MODE_COUNT
 } rs2_recording_mode;
 
-/** \brief All the parameters that requaired to defind video stream*/
+/** \brief All the parameters are requaired to defind video stream*/
 typedef struct rs2_video_stream
 {
     rs2_stream type;
@@ -44,7 +44,7 @@ typedef struct rs2_video_stream
     rs2_intrinsics intrinsics;
 } rs2_video_stream;
 
-/** \brief All the parameters that requaired to define video frame*/
+/** \brief All the parameters are requaired to define video frame*/
 typedef struct rs2_software_video_frame
 {
     void* pixels;
