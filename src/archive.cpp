@@ -36,8 +36,8 @@ namespace librealsense
         return std::make_tuple(texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
     }
 
-	void points::export_to_ply(const std::string& fname, const frame_holder& texture) 
-	{
+    void points::export_to_ply(const std::string& fname, const frame_holder& texture)
+    {
         const auto vertices = get_vertices();
         const auto texcoords = get_texture_coordinates();
         std::vector<float3> new_vertices;
@@ -91,7 +91,7 @@ namespace librealsense
                 out.write(reinterpret_cast<const char*>(&z), sizeof(uint8_t));
             }
         }
-	}
+    }
 
     size_t points::get_vertex_count() const
     {
@@ -163,7 +163,7 @@ namespace librealsense
             return backbuffer;
         }
 
-        frame_interface* track_frame(frame& f)
+        frame_interface* track_frame(T& f)
         {
             std::unique_lock<std::recursive_mutex> lock(mutex);
 
@@ -186,7 +186,7 @@ namespace librealsense
                 log_frame_callback_end(f);
                 std::unique_lock<std::recursive_mutex> lock(mutex);
 
-                --published_frames_count;
+                frame->keep();
 
                 if (recycle_frames)
                 {
@@ -199,6 +199,11 @@ namespace librealsense
                 else
                     delete f;
             }
+        }
+
+        void keep_frame(frame_interface* frame)
+        {
+            --published_frames_count;
         }
 
         frame_interface* publish_frame(frame_interface* frame)
@@ -218,10 +223,14 @@ namespace librealsense
             if (new_frame)
             {
                 if (max_frames) new_frame->mark_fixed();
-                
-                ++published_frames_count;
-                *new_frame = std::move(*f);
             }
+            else
+            {
+                new_frame = new T();
+            }
+                
+            ++published_frames_count;
+            *new_frame = std::move(*f);
 
             return new_frame;
         }
@@ -361,9 +370,18 @@ void frame::release()
     }
 }
 
+void frame::keep()
+{
+    if (!_kept.exchange(true))
+    {
+        owner->keep_frame(this);
+    }
+}
+
 frame_interface* frame::publish(std::shared_ptr<archive_interface> new_owner)
 {
     owner = new_owner;
+    _kept = false;
     return owner->publish_frame(this);
 }
 

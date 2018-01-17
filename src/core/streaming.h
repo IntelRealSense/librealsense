@@ -95,6 +95,8 @@ namespace librealsense
         virtual void mark_fixed() = 0;
         virtual bool is_fixed() const = 0;
 
+        virtual void keep() = 0;
+
         virtual ~frame_interface() = default;
     };
 

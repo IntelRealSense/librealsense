@@ -840,6 +840,13 @@ void rs2_release_frame(rs2_frame* frame) BEGIN_API_CALL
 }
 NOEXCEPT_RETURN(, frame)
 
+void rs2_keep_frame(rs2_frame* frame) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame);
+    ((frame_interface*)frame)->keep();
+}
+NOEXCEPT_RETURN(, frame)
+
 const char* rs2_get_option_description(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
