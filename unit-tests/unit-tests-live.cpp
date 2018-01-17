@@ -4076,6 +4076,11 @@ TEST_CASE(#rs2_enum_type " enum test", "[live]") {                              
         std::string str;                                                                   \
         REQUIRE_NOTHROW(str = rs2_enum_type##_to_string(enum_value));                      \
         REQUIRE(str.empty() == false);                                                     \
+        std::string error = "Unknown enum value passed to " #rs2_enum_type "_to_string";   \
+        error += " (Value: " + std::to_string(i) + ")";                                    \
+        error += "\nDid you add a new value but forgot to add it to:\n"                    \
+                   " librealsense::get_string(" #rs2_enum_type ") ?";                      \
+        CAPTURE(error);                                                                    \
         REQUIRE(str != "UNKNOWN");                                                         \
     }                                                                                      \
     /* Test for false positive*/                                                           \
