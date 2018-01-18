@@ -5155,9 +5155,9 @@ namespace rs2
                 if (show_stream_selection)
                     sub->draw_stream_selection();
 
-                static const std::vector<rs2_option> drawing_order{
-                    RS2_OPTION_EMITTER_ENABLED,
-                    RS2_OPTION_ENABLE_AUTO_EXPOSURE };
+                static const std::vector<rs2_option> drawing_order = dev.is<advanced_mode>() ?
+                    std::vector<rs2_option>{                           RS2_OPTION_EMITTER_ENABLED, RS2_OPTION_ENABLE_AUTO_EXPOSURE }
+                  : std::vector<rs2_option>{ RS2_OPTION_VISUAL_PRESET, RS2_OPTION_EMITTER_ENABLED, RS2_OPTION_ENABLE_AUTO_EXPOSURE };
 
                 for (auto& opt : drawing_order)
                 {
@@ -5176,8 +5176,10 @@ namespace rs2
                         {
                             auto opt = static_cast<rs2_option>(i);
                             if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
-                            if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end() && opt != RS2_OPTION_VISUAL_PRESET)
+                            if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
+                                if (dev.is<advanced_mode>() && opt == RS2_OPTION_VISUAL_PRESET) 
+                                    continue;
                                 if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
                                 {
                                     get_curr_advanced_controls = true;
