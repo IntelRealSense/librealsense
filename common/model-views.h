@@ -19,6 +19,7 @@
 
 #include "imgui-fonts-karla.hpp"
 #include "imgui-fonts-fontawesome.hpp"
+#include "../third-party/json.hpp"
 
 #include "realsense-ui-advanced-mode.h"
 #ifdef _WIN32
@@ -94,6 +95,8 @@ namespace rs2
         static const textual_icon file_movie               { u8"\uf008" };
         static const textual_icon circle                   { u8"\uf111" };
         static const textual_icon square                   { u8"\uf0c8" };
+        static const textual_icon square_o                 { u8"\uf096" };
+        static const textual_icon check_square_o           { u8"\uf046" };
         static const textual_icon refresh                  { u8"\uf021" };
         static const textual_icon info_circle              { u8"\uf05a" };
         static const textual_icon bars                     { u8"\uf0c9" };
@@ -116,6 +119,8 @@ namespace rs2
         static const textual_icon window_maximize          { u8"\uf2d0" };
         static const textual_icon window_restore           { u8"\uf2d2" };
         static const textual_icon plus_circle              { u8"\uf055" };
+        static const textual_icon download                 { u8"\uf019" };
+        static const textual_icon upload                   { u8"\uf093" };
     }
 
     class subdevice_model;
@@ -191,7 +196,7 @@ namespace rs2
         std::string label = "";
         std::string id = "";
         subdevice_model* dev;
-
+        std::function<bool(option_model&, std::string&, notifications_model&)> custom_draw_method = nullptr;
     private:
         bool is_all_integers() const;
         bool is_enum() const;
@@ -444,7 +449,7 @@ namespace rs2
         void pause_record();
         void resume_record();
         int draw_playback_panel(ImFont* font, viewer_model& view);
-        void draw_advanced_mode_tab(viewer_model& view);
+        bool draw_advanced_controls(viewer_model& view, ux_window& window);
         void draw_controls(float panel_width, float panel_height,
             ux_window& window,
             std::string& error_message,
@@ -474,6 +479,8 @@ namespace rs2
         std::set<std::array<uint8_t, 6>> available_controllers;
         std::vector<std::pair<std::string, std::string>> infos;
         std::vector<std::string> restarting_device_info;
+        std::set<std::string> advanced_mode_settings_file_names;
+        std::string selected_file_preset;
     private:
         void draw_info_icon(const ImVec2& size);
         int draw_seek_bar();
@@ -486,6 +493,17 @@ namespace rs2
                                 std::string& error_message,
                                 viewer_model& viewer);
         void play_defaults(viewer_model& view);
+        float draw_preset_panel(float panel_width,
+            ux_window& window,
+            std::string& error_message,
+            viewer_model& viewer,
+            bool update_read_only_options);
+        bool prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text,
+            std::vector<std::string>& restarting_device_info, 
+            viewer_model& view, 
+            ux_window& window);
+        void load_viewer_configurations(const std::string& json_str);
+        void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
