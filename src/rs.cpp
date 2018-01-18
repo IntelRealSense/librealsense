@@ -176,7 +176,7 @@ void verify_version_compatibility(int api_version)
 }
 
 
-void notifications_proccessor::raise_notification(const notification n)
+void notifications_processor::raise_notification(const notification n)
 {
     _dispatcher.invoke([this, n](dispatcher::cancellable_timer ct)
     {
@@ -1524,7 +1524,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, proc)
 
 rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error) BEGIN_API_CALL
 {
-    auto block = std::make_shared<librealsense::syncer_proccess_unit>();
+    auto block = std::make_shared<librealsense::syncer_process_unit>();
 
     return new rs2_processing_block{ block };
 }

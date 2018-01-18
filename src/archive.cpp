@@ -219,7 +219,7 @@ namespace librealsense
                 return nullptr;
             }
             auto new_frame = (max_frames ? published_frames.allocate() : new T());
-            
+
             if (new_frame)
             {
                 if (max_frames) new_frame->mark_fixed();

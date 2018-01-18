@@ -254,6 +254,7 @@ namespace librealsense
         CASE(FILTER_MAGNITUDE)
         CASE(FILTER_SMOOTH_ALPHA)
         CASE(FILTER_SMOOTH_DELTA)
+        CASE(HOLES_FILL)
         CASE(STEREO_BASELINE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
@@ -516,18 +517,18 @@ namespace librealsense
         return ~oldcrc32;
     }
 
-    notifications_proccessor::notifications_proccessor()
+    notifications_processor::notifications_processor()
         :_dispatcher(10), _callback(nullptr , [](rs2_notifications_callback*) {})
     {
     }
 
-    notifications_proccessor::~notifications_proccessor()
+    notifications_processor::~notifications_processor()
     {
         _dispatcher.stop();
     }
 
 
-    void notifications_proccessor::set_callback(notifications_callback_ptr callback)
+    void notifications_processor::set_callback(notifications_callback_ptr callback)
     {
 
         _dispatcher.stop();
@@ -536,7 +537,7 @@ namespace librealsense
         _callback = std::move(callback);
         _dispatcher.start();
     }
-    notifications_callback_ptr notifications_proccessor::get_callback() const
+    notifications_callback_ptr notifications_processor::get_callback() const
     {
         return _callback;
     }

@@ -41,7 +41,7 @@ namespace librealsense
         void set_sensor(std::shared_ptr<sensor_interface> s);
 
     private:
-        friend class syncer_proccess_unit;
+        friend class syncer_process_unit;
 
         mutable std::mutex _callback_mutex;
 

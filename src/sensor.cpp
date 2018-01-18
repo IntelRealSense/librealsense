@@ -17,7 +17,7 @@ namespace librealsense
     sensor_base::sensor_base(std::string name, device* dev)
         : _is_streaming(false),
           _is_opened(false),
-          _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
+          _notifications_processor(std::shared_ptr<notifications_processor>(new notifications_processor())),
           _on_before_frame_callback(nullptr),
           _metadata_parsers(std::make_shared<metadata_parser_map>()),
           _on_open(nullptr),
@@ -54,12 +54,12 @@ namespace librealsense
             auto& opt = get_option(RS2_OPTION_ERROR_POLLING_ENABLED);
             opt.set(1.0f);
         }
-        _notifications_proccessor->set_callback(std::move(callback));
+        _notifications_processor->set_callback(std::move(callback));
     }
 	
 	notifications_callback_ptr sensor_base::get_notifications_callback() const
     {
-        return _notifications_proccessor->get_callback();
+        return _notifications_processor->get_callback();
     }
 	
     int sensor_base::register_before_streaming_changes_callback(std::function<void(bool)> callback)
@@ -86,9 +86,9 @@ namespace librealsense
     {
         return _source.set_callback(callback);
     }
-    std::shared_ptr<notifications_proccessor> sensor_base::get_notifications_proccessor()
+    std::shared_ptr<notifications_processor> sensor_base::get_notifications_processor()
     {
-        return _notifications_proccessor;
+        return _notifications_processor;
     }
 
     void sensor_base::raise_on_before_streaming_changes(bool streaming)
@@ -509,7 +509,7 @@ namespace librealsense
         try {
             _device->stream_on([&](const notification& n)
             {
-                _notifications_proccessor->raise_notification(n);
+                _notifications_processor->raise_notification(n);
             });
         }
         catch (...)

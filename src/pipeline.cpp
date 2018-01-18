@@ -473,20 +473,20 @@ namespace librealsense
             unique_ids.push_back(s->get_unique_id());
         }
 
-        _syncer = std::unique_ptr<syncer_proccess_unit>(new syncer_proccess_unit());
-        _pipeline_proccess = std::unique_ptr<pipeline_processing_block>(new pipeline_processing_block(unique_ids));
+        _syncer = std::unique_ptr<syncer_process_unit>(new syncer_process_unit());
+        _pipeline_process = std::unique_ptr<pipeline_processing_block>(new pipeline_processing_block(unique_ids));
 
-        auto pipeline_proccess_callback = [&](frame_holder fref)
+        auto pipeline_process_callback = [&](frame_holder fref)
         {
-            _pipeline_proccess->invoke(std::move(fref));
+            _pipeline_process->invoke(std::move(fref));
         };
 
-        frame_callback_ptr to_pipeline_proccess = {
-            new internal_frame_callback<decltype(pipeline_proccess_callback)>(pipeline_proccess_callback),
+        frame_callback_ptr to_pipeline_process = {
+            new internal_frame_callback<decltype(pipeline_process_callback)>(pipeline_process_callback),
             [](rs2_frame_callback* p) { p->release(); }
         };
 
-        _syncer->set_output_callback(to_pipeline_proccess);
+        _syncer->set_output_callback(to_pipeline_process);
 
         auto to_syncer = [&](frame_holder fref)
         {
@@ -529,7 +529,7 @@ namespace librealsense
         }
         _active_profile.reset();
         _syncer.reset();
-        _pipeline_proccess.reset();
+        _pipeline_process.reset();
         _prev_conf.reset();
     }
     frame_holder pipeline::wait_for_frames(unsigned int timeout_ms)
@@ -541,7 +541,7 @@ namespace librealsense
         }
 
         frame_holder f;
-        if (_pipeline_proccess->dequeue(&f, timeout_ms))
+        if (_pipeline_process->dequeue(&f, timeout_ms))
         {
             return f;
         }
@@ -555,7 +555,7 @@ namespace librealsense
                 unsafe_stop();
                 unsafe_start(prev_conf);
 
-                if (_pipeline_proccess->dequeue(&f, timeout_ms))
+                if (_pipeline_process->dequeue(&f, timeout_ms))
                 {
                     return f;
                 }
@@ -578,7 +578,7 @@ namespace librealsense
             throw librealsense::wrong_api_call_sequence_exception("poll_for_frames cannot be called before start()");
         }
 
-        if (_pipeline_proccess->try_dequeue(frame))
+        if (_pipeline_process->try_dequeue(frame))
         {
             return true;
         }

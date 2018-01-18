@@ -67,11 +67,11 @@ int main(int argc, char * argv[]) try
         }
 
         //Get processed aligned frame
-        auto proccessed = align.proccess(frameset);
+        auto processed = align.process(frameset);
 
         // Trying to get both other and aligned depth frames
-        rs2::video_frame other_frame = proccessed.first(align_to);
-        rs2::depth_frame aligned_depth_frame = proccessed.get_depth_frame();
+        rs2::video_frame other_frame = processed.first(align_to);
+        rs2::depth_frame aligned_depth_frame = processed.get_depth_frame();
 
         //If one of them is unavailable, continue iteration
         if (!aligned_depth_frame || !other_frame)
