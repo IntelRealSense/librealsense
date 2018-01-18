@@ -4749,6 +4749,7 @@ namespace rs2
                 if (sub->draw_option(RS2_OPTION_VISUAL_PRESET, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
                 {
                     get_curr_advanced_controls = true;
+                    selected_file_preset.clear();
                 }
             }
         }
@@ -5164,6 +5165,7 @@ namespace rs2
                     if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
                     {
                         get_curr_advanced_controls = true;
+                        selected_file_preset.clear();
                     }
                 }
 
@@ -5183,6 +5185,7 @@ namespace rs2
                                 if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
                                 {
                                     get_curr_advanced_controls = true;
+                                    selected_file_preset.clear();
                                 }
                             }
                         }
@@ -5195,6 +5198,7 @@ namespace rs2
                     if (draw_advanced_controls(viewer, window))
                     {
                         sub->options_invalidated = true;
+                        selected_file_preset.clear();
                     }
                 }
 
