@@ -69,8 +69,8 @@ namespace librealsense
         device_hub _hub;
         std::shared_ptr<pipeline_profile> _active_profile;
         frame_callback_ptr _callback;
-        std::unique_ptr<syncer_proccess_unit> _syncer;
-        std::unique_ptr<pipeline_processing_block> _pipeline_proccess;
+        std::unique_ptr<syncer_process_unit> _syncer;
+        std::unique_ptr<pipeline_processing_block> _pipeline_process;
         std::shared_ptr<pipeline_config> _prev_conf;
     };
 

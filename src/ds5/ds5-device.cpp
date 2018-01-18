@@ -407,7 +407,7 @@ namespace librealsense
             _polling_error_handler = std::unique_ptr<polling_error_handler>(
                 new polling_error_handler(1000,
                     std::move(error_control),
-                    depth_ep.get_notifications_proccessor(),
+                    depth_ep.get_notifications_processor(),
 
                     std::unique_ptr<notification_decoder>(new ds5_notification_decoder())));
 

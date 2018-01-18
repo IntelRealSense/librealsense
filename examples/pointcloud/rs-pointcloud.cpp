@@ -7,15 +7,15 @@
 #include <algorithm>            // std::min, std::max
 
 // Helper functions
-void register_glfw_callbacks(window& app, state& app_state);
-void draw_pointcloud(window& app, state& app_state, rs2::points& points);
+void register_glfw_callbacks(window& app, glfw_state& app_state);
+void draw_pointcloud(window& app, glfw_state& app_state, rs2::points& points);
 
 int main(int argc, char * argv[]) try
 {
     // Create a simple OpenGL window for rendering:
     window app(1280, 720, "RealSense Pointcloud Example");
     // Construct an object to manage view state
-    state app_state;
+    glfw_state app_state;
     // register callbacks to allow manipulation of the pointcloud
     register_glfw_callbacks(app, app_state);
 

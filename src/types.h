@@ -868,11 +868,11 @@ namespace librealsense
         virtual notification decode(int value) = 0;
     };
 
-    class notifications_proccessor
+    class notifications_processor
     {
     public:
-        notifications_proccessor();
-        ~notifications_proccessor();
+        notifications_processor();
+        ~notifications_processor();
 
         void set_callback(notifications_callback_ptr callback);
         notifications_callback_ptr get_callback() const;

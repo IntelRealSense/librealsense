@@ -205,13 +205,21 @@ namespace rs2
         frame(rs2_frame* frame_ref) : frame_ref(frame_ref)
         {
 #ifdef _DEBUG
-            rs2_error* e = nullptr;
-            auto r = rs2_get_frame_number(frame_ref, &e);
-            if (!e)
-                frame_number = r;
-            auto s = rs2_get_frame_stream_profile(frame_ref, &e);
-            if (!e)
-                profile = stream_profile(s);
+            if (frame_ref)
+            {
+                rs2_error* e = nullptr;
+                auto r = rs2_get_frame_number(frame_ref, &e);
+                if (!e)
+                    frame_number = r;
+                auto s = rs2_get_frame_stream_profile(frame_ref, &e);
+                if (!e)
+                    profile = stream_profile(s);
+            }
+            else
+            {
+                frame_number = 0;
+                profile = stream_profile();
+            }
 #endif
         }
 

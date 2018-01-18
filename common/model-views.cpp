@@ -358,7 +358,7 @@ namespace rs2
                     value = bool_value ? 1.0f : 0.0f;
                     try
                     {
-                        model.add_log(to_string() << "Setting " << opt << " to " 
+                        model.add_log(to_string() << "Setting " << opt << " to "
                             << value << " (" << (bool_value? "ON" : "OFF") << ")");
                         endpoint->set_option(opt, value);
                         *invalidate_flag = true;
@@ -478,7 +478,7 @@ namespace rs2
                             static_cast<int>(labels.size())))
                         {
                             value = range.min + range.step * selected;
-                            model.add_log(to_string() << "Setting " << opt << " to " 
+                            model.add_log(to_string() << "Setting " << opt << " to "
                                 << value << " (" << labels[selected] << ")");
                             endpoint->set_option(opt, value);
                             *invalidate_flag = true;
@@ -714,7 +714,7 @@ namespace rs2
             auto decimate = std::make_shared<rs2::decimation_filter>();
             decimation_filter = std::make_shared<processing_block_model>(
                 this, "Decimation Filter", decimate,
-                [=](rs2::frame f) { return decimate->proccess(f); },
+                [=](rs2::frame f) { return decimate->process(f); },
                 error_message);
             decimation_filter->enabled = true;
             post_processing.push_back(decimation_filter);
@@ -722,7 +722,7 @@ namespace rs2
             auto depth_2_disparity = std::make_shared<rs2::disparity_transform>();
             depth_to_disparity = std::make_shared<processing_block_model>(
                 this, "Depth->Disparity", depth_2_disparity,
-                [=](rs2::frame f) { return depth_2_disparity->proccess(f); }, error_message);
+                [=](rs2::frame f) { return depth_2_disparity->process(f); }, error_message);
             if (s->is<depth_stereo_sensor>())
             {
                 depth_to_disparity->enabled = true;
@@ -732,7 +732,7 @@ namespace rs2
             auto spatial = std::make_shared<rs2::spatial_filter>();
             spatial_filter = std::make_shared<processing_block_model>(
                 this, "Spatial Filter", spatial,
-                [=](rs2::frame f) { return spatial->proccess(f); },
+                [=](rs2::frame f) { return spatial->process(f); },
                 error_message);
             spatial_filter->enabled = true;
             post_processing.push_back(spatial_filter);
@@ -740,14 +740,14 @@ namespace rs2
             auto temporal = std::make_shared<rs2::temporal_filter>();
             temporal_filter = std::make_shared<processing_block_model>(
                 this, "Temporal Filter", temporal,
-                [=](rs2::frame f) { return temporal->proccess(f); }, error_message);
+                [=](rs2::frame f) { return temporal->process(f); }, error_message);
             temporal_filter->enabled = true;
             post_processing.push_back(temporal_filter);
 
             auto disparity_2_depth = std::make_shared<rs2::disparity_transform>(false);
             disparity_to_depth = std::make_shared<processing_block_model>(
                 this, "Disparity->Depth", disparity_2_depth,
-                [=](rs2::frame f) { return disparity_2_depth->proccess(f); }, error_message);
+                [=](rs2::frame f) { return disparity_2_depth->process(f); }, error_message);
             disparity_to_depth->enabled = s->is<depth_stereo_sensor>();
             if (s->is<depth_stereo_sensor>())
             {
@@ -1739,6 +1739,7 @@ namespace rs2
                 s.second.texture->get_last_frame() &&
                 (s.second.profile.stream_type() == RS2_STREAM_COLOR ||
                  s.second.profile.stream_type() == RS2_STREAM_INFRARED ||
+                 s.second.profile.stream_type() == RS2_STREAM_DEPTH ||
                  s.second.profile.stream_type() == RS2_STREAM_FISHEYE))
             {
                 if (selected_tex_source_uid == -1 && selected_depth_source_uid != -1)
@@ -2849,6 +2850,7 @@ namespace rs2
 
         auto uid = f.get_profile().unique_id();
         auto new_uid = filtered.get_profile().unique_id();
+        viewer.streams_origin[uid] = new_uid;
         viewer.streams_origin[new_uid] = uid;
 
         if(viewer.is_3d_view)
@@ -2866,7 +2868,7 @@ namespace rs2
         return res;
     }
 
-    void post_processing_filters::proccess(rs2::frame f, const rs2::frame_source& source)
+    void post_processing_filters::process(rs2::frame f, const rs2::frame_source& source)
     {
         points p;
         std::vector<frame> results;
@@ -3391,15 +3393,12 @@ namespace rs2
             // Non-linear correspondence customized for non-flat surface exploration
             glPointSize(std::sqrt(viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width()));
 
-            if (selected_tex_source_uid >= 0)
-            {
-                auto tex = last_texture->get_gl_handle();
-                glBindTexture(GL_TEXTURE_2D, tex);
-                glEnable(GL_TEXTURE_2D);
+            auto tex = last_texture->get_gl_handle();
+            glBindTexture(GL_TEXTURE_2D, tex);
+            glEnable(GL_TEXTURE_2D);
 
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
-            }
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
 
             //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
 

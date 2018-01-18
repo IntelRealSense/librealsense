@@ -62,7 +62,7 @@ public:
         return color_frame;
     }
 
-    synthetic_frame& get_synthetic_depth(state& app_state)
+    synthetic_frame& get_synthetic_depth(glfw_state& app_state)
     {
         draw_text(50, 50, "This point-cloud is generated from a synthetic device:");
 
@@ -116,7 +116,7 @@ private:
 int main(int argc, char * argv[]) try
 {
     window app(1280, 1500, "RealSense Capture Example");
-    state app_state;
+    glfw_state app_state;
     register_glfw_callbacks(app, app_state);
     rs2::colorizer color_map; // Save colorized depth for preview
    

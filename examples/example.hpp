@@ -212,8 +212,8 @@ private:
 };
 
 // Struct for managing rotation of pointcloud view
-struct state {
-    state() : yaw(15.0), pitch(15.0), last_x(0.0), last_y(0.0),
+struct glfw_state {
+    glfw_state() : yaw(15.0), pitch(15.0), last_x(0.0), last_y(0.0),
         ml(false), offset_x(2.f), offset_y(2.f), tex() {}
     double yaw;
     double pitch;
@@ -227,7 +227,7 @@ struct state {
 
 
 // Handles all the OpenGL calls needed to display the point cloud
-void draw_pointcloud(window& app, state& app_state, rs2::points& points)
+void draw_pointcloud(window& app, glfw_state& app_state, rs2::points& points)
 {
     if (!points)
         return;
@@ -288,7 +288,7 @@ void draw_pointcloud(window& app, state& app_state, rs2::points& points)
 }
 
 // Registers the state variable and callbacks to allow mouse control of the pointcloud
-void register_glfw_callbacks(window& app, state& app_state)
+void register_glfw_callbacks(window& app, glfw_state& app_state)
 {
     app.on_left_mouse = [&](bool pressed)
     {
