@@ -26,6 +26,7 @@ namespace librealsense
 
     void pipeline_processing_block::handle_frame(frame_holder frame, synthetic_source_interface* source)
     {
+        std::lock_guard<std::mutex> lock(_mutex);
         auto comp = dynamic_cast<composite_frame*>(frame.frame);
         if (comp)
         {

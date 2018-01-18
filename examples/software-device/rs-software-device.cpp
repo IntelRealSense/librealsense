@@ -24,11 +24,10 @@ struct synthetic_frame
     std::vector<uint8_t> frame;
 };
 
-class application_data
+class custom_frame_source
 {
 public:
-    application_data()
-        :app(1280, 1500, "RealSense Capture Example")
+    custom_frame_source()
     {
         depth_frame.x = W;
         depth_frame.y = H;
@@ -56,7 +55,6 @@ public:
                 }
             }
         color_frame.frame = std::move(pixels_color);
-        register_glfw_callbacks(app, app_state);
     }
 
     synthetic_frame& get_synthetic_texture()
@@ -64,7 +62,7 @@ public:
         return color_frame;
     }
 
-    synthetic_frame& get_synthetic_depth()
+    synthetic_frame& get_synthetic_depth(state& app_state)
     {
         draw_text(50, 50, "This point-cloud is generated from a synthetic device:");
 
@@ -79,7 +77,7 @@ public:
             {
                 for (int j = 0; j < depth_frame.x; j++)
                 {
-                    auto d = 2 + 0.2 * 0.5 * (1 + sin(wave_base + j / 50.f));
+                    auto d = 2 + 0.1 * (1 + sin(wave_base + j / 50.f));
                     ((uint16_t*)depth_frame.frame.data())[i*depth_frame.x + j] = (int)(d * 0xff);
                 }
             }
@@ -107,25 +105,26 @@ public:
         return intrinsics;
     }
 
+private:
     synthetic_frame depth_frame;
     synthetic_frame color_frame;
 
     std::chrono::high_resolution_clock::time_point last;
     float wave_base = 0.f;
-    state app_state;
-    window app;
-
 };
 
 int main(int argc, char * argv[]) try
 {
+    window app(1280, 1500, "RealSense Capture Example");
+    state app_state;
+    register_glfw_callbacks(app, app_state);
     rs2::colorizer color_map; // Save colorized depth for preview
    
     rs2::pointcloud pc;
     rs2::points points;
     int frame_number = 0;
     
-    application_data app_data;
+    custom_frame_source app_data;
 
     auto texture = app_data.get_synthetic_texture();
 
@@ -160,9 +159,9 @@ int main(int argc, char * argv[]) try
 
     depth_stream.register_extrinsics_to(color_stream, { { 1,0,0,0,1,0,0,0,1 },{ 0,0,0 } });
 
-    while (app_data.app) // Application still alive?
+    while (app) // Application still alive?
     {
-        synthetic_frame depth_frame = app_data.get_synthetic_depth();
+        synthetic_frame depth_frame = app_data.get_synthetic_depth(app_state);
 
         depth_sensor.on_video_frame({ depth_frame.frame.data(), // Frame pixels from capture API
             [](void*) {}, // Custom deleter (if required)
@@ -190,9 +189,9 @@ int main(int argc, char * argv[]) try
             pc.map_to(color);
 
             // Upload the color frame to OpenGL
-            app_data.app_state.tex.upload(color);
+            app_state.tex.upload(color);
         }
-        draw_pointcloud(app_data.app, app_data.app_state, points);
+        draw_pointcloud(app, app_state, points);
     }
 
     return EXIT_SUCCESS;
