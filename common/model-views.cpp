@@ -4473,28 +4473,27 @@ namespace rs2
                 throw std::runtime_error(to_string() << "Unsupported stream-ir-format: " << formatstr);
             }
         }
-        try
-        {
-            std::string wstr = j["stream-width"];
-            std::string hstr = j["stream-height"];
-            std::string fstr = j["stream-fps"];
-            int width = std::stoi(wstr);
-            int height = std::stoi(hstr);
-            int fps = std::stoi(fstr);
-            for (auto& kvp : requrested_streams)
-            {
-                kvp.second.width = width;
-                kvp.second.height = height;
-                kvp.second.fps = fps;
-            }
-        }
-        catch (const std::exception& e)
-        {
-            throw std::runtime_error(to_string() << "Error parsing json: " << e.what());
-        }
-
         if (!requrested_streams.empty())
         {
+            try
+            {
+                std::string wstr = j["stream-width"];
+                std::string hstr = j["stream-height"];
+                std::string fstr = j["stream-fps"];
+                int width = std::stoi(wstr);
+                int height = std::stoi(hstr);
+                int fps = std::stoi(fstr);
+                for (auto& kvp : requrested_streams)
+                {
+                    kvp.second.width = width;
+                    kvp.second.height = height;
+                    kvp.second.fps = fps;
+                }
+            }
+            catch (const std::exception& e)
+            {
+                throw std::runtime_error(to_string() << "Error parsing streams from JSON: " << e.what());
+            }
             //Disable every stream
             for (auto&& sub : subdevices)
                 for (auto& s : sub->stream_enabled) 
