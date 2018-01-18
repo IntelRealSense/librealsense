@@ -47,7 +47,7 @@ namespace Intel.RealSense
 
     public enum Extension
     {
-        Unknown = 0,
+        Unknown = 0,            
         Debug = 1,
         Info = 2,
         Motion = 3,
@@ -63,7 +63,7 @@ namespace Intel.RealSense
         AdvancedMode = 13,
         Record = 14,
         VideoProfile = 15,
-        Playback = 16,
+        Playback = 16,        
     }
 
     public enum CameraInfo
@@ -172,6 +172,8 @@ namespace Intel.RealSense
         FilterMagnitude = 36,
         FilterSmoothAlpha = 37,
         FilterSmoothDelta = 38,
+        HolesFill = 39,
+        StereoBaseline = 40,
     }
 
     public enum Sr300VisualPreset

@@ -22,12 +22,12 @@ namespace librealsense
         #define CASE(X) STRCASE(RS400_VISUAL_PRESET, X)
         switch (value)
         {
+        CASE(CUSTOM)
         CASE(HAND)
-        CASE(SHORT_RANGE)
         CASE(HIGH_ACCURACY)
         CASE(HIGH_DENSITY)
         CASE(MEDIUM_DENSITY)
-        CASE(CUSTOM)
+        CASE(DEFAULT)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE

@@ -5,6 +5,351 @@
 
 namespace librealsense
 {
+    void default_400(preset& p)
+    {
+        p.depth_controls.deepSeaMedianThreshold = 500;
+        p.depth_controls.deepSeaNeighborThreshold = 7;
+        p.depth_controls.deepSeaSecondPeakThreshold = 325;
+        p.depth_controls.lrAgreeThreshold = 24;
+        p.depth_controls.minusDecrement = 10;
+        p.depth_controls.plusIncrement = 10;
+        p.depth_controls.scoreThreshA = 1;
+        p.depth_controls.scoreThreshB = 2047;
+        p.depth_controls.textureCountThreshold = 0;
+        p.depth_controls.textureDifferenceThreshold = 0;
+        p.rsm.diffThresh = 4.f;
+        p.rsm.removeThresh = 63;
+        p.rsm.rsmBypass = 0;
+        p.rsm.sloRauDiffThresh = 1.f;
+        p.rsvc.minEast = 1;
+        p.rsvc.minNorth = 1;
+        p.rsvc.minNSsum = 3;
+        p.rsvc.minSouth = 1;
+        p.rsvc.minWest = 1;
+        p.rsvc.minWEsum = 3;
+        p.rsvc.uShrink = 3;
+        p.rsvc.vShrink = 1;
+        p.color_control.disableRAUColor = 0;
+        p.color_control.disableSADColor = 0;
+        p.color_control.disableSADNormalize = 0;
+        p.color_control.disableSLOLeftColor = 0;
+        p.color_control.disableSLORightColor = 0;
+        p.rctc.rauDiffThresholdBlue = 51;
+        p.rctc.rauDiffThresholdGreen = 51;
+        p.rctc.rauDiffThresholdRed = 51;
+        p.sctc.diffThresholdBlue = 72;
+        p.sctc.diffThresholdGreen = 72;
+        p.sctc.diffThresholdRed = 72;
+        p.spc.sloK1Penalty = 60;
+        p.spc.sloK1PenaltyMod1 = 105;
+        p.spc.sloK1PenaltyMod2 = 70;
+        p.spc.sloK2Penalty = 342;
+        p.spc.sloK2PenaltyMod1 = 190;
+        p.spc.sloK2PenaltyMod2 = 130;
+        p.hdad.lambdaAD = 800.f;
+        p.hdad.lambdaCensus = 26.f;
+        p.cc.colorCorrection1 = 0.4620000123978f;
+        p.cc.colorCorrection2 = 0.5400000214577f;
+        p.cc.colorCorrection3 = 0.5400000214577f;
+        p.cc.colorCorrection4 = 0.2080000042915f;
+        p.cc.colorCorrection5 = -0.3319999873638f;
+        p.cc.colorCorrection6 = -0.2129999995232f;
+        p.cc.colorCorrection7 = -0.2129999995232f;
+        p.cc.colorCorrection8 = 0.6850000023842f;
+        p.cc.colorCorrection9 = 0.930999994278f;
+        p.cc.colorCorrection10 = -0.5540000200272f;
+        p.cc.colorCorrection11 = -0.5540000200272f;
+        p.cc.colorCorrection12 = 0.04600000008941f;
+        p.depth_table.depthClampMax = 65536;
+        p.depth_table.depthClampMin = 0;
+        p.depth_table.depthUnits = 1000;
+        p.depth_table.disparityShift = 0;
+        p.ae.meanIntensitySetPoint = 400;
+        p.census.uDiameter = 9;
+        p.census.vDiameter = 9;
+        p.depth_exposure.exposure = 33000.f;
+        p.depth_auto_exposure.auto_exposure = 1;
+        p.depth_gain.gain = 16.f;
+    }
+
+
+    void default_405(preset& p)
+    {
+        p.depth_controls.deepSeaMedianThreshold = 500;
+        p.depth_controls.deepSeaNeighborThreshold = 7;
+        p.depth_controls.deepSeaSecondPeakThreshold = 325;
+        p.depth_controls.lrAgreeThreshold = 24;
+        p.depth_controls.minusDecrement = 10;
+        p.depth_controls.plusIncrement = 10;
+        p.depth_controls.scoreThreshA = 1;
+        p.depth_controls.scoreThreshB = 2047;
+        p.depth_controls.textureCountThreshold = 0;
+        p.depth_controls.textureDifferenceThreshold = 0;
+        p.rsm.diffThresh = 4.f;
+        p.rsm.removeThresh = 63;
+        p.rsm.rsmBypass = 0;
+        p.rsm.sloRauDiffThresh = 1.f;
+        p.rsvc.minEast = 1;
+        p.rsvc.minNorth = 1;
+        p.rsvc.minNSsum = 3;
+        p.rsvc.minSouth = 1;
+        p.rsvc.minWest = 1;
+        p.rsvc.minWEsum = 3;
+        p.rsvc.uShrink = 3;
+        p.rsvc.vShrink = 1;
+        p.color_control.disableRAUColor = 0;
+        p.color_control.disableSADColor = 0;
+        p.color_control.disableSADNormalize = 0;
+        p.color_control.disableSLOLeftColor = 0;
+        p.color_control.disableSLORightColor = 0;
+        p.rctc.rauDiffThresholdBlue = 51;
+        p.rctc.rauDiffThresholdGreen = 51;
+        p.rctc.rauDiffThresholdRed = 51;
+        p.sctc.diffThresholdBlue = 72;
+        p.sctc.diffThresholdGreen = 72;
+        p.sctc.diffThresholdRed = 72;
+        p.spc.sloK1Penalty = 60;
+        p.spc.sloK1PenaltyMod1 = 105;
+        p.spc.sloK1PenaltyMod2 = 70;
+        p.spc.sloK2Penalty = 342;
+        p.spc.sloK2PenaltyMod1 = 190;
+        p.spc.sloK2PenaltyMod2 = 130;
+        p.hdad.lambdaAD = 800.f;
+        p.hdad.lambdaCensus = 26.f;
+        p.cc.colorCorrection1 = 0.4620000123978f;
+        p.cc.colorCorrection2 = 0.5400000214577f;
+        p.cc.colorCorrection3 = 0.5400000214577f;
+        p.cc.colorCorrection4 = 0.2080000042915f;
+        p.cc.colorCorrection5 = -0.3319999873638f;
+        p.cc.colorCorrection6 = -0.2129999995232f;
+        p.cc.colorCorrection7 = -0.2129999995232f;
+        p.cc.colorCorrection8 = 0.6850000023842f;
+        p.cc.colorCorrection9 = 0.930999994278f;
+        p.cc.colorCorrection10 = -0.5540000200272f;
+        p.cc.colorCorrection11 = -0.5540000200272f;
+        p.cc.colorCorrection12 = 0.04600000008941f;
+        p.depth_table.depthClampMax = 65536;
+        p.depth_table.depthClampMin = 0;
+        p.depth_table.depthUnits = 1000;
+        p.depth_table.disparityShift = 0;
+        p.ae.meanIntensitySetPoint = 400;
+        p.census.uDiameter = 9;
+        p.census.vDiameter = 9;
+        p.laser_state.laser_state = 1;
+        p.laser_power.laser_power = 150.f;
+        p.depth_exposure.exposure = 33000.f;
+        p.depth_auto_exposure.auto_exposure = 1;
+        p.depth_gain.gain = 16.f;
+    }
+
+
+    void default_410(preset& p)
+    {
+        p.depth_controls.deepSeaMedianThreshold = 500;
+        p.depth_controls.deepSeaNeighborThreshold = 7;
+        p.depth_controls.deepSeaSecondPeakThreshold = 325;
+        p.depth_controls.lrAgreeThreshold = 24;
+        p.depth_controls.minusDecrement = 10;
+        p.depth_controls.plusIncrement = 10;
+        p.depth_controls.scoreThreshA = 1;
+        p.depth_controls.scoreThreshB = 2047;
+        p.depth_controls.textureCountThreshold = 0;
+        p.depth_controls.textureDifferenceThreshold = 0;
+        p.rsm.diffThresh = 4.f;
+        p.rsm.removeThresh = 63;
+        p.rsm.rsmBypass = 0;
+        p.rsm.sloRauDiffThresh = 1.f;
+        p.rsvc.minEast = 1;
+        p.rsvc.minNorth = 1;
+        p.rsvc.minNSsum = 3;
+        p.rsvc.minSouth = 1;
+        p.rsvc.minWest = 1;
+        p.rsvc.minWEsum = 3;
+        p.rsvc.uShrink = 3;
+        p.rsvc.vShrink = 1;
+        p.color_control.disableRAUColor = 0;
+        p.color_control.disableSADColor = 0;
+        p.color_control.disableSADNormalize = 0;
+        p.color_control.disableSLOLeftColor = 0;
+        p.color_control.disableSLORightColor = 0;
+        p.rctc.rauDiffThresholdBlue = 51;
+        p.rctc.rauDiffThresholdGreen = 51;
+        p.rctc.rauDiffThresholdRed = 51;
+        p.sctc.diffThresholdBlue = 72;
+        p.sctc.diffThresholdGreen = 72;
+        p.sctc.diffThresholdRed = 72;
+        p.spc.sloK1Penalty = 60;
+        p.spc.sloK1PenaltyMod1 = 105;
+        p.spc.sloK1PenaltyMod2 = 70;
+        p.spc.sloK2Penalty = 342;
+        p.spc.sloK2PenaltyMod1 = 190;
+        p.spc.sloK2PenaltyMod2 = 130;
+        p.hdad.lambdaAD = 800.f;
+        p.hdad.lambdaCensus = 26.f;
+        p.cc.colorCorrection1 = 0.4620000123978f;
+        p.cc.colorCorrection2 = 0.5400000214577f;
+        p.cc.colorCorrection3 = 0.5400000214577f;
+        p.cc.colorCorrection4 = 0.2080000042915f;
+        p.cc.colorCorrection5 = -0.3319999873638f;
+        p.cc.colorCorrection6 = -0.2129999995232f;
+        p.cc.colorCorrection7 = -0.2129999995232f;
+        p.cc.colorCorrection8 = 0.6850000023842f;
+        p.cc.colorCorrection9 = 0.930999994278f;
+        p.cc.colorCorrection10 = -0.5540000200272f;
+        p.cc.colorCorrection11 = -0.5540000200272f;
+        p.cc.colorCorrection12 = 0.04600000008941f;
+        p.depth_table.depthClampMax = 65536;
+        p.depth_table.depthClampMin = 0;
+        p.depth_table.depthUnits = 1000;
+        p.depth_table.disparityShift = 0;
+        p.ae.meanIntensitySetPoint = 400;
+        p.census.uDiameter = 9;
+        p.census.vDiameter = 9;
+        p.laser_state.laser_state = 1;
+        p.laser_power.laser_power = 150.f;
+        p.depth_exposure.exposure = 33000.f;
+        p.depth_auto_exposure.auto_exposure = 1;
+        p.depth_gain.gain = 16.f;
+    }
+
+
+    void default_420(preset& p)
+    {
+        p.depth_controls.deepSeaMedianThreshold = 500;
+        p.depth_controls.deepSeaNeighborThreshold = 7;
+        p.depth_controls.deepSeaSecondPeakThreshold = 325;
+        p.depth_controls.lrAgreeThreshold = 24;
+        p.depth_controls.minusDecrement = 10;
+        p.depth_controls.plusIncrement = 10;
+        p.depth_controls.scoreThreshA = 1;
+        p.depth_controls.scoreThreshB = 2047;
+        p.depth_controls.textureCountThreshold = 0;
+        p.depth_controls.textureDifferenceThreshold = 0;
+        p.rsm.diffThresh = 4.f;
+        p.rsm.removeThresh = 63;
+        p.rsm.rsmBypass = 0;
+        p.rsm.sloRauDiffThresh = 1.f;
+        p.rsvc.minEast = 1;
+        p.rsvc.minNorth = 1;
+        p.rsvc.minNSsum = 3;
+        p.rsvc.minSouth = 1;
+        p.rsvc.minWest = 1;
+        p.rsvc.minWEsum = 3;
+        p.rsvc.uShrink = 3;
+        p.rsvc.vShrink = 1;
+        p.color_control.disableRAUColor = 0;
+        p.color_control.disableSADColor = 0;
+        p.color_control.disableSADNormalize = 0;
+        p.color_control.disableSLOLeftColor = 0;
+        p.color_control.disableSLORightColor = 0;
+        p.rctc.rauDiffThresholdBlue = 51;
+        p.rctc.rauDiffThresholdGreen = 51;
+        p.rctc.rauDiffThresholdRed = 51;
+        p.sctc.diffThresholdBlue = 72;
+        p.sctc.diffThresholdGreen = 72;
+        p.sctc.diffThresholdRed = 72;
+        p.spc.sloK1Penalty = 60;
+        p.spc.sloK1PenaltyMod1 = 105;
+        p.spc.sloK1PenaltyMod2 = 70;
+        p.spc.sloK2Penalty = 342;
+        p.spc.sloK2PenaltyMod1 = 190;
+        p.spc.sloK2PenaltyMod2 = 130;
+        p.hdad.lambdaAD = 800.f;
+        p.hdad.lambdaCensus = 26.f;
+        p.cc.colorCorrection1 = 0.2989999949932f;
+        p.cc.colorCorrection2 = 0.2939999997616f;
+        p.cc.colorCorrection3 = 0.2939999997616f;
+        p.cc.colorCorrection4 = 0.1140000000596f;
+        p.cc.colorCorrection5 = 0.f;
+        p.cc.colorCorrection6 = 0.f;
+        p.cc.colorCorrection7 = 0.f;
+        p.cc.colorCorrection8 = 0.f;
+        p.cc.colorCorrection9 = 0.f;
+        p.cc.colorCorrection10 = 0.f;
+        p.cc.colorCorrection11 = 0.f;
+        p.cc.colorCorrection12 = 0.f;
+        p.depth_table.depthClampMax = 65536;
+        p.depth_table.depthClampMin = 0;
+        p.depth_table.depthUnits = 1000;
+        p.depth_table.disparityShift = 0;
+        p.ae.meanIntensitySetPoint = 1536;
+        p.census.uDiameter = 9;
+        p.census.vDiameter = 9;
+        p.depth_exposure.exposure = 8500.f;
+        p.depth_auto_exposure.auto_exposure = 1;
+        p.depth_gain.gain = 16.f;
+    }
+
+
+    void default_430(preset& p)
+    {
+        p.depth_controls.deepSeaMedianThreshold = 500;
+        p.depth_controls.deepSeaNeighborThreshold = 7;
+        p.depth_controls.deepSeaSecondPeakThreshold = 325;
+        p.depth_controls.lrAgreeThreshold = 24;
+        p.depth_controls.minusDecrement = 10;
+        p.depth_controls.plusIncrement = 10;
+        p.depth_controls.scoreThreshA = 1;
+        p.depth_controls.scoreThreshB = 2047;
+        p.depth_controls.textureCountThreshold = 0;
+        p.depth_controls.textureDifferenceThreshold = 0;
+        p.rsm.diffThresh = 4.f;
+        p.rsm.removeThresh = 63;
+        p.rsm.rsmBypass = 0;
+        p.rsm.sloRauDiffThresh = 1.f;
+        p.rsvc.minEast = 1;
+        p.rsvc.minNorth = 1;
+        p.rsvc.minNSsum = 3;
+        p.rsvc.minSouth = 1;
+        p.rsvc.minWest = 1;
+        p.rsvc.minWEsum = 3;
+        p.rsvc.uShrink = 3;
+        p.rsvc.vShrink = 1;
+        p.color_control.disableRAUColor = 0;
+        p.color_control.disableSADColor = 0;
+        p.color_control.disableSADNormalize = 0;
+        p.color_control.disableSLOLeftColor = 0;
+        p.color_control.disableSLORightColor = 0;
+        p.rctc.rauDiffThresholdBlue = 51;
+        p.rctc.rauDiffThresholdGreen = 51;
+        p.rctc.rauDiffThresholdRed = 51;
+        p.sctc.diffThresholdBlue = 72;
+        p.sctc.diffThresholdGreen = 72;
+        p.sctc.diffThresholdRed = 72;
+        p.spc.sloK1Penalty = 60;
+        p.spc.sloK1PenaltyMod1 = 105;
+        p.spc.sloK1PenaltyMod2 = 70;
+        p.spc.sloK2Penalty = 342;
+        p.spc.sloK2PenaltyMod1 = 190;
+        p.spc.sloK2PenaltyMod2 = 130;
+        p.hdad.lambdaAD = 800.f;
+        p.hdad.lambdaCensus = 26.f;
+        p.cc.colorCorrection1 = 0.2989999949932f;
+        p.cc.colorCorrection2 = 0.2939999997616f;
+        p.cc.colorCorrection3 = 0.2939999997616f;
+        p.cc.colorCorrection4 = 0.1140000000596f;
+        p.cc.colorCorrection5 = 0.f;
+        p.cc.colorCorrection6 = 0.f;
+        p.cc.colorCorrection7 = 0.f;
+        p.cc.colorCorrection8 = 0.f;
+        p.cc.colorCorrection9 = 0.f;
+        p.cc.colorCorrection10 = 0.f;
+        p.cc.colorCorrection11 = 0.f;
+        p.cc.colorCorrection12 = 0.f;
+        p.depth_table.depthClampMax = 65536;
+        p.depth_table.depthClampMin = 0;
+        p.depth_table.depthUnits = 1000;
+        p.depth_table.disparityShift = 0;
+        p.ae.meanIntensitySetPoint = 1536;
+        p.census.uDiameter = 9;
+        p.census.vDiameter = 9;
+        p.laser_state.laser_state = 1;
+        p.laser_power.laser_power = 150.f;
+        p.depth_exposure.exposure = 8500.f;
+        p.depth_auto_exposure.auto_exposure = 1;
+        p.depth_gain.gain = 16.f;
+    }
+
     void high_res_high_accuracy(preset& p)
     {
         p.depth_controls.deepSeaMedianThreshold = 796;
@@ -17,10 +362,10 @@ namespace librealsense
         p.depth_controls.scoreThreshB = 2893;
         p.depth_controls.textureCountThreshold = 0;
         p.depth_controls.textureDifferenceThreshold = 1722;
-        p.rsm.diffThresh = 1.660570025444;
+        p.rsm.diffThresh = 1.660570025444f;
         p.rsm.removeThresh = 136;
         p.rsm.rsmBypass = 0;
-        p.rsm.sloRauDiffThresh = 0.7269909977913;
+        p.rsm.sloRauDiffThresh = 0.7269909977913f;
         p.rsvc.minEast = 6;
         p.rsvc.minNorth = 3;
         p.rsvc.minNSsum = 7;
@@ -46,8 +391,8 @@ namespace librealsense
         p.spc.sloK2Penalty = 190;
         p.spc.sloK2PenaltyMod1 = 507;
         p.spc.sloK2PenaltyMod2 = 493;
-        p.hdad.lambdaAD = 751;
-        p.hdad.lambdaCensus = 6;
+        p.hdad.lambdaAD = 751.f;
+        p.hdad.lambdaCensus = 6.f;
     }
 
     void high_res_high_density(preset& p)
@@ -62,10 +407,10 @@ namespace librealsense
         p.depth_controls.scoreThreshB = 1443;
         p.depth_controls.textureCountThreshold = 0;
         p.depth_controls.textureDifferenceThreshold = 2466;
-        p.rsm.diffThresh = 1.228299975395;
+        p.rsm.diffThresh = 1.228299975395f;
         p.rsm.removeThresh = 82;
         p.rsm.rsmBypass = 0;
-        p.rsm.sloRauDiffThresh = 0.2664879858494;
+        p.rsm.sloRauDiffThresh = 0.2664879858494f;
         p.rsvc.minEast = 2;
         p.rsvc.minNorth = 1;
         p.rsvc.minNSsum = 6;
@@ -91,8 +436,8 @@ namespace librealsense
         p.spc.sloK2Penalty = 235;
         p.spc.sloK2PenaltyMod1 = 506;
         p.spc.sloK2PenaltyMod2 = 206;
-        p.hdad.lambdaAD = 618;
-        p.hdad.lambdaCensus = 15;
+        p.hdad.lambdaAD = 618.f;
+        p.hdad.lambdaCensus = 15.f;
     }
 
     void high_res_mid_density(preset& p)
@@ -107,10 +452,10 @@ namespace librealsense
         p.depth_controls.scoreThreshB = 887;
         p.depth_controls.textureCountThreshold = 0;
         p.depth_controls.textureDifferenceThreshold = 0;
-        p.rsm.diffThresh = 1.816750049591;
+        p.rsm.diffThresh = 1.816750049591f;
         p.rsm.removeThresh = 81;
         p.rsm.rsmBypass = 0;
-        p.rsm.sloRauDiffThresh = 1;
+        p.rsm.sloRauDiffThresh = 1.f;
         p.rsvc.minEast = 3;
         p.rsvc.minNorth = 1;
         p.rsvc.minNSsum = 6;
@@ -136,8 +481,8 @@ namespace librealsense
         p.spc.sloK2Penalty = 342;
         p.spc.sloK2PenaltyMod1 = 390;
         p.spc.sloK2PenaltyMod2 = 151;
-        p.hdad.lambdaAD = 935;
-        p.hdad.lambdaCensus = 26;
+        p.hdad.lambdaAD = 935.f;
+        p.hdad.lambdaCensus = 26.f;
     }
 
     void low_res_high_accuracy(preset& p)
@@ -152,10 +497,10 @@ namespace librealsense
         p.depth_controls.scoreThreshB = 1890;
         p.depth_controls.textureCountThreshold = 8;
         p.depth_controls.textureDifferenceThreshold = 0;
-        p.rsm.diffThresh = 5.206029891968;
+        p.rsm.diffThresh = 5.206029891968f;
         p.rsm.removeThresh = 86;
         p.rsm.rsmBypass = 0;
-        p.rsm.sloRauDiffThresh = 0.7110940217972;
+        p.rsm.sloRauDiffThresh = 0.7110940217972f;
         p.rsvc.minEast = 1;
         p.rsvc.minNorth = 1;
         p.rsvc.minNSsum = 5;
@@ -181,8 +526,8 @@ namespace librealsense
         p.spc.sloK2Penalty = 414;
         p.spc.sloK2PenaltyMod1 = 96;
         p.spc.sloK2PenaltyMod2 = 57;
-        p.hdad.lambdaAD = 74;
-        p.hdad.lambdaCensus = 26;
+        p.hdad.lambdaAD = 74.f;
+        p.hdad.lambdaCensus = 26.f;
         p.census.uDiameter = 8;
         p.census.vDiameter = 9;
     }
@@ -199,10 +544,10 @@ namespace librealsense
         p.depth_controls.scoreThreshB = 3440;
         p.depth_controls.textureCountThreshold = 0;
         p.depth_controls.textureDifferenceThreshold = 3639;
-        p.rsm.diffThresh = 5.890840053558;
+        p.rsm.diffThresh = 5.890840053558f;
         p.rsm.removeThresh = 68;
         p.rsm.rsmBypass = 0;
-        p.rsm.sloRauDiffThresh = 0.421687990427;
+        p.rsm.sloRauDiffThresh = 0.421687990427f;
         p.rsvc.minEast = 1;
         p.rsvc.minNorth = 1;
         p.rsvc.minNSsum = 5;
@@ -228,8 +573,8 @@ namespace librealsense
         p.spc.sloK2Penalty = 386;
         p.spc.sloK2PenaltyMod1 = 86;
         p.spc.sloK2PenaltyMod2 = 60;
-        p.hdad.lambdaAD = 686;
-        p.hdad.lambdaCensus = 26;
+        p.hdad.lambdaAD = 686.f;
+        p.hdad.lambdaCensus = 26.f;
         p.census.uDiameter = 9;
         p.census.vDiameter = 9;
     }
@@ -246,10 +591,10 @@ namespace librealsense
         p.depth_controls.scoreThreshB = 1885;
         p.depth_controls.textureCountThreshold = 0;
         p.depth_controls.textureDifferenceThreshold = 2817;
-        p.rsm.diffThresh = 6.447229862213;
+        p.rsm.diffThresh = 6.447229862213f;
         p.rsm.removeThresh = 95;
         p.rsm.rsmBypass = 0;
-        p.rsm.sloRauDiffThresh = 0.2744660079479;
+        p.rsm.sloRauDiffThresh = 0.2744660079479f;
         p.rsvc.minEast = 6;
         p.rsvc.minNorth = 1;
         p.rsvc.minNSsum = 2;
@@ -275,8 +620,8 @@ namespace librealsense
         p.spc.sloK2Penalty = 410;
         p.spc.sloK2PenaltyMod1 = 80;
         p.spc.sloK2PenaltyMod2 = 74;
-        p.hdad.lambdaAD = 183;
-        p.hdad.lambdaCensus = 26;
+        p.hdad.lambdaAD = 183.f;
+        p.hdad.lambdaCensus = 26.f;
         p.census.uDiameter = 9;
         p.census.vDiameter = 9;
     }
@@ -293,10 +638,10 @@ namespace librealsense
         p.depth_controls.scoreThreshB = 2047;
         p.depth_controls.textureCountThreshold = 0;
         p.depth_controls.textureDifferenceThreshold = 3474;
-        p.rsm.diffThresh = 3.329339981079;
+        p.rsm.diffThresh = 3.329339981079f;
         p.rsm.removeThresh = 112;
         p.rsm.rsmBypass = 0;
-        p.rsm.sloRauDiffThresh = 0.9618660211563;
+        p.rsm.sloRauDiffThresh = 0.9618660211563f;
         p.rsvc.minEast = 3;
         p.rsvc.minNorth = 1;
         p.rsvc.minNSsum = 6;
@@ -322,8 +667,8 @@ namespace librealsense
         p.spc.sloK2Penalty = 182;
         p.spc.sloK2PenaltyMod1 = 41;
         p.spc.sloK2PenaltyMod2 = 63;
-        p.hdad.lambdaAD = 630;
-        p.hdad.lambdaCensus = 26;
+        p.hdad.lambdaAD = 630.f;
+        p.hdad.lambdaCensus = 26.f;
         p.census.uDiameter = 6;
         p.census.vDiameter = 7;
     }
@@ -340,10 +685,10 @@ namespace librealsense
         p.depth_controls.scoreThreshB = 1949;
         p.depth_controls.textureCountThreshold = 1;
         p.depth_controls.textureDifferenceThreshold = 0;
-        p.rsm.diffThresh = 5.069789886475;
+        p.rsm.diffThresh = 5.069789886475f;
         p.rsm.removeThresh = 75;
         p.rsm.rsmBypass = 0;
-        p.rsm.sloRauDiffThresh = 1;
+        p.rsm.sloRauDiffThresh = 1.f;
         p.rsvc.minEast = 7;
         p.rsvc.minNorth = 1;
         p.rsvc.minNSsum = 6;
@@ -369,8 +714,8 @@ namespace librealsense
         p.spc.sloK2Penalty = 342;
         p.spc.sloK2PenaltyMod1 = 69;
         p.spc.sloK2PenaltyMod2 = 225;
-        p.hdad.lambdaAD = 850;
-        p.hdad.lambdaCensus = 19;
+        p.hdad.lambdaAD = 850.f;
+        p.hdad.lambdaCensus = 19.f;
         p.census.uDiameter = 9;
         p.census.vDiameter = 3;
     }
@@ -387,10 +732,10 @@ namespace librealsense
         p.depth_controls.scoreThreshB = 972;
         p.depth_controls.textureCountThreshold = 6;
         p.depth_controls.textureDifferenceThreshold = 0;
-        p.rsm.diffThresh = 5.859620094299;
+        p.rsm.diffThresh = 5.859620094299f;
         p.rsm.removeThresh = 70;
         p.rsm.rsmBypass = 0;
-        p.rsm.sloRauDiffThresh = 1;
+        p.rsm.sloRauDiffThresh = 1.f;
         p.rsvc.minEast = 3;
         p.rsvc.minNorth = 1;
         p.rsvc.minNSsum = 6;
@@ -416,54 +761,10 @@ namespace librealsense
         p.spc.sloK2Penalty = 397;
         p.spc.sloK2PenaltyMod1 = 21;
         p.spc.sloK2PenaltyMod2 = 226;
-        p.hdad.lambdaAD = 978;
-        p.hdad.lambdaCensus = 21;
+        p.hdad.lambdaAD = 978.f;
+        p.hdad.lambdaCensus = 21.f;
         p.census.uDiameter = 8;
         p.census.vDiameter = 5;
-    }
-
-    void short_range(preset& p)
-    {
-        p.depth_controls.deepSeaMedianThreshold = 528;
-        p.depth_controls.deepSeaNeighborThreshold = 20;
-        p.depth_controls.deepSeaSecondPeakThreshold = 27;
-        p.depth_controls.lrAgreeThreshold = 70;
-        p.depth_controls.minusDecrement = 10;
-        p.depth_controls.plusIncrement = 10;
-        p.depth_controls.scoreThreshA = 10;
-        p.depth_controls.scoreThreshB = 1023;
-        p.depth_controls.textureCountThreshold = 0;
-        p.rsm.diffThresh = 7;
-        p.rsm.removeThresh = 32;
-        p.rsm.rsmBypass = 0;
-        p.rsm.sloRauDiffThresh = 3;
-        p.rsvc.minEast = 1;
-        p.rsvc.minNorth = 1;
-        p.rsvc.minNSsum = 1;
-        p.rsvc.minSouth = 1;
-        p.rsvc.minWest = 1;
-        p.rsvc.minWEsum = 1;
-        p.rsvc.uShrink = 1;
-        p.rsvc.vShrink = 1;
-        p.color_control.disableRAUColor = 0;
-        p.color_control.disableSADColor = 0;
-        p.color_control.disableSADNormalize = 0;
-        p.color_control.disableSLOLeftColor = 0;
-        p.color_control.disableSLORightColor = 0;
-        p.rctc.rauDiffThresholdBlue = 599;
-        p.rctc.rauDiffThresholdGreen = 599;
-        p.rctc.rauDiffThresholdRed = 599;
-        p.sctc.diffThresholdBlue = 300;
-        p.sctc.diffThresholdGreen = 300;
-        p.sctc.diffThresholdRed = 300;
-        p.spc.sloK1Penalty = 44;
-        p.spc.sloK1PenaltyMod1 = 23;
-        p.spc.sloK1PenaltyMod2 = 219;
-        p.spc.sloK2Penalty = 502;
-        p.spc.sloK2PenaltyMod1 = 237;
-        p.spc.sloK2PenaltyMod2 = 113;
-        p.hdad.lambdaAD = 2100;
-        p.hdad.lambdaCensus = 26;
     }
 
     void hand_gesture(preset& p)
@@ -478,10 +779,10 @@ namespace librealsense
         p.depth_controls.scoreThreshB = 791;
         p.depth_controls.textureCountThreshold = 0;
         p.depth_controls.textureDifferenceThreshold = 783;
-        p.rsm.diffThresh = 3.80778002739f;
-        p.rsm.removeThresh = 93;
+        p.rsm.diffThresh = 3.8125f;
+        p.rsm.removeThresh = 92;
         p.rsm.rsmBypass = 0;
-        p.rsm.sloRauDiffThresh = 0.4557830095291f;
+        p.rsm.sloRauDiffThresh = 0.46875f;
         p.rsvc.minEast = 3;
         p.rsvc.minNorth = 1;
         p.rsvc.minNSsum = 4;
@@ -496,7 +797,7 @@ namespace librealsense
         p.color_control.disableSLOLeftColor = 0;
         p.color_control.disableSLORightColor = 1;
         p.rctc.rauDiffThresholdBlue = 50;
-        p.rctc.rauDiffThresholdGreen = 74;
+        p.rctc.rauDiffThresholdGreen = 73;
         p.rctc.rauDiffThresholdRed = 141;
         p.sctc.diffThresholdBlue = 130;
         p.sctc.diffThresholdGreen = 244;
@@ -507,7 +808,15 @@ namespace librealsense
         p.spc.sloK2Penalty = 45;
         p.spc.sloK2PenaltyMod1 = 21;
         p.spc.sloK2PenaltyMod2 = 12;
-        p.hdad.lambdaAD = 1001;
-        p.hdad.lambdaCensus = 7;
+        p.hdad.ignoreSAD = 0;
+        p.hdad.lambdaAD = 1001.f;
+        p.hdad.lambdaCensus = 7.f;
+        p.depth_table.depthClampMax = 65535;
+        p.depth_table.depthClampMin = 0;
+        p.depth_table.depthUnits = 1000;
+        p.depth_table.disparityMode = 0;
+        p.depth_table.disparityShift = 0;
+        p.census.uDiameter = 9;
+        p.census.vDiameter = 3;
     }
 }
