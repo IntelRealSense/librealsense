@@ -716,7 +716,8 @@ namespace librealsense
         if (p.color_auto_white_balance.was_set && p.color_auto_white_balance.auto_white_balance == 0)
             set_color_white_balance(p.color_white_balance);
 
-        set_color_power_line_frequency(p.color_power_line_frequency);
+        // TODO: W/O due to a FW bug of power_line_frequency control on Windows OS
+        //set_color_power_line_frequency(p.color_power_line_frequency);
     }
 
     std::vector<uint8_t> ds5_advanced_mode_base::send_receive(const std::vector<uint8_t>& input) const
