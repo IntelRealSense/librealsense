@@ -15,6 +15,7 @@ namespace librealsense
         extrinsics_graph();
         void register_same_extrinsics(const stream_interface& from, const stream_interface& to);
         void register_extrinsics(const stream_interface& from, const stream_interface& to, std::weak_ptr<lazy<rs2_extrinsics>> extr);
+        void register_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics extr);
         bool try_fetch_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics* extr);
 
 
@@ -51,6 +52,9 @@ namespace librealsense
         std::atomic<int> _locks_count;
         std::mutex _mutex;
         std::map<int, std::map<int, std::weak_ptr<lazy<rs2_extrinsics>>>> _extrinsics;
+
+        std::vector<std::shared_ptr<lazy<rs2_extrinsics>>> _external_extrinsics;
+
         std::shared_ptr<lazy<rs2_extrinsics>> _id;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
 

@@ -303,57 +303,124 @@ namespace librealsense
 
     std::shared_ptr<matcher> rs400_device::create_matcher(const frame_holder& frame) const
     {
-        return create_composite_matcher({ds5_device::create_matcher(frame)});
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get()};
+        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return matcher_factory::create(RS2_MATCHER_DLR, streams);
+        }
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
+        
     }
 
     std::shared_ptr<matcher> rs405_device::create_matcher(const frame_holder& frame) const
     {
-        return create_composite_matcher({ ds5_device::create_matcher(frame) });
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get()};
+
+        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return matcher_factory::create(RS2_MATCHER_DLR, streams);
+        }
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
     std::shared_ptr<matcher> rs410_device::create_matcher(const frame_holder& frame) const
     {
-        return create_composite_matcher({ds5_device::create_matcher(frame)});
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get()};
+        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return matcher_factory::create(RS2_MATCHER_DLR, streams);
+        }
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
     std::shared_ptr<matcher> rs415_device::create_matcher(const frame_holder& frame) const
     {
-        return create_composite_matcher({ds5_device::create_matcher(frame),
-                                         ds5_color::create_matcher(frame)});
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
+        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return matcher_factory::create(RS2_MATCHER_DLR_C, streams);
+        }
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
     std::shared_ptr<matcher> rs420_mm_device::create_matcher(const frame_holder& frame) const
     {
-        return create_composite_matcher({ds5_device::create_matcher(frame),
-                                         ds5_motion::create_matcher(frame)});
+        //TODO: add matcher to mm
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get()};
+        std::vector<stream_interface*> mm_streams = { _fisheye_stream.get(),
+        _accel_stream.get(),
+        _gyro_stream.get()};
+
+        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return create_composite_matcher({ matcher_factory::create(RS2_MATCHER_DLR, streams),
+                matcher_factory::create(RS2_MATCHER_DEFAULT, mm_streams) });
+        }
+        streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
     std::shared_ptr<matcher> rs420_device::create_matcher(const frame_holder& frame) const
     {
-        return create_composite_matcher({ds5_device::create_matcher(frame)});
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get()};
+        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return matcher_factory::create(RS2_MATCHER_DLR, streams);
+        }
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
     std::shared_ptr<matcher> rs430_device::create_matcher(const frame_holder& frame) const
     {
-        return create_composite_matcher({ds5_device::create_matcher(frame)});
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get() };
+        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return matcher_factory::create(RS2_MATCHER_DLR, streams);
+        }
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
     std::shared_ptr<matcher> rs430_mm_device::create_matcher(const frame_holder& frame) const
     {
-        return create_composite_matcher({ds5_device::create_matcher(frame),
-                                         ds5_motion::create_matcher(frame)});
+        //TODO: add matcher to mm
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get() };
+        std::vector<stream_interface*> mm_streams = { _fisheye_stream.get(),
+            _accel_stream.get(),
+            _gyro_stream.get() };
+
+        if (!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return create_composite_matcher({ matcher_factory::create(RS2_MATCHER_DLR, streams),
+                matcher_factory::create(RS2_MATCHER_DEFAULT, mm_streams) });
+        }
+        streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
     std::shared_ptr<matcher> rs435_device::create_matcher(const frame_holder& frame) const
     {
-        return create_composite_matcher({ds5_device::create_matcher(frame),
-                                         ds5_color::create_matcher(frame)});
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
+        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return matcher_factory::create(RS2_MATCHER_DLR_C, streams);
+        }
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
     std::shared_ptr<matcher> rs430_rgb_mm_device::create_matcher(const frame_holder& frame) const
     {
-        return create_composite_matcher({ds5_device::create_matcher(frame),
-                                         ds5_color::create_matcher(frame),
-                                         ds5_motion::create_matcher(frame)});
+        //TODO: add matcher to mm
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
+        std::vector<stream_interface*> mm_streams = { _fisheye_stream.get(),
+            _accel_stream.get(),
+            _gyro_stream.get()};
+
+        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return create_composite_matcher({ matcher_factory::create(RS2_MATCHER_DLR_C, streams),
+                matcher_factory::create(RS2_MATCHER_DEFAULT, mm_streams) });
+        }
+        streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 }

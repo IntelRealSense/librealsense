@@ -16,7 +16,6 @@
 
 using namespace std;
 using namespace TCLAP;
-using namespace rs2;
 
 int MAX_FRAMES_NUMBER = 10; //number of frames to capture from each stream
 const unsigned int NUM_OF_STREAMS = static_cast<int>(RS2_STREAM_COUNT);
@@ -148,7 +147,7 @@ void save_data_to_file(std::array<list<frame_data>, NUM_OF_STREAMS> buffer, cons
 
 int main(int argc, char** argv) try
 {
-    log_to_file(RS2_LOG_SEVERITY_WARN);
+    rs2::log_to_file(RS2_LOG_SEVERITY_WARN);
 
     // Parse command line arguments
     CmdLine cmd("librealsense rs-data-collect example tool", ' ');
@@ -187,7 +186,7 @@ int main(int argc, char** argv) try
         std::atomic_bool need_to_reset(false);
         for (auto sub : dev.query_sensors())
         {
-            sub.set_notifications_callback([&](const notification& n)
+            sub.set_notifications_callback([&](const rs2::notification& n)
             {
                 if (n.get_category() == RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT)
                 {
@@ -262,7 +261,7 @@ int main(int argc, char** argv) try
     }
     return EXIT_SUCCESS;
 }
-catch (const error & e)
+catch (const rs2::error & e)
 {
     cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
     return EXIT_FAILURE;

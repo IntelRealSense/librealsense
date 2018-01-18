@@ -1,5 +1,6 @@
 #include "metadata-parser.h"
 #include "archive.h"
+
 #define MIN_DISTANCE 1e-6
 
 namespace librealsense

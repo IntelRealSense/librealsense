@@ -115,6 +115,7 @@ script:
       echo "Downloading unit-test records...";
       for record in $tests_list; do echo $url_records_path$record; wget $url_records_path$record -P "records/"$(echo $record | cut -d '/' -f 1); done;
 
+      ./unit-tests/live-test -d yes -i [software-device];
       for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done;
       for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done;
 

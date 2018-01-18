@@ -844,12 +844,8 @@ namespace rs2
                 }
             }
 
-            // For Realtec sensors
-            auto rgb_rotation_btn = (val_in_range(std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID)),
-            { std::string("0AD3") ,std::string("0B07") }) &&
-                val_in_range(std::string(s->get_info(RS2_CAMERA_INFO_NAME)), { std::string("RGB Camera") }));
             // Limit Realtec sensor default
-            auto constrain = (rgb_rotation_btn) ? std::make_pair(640, 480) : std::make_pair(0, 0);
+            auto constrain = std::make_pair(0, 0);
             get_default_selection_index(res_values, constrain, &selection_index);
             ui.selected_res_id = selection_index;
 

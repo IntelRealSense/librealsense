@@ -6,6 +6,121 @@
 
 using namespace librealsense;
 
+std::shared_ptr<matcher> matcher_factory::create(rs2_matchers matcher, std::vector<stream_interface*> profiles)
+{
+    switch (matcher)
+    {
+    case RS2_MATCHER_DI:
+        return create_DI_matcher(profiles);
+    case RS2_MATCHER_DI_C:
+        return create_DI_C_matcher(profiles);
+    case RS2_MATCHER_DLR_C:
+        return create_DLR_C_matcher(profiles);
+    case RS2_MATCHER_DLR:
+        return create_DLR_matcher(profiles);
+    case RS2_MATCHER_DEFAULT:default:
+        LOG_DEBUG("Created default matcher");
+        return create_timestamp_matcher(profiles);
+        break;
+    }
+}
+stream_interface* librealsense::find_profile(rs2_stream stream, int index, std::vector<stream_interface*> profiles)
+{
+    auto prof = std::find_if(profiles.begin(), profiles.end(), [&](stream_interface* profile)
+    {
+        return profile->get_stream_type() == stream && profile->get_stream_index() == index;
+    });
+
+    if (prof != profiles.end())
+        return *prof;
+    else
+        return nullptr;
+}
+
+std::shared_ptr<matcher> matcher_factory::create_DLR_C_matcher(std::vector<stream_interface*> profiles)
+{
+    auto color  = find_profile(RS2_STREAM_COLOR, 0, profiles);
+    if (!color)
+    {
+        LOG_DEBUG("Created default matcher");
+        return create_timestamp_matcher(profiles);
+    }
+
+    return create_timestamp_composite_matcher({ create_DLR_matcher(profiles),
+        create_identity_matcher(color) });
+}
+
+std::shared_ptr<matcher> matcher_factory::create_DI_C_matcher(std::vector<stream_interface*> profiles)
+{
+    auto color = find_profile(RS2_STREAM_COLOR, 0, profiles);
+    if (!color)
+    {
+        LOG_DEBUG("Created default matcher");
+        return create_timestamp_matcher(profiles);
+    }
+
+    return create_timestamp_composite_matcher({ create_DI_matcher(profiles),
+        create_identity_matcher(profiles[2]) });
+}
+
+std::shared_ptr<matcher> matcher_factory::create_DLR_matcher(std::vector<stream_interface*> profiles)
+{
+    auto depth = find_profile(RS2_STREAM_DEPTH, 0, profiles);
+    auto left = find_profile(RS2_STREAM_INFRARED, 1, profiles);
+    auto right = find_profile(RS2_STREAM_INFRARED, 2, profiles);
+
+    if (!depth || !left || !right)
+    {
+        LOG_DEBUG("Created default matcher");
+        return create_timestamp_matcher(profiles);
+    }
+    return create_frame_number_matcher({ depth , left , right });
+}
+
+std::shared_ptr<matcher> matcher_factory::create_DI_matcher(std::vector<stream_interface*> profiles)
+{
+    auto depth = find_profile(RS2_STREAM_DEPTH, 0, profiles);
+    auto ir = find_profile(RS2_STREAM_INFRARED, 1, profiles);
+
+    if (!depth || !ir)
+    {
+        LOG_DEBUG("Created default matcher");
+        return create_timestamp_matcher(profiles);
+    }
+    return create_frame_number_matcher({ depth , ir });
+}
+
+std::shared_ptr<matcher> matcher_factory::create_frame_number_matcher(std::vector<stream_interface*> profiles)
+{
+    std::vector<std::shared_ptr<matcher>> matchers;
+    for (auto& p : profiles)
+        matchers.push_back(std::make_shared<identity_matcher>(p->get_unique_id(), p->get_stream_type()));
+
+    return create_frame_number_composite_matcher(matchers);
+}
+std::shared_ptr<matcher> matcher_factory::create_timestamp_matcher(std::vector<stream_interface*> profiles)
+{
+    std::vector<std::shared_ptr<matcher>> matchers;
+    for (auto& p : profiles)
+        matchers.push_back(std::make_shared<identity_matcher>(p->get_unique_id(), p->get_stream_type()));
+
+    return create_timestamp_composite_matcher(matchers);
+}
+
+std::shared_ptr<matcher> matcher_factory::create_identity_matcher(stream_interface *profile)
+{
+    return std::make_shared<identity_matcher>(profile->get_unique_id(), profile->get_stream_type());
+}
+
+std::shared_ptr<matcher> matcher_factory::create_frame_number_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
+{
+    return std::make_shared<frame_number_composite_matcher>(matchers);
+}
+std::shared_ptr<matcher> matcher_factory::create_timestamp_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
+{
+    return std::make_shared<timestamp_composite_matcher>(matchers);
+}
+
 device::device(std::shared_ptr<context> ctx,
                const platform::backend_device_group group,
                bool device_changed_notifications)
@@ -145,3 +260,5 @@ void librealsense::device::register_stream_to_extrinsic_group(const stream_inter
         _extrinsics[stream.get_unique_id()] = iter->second;
     }
 }
+
+

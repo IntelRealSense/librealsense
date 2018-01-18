@@ -122,6 +122,7 @@ set(REALSENSE_CPP
     src/linux/backend-hid.cpp
     src/backend.cpp
     src/verify.c
+    src/software-device.cpp
     src/proc/align.cpp
     src/proc/colorizer.cpp
     src/proc/pointcloud.cpp
@@ -205,6 +206,7 @@ set(REALSENSE_HPP
     src/core/info.h
     src/core/extension.h
     src/core/processing.h
+    src/software-device.h
 
     src/environment.h
     src/device_hub.h
@@ -394,6 +396,7 @@ if(WIN32)
         src/ds5/ds5-active.cpp
         src/ivcam/sr300.cpp
         src/ivcam/ivcam-private.cpp
+        src/software-device.cpp
         )
 
     source_group("Source Files\\Devices\\Advanced Mode" FILES
@@ -419,6 +422,7 @@ if(WIN32)
         src/ds5/ds5-color.h
         src/ivcam/sr300.h
         src/ivcam/ivcam-private.h
+        src/software-device.h
         )
 
     source_group("Header Files\\Core" FILES

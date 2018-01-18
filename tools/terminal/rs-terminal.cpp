@@ -14,7 +14,7 @@
 
 using namespace std;
 using namespace TCLAP;
-using namespace rs2;
+
 
 vector<uint8_t> build_raw_command_data(const command& command, const vector<string>& params)
 {
@@ -37,7 +37,7 @@ vector<uint8_t> build_raw_command_data(const command& command, const vector<stri
     return raw_data;
 }
 
-void xml_mode(const string& line, const commands_xml& cmd_xml, device& dev, map<string, xml_parser_function>& format_type_to_lambda)
+void xml_mode(const string& line, const commands_xml& cmd_xml, rs2::device& dev, map<string, xml_parser_function>& format_type_to_lambda)
 {
     vector<string> tokens;
     stringstream ss(line);
@@ -48,6 +48,7 @@ void xml_mode(const string& line, const commands_xml& cmd_xml, device& dev, map<
         converter << hex << word;
         tokens.push_back(word);
     }
+
     if (tokens.empty())
         throw runtime_error("Wrong input!");
 
@@ -69,7 +70,7 @@ void xml_mode(const string& line, const commands_xml& cmd_xml, device& dev, map<
     }
     cout << endl;
 
-    auto result = dev.as<debug_protocol>().send_and_receive_raw_data(raw_data);
+    auto result = dev.as<rs2::debug_protocol>().send_and_receive_raw_data(raw_data);
 
     unsigned returned_opcode = *result.data();
     // check returned opcode
@@ -92,7 +93,7 @@ void xml_mode(const string& line, const commands_xml& cmd_xml, device& dev, map<
     }
 }
 
-void hex_mode(const string& line, device& dev)
+void hex_mode(const string& line, rs2::device& dev)
 {
     vector<uint8_t> raw_data;
     stringstream ss(line);
@@ -108,7 +109,7 @@ void hex_mode(const string& line, device& dev)
     if (raw_data.empty())
         throw runtime_error("Wrong input!");
 
-    auto result = dev.as<debug_protocol>().send_and_receive_raw_data(raw_data);
+    auto result = dev.as<rs2::debug_protocol>().send_and_receive_raw_data(raw_data);
 
     cout << endl;
     for (auto& elem : result)
@@ -141,7 +142,7 @@ void read_script_file(const string& full_file_path, vector<string>& hex_lines)
     throw runtime_error("Script file not found!");
 }
 
-device wait_for_device(const device_hub& hub)
+rs2::device wait_for_device(const rs2::device_hub& hub)
 {
     cout << "\nWaiting for RealSense device to connect...\n";
     auto dev = hub.wait_for_device();
@@ -165,10 +166,10 @@ int main(int argc, char** argv)
     cmd.parse(argc, argv);
 
     // parse command.xml
-    log_to_file(RS2_LOG_SEVERITY_WARN, "librealsense.log");
+    rs2::log_to_file(RS2_LOG_SEVERITY_WARN, "librealsense.log");
     // Obtain a list of devices currently present on the system
-    context ctx;
-    device_hub hub(ctx);
+    rs2::context ctx;
+    rs2::device_hub hub(ctx);
 
     auto xml_full_file_path = xml_arg.getValue();
     map<string, xml_parser_function> format_type_to_lambda;
@@ -264,8 +265,6 @@ int main(int argc, char** argv)
         }
 
 
-
-
         while (hub.is_connected(dev))
         {
             try
@@ -300,7 +299,7 @@ int main(int argc, char** argv)
 
                 cout << endl;
             }
-            catch (const error & e)
+            catch (const rs2::error & e)
             {
                 cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
             }

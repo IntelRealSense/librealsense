@@ -497,22 +497,6 @@ namespace librealsense
         //TODO: Implement
     }
 
-    std::shared_ptr<matcher> ds5_device::create_matcher(const frame_holder& frame) const
-    {
-        std::set<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get()};
-        std::vector<std::shared_ptr<matcher>> depth_matchers;
-
-        for (auto& s : streams)
-            depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type()));
-
-        if(!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
-        {
-            return device::create_matcher(frame);
-        }
-        return std::make_shared<frame_number_composite_matcher>(depth_matchers);
-    }
-
-
     std::shared_ptr<uvc_sensor> ds5u_device::create_ds5u_depth_device(std::shared_ptr<context> ctx,
         const std::vector<platform::uvc_device_info>& all_device_infos)
     {

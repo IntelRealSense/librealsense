@@ -17,8 +17,6 @@ namespace librealsense
         ds5_color(std::shared_ptr<context> ctx,
                   const platform::backend_device_group& group);
 
-        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
-
     protected:
         std::shared_ptr<stream_interface> _color_stream;
 

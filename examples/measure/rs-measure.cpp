@@ -76,7 +76,7 @@ struct toggle
 };
 
 // Application state shared between the main-thread and GLFW events
-struct state 
+struct state
 {
     bool mouse_down = false;
     toggle ruler_start;
@@ -92,7 +92,7 @@ void register_glfw_callbacks(window& app, state& app_state);
 // This distance ignores the topology of the object and can cut both through
 // air and through solid
 void render_simple_distance(const rs2::depth_frame& depth, 
-                            const state& s, 
+                            const state& s,
                             const window& app,
                             const rs2_intrinsics& intr);
 
@@ -449,7 +449,7 @@ float dist_2d(const pixel& a, const pixel& b)
 }
 
 void render_simple_distance(const rs2::depth_frame& depth, 
-                            const state& s, 
+                            const state& s,
                             const window& app,
                             const rs2_intrinsics& intr)
 {

@@ -15,6 +15,7 @@ namespace librealsense
     class processing_block;
     class pipeline_processing_block : public processing_block
     {
+        std::mutex _mutex;
         std::map<stream_id, frame_holder> _last_set;
         std::unique_ptr<single_consumer_queue<frame_holder>> _queue;
         std::vector<int> _streams_ids;

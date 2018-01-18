@@ -58,7 +58,7 @@ else()
     endif()
 endif()
 
-
+add_subdirectory(software-device)
 add_subdirectory(capture)
 add_subdirectory(save-to-disk)
 add_subdirectory(multicam)

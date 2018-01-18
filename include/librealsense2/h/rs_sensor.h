@@ -406,6 +406,16 @@ void rs2_get_extrinsics(const rs2_stream_profile* from,
                         rs2_extrinsics* extrin, rs2_error** error);
 
 /**
+* \param[in] from          origin stream profile
+* \param[in] to            target stream profile
+* \param[out] extrin       extrinsics from origin to target
+* \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_register_extrinsics(const rs2_stream_profile* from,
+    const rs2_stream_profile* to,
+    rs2_extrinsics extrin, rs2_error** error);
+
+/**
  * When called on a video profile, returns the intrinsics of specific stream configuration
  * \param[in] mode          input stream profile
  * \param[out] intrinsics   resulting intrinsics for the video profile
