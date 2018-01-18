@@ -1,4 +1,4 @@
-# rs-align Sample
+# Software Device Sample
 
 ## Overview
 
