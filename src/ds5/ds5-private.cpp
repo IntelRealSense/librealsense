@@ -91,12 +91,6 @@ namespace librealsense
              float3x3 intrin = table->intrinsic;
              static const float base_aspect_ratio_factor = 16.f / 9.f;
 
-             // Use intrinsic from RGB->Depth projection table
-            for (int i = 0; i < 3; i++)
-                for (int j = 0; j < 3; j++)
-                    intrin(j, i) = table->projection[i * 4 + j];
-
-
              // Compensate for aspect ratio
              intrin(0, 0) *= base_aspect_ratio_factor * (height / (float)width);
              intrin(2, 0) *= base_aspect_ratio_factor * (height / (float)width);
