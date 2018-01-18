@@ -2688,7 +2688,7 @@ namespace rs2
             ImGui::SetCursorPos({ rc.x, rc.y - 4 });
 
             std::string label = to_string() << "##log_entry" << i++;
-            ImGui::InputTextMultiline(label.c_str(),
+            ImGui::InputTextEx(label.c_str(),
                         (char*)line.data(),
                         line.size() + 1,
                         ImVec2(-1, ImGui::GetTextLineHeight() * 1.5 *float(std::max(1,(int)std::count(line.begin(),line.end(), '\n')))),
