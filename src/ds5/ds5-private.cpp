@@ -91,6 +91,12 @@ namespace librealsense
              float3x3 intrin = table->intrinsic;
              static const float base_aspect_ratio_factor = 16.f / 9.f;
 
+             // Use intrinsic from RGB->Depth projection table
+            for (int i = 0; i < 3; i++)
+                for (int j = 0; j < 3; j++)
+                    intrin(j, i) = table->projection[i * 4 + j];
+
+
              // Compensate for aspect ratio
              intrin(0, 0) *= base_aspect_ratio_factor * (height / (float)width);
              intrin(2, 0) *= base_aspect_ratio_factor * (height / (float)width);
@@ -147,19 +153,18 @@ namespace librealsense
         pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
         {
             auto table = check_calib<rgb_calibration_table>(raw_data);
-            float3 rot_vector = table->rotation;
-            float3 trans_vector = table->translation;
+            float3 trans_vector = table->translation_rect;
+            float3x3 rect_rot_mat = table->rotation_matrix_rect;
             float trans_scale = 0.001f; // Convert units from mm to meter
             if (table->translation.x > 0.f) // Extrinsic of color is referenced to the Depth Sensor CS
             {
                 trans_scale *= -1;
-                rot_vector.x *= -1; rot_vector.y *= -1;
             }
             trans_vector.x *= trans_scale;
             trans_vector.y *= trans_scale;
             trans_vector.z *= trans_scale;
 
-            return{ calc_rotation_from_rodrigues_angles({ rot_vector.x, rot_vector.y, rot_vector.z }), trans_vector };
+            return{ rect_rot_mat,trans_vector };
         }
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
