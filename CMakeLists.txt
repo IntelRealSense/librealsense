@@ -555,9 +555,6 @@ if(UNIX)
         message(FATAL_ERROR "\n\n PkgConfig package is missing!\n\n")
     endif()
 
-    find_package (Threads REQUIRED)
-    list(APPEND librealsense_PKG_DEPS "Threads")
-
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -g -D_BSD_SOURCE")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -g -Wno-missing-field-initializers")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar -Wsequence-point")
