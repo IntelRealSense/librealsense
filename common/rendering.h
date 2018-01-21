@@ -978,9 +978,10 @@ namespace rs2
             texture = other.texture;
         }
 
-        texture_buffer& operator =(const texture_buffer& other)
+        texture_buffer& operator=(const texture_buffer& other)
         {
             texture = other.texture;
+            return *this;
         }
 
         rs2::frame get_last_frame(bool with_texture = false) const {
@@ -988,7 +989,7 @@ namespace rs2
             last_queue[idx].poll_for_frame(&last[idx]);
             return last[idx];
         }
-
+		
         texture_buffer() : last_queue(), texture(),
             colorize(std::make_shared<colorizer>()) {}
 

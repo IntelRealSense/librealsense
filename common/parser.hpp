@@ -1,4 +1,4 @@
-// License: Apache 2.0. See LICENSE file in root directory.
+		// License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <string>
@@ -139,8 +139,12 @@ struct parameter {
 };
 
 struct section {
-    std::string name, title, format_type, data;
-    int offset, size;
+    std::string name = "";
+    std::string title = "";
+    std::string format_type = "";
+    std::string data = "";
+    int offset = 0;
+    int size = 0;
 };
 
 struct data {
