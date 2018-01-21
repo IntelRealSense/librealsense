@@ -14,6 +14,10 @@
   * `mkdir build && cd build`
   * `cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -G Xcode`
 5. Open and build the XCode project
+6. (Optional) Add below frameworks for the projects which uses GUI (ex: realsense-viewer) by clicking `+` button in `Build Phases` and select `Link Binary With Libraries`.
+  * CoreVideo.framework
+  * IOKit.framework
+  * Cocoa.framework
 
 ## What works?
 * SR300, D415 and D435 will stream depth, infrared and color at all supported resolutions
