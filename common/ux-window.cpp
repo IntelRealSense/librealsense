@@ -101,6 +101,7 @@ namespace rs2
         int x, y, comp;
         auto r = stbi_load_from_memory(splash, (int)splash_size, &x, &y, &comp, false);
         _splash_tex.upload_image(x, y, r);
+        stbi_image_free(r);
 
         // Apply initial UI state
         reset();

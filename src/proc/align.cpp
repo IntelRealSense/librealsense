@@ -135,6 +135,9 @@ namespace librealsense
             rs2::frame from = composite.first_or_default(*_from_stream_type);
             rs2::depth_frame depth_frame = composite.get_depth_frame();
             rs2::frame to = composite.first_or_default(_to_stream_type);
+            
+            // Can't align partial frame-sets
+            if (!from || !depth_frame || !to) return;
 
             // align_frames(source, from, to)
             update_frame_info((frame_interface*)from.get(), _from_intrinsics, _from_stream_profile, false);
