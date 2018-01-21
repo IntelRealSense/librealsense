@@ -37,7 +37,7 @@ void render_slider_int(const float3 location, char* name, char* label, int* slid
 void render_slider_float(const float3 location, char* name, char* label, float* slider_param,
     float min, float max, char* description, std::mutex& lock);
 void render_checkbox(const float2 location, bool* checkbox_param, char* label, std::mutex& lock);
-void render_ui(float w, float h, std::vector<filter_options>& filters, std::mutex& lock,
+void render_ui(float w, float h, std::vector<filter_options>& filters, std::mutex& param_lock,
     const std::vector<rs2_option>& option_names);
 void save_strings(filter_options& dec_struct, filter_options& spat_struct, filter_options& temp_struct);
 bool is_all_integers(float min, float max, float def, float step);
@@ -49,7 +49,7 @@ inline bool is_integer(float f)
 
 // helper functions to handle filter options
 void set_defaults(std::vector<filter_options>& filters, const std::vector<rs2_option>& option_names);
-void set_filter_options(std::vector<filter_options>& filters, std::mutex& lock,
+void set_filter_options(std::vector<filter_options>& filters, std::mutex& param_lock,
      const std::vector<rs2_option>& option_names);
 
 // A function that draws the 3D-display
@@ -277,7 +277,7 @@ void set_defaults(std::vector<filter_options>& filters, const std::vector<rs2_op
 
 
 // Iterate over all filters, and set every supported option with the chosen value
-void set_filter_options(std::vector<filter_options>& filters, std::mutex& lock, 
+void set_filter_options(std::vector<filter_options>& filters, std::mutex& param_lock, 
     const std::vector<rs2_option>& option_names) {
     for (int i = 0; i < filters.size(); i++) {
         for (int j = 0; j < option_names.size(); j++) {
@@ -285,12 +285,12 @@ void set_filter_options(std::vector<filter_options>& filters, std::mutex& lock,
                 rs2::option_range range = filters[i].filter->get_option_range(option_names[j]);
                 if (is_all_integers(range.min, range.max, range.def, range.step))
                 {
-                    std::lock_guard<std::mutex> lock(lock);
+                    std::lock_guard<std::mutex> lock(param_lock);
                     filters[i].filter->set_option(option_names[j], filters[i].int_params[option_names[j]]);
                 }
                 else
                 {
-                    std::lock_guard<std::mutex> lock(lock);
+                    std::lock_guard<std::mutex> lock(param_lock);
                     filters[i].filter->set_option(option_names[j], filters[i].float_params[option_names[j]]);
                 }
             }
@@ -298,7 +298,7 @@ void set_filter_options(std::vector<filter_options>& filters, std::mutex& lock,
     }
 }
 
-void render_ui(float w, float h, std::vector<filter_options>& filters, std::mutex& lock,
+void render_ui(float w, float h, std::vector<filter_options>& filters, std::mutex& param_lock,
     const std::vector<rs2_option>& option_names) {
     // for the interface: distance between checkbox and slider
     const int dist = 120;
@@ -326,20 +326,20 @@ void render_ui(float w, float h, std::vector<filter_options>& filters, std::mute
                 {
                     render_slider_int({ w / 4 + dist, h / 2 + x, w / 4 }, filters[i].string[option_names[j]][0],
                         filters[i].string[option_names[j]][1], &(filters[i].int_params[option_names[j]]), range.min, range.max,
-                        filters[i].string[option_names[j]][2], lock);
+                        filters[i].string[option_names[j]][2], param_lock);
                     x = x + 50;
                 }
                 else
                 {
                     render_slider_float({ w / 4 + dist, h / 2 + x, w / 4 }, filters[i].string[option_names[j]][0],
                         filters[i].string[option_names[j]][1], &(filters[i].float_params[option_names[j]]),
-                        range.min, range.max, filters[i].string[option_names[j]][2], lock);
+                        range.min, range.max, filters[i].string[option_names[j]][2], param_lock);
                     x += 50;
                 }
             }
         }
         // Using Imgui to provide checkboxes for choosing a filter
-        render_checkbox({ w / 4, h / 2 + 10 + y }, &filters[i].do_filter, checkbox_names[i], lock);
+        render_checkbox({ w / 4, h / 2 + 10 + y }, &filters[i].do_filter, checkbox_names[i], param_lock);
         y += 30;
         if (i == 1)
             x += 12;
