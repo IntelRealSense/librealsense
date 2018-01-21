@@ -11,24 +11,24 @@
 #include "imgui_impl_glfw.h"
 
 
+/* Struct that holds a pointer to an rs2_option, we'll store a pointer to a filter this way;
+int_params and float_params: maps from an option supported by the filter, to the variable that controls
+this option;
+string: map from an option supported by the filter, to the corresponding vector of strings that will
+be used by the gui;
+do_filter: a boolean controlled by the user that determines whether to apply the filter.*/
+struct filter_options {
+    rs2::options* filter;
+    std::map<rs2_option, int> int_params;
+    std::map<rs2_option, float> float_params;
+    std::map<rs2_option, std::vector<char*> > string;
+    bool do_filter;
+};
+
 struct state
 {
     state() : yaw(0.0), tex() {}
     double yaw; texture tex;
-};
-
-// Struct of parameters controled by the user
-struct params
-{
-    bool do_decimate, do_spatial, do_temporal, do_disparity;
-    int decimate_magnitude, temporal_magnitude, spatial_magnitude, temp_smooth_delta, spat_smooth_delta;
-    float temp_smooth_alpha, spat_smooth_alpha;
-};
-
-struct filter_ranges
-{
-    rs2::option_range dec_magnitude_range, spat_magnitude_range, spat_smooth_alpha_range,
-        spat_smooth_delta_range, temp_smooth_alpha_range, temp_smooth_delta_range, temp_magnitude_range;
 };
 
 // helper functions for rendering the ui
@@ -37,19 +37,23 @@ void render_slider_int(const float3 location, char* name, char* label, int* slid
 void render_slider_float(const float3 location, char* name, char* label, float* slider_param,
     float min, float max, char* description, std::mutex& lock);
 void render_checkbox(const float2 location, bool* checkbox_param, char* label, std::mutex& lock);
-void render_ui(float w, float h, params& params, const filter_ranges& ranges, std::mutex& lock);
+void render_ui(float w, float h, std::vector<filter_options>& filters, std::mutex& lock,
+    const std::vector<rs2_option>& option_names);
+void save_strings(filter_options& dec_struct, filter_options& spat_struct, filter_options& temp_struct);
+bool is_all_integers(float min, float max, float def, float step);
 
+inline bool is_integer(float f)
+{
+    return (fabs(fmod(f, 1)) < std::numeric_limits<float>::min());
+}
 
 // helper functions to handle filter options
-void get_filter_ranges(filter_ranges& ranges, rs2::decimation_filter& dec_filter,
-    rs2::spatial_filter& spat_filter, rs2::temporal_filter& temp_filter);
-void set_defaults(params& params, filter_ranges& ranges);
-void set_filter_options(params& params, rs2::decimation_filter& dec_filter,
-    rs2::spatial_filter& spat_filter, rs2::temporal_filter& temp_filter, std::mutex& lock);
+void set_defaults(std::vector<filter_options>& filters, const std::vector<rs2_option>& option_names);
+void set_filter_options(std::vector<filter_options>& filters, std::mutex& lock,
+     const std::vector<rs2_option>& option_names);
 
 // A function that draws the 3D-display
 void draw_pointcloud(const rect& viewer_rect, state& app_state, rs2::points& points);
-
 
 int main(int argc, char * argv[]) try
 {
@@ -61,31 +65,33 @@ int main(int argc, char * argv[]) try
     state app_state;
     state app_state_filtered;
 
-    // Declare pointcloud objects, for calculating pointclouds and texture mappings
-    //one is for the original frames and the second is for the filtered ones
+    /* Declare pointcloud objects, for calculating pointclouds and texture mappings
+    one is for the original frames and the second is for the filtered ones */
     rs2::pointcloud pc;
     rs2::pointcloud pc_filtered;
 
-    // Declare objects that will hold the calculated pointclouds, one is for the
-    //original and one for filtered
+    /* Declare objects that will hold the calculated pointclouds, one is for the
+    original and one for filtered */
     rs2::points depth_points;
     rs2::points filtered_points;
+
+    // Declare RealSense pipeline, encapsulating the actual device and sensors
+    rs2::pipeline pipe;
+    // Start streaming with default recommended configuration
+    pipe.start();
 
     // save the the time of last frame's arrival
     auto last_time = std::chrono::high_resolution_clock::now();
     // a time interval which must pass between movement of the pointcloud
-    const std::chrono::milliseconds rotation_delta(10);
+    const std::chrono::milliseconds rotation_delta(40);
     // maximum angle for the rotation of the pointcloud
     const int max_angle = 90;
     // we'll use velocity to rotate the pointcloud for a better view of the filters effects
     float velocity = 0.3;
 
-    texture depth_image, color_image;
-
-    // Decalre filters: decimation, temporal and spatial
-    // decimation - reduces depth frame density;
-    // spatial - edge-preserving spatial smoothing
-    // temporal - reduces temporal noise
+    /* Decalre filters: decimation, temporal and spatial
+     Decimation - reduces depth frame density; Spatial - edge-preserving spatial smoothing;
+    Temporal - reduces temporal noise */
     rs2::decimation_filter dec_filter;
     rs2::spatial_filter spat_filter;
     rs2::temporal_filter temp_filter;
@@ -94,154 +100,118 @@ int main(int argc, char * argv[]) try
     rs2::disparity_transform depth_to_disparity;
     rs2::disparity_transform disparity_to_depth(false);
 
-    params params;
+    // initialize a vector that would allow iterating on possible filter options
+    std::vector<rs2_option> option_names = { RS2_OPTION_FILTER_MAGNITUDE, RS2_OPTION_FILTER_SMOOTH_ALPHA,
+        RS2_OPTION_FILTER_SMOOTH_DELTA };
+    
+    // initialize a vector that holds filters and their option values
+    filter_options dec_struct;
+    dec_struct.filter = &dec_filter;
+    filter_options disparity_struct;
+    disparity_struct.filter = &depth_to_disparity;
+    filter_options spat_struct;
+    spat_struct.filter = &spat_filter;
+    filter_options temp_struct;
+    temp_struct.filter = &temp_filter;
+    save_strings(dec_struct, spat_struct, temp_struct);
+    std::vector<filter_options> filters = { dec_struct, disparity_struct, spat_struct, temp_struct };
 
-    filter_ranges ranges;
-
-    // get ranges of all filters
-    get_filter_ranges(ranges, dec_filter, spat_filter, temp_filter);
-
-    // set filters to defaults values
-    set_defaults(params, ranges);
+    // set parameters that are controlled by the user to default values
+    set_defaults(filters, option_names);
 
     rs2::frame_queue depth_queue;
     rs2::frame_queue filtered_queue;
-    //rs2::frame_queue filtered_original_queue;
-    //rs2::frame_queue depth_original_queue;
 
+    // mutex to synchronize access to user-contorlled parameters that are used to set the filter options
     std::mutex param_lock;
-    std::mutex pc_lock;
+    //std::mutex pc_lock;
     std::mutex points_lock;
-
-    // Declare RealSense pipeline, encapsulating the actual device and sensors
-    rs2::pipeline pipe;
-    // Start streaming with default recommended configuration
-    pipe.start();
 
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
 
     std::thread t([&]() {
-
         while (app) {
-
-
             rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
             rs2::frame depth_frame = data.get_depth_frame(); // find depth frame
             rs2::frame filtered = depth_frame; // declare frame to apply filters on, while preserving the original depth data
 
-
-           // std::unique_lock<std::mutex> ul(param_lock);
-
-            // Set the filter options as chosen by the user (or by default)
-            set_filter_options(params, dec_filter, spat_filter, temp_filter, param_lock);
-            // ul.unlock();
-
             std::unique_lock<std::mutex> ul1(param_lock);
-            // Apply filters. The implemented flow of the filters pipeline is in the following order: apply decimation filter,
-            //transform the scence into disparity domain, apply spatial filter, apply temporal filter, revert the results back
-            //to depth domain (each post processing block is optional and can be applied independantly).
-            //
-            if (params.do_decimate)
-                filtered = dec_filter.proccess(filtered);
+            bool do_decimate = filters[0].do_filter;
+            bool do_disparity = filters[1].do_filter;
+            bool do_spatial = filters[2].do_filter;
+            bool do_temporal = filters[3].do_filter;
             ul1.unlock();
 
-            std::unique_lock<std::mutex> ul2(param_lock);
-            if (params.do_disparity)
-                filtered = depth_to_disparity.proccess(filtered);
-            ul2.unlock();
+            /* Apply filters. The implemented flow of the filters pipeline is in the following order: apply decimation filter,
+            transform the scence into disparity domain, apply spatial filter, apply temporal filter, revert the results back
+            to depth domain (each post processing block is optional and can be applied independantly).
+            */
+            if (do_decimate)
+                filtered = static_cast<rs2::decimation_filter*>(filters[0].filter)->process(filtered);
 
-            std::unique_lock<std::mutex> ul3(param_lock);
-            if (params.do_spatial)
-                filtered = spat_filter.proccess(filtered);
-            ul3.unlock();
+            if (do_disparity)
+                filtered = static_cast<rs2::disparity_transform*>(filters[1].filter)->process(filtered);
 
-            std::unique_lock<std::mutex> ul4(param_lock);
-            if (params.do_temporal)
-                filtered = temp_filter.proccess(filtered);
-            ul4.unlock();
+            if (do_spatial)
+                filtered = static_cast<rs2::spatial_filter*>(filters[2].filter)->process(filtered);
 
-            std::unique_lock<std::mutex> ul5(param_lock);
-            if (params.do_disparity)
-                filtered = disparity_to_depth.proccess(filtered);
-            ul5.unlock();
+            if (do_temporal)
+                filtered = static_cast<rs2::temporal_filter*>(filters[3].filter)->process(filtered);
 
-            //depth_original_queue.enqueue(depth_frame);
-            //filtered_original_queue.enqueue(filtered);
+            if (do_disparity)
+                filtered = disparity_to_depth.process(filtered);
 
-
-            std::unique_lock<std::mutex> ul6(points_lock);
 
             // Generate the pointcloud and texture mappings
+            std::unique_lock<std::mutex> ul2(points_lock);
             depth_points = pc.calculate(depth_frame);
+            ul2.unlock();
+            std::unique_lock<std::mutex> ul3(points_lock);
             filtered_points = pc_filtered.calculate(filtered);
-
-            ul6.unlock();
+            ul3.unlock();
 
             // Colorize frames to map to the pointclouds
-
             rs2::frame colored_depth = color_map(depth_frame);
-
-            depth_queue.enqueue(colored_depth);
-
             rs2::frame colored_filtered = color_map(filtered);
 
+            depth_queue.enqueue(colored_depth);
             filtered_queue.enqueue(colored_filtered);
         }
     });
-
-    //rs2::frame depth_frame;
-    //rs2::frame filtered;
+    
+    // Frame objects to hold ready frames
     rs2::frame colored_filtered;
     rs2::frame colored_depth;
 
-    while (app) // Application still alive?
-    {
-
-        // Taking dimensions of the window for rendering purposes
+    while (app) {
         float w = static_cast<float>(app.width());
         float h = static_cast<float>(app.height());
 
-       // std::unique_lock<std::mutex> ul1(param_lock);
-
         // render the user interface: sliders, checkboxes
-        render_ui(w, h, params, ranges, param_lock);
+        render_ui(w, h, filters, param_lock, option_names);
 
-        //ul1.unlock();
-        /*
-        if (depth_original_queue.poll_for_frame(&depth_frame)) {
-        filtered = filtered_original_queue.wait_for_frame();
+        // Set the filter options as chosen by the user (or by default)
+        set_filter_options(filters, param_lock, option_names);
 
-        // Generate the pointcloud and texture mappings
-        depth_points = pc.calculate(depth_frame);
-        filtered_points = pc_filtered.calculate(filtered);
-
-        }
-        */
+        // Tell each pointcloud object to map to to the colorized frame and upload the colorized frames to OpenGL
         if (depth_queue.poll_for_frame(&colored_depth)) {
             pc.map_to(colored_depth);
             app_state.tex.upload(colored_depth);
-
-            if (filtered_queue.poll_for_frame(&colored_filtered)) {
-                // Tell each pointcloud object to map to to the colorized frame
-                // std::unique_lock<std::mutex> ul(pc_lock);
-
-                pc_filtered.map_to(colored_filtered);
-                //    ul.unlock();
-
-                // Upload the colorized frames to OpenGL
-
-                app_state_filtered.tex.upload(colored_filtered);
-
-            }
+            
+            // wait for the filtered frame
+            colored_filtered = filtered_queue.wait_for_frame();
+            pc_filtered.map_to(colored_filtered);
+            app_state_filtered.tex.upload(colored_filtered);
         }
 
-
-        std::unique_lock<std::mutex> ul2(points_lock);
         // Draw the pointclouds of the original and the filtered frames    
+        std::unique_lock<std::mutex> ul2(points_lock);
         draw_pointcloud({ 0, h / 2, w / 2, h / 2 }, app_state, depth_points);
-        draw_pointcloud({ w / 2, h / 2, w / 2, h / 2 }, app_state_filtered, filtered_points);
         ul2.unlock();
+        std::unique_lock<std::mutex> ul3(points_lock);
+        draw_pointcloud({ w / 2, h / 2, w / 2, h / 2 }, app_state_filtered, filtered_points);
+        ul3.unlock();
 
         // Update time of current frame's arrival
         auto curr = std::chrono::high_resolution_clock::now();
@@ -257,10 +227,10 @@ int main(int argc, char * argv[]) try
             app_state.yaw += velocity;
             app_state_filtered.yaw += velocity;
             last_time = curr;
-        }
+        }  
     }
 
-    t.join();
+     t.join();
 
     return EXIT_SUCCESS;
 }
@@ -275,52 +245,61 @@ catch (const std::exception& e)
     return EXIT_FAILURE;
 }
 
-
-/* Get the range of each filter option, which contains minimum, maximum and
-default values for that option, as well as the step */
-
-void get_filter_ranges(filter_ranges& ranges, rs2::decimation_filter& dec_filter,
-    rs2::spatial_filter& spat_filter, rs2::temporal_filter& temp_filter) {
-    ranges.dec_magnitude_range = dec_filter.get_option_range(RS2_OPTION_FILTER_MAGNITUDE);
-    ranges.spat_magnitude_range = spat_filter.get_option_range(RS2_OPTION_FILTER_MAGNITUDE);
-    ranges.spat_smooth_alpha_range = spat_filter.get_option_range(RS2_OPTION_FILTER_SMOOTH_ALPHA);
-    ranges.spat_smooth_delta_range = spat_filter.get_option_range(RS2_OPTION_FILTER_SMOOTH_DELTA);
-    ranges.temp_smooth_alpha_range = temp_filter.get_option_range(RS2_OPTION_FILTER_SMOOTH_ALPHA);
-    ranges.temp_smooth_delta_range = temp_filter.get_option_range(RS2_OPTION_FILTER_SMOOTH_DELTA);
-    ranges.temp_magnitude_range = temp_filter.get_option_range(RS2_OPTION_FILTER_MAGNITUDE);
+// helper function for deciding on int ot float slider
+bool is_all_integers(float min, float max, float def, float step)
+{
+    return is_integer(min) && is_integer(max) &&
+        is_integer(def) && is_integer(step);
 }
 
 
-void set_defaults(params& params, filter_ranges& ranges) {
-    // Enable all filters by default
-    params.do_decimate = true;
-    params.do_temporal = true;
-    params.do_spatial = true;
-    params.do_disparity = true;
-
-    // Set default values for all filters
-    params.decimate_magnitude = ranges.dec_magnitude_range.def;
-    params.temporal_magnitude = ranges.temp_magnitude_range.def;
-    params.spatial_magnitude = ranges.spat_magnitude_range.def;
-    params.temp_smooth_alpha = ranges.temp_smooth_alpha_range.def;
-    params.temp_smooth_delta = ranges.temp_smooth_delta_range.def;
-    params.spat_smooth_alpha = ranges.spat_smooth_alpha_range.def;
-    params.spat_smooth_delta = ranges.spat_smooth_delta_range.def;
+// Set default values for the parameters that control filter options through the interface
+void set_defaults(std::vector<filter_options>& filters, const std::vector<rs2_option>& option_names) {
+    for (int i = 0; i < filters.size(); i++) {
+        for (int j = 0; j < option_names.size(); j++) {
+            if (filters[i].filter->supports(option_names[j])) {
+                rs2::option_range range = filters[i].filter->get_option_range(option_names[j]);
+                if (is_all_integers(range.min, range.max, range.def, range.step))
+                {
+                    filters[i].int_params[option_names[j]] = range.def;
+                    int value = filters[i].int_params[option_names[j]];
+                }
+                else
+                {
+                    float value = filters[i].int_params[option_names[j]];
+                    filters[i].float_params[option_names[j]] = range.def;
+                }
+            }
+        }
+        filters[i].do_filter = true;
+    }
 }
 
 
-void set_filter_options(params& params, rs2::decimation_filter& dec_filter,
-    rs2::spatial_filter& spat_filter, rs2::temporal_filter& temp_filter, std::mutex& lock) {
-    dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, params.decimate_magnitude);
-    spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, params.spatial_magnitude);
-    spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, params.spat_smooth_alpha);
-    spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, params.spat_smooth_delta);
-    temp_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, params.temporal_magnitude);
-    temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, params.temp_smooth_alpha);
-    temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, params.temp_smooth_delta);
+// Iterate over all filters, and set every supported option with the chosen value
+void set_filter_options(std::vector<filter_options>& filters, std::mutex& lock, 
+    const std::vector<rs2_option>& option_names) {
+    for (int i = 0; i < filters.size(); i++) {
+        for (int j = 0; j < option_names.size(); j++) {
+            if (filters[i].filter->supports(option_names[j])) {
+                rs2::option_range range = filters[i].filter->get_option_range(option_names[j]);
+                if (is_all_integers(range.min, range.max, range.def, range.step))
+                {
+                    std::lock_guard<std::mutex> lock(lock);
+                    filters[i].filter->set_option(option_names[j], filters[i].int_params[option_names[j]]);
+                }
+                else
+                {
+                    std::lock_guard<std::mutex> lock(lock);
+                    filters[i].filter->set_option(option_names[j], filters[i].float_params[option_names[j]]);
+                }
+            }
+        }
+    }
 }
 
-void render_ui(float w, float h, params& params, const filter_ranges& ranges, std::mutex& lock) {
+void render_ui(float w, float h, std::vector<filter_options>& filters, std::mutex& lock,
+    const std::vector<rs2_option>& option_names) {
     // for the interface: distance between checkbox and slider
     const int dist = 120;
 
@@ -337,38 +316,36 @@ void render_ui(float w, float h, params& params, const filter_ranges& ranges, st
     ImGui::Begin("app", nullptr, flags);
 
     // Using ImGui library to provide slide controllers for adjusting the filter options
-    render_slider_int({ w / 4 + dist, h / 2 + 10, w / 4 }, "slider_dec_mag", "Magnitude", &params.decimate_magnitude,
-        ranges.dec_magnitude_range.min, ranges.dec_magnitude_range.max, "Decimation filter magnitude", lock);
-
-    render_slider_int({ w / 4 + dist, h / 2 + 70, w / 4 }, "slider_spat_mag", "Magnitude",
-        &params.spatial_magnitude, ranges.spat_magnitude_range.min, ranges.spat_magnitude_range.max,
-        "Spatial filter magnitude", lock);
-
-    render_slider_float({ w / 4 + dist, h / 2 + 110, w / 4 }, "slider_spat_smooth_alpha", "Smooth Alpha",
-        &params.spat_smooth_alpha, ranges.spat_smooth_alpha_range.min, ranges.spat_smooth_alpha_range.max,
-        "Current pixel weight", lock);
-
-    render_slider_int({ w / 4 + dist, h / 2 + 150, w / 4 }, "slider_spat_smooth_delta", "Smooth Delta",
-        &params.spat_smooth_delta, ranges.spat_smooth_delta_range.min, ranges.spat_smooth_delta_range.max,
-        "Convolution radius", lock);
-
-    render_slider_int({ w / 4 + dist, h / 2 + 210, w / 4 }, "slider_tem_mag", "Magnitude",
-        &params.temporal_magnitude, ranges.temp_magnitude_range.min, ranges.temp_magnitude_range.max,
-        "Temporal filter magnitude", lock);
-
-    render_slider_float({ w / 4 + dist, h / 2 + 250, w / 4 }, "slider_tem_smooth_alpha", "Smooth Alpha",
-        &params.temp_smooth_alpha, ranges.temp_smooth_alpha_range.min, ranges.temp_smooth_alpha_range.max,
-        "The normalized weight of the current pixel", lock);
-
-    render_slider_int({ w / 4 + dist, h / 2 + 290, w / 4 }, "slider_tem_smooth_delta", "Smooth Delta",
-        &params.temp_smooth_delta, ranges.temp_smooth_delta_range.min, ranges.temp_smooth_delta_range.max,
-        "Depth range (gradient) threshold", lock);
-
-    // Using Imgui to provide checkboxes for choosing a filter
-    render_checkbox({ w / 4, h / 2 + 10 }, &params.do_decimate, "Decimate", lock);
-    render_checkbox({ w / 4, h / 2 + 40 }, &params.do_disparity, "Disparity", lock);
-    render_checkbox({ w / 4, h / 2 + 70 }, &params.do_spatial, "Spatial", lock);
-    render_checkbox({ w / 4, h / 2 + 210 }, &params.do_temporal, "Temporal", lock);
+    std::vector<char*> checkbox_names{ "Decimate", "Disparity", "Spatial", "Temporal" };
+    int x = 20, y = 10;
+    for (int i = 0; i < filters.size(); i++) {
+         for (int j = 0; j < option_names.size(); j++) {
+            if (filters[i].filter->supports(option_names[j])) {
+                rs2::option_range range = filters[i].filter->get_option_range(option_names[j]);
+                if (is_all_integers(range.min, range.max, range.def, range.step))
+                {
+                    render_slider_int({ w / 4 + dist, h / 2 + x, w / 4 }, filters[i].string[option_names[j]][0],
+                        filters[i].string[option_names[j]][1], &(filters[i].int_params[option_names[j]]), range.min, range.max,
+                        filters[i].string[option_names[j]][2], lock);
+                    x = x + 50;
+                }
+                else
+                {
+                    render_slider_float({ w / 4 + dist, h / 2 + x, w / 4 }, filters[i].string[option_names[j]][0],
+                        filters[i].string[option_names[j]][1], &(filters[i].float_params[option_names[j]]),
+                        range.min, range.max, filters[i].string[option_names[j]][2], lock);
+                    x += 50;
+                }
+            }
+        }
+        // Using Imgui to provide checkboxes for choosing a filter
+        render_checkbox({ w / 4, h / 2 + 10 + y }, &filters[i].do_filter, checkbox_names[i], lock);
+        y += 30;
+        if (i == 1)
+            x += 12;
+        if (i == 2)
+            y += 122;
+    }
 
     // Adding before and after labels
     ImGui::SetCursorPosX(20);
@@ -441,6 +418,22 @@ void render_checkbox(const float2 location, bool* checkbox_param, char* label, s
     ul1.unlock();
 }
 
+void save_strings(filter_options& dec_struct, filter_options& spat_struct, filter_options& temp_struct) {
+    dec_struct.string[RS2_OPTION_FILTER_MAGNITUDE] = { "slider_dec_mag", "Magnitude",
+        "Decimation filter magnitude" };
+    spat_struct.string[RS2_OPTION_FILTER_MAGNITUDE] = { "slider_spat_mag", "Magnitude",
+        "Spatial filter magnitude" };
+    spat_struct.string[RS2_OPTION_FILTER_SMOOTH_ALPHA] = { "slider_spat_smooth_alpha", "Smooth Alpha",
+        "Current pixel weight" };
+    spat_struct.string[RS2_OPTION_FILTER_SMOOTH_DELTA] = { "slider_spat_smooth_delta", "Smooth Delta",
+        "Convolution radius" };
+    temp_struct.string[RS2_OPTION_FILTER_MAGNITUDE] = { "slider_tem_mag", "Magnitude",
+        "Temporal filter magnitude" };
+    temp_struct.string[RS2_OPTION_FILTER_SMOOTH_ALPHA] = { "slider_tem_smooth_alpha", "Smooth Alpha",
+        "The normalized weight of the current pixel" };
+    temp_struct.string[RS2_OPTION_FILTER_SMOOTH_DELTA] = { "slider_tem_smooth_delta", "Smooth Delta",
+        "Depth range (gradient) threshold" };
+}
 
 // Handles all the OpenGL calls needed to display the point cloud
 void draw_pointcloud(const rect& viewer_rect, state& app_state, rs2::points& points)
@@ -449,7 +442,7 @@ void draw_pointcloud(const rect& viewer_rect, state& app_state, rs2::points& poi
         return;
 
     glViewport(viewer_rect.x, viewer_rect.y,
-        viewer_rect.w, viewer_rect.h);
+    viewer_rect.w, viewer_rect.h);
 
     // OpenGL commands that prep screen for the pointcloud
     glPopMatrix();
@@ -467,9 +460,7 @@ void draw_pointcloud(const rect& viewer_rect, state& app_state, rs2::points& poi
     glPushMatrix();
     gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
 
-    // glTranslatef(0, 0, +0.5f + app_state.offset_y*0.05f);
     glTranslatef(0, 0, +0.5f);
-    // glRotated(app_state.pitch, 1, 0, 0);
     glRotated(app_state.yaw, 0, 1, 0);
     glTranslatef(0, 0, -0.5f);
 
@@ -478,23 +469,19 @@ void draw_pointcloud(const rect& viewer_rect, state& app_state, rs2::points& poi
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, app_state.tex.get_gl_handle());
-    // float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
 
-    // glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F); // GL_CLAMP_TO_EDGE
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F); // GL_CLAMP_TO_EDGE
     glBegin(GL_POINTS);
 
-
-    /* this segment actually prints the pointcloud */
-
+    // this segment actually prints the pointcloud
     auto vertices = points.get_vertices();              // get vertices
     auto tex_coords = points.get_texture_coordinates(); // and texture coordinates
     for (int i = 0; i < points.size(); i++)
     {
         if (vertices[i].z)
         {
-            // upload the point and texture coordinates only for points we have depth data for
+        // upload the point and texture coordinates only for points we have depth data for
             glVertex3fv(vertices[i]);
             glTexCoord2fv(tex_coords[i]);
         }
