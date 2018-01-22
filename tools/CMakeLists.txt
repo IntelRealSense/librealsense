@@ -53,6 +53,12 @@ if(BUILD_GRAPHICAL_EXAMPLES)
                       /usr/local/lib/${CMAKE_LIBRARY_ARCHITECTURE}
                       /usr/X11R6/lib
         )
+        if(APPLE)
+            find_library(COCOA_LIBRARY Cocoa)
+            find_library(IOKIT_LIBRARY IOKit)
+            find_library(COREVIDEO_LIBRARY CoreVideo)
+            LIST(APPEND DEPENDENCIES ${COCOA_LIBRARY} ${IOKIT_LIBRARY} ${COREVIDEO_LIBRARY})
+        endif()
         list(APPEND DEPENDENCIES m ${GLFW_LIBRARIES} ${LIBUSB1_LIBRARIES})
         include_directories(${GLFW_INCLUDE_DIR})
     endif()
