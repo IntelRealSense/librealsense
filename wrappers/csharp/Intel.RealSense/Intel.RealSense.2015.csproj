@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{E488694F-F2FA-45AD-B1B8-8D4FABE34E86}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Intel.RealSense</RootNamespace>
+    <AssemblyName>Intel.RealSense</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <WarningLevel>4</WarningLevel>
+    <Optimize>false</Optimize>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="FrameSet.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="Context.cs" />
+    <Compile Include="Device.cs" />
+    <Compile Include="Frame.cs" />
+    <Compile Include="FrameQueue.cs" />
+    <Compile Include="NativeMethods.cs" />
+    <Compile Include="Pipeline.cs" />
+    <Compile Include="Processing.cs" />
+    <Compile Include="Sensor.cs" />
+    <Compile Include="StreamProfile.cs" />
+    <Compile Include="Types.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <BuildPlatform>$(Platform)</BuildPlatform>
+    <BuildPlatform Condition="'$(BuildPlatform)' == 'AnyCPU'">x86</BuildPlatform>
+    <InstallPath>C:\Program Files (x86)\Intel RealSense SDK 2.0\bin</InstallPath>
+    <BuildPath>..\..\..\build\$(Configuration)\realsense2.dll</BuildPath>
+  </PropertyGroup>
+  <Target Name="BeforeBuild">
+    <CallTarget Targets="BuildLib" ContinueOnError="true" />
+    <CallTarget Targets="CopyLocalDependencies" />
+  </Target>
+  <Target Name="CopyLocalDependencies" BeforeTargets="Build" Condition="'$(IsCrossTargetingBuild)' != 'true'">
+    <Copy Condition="Exists('$(BuildPath)')" SourceFiles="$(BuildPath)" DestinationFolder="$(OutputPath)" />
+    <Copy Condition="!Exists('$(BuildPath)') and Exists('$(InstallPath)')" SourceFiles="$(InstallPath)\$(BuildPlatform)\realsense2.dll" DestinationFolder="$(OutputPath)" />
+  </Target>
+  <Target Name="BuildLib">
+    <PropertyGroup>
+      <CMakeInstalled>-1</CMakeInstalled>
+      <BuildDirectory>..\..\..\build</BuildDirectory>
+    </PropertyGroup>
+    <Exec Command="CMake --version">
+      <Output TaskParameter="ExitCode" PropertyName="CMakeInstalled" />
+    </Exec>
+    <Error Condition="$(CMakeInstalled)!=0" Text="CMake not found therefore librealsense could not be built from source" />
+    <Exec Command="if not exist $(BuildDirectory) mkdir $(BuildDirectory)" />
+    <Exec Condition="!Exists('$(BuildDirectory)\CMakeCache.txt')" Command="cd $(BuildDirectory) &amp;&amp; cmake -D BUILD_GRAPHICAL_EXAMPLES=OFF -D BUILD_EXAMPLES=OFF .." />
+    <Exec Command="cd $(BuildDirectory) &amp;&amp; cmake --build ./ --config $(Configuration)" />
+  </Target>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
