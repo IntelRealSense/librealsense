@@ -506,6 +506,7 @@ class RSFrame : public Nan::ObjectWrap {
         SupportsFrameMetadata);
     Nan::SetPrototypeMethod(tpl, "isVideoFrame", IsVideoFrame);
     Nan::SetPrototypeMethod(tpl, "isDepthFrame", IsDepthFrame);
+    Nan::SetPrototypeMethod(tpl, "isDisparityFrame", IsDisparityFrame);
 
     // Points related APIs
     Nan::SetPrototypeMethod(tpl, "canGetPoints", CanGetPoints);
@@ -520,6 +521,7 @@ class RSFrame : public Nan::ObjectWrap {
     Nan::SetPrototypeMethod(tpl, "getPointsCount", GetPointsCount);
     Nan::SetPrototypeMethod(tpl, "isValid", IsValid);
     Nan::SetPrototypeMethod(tpl, "getDistance", GetDistance);
+    Nan::SetPrototypeMethod(tpl, "getBaseLine", GetBaseLine);
 
     constructor_.Reset(tpl->GetFunction());
     exports->Set(Nan::New("RSFrame").ToLocalChecked(), tpl->GetFunction());
@@ -723,6 +725,16 @@ class RSFrame : public Nan::ObjectWrap {
       return;
     }
     info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(IsDisparityFrame) {
+    auto me = Nan::ObjectWrap::Unwrap<RSFrame>(info.Holder());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me) return;
+
+    auto is_disparity = rs2_is_frame_extendable_to(
+        me->frame_, RS2_EXTENSION_DISPARITY_FRAME, &me->error_);
+    info.GetReturnValue().Set(Nan::New(is_disparity ? true : false));
   }
 
   static NAN_METHOD(GetFrameMetadata) {
@@ -944,6 +956,15 @@ class RSFrame : public Nan::ObjectWrap {
       return;
     }
     info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(GetBaseLine) {
+    auto me = Nan::ObjectWrap::Unwrap<RSFrame>(info.Holder());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me) return;
+
+    auto val = rs2_depth_stereo_frame_get_baseline(me->frame_, &me->error_);
+    info.GetReturnValue().Set(Nan::New(val));
   }
 
  private:
@@ -1679,8 +1700,12 @@ class RSSensor : public Nan::ObjectWrap, Options {
     frame_->Replace(nullptr);
     video_frame_->Replace(nullptr);
     depth_frame_->Replace(nullptr);
+    disparity_frame_->Replace(nullptr);
 
-    if (rs2_is_frame_extendable_to(raw_frame, RS2_EXTENSION_DEPTH_FRAME,
+    if (rs2_is_frame_extendable_to(raw_frame, RS2_EXTENSION_DISPARITY_FRAME,
+        &error_)) {
+      disparity_frame_->Replace(raw_frame);
+    } else if (rs2_is_frame_extendable_to(raw_frame, RS2_EXTENSION_DEPTH_FRAME,
         &error_)) {
       depth_frame_->Replace(raw_frame);
     } else if (rs2_is_frame_extendable_to(raw_frame, RS2_EXTENSION_VIDEO_FRAME,
@@ -1693,7 +1718,8 @@ class RSSensor : public Nan::ObjectWrap, Options {
 
  private:
   RSSensor() : sensor_(nullptr), error_(nullptr), profile_list_(nullptr),
-      frame_(nullptr), video_frame_(nullptr), depth_frame_(nullptr) {}
+      frame_(nullptr), video_frame_(nullptr), depth_frame_(nullptr),
+      disparity_frame_(nullptr) {}
 
   ~RSSensor() {
     DestroyMe();
@@ -1793,11 +1819,14 @@ class RSSensor : public Nan::ObjectWrap, Options {
     auto frame = Nan::ObjectWrap::Unwrap<RSFrame>(info[1]->ToObject());
     auto depth_frame = Nan::ObjectWrap::Unwrap<RSFrame>(info[2]->ToObject());
     auto video_frame = Nan::ObjectWrap::Unwrap<RSFrame>(info[3]->ToObject());
+    auto disparity_frame = Nan::ObjectWrap::Unwrap<RSFrame>(
+        info[4]->ToObject());
     auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
-    if (me && frame && depth_frame && video_frame) {
+    if (me && frame && depth_frame && video_frame && disparity_frame) {
       me->frame_ = frame;
       me->depth_frame_ = depth_frame;
       me->video_frame_ = video_frame;
+      me->disparity_frame_ = disparity_frame;
       v8::String::Utf8Value str(info[0]);
       me->frame_callback_name_ = std::string(*str);
       rs2_start_cpp(me->sensor_, new FrameCallbackForProc(me), &me->error_);
@@ -1970,6 +1999,7 @@ class RSSensor : public Nan::ObjectWrap, Options {
   RSFrame* frame_;
   RSFrame* video_frame_;
   RSFrame* depth_frame_;
+  RSFrame* disparity_frame_;
   friend class RSContext;
   friend class DevicesChangedCallbackInfo;
   friend class FrameCallbackInfo;
@@ -3644,6 +3674,8 @@ class RSFilter : public Nan::ObjectWrap, Options {
     kFilterDecimation = 0,
     kFilterTemporal,
     kFilterSpatial,
+    kFilterDisparity2Depth,
+    kFilterDepth2Disparity
   };
   static void Init(v8::Local<v8::Object> exports) {
     v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
@@ -3708,6 +3740,12 @@ class RSFilter : public Nan::ObjectWrap, Options {
     } else if (!(type.compare("spatial"))) {
       obj->type_ = kFilterSpatial;
       obj->block_ = rs2_create_spatial_filter_block(&obj->error_);
+    } else if (!(type.compare("disparity-to-depth"))) {
+      obj->type_ = kFilterDisparity2Depth;
+      obj->block_ = rs2_create_disparity_transform_block(0, &obj->error_);
+    } else if (!(type.compare("depth-to-disparity"))) {
+      obj->type_ = kFilterDepth2Disparity;
+      obj->block_ = rs2_create_disparity_transform_block(1, &obj->error_);
     }
     obj->frame_queue_ = rs2_create_frame_queue(1, &obj->error_);
     auto callback = new FrameCallbackForFrameQueue(obj->frame_queue_);
