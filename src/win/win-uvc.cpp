@@ -477,6 +477,21 @@ namespace librealsense
             { RS2_OPTION_AUTO_EXPOSURE_PRIORITY,        KSPROPERTY_CAMERACONTROL_AUTO_EXPOSURE_PRIORITY },
         };
 
+        long to_100micros(long v)
+        {
+            double res = pow(2.0, v);
+            return static_cast<long>(res * 10000);
+        }
+
+        long from_100micros(long val)
+        {
+            double d = val * 0.0001;
+            double l = (d != 0) ? std::log2(d) : 1;
+            long v = static_cast<long>(std::roundl(l));
+            assert(v <= 0 && v >= -8);
+            return v;
+        }
+
         bool wmf_uvc_device::get_pu(rs2_option opt, int32_t& value) const
         {
             long val = 0, flags = 0;
@@ -487,7 +502,7 @@ namespace librealsense
                 if (hr == DEVICE_NOT_READY_ERROR)
                     return false;
 
-                value = (opt == RS2_OPTION_EXPOSURE) ? val : (flags == CameraControl_Flags_Auto);
+                value = (opt == RS2_OPTION_EXPOSURE) ? to_100micros(val) : (flags == CameraControl_Flags_Auto);
                 CHECK_HR(hr);
                 return true;
             }
@@ -531,7 +546,7 @@ namespace librealsense
         {
             if (opt == RS2_OPTION_EXPOSURE)
             {
-                auto hr = _camera_control->Set(CameraControl_Exposure, static_cast<int>(value), CameraControl_Flags_Manual);
+                auto hr = _camera_control->Set(CameraControl_Exposure, from_100micros(value), CameraControl_Flags_Manual);
                 if (hr == DEVICE_NOT_READY_ERROR)
                     return false;
 
@@ -664,7 +679,8 @@ namespace librealsense
             if (opt == RS2_OPTION_EXPOSURE)
             {
                 CHECK_HR(_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
-                control_range result(minVal, maxVal, steppingDelta, defVal);
+                long min = to_100micros(minVal), max = to_100micros(maxVal), def = to_100micros(defVal);
+                control_range result(min, max, min, def);
                 return result;
             }
             for (auto & pu : pu_controls)
