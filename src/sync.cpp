@@ -292,7 +292,11 @@ namespace librealsense
                 {
                     if (!skip_missing_stream(synced_frames, i))
                     {
+                        s << "Wait for skipped missing stream: " << _name<<" ";
+                        for (auto&& stream : i->get_streams())
+                            s << stream;
                         synced_frames.clear();
+                        LOG_DEBUG(s.str());
                         break;
                     }
                     else
@@ -301,9 +305,9 @@ namespace librealsense
                         s << "skipped missing stream: " << _name<<" ";
                         for (auto&& stream : i->get_streams())
                             s << stream;
-
                         LOG_DEBUG(s.str());
                     }
+
                 }
             }
 
@@ -471,10 +475,20 @@ namespace librealsense
         _last_arrived[m] = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
     }
 
-    void timestamp_composite_matcher::update_next_expected(const frame_holder & f)
+    int timestamp_composite_matcher::get_fps(const frame_holder & f)
     {
         auto fps = f.frame->get_stream()->get_framerate();
-        auto gap = 1000 / fps;
+        if(f.frame->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
+        {
+            fps = f.frame->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+        }
+        return fps;
+    }
+
+    void timestamp_composite_matcher::update_next_expected(const frame_holder & f)
+    {
+
+        auto gap = 1000 / get_fps(f);
 
         auto matcher = find_matcher(f);
 
@@ -533,10 +547,11 @@ namespace librealsense
         //next expected of the missing stream didn't updated yet
         if((*synced_frame)->get_frame_timestamp() > next_expected && abs((*synced_frame)->get_frame_timestamp()- next_expected)<MAX_GAP)
         {
+            LOG_DEBUG("next expected of the missing stream didn't updated yet");
             return false;
         }
 
-        return !are_equivalent((*synced_frame)->get_frame_timestamp(), next_expected, (*synced_frame)->get_stream()->get_framerate());
+        return !are_equivalent((*synced_frame)->get_frame_timestamp(), next_expected, get_fps(*synced_frame));
     }
 
     bool timestamp_composite_matcher::are_equivalent(double a, double b, int fps)

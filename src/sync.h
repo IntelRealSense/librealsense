@@ -161,6 +161,7 @@ namespace librealsense
         void update_next_expected(const frame_holder & f) override;
 
     private:
+        int get_fps(const frame_holder & f);
         bool are_equivalent(double a, double b, int fps);
         std::map<matcher*, double> _last_arrived;
 

@@ -606,7 +606,6 @@ namespace rs2
             depth_stream_active(false),
             resulting_queue_max_size(20),
             resulting_queue(static_cast<unsigned int>(resulting_queue_max_size)),
-//            frames_queue(4),
             t([this]() {render_loop(); })
         {
             processing_block.start(resulting_queue);

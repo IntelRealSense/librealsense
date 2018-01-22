@@ -222,6 +222,61 @@ namespace librealsense
         };
     };
 
+
+    class actual_fps_calculator
+    {
+    public:
+        actual_fps_calculator()
+        {
+            _fps_values = {6, 15, 30, 60};
+        }
+
+        rs2_metadata_type get_fps(const frame & frm)
+        {
+            auto diff = 0;
+            if(_last == 0)
+            {
+                diff = 0;
+            }
+            else
+            {
+                diff = frm.get_frame_timestamp() - _last;
+            }
+            _last = frm.get_frame_timestamp();
+
+            return diff ? 1000/diff:frm.get_stream()->get_framerate();
+        }
+    private:
+        double _last = 0;
+        std::vector<int> _fps_values;
+    };
+
+    class md_attribute_actual_fps : public md_attribute_parser_base
+    {
+    public:
+        rs2_metadata_type get(const frame & frm) const override
+        {
+           if(frm.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
+           {
+               auto exp = frm.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+               auto exp_msec = (float)exp/100.f;
+               return 1000.f/exp_msec;
+           }
+           else
+           {
+               return _fps_calculator.get_fps(frm);
+           }
+        }
+
+        bool supports(const frame & frm) const override
+        {
+            return true;
+        }
+
+    private:
+        mutable actual_fps_calculator _fps_calculator;
+    };
+
     /**\brief A helper function to create a specialized parser for RS4xx sensor timestamp*/
     inline std::shared_ptr<md_attribute_parser_base> make_rs400_sensor_ts_parser(std::shared_ptr<md_attribute_parser_base> frame_ts_parser,
         std::shared_ptr<md_attribute_parser_base> sensor_ts_parser)

@@ -92,6 +92,7 @@ namespace librealsense
         color_ep->register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
 
         color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
+        color_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS,  std::make_shared<md_attribute_actual_fps> ());
 
         // attributes of md_capture_timing
         auto md_prop_offset = offsetof(metadata_raw, mode) +
