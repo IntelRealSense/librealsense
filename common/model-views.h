@@ -435,6 +435,8 @@ namespace rs2
         bool show_stream_details = false;
         rect curr_info_rect{};
         temporal_event _stream_not_alive;
+        bool show_map_ruler = true;
+        std::vector<float> _depth_max_distances;
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);
@@ -840,7 +842,6 @@ namespace rs2
         bool is_output_collapsed = false;
         bool is_3d_view = false;
         bool paused = false;
-        bool show_map_ruler = true;
 
 
         void draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message, texture_buffer* texture, rs2::points  f = rs2::points());
@@ -880,8 +881,9 @@ namespace rs2
                               const stream_model& s_model,
                               const rect& stream_rect,
                               std::vector<rgb_per_distance> rgb_per_distance_vec,
-                              double ruler_length, const std::string& ruler_units);
+                              const std::string& ruler_units);
 
+        float _last_avg_distance = 0;
         std::vector<rgb_per_distance> _last_rgb_per_distance_vec;
         streams_layout _layout;
         streams_layout _old_layout;

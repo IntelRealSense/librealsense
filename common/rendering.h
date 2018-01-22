@@ -1502,6 +1502,18 @@ namespace rs2
             if (r != zoomed_rect)
             {
                 draw_texture(unit_square_coordinates, thumbnail);
+
+                // Draw thumbnail border
+                static const auto top_line_offset = 0.5f;
+                static const auto right_line_offset = top_line_offset / 2;
+                glColor3f(0.0, 0.0, 0.0);
+                glBegin(GL_LINE_LOOP);
+                glVertex2f(thumbnail.x - top_line_offset, thumbnail.y - top_line_offset);
+                glVertex2f(thumbnail.x + thumbnail.w + right_line_offset / 2, thumbnail.y - top_line_offset);
+                glVertex2f(thumbnail.x + thumbnail.w + right_line_offset / 2, thumbnail.y + thumbnail.h + top_line_offset);
+                glVertex2f(thumbnail.x - top_line_offset, thumbnail.y + thumbnail.h + top_line_offset);
+                glEnd();
+
                 curr_preview_rect = thumbnail;
                 zoom_preview = true;
             }

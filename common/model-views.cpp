@@ -5,7 +5,6 @@
 #include <thread>
 #include <algorithm>
 #include <regex>
-#include <random>
 
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <librealsense2/rsutil.h>
@@ -2062,7 +2061,7 @@ namespace rs2
         auto num_of_buttons = 4;
         if (!viewer.allow_stream_close) --num_of_buttons;
         if (viewer.streams.size() > 1) ++num_of_buttons;
-        if (RS2_STREAM_DEPTH == profile.stream_type()) ++num_of_buttons;
+        if (RS2_STREAM_DEPTH == profile.stream_type()) ++num_of_buttons; // Color map ruler button
 
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -2125,13 +2124,13 @@ namespace rs2
         if (RS2_STREAM_DEPTH == profile.stream_type())
         {
             label = to_string() << textual_icons::bar_chart << "##Color map";
-            if (viewer.show_map_ruler)
+            if (show_map_ruler)
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
                 if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
                 {
-                    viewer.show_map_ruler = false;
+                    show_map_ruler = false;
                 }
                 if (ImGui::IsItemHovered())
                 {
@@ -2143,7 +2142,7 @@ namespace rs2
             {
                 if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
                 {
-                    viewer.show_map_ruler = true;
+                    show_map_ruler = true;
                 }
                 if (ImGui::IsItemHovered())
                 {
@@ -3212,9 +3211,8 @@ namespace rs2
                                         const stream_model& s_model,
                                         const rect& stream_rect,
                                         std::vector<rgb_per_distance> rgb_per_distance_vec,
-                                        double ruler_length, const std::string& ruler_units)
+                                        const std::string& ruler_units)
     {
-        assert(ruler_length > 0.0);
         if (rgb_per_distance_vec.empty())
             return;
 
@@ -3222,6 +3220,17 @@ namespace rs2
             const rgb_per_distance& b) {
             return a.depth_val < b.depth_val;
         });
+
+        float average_distance = std::accumulate(s_model._depth_max_distances.begin(),
+                                                 s_model._depth_max_distances.end(), 0.0) / s_model._depth_max_distances.size();
+
+        assert(average_distance > 0.f);
+        static const auto avg_distance_threshold = 5;
+        if (_last_avg_distance > 0.f)
+            average_distance = (std::abs(_last_avg_distance - average_distance) > avg_distance_threshold) ? average_distance : _last_avg_distance;
+
+        _last_avg_distance = average_distance;
+        auto ruler_length = static_cast<int>(std::ceil(average_distance));
 
         const auto stream_height = stream_rect.y + stream_rect.h;
         const auto stream_width = stream_rect.x + stream_rect.w;
@@ -3240,7 +3249,7 @@ namespace rs2
             top_y_ruler = s_model.curr_info_rect.y + s_model.curr_info_rect.h + ruler_distance_offset;
         }
 
-        static const auto left_x_colored_ruler_offset = 45;
+        static const auto left_x_colored_ruler_offset = 50;
         static const auto colored_ruler_width = 20;
         const auto left_x_colored_ruler = stream_width - left_x_colored_ruler_offset;
         const auto right_x_colored_ruler = stream_width - (left_x_colored_ruler_offset - colored_ruler_width);
@@ -3253,8 +3262,10 @@ namespace rs2
         auto flags = ImGuiWindowFlags_NoResize |
                      ImGuiWindowFlags_NoMove |
                      ImGuiWindowFlags_NoCollapse |
-                     ImGuiWindowFlags_NoTitleBar;
-        static const auto numbered_ruler_width = 16.f;
+                     ImGuiWindowFlags_NoTitleBar |
+                     ImGuiWindowFlags_NoScrollWithMouse |
+                     ImGuiWindowFlags_NoScrollbar;
+        static const auto numbered_ruler_width = 20.f;
         const auto numbered_ruler_height = bottom_y_ruler - top_y_ruler;
         ImGui::SetNextWindowPos({ right_x_colored_ruler, top_y_ruler });
         ImGui::SetNextWindowSize({ numbered_ruler_width, numbered_ruler_height });
@@ -3263,7 +3274,7 @@ namespace rs2
 
         const auto right_x_numbered_ruler = right_x_colored_ruler + numbered_ruler_width;
         static const auto hovered_numbered_ruler_opac = 0.8f;
-        static const auto unhovered_numbered_ruler_opac = 0.5f;
+        static const auto unhovered_numbered_ruler_opac = 0.6f;
         float colored_ruler_opac = unhovered_numbered_ruler_opac;
         float numbered_ruler_background_opac = unhovered_numbered_ruler_opac;
         bool is_ruler_hovered = false;
@@ -3295,18 +3306,25 @@ namespace rs2
         glVertex2f(right_x_colored_ruler, bottom_y_ruler);
         glEnd();
 
-        static const float x_ruler_val = 5.f;
+
+        static const float x_ruler_val = 4.0f;
         ImGui::SetCursorPos({ x_ruler_val, y_ruler_val });
         const auto font_size = ImGui::GetFontSize();
-        ImGui::Text(std::to_string((int)ruler_length).c_str());
+        ImGui::Text(std::to_string(ruler_length).c_str());
+        const auto skip_numbers = ((ruler_length / 10) - 1);
+        auto to_skip = skip_numbers;
         for (int i = ruler_length - 1; i > 0; --i)
         {
             y_ruler_val += ((bottom_y_ruler - top_y_ruler) / ruler_length);
             ImGui::SetCursorPos({ x_ruler_val, y_ruler_val - font_size / 2 });
+            if (((to_skip--) > 0))
+                continue;
+
             ImGui::Text(std::to_string(i).c_str());
+            to_skip = skip_numbers;
         }
         y_ruler_val += ((bottom_y_ruler - top_y_ruler) / ruler_length);
-        ImGui::SetCursorPos({ x_ruler_val, y_ruler_val - (font_size * 1.5f) });
+        ImGui::SetCursorPos({ x_ruler_val, y_ruler_val - font_size });
         ImGui::Text("0");
         ImGui::End();
         ImGui::PopStyleColor();
@@ -3322,7 +3340,7 @@ namespace rs2
         for (auto i = 1; i < rgb_per_distance_vec.size(); ++i)
         {
             auto curr_depth = rgb_per_distance_vec[i].depth_val;
-            if (((curr_depth - last_depth_value) < sensitivity) && (i != rgb_per_distance_vec.size() - 1))
+            if ((((curr_depth - last_depth_value) < sensitivity) && (i != rgb_per_distance_vec.size() - 1)))
                 continue;
 
             glEnable(GL_BLEND);
@@ -3339,7 +3357,7 @@ namespace rs2
             last_index = i;
 
             auto y = bottom_y_ruler - ((rgb_per_distance_vec[i].depth_val) * ratio);
-            if (i == rgb_per_distance_vec.size() - 1)
+            if ((i == (rgb_per_distance_vec.size() - 1)) || (std::ceil(curr_depth) > ruler_length))
                 y = top_y_ruler;
 
             glColor4f(rgb_per_distance_vec[i].rgb_val.r / 255.f,
@@ -3431,11 +3449,11 @@ namespace rs2
 
             auto frame = streams[stream].texture->get_last_frame().as<video_frame>();
             auto textured_frame = streams[stream].texture->get_last_frame(true).as<video_frame>();
-            if (show_map_ruler && frame && textured_frame &&
+            if (streams[stream].show_map_ruler && frame && textured_frame &&
                 RS2_STREAM_DEPTH == stream_mv.profile.stream_type() &&
                 RS2_FORMAT_Z16 == stream_mv.profile.format())
             {
-                static const double depth_max_distance = 6.0;
+                assert(RS2_FORMAT_RGB8 == textured_frame.get_profile().format());
                 static const std::string depth_units = "m";
                 std::vector<rgb_per_distance> rgb_per_distance_vec;
                 if (!stream_mv.dev->is_paused())
@@ -3446,24 +3464,30 @@ namespace rs2
                     auto num_of_pixels = depth_width * depth_height;
                     auto depth_data = static_cast<const uint16_t*>(frame.get_data());
                     auto textured_depth_data = static_cast<const uint8_t*>(textured_frame.get_data());
-                    static const auto skip_factor = 30;
-                    for (uint64_t i = 0; i < depth_height; i+= skip_factor)
+                    static const auto skip_pixels_factor = 30;
+                    auto max_distance_per_frame = 0.f;
+                    static const int distances_avg_size = 10;
+                    if (streams[stream]._depth_max_distances.size() > distances_avg_size)
+                        streams[stream]._depth_max_distances.clear();
+
+                    for (uint64_t i = 0; i < depth_height; i+= skip_pixels_factor)
                     {
-                        for (uint64_t j = 0; j < depth_width; j+= skip_factor)
+                        for (uint64_t j = 0; j < depth_width; j+= skip_pixels_factor)
                         {
                             auto depth_index = i*depth_width + j;
                             auto length = depth_data[depth_index] * stream_mv.dev->depth_units;
-                            if (length > 0.f && length <= depth_max_distance)
+                            if (length > 0.f)
                             {
+                                max_distance_per_frame = std::max(max_distance_per_frame, length);
                                 auto textured_depth_index = depth_index * 3;
                                 auto r = textured_depth_data[textured_depth_index];
                                 auto g = textured_depth_data[textured_depth_index + 1];
                                 auto b = textured_depth_data[textured_depth_index + 2];
-                                rgb_per_distance_vec.push_back({ length,{ r, g, b } });
+                                rgb_per_distance_vec.push_back({ length, { r, g, b } });
                             }
                         }
                     }
-
+                    streams[stream]._depth_max_distances.push_back(max_distance_per_frame);
                     _last_rgb_per_distance_vec = rgb_per_distance_vec;
                 }
                 else
@@ -3471,7 +3495,7 @@ namespace rs2
                     rgb_per_distance_vec = _last_rgb_per_distance_vec;
                 }
 
-                draw_color_ruler(mouse, streams[stream], stream_rect, rgb_per_distance_vec, depth_max_distance, depth_units);
+                draw_color_ruler(mouse, streams[stream], stream_rect, rgb_per_distance_vec, depth_units);
             }
         }
 
