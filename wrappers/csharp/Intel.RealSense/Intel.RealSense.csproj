@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <None Include=".nuget\Intel.RealSense.targets" />
+	<Compile Remove="Properties/**" />
   </ItemGroup>
 
   <Target Name="CopyLocalDependencies" BeforeTargets="Build" Condition="'$(IsCrossTargetingBuild)' != 'true'">

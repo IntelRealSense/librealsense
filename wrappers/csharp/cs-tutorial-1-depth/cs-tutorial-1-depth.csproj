@@ -78,7 +78,18 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <LibDirectory>..\Intel.RealSense\bin\$(Configuration)</LibDirectory>
+    <LibDirectory Condition="Exists('$(LibDirectory)\net40')">$(LibDirectory)\net40</LibDirectory>
+  </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Intel.RealSense, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(LibDirectory)\Intel.RealSense.dll</HintPath>
+    </Reference>
+    <Content Include="$(LibDirectory)\realsense2.dll" >
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
@@ -89,12 +100,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Intel.RealSense\Intel.RealSense.csproj">
-      <Project>{36f6a7f8-e54a-4bdb-9685-b10475fcef6d}</Project>
-      <Name>Intel.RealSense</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
