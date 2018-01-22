@@ -481,6 +481,14 @@ namespace rs2
         float x, y;
         float w, h;
 
+        void operator=(const rect& other)
+        {
+            x = other.x;
+            y = other.y;
+            w = other.w;
+            h = other.h;
+        }
+
         operator bool() const
         {
             return w*w > 0 && h*h > 0;
@@ -972,6 +980,8 @@ namespace rs2
         mutable rs2::frame last[2];
     public:
         std::shared_ptr<colorizer> colorize;
+        bool zoom_preview = false;
+        rect curr_preview_rect{};
 
         texture_buffer(const texture_buffer& other)
         {
@@ -1476,7 +1486,7 @@ namespace rs2
             glDisable(GL_BLEND);
         }
 
-        void show_preview(const rect& r, const rect& normalized_zoom = rect{0, 0, 1, 1}) const
+        void show_preview(const rect& r, const rect& normalized_zoom = rect{0, 0, 1, 1})
         {
             glBindTexture(GL_TEXTURE_2D, texture);
             glEnable(GL_TEXTURE_2D);
@@ -1490,7 +1500,15 @@ namespace rs2
             rect zoomed_rect = normalized_zoom.unnormalize(r);
 
             if (r != zoomed_rect)
+            {
                 draw_texture(unit_square_coordinates, thumbnail);
+                curr_preview_rect = thumbnail;
+                zoom_preview = true;
+            }
+            else
+            {
+                zoom_preview = false;
+            }
 
             glDisable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, 0);
