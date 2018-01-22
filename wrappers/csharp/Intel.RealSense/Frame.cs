@@ -10,6 +10,7 @@ namespace Intel.RealSense
         public Frame(IntPtr ptr)
         {
             m_instance = new HandleRef(this, ptr);
+            NativeMethods.rs2_keep_frame(m_instance.Handle);
         }
 
         #region IDisposable Support
@@ -50,7 +51,7 @@ namespace Intel.RealSense
 
         public void Release()
         {
-            if(m_instance.Handle != IntPtr.Zero)
+            if (m_instance.Handle != IntPtr.Zero)
                 NativeMethods.rs2_release_frame(m_instance.Handle);
             m_instance = new HandleRef(this, IntPtr.Zero);
         }
