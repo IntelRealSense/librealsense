@@ -226,45 +226,67 @@ namespace librealsense
     class actual_fps_calculator
     {
     public:
-        actual_fps_calculator()
-        {
-            _fps_values = {6, 15, 30, 60};
-        }
-
         rs2_metadata_type get_fps(const frame & frm)
         {
-            auto diff = 0;
-            if(_last == 0)
+            std::lock_guard<std::mutex> lock();
+            if(_last_time_stamp == 0)
             {
-                diff = 0;
+                _last_diff = 0;
             }
             else
             {
-                diff = frm.get_frame_timestamp() - _last;
-            }
-            _last = frm.get_frame_timestamp();
+                auto timestamp = frm.get_frame_timestamp();
+                auto frame_number = frm.get_frame_number();
 
-            return diff ? 1000/diff:frm.get_stream()->get_framerate();
+                if(frame_number > _last_frame_number)
+                {
+                    _last_diff = (double)(timestamp - _last_time_stamp)/(double)(frame_number-_last_frame_number);
+                    _last_frame_number = frame_number;
+
+                }
+                else if(frame_number < _last_frame_number)
+                {
+                    _last_frame_number = frame_number;
+                    _last_diff = 0;
+                }
+            }
+            _last_time_stamp = frm.get_frame_timestamp();
+            return _last_diff ? 1000.f/_last_diff:frm.get_stream()->get_framerate();
         }
     private:
-        double _last = 0;
-        std::vector<int> _fps_values;
+
+        std::mutex _mutex;
+        double _last_time_stamp = 0;
+        long long _last_frame_number = 0;
+        double _last_diff = 0;
     };
 
     class md_attribute_actual_fps : public md_attribute_parser_base
     {
     public:
+        md_attribute_actual_fps()
+            :_fps_values {6, 15, 30, 60}
+        {
+
+        }
         rs2_metadata_type get(const frame & frm) const override
         {
            if(frm.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
            {
                auto exp = frm.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-               auto exp_msec = (float)exp/100.f;
-               return 1000.f/exp_msec;
+               auto exp_msec = (float)exp/10.f;
+               auto fps =  1000.f/exp_msec;
+//               for(auto i =0;i<_fps_values.size()-1;i++)
+//               {
+//                    if(fps < _fps_values[i+1])
+//                        return _fps_values[i];
+//               }
+//               return _fps_values[_fps_values.size()-1];
+                return fps;
            }
            else
            {
-               return _fps_calculator.get_fps(frm);
+               return (rs2_metadata_type)_fps_calculator.get_fps(frm);
            }
         }
 
@@ -275,6 +297,7 @@ namespace librealsense
 
     private:
         mutable actual_fps_calculator _fps_calculator;
+        const std::vector<int> _fps_values;
     };
 
     /**\brief A helper function to create a specialized parser for RS4xx sensor timestamp*/

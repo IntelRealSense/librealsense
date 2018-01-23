@@ -218,10 +218,29 @@ namespace librealsense
         return matcher;
     }
 
+    std::string frame_to_string(frame_holder& f)
+    {
+        std::stringstream s;
+        auto composite = dynamic_cast<composite_frame*>(f.frame);
+        if(composite)
+        {
+            for (int i = 0; i < composite->get_embedded_frames_count(); i++)
+            {
+                auto frame = composite->get_frame(i);
+                s << frame->get_stream()->get_stream_type()<<" "<<frame->get_frame_number()<<" "<<std::fixed << frame->get_frame_timestamp()<<" ";
+            }
+        }
+        else
+        {
+             s<<f->get_stream()->get_stream_type()<<" "<<f->get_frame_number()<<" "<<std::fixed <<(double)f->get_frame_timestamp()<<" ";
+        }
+        return s.str();
+    }
+
     void composite_matcher::sync(frame_holder f, syncronization_environment env)
     {
         std::stringstream s;
-        s <<"SYNC "<<_name<<"--> "<< f->get_stream()->get_stream_type() << " " << f->get_frame_number() << ", "<<std::fixed<< f->get_frame_timestamp()<<"\n";
+        s <<"SYNC "<<_name<<"--> "<< frame_to_string(f)<<"\n";
         LOG_DEBUG(s.str());
 
         update_next_expected(f);
@@ -292,7 +311,7 @@ namespace librealsense
                 {
                     if (!skip_missing_stream(synced_frames, i))
                     {
-                        s << "Wait for skipped missing stream: " << _name<<" ";
+                        s <<  _name<<" Wait for missing stream: ";
                         for (auto&& stream : i->get_streams())
                             s << stream;
                         synced_frames.clear();
@@ -302,7 +321,7 @@ namespace librealsense
                     else
                     {
                         std::stringstream s;
-                        s << "skipped missing stream: " << _name<<" ";
+                        s << _name<< " Skipped missing stream: ";
                         for (auto&& stream : i->get_streams())
                             s << stream;
                         LOG_DEBUG(s.str());
@@ -472,28 +491,36 @@ namespace librealsense
 
     void timestamp_composite_matcher::update_last_arrived(frame_holder& f, matcher* m)
     {
+        if(f->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
+            _fps[m] = f->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+
+        else
+            _fps[m] = f->get_stream()->get_framerate();
+
         _last_arrived[m] = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
     }
 
     int timestamp_composite_matcher::get_fps(const frame_holder & f)
     {
-        auto fps = f.frame->get_stream()->get_framerate();
+        auto fps = 0;
         if(f.frame->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
         {
             fps = f.frame->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
         }
-        return fps;
+        return fps?fps:f.frame->get_stream()->get_framerate();
     }
 
     void timestamp_composite_matcher::update_next_expected(const frame_holder & f)
     {
-
-        auto gap = 1000 / get_fps(f);
+        auto fps = get_fps(f);
+        auto gap = 1000 / fps;
 
         auto matcher = find_matcher(f);
 
         _next_expected[matcher.get()] = f.frame->get_frame_timestamp() + gap;
         _next_expected_domain[matcher.get()] = f.frame->get_frame_timestamp_domain();
+        LOG_DEBUG(_name << frame_to_string(const_cast<frame_holder&>(f))<<"fps " <<fps<<" gap " <<gap<<" next_expected: "<< _next_expected[matcher.get()]);
+
     }
 
     void timestamp_composite_matcher::clean_inactive_streams(frame_holder& f)
@@ -502,7 +529,8 @@ namespace librealsense
         auto now = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
         for(auto m: _matchers)
         {
-            if(_last_arrived[m.second.get()] && (now - _last_arrived[m.second.get()]) > 500)
+            auto thrashold = _fps[m.second.get()]? (1000/_fps[m.second.get()])*5:500;
+            if(_last_arrived[m.second.get()] && (now - _last_arrived[m.second.get()]) > thrashold)
             {
                 std::stringstream s;
                 s << "clean inactive stream in "<<_name;

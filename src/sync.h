@@ -164,6 +164,7 @@ namespace librealsense
         int get_fps(const frame_holder & f);
         bool are_equivalent(double a, double b, int fps);
         std::map<matcher*, double> _last_arrived;
+        std::map<matcher*, int> _fps;
 
     };
 }
