@@ -334,7 +334,7 @@ bool librealsense::record_device::extend_to_aux(std::shared_ptr<P> p, void** ext
         });
     }
 
-    *ext = &ptr;
+    *ext = ptr.get();
     return true;
 }
 

@@ -258,7 +258,6 @@ namespace rs2
         std::shared_ptr<options> _block;
         std::map<int, option_model> options_metadata;
         std::string _name;
-        subdevice_model* _owner;
         std::function<rs2::frame(rs2::frame)> _invoker;
     };
 
@@ -436,7 +435,6 @@ namespace rs2
         rect curr_info_rect{};
         temporal_event _stream_not_alive;
         bool show_map_ruler = true;
-        std::vector<float> _depth_max_distances;
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);
@@ -541,10 +539,10 @@ namespace rs2
 
         static const int MAX_LIFETIME_MS = 10000;
         int height = 40;
-        int index;
+        int index = 0;
         std::string message;
-        double timestamp;
-        rs2_log_severity severity;
+        double timestamp = 0.0;
+        rs2_log_severity severity = RS2_LOG_SEVERITY_NONE;
         std::chrono::high_resolution_clock::time_point created_time;
         // TODO: Add more info
     };
@@ -881,10 +879,10 @@ namespace rs2
                               const stream_model& s_model,
                               const rect& stream_rect,
                               std::vector<rgb_per_distance> rgb_per_distance_vec,
+                              float ruler_length,
                               const std::string& ruler_units);
+        float calculate_ruler_max_distance(const std::vector<float>& distances) const;
 
-        float _last_avg_distance = 0;
-        std::vector<rgb_per_distance> _last_rgb_per_distance_vec;
         streams_layout _layout;
         streams_layout _old_layout;
         std::chrono::high_resolution_clock::time_point _transition_start_time;

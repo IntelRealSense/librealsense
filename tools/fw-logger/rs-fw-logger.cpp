@@ -38,7 +38,7 @@ string datetime_string()
     auto t = time(nullptr);
     char buffer[20] = {};
     const tm* time = localtime(&t);
-    if (nullptr != &time)
+    if (nullptr != time)
         strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", time);
 
     return string(buffer);
