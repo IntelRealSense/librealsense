@@ -258,7 +258,6 @@ namespace rs2
         std::shared_ptr<options> _block;
         std::map<int, option_model> options_metadata;
         std::string _name;
-        subdevice_model* _owner;
         std::function<rs2::frame(rs2::frame)> _invoker;
     };
 
@@ -541,10 +540,10 @@ namespace rs2
 
         static const int MAX_LIFETIME_MS = 10000;
         int height = 40;
-        int index;
+        int index = 0;
         std::string message;
-        double timestamp;
-        rs2_log_severity severity;
+        double timestamp = 0.0;
+        rs2_log_severity severity = RS2_LOG_SEVERITY_NONE;
         std::chrono::high_resolution_clock::time_point created_time;
         // TODO: Add more info
     };
