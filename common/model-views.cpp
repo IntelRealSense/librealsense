@@ -3277,7 +3277,7 @@ namespace rs2
             auto relative_mouse_y = ImGui::GetMousePos().y - top_y_ruler;
             auto y = (bottom_y_ruler - top_y_ruler) - relative_mouse_y;
             ss << std::fixed << std::setprecision(2) << (y / ratio) << ruler_units;
-            ImGui::SetTooltip(ss.str().c_str());
+            ImGui::SetTooltip("%s", ss.str().c_str());
             colored_ruler_opac = 1.f;
             numbered_ruler_background_opac = hovered_numbered_ruler_opac;
         }
@@ -3297,7 +3297,7 @@ namespace rs2
         static const float x_ruler_val = 4.0f;
         ImGui::SetCursorPos({ x_ruler_val, y_ruler_val });
         const auto font_size = ImGui::GetFontSize();
-        ImGui::Text(std::to_string(static_cast<int>(ruler_length)).c_str());
+        ImGui::TextUnformatted(std::to_string(static_cast<int>(ruler_length)).c_str());
         const auto skip_numbers = ((ruler_length / 10.f) - 1.f);
         auto to_skip = (skip_numbers < 0.f)?0.f: skip_numbers;
         for (int i = ruler_length - 1; i > 0; --i)
@@ -3307,7 +3307,7 @@ namespace rs2
             if (((to_skip--) > 0))
                 continue;
 
-            ImGui::Text(std::to_string(i).c_str());
+            ImGui::TextUnformatted(std::to_string(i).c_str());
             to_skip = skip_numbers;
         }
         y_ruler_val += ((bottom_y_ruler - top_y_ruler) / ruler_length);
