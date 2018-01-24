@@ -272,7 +272,7 @@ namespace rs2
             std::shared_ptr<options> options,
             std::string& error_message);
 
-        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::string& error_message);
+        subdevice_model(viewer_model& viewer, device& dev, std::shared_ptr<sensor> s, std::string& error_message);
         bool is_there_common_fps() ;
         bool draw_stream_selection();
         bool is_selected_combination_supported();
@@ -607,14 +607,15 @@ namespace rs2
             resulting_queue_max_size(20),
             resulting_queue(static_cast<unsigned int>(resulting_queue_max_size)),
 //            frames_queue(4),
-            t([this]() {render_loop(); })
+            t([this]() {render_loop(); }),
+            pc(new pointcloud())
         {
             processing_block.start(resulting_queue);
         }
 
         ~post_processing_filters() { stop(); }
 
-        void update_texture(frame f) { pc.map_to(f); }
+        void update_texture(frame f) { pc->map_to(f); }
 
         void stop()
         {
@@ -650,6 +651,11 @@ namespace rs2
         rs2::frame_queue syncer_queue;
         rs2::frame_queue resulting_queue;
 
+        std::shared_ptr<pointcloud> get_pc()
+        {
+            return pc;
+        }
+
     private:
         viewer_model& viewer;
 
@@ -660,7 +666,7 @@ namespace rs2
         rs2::frame apply_filters(rs2::frame f);
         rs2::frame last_tex_frame;
         rs2::processing_block processing_block;
-        pointcloud pc;
+        std::shared_ptr<pointcloud> pc;
         rs2::frameset model;
         std::atomic<bool> keep_calculating;
 

@@ -658,7 +658,8 @@ namespace rs2
     }
 
 
-    processing_block_model::processing_block_model(subdevice_model* owner,
+    processing_block_model::processing_block_model(
+        subdevice_model* owner,
         const std::string& name,
         std::shared_ptr<options> block,
         std::function<rs2::frame(rs2::frame)> invoker,
@@ -669,7 +670,9 @@ namespace rs2
             owner->dev, *owner->s, &owner->options_invalidated, owner, block, error_message);
     }
 
-    subdevice_model::subdevice_model(device& dev,
+    subdevice_model::subdevice_model(
+        viewer_model& viewer,
+        device& dev,
         std::shared_ptr<sensor> s, std::string& error_message)
         : s(s), dev(dev), ui(), last_valid_ui(),
         streaming(false), _pause(false),
@@ -755,6 +758,14 @@ namespace rs2
                 // the block will be internally available, but removed from UI
                 //post_processing.push_back(disparity_to_depth);
             }
+        }
+        else
+        {
+            temporal_filter = std::make_shared<processing_block_model>(
+                this, "Temporal Filter", viewer.ppf.get_pc(),
+                [&viewer](rs2::frame f) { return viewer.ppf.get_pc()->calculate(f); }, error_message);
+            temporal_filter->enabled = true;
+            post_processing.push_back(temporal_filter);
         }
 
         populate_options(options_metadata, dev, *s, &options_invalidated, this, s, error_message);
@@ -2622,7 +2633,7 @@ namespace rs2
     {
         for (auto&& sub : dev.query_sensors())
         {
-            auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), error_message);
+            auto model = std::make_shared<subdevice_model>(viewer, dev, std::make_shared<sensor>(sub), error_message);
             subdevices.push_back(model);
         }
 
@@ -2896,7 +2907,7 @@ namespace rs2
         {
             if(viewer.is_3d_depth_source(f))
             {
-                res.push_back(pc.calculate(filtered));
+                res.push_back(pc->calculate(filtered));
             }
             if(viewer.is_3d_texture_source(f))
             {

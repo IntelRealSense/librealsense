@@ -22,6 +22,7 @@ namespace librealsense
 
         std::shared_ptr<stream_profile_interface> _output_stream, _other_stream;
         int                     _other_stream_id = -1;
+        bool                    _occlusion_rectification;
         stream_profile_interface* _depth_stream = nullptr;
 
         void inspect_depth_frame(const rs2::frame& depth);

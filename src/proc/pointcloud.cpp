@@ -161,14 +161,43 @@ namespace librealsense
             auto height = vid_frame.get_height();
             auto width = vid_frame.get_width();
 
+            float occZTh = 0.2; //meters   - TODO review and refactor
+            int occDilationSz = 3;
+
             for (int y = 0; y < height; ++y)
             {
+                float maxInLine = -1;
+                float maxZ = 0;
+                int occDilationLeft = 0;
+
                 for (int x = 0; x < width; ++x)
                 {
                     if (points->z)
                     {
                         auto trans = transform(&extr, *points);
                         auto tex_xy = project_to_texcoord(&mapped_intr, trans);
+
+                        if (_occlusion_rectification)
+                        {
+                            if (tex_xy.x < maxInLine || (tex_xy.x == maxInLine && (points->z - maxZ) > occZTh))
+                            {
+                                tex_xy.x = 0.f;
+                                tex_xy.y = 0.f;
+                                occDilationLeft = occDilationSz;
+                            }
+
+                            else
+                            {
+                                maxInLine = tex_xy.x;
+                                maxZ = points->z;
+                                if (occDilationLeft > 0)
+                                {
+                                    tex_xy.x = 0.f;
+                                    tex_xy.y = 0.f;
+                                    occDilationLeft--;
+                                }
+                            }
+                        }
 
                         *tex_ptr = tex_xy;
                     }
@@ -187,7 +216,8 @@ namespace librealsense
 
     pointcloud::pointcloud()
         :
-        _other_stream(nullptr), _invalidate_mapped(false)
+        _other_stream(nullptr), _invalidate_mapped(false),
+        _occlusion_rectification(false)
     {
 
         auto mapped_opt = std::make_shared<ptr_option<int>>(0, std::numeric_limits<int>::max(), 1, -1, &_other_stream_id, "Mapped stream ID");
@@ -200,6 +230,18 @@ namespace librealsense
                 old_value = x;
             }
         });
+
+        auto occlusion_rectification_control = std::make_shared<ptr_option<bool>>(false, true, true, true,
+            &_occlusion_rectification, "Occlusion rectification");
+        occlusion_rectification_control->on_set([this, occlusion_rectification_control](float val)
+        {
+            if (!occlusion_rectification_control->is_valid(val))
+                throw invalid_value_exception(to_string()
+                    << "Unsupported rectification option " << val << " is out of range.");
+
+            _occlusion_rectification = !!(static_cast<uint8_t>(val));
+        });
+        register_option(RS2_OPTION_FILTER_MAGNITUDE, occlusion_rectification_control);
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
