@@ -235,23 +235,21 @@ namespace librealsense
             }
             else
             {
-                auto timestamp = frm.get_frame_timestamp();
                 auto frame_number = frm.get_frame_number();
-
                 if(frame_number > _last_frame_number)
                 {
+                    auto timestamp = frm.get_frame_timestamp();
                     _last_diff = (double)(timestamp - _last_time_stamp)/(double)(frame_number-_last_frame_number);
-                    _last_frame_number = frame_number;
-
                 }
                 else if(frame_number < _last_frame_number)
                 {
-                    _last_frame_number = frame_number;
                     _last_diff = 0;
                 }
+                _last_frame_number = frame_number;
             }
+            
             _last_time_stamp = frm.get_frame_timestamp();
-            return _last_diff ? 1000.f/_last_diff:frm.get_stream()->get_framerate();
+            return _last_diff ? 1000.f/ _last_diff :frm.get_stream()->get_framerate();
         }
     private:
 
@@ -261,14 +259,14 @@ namespace librealsense
         double _last_diff = 0;
     };
 
+
     class md_attribute_actual_fps : public md_attribute_parser_base
     {
     public:
         md_attribute_actual_fps()
             :_fps_values {6, 15, 30, 60}
-        {
+        {}
 
-        }
         rs2_metadata_type get(const frame & frm) const override
         {
            if(frm.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
@@ -286,7 +284,7 @@ namespace librealsense
            }
            else
            {
-               return (rs2_metadata_type)_fps_calculator.get_fps(frm);
+               return (rs2_metadata_type)_fps_calculator[frm.get_stream()->get_unique_id()].get_fps(frm);
            }
         }
 
@@ -296,7 +294,7 @@ namespace librealsense
         }
 
     private:
-        mutable actual_fps_calculator _fps_calculator;
+        mutable std::map<int,actual_fps_calculator> _fps_calculator;
         const std::vector<int> _fps_values;
     };
 

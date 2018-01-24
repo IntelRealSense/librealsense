@@ -507,6 +507,7 @@ namespace librealsense
         {
             fps = f.frame->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
         }
+        LOG_DEBUG("fps " <<fps<<" "<< frame_to_string(const_cast<frame_holder&>(f)));
         return fps?fps:f.frame->get_stream()->get_framerate();
     }
 
