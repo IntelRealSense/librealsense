@@ -18,9 +18,9 @@ endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     #pointcloud
-    add_executable(rs-pointcloud rs-pointcloud.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp ../example.hpp)
+    add_executable(rs-pointcloud rs-pointcloud.cpp ../example.hpp)
     target_link_libraries(rs-pointcloud ${DEPENDENCIES})
-    include_directories(rs-pointcloud ../ ../../third-party/imgui)
+    include_directories(rs-pointcloud ../)
     set_target_properties (rs-pointcloud PROPERTIES
         FOLDER Examples
     )

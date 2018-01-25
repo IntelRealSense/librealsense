@@ -61,7 +61,7 @@ namespace librealsense
         virtual void toggle_advanced_mode(bool enable) = 0;
 
         virtual void apply_preset(const std::vector<platform::stream_profile>& configuration,
-                                  rs2_rs400_visual_preset preset) = 0;
+                                  rs2_rs400_visual_preset preset, uint16_t device_pid) = 0;
 
         virtual void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const = 0;
         virtual void get_rsm(STRsm* ptr, int mode = 0) const = 0;
@@ -109,7 +109,7 @@ namespace librealsense
         bool is_enabled() const override;
         void toggle_advanced_mode(bool enable) override;
         void apply_preset(const std::vector<platform::stream_profile>& configuration,
-                          rs2_rs400_visual_preset preset) override;
+                          rs2_rs400_visual_preset preset, uint16_t device_pid) override;
 
         void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const override;
         void get_rsm(STRsm* ptr, int mode = 0) const override;
@@ -192,6 +192,7 @@ namespace librealsense
         uvc_sensor& _depth_sensor;
         lazy<ds5_color_sensor*> _color_sensor;
         lazy<bool> _enabled;
+        std::shared_ptr<advanced_mode_preset_option> _preset_opt;
 
         static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
         static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
@@ -254,6 +255,8 @@ namespace librealsense
         const char* get_value_description(float val) const override;
 
     private:
+        uint16_t get_device_pid(const uvc_sensor& sensor) const;
+
         std::mutex _mtx;
         uvc_sensor& _ep;
         ds5_advanced_mode_base& _advanced;

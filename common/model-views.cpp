@@ -10,7 +10,6 @@
 #include <librealsense2/rsutil.h>
 
 #include "model-views.h"
-
 #include <imgui_internal.h>
 
 #ifdef _MSC_VER
@@ -29,6 +28,7 @@
 #include <arcball_camera.h>
 
 using namespace rs400;
+using namespace nlohmann;
 
 ImVec4 flip(const ImVec4& c)
 {
@@ -234,6 +234,57 @@ namespace rs2
         return stbi_write_png(filename, (int)pixel_width, (int)pixels_height, bytes_per_pixel, raster_data, stride_bytes);
     }
 
+    bool save_frame_raw_data(const std::string& filename, rs2::frame frame)
+    {
+        bool ret = false;
+        auto image = frame.as<video_frame>();
+        if (image)
+        {
+            std::ofstream outfile(filename.data(), std::ofstream::binary);
+            outfile.write(static_cast<const char*>(image.get_data()), image.get_height()*image.get_stride_in_bytes());
+
+            outfile.close();
+            ret = true;
+        }
+
+        return ret;
+    }
+
+    bool frame_metadata_to_csv(const std::string& filename, rs2::frame frame)
+    {
+        bool ret = false;
+        auto image = frame.as<video_frame>();
+        if (image)
+        {
+            std::ofstream csv;
+            csv.open(filename);
+
+            auto profile = image.get_profile();
+            csv << "Frame Info: " << std::endl << "Type," << profile.stream_name() << std::endl;
+            csv << "Format," << rs2_format_to_string(profile.format()) << std::endl;
+            csv << "Frame Number," << image.get_frame_number() << std::endl;
+            csv << "Timestamp (ms)," << std::fixed << std::setprecision(2) << image.get_timestamp() << std::endl;
+            csv << "Resolution x," << (int)image.get_width() << std::endl;
+            csv << "Resolution y," << (int)image.get_height() << std::endl;
+            csv << "Bytes per pixel," << (int)image.get_bytes_per_pixel() << std::endl;
+
+            if (auto vsp = profile.as<video_stream_profile>())
+            {
+                csv << std::endl << "Intrinsic:," << std::fixed << std::setprecision(6) <<std::endl;
+                csv << "Fx," << vsp.get_intrinsics().fx << std::endl;
+                csv << "Fy," << vsp.get_intrinsics().fy << std::endl;
+                csv << "PPx,"<< vsp.get_intrinsics().ppx << std::endl;
+                csv << "PPy,"<< vsp.get_intrinsics().ppy << std::endl;
+                csv << "Distorsion," <<rs2_distortion_to_string(vsp.get_intrinsics().model) << std::endl;
+            }
+
+            csv.close();
+            ret = true;
+        }
+
+        return ret;
+    }
+
     std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec)
     {
         std::vector<const char*> res;
@@ -307,7 +358,7 @@ namespace rs2
                     value = bool_value ? 1.0f : 0.0f;
                     try
                     {
-                        model.add_log(to_string() << "Setting " << opt << " to " 
+                        model.add_log(to_string() << "Setting " << opt << " to "
                             << value << " (" << (bool_value? "ON" : "OFF") << ")");
                         endpoint->set_option(opt, value);
                         *invalidate_flag = true;
@@ -427,7 +478,7 @@ namespace rs2
                             static_cast<int>(labels.size())))
                         {
                             value = range.min + range.step * selected;
-                            model.add_log(to_string() << "Setting " << opt << " to " 
+                            model.add_log(to_string() << "Setting " << opt << " to "
                                 << value << " (" << labels[selected] << ")");
                             endpoint->set_option(opt, value);
                             *invalidate_flag = true;
@@ -663,7 +714,7 @@ namespace rs2
             auto decimate = std::make_shared<rs2::decimation_filter>();
             decimation_filter = std::make_shared<processing_block_model>(
                 this, "Decimation Filter", decimate,
-                [=](rs2::frame f) { return decimate->proccess(f); },
+                [=](rs2::frame f) { return decimate->process(f); },
                 error_message);
             decimation_filter->enabled = true;
             post_processing.push_back(decimation_filter);
@@ -671,7 +722,7 @@ namespace rs2
             auto depth_2_disparity = std::make_shared<rs2::disparity_transform>();
             depth_to_disparity = std::make_shared<processing_block_model>(
                 this, "Depth->Disparity", depth_2_disparity,
-                [=](rs2::frame f) { return depth_2_disparity->proccess(f); }, error_message);
+                [=](rs2::frame f) { return depth_2_disparity->process(f); }, error_message);
             if (s->is<depth_stereo_sensor>())
             {
                 depth_to_disparity->enabled = true;
@@ -681,7 +732,7 @@ namespace rs2
             auto spatial = std::make_shared<rs2::spatial_filter>();
             spatial_filter = std::make_shared<processing_block_model>(
                 this, "Spatial Filter", spatial,
-                [=](rs2::frame f) { return spatial->proccess(f); },
+                [=](rs2::frame f) { return spatial->process(f); },
                 error_message);
             spatial_filter->enabled = true;
             post_processing.push_back(spatial_filter);
@@ -689,14 +740,14 @@ namespace rs2
             auto temporal = std::make_shared<rs2::temporal_filter>();
             temporal_filter = std::make_shared<processing_block_model>(
                 this, "Temporal Filter", temporal,
-                [=](rs2::frame f) { return temporal->proccess(f); }, error_message);
+                [=](rs2::frame f) { return temporal->process(f); }, error_message);
             temporal_filter->enabled = true;
             post_processing.push_back(temporal_filter);
 
             auto disparity_2_depth = std::make_shared<rs2::disparity_transform>(false);
             disparity_to_depth = std::make_shared<processing_block_model>(
                 this, "Disparity->Depth", disparity_2_depth,
-                [=](rs2::frame f) { return disparity_2_depth->proccess(f); }, error_message);
+                [=](rs2::frame f) { return disparity_2_depth->process(f); }, error_message);
             disparity_to_depth->enabled = s->is<depth_stereo_sensor>();
             if (s->is<depth_stereo_sensor>())
             {
@@ -712,6 +763,7 @@ namespace rs2
         {
             auto sensor_profiles = s->get_stream_profiles();
             reverse(begin(sensor_profiles), end(sensor_profiles));
+            rs2_format def_format{ RS2_FORMAT_ANY };
             for (auto&& profile : sensor_profiles)
             {
                 std::stringstream res;
@@ -738,6 +790,7 @@ namespace rs2
                 if (profile.is_default())
                 {
                     stream_enabled[profile.unique_id()] = true;
+                    def_format = profile.format();
                 }
 
                 profiles.push_back(profile);
@@ -780,25 +833,15 @@ namespace rs2
 
             for (auto format_array : format_values)
             {
-                for (auto format : { RS2_FORMAT_RGB8,
-                                     RS2_FORMAT_Z16,
-                                     RS2_FORMAT_Y8,
-                                     RS2_FORMAT_MOTION_XYZ32F })
+                if (get_default_selection_index(format_array.second, def_format, &selection_index))
                 {
-                    if (get_default_selection_index(format_array.second, format, &selection_index))
-                    {
-                        ui.selected_format_id[format_array.first] = selection_index;
-                        break;
-                    }
+                    ui.selected_format_id[format_array.first] = selection_index;
+                    break;
                 }
             }
 
-            // For Realtec sensors
-            auto rgb_rotation_btn = (val_in_range(std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID)),
-            { std::string("0AD3") ,std::string("0B07") }) &&
-                val_in_range(std::string(s->get_info(RS2_CAMERA_INFO_NAME)), { std::string("RGB Camera") }));
             // Limit Realtec sensor default
-            auto constrain = (rgb_rotation_btn) ? std::make_pair(640, 480) : std::make_pair(0, 0);
+            auto constrain = std::make_pair(1280, 720);
             get_default_selection_index(res_values, constrain, &selection_index);
             ui.selected_res_id = selection_index;
 
@@ -1320,7 +1363,10 @@ namespace rs2
                 }
             }
         }
-        return draw(error_message, model);
+        if (custom_draw_method)
+            return custom_draw_method(*this, error_message, model);
+        else
+            return draw(error_message, model);
     }
 
     stream_model::stream_model()
@@ -1692,6 +1738,7 @@ namespace rs2
                 s.second.texture->get_last_frame() &&
                 (s.second.profile.stream_type() == RS2_STREAM_COLOR ||
                  s.second.profile.stream_type() == RS2_STREAM_INFRARED ||
+                 s.second.profile.stream_type() == RS2_STREAM_DEPTH ||
                  s.second.profile.stream_type() == RS2_STREAM_FISHEYE))
             {
                 if (selected_tex_source_uid == -1 && selected_depth_source_uid != -1)
@@ -2008,8 +2055,9 @@ namespace rs2
     {
         const auto top_bar_height = 32.f;
         auto num_of_buttons = 4;
-        if (!viewer.allow_stream_close) num_of_buttons--;
-        if (viewer.streams.size() > 1) num_of_buttons++;
+        if (!viewer.allow_stream_close) --num_of_buttons;
+        if (viewer.streams.size() > 1) ++num_of_buttons;
+        if (RS2_STREAM_DEPTH == profile.stream_type()) ++num_of_buttons; // Color map ruler button
 
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -2069,6 +2117,37 @@ namespace rs2
 
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons, 0 });
 
+        if (RS2_STREAM_DEPTH == profile.stream_type())
+        {
+            label = to_string() << textual_icons::bar_chart << "##Color map";
+            if (show_map_ruler)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    show_map_ruler = false;
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Hide color map ruler");
+                }
+                ImGui::PopStyleColor(2);
+            }
+            else
+            {
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    show_map_ruler = true;
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Show color map ruler");
+                }
+            }
+            ImGui::SameLine();
+        }
+
         auto p = dev->dev.as<playback>();
         if (dev->is_paused() || (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
         {
@@ -2110,22 +2189,11 @@ namespace rs2
         label = to_string() << textual_icons::camera << "##Snapshot " << profile.unique_id();
         if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
         {
-            auto ret = file_dialog_open(save_file, "Portable Network Graphics (PNG)\0*.png\0", NULL, NULL);
+            auto filename = file_dialog_open(save_file, "Portable Network Graphics (PNG)\0*.png\0", NULL, NULL);
 
-            if (ret)
+            if (filename)
             {
-                std::string filename = ret;
-                if (!ends_with(to_lower(filename), ".png")) filename += ".png";
-
-                auto frame = texture->get_last_frame(true).as<video_frame>();
-                if (frame)
-                {
-                    save_to_png(filename.data(), frame.get_width(), frame.get_height(), frame.get_bytes_per_pixel(), frame.get_data(), frame.get_width() * frame.get_bytes_per_pixel());
-
-                    viewer.not_model.add_notification({ to_string() << "Snapshot was saved to " << filename,
-                        0, RS2_LOG_SEVERITY_INFO,
-                        RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
-                }
+                snapshot_frame(filename,viewer);
             }
         }
         if (ImGui::IsItemHovered())
@@ -2241,8 +2309,16 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
             ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(9, 11, 13, 100));
-            ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 275, stream_rect.y + 5 });
-            ImGui::SetNextWindowSize({ 270, 45 });
+            static const auto width_info_rect = 270.f;
+            static const auto height_info_rect = 45.f;
+            static const auto y_offset_info_rect = 5.f;
+            static const auto x_offset_info_rect = 275.f;
+            curr_info_rect = rect{ stream_rect.x + stream_rect.w - x_offset_info_rect,
+                                   stream_rect.y + y_offset_info_rect,
+                                   width_info_rect,
+                                   height_info_rect };
+            ImGui::SetNextWindowPos({ curr_info_rect.x, curr_info_rect.y });
+            ImGui::SetNextWindowSize({ curr_info_rect.w, curr_info_rect.h });
             std::string label = to_string() << "Stream Info of " << profile.unique_id();
             ImGui::Begin(label.c_str(), nullptr, flags);
 
@@ -2345,6 +2421,57 @@ namespace rs2
         ImGui::End();
         ImGui::PopStyleColor();
         ImGui::PopFont();
+    }
+
+    void stream_model::snapshot_frame(const char* filename, viewer_model& viewer) const
+    {
+        std::stringstream ss;
+        std::string stream_desc{};
+        std::string filename_base(filename);
+
+        // Trim the file extension when provided. Note that this may amend user-provided file name in case it uses the "." character, e.g. "my.file.name"
+        auto loc = filename_base.find_last_of(".");
+        if (loc  != std::string::npos)
+            filename_base.erase(loc, std::string::npos);
+
+       // Snapshot the color-augmented version of the frame
+        if (auto colorized_frame = texture->get_last_frame(true).as<video_frame>())
+        {
+            stream_desc = rs2_stream_to_string(colorized_frame.get_profile().stream_type());
+            auto filename_png = filename_base + "_" + stream_desc + ".png";
+            save_to_png(filename_png.data(), colorized_frame.get_width(), colorized_frame.get_height(), colorized_frame.get_bytes_per_pixel(),
+                colorized_frame.get_data(), colorized_frame.get_width() * colorized_frame.get_bytes_per_pixel());
+
+            ss << "PNG snapshot was saved to " << filename_png << std::endl;
+        }
+
+        auto original_frame = texture->get_last_frame(false).as<video_frame>();
+
+        // For Depth-originated streams also provide a copy of the raw data accompanied by sensor-specific metadata
+        if (original_frame && val_in_range(original_frame.get_profile().stream_type(), { RS2_STREAM_DEPTH , RS2_STREAM_INFRARED }))
+        {
+            stream_desc = rs2_stream_to_string(original_frame.get_profile().stream_type());
+
+            //Capture raw frame
+            auto filename = filename_base + "_" + stream_desc + ".bin";
+            if (save_frame_raw_data(filename, original_frame))
+                ss << "Raw data is captured into " << filename << std::endl;
+            else
+                viewer.not_model.add_notification({ to_string() << "Failed to save frame raw data  " << filename,
+                    0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+
+            // And the frame's attributes
+            filename = filename_base + "_" + stream_desc + "_metadata.csv";
+            if (frame_metadata_to_csv(filename, original_frame))
+                ss << "The frame attributes are saved into " << filename;
+            else
+                viewer.not_model.add_notification({ to_string() << "Failed to save frame metadata file " << filename,
+                    0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+        }
+
+        if (ss.str().size())
+            viewer.not_model.add_notification({ ss.str().c_str(), 0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT });
+
     }
 
     rect stream_model::get_normalized_zoom(const rect& stream_rect, const mouse_info& g, bool is_middle_clicked, float zoom_val)
@@ -2594,9 +2721,10 @@ namespace rs2
             ImGui::SetCursorPos({ rc.x, rc.y - 4 });
 
             std::string label = to_string() << "##log_entry" << i++;
-            ImGui::InputText(label.c_str(),
+            ImGui::InputTextEx(label.c_str(),
                         (char*)line.data(),
                         line.size() + 1,
+                        ImVec2(-1, ImGui::GetTextLineHeight() * 1.5 *float(std::max(1,(int)std::count(line.begin(),line.end(), '\n')))),
                         ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             ImGui::PopStyleColor(2);
 
@@ -2761,6 +2889,7 @@ namespace rs2
 
         auto uid = f.get_profile().unique_id();
         auto new_uid = filtered.get_profile().unique_id();
+        viewer.streams_origin[uid] = new_uid;
         viewer.streams_origin[new_uid] = uid;
 
         if(viewer.is_3d_view)
@@ -2778,7 +2907,7 @@ namespace rs2
         return res;
     }
 
-    void post_processing_filters::proccess(rs2::frame f, const rs2::frame_source& source)
+    void post_processing_filters::process(rs2::frame f, const rs2::frame_source& source)
     {
         points p;
         std::vector<frame> results;
@@ -2979,7 +3108,7 @@ namespace rs2
     {
         texture_buffer* texture_frame = nullptr;
         points p;
-        frame f{}, res{};
+        frame f{}, depth{};
 
         std::map<int, frame> last_frames;
         try
@@ -3005,7 +3134,7 @@ namespace rs2
                         }
 
                         if (frame.is<depth_frame>() && !paused)
-                            res = frame;
+                            depth = frame;
 
                         auto texture = upload_frame(std::move(frame));
 
@@ -3041,7 +3170,7 @@ namespace rs2
 
         popup_if_error(window.get_font(), error_message);
 
-        return res;
+        return depth;
     }
 
     void viewer_model::reset_camera(float3 p)
@@ -3072,6 +3201,192 @@ namespace rs2
             up.y /= -up_len;
             up.z /= -up_len;
         }
+    }
+
+    void viewer_model::draw_color_ruler(const mouse_info& mouse,
+                                        const stream_model& s_model,
+                                        const rect& stream_rect,
+                                        std::vector<rgb_per_distance> rgb_per_distance_vec,
+                                        float ruler_length,
+                                        const std::string& ruler_units)
+    {
+        if (rgb_per_distance_vec.empty() || (ruler_length <= 0.f))
+            return;
+
+        ruler_length = std::ceil(ruler_length);
+        std::sort(rgb_per_distance_vec.begin(), rgb_per_distance_vec.end(), [](const rgb_per_distance& a,
+            const rgb_per_distance& b) {
+            return a.depth_val < b.depth_val;
+        });
+
+        const auto stream_height = stream_rect.y + stream_rect.h;
+        const auto stream_width = stream_rect.x + stream_rect.w;
+
+        static const auto ruler_distance_offset = 10;
+        auto bottom_y_ruler = stream_height - ruler_distance_offset;
+        if (s_model.texture->zoom_preview)
+        {
+            bottom_y_ruler = s_model.texture->curr_preview_rect.y - ruler_distance_offset;
+        }
+
+        static const auto top_y_offset = 50;
+        auto top_y_ruler = stream_rect.y + top_y_offset;
+        if (s_model.show_stream_details)
+        {
+            top_y_ruler = s_model.curr_info_rect.y + s_model.curr_info_rect.h + ruler_distance_offset;
+        }
+
+        static const auto left_x_colored_ruler_offset = 50;
+        static const auto colored_ruler_width = 20;
+        const auto left_x_colored_ruler = stream_width - left_x_colored_ruler_offset;
+        const auto right_x_colored_ruler = stream_width - (left_x_colored_ruler_offset - colored_ruler_width);
+        const auto first_rgb = rgb_per_distance_vec.begin()->rgb_val;
+        assert((bottom_y_ruler - top_y_ruler) != 0.f);
+        const auto ratio = (bottom_y_ruler - top_y_ruler) / ruler_length;
+
+        // Draw numbered ruler
+        float y_ruler_val = 0.f;
+        auto flags = ImGuiWindowFlags_NoResize |
+                     ImGuiWindowFlags_NoMove |
+                     ImGuiWindowFlags_NoCollapse |
+                     ImGuiWindowFlags_NoTitleBar |
+                     ImGuiWindowFlags_NoScrollWithMouse |
+                     ImGuiWindowFlags_NoScrollbar;
+        static const auto numbered_ruler_width = 20.f;
+        const auto numbered_ruler_height = bottom_y_ruler - top_y_ruler;
+        ImGui::SetNextWindowPos({ right_x_colored_ruler, top_y_ruler });
+        ImGui::SetNextWindowSize({ numbered_ruler_width, numbered_ruler_height });
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.f, 0.f, 0.f, 0.f });
+        ImGui::Begin("numbered_ruler", nullptr, flags);
+
+        const auto right_x_numbered_ruler = right_x_colored_ruler + numbered_ruler_width;
+        static const auto hovered_numbered_ruler_opac = 0.8f;
+        static const auto unhovered_numbered_ruler_opac = 0.6f;
+        float colored_ruler_opac = unhovered_numbered_ruler_opac;
+        float numbered_ruler_background_opac = unhovered_numbered_ruler_opac;
+        bool is_ruler_hovered = false;
+        if (mouse.cursor.x >= left_x_colored_ruler &&
+            mouse.cursor.x <= right_x_numbered_ruler &&
+            mouse.cursor.y >= top_y_ruler &&
+            mouse.cursor.y <= bottom_y_ruler)
+            is_ruler_hovered = true;
+
+        if (is_ruler_hovered)
+        {
+            std::stringstream ss;
+            auto relative_mouse_y = ImGui::GetMousePos().y - top_y_ruler;
+            auto y = (bottom_y_ruler - top_y_ruler) - relative_mouse_y;
+            ss << std::fixed << std::setprecision(2) << (y / ratio) << ruler_units;
+            ImGui::SetTooltip("%s", ss.str().c_str());
+            colored_ruler_opac = 1.f;
+            numbered_ruler_background_opac = hovered_numbered_ruler_opac;
+        }
+
+        // Draw a background to the numbered ruler
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glColor4f(0.0, 0.0, 0.0, numbered_ruler_background_opac);
+        glBegin(GL_POLYGON);
+        glVertex2f(right_x_colored_ruler, top_y_ruler);
+        glVertex2f(right_x_numbered_ruler , top_y_ruler);
+        glVertex2f(right_x_numbered_ruler , bottom_y_ruler);
+        glVertex2f(right_x_colored_ruler, bottom_y_ruler);
+        glEnd();
+
+
+        static const float x_ruler_val = 4.0f;
+        ImGui::SetCursorPos({ x_ruler_val, y_ruler_val });
+        const auto font_size = ImGui::GetFontSize();
+        ImGui::TextUnformatted(std::to_string(static_cast<int>(ruler_length)).c_str());
+        const auto skip_numbers = ((ruler_length / 10.f) - 1.f);
+        auto to_skip = (skip_numbers < 0.f)?0.f: skip_numbers;
+        for (int i = ruler_length - 1; i > 0; --i)
+        {
+            y_ruler_val += ((bottom_y_ruler - top_y_ruler) / ruler_length);
+            ImGui::SetCursorPos({ x_ruler_val, y_ruler_val - font_size / 2 });
+            if (((to_skip--) > 0))
+                continue;
+
+            ImGui::TextUnformatted(std::to_string(i).c_str());
+            to_skip = skip_numbers;
+        }
+        y_ruler_val += ((bottom_y_ruler - top_y_ruler) / ruler_length);
+        ImGui::SetCursorPos({ x_ruler_val, y_ruler_val - font_size });
+        ImGui::Text("0");
+        ImGui::End();
+        ImGui::PopStyleColor();
+
+        auto total_depth_scale = rgb_per_distance_vec.back().depth_val - rgb_per_distance_vec.front().depth_val;
+        static const auto sensitivity_factor = 0.01f;
+        auto sensitivity = sensitivity_factor * total_depth_scale;
+
+        // Draw colored ruler
+        auto last_y = bottom_y_ruler;
+        auto last_depth_value = 0.f;
+        auto last_index = 0;
+        for (auto i = 1; i < rgb_per_distance_vec.size(); ++i)
+        {
+            auto curr_depth = rgb_per_distance_vec[i].depth_val;
+            if ((((curr_depth - last_depth_value) < sensitivity) && (i != rgb_per_distance_vec.size() - 1)))
+                continue;
+
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glBegin(GL_QUADS);
+            glColor4f(rgb_per_distance_vec[last_index].rgb_val.r / 255.f,
+                      rgb_per_distance_vec[last_index].rgb_val.g / 255.f,
+                      rgb_per_distance_vec[last_index].rgb_val.b / 255.f,
+                      colored_ruler_opac);
+            glVertex2f(left_x_colored_ruler, last_y);
+            glVertex2f(right_x_colored_ruler, last_y);
+
+            last_depth_value = curr_depth;
+            last_index = i;
+
+            auto y = bottom_y_ruler - ((rgb_per_distance_vec[i].depth_val) * ratio);
+            if ((i == (rgb_per_distance_vec.size() - 1)) || (std::ceil(curr_depth) > ruler_length))
+                y = top_y_ruler;
+
+            glColor4f(rgb_per_distance_vec[i].rgb_val.r / 255.f,
+                      rgb_per_distance_vec[i].rgb_val.g / 255.f,
+                      rgb_per_distance_vec[i].rgb_val.b / 255.f,
+                      colored_ruler_opac);
+
+            glVertex2f(right_x_colored_ruler, y);
+            glVertex2f(left_x_colored_ruler, y);
+            last_y = y;
+            glEnd();
+        }
+
+        // Draw ruler border
+        static const auto top_line_offset = 0.5f;
+        static const auto right_line_offset = top_line_offset / 2;
+        glColor4f(0.0, 0.0, 0.0, colored_ruler_opac);
+        glBegin(GL_LINE_LOOP);
+        glVertex2f(left_x_colored_ruler - top_line_offset, top_y_ruler - top_line_offset);
+        glVertex2f(right_x_numbered_ruler + right_line_offset / 2, top_y_ruler - top_line_offset);
+        glVertex2f(right_x_numbered_ruler + right_line_offset / 2, bottom_y_ruler + top_line_offset);
+        glVertex2f(left_x_colored_ruler - top_line_offset, bottom_y_ruler + top_line_offset);
+        glEnd();
+    }
+
+    float viewer_model::calculate_ruler_max_distance(const std::vector<float>& distances) const
+    {
+        assert(!distances.empty());
+
+        float mean = std::accumulate(distances.begin(),
+            distances.end(), 0.0) / distances.size();
+
+        float e = 0;
+        float inverse = 1.f / distances.size();
+        for (auto elem : distances)
+        {
+            e += pow(elem - mean, 2);
+        }
+
+        auto standard_deviation = sqrt(inverse * e);
+        static const auto length_jump = 4.f;
+        return std::ceil((mean + 1.5f * standard_deviation) / length_jump) * length_jump;
     }
 
     void viewer_model::render_2d_view(const rect& view_rect,
@@ -3137,6 +3452,49 @@ namespace rs2
             stream_rect.h += 32;
             stream_rect.w += 1;
             draw_rect(stream_rect);
+
+            auto frame = streams[stream].texture->get_last_frame().as<video_frame>();
+            auto textured_frame = streams[stream].texture->get_last_frame(true).as<video_frame>();
+            if (streams[stream].show_map_ruler && frame && textured_frame &&
+                RS2_STREAM_DEPTH == stream_mv.profile.stream_type() &&
+                RS2_FORMAT_Z16 == stream_mv.profile.format())
+            {
+                assert(RS2_FORMAT_RGB8 == textured_frame.get_profile().format());
+                static const std::string depth_units = "m";
+                float ruler_length = 0.f;
+                auto depth_vid_profile = stream_mv.profile.as<video_stream_profile>();
+                auto depth_width = depth_vid_profile.width();
+                auto depth_height = depth_vid_profile.height();
+                auto num_of_pixels = depth_width * depth_height;
+                auto depth_data = static_cast<const uint16_t*>(frame.get_data());
+                auto textured_depth_data = static_cast<const uint8_t*>(textured_frame.get_data());
+                static const auto skip_pixels_factor = 30;
+                std::vector<rgb_per_distance> rgb_per_distance_vec;
+                std::vector<float> distances;
+                for (uint64_t i = 0; i < depth_height; i+= skip_pixels_factor)
+                {
+                    for (uint64_t j = 0; j < depth_width; j+= skip_pixels_factor)
+                    {
+                        auto depth_index = i*depth_width + j;
+                        auto length = depth_data[depth_index] * stream_mv.dev->depth_units;
+                        if (length > 0.f)
+                        {
+                            auto textured_depth_index = depth_index * 3;
+                            auto r = textured_depth_data[textured_depth_index];
+                            auto g = textured_depth_data[textured_depth_index + 1];
+                            auto b = textured_depth_data[textured_depth_index + 2];
+                            rgb_per_distance_vec.push_back({ length, { r, g, b } });
+                            distances.push_back(length);
+                        }
+                    }
+                }
+
+                if (!distances.empty())
+                {
+                    ruler_length = calculate_ruler_max_distance(distances);
+                    draw_color_ruler(mouse, streams[stream], stream_rect, rgb_per_distance_vec, ruler_length, depth_units);
+                }
+            }
         }
 
         // Metadata overlay windows shall be drawn after textures to preserve z-buffer functionality
@@ -3303,15 +3661,12 @@ namespace rs2
             // Non-linear correspondence customized for non-flat surface exploration
             glPointSize(std::sqrt(viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width()));
 
-            if (selected_tex_source_uid >= 0)
-            {
-                auto tex = last_texture->get_gl_handle();
-                glBindTexture(GL_TEXTURE_2D, tex);
-                glEnable(GL_TEXTURE_2D);
+            auto tex = last_texture->get_gl_handle();
+            glBindTexture(GL_TEXTURE_2D, tex);
+            glEnable(GL_TEXTURE_2D);
 
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
-            }
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
 
             //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
 
@@ -3930,16 +4285,24 @@ namespace rs2
         return device_names;
     }
 
-    bool yes_no_dialog(const std::string& title, const std::string& do_what, bool& approved)
+    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window)
     {
+        ImGui_ScopePushFont(window.get_font());
+        ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
+        ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_header_light_blue); //TODO: Change color?
+        ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, regular_blue); //TODO: Change color?
+        ImGui_ScopePushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+        ImGui_ScopePushStyleColor(ImGuiCol_TitleBg, header_color);
+        ImGui_ScopePushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+        ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         auto clicked = false;
         ImGui::OpenPopup(title.c_str());
         if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            std::string msg = to_string() << "\t\tAre you sure you want to " << do_what << "?\t\t\n";
-            ImGui::Text("\n%s\n", msg.c_str());
-            ImGui::Separator();
+            ImGui::Text("\n%s\n\n", message_text.c_str());
             auto width = ImGui::GetWindowWidth();
+            ImGui::Dummy(ImVec2(0, 0));
             ImGui::Dummy(ImVec2(width / 4.f, 0));
             ImGui::SameLine();
             if (ImGui::Button("Yes", ImVec2(60, 30)))
@@ -3960,93 +4323,54 @@ namespace rs2
         }
         return clicked;
     }
-
-    void device_model::draw_advanced_mode_tab(viewer_model& view)
+    bool device_model::prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text, std::vector<std::string>& restarting_device_info, viewer_model& view, ux_window& window)
     {
-        using namespace rs400;
+        bool keep_showing = true;
+        bool yes_was_chosen = false;
+        if (yes_no_dialog("Advanced Mode", message_text, yes_was_chosen, window))
+        {
+            if (yes_was_chosen)
+            {
+                dev.as<advanced_mode>().toggle_advanced_mode(enable_advanced_mode);
+                restarting_device_info = get_device_info(dev, false);
+                view.not_model.add_log(enable_advanced_mode ? "Turning on advanced mode..." : "Turning off  advanced mode...");
+            }
+            keep_showing = false;
+        }
+        return keep_showing;
+    }
+    bool device_model::draw_advanced_controls(viewer_model& view, ux_window& window)
+    {
+        bool was_set = false;
+
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.9f, 0.9f, 0.9f, 1 });
 
         auto is_advanced_mode = dev.is<advanced_mode>();
-        if (ImGui::TreeNode("Advanced Mode"))
+        if (is_advanced_mode && ImGui::TreeNode("Advanced Controls"))
         {
             try
             {
-                if (!is_advanced_mode)
+                auto advanced = dev.as<advanced_mode>();
+                if (advanced.is_enabled())
                 {
-                    // TODO: Why are we showing the tab then??
-                    ImGui::TextColored(redish, "Selected device does not offer\nany advanced settings");
+                    draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls, was_set);
                 }
                 else
                 {
-                    auto advanced = dev.as<advanced_mode>();
-                    if (advanced.is_enabled())
+                    ImGui::TextColored(redish, "Device is not in advanced mode");
+                    std::string button_text = to_string() << "Turn on Advanced Mode" << "##" << id;
+                    static bool show_yes_no_modal = false;
+                    if (ImGui::Button(button_text.c_str(), ImVec2{ 226, 0 }))
                     {
-                        static bool show_dialog = false;
-                        static bool disable_approved = true;
-                        if (allow_remove)
-                        {
-                            if (ImGui::Button("Disable Advanced Mode", ImVec2{ 226, 0 }))
-                            {
-                                show_dialog = true;
-                                disable_approved = false;
-                            }
-
-                            if (ImGui::IsItemHovered())
-                            {
-                                ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
-                            }
-
-                            if (show_dialog &&
-                                yes_no_dialog("Advanced Mode", "Disable Advanced Mode", disable_approved))
-                            {
-                                if (disable_approved)
-                                {
-                                    advanced.toggle_advanced_mode(false);
-                                    restarting_device_info = get_device_info(dev, false);
-                                    view.not_model.add_log("Switching out of advanced mode...");
-                                }
-                                show_dialog = false;
-                            }
-
-                            if (ImGui::IsItemHovered())
-                            {
-                                ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
-                            }
-                        }
-
-                        draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
+                        show_yes_no_modal = true;
                     }
-                    else
+                    if (ImGui::IsItemHovered())
                     {
-                        if (allow_remove)
-                        {
-                            static bool show_dialog = false;
-                            static bool enable_approved = true;
-                            if (ImGui::Button("Enable Advanced Mode", ImVec2{ 226, 0 }))
-                            {
-                                show_dialog = true;
-                                enable_approved = false;
-                            }
-
-                            if (ImGui::IsItemHovered())
-                            {
-                                ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
-                            }
-
-                            if (show_dialog &&
-                                yes_no_dialog("Advanced Mode", "Enable Advanced Mode", enable_approved))
-                            {
-                                if (enable_approved)
-                                {
-                                    advanced.toggle_advanced_mode(true);
-                                    restarting_device_info = get_device_info(dev, false);
-                                    view.not_model.add_log("Switching into advanced mode...");
-                                }
-                                show_dialog = false;
-                            }
-                        }
-
-                        ImGui::TextColored(redish, "Device is not in advanced mode!\nTo access advanced functionality\nclick \"Enable Advanced Mode\"");
+                        ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
+                    }
+                    if (show_yes_no_modal)
+                    {
+                        show_yes_no_modal = prompt_toggle_advanced_mode(true, "\t\tAre you sure you want to turn on Advanced Mode?\t\t", restarting_device_info, view, window);
                     }
                 }
             }
@@ -4059,6 +4383,7 @@ namespace rs2
         }
 
         ImGui::PopStyleColor();
+        return was_set;
     }
 
     void device_model::draw_info_icon(const ImVec2& size)
@@ -4178,6 +4503,7 @@ namespace rs2
         }
         ImGui::PopFont();
         ImGui::PushFont(window.get_font());
+        static bool keep_showing_advanced_mode_modal = false;
         if (ImGui::BeginPopup(label.c_str()))
         {
             bool something_to_show = false;
@@ -4215,55 +4541,20 @@ namespace rs2
                     error_message = e.what();
                 }
             }
-            if (auto adv = dev.as<advanced_mode>())
-            {
-                something_to_show = true;
-                try
-                {
-                    if (ImGui::Selectable("Load Settings", false, ImGuiSelectableFlags_SpanAllColumns))
-                    {
-                        auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
-                        if (ret)
-                        {
-                            std::ifstream t(ret);
-                            viewer.not_model.add_log(to_string() << "Loading settings from \"" << ret << "\"...");
-                            std::string str((std::istreambuf_iterator<char>(t)),
-                                std::istreambuf_iterator<char>());
-
-                            adv.load_json(str);
-                            get_curr_advanced_controls = true;
-                        }
-                    }
-
-                    if (ImGui::Selectable("Save Settings", false, ImGuiSelectableFlags_SpanAllColumns))
-                    {
-                        auto ret = file_dialog_open(save_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
-
-                        if (ret)
-                        {
-                            std::string filename = ret;
-                            if (!ends_with(to_lower(filename), ".json")) filename += ".json";
-
-                            viewer.not_model.add_log(to_string() << "Saving settings to \"" << filename << "\"...");
-                            std::ofstream out(filename);
-                            out << adv.serialize_json();
-                            out.close();
-                        }
-                    }
-                }
-                catch (const error& e)
-                {
-                    error_message = error_to_string(e);
-                }
-                catch (const std::exception& e)
-                {
-                    error_message = e.what();
-                }
-            }
 
             if (allow_remove)
             {
                 something_to_show = true;
+
+                if (auto adv = dev.as<advanced_mode>())
+                {
+                    const bool is_advanced_mode_enabled = adv.is_enabled();
+                    bool selected = is_advanced_mode_enabled;
+                    if (ImGui::MenuItem("Advanced Mode", nullptr, &selected))
+                    {
+                        keep_showing_advanced_mode_modal = true;
+                    }
+                }
 
                 ImGui::Separator();
 
@@ -4295,12 +4586,18 @@ namespace rs2
             ImGui::EndPopup();
         }
 
+        if (keep_showing_advanced_mode_modal)
+        {
+            const bool is_advanced_mode_enabled = dev.as<advanced_mode>().is_enabled();
+            std::string msg = to_string() << "\t\tAre you sure you want to " << (is_advanced_mode_enabled ? "turn off Advanced mode" : "turn on Advanced mode") << "\t\t";
+            keep_showing_advanced_mode_modal = prompt_toggle_advanced_mode(!is_advanced_mode_enabled, msg, restarting_device_info, viewer, window);
+        }
         ////////////////////////////////////////
         // Draw icons names
         ////////////////////////////////////////
         //Move to next line, and we want to keep the horizontal alignment
         ImGui::SetCursorPos({ panel_pos.x, ImGui::GetCursorPosY() });
-        //Using transparent-non-actionable buttons to have the sam
+        //Using transparent-non-actionable buttons to have the same locations
         ImGui::PushStyleColor(ImGuiCol_Button, ImColor(0, 0, 0, 0));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor(0, 0, 0, 0));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor(0,0,0,0));
@@ -4318,6 +4615,487 @@ namespace rs2
         return device_panel_height;
     }
 
+    template <typename T>
+    std::string safe_call(T t)
+    {
+        try
+        {
+            t();
+            return "";
+        }
+        catch (const error& e)
+        {
+            return error_to_string(e);
+        }
+        catch (const std::exception& e)
+        {
+            return e.what();
+        }
+        catch (...)
+        {
+            return "Unknown error occurred";
+        }
+    }
+
+    void device_model::save_viewer_configurations(std::ofstream& outfile, json& j)
+    {
+        for (auto&& sub : subdevices)
+        {
+            int num_irs = 0;
+            bool video_profile_saved = false;
+            for (auto&& p : sub->get_selected_profiles())
+            {
+                rs2_stream stream_type = p.stream_type();
+                std::string stream_format_key = to_string() << "stream-" << to_lower(rs2_stream_to_string(stream_type)) << "-format";
+                std::string stream_format_value = rs2_format_to_string(p.format());
+                
+                if (stream_type == RS2_STREAM_DEPTH)
+                {
+                    stream_format_key = "stream-depth-format";
+                }
+                else if (stream_type == RS2_STREAM_INFRARED)
+                {
+                    stream_format_key = "stream-ir-format";
+                    num_irs++;
+                    if (num_irs == 2)
+                    {
+                        stream_format_value = "R8L8";
+                    }
+                }
+                else
+                {
+                    continue; //TODO: Ignoring other streams for now
+                }
+
+                j[stream_format_key] = stream_format_value;
+                if (!video_profile_saved)
+                {
+                    if (auto vp = p.as<rs2::video_stream_profile>())
+                    {
+                        j["stream-width"] = std::to_string(vp.width());
+                        j["stream-height"] = std::to_string(vp.height());
+                        j["stream-fps"] = std::to_string(vp.fps());
+                        video_profile_saved = true;
+                    }
+                }
+            }
+        }
+    }
+
+    void device_model::load_viewer_configurations(const std::string& json_str)
+    {
+        json j = json::parse(json_str);
+        struct video_stream
+        {
+            rs2_format format = RS2_FORMAT_ANY;
+            int width = 0;
+            int height = 0;
+            int fps = 0;
+        };
+
+        std::map<std::pair<rs2_stream, int>, video_stream> requrested_streams;
+        auto it = j.find("stream-depth-format");
+        if (it != j.end())
+        {
+            assert(it.value().is_string());
+            std::string formatstr = it.value();
+            bool found = false;
+            for (int i = 0; i < static_cast<int>(RS2_FORMAT_COUNT); i++)
+            {
+                auto f = static_cast<rs2_format>(i);
+                auto fstr = rs2_format_to_string(f);
+                if (formatstr == fstr)
+                {
+                    requrested_streams[std::make_pair(RS2_STREAM_DEPTH, 0)].format = f;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+                throw std::runtime_error(to_string() << "Unsupported stream-depth-format: " << formatstr);
+        }
+
+        it = j.find("stream-ir-format");
+        if (it != j.end())
+        {
+            assert(it.value().is_string());
+            std::string formatstr = it.value();
+            if (formatstr == "R8L8")
+            {
+                requrested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_Y8;
+                requrested_streams[std::make_pair(RS2_STREAM_INFRARED, 2)].format = RS2_FORMAT_Y8;
+            }
+            else if (formatstr == "Y8")
+            {
+                requrested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_Y8;
+            }
+            else if (formatstr == "UYVY")
+            {
+                requrested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_UYVY;
+            }
+            else
+            {
+                throw std::runtime_error(to_string() << "Unsupported stream-ir-format: " << formatstr);
+            }
+        }
+        if (!requrested_streams.empty())
+        {
+            try
+            {
+                std::string wstr = j["stream-width"];
+                std::string hstr = j["stream-height"];
+                std::string fstr = j["stream-fps"];
+                int width = std::stoi(wstr);
+                int height = std::stoi(hstr);
+                int fps = std::stoi(fstr);
+                for (auto& kvp : requrested_streams)
+                {
+                    kvp.second.width = width;
+                    kvp.second.height = height;
+                    kvp.second.fps = fps;
+                }
+            }
+            catch (const std::exception& e)
+            {
+                throw std::runtime_error(to_string() << "Error parsing streams from JSON: " << e.what());
+            }
+            //Disable every stream
+            for (auto&& sub : subdevices)
+                for (auto& s : sub->stream_enabled) 
+                    s.second = false; 
+        }
+
+        for (auto&& kvp : requrested_streams)
+        {
+            std::string stream_name = to_string() << rs2_stream_to_string(kvp.first.first) << (kvp.first.second > 0 ? (" " + std::to_string(kvp.first.second)) : "");
+            for (auto&& sub : subdevices)
+            {
+                auto itr = std::find_if(sub->stream_display_names.begin(), sub->stream_display_names.end(), [stream_name](const std::pair<int, std::string>& p) { return p.second == stream_name; });
+                if (itr != sub->stream_display_names.end())
+                {
+                    int uid = itr->first;
+                    sub->stream_enabled[uid] = true;
+
+                    //Find format
+                    int format_id = 0;
+                    rs2_format requested_format = kvp.second.format;
+                    for (; format_id < sub->format_values[uid].size(); format_id++)
+                    {
+                        if (sub->format_values[uid][format_id] == requested_format)
+                            break;
+                    }
+                    if (format_id == sub->format_values[uid].size())
+                    {
+                        throw std::runtime_error(to_string() << "No match found for requested format: " << requested_format);
+                    }
+                    sub->ui.selected_format_id[uid] = format_id;
+
+                    //Find fps
+                    int requested_fps = kvp.second.fps;
+                    int fps_id = 0;
+                    for (; fps_id < sub->shared_fps_values.size(); fps_id++)
+                    {
+                        if (sub->shared_fps_values[fps_id] == requested_fps)
+                            break;
+                    }
+                    if (fps_id == sub->shared_fps_values.size())
+                    {
+                        throw std::runtime_error(to_string() << "No match found for requested fps: " << requested_fps);
+                    }
+                    sub->ui.selected_shared_fps_id = fps_id;
+
+                    //Find Resolution
+                    std::pair<int, int> requested_res{ kvp.second.width,kvp.second.height };
+                    int res_id = 0;
+                    for (; res_id < sub->res_values.size(); res_id++)
+                    {
+                        if (sub->res_values[res_id] == requested_res)
+                            break;
+                    }
+                    if (res_id == sub->res_values.size())
+                    {
+                        throw std::runtime_error(to_string() << "No match found for requested resolution: " << requested_res.first << "x" << requested_res.second);
+                    }
+                    sub->ui.selected_res_id = res_id;
+                }
+            }
+        }
+    }
+
+    float device_model::draw_preset_panel(float panel_width,
+        ux_window& window,
+        std::string& error_message,
+        viewer_model& viewer,
+        bool update_read_only_options)
+    {
+        const float panel_height = 40.f;
+        auto panel_pos = ImGui::GetCursorPos();
+        ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+        ImGui::PushFont(window.get_font());
+
+        const auto load_json = [&](const std::string f) {
+            std::ifstream file(f);
+            if (!file.good())
+            {
+                //Failed to read file, removing it from the available ones
+                advanced_mode_settings_file_names.erase(f);
+                selected_file_preset.clear();
+                throw std::runtime_error(to_string() << "Failed to read configuration file:\n\"" << f << "\"\nRemoving it from presets.");
+            }
+            std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+            if (auto advanced = dev.as<advanced_mode>())
+            {
+                advanced.load_json(str);
+                for (auto&& sub : subdevices)
+                {
+                    //If json was loaded correctly, we want the presets combo box to show the name of the configuration file 
+                    // And as a workaround, set the current preset to "custom", so that if the file is removed the preset will show "custom"
+                    if (auto dpt = sub->s->as<depth_sensor>())
+                    {
+                        auto itr = sub->options_metadata.find(RS2_OPTION_VISUAL_PRESET);
+                        if (itr != sub->options_metadata.end())
+                        {
+                            //TODO: Update to work with SR300 when the load json will update viewer configurations
+                            itr->second.endpoint->set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_CUSTOM);
+                            *(itr->second.invalidate_flag) = true;
+                        }
+                    }
+                }
+                
+            }
+            load_viewer_configurations(str);
+            get_curr_advanced_controls = true;
+            advanced_mode_settings_file_names.insert(f);
+            selected_file_preset = f;
+            viewer.not_model.add_log(to_string() << "Loaded settings from \"" << f << "\"...");
+        };
+
+        const auto save_to_json = [&](std::string full_filename)
+        {
+            auto advanced = dev.as<advanced_mode>();
+            if (!ends_with(to_lower(full_filename), ".json")) full_filename += ".json";
+            std::ofstream outfile(full_filename);
+            json saved_configuraion;
+            if (auto advanced = dev.as<advanced_mode>())
+            {
+                saved_configuraion = json::parse(advanced.serialize_json());
+            }
+            save_viewer_configurations(outfile, saved_configuraion);
+            outfile << saved_configuraion.dump(4);
+            outfile.close();
+            advanced_mode_settings_file_names.insert(full_filename);
+            selected_file_preset = full_filename;
+            viewer.not_model.add_log(to_string() << "Saved settings to \"" << full_filename << "\"...");
+
+        };
+        const std::string popup_message = "\t\tTo use this feature, the device must be in Advanced Mode.\t\t\n\n\t\tWould you like to turn Advanced Mode?\t\t";
+        ////////////////////////////////////////
+        // Draw Combo Box
+        ////////////////////////////////////////
+        for (auto&& sub : subdevices)
+        {
+            if (auto dpt = sub->s->as<depth_sensor>())
+            {
+                ImGui::SetCursorPos({ panel_pos.x + 8, ImGui::GetCursorPosY() + 10 });
+                //TODO: set this once!
+                const auto draw_preset_combo_box = [&](option_model& opt_model, std::string& error_message, notifications_model& model)
+                {
+                    bool is_clicked = false;
+                    assert(opt_model.opt == RS2_OPTION_VISUAL_PRESET);
+                    ImGui::Text("Presets: ");
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Select a preset configuration (or use the load button)");
+                    }
+
+                    ImGui::SameLine();
+                    ImGui::PushItemWidth(185);
+
+                    ///////////////////////////////////////////
+                    //TODO: make this a member function
+                    std::vector<const char*> labels;
+                    auto selected = 0, counter = 0;
+                    for (auto i = opt_model.range.min; i <= opt_model.range.max; i += opt_model.range.step, counter++)
+                    {
+                        if (std::fabs(i - opt_model.value) < 0.001f)
+                        {
+                            selected = counter;
+                        }
+                        labels.push_back(opt_model.endpoint->get_option_value_description(opt_model.opt, i));
+                    }
+                    ///////////////////////////////////////////
+
+                    ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, white);
+                    ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
+                    ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, button_color + 0.1f);
+                    ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, button_color + 0.1f);
+                    ImVec2 padding{ 2,2 };
+                    ImGui_ScopePushStyleVar(ImGuiStyleVar_FramePadding, padding);
+                    ///////////////////////////////////////////
+                    // Go over the loaded files and add them to the combo box
+                    std::vector<std::string> full_files_names(advanced_mode_settings_file_names.begin(), advanced_mode_settings_file_names.end());
+                    std::vector<std::string> files_labels;
+                    int i = labels.size();
+                    for (auto&& file : full_files_names)
+                    {
+                        files_labels.push_back(get_file_name(file));
+                        if (selected_file_preset == file)
+                        {
+                            selected = i;
+                        }
+                        i++;
+                    }
+                    std::transform(files_labels.begin(), files_labels.end(), std::back_inserter(labels), [](const std::string& s) { return s.c_str(); });
+                    
+                    ///////////////////////////////////////////
+
+                    try
+                    {
+                        static bool keep_showing_popup = false;
+                        if (ImGui::Combo(opt_model.id.c_str(), &selected, labels.data(),
+                            static_cast<int>(labels.size())))
+                        {
+                            auto advanced = dev.as<advanced_mode>();
+                            if (advanced)
+                            {
+                                if (advanced.is_enabled())
+                                {
+                                    if (selected < static_cast<int>(labels.size() - files_labels.size()))
+                                    {
+                                        //Known preset was chosen
+                                        opt_model.value = opt_model.range.min + opt_model.range.step * selected;
+                                        model.add_log(to_string() << "Setting " << opt_model.opt << " to "
+                                            << opt_model.value << " (" << labels[selected] << ")");
+                                        opt_model.endpoint->set_option(opt_model.opt, opt_model.value);
+                                        *opt_model.invalidate_flag = true;
+                                        is_clicked = true;
+                                        selected_file_preset = "";
+                                    }
+                                    else
+                                    {
+                                        //File was chosen
+                                        auto f = full_files_names[selected - static_cast<int>(labels.size() - files_labels.size())];
+                                        error_message = safe_call([&]() { load_json(f); });
+                                        selected_file_preset = f;
+                                    }
+                                }
+                                else
+                                {
+                                    keep_showing_popup = true;
+                                }
+                            }
+                        }
+                        if (keep_showing_popup)
+                        {
+                            keep_showing_popup = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window);
+                        }
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+
+                    ImGui::PopItemWidth();
+                    return is_clicked;
+                };
+                sub->options_metadata[RS2_OPTION_VISUAL_PRESET].custom_draw_method = draw_preset_combo_box;
+                if (sub->draw_option(RS2_OPTION_VISUAL_PRESET, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
+                {
+                    get_curr_advanced_controls = true;
+                    selected_file_preset.clear();
+                }
+            }
+        }
+
+        ImGui::SameLine();
+        const ImVec2 icons_size{ 20, 20 };
+        //TODO: Change this once we have support for loading jsons with more data than only advanced controls
+        bool is_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming; });
+        const int buttons_flags = dev.is<advanced_mode>() ? 0 : ImGuiButtonFlags_Disabled;
+        static bool require_advanced_mode_enable_prompt = false;
+        auto advanced_dev = dev.as<advanced_mode>();
+        bool is_advanced_mode_enabled = false;
+        if (advanced_dev)
+        {
+            is_advanced_mode_enabled = advanced_dev.is_enabled();
+        }
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 3);
+
+        ////////////////////////////////////////
+        // Draw Load Icon
+        ////////////////////////////////////////
+        std::string upload_button_name = to_string() << textual_icons::upload << "##" << id;
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+        if (ImGui::ButtonEx(upload_button_name.c_str(), icons_size, is_streaming ? ImGuiButtonFlags_Disabled : buttons_flags))
+        {
+            if (is_advanced_mode_enabled)
+            {
+                auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+                if (ret)
+                {
+                    error_message = safe_call([&]() { load_json(ret); });
+                }
+            }
+            else
+            {
+                require_advanced_mode_enable_prompt = true;
+            }
+        }
+        if (ImGui::IsItemHovered())
+        {
+            std::string tooltip = to_string() << "Load pre-configured settings" << (is_streaming ? " (Disabled while streaming)" : "");
+            ImGui::SetTooltip("%s", tooltip.c_str());
+        }
+        ImGui::SameLine();
+
+        ////////////////////////////////////////
+        // Draw Save Icon
+        ////////////////////////////////////////
+        std::string save_button_name = to_string() << textual_icons::download << "##" << id;
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1); //Align the two icons to buttom
+        if (ImGui::ButtonEx(save_button_name.c_str(), icons_size, buttons_flags))
+        {
+            if (is_advanced_mode_enabled)
+            {
+                auto ret = file_dialog_open(save_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+                if (ret)
+                {
+                    error_message = safe_call([&]() { save_to_json(ret); });
+                }
+            }
+            else
+            {
+                require_advanced_mode_enable_prompt = true;
+            }
+
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Save current settings to file");
+        }
+        ImGui::PopStyleColor(2);
+        ImGui::SameLine();
+
+        if (require_advanced_mode_enable_prompt)
+        {
+            require_advanced_mode_enable_prompt = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window);
+        }
+
+        ImGui::PopFont();
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor(7);
+
+        return panel_height;
+    }
+
     void device_model::draw_controls(float panel_width, float panel_height,
         ux_window& window,
         std::string& error_message,
@@ -4333,7 +5111,7 @@ namespace rs2
         auto header_h = panel_height;
         if (is_playback_device) header_h += 15;
 
-        ImColor device_header_background_color = ImColor(from_rgba(27, 33, 38, 255));
+        ImColor device_header_background_color = title_color;
         const float left_space = 3.f;
         const float upper_space = 3.f;
 
@@ -4356,7 +5134,7 @@ namespace rs2
         ////////////////////////////////////////
         // Draw device name
         ////////////////////////////////////////
-        const ImVec2 name_pos = { pos.x + 8, pos.y + 17 };
+        const ImVec2 name_pos = { pos.x + 9, pos.y + 17 };
         ImGui::SetCursorPos(name_pos);
         ImGui::Text(" %s", dev.get_info(RS2_CAMERA_INFO_NAME));
         ImGui::PopFont();
@@ -4373,7 +5151,7 @@ namespace rs2
         if (allow_remove)
         {
             ImGui::Columns(1);
-            float horizontal_distance_from_right_side_of_panel = 50;
+            float horizontal_distance_from_right_side_of_panel = 47;
             ImGui::SetCursorPos({ panel_width - horizontal_distance_from_right_side_of_panel, pos.y + 9 + (header_h - panel_height) / 2 });
             std::string remove_source_button_label = to_string() << textual_icons::times << "##" << id;
             if (ImGui::Button(remove_source_button_label.c_str(), { 33,35 }))
@@ -4420,6 +5198,21 @@ namespace rs2
             const float device_panel_height = draw_device_panel(panel_width, window, error_message, viewer);
             ImGui::SetCursorPos({ device_panel_pos.x, device_panel_pos.y + device_panel_height });
         }
+
+        ////////////////////////////////////////
+        // draw advanced mode panel
+        ////////////////////////////////////////
+        if (dev.is<advanced_mode>())
+        {
+            pos = ImGui::GetCursorPos();
+            const float vertical_space_before_advanced_mode_control = 10.0f;
+            const float horizontal_space_before_device_control = 3.0f;
+            auto advanced_mode_pos = ImVec2{ pos.x + horizontal_space_before_device_control, pos.y + vertical_space_before_advanced_mode_control };
+            ImGui::SetCursorPos(advanced_mode_pos);
+            const float advanced_mode_panel_height = draw_preset_panel(panel_width, window, error_message, viewer, update_read_only_options);
+            ImGui::SetCursorPos({ advanced_mode_pos.x, advanced_mode_pos.y + advanced_mode_panel_height });
+        }
+
         ////////////////////////////////////////
         // draw playback control panel
         ////////////////////////////////////////
@@ -4623,16 +5416,16 @@ namespace rs2
                 if (show_stream_selection)
                     sub->draw_stream_selection();
 
-                static const std::vector<rs2_option> drawing_order{
-                    RS2_OPTION_VISUAL_PRESET,
-                    RS2_OPTION_EMITTER_ENABLED,
-                    RS2_OPTION_ENABLE_AUTO_EXPOSURE };
+                static const std::vector<rs2_option> drawing_order = dev.is<advanced_mode>() ?
+                    std::vector<rs2_option>{                           RS2_OPTION_EMITTER_ENABLED, RS2_OPTION_ENABLE_AUTO_EXPOSURE }
+                  : std::vector<rs2_option>{ RS2_OPTION_VISUAL_PRESET, RS2_OPTION_EMITTER_ENABLED, RS2_OPTION_ENABLE_AUTO_EXPOSURE };
 
                 for (auto& opt : drawing_order)
                 {
                     if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
                     {
                         get_curr_advanced_controls = true;
+                        selected_file_preset.clear();
                     }
                 }
 
@@ -4647,9 +5440,12 @@ namespace rs2
                             if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
                             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
+                                if (dev.is<advanced_mode>() && opt == RS2_OPTION_VISUAL_PRESET) 
+                                    continue;
                                 if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
                                 {
                                     get_curr_advanced_controls = true;
+                                    selected_file_preset.clear();
                                 }
                             }
                         }
@@ -4658,7 +5454,14 @@ namespace rs2
                     }
                 }
                 if (dev.is<advanced_mode>() && sub->s->is<depth_sensor>())
-                    draw_advanced_mode_tab(viewer);
+                {
+                    if (draw_advanced_controls(viewer, window))
+                    {
+                        sub->options_invalidated = true;
+                        selected_file_preset.clear();
+                    }
+                }
+
 
                 for (auto&& pb : sub->const_effects)
                 {

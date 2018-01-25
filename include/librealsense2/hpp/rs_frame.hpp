@@ -42,6 +42,14 @@ namespace rs2
             return res;
         }
 
+        bool operator==(const stream_profile& rhs)
+        {
+            return  stream_index() == rhs.stream_index()&&
+                    stream_type() == rhs.stream_type()&&
+                    format() == rhs.format()&&
+                    fps() == rhs.fps();
+        }
+
         template<class T>
         bool is() const
         {
@@ -70,6 +78,10 @@ namespace rs2
 
         const rs2_stream_profile* get() const { return _profile; }
 
+        operator const rs2_stream_profile*()
+        {
+            return _profile;
+        }
         rs2_extrinsics get_extrinsics_to(const stream_profile& to) const
         {
             rs2_error* e = nullptr;
@@ -78,11 +90,18 @@ namespace rs2
             error::handle(e);
             return res;
         }
+        void register_extrinsics_to(const stream_profile& to, rs2_extrinsics extrinsics)
+        {
+            rs2_error* e = nullptr;
+            rs2_register_extrinsics(get(), to.get(), extrinsics, &e);
+            error::handle(e);
+        }
 
     protected:
         friend class rs2::sensor;
         friend class rs2::frame;
         friend class rs2::pipeline_profile;
+        friend class software_sensor;
 
         explicit stream_profile(const rs2_stream_profile* profile) : _profile(profile)
         {
@@ -186,13 +205,21 @@ namespace rs2
         frame(rs2_frame* frame_ref) : frame_ref(frame_ref)
         {
 #ifdef _DEBUG
-            rs2_error* e = nullptr;
-            auto r = rs2_get_frame_number(frame_ref, &e);
-            if (!e)
-                frame_number = r;
-            auto s = rs2_get_frame_stream_profile(frame_ref, &e);
-            if (!e)
-                profile = stream_profile(s);
+            if (frame_ref)
+            {
+                rs2_error* e = nullptr;
+                auto r = rs2_get_frame_number(frame_ref, &e);
+                if (!e)
+                    frame_number = r;
+                auto s = rs2_get_frame_stream_profile(frame_ref, &e);
+                if (!e)
+                    profile = stream_profile(s);
+            }
+            else
+            {
+                frame_number = 0;
+                profile = stream_profile();
+            }
 #endif
         }
 
@@ -238,6 +265,8 @@ namespace rs2
                 rs2_release_frame(frame_ref);
             }
         }
+
+        void keep() { rs2_keep_frame(frame_ref); }
 
         operator bool() const { return frame_ref != nullptr; }
 

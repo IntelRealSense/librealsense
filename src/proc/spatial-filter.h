@@ -2,6 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved
 //// In-place Domain Transform Edge-preserving filter based on
 // http://inf.ufrgs.br/~eslgastal/DomainTransform/Gastal_Oliveira_SIGGRAPH2011_Domain_Transform.pdf
+// The filter also allows to apply holes filling extention that due to implementation constrains can be applied horizontally only
 
 #pragma once
 
@@ -47,63 +48,86 @@ namespace librealsense
             // Filtering integer values requires round-up to the nearest discrete value
             const float round = fp ? 0.f : 0.5f;
             // Disparity value of 0.001 corresponds to 0.5 mm at 0.5 meter to 5 mm at 5m
-            // For Depth values the smoothing will take effect when the gradient is more than 4 level (~0.4mm)
+            // For Depth values the smoothing will take place when the gradient is more than 4 level (~0.4mm)
             const T noise = fp ? static_cast<T>(0.001f) : static_cast<T>(4);
             const T max_radius = static_cast<T>(fp ? 2.f : deltaZ);
 
             auto image = reinterpret_cast<T*>(image_data);
+            size_t cur_fill = 0;
 
-            for (v = 0; v < _height; v++) 
+            for (v = 0; v < _height; v++)
             {
                 // left to right
                 T *im = image + v * _width;
                 T val0 = im[0];
-                for (u = 1; u < _width; u++)
+                cur_fill = 0;
+
+                for (u = 1; u < _width-1; u++)
                 {
                     T val1 = im[1];
 
-                    if (val0 >= noise && val1 >= noise)
+                    if (val0 >= noise)
                     {
-                        T diff = static_cast<T>(fabs(val1 - val0));
-
-                        if (diff >= noise && diff <= max_radius)
+                        if (val1 >= noise)
                         {
-                            float filtered = val1 * alpha + val0 * (1.0f - alpha);
-                            val0 = static_cast<T>(filtered + round);
-                            im[1] = val0;
-                        }
-                        else
-                            val0 = val1;
-                    }
-                    else
-                        val0 = val1;
+                            cur_fill = 0;
+                            T diff = static_cast<T>(fabs(val1 - val0));
 
+                            if (diff >= noise && diff <= max_radius)
+                            {
+                                float filtered = val1 * alpha + val0 * (1.0f - alpha);
+                                val1 = static_cast<T>(filtered + round);
+                                im[1] = val1;
+                            }
+                        }
+                        else // Only the old value is valid - appy holes filling
+                        {
+                            if (_holes_filling_radius)
+                            {
+                                if (++cur_fill <_holes_filling_radius)
+                                    im[1] = val1 = val0;
+                            }
+                        }
+                    }
+
+                    val0 = val1;
                     im += 1;
                 }
 
                 // right to left
                 im = image + (v + 1) * _width - 2;  // end of row - two pixels
                 T val1 = im[1];
+                cur_fill = 0;
+
                 for (u = _width - 1; u > 0; u--)
                 {
                     T val0 = im[0];
 
-                    if (val1 >= noise && val0> noise)
+                    if (val1 >= noise)
                     {
-                        T diff = static_cast<T>(fabs(val1 - val0));
-
-                        if (diff >= noise && diff <= max_radius)
+                        if (val0 > noise)
                         {
-                            float filtered = val0 * alpha + val1 * (1.0f - alpha);
-                            val1 = static_cast<T>(filtered + round);
-                            im[0] = val1;
-                        }
-                        else
-                            val1 = val0;
-                    }
-                    else
-                        val1 = val0;
+                            cur_fill = 0;
+                            T diff = static_cast<T>(fabs(val1 - val0));
 
+                            if (diff >= noise && diff <= max_radius)
+                            {
+                                float filtered = val0 * alpha + val1 * (1.0f - alpha);
+                                val0 = static_cast<T>(filtered + round);
+                                im[0] = val0;
+                            }
+                        }
+                        else // 'inertial' hole filling
+                        {
+                            if (_holes_filling_radius)
+                            {
+                                if (++cur_fill <_holes_filling_radius)
+                                    im[0] = val0 = val1;
+                            }
+                        }
+                    }
+
+                    val1 = val0;
                     im -= 1;
                 }
             }
@@ -191,5 +215,7 @@ namespace librealsense
         bool                    _stereoscopic_depth;
         float                   _focal_lenght_mm;
         float                   _stereo_baseline_mm;
+        uint8_t                 _holes_filling_mode;
+        uint8_t                 _holes_filling_radius;
     };
 }

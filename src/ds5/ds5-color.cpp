@@ -163,9 +163,4 @@ namespace librealsense
 
         return results;
     }
-
-    std::shared_ptr<matcher> ds5_color::create_matcher(const frame_holder& frame) const
-    {
-        return std::make_shared<identity_matcher>( _color_stream->get_unique_id(), _color_stream->get_stream_type());
-    }
 }

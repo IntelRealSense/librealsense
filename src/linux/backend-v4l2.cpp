@@ -205,7 +205,7 @@ namespace librealsense
             {
                 _length += MAX_META_DATA_SIZE;
                 _start = static_cast<uint8_t*>(malloc( buf.length + MAX_META_DATA_SIZE));
-                if (!_start) linux_backend_exception("User_p allocation failed!");
+                if (!_start) throw linux_backend_exception("User_p allocation failed!");
                 memset(_start, 0, _length);
             }
         }
@@ -1194,8 +1194,7 @@ namespace librealsense
 
         bool v4l_uvc_device::has_metadata()
         {
-           if(!_use_memory_map)
-               return true;
+            return !_use_memory_map;
         }
 
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const

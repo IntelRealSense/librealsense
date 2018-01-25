@@ -179,6 +179,15 @@ void rs2_frame_add_ref(rs2_frame* frame, rs2_error ** error);
 void rs2_release_frame(rs2_frame* frame);
 
 /**
+* communicate to the library you intend to keep the frame alive for a while
+* this will remove the frame from the regular count of the frame pool
+* once this function is called, the SDK can no longer guarantee 0-allocations during frame cycling
+* \param[in] frame handle returned from a callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_keep_frame(rs2_frame* frame);
+
+/**
 * When called on Points frame type, this method returns a pointer to an array of 3D vertices of the model
 * The coordinate system is: X right, Y up, Z away from the camera. Units: Meters
 * \param[in] frame       Points frame
@@ -194,7 +203,7 @@ rs2_vertex* rs2_get_frame_vertices(const rs2_frame* frame, rs2_error** error);
 * \param[in] texture     Texture frame
 * \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_export_to_ply(const rs2_frame* frame, const char* fname, rs2_frame* texture, rs2_error** error); 
+void rs2_export_to_ply(const rs2_frame* frame, const char* fname, rs2_frame* texture, rs2_error** error);
 
 /**
 * When called on Points frame type, this method returns a pointer to an array of texture coordinates per vertex

@@ -30,6 +30,7 @@
 #include "pipeline.h"
 #include "environment.h"
 #include "proc/temporal-filter.h"
+#include "software-device.h"
 
 ////////////////////////
 // API implementation //
@@ -176,7 +177,7 @@ void verify_version_compatibility(int api_version)
 }
 
 
-void notifications_proccessor::raise_notification(const notification n)
+void notifications_processor::raise_notification(const notification n)
 {
     _dispatcher.invoke([this, n](dispatcher::cancellable_timer ct)
     {
@@ -840,6 +841,13 @@ void rs2_release_frame(rs2_frame* frame) BEGIN_API_CALL
 }
 NOEXCEPT_RETURN(, frame)
 
+void rs2_keep_frame(rs2_frame* frame) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame);
+    ((frame_interface*)frame)->keep();
+}
+NOEXCEPT_RETURN(, frame)
+
 const char* rs2_get_option_description(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
@@ -940,6 +948,17 @@ void rs2_get_extrinsics(const rs2_stream_profile* from,
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, from, to, extrin)
+
+void rs2_register_extrinsics(const rs2_stream_profile* from,
+    const rs2_stream_profile* to,
+    rs2_extrinsics extrin, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(from);
+    VALIDATE_NOT_NULL(to);
+
+    environment::get_instance().get_extrinsics_graph().register_extrinsics(*from->profile, *to->profile, extrin);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, from, to)
 
 void rs2_hardware_reset(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
@@ -1059,6 +1078,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_ROI                 : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::roi_sensor_interface)   != nullptr;
     case RS2_EXTENSION_DEPTH_SENSOR        : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_sensor)           != nullptr;
     case RS2_EXTENSION_DEPTH_STEREO_SENSOR : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_stereo_sensor)    != nullptr;
+    case RS2_EXTENSION_SOFTWARE_SENSOR:  return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::software_sensor) != nullptr;
     default:
         return false;
     }
@@ -1517,7 +1537,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, proc)
 
 rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error) BEGIN_API_CALL
 {
-    auto block = std::make_shared<librealsense::syncer_proccess_unit>();
+    auto block = std::make_shared<librealsense::syncer_process_unit>();
 
     return new rs2_processing_block{ block };
 }
@@ -1767,6 +1787,62 @@ rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
     return environment::get_instance().get_time_service()->get_time();
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
+
+rs2_device* rs2_create_software_device(rs2_error** error) BEGIN_API_CALL
+{
+    auto dev = std::make_shared<software_device>();
+    return new rs2_device{ dev->get_context(), std::make_shared<readonly_device_info>(dev), dev };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
+
+void rs2_software_device_create_matcher(rs2_device* dev, rs2_matchers m, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    auto df = VALIDATE_INTERFACE(dev->device, librealsense::software_device);
+    df->set_matcher_type(m);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, m)
+
+rs2_sensor* rs2_software_device_add_sensor(rs2_device* dev, const char* sensor_name, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    auto df = VALIDATE_INTERFACE(dev->device, librealsense::software_device);
+
+    return new rs2_sensor(
+        *dev,
+        &df->add_software_sensor(sensor_name),
+        0);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev, sensor_name)
+
+void rs2_software_sensor_on_video_frame(rs2_sensor* sensor, rs2_software_video_frame frame, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
+    return bs->on_video_frame(frame);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, frame.pixels)
+
+rs2_stream_profile* rs2_software_sensor_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stream, rs2_error** error) BEGIN_API_CALL
+{
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
+    return bs->add_video_stream(video_stream)->get_c_wrapper();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0,sensor, video_stream.type, video_stream.index, video_stream.fmt, video_stream.width, video_stream.height, video_stream.uid)
+
+void rs2_software_sensor_add_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error) BEGIN_API_CALL
+{
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
+    return bs->add_read_only_option(option, val);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, val)
+
+void rs2_software_sensor_update_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error) BEGIN_API_CALL
+{
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
+    return bs->update_read_only_option(option, val);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, val)
 
 void rs2_log(rs2_log_severity severity, const char * message, rs2_error ** error) BEGIN_API_CALL
 {

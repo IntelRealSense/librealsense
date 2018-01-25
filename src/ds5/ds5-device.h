@@ -33,8 +33,6 @@ namespace librealsense
         void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
         void enable_recording(std::function<void(const debug_interface&)> record_action) override;
 
-        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
-
     protected:
 
         std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;

@@ -18,6 +18,7 @@
 #include "ds5-timestamp.h"
 #include "stream.h"
 #include "environment.h"
+#include "ds5-color.h"
 
 namespace librealsense
 {
@@ -121,10 +122,22 @@ namespace librealsense
                 if (video->get_width() == 1280 && video->get_height() == 720 && video->get_format() == RS2_FORMAT_Z16 && video->get_framerate() == 30)
                     video->make_default();
 
-                if (video->get_width() == 1280 && video->get_height() == 720
+                auto color_dev = dynamic_cast<const ds5_color*>(&get_device());
+                if (color_dev)
+                {
+                    if (video->get_width() == 1280 && video->get_height() == 720
+                        && p->get_stream_type() == RS2_STREAM_INFRARED
+                        && video->get_format() == RS2_FORMAT_Y8 && video->get_framerate() == 30
+                        && p->get_stream_index() == 1)
+                        video->make_default();
+                }
+                else
+                {
+                    if (video->get_width() == 1280 && video->get_height() == 720
                         && p->get_stream_type() == RS2_STREAM_INFRARED
                         && video->get_format() == RS2_FORMAT_RGB8 && video->get_framerate() == 30)
-                    video->make_default();
+                        video->make_default();
+                }
 
                 // Register intrinsics
                 if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
@@ -407,7 +420,7 @@ namespace librealsense
             _polling_error_handler = std::unique_ptr<polling_error_handler>(
                 new polling_error_handler(1000,
                     std::move(error_control),
-                    depth_ep.get_notifications_proccessor(),
+                    depth_ep.get_notifications_processor(),
 
                     std::unique_ptr<notification_decoder>(new ds5_notification_decoder())));
 
@@ -496,22 +509,6 @@ namespace librealsense
     {
         //TODO: Implement
     }
-
-    std::shared_ptr<matcher> ds5_device::create_matcher(const frame_holder& frame) const
-    {
-        std::set<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get()};
-        std::vector<std::shared_ptr<matcher>> depth_matchers;
-
-        for (auto& s : streams)
-            depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type()));
-
-        if(!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
-        {
-            return device::create_matcher(frame);
-        }
-        return std::make_shared<frame_number_composite_matcher>(depth_matchers);
-    }
-
 
     std::shared_ptr<uvc_sensor> ds5u_device::create_ds5u_depth_device(std::shared_ptr<context> ctx,
         const std::vector<platform::uvc_device_info>& all_device_infos)

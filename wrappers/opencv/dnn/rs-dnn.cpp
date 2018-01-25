@@ -58,7 +58,7 @@ int main(int argc, char** argv) try
         // Wait for the next set of frames
         auto data = pipe.wait_for_frames();
         // Make sure the frames are spatially aligned
-        data = align_to.proccess(data); 
+        data = align_to.process(data);
 
         auto color_frame = data.get_color_frame();
         auto depth_frame = data.get_depth_frame();

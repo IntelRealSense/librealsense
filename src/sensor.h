@@ -47,7 +47,7 @@ namespace librealsense
         void register_notifications_callback(notifications_callback_ptr callback) override;
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
         void unregister_before_start_callback(int token) override;
-        std::shared_ptr<notifications_proccessor> get_notifications_proccessor();
+        std::shared_ptr<notifications_processor> get_notifications_processor();
         virtual frame_callback_ptr get_frames_callback() const override;
         virtual void set_frames_callback(frame_callback_ptr callback) override;
 
@@ -93,7 +93,7 @@ namespace librealsense
 
         std::atomic<bool> _is_streaming;
         std::atomic<bool> _is_opened;
-        std::shared_ptr<notifications_proccessor> _notifications_proccessor;
+        std::shared_ptr<notifications_processor> _notifications_processor;
         on_before_frame_callback _on_before_frame_callback;
         on_open _on_open;
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;

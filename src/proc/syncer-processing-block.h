@@ -14,12 +14,12 @@ namespace librealsense
 {
     class processing_block;
     class timestamp_composite_matcher;
-    class syncer_proccess_unit : public processing_block
+    class syncer_process_unit : public processing_block
     {
     public:
-        syncer_proccess_unit();
+        syncer_process_unit();
 
-        ~syncer_proccess_unit()
+        ~syncer_process_unit()
         {
             _matcher.reset();
         }

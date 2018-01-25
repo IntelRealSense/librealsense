@@ -139,8 +139,12 @@ struct parameter {
 };
 
 struct section {
-    std::string name, title, format_type, data;
-    int offset, size;
+    std::string name = "";
+    std::string title = "";
+    std::string format_type = "";
+    std::string data = "";
+    int offset = 0;
+    int size = 0;
 };
 
 struct data {

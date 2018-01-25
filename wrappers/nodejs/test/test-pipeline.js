@@ -54,7 +54,8 @@ describe('Pipeline test', function() {
     assert.doesNotThrow(() => {
       pipeline = new rs2.Pipeline();
       pipeline.start();
-      pipeline.destroy();
+      pipeline.waitForFrames();
+      pipeline.stop();
     });
   });
 
@@ -72,7 +73,7 @@ describe('Pipeline test', function() {
     while (!endTest) {
       frameSet = pipeline.waitForFrames();
       n++;
-      console.log(`retring left ...${10 - n} times`);
+      if (n > 1) console.log(`retring left ...${10 - n} times`);
       if (frameSet !== undefined && frameSet.colorFrame !== undefined &&
         frameSet.depthFrame !== undefined) {
         assert(frameSet.depthFrame instanceof rs2.VideoFrame);
@@ -83,7 +84,7 @@ describe('Pipeline test', function() {
         assert(false, 'could not get colorFrame or depthFrame, try to reset camera');
       }
     }
-    pipeline.destroy();
+    pipeline.stop();
   });
 
   it('Testing method start', () => {
@@ -91,11 +92,13 @@ describe('Pipeline test', function() {
     assert.doesNotThrow(() => {
       pipeline = new rs2.Pipeline();
       pipeline.start();
+      pipeline.waitForFrames();
     });
     assert.notEqual(pipeline, undefined);
     assert.doesNotThrow(() => {
       pipeline.start();
-      pipeline.destroy();
+      pipeline.waitForFrames();
+      pipeline.stop();
     });
   });
 
@@ -105,8 +108,8 @@ describe('Pipeline test', function() {
     assert.notEqual(pipeline, undefined);
     assert.doesNotThrow(() => {
       pipeline.start();
+      pipeline.waitForFrames();
       pipeline.stop();
-      pipeline.destroy();
    });
   });
 });

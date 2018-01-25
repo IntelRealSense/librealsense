@@ -868,14 +868,14 @@ namespace librealsense
         notification controller_event{ RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT, 0, RS2_LOG_SEVERITY_INFO, msg };
         controller_event.serialized_data = json_data;
         controller_event.timestamp = timestamp;
-        get_notifications_proccessor()->raise_notification(controller_event);
+        get_notifications_processor()->raise_notification(controller_event);
     }
     
     void tm2_sensor::raise_error_notification(const std::string& msg)
     {
         notification error{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, 0, RS2_LOG_SEVERITY_ERROR, msg };
         error.timestamp = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-        get_notifications_proccessor()->raise_notification(error);
+        get_notifications_processor()->raise_notification(error);
     }
     void tm2_sensor::attach_controller(const std::array<uint8_t, 6>& mac_addr)
     {

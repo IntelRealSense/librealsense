@@ -404,7 +404,7 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_log_severity, LOG_SEVERITY)
     RS2_ENUM_HELPERS(rs2_notification_category, NOTIFICATION_CATEGORY)
     RS2_ENUM_HELPERS(rs2_playback_status, PLAYBACK_STATUS)
-
+    RS2_ENUM_HELPERS(rs2_matchers, MATCHER)
     ////////////////////////////////////////////
     // World's tiniest linear algebra library //
     ////////////////////////////////////////////
@@ -868,11 +868,11 @@ namespace librealsense
         virtual notification decode(int value) = 0;
     };
 
-    class notifications_proccessor
+    class notifications_processor
     {
     public:
-        notifications_proccessor();
-        ~notifications_proccessor();
+        notifications_processor();
+        ~notifications_processor();
 
         void set_callback(notifications_callback_ptr callback);
         notifications_callback_ptr get_callback() const;
