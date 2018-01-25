@@ -6,6 +6,7 @@
 
 /* global describe, it, before, after */
 const assert = require('assert');
+const fs = require('fs');
 let rs2;
 try {
   rs2 = require('node-librealsense');
@@ -44,5 +45,21 @@ describe('Disparity transform tests', function() {
       }
     });
     pipe.stop();
+  });
+});
+
+describe('Points.exportToPly', function() {
+  it('exportToPly', () => {
+    const pc = new rs2.PointCloud();
+    const pipe = new rs2.Pipeline();
+    const file = 'points.ply';
+    pipe.start();
+    const frameset = pipe.waitForFrames();
+    const points = pc.calculate(frameset.depthFrame);
+    points.exportToPly(file, frameset.colorFrame);
+    assert.equal(fs.existsSync(file), true);
+    fs.unlinkSync(file);
+    pipe.stop();
+    rs2.cleanup();
   });
 });
