@@ -342,12 +342,16 @@ namespace rs2
         throw std::runtime_error(std::string("Failed to match MAC in string: ") + data);
     }
 
-    bool option_model::draw(std::string& error_message, notifications_model& model)
+    bool option_model::draw(std::string& error_message, notifications_model& model, bool new_line, bool use_option_name)
     {
         auto res = false;
         if (supported)
         {
             auto desc = endpoint->get_option_description(opt);
+
+            // remain optionto append to the current line
+            if (!new_line)
+                ImGui::SameLine();
 
             if (is_checkbox())
             {
@@ -446,12 +450,10 @@ namespace rs2
                 }
                 else
                 {
-                    std::string txt = to_string() << rs2_option_to_string(opt) << ":";
+                    std::string txt = to_string() << (use_option_name ? rs2_option_to_string(opt) : desc) << ":";
                     auto col_id = id + "columns";
                     //ImGui::Columns(2, col_id.c_str(), false);
                     //ImGui::SetColumnOffset(1, 120);
-
-
 
                     ImGui::Text("%s", txt.c_str());
                     if (ImGui::IsItemHovered() && desc)
@@ -459,9 +461,11 @@ namespace rs2
                         ImGui::SetTooltip("%s", desc);
                     }
 
-                    ImGui::SameLine(); ImGui::SetCursorPosX(135);
+                    ImGui::SameLine();
+                    if (new_line)
+                        ImGui::SetCursorPosX(135);
 
-                    ImGui::PushItemWidth(-1);
+                    ImGui::PushItemWidth(new_line? -1:100);
 
                     std::vector<const char*> labels;
                     auto selected = 0, counter = 0;
@@ -668,6 +672,49 @@ namespace rs2
     {
         subdevice_model::populate_options(options_metadata,
             owner->dev, *owner->s, &owner->options_invalidated, owner, block, error_message);
+    }
+
+    processing_block_model::processing_block_model(const std::string& name,
+        std::shared_ptr<options> block,
+        std::function<rs2::frame(rs2::frame)> invoker,
+        std::string& error_message)
+        : _name(name), _block(block), _invoker(invoker)
+    {
+        // TODO refactor to a function Evgeni
+        // Map processing block options to the model
+        for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+        {
+            option_model metadata;
+            auto opt = static_cast<rs2_option>(i);
+
+            std::stringstream ss;
+            ss << "##" << name << "/" << rs2_option_to_string(opt);
+            metadata.id = ss.str();
+            metadata.opt = opt;
+            metadata.endpoint = _block;
+            metadata.label = rs2_option_to_string(opt) + std::string("##") + ss.str();
+            metadata.invalidate_flag = &options_invalidated;
+            metadata.dev = nullptr;
+
+            metadata.supported = _block->supports(opt);
+            if (metadata.supported)
+            {
+                try
+                {
+                    metadata.range = _block->get_option_range(opt);
+                    metadata.read_only = _block->is_option_read_only(opt);
+                    if (!metadata.read_only)
+                        metadata.value = _block->get_option(opt);
+                }
+                catch (const error& e)
+                {
+                    metadata.range = { 0, 1, 0, 0 };
+                    metadata.value = 0;
+                    error_message = error_to_string(e);
+                }
+            }
+            options_metadata[opt] = metadata;
+        }
     }
 
     subdevice_model::subdevice_model(
@@ -1788,6 +1835,25 @@ namespace rs2
             ImGui::PopItemWidth();
         }
 
+        // Draw occlusion option checkbox
+        if (true)
+        {
+            /*ImGui::SameLine();
+            ImGui::SetCursorPosY(7);
+            ImGui::PushItemWidth(100);
+            draw_combo_box("##Occlusion Removal", {"abc","bbc","ccc"}, occlusion_removal);
+            ImGui::PopItemWidth();*/
+            //pc->set_occlusion(viewer.occlusion_removal);
+
+            /*ImGui::SameLine();
+            ImGui::SetCursorPosY(7);
+            ImGui::PushItemWidth(50);*/
+            std::string abc;
+            // render options block in the same line and use option description as a name rather than the option's name
+            ppf.get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).draw(abc, not_model,false,false);
+            //ImGui::PopItemWidth();
+            //ImGui::Checkbox("Occlusion Removal:", &occlusion_mark);
+        }
 
         //ImGui::SetCursorPosY(9);
         //ImGui::Text("Viewport:"); ImGui::SameLine();

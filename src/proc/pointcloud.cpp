@@ -6,7 +6,8 @@
 
 #include "proc/synthetic-stream.h"
 #include "environment.h"
-#include "pointcloud.h"
+#include "proc/occlusion-filter.h"
+#include "proc/pointcloud.h"
 #include "option.h"
 
 namespace librealsense
@@ -161,8 +162,8 @@ namespace librealsense
             auto height = vid_frame.get_height();
             auto width = vid_frame.get_width();
 
-            float occZTh = 0.2; //meters   - TODO review and refactor
-            int occDilationSz = 3;
+            float occZTh = 0.2f; //meters   - TODO review and refactor
+            int occDilationSz = 1;
 
             for (int y = 0; y < height; ++y)
             {
@@ -214,12 +215,10 @@ namespace librealsense
         get_source().frame_ready(std::move(res));
     }
 
-    pointcloud::pointcloud()
-        :
+    pointcloud::pointcloud():
         _other_stream(nullptr), _invalidate_mapped(false),
-        _occlusion_rectification(false)
+        _occlusion_rectification(false) // TODO remove after integration
     {
-
         auto mapped_opt = std::make_shared<ptr_option<int>>(0, std::numeric_limits<int>::max(), 1, -1, &_other_stream_id, "Mapped stream ID");
         register_option(RS2_OPTION_TEXTURE_SOURCE, mapped_opt);
         float old_value = static_cast<float>(_other_stream_id);
@@ -231,21 +230,30 @@ namespace librealsense
             }
         });
 
-        auto occlusion_rectification_control = std::make_shared<ptr_option<bool>>(false, true, true, true,
-            &_occlusion_rectification, "Occlusion rectification");
-        occlusion_rectification_control->on_set([this, occlusion_rectification_control](float val)
-        {
-            if (!occlusion_rectification_control->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported rectification option " << val << " is out of range.");
+        _occlusion_filter = std::make_shared<occlusion_filter>();
 
-            _occlusion_rectification = !!(static_cast<uint8_t>(val));
+        auto occlusion_invalidation = std::make_shared<ptr_option<uint8_t>>(
+            occlusion_none,
+            occlusion_max-1, 1,
+            occlusion_none,
+            (uint8_t*)&_occlusion_filter->_occlusion_filter,
+            "Occlusion removal");
+        occlusion_invalidation->on_set([this, occlusion_invalidation](float val)
+        {
+            if (!occlusion_invalidation->is_valid(val))
+                throw invalid_value_exception(to_string()
+                    << "Unsupported occlusion filtering requiested " << val << " is out of range.");
+
+            _occlusion_filter->set_mode(static_cast<uint8_t>(val));
+            _occlusion_rectification = !!static_cast<uint8_t>(val); // TODO remove after completion
         });
-        register_option(RS2_OPTION_FILTER_MAGNITUDE, occlusion_rectification_control);
+        occlusion_invalidation->set_description(0.f, "Off");
+        occlusion_invalidation->set_description(1.f, "Heuristic");
+        occlusion_invalidation->set_description(2.f, "Exhostive");
+        register_option(RS2_OPTION_FILTER_MAGNITUDE, occlusion_invalidation);
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
-
             if (auto composite = f.as<rs2::frameset>())
             {
                 auto depth = composite.first_or_default(RS2_STREAM_DEPTH);
@@ -278,4 +286,5 @@ namespace librealsense
         auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
         processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
     }
+
 }

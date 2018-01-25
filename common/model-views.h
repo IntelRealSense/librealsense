@@ -179,7 +179,7 @@ namespace rs2
     class option_model
     {
     public:
-        bool draw(std::string& error_message, notifications_model& model);
+        bool draw(std::string& error_message, notifications_model& model,bool new_line=true, bool use_option_name = true);
         void update_supported(std::string& error_message);
         void update_read_only_status(std::string& error_message);
         void update_all_fields(std::string& error_message, notifications_model& model);
@@ -247,6 +247,11 @@ namespace rs2
             std::function<rs2::frame(rs2::frame)> invoker,
             std::string& error_message);
 
+        processing_block_model(const std::string& name,
+            std::shared_ptr<options> block,
+            std::function<rs2::frame(rs2::frame)> invoker,
+            std::string& error_message);
+
         const std::string& get_name() const { return _name; }
 
         option_model& get_option(rs2_option opt) { return options_metadata[opt]; }
@@ -259,6 +264,7 @@ namespace rs2
         std::map<int, option_model> options_metadata;
         std::string _name;
         std::function<rs2::frame(rs2::frame)> _invoker;
+        bool options_invalidated = true;
     };
 
     class subdevice_model
@@ -610,6 +616,17 @@ namespace rs2
             t([this]() {render_loop(); }),
             pc(new pointcloud())
         {
+            std::string s;
+            pc_gen = std::make_shared<processing_block_model>("Pointclould Engine", pc, [=](rs2::frame f) { return pc->calculate(f); }, s);
+                /*
+                auto decimate = std::make_shared<rs2::decimation_filter>();
+                decimation_filter = std::make_shared<processing_block_model>(
+                this, "Decimation Filter", decimate,
+                [=](rs2::frame f) { return decimate->process(f); },
+                error_message);
+                decimation_filter->enabled = true;
+                post_processing.push_back(decimation_filter);
+                */
             processing_block.start(resulting_queue);
         }
 
@@ -651,10 +668,8 @@ namespace rs2
         rs2::frame_queue syncer_queue;
         rs2::frame_queue resulting_queue;
 
-        std::shared_ptr<pointcloud> get_pc()
-        {
-            return pc;
-        }
+        std::shared_ptr<pointcloud> get_pc() const { return pc; }
+        std::shared_ptr<processing_block_model> get_pc_model() const {  return pc_gen; }
 
     private:
         viewer_model& viewer;
@@ -669,6 +684,7 @@ namespace rs2
         std::shared_ptr<pointcloud> pc;
         rs2::frameset model;
         std::atomic<bool> keep_calculating;
+        std::shared_ptr<processing_block_model> pc_gen;
 
         std::thread t;
 
@@ -852,6 +868,7 @@ namespace rs2
 
         bool allow_3d_source_change = true;
         bool allow_stream_close = true;
+        int occlusion_removal = 0;
 
         std::array<float3, 4> roi_rect;
         bool draw_plane = false;

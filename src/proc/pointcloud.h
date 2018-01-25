@@ -5,7 +5,7 @@
 #include "../include/librealsense2/hpp/rs_frame.hpp"
 namespace librealsense
 {
-
+    class occlusion_filter;
     class pointcloud : public processing_block
     {
     public:
@@ -19,11 +19,13 @@ namespace librealsense
         optional_value<float>                  _depth_units;
         optional_value<rs2_extrinsics>         _extrinsics;
         std::atomic_bool                       _invalidate_mapped;
+        std::shared_ptr<occlusion_filter>      _occlusion_filter;
 
         std::shared_ptr<stream_profile_interface> _output_stream, _other_stream;
+
         int                     _other_stream_id = -1;
-        bool                    _occlusion_rectification;
-        stream_profile_interface* _depth_stream = nullptr;
+        bool                    _occlusion_rectification; // TODO remove after POC is completed
+        stream_profile_interface*       _depth_stream = nullptr;
 
         void inspect_depth_frame(const rs2::frame& depth);
         void inspect_other_frame(const rs2::frame& other);
