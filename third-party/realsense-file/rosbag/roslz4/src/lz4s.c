@@ -474,7 +474,7 @@ int decompressBlock(roslz4_stream *str) {
   }
 
   if (state->block_uncompressed) {
-    if ((int)str->output_left >= state->block_size) {
+    if (str->output_left > 0 && (unsigned int)str->output_left >= state->block_size) {
       memcpy(str->output_next, state->buffer, state->block_size);
       int ret = XXH32_update(state->xxh32_state, str->output_next,
                              state->block_size);

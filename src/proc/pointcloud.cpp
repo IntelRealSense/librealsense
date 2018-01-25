@@ -192,7 +192,7 @@ namespace librealsense
 
         auto mapped_opt = std::make_shared<ptr_option<int>>(0, std::numeric_limits<int>::max(), 1, -1, &_other_stream_id, "Mapped stream ID");
         register_option(RS2_OPTION_TEXTURE_SOURCE, mapped_opt);
-        float old_value = _other_stream_id;
+        float old_value = static_cast<float>(_other_stream_id);
         mapped_opt->on_set([this, old_value](float x) mutable {
             if (fabs(old_value - x) > 1e-6)
             {

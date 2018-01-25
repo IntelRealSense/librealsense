@@ -5,7 +5,7 @@
 #include <thread>
 #include <algorithm>
 #include <regex>
-
+#include <cmath>
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <librealsense2/rsutil.h>
 
@@ -231,7 +231,7 @@ namespace rs2
         size_t pixel_width, size_t pixels_height, size_t bytes_per_pixel,
         const void* raster_data, size_t stride_bytes)
     {
-        return stbi_write_png(filename, (int)pixel_width, (int)pixels_height, bytes_per_pixel, raster_data, stride_bytes);
+        return stbi_write_png(filename, (int)pixel_width, (int)pixels_height, (int)bytes_per_pixel, raster_data, (int)stride_bytes);
     }
 
     bool save_frame_raw_data(const std::string& filename, rs2::frame frame)
@@ -406,7 +406,7 @@ namespace rs2
                                 auto c = ImGui::ColorConvertU32ToFloat4(ImGui::GetColorU32(ImGuiCol_FrameBg));
                                 ImGui::PushStyleColor(ImGuiCol_FrameBgActive, c);
                                 ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, c);
-                                float dummy = (int)value;
+                                float dummy = std::floor(value);
                                 ImGui::DragFloat(id.c_str(), &dummy, 1, 0, 0, text.c_str());
                                 ImGui::PopStyleColor(2);
                             }
@@ -1339,9 +1339,9 @@ namespace rs2
         }
     }
     
-    int subdevice_model::num_supported_non_default_options() const
+    uint64_t subdevice_model::num_supported_non_default_options() const
     {
-        return std::count_if(
+        return (uint64_t)std::count_if(
             std::begin(options_metadata), 
             std::end(options_metadata), 
             [](const std::pair<int, option_model>& p) {return p.second.supported && p.second.opt != RS2_OPTION_FRAMES_QUEUE_SIZE; });
@@ -1428,7 +1428,7 @@ namespace rs2
     {
         glPushAttrib(GL_ENABLE_BIT);
 
-        glLineWidth(line_width);
+        glLineWidth((GLfloat)line_width);
 
         glBegin(GL_LINE_STRIP);
         glVertex2f(r.x, r.y);
@@ -1533,10 +1533,10 @@ namespace rs2
                     // Send it to firmware:
                     // Step 1: get rid of negative width / height
                     region_of_interest roi{};
-                    roi.min_x = std::min(r.x, r.x + r.w);
-                    roi.max_x = std::max(r.x, r.x + r.w);
-                    roi.min_y = std::min(r.y, r.y + r.h);
-                    roi.max_y = std::max(r.y, r.y + r.h);
+                    roi.min_x = static_cast<int>(std::min(r.x, r.x + r.w));
+                    roi.max_x = static_cast<int>(std::max(r.x, r.x + r.w));
+                    roi.min_y = static_cast<int>(std::min(r.y, r.y + r.h));
+                    roi.max_y = static_cast<int>(std::max(r.y, r.y + r.h));
 
                     try
                     {
@@ -2548,7 +2548,7 @@ namespace rs2
             std::string message = "Metrics Region of Interest";
             auto msg_width = stb_easy_font_width((char*)message.c_str());
             if (msg_width < r.w)
-                draw_text(r.x + r.w / 2 - msg_width / 2, r.y + 10, message.c_str());
+                draw_text(static_cast<int>(r.x + r.w / 2 - msg_width / 2), static_cast<int>(r.y + 10), message.c_str());
 
             glColor3f(1.f, 1.f, 1.f);
         }
@@ -2723,8 +2723,8 @@ namespace rs2
             std::string label = to_string() << "##log_entry" << i++;
             ImGui::InputTextEx(label.c_str(),
                         (char*)line.data(),
-                        line.size() + 1,
-                        ImVec2(-1, ImGui::GetTextLineHeight() * 1.5 *float(std::max(1,(int)std::count(line.begin(),line.end(), '\n')))),
+                        static_cast<int>(line.size() + 1),
+                        ImVec2(-1, ImGui::GetTextLineHeight() * 1.5f * float(std::max(1,(int)std::count(line.begin(),line.end(), '\n')))),
                         ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             ImGui::PopStyleColor(2);
 
@@ -2835,7 +2835,7 @@ namespace rs2
     }
     void viewer_model::show_recording_icon(ImFont* font_18, int x, int y, int id, float alpha_delta)
     {
-        show_icon(font_18, "recording_icon", textual_icons::circle, x, y, id, from_rgba(255, 46, 54, alpha_delta * 255));
+        show_icon(font_18, "recording_icon", textual_icons::circle, x, y, id, from_rgba(255, 46, 54, static_cast<uint8_t>(alpha_delta * 255)));
     }
 
     rs2::frame post_processing_filters::apply_filters(rs2::frame f)
@@ -3166,7 +3166,7 @@ namespace rs2
 
         draw_viewport(viewer_rect, window, devices, error_message, texture_frame, p);
 
-        not_model.draw(window.get_font(), window.width(), window.height());
+        not_model.draw(window.get_font(), static_cast<int>(window.width()), static_cast<int>(window.height()));
 
         popup_if_error(window.get_font(), error_message);
 
@@ -3300,7 +3300,7 @@ namespace rs2
         ImGui::TextUnformatted(std::to_string(static_cast<int>(ruler_length)).c_str());
         const auto skip_numbers = ((ruler_length / 10.f) - 1.f);
         auto to_skip = (skip_numbers < 0.f)?0.f: skip_numbers;
-        for (int i = ruler_length - 1; i > 0; --i)
+        for (int i = static_cast<int>(ruler_length - 1); i > 0; --i)
         {
             y_ruler_val += ((bottom_y_ruler - top_y_ruler) / ruler_length);
             ImGui::SetCursorPos({ x_ruler_val, y_ruler_val - font_size / 2 });
@@ -3375,7 +3375,7 @@ namespace rs2
         assert(!distances.empty());
 
         float mean = std::accumulate(distances.begin(),
-            distances.end(), 0.0) / distances.size();
+            distances.end(), 0.0f) / distances.size();
 
         float e = 0;
         float inverse = 1.f / distances.size();
@@ -3400,7 +3400,7 @@ namespace rs2
         float alpha = icon_visible ? 1.f : 0.2f;
 
         glViewport(0, 0,
-            win.framebuf_width(), win.framebuf_height());
+            static_cast<GLsizei>(win.framebuf_width()), static_cast<GLsizei>(win.framebuf_height()));
         glLoadIdentity();
         glOrtho(0, win.width(), win.height(), 0, -1, +1);
 
@@ -3408,7 +3408,7 @@ namespace rs2
 
         if ((layout.size() == 0) && (dev_model_num > 0))
         {
-            show_no_stream_overlay(font2, view_rect.x, view_rect.y, win.width(), win.height() - output_height);
+            show_no_stream_overlay(font2, static_cast<int>(view_rect.x), static_cast<int>(view_rect.y), static_cast<int>(win.width()), static_cast<int>(win.height() - output_height));
         }
 
         for (auto &&kvp : layout)
@@ -3426,7 +3426,7 @@ namespace rs2
 
             if (stream_mv.dev->_is_being_recorded)
             {
-                show_recording_icon(font2, pos, stream_rect.y + 5, stream_mv.profile.unique_id(), alpha);
+                show_recording_icon(font2, static_cast<int>(pos), static_cast<int>(stream_rect.y + 5), stream_mv.profile.unique_id(), alpha);
                 pos += 23;
             }
 
@@ -3434,15 +3434,15 @@ namespace rs2
             {
                 std::string message = to_string() << textual_icons::exclamation_triangle << " No Frames Received!";
                 show_icon(font2, "warning_icon", message.c_str(),
-                    stream_rect.center().x - 100,
-                    stream_rect.center().y - 25,
+                    static_cast<int>(stream_rect.center().x - 100),
+                    static_cast<int>(stream_rect.center().y - 25),
                     stream_mv.profile.unique_id(),
                     blend(dark_red, alpha),
                     "Did not receive frames from the platform within a reasonable time window,\nplease try reducing the FPS or the resolution");
             }
 
             if (stream_mv.dev->is_paused() || (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
-                show_paused_icon(font2, pos, stream_rect.y + 5, stream_mv.profile.unique_id());
+                show_paused_icon(font2, static_cast<int>(pos), static_cast<int>(stream_rect.y + 5), stream_mv.profile.unique_id());
 
             stream_mv.show_stream_header(font1, stream_rect, *this);
             stream_mv.show_stream_footer(stream_rect, mouse);
@@ -3518,8 +3518,8 @@ namespace rs2
                 last_texture = texture;
             }
         }
-        glViewport(viewer_rect.x, 0,
-            viewer_rect.w, viewer_rect.h);
+        glViewport(static_cast<GLint>(viewer_rect.x), 0,
+            static_cast<GLsizei>(viewer_rect.w), static_cast<GLsizei>(viewer_rect.h));
 
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -3552,7 +3552,7 @@ namespace rs2
         }
         glEnd();
 
-        texture_buffer::draw_axis(0.1, 1);
+        texture_buffer::draw_axis(0.1f, 1);
 
         if (draw_plane)
         {
@@ -3641,9 +3641,9 @@ namespace rs2
                 };
 
                 auto top_left = get_point(0, 0);
-                auto top_right = get_point(intrin.width, 0);
-                auto bottom_right = get_point(intrin.width, intrin.height);
-                auto bottom_left = get_point(0, intrin.height);
+                auto top_right = get_point(static_cast<float>(intrin.width), 0);
+                auto bottom_right = get_point(static_cast<float>(intrin.width), static_cast<float>(intrin.height));
+                auto bottom_left = get_point(0, static_cast<float>(intrin.height));
 
                 glVertex3fv(&top_left.x); glVertex3fv(&top_right.x);
                 glVertex3fv(&top_right.x); glVertex3fv(&bottom_right.x);
@@ -3791,11 +3791,11 @@ namespace rs2
                 0.2f, // zoom per tick
                 -0.1f, // pan speed
                 3.0f, // rotation multiplier
-                viewer_rect.w, viewer_rect.h, // screen (window) size
-                mouse.prev_cursor.x, mouse.cursor.x,
-                mouse.prev_cursor.y, mouse.cursor.y,
-                ImGui::GetIO().MouseDown[2],
-                ImGui::GetIO().MouseDown[0],
+                static_cast<int>(viewer_rect.w), static_cast<int>(viewer_rect.h), // screen (window) size
+                static_cast<int>(mouse.prev_cursor.x), static_cast<int>(mouse.cursor.x),
+                static_cast<int>(mouse.prev_cursor.y), static_cast<int>(mouse.cursor.y),
+                ImGui::GetIO().MouseDown[2] ? 1 : 0,
+                ImGui::GetIO().MouseDown[0] ? 1 : 0,
                 mouse.mouse_wheel,
                 0);
         }
@@ -3900,13 +3900,14 @@ namespace rs2
 
         const int playback_control_height = 35;
         const float combo_box_width = 90.f;
-        const float icon_width = 30;
-        const float line_width = ImGui::GetWindowWidth() - 35;
+        const float icon_width = 28;
+        const float line_width = 255; //Ideally should use: ImGui::GetContentRegionMax().x
         //Line looks like this ("-" == space, "[]" == icon, "[     ]" == combo_box):  |-[]-[]-[]-[]-[]-[     ]-[]-|
         const int num_icons_in_line = 6;
         const int num_combo_boxes_in_line = 1;
         const int num_spaces_in_line = num_icons_in_line + num_combo_boxes_in_line + 1;
-        float space_width = (line_width - ((num_combo_boxes_in_line * combo_box_width) + (num_icons_in_line * icon_width))) / num_spaces_in_line;
+        const float required_row_width = (num_combo_boxes_in_line * combo_box_width) + (num_icons_in_line * icon_width);
+        float space_width = std::max(line_width - required_row_width, 0.f) / num_spaces_in_line;
         ImVec2 button_dim = { icon_width, icon_width };
 
         const bool supports_playback_step = false;
@@ -4942,7 +4943,7 @@ namespace rs2
                     // Go over the loaded files and add them to the combo box
                     std::vector<std::string> full_files_names(advanced_mode_settings_file_names.begin(), advanced_mode_settings_file_names.end());
                     std::vector<std::string> files_labels;
-                    int i = labels.size();
+                    int i = static_cast<int>(labels.size());
                     for (auto&& file : full_files_names)
                     {
                         files_labels.push_back(get_file_name(file));
@@ -5720,13 +5721,13 @@ namespace rs2
         if (!is_3d_view)
         {
             render_2d_view(viewer_rect, window,
-                get_output_height(), window.get_font(), window.get_large_font(),
+                static_cast<int>(get_output_height()), window.get_font(), window.get_large_font(),
                 devices, window.get_mouse(), error_message);
         }
         else
         {
             if (paused)
-                show_paused_icon(window.get_large_font(), panel_width + 15, panel_y + 15 + 32, 0);
+                show_paused_icon(window.get_large_font(), static_cast<int>(panel_width + 15), static_cast<int>(panel_y + 15 + 32), 0);
 
             show_3dviewer_header(window.get_font(), viewer_rect, paused);
 
