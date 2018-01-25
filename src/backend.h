@@ -170,6 +170,8 @@ namespace librealsense
             uint8_t         metadata_size;
             const void *    pixels;
             const void *    metadata;
+            rs2_time_t      backend_time;
+
         };
 
         typedef std::function<void(stream_profile, frame_object, std::function<void()>)> frame_callback;

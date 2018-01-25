@@ -43,8 +43,8 @@
 
 #include <sys/signalfd.h>
 #include <signal.h>
-
-
+#include <time.h>
+#include "environment.h"
 #pragma GCC diagnostic ignored "-Woverflow"
 
 const size_t MAX_DEV_PARENT_DIR = 10;
@@ -52,7 +52,7 @@ const size_t MAX_DEV_PARENT_DIR = 10;
 
 #ifdef ANDROID
 
-#include <sys/sysmacros.h> // minor(...), major(...)
+//#include <sys/sysmacros.h> // minor(...), major(...)
 
 // https://android.googlesource.com/platform/bionic/+/master/libc/include/bits/lockf.h
 #define F_ULOCK 0
@@ -712,6 +712,19 @@ namespace librealsense
             }
         }
 
+        double monotonic_to_realtime(double monotonic)
+        {
+            auto realtime = environment::get_instance().get_time_service()->get_time();
+            timespec  vsTime;
+
+            clock_gettime(CLOCK_MONOTONIC, &vsTime);
+
+            long uptime_ms = vsTime.tv_sec* 1000 + (long)round( vsTime.tv_nsec/ 1000000.0);
+            auto diff = realtime - uptime_ms;
+
+            return monotonic + diff;
+        }
+
         void v4l_uvc_device::poll()
         {
             fd_set fds{};
@@ -791,8 +804,11 @@ namespace librealsense
                                 md_size = (*(uint8_t*)md_start);
                             }
 
+                            auto timestamp = (double)buf.timestamp.tv_sec*1000.f + (double)buf.timestamp.tv_usec/1000.f;
+                            timestamp = monotonic_to_realtime(timestamp);
+
                             frame_object fo{ buffer->get_length_frame_only(), md_size,
-                                buffer->get_frame_start(), md_start };
+                                buffer->get_frame_start(), md_start, timestamp };
 
                              if (buf.bytesused > 0)
                              {
