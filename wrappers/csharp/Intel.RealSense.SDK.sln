@@ -3,11 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Intel.RealSense", "Intel.RealSense.csproj", "{E488694F-F2FA-45AD-B1B8-8D4FABE34E86}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Intel.RealSense", "Intel.RealSense\Intel.RealSense.csproj", "{E488694F-F2FA-45AD-B1B8-8D4FABE34E86}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cs-tutorial-1-depth", "cs-tutorial-1-depth\cs-tutorial-1-depth.csproj", "{C351D258-21D5-4A7E-832F-46A5BD733D27}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E488694F-F2FA-45AD-B1B8-8D4FABE34E86} = {E488694F-F2FA-45AD-B1B8-8D4FABE34E86}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cs-tutorial-2-capture", "cs-tutorial-2-capture\cs-tutorial-2-capture.csproj", "{4E200124-E140-40A7-83B1-625E4817198C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E488694F-F2FA-45AD-B1B8-8D4FABE34E86} = {E488694F-F2FA-45AD-B1B8-8D4FABE34E86}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
