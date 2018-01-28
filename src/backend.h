@@ -852,6 +852,8 @@ namespace librealsense
             virtual ~device_watcher() {};
         };
     }
+
+    double monotonic_to_realtime(double monotonic);
 }
 
 #endif

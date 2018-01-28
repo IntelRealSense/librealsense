@@ -388,13 +388,12 @@ namespace librealsense
                 [this, mode, timestamp_reader, requests](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
                     auto system_time = environment::get_instance().get_time_service()->get_time();
-
                     if (!this->is_streaming())
                     {
                         LOG_WARNING("Frame received with streaming inactive,"
                             << librealsense::get_string(mode.unpacker->outputs.front().first.type)
                             << mode.unpacker->outputs.front().first.index
-                                << ", Arrived," << std::fixed << system_time);
+                                << ", Arrived," << std::fixed << f.backend_time << " " << system_time);
                         return;
                     }
 
@@ -419,7 +418,7 @@ namespace librealsense
                     {
                         LOG_DEBUG("FrameAccepted," << librealsense::get_string(output.first.type) << "," << std::dec << frame_counter
                             << output.first.index << "," << frame_counter
-                            << ",Arrived," << std::fixed << system_time
+                            << ",Arrived," << std::fixed << f.backend_time << " " << std::fixed << system_time<<" diff - "<< system_time- f.backend_time << " "
                             << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain));
 
                         std::shared_ptr<stream_profile_interface> request = nullptr;
