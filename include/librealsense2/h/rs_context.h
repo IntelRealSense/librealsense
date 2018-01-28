@@ -44,7 +44,7 @@ void rs2_set_devices_changed_callback_cpp(rs2_context* context, rs2_devices_chan
 * \param[in] callback function pointer to register as per-notifications callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_set_devices_changed_callback(rs2_context* context, rs2_devices_changed_callback_ptr callback, rs2_error** error);
+void rs2_set_devices_changed_callback(const rs2_context* context, rs2_devices_changed_callback_ptr callback, void* user, rs2_error** error);
 
 /**
  * Create a new device and add it to the context
