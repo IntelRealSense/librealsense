@@ -1675,7 +1675,7 @@ namespace rs2
         return ImGui::Combo(id.c_str(), &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
     }
 
-    void viewer_model::show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused)
+    void viewer_model::show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message)
     {
         //frame texture_map;
         //static auto last_frame_number = 0;
@@ -1833,26 +1833,10 @@ namespace rs2
             selected_tex_source_uid = tex_sources[selected_tex_source];
             texture.colorize = streams[selected_tex_source].texture->colorize;
             ImGui::PopItemWidth();
-        }
 
-        // Draw occlusion option checkbox
-        if (true)
-        {
-            /*ImGui::SameLine();
-            ImGui::SetCursorPosY(7);
-            ImGui::PushItemWidth(100);
-            draw_combo_box("##Occlusion Removal", {"abc","bbc","ccc"}, occlusion_removal);
-            ImGui::PopItemWidth();*/
-            //pc->set_occlusion(viewer.occlusion_removal);
-
-            /*ImGui::SameLine();
-            ImGui::SetCursorPosY(7);
-            ImGui::PushItemWidth(50);*/
-            std::string abc;
-            // render options block in the same line and use option description as a name rather than the option's name
-            ppf.get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).draw(abc, not_model,false,false);
-            //ImGui::PopItemWidth();
-            //ImGui::Checkbox("Occlusion Removal:", &occlusion_mark);
+            // Occlusion control for RGB UV-Map only - render in the same line and use option's description as name
+            if (RS2_STREAM_COLOR==streams[selected_tex_source_uid].profile.stream_type())
+                ppf.get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).draw(error_message, not_model, false, false);
         }
 
         //ImGui::SetCursorPosY(9);
@@ -2984,7 +2968,6 @@ namespace rs2
             }
             if(viewer.is_3d_texture_source(f))
             {
-                //TODO Evgeni - refactor
                 update_texture(filtered);
             }
         }
@@ -5814,7 +5797,7 @@ namespace rs2
             if (paused)
                 show_paused_icon(window.get_large_font(), static_cast<int>(panel_width + 15), static_cast<int>(panel_y + 15 + 32), 0);
 
-            show_3dviewer_header(window.get_font(), viewer_rect, paused);
+            show_3dviewer_header(window.get_font(), viewer_rect, paused, error_message);
 
             update_3d_camera(viewer_rect, window.get_mouse());
 

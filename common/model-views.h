@@ -612,21 +612,11 @@ namespace rs2
             depth_stream_active(false),
             resulting_queue_max_size(20),
             resulting_queue(static_cast<unsigned int>(resulting_queue_max_size)),
-//            frames_queue(4),
             t([this]() {render_loop(); }),
             pc(new pointcloud())
         {
             std::string s;
             pc_gen = std::make_shared<processing_block_model>("Pointclould Engine", pc, [=](rs2::frame f) { return pc->calculate(f); }, s);
-                /*
-                auto decimate = std::make_shared<rs2::decimation_filter>();
-                decimation_filter = std::make_shared<processing_block_model>(
-                this, "Decimation Filter", decimate,
-                [=](rs2::frame f) { return decimate->process(f); },
-                error_message);
-                decimation_filter->enabled = true;
-                post_processing.push_back(decimation_filter);
-                */
             processing_block.start(resulting_queue);
         }
 
@@ -835,7 +825,7 @@ namespace rs2
 
         void show_event_log(ImFont* font_14, float x, float y, float w, float h);
 
-        void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused);
+        void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message);
 
         void update_3d_camera(const rect& viewer_rect,
                               mouse_info& mouse, bool force = false);
