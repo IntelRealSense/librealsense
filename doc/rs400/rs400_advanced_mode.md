@@ -14,66 +14,345 @@ However, while tinkering with the advanced controls, depth quality and stream fr
 * In the long-term, Intel algorithm developers will come up with best set of recommended presets, as well as most popular presets from our customers, and these will be hard-coded into the camera firmware.
 This will provide fast, reliable way to optimize the device for a specific use case.
 
-## Building Advanced Mode APIs
-To build advanced mode APIs in addition to librealsense, you need to configure `cmake` with the following additional parameter: `-DBUILD_RS400_EXTRAS=true`. For example:
-`cmake .. -DBUILD_EXAMPLES=true -DBUILD_RS400_EXTRAS=true`
-
-You will need one of the following compilers (or newer) for JSON support:
-* GCC 4.9
-* Clang 3.4
-* Microsoft Visual C++ 2015 / Build Tools 14.0.25123.0
-
-(based on [github.com/nlohmann/json](https://github.com/nlohmann/json))
-
-Once the library is built, navigate to the output folder (./build/rs400/examples from librealsense folder on Linux) and run ``rs400-advanced-mode-sample``:
-![RS400 Advanced Mode Sample](advanced_mode_sample.png)
-This application allows you to adjust various controls live and load existing presets (you can drag & drop JSON file into the application)
-
 ## Programming Interface
-At the moment, RS400 advanced mode produces single library `rs400-advanced-mode` (.so / .dll) that depends on librealsense.
-This library provides C API for setting various controls:
+ Here are some examples of how to use the advanced-mode API via C and C++.<br>
+ 
+ ### Advanced Mode C API
+ The following code sample checking if the connected device is in advanced-mode and moving it to advance-mode if it's not.
 ```c
-#include <rs400_advanced_mode/rs400_advanced_mode.h>
+/* Include the librealsense C header files */
+#include <librealsense2/rs.h>
+#include <librealsense2/rs_advanced_mode.h>
 
-// Create one of the low level control groups:
-STDepthControlGroup depth_control;
+#include <stdio.h> // printf
+#include <stdlib.h> // exit
 
-printf("Reading deepSeaMedianThreshold from Depth Control...\n");
-// Query current values from the device:
-int result = get_depth_control(dev, &depth_control);
-if (result)
+/* Function calls to librealsense may raise errors of type rs_error*/
+void check_error(rs2_error* e)
 {
-    printf("Advanced mode get failed!\n");
+    if (e)
+    {
+        printf("rs_error was raised when calling %s(%s):\n", rs2_get_failed_function(e), rs2_get_failed_args(e));
+        printf("    %s\n", rs2_get_error_message(e));
+        exit(1);
+    }
+}
+
+int main()
+{
+    rs2_error* e = 0;
+
+    // Create a context object. This object owns the handles to all connected realsense devices.
+    // The returned object should be released with rs2_delete_context(...)
+    rs2_context* ctx = rs2_create_context(RS2_API_VERSION, &e);
+    check_error(e);
+
+    /* Get a list of all the connected devices. */
+    // The returned object should be released with rs2_delete_device_list(...)
+    rs2_device_list* device_list = rs2_query_devices(ctx, &e);
+    check_error(e);
+
+    int dev_count = rs2_get_device_count(device_list, &e);
+    check_error(e);
+    printf("There are %d connected RealSense devices.\n", dev_count);
+    if (0 == dev_count)
+        return 1;
+
+    // Get the first connected device
+    // The returned object should be released with rs2_delete_device(...)
+    rs2_device* dev = rs2_create_device(device_list, 0, &e);
+    check_error(e);
+
+    // Check if Advanced-Mode is enabled
+    int is_advanced_mode_enabled;
+    rs2_is_enabled(dev, &is_advanced_mode_enabled, &e);
+    check_error(e);
+
+    if (!is_advanced_mode_enabled)
+    {
+        // Enable advanced-mode
+        rs2_toggle_advanced_mode(dev, 1, &e);
+        check_error(e);
+    }
+
+    rs2_delete_device(dev);
+    rs2_delete_device_list(device_list);
+    rs2_delete_context(ctx);
+}
+```
+
+The following code sample showing how to serialize the current values of advanced mode controls to a JSON file,
+and also how to load and apply it to the device.
+```c
+/* Include the librealsense C header files */
+#include <librealsense2/rs.h>
+#include <librealsense2/rs_advanced_mode.h>
+
+#include <stdio.h> // printf
+#include <stdlib.h> // exit
+
+/* Function calls to librealsense may raise errors of type rs_error*/
+void check_error(rs2_error* e)
+{
+    if (e)
+    {
+        printf("rs_error was raised when calling %s(%s):\n", rs2_get_failed_function(e), rs2_get_failed_args(e));
+        printf("    %s\n", rs2_get_error_message(e));
+        exit(1);
+    }
+}
+
+int main()
+{
+    rs2_error* e = 0;
+
+    // Create a context object. This object owns the handles to all connected realsense devices.
+    // The returned object should be released with rs2_delete_context(...)
+    rs2_context* ctx = rs2_create_context(RS2_API_VERSION, &e);
+    check_error(e);
+
+    /* Get a list of all the connected devices. */
+    // The returned object should be released with rs2_delete_device_list(...)
+    rs2_device_list* device_list = rs2_query_devices(ctx, &e);
+    check_error(e);
+
+    int dev_count = rs2_get_device_count(device_list, &e);
+    check_error(e);
+    printf("There are %d connected RealSense devices.\n", dev_count);
+    if (0 == dev_count)
+        return 1;
+
+    // Get the first connected device
+    // The returned object should be released with rs2_delete_device(...)
+    rs2_device* dev = rs2_create_device(device_list, 0, &e);
+    check_error(e);
+
+    // Serialize current values of advanced mode controls to a JSON content
+    rs2_raw_data_buffer* raw_data_buffer = rs2_serialize_json(dev, &e);
+    check_error(e);
+
+    // Get raw data size
+    int raw_data_size = rs2_get_raw_data_size(raw_data_buffer, &e);
+    check_error(e);
+
+    // Get the pointer of the raw data
+    const unsigned char* raw_data =  rs2_get_raw_data(raw_data_buffer, &e);
+    check_error(e);
+
+    // Write the raw_data to a JSON file
+    const char* full_file_path = "./advanced_mode_controls.json";
+    FILE *f = fopen(full_file_path, "w");
+    if (f == NULL)
+    {
+        printf("Error opening file!\n");
+        exit(1);
+    }
+
+    fwrite(raw_data, sizeof(unsigned char), raw_data_size, f);
+    fclose(f);
+
+
+    // Load the JSON raw data and apply the control values
+    rs2_load_json(dev, raw_data, raw_data_size, &e);
+    check_error(e);
+
+    rs2_delete_raw_data(raw_data_buffer);
+    rs2_delete_device(dev);
+    rs2_delete_device_list(device_list);
+    rs2_delete_context(ctx);
+}
+```
+
+The following code sample showing how to retrieve the advanced-mode control values. 
+```c
+/* Include the librealsense C header files */
+#include <librealsense2/rs.h>
+#include <librealsense2/rs_advanced_mode.h>
+
+#include <stdio.h> // printf
+#include <stdlib.h> // exit
+
+/* Function calls to librealsense may raise errors of type rs_error*/
+void check_error(rs2_error* e)
+{
+    if (e)
+    {
+        printf("rs_error was raised when calling %s(%s):\n", rs2_get_failed_function(e), rs2_get_failed_args(e));
+        printf("    %s\n", rs2_get_error_message(e));
+        exit(1);
+    }
+}
+
+int main()
+{
+    rs2_error* e = 0;
+
+    // Create a context object. This object owns the handles to all connected realsense devices.
+    // The returned object should be released with rs2_delete_context(...)
+    rs2_context* ctx = rs2_create_context(RS2_API_VERSION, &e);
+    check_error(e);
+
+    /* Get a list of all the connected devices. */
+    // The returned object should be released with rs2_delete_device_list(...)
+    rs2_device_list* device_list = rs2_query_devices(ctx, &e);
+    check_error(e);
+
+    int dev_count = rs2_get_device_count(device_list, &e);
+    check_error(e);
+    printf("There are %d connected RealSense devices.\n", dev_count);
+    if (0 == dev_count)
+        return 1;
+
+    // Get the first connected device
+    // The returned object should be released with rs2_delete_device(...)
+    rs2_device* dev = rs2_create_device(device_list, 0, &e);
+    check_error(e);
+
+    const int curr_val_mode = 0; // 0 - Get current values mode
+    STDepthControlGroup curr_depth_control_group;
+    // Get current values of depth control group
+    rs2_get_depth_control(dev, &curr_depth_control_group, curr_val_mode, &e);
+    check_error(e);
+
+    const int min_val_mode = 1; // 1 - Get minimum values mode
+    STDepthControlGroup min_depth_control_group;
+    // Get minimum values of depth control group
+    rs2_get_depth_control(dev, &min_depth_control_group, min_val_mode, &e);
+    check_error(e);
+
+    const int max_val_mode = 2; // 2 - Get maximum values mode
+    STDepthControlGroup max_depth_control_group;
+    // Get maximum values of depth control group
+    rs2_get_depth_control(dev, &max_depth_control_group, max_val_mode, &e);
+    check_error(e);
+
+
+    // Set the maximum values to depth control group
+    rs2_set_depth_control(dev, &max_depth_control_group, &e);
+    check_error(e);
+
+
+    rs2_delete_device(dev);
+    rs2_delete_device_list(device_list);
+    rs2_delete_context(ctx);
+
+    return 0;
+}
+```
+
+### Advanced Mode C++ API
+The following sample code showing how to enable advanced-mode in a connected D400 device.
+```cpp
+/* Include the librealsense CPP header files */
+#include <librealsense2/rs.hpp>
+#include <librealsense2/rs_advanced_mode.hpp>
+
+#include <iostream>
+
+using namespace std;
+using namespace rs2;
+
+int main(int argc, char** argv) try
+{
+    // Obtain a list of devices currently present on the system
+    context ctx;
+    auto devices = ctx.query_devices();
+    size_t device_count = devices.size();
+    if (!device_count)
+    {
+        cout <<"No device detected. Is it plugged in?\n";
+        return EXIT_SUCCESS;
+    }
+
+    // Get the first connected device
+    auto dev = devices[0];
+
+    if (dev.is<rs400::advanced_mode>())
+    {
+        auto advanced_mode_dev = dev.as<rs400::advanced_mode>();
+        // Check if advanced-mode is enabled
+        if (!advanced_mode_dev.is_enabled())
+        {
+            // Enable advanced-mode
+            advanced_mode_dev.toggle_advanced_mode(true);
+        }
+    }
+    else
+    {
+        cout << "Current device doesn't support advanced-mode!\n";
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+catch (const rs2::error & e)
+{
+    cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
     return EXIT_FAILURE;
 }
-printf("deepSeaMedianThreshold = %d\n", depth_control.deepSeaMedianThreshold);
-
-printf("Writing Depth Control back to the device...\n");
-// Write new values to the device:
-result = set_depth_control(dev, &depth_control);
-if (result)
+catch (const exception & e)
 {
-    printf("Advanced mode set failed!\n");
+    cerr << e.what() << endl;
     return EXIT_FAILURE;
 }
 ```
-(see [./rs400/examples/c-sample.c](https://github.com/IntelRealSense/librealsense/blob/development/rs400/examples/c-sample.c))
 
-In addition, you can use advanced mode functionality in your **C++** application without linking with any additional dependencies by just including `rs400_advanced_mode/rs400_advanced_mode.hpp` (under `/rs400/include`):
+The following code sample showing how to retrieve the advanced-mode control values. 
 ```cpp
-#include <rs400_advanced_mode/rs400_advanced_mode.hpp>
+/* Include the librealsense CPP header files */
+#include <librealsense2/rs.hpp>
+#include <librealsense2/rs_advanced_mode.hpp>
 
-// Define a lambda to tie the advanced mode to an existing realsense device (dev)
-auto send_receive = [&dev](const std::vector<uint8_t>& input)
+#include <iostream>
+
+using namespace std;
+using namespace rs2;
+
+
+int main(int argc, char** argv) try
 {
-    return dev->debug().send_and_receive_raw_data(input);
-};
-// Create advanced mode abstraction on to of that
-rs400::advanced_mode advanced(send_receive);
+    // Obtain a list of devices currently present on the system
+    context ctx;
+    auto devices = ctx.query_devices();
+    size_t device_count = devices.size();
+    if (!device_count)
+    {
+        cout <<"No device detected. Is it plugged in?\n";
+        return EXIT_SUCCESS;
+    }
 
-// Create one of the low level control groups
-rs400::STDepthControlGroup depth_control;
-advanced.get(&depth_control); // Query current values
-std::cout << "deepSeaMedianThreshold: " << depth_control.deepSeaMedianThreshold << std::endl;
+    // Get the first connected device
+    auto dev = devices[0];
+
+    // Check if current device supports advanced mode
+    if (dev.is<rs400::advanced_mode>())
+    {
+        // Get the advanced mode functionality
+        auto advanced_mode_dev = dev.as<rs400::advanced_mode>();
+        const int max_val_mode = 2; // 0 - Get maximum values
+        // Get the maximum values of depth controls
+        auto depth_control_group = advanced_mode_dev.get_depth_control(max_val_mode);
+
+        // Apply the depth controls maximum values
+        advanced_mode_dev.set_depth_control(depth_control_group);
+    }
+    else
+    {
+        cout << "Current device doesn't support advanced-mode!\n";
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+catch (const rs2::error & e)
+{
+    cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch (const exception & e)
+{
+    cerr << e.what() << endl;
+    return EXIT_FAILURE;
+}
 ```
 *Note: It is recommended to set advanced mode controls when not streaming.*
