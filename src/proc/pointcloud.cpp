@@ -51,7 +51,6 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_mutex);
 
 
-
         if (!_output_stream.get() || _depth_stream != depth_frame->get_stream().get() || stream_changed(_depth_stream,depth_frame->get_stream().get()))
         {
             _output_stream = depth_frame->get_stream()->clone();
@@ -71,6 +70,8 @@ namespace librealsense
             if (auto video = dynamic_cast<video_stream_profile_interface*>(stream_profile.get()))
             {
                 _depth_intrinsics = video->get_intrinsics();
+                _pixels_map.resize(0);
+                _pixels_map.resize(_depth_intrinsics->height*_depth_intrinsics->width);
                 found_depth_intrinsics = true;
             }
         }
@@ -143,6 +144,7 @@ namespace librealsense
 
         auto vid_frame = depth.as<rs2::video_frame>();
         float2* tex_ptr = pframe->get_texture_coordinates();
+        float2* pixels_ptr = _pixels_map.data();
 
         rs2_intrinsics mapped_intr;
         rs2_extrinsics extr;
@@ -162,7 +164,7 @@ namespace librealsense
             auto height = vid_frame.get_height();
             auto width = vid_frame.get_width();
 
-            float occZTh = 0.2f; //meters   - TODO review and refactor
+            float occZTh = 0.2f; //meters   - TODO review and refactor Evgeni
             int occDilationSz = 1;
 
             for (int y = 0; y < height; ++y)
@@ -176,7 +178,10 @@ namespace librealsense
                     if (points->z)
                     {
                         auto trans = transform(&extr, *points);
-                        auto tex_xy = project_to_texcoord(&mapped_intr, trans);
+                        //auto tex_xy = project_to_texcoord(&mapped_intr, trans);
+                        //auto pix_xy = project(&mapped_intr, trans);
+                        *pixels_ptr = project(&mapped_intr, trans);
+                        auto tex_xy = pixel_to_texcoord(&mapped_intr, *pixels_ptr);
 
                         if (_occlusion_rectification)
                         {
@@ -208,7 +213,15 @@ namespace librealsense
                     }
                     ++points;
                     ++tex_ptr;
+                    ++pixels_ptr;
                 }
+            }
+
+            if (_occlusion_filter->active())
+            {
+                _occlusion_filter->process(pframe->get_vertices(), width,height,
+                                                 pframe->get_texture_coordinates(),
+                                                 _pixels_map);
             }
         }
 
@@ -245,11 +258,12 @@ namespace librealsense
                     << "Unsupported occlusion filtering requiested " << val << " is out of range.");
 
             _occlusion_filter->set_mode(static_cast<uint8_t>(val));
-            _occlusion_rectification = !!static_cast<uint8_t>(val); // TODO remove after completion
+            _occlusion_rectification = (3==static_cast<uint8_t>(val)); // TODO remove after completion
         });
         occlusion_invalidation->set_description(0.f, "Off");
         occlusion_invalidation->set_description(1.f, "Heuristic");
         occlusion_invalidation->set_description(2.f, "Exhostive");
+        occlusion_invalidation->set_description(3.f, "Heuristic in-place");
         register_option(RS2_OPTION_FILTER_MAGNITUDE, occlusion_invalidation);
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)

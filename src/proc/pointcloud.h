@@ -20,6 +20,7 @@ namespace librealsense
         optional_value<rs2_extrinsics>         _extrinsics;
         std::atomic_bool                       _invalidate_mapped;
         std::shared_ptr<occlusion_filter>      _occlusion_filter;
+        std::vector<float2>                    _pixels_map;
 
         std::shared_ptr<stream_profile_interface> _output_stream, _other_stream;
 

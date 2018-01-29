@@ -4,51 +4,91 @@
 #include "../include/librealsense2/rs.hpp"
 #include "../include/librealsense2/rsutil.h"
 
+//#include "types.h"
 #include "proc/synthetic-stream.h"
 #include "proc/occlusion-filter.h"
 
 
 namespace librealsense
 {
-    occlusion_filter::occlusion_filter(): _occlusion_filter(occlusion_none)
+    occlusion_filter::occlusion_filter() : _occlusion_filter(occlusion_none)
     {
     }
 
-    rs2::frame occlusion_filter::process(const rs2::frame& points, size_t points_width, size_t points_height,
-        const std::vector<float2> & texture_coords, size_t texture_width, size_t texture_height)
+    void occlusion_filter::process(float3* points, size_t points_width, size_t points_height,
+                                   float2* uv_map, const std::vector<float2> & pix_coord) const
     {
-        rs2::frame res = points;
+        //librealsense::frame_holder res = points.clone();
 
         switch (_occlusion_filter)
         {
         case occlusion_none:
             break;
         case occlusion_monotonic_scan:
-            res = monotonic_heuristic_invalidation(points, points_width, points_height, texture_coords, texture_width, texture_height);
+            monotonic_heuristic_invalidation(points, points_width, points_height, uv_map, pix_coord);
             break;
         case occlusion_exhostic_search:
-            res = comprehensive_invalidation(points, points_width, points_height, texture_coords, texture_width, texture_height);
+            comprehensive_invalidation(points, points_width, points_height, uv_map, pix_coord);
+            break;
+        case heuristic_in_place:
+            // Applied immedeately during texture mapping
             break;
         default:
             throw std::runtime_error(to_string() << "Unsupported occlusion filter type " << _occlusion_filter << " requested");
             break;
         }
-
-        return res;
     }
 
-    rs2::frame occlusion_filter::monotonic_heuristic_invalidation(const rs2::frame& points, size_t points_width, size_t points_height,
-        const std::vector<float2> & texture_coords, size_t texture_width, size_t texture_height)
+    void occlusion_filter::monotonic_heuristic_invalidation(float3* points, size_t points_width, size_t points_height,
+        float2* uv_map, const std::vector<float2> & pix_coord) const
     {
-        return points;
+        float occZTh = 0.2f; //meters   - TODO review and refactor Evgeni
+        int occDilationSz = 1;
+        auto pixels_ptr = pix_coord.data();
+
+        for (int y = 0; y < points_height; ++y)
+        {
+            float maxInLine = -1;
+            float maxZ = 0;
+            int occDilationLeft = 0;
+
+            for (int x = 0; x < points_width; ++x)
+            {
+                if (points->z)
+                {
+                    // Occlusion detection
+                    if (pixels_ptr->x < maxInLine || (pixels_ptr->x == maxInLine && (points->z - maxZ) > occZTh))
+                    {
+                        uv_map->x = 0.f;
+                        uv_map->y = 0.f;
+                        occDilationLeft = occDilationSz;
+                    }
+                    else
+                    {
+                        maxInLine = pixels_ptr->x;
+                        maxZ = points->z;
+                        if (occDilationLeft > 0)
+                        {
+                            uv_map->x = 0.f;
+                            uv_map->y = 0.f;
+                            occDilationLeft--;
+                        }
+                    }
+                }
+                
+                ++points;
+                ++uv_map;
+                ++pixels_ptr;
+            }
+        }
     }
 
-    rs2::frame occlusion_filter::comprehensive_invalidation(const rs2::frame& points, size_t points_width, size_t points_height,
-        const std::vector<float2> & texture_coords, size_t texture_width, size_t texture_height)
+    void occlusion_filter::comprehensive_invalidation(float3* points, size_t points_width, size_t points_height,
+        float2* uv_map, const std::vector<float2> & pix_coord) const
     {
-        return points;
+        //TODO
     }
-    /*void occlusion_filter::update_configuration(const rs2::frame& texture_frame)
+    /*void occlusion_filter::update_configuration(const frame_holder& texture_frame)
     {
         auto other_frame = (frame_interface*)other.get();
         std::lock_guard<std::mutex> lock(_mutex);
@@ -67,10 +107,10 @@ namespace librealsense
         }
     }*/
 
-    //rs2::frame occlusion_filter::prepare_target_points(const rs2::frame& f, const rs2::frame_source& source)
+    //frame_holder occlusion_filter::prepare_target_points(const frame_holder& f, const rs2::frame_source& source)
     //{
     //    // Allocate and copy the content of the original Depth data to the target
-    //    //rs2::frame tgt = source.allocate_video_frame(_target_stream_profile, f, int(_bpp), int(_width), int(_height), int(_stride), _extension_type);
+    //    //frame_holder tgt = source.allocate_video_frame(_target_stream_profile, f, int(_bpp), int(_width), int(_height), int(_stride), _extension_type);
 
     //    frame_holder res = get_source().allocate_points(_output_stream, (frame_interface*)depth.get());
 

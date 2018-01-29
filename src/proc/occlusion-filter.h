@@ -5,7 +5,7 @@
 #include "../include/librealsense2/hpp/rs_frame.hpp"
 namespace librealsense
 {
-    enum occlusion_rect_type : uint8_t { occlusion_none, occlusion_monotonic_scan, occlusion_exhostic_search, occlusion_max };
+    enum occlusion_rect_type : uint8_t { occlusion_none, occlusion_monotonic_scan, occlusion_exhostic_search, heuristic_in_place, occlusion_max };
 
     class pointcloud;
 
@@ -16,11 +16,11 @@ namespace librealsense
 
         bool active(void) const { return (occlusion_none != _occlusion_filter); };
 
-        void update_configuration(const rs2::frame& texture_frame);
+        //void update_configuration(const frame_holder& texture_frame);
 
-        rs2::frame process(const rs2::frame& points, const std::vector<float2> & texture_coords);
-        rs2::frame process(const rs2::frame& points, size_t points_width, size_t points_height,
-            const std::vector<float2> & texture_coords, size_t texture_width, size_t texture_height);
+        //frame_holder process(const frame_holder& points, const std::vector<float2> & texture_coords); evgeni  -check if the internal members ca do the work here
+        void process(float3* points, size_t points_width, size_t points_height,
+                    float2* uv_map, const std::vector<float2> & pix_coord) const;
 
         void set_mode(uint8_t filter_type) { _occlusion_filter = (occlusion_rect_type)filter_type; }
 
@@ -28,13 +28,13 @@ namespace librealsense
     private:
         friend class pointcloud;
 
-        rs2::frame prepare_target_points(const rs2::frame& f, const rs2::frame_source& source);
+        frame_holder prepare_target_points(const frame_holder& f, const rs2::frame_source& source);
 
-        rs2::frame monotonic_heuristic_invalidation(const rs2::frame& points, size_t points_width, size_t points_height,
-            const std::vector<float2> & texture_coords, size_t texture_width, size_t texture_height);
+        void monotonic_heuristic_invalidation(float3* points, size_t points_width, size_t points_height,
+                                              float2* uv_map, const std::vector<float2> & pix_coord) const;
 
-        rs2::frame comprehensive_invalidation(const rs2::frame& points, size_t points_width, size_t points_height,
-            const std::vector<float2> & texture_coords, size_t texture_width, size_t texture_height);
+        void comprehensive_invalidation(float3* points, size_t points_width, size_t points_height,
+                                        float2* uv_map, const std::vector<float2> & pix_coord) const;
 
         std::shared_ptr<stream_profile_interface>   _output_stream, _texture_source_stream;
         std::vector<float2>                         _texture_map;

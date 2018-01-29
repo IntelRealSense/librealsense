@@ -2917,7 +2917,6 @@ namespace rs2
 
     rs2::frame post_processing_filters::apply_filters(rs2::frame f)
     {
-
         if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
         {
             for (auto&& s : viewer.streams)
@@ -2955,6 +2954,14 @@ namespace rs2
                 }
             }
         }
+
+        // TODO Evgeni - refactor
+        // Override the value of the first pixel to use as invalidation value for the occlusion filter
+        if (f.get_profile().stream_type() == RS2_STREAM_COLOR)
+        {
+            auto rgb_stream = const_cast<void*>(f.get_data());
+            memset(rgb_stream, 0, 3);
+        }
         return f;
     }
 
@@ -2977,6 +2984,7 @@ namespace rs2
             }
             if(viewer.is_3d_texture_source(f))
             {
+                //TODO Evgeni - refactor
                 update_texture(filtered);
             }
         }
