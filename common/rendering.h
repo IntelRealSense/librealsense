@@ -441,7 +441,7 @@ namespace rs2
     {
         bool inside = false;
         int i = 0, j = 0;
-        for (i = 0, j = polygon.size() - 1; i < polygon.size(); j = i++) 
+        for (i = 0, j = static_cast<int>(polygon.size()) - 1; i < static_cast<int>(polygon.size()); j = i++)
         {
             if (((polygon[i].y > point.y) != (polygon[j].y > point.y)) &&
                 (point.x < (polygon[j].x - polygon[i].x) * (point.y - polygon[i].y) / (polygon[j].y - polygon[i].y) + polygon[i].x))
@@ -1394,7 +1394,7 @@ namespace rs2
             glLoadIdentity();
 
             draw_grid();
-            draw_axis(0.3, 2);
+            draw_axis(0.3f, 2.f);
             
             // Drawing pose:
             matrix4 pose_trans = tm2_pose_to_world_transformation(pose);
@@ -1406,7 +1406,7 @@ namespace rs2
             glPushMatrix();
             glLoadMatrixf(model);
 
-            draw_axis(0.3, 2);
+            draw_axis(0.3f, 2.f);
 
             // remove model matrix from the rest of the render
             glPopMatrix();

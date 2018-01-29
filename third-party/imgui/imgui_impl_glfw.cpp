@@ -251,8 +251,8 @@ void ImGui_ImplGlfw_NewFrame(float scale_factor)
     glfwGetWindowSize(g_Window, &w, &h);
     if (scale_factor > 0.f)
     {
-        w = w / scale_factor;
-        h = h / scale_factor;
+        w = static_cast<int>(w / scale_factor);
+        h = static_cast<int>(h / scale_factor);
     }
     glfwGetFramebufferSize(g_Window, &display_w, &display_h);
     io.DisplaySize = ImVec2((float)w, (float)h);

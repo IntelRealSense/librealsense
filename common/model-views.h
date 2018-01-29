@@ -283,7 +283,7 @@ namespace rs2
         void draw_options(const std::vector<rs2_option>& drawing_order,
                           bool update_read_only_options, std::string& error_message,
                           notifications_model& model);
-        int num_supported_non_default_options() const;
+        uint64_t num_supported_non_default_options() const;
         bool draw_option(rs2_option opt, bool update_read_only_options,
             std::string& error_message, notifications_model& model)
         {
@@ -605,7 +605,7 @@ namespace rs2
             keep_calculating(true),
             depth_stream_active(false),
             resulting_queue_max_size(20),
-            resulting_queue(resulting_queue_max_size),
+            resulting_queue(static_cast<unsigned int>(resulting_queue_max_size)),
 //            frames_queue(4),
             t([this]() {render_loop(); })
         {
