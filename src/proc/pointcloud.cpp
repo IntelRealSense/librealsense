@@ -72,6 +72,7 @@ namespace librealsense
                 _depth_intrinsics = video->get_intrinsics();
                 _pixels_map.resize(0);
                 _pixels_map.resize(_depth_intrinsics->height*_depth_intrinsics->width);
+                _occlusion_filter->set_depth_intrinsics(_depth_intrinsics.value());
                 found_depth_intrinsics = true;
             }
         }
@@ -117,6 +118,7 @@ namespace librealsense
             if (auto video = dynamic_cast<video_stream_profile_interface*>(_other_stream.get()))
             {
                 _other_intrinsics = video->get_intrinsics();
+                _occlusion_filter->set_texel_intrinsics(_other_intrinsics.value());
             }
         }
 
@@ -210,6 +212,7 @@ namespace librealsense
                     else
                     {
                         *tex_ptr = { 0.f, 0.f };
+                        *pixels_ptr = { 0.f, 0.f };
                     }
                     ++points;
                     ++tex_ptr;

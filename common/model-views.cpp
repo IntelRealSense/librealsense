@@ -1834,7 +1834,7 @@ namespace rs2
             texture.colorize = streams[selected_tex_source].texture->colorize;
             ImGui::PopItemWidth();
 
-            // Occlusion control for RGB UV-Map only - render in the same line and use option's description as name
+            // Occlusion control for RGB UV-Map will appear in the same line and use option's description as name
             if (RS2_STREAM_COLOR==streams[selected_tex_source_uid].profile.stream_type())
                 ppf.get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).draw(error_message, not_model, false, false);
         }
