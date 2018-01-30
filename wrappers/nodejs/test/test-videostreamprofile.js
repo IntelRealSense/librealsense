@@ -105,7 +105,7 @@ describe('VideoStreamProfile test', function() {
     assert.equal(Object.prototype.toString.call(ExtrinsicsObject.rotation), '[object Array]');
   });
 
-  it.skip('Testing method getExtrinsicsTo - invalid argument', () => {
+  it('Testing method getExtrinsicsTo - invalid argument', () => {
     assert.throws(() => {
       streamProfiles[0].getExtrinsicsTo('dummy');
     });
