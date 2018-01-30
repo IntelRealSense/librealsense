@@ -39,7 +39,7 @@ describe('Config test', function() {
   });
 
   it('Testing method canResolve - 2 argument', () => {
-    assert.doesNotThrow(() => {
+    assert.throws(() => {
       config.canResolve(pipeline, pipeline);
     });
   });
@@ -96,7 +96,7 @@ describe('Config test', function() {
   });
 
   it('Testing method enableDevice - 0 argument', () => {
-    assert.doesNotThrow(() => {
+    assert.throws(() => {
       config.enableDevice();
     });
   });

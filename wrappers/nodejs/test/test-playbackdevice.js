@@ -117,7 +117,7 @@ describe('PlayBackDevice test', function() {
 
   it('Testing constructor - 2 arguments', () => {
     let ctx = new rs2.Context();
-    assert.doesNotThrow(() => {
+    assert.throws(() => {
       ctx.loadDevice(fileName, 1);
     });
   });
@@ -129,7 +129,7 @@ describe('PlayBackDevice test', function() {
     });
   });
 
-  it.skip('Testing constructor - invalid file content', () => {
+  it('Testing constructor - invalid file content', () => {
     let ctx = new rs2.Context();
     assert.throws(() => {
       ctx.loadDevice('./test-playbackdevice.js');
