@@ -142,11 +142,16 @@ void read_script_file(const string& full_file_path, vector<string>& hex_lines)
     throw runtime_error("Script file not found!");
 }
 
-rs2::device wait_for_device(const rs2::device_hub& hub)
+rs2::device wait_for_device(const rs2::device_hub& hub, bool print_info = true)
 {
-    cout << "\nWaiting for RealSense device to connect...\n";
+    if (print_info)
+        cout << "\nWaiting for RealSense device to connect...\n";
+
     auto dev = hub.wait_for_device();
-    cout << "RealSense device has connected...\n";
+
+    if (print_info)
+        cout << "RealSense device has connected...\n";
+
     return dev;
 }
 
@@ -196,9 +201,32 @@ int main(int argc, char** argv)
     }
     auto auto_comp = get_auto_complete_obj(is_application_in_hex_mode, cmd_xml.commands);
 
+    rs2::device dev;
     while (true)
     {
-        auto dev = wait_for_device(hub);
+        if (device_id_arg.isSet())
+        {
+            auto dev_id = device_id_arg.getValue();
+            auto num_of_devices = ctx.query_devices().size();
+            if (num_of_devices < (dev_id + 1))
+            {
+                std::cout << "\nGiven device_id doesn't exist! device_id=" <<
+                             dev_id << " ; connected devices=" << num_of_devices << std::endl;
+                return EXIT_FAILURE;
+            }
+
+            for (int i = 0; i < (num_of_devices - 1); ++i)
+            {
+                wait_for_device(hub, false);
+            }
+            dev = wait_for_device(hub, false);
+            std::cout << "\nDevice ID " << dev_id << " has loaded.\n";
+        }
+        else
+        {
+            dev = wait_for_device(hub);
+        }
+
         fflush(nullptr);
 
         if (hex_cmd_arg.isSet())
