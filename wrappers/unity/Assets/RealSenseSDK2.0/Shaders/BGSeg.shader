@@ -61,6 +61,11 @@ Shader "Custom/BGSeg" {
                     alpha = 1; //Withing the range
 				}
 
+                if (alpha < 1)
+                {
+                    Y = dot(Y, float3(0.3, 0.59, 0.11)); //To Grayscale
+                    alpha = 0.7;
+                }
 				#if _HASCOLOR_ON
 					return float4(Y, alpha);
 				#else
