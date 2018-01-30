@@ -95,6 +95,7 @@ namespace Intel.RealSense
         public FrameSet Process(FrameSet original)
         {
             object error;
+            NativeMethods.rs2_frame_add_ref(original.m_instance.Handle, out error);
             NativeMethods.rs2_process_frame(m_instance.Handle, original.m_instance.Handle, out error);
             return queue.WaitForFrames();
         }
