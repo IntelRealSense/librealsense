@@ -13,6 +13,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 class MainThreadCallbackInfo {
@@ -519,6 +520,7 @@ class RSFrame : public Nan::ObjectWrap {
     Nan::SetPrototypeMethod(tpl, "writeTextureCoordinates",
                             WriteTextureCoordinates);
     Nan::SetPrototypeMethod(tpl, "getPointsCount", GetPointsCount);
+    Nan::SetPrototypeMethod(tpl, "exportToPly", ExportToPly);
     Nan::SetPrototypeMethod(tpl, "isValid", IsValid);
     Nan::SetPrototypeMethod(tpl, "getDistance", GetDistance);
     Nan::SetPrototypeMethod(tpl, "getBaseLine", GetBaseLine);
@@ -933,6 +935,19 @@ class RSFrame : public Nan::ObjectWrap {
       return;
     }
     info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(ExportToPly) {
+    auto me = Nan::ObjectWrap::Unwrap<RSFrame>(info.Holder());
+    v8::String::Utf8Value str(info[0]);
+    std::string file = std::string(*str);
+    auto texture = Nan::ObjectWrap::Unwrap<RSFrame>(info[1]->ToObject());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me || !texture) return;
+
+    rs2_frame* ptr = nullptr;
+    std::swap(texture->frame_, ptr);
+    rs2_export_to_ply(me->frame_, file.c_str(), ptr, &me->error_);
   }
 
   static NAN_METHOD(IsValid) {

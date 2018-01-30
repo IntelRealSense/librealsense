@@ -1888,6 +1888,22 @@ class Points extends Frame {
   }
 
   /**
+   * Creates a ply file of the model with the given file name.
+   * @param {String} fileName name of the ply file
+   * @param {VideoFrame} texture texture frame
+   * @return {undefined}
+   */
+  exportToPly(fileName, texture) {
+    const funcName = 'Points.exportToPly()';
+    checkArgumentLength(2, 2, arguments.length, funcName);
+    checkArgumentType(arguments, 'string', 0, funcName);
+    checkArgumentType(arguments, VideoFrame, 1, funcName);
+    if (this.cxxFrame) {
+      this.cxxFrame.exportToPly(fileName, texture.cxxFrame);
+    }
+  }
+
+  /**
    * Get an array of texture coordinates per vertex
    * Each coordinate represent a (u,v) pair within [0,1] range, to be mapped to texture image
    *
