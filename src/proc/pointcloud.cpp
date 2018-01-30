@@ -34,7 +34,7 @@ namespace librealsense
 
     float3 transform(const rs2_extrinsics *extrin, const float3 &point) { float3 p = {}; rs2_transform_point_to_point(&p.x, extrin, &point.x); return p; }
     float2 project(const rs2_intrinsics *intrin, const float3 & point) { float2 pixel = {}; rs2_project_point_to_pixel(&pixel.x, intrin, &point.x); return pixel; }
-    float2 pixel_to_texcoord(const rs2_intrinsics *intrin, const float2 & pixel) { return{ pixel.x / intrin->width, pixel.y / intrin->height }; }
+    float2 pixel_to_texcoord(const rs2_intrinsics *intrin, const float2 & pixel) { return{ pixel.x / (intrin->width-1), pixel.y / (intrin->height-1) }; }
     float2 project_to_texcoord(const rs2_intrinsics *intrin, const float3 & point) { return pixel_to_texcoord(intrin, project(intrin, point)); }
 
      bool pointcloud::stream_changed( stream_profile_interface* old, stream_profile_interface* curr)
@@ -166,9 +166,6 @@ namespace librealsense
             auto height = vid_frame.get_height();
             auto width = vid_frame.get_width();
 
-            float occZTh = 0.2f; //meters   - TODO review and refactor Evgeni
-            int occDilationSz = 1;
-
             for (int y = 0; y < height; ++y)
             {
                 float maxInLine = -1;
@@ -184,28 +181,6 @@ namespace librealsense
                         //auto pix_xy = project(&mapped_intr, trans);
                         *pixels_ptr = project(&mapped_intr, trans);
                         auto tex_xy = pixel_to_texcoord(&mapped_intr, *pixels_ptr);
-
-                        if (_occlusion_rectification)
-                        {
-                            if (tex_xy.x < maxInLine || (tex_xy.x == maxInLine && (points->z - maxZ) > occZTh))
-                            {
-                                tex_xy.x = 0.f;
-                                tex_xy.y = 0.f;
-                                occDilationLeft = occDilationSz;
-                            }
-
-                            else
-                            {
-                                maxInLine = tex_xy.x;
-                                maxZ = points->z;
-                                if (occDilationLeft > 0)
-                                {
-                                    tex_xy.x = 0.f;
-                                    tex_xy.y = 0.f;
-                                    occDilationLeft--;
-                                }
-                            }
-                        }
 
                         *tex_ptr = tex_xy;
                     }
@@ -232,8 +207,8 @@ namespace librealsense
     }
 
     pointcloud::pointcloud():
-        _other_stream(nullptr), _invalidate_mapped(false),
-        _occlusion_rectification(false) // TODO remove after integration
+        _other_stream(nullptr),
+        _invalidate_mapped(false)
     {
         auto mapped_opt = std::make_shared<ptr_option<int>>(0, std::numeric_limits<int>::max(), 1, -1, &_other_stream_id, "Mapped stream ID");
         register_option(RS2_OPTION_TEXTURE_SOURCE, mapped_opt);
@@ -261,12 +236,11 @@ namespace librealsense
                     << "Unsupported occlusion filtering requiested " << val << " is out of range.");
 
             _occlusion_filter->set_mode(static_cast<uint8_t>(val));
-            _occlusion_rectification = (3==static_cast<uint8_t>(val)); // TODO remove after completion
+
         });
         occlusion_invalidation->set_description(0.f, "Off");
         occlusion_invalidation->set_description(1.f, "Heuristic");
-        occlusion_invalidation->set_description(2.f, "Exhostive");
-        occlusion_invalidation->set_description(3.f, "Heuristic in-place");
+        occlusion_invalidation->set_description(2.f, "Exhaustive");
         register_option(RS2_OPTION_FILTER_MAGNITUDE, occlusion_invalidation);
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)

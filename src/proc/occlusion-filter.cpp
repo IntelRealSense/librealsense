@@ -6,7 +6,7 @@
 
 #include "proc/synthetic-stream.h"
 #include "proc/occlusion-filter.h"
-
+#include <iomanip>
 
 namespace librealsense
 {
@@ -30,11 +30,8 @@ namespace librealsense
         case occlusion_monotonic_scan:
             monotonic_heuristic_invalidation(points, points_width, points_height, uv_map, pix_coord);
             break;
-        case occlusion_exhostic_search:
+        case occlusion_exhaustic_search:
             comprehensive_invalidation(points, points_width, points_height, uv_map, pix_coord);
-            break;
-        case heuristic_in_place:
-            // Applied immedeately during texture mapping
             break;
         default:
             throw std::runtime_error(to_string() << "Unsupported occlusion filter type " << _occlusion_filter << " requested");
@@ -45,7 +42,7 @@ namespace librealsense
     void occlusion_filter::monotonic_heuristic_invalidation(float3* points, size_t points_width, size_t points_height,
         float2* uv_map, const std::vector<float2> & pix_coord) const
     {
-        float occZTh = 0.2f; //meters
+        float occZTh = 0.1f; //meters
         int occDilationSz = 1;
         auto pixels_ptr = pix_coord.data();
 
@@ -94,21 +91,12 @@ namespace librealsense
     {
         auto depth_points = points;
         auto mapped_pix = pix_coord.data();
+        size_t mapped_tex_width = _texels_intrinsics->width;
+        size_t mapped_tex_height = _texels_intrinsics->height;
 
-        /*auto min_x = 0.f;
-        auto max_x = 0.f;
-        auto min_y = 0.f;
-        auto max_y = 0.f;
-        for (auto i = 0; i < pix_coord.size(); i++)
-        {
-            if (pix_coord[i].x < min_x) min_x = pix_coord[i].x;
-            if (pix_coord[i].x > max_x) max_x = pix_coord[i].x;
-            if (pix_coord[i].y < min_y) min_y = pix_coord[i].y;
-            if (pix_coord[i].y > max_y) max_y = pix_coord[i].y;
-        }*/
+        static const float z_threshold = 0.3f; // Compensate for temporal noise when comparing Z values - significal occlusion
 
         // Clear previous data
-        //std::fill(_texels_map.begin(), _texels_map.end(), 0.f);
         memset((void*)(_texels_depth.data()), 0, _texels_depth.size() * sizeof(float));
 
         // Pass1 -generate texels mapping with minimal depth for each texel involved
@@ -116,11 +104,16 @@ namespace librealsense
         {
             for (size_t j = 0; j < points_width; j++)
             {
-                if ((depth_points->z > 0.0001f) && (mapped_pix->x > 0.f) && (mapped_pix->y > 0))
+                if ((depth_points->z > 0.0001f) &&
+                    (mapped_pix->x > 0.f) && (mapped_pix->x < mapped_tex_height) &&
+                    (mapped_pix->y > 0.f) && (mapped_pix->y < mapped_tex_width))
                 {
-                    size_t texel_index = static_cast<size_t>(std::floor(mapped_pix->y)*points_width + std::floor(mapped_pix->x));
-                    if (_texels_depth[texel_index] > depth_points->z)
+                    size_t texel_index = (size_t)(mapped_pix->x)*points_width + (size_t)(mapped_pix->y);
+
+                    if ((_texels_depth[texel_index] < 0.0001f) || ((_texels_depth[texel_index] + z_threshold) > depth_points->z))
+                    {
                         _texels_depth[texel_index] = depth_points->z;
+                    }
                 }
 
                 ++depth_points;
@@ -137,11 +130,16 @@ namespace librealsense
         {
             for (size_t j = 0; j < points_width; j++)
             {
-                if ((depth_points->z > 0.0001f) && (mapped_pix->x > 0.f) && (mapped_pix->y > 0.f))
+                if ((depth_points->z > 0.0001f) &&
+                    (mapped_pix->x > 0.f) && (mapped_pix->x < mapped_tex_height) &&
+                    (mapped_pix->y > 0.f) && (mapped_pix->y < mapped_tex_width))
                 {
-                    size_t texel_index = static_cast<size_t>(std::floor(mapped_pix->y)*points_width + std::floor(mapped_pix->x));
-                    if (_texels_depth[texel_index] < depth_points->z)
+                    size_t texel_index = (size_t)(mapped_pix->x)*points_width + (size_t)(mapped_pix->y);
+
+                    if ((_texels_depth[texel_index] > 0.0001f) && ((_texels_depth[texel_index] + z_threshold) < depth_points->z))
+                    {
                         *uv_ptr = { 0.f, 0.f };
+                    }
                 }
 
                 ++depth_points;
@@ -149,78 +147,5 @@ namespace librealsense
                 ++uv_ptr;
             }
         }
-        /*
-        uint16_t * r = g_color_img_map;
-        float * s = g_color_camera;
-        float * q = g_color_depth;
-
-        int size = width * height;
-        memset(g_color_depth, 0, size * sizeof(float));
-        memset(g_color_img_map, 0, size * 2 * sizeof(uint16_t));
-        memset(g_color_camera, 0, size * 3 * sizeof(float));
-
-        int pos = 0;
-        uint16_t * p = zImage;
-        for (int y = 0; y < height; ++y)
-        {
-            for (int x = 0; x < width; ++x)
-            {
-                if (uint16_t d = *p++)
-                {
-                    float z_image[] = { static_cast<float>, static_cast<float> };
-
-                    float z_camera[3];
-                    rs2_deproject_pixel_to_point(z_camera, &g_intrinsics_depth_scaled, z_image, static_cast<float>(d));
-                    rs2_transform_point_to_point(s, &g_extrinsics_color, z_camera);
-
-                    float color_image[2];
-                    rs2_project_point_to_pixel(color_image, &g_intrinsics_color_scaled, s);
-
-                    r[0] = (uint16_t)color_image[0];
-                    r[1] = (uint16_t)color_image[1];
-
-                    if (r[0] >= 0 && r[0] < width && r[1] >= 0 && r[1] < height && s[2])
-                    {
-
-                        pos = r[1] * width + r[0];
-
-                        if (q[pos] < 0.001f || s[2] < q[pos])
-
-                            q[pos] = s[2];
-                    }
-
-                    else
-                        s[2] = 0;
-                }
-
-                r += 2;
-                s += 3;
-            }
-        }
-
-        q = g_color_depth;
-        r = g_color_img_map;
-        s = g_color_camera;
-
-        for (int y = 0; y < height; ++y)
-        {
-            for (int x = 0; x < width; ++x)
-            {
-                if (s[2])
-
-                {
-
-                    pos = r[1] * width + r[0];
-
-                    if (s[2] > q[pos] + 0.001f)
-
-                        s[2] = 0;
-
-                }
-
-                r += 2;
-                s += 3;
-            }
-        }*/
     }
 }

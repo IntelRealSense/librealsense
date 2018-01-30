@@ -498,10 +498,6 @@ namespace rs2
                 rs2_error* e = nullptr;
                 _size = rs2_get_frame_points_count(get(), &e);
                 error::handle(e);
-                /*_width = rs2_get_frame_width(get(), &e);
-                error::handle(e);
-                _height = rs2_get_frame_height(get(), &e);
-                error::handle(e);*/
             }
         }
 
@@ -537,8 +533,6 @@ namespace rs2
 
     private:
         size_t _size;
-        /*size_t _width;
-        size_t _height;*/
     };
 
     class depth_frame : public video_frame

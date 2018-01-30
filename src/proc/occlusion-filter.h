@@ -5,7 +5,7 @@
 #include "../include/librealsense2/hpp/rs_frame.hpp"
 namespace librealsense
 {
-    enum occlusion_rect_type : uint8_t { occlusion_none, occlusion_monotonic_scan, occlusion_exhostic_search, heuristic_in_place, occlusion_max };
+    enum occlusion_rect_type : uint8_t { occlusion_none, occlusion_monotonic_scan, occlusion_exhaustic_search, occlusion_max };
 
     class pointcloud;
 

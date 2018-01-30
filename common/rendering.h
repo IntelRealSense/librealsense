@@ -999,7 +999,7 @@ namespace rs2
             last_queue[idx].poll_for_frame(&last[idx]);
             return last[idx];
         }
-		
+
         texture_buffer() : last_queue(), texture(),
             colorize(std::make_shared<colorizer>()) {}
 

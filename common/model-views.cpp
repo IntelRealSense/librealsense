@@ -2476,7 +2476,10 @@ namespace rs2
             }
 
             label = ss.str();
+            ImGui::PushStyleColor(ImGuiCol_Text, { 0.8f, 0.f, 0.8f, 1.f });
             ImGui::Text("%s", label.c_str());
+            ImGui::PopStyleColor();
+            
         }
 
         ImGui::End();
@@ -2939,13 +2942,14 @@ namespace rs2
             }
         }
 
-        // TODO Evgeni - refactor
-        // Override the value of the first pixel to use as invalidation value for the occlusion filter
-        if (f.get_profile().stream_type() == RS2_STREAM_COLOR)
+        // Override the the first pixel in Depth->RGB map to be used as a mark when occlusion filter is active
+        if ((f.get_profile().stream_type() == RS2_STREAM_COLOR) &&
+            get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).value)
         {
-            auto rgb_stream = const_cast<void*>(f.get_data());
-            memset(rgb_stream, 0, 3);
+            auto rgb_stream = const_cast<uint8_t*>(static_cast<const uint8_t*>(f.get_data()));
+            rgb_stream[0] = rgb_stream[2] = 0xff; // Use magenta to highlight the occlusion areas
         }
+
         return f;
     }
 
@@ -3686,7 +3690,7 @@ namespace rs2
         }
 
         glColor4f(1.f, 1.f, 1.f, 1.f);
-        
+
         if (draw_frustrum && last_points)
         {
             glLineWidth(1.f);
