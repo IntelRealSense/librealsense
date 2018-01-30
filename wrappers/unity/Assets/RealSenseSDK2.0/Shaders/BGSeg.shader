@@ -63,7 +63,7 @@ Shader "Custom/BGSeg" {
 
                 if (alpha < 1)
                 {
-                    Y = dot(Y, float3(0.3, 0.59, 0.11)); //To Grayscale
+                    Y = dot(Y, float3(0.15, 0.3, 0.05)); //To Grayscale(0.3, 0.59, 0.11)
                     alpha = 0.7;
                 }
 				#if _HASCOLOR_ON
