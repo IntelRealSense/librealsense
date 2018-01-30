@@ -75,6 +75,25 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!1 &1600353027519356
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 4038617940120058}
+  - component: {fileID: 114323456739243918}
+  - component: {fileID: 114699932149661920}
+  - component: {fileID: 114368246650821110}
+  - component: {fileID: 114477867214699988}
+  m_Layer: 0
+  m_Name: Alignment
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
 --- !u!1 &1806512559833052
 GameObject:
   m_ObjectHideFlags: 0
@@ -103,6 +122,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4551850772882396}
   m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &4038617940120058
+Transform:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1600353027519356}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 4551850772882396}
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &4441759289123706
 Transform:
@@ -144,6 +176,7 @@ Transform:
   - {fileID: 4441759289123706}
   - {fileID: 4528762567361350}
   - {fileID: 4927849965351190}
+  - {fileID: 4038617940120058}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -189,6 +222,50 @@ MonoBehaviour:
         m_CallState: 2
     m_TypeName: TextureProvider+TextureEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
+  fetchFramesFromDevice: 1
+--- !u!114 &114323456739243918
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1600353027519356}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc1e75ec3c5a48f4fa3e6be5870af5a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  from: {fileID: 114699932149661920}
+  to: {fileID: 114368246650821110}
+--- !u!114 &114368246650821110
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1600353027519356}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f59de22db6bfdfe46937570a9af2882b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sourceStreamType: 2
+  textureFormat: 3
+  textureBinding:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 114477867214699988}
+        m_MethodName: set_Texture
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_TypeName: TextureProvider+TextureEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  fetchFramesFromDevice: 0
 --- !u!114 &114399326722207266
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -218,6 +295,35 @@ MonoBehaviour:
         m_CallState: 2
     m_TypeName: TextureProvider+TextureEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
+  fetchFramesFromDevice: 1
+--- !u!114 &114477867214699988
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1600353027519356}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1efe8d13569ef747ae9556b47f8ac80, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  textureName: _ColorTex
+  textureBinding:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 2100000, guid: b450f17118e189b44afff9200f9d1672, type: 2}
+        m_MethodName: SetTexture
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_TypeName: NamedTextureBinding+NamedTextureEvent, Assembly-CSharp, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
 --- !u!114 &114485450083877872
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -247,7 +353,38 @@ MonoBehaviour:
         m_CallState: 2
     m_TypeName: TextureProvider+TextureEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
+  fetchFramesFromDevice: 1
   colorMap: 0
+--- !u!114 &114699932149661920
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1600353027519356}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f59de22db6bfdfe46937570a9af2882b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sourceStreamType: 1
+  textureFormat: 9
+  textureBinding:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 2100000, guid: b450f17118e189b44afff9200f9d1672, type: 2}
+        m_MethodName: set_mainTexture
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_TypeName: TextureProvider+TextureEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  fetchFramesFromDevice: 0
 --- !u!114 &114883162738747752
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -311,3 +448,4 @@ MonoBehaviour:
         m_CallState: 2
     m_TypeName: TextureProvider+TextureEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
+  fetchFramesFromDevice: 1

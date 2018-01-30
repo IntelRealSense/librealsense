@@ -29,10 +29,12 @@ public class RealsenseStreamTexture : MonoBehaviour
     /// </summary>
     /// <param name="f">The frame to process</param>
     /// <returns>The processed frame</returns>
-     virtual protected Frame ProcessFrame(Frame f)
+    virtual protected Frame ProcessFrame(Frame f)
     {
         return f;
     }
+
+    public bool fetchFramesFromDevice = true;
 
     void Start()
     {
@@ -48,11 +50,34 @@ public class RealsenseStreamTexture : MonoBehaviour
         };
         texture.Apply();
         textureBinding.Invoke(texture);
-
+        if (fetchFramesFromDevice)
+        {
+            if (RealSenseDevice.Instance.processMode == RealSenseDevice.ProcessMode.UnityThread)
+                RealSenseDevice.Instance.onNewSample += onNewSampleUnityThread;
+            else
+                RealSenseDevice.Instance.onNewSample += onNewSampleThreading;
+        }
+    }
+    public void OnFrame(Frame f)
+    {
         if (RealSenseDevice.Instance.processMode == RealSenseDevice.ProcessMode.UnityThread)
-            RealSenseDevice.Instance.onNewSample += onNewSampleUnityThread;
+        {
+            onNewSampleUnityThread(f);
+        }
         else
-            RealSenseDevice.Instance.onNewSample += onNewSampleThreading;
+        {
+            onNewSampleThreading(f);
+        }
+    }
+
+    private void onNewSampleThreading(Frame frame)
+    {
+        if (frame.Profile.Stream != sourceStreamType)
+            return;
+        var vidFrame = ProcessFrame(frame) as VideoFrame;
+        data = data ?? new byte[vidFrame.Stride * vidFrame.Height];
+        vidFrame.CopyTo(data);
+        f.Set();
     }
 
     private void onNewSampleUnityThread(Frame frame)
@@ -64,16 +89,6 @@ public class RealsenseStreamTexture : MonoBehaviour
         var vidFrame = ProcessFrame(frame) as VideoFrame;
         texture.LoadRawTextureData(frame.Data, vidFrame.Stride * vidFrame.Height);
         texture.Apply();
-    }
-
-    private void onNewSampleThreading(Frame frame)
-    {
-        if (frame.Profile.Stream != sourceStreamType)
-            return;
-        var vidFrame = ProcessFrame(frame) as VideoFrame;
-        data = data ?? new byte[vidFrame.Stride * vidFrame.Height];
-        vidFrame.CopyTo(data);
-        f.Set();
     }
 
     // Update is called once per frame

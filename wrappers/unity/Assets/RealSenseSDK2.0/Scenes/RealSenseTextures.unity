@@ -265,46 +265,26 @@ Prefab:
       propertyPath: m_RootOrder
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 114399326722207266, guid: c88c4d8330157094da830413654dd969,
-        type: 2}
-      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 791310447}
-    - target: {fileID: 114992692163787420, guid: c88c4d8330157094da830413654dd969,
-        type: 2}
-      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 321041854}
-    - target: {fileID: 114138829844208476, guid: c88c4d8330157094da830413654dd969,
-        type: 2}
-      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 312912468}
     - target: {fileID: 114485450083877872, guid: c88c4d8330157094da830413654dd969,
         type: 2}
       propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1161181386}
-    - target: {fileID: 114399326722207266, guid: c88c4d8330157094da830413654dd969,
-        type: 2}
-      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: set_texture
-      objectReference: {fileID: 0}
-    - target: {fileID: 114485450083877872, guid: c88c4d8330157094da830413654dd969,
-        type: 2}
-      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: set_texture
-      objectReference: {fileID: 0}
     - target: {fileID: 114992692163787420, guid: c88c4d8330157094da830413654dd969,
         type: 2}
-      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: set_texture
-      objectReference: {fileID: 0}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 321041854}
+    - target: {fileID: 114399326722207266, guid: c88c4d8330157094da830413654dd969,
+        type: 2}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 791310447}
     - target: {fileID: 114138829844208476, guid: c88c4d8330157094da830413654dd969,
         type: 2}
-      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: set_texture
-      objectReference: {fileID: 0}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 312912468}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: c88c4d8330157094da830413654dd969, type: 2}
   m_IsPrefabParent: 0

@@ -74,7 +74,8 @@ public class RealSenseDevice : MonoBehaviour
     private Pipeline m_pipeline;
     private Config m_config;
     public event Action<Frame> onNewSample;
-
+    public event Action<FrameSet> onNewSampleSet;
+    
     void Awake()
     {
         if (Instance != null)
@@ -83,7 +84,7 @@ public class RealSenseDevice : MonoBehaviour
 
         m_pipeline = new Pipeline();
         m_config = DeviceConfiguration.ToPipelineConfig();
-        ActiveProfile = m_config.Resolve(m_pipeline); 
+        ActiveProfile = m_config.Resolve(m_pipeline);
     }
 
     void Start()
@@ -156,11 +157,17 @@ public class RealSenseDevice : MonoBehaviour
         if (s != null)
         {
             s(frame);
-            //Debug.Log(frame.Profile.Stream.ToString() + "Frame");
         }
-
     }
 
+    private void HandleFrameSet(FrameSet frames)
+    {
+        var s = onNewSampleSet;
+        if (s != null)
+        {
+            s(frames);
+        }
+    }
     /// <summary>
     /// Process frame on each new frame, ends by calling the event
     /// </summary>
@@ -169,6 +176,14 @@ public class RealSenseDevice : MonoBehaviour
         try
         {
             var frames = m_pipeline.WaitForFrames();
+            try
+            {
+                HandleFrameSet(frames);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e.Message);
+            }
             foreach (var frame in frames)
             {
                 try
