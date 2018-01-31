@@ -81,7 +81,7 @@ Each texture stream is associated with the `RealSenseStreamTexture` script which
 * Texture Binding - Allows the user to bind textures to the script. Multiple textures can be bound to a single script.
 * Fetch Frames From Device - Toggle whether the script should fetch the frames from the device, or should wait for the user to pass frame to is using its `OnFrame` method.
 
-The `Alignment` object is a special case of texture stream which uses the `AlignImages` script. This script takes `FrameSet`s from the device, performs iamge alignment between the frames of the frame set, and passes them to each of the scripts stream texture: `from` and `to` which will provide textures that are aligned to one another.
+The `Alignment` object is a special case of texture stream which uses the `AlignImages` script. This script takes `FrameSet`s from the device, performs image alignment between the frames of the frame set, and passes them to each of the scripts stream texture: `from` and `to` which will provide textures that are aligned to one another.
 
 ![image](https://user-images.githubusercontent.com/22654243/35590061-5f9a9108-060e-11e8-9018-8c9f1db991ad.png)
 

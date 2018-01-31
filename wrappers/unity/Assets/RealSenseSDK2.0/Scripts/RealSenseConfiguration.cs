@@ -46,7 +46,6 @@ public struct RealSenseConfiguration
         //}
         foreach (var p in Profiles)
         {
-            //cfg.EnableStream(p.Stream ?? Stream.Any, p.StreamIndex ?? -1, p.Width ?? 0, p.Height ?? 0, p.Format ?? Format.Any, p.Framerate ?? 0);
             cfg.EnableStream(p.Stream, p.StreamIndex, p.Width, p.Height, p.Format, p.Framerate);
         }
         return cfg;

@@ -9,12 +9,13 @@ public class GradientTexture : MonoBehaviour
 
     [System.Serializable]
     public class TextureEvent : UnityEvent<Texture> { }
-    public TextureEvent TextureBinding; 
+    public TextureEvent TextureBinding;
 
+    const int numSamples = 1024;
 
     public void Start()
     {
-        tex = new Texture2D(1024, 1);
+        tex = new Texture2D(numSamples, 1);
         for (int i = 0; i < tex.width; i++)
         {
             float t = (float)i / (float)tex.width;

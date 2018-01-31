@@ -38,8 +38,8 @@ Shader "Custom/BGSeg" {
 
 			half4 frag(v2f_img pix) : SV_Target
 			{
-                float r = tex2D(_MainTex, pix.uv).r;
-                float distMeters = r * 65536 * _DepthScale;
+                float r = tex2D(_MainTex, pix.uv).r; //r is unscaled depth, normalized to [0-1]
+                float distMeters = r * 65536 * _DepthScale; //resotring to uint16 and multiplying by depth scale to get depth in meters
 
 				#if _HASCOLOR_ON
 					float3 Y = pow(tex2D(_ColorTex, pix.uv).rgb, 0.4);
