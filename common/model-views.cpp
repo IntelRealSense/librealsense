@@ -2947,7 +2947,10 @@ namespace rs2
             get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).value)
         {
             auto rgb_stream = const_cast<uint8_t*>(static_cast<const uint8_t*>(f.get_data()));
-            rgb_stream[0] = rgb_stream[2] = 0xff; // Use magenta to highlight the occlusion areas
+            memset(rgb_stream, 0, 3); // Override the zero pixel with black color for occlusion marking
+            // Alternatively, enable the next two lines to render invalidation with magenta color for inspection
+            //rgb_stream[0] = rgb_stream[2] = 0xff; // Use magenta to highlight the occlusion areas
+            //rgb_stream[1] = 0;
         }
 
         return f;

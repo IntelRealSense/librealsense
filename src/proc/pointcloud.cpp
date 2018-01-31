@@ -197,7 +197,7 @@ namespace librealsense
 
             if (_occlusion_filter->active())
             {
-                _occlusion_filter->process(pframe->get_vertices(), width,height,
+                _occlusion_filter->process(pframe->get_vertices(),
                                                  pframe->get_texture_coordinates(),
                                                  _pixels_map);
             }
