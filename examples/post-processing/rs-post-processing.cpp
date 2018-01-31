@@ -10,50 +10,40 @@
 #include <imgui.h>
 #include "imgui_impl_glfw.h"
 
-
-/* Struct that holds a pointer to an rs2_option, we'll store a pointer to a filter this way;
-int_params and float_params: maps from an option supported by the filter, to the variable that controls
-this option;
-string: map from an option supported by the filter, to the corresponding vector of strings that will
-be used by the gui;
-do_filter: a boolean controlled by the user that determines whether to apply the filter.*/
-struct filter_options {
-    rs2::options* filter;
-    std::map<rs2_option, int> int_params;
-    std::map<rs2_option, float> float_params;
-    std::map<rs2_option, std::vector<char*> > string;
-    bool do_filter;
+/**
+    Helper class for controlling the filter's GUI element
+*/
+struct filter_slider_ui
+{
+    std::string name;
+    std::string label;
+    std::string description;
+    bool is_int;
+    float value;
+    rs2::option_range range;
+    bool render(const float3& location, bool enabled);
 };
 
-struct state
+/**
+    Class to encapsulate a filter alongside its GUI elements
+*/
+class filter_options
 {
-    state() : yaw(0.0), tex() {}
-    double yaw; texture tex;
+public:
+    filter_options(const std::string name, rs2::process_interface& filter);
+    filter_options(filter_options&& other);
+    std::string filter_name;                                   //Friendly name of the filter
+    rs2::process_interface& filter;                            //The filter in use
+    std::map<rs2_option, filter_slider_ui> supported_options;  //maps from an option supported by the filter, to the corresponding slider
+    std::atomic_bool is_enabled;                               //A boolean controlled by the user that determines whether to apply the filter or not
+private:
+    // helper function for deciding on int ot float slider
+    bool is_all_integers(const rs2::option_range& range);
 };
 
-// helper functions for rendering the ui
-void render_slider_int(const float3 location, char* name, char* label, int* slider_param,
-    int min, int max, char* description, std::mutex& lock);
-void render_slider_float(const float3 location, char* name, char* label, float* slider_param,
-    float min, float max, char* description, std::mutex& lock);
-void render_checkbox(const float2 location, bool* checkbox_param, char* label, std::mutex& lock);
-void render_ui(float w, float h, std::vector<filter_options>& filters, std::mutex& param_lock,
-    const std::vector<rs2_option>& option_names);
-void save_strings(filter_options& dec_struct, filter_options& spat_struct, filter_options& temp_struct);
-bool is_all_integers(float min, float max, float def, float step);
-
-inline bool is_integer(float f)
-{
-    return (fabs(fmod(f, 1)) < std::numeric_limits<float>::min());
-}
-
-// helper functions to handle filter options
-void set_defaults(std::vector<filter_options>& filters, const std::vector<rs2_option>& option_names);
-void set_filter_options(std::vector<filter_options>& filters, std::mutex& param_lock,
-     const std::vector<rs2_option>& option_names);
-
-// A function that draws the 3D-display
-void draw_pointcloud(const rect& viewer_rect, state& app_state, rs2::points& points);
+// Helper functions for rendering the ui
+void render_checkbox(const float2 location, bool* checkbox_param, const char* label);
+void render_ui(float w, float h, std::vector<filter_options>& filters);
 
 int main(int argc, char * argv[]) try
 {
@@ -62,69 +52,53 @@ int main(int argc, char * argv[]) try
     ImGui_ImplGlfw_Init(app, false);
 
     // Construct objects to manage view state
-    state app_state;
-    state app_state_filtered;
+    glfw_state original_view_orientation{};
+    glfw_state filtered_view_orientation{};
 
-    /* Declare pointcloud objects, for calculating pointclouds and texture mappings
-    one is for the original frames and the second is for the filtered ones */
-    rs2::pointcloud pc;
-    rs2::pointcloud pc_filtered;
+    // Declare pointcloud objects, for calculating pointclouds and texture mappings
+    rs2::pointcloud original_pc;
+    rs2::pointcloud filtered_pc;
 
-    /* Declare objects that will hold the calculated pointclouds, one is for the
-    original and one for filtered */
-    rs2::points depth_points;
+    // Declare objects that will hold the calculated pointclouds
+    rs2::points original_points;
     rs2::points filtered_points;
+
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
+    rs2::config cfg;
+    cfg.enable_stream(RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, 30);
     // Start streaming with default recommended configuration
-    pipe.start();
+    pipe.start(cfg);
 
-    // save the the time of last frame's arrival
+    // save the time of last frame's arrival
     auto last_time = std::chrono::high_resolution_clock::now();
-    // a time interval which must pass between movement of the pointcloud
-    const std::chrono::milliseconds rotation_delta(40);
     // maximum angle for the rotation of the pointcloud
-    const int max_angle = 90;
+    const double max_angle = 90.0;
     // we'll use velocity to rotate the pointcloud for a better view of the filters effects
-    float velocity = 0.3;
+    float velocity = 0.3f;
 
-    /* Decalre filters: decimation, temporal and spatial
-     Decimation - reduces depth frame density; Spatial - edge-preserving spatial smoothing;
-    Temporal - reduces temporal noise */
-    rs2::decimation_filter dec_filter;
-    rs2::spatial_filter spat_filter;
-    rs2::temporal_filter temp_filter;
+    // Decalre filters
+    rs2::decimation_filter dec_filter;  // Decimation - reduces depth frame density
+    rs2::spatial_filter spat_filter;    // Spatial    - edge-preserving spatial smoothing
+    rs2::temporal_filter temp_filter;   // Temporal   - reduces temporal noise
 
     // Declare disparity transform from depth to disparity and vice versa
-    rs2::disparity_transform depth_to_disparity;
+    const std::string disparity_filter_name = "Disparity";
+    rs2::disparity_transform depth_to_disparity(true);
     rs2::disparity_transform disparity_to_depth(false);
 
-    // initialize a vector that would allow iterating on possible filter options
-    std::vector<rs2_option> option_names = { RS2_OPTION_FILTER_MAGNITUDE, RS2_OPTION_FILTER_SMOOTH_ALPHA,
-        RS2_OPTION_FILTER_SMOOTH_DELTA };
-    
     // initialize a vector that holds filters and their option values
-    filter_options dec_struct;
-    dec_struct.filter = &dec_filter;
-    filter_options disparity_struct;
-    disparity_struct.filter = &depth_to_disparity;
-    filter_options spat_struct;
-    spat_struct.filter = &spat_filter;
-    filter_options temp_struct;
-    temp_struct.filter = &temp_filter;
-    save_strings(dec_struct, spat_struct, temp_struct);
-    std::vector<filter_options> filters = { dec_struct, disparity_struct, spat_struct, temp_struct };
-
-    // set parameters that are controlled by the user to default values
-    set_defaults(filters, option_names);
+    std::vector<filter_options> filters;
+    filters.emplace_back("Decimate", dec_filter);
+    filters.emplace_back(disparity_filter_name, depth_to_disparity);
+    filters.emplace_back("Spatial", spat_filter);
+    filters.emplace_back("Temporal", temp_filter);
 
     rs2::frame_queue depth_queue;
     rs2::frame_queue filtered_queue;
 
     // mutex to synchronize access to user-contorlled parameters that are used to set the filter options
-    std::mutex param_lock;
-    //std::mutex pc_lock;
     std::mutex points_lock;
 
     // Declare depth colorizer for pretty visualization of depth data
@@ -136,39 +110,38 @@ int main(int argc, char * argv[]) try
             rs2::frame depth_frame = data.get_depth_frame(); // find depth frame
             rs2::frame filtered = depth_frame; // declare frame to apply filters on, while preserving the original depth data
 
-            std::unique_lock<std::mutex> ul1(param_lock);
-            bool do_decimate = filters[0].do_filter;
-            bool do_disparity = filters[1].do_filter;
-            bool do_spatial = filters[2].do_filter;
-            bool do_temporal = filters[3].do_filter;
-            ul1.unlock();
-
-            /* Apply filters. The implemented flow of the filters pipeline is in the following order: apply decimation filter,
-            transform the scence into disparity domain, apply spatial filter, apply temporal filter, revert the results back
+            /* Apply filters.
+                The implemented flow of the filters pipeline is in the following order: 
+                    1. apply decimation filter
+                    2. transform the scence into disparity domain
+                    3. apply spatial filter
+                    4. apply temporal filter
+                    5. revert the results back (if step Disparity filter was applied
             to depth domain (each post processing block is optional and can be applied independantly).
             */
-            if (do_decimate)
-                filtered = static_cast<rs2::decimation_filter*>(filters[0].filter)->process(filtered);
+            bool revert_disparity = false;
+            for (auto&& filter : filters)
+            {
+                if (filter.is_enabled)
+                {
+                    filtered = filter.filter.process(filtered);
+                    if (filter.filter_name == disparity_filter_name)
+                    {
+                        revert_disparity = true;
+                    }
+                }
+            }
 
-            if (do_disparity)
-                filtered = static_cast<rs2::disparity_transform*>(filters[1].filter)->process(filtered);
-
-            if (do_spatial)
-                filtered = static_cast<rs2::spatial_filter*>(filters[2].filter)->process(filtered);
-
-            if (do_temporal)
-                filtered = static_cast<rs2::temporal_filter*>(filters[3].filter)->process(filtered);
-
-            if (do_disparity)
+            if (revert_disparity)
                 filtered = disparity_to_depth.process(filtered);
 
 
             // Generate the pointcloud and texture mappings
             std::unique_lock<std::mutex> ul2(points_lock);
-            depth_points = pc.calculate(depth_frame);
+            original_points = original_pc.calculate(depth_frame);
             ul2.unlock();
             std::unique_lock<std::mutex> ul3(points_lock);
-            filtered_points = pc_filtered.calculate(filtered);
+            filtered_points = filtered_pc.calculate(filtered);
             ul3.unlock();
 
             // Colorize frames to map to the pointclouds
@@ -188,44 +161,48 @@ int main(int argc, char * argv[]) try
         float w = static_cast<float>(app.width());
         float h = static_cast<float>(app.height());
 
-        // render the user interface: sliders, checkboxes
-        render_ui(w, h, filters, param_lock, option_names);
-
-        // Set the filter options as chosen by the user (or by default)
-        set_filter_options(filters, param_lock, option_names);
+        // Render the GUI
+        render_ui(w, h, filters);
 
         // Tell each pointcloud object to map to to the colorized frame and upload the colorized frames to OpenGL
         if (depth_queue.poll_for_frame(&colored_depth)) {
-            pc.map_to(colored_depth);
-            app_state.tex.upload(colored_depth);
+            original_pc.map_to(colored_depth);
+            original_view_orientation.tex.upload(colored_depth);
             
             // wait for the filtered frame
             colored_filtered = filtered_queue.wait_for_frame();
-            pc_filtered.map_to(colored_filtered);
-            app_state_filtered.tex.upload(colored_filtered);
+            filtered_pc.map_to(colored_filtered);
+            filtered_view_orientation.tex.upload(colored_filtered);
         }
 
         // Draw the pointclouds of the original and the filtered frames    
         std::unique_lock<std::mutex> ul2(points_lock);
-        draw_pointcloud({ 0, h / 2, w / 2, h / 2 }, app_state, depth_points);
+        draw_text(10, 50, "Original");
+        draw_text(static_cast<int>(w / 2), 50, "Filtered");
+        glViewport(0, h / 2, w / 2, h / 2);
+        draw_pointcloud(w / 2, h / 2, original_view_orientation, original_points);
         ul2.unlock();
         std::unique_lock<std::mutex> ul3(points_lock);
-        draw_pointcloud({ w / 2, h / 2, w / 2, h / 2 }, app_state_filtered, filtered_points);
+        glViewport(w / 2, h / 2, w / 2, h / 2);
+        draw_pointcloud(w / 2, h / 2, filtered_view_orientation, filtered_points);
         ul3.unlock();
 
         // Update time of current frame's arrival
         auto curr = std::chrono::high_resolution_clock::now();
 
+        // a time interval which must pass between movement of the pointcloud
+        const std::chrono::milliseconds rotation_delta(40);
+
         // In order to calibrate the velocity of the rotation to the actual displaying speed, rotate
         //pointcloud only when enough time has passed between frames
         if (curr - last_time > rotation_delta)
         {
-            if (fabs(app_state_filtered.yaw) > max_angle)
+            if (std::fabs(filtered_view_orientation.yaw) > max_angle)
             {
                 velocity = -velocity;
             }
-            app_state.yaw += velocity;
-            app_state_filtered.yaw += velocity;
+            original_view_orientation.yaw += velocity;
+            filtered_view_orientation.yaw += velocity;
             last_time = curr;
         }  
     }
@@ -245,61 +222,7 @@ catch (const std::exception& e)
     return EXIT_FAILURE;
 }
 
-// helper function for deciding on int ot float slider
-bool is_all_integers(float min, float max, float def, float step)
-{
-    return is_integer(min) && is_integer(max) &&
-        is_integer(def) && is_integer(step);
-}
-
-
-// Set default values for the parameters that control filter options through the interface
-void set_defaults(std::vector<filter_options>& filters, const std::vector<rs2_option>& option_names) {
-    for (int i = 0; i < filters.size(); i++) {
-        for (int j = 0; j < option_names.size(); j++) {
-            if (filters[i].filter->supports(option_names[j])) {
-                rs2::option_range range = filters[i].filter->get_option_range(option_names[j]);
-                if (is_all_integers(range.min, range.max, range.def, range.step))
-                {
-                    filters[i].int_params[option_names[j]] = range.def;
-                    int value = filters[i].int_params[option_names[j]];
-                }
-                else
-                {
-                    float value = filters[i].int_params[option_names[j]];
-                    filters[i].float_params[option_names[j]] = range.def;
-                }
-            }
-        }
-        filters[i].do_filter = true;
-    }
-}
-
-
-// Iterate over all filters, and set every supported option with the chosen value
-void set_filter_options(std::vector<filter_options>& filters, std::mutex& param_lock, 
-    const std::vector<rs2_option>& option_names) {
-    for (int i = 0; i < filters.size(); i++) {
-        for (int j = 0; j < option_names.size(); j++) {
-            if (filters[i].filter->supports(option_names[j])) {
-                rs2::option_range range = filters[i].filter->get_option_range(option_names[j]);
-                if (is_all_integers(range.min, range.max, range.def, range.step))
-                {
-                    std::lock_guard<std::mutex> lock(param_lock);
-                    filters[i].filter->set_option(option_names[j], filters[i].int_params[option_names[j]]);
-                }
-                else
-                {
-                    std::lock_guard<std::mutex> lock(param_lock);
-                    filters[i].filter->set_option(option_names[j], filters[i].float_params[option_names[j]]);
-                }
-            }
-        }
-    }
-}
-
-void render_ui(float w, float h, std::vector<filter_options>& filters, std::mutex& param_lock,
-    const std::vector<rs2_option>& option_names) {
+void render_ui(float w, float h, std::vector<filter_options>& filters) {
     // for the interface: distance between checkbox and slider
     const int dist = 120;
 
@@ -316,183 +239,137 @@ void render_ui(float w, float h, std::vector<filter_options>& filters, std::mute
     ImGui::Begin("app", nullptr, flags);
 
     // Using ImGui library to provide slide controllers for adjusting the filter options
-    std::vector<char*> checkbox_names{ "Decimate", "Disparity", "Spatial", "Temporal" };
     int x = 20, y = 10;
-    for (int i = 0; i < filters.size(); i++) {
-         for (int j = 0; j < option_names.size(); j++) {
-            if (filters[i].filter->supports(option_names[j])) {
-                rs2::option_range range = filters[i].filter->get_option_range(option_names[j]);
-                if (is_all_integers(range.min, range.max, range.def, range.step))
-                {
-                    render_slider_int({ w / 4 + dist, h / 2 + x, w / 4 }, filters[i].string[option_names[j]][0],
-                        filters[i].string[option_names[j]][1], &(filters[i].int_params[option_names[j]]), range.min, range.max,
-                        filters[i].string[option_names[j]][2], param_lock);
-                    x = x + 50;
-                }
-                else
-                {
-                    render_slider_float({ w / 4 + dist, h / 2 + x, w / 4 }, filters[i].string[option_names[j]][0],
-                        filters[i].string[option_names[j]][1], &(filters[i].float_params[option_names[j]]),
-                        range.min, range.max, filters[i].string[option_names[j]][2], param_lock);
-                    x += 50;
-                }
+    int i = 0;
+    for (auto& filter : filters)
+    {
+        for (auto& option_slider_pair : filter.supported_options)
+        {
+            filter_slider_ui& slider = option_slider_pair.second;
+            if (slider.render({ w / 4 + dist, h / 2 + x, w / 4 }, filter.is_enabled))
+            {
+                filter.filter.set_option(option_slider_pair.first, slider.value);
             }
+            x += 50;
         }
         // Using Imgui to provide checkboxes for choosing a filter
-        render_checkbox({ w / 4, h / 2 + 10 + y }, &filters[i].do_filter, checkbox_names[i], param_lock);
+        bool tmp_value = filter.is_enabled;
+        render_checkbox({ w / 4, h / 2 + 10 + y }, &tmp_value, filter.filter_name.c_str());
+        filter.is_enabled = tmp_value;
         y += 30;
         if (i == 1)
             x += 12;
         if (i == 2)
             y += 122;
+
+        i++;
     }
-
-    // Adding before and after labels
-    ImGui::SetCursorPosX(20);
-    ImGui::SetCursorPosY(10);
-    ImGui::TextUnformatted("Before");
-
-    ImGui::SetCursorPosX(w / 2 + 20);
-    ImGui::SetCursorPosY(10);
-    ImGui::TextUnformatted("After");
 
     ImGui::End();
     ImGui::Render();
 }
 
-/*
-Function that renders the slider. Parameter: location: x, y - coordinates for the text, z - width of the slider,
-name: used as a unique id for the slider, label: the text to display next to the slider,
-slider_param: pointer to the parameter controled by the slider, min, max: lower and upper bounds of the slider,
-description: text to display when mouse is hovered on the slider label.
-*/
-void render_slider_int(const float3 location, char* name, char* label, int* slider_param,
-    int min, int max, char* description, std::mutex& lock) {
-    ImGui::PushItemWidth(location.z);
-    ImGui::SetCursorPosX(location.x + 100);
-    ImGui::SetCursorPosY(location.y);
-    std::string s(name);
-
-    std::unique_lock<std::mutex> ul1(lock);
-    ImGui::SliderInt(("##" + s).c_str(), slider_param, min, max, "%.0f");
-    ul1.unlock();
-
-    ImGui::PopItemWidth();
-    ImGui::SetCursorPosX(location.x);
-    ImGui::SetCursorPosY(location.y + 3);
-    ImGui::TextUnformatted(label);
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip(description);
-}
-
-
-void render_slider_float(const float3 location, char* name, char* label, float* slider_param,
-    float min, float max, char* description, std::mutex& lock) {
-    ImGui::PushItemWidth(location.z);
-    ImGui::SetCursorPosX(location.x + 100);
-    ImGui::SetCursorPosY(location.y);
-    std::string s(name);
-
-    std::unique_lock<std::mutex> ul1(lock);
-    ImGui::SliderFloat(("##" + s).c_str(), slider_param, min, max, "%.3f", 1.0f);
-    ul1.unlock();
-
-    ImGui::PopItemWidth();
-    ImGui::SetCursorPosX(location.x);
-    ImGui::SetCursorPosY(location.y + 3);
-    ImGui::TextUnformatted(label);
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip(description);
-}
-
-/*
-Function that renders the checkbox. Parameters: location: x, y coordinates for the checkbox,
-checkbox_param: pointer to the parameter controled by the checkbox,
-label: a string that appears next to the checkbox.
-*/
-void render_checkbox(const float2 location, bool* checkbox_param, char* label, std::mutex& lock) {
-    ImGui::SetCursorPosX(location.x);
-    ImGui::SetCursorPosY(location.y);
-    std::unique_lock<std::mutex> ul1(lock);
-    ImGui::Checkbox(label, checkbox_param);
-    ul1.unlock();
-}
-
-void save_strings(filter_options& dec_struct, filter_options& spat_struct, filter_options& temp_struct) {
-    dec_struct.string[RS2_OPTION_FILTER_MAGNITUDE] = { "slider_dec_mag", "Magnitude",
-        "Decimation filter magnitude" };
-    spat_struct.string[RS2_OPTION_FILTER_MAGNITUDE] = { "slider_spat_mag", "Magnitude",
-        "Spatial filter magnitude" };
-    spat_struct.string[RS2_OPTION_FILTER_SMOOTH_ALPHA] = { "slider_spat_smooth_alpha", "Smooth Alpha",
-        "Current pixel weight" };
-    spat_struct.string[RS2_OPTION_FILTER_SMOOTH_DELTA] = { "slider_spat_smooth_delta", "Smooth Delta",
-        "Convolution radius" };
-    temp_struct.string[RS2_OPTION_FILTER_MAGNITUDE] = { "slider_tem_mag", "Magnitude",
-        "Temporal filter magnitude" };
-    temp_struct.string[RS2_OPTION_FILTER_SMOOTH_ALPHA] = { "slider_tem_smooth_alpha", "Smooth Alpha",
-        "The normalized weight of the current pixel" };
-    temp_struct.string[RS2_OPTION_FILTER_SMOOTH_DELTA] = { "slider_tem_smooth_delta", "Smooth Delta",
-        "Depth range (gradient) threshold" };
-}
-
-// Handles all the OpenGL calls needed to display the point cloud
-void draw_pointcloud(const rect& viewer_rect, state& app_state, rs2::points& points)
+void render_checkbox(const float2 location, bool* checkbox_param, const char* label)
 {
-    if (!points)
-        return;
+    ImGui::SetCursorPosX(location.x);
+    ImGui::SetCursorPosY(location.y);
+    ImGui::PushStyleColor(ImGuiCol_CheckMark, { 40 / 255.f, 170 / 255.f, 90 / 255.f, 1 });
+    ImGui::Checkbox(label, checkbox_param);
+    ImGui::PopStyleColor();
+}
 
-    glViewport(viewer_rect.x, viewer_rect.y,
-    viewer_rect.w, viewer_rect.h);
-
-    // OpenGL commands that prep screen for the pointcloud
-    glPopMatrix();
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-
-    float width = viewer_rect.w, height = viewer_rect.h;
-
-    glClear(GL_DEPTH_BUFFER_BIT);
-
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    gluPerspective(60, width / height, 0.01f, 10.0f);
-
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
-
-    glTranslatef(0, 0, +0.5f);
-    glRotated(app_state.yaw, 0, 1, 0);
-    glTranslatef(0, 0, -0.5f);
-
-    glPointSize(width / 640);
-
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, app_state.tex.get_gl_handle());
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F); // GL_CLAMP_TO_EDGE
-    glBegin(GL_POINTS);
-
-    // this segment actually prints the pointcloud
-    auto vertices = points.get_vertices();              // get vertices
-    auto tex_coords = points.get_texture_coordinates(); // and texture coordinates
-    for (int i = 0; i < points.size(); i++)
+bool filter_slider_ui::render(const float3& location, bool enabled)
+{
+    bool value_changed = false;
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12);
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab, { 40 / 255.f, 170 / 255.f, 90 / 255.f, 1 });
+    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, { 20 / 255.f, 150 / 255.f, 70 / 255.f, 1 });
+    ImGui::GetStyle().GrabRounding = 12;
+    if (!enabled)
     {
-        if (vertices[i].z)
-        {
-        // upload the point and texture coordinates only for points we have depth data for
-            glVertex3fv(vertices[i]);
-            glTexCoord2fv(tex_coords[i]);
-        }
+        ImGui::PushStyleColor(ImGuiCol_SliderGrab, { 0,0,0,0 });
+        ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, { 0,0,0,0 });
+        ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(ImGui::GetColorU32(ImGuiCol_TextDisabled)));
     }
 
-    // OpenGL cleanup
-    glEnd();
-    glPopMatrix();
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glPopAttrib();
-    glPushMatrix();
+    ImGui::PushItemWidth(location.z);
+    ImGui::SetCursorPos({ location.x, location.y + 3 });
+    ImGui::TextUnformatted(label.c_str());
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip(description.c_str());
+
+    ImGui::SetCursorPos({ location.x + 170, location.y });
+
+    if (is_int)
+    {
+        int value_as_int = static_cast<int>(value);
+        value_changed = ImGui::SliderInt(("##" + name).c_str(), &value_as_int, static_cast<int>(range.min), static_cast<int>(range.max), "%.0f");
+        value = static_cast<float>(value_as_int);
+    }
+    else
+    {
+        value_changed = ImGui::SliderFloat(("##" + name).c_str(), &value, range.min, range.max, "%.3f", 1.0f);
+    }
+
+    ImGui::PopItemWidth();
+
+    if (!enabled)
+    {
+        ImGui::PopStyleColor(3);
+    }
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor(2);
+    return value_changed;
 }
 
+/**
+    Constructor for filter_options, takes a name and a filter.
+*/
+filter_options::filter_options(const std::string name, rs2::process_interface& filter) :
+    filter_name(name),
+    filter(filter),
+    is_enabled(true)
+{
+    const std::array<rs2_option, 3> possible_filter_options = {
+        RS2_OPTION_FILTER_MAGNITUDE,
+        RS2_OPTION_FILTER_SMOOTH_ALPHA,
+        RS2_OPTION_FILTER_SMOOTH_DELTA
+    };
+
+    //Go over each filter option and create a slider for it
+    for (rs2_option opt : possible_filter_options)
+    {
+        if (filter.supports(opt))
+        {
+            rs2::option_range range = filter.get_option_range(opt);
+            supported_options[opt].range = range;
+            supported_options[opt].value = range.def;
+            supported_options[opt].is_int = is_all_integers(range);
+            supported_options[opt].description = filter.get_option_description(opt);
+            std::string opt_name = rs2_option_to_string(opt);
+            supported_options[opt].name = name + "_" + opt_name;
+            std::string prefix = "Filter ";
+            supported_options[opt].label = name + " " + opt_name.substr(prefix.length());
+        }
+    }
+}
+
+filter_options::filter_options(filter_options&& other) :
+    filter_name(std::move(other.filter_name)),
+    filter(std::move(other.filter)),
+    supported_options(std::move(other.supported_options)),
+    is_enabled(other.is_enabled.load())
+{
+
+}
+
+bool filter_options::is_all_integers(const rs2::option_range& range)
+{
+    const auto is_integer = [](float f)
+    {
+        return (fabs(fmod(f, 1)) < std::numeric_limits<float>::min());
+    };
+
+    return is_integer(range.min) && is_integer(range.max) &&
+        is_integer(range.def) && is_integer(range.step);
+}
