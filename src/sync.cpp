@@ -8,6 +8,25 @@ namespace librealsense
 {
     const int MAX_GAP = 1000;
 
+    std::string frame_to_string(frame_holder& f)
+    {
+        std::stringstream s;
+        auto composite = dynamic_cast<composite_frame*>(f.frame);
+        if(composite)
+        {
+            for (int i = 0; i < composite->get_embedded_frames_count(); i++)
+            {
+                auto frame = composite->get_frame(i);
+                s << frame->get_stream()->get_stream_type()<<" "<<frame->get_frame_number()<<" "<<std::fixed << frame->get_frame_timestamp()<<" ";
+            }
+        }
+        else
+        {
+             s<<f->get_stream()->get_stream_type()<<" "<<f->get_frame_number()<<" "<<std::fixed <<(double)f->get_frame_timestamp()<<" ";
+        }
+        return s.str();
+    }
+   
     matcher::matcher(std::vector<stream_id> streams_id)
         : _streams_id(streams_id){}
 
@@ -119,7 +138,7 @@ namespace librealsense
     void composite_matcher::dispatch(frame_holder f, syncronization_environment env)
     {
         std::stringstream s;
-        s <<"DISPATCH "<<_name<<"--> "<< f->get_stream()->get_stream_type() << " " << f->get_frame_number() << ", "<<std::fixed<< f->get_frame_timestamp()<<"\n";
+        s <<"DISPATCH "<<_name<<"--> "<< frame_to_string(f) <<"\n";
         LOG_DEBUG(s.str());
 
         clean_inactive_streams(f);
@@ -218,23 +237,17 @@ namespace librealsense
         return matcher;
     }
 
-    std::string frame_to_string(frame_holder& f)
+
+    std::string composite_matcher::frames_to_string(std::vector<librealsense::matcher*> matchers)
     {
-        std::stringstream s;
-        auto composite = dynamic_cast<composite_frame*>(f.frame);
-        if(composite)
+        std::string str;
+        for (auto m : matchers)
         {
-            for (int i = 0; i < composite->get_embedded_frames_count(); i++)
-            {
-                auto frame = composite->get_frame(i);
-                s << frame->get_stream()->get_stream_type()<<" "<<frame->get_frame_number()<<" "<<std::fixed << frame->get_frame_timestamp()<<" ";
-            }
+            frame_holder* f;
+            if(_frames_queue[m].peek(&f));
+            str += frame_to_string(*f);
         }
-        else
-        {
-             s<<f->get_stream()->get_stream_type()<<" "<<f->get_frame_number()<<" "<<std::fixed <<(double)f->get_frame_timestamp()<<" ";
-        }
-        return s.str();
+        return str;
     }
 
     void composite_matcher::sync(frame_holder f, syncronization_environment env)
@@ -254,6 +267,7 @@ namespace librealsense
 
         do
         {
+            std::stringstream s;
             auto old_frames = false;
 
             synced_frames.clear();
@@ -311,9 +325,10 @@ namespace librealsense
                 {
                     if (!skip_missing_stream(synced_frames, i))
                     {
-                        s <<  _name<<" Wait for missing stream: ";
+                        s <<  _name<<" "<<frames_to_string(synced_frames )<<" Wait for missing stream: ";
+                        
                         for (auto&& stream : i->get_streams())
-                            s << stream;
+                            s << stream<<" next expected "<<std::fixed<< _next_expected[i];
                         synced_frames.clear();
                         LOG_DEBUG(s.str());
                         break;
@@ -321,15 +336,18 @@ namespace librealsense
                     else
                     {
                         std::stringstream s;
-                        s << _name<< " Skipped missing stream: ";
+                        s << _name << " " << frames_to_string(synced_frames) << " Skipped missing stream: ";
                         for (auto&& stream : i->get_streams())
-                            s << stream;
+                            s << stream << " next expected " << std::fixed << _next_expected[i]<<" ";
                         LOG_DEBUG(s.str());
                     }
 
                 }
             }
-
+            else
+            {
+                s << _name << " old frames: ";
+            }
             if (synced_frames.size())
             {
                 std::vector<frame_holder> match;
@@ -339,8 +357,16 @@ namespace librealsense
                 {
                     frame_holder frame;
                     _frames_queue[index].dequeue(&frame);
-
+                    if (old_frames)
+                    {
+                        s  << "--> " << frame_to_string(frame) << "\n";
+                    }
                     match.push_back(std::move(frame));
+                }
+
+                if (old_frames)
+                {
+                    LOG_DEBUG(s.str());
                 }
 
                 std::sort(match.begin(), match.end(), [](frame_holder& f1, frame_holder& f2)
@@ -349,31 +375,10 @@ namespace librealsense
                 });
 
 
-                std::stringstream s;
-                s<<"MATCHED: "<<_name;
-                for(auto&& f: match)
-                {
-                    auto composite = dynamic_cast<composite_frame*>(f.frame);
-                    if(composite)
-                    {
-                        for (int i = 0; i < composite->get_embedded_frames_count(); i++)
-                        {
-                            auto matched = composite->get_frame(i);
-                            s << matched->get_stream()->get_stream_type()<<" "<<f->get_frame_number()<<" "<<std::fixed << matched->get_frame_timestamp()<<" ";
-                        }
-                    }
-                    else {
-                         s<<f->get_stream()->get_stream_type()<<" "<<f->get_frame_number()<<" "<<std::fixed <<(double)f->get_frame_timestamp()<<" ";
-                    }
-
-
-                }
-                s<<"\n";
-                LOG_DEBUG(s.str());
                 frame_holder composite = env.source->allocate_composite_frame(std::move(match));
                 if (composite.frame)
                 {
-                    s <<"SYNCED "<<_name<<"--> "<< composite->get_stream()->get_stream_type() << " " << composite->get_frame_number() << ", "<<std::fixed<< composite->get_frame_timestamp()<<"\n";
+                    s <<"SYNCED "<<_name<<"--> "<< frame_to_string(composite)<<"\n";
 
                     auto cb = begin_callback();
                     _callback(std::move(composite), env);
@@ -467,8 +472,8 @@ namespace librealsense
     }
     bool timestamp_composite_matcher::are_equivalent(frame_holder & a, frame_holder & b)
     {
-        auto a_fps = a->get_stream()->get_framerate();
-        auto b_fps = b->get_stream()->get_framerate();
+        auto a_fps = get_fps(a);
+        auto b_fps = get_fps(b);
 
         auto min_fps = std::min(a_fps, b_fps);
 
@@ -572,9 +577,9 @@ namespace librealsense
                 return false;
             }
         }
-
+        auto gap = 1000.f/ (float)get_fps(*synced_frame);
         //next expected of the missing stream didn't updated yet
-        if((*synced_frame)->get_frame_timestamp() > next_expected && abs((*synced_frame)->get_frame_timestamp()- next_expected)<MAX_GAP)
+        if((*synced_frame)->get_frame_timestamp() > next_expected && abs((*synced_frame)->get_frame_timestamp()- next_expected)<gap*10)
         {
             LOG_DEBUG("next expected of the missing stream didn't updated yet");
             return false;

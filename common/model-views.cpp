@@ -1376,6 +1376,12 @@ namespace rs2
 
     texture_buffer* stream_model::upload_frame(frame&& f)
     {
+        if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
+        {
+            auto fps = f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+            _frame_timeout = (1000.f / (float)fps) * 30;
+
+        }
         if (dev && dev->is_paused() && !dev->dev.is<playback>()) return nullptr;
 
         last_frame = std::chrono::high_resolution_clock::now();

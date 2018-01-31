@@ -229,27 +229,19 @@ namespace librealsense
         rs2_metadata_type get_fps(const frame & frm)
         {
             std::lock_guard<std::mutex> lock();
-            if(_last_time_stamp == 0)
+
+            auto frame_number = frm.get_frame_number();
+            if (frame_number > _last_frame_number)
             {
-                _last_diff = 0;
-            }
-            else
-            {
-                auto frame_number = frm.get_frame_number();
-                if(frame_number > _last_frame_number)
-                {
-                    auto timestamp = frm.get_frame_timestamp();
-                    _last_diff = (double)(timestamp - _last_time_stamp)/(double)(frame_number-_last_frame_number);
-                }
-                else if(frame_number < _last_frame_number)
-                {
-                    _last_diff = 0;
-                }
+                auto timestamp = frm.get_frame_timestamp();
+                _last_diff = (double)(timestamp - _last_time_stamp) / (double)(frame_number - _last_frame_number);
                 _last_frame_number = frame_number;
             }
-            
+
             _last_time_stamp = frm.get_frame_timestamp();
-            return _last_diff ? 1000.f/ _last_diff :frm.get_stream()->get_framerate();
+            auto  fps = _last_diff ? 1000.f / _last_diff : frm.get_stream()->get_framerate();
+            auto  fps_ceil = std::ceil(fps);
+            return fps_ceil;
         }
     private:
 
@@ -263,29 +255,46 @@ namespace librealsense
     class md_attribute_actual_fps : public md_attribute_parser_base
     {
     public:
-        md_attribute_actual_fps()
-            :_fps_values {6, 15, 30, 60}
+        md_attribute_actual_fps(bool discrete = true, attrib_modifyer  exposure_mod = [](const rs2_metadata_type& param) {return param; })
+            :_exposure_modifyer(exposure_mod), _discrete(discrete), _fps_values{ 6, 15, 30, 60, 90 }
         {}
 
         rs2_metadata_type get(const frame & frm) const override
         {
-           if(frm.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
-           {
-               auto exp = frm.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-               auto exp_msec = (float)exp/10.f;
-               auto fps =  1000.f/exp_msec;
-//               for(auto i =0;i<_fps_values.size()-1;i++)
-//               {
-//                    if(fps < _fps_values[i+1])
-//                        return _fps_values[i];
-//               }
-//               return _fps_values[_fps_values.size()-1];
-                return fps;
-           }
-           else
-           {
-               return (rs2_metadata_type)_fps_calculator[frm.get_stream()->get_unique_id()].get_fps(frm);
-           }
+            if (frm.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
+            {
+                auto exp = frm.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+
+                auto exp_in_micro = _exposure_modifyer(exp);
+                auto exp_in_milli = (double)exp_in_micro / 1000.f;
+                if (exp_in_milli > 0)
+                {
+                    auto fps = 1000.f / (float)exp_in_milli;
+
+                    if (_discrete)
+                    {
+                        if (fps >= _fps_values[_fps_values.size() - 1])
+                        {
+                            fps = _fps_values[_fps_values.size() - 1];
+                        }
+                        else
+                        {
+                            for (auto i = 0; i < _fps_values.size() - 1; i++)
+                            {
+                                if (fps < _fps_values[i + 1])
+                                {
+                                    fps = _fps_values[i];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    return std::min((int)fps, (int)frm.get_stream()->get_framerate());
+                }
+            }
+
+            return (rs2_metadata_type)_fps_calculator[frm.get_stream()->get_unique_id()].get_fps(frm);
+
         }
 
         bool supports(const frame & frm) const override
@@ -296,6 +305,8 @@ namespace librealsense
     private:
         mutable std::map<int,actual_fps_calculator> _fps_calculator;
         const std::vector<int> _fps_values;
+        attrib_modifyer _exposure_modifyer;
+        bool _discrete;
     };
 
     /**\brief A helper function to create a specialized parser for RS4xx sensor timestamp*/
