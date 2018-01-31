@@ -43,8 +43,6 @@
 
 #include <sys/signalfd.h>
 #include <signal.h>
-
-
 #pragma GCC diagnostic ignored "-Woverflow"
 
 const size_t MAX_DEV_PARENT_DIR = 10;
@@ -712,6 +710,7 @@ namespace librealsense
             }
         }
 
+
         void v4l_uvc_device::poll()
         {
             fd_set fds{};
@@ -791,8 +790,11 @@ namespace librealsense
                                 md_size = (*(uint8_t*)md_start);
                             }
 
+                            auto timestamp = (double)buf.timestamp.tv_sec*1000.f + (double)buf.timestamp.tv_usec/1000.f;
+                            timestamp = monotonic_to_realtime(timestamp);
+
                             frame_object fo{ buffer->get_length_frame_only(), md_size,
-                                buffer->get_frame_start(), md_start };
+                                buffer->get_frame_start(), md_start, timestamp };
 
                              buffer->attach_buffer(buf);
                              moved_qbuff = true;

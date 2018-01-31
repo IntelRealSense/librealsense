@@ -340,6 +340,7 @@ namespace librealsense
                 CASE(WHITE_BALANCE)
                 CASE(TIME_OF_ARRIVAL)
                 CASE(TEMPERATURE)
+                CASE(BACKEND_TIMESTAMP)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
