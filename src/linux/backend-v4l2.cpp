@@ -199,7 +199,7 @@ namespace librealsense
                                                     PROT_READ | PROT_WRITE, MAP_SHARED,
                                                     fd, buf.m.offset));
                 if(_start == MAP_FAILED)
-                    linux_backend_exception("mmap failed");
+                    throw linux_backend_exception("mmap failed");
             }
             else
             {
@@ -781,7 +781,7 @@ namespace librealsense
 
                             _error_handler(n);
                         }
-                        else
+                        else if (buf.bytesused > 0)
                         {
                             void* md_start = nullptr;
                             uint8_t md_size = 0;
@@ -794,20 +794,17 @@ namespace librealsense
                             frame_object fo{ buffer->get_length_frame_only(), md_size,
                                 buffer->get_frame_start(), md_start };
 
-                             if (buf.bytesused > 0)
-                             {
-                                 buffer->attach_buffer(buf);
-                                 moved_qbuff = true;
-                                 auto fd = _fd;
-                                 _callback(_profile, fo,
-                                           [fd, buffer]() mutable {
-                                     buffer->request_next_frame(fd);
-                                 });
-                             }
-                             else
-                             {
-                                 LOG_WARNING("Empty frame has arrived.");
-                             }
+                             buffer->attach_buffer(buf);
+                             moved_qbuff = true;
+                             auto fd = _fd;
+                             _callback(_profile, fo,
+                                       [fd, buffer]() mutable {
+                                 buffer->request_next_frame(fd);
+                             });
+                        }
+                        else
+                        {
+                            LOG_WARNING("Empty frame has arrived.");
                         }
                     }
 
