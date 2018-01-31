@@ -190,7 +190,6 @@ namespace rs2
         rs2_option opt;
         option_range range;
         std::shared_ptr<options> endpoint;
-        bool* invalidate_flag;
         bool supported = false;
         bool read_only = false;
         float value = 0.0f;
@@ -247,11 +246,6 @@ namespace rs2
             std::function<rs2::frame(rs2::frame)> invoker,
             std::string& error_message);
 
-        processing_block_model(const std::string& name,
-            std::shared_ptr<options> block,
-            std::function<rs2::frame(rs2::frame)> invoker,
-            std::string& error_message);
-
         const std::string& get_name() const { return _name; }
 
         option_model& get_option(rs2_option opt) { return options_metadata[opt]; }
@@ -271,9 +265,7 @@ namespace rs2
     {
     public:
         static void populate_options(std::map<int, option_model>& opt_container,
-            const device& dev,
-            const sensor& s,
-            bool* options_invalidated,
+            const std::string& opt_base_label,
             subdevice_model* model,
             std::shared_ptr<options> options,
             std::string& error_message);
@@ -616,7 +608,7 @@ namespace rs2
             pc(new pointcloud())
         {
             std::string s;
-            pc_gen = std::make_shared<processing_block_model>("Pointclould Engine", pc, [=](rs2::frame f) { return pc->calculate(f); }, s);
+            pc_gen = std::make_shared<processing_block_model>(nullptr, "Pointclould Engine", pc, [=](rs2::frame f) { return pc->calculate(f); }, s);
             processing_block.start(resulting_queue);
         }
 

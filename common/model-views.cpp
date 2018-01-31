@@ -365,7 +365,6 @@ namespace rs2
                         model.add_log(to_string() << "Setting " << opt << " to "
                             << value << " (" << (bool_value? "ON" : "OFF") << ")");
                         endpoint->set_option(opt, value);
-                        *invalidate_flag = true;
                     }
                     catch (const error& e)
                     {
@@ -427,7 +426,6 @@ namespace rs2
                                 value = static_cast<float>(int_value);
                                 model.add_log(to_string() << "Setting " << opt << " to " << value);
                                 endpoint->set_option(opt, value);
-                                *invalidate_flag = true;
                                 res = true;
                             }
                         }
@@ -438,7 +436,6 @@ namespace rs2
                             {
                                 model.add_log(to_string() << "Setting " << opt << " to " << value);
                                 endpoint->set_option(opt, value);
-                                *invalidate_flag = true;
                                 res = true;
                             }
                         }
@@ -485,7 +482,6 @@ namespace rs2
                             model.add_log(to_string() << "Setting " << opt << " to "
                                 << value << " (" << labels[selected] << ")");
                             endpoint->set_option(opt, value);
-                            *invalidate_flag = true;
                             res = true;
                         }
                     }
@@ -617,9 +613,7 @@ namespace rs2
     }
 
     void subdevice_model::populate_options(std::map<int, option_model>& opt_container,
-        const device& dev,
-        const sensor& s,
-        bool* options_invalidated,
+        const std::string& opt_base_label,
         subdevice_model* model,
         std::shared_ptr<options> options,
         std::string& error_message)
@@ -630,14 +624,13 @@ namespace rs2
             auto opt = static_cast<rs2_option>(i);
 
             std::stringstream ss;
-            ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
-                << "/" << s.get_info(RS2_CAMERA_INFO_NAME)
-                << "/" << rs2_option_to_string(opt);
+            /*ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
+                << "/" << s.get_info(RS2_CAMERA_INFO_NAME)*/
+            ss << opt_base_label << "/" << rs2_option_to_string(opt);
             metadata.id = ss.str();
             metadata.opt = opt;
             metadata.endpoint = options;
             metadata.label = rs2_option_to_string(opt) + std::string("##") + ss.str();
-            metadata.invalidate_flag = options_invalidated;
             metadata.dev = model;
 
             metadata.supported = options->supports(opt);
@@ -670,51 +663,12 @@ namespace rs2
         std::string& error_message)
         : _name(name), _block(block), _invoker(invoker)
     {
+        std::stringstream ss;
+        ss << "##" << ((owner) ? owner->dev.get_info(RS2_CAMERA_INFO_NAME) : _name)
+            << "/" << ((owner) ? (*owner->s).get_info(RS2_CAMERA_INFO_NAME) : "_");
+
         subdevice_model::populate_options(options_metadata,
-            owner->dev, *owner->s, &owner->options_invalidated, owner, block, error_message);
-    }
-
-    processing_block_model::processing_block_model(const std::string& name,
-        std::shared_ptr<options> block,
-        std::function<rs2::frame(rs2::frame)> invoker,
-        std::string& error_message)
-        : _name(name), _block(block), _invoker(invoker)
-    {
-        // TODO refactor to a function Evgeni
-        // Map processing block options to the model
-        for (auto i = 0; i < RS2_OPTION_COUNT; i++)
-        {
-            option_model metadata;
-            auto opt = static_cast<rs2_option>(i);
-
-            std::stringstream ss;
-            ss << "##" << name << "/" << rs2_option_to_string(opt);
-            metadata.id = ss.str();
-            metadata.opt = opt;
-            metadata.endpoint = _block;
-            metadata.label = rs2_option_to_string(opt) + std::string("##") + ss.str();
-            metadata.invalidate_flag = &options_invalidated;
-            metadata.dev = nullptr;
-
-            metadata.supported = _block->supports(opt);
-            if (metadata.supported)
-            {
-                try
-                {
-                    metadata.range = _block->get_option_range(opt);
-                    metadata.read_only = _block->is_option_read_only(opt);
-                    if (!metadata.read_only)
-                        metadata.value = _block->get_option(opt);
-                }
-                catch (const error& e)
-                {
-                    metadata.range = { 0, 1, 0, 0 };
-                    metadata.value = 0;
-                    error_message = error_to_string(e);
-                }
-            }
-            options_metadata[opt] = metadata;
-        }
+            ss.str().c_str(), owner, block, error_message);
     }
 
     subdevice_model::subdevice_model(
@@ -815,7 +769,10 @@ namespace rs2
             post_processing.push_back(temporal_filter);
         }
 
-        populate_options(options_metadata, dev, *s, &options_invalidated, this, s, error_message);
+        std::stringstream ss;
+        ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
+            << "/" << s->get_info(RS2_CAMERA_INFO_NAME);
+        populate_options(options_metadata, ss.str().c_str(), this, s, error_message);
 
         try
         {
@@ -4940,7 +4897,6 @@ namespace rs2
                         {
                             //TODO: Update to work with SR300 when the load json will update viewer configurations
                             itr->second.endpoint->set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_CUSTOM);
-                            *(itr->second.invalidate_flag) = true;
                         }
                     }
                 }
@@ -5050,7 +5006,6 @@ namespace rs2
                                         model.add_log(to_string() << "Setting " << opt_model.opt << " to "
                                             << opt_model.value << " (" << labels[selected] << ")");
                                         opt_model.endpoint->set_option(opt_model.opt, opt_model.value);
-                                        *opt_model.invalidate_flag = true;
                                         is_clicked = true;
                                         selected_file_preset = "";
                                     }
