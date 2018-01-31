@@ -20,10 +20,11 @@ namespace librealsense
         optional_value<rs2_extrinsics>         _extrinsics;
         std::atomic_bool                       _invalidate_mapped;
         std::shared_ptr<occlusion_filter>      _occlusion_filter;
-        std::vector<float2>                    _pixels_map; // Intermedeate translation table of (depth_x*depth_y) with UV coordinates for each depth pixel
+
+        // Intermediate translation table of (depth_x*depth_y) with actual texel coordinates per depth pixel
+        std::vector<float2>                    _pixels_map;
 
         std::shared_ptr<stream_profile_interface> _output_stream, _other_stream;
-
         int                             _other_stream_id = -1;
         stream_profile_interface*       _depth_stream = nullptr;
 

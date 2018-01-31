@@ -34,7 +34,7 @@ namespace librealsense
 
     float3 transform(const rs2_extrinsics *extrin, const float3 &point) { float3 p = {}; rs2_transform_point_to_point(&p.x, extrin, &point.x); return p; }
     float2 project(const rs2_intrinsics *intrin, const float3 & point) { float2 pixel = {}; rs2_project_point_to_pixel(&pixel.x, intrin, &point.x); return pixel; }
-    float2 pixel_to_texcoord(const rs2_intrinsics *intrin, const float2 & pixel) { return{ pixel.x / (intrin->width-1), pixel.y / (intrin->height-1) }; }
+    float2 pixel_to_texcoord(const rs2_intrinsics *intrin, const float2 & pixel) { return{ pixel.x / (intrin->width), pixel.y / (intrin->height) }; }
     float2 project_to_texcoord(const rs2_intrinsics *intrin, const float3 & point) { return pixel_to_texcoord(intrin, project(intrin, point)); }
 
      bool pointcloud::stream_changed( stream_profile_interface* old, stream_profile_interface* curr)
@@ -49,7 +49,6 @@ namespace librealsense
     {
         auto depth_frame = (frame_interface*)depth.get();
         std::lock_guard<std::mutex> lock(_mutex);
-
 
         if (!_output_stream.get() || _depth_stream != depth_frame->get_stream().get() || stream_changed(_depth_stream,depth_frame->get_stream().get()))
         {
@@ -70,7 +69,6 @@ namespace librealsense
             if (auto video = dynamic_cast<video_stream_profile_interface*>(stream_profile.get()))
             {
                 _depth_intrinsics = video->get_intrinsics();
-                _pixels_map.resize(0);
                 _pixels_map.resize(_depth_intrinsics->height*_depth_intrinsics->width);
                 _occlusion_filter->set_depth_intrinsics(_depth_intrinsics.value());
                 found_depth_intrinsics = true;
@@ -146,6 +144,7 @@ namespace librealsense
 
         auto vid_frame = depth.as<rs2::video_frame>();
         float2* tex_ptr = pframe->get_texture_coordinates();
+        // Pixels calculated in the mapped texture. Used in post-processing filters
         float2* pixels_ptr = _pixels_map.data();
 
         rs2_intrinsics mapped_intr;
@@ -168,17 +167,13 @@ namespace librealsense
 
             for (int y = 0; y < height; ++y)
             {
-                float maxInLine = -1;
-                float maxZ = 0;
-                int occDilationLeft = 0;
-
                 for (int x = 0; x < width; ++x)
                 {
                     if (points->z)
                     {
                         auto trans = transform(&extr, *points);
                         //auto tex_xy = project_to_texcoord(&mapped_intr, trans);
-                        //auto pix_xy = project(&mapped_intr, trans);
+                        // Store intermediate results for poincloud filters
                         *pixels_ptr = project(&mapped_intr, trans);
                         auto tex_xy = pixel_to_texcoord(&mapped_intr, *pixels_ptr);
 
@@ -197,9 +192,7 @@ namespace librealsense
 
             if (_occlusion_filter->active())
             {
-                _occlusion_filter->process(pframe->get_vertices(),
-                                                 pframe->get_texture_coordinates(),
-                                                 _pixels_map);
+                _occlusion_filter->process(pframe->get_vertices(), pframe->get_texture_coordinates(), _pixels_map);
             }
         }
 
@@ -277,5 +270,4 @@ namespace librealsense
         auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
         processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
     }
-
 }

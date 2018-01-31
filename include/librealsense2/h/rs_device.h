@@ -113,7 +113,7 @@ rs2_sensor_list* rs2_query_sensors(const rs2_device* device, rs2_error** error);
 * \param[in]  from_file  Path to bag file with raw data for loopback
 * \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_loopback_enable(const rs2_device* device, const char* from_file, rs2_error** error); 
+void rs2_loopback_enable(const rs2_device* device, const char* from_file, rs2_error** error);
 
 /**
 * Restores the given device into normal operation mode

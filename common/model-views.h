@@ -258,7 +258,6 @@ namespace rs2
         std::map<int, option_model> options_metadata;
         std::string _name;
         std::function<rs2::frame(rs2::frame)> _invoker;
-        bool options_invalidated = true;
     };
 
     class subdevice_model
@@ -270,7 +269,7 @@ namespace rs2
             std::shared_ptr<options> options,
             std::string& error_message);
 
-        subdevice_model(viewer_model& viewer, device& dev, std::shared_ptr<sensor> s, std::string& error_message);
+        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::string& error_message);
         bool is_there_common_fps() ;
         bool draw_stream_selection();
         bool is_selected_combination_supported();
@@ -499,8 +498,8 @@ namespace rs2
             viewer_model& viewer,
             bool update_read_only_options);
         bool prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text,
-            std::vector<std::string>& restarting_device_info, 
-            viewer_model& view, 
+            std::vector<std::string>& restarting_device_info,
+            viewer_model& view,
             ux_window& window);
         void load_viewer_configurations(const std::string& json_str);
         void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);
@@ -686,8 +685,8 @@ namespace rs2
             icon[pressed] = icon_pressed;
         }
 
-        void toggle_button() { state_pressed = !state_pressed; }            
-        void set_button_pressed(bool p) { state_pressed = p; }            
+        void toggle_button() { state_pressed = !state_pressed; }
+        void set_button_pressed(bool p) { state_pressed = p; }
         bool is_pressed() { return state_pressed; }
         std::string get_tooltip() { return(state_pressed ? tooltip[pressed]: tooltip[unpressed]); }
         std::string get_icon() { return(state_pressed ? icon[pressed] : icon[unpressed]); }
@@ -700,7 +699,7 @@ namespace rs2
         };
 
         bool state_pressed = false;
-        std::string tooltip[2];        
+        std::string tooltip[2];
         std::string icon[2];
     };
 
@@ -763,10 +762,10 @@ namespace rs2
         colored_cube camera_box{ { { f1,colors[0] },{ f2,colors[1] },{ f3,colors[2] },{ f4,colors[3] },{ f5,colors[4] },{ f6,colors[5] } } };
         float3 center_left{ v5.x + len_x / 3, v6.y - len_y / 3, v5.z };
         float3 center_right{ v6.x - len_x / 3, v6.y - len_y / 3, v5.z };
-                
+
         std::vector<tracked_point> trajectory;
         std::vector<float2> boundary;
-        
+
     };
 
     class viewer_model
@@ -850,7 +849,6 @@ namespace rs2
 
         bool allow_3d_source_change = true;
         bool allow_stream_close = true;
-        int occlusion_removal = 0;
 
         std::array<float3, 4> roi_rect;
         bool draw_plane = false;

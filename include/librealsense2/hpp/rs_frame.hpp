@@ -188,7 +188,7 @@ namespace rs2
         /**
         * returns scale and bias of a the motion stream profile
         */
-        rs2_motion_device_intrinsic get_motion_intrinsics() 
+        rs2_motion_device_intrinsic get_motion_intrinsics()
         {
             rs2_error* e = nullptr;
             rs2_motion_device_intrinsic intrin;
@@ -557,7 +557,7 @@ namespace rs2
             return r;
         }
     };
-	
+
     class disparity_frame : public depth_frame
     {
     public:
@@ -580,7 +580,7 @@ namespace rs2
             return r;
         }
     };
-    
+
     class motion_frame : public frame
     {
     public:
@@ -601,7 +601,7 @@ namespace rs2
             return rs2_vector{data[0], data[1], data[2]};
         }
     };
-    
+
     class pose_frame : public frame
     {
     public:
