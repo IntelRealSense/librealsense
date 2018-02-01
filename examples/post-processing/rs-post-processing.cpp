@@ -5,13 +5,15 @@
 #include "example.hpp"          // Include short list of convenience functions for rendering
 
 #include <map>
+#include <string>
 #include <thread>
+#include <atomic>
 
 #include <imgui.h>
 #include "imgui_impl_glfw.h"
 
 /**
-    Helper class for controlling the filter's GUI element
+  Helper class for controlling the filter's GUI element
 */
 struct filter_slider_ui
 {
@@ -25,7 +27,7 @@ struct filter_slider_ui
 };
 
 /**
-    Class to encapsulate a filter alongside its GUI elements
+  Class to encapsulate a filter alongside its GUI elements
 */
 class filter_options
 {
@@ -42,8 +44,10 @@ private:
 };
 
 // Helper functions for rendering the ui
-void render_checkbox(const float2 location, bool* checkbox_param, const char* label);
+void render_checkbox(const ImVec2& location, bool* checkbox_param, const char* label);
 void render_ui(float w, float h, std::vector<filter_options>& filters);
+// Helper function for getting data from the queues and updating the view
+void update_data(rs2::frame_queue& data, rs2::frame& depth, rs2::points& points, rs2::pointcloud& pc, glfw_state& view);
 
 int main(int argc, char * argv[]) try
 {
@@ -59,24 +63,20 @@ int main(int argc, char * argv[]) try
     rs2::pointcloud original_pc;
     rs2::pointcloud filtered_pc;
 
-    // Declare objects that will hold the calculated pointclouds
-    rs2::points original_points;
-    rs2::points filtered_points;
-
-
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
     rs2::config cfg;
+    // Use a configuration object to request only depth from the pipeline
     cfg.enable_stream(RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, 30);
     // Start streaming with default recommended configuration
     pipe.start(cfg);
 
-    // save the time of last frame's arrival
+    // Save the time of last frame's arrival
     auto last_time = std::chrono::high_resolution_clock::now();
-    // maximum angle for the rotation of the pointcloud
+    // Maximum angle for the rotation of the pointcloud
     const double max_angle = 90.0;
-    // we'll use velocity to rotate the pointcloud for a better view of the filters effects
-    float velocity = 0.3f;
+    // We'll use rotation_velocity to rotate the pointcloud for a better view of the filters effects
+    float rotation_velocity = 0.3f;
 
     // Decalre filters
     rs2::decimation_filter dec_filter;  // Decimation - reduces depth frame density
@@ -88,35 +88,45 @@ int main(int argc, char * argv[]) try
     rs2::disparity_transform depth_to_disparity(true);
     rs2::disparity_transform disparity_to_depth(false);
 
-    // initialize a vector that holds filters and their option values
+    // Initialize a vector that holds filters and their options
     std::vector<filter_options> filters;
+    
+    // The following order of emplacment will dictate the orders in which filters are applied
     filters.emplace_back("Decimate", dec_filter);
     filters.emplace_back(disparity_filter_name, depth_to_disparity);
     filters.emplace_back("Spatial", spat_filter);
     filters.emplace_back("Temporal", temp_filter);
 
-    rs2::frame_queue depth_queue;
-    rs2::frame_queue filtered_queue;
-
-    // mutex to synchronize access to user-contorlled parameters that are used to set the filter options
-    std::mutex points_lock;
+    // Declaring two concurrent queues that will be used to push and pop frames from different threads
+    rs2::frame_queue original_data;
+    rs2::frame_queue filtered_data;
 
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
 
-    std::thread t([&]() {
-        while (app) {
-            rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
-            rs2::frame depth_frame = data.get_depth_frame(); // find depth frame
-            rs2::frame filtered = depth_frame; // declare frame to apply filters on, while preserving the original depth data
+    // Atomic boolean to allow thread safe way to stop the thread
+    std::atomic_bool stopped(false);
+
+    // Create a thread for getting frames from the device and process them
+    // to prevent UI thread from blocking due to long computations.
+    std::thread processing_thread([&]() {
+        rs2::processing_block frame_processor(
+            [&](rs2::frameset data, // Input frameset (from the pipeline)
+                rs2::frame_source& source) // Frame pool that can allocate new frames
+        {
+            rs2::frame depth_frame = data.get_depth_frame();
+            if (!depth_frame) //Should not happen but if the pipeline is configured differently 
+                return;       // it migh not provide depth and we don't want to crash
+
+            rs2::frame filtered = depth_frame; // Does not copy the frame, only adds a reference
 
             /* Apply filters.
-                The implemented flow of the filters pipeline is in the following order: 
-                    1. apply decimation filter
-                    2. transform the scence into disparity domain
-                    3. apply spatial filter
-                    4. apply temporal filter
-                    5. revert the results back (if step Disparity filter was applied
+            The implemented flow of the filters pipeline is in the following order:
+            1. apply decimation filter
+            2. transform the scence into disparity domain
+            3. apply spatial filter
+            4. apply temporal filter
+            5. revert the results back (if step Disparity filter was applied
             to depth domain (each post processing block is optional and can be applied independantly).
             */
             bool revert_disparity = false;
@@ -131,31 +141,45 @@ int main(int argc, char * argv[]) try
                     }
                 }
             }
-
             if (revert_disparity)
+            {
                 filtered = disparity_to_depth.process(filtered);
+            }
 
-
-            // Generate the pointcloud and texture mappings
-            std::unique_lock<std::mutex> ul2(points_lock);
-            original_points = original_pc.calculate(depth_frame);
-            ul2.unlock();
-            std::unique_lock<std::mutex> ul3(points_lock);
-            filtered_points = filtered_pc.calculate(filtered);
-            ul3.unlock();
-
-            // Colorize frames to map to the pointclouds
-            rs2::frame colored_depth = color_map(depth_frame);
+            // Generate point cloud from the filtered frame
+            rs2::points filtered_points = filtered_pc.calculate(filtered);
+            //Colorize the filtered depth frame
             rs2::frame colored_filtered = color_map(filtered);
 
-            depth_queue.enqueue(colored_depth);
-            filtered_queue.enqueue(colored_filtered);
+            // Group the filtered data set into a frameset and push it to its queue
+            rs2::frameset filtered_set = source.allocate_composite_frame({ colored_filtered , filtered_points });
+            // Push filtered data to its respective queue
+            filtered_data.enqueue(filtered_set);
+
+            // Generate point cloud from the filtered frame
+            rs2::points original_points = original_pc.calculate(depth_frame);
+            // Colorize frames to map to the pointclouds
+            rs2::frame colored_depth = color_map(depth_frame);
+            // Group the filtered data set into a frameset and push it to its queue
+            rs2::frameset original_set = source.allocate_composite_frame({ colored_depth , original_points });
+            // Push original data to its respective queue
+            original_data.enqueue(original_set);
+        });
+
+        while (!stopped) //While application is running
+        {
+            rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
+            frame_processor.invoke(data);
         }
     });
-    
-    // Frame objects to hold ready frames
-    rs2::frame colored_filtered;
+
+
+    // Declare objects that will hold the calculated pointclouds and colored frames
+    // We save the last set of data to minimize flickering of the view
     rs2::frame colored_depth;
+    rs2::frame colored_filtered;
+    rs2::points original_points;
+    rs2::points filtered_points;
 
     while (app) {
         float w = static_cast<float>(app.width());
@@ -164,50 +188,48 @@ int main(int argc, char * argv[]) try
         // Render the GUI
         render_ui(w, h, filters);
 
-        // Tell each pointcloud object to map to to the colorized frame and upload the colorized frames to OpenGL
-        if (depth_queue.poll_for_frame(&colored_depth)) {
-            original_pc.map_to(colored_depth);
-            original_view_orientation.tex.upload(colored_depth);
-            
-            // wait for the filtered frame
-            colored_filtered = filtered_queue.wait_for_frame();
-            filtered_pc.map_to(colored_filtered);
-            filtered_view_orientation.tex.upload(colored_filtered);
-        }
+        // Try to get new data from the queues and update the view with new texture
+        update_data(original_data, colored_depth, original_points, original_pc, original_view_orientation);
+        update_data(filtered_data, colored_filtered, filtered_points, filtered_pc, filtered_view_orientation);
 
-        // Draw the pointclouds of the original and the filtered frames    
-        std::unique_lock<std::mutex> ul2(points_lock);
         draw_text(10, 50, "Original");
         draw_text(static_cast<int>(w / 2), 50, "Filtered");
-        glViewport(0, h / 2, w / 2, h / 2);
-        draw_pointcloud(w / 2, h / 2, original_view_orientation, original_points);
-        ul2.unlock();
-        std::unique_lock<std::mutex> ul3(points_lock);
-        glViewport(w / 2, h / 2, w / 2, h / 2);
-        draw_pointcloud(w / 2, h / 2, filtered_view_orientation, filtered_points);
-        ul3.unlock();
 
+        // Draw the pointclouds of the original and the filtered frames (if the are available already)
+        if (colored_depth && original_points)
+        {
+            glViewport(0, h / 2, w / 2, h / 2);
+            draw_pointcloud(w / 2, h / 2, original_view_orientation, original_points);
+        }
+        if (colored_filtered && filtered_points)
+        {
+            glViewport(w / 2, h / 2, w / 2, h / 2);
+            draw_pointcloud(w / 2, h / 2, filtered_view_orientation, filtered_points);
+        }
         // Update time of current frame's arrival
         auto curr = std::chrono::high_resolution_clock::now();
 
-        // a time interval which must pass between movement of the pointcloud
+        // Time interval which must pass between movement of the pointcloud
         const std::chrono::milliseconds rotation_delta(40);
 
         // In order to calibrate the velocity of the rotation to the actual displaying speed, rotate
-        //pointcloud only when enough time has passed between frames
+        //  pointcloud only when enough time has passed between frames
         if (curr - last_time > rotation_delta)
         {
             if (std::fabs(filtered_view_orientation.yaw) > max_angle)
             {
-                velocity = -velocity;
+                rotation_velocity = -rotation_velocity;
             }
-            original_view_orientation.yaw += velocity;
-            filtered_view_orientation.yaw += velocity;
+            original_view_orientation.yaw += rotation_velocity;
+            filtered_view_orientation.yaw += rotation_velocity;
             last_time = curr;
-        }  
+        }
     }
 
-     t.join();
+    // Signal the processing thread to stop, and join
+    // (Not the safest way to join a thread, please wrap your threads in some RAII manner)
+    stopped = true;
+    processing_thread.join();
 
     return EXIT_SUCCESS;
 }
@@ -222,10 +244,29 @@ catch (const std::exception& e)
     return EXIT_FAILURE;
 }
 
-void render_ui(float w, float h, std::vector<filter_options>& filters) {
-    // for the interface: distance between checkbox and slider
-    const int dist = 120;
+void update_data(rs2::frame_queue& data, rs2::frame& depth, rs2::points& points, rs2::pointcloud& pc, glfw_state& view)
+{
+    // Try to take the depth and points from the queue
+    rs2::frameset frames;
+    if (data.poll_for_frame(&frames))
+    {
+        //Find the depth frame and the points frame
+        for (auto f : frames)
+        {
+            if (f.is<rs2::depth_frame>())
+            {
+                depth = f;              // Update the given depth frame
+                pc.map_to(depth);       // Map the colored depth to the point cloud
+                view.tex.upload(depth); // And upload the texture to the view (without this the view will be B&W)
+            }
+            if (f.is<rs2::points>())
+                points = f;             // Update the given points frame
+        }
+    }
+}
 
+void render_ui(float w, float h, std::vector<filter_options>& filters) 
+{
     // Flags for displaying ImGui window
     static const int flags = ImGuiWindowFlags_NoCollapse
         | ImGuiWindowFlags_NoScrollbar
@@ -239,43 +280,38 @@ void render_ui(float w, float h, std::vector<filter_options>& filters) {
     ImGui::Begin("app", nullptr, flags);
 
     // Using ImGui library to provide slide controllers for adjusting the filter options
-    int x = 20, y = 10;
-    int i = 0;
+    const float offset_x = w / 4;
+    const int offset_from_checkbox = 120;
+    float offset_y = h / 2 + 20;
+    float elements_margin = 45;
     for (auto& filter : filters)
     {
+        // Draw a checkbox per filter to toggle if it should be applied
+        ImGui::SetCursorPos({ offset_x, offset_y });
+        ImGui::PushStyleColor(ImGuiCol_CheckMark, { 40 / 255.f, 170 / 255.f, 90 / 255.f, 1 });
+        bool tmp_value = filter.is_enabled;
+        ImGui::Checkbox(filter.filter_name.c_str(), &tmp_value);
+        filter.is_enabled = tmp_value;
+        ImGui::PopStyleColor();
+
+        if (filter.supported_options.size() == 0)
+        {
+            offset_y += elements_margin;
+        }
+        // Draw a slider for each of the filter's options
         for (auto& option_slider_pair : filter.supported_options)
         {
             filter_slider_ui& slider = option_slider_pair.second;
-            if (slider.render({ w / 4 + dist, h / 2 + x, w / 4 }, filter.is_enabled))
+            if (slider.render({ offset_x + offset_from_checkbox, offset_y, w / 4 }, filter.is_enabled))
             {
                 filter.filter.set_option(option_slider_pair.first, slider.value);
             }
-            x += 50;
+            offset_y += elements_margin;
         }
-        // Using Imgui to provide checkboxes for choosing a filter
-        bool tmp_value = filter.is_enabled;
-        render_checkbox({ w / 4, h / 2 + 10 + y }, &tmp_value, filter.filter_name.c_str());
-        filter.is_enabled = tmp_value;
-        y += 30;
-        if (i == 1)
-            x += 12;
-        if (i == 2)
-            y += 122;
-
-        i++;
     }
 
     ImGui::End();
     ImGui::Render();
-}
-
-void render_checkbox(const float2 location, bool* checkbox_param, const char* label)
-{
-    ImGui::SetCursorPosX(location.x);
-    ImGui::SetCursorPosY(location.y);
-    ImGui::PushStyleColor(ImGuiCol_CheckMark, { 40 / 255.f, 170 / 255.f, 90 / 255.f, 1 });
-    ImGui::Checkbox(label, checkbox_param);
-    ImGui::PopStyleColor();
 }
 
 bool filter_slider_ui::render(const float3& location, bool enabled)
