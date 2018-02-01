@@ -2628,13 +2628,13 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
 //}
 
 
-void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::vector<double>> timestamps, device_profiles requests)
+void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::vector<double>> timestamps, device_profiles requests, int actual_fps)
 {
     REQUIRE(frames.size() > 0);
 
     int successful = 0;
 
-    auto gap = 1000 / requests.fps;
+    auto gap = 1000 / actual_fps;
 
     auto ts = 0;
 
@@ -2775,6 +2775,7 @@ TEST_CASE("Pipeline wait_for_frames", "[live]") {
             for (auto i = 0; i < 30; i++)
                 REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
 
+            auto actual_fps = pipeline_default_configurations.at(PID).fps;
 
             while (frames.size() < 100)
             {
@@ -2782,8 +2783,15 @@ TEST_CASE("Pipeline wait_for_frames", "[live]") {
                 REQUIRE_NOTHROW(frame = pipe.wait_for_frames(10000));
                 std::vector<stream_profile> frames_set;
                 std::vector<double> ts;
+
                 for (auto f : frame)
                 {
+                    if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
+                    {
+                        auto val = f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+                        if (val < actual_fps)
+                            actual_fps = val;
+                    }
                     frames_set.push_back(f.get_profile());
                     ts.push_back(f.get_timestamp());
                 }
@@ -2793,7 +2801,7 @@ TEST_CASE("Pipeline wait_for_frames", "[live]") {
 
 
             REQUIRE_NOTHROW(pipe.stop());
-            validate(frames, timestamps, pipeline_default_configurations.at(PID));
+            validate(frames, timestamps, pipeline_default_configurations.at(PID), actual_fps);
         }
     }
 }
@@ -2835,7 +2843,7 @@ TEST_CASE("Pipeline poll_for_frames", "[live]")
             for (auto i = 0; i < 30; i++)
                 REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
 
-
+            auto actual_fps = pipeline_default_configurations.at(PID).fps;
             while (frames.size() < 100)
             {
                 frameset frame;
@@ -2845,6 +2853,12 @@ TEST_CASE("Pipeline poll_for_frames", "[live]")
                     std::vector<double> ts;
                     for (auto f : frame)
                     {
+                        if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
+                        {
+                            auto val = f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+                            if (val < actual_fps)
+                                actual_fps = val;
+                        }
                         frames_set.push_back(f.get_profile());
                         ts.push_back(f.get_timestamp());
                     }
@@ -2854,7 +2868,7 @@ TEST_CASE("Pipeline poll_for_frames", "[live]")
             }
 
             REQUIRE_NOTHROW(pipe.stop());
-            validate(frames, timestamps, pipeline_default_configurations.at(PID));
+            validate(frames, timestamps, pipeline_default_configurations.at(PID), actual_fps);
         }
 
     }
@@ -2922,6 +2936,7 @@ TEST_CASE("Pipeline enable stream", "[live]") {
             for (auto i = 0; i < 30; i++)
                 REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
 
+            auto actual_fps = dev_requests[PID].fps;
 
             while (frames.size() < 100)
             {
@@ -2929,8 +2944,15 @@ TEST_CASE("Pipeline enable stream", "[live]") {
                 REQUIRE_NOTHROW(frame = pipe.wait_for_frames(5000));
                 std::vector<stream_profile> frames_set;
                 std::vector<double> ts;
+                
                 for (auto f : frame)
                 {
+                    if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
+                    {
+                        auto val = f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+                        if (val < actual_fps)
+                            actual_fps = val;
+                    }
                     frames_set.push_back(f.get_profile());
                     ts.push_back(f.get_timestamp());
                 }
@@ -2939,7 +2961,7 @@ TEST_CASE("Pipeline enable stream", "[live]") {
             }
 
             REQUIRE_NOTHROW(pipe.stop());
-            validate(frames, timestamps, dev_requests[PID]);
+            validate(frames, timestamps, dev_requests[PID], actual_fps);
         }
     }
 }
@@ -3010,6 +3032,8 @@ TEST_CASE("Pipeline enable stream auto complete", "[live]")
             for (auto i = 0; i < 30; i++)
                 REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
 
+            auto actual_fps = configurations[PID].fps;
+
             while (frames.size() < 100)
             {
                 frameset frame;
@@ -3018,6 +3042,12 @@ TEST_CASE("Pipeline enable stream auto complete", "[live]")
                 std::vector<double> ts;
                 for (auto f : frame)
                 {
+                    if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
+                    {
+                        auto val = f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+                        if (val < actual_fps)
+                            actual_fps = val;
+                    }
                     frames_set.push_back(f.get_profile());
                     ts.push_back(f.get_timestamp());
                 }
@@ -3026,7 +3056,7 @@ TEST_CASE("Pipeline enable stream auto complete", "[live]")
             }
 
             REQUIRE_NOTHROW(pipe.stop());
-            validate(frames, timestamps, configurations[PID]);
+            validate(frames, timestamps, configurations[PID], actual_fps);
         }
     }
 }
@@ -3080,6 +3110,7 @@ TEST_CASE("Pipeline disable_all", "[live]") {
             for (auto i = 0; i < 30; i++)
                 REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
 
+            auto actual_fps = default_configurations[PID].fps;
 
             while (frames.size() < 100)
             {
@@ -3089,6 +3120,12 @@ TEST_CASE("Pipeline disable_all", "[live]") {
                 std::vector<double> ts;
                 for (auto f : frame)
                 {
+                    if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
+                    {
+                        auto val = f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+                        if (val < actual_fps)
+                            actual_fps = val;
+                    }
                     frames_set.push_back(f.get_profile());
                     ts.push_back(f.get_timestamp());
                 }
@@ -3097,7 +3134,7 @@ TEST_CASE("Pipeline disable_all", "[live]") {
             }
 
             REQUIRE_NOTHROW(pipe.stop());
-            validate(frames, timestamps, default_configurations[PID]);
+            validate(frames, timestamps, default_configurations[PID], actual_fps);
         }
     }
 }
@@ -3153,7 +3190,7 @@ TEST_CASE("Pipeline disable stream", "[live]") {
             for (auto i = 0; i < 30; i++)
                 REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
 
-
+            auto actual_fps = configurations[PID].fps;
             while (frames.size() < 100)
             {
                 frameset frame;
@@ -3162,6 +3199,12 @@ TEST_CASE("Pipeline disable stream", "[live]") {
                 std::vector<double> ts;
                 for (auto f : frame)
                 {
+                    if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
+                    {
+                        auto val = f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+                        if (val < actual_fps)
+                            actual_fps = val;
+                    }
                     frames_set.push_back(f.get_profile());
                     ts.push_back(f.get_timestamp());
                 }
@@ -3170,7 +3213,7 @@ TEST_CASE("Pipeline disable stream", "[live]") {
             }
 
             REQUIRE_NOTHROW(pipe.stop());
-            validate(frames, timestamps, configurations[PID]);
+            validate(frames, timestamps, configurations[PID], actual_fps);
         }
     }
 }
