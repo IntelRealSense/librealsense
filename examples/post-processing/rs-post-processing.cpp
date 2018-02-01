@@ -13,7 +13,7 @@
 #include "imgui_impl_glfw.h"
 
 /**
-  Helper class for controlling the filter's GUI element
+Helper class for controlling the filter's GUI element
 */
 struct filter_slider_ui
 {
@@ -23,11 +23,13 @@ struct filter_slider_ui
     bool is_int;
     float value;
     rs2::option_range range;
+
     bool render(const float3& location, bool enabled);
+    static bool is_all_integers(const rs2::option_range& range);
 };
 
 /**
-  Class to encapsulate a filter alongside its GUI elements
+Class to encapsulate a filter alongside its options
 */
 class filter_options
 {
@@ -38,16 +40,12 @@ public:
     rs2::process_interface& filter;                            //The filter in use
     std::map<rs2_option, filter_slider_ui> supported_options;  //maps from an option supported by the filter, to the corresponding slider
     std::atomic_bool is_enabled;                               //A boolean controlled by the user that determines whether to apply the filter or not
-private:
-    // helper function for deciding on int ot float slider
-    bool is_all_integers(const rs2::option_range& range);
 };
 
-// Helper functions for rendering the ui
-void render_checkbox(const ImVec2& location, bool* checkbox_param, const char* label);
+// Helper functions for rendering the UI
 void render_ui(float w, float h, std::vector<filter_options>& filters);
 // Helper function for getting data from the queues and updating the view
-void update_data(rs2::frame_queue& data, rs2::frame& depth, rs2::points& points, rs2::pointcloud& pc, glfw_state& view);
+void update_data(rs2::frame_queue& data, rs2::frame& depth, rs2::points& points, rs2::pointcloud& pc, glfw_state& view, rs2::colorizer& color_map);
 
 int main(int argc, char * argv[]) try
 {
@@ -68,29 +66,22 @@ int main(int argc, char * argv[]) try
     rs2::config cfg;
     // Use a configuration object to request only depth from the pipeline
     cfg.enable_stream(RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, 30);
-    // Start streaming with default recommended configuration
+    // Start streaming with the above configuration
     pipe.start(cfg);
-
-    // Save the time of last frame's arrival
-    auto last_time = std::chrono::high_resolution_clock::now();
-    // Maximum angle for the rotation of the pointcloud
-    const double max_angle = 90.0;
-    // We'll use rotation_velocity to rotate the pointcloud for a better view of the filters effects
-    float rotation_velocity = 0.3f;
 
     // Decalre filters
     rs2::decimation_filter dec_filter;  // Decimation - reduces depth frame density
     rs2::spatial_filter spat_filter;    // Spatial    - edge-preserving spatial smoothing
     rs2::temporal_filter temp_filter;   // Temporal   - reduces temporal noise
 
-    // Declare disparity transform from depth to disparity and vice versa
+                                        // Declare disparity transform from depth to disparity and vice versa
     const std::string disparity_filter_name = "Disparity";
     rs2::disparity_transform depth_to_disparity(true);
     rs2::disparity_transform disparity_to_depth(false);
 
     // Initialize a vector that holds filters and their options
     std::vector<filter_options> filters;
-    
+
     // The following order of emplacment will dictate the orders in which filters are applied
     filters.emplace_back("Decimate", dec_filter);
     filters.emplace_back(disparity_filter_name, depth_to_disparity);
@@ -110,13 +101,12 @@ int main(int argc, char * argv[]) try
     // Create a thread for getting frames from the device and process them
     // to prevent UI thread from blocking due to long computations.
     std::thread processing_thread([&]() {
-        rs2::processing_block frame_processor(
-            [&](rs2::frameset data, // Input frameset (from the pipeline)
-                rs2::frame_source& source) // Frame pool that can allocate new frames
+        while (!stopped) //While application is running
         {
-            rs2::frame depth_frame = data.get_depth_frame();
-            if (!depth_frame) //Should not happen but if the pipeline is configured differently 
-                return;       // it migh not provide depth and we don't want to crash
+            rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
+            rs2::frame depth_frame = data.get_depth_frame(); //Take the depth frame from the frameset
+            if (!depth_frame) // Should not happen but if the pipeline is configured differently 
+                return;       //  it might not provide depth and we don't want to crash
 
             rs2::frame filtered = depth_frame; // Does not copy the frame, only adds a reference
 
@@ -146,30 +136,13 @@ int main(int argc, char * argv[]) try
                 filtered = disparity_to_depth.process(filtered);
             }
 
-            // Generate point cloud from the filtered frame
-            rs2::points filtered_points = filtered_pc.calculate(filtered);
-            //Colorize the filtered depth frame
-            rs2::frame colored_filtered = color_map(filtered);
-
-            // Group the filtered data set into a frameset and push it to its queue
-            rs2::frameset filtered_set = source.allocate_composite_frame({ colored_filtered , filtered_points });
-            // Push filtered data to its respective queue
-            filtered_data.enqueue(filtered_set);
-
-            // Generate point cloud from the filtered frame
-            rs2::points original_points = original_pc.calculate(depth_frame);
-            // Colorize frames to map to the pointclouds
-            rs2::frame colored_depth = color_map(depth_frame);
-            // Group the filtered data set into a frameset and push it to its queue
-            rs2::frameset original_set = source.allocate_composite_frame({ colored_depth , original_points });
-            // Push original data to its respective queue
-            original_data.enqueue(original_set);
-        });
-
-        while (!stopped) //While application is running
-        {
-            rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
-            frame_processor.invoke(data);
+            // Push filtered & original data to their respective queues
+            // Note, pushing to two different queues might cause the application to display
+            //  original and filtered pointclouds from different depth frames
+            //  To make sure they are synchronized you need to push them together or add some
+            //  synchronization mechanisms 
+            filtered_data.enqueue(filtered);
+            original_data.enqueue(depth_frame);
         }
     });
 
@@ -181,7 +154,16 @@ int main(int argc, char * argv[]) try
     rs2::points original_points;
     rs2::points filtered_points;
 
-    while (app) {
+
+    // Save the time of last frame's arrival
+    auto last_time = std::chrono::high_resolution_clock::now();
+    // Maximum angle for the rotation of the pointcloud
+    const double max_angle = 90.0;
+    // We'll use rotation_velocity to rotate the pointcloud for a better view of the filters effects
+    float rotation_velocity = 0.3f;
+
+    while (app) 
+    {
         float w = static_cast<float>(app.width());
         float h = static_cast<float>(app.height());
 
@@ -189,8 +171,8 @@ int main(int argc, char * argv[]) try
         render_ui(w, h, filters);
 
         // Try to get new data from the queues and update the view with new texture
-        update_data(original_data, colored_depth, original_points, original_pc, original_view_orientation);
-        update_data(filtered_data, colored_filtered, filtered_points, filtered_pc, filtered_view_orientation);
+        update_data(original_data, colored_depth, original_points, original_pc, original_view_orientation, color_map);
+        update_data(filtered_data, colored_filtered, filtered_points, filtered_pc, filtered_view_orientation, color_map);
 
         draw_text(10, 50, "Original");
         draw_text(static_cast<int>(w / 2), 50, "Filtered");
@@ -216,7 +198,7 @@ int main(int argc, char * argv[]) try
         //  pointcloud only when enough time has passed between frames
         if (curr - last_time > rotation_delta)
         {
-            if (std::fabs(filtered_view_orientation.yaw) > max_angle)
+            if (fabs(filtered_view_orientation.yaw) > max_angle)
             {
                 rotation_velocity = -rotation_velocity;
             }
@@ -244,28 +226,19 @@ catch (const std::exception& e)
     return EXIT_FAILURE;
 }
 
-void update_data(rs2::frame_queue& data, rs2::frame& depth, rs2::points& points, rs2::pointcloud& pc, glfw_state& view)
+void update_data(rs2::frame_queue& data, rs2::frame& depth, rs2::points& points, rs2::pointcloud& pc, glfw_state& view, rs2::colorizer& color_map)
 {
-    // Try to take the depth and points from the queue
-    rs2::frameset frames;
-    if (data.poll_for_frame(&frames))
+    rs2::frame f;
+    if (data.poll_for_frame(&f))  // Try to take the depth and points from the queue
     {
-        //Find the depth frame and the points frame
-        for (auto f : frames)
-        {
-            if (f.is<rs2::depth_frame>())
-            {
-                depth = f;              // Update the given depth frame
-                pc.map_to(depth);       // Map the colored depth to the point cloud
-                view.tex.upload(depth); // And upload the texture to the view (without this the view will be B&W)
-            }
-            if (f.is<rs2::points>())
-                points = f;             // Update the given points frame
-        }
+        points = pc.calculate(f); // Generate pointcloud from the depth data
+        depth = color_map(f);     // Colorize the depth frame with a color map
+        pc.map_to(depth);         // Map the colored depth to the point cloud
+        view.tex.upload(depth);   //  and upload the texture to the view (without this the view will be B&W)
     }
 }
 
-void render_ui(float w, float h, std::vector<filter_options>& filters) 
+void render_ui(float w, float h, std::vector<filter_options>& filters)
 {
     // Flags for displaying ImGui window
     static const int flags = ImGuiWindowFlags_NoCollapse
@@ -332,7 +305,7 @@ bool filter_slider_ui::render(const float3& location, bool enabled)
     ImGui::SetCursorPos({ location.x, location.y + 3 });
     ImGui::TextUnformatted(label.c_str());
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip(description.c_str());
+        ImGui::SetTooltip("%s", description.c_str());
 
     ImGui::SetCursorPos({ location.x + 170, location.y });
 
@@ -359,7 +332,21 @@ bool filter_slider_ui::render(const float3& location, bool enabled)
 }
 
 /**
-    Constructor for filter_options, takes a name and a filter.
+  Helper function for deciding on int ot float slider
+*/
+bool filter_slider_ui::is_all_integers(const rs2::option_range& range)
+{
+    const auto is_integer = [](float f)
+    {
+        return (fabs(fmod(f, 1)) < std::numeric_limits<float>::min());
+    };
+
+    return is_integer(range.min) && is_integer(range.max) &&
+        is_integer(range.def) && is_integer(range.step);
+}
+
+/**
+Constructor for filter_options, takes a name and a filter.
 */
 filter_options::filter_options(const std::string name, rs2::process_interface& filter) :
     filter_name(name),
@@ -380,7 +367,7 @@ filter_options::filter_options(const std::string name, rs2::process_interface& f
             rs2::option_range range = filter.get_option_range(opt);
             supported_options[opt].range = range;
             supported_options[opt].value = range.def;
-            supported_options[opt].is_int = is_all_integers(range);
+            supported_options[opt].is_int = filter_slider_ui::is_all_integers(range);
             supported_options[opt].description = filter.get_option_description(opt);
             std::string opt_name = rs2_option_to_string(opt);
             supported_options[opt].name = name + "_" + opt_name;
@@ -392,20 +379,8 @@ filter_options::filter_options(const std::string name, rs2::process_interface& f
 
 filter_options::filter_options(filter_options&& other) :
     filter_name(std::move(other.filter_name)),
-    filter(std::move(other.filter)),
+    filter(other.filter),
     supported_options(std::move(other.supported_options)),
     is_enabled(other.is_enabled.load())
 {
-
-}
-
-bool filter_options::is_all_integers(const rs2::option_range& range)
-{
-    const auto is_integer = [](float f)
-    {
-        return (fabs(fmod(f, 1)) < std::numeric_limits<float>::min());
-    };
-
-    return is_integer(range.min) && is_integer(range.max) &&
-        is_integer(range.def) && is_integer(range.step);
 }
