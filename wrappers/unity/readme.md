@@ -45,7 +45,7 @@ The Unity wrapper provides several example scenes to help you get started with R
 
 ### RealSenseDevice
 
-The RealSenseDevice provides an encapsulation of a single device connected to the system. The following iamge displays the RealSenseDevice script:
+The RealSenseDevice provides an encapsulation of a single device connected to the system. The following image displays the RealSenseDevice script:
 
 ![image](https://user-images.githubusercontent.com/22654243/35568760-b5860d4a-05d2-11e8-847a-a0a0904e2370.png)
 
