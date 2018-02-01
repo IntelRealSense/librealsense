@@ -32,6 +32,7 @@ namespace librealsense
                 : _owner(lock._owner)
             {
                 _owner._locks_count = lock._owner._locks_count.load();
+                _owner._locks_count.fetch_add(1);
             }
 
             ~extrinsics_lock() {

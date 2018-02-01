@@ -58,28 +58,33 @@ namespace librealsense
 
         auto counter = 0;
         auto dead_counter = 0;
+        std::vector<int> dead_ids;
         for (auto&& kvp : _streams)
         {
             if (!kvp.second.lock())
             {
                 auto dead_id = kvp.first;
-                for (auto&& edge : _extrinsics[dead_id])
-                {
-                    if(edge.first == dead_id)
-                    {
-                        continue;
-                    }
-                    // First, delete any extrinsics going into the stream
-                    _extrinsics[edge.first].erase(dead_id);
-                    counter += 2;
-                }
-                // Then delete all extrinsics going out of this stream
+                // Delete all extrinsics going out of this stream
                 _extrinsics.erase(dead_id);
-                dead_counter++;
+                ++counter;
+                ++dead_counter;
+                dead_ids.push_back(dead_id);
             }
         }
+
+        for (auto dead_id : dead_ids)
+        {
+            _streams.erase(dead_id);
+            for (auto&& elem : _extrinsics)
+            {
+                // Delete any extrinsics going into the stream
+                elem.second.erase(dead_id);
+                ++counter;
+            }
+        }
+
         if (dead_counter)
-        LOG_INFO("Found " << dead_counter << " unreachable streams, " << counter << " extrinsics deleted");
+            LOG_INFO("Found " << dead_counter << " unreachable streams, " << counter << " extrinsics deleted");
     }
 
     int extrinsics_graph::find_stream_profile(const stream_interface& p)
