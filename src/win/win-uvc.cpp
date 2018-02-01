@@ -206,7 +206,7 @@ namespace librealsense
                                 auto& stream = owner->_streams[dwStreamIndex];
                                 std::lock_guard<std::mutex> lock(owner->_streams_mutex);
                                 auto profile = stream.profile;
-                                frame_object f{ current_length, metadata_size, byte_buffer, metadata, monotonic_to_realtime(llTimestamp/10000) };
+                                frame_object f{ current_length, metadata_size, byte_buffer, metadata, monotonic_to_realtime(llTimestamp/10000.f) };
 
                                 auto continuation = [buffer, this]()
                                 {

@@ -247,7 +247,7 @@ namespace librealsense
 
         std::mutex _mutex;
         double _last_time_stamp = 0;
-        long long _last_frame_number = 0;
+        long long _last_frame_number = 1;
         double _last_diff = 0;
     };
 

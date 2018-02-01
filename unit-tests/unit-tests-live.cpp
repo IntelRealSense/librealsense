@@ -203,6 +203,7 @@ TEST_CASE("Sync sanity", "[live]") {
         }
 
         std::vector<std::vector<double>> all_timestamps;
+        auto actual_fps =  30;
         bool hw_timestamp_domain = false;
         bool system_timestamp_domain = false;
         for (auto i = 0; i < 200; i++)
@@ -213,6 +214,14 @@ TEST_CASE("Sync sanity", "[live]") {
             std::vector<double> timestamps;
             for (auto&& f : frames)
             {
+                if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
+                {
+                    auto val = f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+                    if (val < actual_fps)
+                    {
+                        actual_fps = val;
+                    }
+                }
                 if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
                 {
                     hw_timestamp_domain = true;
@@ -245,7 +254,7 @@ TEST_CASE("Sync sanity", "[live]") {
                 continue;
 
             std::sort(set_timestamps.begin(), set_timestamps.end());
-            REQUIRE(set_timestamps[set_timestamps.size() - 1] - set_timestamps[0] <= DELTA);
+            REQUIRE(set_timestamps[set_timestamps.size() - 1] - set_timestamps[0] <= (float)1000/(float)actual_fps);
         }
 
         CAPTURE(num_of_partial_sync_sets);
