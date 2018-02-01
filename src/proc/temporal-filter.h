@@ -86,11 +86,11 @@ namespace librealsense
         }
 
     private:
-        void on_set_confidence_control(uint8_t val);
+        void on_set_credibility_control(uint8_t val);
         void on_set_alpha(float val);
         void on_set_delta(float val);
 
-        void recalc_creadibility_map();
+        void recalc_credibility_map();
         std::mutex _mutex;
         uint8_t                 _credibility_param;
 
