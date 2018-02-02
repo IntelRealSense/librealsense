@@ -175,6 +175,73 @@ class Device {
     }
     this._events = undefined;
   }
+
+  static _internalCreateDevice(cxxDevice) {
+    return cxxDevice.isTm2() ? new Tm2(cxxDevice) : new Device(cxxDevice);
+  }
+}
+
+/**
+ * This class represents the tm2 device
+ */
+class Tm2 extends Device {
+  constructor(dev) {
+    super(dev);
+  }
+
+  /**
+   * Enter the given device into loopback operation mode that uses the given file as input for
+   * raw data
+   * @param {String} file Path to bag file with raw data for loopback
+   * @return {undefined}
+   */
+  enableLoopback(file) {
+    const funcName = 'Tm2.enableLoopback()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'string', 0, funcName);
+    checkFileExistence(file);
+    this.cxxDev.enableLoopback(file);
+  }
+
+  /**
+   * Restores the given device into normal operation mode
+   * @return {undefined}
+   */
+  disableLoopback() {
+    this.cxxDev.disableLoopback();
+  }
+
+  /**
+   * Checks if the device is in loopback mode or not
+   * @return {Boolean}
+   */
+  get loopbackEnabled() {
+    return this.cxxDev.isLoopbackEnabled();
+  }
+
+  /**
+   * Connects to a given tm2 controller
+   * @param {ArrayBuffer} macAddress The MAC address of the desired controller
+   * @return {undefined}
+   */
+  connectController(macAddress) {
+    const funcName = 'Tm2.connectController()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'ArrayBuffer', 0, funcName);
+    this.cxxDev.connectController(macAddress);
+  }
+
+  /**
+   * Disconnects a given tm2 controller
+   * @param {Integer} id The ID of the desired controller
+   * @return {undefined}
+   */
+  disconnectController(id) {
+    const funcName = 'Tm2.disconnectController()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentType(arguments, 'integer', 0, funcName);
+    this.cxxDev.disconnectController(id);
+  }
 }
 
 /**
@@ -273,6 +340,45 @@ class StreamProfile {
       this.cxxProfile = undefined;
     }
   }
+
+  static _internalCreateStreamProfile(cxxProfile) {
+    if (cxxProfile.isMotionProfile()) {
+      return new MotionStreamProfile(cxxProfile);
+    } else if (cxxProfile.isVideoProfile()) {
+      return new VideoStreamProfile(cxxProfile);
+    } else {
+      return new StreamProfile(cxxProfile);
+    }
+  }
+}
+
+/**
+ * Motion intrinsics: scale, bias, and variances.
+ * @typedef {Object} MotionIntrinsics
+ * @property {Float32[]} data - Array(12), Interpret data array values. Indices are:
+ *   <br>[0 - Scale X, 1 - cross axis, 2 - cross axis, 3 - Bias X,
+ *   <br> 4 - cross axis, 5 - Scale Y, 6 - cross axis, 7 - Bias Y,
+ *   <br> 8 - cross axis, 9 - cross axis, 10 - Scale Z, 11 - Bias Z]
+ * @property {Float32[]} noiseVariances - Array(3), Variance of noise for X, Y, and Z axis
+ * @property {Float32[]} biasVariances - Array(3), Variance of bias for X, Y, and Z axis
+ * @see [MotionStreamProfile.getMotionIntrinsics()]{@link MotionStreamProfile#getMotionIntrinsics}
+ */
+
+/**
+ * This represent the stream profile of motion stream
+ */
+class MotionStreamProfile extends StreamProfile {
+  constructor(cxxProfile) {
+    super(cxxProfile);
+  }
+
+  /**
+   * Returns scale and bias of a motion stream.
+   * @return {MotionIntrinsics} {@link MotionIntrinsics}
+   */
+  getMotionIntrinsics() {
+    return this.cxxProfile.getMotionIntrinsics();
+  }
 }
 
 /**
@@ -319,7 +425,7 @@ class DeviceList {
     checkArgumentLength(1, 1, arguments.length, funcName);
     checkArgumentType(arguments, 'number', 0, funcName, 0, this.size);
     let dev = this.cxxList.getDevice(index);
-    return dev ? new Device(dev) : undefined;
+    return dev ? Device._internalCreateDevice(dev) : undefined;
   }
 
   get devices() {
@@ -329,7 +435,7 @@ class DeviceList {
     }
     let output = [];
     for (let i = 0; i < len; i++) {
-      output[i] = new Device(this.cxxList.getDevice(i));
+      output[i] = Device._internalCreateDevice(this.cxxList.getDevice(i));
     }
     return output;
   }
@@ -703,6 +809,8 @@ class Sensor extends Options {
       this.depthFrame = new DepthFrame();
       this.videoFrame = new VideoFrame();
       this.disparityFrame = new DisparityFrame();
+      this.motionFrame = new MotionFrame();
+      this.poseFrame = new PoseFrame();
 
       let inst = this;
       this.cxxSensor.frameCallback = function() {
@@ -717,13 +825,20 @@ class Sensor extends Options {
         } else if (inst.videoFrame.isValid) {
           inst.videoFrame.updateProfile();
           callback(inst.videoFrame);
+        } else if (inst.motionFrame.isValid) {
+          inst.motionFrame.updateProfile();
+          callback(inst.motionFrame);
+        } else if (inst.poseFrame.isValid) {
+          inst.poseFrame.updateProfile();
+          callback(inst.poseFrame);
         } else {
           inst.frame.updateProfile();
           callback(inst.frame);
         }
       };
       this.cxxSensor.startWithCallback('frameCallback', this.frame.cxxFrame,
-          this.depthFrame.cxxFrame, this.videoFrame.cxxFrame, this.disparityFrame.cxxFrame);
+          this.depthFrame.cxxFrame, this.videoFrame.cxxFrame, this.disparityFrame.cxxFrame,
+          this.motionFrame.cxxFrame, this.poseFrame.cxxFrame);
     }
   }
 
@@ -809,11 +924,7 @@ class Sensor extends Options {
     if (profiles) {
       const array = [];
       profiles.forEach((profile) => {
-        if (profile.isVideoProfile()) {
-          array.push(new VideoStreamProfile(profile));
-        } else {
-          array.push(new StreamProfile(profile));
-        }
+        array.push(StreamProfile._internalCreateStreamProfile(profile));
       });
       return array;
     }
@@ -1055,7 +1166,7 @@ class Context {
     if (!cxxDev) {
       return undefined;
     }
-    return new Device(cxxDev);
+    return Device._internalCreateDevice(cxxDev);
   }
 
   /**
@@ -1593,8 +1704,7 @@ class Frame {
     if (this.cxxFrame) {
       let cxxProfile = this.cxxFrame.getStreamProfile();
       if (cxxProfile) {
-        this.streamProfile = cxxProfile.isVideoProfile ?
-            new VideoStreamProfile(cxxProfile) : new StreamProfile(cxxProfile);
+        this.streamProfile = StreamProfile._internalCreateStreamProfile(cxxProfile);
       }
     }
   }
@@ -1746,6 +1856,8 @@ class Frame {
         return this.typedArray;
       case constants.format.FORMAT_XYZ32F:
       case constants.format.FORMAT_MOTION_XYZ32F:
+      case constants.format.FORMAT_6DOF:
+      case constants.format.FORMAT_DISPARITY32:
         this.typedArray = new Float32Array(this.arrayBuffer);
         return this.typedArray;
     }
@@ -1777,6 +1889,27 @@ class Frame {
       checkArgumentType(arguments, 'ArrayBuffer', 0, funcName);
       return this.cxxFrame.writeData(buffer);
     }
+  }
+
+  /**
+   * communicate to the library you intend to keep the frame alive for a while
+   * this will remove the frame from the regular count of the frame pool
+   * once this function is called, the SDK can no longer guarantee 0-allocations during frame
+   * cycling
+   * @return {undefined}
+   */
+  keep() {
+    this.cxxFrame.keep();
+  }
+
+  static _internalCreateFrame(cxxFrame) {
+    if (!cxxFrame) return undefined;
+    if (cxxFrame.isPoseFrame()) return new PoseFrame(cxxFrame);
+    if (cxxFrame.isMotionFrame()) return new MotionFrame(cxxFrame);
+    if (cxxFrame.isDisparityFrame()) return new DisparityFrame(cxxFrame);
+    if (cxxFrame.isDepthFrame()) return new DepthFrame(cxxFrame);
+    if (cxxFrame.isVideoFrame()) return new VideoFrame(cxxFrame);
+    return new Frame(cxxFrame);
   }
 }
 
@@ -1980,6 +2113,90 @@ class DisparityFrame extends DepthFrame {
 }
 
 /**
+ * 3D vector in Euclidean coordinate space
+ * @typedef {Object} Vector
+ * @property {Float32} x - value of x coordinate
+ * @property {Float32} y - value of y coordinate
+ * @property {Float32} z - value of z coordinate
+ * @see [MotionFrame.getMotionData()]{@link MotionFrame#getMotionData}
+ */
+
+/**
+ * Quaternion used to represent rotation
+ * @typedef {Object} Quaternion
+ * @property {Float32} x
+ * @property {Float32} y
+ * @property {Float32} z
+ * @property {Float32} w
+ * @see [PoseFrame.getPoseData()]{@link PoseFrame#getPoseData}
+ */
+
+/**
+ * This class resprents a motion frame and is a subclass of Frame
+ */
+class MotionFrame extends Frame {
+  constructor(frame) {
+    super(frame);
+    this._motion = {x: 0, y: 0, z: 0};
+  }
+
+  /**
+   * Get the motion data
+   * @return {Vector} the motion data on x, y and z coordinates
+   */
+  get motionData() {
+    this.cxxFrame.getMotionData(this._motion);
+    return this._motion;
+  }
+}
+
+/**
+ * PoseData
+ * @typedef {Object} PoseData
+ * @property {Vector} translation - X, Y, Z values of translation, in meters (relative to
+ * initial position)
+ * @property {Vector} velocity - X, Y, Z values of velocity, in meter/sec
+ * @property {Vector} acceleration - X, Y, Z values of acceleration, in meter/sec^2
+ * @property {Quaternion} rotation - Qi, Qj, Qk, Qr components of rotation as represented
+ * in quaternion rotation (relative to initial position)
+ * @property {Vector} angularVelocity - X, Y, Z values of angular velocity, in radians/sec
+ * @property {Vector} angularAcceleration - X, Y, Z values of angular acceleration, in radians/sec^2
+ * @property {Integer} trackerConfidence - pose data confidence 0 - Failed, 1 - Low, 2 - Medium,
+ * 3 - High
+ * @property {Integer} mapperConfidence - pose data confidence 0 - Failed, 1 - Low, 2 - Medium,
+ * 3 - High
+ * @see [PoseFrame.getPoseData()]{@link PoseFrame#getPoseData}
+ */
+
+/**
+ * This class resprents a pose frame and is a subclass of Frame
+ */
+class PoseFrame extends Frame {
+  constructor(frame) {
+    super(frame);
+    this._pose = {
+      translation: {x: 0, y: 0, z: 0},
+      velocity: {x: 0, y: 0, z: 0},
+      acceleration: {x: 0, y: 0, z: 0},
+      rotation: {x: 0, y: 0, z: 0, w: 0},
+      angularVelocity: {x: 0, y: 0, z: 0},
+      angularAcceleration: {x: 0, y: 0, z: 0},
+      trackerConfidence: 0,
+      mapperConfidence: 0,
+    };
+  }
+
+  /**
+   * Get the pose data
+   * @return {PoseData}
+   */
+  get poseData() {
+    this.cxxFrame.getPoseData(this._pose);
+    return this._pose;
+  }
+}
+
+/**
  * Class containing a set of frames
  *
  * @property {Integer} size - count of frames.
@@ -2048,16 +2265,8 @@ class FrameSet {
     }
   }
 
-  __internalAssembleFrame(cxxFrame) {
-    if (!cxxFrame) return undefined;
-    if (cxxFrame.isDisparityFrame()) return new DisparityFrame(cxxFrame);
-    if (cxxFrame.isDepthFrame()) return new DepthFrame(cxxFrame);
-    if (cxxFrame.isVideoFrame()) return new VideoFrame(cxxFrame);
-    return new Frame(cxxFrame);
-  }
-
   __internalGetFrame(stream) {
-    return this.__internalAssembleFrame(this.cxxFrameSet.getFrame(stream));
+    return Frame._internalCreateFrame(this.cxxFrameSet.getFrame(stream));
   }
 
   __internalGetFrameCache(stream, callback) {
@@ -2322,11 +2531,7 @@ class PipelineProfile {
 
     const array = [];
     profiles.forEach((profile) => {
-      if (profile.isVideoProfile()) {
-        array.push(new VideoStreamProfile(profile));
-      } else {
-        array.push(new StreamProfile(profile));
-      }
+      array.push(StreamProfile._internalCreateStreamProfile(profile));
     });
     return array;
   }
@@ -2371,7 +2576,7 @@ class PipelineProfile {
    * @return {Device} the pipeline selected device
    */
   getDevice() {
-    return new Device(this.cxxPipelineProfile.getDevice());
+    return Device._internalCreateDevice(this.cxxPipelineProfile.getDevice());
   }
 
   /**
@@ -2643,7 +2848,7 @@ class DeviceHub {
    */
   waitForDevice() {
     let dev = this.cxxHub.waitForDevice();
-    return (dev ? new Device(dev) : undefined);
+    return (dev ? Device._internalCreateDevice(dev) : undefined);
   }
 
   /**
@@ -2925,6 +3130,11 @@ function checkArgumentType(args, expectedType, argIndex, funcName, start, end) {
         throw new TypeError(wrongTypeErrMsgPrefix + expectedType);
       }
       break;
+    case 'integer':
+      if (!Number.isInteger(arg)) {
+        throw new TypeError(wrongTypeErrMsgPrefix + expectedType);
+      }
+      break;
     default:
       if (typeof expectedType === 'function') {
         if (!(arg instanceof expectedType)) {
@@ -3055,6 +3265,12 @@ function checkDiscreteArgumentLength(lenthArray, actualLength, funcName) {
 function equalsToEither(arg, strConst, numConst) {
   return (typeof arg === 'string' && arg === strConst) ||
          (typeof arg === 'number' && arg === numConst);
+}
+
+function checkFileExistence(file) {
+  if (!fs.existsSync(file)) {
+    throw new TypeError('Can\'t open file: ' + file);
+  }
 }
 
 /**
@@ -5366,6 +5582,7 @@ module.exports = {
   Config: Config,
   Colorizer: Colorizer,
   Device: Device,
+  Tm2: Tm2,
   DeviceList: DeviceList,
   DeviceHub: DeviceHub,
   Sensor: Sensor,
@@ -5373,11 +5590,14 @@ module.exports = {
   ROISensor: ROISensor,
   StreamProfile: StreamProfile,
   VideoStreamProfile: VideoStreamProfile,
+  MotionStreamProfile: MotionStreamProfile,
   Frame: Frame,
   FrameSet: FrameSet,
   VideoFrame: VideoFrame,
   DepthFrame: DepthFrame,
   DisparityFrame: DisparityFrame,
+  MotionFrame: MotionFrame,
+  PoseFrame: PoseFrame,
   Align: Align,
   PointCloud: PointCloud,
   Points: Points,
