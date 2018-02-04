@@ -114,6 +114,8 @@ namespace librealsense
         virtual ~json_field() = default;
 
         bool was_set = false;
+        // Duplicated fields will not be in the generated JSON file but will be processed as an input for backward compatibility
+        bool is_duplicated = false;
 
         virtual void load(const std::string& value) = 0;
         virtual std::string save() const = 0;
@@ -209,21 +211,23 @@ namespace librealsense
     };
 
     template<class T, class S>
-    std::shared_ptr<json_field> make_field(T& strct, S T::group_type::* field, float scale = 1.0f)
+    std::shared_ptr<json_field> make_field(T& strct, S T::group_type::* field, float scale = 1.0f, bool is_duplicated_field = false)
     {
         std::shared_ptr<json_struct_field<T, S>> f(new json_struct_field<T, S>());
         f->field = field;
         f->strct = &strct;
         f->scale = scale;
+        f->is_duplicated = is_duplicated_field;
         return f;
     }
 
     template<class T, class S>
-    std::shared_ptr<json_field> make_string_field(T& strct, S T::group_type::* field, const std::map<std::string, float>& values)
+    std::shared_ptr<json_field> make_string_field(T& strct, S T::group_type::* field, const std::map<std::string, float>& values, bool is_duplicated_field = false)
     {
         std::shared_ptr<json_string_struct_field<T, S>> f(new json_string_struct_field<T, S>(values));
         f->field = field;
         f->strct = &strct;
+        f->is_duplicated = is_duplicated_field;
         return f;
     }
 
@@ -233,11 +237,12 @@ namespace librealsense
     }
 
     template<class T, class S>
-    std::shared_ptr<json_field> make_invert_field(T& strct, S T::group_type::* field)
+    std::shared_ptr<json_field> make_invert_field(T& strct, S T::group_type::* field, bool is_duplicated_field = false)
     {
         std::shared_ptr<json_invert_struct_field<T, S>> f(new json_invert_struct_field<T, S>());
         f->field = field;
         f->strct = &strct;
+        f->is_duplicated = is_duplicated_field;
         return f;
     }
 
@@ -339,18 +344,18 @@ namespace librealsense
             { "ignoreSAD", make_field(p.hdad, &STHdad::ignoreSAD) },
 
             // SLO Penalty Control
-            { "param-colorcorrection1", make_field(p.cc, &STColorCorrection::colorCorrection1) },
-            { "param-colorcorrection2", make_field(p.cc, &STColorCorrection::colorCorrection2) },
-            { "param-colorcorrection3", make_field(p.cc, &STColorCorrection::colorCorrection3) },
-            { "param-colorcorrection4", make_field(p.cc, &STColorCorrection::colorCorrection4) },
-            { "param-colorcorrection5", make_field(p.cc, &STColorCorrection::colorCorrection5) },
-            { "param-colorcorrection6", make_field(p.cc, &STColorCorrection::colorCorrection6) },
-            { "param-colorcorrection7", make_field(p.cc, &STColorCorrection::colorCorrection7) },
-            { "param-colorcorrection8", make_field(p.cc, &STColorCorrection::colorCorrection8) },
-            { "param-colorcorrection9", make_field(p.cc, &STColorCorrection::colorCorrection9) },
-            { "param-colorcorrection10", make_field(p.cc, &STColorCorrection::colorCorrection10) },
-            { "param-colorcorrection11", make_field(p.cc, &STColorCorrection::colorCorrection11) },
-            { "param-colorcorrection12", make_field(p.cc, &STColorCorrection::colorCorrection12) },
+            { "param-colorcorrection1", make_field(p.cc, &STColorCorrection::colorCorrection1, 1.f, true) },
+            { "param-colorcorrection2", make_field(p.cc, &STColorCorrection::colorCorrection2, 1.f, true) },
+            { "param-colorcorrection3", make_field(p.cc, &STColorCorrection::colorCorrection3, 1.f, true) },
+            { "param-colorcorrection4", make_field(p.cc, &STColorCorrection::colorCorrection4, 1.f, true) },
+            { "param-colorcorrection5", make_field(p.cc, &STColorCorrection::colorCorrection5, 1.f, true) },
+            { "param-colorcorrection6", make_field(p.cc, &STColorCorrection::colorCorrection6, 1.f, true) },
+            { "param-colorcorrection7", make_field(p.cc, &STColorCorrection::colorCorrection7, 1.f, true) },
+            { "param-colorcorrection8", make_field(p.cc, &STColorCorrection::colorCorrection8, 1.f, true) },
+            { "param-colorcorrection9", make_field(p.cc, &STColorCorrection::colorCorrection9, 1.f, true) },
+            { "param-colorcorrection10", make_field(p.cc, &STColorCorrection::colorCorrection10, 1.f, true) },
+            { "param-colorcorrection11", make_field(p.cc, &STColorCorrection::colorCorrection11, 1.f, true) },
+            { "param-colorcorrection12", make_field(p.cc, &STColorCorrection::colorCorrection12, 1.f, true) },
 
             { "aux-param-colorcorrection1", make_field(p.cc, &STColorCorrection::colorCorrection1) },
             { "aux-param-colorcorrection2", make_field(p.cc, &STColorCorrection::colorCorrection2) },
@@ -440,6 +445,9 @@ namespace librealsense
         json j;
         for (auto&& f : fields)
         {
+            if (f.second->is_duplicated) // Skip duplicated fields
+                continue;
+
             auto str = f.second->save();
             if (!str.empty()) // Ignored fields return empty string
                 j[f.first.c_str()] = str;
