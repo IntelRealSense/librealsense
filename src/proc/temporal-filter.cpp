@@ -12,10 +12,10 @@
 
 namespace librealsense
 {
-    const size_t CREDIBILITY_MAP_NUM = 9;
+    const size_t PERSISTENCE_MAP_NUM = 9;
 
-    // encodes whether a particular 8 bit history is good enough for all 8 phases of storage
-    static const std::vector<std::array<uint8_t, CREDIBILITY_MAP_SIZE>> _credibility_lut =
+    // Look-up table that establishes pixel persistency criteria. Utilized in holes-filling phase
+    static const std::vector<std::array<uint8_t, PRESISTENCY_LUT_SIZE>> _persistence_lut =
     {
         // index 0
         {
@@ -192,25 +192,25 @@ namespace librealsense
         }
     };
 
-    // The credibility map
-    const uint8_t cred_min = 0;
-    const uint8_t cred_max = CREDIBILITY_MAP_NUM-1;
-    const uint8_t cred_default = 3;  // Credible if two of the last four frames are valid at this pixel
-    const uint8_t cred_step = 1;
+    // The persistence parameter/holes filling mode
+    const uint8_t persistence_min = 0;
+    const uint8_t persistence_max = PERSISTENCE_MAP_NUM-1;
+    const uint8_t persistence_default = 3;  // Credible if two of the last four frames are valid at this pixel
+    const uint8_t persistence_step = 1;
 
-    //alpha -  the weight with default value 0.25, between 1 and 0 -- 1 means 100% weight from the current pixel
+    //alpha -  the weight with default value 0.4, between 1 and 0 -- 1 means 100% weight from the current pixel
     const float temp_alpha_min = 0.f;
     const float temp_alpha_max = 1.f;
-    const float temp_alpha_default = 0.25f;
+    const float temp_alpha_default = 0.4f;
     const float temp_alpha_step = 0.01f;
 
-    //delta -  the threashold for valid range with default value 50.0 for depth map
+    //delta -  the filter threshold for edge classification and preserving with default value of 20 depth increments
     const uint8_t temp_delta_min = 1;
     const uint8_t temp_delta_max = 100;
-    const uint8_t temp_delta_default = 50;
+    const uint8_t temp_delta_default = 20;
     const uint8_t temp_delta_step = 1;
 
-    temporal_filter::temporal_filter() : _credibility_param(cred_default),
+    temporal_filter::temporal_filter() : _persistence_param(persistence_default),
         _alpha_param(temp_alpha_default),
         _one_minus_alpha(1- _alpha_param),
         _delta_param(temp_delta_default),
@@ -218,28 +218,34 @@ namespace librealsense
         _extension_type(RS2_EXTENSION_DEPTH_FRAME),
         _current_frm_size_pixels(0)
     {
-        auto temporal_credibility_control = std::make_shared<ptr_option<uint8_t>>(cred_min, cred_max, cred_step, cred_default,
-            &_credibility_param, "Holes filling by previous data");
+        auto temporal_persistence_control = std::make_shared<ptr_option<uint8_t>>(
+            persistence_min,
+            persistence_max,
+            persistence_step,
+            persistence_default,
+            &_persistence_param, "Holes filling by data persistency");
 
-        temporal_credibility_control->set_description(0, "Disabled");
-        temporal_credibility_control->set_description(1, "Valid in 8/8");
-        temporal_credibility_control->set_description(2, "Valid in 2/last 3");
-        temporal_credibility_control->set_description(3, "Valid in 2/last 4");
-        temporal_credibility_control->set_description(4, "Valid in 2/8");
-        temporal_credibility_control->set_description(5, "Valid in 1/last 2");
-        temporal_credibility_control->set_description(6, "Valid in 1/last 5");
-        temporal_credibility_control->set_description(7, "Valid in 1/8");
-        temporal_credibility_control->set_description(8, "Valid in previous");
+        temporal_persistence_control->set_description(0, "Disabled");
+        temporal_persistence_control->set_description(1, "Valid in 8/8");
+        temporal_persistence_control->set_description(2, "Valid in 2/last 3");
+        temporal_persistence_control->set_description(3, "Valid in 2/last 4");
+        temporal_persistence_control->set_description(4, "Valid in 2/8");
+        temporal_persistence_control->set_description(5, "Valid in 1/last 2");
+        temporal_persistence_control->set_description(6, "Valid in 1/last 5");
+        temporal_persistence_control->set_description(7, "Valid in 1/8");
+        temporal_persistence_control->set_description(8, "Valid in previous");
 
-        temporal_credibility_control->on_set([this,temporal_credibility_control](float val)
+        temporal_persistence_control->on_set([this,temporal_persistence_control](float val)
         {
-            if (!temporal_credibility_control->is_valid(val))
-                throw invalid_value_exception(to_string() << "Unsupported temporal credibility " << (int)val << " is out of range.");
+            if (!temporal_persistence_control->is_valid(val))
+                throw invalid_value_exception(to_string()
+                    << "Unsupported temporal persistence param "
+                    << (int)val << " is out of range.");
 
-            on_set_credibility_control(static_cast<uint8_t>(val));
+            on_set_persistence_control(static_cast<uint8_t>(val));
         });
 
-        register_option(RS2_OPTION_HOLES_FILL, temporal_credibility_control);
+        register_option(RS2_OPTION_HOLES_FILL, temporal_persistence_control);
 
         auto temporal_filter_alpha = std::make_shared<ptr_option<float>>(
             temp_alpha_min,
@@ -257,7 +263,7 @@ namespace librealsense
             temp_delta_max,
             temp_delta_step,
             temp_delta_default,
-            &_delta_param, "Depth range (gradient) threshold");
+            &_delta_param, "Depth edge (gradient) classification threshold");
         temporal_filter_delta->on_set([this, temporal_filter_delta](float val)
         {
             if (!temporal_filter_delta->is_valid(val))
@@ -283,7 +289,7 @@ namespace librealsense
                 update_configuration(f);
                 tgt = prepare_target_frame(depth, source);
 
-                // Spatial smooth with domain transform filter
+                // Temporal filter execution
                 if (_extension_type == RS2_EXTENSION_DISPARITY_FRAME)
                     temp_jw_smooth<float>(const_cast<void*>(tgt.get_data()), _last_frame.data(), _history.data());
                 else
@@ -298,16 +304,16 @@ namespace librealsense
         auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
         processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
 
-        on_set_credibility_control(_credibility_param);
+        on_set_persistence_control(_persistence_param);
         on_set_delta(_delta_param);
         on_set_alpha(_alpha_param);
     }
 
-    void temporal_filter::on_set_credibility_control(uint8_t val)
+    void temporal_filter::on_set_persistence_control(uint8_t val)
     {
         std::lock_guard<std::mutex> lock(_mutex);
-        _credibility_param = val;
-        recalc_credibility_map();
+        _persistence_param = val;
+        recalc_persistence_map();
         _last_frame.clear();
         _history.clear();
     }
@@ -369,9 +375,9 @@ namespace librealsense
         return tgt;
     }
 
-    void temporal_filter::recalc_credibility_map()
+    void temporal_filter::recalc_persistence_map()
     {
-        _credibility_map.fill(0);
-        _credibility_map = _credibility_lut[_credibility_param];
+        _persistence_map.fill(0);
+        _persistence_map = _persistence_lut[_persistence_param];
     }
 }
