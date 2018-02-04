@@ -48,7 +48,7 @@ try:
         # frames.get_depth_frame() is a 640x360 depth image
         
         # Align the depth frame to color frame
-        aligned_frames = align.proccess(frames)
+        aligned_frames = align.process(frames)
         
         # Get aligned frames
         aligned_depth_frame = aligned_frames.get_depth_frame() # aligned_depth_frame is a 640x480 depth image

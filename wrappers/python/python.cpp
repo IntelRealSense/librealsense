@@ -18,6 +18,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "../include/librealsense2/rs.h"
 #include "../include/librealsense2/rs.hpp"
 #include "../include/librealsense2/rs_advanced_mode.hpp"
+#include "../include/librealsense2/rsutil.h"
 #define NAME pyrealsense2
 #define SNAME "pyrealsense2"
 #define BIND_RAW_ARRAY(class, name, type, size) #name, [](const class &c) -> const std::array<type, size>& { return reinterpret_cast<const std::array<type, size>&>(c.name); }
@@ -464,7 +465,7 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::align> align(m, "align");
     align.def(py::init<rs2_stream>(), "align_to"_a)
-        .def("proccess", &rs2::align::process, "depth"_a);
+        .def("process", &rs2::align::process, "depth"_a);
 
     /* rs2_record_playback.hpp */
     py::class_<rs2::playback, rs2::device> playback(m, "playback");
@@ -498,8 +499,10 @@ PYBIND11_MODULE(NAME, m) {
         .def(BIND_DOWNCAST(stream_profile, stream_profile))
         .def(BIND_DOWNCAST(stream_profile, video_stream_profile))
         .def("stream_name", &rs2::stream_profile::stream_name)
+        .def("is_default", &rs2::stream_profile::is_default)
         .def("__nonzero__", &rs2::stream_profile::operator bool)
         .def("get_extrinsics_to", &rs2::stream_profile::get_extrinsics_to, "to"_a)
+        .def("register_extrinsics_to", &rs2::stream_profile::register_extrinsics_to, "to"_a, "extrinsics"_a)
         .def("__repr__", [](const rs2::stream_profile& self)
     {
         std::stringstream ss;
@@ -893,4 +896,33 @@ PYBIND11_MODULE(NAME, m) {
     m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);
     m.def("log_to_file", &rs2::log_to_file, "min_severity"_a, "file_path"_a);
 
+    /* rsutil.h */
+    m.def("rs2_project_point_to_pixel", [](const rs2_intrinsics& intrin, const std::array<float, 3>& point)->std::array<float, 2>
+    {
+        std::array<float, 2> pixel{};
+        rs2_project_point_to_pixel(pixel.data(), &intrin, point.data());
+        return pixel;
+    }, "Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera");
+
+    m.def("rs2_deproject_pixel_to_point", [](const rs2_intrinsics& intrin, const std::array<float, 2>& pixel, float depth)->std::array<float, 3>
+    {
+        std::array<float, 3> point{};
+        rs2_deproject_pixel_to_point(point.data(), &intrin, pixel.data(), depth);
+        return point;
+    }, "Given pixel coordinates and depth in an image with no distortion or inverse distortion coefficients, compute the corresponding point in 3D space relative to the same camera");
+
+    m.def("rs2_transform_point_to_point", [](const rs2_extrinsics& extrin, const std::array<float, 3>& from_point)->std::array<float, 3>
+    {
+        std::array<float, 3> to_point{};
+        rs2_transform_point_to_point(to_point.data(), &extrin, from_point.data());
+        return to_point;
+    }, "Transform 3D coordinates relative to one sensor to 3D coordinates relative to another viewpoint");
+
+    m.def("rs2_fov", [](const rs2_intrinsics& intrin)->std::array<float, 2>
+    {
+        std::array<float, 2> to_fow{};
+        rs2_fov(&intrin, to_fow.data());
+        return to_fow;
+
+    }, "Calculate horizontal and vertical feild of view, based on video intrinsics");
 }
