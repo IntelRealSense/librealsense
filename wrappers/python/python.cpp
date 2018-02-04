@@ -465,7 +465,7 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::align> align(m, "align");
     align.def(py::init<rs2_stream>(), "align_to"_a)
-        .def("proccess", &rs2::align::process, "depth"_a);
+        .def("process", &rs2::align::process, "depth"_a);
 
     /* rs2_record_playback.hpp */
     py::class_<rs2::playback, rs2::device> playback(m, "playback");
