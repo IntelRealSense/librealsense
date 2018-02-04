@@ -7,7 +7,7 @@
 #include "types.h"
 #include "archive.h"
 #include "metadata.h"
-
+#include <cmath>
 using namespace librealsense;
 
 namespace librealsense
