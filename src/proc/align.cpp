@@ -13,8 +13,8 @@
 namespace librealsense
 {
     template<class GET_DEPTH, class TRANSFER_PIXEL>
-    void align_images(const rs2_intrinsics & depth_intrin, const rs2_extrinsics & depth_to_other,
-        const rs2_intrinsics & other_intrin, GET_DEPTH get_depth, TRANSFER_PIXEL transfer_pixel)
+    void align_images(const rs2_intrinsics& depth_intrin, const rs2_extrinsics& depth_to_other,
+        const rs2_intrinsics& other_intrin, GET_DEPTH get_depth, TRANSFER_PIXEL transfer_pixel)
     {
         // Iterate over the pixels of the depth image
 #pragma omp parallel for schedule(dynamic)
@@ -58,149 +58,254 @@ namespace librealsense
         }
     }
 
-    void align::update_frame_info(const frame_interface* frame, optional_value<rs2_intrinsics>& intrin,
-        std::shared_ptr<stream_profile_interface>& profile, bool register_extrin)
+    void align_z_to_other(byte* z_aligned_to_other, const uint16_t* z_pixels, float z_scale, const rs2_intrinsics& z_intrin, const rs2_extrinsics& z_to_other, const rs2_intrinsics& other_intrin)
     {
-        if (!frame)
+        auto out_z = (uint16_t *)(z_aligned_to_other);
+        align_images(z_intrin, z_to_other, other_intrin,
+            [z_pixels, z_scale](int z_pixel_index)
+        {
+            return z_scale * z_pixels[z_pixel_index];
+        },
+            [out_z, z_pixels](int z_pixel_index, int other_pixel_index)
+        {
+            out_z[other_pixel_index] = out_z[other_pixel_index] ?
+                std::min((int)out_z[other_pixel_index], (int)z_pixels[z_pixel_index]) :
+                z_pixels[z_pixel_index];
+        });
+    }
+
+    template<int N> struct bytes { char b[N]; };
+
+    template<int N, class GET_DEPTH> 
+    void align_other_to_depth_bytes(byte* other_aligned_to_depth, GET_DEPTH get_depth, const rs2_intrinsics& depth_intrin, const rs2_extrinsics& depth_to_other, const rs2_intrinsics& other_intrin, const byte* other_pixels)
+    {
+        auto in_other = (const bytes<N> *)(other_pixels);
+        auto out_other = (bytes<N> *)(other_aligned_to_depth);
+        align_images(depth_intrin, depth_to_other, other_intrin, get_depth,
+            [out_other, in_other](int depth_pixel_index, int other_pixel_index) { out_other[depth_pixel_index] = in_other[other_pixel_index]; });
+    }
+
+    template<class GET_DEPTH> 
+    void align_other_to_depth(byte* other_aligned_to_depth, GET_DEPTH get_depth, const rs2_intrinsics& depth_intrin, const rs2_extrinsics & depth_to_other, const rs2_intrinsics& other_intrin, const byte* other_pixels, rs2_format other_format)
+    {
+        switch (other_format)
+        {
+        case RS2_FORMAT_Y8:
+            align_other_to_depth_bytes<1>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
+            break;
+        case RS2_FORMAT_Y16:
+        case RS2_FORMAT_Z16:
+            align_other_to_depth_bytes<2>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
+            break;
+        case RS2_FORMAT_RGB8:
+        case RS2_FORMAT_BGR8:
+            align_other_to_depth_bytes<3>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
+            break;
+        case RS2_FORMAT_RGBA8:
+        case RS2_FORMAT_BGRA8:
+            align_other_to_depth_bytes<4>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
+            break;
+        default:
+            assert(false); // NOTE: rs2_align_other_to_depth_bytes<2>(...) is not appropriate for RS2_FORMAT_YUYV/RS2_FORMAT_RAW10 images, no logic prevents U/V channels from being written to one another
+        }
+    }
+
+    void align_other_to_z(byte* other_aligned_to_z, const uint16_t* z_pixels, float z_scale, const rs2_intrinsics& z_intrin, const rs2_extrinsics& z_to_other, const rs2_intrinsics& other_intrin, const byte* other_pixels, rs2_format other_format)
+    {
+        align_other_to_depth(other_aligned_to_z, [z_pixels, z_scale](int z_pixel_index) { return z_scale * z_pixels[z_pixel_index]; }, z_intrin, z_to_other, other_intrin, other_pixels, other_format);
+    }
+
+    void align::on_frame(frame_holder frameset, librealsense::synthetic_source_interface* source)
+    {
+        auto composite = As<composite_frame>(frameset.frame);
+        if (composite == nullptr)
+        {
+            LOG_WARNING("Trying to align a non composite frame");
             return;
-
-        // Get profile
-        if (!profile)
-        {
-            profile = frame->get_stream();
-            if (register_extrin)
-                environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*profile, *profile);
         }
 
-        // Get intrinsics
-        if (!intrin)
+        if (composite->get_embedded_frames_count() < 2)
         {
-            if (auto video = As<video_stream_profile_interface>(profile))
+            LOG_WARNING("Trying to align a single frame");
+            return;
+        }
+
+        librealsense::video_frame* depth_frame = nullptr;
+        std::vector<librealsense::video_frame*> other_frames;
+        //Find the depth frame
+        for (int i = 0; i < composite->get_embedded_frames_count(); i++)
+        {
+            frame_interface* f = composite->get_frame(i);
+            if (f->get_stream()->get_stream_type() == RS2_STREAM_DEPTH)
             {
-                intrin = video->get_intrinsics();
-            }
-        }
-    }
-    void align::update_align_info(const frame_interface* depth_frame)
-    {
-        // Get depth units
-        if (!_depth_units)
-        {
-            auto sensor = depth_frame->get_sensor();
-            _depth_units = sensor->get_option(RS2_OPTION_DEPTH_UNITS).query();
-        }
-
-        // Get extrinsics
-        if (!_extrinsics && _from_stream_profile && _to_stream_profile)
-        {
-            rs2_extrinsics ex;
-            if (environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics(*_from_stream_profile, *_to_stream_profile, &ex))
-            {
-                _extrinsics = ex;
-            }
-        }
-    }
-
-    align::align(rs2_stream to_stream)
-    {
-        auto on_frame = [this, to_stream](rs2::frame f, const rs2::frame_source& source)
-        {
-            auto composite = f.as<rs2::frameset>();
-            if (!composite)
-                return;
-
-            std::unique_lock<std::mutex> lock(_mutex);
-
-            assert(composite.size() >= 2);
-            if (!_from_stream_type)
-            {
-                _from_stream_type = RS2_STREAM_DEPTH;
-                _to_stream_type = to_stream;
-                if (to_stream == RS2_STREAM_DEPTH) //Align other to depth
+                assert(depth_frame == nullptr); // Trying to align multiple depth frames is not supported, in release we take the last one
+                depth_frame = As<librealsense::video_frame>(f);
+                if (depth_frame == nullptr)
                 {
-                    for (auto&& f : composite)
-                    {
-                        rs2_stream other_stream_type = f.get_profile().stream_type();
-                        if (other_stream_type != RS2_STREAM_DEPTH)
-                        {
-                            _from_stream_type = other_stream_type;
-                            break; //Take first matching stream type that is not depth
-                        }
-                    }
-                    if (!_from_stream_type)
-                        _from_stream_type = RS2_STREAM_DEPTH; //If we only have depth frames, align them to one another
+                    LOG_ERROR("Given depth frame is not a librealsense::video_frame");
+                    return;
                 }
             }
-
-            rs2::frame from = composite.first_or_default(*_from_stream_type);
-            rs2::depth_frame depth_frame = composite.get_depth_frame();
-            rs2::frame to = composite.first_or_default(_to_stream_type);
-
-            // align_frames(source, from, to)
-            update_frame_info((frame_interface*)from.get(), _from_intrinsics, _from_stream_profile, false);
-            update_frame_info((frame_interface*)to.get(), _to_intrinsics, _to_stream_profile, true);
-            update_align_info((frame_interface*)depth_frame.get());
-
-            if (!_from_bytes_per_pixel)
+            else
             {
-                auto vid_frame = from.as<rs2::video_frame>();
-                _from_bytes_per_pixel = vid_frame.get_bytes_per_pixel();
+                auto other_video_frame = As<librealsense::video_frame>(f);
+                auto other_stream_profile = f->get_stream();
+                assert(other_stream_profile != nullptr);
+                
+                if (other_video_frame == nullptr)
+                {
+                    LOG_ERROR("Given frame of type " << other_stream_profile->get_stream_type() << ", is not a librealsense::video_frame, ignoring it");
+                    return;
+                }
+
+                if (_to_stream_type == RS2_STREAM_DEPTH)
+                {
+                    //In case of alignment to depth, we will align any image given in the frameset to the depth one
+                    other_frames.push_back(other_video_frame);
+                }
+                else
+                {
+                    //In case of alignment from depth to other, we only want the other frame with the stream type that was requested to align to
+                    if (other_stream_profile->get_stream_type() == _to_stream_type)
+                    {
+                        assert(other_frames.size() == 0); // Trying to align depth to multiple frames is not supported, in release we take the last one
+                        other_frames.push_back(other_video_frame);
+                    }
+                }
+            }
+        }
+        
+        if (depth_frame == nullptr)
+        {
+            LOG_WARNING("No depth frame provided to align");
+            return;
+        }
+
+        if (other_frames.empty())
+        {
+            LOG_WARNING("Only depth frame provided to align");
+            return;
+        }
+
+        auto depth_profile = As<video_stream_profile_interface>(depth_frame->get_stream());
+        if (depth_profile == nullptr)
+        {
+            LOG_ERROR("Depth profile is not a video stream profile");
+            return;
+        }
+        rs2_intrinsics depth_intrinsics = depth_profile->get_intrinsics();
+        std::vector<frame_holder> output_frames;
+
+        if (_to_stream_type == RS2_STREAM_DEPTH)
+        {
+            //Storing the original depth frame for output frameset
+            depth_frame->acquire();
+            output_frames.push_back(depth_frame);
+        }
+        
+        for (librealsense::video_frame* other_frame : other_frames)
+        {
+            auto other_profile = As<video_stream_profile_interface>(other_frame->get_stream());
+            if (other_profile == nullptr)
+            {
+                LOG_WARNING("Other frame with type " << other_frame->get_stream()->get_stream_type() << ", is not a video stream profile. Ignoring it");
+                continue;
             }
 
-            if (_from_intrinsics && _to_intrinsics && _extrinsics && _depth_units && _from_stream_profile && _to_stream_profile)
+            rs2_intrinsics other_intrinsics = other_profile->get_intrinsics();
+            rs2_extrinsics depth_to_other_extrinsics{};
+            if (!environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics(*depth_profile, *other_profile, &depth_to_other_extrinsics))
             {
-                std::vector<frame_holder> frames(2);
-                bool from_depth = (*_from_stream_type == RS2_STREAM_DEPTH);
-
-                // Save the target ("to") frame as is
-                auto to_frame = (frame_interface*)to.get();
-                to_frame->acquire();
-                frames[0] = frame_holder{ to_frame };
-
-                auto from_frame = (frame_interface*)from.get();
-
-                // Create a new frame which will transform the "from" frame
-                int output_image_bytes_per_pixel = _from_bytes_per_pixel.value();
-                frame_holder out_frame = get_source().allocate_video_frame(_from_stream_profile, from_frame,
-                    output_image_bytes_per_pixel, _to_intrinsics->width, _to_intrinsics->height, 0, from_depth ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME);
-
-                //Clear the new image buffer
-                auto p_out_frame = reinterpret_cast<uint8_t*>(((frame*)(out_frame.frame))->data.data());
-                int blank_color = (_from_stream_profile->get_format() == RS2_FORMAT_DISPARITY16) ? 0xFF : 0x00;
-                memset(p_out_frame, blank_color, _to_intrinsics->height * _to_intrinsics->width * output_image_bytes_per_pixel);
-
-                auto p_depth_frame = reinterpret_cast<const uint16_t*>(depth_frame.get_data());
-                auto p_from_frame = reinterpret_cast<const uint8_t*>(from.get_data());
-
-                lock.unlock();
-                float depth_units = _depth_units.value();
-                align_images(*_from_intrinsics, *_extrinsics, *_to_intrinsics,
-                    [p_depth_frame, depth_units, from_depth](int z_pixel_index) -> float
-                {
-                    if (from_depth)
-                    {
-                        return depth_units * p_depth_frame[z_pixel_index];
-                    }
-                    return 1;
-                },
-                    [p_out_frame, p_from_frame, output_image_bytes_per_pixel](int from_pixel_index, int out_pixel_index)
-                {
-                    //Tranfer n-bit pixel to n-bit pixel
-                    for (int i = 0; i < output_image_bytes_per_pixel; i++)
-                    {
-                        const auto out_offset = out_pixel_index * output_image_bytes_per_pixel + i;
-                        const auto from_offset = from_pixel_index * output_image_bytes_per_pixel + i;
-                        p_out_frame[out_offset] = p_out_frame[out_offset] ?
-                            std::min((int)(p_out_frame[out_offset]), (int)(p_from_frame[from_offset]))
-                            : p_from_frame[from_offset];
-                    }
-                });
-                frames[1] = std::move(out_frame);
-                auto composite = get_source().allocate_composite_frame(std::move(frames));
-                get_source().frame_ready(std::move(composite));
+                LOG_WARNING("Failed to get extrinsics from depth to " << other_profile->get_stream_type() << ", ignoring it");
+                continue;
             }
-        };
-        auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
+
+            auto sensor = depth_frame->get_sensor();
+            if (sensor == nullptr)
+            {
+                LOG_ERROR("Failed to get sensor from depth frame");
+                return;
+            }
+
+            if (sensor->supports_option(RS2_OPTION_DEPTH_UNITS) == false)
+            {
+                LOG_ERROR("Sensor of depth frame does not provide depth units");
+                return;
+            }
+
+            float depth_scale = sensor->get_option(RS2_OPTION_DEPTH_UNITS).query();
+
+            frame_holder aligned_frame{ nullptr };
+            if (_to_stream_type == RS2_STREAM_DEPTH)
+            {
+                //Align a stream to depth
+                auto aligned_bytes_per_pixel = other_frame->get_bpp() / 8;
+                aligned_frame = source->allocate_video_frame(other_profile,
+                    other_frame,
+                    aligned_bytes_per_pixel,
+                    depth_frame->get_width(), 
+                    depth_frame->get_height(), 
+                    depth_frame->get_width() * aligned_bytes_per_pixel,
+                    RS2_EXTENSION_VIDEO_FRAME);
+
+                if (aligned_frame == nullptr)
+                {
+                    LOG_ERROR("Failed to allocate frame for aligned output");
+                    return;
+                }
+
+                byte* other_aligned_to_depth = const_cast<byte*>(aligned_frame.frame->get_frame_data());
+                memset(other_aligned_to_depth, 0, depth_intrinsics.height * depth_intrinsics.width * aligned_bytes_per_pixel);
+                align_other_to_z(other_aligned_to_depth,
+                    reinterpret_cast<const uint16_t*>(depth_frame->get_frame_data()),
+                    depth_scale, depth_intrinsics, 
+                    depth_to_other_extrinsics, 
+                    other_intrinsics, 
+                    other_frame->get_frame_data(), 
+                    other_profile->get_format());
+            }
+            else
+            {
+                //Align depth to some stream
+                auto aligned_bytes_per_pixel = depth_frame->get_bpp() / 8;
+                aligned_frame = source->allocate_video_frame(
+                    depth_profile, 
+                    depth_frame, 
+                    aligned_bytes_per_pixel,
+                    other_intrinsics.width,
+                    other_intrinsics.height,
+                    other_intrinsics.width * aligned_bytes_per_pixel,
+                    RS2_EXTENSION_DEPTH_FRAME);
+
+                if (aligned_frame == nullptr)
+                {
+                    LOG_ERROR("Failed to allocate frame for aligned output");
+                    return;
+                }
+                byte* z_aligned_to_other = const_cast<byte*>(aligned_frame.frame->get_frame_data());
+                memset(z_aligned_to_other, 0, other_intrinsics.height * other_intrinsics.width * aligned_bytes_per_pixel);
+                align_z_to_other(z_aligned_to_other, 
+                    reinterpret_cast<const uint16_t*>(depth_frame->get_frame_data()), 
+                    depth_scale, 
+                    depth_intrinsics,
+                    depth_to_other_extrinsics,
+                    other_intrinsics);
+
+                //Storing the original other frame for output frameset
+                assert(output_frames.size() == 0); //When aligning depth to other, only 2 frames are expected in the output.
+                other_frame->acquire();
+                output_frames.push_back(other_frame);
+            }
+            output_frames.push_back(std::move(aligned_frame));
+        }
+        auto new_composite = source->allocate_composite_frame(std::move(output_frames));
+        source->frame_ready(std::move(new_composite));
+    }
+
+    align::align(rs2_stream to_stream) : _to_stream_type(to_stream)
+    {
+        auto cb = [this](frame_holder frameset, librealsense::synthetic_source_interface* source) { on_frame(std::move(frameset), source); };
+        auto callback = new internal_frame_processor_callback<decltype(cb)>(cb);
         processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
     }
 }

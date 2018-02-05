@@ -20,13 +20,13 @@ namespace librealsense
             assert_no_error(ds::fw_cmd::UAMG, results);
             return results[4] > 0;
         };
-        _depth_sensor.register_option(RS2_OPTION_VISUAL_PRESET,
-            std::make_shared<advanced_mode_preset_option>(*this,
-                                                          _depth_sensor,
-                                                          option_range{ 0,
-                                                                        RS2_RS400_VISUAL_PRESET_COUNT - 1,
-                                                                        1,
-                                                                        RS2_RS400_VISUAL_PRESET_CUSTOM }));
+        _preset_opt = std::make_shared<advanced_mode_preset_option>(*this,
+            _depth_sensor,
+            option_range{ 0,
+            RS2_RS400_VISUAL_PRESET_COUNT - 1,
+            1,
+            RS2_RS400_VISUAL_PRESET_CUSTOM });
+        _depth_sensor.register_option(RS2_OPTION_VISUAL_PRESET, _preset_opt);
         _color_sensor = [this]() {
             auto& dev = _depth_sensor.get_device();
             for (size_t i = 0; i < dev.get_sensors_count(); ++i)
@@ -52,18 +52,40 @@ namespace librealsense
     }
 
     void ds5_advanced_mode_base::apply_preset(const std::vector<platform::stream_profile>& configuration,
-                                              rs2_rs400_visual_preset preset)
+                                              rs2_rs400_visual_preset preset, uint16_t device_pid)
     {
         auto p = get_all();
         auto res = get_res_type(configuration.front().width, configuration.front().height);
 
         switch (preset)
         {
+        case RS2_RS400_VISUAL_PRESET_DEFAULT:
+            switch (device_pid)
+            {
+            case ds::RS410_PID:
+            case ds::RS415_PID:
+                default_410(p);
+                break;
+            case ds::RS430_PID:
+            case ds::RS435_RGB_PID:
+                default_430(p);
+                break;
+            case ds::RS405_PID:
+                default_405(p);
+                break;
+            case ds::RS400_PID:
+                default_400(p);
+                break;
+            case ds::RS420_PID:
+                default_420(p);
+                break;
+            default:
+                throw invalid_value_exception(to_string() << "apply_preset(...) failed! Invalid product ID (" << device_pid << ")");
+                break;
+            }
+            break;
         case RS2_RS400_VISUAL_PRESET_HAND:
             hand_gesture(p);
-            break;
-        case RS2_RS400_VISUAL_PRESET_SHORT_RANGE:
-            short_range(p);
             break;
         case RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY:
             switch (res)
@@ -108,7 +130,7 @@ namespace librealsense
             }
             break;
         default:
-            throw invalid_value_exception(to_string() << "Invalid preset! " << preset);
+            throw invalid_value_exception(to_string() << "apply_preset(...) failed! Invalid preset! (" << preset << ")");
         }
         set_all(p);
     }
@@ -360,61 +382,73 @@ namespace librealsense
     void ds5_advanced_mode_base::set_depth_control_group(const STDepthControlGroup& val)
     {
         set(val, advanced_mode_traits<STDepthControlGroup>::group);
+        _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds5_advanced_mode_base::set_rsm(const STRsm& val)
     {
         set(val, advanced_mode_traits<STRsm>::group);
+        _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds5_advanced_mode_base::set_rau_support_vector_control(const STRauSupportVectorControl& val)
     {
         set(val, advanced_mode_traits<STRauSupportVectorControl>::group);
+        _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds5_advanced_mode_base::set_color_control(const STColorControl& val)
     {
         set(val, advanced_mode_traits<STColorControl>::group);
+        _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds5_advanced_mode_base::set_rau_color_thresholds_control(const STRauColorThresholdsControl& val)
     {
         set(val, advanced_mode_traits<STRauColorThresholdsControl>::group);
+        _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds5_advanced_mode_base::set_slo_color_thresholds_control(const STSloColorThresholdsControl& val)
     {
         set(val, advanced_mode_traits<STSloColorThresholdsControl>::group);
+        _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds5_advanced_mode_base::set_slo_penalty_control(const STSloPenaltyControl& val)
     {
         set(val, advanced_mode_traits<STSloPenaltyControl>::group);
+        _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds5_advanced_mode_base::set_hdad(const STHdad& val)
     {
         set(val, advanced_mode_traits<STHdad>::group);
+        _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds5_advanced_mode_base::set_color_correction(const STColorCorrection& val)
     {
         set(val, advanced_mode_traits<STColorCorrection>::group);
+        _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds5_advanced_mode_base::set_depth_table_control(const STDepthTableControl& val)
     {
         set(val, advanced_mode_traits<STDepthTableControl>::group);
+        _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds5_advanced_mode_base::set_ae_control(const STAEControl& val)
     {
         set(val, advanced_mode_traits<STAEControl>::group);
+        _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds5_advanced_mode_base::set_census_radius(const STCensusRadius& val)
     {
         set(val, advanced_mode_traits<STCensusRadius>::group);
+        _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds5_advanced_mode_base::set_laser_power(const laser_power_control& val)
@@ -597,6 +631,7 @@ namespace librealsense
         auto p = get_all();
         update_structs(json_content, p);
         set_all(p);
+        _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     preset ds5_advanced_mode_base::get_all() const
@@ -638,18 +673,18 @@ namespace librealsense
 
     void ds5_advanced_mode_base::set_all(const preset& p)
     {
-        set_depth_control_group(p.depth_controls);
-        set_rsm(p.rsm);
-        set_rau_support_vector_control(p.rsvc);
-        set_color_control(p.color_control);
-        set_rau_color_thresholds_control(p.rctc);
-        set_slo_color_thresholds_control(p.sctc);
-        set_slo_penalty_control(p.spc);
-        set_hdad(p.hdad);
-        set_color_correction(p.cc);
-        set_depth_table_control(p.depth_table);
-        set_ae_control(p.ae);
-        set_census_radius(p.census);
+        set(p.depth_controls, advanced_mode_traits<STDepthControlGroup>::group);
+        set(p.rsm           , advanced_mode_traits<STRsm>::group);
+        set(p.rsvc          , advanced_mode_traits<STRauSupportVectorControl>::group);
+        set(p.color_control , advanced_mode_traits<STColorControl>::group);
+        set(p.rctc          , advanced_mode_traits<STRauColorThresholdsControl>::group);
+        set(p.sctc          , advanced_mode_traits<STSloColorThresholdsControl>::group);
+        set(p.spc           , advanced_mode_traits<STSloPenaltyControl>::group);
+        set(p.hdad          , advanced_mode_traits<STHdad>::group);
+        set(p.cc            , advanced_mode_traits<STColorCorrection>::group);
+        set(p.depth_table   , advanced_mode_traits<STDepthTableControl>::group);
+        set(p.ae            , advanced_mode_traits<STAEControl>::group);
+        set(p.census        , advanced_mode_traits<STCensusRadius>::group);
 
         set_laser_state(p.laser_state);
         if (p.laser_state.was_set && p.laser_state.laser_state == 1) // 1 - on
@@ -681,7 +716,7 @@ namespace librealsense
         if (p.color_auto_white_balance.was_set && p.color_auto_white_balance.auto_white_balance == 0)
             set_color_white_balance(p.color_white_balance);
 
-        // TODO: Itay, check the issue of setting PWF to auto
+        // TODO: W/O due to a FW bug of power_line_frequency control on Windows OS
         //set_color_power_line_frequency(p.color_power_line_frequency);
     }
 
@@ -767,7 +802,7 @@ namespace librealsense
         _ep.register_on_open([this](std::vector<platform::stream_profile> configurations) {
             std::lock_guard<std::mutex> lock(_mtx);
             if (_last_preset != RS2_RS400_VISUAL_PRESET_CUSTOM)
-                _advanced.apply_preset(configurations, _last_preset);
+                _advanced.apply_preset(configurations, _last_preset, get_device_pid(_ep));
         });
     }
 
@@ -793,9 +828,8 @@ namespace librealsense
         }
 
         auto uvc_sensor = dynamic_cast<librealsense::uvc_sensor*>(&_ep);
-
         auto configurations = uvc_sensor->get_configuration();
-        _advanced.apply_preset(configurations, preset);
+        _advanced.apply_preset(configurations, preset, get_device_pid(_ep));
         _last_preset = preset;
         _recording_function(*this);
     }
@@ -824,5 +858,15 @@ namespace librealsense
         {
             throw invalid_value_exception(to_string() << "advanced_mode_preset: get_value_description(...) failed! Description of value " << val << " is not found.");
         }
+    }
+
+    uint16_t advanced_mode_preset_option::get_device_pid(const uvc_sensor& sensor) const
+    {
+        auto str_pid = sensor.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+        uint16_t device_pid{};
+        std::stringstream ss;
+        ss << std::hex << str_pid;
+        ss >> device_pid;
+        return device_pid;
     }
 }

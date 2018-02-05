@@ -19,6 +19,7 @@
 
 #include "imgui-fonts-karla.hpp"
 #include "imgui-fonts-fontawesome.hpp"
+#include "../third-party/json.hpp"
 
 #include "realsense-ui-advanced-mode.h"
 #ifdef _WIN32
@@ -94,6 +95,8 @@ namespace rs2
         static const textual_icon file_movie               { u8"\uf008" };
         static const textual_icon circle                   { u8"\uf111" };
         static const textual_icon square                   { u8"\uf0c8" };
+        static const textual_icon square_o                 { u8"\uf096" };
+        static const textual_icon check_square_o           { u8"\uf046" };
         static const textual_icon refresh                  { u8"\uf021" };
         static const textual_icon info_circle              { u8"\uf05a" };
         static const textual_icon bars                     { u8"\uf0c9" };
@@ -116,6 +119,9 @@ namespace rs2
         static const textual_icon window_maximize          { u8"\uf2d0" };
         static const textual_icon window_restore           { u8"\uf2d2" };
         static const textual_icon plus_circle              { u8"\uf055" };
+        static const textual_icon download                 { u8"\uf019" };
+        static const textual_icon upload                   { u8"\uf093" };
+        static const textual_icon bar_chart                { u8"\uf080" };
     }
 
     class subdevice_model;
@@ -191,7 +197,7 @@ namespace rs2
         std::string label = "";
         std::string id = "";
         subdevice_model* dev;
-
+        std::function<bool(option_model&, std::string&, notifications_model&)> custom_draw_method = nullptr;
     private:
         bool is_all_integers() const;
         bool is_enum() const;
@@ -252,7 +258,6 @@ namespace rs2
         std::shared_ptr<options> _block;
         std::map<int, option_model> options_metadata;
         std::string _name;
-        subdevice_model* _owner;
         std::function<rs2::frame(rs2::frame)> _invoker;
     };
 
@@ -400,6 +405,8 @@ namespace rs2
         void show_stream_footer(const rect& stream_rect,const mouse_info& mouse);
         void show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer);
 
+        void snapshot_frame(const char* filename,viewer_model& viewer) const;
+
         void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p);
         rect layout;
         std::unique_ptr<texture_buffer> texture;
@@ -425,7 +432,9 @@ namespace rs2
         rect _normalized_zoom{0, 0, 1, 1};
         int color_map_idx = 1;
         bool show_stream_details = false;
+        rect curr_info_rect{};
         temporal_event _stream_not_alive;
+        bool show_map_ruler = true;
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);
@@ -442,7 +451,7 @@ namespace rs2
         void pause_record();
         void resume_record();
         int draw_playback_panel(ImFont* font, viewer_model& view);
-        void draw_advanced_mode_tab(viewer_model& view);
+        bool draw_advanced_controls(viewer_model& view, ux_window& window);
         void draw_controls(float panel_width, float panel_height,
             ux_window& window,
             std::string& error_message,
@@ -472,6 +481,8 @@ namespace rs2
         std::set<std::array<uint8_t, 6>> available_controllers;
         std::vector<std::pair<std::string, std::string>> infos;
         std::vector<std::string> restarting_device_info;
+        std::set<std::string> advanced_mode_settings_file_names;
+        std::string selected_file_preset;
     private:
         void draw_info_icon(const ImVec2& size);
         int draw_seek_bar();
@@ -484,6 +495,17 @@ namespace rs2
                                 std::string& error_message,
                                 viewer_model& viewer);
         void play_defaults(viewer_model& view);
+        float draw_preset_panel(float panel_width,
+            ux_window& window,
+            std::string& error_message,
+            viewer_model& viewer,
+            bool update_read_only_options);
+        bool prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text,
+            std::vector<std::string>& restarting_device_info, 
+            viewer_model& view, 
+            ux_window& window);
+        void load_viewer_configurations(const std::string& json_str);
+        void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
@@ -517,10 +539,10 @@ namespace rs2
 
         static const int MAX_LIFETIME_MS = 10000;
         int height = 40;
-        int index;
+        int index = 0;
         std::string message;
-        double timestamp;
-        rs2_log_severity severity;
+        double timestamp = 0.0;
+        rs2_log_severity severity = RS2_LOG_SEVERITY_NONE;
         std::chrono::high_resolution_clock::time_point created_time;
         // TODO: Add more info
     };
@@ -577,7 +599,7 @@ namespace rs2
         post_processing_filters(viewer_model& viewer)
             : processing_block([&](rs2::frame f, const rs2::frame_source& source)
             {
-                proccess(std::move(f),source);
+                process(std::move(f),source);
             }),
             viewer(viewer),
             keep_calculating(true),
@@ -632,7 +654,7 @@ namespace rs2
         viewer_model& viewer;
 
         void render_loop();
-        void proccess(rs2::frame f, const rs2::frame_source& source);
+        void process(rs2::frame f, const rs2::frame_source& source);
         std::vector<rs2::frame> handle_frame(rs2::frame f);
 
         rs2::frame apply_filters(rs2::frame f);
@@ -840,11 +862,26 @@ namespace rs2
 
         rs2::asynchronous_syncer s;
     private:
+        struct rgb {
+            uint32_t r, g, b;
+        };
+
+        struct rgb_per_distance {
+            float depth_val;
+            rgb rgb_val;
+        };
 
         friend class post_processing_filters;
         std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
         void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y,
                        int id, const ImVec4& color, const std::string& tooltip = "");
+        void draw_color_ruler(const mouse_info& mouse,
+                              const stream_model& s_model,
+                              const rect& stream_rect,
+                              std::vector<rgb_per_distance> rgb_per_distance_vec,
+                              float ruler_length,
+                              const std::string& ruler_units);
+        float calculate_ruler_max_distance(const std::vector<float>& distances) const;
 
         streams_layout _layout;
         streams_layout _old_layout;
@@ -880,6 +917,12 @@ namespace rs2
     int save_to_png(const char* filename,
         size_t pixel_width, size_t pixels_height, size_t bytes_per_pixel,
         const void* raster_data, size_t stride_bytes);
+
+    // Auxillary function to save stream data in its internal (raw) format
+    bool save_frame_raw_data(const std::string& filename, rs2::frame frame);
+
+    // Auxillary function to store frame attributes
+    bool save_frame_meta_data(const std::string& filename, rs2::frame frame);
 
     class device_changes
     {

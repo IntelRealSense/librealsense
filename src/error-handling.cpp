@@ -6,14 +6,14 @@
 namespace librealsense
 {
     polling_error_handler::polling_error_handler(unsigned int poll_intervals_ms, std::unique_ptr<option> option,
-        std::shared_ptr <notifications_proccessor> proccessor, std::unique_ptr<notification_decoder> decoder)
+        std::shared_ptr <notifications_processor> processor, std::unique_ptr<notification_decoder> decoder)
         :_poll_intervals_ms(poll_intervals_ms),
         _active_object([this](dispatcher::cancellable_timer cancellable_timer)
         {
             polling(cancellable_timer);
         }),
         _option(std::move(option)),
-        _notifications_proccessor(proccessor),
+        _notifications_processor(processor),
         _decoder(std::move(decoder))
     {
     }
@@ -44,7 +44,7 @@ namespace librealsense
                  if (val != 0 && !_silenced)
                  {
                      auto n = _decoder->decode(val);
-                     auto strong = _notifications_proccessor.lock();
+                     auto strong = _notifications_processor.lock();
                      if (strong) strong->raise_notification(n);
 
                      val = static_cast<int>(_option->query());

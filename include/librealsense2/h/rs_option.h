@@ -60,6 +60,7 @@ typedef enum rs2_option
     RS2_OPTION_FILTER_MAGNITUDE                           , /**< The 2D-filter effect. The specific interpretation is given within the context of the filter */
     RS2_OPTION_FILTER_SMOOTH_ALPHA                        , /**< 2D-filter parameter controls the weight/radius for smoothing.*/
     RS2_OPTION_FILTER_SMOOTH_DELTA                        , /**< 2D-filter range/validity threshold*/
+    RS2_OPTION_HOLES_FILL                                 , /**< Enhance depth data post-processing with holes filling where appropriate*/
     RS2_OPTION_STEREO_BASELINE                            , /**< The distance in mm between the first and the second imagers in stereo-based depth cameras*/
     RS2_OPTION_COUNT                                        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
@@ -87,7 +88,7 @@ const char* rs2_sr300_visual_preset_to_string(rs2_sr300_visual_preset preset);
 typedef enum rs2_rs400_visual_preset
 {
     RS2_RS400_VISUAL_PRESET_CUSTOM,
-    RS2_RS400_VISUAL_PRESET_SHORT_RANGE,
+    RS2_RS400_VISUAL_PRESET_DEFAULT,
     RS2_RS400_VISUAL_PRESET_HAND,
     RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY,
     RS2_RS400_VISUAL_PRESET_HIGH_DENSITY,

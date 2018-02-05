@@ -87,6 +87,13 @@ namespace rs2
             error::handle(e);
         }
 
+        template<class S>
+        S& operator>>(S& on_frame)
+        {
+            start(on_frame);
+            return on_frame;
+        }
+
         void invoke(frame f) const
         {
             rs2_frame* ptr = nullptr;
@@ -171,13 +178,15 @@ namespace rs2
         * \param[out] f - frame handle
         * \return true if new frame was stored to f
         */
-        bool poll_for_frame(frame* f) const
+        template<typename T>
+        typename std::enable_if<std::is_base_of<rs2::frame, T>::value, bool>::type poll_for_frame(T* output) const
         {
             rs2_error* e = nullptr;
             rs2_frame* frame_ref = nullptr;
             auto res = rs2_poll_for_frame(_queue.get(), &frame_ref, &e);
             error::handle(e);
-            if (res) *f = { frame_ref };
+            frame f{ frame_ref };
+            if (res) *output = f;
             return res > 0;
         }
 
@@ -260,7 +269,8 @@ namespace rs2
     class syncer
     {
     public:
-        syncer()
+        syncer(int queue_size = 1)
+            :_results(queue_size)
         {
             _sync.start(_results);
 
@@ -312,7 +322,7 @@ namespace rs2
             Alignment is performed between a depth image and another image.
             To perform alignment of a depth image to the other, set the align_to parameter with the other stream type.
             To perform alignment of a non depth image to a depth image, set the align_to parameter to RS2_STREAM_DEPTH
-            Camera calibration and frame's stream type are determined on the fly, according to the first valid frameset passed to proccess()
+            Camera calibration and frame's stream type are determined on the fly, according to the first valid frameset passed to process()
 
             * \param[in] align_to      The stream type to which alignment should be made.
         */
@@ -334,7 +344,7 @@ namespace rs2
         * \param[in] frame      A pair of images, where at least one of which is a depth frame
         * \return Input frames aligned to one another
         */
-        frameset proccess(frameset frame)
+        frameset process(frameset frame)
         {
             (*_block)(frame);
             rs2::frame f;
@@ -406,7 +416,7 @@ namespace rs2
             _block->start(_queue);
         }
 
-        rs2::frame proccess(rs2::frame frame)
+        rs2::frame process(rs2::frame frame)
         {
             (*_block)(frame);
             rs2::frame f;
@@ -443,7 +453,7 @@ namespace rs2
             _block->start(_queue);
         }
 
-        rs2::frame proccess(rs2::frame frame)
+        rs2::frame process(rs2::frame frame)
         {
             (*_block)(frame);
             rs2::frame f;
@@ -480,7 +490,7 @@ namespace rs2
             _block->start(_queue);
         }
 
-        rs2::frame proccess(rs2::frame frame)
+        rs2::frame process(rs2::frame frame)
         {
             (*_block)(frame);
             rs2::frame f;
@@ -517,7 +527,7 @@ namespace rs2
             _block->start(_queue);
         }
 
-        rs2::frame proccess(rs2::frame frame)
+        rs2::frame process(rs2::frame frame)
         {
             (*_block)(frame);
             rs2::frame f;

@@ -414,7 +414,7 @@ namespace librealsense
 
         auto next_expected = _next_expected[missing];
 
-        if((*synced_frame)->get_frame_number() - next_expected > 4)
+        if((*synced_frame)->get_frame_number() - next_expected > 4 || (*synced_frame)->get_frame_number() < next_expected)
         {
             return true;
         }

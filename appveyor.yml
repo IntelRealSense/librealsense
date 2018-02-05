@@ -87,6 +87,13 @@ test_script:
 
     $test_failed = @()
 
+    & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe -d yes -i [software-device]
+
+    if ($LASTEXITCODE -ne 0)
+    {
+        $test_failed +=  $element
+    }
+
     foreach ($element in $records) 
     {
 

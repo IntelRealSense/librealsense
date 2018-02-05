@@ -481,6 +481,14 @@ namespace rs2
         float x, y;
         float w, h;
 
+        void operator=(const rect& other)
+        {
+            x = other.x;
+            y = other.y;
+            w = other.w;
+            h = other.h;
+        }
+
         operator bool() const
         {
             return w*w > 0 && h*h > 0;
@@ -972,15 +980,18 @@ namespace rs2
         mutable rs2::frame last[2];
     public:
         std::shared_ptr<colorizer> colorize;
+        bool zoom_preview = false;
+        rect curr_preview_rect{};
 
         texture_buffer(const texture_buffer& other)
         {
             texture = other.texture;
         }
 
-        texture_buffer& operator =(const texture_buffer& other)
+        texture_buffer& operator=(const texture_buffer& other)
         {
             texture = other.texture;
+            return *this;
         }
 
         rs2::frame get_last_frame(bool with_texture = false) const {
@@ -988,7 +999,7 @@ namespace rs2
             last_queue[idx].poll_for_frame(&last[idx]);
             return last[idx];
         }
-
+		
         texture_buffer() : last_queue(), texture(),
             colorize(std::make_shared<colorizer>()) {}
 
@@ -1476,7 +1487,7 @@ namespace rs2
             glDisable(GL_BLEND);
         }
 
-        void show_preview(const rect& r, const rect& normalized_zoom = rect{0, 0, 1, 1}) const
+        void show_preview(const rect& r, const rect& normalized_zoom = rect{0, 0, 1, 1})
         {
             glBindTexture(GL_TEXTURE_2D, texture);
             glEnable(GL_TEXTURE_2D);
@@ -1490,7 +1501,27 @@ namespace rs2
             rect zoomed_rect = normalized_zoom.unnormalize(r);
 
             if (r != zoomed_rect)
+            {
                 draw_texture(unit_square_coordinates, thumbnail);
+
+                // Draw thumbnail border
+                static const auto top_line_offset = 0.5f;
+                static const auto right_line_offset = top_line_offset / 2;
+                glColor3f(0.0, 0.0, 0.0);
+                glBegin(GL_LINE_LOOP);
+                glVertex2f(thumbnail.x - top_line_offset, thumbnail.y - top_line_offset);
+                glVertex2f(thumbnail.x + thumbnail.w + right_line_offset / 2, thumbnail.y - top_line_offset);
+                glVertex2f(thumbnail.x + thumbnail.w + right_line_offset / 2, thumbnail.y + thumbnail.h + top_line_offset);
+                glVertex2f(thumbnail.x - top_line_offset, thumbnail.y + thumbnail.h + top_line_offset);
+                glEnd();
+
+                curr_preview_rect = thumbnail;
+                zoom_preview = true;
+            }
+            else
+            {
+                zoom_preview = false;
+            }
 
             glDisable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, 0);

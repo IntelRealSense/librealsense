@@ -13,7 +13,7 @@ namespace librealsense
 
     private:
         std::mutex              _mutex;
-        
+
         optional_value<rs2_intrinsics>         _depth_intrinsics;
         optional_value<rs2_intrinsics>         _other_intrinsics;
         optional_value<float>                  _depth_units;

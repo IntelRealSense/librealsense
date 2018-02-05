@@ -5,6 +5,7 @@
 #define LIBREALSENSE_RS2_INTERNAL_HPP
 
 #include "rs_types.hpp"
+#include "rs_device.hpp"
 #include "rs_context.hpp"
 #include "../h/rs_internal.h"
 
@@ -67,6 +68,125 @@ namespace rs2
             return time;
         }
     }
+
+    class software_sensor : public sensor
+    {
+    public:
+        /**
+        * Add video stream to software sensor
+        *
+        * \param[in] video_stream   all the parameters that required to defind video stream
+        */
+        stream_profile add_video_stream(rs2_video_stream video_stream)
+        {
+            rs2_error* e = nullptr;
+
+            stream_profile stream(rs2_software_sensor_add_video_stream(_sensor.get(),video_stream, &e));
+            error::handle(e);
+
+            return stream;
+        }
+
+        /**
+        * Inject frame into the sensor
+        *
+        * \param[in] frame   all the parameters that required to define video frame
+        */
+        void on_video_frame(rs2_software_video_frame frame)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_sensor_on_video_frame(_sensor.get(), frame, &e);
+            error::handle(e);
+        }
+
+        /**
+        * Register option that will be supported by the sensor
+        *
+        * \param[in] option  the option
+        * \param[in] val  the initial value
+        */
+        void add_read_only_option(rs2_option option, float val)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_sensor_add_read_only_option(_sensor.get(), option, val, &e);
+            error::handle(e);
+        }
+
+        /**
+        * Update value of registered option
+        *
+        * \param[in] option  the option
+        * \param[in] val  the initial value
+        */
+        void set_read_only_option(rs2_option option, float val)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_sensor_update_read_only_option(_sensor.get(), option, val, &e);
+            error::handle(e);
+        }
+    private:
+        friend class software_device;
+
+        software_sensor(std::shared_ptr<rs2_sensor> s)
+            : rs2::sensor(s)
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_SOFTWARE_SENSOR, &e) == 0 && !e)
+            {
+                _sensor = nullptr;
+            }
+            rs2::error::handle(e);
+        }
+    };
+
+
+    class software_device : public device
+    {
+        std::shared_ptr<rs2_device> create_device_ptr()
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_device> dev(
+                rs2_create_software_device(&e),
+                rs2_delete_device);
+            error::handle(e);
+            return dev;
+        }
+       
+
+    public:
+        software_device()
+            : device(create_device_ptr())
+        {}
+
+        /**
+        * Add sensor stream to software sensor
+        *
+        * \param[in] name   the name of the sensor
+        */
+        software_sensor add_sensor(std::string name)
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_sensor> sensor(
+                rs2_software_device_add_sensor(_dev.get(), name.c_str(), &e),
+                rs2_delete_sensor);
+            error::handle(e);
+
+            return software_sensor(sensor);
+            
+        }
+
+        /**
+        * Set the wanted matcher type that will be used by the syncer
+        * \param[in] matcher matcher type
+        */
+        void create_matcher(rs2_matchers matcher)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_device_create_matcher(_dev.get(), matcher, &e);
+            error::handle(e);
+        }
+       
+    };
 
 }
 #endif // LIBREALSENSE_RS2_INTERNAL_HPP

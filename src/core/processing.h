@@ -47,4 +47,20 @@ namespace librealsense
 
         virtual ~processing_block_interface() = default;
     };
+
+    template<class T>
+    class internal_frame_processor_callback : public rs2_frame_processor_callback
+    {
+        T on_frame_function;
+    public:
+        explicit internal_frame_processor_callback(T on_frame) : on_frame_function(on_frame) {}
+
+        void on_frame(rs2_frame * f, rs2_source * source) override
+        {
+            frame_holder front((frame_interface*)f);
+            on_frame_function(std::move(front), source->source);
+        }
+
+        void release() override { delete this; }
+    };
 }

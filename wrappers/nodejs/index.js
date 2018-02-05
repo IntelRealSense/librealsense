@@ -702,12 +702,16 @@ class Sensor extends Options {
       this.frame = new Frame();
       this.depthFrame = new DepthFrame();
       this.videoFrame = new VideoFrame();
+      this.disparityFrame = new DisparityFrame();
 
       let inst = this;
       this.cxxSensor.frameCallback = function() {
         // When the callback is triggered, the underlying frame bas been saved in the objects
         // created above, we need to update it and callback.
-        if (inst.depthFrame.isValid) {
+        if (inst.disparityFrame.isValid) {
+          inst.disparityFrame.updateProfile();
+          callback(inst.disparityFrame);
+        } else if (inst.depthFrame.isValid) {
           inst.depthFrame.updateProfile();
           callback(inst.depthFrame);
         } else if (inst.videoFrame.isValid) {
@@ -719,7 +723,7 @@ class Sensor extends Options {
         }
       };
       this.cxxSensor.startWithCallback('frameCallback', this.frame.cxxFrame,
-          this.depthFrame.cxxFrame, this.videoFrame.cxxFrame);
+          this.depthFrame.cxxFrame, this.videoFrame.cxxFrame, this.disparityFrame.cxxFrame);
     }
   }
 
@@ -1943,6 +1947,23 @@ class DepthFrame extends VideoFrame {
 }
 
 /**
+ * Disparity Frame
+ */
+class DisparityFrame extends DepthFrame {
+  constructor(cxxFrame) {
+    super(cxxFrame);
+  }
+
+  /**
+   * Retrieve the stereoscopic baseline value. Applicable to stereo-based depth modules
+   * @return {Float} Stereoscopic baseline in millimeters
+   */
+  get baseLine() {
+    return this.cxxFrame.getBaseLine();
+  }
+}
+
+/**
  * Class containing a set of frames
  *
  * @property {Integer} size - count of frames.
@@ -2013,6 +2034,7 @@ class FrameSet {
 
   __internalAssembleFrame(cxxFrame) {
     if (!cxxFrame) return undefined;
+    if (cxxFrame.isDisparityFrame()) return new DisparityFrame(cxxFrame);
     if (cxxFrame.isDepthFrame()) return new DepthFrame(cxxFrame);
     if (cxxFrame.isVideoFrame()) return new VideoFrame(cxxFrame);
     return new Frame(cxxFrame);
@@ -2637,10 +2659,18 @@ class DeviceHub {
 class Filter extends Options {
   constructor(type) {
     super(new RS2.RSFilter(type));
-    this.frame = new DepthFrame();
     internal.addObject(this);
   }
 
+  _internalGetInputType() {
+    return DepthFrame;
+  }
+
+  _internalPrepareOutputFrame() {
+    if (!this.frame) {
+      this.frame = new DepthFrame();
+    }
+  }
   /**
    * Apply the filter processing on the frame and return the processed frame
    * @param {Frame} frame the depth frame to be processed
@@ -2649,7 +2679,8 @@ class Filter extends Options {
   process(frame) {
     const funcName = 'Filter.process()';
     checkArgumentLength(1, 1, arguments.length, funcName);
-    checkArgumentType(arguments, Frame, 0, funcName);
+    checkArgumentType(arguments, this._internalGetInputType(), 0, funcName);
+    this._internalPrepareOutputFrame();
     if (this.cxxObj && this.cxxObj.process(frame.cxxFrame, this.frame.cxxFrame)) {
       this.frame.updateProfile();
       return this.frame;
@@ -2664,6 +2695,10 @@ class Filter extends Options {
     if (this.cxxObj) {
       this.cxxObj.destroy();
       this.cxxObj = null;
+    }
+    if (this.frame) {
+      this.frame.destroy();
+      this.frame = undefined;
     }
   }
 }
@@ -2692,6 +2727,36 @@ class TemporalFilter extends Filter {
 class SpatialFilter extends Filter {
   constructor() {
     super('spatial');
+  }
+}
+
+/**
+ * Post processing block that could transform disparity frame to depth frame
+ */
+class DisparityToDepthTransform extends Filter {
+  constructor() {
+    super('disparity-to-depth');
+  }
+
+  // override base implementation
+  _internalGetInputType() {
+    return DisparityFrame;
+  }
+}
+
+/**
+ * Post processing block that could transform depth frame to disparity frame
+ */
+class DepthToDisparityTransform extends Filter {
+  constructor() {
+    super('depth-to-disparity');
+  }
+
+  // override base implementation
+  _internalPrepareOutputFrame() {
+    if (!this.frame) {
+      this.frame = new DisparityFrame();
+    }
   }
 }
 
@@ -4654,8 +4719,8 @@ const notification_category = {
      */
     notification_category_hardware_error: 'hardware-error',
     /**
-     * String literal of <code>'hardware-event'</code>. <br>General hardware notification reported from the sensor
-     * <br>Equivalent to its uppercase counterpart.
+     * String literal of <code>'hardware-event'</code>. <br>General hardware notification reported
+     * from the sensor <br>Equivalent to its uppercase counterpart.
      */
     notification_category_hardware_event: 'hardware-event',
     /**
@@ -4680,7 +4745,8 @@ const notification_category = {
      */
     NOTIFICATION_CATEGORY_HARDWARE_ERROR: RS2.RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
     /**
-     * General hardware notification reported from the sensor <br>Equivalent to its lowercase counterpart
+     * General hardware notification reported from the sensor <br>Equivalent to its lowercase
+     * counterpart
      * @type {Integer}
      */
     NOTIFICATION_CATEGORY_HARDWARE_EVENT: RS2.NOTIFICATION_CATEGORY_HARDWARE_EVENT,
@@ -5027,6 +5093,7 @@ module.exports = {
   FrameSet: FrameSet,
   VideoFrame: VideoFrame,
   DepthFrame: DepthFrame,
+  DisparityFrame: DisparityFrame,
   Align: Align,
   PointCloud: PointCloud,
   Points: Points,
@@ -5036,6 +5103,8 @@ module.exports = {
   DecimationFilter: DecimationFilter,
   TemporalFilter: TemporalFilter,
   SpatialFilter: SpatialFilter,
+  DisparityToDepthTransform: DisparityToDepthTransform,
+  DepthToDisparityTransform: DepthToDisparityTransform,
 
 
   stream: stream,

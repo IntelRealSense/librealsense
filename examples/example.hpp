@@ -55,7 +55,6 @@ inline void draw_text(int x, int y, const char * text)
 ////////////////////////
 // Image display code //
 ////////////////////////
-
 class texture
 {
 public:
@@ -84,6 +83,9 @@ public:
         {
         case RS2_FORMAT_RGB8:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, frame.get_data());
+            break;
+        case RS2_FORMAT_RGBA8:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame.get_data());
             break;
         case RS2_FORMAT_Y8:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, frame.get_data());
@@ -208,3 +210,117 @@ private:
     GLFWwindow* win;
     int _width, _height;
 };
+
+// Struct for managing rotation of pointcloud view
+struct glfw_state {
+    glfw_state() : yaw(15.0), pitch(15.0), last_x(0.0), last_y(0.0),
+        ml(false), offset_x(2.f), offset_y(2.f), tex() {}
+    double yaw;
+    double pitch;
+    double last_x;
+    double last_y;
+    bool ml; 
+    float offset_x;
+    float offset_y; 
+    texture tex;
+};
+
+
+// Handles all the OpenGL calls needed to display the point cloud
+void draw_pointcloud(window& app, glfw_state& app_state, rs2::points& points)
+{
+    if (!points)
+        return;
+
+    // OpenGL commands that prep screen for the pointcloud
+    glPopMatrix();
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+    float width = app.width(), height = app.height();
+
+    glClearColor(153.f / 255, 153.f / 255, 153.f / 255, 1);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    gluPerspective(60, width / height, 0.01f, 10.0f);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
+
+    glTranslatef(0, 0, +0.5f + app_state.offset_y*0.05f);
+    glRotated(app_state.pitch, 1, 0, 0);
+    glRotated(app_state.yaw, 0, 1, 0);
+    glTranslatef(0, 0, -0.5f);
+
+    glPointSize(width / 640);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, app_state.tex.get_gl_handle());
+    float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F); // GL_CLAMP_TO_EDGE
+    glBegin(GL_POINTS);
+
+
+    /* this segment actually prints the pointcloud */
+    auto vertices = points.get_vertices();              // get vertices
+    auto tex_coords = points.get_texture_coordinates(); // and texture coordinates
+    for (int i = 0; i < points.size(); i++)
+    {
+        if (vertices[i].z)
+        {
+            // upload the point and texture coordinates only for points we have depth data for
+            glVertex3fv(vertices[i]);
+            glTexCoord2fv(tex_coords[i]);
+        }
+    }
+
+    // OpenGL cleanup
+    glEnd();
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glPopAttrib();
+    glPushMatrix();
+}
+
+// Registers the state variable and callbacks to allow mouse control of the pointcloud
+void register_glfw_callbacks(window& app, glfw_state& app_state)
+{
+    app.on_left_mouse = [&](bool pressed)
+    {
+        app_state.ml = pressed;
+    };
+
+    app.on_mouse_scroll = [&](double xoffset, double yoffset)
+    {
+        app_state.offset_x -= static_cast<float>(xoffset);
+        app_state.offset_y -= static_cast<float>(yoffset);
+    };
+
+    app.on_mouse_move = [&](double x, double y)
+    {
+        if (app_state.ml)
+        {
+            app_state.yaw -= (x - app_state.last_x);
+            app_state.yaw = std::max(app_state.yaw, -120.0);
+            app_state.yaw = std::min(app_state.yaw, +120.0);
+            app_state.pitch += (y - app_state.last_y);
+            app_state.pitch = std::max(app_state.pitch, -80.0);
+            app_state.pitch = std::min(app_state.pitch, +80.0);
+        }
+        app_state.last_x = x;
+        app_state.last_y = y;
+    };
+
+    app.on_key_release = [&](int key)
+    {
+        if (key == 32) // Escape
+        {
+            app_state.yaw = app_state.pitch = 0; app_state.offset_x = app_state.offset_y = 0.0;
+        }
+    };
+}

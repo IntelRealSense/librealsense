@@ -95,12 +95,12 @@ void playback_sensor::close()
 void playback_sensor::register_notifications_callback(notifications_callback_ptr callback)
 {
     LOG_DEBUG("register_notifications_callback for sensor " << m_sensor_id);
-    _notifications_proccessor.set_callback(std::move(callback));
+    _notifications_processor.set_callback(std::move(callback));
 }
 
 notifications_callback_ptr playback_sensor::get_notifications_callback() const
 {
-    return _notifications_proccessor.get_callback();
+    return _notifications_processor.get_callback();
 }
 
 
@@ -291,5 +291,5 @@ void playback_sensor::unregister_before_start_callback(int token)
 
 void playback_sensor::raise_notification(const notification& n)
 {
-    _notifications_proccessor.raise_notification(n);
+    _notifications_processor.raise_notification(n);
 }
