@@ -1,6 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
+#ifdef _MSC_VER
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#endif
+
 #include <regex>
 #include <thread>
 #include <algorithm>
@@ -11,12 +17,6 @@
 
 #include "model-views.h"
 #include <imgui_internal.h>
-
-#ifdef _MSC_VER
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#endif
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -4896,7 +4896,7 @@ namespace rs2
             viewer.not_model.add_log(to_string() << "Saved settings to \"" << full_filename << "\"...");
 
         };
-        const std::string popup_message = "\t\tTo use this feature, the device must be in Advanced Mode.\t\t\n\n\t\tWould you like to turn Advanced Mode?\t\t";
+        static const std::string popup_message = "\t\tTo use this feature, the device must be in Advanced Mode.\t\t\n\n\t\tWould you like to turn Advanced Mode?\t\t";
         ////////////////////////////////////////
         // Draw Combo Box
         ////////////////////////////////////////

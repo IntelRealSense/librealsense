@@ -81,7 +81,7 @@ namespace librealsense
         sync(std::move(f), env);
     }
 
-    std::string create_composite_name(const std::vector<std::shared_ptr<matcher>>& matchers, std::string name)
+    std::string create_composite_name(const std::vector<std::shared_ptr<matcher>>& matchers, const std::string& name)
     {
         std::stringstream s;
         s<<"("<<name;
