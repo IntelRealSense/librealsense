@@ -462,7 +462,7 @@ namespace rs2
                     if (new_line)
                         ImGui::SetCursorPosX(135);
 
-                    ImGui::PushItemWidth(new_line? -1:100);
+                    ImGui::PushItemWidth(new_line? -1.f:100.f);
 
                     std::vector<const char*> labels;
                     auto selected = 0, counter = 0;
@@ -1780,9 +1780,11 @@ namespace rs2
             texture.colorize = streams[selected_tex_source].texture->colorize;
             ImGui::PopItemWidth();
 
-            // Occlusion control for RGB UV-Map will appear in the same line and use option's description as name
+            // Occlusion control for RGB UV-Map uses option's description as label
+            // Position is dynamically adjusted to avoid overlapping on resize
             if (RS2_STREAM_COLOR==streams[selected_tex_source_uid].profile.stream_type())
-                ppf.get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).draw(error_message, not_model, false, false);
+                ppf.get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).draw(error_message,
+                    not_model, stream_rect.w < 1000, false);
         }
 
         //ImGui::SetCursorPosY(9);
