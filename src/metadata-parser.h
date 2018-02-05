@@ -261,6 +261,17 @@ namespace librealsense
         {
             if (frm.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
             {
+				if (frm.get_stream()->get_format() == RS2_FORMAT_Y16 &&
+					frm.get_stream()->get_stream_type() == RS2_STREAM_INFRARED) //calibration mode
+				{
+					if (std::find(_fps_values.begin(), _fps_values.end(), 25) == _fps_values.end())
+					{
+						_fps_values.push_back(25);
+						std::sort(_fps_values.begin(), _fps_values.end());
+					}
+
+				}
+
                 auto exp = frm.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
 
                 auto exp_in_micro = _exposure_modifyer(exp);
@@ -302,7 +313,7 @@ namespace librealsense
 
     private:
         mutable std::map<int,actual_fps_calculator> _fps_calculator;
-        const std::vector<int> _fps_values;
+		mutable std::vector<int> _fps_values;
         attrib_modifyer _exposure_modifyer;
         bool _discrete;
     };
