@@ -21,12 +21,12 @@
     <BuildPlatform>$(Platform)</BuildPlatform>
     <BuildPlatform Condition="'$(BuildPlatform)' == 'AnyCPU'">x86</BuildPlatform>
     <InstallPath>C:\Program Files (x86)\Intel RealSense SDK 2.0\bin</InstallPath>
-    <BuildPath>..\..\..\build\$(Configuration)\realsense2.dll</BuildPath>
+    <BuildPath Condition="'$(BuildPath)'==''">..\..\..\build\$(Configuration)\realsense2.dll</BuildPath>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include=".nuget\Intel.RealSense.targets" />
-	<Compile Remove="Properties/**" />
+    <Compile Remove="Properties/**" />
   </ItemGroup>
 
   <Target Name="CopyLocalDependencies" BeforeTargets="Build" Condition="'$(IsCrossTargetingBuild)' != 'true'">

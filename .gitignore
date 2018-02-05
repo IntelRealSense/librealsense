@@ -71,7 +71,6 @@ librealsense-log.txt
 *.exe
 *.cache
 *.lib
-*.sln
 *.filters
 *.db
 *.opendb
