@@ -2663,7 +2663,6 @@ void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::
 
         if (ts[ts.size() - 1] - ts[0] > (float)gap / (float)2)
         {
-			std::cout << "gap " << gap << " ts[ts.size() - 1] - ts[0] " << ts[ts.size() - 1] - ts[0] << "\n";
 			CAPTURE(gap);
 			CAPTURE((float)gap / (float)2);
 			CAPTURE(ts[ts.size() - 1]);

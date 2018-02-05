@@ -313,7 +313,7 @@ namespace librealsense
 
     private:
         mutable std::map<int,actual_fps_calculator> _fps_calculator;
-		mutable std::vector<int> _fps_values;
+		mutable std::vector<uint32_t> _fps_values;
         attrib_modifyer _exposure_modifyer;
         bool _discrete;
     };

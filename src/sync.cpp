@@ -505,7 +505,7 @@ namespace librealsense
         _last_arrived[m] = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
     }
 
-    int timestamp_composite_matcher::get_fps(const frame_holder & f)
+	unsigned int timestamp_composite_matcher::get_fps(const frame_holder & f)
     {
         auto fps = 0;
         if(f.frame->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
@@ -519,7 +519,7 @@ namespace librealsense
     void timestamp_composite_matcher::update_next_expected(const frame_holder & f)
     {
         auto fps = get_fps(f);
-        auto gap = 1000 / fps;
+        auto gap = 1000.f / (float)fps;
 
         auto matcher = find_matcher(f);
 
@@ -535,8 +535,9 @@ namespace librealsense
         auto now = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
         for(auto m: _matchers)
         {
-            auto thrashold = _fps[m.second.get()]? (1000/_fps[m.second.get()])*5:500;
-            if(_last_arrived[m.second.get()] && (now - _last_arrived[m.second.get()]) > thrashold)
+			auto threshold = _fps[m.second.get()] ? (1000 / _fps[m.second.get()]) * 5 : 500; //if frame of a specific stream didn't arrive for time equivalence to 5 frames duration 
+																							 //this stream will be marked as "not active" in order to not stack the other streams
+            if(_last_arrived[m.second.get()] && (now - _last_arrived[m.second.get()]) > threshold)
             {
                 std::stringstream s;
                 s << "clean inactive stream in "<<_name;
@@ -590,7 +591,7 @@ namespace librealsense
 
     bool timestamp_composite_matcher::are_equivalent(double a, double b, int fps)
     {
-        auto gap = 1000 / fps;
-        return abs(a - b) < (gap / 2) ;
+        auto gap = 1000.f / (float)fps;
+        return abs(a - b) < ((float)gap / (float)2) ;
     }
 }
