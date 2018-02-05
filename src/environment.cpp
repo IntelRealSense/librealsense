@@ -57,8 +57,7 @@ namespace librealsense
         if (_locks_count.load()) return;
 
         auto counter = 0;
-        auto dead_counter = 0;
-        std::vector<int> dead_ids;
+        std::vector<int> invalid_ids;
         for (auto&& kvp : _streams)
         {
             if (!kvp.second.lock())
@@ -67,12 +66,11 @@ namespace librealsense
                 // Delete all extrinsics going out of this stream
                 _extrinsics.erase(dead_id);
                 ++counter;
-                ++dead_counter;
-                dead_ids.push_back(dead_id);
+                invalid_ids.push_back(dead_id);
             }
         }
 
-        for (auto dead_id : dead_ids)
+        for (auto dead_id : invalid_ids)
         {
             _streams.erase(dead_id);
             for (auto&& elem : _extrinsics)
@@ -83,8 +81,8 @@ namespace librealsense
             }
         }
 
-        if (dead_counter)
-            LOG_INFO("Found " << dead_counter << " unreachable streams, " << counter << " extrinsics deleted");
+        if (!invalid_ids.empty())
+            LOG_INFO("Found " << invalid_ids.size() << " unreachable streams, " << counter << " extrinsics deleted");
     }
 
     int extrinsics_graph::find_stream_profile(const stream_interface& p)
