@@ -2634,7 +2634,7 @@ void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::
 
     int successful = 0;
 
-    auto gap = 1000 / actual_fps;
+    auto gap = (float)1000 / (float)actual_fps;
 
     auto ts = 0;
 
@@ -2658,7 +2658,7 @@ void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::
 
         std::sort(ts.begin(), ts.end());
 
-        if (ts[ts.size() - 1] - ts[0] > gap / 2)
+        if (ts[ts.size() - 1] - ts[0] > (float)gap / (float)2)
         {
             continue;
         }
