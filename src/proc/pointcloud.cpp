@@ -233,7 +233,8 @@ namespace librealsense
         });
         occlusion_invalidation->set_description(0.f, "Off");
         occlusion_invalidation->set_description(1.f, "Heuristic");
-        occlusion_invalidation->set_description(2.f, "Exhaustive");
+        // TODO verify filter's implementation and performance
+        occlusion_invalidation->set_description(2.f, "__"); // Placeholder for Exhaustive
         register_option(RS2_OPTION_FILTER_MAGNITUDE, occlusion_invalidation);
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)

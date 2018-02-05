@@ -26,21 +26,21 @@ namespace librealsense
         case occlusion_none:
             break;
         case occlusion_monotonic_scan:
+        case occlusion_exhaustic_search:
             monotonic_heuristic_invalidation(points, uv_map, pix_coord);
             break;
-        case occlusion_exhaustic_search:
+        /*case occlusion_exhaustic_search:                              TODO - additional validation work is required
             comprehensive_invalidation(points, uv_map, pix_coord);
-            break;
+            break;*/
         default:
             throw std::runtime_error(to_string() << "Unsupported occlusion filter type " << _occlusion_filter << " requested");
             break;
         }
     }
 
-    // Heuristic occlusion invalidation algorithm that works as follows:
     // IMPORTANT! This implementation is based on the assumption that the RGB sensor is positioned strictly to the left of the depth sensor.
     // namely D415/D435 and SR300. The implementation WILL NOT work properly for different setups
-    // Algorithm flow:
+    // Heuristic occlusion invalidation algorithm:
     // -  Use the uv texels calculated when projecting depth to color
     // -  Scan each line from left to right and check the the U coordinate in the mapping is raising monotonically.
     // -  The occlusion is designated as U coordinate for a given pixel is less than the U coordinate of the predecessing pixel.
