@@ -2383,17 +2383,6 @@ namespace rs2
 
     void stream_model::show_stream_footer(const rect &stream_rect, const  mouse_info& mouse)
     {
-        auto flags = ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse |
-            ImGuiWindowFlags_NoTitleBar;
-
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
-        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 30 });
-        ImGui::SetNextWindowSize({ stream_rect.w, 30 });
-        std::string label = to_string() << "Footer for stream of " << profile.unique_id();
-        ImGui::Begin(label.c_str(), nullptr, flags);
-
         if (stream_rect.contains(mouse.cursor))
         {
             std::stringstream ss;
@@ -2414,24 +2403,37 @@ namespace rs2
             if (texture->get_last_frame().is<depth_frame>())
             {
                 auto meters = texture->get_last_frame().as<depth_frame>().get_distance(x, y);
-                if (meters > 0)
+                //if (meters > 0)
                 {
                     ss << std::dec << ", "
                         << std::setprecision(2) << meters << " meters";
                 }
             }
 
-            // Render pixel coordinate with magenta color to improve text readability
-            label = ss.str();
-            ImGui::PushStyleColor(ImGuiCol_Text, { 0.8f, 0.f, 0.8f, 1.f });
-            ImGui::Text("%s", label.c_str());
-            ImGui::PopStyleColor();
+            std::string msg(ss.str().c_str());
 
+            auto flags = ImGuiWindowFlags_NoResize |
+                ImGuiWindowFlags_NoMove |
+                ImGuiWindowFlags_NoCollapse |
+                ImGuiWindowFlags_NoTitleBar |
+                ImGuiWindowFlags_NoInputs;
+
+            // adjust windows size to the message length
+            ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 35 });
+            ImGui::SetNextWindowSize({ float(msg.size()*8), 20 });
+
+            std::string label = to_string() << "Footer for stream of " << profile.unique_id();
+            ImGui::Begin(label.c_str(), nullptr, flags);
+
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(9, 11, 13, 100));
+            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+            ImGui::Text("%s", msg.c_str());
+            ImGui::PopStyleColor(3);
+
+            ImGui::End();
         }
-
-        ImGui::End();
-        ImGui::PopStyleColor();
-        ImGui::PopFont();
     }
 
     void stream_model::snapshot_frame(const char* filename, viewer_model& viewer) const
