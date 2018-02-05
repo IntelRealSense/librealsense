@@ -2660,6 +2660,11 @@ void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::
 
         if (ts[ts.size() - 1] - ts[0] > (float)gap / (float)2)
         {
+			CAPTURE(gap);
+			CAPTURE((float)gap / (float)2);
+			CAPTURE(ts[ts.size() - 1]);
+			CAPTURE(ts[0]);
+			CAPTURE(ts[ts.size() - 1] - ts[0]);
             continue;
         }
 

@@ -239,9 +239,7 @@ namespace librealsense
             }
 
             _last_time_stamp = frm.get_frame_timestamp();
-            auto  fps = _last_diff ? 1000.f / _last_diff : frm.get_stream()->get_framerate();
-            auto  fps_ceil = std::ceil(fps);
-            return fps_ceil;
+			return _last_diff ? 1000.f / std::ceil(_last_diff) : frm.get_stream()->get_framerate();
         }
     private:
 
