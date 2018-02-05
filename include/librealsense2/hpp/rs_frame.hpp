@@ -188,7 +188,7 @@ namespace rs2
         /**
         * returns scale and bias of a the motion stream profile
         */
-        rs2_motion_device_intrinsic get_motion_intrinsics() 
+        rs2_motion_device_intrinsic get_motion_intrinsics() const
         {
             rs2_error* e = nullptr;
             rs2_motion_device_intrinsic intrin;
