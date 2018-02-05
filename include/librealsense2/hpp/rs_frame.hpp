@@ -686,6 +686,24 @@ namespace rs2
             }
             return f;
         }
+
+        video_frame get_infrared_frame(const size_t index = 0) const
+        {
+            frame f;
+            if (!index)
+            {
+                f = first_or_default(RS2_STREAM_INFRARED);
+            }
+            else
+            {
+                foreach([&f, index](const frame& frame) {
+                    if (frame.get_profile().stream_type() == RS2_STREAM_INFRARED && frame.get_profile().stream_index() == index)
+                        f = frame;
+                });
+            }
+            return f;
+        }
+
         size_t size() const
         {
             return _size;
