@@ -223,31 +223,24 @@ namespace librealsense
     };
 
 
-    class actual_fps_calculator
-    {
-    public:
-        rs2_metadata_type get_fps(const frame & frm)
-        {
-            std::lock_guard<std::mutex> lock();
-
-            auto frame_number = frm.get_frame_number();
-            if (frame_number > _last_frame_number)
-            {
-                auto timestamp = frm.get_frame_timestamp();
-                _last_diff = (double)(timestamp - _last_time_stamp) / (double)(frame_number - _last_frame_number);
-                _last_frame_number = frame_number;
-            }
-
-            _last_time_stamp = frm.get_frame_timestamp();
-			return _last_diff ? 1000.f / std::ceil(_last_diff) : frm.get_stream()->get_framerate();
-        }
-    private:
-
-        std::mutex _mutex;
-        double _last_time_stamp = 0;
-        long long _last_frame_number = 1;
-        double _last_diff = 0;
-    };
+	class actual_fps_calculator
+	{
+	public:
+		rs2_metadata_type get_fps(const frame & frm)
+		{
+			auto num_of_frames = 0;
+			if (frm.additional_data.frame_number < frm.additional_data.last_frame_number)
+			{
+				num_of_frames = std::numeric_limits<unsigned long long>::max() - frm.additional_data.last_frame_number + frm.additional_data.frame_number;
+			}
+			else
+			{
+				num_of_frames = frm.additional_data.frame_number - frm.additional_data.last_frame_number;
+			}
+			auto diff = (double)(frm.additional_data.timestamp - frm.additional_data.last_timestamp) / (double)num_of_frames;
+			return diff > 0 ? std::max(1000.f / std::ceil(diff), (double)1) : frm.get_stream()->get_framerate();
+		}
+	};
 
 
     class md_attribute_actual_fps : public md_attribute_parser_base
