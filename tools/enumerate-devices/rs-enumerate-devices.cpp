@@ -392,14 +392,22 @@ int main(int argc, char** argv) try
 
             // Print Extrinsics
             cout << "\nProvided Extrinsic:" << endl;
+            rs2_extrinsics extrinsics{};
             for (auto kvp1 = streams.begin(); kvp1 != streams.end(); ++kvp1)
             {
                 for (auto kvp2 = streams.begin(); kvp2 != streams.end(); ++kvp2)
                 {
                     cout << "Extrinsic from \"" << kvp1->second.stream_name() << "\"\t  " <<
-                            "To" << "\t  \"" << kvp2->second.stream_name() << "\"\n";
-                    auto extrinsics = kvp1->second.get_extrinsics_to(kvp2->second);
-                    print(extrinsics);
+                            "To" << "\t  \"" << kvp2->second.stream_name() << "\" :\n";
+                    try
+                    {
+                        extrinsics = kvp1->second.get_extrinsics_to(kvp2->second);
+                        print(extrinsics);
+                    }
+                    catch (...)
+                    {
+                        cout << "N/A\n";
+                    }
                 }
             }
         }
