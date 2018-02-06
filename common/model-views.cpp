@@ -2453,7 +2453,7 @@ namespace rs2
             stream_desc = rs2_stream_to_string(original_frame.get_profile().stream_type());
 
             //Capture raw frame
-            auto filename = filename_base + "_" + stream_desc + ".bin";
+            auto filename = filename_base + "_" + stream_desc + ".raw";
             if (save_frame_raw_data(filename, original_frame))
                 ss << "Raw data is captured into " << filename << std::endl;
             else
