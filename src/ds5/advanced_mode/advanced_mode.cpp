@@ -681,7 +681,11 @@ namespace librealsense
         set(p.sctc          , advanced_mode_traits<STSloColorThresholdsControl>::group);
         set(p.spc           , advanced_mode_traits<STSloPenaltyControl>::group);
         set(p.hdad          , advanced_mode_traits<STHdad>::group);
+
+        // Setting auto-white-balance control before colorCorrection parameters
+        set_depth_auto_white_balance(p.depth_auto_white_balance);
         set(p.cc            , advanced_mode_traits<STColorCorrection>::group);
+
         set(p.depth_table   , advanced_mode_traits<STDepthTableControl>::group);
         set(p.ae            , advanced_mode_traits<STAEControl>::group);
         set(p.census        , advanced_mode_traits<STCensusRadius>::group);
@@ -696,8 +700,6 @@ namespace librealsense
             set_depth_gain(p.depth_gain);
             set_depth_exposure(p.depth_exposure);
         }
-
-        set_depth_auto_white_balance(p.depth_auto_white_balance);
 
         set_color_auto_exposure(p.color_auto_exposure);
         if (p.color_auto_exposure.was_set && p.color_auto_exposure.auto_exposure == 0)
