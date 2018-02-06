@@ -169,11 +169,8 @@ namespace librealsense
 
     ds::tm1_eeprom ds5_motion::get_tm1_eeprom() const
     {
-        auto table = *(reinterpret_cast<const ds::tm1_eeprom*>(&(*_tm1_eeprom_raw)[0]));
-        return table;
-        // TODO verify CRC calculation boundaries for the whole EEPROM
-        // auto table = ds::check_calib<ds::tm1_eeprom>(*_tm1_eeprom_raw);
-        //return *table;
+        auto table = ds::check_calib<ds::tm1_eeprom>(*_tm1_eeprom_raw);
+        return *table;
     }
 
     std::shared_ptr<hid_sensor> ds5_motion::create_hid_device(std::shared_ptr<context> ctx,

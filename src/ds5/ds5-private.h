@@ -244,19 +244,29 @@ namespace librealsense
         struct tm1_calib_model
         {
             table_header                header;
-            uint32_t                    calibration_model_flag;     //  1 - Brown, 2 - FOV, 3 - Kannala Brandt ???????
-            fisheye_calibration_table   fe_calibration;             // 152 bytes ??
+            float                       calibration_model_flag;     //  1 - Brown, 2 - FOV, 3 - Kannala Brandt ???????
+            fisheye_calibration_table   fe_calibration;
             float                       temperature;
             uint8_t                     reserved[20];
         };
 
         constexpr size_t tm1_calib_model_size = sizeof(tm1_calib_model);
 
+        struct tm1_serial_num_table
+        {
+            table_header                header;
+            uint8_t                     serial_num[8];              // 2 bytes reserved + 6 data  12 digits in (0000xxxxxxxxxxxx) format
+            uint8_t                     reserved[8];
+        };
+
+        constexpr size_t tm1_serial_num_table_size = sizeof(tm1_serial_num_table);
+
         struct tm1_calibration_table
         {
             table_header                header;
             tm1_calib_model             calib_model;
             imu_calibration_table       imu_calib_table;
+            tm1_serial_num_table        serial_num_table;
         };
 
         constexpr size_t tm1_calibration_table_size = sizeof(tm1_calibration_table);
