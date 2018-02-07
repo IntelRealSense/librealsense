@@ -158,7 +158,7 @@ int main(int argc, char * argv[]) try
     // Save the time of last frame's arrival
     auto last_time = std::chrono::high_resolution_clock::now();
     // Maximum angle for the rotation of the pointcloud
-    const double max_angle = 90.0;
+    const double max_angle = 15.0;
     // We'll use rotation_velocity to rotate the pointcloud for a better view of the filters effects
     float rotation_velocity = 0.3f;
 
@@ -226,15 +226,15 @@ catch (const std::exception& e)
     return EXIT_FAILURE;
 }
 
-void update_data(rs2::frame_queue& data, rs2::frame& depth, rs2::points& points, rs2::pointcloud& pc, glfw_state& view, rs2::colorizer& color_map)
+void update_data(rs2::frame_queue& data, rs2::frame& colorized_depth, rs2::points& points, rs2::pointcloud& pc, glfw_state& view, rs2::colorizer& color_map)
 {
     rs2::frame f;
     if (data.poll_for_frame(&f))  // Try to take the depth and points from the queue
     {
         points = pc.calculate(f); // Generate pointcloud from the depth data
-        depth = color_map(f);     // Colorize the depth frame with a color map
-        pc.map_to(depth);         // Map the colored depth to the point cloud
-        view.tex.upload(depth);   //  and upload the texture to the view (without this the view will be B&W)
+        colorized_depth = color_map(f);     // Colorize the depth frame with a color map
+        pc.map_to(colorized_depth);         // Map the colored depth to the point cloud
+        view.tex.upload(colorized_depth);   //  and upload the texture to the view (without this the view will be B&W)
     }
 }
 
@@ -298,7 +298,7 @@ bool filter_slider_ui::render(const float3& location, bool enabled)
     {
         ImGui::PushStyleColor(ImGuiCol_SliderGrab, { 0,0,0,0 });
         ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, { 0,0,0,0 });
-        ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(ImGui::GetColorU32(ImGuiCol_TextDisabled)));
+        ImGui::PushStyleColor(ImGuiCol_Text, { 0.6f, 0.6f, 0.6f, 1 });
     }
 
     ImGui::PushItemWidth(location.z);

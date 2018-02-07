@@ -16,7 +16,7 @@ This example demonstrates usage of the following processing blocks:
 
 
 ## Expected Output
-![expected output](https://user-images.githubusercontent.com/22654243/35671315-b10120a8-0743-11e8-8ee3-715596bce3d4.png)
+![expected output](https://user-images.githubusercontent.com/22654243/35924136-dd9cd1b6-0c2a-11e8-925a-84a52c0a5b96.gif)
 
 This application displays a rotating point cloud of the depth frame, with GUI for controlling the filters' options, and a checkbox to enable/disable each one.
 
