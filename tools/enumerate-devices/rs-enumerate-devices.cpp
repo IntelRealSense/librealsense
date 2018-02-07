@@ -77,22 +77,31 @@ void print(const rs2_intrinsics& intrinsics)
     cout << ss.str() << endl << endl;
 }
 
-void safe_get_intrinsics(const video_stream_profile& profile, rs2_intrinsics& intrinsics)
+bool safe_get_intrinsics(const video_stream_profile& profile, rs2_intrinsics& intrinsics)
 {
-    try{
+    bool ret = false;
+    try
+    {
         intrinsics = profile.get_intrinsics();
+        ret = true;
     }
     catch(...)
     {}
+
+    return ret;
 }
 
-void safe_get_motion_intrinsics(const motion_stream_profile& profile, rs2_motion_device_intrinsic& intrinsics)
+bool safe_get_motion_intrinsics(const motion_stream_profile& profile, rs2_motion_device_intrinsic& intrinsics)
 {
-    try{
+    bool ret = false;
+    try
+    {
         intrinsics = profile.get_motion_intrinsics();
+        ret = true;
     }
     catch(...)
     {}
+    return ret;
 }
 
 struct stream_and_resolution{
@@ -307,17 +316,19 @@ int main(int argc, char** argv) try
 
                         rs2_intrinsics intrinsics{};
                         stream_and_resolution stream_res{profile.stream_type(), profile.stream_index(), video.width(), video.height(), profile.stream_name()};
-                        safe_get_intrinsics(video, intrinsics);
-                        auto it = std::find_if((intrinsics_map[stream_res]).begin(), (intrinsics_map[stream_res]).end(), [&](const std::pair<std::set<rs2_format>, rs2_intrinsics>& kvp){
-                            return intrinsics == kvp.second;
-                        });
-                        if (it == (intrinsics_map[stream_res]).end())
+                        if (safe_get_intrinsics(video, intrinsics))
                         {
-                            (intrinsics_map[stream_res]).push_back({{profile.format()}, intrinsics});
-                        }
-                        else
-                        {
-                            it->first.insert(profile.format()); // If the intrinsics are equals, add the profile format to format set
+                            auto it = std::find_if((intrinsics_map[stream_res]).begin(), (intrinsics_map[stream_res]).end(), [&](const std::pair<std::set<rs2_format>, rs2_intrinsics>& kvp) {
+                                return intrinsics == kvp.second;
+                            });
+                            if (it == (intrinsics_map[stream_res]).end())
+                            {
+                                (intrinsics_map[stream_res]).push_back({ {profile.format()}, intrinsics });
+                            }
+                            else
+                            {
+                                it->first.insert(profile.format()); // If the intrinsics are equals, add the profile format to format set
+                            }
                         }
                     }
                     else
@@ -331,19 +342,21 @@ int main(int argc, char** argv) try
 
                             rs2_motion_device_intrinsic motion_intrinsics{};
                             stream_and_resolution stream_res{profile.stream_type(), profile.stream_index(), motion.stream_type(), motion.stream_index(), profile.stream_name()};
-                            safe_get_motion_intrinsics(motion, motion_intrinsics);
-                            auto it = std::find_if((motion_intrinsics_map[stream_res]).begin(), (motion_intrinsics_map[stream_res]).end(),
-                                                   [&](const std::pair<std::set<rs2_format>, rs2_motion_device_intrinsic>& kvp)
+                            if (safe_get_motion_intrinsics(motion, motion_intrinsics))
                             {
-                                return motion_intrinsics == kvp.second;
-                            });
-                            if (it == (motion_intrinsics_map[stream_res]).end())
-                            {
-                                (motion_intrinsics_map[stream_res]).push_back({{profile.format()}, motion_intrinsics});
-                            }
-                            else
-                            {
-                                it->first.insert(profile.format()); // If the intrinsics are equals, add the profile format to format set
+                                auto it = std::find_if((motion_intrinsics_map[stream_res]).begin(), (motion_intrinsics_map[stream_res]).end(),
+                                    [&](const std::pair<std::set<rs2_format>, rs2_motion_device_intrinsic>& kvp)
+                                {
+                                    return motion_intrinsics == kvp.second;
+                                });
+                                if (it == (motion_intrinsics_map[stream_res]).end())
+                                {
+                                    (motion_intrinsics_map[stream_res]).push_back({ {profile.format()}, motion_intrinsics });
+                                }
+                                else
+                                {
+                                    it->first.insert(profile.format()); // If the intrinsics are equals, add the profile format to format set
+                                }
                             }
                         }
                     }
