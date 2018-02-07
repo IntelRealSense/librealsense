@@ -30,12 +30,12 @@ namespace rs2
         error::handle(e);
     }
 
-	inline void log(rs2_log_severity severity, const char* message)
-	{
-		rs2_error* e = nullptr;
-		rs2_log(severity, message, &e);
-		error::handle(e);
-	}
+    inline void log(rs2_log_severity severity, const char* message)
+    {
+        rs2_error* e = nullptr;
+        rs2_log(severity, message, &e);
+        error::handle(e);
+    }
 }
 
 inline std::ostream & operator << (std::ostream & o, rs2_stream stream) { return o << rs2_stream_to_string(stream); }

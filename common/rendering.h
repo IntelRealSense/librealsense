@@ -319,17 +319,17 @@ namespace rs2
             column_major[1] = mat[1][0];
             column_major[2] = mat[2][0];
             column_major[3] = mat[3][0];
-            column_major[4] = mat[0][1]; 
+            column_major[4] = mat[0][1];
             column_major[5] = mat[1][1];
             column_major[6] = mat[2][1];
             column_major[7] = mat[3][1];
-            column_major[8] = mat[0][2]; 
+            column_major[8] = mat[0][2];
             column_major[9] = mat[1][2];
-            column_major[10] = mat[2][2]; 
+            column_major[10] = mat[2][2];
             column_major[11] = mat[3][2];
             column_major[12] = mat[0][3];
-            column_major[13] = mat[1][3]; 
-            column_major[14] = mat[2][3]; 
+            column_major[13] = mat[1][3];
+            column_major[14] = mat[2][3];
             column_major[15] = mat[3][3];
         }
     };
@@ -426,7 +426,7 @@ namespace rs2
             else
             {
                 res.insert(res.end(), res_second_half.begin(), res_second_half.end());
-            }            
+            }
         }
         else
         {
@@ -448,12 +448,10 @@ namespace rs2
             {
                 inside = !inside;
             }
-                
         }
         return inside;
     }
 
-    
     struct mouse_info
     {
         float2 cursor;
@@ -999,7 +997,7 @@ namespace rs2
             last_queue[idx].poll_for_frame(&last[idx]);
             return last[idx];
         }
-		
+
         texture_buffer() : last_queue(), texture(),
             colorize(std::make_shared<colorizer>()) {}
 
@@ -1395,7 +1393,7 @@ namespace rs2
 
             draw_grid();
             draw_axis(0.3f, 2.f);
-            
+
             // Drawing pose:
             matrix4 pose_trans = tm2_pose_to_world_transformation(pose);
             float model[16];

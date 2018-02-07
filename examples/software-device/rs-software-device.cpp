@@ -70,7 +70,7 @@ public:
         if (now - last > std::chrono::milliseconds(1))
         {
             app_state.yaw -= 1;
-            wave_base += 0.1;
+            wave_base += 0.1f;
             last = now;
 
             for (int i = 0; i < depth_frame.y; i++)

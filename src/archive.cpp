@@ -1,5 +1,6 @@
 #include "metadata-parser.h"
 #include "archive.h"
+#include <fstream>
 
 #define MIN_DISTANCE 1e-6
 
