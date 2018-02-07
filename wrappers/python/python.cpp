@@ -21,8 +21,6 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "../include/librealsense2/rsutil.h"
 #define NAME pyrealsense2
 #define SNAME "pyrealsense2"
-#define BIND_RAW_ARRAY(class, name, type, size) #name, [](const class &c) -> const std::array<type, size>& { return reinterpret_cast<const std::array<type, size>&>(c.name); }
-#define BIND_RAW_2D_ARRAY(class_name, member_name, type, nsize, msize) #member_name, [](const class_name &c) -> const std::array<std::array<type, msize>, nsize>& { return reinterpret_cast<const std::array<std::array<type, msize>, nsize>&>(c.member_name); }
 // hacky little bit of half-functions to make .def(BIND_DOWNCAST) look nice for binding as/is functions
 #define BIND_DOWNCAST(class, downcast) "is_"#downcast, &rs2::class::is<rs2::downcast>).def("as_"#downcast, &rs2::class::as<rs2::downcast>
 const std::string rs2_prefix{ "rs2_" };
@@ -49,6 +47,50 @@ std::string make_pythonic_str(std::string str)
         py_##rs2_enum_type.value(python_name.c_str(), v);                                                                   \
         /* std::cout << " - " << python_name << std::endl;    */                                                            \
     }
+
+template<typename T, size_t SIZE>
+void copy_raw_array(T(&dst)[SIZE], const std::array<T, SIZE>& src)
+{
+    for (size_t i = 0; i < SIZE; i++)
+    {
+        dst[i] = src[i];
+    }
+}
+
+template<typename T, size_t NROWS, size_t NCOLS>
+void copy_raw_2d_array(T(&dst)[NROWS][NCOLS], const std::array<std::array<T, NCOLS>, NROWS>& src)
+{
+    for (size_t i = 0; i < NROWS; i++)
+    {
+        for (size_t j = 0; j < NCOLS; j++)
+        {
+            dst[i][j] = src[i][j];
+        }
+    }
+}
+template <typename T, size_t N>
+std::string array_to_string(const T(&arr)[N])
+{
+    std::ostringstream oss;
+    oss << "[";
+    for (int i = 0; i < N; i++)
+    {
+        if (i != 0)
+            oss << ", ";
+        oss << arr[i];
+    }
+    oss << "]";
+    return oss.str();
+}
+
+#define BIND_RAW_ARRAY_GETTER(T, member, valueT, SIZE) [](const T& self) { return reinterpret_cast<const std::array<valueT, SIZE>&>(self.member); }
+#define BIND_RAW_ARRAY_SETTER(T, member, valueT, SIZE) [](T& self, const std::array<valueT, SIZE>& src) { copy_raw_array(self.member, src); }
+
+#define BIND_RAW_2D_ARRAY_GETTER(T, member, valueT, NROWS, NCOLS) [](const T& self) { return reinterpret_cast<const std::array<std::array<valueT, NCOLS>, NROWS>&>(self.member); }
+#define BIND_RAW_2D_ARRAY_SETTER(T, member, valueT, NROWS, NCOLS) [](T& self, const std::array<std::array<valueT, NCOLS>, NROWS>& src) { copy_raw_2d_array(self.member, src); }
+
+#define BIND_RAW_ARRAY_PROPERTY(T, member, valueT, SIZE) #member, BIND_RAW_ARRAY_GETTER(T, member, valueT, SIZE), BIND_RAW_ARRAY_SETTER(T, member, valueT, SIZE)
+#define BIND_RAW_2D_ARRAY_PROPERTY(T, member, valueT, NROWS, NCOLS) #member, BIND_RAW_2D_ARRAY_GETTER(T, member, valueT, NROWS, NCOLS), BIND_RAW_2D_ARRAY_SETTER(T, member, valueT, NROWS, NCOLS)
 
 /*PYBIND11_MAKE_OPAQUE(std::vector<rs2::stream_profile>)*/
 
@@ -84,20 +126,9 @@ PYBIND11_MODULE(NAME, m) {
         self._strides); }
     );
 
-    /* enums, c-structs */
-    py::class_<rs2_extrinsics> extrinsics(m, "extrinsics");
-    extrinsics.def_property_readonly(BIND_RAW_ARRAY(rs2_extrinsics, rotation, float, 9))
-        .def_property_readonly(BIND_RAW_ARRAY(rs2_extrinsics, translation, float, 3))
-        .def("__repr__", [](const rs2_extrinsics &e) {
-        std::stringstream ss;
-        ss << "( (" << e.rotation[0];
-        for (int i = 1; i<9; ++i) ss << ", " << e.rotation[i];
-        ss << "), (" << e.translation[0];
-        for (int i = 1; i<3; ++i) ss << ", " << e.translation[i];
-        ss << ") )";
-        return ss.str();
-    });
-
+    /**
+        Binding of rs2_ enums
+    */
     BIND_ENUM(m, rs2_camera_info, RS2_CAMERA_INFO_COUNT)
     BIND_ENUM(m, rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT)
     BIND_ENUM(m, rs2_stream, RS2_STREAM_COUNT)
@@ -110,15 +141,27 @@ PYBIND11_MODULE(NAME, m) {
     BIND_ENUM(m, rs2_distortion, RS2_DISTORTION_COUNT)
     BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT)
 
+    py::class_<rs2_extrinsics> extrinsics(m, "extrinsics");
+    extrinsics.def(py::init<>())
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_extrinsics, rotation, float, 9))
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_extrinsics, translation, float, 3))
+        .def("__repr__", [](const rs2_extrinsics &e) {
+            std::stringstream ss;
+            ss << "rotation: " << array_to_string(e.rotation);
+            ss << "\ntranslation: " << array_to_string(e.translation);
+            return ss.str();
+        });
+
     py::class_<rs2_intrinsics> intrinsics(m, "intrinsics");
-    intrinsics.def_readonly("width", &rs2_intrinsics::width)
-        .def_readonly("height", &rs2_intrinsics::height)
-        .def_readonly("ppx", &rs2_intrinsics::ppx)
-        .def_readonly("ppy", &rs2_intrinsics::ppy)
-        .def_readonly("fx", &rs2_intrinsics::fx)
-        .def_readonly("fy", &rs2_intrinsics::fy)
-        .def_readonly("model", &rs2_intrinsics::model)
-        .def_property_readonly(BIND_RAW_ARRAY(rs2_intrinsics, coeffs, float, 5))
+    intrinsics.def(py::init<>())
+        .def_readwrite("width", &rs2_intrinsics::width)
+        .def_readwrite("height", &rs2_intrinsics::height)
+        .def_readwrite("ppx", &rs2_intrinsics::ppx)
+        .def_readwrite("ppy", &rs2_intrinsics::ppy)
+        .def_readwrite("fx", &rs2_intrinsics::fx)
+        .def_readwrite("fy", &rs2_intrinsics::fy)
+        .def_readwrite("model", &rs2_intrinsics::model)
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_intrinsics, coeffs, float, 5))
         .def("__repr__", [](const rs2_intrinsics& self)
     {
         std::stringstream ss;
@@ -128,21 +171,18 @@ PYBIND11_MODULE(NAME, m) {
         ss << "ppy: " << self.ppy << ", ";
         ss << "fx: " << self.fx << ", ";
         ss << "fy: " << self.fy << ", ";
-        ss << "model: " << self.model;
+        ss << "model: " << self.model << ", ";
+        ss << "coeffs: " << array_to_string(self.coeffs);
         return ss.str();
     });
 
     py::class_<rs2_motion_device_intrinsic> motion_device_inrinsic(m, "motion_device_intrinsic");
-    motion_device_inrinsic.def_property_readonly(BIND_RAW_2D_ARRAY(rs2_motion_device_intrinsic, data, float, 3, 4))
-        .def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, noise_variances, float, 3))
-        .def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, bias_variances, float, 3));
+    motion_device_inrinsic.def(py::init<>())
+        .def_property(BIND_RAW_2D_ARRAY_PROPERTY(rs2_motion_device_intrinsic, data, float, 3, 4))
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_motion_device_intrinsic, noise_variances, float, 3))
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_motion_device_intrinsic, bias_variances, float, 3));
 
     /* rs2_types.hpp */
-    // TODO: error types
-
-    // Not binding devices_changed_callback, templated
-
-    // Not binding frame_callback, templated
 
     py::class_<rs2::option_range> option_range(m, "option_range");
     option_range.def_readwrite("min", &rs2::option_range::min)
