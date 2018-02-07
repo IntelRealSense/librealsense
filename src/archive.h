@@ -27,14 +27,16 @@ struct frame_additional_data
     uint32_t        metadata_size = 0;
     bool            fisheye_ae_mode = false;
     std::array<uint8_t,MAX_META_DATA_SIZE> metadata_blob;
+    rs2_time_t      backend_timestamp = 0;
 
     frame_additional_data() {};
 
-    frame_additional_data(double in_timestamp, unsigned long long in_frame_number, double in_system_time, uint8_t md_size, const uint8_t* md_buf)
+    frame_additional_data(double in_timestamp, unsigned long long in_frame_number, double in_system_time, uint8_t md_size, const uint8_t* md_buf, double backend_time )
         : timestamp(in_timestamp),
           frame_number(in_frame_number),
           system_time(in_system_time),
-          metadata_size(md_size)
+          metadata_size(md_size),
+          backend_timestamp(backend_time)
     {
         // Copy up to 255 bytes to preserve metadata as raw data
         if (metadata_size)

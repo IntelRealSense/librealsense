@@ -33,7 +33,7 @@ namespace librealsense
 
     float3 transform(const rs2_extrinsics *extrin, const float3 &point) { float3 p = {}; rs2_transform_point_to_point(&p.x, extrin, &point.x); return p; }
     float2 project(const rs2_intrinsics *intrin, const float3 & point) { float2 pixel = {}; rs2_project_point_to_pixel(&pixel.x, intrin, &point.x); return pixel; }
-    float2 pixel_to_texcoord(const rs2_intrinsics *intrin, const float2 & pixel) { return{ (pixel.x + 0.5f) / intrin->width, (pixel.y + 0.5f) / intrin->height }; }
+    float2 pixel_to_texcoord(const rs2_intrinsics *intrin, const float2 & pixel) { return{ pixel.x / intrin->width, pixel.y / intrin->height }; }
     float2 project_to_texcoord(const rs2_intrinsics *intrin, const float3 & point) { return pixel_to_texcoord(intrin, project(intrin, point)); }
 
      bool pointcloud::stream_changed( stream_profile_interface* old, stream_profile_interface* curr)
@@ -192,7 +192,7 @@ namespace librealsense
 
         auto mapped_opt = std::make_shared<ptr_option<int>>(0, std::numeric_limits<int>::max(), 1, -1, &_other_stream_id, "Mapped stream ID");
         register_option(RS2_OPTION_TEXTURE_SOURCE, mapped_opt);
-        float old_value = _other_stream_id;
+        float old_value = static_cast<float>(_other_stream_id);
         mapped_opt->on_set([this, old_value](float x) mutable {
             if (fabs(old_value - x) > 1e-6)
             {

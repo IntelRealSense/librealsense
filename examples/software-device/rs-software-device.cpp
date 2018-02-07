@@ -8,11 +8,11 @@
 
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <../third-party/stb_image_write.h>
-#include <../common/res/int-rs-splash.hpp>
+#include <stb_image_write.h>
+#include <int-rs-splash.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <../third-party/stb_image.h>
+#include <stb_image.h>
 
 const int W = 640;
 const int H = 480;

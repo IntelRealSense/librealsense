@@ -8,6 +8,7 @@
 #include "device.h"
 
 #include <type_traits>
+#include <iostream>
 
 struct rs2_raw_data_buffer
 {

@@ -6,6 +6,7 @@
 #include "sql.h"
 #include <algorithm>
 #include "types.h"
+#include <iostream>
 
 using namespace std;
 using namespace sql;

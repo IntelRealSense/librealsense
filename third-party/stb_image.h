@@ -901,8 +901,8 @@ static void *stbi__malloc(size_t size)
    #define stbi__err(x,y)  stbi__err(x)
 #endif
 
-#define stbi__errpf(x,y)   ((float *) (stbi__err(x,y)?NULL:NULL))
-#define stbi__errpuc(x,y)  ((unsigned char *) (stbi__err(x,y)?NULL:NULL))
+#define stbi__errpf(x,y)   ((float *) (stbi__err(x,y)?nullptr:nullptr))
+#define stbi__errpuc(x,y)  ((unsigned char *) (stbi__err(x,y)?nullptr:nullptr))
 
 STBIDEF void stbi_image_free(void *retval_from_stbi_load)
 {

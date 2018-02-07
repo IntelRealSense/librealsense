@@ -388,13 +388,12 @@ namespace librealsense
                 [this, mode, timestamp_reader, requests](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
                     auto system_time = environment::get_instance().get_time_service()->get_time();
-
                     if (!this->is_streaming())
                     {
                         LOG_WARNING("Frame received with streaming inactive,"
                             << librealsense::get_string(mode.unpacker->outputs.front().first.type)
                             << mode.unpacker->outputs.front().first.index
-                                << ", Arrived," << std::fixed << system_time);
+                                << ", Arrived," << std::fixed << f.backend_time << " " << system_time);
                         return;
                     }
 
@@ -404,7 +403,6 @@ namespace librealsense
                     // Determine the timestamp for this frame
                     auto timestamp = timestamp_reader->get_frame_timestamp(mode, f);
                     auto timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode, f);
-
                     auto frame_counter = timestamp_reader->get_frame_counter(mode, f);
 
                     auto requires_processing = mode.requires_processing();
@@ -420,7 +418,7 @@ namespace librealsense
                     {
                         LOG_DEBUG("FrameAccepted," << librealsense::get_string(output.first.type) << "," << std::dec << frame_counter
                             << output.first.index << "," << frame_counter
-                            << ",Arrived," << std::fixed << system_time
+                            << ",Arrived," << std::fixed << f.backend_time << " " << std::fixed << system_time<<" diff - "<< system_time- f.backend_time << " "
                             << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain));
 
                         std::shared_ptr<stream_profile_interface> request = nullptr;
@@ -439,7 +437,8 @@ namespace librealsense
                             frame_counter,
                             system_time,
                             static_cast<uint8_t>(f.metadata_size),
-                            (const uint8_t*)f.metadata);
+                            (const uint8_t*)f.metadata,
+                            f.backend_time);
 
                         frame_holder frame = _source.alloc_frame(stream_to_frame_types(output.first.type), width * height * bpp / 8, additional_data, requires_processing);
                         if (frame.frame)
@@ -1004,5 +1003,6 @@ namespace librealsense
           _user_count(0),
           _timestamp_reader(std::move(timestamp_reader))
     {
+        register_metadata(RS2_FRAME_METADATA_BACKEND_TIMESTAMP,     make_additional_data_parser(&frame_additional_data::backend_timestamp));
     }
 }

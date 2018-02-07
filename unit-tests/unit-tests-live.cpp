@@ -4302,3 +4302,9 @@ ADD_ENUM_TEST_CASE(rs2_extension, RS2_EXTENSION_COUNT)
 ADD_ENUM_TEST_CASE(rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT)
 ADD_ENUM_TEST_CASE(rs2_rs400_visual_preset, RS2_RS400_VISUAL_PRESET_COUNT)
 
+void dev_changed(rs2_device_list* removed_devs, rs2_device_list* added_devs, void* ptr) {};
+TEST_CASE("C API Compilation", "[live]") {
+    rs2_error* e;
+    REQUIRE_NOTHROW(rs2_set_devices_changed_callback(NULL, dev_changed, NULL, &e));
+    REQUIRE(e != nullptr);
+}
