@@ -183,14 +183,6 @@ namespace librealsense
 
 #pragma pack(push, 1)
 
-        struct fisheye_intrinsics_table
-        {
-            table_header        header;
-            float               intrinsics_model;           //  1 - Brown, 2 - FOV, 3 - Kannala Brandt
-            float3x3            intrinsic;                  //  fisheye intrinsic data, normalized
-            float               distortion[5];
-        };
-
         struct fisheye_extrinsics_table
         {
             table_header        header;
@@ -205,6 +197,89 @@ namespace librealsense
             float3x3            rotation;
             float3              translation;
         };
+
+        struct imu_intrinsics
+        {
+            float bias[3];
+            float scale[3];
+        };
+
+        struct fisheye_calibration_table
+        {
+            table_header        header;
+            float               intrinsics_model;           //  1 - Brown, 2 - FOV, 3 - Kannala Brandt
+            float3x3            intrinsic;                  //  FishEye intrinsic matrix, normalize by [-1 1]
+            float               distortion[5];              //  FishEye forward distortion parameters, F-theta model
+            extrinsics_table    fisheye_to_imu;             //  FishEye rotation matrix and translation vector in IMU CS
+            uint8_t             reserved[28];
+        };
+
+        constexpr size_t fisheye_calibration_table_size = sizeof(fisheye_calibration_table);
+
+        struct imu_calibration_table
+        {
+            table_header        header;
+            float               rmax;
+            extrinsics_table    imu_to_imu;
+            imu_intrinsics      accel_intrinsics;
+            imu_intrinsics      gyro_intrinsics;
+            uint8_t             reserved[64];
+        };
+
+        constexpr size_t imu_calibration_table_size = sizeof(imu_calibration_table);
+
+        struct tm1_module_info
+        {
+            table_header        header;
+            uint8_t             serial_num[8];              // 2 bytes reserved + 6 data (0000xxxxxxxxxxxx)
+            uint8_t             optic_module_mm[4];
+            uint8_t             ta[10];
+            uint32_t            board_num;                  // SKU id
+            uint32_t            board_rev;                  // 0
+            uint8_t             reserved[34];               // Align to 64 byte ??? 
+        };
+
+        constexpr size_t tm1_module_info_size = sizeof(tm1_module_info);
+
+        struct tm1_calib_model
+        {
+            table_header                header;
+            float                       calibration_model_flag;     //  1 - Brown, 2 - FOV, 3 - Kannala Brandt ???????
+            fisheye_calibration_table   fe_calibration;
+            float                       temperature;
+            uint8_t                     reserved[20];
+        };
+
+        constexpr size_t tm1_calib_model_size = sizeof(tm1_calib_model);
+
+        struct tm1_serial_num_table
+        {
+            table_header                header;
+            uint8_t                     serial_num[8];              // 2 bytes reserved + 6 data  12 digits in (0000xxxxxxxxxxxx) format
+            uint8_t                     reserved[8];
+        };
+
+        constexpr size_t tm1_serial_num_table_size = sizeof(tm1_serial_num_table);
+
+        struct tm1_calibration_table
+        {
+            table_header                header;
+            tm1_calib_model             calib_model;
+            imu_calibration_table       imu_calib_table;
+            tm1_serial_num_table        serial_num_table;
+        };
+
+        constexpr size_t tm1_calibration_table_size = sizeof(tm1_calibration_table);
+
+        // TM1 ver 0.51
+        struct tm1_eeprom
+        {
+            table_header            header;
+            tm1_module_info         module_info;
+            tm1_calibration_table   calibration_table;
+        };
+
+        constexpr size_t tm1_eeprom_size = sizeof(tm1_eeprom);
 
         struct depth_table_control
         {
@@ -235,11 +310,6 @@ namespace librealsense
             float               reserved[24];
         };
 
-        struct imu_intrinsics
-        {
-            float bias[3];
-            float scale[3];
-        };
 
         inline rs2_motion_device_intrinsic create_motion_intrinsics(imu_intrinsics data)
         {
@@ -253,15 +323,7 @@ namespace librealsense
             return result;
         }
 
-        struct imu_calibration_table
-        {
-            table_header        header;
-            float               rmax;
-            extrinsics_table    imu_to_fisheye;
-            imu_intrinsics      accel_intrinsics;
-            imu_intrinsics      gyro_intrinsics;
-            uint8_t             reserved[64];
-        };
+
 
 #pragma pack(pop)
 
