@@ -575,7 +575,7 @@ namespace librealsense
             {
                 return !list_changed(uvc_devices, other.uvc_devices) &&
                     !list_changed(hid_devices, other.hid_devices) &&
-                    !list_changed(playback_devices, other.playback_devices) && 
+                    !list_changed(playback_devices, other.playback_devices) &&
                     !list_changed(tm2_devices, other.tm2_devices);
             }
 

@@ -151,7 +151,6 @@ namespace rs2
             error::handle(e);
             return dev;
         }
-       
 
     public:
         software_device()
@@ -172,7 +171,6 @@ namespace rs2
             error::handle(e);
 
             return software_sensor(sensor);
-            
         }
 
         /**
@@ -185,7 +183,6 @@ namespace rs2
             rs2_software_device_create_matcher(_dev.get(), matcher, &e);
             error::handle(e);
         }
-       
     };
 
 }

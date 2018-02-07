@@ -202,19 +202,22 @@ namespace rs2
         size_t _capacity;
     };
 
-    class pointcloud
+    class pointcloud : public options
     {
     public:
         pointcloud() :  _queue(1)
         {
             rs2_error* e = nullptr;
 
-            _block = std::make_shared<processing_block>(
-                                std::shared_ptr<rs2_processing_block>(
-                                                    rs2_create_pointcloud(&e),
-                                                    rs2_delete_processing_block));
+            auto pb = std::shared_ptr<rs2_processing_block>(
+                rs2_create_pointcloud(&e),
+                rs2_delete_processing_block);
+            _block = std::make_shared<processing_block>(pb);
 
             error::handle(e);
+
+            // Redirect options API to the processing block
+            options::operator=(pb);
 
             _block->start(_queue);
         }
