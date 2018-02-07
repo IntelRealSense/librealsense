@@ -390,8 +390,7 @@ int main(int argc, char** argv) try
                 for (auto& intrinsics : kvp.second)
                 {
                     auto formats = get_str_formats(intrinsics.first);
-                    cout << "Motion Intrinsic of \"" << stream_res.stream_name << "\"\t  " << stream_res.width << "x"
-                        << stream_res.height << "\t  " << formats << endl;
+                    cout << "Motion Intrinsic of \"" << stream_res.stream_name << "\"\t  " << formats << endl;
                     if (intrinsics.second == rs2_motion_device_intrinsic{})
                     {
                         cout << "Intrinsic NOT available!\n\n";
