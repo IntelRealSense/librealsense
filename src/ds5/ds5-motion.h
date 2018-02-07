@@ -29,18 +29,17 @@ namespace librealsense
         uint8_t _fisheye_device_idx = -1;
         uint8_t _motion_module_device_idx = -1;
 
-        lazy<std::vector<uint8_t>> _fisheye_intrinsics_raw;
-        lazy<std::vector<uint8_t>> _fisheye_extrinsics_raw;
-        lazy<ds::extrinsics_table> _motion_module_extrinsics_raw;
-        lazy<ds::imu_intrinsics> _accel_intrinsics;
-        lazy<ds::imu_intrinsics> _gyro_intrinsics;
-
-        std::vector<uint8_t> get_raw_fisheye_intrinsics_table() const;
-        std::vector<uint8_t> get_raw_fisheye_extrinsics_table() const;
-        ds::imu_calibration_table get_motion_module_calibration_table() const;
-
-        std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_fisheye;
+        lazy<std::vector<uint8_t>>      _tm1_eeprom_raw;
+        lazy<ds::tm1_eeprom>            _tm1_eeprom;
+        lazy<ds::imu_intrinsics>        _accel_intrinsics;
+        lazy<ds::imu_intrinsics>        _gyro_intrinsics;
         std::shared_ptr<lazy<rs2_extrinsics>> _fisheye_to_imu;
+
+        ds::tm1_eeprom        get_tm1_eeprom() const;
+        std::vector<uint8_t>  get_tm1_eeprom_raw() const;
+
+        lazy<std::vector<uint8_t>>      _fisheye_calibration_table_raw;
+        //std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_fisheye;
 
         // Bandwidth parameters from BOSCH BMI 055 spec'
         std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles =

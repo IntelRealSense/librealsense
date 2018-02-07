@@ -132,6 +132,7 @@ set(REALSENSE_CPP
     src/proc/align.cpp
     src/proc/colorizer.cpp
     src/proc/pointcloud.cpp
+    src/proc/occlusion-filter.cpp
     src/proc/synthetic-stream.cpp
     src/proc/syncer-processing-block.cpp
     src/proc/decimation-filter.cpp
@@ -228,6 +229,7 @@ set(REALSENSE_HPP
     src/proc/align.h
     src/proc/colorizer.h
     src/proc/pointcloud.h
+    src/proc/occlusion-filter.h
     src/proc/synthetic-stream.h
     src/proc/decimation-filter.h
     src/proc/spatial-filter.h
@@ -452,6 +454,7 @@ if(WIN32)
         src/proc/synthetic-stream.cpp
         src/proc/align.cpp
         src/proc/pointcloud.cpp
+        src/proc/occlusion-filter.cpp
         src/proc/decimation-filter.cpp
         src/proc/spatial-filter.cpp
         src/proc/temporal-filter.cpp
@@ -463,6 +466,7 @@ if(WIN32)
         src/proc/colorizer.h
         src/proc/align.h
         src/proc/pointcloud.h
+        src/proc/occlusion-filter.h
         src/proc/synthetic-stream.h
         src/proc/decimation-filter.h
         src/proc/spatial-filter.h
