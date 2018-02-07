@@ -372,7 +372,7 @@ namespace librealsense
             auto rot = fe_calib.fisheye_to_imu.rotation;
             auto trans = fe_calib.fisheye_to_imu.translation;
 
-            pose ex = { { rot(0,0), rot(1,0),rot(2,0),rot(1,0), rot(1,1),rot(2,1),rot(0,2), rot(1,2),rot(2,2) },
+            pose ex = { { rot(0,0), rot(1,0),rot(2,0),rot(0,1), rot(1,1),rot(2,1),rot(0,2), rot(1,2),rot(2,2) },
             { trans[0], trans[1], trans[2] } };
 
             return from_pose(ex);
