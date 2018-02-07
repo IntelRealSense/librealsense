@@ -40,7 +40,9 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       brew uninstall xctool;
       brew install xctool --HEAD;
-      brew install homebrew/versions/glfw3;
+      brew update;
+      brew doctor;
+      brew install glfw;
     fi
 
   # Install linux required packages
