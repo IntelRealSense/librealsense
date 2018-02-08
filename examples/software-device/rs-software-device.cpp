@@ -191,7 +191,7 @@ int main(int argc, char * argv[]) try
             // Upload the color frame to OpenGL
             app_state.tex.upload(color);
         }
-        draw_pointcloud(app, app_state, points);
+        draw_pointcloud(app.width(), app.height(), app_state, points);
     }
 
     return EXIT_SUCCESS;

@@ -231,8 +231,7 @@ namespace rs2
         void map_to(frame mapped)
         {
             _block->set_option(RS2_OPTION_TEXTURE_SOURCE, float(mapped.get_profile().unique_id()));
-            if (mapped.get_profile().stream_type() != RS2_STREAM_DEPTH)
-                _block->invoke(std::move(mapped));
+            _block->invoke(std::move(mapped));
         }
     private:
         friend class context;
@@ -401,7 +400,18 @@ namespace rs2
          frame_queue _queue;
      };
 
-    class decimation_filter : public options
+    /**
+        Interface for frame processing functionality
+    */
+    class process_interface : public options
+    {
+    public:
+        virtual rs2::frame process(rs2::frame frame) = 0;
+        virtual void operator()(frame f) const = 0;
+        virtual ~process_interface() = default;
+    };
+
+    class decimation_filter : public process_interface
     {
     public:
         decimation_filter() :_queue(1)
@@ -419,7 +429,7 @@ namespace rs2
             _block->start(_queue);
         }
 
-        rs2::frame process(rs2::frame frame)
+        rs2::frame process(rs2::frame frame) override
         {
             (*_block)(frame);
             rs2::frame f;
@@ -427,7 +437,7 @@ namespace rs2
             return f;
         }
 
-        void operator()(frame f) const
+        void operator()(frame f) const override
         {
             (*_block)(std::move(f));
         }
@@ -438,7 +448,7 @@ namespace rs2
         frame_queue _queue;
     };
 
-    class temporal_filter : public options
+    class temporal_filter : public process_interface
     {
     public:
         temporal_filter() :_queue(1)
@@ -456,7 +466,7 @@ namespace rs2
             _block->start(_queue);
         }
 
-        rs2::frame process(rs2::frame frame)
+        rs2::frame process(rs2::frame frame) override
         {
             (*_block)(frame);
             rs2::frame f;
@@ -464,7 +474,7 @@ namespace rs2
             return f;
         }
 
-        void operator()(frame f) const
+        void operator()(frame f) const override
         {
             (*_block)(std::move(f));
         }
@@ -475,7 +485,7 @@ namespace rs2
         frame_queue _queue;
     };
 
-    class spatial_filter : public options
+    class spatial_filter : public process_interface
     {
     public:
         spatial_filter() :_queue(1)
@@ -493,7 +503,7 @@ namespace rs2
             _block->start(_queue);
         }
 
-        rs2::frame process(rs2::frame frame)
+        rs2::frame process(rs2::frame frame) override
         {
             (*_block)(frame);
             rs2::frame f;
@@ -501,7 +511,7 @@ namespace rs2
             return f;
         }
 
-        void operator()(frame f) const
+        void operator()(frame f) const override
         {
             (*_block)(std::move(f));
         }
@@ -512,7 +522,7 @@ namespace rs2
         frame_queue _queue;
     };
 
-    class disparity_transform : public options
+    class disparity_transform : public process_interface
     {
     public:
         disparity_transform(bool transform_to_disparity=true) :_queue(1)
@@ -530,7 +540,7 @@ namespace rs2
             _block->start(_queue);
         }
 
-        rs2::frame process(rs2::frame frame)
+        rs2::frame process(rs2::frame frame) override
         {
             (*_block)(frame);
             rs2::frame f;
@@ -538,7 +548,7 @@ namespace rs2
             return f;
         }
 
-        void operator()(frame f) const
+        void operator()(frame f) const override
         {
             (*_block)(std::move(f));
         }

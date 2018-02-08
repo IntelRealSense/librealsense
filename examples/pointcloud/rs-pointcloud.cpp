@@ -8,7 +8,6 @@
 
 // Helper functions
 void register_glfw_callbacks(window& app, glfw_state& app_state);
-void draw_pointcloud(window& app, glfw_state& app_state, rs2::points& points);
 
 int main(int argc, char * argv[]) try
 {
@@ -48,7 +47,7 @@ int main(int argc, char * argv[]) try
         app_state.tex.upload(color);
 
         // Draw the pointcloud
-        draw_pointcloud(app, app_state, points);
+        draw_pointcloud(app.width(), app.height(), app_state, points);
     }
 
     return EXIT_SUCCESS;

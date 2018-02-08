@@ -257,7 +257,7 @@ namespace librealsense
             }
             else
             {
-                if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+                if (f.get_profile().stream_type() == RS2_STREAM_DEPTH && f.get_profile().format() == RS2_FORMAT_Z16)
                 {
                     inspect_depth_frame(f);
                     process_depth_frame(f);
