@@ -1,6 +1,16 @@
 # librealsense2 Node.js Wrapper
 This is the Node.js wrapper for the C++ `librealsense2` for Intel® RealSense™ depth cameras (D400 series and the SR300).
 
+## Notice: Before You Go Further ##
+
+**To librealsense contributors**: this document is for developers who want to fork [librealsense](https://github.com/IntelRealSense/librealsense) and make changes to source code. (pull requests are welcome)
+
+**To Node.js users**: if you're using Node.js and want to use [Node.js librealsense API](https://www.npmjs.com/package/node-librealsense), please use the following command to install it directly:
+```
+npm install --save node-librealsense
+```
+If it fails to install, please refer to [install prerequisites](https://www.npmjs.com/package/node-librealsense#1-install-prerequisites). Usage examples can be found in `node_modules/node-librealsense/examples` dir.
+
 # 1. Build from Source #
 
 ## 1.1. Install Build Prerequisites
