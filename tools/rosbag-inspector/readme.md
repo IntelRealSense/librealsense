@@ -13,11 +13,10 @@ The rosbag inspector allows you to view the topics and messages of `.bag` files.
 
 Files can be loaded by either:
 1. Drag and drop `.bag` files to the application window
-  ![realsense-rosbag-inspector-08_02_18-11_38_42](https://user-images.githubusercontent.com/22654243/35965851-cbc7ac3c-0cc4-11e8-8d9e-163c87b00482.gif)
+   ![realsense-rosbag-inspector-08_02_18-11_38_42](https://user-images.githubusercontent.com/22654243/35965851-cbc7ac3c-0cc4-11e8-8d9e-163c87b00482.gif)
 
 2. Using the `File` menu
-
-  ![realsense-rosbag-inspector-08_02_18-11_34_24](https://user-images.githubusercontent.com/22654243/35965602-18e47c1c-0cc4-11e8-8e08-677b5e876d85.gif)
+    ![realsense-rosbag-inspector-08_02_18-11_34_24](https://user-images.githubusercontent.com/22654243/35965602-18e47c1c-0cc4-11e8-8e08-677b5e876d85.gif)
 
 ### Inspecting Rosbag Files
 #### Files List
@@ -36,7 +35,7 @@ The application displays a summary of the selected file's details at the top of 
 
 Below the details is a collapsable `Topics` tab which allows the inspection of the file's data:
 
-![image](https://user-images.githubusercontent.com/22654243/35966296-1996c21c-0cc6-11e8-8c70-2ce51ec1d542.png)
+![image](https://user-images.githubusercontent.com/22654243/35966960-11e5d0ce-0cc8-11e8-8ba8-371ec5ca51ec.png)
 
 This will display all topics in the files, along with the number of messages for that topic, and the type of the messages for that topic (In case of multiple types, the first is displayed).
 
