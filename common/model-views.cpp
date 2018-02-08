@@ -1768,7 +1768,7 @@ namespace rs2
 
         if (!allow_3d_source_change) ImGui::SetCursorPos({ 7, 7 });
         // Only allow to change texture if we have something to put it on:
-        if (tex_sources_str.size() > 0 && depth_sources_str.size() > 0 && allow_3d_source_change)
+        if (tex_sources_str.size() && depth_sources_str.size())
         {
             ImGui::SetCursorPosY(7);
             ImGui::Text("Texture Source:"); ImGui::SameLine();
@@ -2060,7 +2060,7 @@ namespace rs2
         }
     }
 
-    void stream_model::show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer)
+    void stream_model::show_stream_header(ImFont* font, const rect &stream_rect, viewer_model& viewer)
     {
         const auto top_bar_height = 32.f;
         auto num_of_buttons = 4;
@@ -2073,7 +2073,7 @@ namespace rs2
             ImGuiWindowFlags_NoCollapse |
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-        ImGui::PushFont(font);
+        ImGui_ScopePushFont(font);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
@@ -2383,7 +2383,7 @@ namespace rs2
         }
     }
 
-    void stream_model::show_stream_footer(const rect &stream_rect, const  mouse_info& mouse)
+    void stream_model::show_stream_footer(ImFont* font, const rect &stream_rect, const  mouse_info& mouse)
     {
         if (stream_rect.contains(mouse.cursor))
         {
@@ -2405,11 +2405,8 @@ namespace rs2
             if (texture->get_last_frame().is<depth_frame>())
             {
                 auto meters = texture->get_last_frame().as<depth_frame>().get_distance(x, y);
-                //if (meters > 0)
-                {
-                    ss << std::dec << ", "
-                        << std::setprecision(2) << meters << " meters";
-                }
+
+                ss << std::dec << ", " << std::setprecision(2) << meters << " meters";
             }
 
             std::string msg(ss.str().c_str());
@@ -2419,6 +2416,8 @@ namespace rs2
                 ImGuiWindowFlags_NoCollapse |
                 ImGuiWindowFlags_NoTitleBar |
                 ImGuiWindowFlags_NoInputs;
+
+            ImGui_ScopePushFont(font);
 
             // adjust windows size to the message length
             ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 35 });
@@ -2758,7 +2757,7 @@ namespace rs2
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
             ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar;
 
-        ImGui::PushFont(font_14);
+        ImGui_ScopePushFont(font_14);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -2817,7 +2816,6 @@ namespace rs2
 
         ImGui::PopStyleColor(3);
         ImGui::PopStyleVar(2);
-        ImGui::PopFont();
     }
     void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id,
         const ImVec4& text_color, const std::string& tooltip)
@@ -2827,7 +2825,7 @@ namespace rs2
             ImGuiWindowFlags_NoCollapse |
             ImGuiWindowFlags_NoTitleBar;
 
-        ImGui::PushFont(font_18);
+        ImGui_ScopePushFont(font_18);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
         ImGui::SetNextWindowPos({ (float)x, (float)y });
         ImGui::SetNextWindowSize({ 320.f, 32.f });
@@ -2842,7 +2840,6 @@ namespace rs2
 
         ImGui::End();
         ImGui::PopStyleColor();
-        ImGui::PopFont();
     }
     void viewer_model::show_paused_icon(ImFont* font_18, int x, int y, int id)
     {
@@ -3471,7 +3468,7 @@ namespace rs2
                 show_paused_icon(font2, static_cast<int>(pos), static_cast<int>(stream_rect.y + 5), stream_mv.profile.unique_id());
 
             stream_mv.show_stream_header(font1, stream_rect, *this);
-            stream_mv.show_stream_footer(stream_rect, mouse);
+            stream_mv.show_stream_footer(font1, stream_rect, mouse);
 
             glColor3f(header_window_bg.x, header_window_bg.y, header_window_bg.z);
             stream_rect.y -= 32;

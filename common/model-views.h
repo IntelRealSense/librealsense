@@ -369,7 +369,7 @@ namespace rs2
         std::shared_ptr<processing_block_model> disparity_to_depth;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
-        bool post_processing_enabled = true;
+        bool post_processing_enabled = false;
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
     };
 
@@ -399,8 +399,8 @@ namespace rs2
 
         bool is_stream_alive();
 
-        void show_stream_footer(const rect& stream_rect,const mouse_info& mouse);
-        void show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer);
+        void show_stream_footer(ImFont* font, const rect& stream_rect,const mouse_info& mouse);
+        void show_stream_header(ImFont* font, const rect& stream_rect, viewer_model& viewer);
 
         void snapshot_frame(const char* filename,viewer_model& viewer) const;
 
