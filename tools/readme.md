@@ -9,4 +9,4 @@
 4. [Firmware-Logger](./fw-logger) - Console application for collecting internal camera logs.
 5. [Data-Collect](./data-collect) - Console application capable of generating CSV report of frame statistics
 6. [Terminal](./terminal) - Troubleshooting tool that sends commands to the camera firmware
-
+7. [ROS Bag Inspector](./rosbag-inspector) - GUI application for inspecting `.bag` files
