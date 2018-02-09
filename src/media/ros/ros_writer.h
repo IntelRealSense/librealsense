@@ -468,7 +468,9 @@ namespace librealsense
             //One message for value
             std_msgs::Float32 option_msg;
             option_msg.data = value;
-            write_message(ros_topic::option_value_topic(sensor_id, type), timestamp, option_msg);
+            std::string topic = ros_topic::option_value_topic(sensor_id, type);
+            std::replace(topic.begin(), topic.end(), ' ', '_');
+            write_message(topic, timestamp, option_msg);
 
             //Another message for description, should be written once per topic
 
@@ -476,7 +478,9 @@ namespace librealsense
             {
                 std_msgs::String option_msg_desc;
                 option_msg_desc.data = description;
-                write_message(ros_topic::option_description_topic(sensor_id, type), get_static_file_info_timestamp(), option_msg_desc);
+                std::string topic = ros_topic::option_value_topic(sensor_id, type);
+                std::replace(topic.begin(), topic.end(), ' ', '_');
+                write_message(topic, get_static_file_info_timestamp(), option_msg_desc);
                 m_written_options_descriptions[sensor_id.sensor_index].insert(type);
             }
         }
