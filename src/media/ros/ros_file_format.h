@@ -317,13 +317,17 @@ namespace librealsense
         /*version 3 and up*/
         static std::string option_value_topic(const device_serializer::sensor_identifier& sensor_id, rs2_option option_type)
         {
-            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", rs2_option_to_string(option_type), "value" });
+            std::string topic_name = rs2_option_to_string(option_type);
+            std::replace(topic_name.begin(), topic_name.end(), ' ', '_');
+            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", topic_name, "value" });
         }
 
         /*version 3 and up*/
         static std::string option_description_topic(const device_serializer::sensor_identifier& sensor_id, rs2_option option_type)
         {
-            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", rs2_option_to_string(option_type), "description" });
+            std::string topic_name = rs2_option_to_string(option_type);
+            std::replace(topic_name.begin(), topic_name.end(), ' ', '_');
+            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", topic_name, "description" });
         }
 
         static std::string pose_transform_topic(const device_serializer::stream_identifier& stream_id)
@@ -496,7 +500,7 @@ namespace librealsense
         {
            return  to_string() << "/device_" << stream_id.device_index
                                << "/sensor_" << stream_id.sensor_index
-                               << "/" << get_string(stream_id.stream_type) << "_" << stream_id.stream_index;							   
+                               << "/" << get_string(stream_id.stream_type) << "_" << stream_id.stream_index;
         }
 
     private:
@@ -538,7 +542,7 @@ namespace librealsense
     class OptionsQuery : public RegexTopicQuery
     {
     public:
-        OptionsQuery() : 
+        OptionsQuery() :
             RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/option/.*/value)RRR") {}
     };
 
@@ -584,7 +588,7 @@ namespace librealsense
     {
         if (t == get_static_file_info_timestamp())
             return ros::TIME_MIN;
-        
+
         auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(t);
         return ros::Time(secs.count());
     }
@@ -605,7 +609,7 @@ namespace librealsense
         constexpr const char* EXTENDED_STATUS = "{ 0xff6e50db, 0x3c5f, 0x43e7,{ 0xb4, 0x82, 0xb8, 0xc3, 0xa6, 0x8e, 0x78, 0xcd } }";
         constexpr const char* SERIAL_NUMBER = "{ 0x7d3e44e7, 0x8970, 0x4a32,{ 0x8e, 0xee, 0xe8, 0xd1, 0xd1, 0x32, 0xa3, 0x22 } }";
         constexpr const char* TIMESTAMP_SORT_TYPE = "{ 0xb409b217, 0xe5cd, 0x4a04,{ 0x9e, 0x85, 0x1a, 0x7d, 0x59, 0xd7, 0xe5, 0x61 } }";
-        
+
         constexpr const char* DEPTH = "DEPTH";
         constexpr const char* COLOR = "COLOR";
         constexpr const char* INFRARED = "INFRARED";
@@ -643,7 +647,7 @@ namespace librealsense
             case auto_exposure: res = RS2_FRAME_METADATA_AUTO_EXPOSURE;
             case white_balance: res = RS2_FRAME_METADATA_WHITE_BALANCE;
             case time_of_arrival: res = RS2_FRAME_METADATA_TIME_OF_ARRIVAL;
-                //Not supported here case SYSTEM_TIMESTAMP: 
+                //Not supported here case SYSTEM_TIMESTAMP:
                 //Not supported case TEMPRATURE: res =  RS2_FRAME_METADATA_;
             case EXPOSURE_TIME: res = RS2_FRAME_METADATA_SENSOR_TIMESTAMP;
                 //Not supported case FRAME_LENGTH: res =  RS2_FRAME_METADATA_;
@@ -659,7 +663,7 @@ namespace librealsense
             switch (source)
             {
             case 0 /*camera*/: //[[fallthrough]]
-            case 1 /*microcontroller*/ : 
+            case 1 /*microcontroller*/ :
                 return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
             case 2: return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
            }
@@ -700,7 +704,7 @@ namespace librealsense
         {
             return file_version();
         }
-     
+
         inline std::string stream_type_to_string(const stream_descriptor& source)
         {
             //Other than 6DOF, streams are in the form of "<stream_type><stream_index>" where "stream_index" is empty for index 0/1 and the actual number for 2 and above
@@ -780,7 +784,7 @@ namespace librealsense
             auto index_str = source.substr(type_str.length());
             if (index_str.empty())
             {
-                    
+
                 retval.index = 0;
             }
             else
@@ -800,7 +804,7 @@ namespace librealsense
             //    /camera/rs_6DoF<id>/0
             //   /imu/ACCELEROMETER/imu_raw/0
             //   /imu/GYROMETER/imu_raw/0
-            FrameQuery() : MultipleRegexTopicQuery({ 
+            FrameQuery() : MultipleRegexTopicQuery({
                 to_string() << R"RRR(/(camera|imu)/.*/(image|imu)_raw/\d+)RRR" ,
                 to_string() << R"RRR(/camera/rs_6DoF\d+/\d+)RRR" }) {}
         };
@@ -819,8 +823,8 @@ namespace librealsense
         {
         public:
             StreamQuery(const device_serializer::stream_identifier& stream_id) :
-                RegexTopicQuery(to_string() 
-                    << (is_camera(stream_id.stream_type) ? "/camera/" : "/imu/") 
+                RegexTopicQuery(to_string()
+                    << (is_camera(stream_id.stream_type) ? "/camera/" : "/imu/")
                     << stream_type_to_string({ stream_id.stream_type, (int)stream_id.stream_index})
                     << ((stream_id.stream_type == RS2_STREAM_POSE) ? "/" : (is_camera(stream_id.stream_type)) ? "/image_raw/" : "/imu_raw/")
                     << stream_id.sensor_index)
