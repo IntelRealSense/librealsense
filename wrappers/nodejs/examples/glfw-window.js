@@ -4,7 +4,7 @@
 
 'use strict';
 
-const glfw = require('node-glfw');
+const glfw = require('node-glfw-3');
 const rs2 = require('../index.js');
 const now = require('performance-now');
 
