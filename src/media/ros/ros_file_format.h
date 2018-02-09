@@ -558,7 +558,7 @@ namespace librealsense
     */
     constexpr uint32_t get_file_version()
     {
-        return 3u;
+        return 4u;
     }
 
     constexpr uint32_t get_minimum_supported_file_version()
