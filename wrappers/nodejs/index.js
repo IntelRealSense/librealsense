@@ -1616,7 +1616,9 @@ class Colorizer extends Options {
   colorize(depthFrame) {
     const funcName = 'Colorizer.colorize()';
     checkArgumentLength(1, 1, arguments.length, funcName);
-    checkArgumentType(arguments, DepthFrame, 0, funcName);
+    // Though depth frame is expected, color frame could also be processed, so
+    // only check whether the type is Frame
+    checkArgumentType(arguments, Frame, 0, funcName);
     const success = this.cxxColorizer.colorize(depthFrame.cxxFrame, this.depthRGB.cxxFrame);
     this.depthRGB.updateProfile();
     return success ? this.depthRGB : undefined;
