@@ -5,7 +5,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "node-glfw": "^0.4.6",
+    "node-glfw-3": "^0.3.2",
     "performance-now": "^2.1.0",
     "pkg": "^4.2.4"
   }

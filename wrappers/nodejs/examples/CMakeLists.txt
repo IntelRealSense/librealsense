@@ -28,16 +28,16 @@ string(REPLACE "ia32" "x86" ARCH ${ARCH})
 set(PKG_STR node${NODE_VERSOIN}-${OS}-${ARCH})
 
 add_custom_command(
-  OUTPUT ${PROJECT_SOURCE_DIR}/node_modules/node-glfw/build/Release/glfw.node
+  OUTPUT ${PROJECT_SOURCE_DIR}/node_modules/node-glfw-3/build/Release/glfw.node
   COMMAND npm install
   DEPENDS BUILD_NODE_ADDON package.json
   WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-  COMMENT "Build node-glfw"
+  COMMENT "Build node-glfw-3"
 )
 
 add_custom_target(
   BUILD_NODE_EXAMPLES ALL
-  DEPENDS ${PROJECT_SOURCE_DIR}/node_modules/node-glfw/build/Release/glfw.node
+  DEPENDS ${PROJECT_SOURCE_DIR}/node_modules/node-glfw-3/build/Release/glfw.node
 )
 set_target_properties(BUILD_NODE_EXAMPLES PROPERTIES FOLDER Wrappers/NodeJS)
 
@@ -89,4 +89,4 @@ set_target_properties(RealsenseNodeJSExamples PROPERTIES FOLDER Wrappers/NodeJS)
 install(PROGRAMS ${packagedExamples} DESTINATION ${CMAKE_INSTALL_BINDIR})
 # TODO: Use buildtype instead of hardcode of Release
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../build/Release/node_librealsense.node DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/node_modules/node-glfw/build/Release/glfw.node DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/node_modules/node-glfw-3/build/Release/glfw.node DESTINATION ${CMAKE_INSTALL_BINDIR})
