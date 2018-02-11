@@ -105,16 +105,16 @@ namespace Intel.RealSense
 
         public class CameraInfos
         {
-            IntPtr m_device;
-            public CameraInfos(IntPtr device) { m_device = device; }
+            IntPtr m_sensor;
+            public CameraInfos(IntPtr sensor) { m_sensor = sensor; }
 
             public string this[CameraInfo info]
             {
                 get
                 {
                     object err;
-                    if (NativeMethods.rs2_supports_device_info(m_device, info, out err) > 0)
-                        return Marshal.PtrToStringAnsi(NativeMethods.rs2_get_device_info(m_device, info, out err));
+                    if (NativeMethods.rs2_supports_sensor_info(m_sensor, info, out err) > 0)
+                        return Marshal.PtrToStringAnsi(NativeMethods.rs2_get_sensor_info(m_sensor, info, out err));
                     return null;
                 }
             }
