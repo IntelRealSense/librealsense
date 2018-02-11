@@ -83,10 +83,10 @@ std::string array_to_string(const T(&arr)[N])
     return oss.str();
 }
 
-#define BIND_RAW_ARRAY_GETTER(T, member, valueT, SIZE) [](const T& self) { return reinterpret_cast<const std::array<valueT, SIZE>&>(self.member); }
+#define BIND_RAW_ARRAY_GETTER(T, member, valueT, SIZE) [](const T& self) -> const std::array<valueT, SIZE>& { return reinterpret_cast<const std::array<valueT, SIZE>&>(self.member); }
 #define BIND_RAW_ARRAY_SETTER(T, member, valueT, SIZE) [](T& self, const std::array<valueT, SIZE>& src) { copy_raw_array(self.member, src); }
 
-#define BIND_RAW_2D_ARRAY_GETTER(T, member, valueT, NROWS, NCOLS) [](const T& self) { return reinterpret_cast<const std::array<std::array<valueT, NCOLS>, NROWS>&>(self.member); }
+#define BIND_RAW_2D_ARRAY_GETTER(T, member, valueT, NROWS, NCOLS) [](const T& self) -> const std::array<std::array<valueT, NCOLS>, NROWS>& { return reinterpret_cast<const std::array<std::array<valueT, NCOLS>, NROWS>&>(self.member); }
 #define BIND_RAW_2D_ARRAY_SETTER(T, member, valueT, NROWS, NCOLS) [](T& self, const std::array<std::array<valueT, NCOLS>, NROWS>& src) { copy_raw_2d_array(self.member, src); }
 
 #define BIND_RAW_ARRAY_PROPERTY(T, member, valueT, SIZE) #member, BIND_RAW_ARRAY_GETTER(T, member, valueT, SIZE), BIND_RAW_ARRAY_SETTER(T, member, valueT, SIZE)
