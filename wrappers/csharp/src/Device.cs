@@ -182,9 +182,6 @@ namespace Intel.RealSense
         {
             get
             {
-                if (!AdvancedModeEnabled)
-                    throw new InvalidOperationException(AdvancedModeDisabledException);
-
                 IntPtr buffer = NativeMethods.rs2_serialize_json(m_instance, out object error);
                 int size = NativeMethods.rs2_get_raw_data_size(buffer, out error);
                 IntPtr data = NativeMethods.rs2_get_raw_data(buffer, out error);
@@ -193,9 +190,6 @@ namespace Intel.RealSense
             }
             set
             {
-                if (!AdvancedModeEnabled)
-                    throw new InvalidOperationException(AdvancedModeDisabledException);
-
                 NativeMethods.rs2_load_json(m_instance, value, (uint)value.ToCharArray().Length, out object error);
             }
         }
