@@ -33,6 +33,9 @@ function choose_kernel_branch {
 	"10")								 	# kernel 4.10 is managed on branch hwe-zesty as of 1.1.2018
 		echo hwe-zesty
 		;;
+	"13")								 	# kernel 4.13 is managed on branch hwe
+		echo hwe
+		;;
 	*)
 		#error message shall be redirected to stderr to be printed properly
 		echo -e "\e[31mUnsupported kernel version $1 . The provide patches currently supports Ubuntu LTS kernels 4.4, 4.8 and 4.10 only\e[0m" >&2
