@@ -163,7 +163,7 @@ namespace Intel.RealSense
 
         }
 
-        public bool AdvancedMode
+        public bool AdvancedModeEnabled
         {
             get
             {
@@ -182,7 +182,7 @@ namespace Intel.RealSense
         {
             get
             {
-                if (!AdvancedMode)
+                if (!AdvancedModeEnabled)
                     throw new InvalidOperationException(AdvancedModeDisabledException);
 
                 IntPtr buffer = NativeMethods.rs2_serialize_json(m_instance, out object error);
@@ -193,7 +193,7 @@ namespace Intel.RealSense
             }
             set
             {
-                if (!AdvancedMode)
+                if (!AdvancedModeEnabled)
                     throw new InvalidOperationException(AdvancedModeDisabledException);
 
                 NativeMethods.rs2_load_json(m_instance, value, (uint)value.ToCharArray().Length, out object error);
