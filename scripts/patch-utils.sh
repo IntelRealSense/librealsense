@@ -1,7 +1,12 @@
 function require_package {
 	package_name=$1
 	printf "\e[32mPackage required %s: \e[0m" "${package_name}"
-	if [ $(dpkg-query -W -f='${Status}' ${package_name} 2>/dev/null | grep -c "ok installed") -eq 0 ];
+	exec 3>&2
+	exec 2> /dev/null
+	installed=$(dpkg-query -W -f='${Status}' ${package_name} | grep -c "ok installed")
+	exec 2>&3
+
+	if [ $installed -eq 0 ];
 	then
 		echo -e "\e[31m - not found, installing now...\e[0m"
 		sudo apt-get install ${package_name}
@@ -29,7 +34,8 @@ function choose_kernel_branch {
 		echo hwe-zesty
 		;;
 	*)
-		echo -e "\e[31mUnsupported kernel version $1 . The provide patches currently supports Ubuntu LTS kernels 4.4, 4.8 and 4.10 only\e[0m"
+		#error message shall be redirected to stderr to be printed properly
+		echo -e "\e[31mUnsupported kernel version $1 . The provide patches currently supports Ubuntu LTS kernels 4.4, 4.8 and 4.10 only\e[0m" >&2
 		exit 1
 		;;
 	esac
@@ -43,7 +49,7 @@ function try_unload_module {
 
 	if [ $op_failed -ne 0 ];
 	then
-		echo -e "\e[31mFailed to unload module $unload_module_name. error type $op_failed . Operation is aborted\e[0m"
+		echo -e "\e[31mFailed to unload module $unload_module_name. error type $op_failed . Operation is aborted\e[0m" >&2
 		exit 1
 	fi
 }
@@ -56,7 +62,7 @@ function try_load_module {
 
 	if [ $op_failed -ne 0 ];
 	then
-		echo -e "\e[31mFailed to reload module $load_module_name. error type $op_failed . Operation is aborted\e[0m"
+		echo -e "\e[31mFailed to reload module $load_module_name. error type $op_failed . Operation is aborted\e[0m"  >&2
 		exit 1
 	fi
 }
@@ -119,7 +125,7 @@ function try_module_insert {
 		then
 			sudo cp ${tgt_ko}.bckup ${tgt_ko}
 			sudo modprobe ${module_name}
-			printf "\e[34mThe original \e[33m %s \e[34m module was reloaded\n\e[0m" ${module_name}
+			printf "\e[34mThe original \e[33m %s \e[34m module was reloaded\n\e[0m" ${module_name}  >&2
 		fi
 		exit 1
 	else
