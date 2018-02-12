@@ -155,6 +155,13 @@ rs2::device wait_for_device(const rs2::device_hub& hub, bool print_info = true)
     return dev;
 }
 
+void print_dev_info(const rs2::device& dev)
+{
+    std:: cout << "Device Name: " << dev.get_info(RS2_CAMERA_INFO_NAME)
+               << "\nDevice Path: " << dev.get_info(RS2_CAMERA_INFO_PHYSICAL_PORT)
+               << "\nDevice S/N: " << dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << std::endl;
+}
+
 int main(int argc, char** argv)
 {
     CmdLine cmd("librealsense rs-terminal example tool", ' ', RS2_API_VERSION_STR);
@@ -206,7 +213,7 @@ int main(int argc, char** argv)
     {
         if (device_id_arg.isSet())
         {
-            auto dev_id = device_id_arg.getValue();
+            uint32_t dev_id = device_id_arg.getValue();
             auto num_of_devices = ctx.query_devices().size();
             if (num_of_devices < (dev_id + 1))
             {
@@ -215,16 +222,22 @@ int main(int argc, char** argv)
                 return EXIT_FAILURE;
             }
 
-            for (int i = 0; i < (num_of_devices - 1); ++i)
+            if (dev_id != 0)
             {
-                wait_for_device(hub, false);
+                for (int i = 0; i < (num_of_devices - 1); ++i)
+                {
+                    wait_for_device(hub, false);
+                }
             }
+
             dev = wait_for_device(hub, false);
             std::cout << "\nDevice ID " << dev_id << " has loaded.\n";
+            print_dev_info(dev);
         }
         else
         {
             dev = wait_for_device(hub);
+            print_dev_info(dev);
         }
 
         fflush(nullptr);
@@ -303,18 +316,19 @@ int main(int argc, char** argv)
 
 
                 line = auto_comp.get_line([&]() {return !hub.is_connected(dev); });
+
+                if (line == "exit")
+                {
+                    return EXIT_SUCCESS;
+                }
+
                 if (!hub.is_connected(dev))
                     continue;
-
 
                 if (line == "next")
                 {
                     dev = wait_for_device(hub);
                     continue;
-                }
-                if (line == "exit")
-                {
-                    return EXIT_SUCCESS;
                 }
                 if (is_application_in_hex_mode)
                 {
