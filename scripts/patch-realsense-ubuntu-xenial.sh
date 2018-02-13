@@ -68,12 +68,12 @@ else
 	# Patching kernel for RealSense devices
 	echo -e "\e[32mApplying realsense-uvc patch\e[0m"
 	patch -p1 < ../scripts/realsense-camera-formats_ubuntu-xenial-${kernel_branch}.patch
-	echo -e "\e[32mApplying realsense-metadata patch\e[0m"
-	patch -p1 < ../scripts/realsense-metadata-ubuntu-xenial.patch
-	echo -e "\e[32mApplying realsense-hid patch\e[0m"
-	patch -p1 < ../scripts/realsense-hid-ubuntu-xenial-${kernel_branch}.patch
-	echo -e "\e[32mApplying realsense-powerlinefrequency-fix patch\e[0m"
-	patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch
+	#echo -e "\e[32mApplying realsense-metadata patch\e[0m"
+	#patch -p1 < ../scripts/realsense-metadata-ubuntu-xenial.patch
+	#echo -e "\e[32mApplying realsense-hid patch\e[0m"
+	#patch -p1 < ../scripts/realsense-hid-ubuntu-xenial-${kernel_branch}.patch
+	#echo -e "\e[32mApplying realsense-powerlinefrequency-fix patch\e[0m"
+	#patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch
 fi
 
 # Copy configuration
