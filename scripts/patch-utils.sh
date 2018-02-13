@@ -38,7 +38,7 @@ function choose_kernel_branch {
 		;;
 	*)
 		#error message shall be redirected to stderr to be printed properly
-		echo -e "\e[31mUnsupported kernel version $1 . The provide patches currently supports Ubuntu LTS kernels 4.4, 4.8 and 4.10 only\e[0m" >&2
+		echo -e "\e[31mUnsupported kernel version $1 . The patches are maintained for Ubuntu LTS with kernel versions 4.4, 4.8, 4.10 and 4.13 only\e[0m" >&2
 		exit 1
 		;;
 	esac
@@ -75,6 +75,7 @@ function try_module_insert {
 	src_ko=$2
 	tgt_ko=$3
 	backup_available=1
+	dependent_modules=""
 
 	printf "\e[32mHandle \e[93m\e[1m%s \e[32m\e[21m:\n\e[0m" ${module_name}
 
@@ -92,7 +93,7 @@ function try_module_insert {
 		do
 			printf "\e[32m\tModule \e[93m\e[1m%s \e[32m\e[21m is in use by \e[34m$dependent_module\n\e[0m" ${module_name}
 			printf "\e[32m\tUnloading dependency \e[34m$dependent_module\e[0m\n\t"
-			dependent_modules+=("$dependent_module ")
+			dependent_modules+="$dependent_module "
 			try_unload_module $dependent_module
 			dependent_module=$(lsmod | grep ^${module_name} | awk '{printf $4}' | awk -F, '{printf $1}')
 		done
@@ -128,7 +129,7 @@ function try_module_insert {
 		then
 			sudo cp ${tgt_ko}.bckup ${tgt_ko}
 			sudo modprobe ${module_name}
-			printf "\e[34mThe original \e[33m %s \e[34m module was reloaded\n\e[0m" ${module_name}  >&2
+			printf "\e[34mThe original \e[33m %s \e[34m module was reloaded\n\e[0m" ${module_name}
 		fi
 		exit 1
 	else
@@ -144,7 +145,7 @@ function try_module_insert {
 		modules_list=(${dependent_modules})
 		for (( idx=${#modules_list[@]}-1 ; idx>=0 ; idx-- ));
 		do
-			printf "\e[32m\tReloading dependency \e[34m${modules_list[idx]} \e[32m... \e[0m";
+			printf "\e[32m\tReloading dependent kernel module \e[34m${modules_list[idx]} \e[32m... \e[0m"
 			try_load_module ${modules_list[idx]}
 			printf "\e[32m succeeded. \e[0m\n"
 		done
