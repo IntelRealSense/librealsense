@@ -7,8 +7,6 @@ using System;
 
 public class SensorOptions : MonoBehaviour
 {
-
-    // Use this for initialization
     void Start()
     {
         if (RealSenseDevice.Instance.ActiveProfile != null)
@@ -23,13 +21,13 @@ public class SensorOptions : MonoBehaviour
 
     private void onStartStreaming(PipelineProfile profile)
     {
+        sensors.Clear();
         foreach (var s in profile.Device.Sensors)
         {
             sensors.Add(s.Info[CameraInfo.Name], s);
         }
     }
 
-    // Update is called once per frame
     void Update()
     {
     }

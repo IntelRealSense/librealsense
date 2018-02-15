@@ -40,9 +40,10 @@ public class RealsenseStreamTexture : MonoBehaviour
     {
         if (RealSenseDevice.Instance.ActiveProfile.Streams == null)
             return;
-        var videoProfile = RealSenseDevice.Instance.ActiveProfile.Streams.First(p => p.Stream == sourceStreamType) as VideoStreamProfile;
-        if (videoProfile == null)
+        var profile = RealSenseDevice.Instance.ActiveProfile.Streams.First(p => p.Stream == sourceStreamType);
+        if (profile == null)
             return;
+        var videoProfile = profile as VideoStreamProfile;
         texture = new Texture2D(videoProfile.Width, videoProfile.Height, textureFormat, false, true)
         {
             wrapMode = TextureWrapMode.Clamp,
