@@ -5,7 +5,7 @@ using UnityEditor;
 using Intel.RealSense;
 using System;
 
-public class SensorOptions : MonoBehaviour
+public class RealSenseDeviceInspector : MonoBehaviour
 {
     void Start()
     {
@@ -21,17 +21,22 @@ public class SensorOptions : MonoBehaviour
 
     private void onStartStreaming(PipelineProfile profile)
     {
+        device = profile.Device;
+        streams = profile.Streams;
         sensors.Clear();
         foreach (var s in profile.Device.Sensors)
         {
             sensors.Add(s.Info[CameraInfo.Name], s);
         }
+        streaming = true;
     }
 
     void Update()
     {
     }
-
+    public bool streaming;
+    public Device device;
+    public StreamProfileList streams;
     public Dictionary<string, Sensor> sensors = new Dictionary<string, Sensor>();
 }
 
@@ -63,13 +68,32 @@ public static class extensions
                 is_integer(opt.Default) && is_integer(opt.Step);
     }
 }
-[CustomEditor(typeof(SensorOptions))]
-public class SensorControllerEditor : Editor
+
+[CustomEditor(typeof(RealSenseDeviceInspector))]
+public class RealSenseDeviceInspectorEditor : Editor
 {
+    public static void DrawHorizontal(string field, string value)
+    {
+        EditorGUILayout.BeginHorizontal();
+        {
+            EditorGUILayout.LabelField(field, GUILayout.Width(EditorGUIUtility.labelWidth - 4));
+            EditorGUILayout.SelectableLabel(value, EditorStyles.textField, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+        }
+        EditorGUILayout.EndHorizontal();
+    }
     public override void OnInspectorGUI()
     {
-        SensorOptions sensorController = (SensorOptions)target;
-        foreach (var kvp in sensorController.sensors)
+        RealSenseDeviceInspector deviceInspector = (RealSenseDeviceInspector)target;
+        if (!deviceInspector.streaming)
+            return;
+
+        EditorGUILayout.Space();
+        var devName = deviceInspector.device.Info[CameraInfo.Name];
+        var devSerial = deviceInspector.device.Info[CameraInfo.SerialNumber];
+        DrawHorizontal("Device", devName);
+        DrawHorizontal("Device S/N", devSerial);
+        EditorGUILayout.Space();
+        foreach (var kvp in deviceInspector.sensors)
         {
             string sensorName = kvp.Key;
             var sensor = kvp.Value;

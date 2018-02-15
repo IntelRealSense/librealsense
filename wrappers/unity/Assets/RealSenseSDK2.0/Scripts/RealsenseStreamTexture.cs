@@ -1,4 +1,5 @@
 ﻿using Intel.RealSense;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,8 +39,14 @@ public class RealsenseStreamTexture : MonoBehaviour
 
     void Start()
     {
-        if (RealSenseDevice.Instance.ActiveProfile.Streams == null)
-            return;
+        if (RealSenseDevice.Instance.ActiveProfile != null)
+            OnStartStreaming(RealSenseDevice.Instance.ActiveProfile);
+        else
+            RealSenseDevice.Instance.OnStart += OnStartStreaming;
+    }
+
+    private void OnStartStreaming(PipelineProfile activeProfile)
+    {
         var profile = RealSenseDevice.Instance.ActiveProfile.Streams.First(p => p.Stream == sourceStreamType);
         if (profile == null)
             return;
@@ -59,6 +66,7 @@ public class RealsenseStreamTexture : MonoBehaviour
                 RealSenseDevice.Instance.onNewSample += onNewSampleThreading;
         }
     }
+
     public void OnFrame(Frame f)
     {
         if (RealSenseDevice.Instance.processMode == RealSenseDevice.ProcessMode.UnityThread)

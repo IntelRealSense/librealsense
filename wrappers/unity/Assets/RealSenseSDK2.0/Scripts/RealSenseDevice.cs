@@ -86,30 +86,24 @@ public class RealSenseDevice : MonoBehaviour
         m_config = DeviceConfiguration.ToPipelineConfig();
         ActiveProfile = m_config.Resolve(m_pipeline);
     }
-
+    //void OnApplicationQuit()
+    //{
+    //    Debug.Log("Exit called");
+    //    if (m_pipeline == null)
+    //        return;
+    //    try
+    //    {
+    //        m_pipeline.Stop();
+    //    }
+    //    catch (Exception e)
+    //    {
+    //        Debug.Log(e.Message);
+    //    }
+    //}
     void Start()
     {
         try
         {
-            if (DeviceConfiguration.SensorOptions != null)
-            {
-                foreach (var opt in DeviceConfiguration.SensorOptions)
-                {
-                    foreach (var sensor in ActiveProfile.Device.Sensors)
-                    {
-                        try
-                        {
-                            if (sensor.Options[opt.option].Supported)
-                                sensor.Options[opt.option].Value = opt.value;
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.Log("Failed to set option " + opt.option + " to sensor " + sensor.Info[CameraInfo.Name] + ". Error: " + e.Message);
-                        }
-                    }
-                }
-            }
-
             ActiveProfile = m_pipeline.Start(m_config);
 
             //Start thread for multithread option
@@ -132,7 +126,8 @@ public class RealSenseDevice : MonoBehaviour
 
     void OnDestroy()
     {
-        if(worker!=null)
+        Debug.Log("RealSenseDevice OnDestory");
+        if (worker!=null)
         {
             //Destroy BG thread
             worker.CancelAsync();
@@ -140,6 +135,7 @@ public class RealSenseDevice : MonoBehaviour
         try
         {
             m_pipeline.Stop();
+            m_pipeline.Release();
         }
         catch (Exception e)
         {
@@ -211,11 +207,11 @@ public class RealSenseDevice : MonoBehaviour
     /// <param name="e">arguments</param>
     private void Worker_DoWork(object sender, DoWorkEventArgs e)
     {
-        while (worker.CancellationPending==false)
+        while (worker.CancellationPending == false)
         {
             ProcessFrame();
         }
-        Debug.Log("Worker Thread ended");
+        Debug.Log("RealSenseDevice thread ended");
     }
 
     void Update()
