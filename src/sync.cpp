@@ -3,6 +3,7 @@
 
 #include "proc/synthetic-stream.h"
 #include "sync.h"
+#include "environment.h"
 
 namespace librealsense
 {
@@ -502,7 +503,7 @@ namespace librealsense
         else
             _fps[m] = f->get_stream()->get_framerate();
 
-        _last_arrived[m] = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+		_last_arrived[m] = environment::get_instance().get_time_service()->get_time();
     }
 
 	unsigned int timestamp_composite_matcher::get_fps(const frame_holder & f)
@@ -532,7 +533,7 @@ namespace librealsense
     void timestamp_composite_matcher::clean_inactive_streams(frame_holder& f)
     {
         std::vector<stream_id> dead_matchers;
-        auto now = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+		auto now = environment::get_instance().get_time_service()->get_time();
         for(auto m: _matchers)
         {
 			auto threshold = _fps[m.second.get()] ? (1000 / _fps[m.second.get()]) * 5 : 500; //if frame of a specific stream didn't arrive for time equivalence to 5 frames duration 
