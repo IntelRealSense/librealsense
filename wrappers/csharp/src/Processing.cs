@@ -115,7 +115,7 @@ namespace Intel.RealSense
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
-        public Points Points(Frame original)
+        public Points Calculate(Frame original)
         {
             object error;
             NativeMethods.rs2_frame_add_ref(original.m_instance.Handle, out error);
