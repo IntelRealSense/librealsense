@@ -13,7 +13,9 @@ namespace Intel.RealSense
         internal static Frame CreateFrame(IntPtr ptr)
         {
             object error;
-            if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.DepthFrame, out error) > 0)
+            if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.Points, out error) > 0)
+                return new Points(ptr);
+            else if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.DepthFrame, out error) > 0)
                 return new DepthFrame(ptr);
             else if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.VideoFrame, out error) > 0)
                 return new VideoFrame(ptr);
