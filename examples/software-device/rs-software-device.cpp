@@ -70,7 +70,7 @@ public:
         if (now - last > std::chrono::milliseconds(1))
         {
             app_state.yaw -= 1;
-            wave_base += 0.1;
+            wave_base += 0.1f;
             last = now;
 
             for (int i = 0; i < depth_frame.y; i++)
@@ -191,7 +191,7 @@ int main(int argc, char * argv[]) try
             // Upload the color frame to OpenGL
             app_state.tex.upload(color);
         }
-        draw_pointcloud(app, app_state, points);
+        draw_pointcloud(app.width(), app.height(), app_state, points);
     }
 
     return EXIT_SUCCESS;

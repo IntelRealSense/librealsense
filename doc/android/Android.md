@@ -1,3 +1,5 @@
+>:pushpin: While we do not officially support using the Intel® RealSense™ SDK on Android platforms, the RealSense compatible devices can be connected to Android phones and tablets via a USB 3 port.
+
 #  Build Intel&reg; RealSense&trade; SDK 2.0 for Android OS
 This document describes how to build the [Intel&reg; RealSense&trade; SDK 2.0](https://github.com/IntelRealSense/librealsense) including headless tools and examples for Android devices.
 

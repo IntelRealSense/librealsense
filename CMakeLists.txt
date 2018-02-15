@@ -57,6 +57,11 @@ option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 
 option(BUILD_WITH_OPENMP "Use OpenMP" ON)
 
+option(USE_SYSTEM_LIBUSB "Use the distribution libusb package" ON)
+if (WIN32)
+    set(USE_SYSTEM_LIBUSB OFF)
+endif()
+
 option(ENABLE_ZERO_COPY "Enable zero copy functionality" OFF)
 if (ENABLE_ZERO_COPY)
     add_definitions(-DZERO_COPY)
@@ -66,6 +71,7 @@ if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
     unset(WIN32)
     unset(UNIX)
     unset(APPLE)
+    set(USE_SYSTEM_LIBUSB OFF)
     set(BUILD_WITH_OPENMP OFF)
     set(FORCE_LIBUVC ON)
     set(BUILD_GRAPHICAL_EXAMPLES OFF)
@@ -126,6 +132,7 @@ set(REALSENSE_CPP
     src/proc/align.cpp
     src/proc/colorizer.cpp
     src/proc/pointcloud.cpp
+    src/proc/occlusion-filter.cpp
     src/proc/synthetic-stream.cpp
     src/proc/syncer-processing-block.cpp
     src/proc/decimation-filter.cpp
@@ -222,6 +229,7 @@ set(REALSENSE_HPP
     src/proc/align.h
     src/proc/colorizer.h
     src/proc/pointcloud.h
+    src/proc/occlusion-filter.h
     src/proc/synthetic-stream.h
     src/proc/decimation-filter.h
     src/proc/spatial-filter.h
@@ -446,6 +454,7 @@ if(WIN32)
         src/proc/synthetic-stream.cpp
         src/proc/align.cpp
         src/proc/pointcloud.cpp
+        src/proc/occlusion-filter.cpp
         src/proc/decimation-filter.cpp
         src/proc/spatial-filter.cpp
         src/proc/temporal-filter.cpp
@@ -457,6 +466,7 @@ if(WIN32)
         src/proc/colorizer.h
         src/proc/align.h
         src/proc/pointcloud.h
+        src/proc/occlusion-filter.h
         src/proc/synthetic-stream.h
         src/proc/decimation-filter.h
         src/proc/spatial-filter.h
@@ -555,6 +565,17 @@ if(UNIX)
         message(FATAL_ERROR "\n\n PkgConfig package is missing!\n\n")
     endif()
 
+    if (USE_SYSTEM_LIBUSB)
+        pkg_search_module(LIBUSB1 REQUIRED libusb-1.0)
+        if(LIBUSB1_FOUND)
+            include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})
+            link_directories(${LIBUSB1_LIBRARY_DIRS})
+            list(APPEND librealsense_PKG_DEPS "libusb-1.0")
+        else()
+            message( FATAL_ERROR "Failed to find libusb-1.0" )
+        endif(LIBUSB1_FOUND)
+    endif()
+
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -g -D_BSD_SOURCE")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -g -Wno-missing-field-initializers")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar -Wsequence-point -Wformat-security")
@@ -585,10 +606,12 @@ if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
 endif()
 
-if(NOT WIN32)
-    add_subdirectory(third-party/libusb/)
-elseif(FORCE_LIBUVC)
-    add_subdirectory(third-party/libusb/)
+if (NOT USE_SYSTEM_LIBUSB)
+    if(NOT WIN32)
+        add_subdirectory(third-party/libusb/)
+    elseif(FORCE_LIBUVC)
+        add_subdirectory(third-party/libusb/)
+    endif()
 endif()
 
 add_subdirectory(third-party/realsense-file)
@@ -677,10 +700,14 @@ set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
 target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
 
-if(NOT WIN32)
-    target_link_libraries(realsense2 PRIVATE usb)
-elseif(FORCE_LIBUVC)
-    target_link_libraries(realsense2 PRIVATE usb)
+if (NOT USE_SYSTEM_LIBUSB)
+    if(NOT WIN32)
+        target_link_libraries(realsense2 PRIVATE usb)
+    elseif(FORCE_LIBUVC)
+        target_link_libraries(realsense2 PRIVATE usb)
+    endif()
+else()
+    target_link_libraries(realsense2 PRIVATE ${LIBUSB1_LIBRARIES})
 endif()
 
 
@@ -706,6 +733,10 @@ target_include_directories(realsense2 PRIVATE
         ${BOOST_INCLUDE_PATH}
         ${LZ4_INCLUDE_PATH}
         )
+
+if (USE_SYSTEM_LIBUSB)
+    target_include_directories(realsense2 PRIVATE ${LIBUSB1_INCLUDE_DIRS})
+endif()
 
 target_include_directories(realsense2 PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                             $<INSTALL_INTERFACE:include>

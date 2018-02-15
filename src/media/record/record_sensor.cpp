@@ -342,20 +342,19 @@ void record_sensor::wrap_streams()
         {
             std::shared_ptr<stream_profile_interface> snapshot;
             stream->create_snapshot(snapshot);
-	        rs2_extension extension_type;
-	        if (Is<librealsense::video_stream_profile_interface>(stream))
-	            extension_type = RS2_EXTENSION_VIDEO_PROFILE;
-	        else if (Is<librealsense::motion_stream_profile_interface>(stream))
-	            extension_type = RS2_EXTENSION_MOTION_PROFILE;
-	        else if (Is<librealsense::pose_stream_profile_interface>(stream))
-	            extension_type = RS2_EXTENSION_POSE_PROFILE;
-     		else 
-				throw std::runtime_error("Unsupported stream");
+            rs2_extension extension_type;
+            if (Is<librealsense::video_stream_profile_interface>(stream))
+                extension_type = RS2_EXTENSION_VIDEO_PROFILE;
+            else if (Is<librealsense::motion_stream_profile_interface>(stream))
+                extension_type = RS2_EXTENSION_MOTION_PROFILE;
+            else if (Is<librealsense::pose_stream_profile_interface>(stream))
+                extension_type = RS2_EXTENSION_POSE_PROFILE;
+            else 
+                throw std::runtime_error("Unsupported stream");
 
-	        on_extension_change(extension_type, std::dynamic_pointer_cast<extension_snapshot>(snapshot));
+            on_extension_change(extension_type, std::dynamic_pointer_cast<extension_snapshot>(snapshot));
 
            m_recorded_streams_ids.insert(id);
         }
     }
 }
-

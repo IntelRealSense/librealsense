@@ -17,7 +17,7 @@ let errors = [];
 function doCppLint(files) {
   if (!files) return;
 
-  let cpplint = (os.platform == 'win32') ? which.sync('cpplint', {pathExt: '.EXE;.PY'})
+  let cpplint = (os.platform() == 'win32') ? which.sync('cpplint', {pathExt: '.EXE;.PY'})
                                          : which.sync('cpplint.py');
   if (!cpplint) {
     console.log('You need install depot_tools, and add to PATH.' +
@@ -42,7 +42,7 @@ function doJsLint(files) {
 
   for (let linter of ['eslint', 'jshint']) {
     let output = null;
-    if (os.platform == 'win32') {
+    if (os.platform() == 'win32') {
       output = spawn(path.join(jsLinterDir, linter + '.cmd'), files).stdout.toString();
     } else {
       output = spawn('node', [path.join(jsLinterDir, linter)].concat(files)).stdout.toString();

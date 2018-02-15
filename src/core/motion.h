@@ -23,7 +23,6 @@ namespace librealsense
 
     MAP_EXTENSION(RS2_EXTENSION_POSE_PROFILE, librealsense::pose_stream_profile_interface);
 
-    
     class tm2_extensions
     {
     public:

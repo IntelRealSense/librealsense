@@ -40,14 +40,16 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       brew uninstall xctool;
       brew install xctool --HEAD;
-      brew install homebrew/versions/glfw3;
+      brew install homebrew/core/glfw3;
+      brew install libusb;
     fi
 
   # Install linux required packages
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
       sudo apt-get update;
-      sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev libudev-dev;
+      sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
+      sudo apt-get install -qq libusb-1.0-0-dev;
       sudo apt-get install -qq libgtk-3-dev;
       sudo apt-get install -qq python python-dev;
       sudo apt-get install gcc-5 g++-5;

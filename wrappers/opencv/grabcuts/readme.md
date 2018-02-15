@@ -16,7 +16,7 @@ We start by getting a pair of spatially and temporally synchronized frames:
 frameset data = pipe.wait_for_frames();
 // Make sure the frameset is spatialy aligned 
 // (each pixel in depth image corresponds to the same pixel in the color image)
-frameset aligned_set = align_to.proccess(data);
+frameset aligned_set = align_to.process(data);
 frame depth = aligned_set.get_depth_frame();
 auto color_mat = frame_to_mat(aligned_set.get_color_frame());
 ```

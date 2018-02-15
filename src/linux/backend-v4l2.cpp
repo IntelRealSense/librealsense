@@ -34,6 +34,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
+#include <sys/sysmacros.h> // minor(...), major(...)
 #include <linux/usb/video.h>
 #include <linux/uvcvideo.h>
 #include <linux/videodev2.h>
@@ -49,8 +50,6 @@ const size_t MAX_DEV_PARENT_DIR = 10;
 
 
 #ifdef ANDROID
-
-#include <sys/sysmacros.h> // minor(...), major(...)
 
 // https://android.googlesource.com/platform/bionic/+/master/libc/include/bits/lockf.h
 #define F_ULOCK 0
