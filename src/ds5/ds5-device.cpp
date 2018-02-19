@@ -158,7 +158,7 @@ namespace librealsense
             }
 
             // If no stream profile was marked as default, fall back to second best depth resultion
-            if (!std::any_of(results.begin(), results.end(), [](auto p) {
+            if (!std::any_of(results.begin(), results.end(), [](const std::shared_ptr<stream_profile_interface>& p) {
                 return p->get_stream_type() == RS2_STREAM_DEPTH && p->is_default();
             }))
             {
