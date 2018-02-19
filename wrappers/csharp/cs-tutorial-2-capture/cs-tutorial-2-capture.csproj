@@ -81,7 +81,7 @@
   <PropertyGroup>
     <StartupObject>Intel.RealSense.Program</StartupObject>
 	<LibDirectory>..\Intel.RealSense\bin\$(Configuration)</LibDirectory>
-	<LibDirectory Condition="Exists('$(LibDirectory)\net40')">$(LibDirectory)\net40</LibDirectory>
+    <LibDirectory Condition="Exists('$(LibDirectory)\net35')">$(LibDirectory)\net35</LibDirectory>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Intel.RealSense, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
