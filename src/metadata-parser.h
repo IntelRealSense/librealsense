@@ -237,7 +237,10 @@ namespace librealsense
             {
                 num_of_frames = frm.additional_data.frame_number - frm.additional_data.last_frame_number;
             }
-            assert(num_of_frames);
+            if (num_of_frames == 0)
+            {
+                LOG_INFO("frame_number - last_frame_number " << num_of_frames);
+            }
 
             auto diff = num_of_frames ? (double)(frm.additional_data.timestamp - frm.additional_data.last_timestamp) / (double)num_of_frames : 0;
             return diff > 0 ? std::max(1000.f / std::ceil(diff), (double)1) : frm.get_stream()->get_framerate();
@@ -254,7 +257,7 @@ namespace librealsense
 
         rs2_metadata_type get(const frame & frm) const override
         {
-            if (!frm.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
+            if (frm.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
             {
                 if (frm.get_stream()->get_format() == RS2_FORMAT_Y16 &&
                     frm.get_stream()->get_stream_type() == RS2_STREAM_INFRARED) //calibration mode
