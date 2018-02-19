@@ -93,7 +93,10 @@ namespace librealsense
         set_active_streams(requests);
     }
 
-    void software_sensor::close(){}
+    void software_sensor::close()
+    {
+        set_active_streams({});
+    }
 
     void software_sensor::start(frame_callback_ptr callback)
     {
