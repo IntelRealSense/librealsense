@@ -226,7 +226,7 @@ MonoBehaviour:
     type: 2}
   m_PrefabInternal: {fileID: 1749709813}
   m_Script: {fileID: -98529514, guid: f70555f144d8491a825f0804e09c671c, type: 3}
---- !u!1001 &1513209409
+--- !u!1001 &1173568655
 Prefab:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -285,6 +285,21 @@ Prefab:
       propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1161181386}
+    - target: {fileID: 199450800450378262, guid: c88c4d8330157094da830413654dd969,
+        type: 2}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
+    - target: {fileID: 199450800450378262, guid: c88c4d8330157094da830413654dd969,
+        type: 2}
+      propertyPath: m_Materials.Array.data[1]
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 114829735335920084, guid: c88c4d8330157094da830413654dd969,
+        type: 2}
+      propertyPath: gradientNear
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: c88c4d8330157094da830413654dd969, type: 2}
   m_IsPrefabParent: 0

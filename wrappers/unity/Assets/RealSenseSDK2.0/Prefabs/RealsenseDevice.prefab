@@ -438,7 +438,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1477018736042352}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0c360fc0f09c4244eab74c8e5efa9abe, type: 3}
+  m_Script: {fileID: 11500000, guid: aba41b1f9e48a814499563e1e524dabf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   pSize: 0.01
@@ -569,7 +569,7 @@ ParticleSystem:
   moveWithTransform: 0
   moveWithCustomTransform: {fileID: 0}
   scalingMode: 1
-  randomSeed: 972435224
+  randomSeed: -367151388
   InitialModule:
     serializedVersion: 3
     enabled: 1

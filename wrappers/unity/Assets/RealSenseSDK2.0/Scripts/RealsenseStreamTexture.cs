@@ -96,6 +96,16 @@ public class RealsenseStreamTexture : MonoBehaviour
             return;
 
         var vidFrame = ProcessFrame(frame) as VideoFrame;
+        if (vidFrame == null)
+        {
+            Debug.Log("ProcessFrame returned null frame");
+            return;
+        }
+        if (vidFrame.Data == null)
+        {
+            Debug.Log("frame's data is null");
+            return;
+        }
         texture.LoadRawTextureData(frame.Data, vidFrame.Stride * vidFrame.Height);
         texture.Apply();
     }
