@@ -119,7 +119,8 @@ namespace librealsense
                 }
                 auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                if (video->get_width() == 1280 && video->get_height() == 720 && video->get_format() == RS2_FORMAT_Z16 && video->get_framerate() == 30)
+                if (video->get_width() == 1280 && video->get_height() == 720 && 
+                    video->get_format() == RS2_FORMAT_Z16 && video->get_framerate() == 30)
                     video->make_default();
 
                 auto color_dev = dynamic_cast<const ds5_color*>(&get_device());
@@ -154,6 +155,21 @@ namespace librealsense
                             return rs2_intrinsics{};
                     });
                 }
+            }
+
+            // If no stream profile was marked as default, fall back to second best depth resultion
+            if (!std::any_of(results.begin(), results.end(), [](auto p) {
+                return p->get_stream_type() == RS2_STREAM_DEPTH && p->is_default();
+            }))
+            {
+                for (auto p : results)
+                {
+                    auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+
+                    if (video->get_width() == 848 && video->get_height() == 480
+                        && video->get_framerate() == 30 && video->get_stream_index() == 0)
+                        video->make_default();
+                } 
             }
 
             return results;
