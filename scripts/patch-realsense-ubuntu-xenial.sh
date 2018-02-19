@@ -4,18 +4,17 @@
 set -e
 
 #Locally suppress stderr to avoid raising not relevant messages
-exec 2>/dev/null
+exec 3>&2
+exec 2> /dev/null
+con_dev=$(ls /dev/video* | wc -l)
+exec 2>&3
 
-if [ $(ls /dev/video* | wc -l) -ne 0 ];
+if [ $con_dev -ne 0 ];
 then
-	# Restore stderr
-	exec 2>&1
 	echo -e "\e[32m"
 	read -p "Remove all RealSense cameras attached. Hit any key when ready"
 	echo -e "\e[0m"
 fi
-# Restore stderr
-exec 2>&1
 
 #Include usability functions
 source ./scripts/patch-utils.sh
@@ -70,7 +69,7 @@ else
 	echo -e "\e[32mApplying realsense-uvc patch\e[0m"
 	patch -p1 < ../scripts/realsense-camera-formats_ubuntu-xenial-${kernel_branch}.patch
 	echo -e "\e[32mApplying realsense-metadata patch\e[0m"
-	patch -p1 < ../scripts/realsense-metadata-ubuntu-xenial.patch
+	patch -p1 < ../scripts/realsense-metadata-ubuntu-xenial-${kernel_branch}.patch
 	echo -e "\e[32mApplying realsense-hid patch\e[0m"
 	patch -p1 < ../scripts/realsense-hid-ubuntu-xenial-${kernel_branch}.patch
 	echo -e "\e[32mApplying realsense-powerlinefrequency-fix patch\e[0m"
@@ -118,7 +117,7 @@ echo -e "\e[32mPatched kernels modules were created successfully\n\e[0m"
 # Load the newly-built modules
 try_module_insert videodev				~/$LINUX_BRANCH-videodev.ko 			/lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videodev.ko
 try_module_insert uvcvideo				~/$LINUX_BRANCH-uvcvideo.ko 			/lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko
-try_module_insert hid-sensor-accel-3d 	~/$LINUX_BRANCH-hid-sensor-accel-3d.ko 	/lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko
-try_module_insert hid-sensor-gyro-3d	~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko 	/lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko
+try_module_insert hid_sensor_accel_3d 	~/$LINUX_BRANCH-hid-sensor-accel-3d.ko 	/lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko
+try_module_insert hid_sensor_gyro_3d	~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko 	/lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko
 
 echo -e "\e[92m\n\e[1mScript has completed. Please consult the installation guide for further instruction.\n\e[0m"

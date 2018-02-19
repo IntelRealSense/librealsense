@@ -195,6 +195,63 @@ namespace Intel.RealSense
         }
     }
 
+
+    public class Points : Frame
+    {
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        public struct Vertex
+        {
+            public float x;
+            public float y;
+            public float z;
+        }
+
+        public Points(IntPtr ptr) : base(ptr)
+        {
+        }
+
+        public int Count
+        {
+            get
+            {
+                object error;
+                var h = NativeMethods.rs2_get_frame_points_count(m_instance.Handle, out error);
+                return h;
+            }
+        }
+
+        private IntPtr VertexData
+        {
+            get
+            {
+                object error;
+                return NativeMethods.rs2_get_frame_vertices(m_instance.Handle, out error);
+            }
+        }
+
+
+        /// <summary>
+        /// Copy frame data to Vertex array
+        /// </summary>
+        /// <param name="array"></param>
+        public void CopyTo(Vertex[] array)
+        {
+            if (array == null)
+                throw new ArgumentNullException("array");
+            var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+            try
+            {
+                NativeMethods.memcpy(handle.AddrOfPinnedObject(), VertexData, Count * Marshal.SizeOf(typeof(Vertex)));
+            }
+            finally
+            {
+                handle.Free();
+            }
+        }
+    }
+
+
+
     class FrameMarshaler : ICustomMarshaler
     {
         private static FrameMarshaler Instance;
