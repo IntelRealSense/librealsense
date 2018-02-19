@@ -47,7 +47,8 @@ The Unity wrapper provides several example scenes to help you get started with R
 
 The RealSenseDevice provides an encapsulation of a single device connected to the system. The following image displays the RealSenseDevice script:
 
-![image](https://user-images.githubusercontent.com/22654243/35568760-b5860d4a-05d2-11e8-847a-a0a0904e2370.png)
+
+![image](https://user-images.githubusercontent.com/22654243/36370418-77bf062a-1567-11e8-98ee-c2489aeb1208.png)
 
 ##### Process Mode
 This option indicates which threading model the user expects to use.
@@ -61,9 +62,16 @@ Note that this option affects all other scripts that do any sort of frame proces
 The device is configured the same way that a `Pipeline` is, i.e. with a `Config`. In order to make it available via Unity Inspector, a `Configuration` object is exposed for each RealSenseDevice. When Starting the scene, the device will try to start streaming the requested configuration (`Pipeline.Start(config)` is called).
 Upon starting the device, the device will begin raising frames via its `OnNewSample` and `OnNewSampleSet` public events. These frames are raised either from a separate thread or from the Unity thread, depending on the user's choice of Process Mode.
 
-In addition to stream configuration, the panel also allows users to select a specific device by providing its serial number, and select options to set to the sensors prior to streaming.
+In addition to stream configuration, the panel also allows users to select a specific device by providing its serial number.
 
-![image](https://user-images.githubusercontent.com/22654243/35588548-ab7b6dea-0609-11e8-8eca-ba50b27732e9.png)
+![image](https://user-images.githubusercontent.com/22654243/36370385-5dbddb2a-1567-11e8-9c52-aa7ee988f19f.png)
+
+
+##### RealSense Device Inspector
+
+Once the device is streaming, Unity Inspector will show the device's sensors and allow controlling their options via the GUI under the RealSenseDeviceInspector script. Changing these options affect the sensor directly on runtime:
+
+![image](https://user-images.githubusercontent.com/22654243/36370003-007a7bc2-1566-11e8-979f-e31617643e7a.png)
 
 
 ##### Texture Streams
