@@ -4769,6 +4769,16 @@ const frame_metadata = {
    * <br>Equivalent to its uppercase counterpart
    */
   frame_metadata_temperature: 'temperature',
+   /**
+   * Timestamp get from uvc driver. usec
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_backend_timestamp: 'backend_timestamp',
+    /**
+  * Actual fps
+  * <br>Equivalent to its uppercase counterpart
+  */
+  frame_metadata_actual_fps: 'actual_fps',
   /**
    * A sequential index managed per-stream. Integer value <br>Equivalent to its lowercase
    * counterpart.
@@ -4823,6 +4833,18 @@ const frame_metadata = {
    * @type {Integer}
    */
   FRAME_METADATA_TEMPERATURE: RS2.RS2_FRAME_METADATA_TEMPERATURE,
+  /**
+  * Timestamp get from uvc driver. usec
+  * <br>Equivalent to its lowercase counterpart
+  * @type {Integer}
+  */
+  FRAME_METADATA_BACKEND_TIMESTAMP: RS2.RS2_FRAME_METADATA_BACKEND_TIMESTAMP,
+  /**
+  * Actual fps
+  * <br>Equivalent to its lowercase counterpart
+  * @type {Integer}
+  */
+  FRAME_METADATA_ACTUAL_FPS: RS2.RS2_FRAME_METADATA_ACTUAL_FPS,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}

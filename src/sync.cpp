@@ -503,10 +503,10 @@ namespace librealsense
         else
             _fps[m] = f->get_stream()->get_framerate();
 
-		_last_arrived[m] = environment::get_instance().get_time_service()->get_time();
+        _last_arrived[m] = environment::get_instance().get_time_service()->get_time();
     }
 
-	unsigned int timestamp_composite_matcher::get_fps(const frame_holder & f)
+    unsigned int timestamp_composite_matcher::get_fps(const frame_holder & f)
     {
         auto fps = 0;
         if(f.frame->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
@@ -533,11 +533,11 @@ namespace librealsense
     void timestamp_composite_matcher::clean_inactive_streams(frame_holder& f)
     {
         std::vector<stream_id> dead_matchers;
-		auto now = environment::get_instance().get_time_service()->get_time();
+        auto now = environment::get_instance().get_time_service()->get_time();
         for(auto m: _matchers)
         {
-			auto threshold = _fps[m.second.get()] ? (1000 / _fps[m.second.get()]) * 5 : 500; //if frame of a specific stream didn't arrive for time equivalence to 5 frames duration 
-																							 //this stream will be marked as "not active" in order to not stack the other streams
+            auto threshold = _fps[m.second.get()] ? (1000 / _fps[m.second.get()]) * 5 : 500; //if frame of a specific stream didn't arrive for time equivalence to 5 frames duration 
+                                                                                             //this stream will be marked as "not active" in order to not stack the other streams
             if(_last_arrived[m.second.get()] && (now - _last_arrived[m.second.get()]) > threshold)
             {
                 std::stringstream s;

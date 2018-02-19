@@ -384,8 +384,8 @@ namespace librealsense
         {
             try
             {
-				unsigned long long last_frame_number = 0;
-				rs2_time_t last_timestamp = 0;
+                unsigned long long last_frame_number = 0;
+                rs2_time_t last_timestamp = 0;
                 _device->probe_and_commit(mode.profile,
                 [this, mode, timestamp_reader, requests, last_frame_number, last_timestamp](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
@@ -422,7 +422,7 @@ namespace librealsense
                             << output.first.index << "," << frame_counter
                             << ",Arrived," << std::fixed << f.backend_time << " " << std::fixed << system_time<<" diff - "<< system_time- f.backend_time << " "
                             << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain) 
-							<<" last_frame_number "<< last_frame_number<<" last_timestamp "<< last_timestamp);
+                            <<" last_frame_number "<< last_frame_number<<" last_timestamp "<< last_timestamp);
 
                         std::shared_ptr<stream_profile_interface> request = nullptr;
                         for (auto&& original_prof : mode.original_requests)
@@ -442,11 +442,11 @@ namespace librealsense
                             static_cast<uint8_t>(f.metadata_size),
                             (const uint8_t*)f.metadata,
                             f.backend_time,
-							last_timestamp,
-							last_frame_number);
+                            last_timestamp,
+                            last_frame_number);
 
-						last_frame_number = frame_counter;
-						last_timestamp = timestamp;
+                        last_frame_number = frame_counter;
+                        last_timestamp = timestamp;
 
                         frame_holder frame = _source.alloc_frame(stream_to_frame_types(output.first.type), width * height * bpp / 8, additional_data, requires_processing);
                         if (frame.frame)
