@@ -240,7 +240,7 @@ namespace Intel.RealSense
                 get
                 {
                     object error;
-                    return NativeMethods.rs2_is_option_read_only(dev, option, out error) != 0;
+                    return NativeMethods.rs2_is_option_read_only(m_sensor, option, out error) != 0;
                 }
             }
         }
@@ -263,7 +263,7 @@ namespace Intel.RealSense
             public string OptionValueDescription(Option option, float value)
             {
                 object error;
-                var desc = NativeMethods.rs2_get_option_value_description(dev, option, value, out error);
+                var desc = NativeMethods.rs2_get_option_value_description(m_sensor, option, value, out error);
                 if(desc != null)
                 {
                     return Marshal.PtrToStringAnsi(desc);
