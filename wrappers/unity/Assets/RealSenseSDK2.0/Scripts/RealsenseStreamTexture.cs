@@ -101,7 +101,7 @@ public class RealsenseStreamTexture : MonoBehaviour
             Debug.Log("ProcessFrame returned null frame");
             return;
         }
-        if (vidFrame.Data == null)
+        if (vidFrame.Data == IntPtr.Zero)
         {
             Debug.Log("frame's data is null");
             return;

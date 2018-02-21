@@ -78,7 +78,9 @@ Once the device is streaming, Unity Inspector will show the device's sensors and
 
 Under the `RealSenseDeivce` object in Unity's Hierarchy view, you can find a number of textures that bind to the device's frame callback and allow user to bind a texture to be updated upon frame arrival.
 
-![image](https://user-images.githubusercontent.com/22654243/35589031-21a42448-060b-11e8-9a99-d7549b4bb53d.png)
+
+![image](https://user-images.githubusercontent.com/22654243/36472152-90796e10-16f9-11e8-9b24-5d0abe159fbe.png)
+
 
 Each texture stream is associated with the `RealSenseStreamTexture` script which allows user to bind their textures so that they will be updated with each new frame. The following screenshot displays the configurations available for users when using a texture stream:
 
@@ -96,6 +98,18 @@ The `Alignment` object is a special case of texture stream which uses the `Align
 An example usage of this script is to perform background segmentation between depth and color images by turning each colored pixel that is not within the given range into a grayscale pixel. The scene presents this example in the bottom right image labeled "Background Segmentation".
 Segmentation is performed using the `BGSeg` shader.
 
+##### PointCloud
+
+Also under the `RealSenseDeivce` object in Unity's Hierarchy view, you can find PointCloud object that provides a 3D point cloud of the depth data in the form of Unity Particles (Using the Particle System).
+
+The PointCloud object uses the `PointCloudGenerator.cs` script which allows some user control over the output:
+
+![image](https://user-images.githubusercontent.com/22654243/36472070-43c9e13a-16f9-11e8-9607-3aadf97c7bb4.png)
+
+
+* Gradient - is a color gradient used to color the particles
+* Points Size - Controls the size of the Particles
+* Skip Particles - A factor >= 1 meaning how many points to skip when creating the particles.
 
 ### Images
 

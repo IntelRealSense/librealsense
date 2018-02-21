@@ -17,10 +17,9 @@ public class PointCloudGenerator : MonoBehaviour
     private int particleCount;
     private ParticleSystem.Particle[] particles;
     private Intrinsics depthIntrinsic;
-
-    public float pSize = 0.01f;
-    public float gradientNear = 0.0f;
-    public float gradientFar = 3.0f;
+    private PointCloud pc = new PointCloud();
+    public UnityEngine.Gradient gradient;
+    public float pointsSize = 0.01f;
     public int skipParticles = 2;
     public ParticleSystem pointCloudParticles;
 
@@ -51,52 +50,41 @@ public class PointCloudGenerator : MonoBehaviour
 
     private void OnFrame(Frame frame)
     {
-        if (frame.Profile.Stream != Intel.RealSense.Stream.Depth)
-            return;
-
-        var depthFrame = frame as DepthFrame;
-        if (depthFrame == null)
+        if (frame.Profile.Stream == Intel.RealSense.Stream.Depth)
         {
-            Debug.Log("Frame is not a depth frame");
-            return;
-        }
-
-        UpdateParticleParams(depthFrame.Width, depthFrame.Height, depthFrame.Profile.Format);
-
-        //TODO: Use PointCloud Processing Block instead
-        int particleIndex = 0;
-        particleCount = particleSize;
-        for (int y = 0; y < streamHeight; y += skipParticles)
-        {
-            for (int x = 0; x < streamWidth; x += skipParticles)
+            var depthFrame = frame as DepthFrame;
+            if (depthFrame == null)
             {
-                float depthValue = depthFrame.GetDistance(x, y);
-                //depthValue *= 0.001f;
-                if (depthValue > 0)
-                {
-                    Vector3 point3D;
-                    float xx = x;
-                    float yy = y;
-                    float px = (xx - depthIntrinsic.ppx) / depthIntrinsic.fx;
-                    float py = (yy - depthIntrinsic.ppy) / depthIntrinsic.fy;
+                Debug.Log("Frame is not a depth frame");
+                return;
+            }
 
-                    point3D.x = depthValue * px;
-                    point3D.y = depthValue * -py;
-                    point3D.z = depthValue;
-                    particles[particleIndex].position = point3D;
-                    particles[particleIndex].startSize = pSize;
-                    //TODO: Take from texture map of pointcloud, or use the colorizer
-                    float pColorVal = Remap((float)depthValue, gradientNear, gradientFar, 255.0f, 0.0f);
-                    particles[particleIndex].startColor = new Color32((byte)pColorVal, (byte)pColorVal, (byte)pColorVal, 255);
+            UpdateParticleParams(depthFrame.Width, depthFrame.Height, depthFrame.Profile.Format);
+
+            var points = pc.Calculate(frame);
+
+            Points.Vertex[] vertices = new Points.Vertex[points.Count];
+            points.CopyTo(vertices);
+            for (int index = 0; index < vertices.Length; index += skipParticles)
+            {
+                var v = vertices[index];
+                if (v.z > 0)
+                {
+                    particles[index].position = new Vector3(v.x, v.y, v.z);
+                    particles[index].startSize = pointsSize;
+                    particles[index].startColor = gradient.Evaluate(v.z);
                 }
                 else
                 {
-                    particles[particleIndex].position = new Vector3(0, 0, 0);
-                    particles[particleIndex].startSize = (float)0.0;
-                    particles[particleIndex].startColor = new Color32(0, 0, 0, 0);
+                    particles[index].position = new Vector3(0, 0, 0);
+                    particles[index].startSize = (float)0.0;
+                    particles[index].startColor = new Color32(0, 0, 0, 0);
                 }
-                particleIndex++;
             }
+        }
+        else if(frame.Profile.Stream == Intel.RealSense.Stream.Color)
+        {
+            //pc.MapTexture(frame);
         }
     }
 
@@ -125,6 +113,7 @@ public class PointCloudGenerator : MonoBehaviour
             particleSize = totalImageSize / skipParticles;
             particles = new ParticleSystem.Particle[particleSize];
         }
+        particleCount = particleSize;
     }
 
     void Update()
