@@ -16,6 +16,16 @@ After installing all prerequisites, navigate to `/wrappers/csharp` and open eith
 
 Press `Ctrl + Shift + B` to build the solution. 
 
+If you choose to build the SDK from source and do so to a custom directory you may need to specify the path to `realsense2.dll` in the Intel.RealSense[.2015].csproj. This can be done by manually editing the csproj to add a BuildPath property above the default. 
+e.g.
+```
+  <PropertyGroup>
+    ...
+    <BuildPath>your\path\to\realsense2.dll</BuildPath>
+    <BuildPath Condition="'$(BuildPath)'==''">..\..\..\build\$(Configuration)\realsense2.dll</BuildPath> <---Existing default location
+  </PropertyGroup>
+```
+
 ## Hello World
 
 Here is a minimal depth application written in C#: 
