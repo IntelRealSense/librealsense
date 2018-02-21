@@ -16,7 +16,6 @@ public class PointCloudGenerator : MonoBehaviour
     private int particleSize;
     private int particleCount;
     private ParticleSystem.Particle[] particles;
-    private Intrinsics depthIntrinsic;
     private PointCloud pc = new PointCloud();
     public UnityEngine.Gradient gradient;
     public float pointsSize = 0.01f;
@@ -131,7 +130,7 @@ public class PointCloudGenerator : MonoBehaviour
             return false;
         }
         var depthProfile = depthStream as VideoStreamProfile;
-        depthIntrinsic = depthProfile.GetIntrinsics();
+        //depthIntrinsic = depthProfile.GetIntrinsics();
         streamWidth = depthProfile.Width;
         streamHeight = depthProfile.Height;
         return true;

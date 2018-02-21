@@ -61,7 +61,7 @@ public class RealsenseStreamTexture : MonoBehaviour
         if (fetchFramesFromDevice)
         {
             if (RealSenseDevice.Instance.processMode == RealSenseDevice.ProcessMode.UnityThread)
-                RealSenseDevice.Instance.onNewSample += onNewSampleUnityThread;
+                RealSenseDevice.Instance.onNewSample += OnNewSampleUnityThread;
             else
                 RealSenseDevice.Instance.onNewSample += onNewSampleThreading;
         }
@@ -71,7 +71,7 @@ public class RealsenseStreamTexture : MonoBehaviour
     {
         if (RealSenseDevice.Instance.processMode == RealSenseDevice.ProcessMode.UnityThread)
         {
-            onNewSampleUnityThread(f);
+            OnNewSampleUnityThread(f);
         }
         else
         {
@@ -79,35 +79,32 @@ public class RealsenseStreamTexture : MonoBehaviour
         }
     }
 
-    private void onNewSampleThreading(Frame frame)
+    private void UpdateData(Frame frame)
     {
         if (frame.Profile.Stream != sourceStreamType)
             return;
+
         var vidFrame = ProcessFrame(frame) as VideoFrame;
         data = data ?? new byte[vidFrame.Stride * vidFrame.Height];
         vidFrame.CopyTo(data);
+    }
+
+    private void UploadTexture()
+    {
+        texture.LoadRawTextureData(data);
+        texture.Apply();
+    }
+        private void onNewSampleThreading(Frame frame)
+    {
+        UpdateData(frame);
         f.Set();
     }
 
-    private void onNewSampleUnityThread(Frame frame)
+    private void OnNewSampleUnityThread(Frame frame)
     {
         UnityEngine.Assertions.Assert.AreEqual(threadId, Thread.CurrentThread.ManagedThreadId);
-        if (frame.Profile.Stream != sourceStreamType)
-            return;
-
-        var vidFrame = ProcessFrame(frame) as VideoFrame;
-        if (vidFrame == null)
-        {
-            Debug.Log("ProcessFrame returned null frame");
-            return;
-        }
-        if (vidFrame.Data == IntPtr.Zero)
-        {
-            Debug.Log("frame's data is null");
-            return;
-        }
-        texture.LoadRawTextureData(frame.Data, vidFrame.Stride * vidFrame.Height);
-        texture.Apply();
+        UpdateData(frame);
+        UploadTexture();
     }
 
     // Update is called once per frame
@@ -115,8 +112,7 @@ public class RealsenseStreamTexture : MonoBehaviour
     {
         if (f.WaitOne(0))
         {
-            texture.LoadRawTextureData(data);
-            texture.Apply();
+            UploadTexture();
         }
     }
 }

@@ -86,20 +86,7 @@ public class RealSenseDevice : MonoBehaviour
         m_config = DeviceConfiguration.ToPipelineConfig();
         ActiveProfile = m_config.Resolve(m_pipeline);
     }
-    //void OnApplicationQuit()
-    //{
-    //    Debug.Log("Exit called");
-    //    if (m_pipeline == null)
-    //        return;
-    //    try
-    //    {
-    //        m_pipeline.Stop();
-    //    }
-    //    catch (Exception e)
-    //    {
-    //        Debug.Log(e.Message);
-    //    }
-    //}
+
     void Start()
     {
         try
@@ -167,11 +154,10 @@ public class RealSenseDevice : MonoBehaviour
     /// <summary>
     /// Process frame on each new frame, ends by calling the event
     /// </summary>
-    public void ProcessFrame()
+    public void ProcessFrames(FrameSet frames)
     {
         try
         {
-            var frames = m_pipeline.WaitForFrames();
             try
             {
                 HandleFrameSet(frames);
@@ -180,6 +166,7 @@ public class RealSenseDevice : MonoBehaviour
             {
                 Debug.LogError(e.Message);
             }
+
             foreach (var frame in frames)
             {
                 try
@@ -209,7 +196,8 @@ public class RealSenseDevice : MonoBehaviour
     {
         while (worker.CancellationPending == false)
         {
-            ProcessFrame();
+            var frames = m_pipeline.WaitForFrames();
+            ProcessFrames(frames);
         }
         Debug.Log("RealSenseDevice thread ended");
     }
@@ -217,9 +205,13 @@ public class RealSenseDevice : MonoBehaviour
     void Update()
     {
         //Call Directly in non threaded mode
-        if (processMode==ProcessMode.UnityThread)
+        if (processMode != ProcessMode.UnityThread)
+            return;
+
+        FrameSet frames;
+        if(m_pipeline.PollForFrames(out frames))
         {
-            ProcessFrame();
+            ProcessFrames(frames);
         }
     }
 }
