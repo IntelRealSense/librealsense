@@ -6,7 +6,8 @@
 
 #include "proc/synthetic-stream.h"
 #include "environment.h"
-#include "pointcloud.h"
+#include "proc/occlusion-filter.h"
+#include "proc/pointcloud.h"
 #include "option.h"
 
 namespace librealsense
@@ -33,7 +34,7 @@ namespace librealsense
 
     float3 transform(const rs2_extrinsics *extrin, const float3 &point) { float3 p = {}; rs2_transform_point_to_point(&p.x, extrin, &point.x); return p; }
     float2 project(const rs2_intrinsics *intrin, const float3 & point) { float2 pixel = {}; rs2_project_point_to_pixel(&pixel.x, intrin, &point.x); return pixel; }
-    float2 pixel_to_texcoord(const rs2_intrinsics *intrin, const float2 & pixel) { return{ (pixel.x + 0.5f) / intrin->width, (pixel.y + 0.5f) / intrin->height }; }
+    float2 pixel_to_texcoord(const rs2_intrinsics *intrin, const float2 & pixel) { return{ pixel.x / (intrin->width), pixel.y / (intrin->height) }; }
     float2 project_to_texcoord(const rs2_intrinsics *intrin, const float3 & point) { return pixel_to_texcoord(intrin, project(intrin, point)); }
 
      bool pointcloud::stream_changed( stream_profile_interface* old, stream_profile_interface* curr)
@@ -48,8 +49,6 @@ namespace librealsense
     {
         auto depth_frame = (frame_interface*)depth.get();
         std::lock_guard<std::mutex> lock(_mutex);
-
-
 
         if (!_output_stream.get() || _depth_stream != depth_frame->get_stream().get() || stream_changed(_depth_stream,depth_frame->get_stream().get()))
         {
@@ -70,6 +69,8 @@ namespace librealsense
             if (auto video = dynamic_cast<video_stream_profile_interface*>(stream_profile.get()))
             {
                 _depth_intrinsics = video->get_intrinsics();
+                _pixels_map.resize(_depth_intrinsics->height*_depth_intrinsics->width);
+                _occlusion_filter->set_depth_intrinsics(_depth_intrinsics.value());
                 found_depth_intrinsics = true;
             }
         }
@@ -115,6 +116,7 @@ namespace librealsense
             if (auto video = dynamic_cast<video_stream_profile_interface*>(_other_stream.get()))
             {
                 _other_intrinsics = video->get_intrinsics();
+                _occlusion_filter->set_texel_intrinsics(_other_intrinsics.value());
             }
         }
 
@@ -142,6 +144,8 @@ namespace librealsense
 
         auto vid_frame = depth.as<rs2::video_frame>();
         float2* tex_ptr = pframe->get_texture_coordinates();
+        // Pixels calculated in the mapped texture. Used in post-processing filters
+        float2* pixels_ptr = _pixels_map.data();
 
         rs2_intrinsics mapped_intr;
         rs2_extrinsics extr;
@@ -168,31 +172,40 @@ namespace librealsense
                     if (points->z)
                     {
                         auto trans = transform(&extr, *points);
-                        auto tex_xy = project_to_texcoord(&mapped_intr, trans);
+                        //auto tex_xy = project_to_texcoord(&mapped_intr, trans);
+                        // Store intermediate results for poincloud filters
+                        *pixels_ptr = project(&mapped_intr, trans);
+                        auto tex_xy = pixel_to_texcoord(&mapped_intr, *pixels_ptr);
 
                         *tex_ptr = tex_xy;
                     }
                     else
                     {
                         *tex_ptr = { 0.f, 0.f };
+                        *pixels_ptr = { 0.f, 0.f };
                     }
                     ++points;
                     ++tex_ptr;
+                    ++pixels_ptr;
                 }
+            }
+
+            if (_occlusion_filter->active())
+            {
+                _occlusion_filter->process(pframe->get_vertices(), pframe->get_texture_coordinates(), _pixels_map);
             }
         }
 
         get_source().frame_ready(std::move(res));
     }
 
-    pointcloud::pointcloud()
-        :
-        _other_stream(nullptr), _invalidate_mapped(false)
+    pointcloud::pointcloud():
+        _other_stream(nullptr),
+        _invalidate_mapped(false)
     {
-
         auto mapped_opt = std::make_shared<ptr_option<int>>(0, std::numeric_limits<int>::max(), 1, -1, &_other_stream_id, "Mapped stream ID");
         register_option(RS2_OPTION_TEXTURE_SOURCE, mapped_opt);
-        float old_value = _other_stream_id;
+        float old_value = static_cast<float>(_other_stream_id);
         mapped_opt->on_set([this, old_value](float x) mutable {
             if (fabs(old_value - x) > 1e-6)
             {
@@ -201,9 +214,31 @@ namespace librealsense
             }
         });
 
+        _occlusion_filter = std::make_shared<occlusion_filter>();
+
+        auto occlusion_invalidation = std::make_shared<ptr_option<uint8_t>>(
+            occlusion_none,
+            occlusion_max-1, 1,
+            occlusion_none,
+            (uint8_t*)&_occlusion_filter->_occlusion_filter,
+            "Occlusion removal");
+        occlusion_invalidation->on_set([this, occlusion_invalidation](float val)
+        {
+            if (!occlusion_invalidation->is_valid(val))
+                throw invalid_value_exception(to_string()
+                    << "Unsupported occlusion filtering requiested " << val << " is out of range.");
+
+            _occlusion_filter->set_mode(static_cast<uint8_t>(val));
+
+        });
+        occlusion_invalidation->set_description(0.f, "Off");
+        occlusion_invalidation->set_description(1.f, "Heuristic");
+        // TODO verify filter's implementation and performance
+        occlusion_invalidation->set_description(2.f, "__"); // Placeholder for Exhaustive
+        register_option(RS2_OPTION_FILTER_MAGNITUDE, occlusion_invalidation);
+
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
-
             if (auto composite = f.as<rs2::frameset>())
             {
                 auto depth = composite.first_or_default(RS2_STREAM_DEPTH);
@@ -222,7 +257,7 @@ namespace librealsense
             }
             else
             {
-                if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+                if (f.get_profile().stream_type() == RS2_STREAM_DEPTH && f.get_profile().format() == RS2_FORMAT_Z16)
                 {
                     inspect_depth_frame(f);
                     process_depth_frame(f);

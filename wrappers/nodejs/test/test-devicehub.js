@@ -55,7 +55,7 @@ describe('DeviceHub test', function() {
     });
   });
 
-  it.skip('Testing method isConnected - with invalid argument', () => {
+  it('Testing method isConnected - with invalid argument', () => {
     assert.throws(() => {
       devh.isConnected('dummy');
     });

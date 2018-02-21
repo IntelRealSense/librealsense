@@ -227,7 +227,7 @@ struct glfw_state {
 
 
 // Handles all the OpenGL calls needed to display the point cloud
-void draw_pointcloud(window& app, glfw_state& app_state, rs2::points& points)
+void draw_pointcloud(float width, float height, glfw_state& app_state, rs2::points& points)
 {
     if (!points)
         return;
@@ -235,8 +235,6 @@ void draw_pointcloud(window& app, glfw_state& app_state, rs2::points& points)
     // OpenGL commands that prep screen for the pointcloud
     glPopMatrix();
     glPushAttrib(GL_ALL_ATTRIB_BITS);
-
-    float width = app.width(), height = app.height();
 
     glClearColor(153.f / 255, 153.f / 255, 153.f / 255, 1);
     glClear(GL_DEPTH_BUFFER_BIT);

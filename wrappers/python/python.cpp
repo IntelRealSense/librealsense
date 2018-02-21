@@ -18,10 +18,9 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "../include/librealsense2/rs.h"
 #include "../include/librealsense2/rs.hpp"
 #include "../include/librealsense2/rs_advanced_mode.hpp"
+#include "../include/librealsense2/rsutil.h"
 #define NAME pyrealsense2
 #define SNAME "pyrealsense2"
-#define BIND_RAW_ARRAY(class, name, type, size) #name, [](const class &c) -> const std::array<type, size>& { return reinterpret_cast<const std::array<type, size>&>(c.name); }
-#define BIND_RAW_2D_ARRAY(class_name, member_name, type, nsize, msize) #member_name, [](const class_name &c) -> const std::array<std::array<type, msize>, nsize>& { return reinterpret_cast<const std::array<std::array<type, msize>, nsize>&>(c.member_name); }
 // hacky little bit of half-functions to make .def(BIND_DOWNCAST) look nice for binding as/is functions
 #define BIND_DOWNCAST(class, downcast) "is_"#downcast, &rs2::class::is<rs2::downcast>).def("as_"#downcast, &rs2::class::as<rs2::downcast>
 const std::string rs2_prefix{ "rs2_" };
@@ -48,6 +47,50 @@ std::string make_pythonic_str(std::string str)
         py_##rs2_enum_type.value(python_name.c_str(), v);                                                                   \
         /* std::cout << " - " << python_name << std::endl;    */                                                            \
     }
+
+template<typename T, size_t SIZE>
+void copy_raw_array(T(&dst)[SIZE], const std::array<T, SIZE>& src)
+{
+    for (size_t i = 0; i < SIZE; i++)
+    {
+        dst[i] = src[i];
+    }
+}
+
+template<typename T, size_t NROWS, size_t NCOLS>
+void copy_raw_2d_array(T(&dst)[NROWS][NCOLS], const std::array<std::array<T, NCOLS>, NROWS>& src)
+{
+    for (size_t i = 0; i < NROWS; i++)
+    {
+        for (size_t j = 0; j < NCOLS; j++)
+        {
+            dst[i][j] = src[i][j];
+        }
+    }
+}
+template <typename T, size_t N>
+std::string array_to_string(const T(&arr)[N])
+{
+    std::ostringstream oss;
+    oss << "[";
+    for (int i = 0; i < N; i++)
+    {
+        if (i != 0)
+            oss << ", ";
+        oss << arr[i];
+    }
+    oss << "]";
+    return oss.str();
+}
+
+#define BIND_RAW_ARRAY_GETTER(T, member, valueT, SIZE) [](const T& self) -> const std::array<valueT, SIZE>& { return reinterpret_cast<const std::array<valueT, SIZE>&>(self.member); }
+#define BIND_RAW_ARRAY_SETTER(T, member, valueT, SIZE) [](T& self, const std::array<valueT, SIZE>& src) { copy_raw_array(self.member, src); }
+
+#define BIND_RAW_2D_ARRAY_GETTER(T, member, valueT, NROWS, NCOLS) [](const T& self) -> const std::array<std::array<valueT, NCOLS>, NROWS>& { return reinterpret_cast<const std::array<std::array<valueT, NCOLS>, NROWS>&>(self.member); }
+#define BIND_RAW_2D_ARRAY_SETTER(T, member, valueT, NROWS, NCOLS) [](T& self, const std::array<std::array<valueT, NCOLS>, NROWS>& src) { copy_raw_2d_array(self.member, src); }
+
+#define BIND_RAW_ARRAY_PROPERTY(T, member, valueT, SIZE) #member, BIND_RAW_ARRAY_GETTER(T, member, valueT, SIZE), BIND_RAW_ARRAY_SETTER(T, member, valueT, SIZE)
+#define BIND_RAW_2D_ARRAY_PROPERTY(T, member, valueT, NROWS, NCOLS) #member, BIND_RAW_2D_ARRAY_GETTER(T, member, valueT, NROWS, NCOLS), BIND_RAW_2D_ARRAY_SETTER(T, member, valueT, NROWS, NCOLS)
 
 /*PYBIND11_MAKE_OPAQUE(std::vector<rs2::stream_profile>)*/
 
@@ -83,20 +126,9 @@ PYBIND11_MODULE(NAME, m) {
         self._strides); }
     );
 
-    /* enums, c-structs */
-    py::class_<rs2_extrinsics> extrinsics(m, "extrinsics");
-    extrinsics.def_property_readonly(BIND_RAW_ARRAY(rs2_extrinsics, rotation, float, 9))
-        .def_property_readonly(BIND_RAW_ARRAY(rs2_extrinsics, translation, float, 3))
-        .def("__repr__", [](const rs2_extrinsics &e) {
-        std::stringstream ss;
-        ss << "( (" << e.rotation[0];
-        for (int i = 1; i<9; ++i) ss << ", " << e.rotation[i];
-        ss << "), (" << e.translation[0];
-        for (int i = 1; i<3; ++i) ss << ", " << e.translation[i];
-        ss << ") )";
-        return ss.str();
-    });
-
+    /**
+        Binding of rs2_ enums
+    */
     BIND_ENUM(m, rs2_camera_info, RS2_CAMERA_INFO_COUNT)
     BIND_ENUM(m, rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT)
     BIND_ENUM(m, rs2_stream, RS2_STREAM_COUNT)
@@ -109,15 +141,27 @@ PYBIND11_MODULE(NAME, m) {
     BIND_ENUM(m, rs2_distortion, RS2_DISTORTION_COUNT)
     BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT)
 
+    py::class_<rs2_extrinsics> extrinsics(m, "extrinsics");
+    extrinsics.def(py::init<>())
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_extrinsics, rotation, float, 9))
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_extrinsics, translation, float, 3))
+        .def("__repr__", [](const rs2_extrinsics &e) {
+            std::stringstream ss;
+            ss << "rotation: " << array_to_string(e.rotation);
+            ss << "\ntranslation: " << array_to_string(e.translation);
+            return ss.str();
+        });
+
     py::class_<rs2_intrinsics> intrinsics(m, "intrinsics");
-    intrinsics.def_readonly("width", &rs2_intrinsics::width)
-        .def_readonly("height", &rs2_intrinsics::height)
-        .def_readonly("ppx", &rs2_intrinsics::ppx)
-        .def_readonly("ppy", &rs2_intrinsics::ppy)
-        .def_readonly("fx", &rs2_intrinsics::fx)
-        .def_readonly("fy", &rs2_intrinsics::fy)
-        .def_readonly("model", &rs2_intrinsics::model)
-        .def_property_readonly(BIND_RAW_ARRAY(rs2_intrinsics, coeffs, float, 5))
+    intrinsics.def(py::init<>())
+        .def_readwrite("width", &rs2_intrinsics::width)
+        .def_readwrite("height", &rs2_intrinsics::height)
+        .def_readwrite("ppx", &rs2_intrinsics::ppx)
+        .def_readwrite("ppy", &rs2_intrinsics::ppy)
+        .def_readwrite("fx", &rs2_intrinsics::fx)
+        .def_readwrite("fy", &rs2_intrinsics::fy)
+        .def_readwrite("model", &rs2_intrinsics::model)
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_intrinsics, coeffs, float, 5))
         .def("__repr__", [](const rs2_intrinsics& self)
     {
         std::stringstream ss;
@@ -127,21 +171,18 @@ PYBIND11_MODULE(NAME, m) {
         ss << "ppy: " << self.ppy << ", ";
         ss << "fx: " << self.fx << ", ";
         ss << "fy: " << self.fy << ", ";
-        ss << "model: " << self.model;
+        ss << "model: " << self.model << ", ";
+        ss << "coeffs: " << array_to_string(self.coeffs);
         return ss.str();
     });
 
     py::class_<rs2_motion_device_intrinsic> motion_device_inrinsic(m, "motion_device_intrinsic");
-    motion_device_inrinsic.def_property_readonly(BIND_RAW_2D_ARRAY(rs2_motion_device_intrinsic, data, float, 3, 4))
-        .def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, noise_variances, float, 3))
-        .def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, bias_variances, float, 3));
+    motion_device_inrinsic.def(py::init<>())
+        .def_property(BIND_RAW_2D_ARRAY_PROPERTY(rs2_motion_device_intrinsic, data, float, 3, 4))
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_motion_device_intrinsic, noise_variances, float, 3))
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_motion_device_intrinsic, bias_variances, float, 3));
 
     /* rs2_types.hpp */
-    // TODO: error types
-
-    // Not binding devices_changed_callback, templated
-
-    // Not binding frame_callback, templated
 
     py::class_<rs2::option_range> option_range(m, "option_range");
     option_range.def_readwrite("min", &rs2::option_range::min)
@@ -296,7 +337,6 @@ PYBIND11_MODULE(NAME, m) {
          .def("get_frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain, "Retrieve the timestamp domain.")
          .def_property_readonly("frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain, "Retrieve the timestamp domain.")
          .def("get_frame_metadata", &rs2::frame::get_frame_metadata, "Retrieve the current value of a single frame_metadata.", "frame_metadata"_a)
-         .def_property_readonly("frame_metadata", &rs2::frame::get_frame_metadata, "Retrieve the current value of a single frame_metadata.", "frame_metadata"_a)
          .def("supports_frame_metadata", &rs2::frame::supports_frame_metadata, "Determine if the device allows a specific metadata to be queried.", "frame_metadata"_a)
          .def("get_frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
          .def_property_readonly("frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
@@ -464,7 +504,7 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::align> align(m, "align");
     align.def(py::init<rs2_stream>(), "align_to"_a)
-        .def("proccess", &rs2::align::process, "depth"_a);
+        .def("process", &rs2::align::process, "depth"_a);
 
     /* rs2_record_playback.hpp */
     py::class_<rs2::playback, rs2::device> playback(m, "playback");
@@ -498,8 +538,10 @@ PYBIND11_MODULE(NAME, m) {
         .def(BIND_DOWNCAST(stream_profile, stream_profile))
         .def(BIND_DOWNCAST(stream_profile, video_stream_profile))
         .def("stream_name", &rs2::stream_profile::stream_name)
+        .def("is_default", &rs2::stream_profile::is_default)
         .def("__nonzero__", &rs2::stream_profile::operator bool)
         .def("get_extrinsics_to", &rs2::stream_profile::get_extrinsics_to, "to"_a)
+        .def("register_extrinsics_to", &rs2::stream_profile::register_extrinsics_to, "to"_a, "extrinsics"_a)
         .def("__repr__", [](const rs2::stream_profile& self)
     {
         std::stringstream ss;
@@ -893,4 +935,33 @@ PYBIND11_MODULE(NAME, m) {
     m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);
     m.def("log_to_file", &rs2::log_to_file, "min_severity"_a, "file_path"_a);
 
+    /* rsutil.h */
+    m.def("rs2_project_point_to_pixel", [](const rs2_intrinsics& intrin, const std::array<float, 3>& point)->std::array<float, 2>
+    {
+        std::array<float, 2> pixel{};
+        rs2_project_point_to_pixel(pixel.data(), &intrin, point.data());
+        return pixel;
+    }, "Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera");
+
+    m.def("rs2_deproject_pixel_to_point", [](const rs2_intrinsics& intrin, const std::array<float, 2>& pixel, float depth)->std::array<float, 3>
+    {
+        std::array<float, 3> point{};
+        rs2_deproject_pixel_to_point(point.data(), &intrin, pixel.data(), depth);
+        return point;
+    }, "Given pixel coordinates and depth in an image with no distortion or inverse distortion coefficients, compute the corresponding point in 3D space relative to the same camera");
+
+    m.def("rs2_transform_point_to_point", [](const rs2_extrinsics& extrin, const std::array<float, 3>& from_point)->std::array<float, 3>
+    {
+        std::array<float, 3> to_point{};
+        rs2_transform_point_to_point(to_point.data(), &extrin, from_point.data());
+        return to_point;
+    }, "Transform 3D coordinates relative to one sensor to 3D coordinates relative to another viewpoint");
+
+    m.def("rs2_fov", [](const rs2_intrinsics& intrin)->std::array<float, 2>
+    {
+        std::array<float, 2> to_fow{};
+        rs2_fov(&intrin, to_fow.data());
+        return to_fow;
+
+    }, "Calculate horizontal and vertical feild of view, based on video intrinsics");
 }

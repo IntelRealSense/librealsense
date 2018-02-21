@@ -166,7 +166,7 @@ namespace librealsense
         explicit pose_stream_profile(platform::stream_profile sp) : stream_profile_base(std::move(sp)) {}
         void update(std::shared_ptr<extension_snapshot> ext) override { /*Nothing to do here*/ }
     };
-	
+
     inline stream_profile to_profile(const stream_profile_interface* sp)
     {
         auto fps = static_cast<uint32_t>(sp->get_framerate());

@@ -464,7 +464,7 @@ int main(int argv, const char** argc) try
             ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + ImGui::GetContentRegionAvail().y));
             ImGui::GetWindowDrawList()->AddRectFilled(bb.GetTL(), bb.GetBR(), ImColor(dark_window_background));
 
-            viewer_model.show_no_device_overlay(window.get_large_font(), 50, viewer_model.panel_y + 50);
+            viewer_model.show_no_device_overlay(window.get_large_font(), 50, static_cast<int>(viewer_model.panel_y + 50));
         }
 
         ImGui::End();
@@ -472,7 +472,7 @@ int main(int argv, const char** argc) try
         ImGui::PopStyleColor();
 
         // Fetch and process frames from queue
-        viewer_model.handle_ready_frames(viewer_rect, window, device_models.size(), error_message);
+        viewer_model.handle_ready_frames(viewer_rect, window, static_cast<int>(device_models.size()), error_message);
     }
 
     // Stop calculating 3D model

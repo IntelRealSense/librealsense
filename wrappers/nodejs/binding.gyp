@@ -1,5 +1,6 @@
 {
   'variables': {
+    'configuration%': '${BUILDTYPE}',
     'build_arch': '<!(node -p "process.arch")',
     'variables': {
       'vs_configuration%': "Debug",
@@ -53,8 +54,22 @@
             ],
           }
         ],
-        [
-          "OS!=\"win\"",
+       ['OS=="mac"',
+          {
+            "libraries": [
+              '<(module_root_dir)/../../build/<(configuration)/librealsense2.dylib',
+              # Write the below RPATH into the generated addon
+              '-Wl,-rpath,@loader_path/../../../../build/<(configuration)',
+            ],
+            'xcode_settings': {
+              'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
+              'CLANG_CXX_LIBRARY': 'libc++',
+              'MACOS_DEPLOYMENT_TARGET': '10.12',
+              'CLANG_CXX_LANGUAGE_STANDARD': 'c++14'
+            }
+          }
+        ],
+        ['OS=="linux"',
           {
             "libraries": [
               "-lrealsense2"
@@ -66,7 +81,7 @@
               # rpatch for build debian package
               '-Wl,-rpath,\$$ORIGIN/../../../../obj-x86_64-linux-gnu',
               '-L<(module_root_dir)/../../obj-x86_64-linux-gnu'
-            ],
+           ],
             "cflags+": [
               "-std=c++11"
             ],

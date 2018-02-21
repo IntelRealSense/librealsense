@@ -170,6 +170,8 @@ namespace librealsense
             uint8_t         metadata_size;
             const void *    pixels;
             const void *    metadata;
+            rs2_time_t      backend_time;
+
         };
 
         typedef std::function<void(stream_profile, frame_object, std::function<void()>)> frame_callback;
@@ -573,7 +575,7 @@ namespace librealsense
             {
                 return !list_changed(uvc_devices, other.uvc_devices) &&
                     !list_changed(hid_devices, other.hid_devices) &&
-                    !list_changed(playback_devices, other.playback_devices) && 
+                    !list_changed(playback_devices, other.playback_devices) &&
                     !list_changed(tm2_devices, other.tm2_devices);
             }
 
@@ -850,6 +852,8 @@ namespace librealsense
             virtual ~device_watcher() {};
         };
     }
+
+    double monotonic_to_realtime(double monotonic);
 }
 
 #endif

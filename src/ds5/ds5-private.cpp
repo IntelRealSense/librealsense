@@ -63,7 +63,7 @@ namespace librealsense
 
         rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
         {
-             auto table = check_calib<ds::fisheye_intrinsics_table>(raw_data);
+             auto table = check_calib<ds::fisheye_calibration_table>(raw_data);
 
              rs2_intrinsics intrinsics;
              auto intrin = table->intrinsic;

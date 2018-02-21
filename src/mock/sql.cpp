@@ -85,7 +85,7 @@ namespace sql
     statement::statement(const connection& conn, const char * sql)
     {
         auto const code = do_with_retries([&]() {
-            return sqlite3_prepare_v2(conn.m_handle.get(), sql, strlen(sql), m_handle.get_address(), nullptr);
+            return sqlite3_prepare_v2(conn.m_handle.get(), sql, static_cast<int>(strlen(sql)), m_handle.get_address(), nullptr);
         });
         if (SQLITE_OK != code)
         {
@@ -148,7 +148,7 @@ namespace sql
 
     void statement::bind(int param, const std::vector<uint8_t>& value) const
     {
-        sqlite3_bind_blob(m_handle.get(), param, value.data(), value.size(), SQLITE_STATIC);
+        sqlite3_bind_blob(m_handle.get(), param, value.data(), static_cast<int>(value.size()), SQLITE_STATIC);
     }
 
     statement::row_value statement::iterator::operator*() const
