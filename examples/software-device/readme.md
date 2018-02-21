@@ -2,7 +2,7 @@
 
 ## Overview
 
-This sample demonstrates usage of the `software_device` object, which allows users to create and control custom SDK device not dependent on Intel RealSense hardware. 
+This sample demonstrates usage of the `software_device` object, which allows users to create and control custom SDK device not dependent on Intel RealSense hardware. This allows for comparison of other hardware with Intel RealSense.
 
 `software_device` can be used to generate frames from synthetic or external sources and pass them into SDK processing functionality: 
 * Record and playback services

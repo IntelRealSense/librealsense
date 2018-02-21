@@ -12,14 +12,14 @@
 #include <cmath>
 
 #define STRCASE(T, X) case RS2_##T##_##X: {\
-        static std::string s##T##_##X##_str = make_less_screamy(#X);\
+        static const std::string s##T##_##X##_str = make_less_screamy(#X);\
         return s##T##_##X##_str.c_str(); }
 
 namespace librealsense
 {
-    std::string make_less_screamy(const char* str)
+    inline std::string make_less_screamy(const char* str)
     {
-        std::string res = str;
+        std::string res(str);
 
         bool first = true;
         for (auto i = 0; i < res.size(); i++)
@@ -340,6 +340,7 @@ namespace librealsense
                 CASE(WHITE_BALANCE)
                 CASE(TIME_OF_ARRIVAL)
                 CASE(TEMPERATURE)
+                CASE(BACKEND_TIMESTAMP)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

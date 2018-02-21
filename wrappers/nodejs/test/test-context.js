@@ -146,7 +146,7 @@ describe('Context test', function() {
 
   it('testing method - setDevicesChangedCallback', () => {
     const context = new librealsense2.Context();
-    assert.doesNotThrow(() => {
+    assert.throws(() => {
       context.setDevicesChangedCallback();
     });
   });

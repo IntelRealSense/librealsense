@@ -15,6 +15,7 @@
 #include <chrono>
 #include <Windows.h>
 #include <dbt.h>
+#include <cctype> // std::tolower
 
 namespace librealsense
 {

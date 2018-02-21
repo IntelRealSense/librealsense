@@ -54,8 +54,9 @@ describe('DeviceList test', function() {
   });
 
   it('Testing method getDevice - without argument', () => {
-    let dev = devl.getDevice();
-    assert(dev instanceof rs2.Device);
+    assert.throws(() => {
+      devl.getDevice();
+    });
   });
 
   it('Testing method getDevice - return value', () => {
@@ -78,8 +79,9 @@ describe('DeviceList test', function() {
   });
 
   it('Testing method getDevice - with invalid argument', () => {
-    let dev = devl.getDevice('dummy');
-    assert(dev instanceof rs2.Device);
+    assert.throws(() => {
+      devl.getDevice('dummy');
+    });
   });
 
   it('Testing method contains - without argument', () => {

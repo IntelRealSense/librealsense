@@ -37,6 +37,7 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_WHITE_BALANCE        , /**< White Balance setting as a color temperature. Kelvin degrees*/
     RS2_FRAME_METADATA_TIME_OF_ARRIVAL      , /**< Time of arrival in system clock */
     RS2_FRAME_METADATA_TEMPERATURE          , /**< Temperature of the device, measured at the time of the frame capture. Celsius degrees */
+    RS2_FRAME_METADATA_BACKEND_TIMESTAMP    , /**< Timestamp get from uvc driver. usec*/
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);

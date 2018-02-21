@@ -1,8 +1,9 @@
 # Linux Distribution
 
-**Intel® RealSense™ SDK 2.0** provides installation packages in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Debian OS and its derivatives.  
+**Intel® RealSense™ SDK 2.0** provides installation packages in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Ubuntu 16 LTS\*.    
+\* The Realsense DKMS driver package (`realsense-uvcvideo`) currently supports Ubuntu 16 with LTS kernels 4.4 and 4.10.  
 
-> To build from source, please follow the steps described [here](./installation.md)
+> To build the project from source, please follow steps described [here](./installation.md)
 
 
 
@@ -12,7 +13,7 @@
 It is recommended to backup `/etc/apt/sources.list.d/realsense-public.list` file in case of an upgrade.
 
 - Register the server's public key :  
-`sudo apt-key adv --keyserver keys.gnupg.net --recv-key 7DCC6F0F`  
+`sudo apt-key adv --keyserver keys.gnupg.net --recv-key 6F3EFCDE`  
 - Refresh the list of repositories and packages available :  
 `sudo apt-get update`  
 
@@ -24,7 +25,7 @@ It is recommended to backup `/etc/apt/sources.list.d/realsense-public.list` file
 - Developers shall install additional packages:  
   `sudo apt-get install librealsense2-dev`  
   `sudo apt-get install librealsense2-dbg`  
-  With `dev` package installed, you can compile an application with **librealsense** using `g++ -std=c++11 filename.cpp -lrealsense2` or an IDE of your choice. 
+  With `dev` package installed, you can compile an application with **librealsense** using `g++ -std=c++11 filename.cpp -lrealsense2` or an IDE of your choice.
 
 
   Complete the installation by performing  

@@ -64,14 +64,14 @@ describe('Align test', function() {
     });
   });
 
-  it.skip('Testing process - invalid argument', () => {
+  it('Testing process - invalid argument', () => {
     const align = new rs2.Align(rs2.stream.STREAM_COLOR);
     assert.throws(() => {
       align.process('dummy');
     });
   });
 
-  it.skip('Testing process - valid argument', () => {
+  it('Testing process - valid argument', () => {
     const align = new rs2.Align(rs2.stream.STREAM_COLOR);
     assert.doesNotThrow(() => {
       align.process(frameset);

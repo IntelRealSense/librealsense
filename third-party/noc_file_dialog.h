@@ -178,7 +178,7 @@ const char *noc_file_dialog_open(int flags,
         ret = GetSaveFileNameA(&ofn);
 
     free(g_noc_file_dialog_ret);
-    g_noc_file_dialog_ret = ret ? strdup(szFile) : NULL;
+    g_noc_file_dialog_ret = ret ? _strdup(szFile) : NULL;
     return g_noc_file_dialog_ret;
 }
 
