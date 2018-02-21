@@ -153,8 +153,8 @@ namespace Intel.RealSense
             }
         }
     }
-	
-	public class AdvancedDevice : Device
+
+    public class AdvancedDevice : Device
     {
         private const string AdvancedModeDisabledException = "Advanced mode has not been enabled";
 
@@ -168,13 +168,15 @@ namespace Intel.RealSense
             get
             {
                 int enabled = 0;
-                NativeMethods.rs2_is_enabled(m_instance, out enabled, out object error);
+                object error;
+                NativeMethods.rs2_is_enabled(m_instance, out enabled, out error);
 
                 return enabled == 1 ? true : false;
             }
             set
             {
-                NativeMethods.rs2_toggle_advanced_mode(m_instance, value ? 1 : 0, out object error);
+                object error;
+                NativeMethods.rs2_toggle_advanced_mode(m_instance, value ? 1 : 0, out error);
             }
         }
 
@@ -182,7 +184,8 @@ namespace Intel.RealSense
         {
             get
             {
-                IntPtr buffer = NativeMethods.rs2_serialize_json(m_instance, out object error);
+                object error;
+                IntPtr buffer = NativeMethods.rs2_serialize_json(m_instance, out error);
                 int size = NativeMethods.rs2_get_raw_data_size(buffer, out error);
                 IntPtr data = NativeMethods.rs2_get_raw_data(buffer, out error);
 
@@ -190,7 +193,8 @@ namespace Intel.RealSense
             }
             set
             {
-                NativeMethods.rs2_load_json(m_instance, value, (uint)value.ToCharArray().Length, out object error);
+                object error;
+                NativeMethods.rs2_load_json(m_instance, value, (uint)value.ToCharArray().Length, out error);
             }
         }
     }
