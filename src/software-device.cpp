@@ -90,11 +90,12 @@ namespace librealsense
 
     void software_sensor::open(const stream_profiles& requests)
     {
-
+        set_active_streams(requests);
     }
+
     void software_sensor::close()
     {
-
+        set_active_streams({});
     }
 
     void software_sensor::start(frame_callback_ptr callback)
@@ -102,10 +103,12 @@ namespace librealsense
         _source.init(_metadata_parsers);
         _source.set_sensor(this->shared_from_this());
         _source.set_callback(callback);
+        raise_on_before_streaming_changes(true);
     }
 
     void software_sensor::stop()
     {
+        raise_on_before_streaming_changes(false);
         _source.flush();
         _source.reset();
     }
@@ -121,6 +124,7 @@ namespace librealsense
             RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME;
 
         auto frame = _source.alloc_frame(extension, 0, data, false);
+        if (!frame) return;
 
         auto vid_profile = dynamic_cast<video_stream_profile_interface*>(software_frame.profile->profile);
         auto vid_frame = dynamic_cast<video_frame*>(frame);

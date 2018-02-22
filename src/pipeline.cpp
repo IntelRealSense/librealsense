@@ -237,7 +237,7 @@ namespace librealsense
                         {
                             try
                             {
-                                auto dev = dev_info->create_device();
+                                auto dev = dev_info->create_device(true);
                                 _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
                                 return _resolved_profile;
                             }
