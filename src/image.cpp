@@ -231,146 +231,376 @@ namespace librealsense
     template<rs2_format FORMAT> void unpack_yuy2(byte * const d [], const byte * s, int n)
     {
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
-#ifdef __SSSE3__
-        auto src = reinterpret_cast<const __m128i *>(s);
-        auto dst = reinterpret_cast<__m128i *>(d[0]);
+#ifdef RGB_AVX2
+        auto src = reinterpret_cast<const __m256i *>(s);
+        auto dst = reinterpret_cast<__m256i *>(d[0]);
+
         #pragma omp parallel for
-        for(int i = 0; i < n/16; i++)
+        for (int i = 0; i < n / 32; i++)
         {
-            const __m128i zero = _mm_set1_epi8(0);
-            const __m128i n100 = _mm_set1_epi16(100 << 4);
-            const __m128i n208 = _mm_set1_epi16(208 << 4);
-            const __m128i n298 = _mm_set1_epi16(298 << 4);
-            const __m128i n409 = _mm_set1_epi16(409 << 4);
-            const __m128i n516 = _mm_set1_epi16(516 << 4);
-            const __m128i evens_odds = _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15);
+            const __m256i zero = _mm256_set1_epi8(0);
+            const __m256i n100 = _mm256_set1_epi16(100 << 4);
+            const __m256i n208 = _mm256_set1_epi16(208 << 4);
+            const __m256i n298 = _mm256_set1_epi16(298 << 4);
+            const __m256i n409 = _mm256_set1_epi16(409 << 4);
+            const __m256i n516 = _mm256_set1_epi16(516 << 4);
+            const __m256i evens_odds = _mm256_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
+                                                        0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30);
 
-            // Load 8 YUY2 pixels each into two 16-byte registers
-            __m128i s0 = _mm_loadu_si128(&src[i*2]);
-            __m128i s1 = _mm_loadu_si128(&src[i*2+1]);
 
-            if(FORMAT == RS2_FORMAT_Y8)
+            // Load 16 YUY2 pixels each into two 32-byte registers
+            __m256i s0 = _mm256_loadu_si256(&src[i * 2]);
+            __m256i s1 = _mm256_loadu_si256(&src[i * 2 + 1]);
+
+            if (FORMAT == RS2_FORMAT_Y8)
             {
-                // Align all Y components and output 16 pixels (16 bytes) at once
-                __m128i y0 = _mm_shuffle_epi8(s0, _mm_setr_epi8(1, 3, 5, 7, 9, 11, 13, 15,   0, 2, 4, 6, 8, 10, 12, 14));
-                __m128i y1 = _mm_shuffle_epi8(s1, _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14,   1, 3, 5, 7, 9, 11, 13, 15));
-                _mm_storeu_si128(&dst[i], _mm_alignr_epi8(y0, y1, 8));
+                // Align all Y components and output 32 pixels (32 bytes) at once
+                __m256i y0 = _mm256_shuffle_epi8(s0, _mm256_setr_epi8(1, 3, 5, 7, 9, 11, 13, 15, 0, 2, 4, 6, 8, 10, 12, 14,
+                                                                      1, 3, 5, 7, 9, 11, 13, 15, 0, 2, 4, 6, 8, 10, 12, 14));
+                __m256i y1 = _mm256_shuffle_epi8(s1, _mm256_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15,
+                                                                      0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15));
+                _mm256_storeu_si256(&dst[i], _mm256_alignr_epi8(y0, y1, 8));
                 continue;
             }
 
             // Shuffle all Y components to the low order bytes of the register, and all U/V components to the high order bytes
-            const __m128i evens_odd1s_odd3s = _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 5, 9, 13, 3, 7, 11, 15); // to get yyyyyyyyuuuuvvvv
-            __m128i yyyyyyyyuuuuvvvv0 = _mm_shuffle_epi8(s0, evens_odd1s_odd3s);
-            __m128i yyyyyyyyuuuuvvvv8 = _mm_shuffle_epi8(s1, evens_odd1s_odd3s);
+            const __m256i evens_odd1s_odd3s = _mm256_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 5, 9, 13, 3, 7, 11, 15,
+                                                               0, 2, 4, 6, 8, 10, 12, 14, 1, 5, 9, 13, 3, 7, 11, 15); // to get yyyyyyyyuuuuvvvvyyyyyyyyuuuuvvvv
+            __m256i yyyyyyyyuuuuvvvv0 = _mm256_shuffle_epi8(s0, evens_odd1s_odd3s);
+            __m256i yyyyyyyyuuuuvvvv8 = _mm256_shuffle_epi8(s1, evens_odd1s_odd3s);
 
-            // Retrieve all 16 Y components as 16-bit values (8 components per register))
-            __m128i y16__0_7 = _mm_unpacklo_epi8(yyyyyyyyuuuuvvvv0, zero);         // convert to 16 bit
-            __m128i y16__8_F = _mm_unpacklo_epi8(yyyyyyyyuuuuvvvv8, zero);         // convert to 16 bit
+            // Retrieve all 32 Y components as 32-bit values (16 components per register))
+            __m256i y16__0_7 = _mm256_unpacklo_epi8(yyyyyyyyuuuuvvvv0, zero);         // convert to 16 bit
+            __m256i y16__8_F = _mm256_unpacklo_epi8(yyyyyyyyuuuuvvvv8, zero);         // convert to 16 bit
 
-            if(FORMAT == RS2_FORMAT_Y16)
+            if (FORMAT == RS2_FORMAT_Y16)
             {
-                // Output 16 pixels (32 bytes) at once
-                _mm_storeu_si128(&dst[i*2], _mm_slli_epi16(y16__0_7, 8));
-                _mm_storeu_si128(&dst[i*2+1], _mm_slli_epi16(y16__8_F, 8));
+                _mm256_storeu_si256(&dst[i * 2], _mm256_slli_epi16(y16__0_7, 8));
+                _mm256_storeu_si256(&dst[i * 2 + 1], _mm256_slli_epi16(y16__8_F, 8));
                 continue;
             }
 
-            // Retrieve all 16 U and V components as 16-bit values (8 components per register)
-            __m128i uv = _mm_unpackhi_epi32(yyyyyyyyuuuuvvvv0, yyyyyyyyuuuuvvvv8); // uuuuuuuuvvvvvvvv
-            __m128i u = _mm_unpacklo_epi8(uv, uv);                                 //  uu uu uu uu uu uu uu uu  u's duplicated
-            __m128i v = _mm_unpackhi_epi8(uv, uv);                                 //  vv vv vv vv vv vv vv vv
-            __m128i u16__0_7 = _mm_unpacklo_epi8(u, zero);                         // convert to 16 bit
-            __m128i u16__8_F = _mm_unpackhi_epi8(u, zero);                         // convert to 16 bit
-            __m128i v16__0_7 = _mm_unpacklo_epi8(v, zero);                         // convert to 16 bit
-            __m128i v16__8_F = _mm_unpackhi_epi8(v, zero);                         // convert to 16 bit
+            // Retrieve all 16 U and V components as 32-bit values (16 components per register)
+            __m256i uv = _mm256_unpackhi_epi32(yyyyyyyyuuuuvvvv0, yyyyyyyyuuuuvvvv8); // uuuuuuuuvvvvvvvvuuuuuuuuvvvvvvvv
+            __m256i u = _mm256_unpacklo_epi8(uv, uv);                                 // u's duplicated: uu uu uu uu uu uu uu uu uu uu uu uu uu uu uu uu
+            __m256i v = _mm256_unpackhi_epi8(uv, uv);                                 //  vv vv vv vv vv vv vv vv vv vv vv vv vv vv vv vv
+            __m256i u16__0_7 = _mm256_unpacklo_epi8(u, zero);                         // convert to 16 bit
+            __m256i u16__8_F = _mm256_unpackhi_epi8(u, zero);                         // convert to 16 bit
+            __m256i v16__0_7 = _mm256_unpacklo_epi8(v, zero);                         // convert to 16 bit
+            __m256i v16__8_F = _mm256_unpackhi_epi8(v, zero);                         // convert to 16 bit
 
-            // Compute R, G, B values for first 8 pixels
-            __m128i c16__0_7 = _mm_slli_epi16(_mm_subs_epi16(y16__0_7, _mm_set1_epi16(16)), 4);
-            __m128i d16__0_7 = _mm_slli_epi16(_mm_subs_epi16(u16__0_7, _mm_set1_epi16(128)), 4); // perhaps could have done these u,v to d,e before the duplication
-            __m128i e16__0_7 = _mm_slli_epi16(_mm_subs_epi16(v16__0_7, _mm_set1_epi16(128)), 4);
-            __m128i r16__0_7 = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__0_7, n298), _mm_mulhi_epi16(e16__0_7, n409))))));                                                 // (298 * c + 409 * e + 128) ; //
-            __m128i g16__0_7 = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_sub_epi16(_mm_sub_epi16(_mm_mulhi_epi16(c16__0_7, n298), _mm_mulhi_epi16(d16__0_7, n100)), _mm_mulhi_epi16(e16__0_7, n208)))))); // (298 * c - 100 * d - 208 * e + 128)
-            __m128i b16__0_7 = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__0_7, n298), _mm_mulhi_epi16(d16__0_7, n516))))));                                                 // clampbyte((298 * c + 516 * d + 128) >> 8);
+            // Compute R, G, B values for first 16 pixels
+            __m256i c16__0_7 = _mm256_slli_epi16(_mm256_subs_epi16(y16__0_7, _mm256_set1_epi16(16)), 4); // (y - 16) << 4
+            __m256i d16__0_7 = _mm256_slli_epi16(_mm256_subs_epi16(u16__0_7, _mm256_set1_epi16(128)), 4); // (u - 128) << 4    perhaps could have done these u,v to d,e before the duplication
+            __m256i e16__0_7 = _mm256_slli_epi16(_mm256_subs_epi16(v16__0_7, _mm256_set1_epi16(128)), 4); // (v - 128) << 4
+            __m256i r16__0_7 = _mm256_min_epi16(_mm256_set1_epi16(255), _mm256_max_epi16(zero, ((_mm256_add_epi16(_mm256_mulhi_epi16(c16__0_7, n298), _mm256_mulhi_epi16(e16__0_7, n409))))));                                                 // (298 * c + 409 * e + 128) ; //
+            __m256i g16__0_7 = _mm256_min_epi16(_mm256_set1_epi16(255), _mm256_max_epi16(zero, ((_mm256_sub_epi16(_mm256_sub_epi16(_mm256_mulhi_epi16(c16__0_7, n298), _mm256_mulhi_epi16(d16__0_7, n100)), _mm256_mulhi_epi16(e16__0_7, n208)))))); // (298 * c - 100 * d - 208 * e + 128)
+            __m256i b16__0_7 = _mm256_min_epi16(_mm256_set1_epi16(255), _mm256_max_epi16(zero, ((_mm256_add_epi16(_mm256_mulhi_epi16(c16__0_7, n298), _mm256_mulhi_epi16(d16__0_7, n516))))));                                                 // clampbyte((298 * c + 516 * d + 128) >> 8);
 
             // Compute R, G, B values for second 8 pixels
-            __m128i c16__8_F = _mm_slli_epi16(_mm_subs_epi16(y16__8_F, _mm_set1_epi16(16)), 4);
-            __m128i d16__8_F = _mm_slli_epi16(_mm_subs_epi16(u16__8_F, _mm_set1_epi16(128)), 4); // perhaps could have done these u,v to d,e before the duplication
-            __m128i e16__8_F = _mm_slli_epi16(_mm_subs_epi16(v16__8_F, _mm_set1_epi16(128)), 4);
-            __m128i r16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(e16__8_F, n409))))));                                                 // (298 * c + 409 * e + 128) ; //
-            __m128i g16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_sub_epi16(_mm_sub_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(d16__8_F, n100)), _mm_mulhi_epi16(e16__8_F, n208)))))); // (298 * c - 100 * d - 208 * e + 128)
-            __m128i b16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(d16__8_F, n516))))));                                                 // clampbyte((298 * c + 516 * d + 128) >> 8);
+            __m256i c16__8_F = _mm256_slli_epi16(_mm256_subs_epi16(y16__8_F, _mm256_set1_epi16(16)), 4); // (y - 16) << 4
+            __m256i d16__8_F = _mm256_slli_epi16(_mm256_subs_epi16(u16__8_F, _mm256_set1_epi16(128)), 4); // (u - 128) << 4    perhaps could have done these u,v to d,e before the duplication
+            __m256i e16__8_F = _mm256_slli_epi16(_mm256_subs_epi16(v16__8_F, _mm256_set1_epi16(128)), 4); // (v - 128) << 4
+            __m256i r16__8_F = _mm256_min_epi16(_mm256_set1_epi16(255), _mm256_max_epi16(zero, ((_mm256_add_epi16(_mm256_mulhi_epi16(c16__8_F, n298), _mm256_mulhi_epi16(e16__8_F, n409))))));                                                 // (298 * c + 409 * e + 128) ; //
+            __m256i g16__8_F = _mm256_min_epi16(_mm256_set1_epi16(255), _mm256_max_epi16(zero, ((_mm256_sub_epi16(_mm256_sub_epi16(_mm256_mulhi_epi16(c16__8_F, n298), _mm256_mulhi_epi16(d16__8_F, n100)), _mm256_mulhi_epi16(e16__8_F, n208)))))); // (298 * c - 100 * d - 208 * e + 128)
+            __m256i b16__8_F = _mm256_min_epi16(_mm256_set1_epi16(255), _mm256_max_epi16(zero, ((_mm256_add_epi16(_mm256_mulhi_epi16(c16__8_F, n298), _mm256_mulhi_epi16(d16__8_F, n516))))));                                                 // clampbyte((298 * c + 516 * d + 128) >> 8);
 
             if (FORMAT == RS2_FORMAT_RGB8 || FORMAT == RS2_FORMAT_RGBA8)
             {
                 // Shuffle separate R, G, B values into four registers storing four pixels each in (R, G, B, A) order
-                __m128i rg8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(r16__0_7, evens_odds), _mm_shuffle_epi8(g16__0_7, evens_odds)); // hi to take the odds which are the upper bytes we care about
-                __m128i ba8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(b16__0_7, evens_odds), _mm_set1_epi8(-1));
-                __m128i rgba_0_3 = _mm_unpacklo_epi16(rg8__0_7, ba8__0_7);
-                __m128i rgba_4_7 = _mm_unpackhi_epi16(rg8__0_7, ba8__0_7);
+                __m256i rg8__0_7 = _mm256_unpacklo_epi8(_mm256_shuffle_epi8(r16__0_7, evens_odds), _mm256_shuffle_epi8(g16__0_7, evens_odds)); // hi to take the odds which are the upper bytes we care about
+                __m256i ba8__0_7 = _mm256_unpacklo_epi8(_mm256_shuffle_epi8(b16__0_7, evens_odds), _mm256_set1_epi8(-1));
+                __m256i rgba_0_3 = _mm256_unpacklo_epi16(rg8__0_7, ba8__0_7);
+                __m256i rgba_4_7 = _mm256_unpackhi_epi16(rg8__0_7, ba8__0_7);
 
-                __m128i rg8__8_F = _mm_unpacklo_epi8(_mm_shuffle_epi8(r16__8_F, evens_odds), _mm_shuffle_epi8(g16__8_F, evens_odds)); // hi to take the odds which are the upper bytes we care about
-                __m128i ba8__8_F = _mm_unpacklo_epi8(_mm_shuffle_epi8(b16__8_F, evens_odds), _mm_set1_epi8(-1));
-                __m128i rgba_8_B = _mm_unpacklo_epi16(rg8__8_F, ba8__8_F);
-                __m128i rgba_C_F = _mm_unpackhi_epi16(rg8__8_F, ba8__8_F);
+                __m128i ZW1 = _mm256_extracti128_si256(rgba_4_7, 0);
+                __m256i XYZW1 = _mm256_inserti128_si256(rgba_0_3, ZW1, 1);
 
-                if(FORMAT == RS2_FORMAT_RGBA8)
+                __m128i UV1 = _mm256_extracti128_si256(rgba_0_3, 1);
+                __m256i UVST1 = _mm256_inserti128_si256(rgba_4_7, UV1, 0);
+
+                __m256i rg8__8_F = _mm256_unpacklo_epi8(_mm256_shuffle_epi8(r16__8_F, evens_odds), _mm256_shuffle_epi8(g16__8_F, evens_odds)); // hi to take the odds which are the upper bytes we care about
+                __m256i ba8__8_F = _mm256_unpacklo_epi8(_mm256_shuffle_epi8(b16__8_F, evens_odds), _mm256_set1_epi8(-1));
+                __m256i rgba_8_B = _mm256_unpacklo_epi16(rg8__8_F, ba8__8_F);
+                __m256i rgba_C_F = _mm256_unpackhi_epi16(rg8__8_F, ba8__8_F);
+
+                __m128i ZW2 = _mm256_extracti128_si256(rgba_C_F, 0);
+                __m256i XYZW2 = _mm256_inserti128_si256(rgba_8_B, ZW2, 1);
+
+                __m128i UV2 = _mm256_extracti128_si256(rgba_8_B, 1);
+                __m256i UVST2 = _mm256_inserti128_si256(rgba_C_F, UV2, 0);
+
+                if (FORMAT == RS2_FORMAT_RGBA8)
                 {
-                    // Store 16 pixels (64 bytes) at once
-                    _mm_storeu_si128(&dst[i*4], rgba_0_3);
-                    _mm_storeu_si128(&dst[i*4 + 1], rgba_4_7);
-                    _mm_storeu_si128(&dst[i*4 + 2], rgba_8_B);
-                    _mm_storeu_si128(&dst[i*4 + 3], rgba_C_F);
+                    // Store 32 pixels (128 bytes) at once
+                    _mm256_storeu_si256(&dst[i * 4], XYZW1);
+                    _mm256_storeu_si256(&dst[i * 4 + 1], UVST1);
+                    _mm256_storeu_si256(&dst[i * 4 + 2], XYZW2);
+                    _mm256_storeu_si256(&dst[i * 4 + 3], UVST2);
                 }
 
-                if(FORMAT == RS2_FORMAT_RGB8)
+                if (FORMAT == RS2_FORMAT_RGB8)
                 {
-                    // Shuffle rgb triples to the start and end of each register
-                    __m128i rgb0 = _mm_shuffle_epi8(rgba_0_3, _mm_setr_epi8(  3, 7, 11, 15,   0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14));
-                    __m128i rgb1 = _mm_shuffle_epi8(rgba_4_7, _mm_setr_epi8(0, 1, 2, 4,   3, 7, 11, 15,   5, 6, 8, 9, 10, 12, 13, 14));
-                    __m128i rgb2 = _mm_shuffle_epi8(rgba_8_B, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9,   3, 7, 11, 15,   10, 12, 13, 14));
-                    __m128i rgb3 = _mm_shuffle_epi8(rgba_C_F, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14,   3, 7, 11, 15  ));
+                    __m128i rgba0 = _mm256_extracti128_si256(XYZW1, 0);
+                    __m128i rgba1 = _mm256_extracti128_si256(XYZW1, 1);
+                    __m128i rgba2 = _mm256_extracti128_si256(UVST1, 0);
+                    __m128i rgba3 = _mm256_extracti128_si256(UVST1, 1);
+                    __m128i rgba4 = _mm256_extracti128_si256(XYZW2, 0);
+                    __m128i rgba5 = _mm256_extracti128_si256(XYZW2, 1);
+                    __m128i rgba6 = _mm256_extracti128_si256(UVST2, 0);
+                    __m128i rgba7 = _mm256_extracti128_si256(UVST2, 1);
 
-                    // Align registers and store 16 pixels (48 bytes) at once
-                    _mm_storeu_si128(&dst[i*3], _mm_alignr_epi8(rgb1, rgb0, 4));
-                    _mm_storeu_si128(&dst[i*3 + 1], _mm_alignr_epi8(rgb2, rgb1, 8));
-                    _mm_storeu_si128(&dst[i*3 + 2], _mm_alignr_epi8(rgb3, rgb2, 12));
+                    // Shuffle rgb triples to the start and end of each register
+                    __m128i rgb0 = _mm_shuffle_epi8(rgba0, _mm_setr_epi8(3, 7, 11, 15, 0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14));
+                    __m128i rgb1 = _mm_shuffle_epi8(rgba1, _mm_setr_epi8(0, 1, 2, 4, 3, 7, 11, 15, 5, 6, 8, 9, 10, 12, 13, 14));
+                    __m128i rgb2 = _mm_shuffle_epi8(rgba2, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 3, 7, 11, 15, 10, 12, 13, 14));
+                    __m128i rgb3 = _mm_shuffle_epi8(rgba3, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 3, 7, 11, 15));
+                    __m128i rgb4 = _mm_shuffle_epi8(rgba4, _mm_setr_epi8(3, 7, 11, 15, 0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14));
+                    __m128i rgb5 = _mm_shuffle_epi8(rgba5, _mm_setr_epi8(0, 1, 2, 4, 3, 7, 11, 15, 5, 6, 8, 9, 10, 12, 13, 14));
+                    __m128i rgb6 = _mm_shuffle_epi8(rgba6, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 3, 7, 11, 15, 10, 12, 13, 14));
+                    __m128i rgb7 = _mm_shuffle_epi8(rgba7, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 3, 7, 11, 15));
+
+                    __m128i a1 = _mm_alignr_epi8(rgb1, rgb0, 4);
+                    __m128i a2 = _mm_alignr_epi8(rgb2, rgb1, 8);
+                    __m128i a3 = _mm_alignr_epi8(rgb3, rgb2, 12);
+                    __m128i a4 = _mm_alignr_epi8(rgb5, rgb4, 4);
+                    __m128i a5 = _mm_alignr_epi8(rgb6, rgb5, 8);
+                    __m128i a6 = _mm_alignr_epi8(rgb7, rgb6, 12);
+
+                    __m256i a1_2 = _mm256_castsi128_si256(a1);
+                    a1_2 = _mm256_inserti128_si256(a1_2, a2, 1);
+
+                    __m256i a3_4 = _mm256_castsi128_si256(a3);
+                    a3_4 = _mm256_inserti128_si256(a3_4, a4, 1);
+
+                    __m256i a5_6 = _mm256_castsi128_si256(a5);
+                    a5_6 = _mm256_inserti128_si256(a5_6, a6, 1);
+
+                    // Align registers and store 32 pixels (96 bytes) at once
+                    _mm256_storeu_si256(&dst[i * 3], a1_2);
+                    _mm256_storeu_si256(&dst[i * 3 + 1], a3_4);
+                    _mm256_storeu_si256(&dst[i * 3 + 2], a5_6);
                 }
             }
 
             if (FORMAT == RS2_FORMAT_BGR8 || FORMAT == RS2_FORMAT_BGRA8)
             {
                 // Shuffle separate R, G, B values into four registers storing four pixels each in (B, G, R, A) order
-                __m128i bg8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(b16__0_7, evens_odds), _mm_shuffle_epi8(g16__0_7, evens_odds)); // hi to take the odds which are the upper bytes we care about
-                __m128i ra8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(r16__0_7, evens_odds), _mm_set1_epi8(-1));
-                __m128i bgra_0_3 = _mm_unpacklo_epi16(bg8__0_7, ra8__0_7);
-                __m128i bgra_4_7 = _mm_unpackhi_epi16(bg8__0_7, ra8__0_7);
+                __m256i bg8__0_7 = _mm256_unpacklo_epi8(_mm256_shuffle_epi8(b16__0_7, evens_odds), _mm256_shuffle_epi8(g16__0_7, evens_odds)); // hi to take the odds which are the upper bytes we care about
+                __m256i ra8__0_7 = _mm256_unpacklo_epi8(_mm256_shuffle_epi8(r16__0_7, evens_odds), _mm256_set1_epi8(-1));
+                __m256i bgra_0_3 = _mm256_unpacklo_epi16(bg8__0_7, ra8__0_7);
+                __m256i bgra_4_7 = _mm256_unpackhi_epi16(bg8__0_7, ra8__0_7);
 
-                __m128i bg8__8_F = _mm_unpacklo_epi8(_mm_shuffle_epi8(b16__8_F, evens_odds), _mm_shuffle_epi8(g16__8_F, evens_odds)); // hi to take the odds which are the upper bytes we care about
-                __m128i ra8__8_F = _mm_unpacklo_epi8(_mm_shuffle_epi8(r16__8_F, evens_odds), _mm_set1_epi8(-1));
-                __m128i bgra_8_B = _mm_unpacklo_epi16(bg8__8_F, ra8__8_F);
-                __m128i bgra_C_F = _mm_unpackhi_epi16(bg8__8_F, ra8__8_F);
+                __m128i ZW1 = _mm256_extracti128_si256(bgra_4_7, 0);
+                __m256i XYZW1 = _mm256_inserti128_si256(bgra_0_3, ZW1, 1);
 
-                if(FORMAT == RS2_FORMAT_BGRA8)
+                __m128i UV1 = _mm256_extracti128_si256(bgra_0_3, 1);
+                __m256i UVST1 = _mm256_inserti128_si256(bgra_4_7, UV1, 0);
+
+                __m256i bg8__8_F = _mm256_unpacklo_epi8(_mm256_shuffle_epi8(b16__8_F, evens_odds), _mm256_shuffle_epi8(g16__8_F, evens_odds)); // hi to take the odds which are the upper bytes we care about
+                __m256i ra8__8_F = _mm256_unpacklo_epi8(_mm256_shuffle_epi8(r16__8_F, evens_odds), _mm256_set1_epi8(-1));
+                __m256i bgra_8_B = _mm256_unpacklo_epi16(bg8__8_F, ra8__8_F);
+                __m256i bgra_C_F = _mm256_unpackhi_epi16(bg8__8_F, ra8__8_F);
+
+                __m128i ZW2 = _mm256_extracti128_si256(bgra_C_F, 0);
+                __m256i XYZW2 = _mm256_inserti128_si256(bgra_8_B, ZW2, 1);
+
+                __m128i UV2 = _mm256_extracti128_si256(bgra_8_B, 1);
+                __m256i UVST2 = _mm256_inserti128_si256(bgra_C_F, UV2, 0);
+
+                if (FORMAT == RS2_FORMAT_BGRA8)
                 {
-                    // Store 16 pixels (64 bytes) at once
-                    _mm_storeu_si128(&dst[i*4], bgra_0_3);
-                    _mm_storeu_si128(&dst[i*4 + 1], bgra_4_7);
-                    _mm_storeu_si128(&dst[i*4 + 2], bgra_8_B);
-                    _mm_storeu_si128(&dst[i*4 + 3], bgra_C_F);
+                    // Store 32 pixels (128 bytes) at once
+                    _mm256_storeu_si256(&dst[i * 4], XYZW1);
+                    _mm256_storeu_si256(&dst[i * 4 + 1], UVST1);
+                    _mm256_storeu_si256(&dst[i * 4 + 2], XYZW2);
+                    _mm256_storeu_si256(&dst[i * 4 + 3], UVST2);
                 }
 
-                if(FORMAT == RS2_FORMAT_BGR8)
+                if (FORMAT == RS2_FORMAT_BGR8)
                 {
-                    // Shuffle rgb triples to the start and end of each register
-                    __m128i bgr0 = _mm_shuffle_epi8(bgra_0_3, _mm_setr_epi8(  3, 7, 11, 15,   0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14));
-                    __m128i bgr1 = _mm_shuffle_epi8(bgra_4_7, _mm_setr_epi8(0, 1, 2, 4,   3, 7, 11, 15,   5, 6, 8, 9, 10, 12, 13, 14));
-                    __m128i bgr2 = _mm_shuffle_epi8(bgra_8_B, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9,   3, 7, 11, 15,   10, 12, 13, 14));
-                    __m128i bgr3 = _mm_shuffle_epi8(bgra_C_F, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14,   3, 7, 11, 15  ));
+                    __m128i rgba0 = _mm256_extracti128_si256(XYZW1, 0);
+                    __m128i rgba1 = _mm256_extracti128_si256(XYZW1, 1);
+                    __m128i rgba2 = _mm256_extracti128_si256(UVST1, 0);
+                    __m128i rgba3 = _mm256_extracti128_si256(UVST1, 1);
+                    __m128i rgba4 = _mm256_extracti128_si256(XYZW2, 0);
+                    __m128i rgba5 = _mm256_extracti128_si256(XYZW2, 1);
+                    __m128i rgba6 = _mm256_extracti128_si256(UVST2, 0);
+                    __m128i rgba7 = _mm256_extracti128_si256(UVST2, 1);
 
-                    // Align registers and store 16 pixels (48 bytes) at once
-                    _mm_storeu_si128(&dst[i*3], _mm_alignr_epi8(bgr1, bgr0, 4));
-                    _mm_storeu_si128(&dst[i*3+1], _mm_alignr_epi8(bgr2, bgr1, 8));
-                    _mm_storeu_si128(&dst[i*3+2], _mm_alignr_epi8(bgr3, bgr2, 12));
+                    // Shuffle rgb triples to the start and end of each register
+                    __m128i bgr0 = _mm_shuffle_epi8(rgba0, _mm_setr_epi8(3, 7, 11, 15, 0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14));
+                    __m128i bgr1 = _mm_shuffle_epi8(rgba1, _mm_setr_epi8(0, 1, 2, 4, 3, 7, 11, 15, 5, 6, 8, 9, 10, 12, 13, 14));
+                    __m128i bgr2 = _mm_shuffle_epi8(rgba2, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 3, 7, 11, 15, 10, 12, 13, 1));
+                    __m128i bgr3 = _mm_shuffle_epi8(rgba3, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 3, 7, 11, 15));
+                    __m128i bgr4 = _mm_shuffle_epi8(rgba4, _mm_setr_epi8(3, 7, 11, 15, 0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14));
+                    __m128i bgr5 = _mm_shuffle_epi8(rgba5, _mm_setr_epi8(0, 1, 2, 4, 3, 7, 11, 15, 5, 6, 8, 9, 10, 12, 13, 14));
+                    __m128i bgr6 = _mm_shuffle_epi8(rgba6, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 3, 7, 11, 15, 10, 12, 13, 1));
+                    __m128i bgr7 = _mm_shuffle_epi8(rgba7, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 3, 7, 11, 15));
+
+                    __m128i a1 = _mm_alignr_epi8(bgr1, bgr0, 4);
+                    __m128i a2 = _mm_alignr_epi8(bgr2, bgr1, 8);
+                    __m128i a3 = _mm_alignr_epi8(bgr3, bgr2, 12);
+                    __m128i a4 = _mm_alignr_epi8(bgr5, bgr4, 4);
+                    __m128i a5 = _mm_alignr_epi8(bgr6, bgr5, 8);
+                    __m128i a6 = _mm_alignr_epi8(bgr7, bgr6, 12);
+
+                    __m256i a1_2 = _mm256_castsi128_si256(a1);
+                    a1_2 = _mm256_inserti128_si256(a1_2, a2, 1);
+
+                    __m256i a3_4 = _mm256_castsi128_si256(a3);
+                    a3_4 = _mm256_inserti128_si256(a3_4, a4, 1);
+
+                    __m256i a5_6 = _mm256_castsi128_si256(a5);
+                    a5_6 = _mm256_inserti128_si256(a5_6, a6, 1);
+
+                    // Align registers and store 32 pixels (96 bytes) at once
+                    _mm256_storeu_si256(&dst[i * 3], a1_2);
+                    _mm256_storeu_si256(&dst[i * 3 + 1], a3_4);
+                    _mm256_storeu_si256(&dst[i * 3 + 2], a5_6);
+                }
+            }
+        }
+#elif __SSSE3__
+auto src = reinterpret_cast<const __m128i *>(s);
+auto dst = reinterpret_cast<__m128i *>(d[0]);
+#pragma omp parallel for
+for (int i = 0; i < n / 16; i++)
+{
+    const __m128i zero = _mm_set1_epi8(0);
+    const __m128i n100 = _mm_set1_epi16(100 << 4);
+    const __m128i n208 = _mm_set1_epi16(208 << 4);
+    const __m128i n298 = _mm_set1_epi16(298 << 4);
+    const __m128i n409 = _mm_set1_epi16(409 << 4);
+    const __m128i n516 = _mm_set1_epi16(516 << 4);
+    const __m128i evens_odds = _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15);
+
+    // Load 8 YUY2 pixels each into two 16-byte registers
+    __m128i s0 = _mm_loadu_si128(&src[i * 2]);
+    __m128i s1 = _mm_loadu_si128(&src[i * 2 + 1]);
+
+    if (FORMAT == RS2_FORMAT_Y8)
+    {
+        // Align all Y components and output 16 pixels (16 bytes) at once
+        __m128i y0 = _mm_shuffle_epi8(s0, _mm_setr_epi8(1, 3, 5, 7, 9, 11, 13, 15, 0, 2, 4, 6, 8, 10, 12, 14));
+        __m128i y1 = _mm_shuffle_epi8(s1, _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15));
+        _mm_storeu_si128(&dst[i], _mm_alignr_epi8(y0, y1, 8));
+        continue;
+    }
+
+    // Shuffle all Y components to the low order bytes of the register, and all U/V components to the high order bytes
+    const __m128i evens_odd1s_odd3s = _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 5, 9, 13, 3, 7, 11, 15); // to get yyyyyyyyuuuuvvvv
+    __m128i yyyyyyyyuuuuvvvv0 = _mm_shuffle_epi8(s0, evens_odd1s_odd3s);
+    __m128i yyyyyyyyuuuuvvvv8 = _mm_shuffle_epi8(s1, evens_odd1s_odd3s);
+
+    // Retrieve all 16 Y components as 16-bit values (8 components per register))
+    __m128i y16__0_7 = _mm_unpacklo_epi8(yyyyyyyyuuuuvvvv0, zero);         // convert to 16 bit
+    __m128i y16__8_F = _mm_unpacklo_epi8(yyyyyyyyuuuuvvvv8, zero);         // convert to 16 bit
+
+    if (FORMAT == RS2_FORMAT_Y16)
+    {
+        // Output 16 pixels (32 bytes) at once
+        _mm_storeu_si128(&dst[i * 2], _mm_slli_epi16(y16__0_7, 8));
+        _mm_storeu_si128(&dst[i * 2 + 1], _mm_slli_epi16(y16__8_F, 8));
+        continue;
+    }
+
+    // Retrieve all 16 U and V components as 16-bit values (8 components per register)
+    __m128i uv = _mm_unpackhi_epi32(yyyyyyyyuuuuvvvv0, yyyyyyyyuuuuvvvv8); // uuuuuuuuvvvvvvvv
+    __m128i u = _mm_unpacklo_epi8(uv, uv);                                 //  uu uu uu uu uu uu uu uu  u's duplicated
+    __m128i v = _mm_unpackhi_epi8(uv, uv);                                 //  vv vv vv vv vv vv vv vv
+    __m128i u16__0_7 = _mm_unpacklo_epi8(u, zero);                         // convert to 16 bit
+    __m128i u16__8_F = _mm_unpackhi_epi8(u, zero);                         // convert to 16 bit
+    __m128i v16__0_7 = _mm_unpacklo_epi8(v, zero);                         // convert to 16 bit
+    __m128i v16__8_F = _mm_unpackhi_epi8(v, zero);                         // convert to 16 bit
+
+                                                                           // Compute R, G, B values for first 8 pixels
+    __m128i c16__0_7 = _mm_slli_epi16(_mm_subs_epi16(y16__0_7, _mm_set1_epi16(16)), 4);
+    __m128i d16__0_7 = _mm_slli_epi16(_mm_subs_epi16(u16__0_7, _mm_set1_epi16(128)), 4); // perhaps could have done these u,v to d,e before the duplication
+    __m128i e16__0_7 = _mm_slli_epi16(_mm_subs_epi16(v16__0_7, _mm_set1_epi16(128)), 4);
+    __m128i r16__0_7 = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__0_7, n298), _mm_mulhi_epi16(e16__0_7, n409))))));                                                 // (298 * c + 409 * e + 128) ; //
+    __m128i g16__0_7 = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_sub_epi16(_mm_sub_epi16(_mm_mulhi_epi16(c16__0_7, n298), _mm_mulhi_epi16(d16__0_7, n100)), _mm_mulhi_epi16(e16__0_7, n208)))))); // (298 * c - 100 * d - 208 * e + 128)
+    __m128i b16__0_7 = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__0_7, n298), _mm_mulhi_epi16(d16__0_7, n516))))));                                                 // clampbyte((298 * c + 516 * d + 128) >> 8);
+
+                                                                                                                                                                                                                     // Compute R, G, B values for second 8 pixels
+    __m128i c16__8_F = _mm_slli_epi16(_mm_subs_epi16(y16__8_F, _mm_set1_epi16(16)), 4);
+    __m128i d16__8_F = _mm_slli_epi16(_mm_subs_epi16(u16__8_F, _mm_set1_epi16(128)), 4); // perhaps could have done these u,v to d,e before the duplication
+    __m128i e16__8_F = _mm_slli_epi16(_mm_subs_epi16(v16__8_F, _mm_set1_epi16(128)), 4);
+    __m128i r16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(e16__8_F, n409))))));                                                 // (298 * c + 409 * e + 128) ; //
+    __m128i g16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_sub_epi16(_mm_sub_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(d16__8_F, n100)), _mm_mulhi_epi16(e16__8_F, n208)))))); // (298 * c - 100 * d - 208 * e + 128)
+    __m128i b16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(d16__8_F, n516))))));                                                 // clampbyte((298 * c + 516 * d + 128) >> 8);
+
+    if (FORMAT == RS2_FORMAT_RGB8 || FORMAT == RS2_FORMAT_RGBA8)
+    {
+        // Shuffle separate R, G, B values into four registers storing four pixels each in (R, G, B, A) order
+        __m128i rg8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(r16__0_7, evens_odds), _mm_shuffle_epi8(g16__0_7, evens_odds)); // hi to take the odds which are the upper bytes we care about
+        __m128i ba8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(b16__0_7, evens_odds), _mm_set1_epi8(-1));
+        __m128i rgba_0_3 = _mm_unpacklo_epi16(rg8__0_7, ba8__0_7);
+        __m128i rgba_4_7 = _mm_unpackhi_epi16(rg8__0_7, ba8__0_7);
+
+        __m128i rg8__8_F = _mm_unpacklo_epi8(_mm_shuffle_epi8(r16__8_F, evens_odds), _mm_shuffle_epi8(g16__8_F, evens_odds)); // hi to take the odds which are the upper bytes we care about
+        __m128i ba8__8_F = _mm_unpacklo_epi8(_mm_shuffle_epi8(b16__8_F, evens_odds), _mm_set1_epi8(-1));
+        __m128i rgba_8_B = _mm_unpacklo_epi16(rg8__8_F, ba8__8_F);
+        __m128i rgba_C_F = _mm_unpackhi_epi16(rg8__8_F, ba8__8_F);
+
+        if (FORMAT == RS2_FORMAT_RGBA8)
+        {
+            // Store 16 pixels (64 bytes) at once
+            _mm_storeu_si128(&dst[i * 4], rgba_0_3);
+            _mm_storeu_si128(&dst[i * 4 + 1], rgba_4_7);
+            _mm_storeu_si128(&dst[i * 4 + 2], rgba_8_B);
+            _mm_storeu_si128(&dst[i * 4 + 3], rgba_C_F);
+        }
+
+        if (FORMAT == RS2_FORMAT_RGB8)
+        {
+            // Shuffle rgb triples to the start and end of each register
+            __m128i rgb0 = _mm_shuffle_epi8(rgba_0_3, _mm_setr_epi8(3, 7, 11, 15, 0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14));
+            __m128i rgb1 = _mm_shuffle_epi8(rgba_4_7, _mm_setr_epi8(0, 1, 2, 4, 3, 7, 11, 15, 5, 6, 8, 9, 10, 12, 13, 14));
+            __m128i rgb2 = _mm_shuffle_epi8(rgba_8_B, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 3, 7, 11, 15, 10, 12, 13, 14));
+            __m128i rgb3 = _mm_shuffle_epi8(rgba_C_F, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 3, 7, 11, 15));
+
+            // Align registers and store 16 pixels (48 bytes) at once
+            _mm_storeu_si128(&dst[i * 3], _mm_alignr_epi8(rgb1, rgb0, 4));
+            _mm_storeu_si128(&dst[i * 3 + 1], _mm_alignr_epi8(rgb2, rgb1, 8));
+            _mm_storeu_si128(&dst[i * 3 + 2], _mm_alignr_epi8(rgb3, rgb2, 12));
+        }
+    }
+
+    if (FORMAT == RS2_FORMAT_BGR8 || FORMAT == RS2_FORMAT_BGRA8)
+    {
+        // Shuffle separate R, G, B values into four registers storing four pixels each in (B, G, R, A) order
+        __m128i bg8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(b16__0_7, evens_odds), _mm_shuffle_epi8(g16__0_7, evens_odds)); // hi to take the odds which are the upper bytes we care about
+        __m128i ra8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(r16__0_7, evens_odds), _mm_set1_epi8(-1));
+        __m128i bgra_0_3 = _mm_unpacklo_epi16(bg8__0_7, ra8__0_7);
+        __m128i bgra_4_7 = _mm_unpackhi_epi16(bg8__0_7, ra8__0_7);
+
+        __m128i bg8__8_F = _mm_unpacklo_epi8(_mm_shuffle_epi8(b16__8_F, evens_odds), _mm_shuffle_epi8(g16__8_F, evens_odds)); // hi to take the odds which are the upper bytes we care about
+        __m128i ra8__8_F = _mm_unpacklo_epi8(_mm_shuffle_epi8(r16__8_F, evens_odds), _mm_set1_epi8(-1));
+        __m128i bgra_8_B = _mm_unpacklo_epi16(bg8__8_F, ra8__8_F);
+        __m128i bgra_C_F = _mm_unpackhi_epi16(bg8__8_F, ra8__8_F);
+
+        if (FORMAT == RS2_FORMAT_BGRA8)
+        {
+            // Store 16 pixels (64 bytes) at once
+            _mm_storeu_si128(&dst[i * 4], bgra_0_3);
+            _mm_storeu_si128(&dst[i * 4 + 1], bgra_4_7);
+            _mm_storeu_si128(&dst[i * 4 + 2], bgra_8_B);
+            _mm_storeu_si128(&dst[i * 4 + 3], bgra_C_F);
+        }
+
+        if (FORMAT == RS2_FORMAT_BGR8)
+        {
+            // Shuffle rgb triples to the start and end of each register
+            __m128i bgr0 = _mm_shuffle_epi8(bgra_0_3, _mm_setr_epi8(3, 7, 11, 15, 0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14));
+            __m128i bgr1 = _mm_shuffle_epi8(bgra_4_7, _mm_setr_epi8(0, 1, 2, 4, 3, 7, 11, 15, 5, 6, 8, 9, 10, 12, 13, 14));
+            __m128i bgr2 = _mm_shuffle_epi8(bgra_8_B, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 3, 7, 11, 15, 10, 12, 13, 14));
+            __m128i bgr3 = _mm_shuffle_epi8(bgra_C_F, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 3, 7, 11, 15));
+
+            // Align registers and store 16 pixels (48 bytes) at once
+            _mm_storeu_si128(&dst[i * 3], _mm_alignr_epi8(bgr1, bgr0, 4));
+            _mm_storeu_si128(&dst[i * 3 + 1], _mm_alignr_epi8(bgr2, bgr1, 8));
+            _mm_storeu_si128(&dst[i * 3 + 2], _mm_alignr_epi8(bgr3, bgr2, 12));
                 }
             }
         }
@@ -433,7 +663,7 @@ namespace librealsense
                 int32_t t;
                 #define clamp(x)  ((t=(x)) > 255 ? 255 : t < 0 ? 0 : t)
                 r[i] = clamp((298 * c           + 409 * e + 128) >> 8);
-                g[i] = clamp((298 * c - 100 * d - 409 * e + 128) >> 8);
+                g[i] = clamp((298 * c - 100 * d - 208 * e + 128) >> 8);
                 b[i] = clamp((298 * c + 516 * d           + 128) >> 8);
                 #undef clamp
             }
