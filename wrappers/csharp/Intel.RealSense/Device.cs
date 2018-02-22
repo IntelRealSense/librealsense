@@ -156,11 +156,14 @@ namespace Intel.RealSense
 
     public class AdvancedDevice : Device
     {
-        private const string AdvancedModeDisabledException = "Advanced mode has not been enabled";
-
         internal AdvancedDevice(IntPtr dev) : base(dev)
         {
 
+        }
+
+        public static AdvancedDevice FromDevice(Device dev)
+        {
+            return new AdvancedDevice(dev.m_instance);
         }
 
         public bool AdvancedModeEnabled
