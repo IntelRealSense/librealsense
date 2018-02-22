@@ -234,6 +234,15 @@ namespace Intel.RealSense
                     return @default;
                 }
             }
+
+            public bool ReadOnly
+            {
+                get
+                {
+                    object error;
+                    return NativeMethods.rs2_is_option_read_only(m_sensor, option, out error) != 0;
+                }
+            }
         }
 
         public class SensorOptions : IEnumerable<CameraOption>
@@ -251,7 +260,16 @@ namespace Intel.RealSense
                     return new CameraOption(m_sensor, option);
                 }
             }
-
+            public string OptionValueDescription(Option option, float value)
+            {
+                object error;
+                var desc = NativeMethods.rs2_get_option_value_description(m_sensor, option, value, out error);
+                if(desc != null)
+                {
+                    return Marshal.PtrToStringAnsi(desc);
+                }
+                return null;
+            }
             public IEnumerator<CameraOption> GetEnumerator()
             {
                 var values = Enum.GetValues(typeof(Option)) as Option[];

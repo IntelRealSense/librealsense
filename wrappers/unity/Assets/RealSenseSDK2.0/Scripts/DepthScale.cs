@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Intel.RealSense;
 using System.Linq;
+using System;
 
 public class DepthScale : MonoBehaviour {
 
@@ -11,15 +12,28 @@ public class DepthScale : MonoBehaviour {
 
     public Material bGSegMat;
     // Use this for initialization
-    void Start () {
+    void Start() {
         bGSegMat.SetFloat("_MinRange", minDistanceInMeters);
         bGSegMat.SetFloat("_MaxRange", maxDistanceInMeters);
-        Debug.Log("Depth Scale!");
-        var sensor = RealSenseDevice.Instance.ActiveProfile.Device.Sensors.First(s => s.DepthScale != 0);
+        if (RealSenseDevice.Instance.ActiveProfile != null)
+            OnStartStreaming(RealSenseDevice.Instance.ActiveProfile);
+        else
+            RealSenseDevice.Instance.OnStart += OnStartStreaming;
+    }
+
+    private void OnStartStreaming(PipelineProfile profile)
+    {
+        var sensor = profile.Device.Sensors.First(s =>
+        {
+            if (!s.Options[Option.DepthUnits].Supported)
+                return false;
+            return s.Options[Option.DepthUnits].Value > 0;
+        });
         if (sensor != null)
         {
-            bGSegMat.SetFloat("_DepthScale", sensor.DepthScale);
-            Debug.Log("Depth Scale for BGSeg : " + sensor.DepthScale.ToString());
+            var depthUnits = sensor.Options[Option.DepthUnits].Value;
+            bGSegMat.SetFloat("_DepthScale", depthUnits);
+            Debug.Log("Depth Scale for BGSeg : " + depthUnits.ToString());
         }
         else
         {
