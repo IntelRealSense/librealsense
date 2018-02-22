@@ -139,10 +139,6 @@ namespace rs2
         Operator implement, return the internal stream profile instance.
         * \return rs2_stream_profile* - internal instance to communicate with real implementation.
         */
-        operator const rs2_stream_profile*()
-        {
-            return _profile;
-        }
         /**
         * Get the extrinsic transformation between two profiles (representing physical sensors)
         * \param[in] stream_profile to - the stream profile (another sensor) to be based to return the extrinsic
@@ -180,7 +176,7 @@ namespace rs2
             error::handle(e);
 
         }
-        explicit operator const rs2_stream_profile*() { return _profile; }
+        operator const rs2_stream_profile*() { return _profile; }
         explicit operator std::shared_ptr<rs2_stream_profile>() { return _clone; }
 
     protected:
