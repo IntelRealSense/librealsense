@@ -25,14 +25,14 @@ Using this wrapper, Unity developers can get a live stream of Color, Depth and I
 The Unity wrapper depends on the C# wrapper provided by the RealSense SDK 2.0.
 At the end of this step, the following files are expected to be available under their respective folders:
 
-* `unity/Assets/Plugin.Managed/LibrealsenseWrapper.dll` - The .NET wrapper assembly
-* `unity/Assets/RealSenseSDK2.0/Plugins/realsense2.dll` - The SDK's library
+* `unity/Assets/Plugin.Managed/Intel.RealSense.dll` - The .NET wrapper assembly (for .NET 3.5)
+* `unity/Assets/RealSenseSDK2.0/Plugins/realsense2.dll` - The SDK's library (that was used to build the .NET wrapper)
 
 In order to get these files, either:
 1. download and install [RealSense SDK 2.0](https://github.com/IntelRealSense/librealsense/releases), then copy the files from the installation location to their respective folders in the project. Or,
 2. Follow [.NET wrapper instructions for building the wrapper](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/csharp#getting-started) and copy the file to their respective folders in the project.
 
-> NOTE: Unity requires that manage assemblies (such as the C# wrapper) are targeted to .NET Framework 3.5 and lower.
+  > NOTE: Unity requires that manage assemblies (such as the C# wrapper) are targeted to .NET Framework 3.5 and lower. The .NET wrapper provides assemblies for multiple targets, one of which is .NET 3.5 (net35).
 
 ### Step 2 - Open a Unity Scene
 
