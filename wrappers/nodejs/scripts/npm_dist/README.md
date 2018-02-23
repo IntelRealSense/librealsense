@@ -47,6 +47,19 @@ sudo apt install -y libusb-1.0-0-dev pkg-config libgtk-3-dev libglfw3-dev cmake
 
 Please refer to [Linux installation doc](https://github.com/IntelRealSense/librealsense/blob/development/doc/installation.md) or [Windows installation doc](https://github.com/IntelRealSense/librealsense/blob/development/doc/installation_windows.md) for full document of C++ librealsense build environment setup.
 
+### Setup Mac OS Build Environment ###
+
+**Note:** OSX support for the full range of functionality offered by the SDK is not yet complete.
+
+ 1. Install XCode 6.0+ via the AppStore.
+
+ 2. Install the Homebrew package manager via terminal - [link](http://brew.sh/)
+
+ 3. Install the following packages via brew:
+   * `brew install libusb pkg-config`
+   * `brew install homebrew/versions/glfw3`
+   * `brew install cmake`
+
 ### Setup Necessary Global NPM Packages ###
 
 ```
