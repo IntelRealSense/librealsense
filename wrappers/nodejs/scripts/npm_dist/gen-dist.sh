@@ -18,6 +18,7 @@ rsync -a . $MODULEDIR --exclude build --exclude dist --exclude node_modules
 cp -f scripts/npm_dist/binding.gyp $MODULEDIR
 cp -f scripts/npm_dist/package.json $MODULEDIR
 cp -f scripts/npm_dist/README.md $MODULEDIR
+git rev-parse --verify HEAD > $RSDIR/commit
 
 pushd . > /dev/null
 cd $WORKDIR
