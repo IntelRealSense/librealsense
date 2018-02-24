@@ -1218,6 +1218,7 @@ class Context {
     const funcName = 'Context.loadDevice()';
     checkArgumentLength(1, 1, arguments.length, funcName);
     checkArgumentType(arguments, 'string', 0, funcName);
+    checkFileExistence(file);
     return new PlaybackDevice(this.cxxCtx.loadDeviceFile(file), file);
   }
 
@@ -1230,6 +1231,7 @@ class Context {
     const funcName = 'Context.unloadDevice()';
     checkArgumentLength(1, 1, arguments.length, funcName);
     checkArgumentType(arguments, 'string', 0, funcName);
+    checkFileExistence(file);
     this.cxxCtx.unloadDeviceFile(file);
   }
 }
@@ -1274,6 +1276,7 @@ class PlaybackContext extends Context {
     checkArgumentLength(1, 2, arguments.length, funcName);
     checkArgumentType(arguments, 'string', 0, funcName);
     checkArgumentType(arguments, 'string', 1, funcName);
+    checkFileExistence(fileName);
     super('playback', fileName, section);
   }
 }
@@ -2693,13 +2696,14 @@ class Config {
    * This request cannot be used if {@link Config.enableRecordToFile} is called for the current
    * config, and vise versa
    *
-   * @param {String} filename the playback file of the device
+   * @param {String} fileName the playback file of the device
    */
-  enableDeviceFromFile(filename) {
+  enableDeviceFromFile(fileName) {
     const funcName = 'Config.enableDeviceFromFile()';
     checkArgumentLength(1, 1, arguments.length, funcName);
     checkArgumentType(arguments, 'string', 0, funcName);
-    this.cxxConfig.enableDeviceFromFile(filename);
+    checkFileExistence(fileName);
+    this.cxxConfig.enableDeviceFromFile(fileName);
   }
 
   /**
@@ -2707,13 +2711,13 @@ class Config {
    * This request cannot be used if {@link Config.enableDeviceFromFile} is called for the current
    * config, and vise versa as available.
    *
-   * @param {String} filename the desired file for the output record
+   * @param {String} fileName the desired file for the output record
    */
-  enableRecordToFile(filename) {
+  enableRecordToFile(fileName) {
     const funcName = 'Config.enableRecordToFile()';
     checkArgumentLength(1, 1, arguments.length, funcName);
     checkArgumentType(arguments, 'string', 0, funcName);
-    this.cxxConfig.enableRecordToFile(filename);
+    this.cxxConfig.enableRecordToFile(fileName);
   }
 
   /**
