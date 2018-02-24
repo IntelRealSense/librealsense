@@ -503,6 +503,7 @@ describe('Sensor tests', function() {
         assert.equal(typeof n.timestamp, 'number');
         assert.equal(typeof n.severity, 'number');
         assert.equal(typeof n.category, 'number');
+        assert.equal(typeof n.serializedData, 'string');
         resolve();
       });
       setTimeout(() => {
@@ -689,6 +690,7 @@ if (!(isRecord || isPlayback)) {
           let sensors = recorder.querySensors();
           let sensor = sensors[0];
           let profiles = sensor.getStreamProfiles();
+          assert.equal(recorder.fileName, file);
           for (let i = 0; i < profiles.length; i++) {
             if (profiles[i].streamType === rs2.stream.STREAM_DEPTH &&
                 profiles[i].fps === 30 &&

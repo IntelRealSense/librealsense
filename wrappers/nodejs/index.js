@@ -861,6 +861,7 @@ class Sensor extends Options {
    * @property {Float}  timestamp - The timestamp of the notification
    * @property {String} severity - The severity of the notification
    * @property {String} category - The category of the notification
+   * @property {String} serializedData - The serialized data of the notification
    */
 
   /**
@@ -871,6 +872,7 @@ class Sensor extends Options {
    * @param {Float}  info.timestamp - See {@link NotificationEventObject} for details
    * @param {String} info.severity - See {@link NotificationEventObject} for details
    * @param {String} info.category - See {@link NotificationEventObject} for details
+   * @param {String} info.serializedData - See {@link NotificationEventObject} for details
    *
    * @see {@link NotificationEventObject}
    * @see [Sensor.setNotificationsCallback()]{@link Sensor#setNotificationsCallback}
@@ -883,6 +885,7 @@ class Sensor extends Options {
    * @param {Float}  evt.timestamp - See {@link NotificationEventObject} for details
    * @param {String} evt.severity - See {@link NotificationEventObject} for details
    * @param {String} evt.category - See {@link NotificationEventObject} for details
+   * @param {String} evt.serializedData - See {@link NotificationEventObject} for details
    * @see {@link NotificationEventObject}
    * @see [Sensor.setNotificationsCallback()]{@link Sensor#setNotificationsCallback}
    */
@@ -1340,6 +1343,13 @@ class RecorderDevice extends Device {
    */
   resume() {
     this.cxxDev.resumeRecord();
+  }
+  /**
+   * Gets the name of the file to which the recorder is writing
+   * @return {String}
+   */
+  get fileName() {
+    return this.cxxDev.getFileName();
   }
 }
 
