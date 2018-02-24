@@ -4779,12 +4779,12 @@ const frame_metadata = {
    * Timestamp get from uvc driver. usec
    * <br>Equivalent to its uppercase counterpart
    */
-  frame_metadata_backend_timestamp: 'backend_timestamp',
+  frame_metadata_backend_timestamp: 'backend-timestamp',
     /**
   * Actual fps
   * <br>Equivalent to its uppercase counterpart
   */
-  frame_metadata_actual_fps: 'actual_fps',
+  frame_metadata_actual_fps: 'actual-fps',
   /**
    * A sequential index managed per-stream. Integer value <br>Equivalent to its lowercase
    * counterpart.
@@ -4885,6 +4885,10 @@ const frame_metadata = {
         return this.frame_metadata_time_of_arrival;
       case this.FRAME_METADATA_TEMPERATURE:
         return this.frame_metadata_temperature;
+      case this.FRAME_METADATA_BACKEND_TIMESTAMP:
+        return this.frame_metadata_backend_timestamp;
+      case this.FRAME_METADATA_ACTUAL_FPS:
+        return this.frame_metadata_actual_fps;
     }
   },
 };
