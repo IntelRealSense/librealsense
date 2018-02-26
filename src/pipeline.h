@@ -72,6 +72,8 @@ namespace librealsense
         std::unique_ptr<syncer_process_unit> _syncer;
         std::unique_ptr<pipeline_processing_block> _pipeline_process;
         std::shared_ptr<pipeline_config> _prev_conf;
+        int _playback_stopped_token = -1;
+        dispatcher _dispatcher;
     };
 
     class pipeline_config
