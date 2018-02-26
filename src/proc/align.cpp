@@ -9,6 +9,7 @@
 #include "proc/synthetic-stream.h"
 #include "environment.h"
 #include "align.h"
+#include "stream.h"
 
 namespace librealsense
 {
@@ -115,6 +116,33 @@ namespace librealsense
         align_other_to_depth(other_aligned_to_z, [z_pixels, z_scale](int z_pixel_index) { return z_scale * z_pixels[z_pixel_index]; }, z_intrin, z_to_other, other_intrin, other_pixels, other_format);
     }
 
+    std::shared_ptr<stream_profile_interface> create_aligned_profile(
+        const std::shared_ptr<stream_profile_interface>& original_profile, 
+        const std::shared_ptr<stream_profile_interface>& to_profile)
+    {
+        auto aligned_profile = original_profile->clone();
+        aligned_profile->set_unique_id(100000 + original_profile->get_unique_id());
+        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*aligned_profile, *original_profile);
+        aligned_profile->set_stream_index(original_profile->get_stream_index());
+        aligned_profile->set_stream_type(original_profile->get_stream_type());
+        aligned_profile->set_format(original_profile->get_format());
+        aligned_profile->set_framerate(original_profile->get_framerate());
+        if (auto original_video_profile = As<video_stream_profile_interface>(original_profile))
+        {
+            if (auto to_video_profile = As<video_stream_profile_interface>(to_profile))
+            {
+                if (auto aligned_video_profile = As<video_stream_profile_interface>(aligned_profile))
+                {
+                    aligned_video_profile->set_dims(to_video_profile->get_width(), to_video_profile->get_height());
+                    auto aligned_intrinsics = original_video_profile->get_intrinsics();
+                    aligned_intrinsics.width = to_video_profile->get_width();
+                    aligned_intrinsics.height = to_video_profile->get_height();
+                    aligned_video_profile->set_intrinsics([aligned_intrinsics]() { return aligned_intrinsics; });
+                }
+            }
+        }
+        return aligned_profile;
+    }
     void align::on_frame(frame_holder frameset, librealsense::synthetic_source_interface* source)
     {
         auto composite = As<composite_frame>(frameset.frame);
@@ -240,7 +268,9 @@ namespace librealsense
             {
                 //Align a stream to depth
                 auto aligned_bytes_per_pixel = other_frame->get_bpp() / 8;
-                aligned_frame = source->allocate_video_frame(other_profile,
+                auto aligned_profile = create_aligned_profile(other_profile, depth_profile);
+                aligned_frame = source->allocate_video_frame(
+                    aligned_profile,
                     other_frame,
                     aligned_bytes_per_pixel,
                     depth_frame->get_width(), 
@@ -268,8 +298,9 @@ namespace librealsense
             {
                 //Align depth to some stream
                 auto aligned_bytes_per_pixel = depth_frame->get_bpp() / 8;
+                auto aligned_profile = create_aligned_profile(depth_profile, other_profile);
                 aligned_frame = source->allocate_video_frame(
-                    depth_profile, 
+                    aligned_profile,
                     depth_frame, 
                     aligned_bytes_per_pixel,
                     other_intrinsics.width,
