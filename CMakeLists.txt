@@ -67,11 +67,6 @@ if (ENABLE_ZERO_COPY)
     add_definitions(-DZERO_COPY)
 endif()
 
-option(RGB_USING_AVX2 "Unpack YUY2 to RGB8/RGBA8/BGR8/BGRA8/Y16 using AVX2" OFF)
-if (RGB_USING_AVX2)
-    add_definitions(-DRGB_AVX2)
-endif()
-
 if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
     unset(WIN32)
     unset(UNIX)
