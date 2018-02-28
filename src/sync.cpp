@@ -245,8 +245,8 @@ namespace librealsense
         for (auto m : matchers)
         {
             frame_holder* f;
-            if(_frames_queue[m].peek(&f));
-            str += frame_to_string(*f);
+            if(_frames_queue[m].peek(&f))
+                str += frame_to_string(*f);
         }
         return str;
     }
@@ -498,7 +498,7 @@ namespace librealsense
     void timestamp_composite_matcher::update_last_arrived(frame_holder& f, matcher* m)
     {
         if(f->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
-            _fps[m] = f->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+            _fps[m] = (uint32_t)f->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
 
         else
             _fps[m] = f->get_stream()->get_framerate();
@@ -508,10 +508,10 @@ namespace librealsense
 
     unsigned int timestamp_composite_matcher::get_fps(const frame_holder & f)
     {
-        auto fps = 0;
+        uint32_t fps = 0;
         if(f.frame->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
         {
-            fps = f.frame->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+            fps = (uint32_t)f.frame->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
         }
         LOG_DEBUG("fps " <<fps<<" "<< frame_to_string(const_cast<frame_holder&>(f)));
         return fps?fps:f.frame->get_stream()->get_framerate();
