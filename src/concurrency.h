@@ -160,7 +160,12 @@ public:
                 if (_queue.dequeue(&item))
                 {
                     cancellable_timer time(this);
-                    item(time);
+
+                    try
+                    {
+                        item(time);
+                    }
+                    catch(...){}
                 }
 
 #ifndef ANDROID
