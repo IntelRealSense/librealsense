@@ -22,7 +22,7 @@
 * [Getting Started](stepbystep/getting_started_with_openCV.md) - Getting started with OpenCV
 * [Error Handling](error_handling.md) - Documents librealsense error handling policy
 * Device specific topics:
-  * [D400 at software.intel.com](https://software.intel.com/en-us/realsense/d400) - Camera specifications
+  * [D400 at realsense.intel.com/](https://realsense.intel.com/stereo) - Camera specifications
   * [D400 and External Devices](rs400/external_devices.md) - Notes on integrating RS400 with external devices
   * [D400 Advanced Mode](rs400/rs400_advanced_mode.md) - Overview of the Advanced Mode APIs
   * [D400 cameras with Raspberry Pi](./RaspberryPi3.md) - Example of low-end system without USB3 interface
