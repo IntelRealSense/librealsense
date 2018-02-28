@@ -27,7 +27,7 @@ namespace librealsense
         }
         return s.str();
     }
-   
+
     matcher::matcher(std::vector<stream_id> streams_id)
         : _streams_id(streams_id){}
 
@@ -327,7 +327,7 @@ namespace librealsense
                     if (!skip_missing_stream(synced_frames, i))
                     {
                         s <<  _name<<" "<<frames_to_string(synced_frames )<<" Wait for missing stream: ";
-                        
+
                         for (auto&& stream : i->get_streams())
                             s << stream<<" next expected "<<std::fixed<< _next_expected[i];
                         synced_frames.clear();
@@ -536,7 +536,7 @@ namespace librealsense
         auto now = environment::get_instance().get_time_service()->get_time();
         for(auto m: _matchers)
         {
-            auto threshold = _fps[m.second.get()] ? (1000 / _fps[m.second.get()]) * 5 : 500; //if frame of a specific stream didn't arrive for time equivalence to 5 frames duration 
+            auto threshold = _fps[m.second.get()] ? (1000 / _fps[m.second.get()]) * 5 : 500; //if frame of a specific stream didn't arrive for time equivalence to 5 frames duration
                                                                                              //this stream will be marked as "not active" in order to not stack the other streams
             if(_last_arrived[m.second.get()] && (now - _last_arrived[m.second.get()]) > threshold)
             {

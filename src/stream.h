@@ -151,7 +151,7 @@ namespace librealsense
             }
             rs2_motion_device_intrinsic get_intrinsics() const override { return _calc_intrinsics(); }
             void set_intrinsics(std::function<rs2_motion_device_intrinsic()> calc) override { _calc_intrinsics = calc; }
-            
+
             void update(std::shared_ptr<extension_snapshot> ext) override
             {
                 return; //TODO: apply changes here

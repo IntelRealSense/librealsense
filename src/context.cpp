@@ -121,9 +121,9 @@ namespace librealsense
        {
            std::vector<rs2_device_info> rs2_devices_info_added;
            std::vector<rs2_device_info> rs2_devices_info_removed;
-           if(removed) 
+           if(removed)
                rs2_devices_info_removed.push_back({ shared_from_this(), removed });
-           if (added) 
+           if (added)
                rs2_devices_info_added.push_back({ shared_from_this(), added });
            raise_devices_changed(rs2_devices_info_removed, rs2_devices_info_added);
        };
@@ -443,17 +443,17 @@ namespace librealsense
         return result;
     }
 
-	// TODO: Make template
-	std::vector<platform::usb_device_info> filter_by_product(const std::vector<platform::usb_device_info>& devices, const std::set<uint16_t>& pid_list)
-	{
-		std::vector<platform::usb_device_info> result;
-		for (auto&& info : devices)
-		{
-			if (pid_list.count(info.pid))
-				result.push_back(info);
-		}
-		return result;
-	}
+    // TODO: Make template
+    std::vector<platform::usb_device_info> filter_by_product(const std::vector<platform::usb_device_info>& devices, const std::set<uint16_t>& pid_list)
+    {
+        std::vector<platform::usb_device_info> result;
+        for (auto&& info : devices)
+        {
+            if (pid_list.count(info.pid))
+                result.push_back(info);
+        }
+        return result;
+    }
 
     std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> group_devices_and_hids_by_unique_id(
         const std::vector<std::vector<platform::uvc_device_info>>& devices,
@@ -517,9 +517,9 @@ namespace librealsense
         return result;
     }
 
-	// TODO: Sergey
-	// Make template
-	void trim_device_list(std::vector<platform::usb_device_info>& devices, const std::vector<platform::usb_device_info>& chosen)
+    // TODO: Sergey
+    // Make template
+    void trim_device_list(std::vector<platform::usb_device_info>& devices, const std::vector<platform::usb_device_info>& chosen)
     {
         if (chosen.empty())
             return;

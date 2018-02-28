@@ -33,13 +33,13 @@ struct frame_additional_data
 
     frame_additional_data() {};
 
-    frame_additional_data(double in_timestamp, 
-        unsigned long long in_frame_number, 
-        double in_system_time, 
-        uint8_t md_size, 
-        const uint8_t* md_buf, 
-        double backend_time, 
-        rs2_time_t last_timestamp, 
+    frame_additional_data(double in_timestamp,
+        unsigned long long in_frame_number,
+        double in_system_time,
+        uint8_t md_size,
+        const uint8_t* md_buf,
+        double backend_time,
+        rs2_time_t last_timestamp,
         unsigned long long last_frame_number)
         : timestamp(in_timestamp),
           frame_number(in_frame_number),
@@ -262,7 +262,7 @@ namespace librealsense
             _depth_units = optional_value<float>();
             return video_frame::publish(new_owner);
         }
-        
+
         void keep() override
         {
             if (_original) _original->keep();
@@ -289,8 +289,8 @@ namespace librealsense
             return pixel * get_units();
         }
 
-        float get_units() const 
-        { 
+        float get_units() const
+        {
             if (!_depth_units)
                 _depth_units = query_units(get_sensor());
             return _depth_units.value();

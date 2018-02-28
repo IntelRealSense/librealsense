@@ -28,8 +28,8 @@ float dist_2d(const pixel& a, const pixel& b);
 struct toggle
 {
     toggle() : x(0.f), y(0.f) {}
-    toggle(float x, float y) 
-        : x(std::min(std::max(x, 0.f), 1.f)), 
+    toggle(float x, float y)
+        : x(std::min(std::max(x, 0.f), 1.f)),
           y(std::min(std::max(y, 0.f), 1.f))
     {}
 
@@ -54,7 +54,7 @@ struct toggle
         for (auto i = 0; i <= segments; i++)
         {
             auto t = 2 * M_PI * float(i) / segments;
-            glVertex2f(x * app.width()  + cos(t) * r, 
+            glVertex2f(x * app.width()  + cos(t) * r,
                        y * app.height() + sin(t) * r);
         }
         glEnd();
@@ -64,7 +64,7 @@ struct toggle
 
     // This helper function is used to find the button
     // closest to the mouse cursor
-    // Since we are only comparing this distance, sqrt can be safely skipped 
+    // Since we are only comparing this distance, sqrt can be safely skipped
     float dist_2d(const toggle& other) const
     {
         return pow(x - other.x, 2) + pow(y - other.y, 2);
@@ -91,7 +91,7 @@ void register_glfw_callbacks(window& app, state& app_state);
 // Simple distance is the classic pythagorean distance between 3D points
 // This distance ignores the topology of the object and can cut both through
 // air and through solid
-void render_simple_distance(const rs2::depth_frame& depth, 
+void render_simple_distance(const rs2::depth_frame& depth,
                             const state& s,
                             const window& app,
                             const rs2_intrinsics& intr);
@@ -122,7 +122,7 @@ int main(int argc, char * argv[]) try
     rs2::spatial_filter spat;
     // Enable hole-filling
     // Hole filling is an agressive heuristic and it gets the depth wrong many times
-    // However, this demo is not built to handle holes 
+    // However, this demo is not built to handle holes
     // (the shortest-path will always prefer to "cut" through the holes since they have zero 3D distance)
     spat.set_option(RS2_OPTION_HOLES_FILL, 5); // 5 = fill all the zero pixels
     // Define temporal filter
@@ -144,7 +144,7 @@ int main(int argc, char * argv[]) try
     auto profile = pipe.start(cfg);
 
     auto sensor = profile.get_device().first<rs2::depth_sensor>();
-    
+
     // TODO: At the moment the SDK does not offer a closed enum for D400 visual presets
     // (because they keep changing)
     // As a work-around we try to find the High-Density preset by name
@@ -171,7 +171,7 @@ int main(int argc, char * argv[]) try
     rs2::frame_queue postprocessed_frames;
 
     // In addition, depth frames will also flow into this queue:
-    rs2::frame_queue pathfinding_queue; 
+    rs2::frame_queue pathfinding_queue;
 
     // Alive boolean will signal the worker threads to finish-up
     std::atomic_bool alive{ true };
@@ -183,7 +183,7 @@ int main(int argc, char * argv[]) try
 
     // Video-processing thread will fetch frames from the camera,
     // apply post-processing and send the result to the main thread for rendering
-    // It recieves synchronized (but not spatially aligned) pairs 
+    // It recieves synchronized (but not spatially aligned) pairs
     // and outputs synchronized and aligned pairs
     std::thread video_processing_thread([&]() {
         // In order to generate new composite frames, we have to wrap the processing
@@ -199,7 +199,7 @@ int main(int argc, char * argv[]) try
             rs2::frame depth = data.get_depth_frame();
             // Decimation will reduce the resultion of the depth image,
             // closing small holes and speeding-up the algorithm
-            depth = dec.process(depth); 
+            depth = dec.process(depth);
             // To make sure far-away objects are filtered proportionally
             // we try to switch to disparity domain
             depth = depth2disparity.process(depth);
@@ -220,7 +220,7 @@ int main(int argc, char * argv[]) try
             // Send the composite frame for rendering
             source.frame_ready(combined);
         });
-        // Indicate that we want the results of frame_processor 
+        // Indicate that we want the results of frame_processor
         // to be pushed into postprocessed_frames queue
         frame_processor >> postprocessed_frames;
 
@@ -448,7 +448,7 @@ float dist_2d(const pixel& a, const pixel& b)
     return pow(a.first - b.first, 2) + pow(a.second - b.second, 2);
 }
 
-void render_simple_distance(const rs2::depth_frame& depth, 
+void render_simple_distance(const rs2::depth_frame& depth,
                             const state& s,
                             const window& app,
                             const rs2_intrinsics& intr)
@@ -523,7 +523,7 @@ void register_glfw_callbacks(window& app, state& app_state)
     app.on_mouse_move = [&](double x, double y)
     {
         toggle cursor{ float(x) / app.width(), float(y) / app.height() };
-        std::vector<toggle*> toggles{ 
+        std::vector<toggle*> toggles{
             &app_state.ruler_start,
             &app_state.ruler_end };
 

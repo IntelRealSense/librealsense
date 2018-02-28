@@ -519,7 +519,7 @@ namespace librealsense
                 }
             };
         }
-        
+
         _dispatcher.start();
         profile->_multistream.open();
         profile->_multistream.start(syncer_callback);
@@ -541,7 +541,7 @@ namespace librealsense
     {
         if (_active_profile)
         {
-            try 
+            try
             {
                 auto dev = _active_profile->get_device();
                 if (auto playback = As<librealsense::playback_device>(dev))

@@ -230,7 +230,7 @@ namespace librealsense
             {
                 new_frame = new T();
             }
-                
+
             ++published_frames_count;
             *new_frame = std::move(*f);
 

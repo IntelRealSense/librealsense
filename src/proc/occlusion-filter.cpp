@@ -44,7 +44,7 @@ namespace librealsense
     // -  Use the uv texels calculated when projecting depth to color
     // -  Scan each line from left to right and check the the U coordinate in the mapping is raising monotonically.
     // -  The occlusion is designated as U coordinate for a given pixel is less than the U coordinate of the predecessing pixel.
-    // -  The UV mapping for the occluded pixel is reset to (0,0). Later on the (0,0) coordinate in the texture map is overwritten 
+    // -  The UV mapping for the occluded pixel is reset to (0,0). Later on the (0,0) coordinate in the texture map is overwritten
     //    with a invalidation color such as black/magenta according to the purpose (production/debugging)
     void occlusion_filter::monotonic_heuristic_invalidation(float3* points, float2* uv_map, const std::vector<float2> & pix_coord) const
     {
@@ -83,7 +83,7 @@ namespace librealsense
                         }
                     }
                 }
-                
+
                 ++points;
                 ++uv_map;
                 ++pixels_ptr;

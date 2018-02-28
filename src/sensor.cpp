@@ -56,12 +56,12 @@ namespace librealsense
         }
         _notifications_processor->set_callback(std::move(callback));
     }
-	
-	notifications_callback_ptr sensor_base::get_notifications_callback() const
+
+    notifications_callback_ptr sensor_base::get_notifications_callback() const
     {
         return _notifications_processor->get_callback();
     }
-	
+
     int sensor_base::register_before_streaming_changes_callback(std::function<void(bool)> callback)
     {
         int token = (on_before_streaming_changes += callback);
@@ -99,7 +99,7 @@ namespace librealsense
     {
         _active_profiles = requests;
     }
-    
+
     bool sensor_base::try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const
     {
         auto it = std::find_if(begin(_pixel_formats), end(_pixel_formats),
@@ -421,7 +421,7 @@ namespace librealsense
                         LOG_DEBUG("FrameAccepted," << librealsense::get_string(output.first.type) << "," << std::dec << frame_counter
                             << output.first.index << "," << frame_counter
                             << ",Arrived," << std::fixed << f.backend_time << " " << std::fixed << system_time<<" diff - "<< system_time- f.backend_time << " "
-                            << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain) 
+                            << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain)
                             <<" last_frame_number "<< last_frame_number<<" last_timestamp "<< last_timestamp);
 
                         std::shared_ptr<stream_profile_interface> request = nullptr;
@@ -627,7 +627,7 @@ namespace librealsense
             _camera_info[info] = std::move(val);
         }
     }
-    
+
     void info_container::update_info(rs2_camera_info info, const std::string& val)
     {
         if (info_container::supports_info(info))

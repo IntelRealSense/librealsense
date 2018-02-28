@@ -62,9 +62,9 @@ librealsense::record_device::~record_device()
         LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
     }
     (*m_write_thread)->stop();
-    //Just in case someone still holds a reference to the sensors, 
+    //Just in case someone still holds a reference to the sensors,
     // we make sure that they will not try to record anything
-	m_sensors.clear();
+    m_sensors.clear();
 }
 
 std::shared_ptr<context> librealsense::record_device::get_context() const
