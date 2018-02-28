@@ -119,7 +119,7 @@ namespace librealsense
                 }
                 auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                if (video->get_width() == 1280 && video->get_height() == 720 && 
+                if (video->get_width() == 1280 && video->get_height() == 720 &&
                     video->get_format() == RS2_FORMAT_Z16 && video->get_framerate() == 30)
                     video->make_default();
 
@@ -169,7 +169,7 @@ namespace librealsense
                     if (video->get_width() == 848 && video->get_height() == 480
                         && video->get_framerate() == 30 && video->get_stream_index() == 0)
                         video->make_default();
-                } 
+                }
             }
 
             return results;

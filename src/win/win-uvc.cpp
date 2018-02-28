@@ -169,7 +169,7 @@ namespace librealsense
             return count;
         }
 
-       
+
         STDMETHODIMP source_reader_callback::OnReadSample(HRESULT hrStatus,
             DWORD dwStreamIndex,
             DWORD /*dwStreamFlags*/,

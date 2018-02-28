@@ -69,7 +69,6 @@ void playback_sensor::open(const stream_profiles& requests)
     }
     m_active_streams = requests;
     opened(opened_streams);
-    
 }
 
 void playback_sensor::close()
