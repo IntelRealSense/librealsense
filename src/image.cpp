@@ -11,6 +11,12 @@
 #include <immintrin.h>
 #endif
 
+#ifdef ANDROID
+
+bool has_avx() { return false; }
+
+#else
+
 #ifdef _WIN32
 #define cpuid(info, x)    __cpuidex(info, x, 0)
 #else
@@ -27,6 +33,8 @@ bool has_avx()
     cpuid(info, 0x80000000);
     return (info[2] & ((int)1 << 28)) != 0;
 }
+
+#endif
 
 #pragma pack(push, 1) // All structs in this file are assumed to be byte-packed
 namespace librealsense
