@@ -8,7 +8,25 @@
 
 #ifdef __SSSE3__
 #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
+#include <immintrin.h>
 #endif
+
+#ifdef _WIN32
+#define cpuid(info, x)    __cpuidex(info, x, 0)
+#else
+#include <cpuid.h>
+void cpuid(int info[4], int info_type){
+    __cpuid_count(info_type, 0, info[0], info[1], info[2], info[3]);
+}
+#endif
+
+bool has_avx()
+{
+    int info[4];
+    cpuid(info, 0);
+    cpuid(info, 0x80000000);
+    return (info[2] & ((int)1 << 28)) != 0;
+}
 
 #pragma pack(push, 1) // All structs in this file are assumed to be byte-packed
 namespace librealsense
@@ -221,17 +239,6 @@ namespace librealsense
             *tgt++ = from[3];
         }
 #endif
-    }
-
-    bool has_avx()
-    {
-        int cpuInfo[4] = { 0, 0, 0, 0 };
-        __cpuid(cpuInfo, 0);
-        if (cpuInfo[0] != 0) {
-            __cpuid(cpuInfo, 1);
-            if (cpuInfo[2] & (1 << 28)) return true;
-        }
-        return false;
     }
 
     /////////////////////////////
