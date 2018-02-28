@@ -91,25 +91,6 @@ public class RealSenseDevice : MonoBehaviour
     {
         try
         {
-            if (DeviceConfiguration.SensorOptions != null)
-            {
-                foreach (var opt in DeviceConfiguration.SensorOptions)
-                {
-                    foreach (var sensor in ActiveProfile.Device.Sensors)
-                    {
-                        try
-                        {
-                            if (sensor.Options[opt.option].Supported)
-                                sensor.Options[opt.option].Value = opt.value;
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.Log("Failed to set option " + opt.option + " to sensor " + sensor.Info[CameraInfo.Name] + ". Error: " + e.Message);
-                        }
-                    }
-                }
-            }
-
             ActiveProfile = m_pipeline.Start(m_config);
 
             //Start thread for multithread option
@@ -132,7 +113,8 @@ public class RealSenseDevice : MonoBehaviour
 
     void OnDestroy()
     {
-        if(worker!=null)
+        Debug.Log("RealSenseDevice OnDestory");
+        if (worker!=null)
         {
             //Destroy BG thread
             worker.CancelAsync();
@@ -140,6 +122,7 @@ public class RealSenseDevice : MonoBehaviour
         try
         {
             m_pipeline.Stop();
+            m_pipeline.Release();
         }
         catch (Exception e)
         {
@@ -171,11 +154,10 @@ public class RealSenseDevice : MonoBehaviour
     /// <summary>
     /// Process frame on each new frame, ends by calling the event
     /// </summary>
-    public void ProcessFrame()
+    public void ProcessFrames(FrameSet frames)
     {
         try
         {
-            var frames = m_pipeline.WaitForFrames();
             try
             {
                 HandleFrameSet(frames);
@@ -184,6 +166,7 @@ public class RealSenseDevice : MonoBehaviour
             {
                 Debug.LogError(e.Message);
             }
+
             foreach (var frame in frames)
             {
                 try
@@ -211,19 +194,24 @@ public class RealSenseDevice : MonoBehaviour
     /// <param name="e">arguments</param>
     private void Worker_DoWork(object sender, DoWorkEventArgs e)
     {
-        while (worker.CancellationPending==false)
+        while (worker.CancellationPending == false)
         {
-            ProcessFrame();
+            var frames = m_pipeline.WaitForFrames();
+            ProcessFrames(frames);
         }
-        Debug.Log("Worker Thread ended");
+        Debug.Log("RealSenseDevice thread ended");
     }
 
     void Update()
     {
         //Call Directly in non threaded mode
-        if (processMode==ProcessMode.UnityThread)
+        if (processMode != ProcessMode.UnityThread)
+            return;
+
+        FrameSet frames;
+        if(m_pipeline.PollForFrames(out frames))
         {
-            ProcessFrame();
+            ProcessFrames(frames);
         }
     }
 }

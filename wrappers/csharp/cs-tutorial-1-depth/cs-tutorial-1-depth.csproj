@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Intel.RealSense</RootNamespace>
     <AssemblyName>cs-tutorial-1-depth</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFrameworkProfile />
@@ -78,17 +78,22 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <LibDirectory>..\Intel.RealSense\bin\$(Configuration)</LibDirectory>
+    <LibDirectory Condition="Exists('$(LibDirectory)\net35')">$(LibDirectory)\net35</LibDirectory>
+  </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Intel.RealSense, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(LibDirectory)\Intel.RealSense.dll</HintPath>
+    </Reference>
+    <Content Include="$(LibDirectory)\realsense2.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Intel.RealSense.csproj">
-      <Project>{E488694F-F2FA-45AD-B1B8-8D4FABE34E86}</Project>
-      <Name>Intel.RealSense</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

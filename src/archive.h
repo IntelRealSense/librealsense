@@ -28,15 +28,26 @@ struct frame_additional_data
     bool            fisheye_ae_mode = false;
     std::array<uint8_t,MAX_META_DATA_SIZE> metadata_blob;
     rs2_time_t      backend_timestamp = 0;
+    rs2_time_t last_timestamp = 0;
+    unsigned long long last_frame_number = 0;
 
     frame_additional_data() {};
 
-    frame_additional_data(double in_timestamp, unsigned long long in_frame_number, double in_system_time, uint8_t md_size, const uint8_t* md_buf, double backend_time )
+    frame_additional_data(double in_timestamp,
+        unsigned long long in_frame_number,
+        double in_system_time,
+        uint8_t md_size,
+        const uint8_t* md_buf,
+        double backend_time,
+        rs2_time_t last_timestamp,
+        unsigned long long last_frame_number)
         : timestamp(in_timestamp),
           frame_number(in_frame_number),
           system_time(in_system_time),
           metadata_size(md_size),
-          backend_timestamp(backend_time)
+          backend_timestamp(backend_time),
+          last_timestamp(last_timestamp),
+          last_frame_number(last_frame_number)
     {
         // Copy up to 255 bytes to preserve metadata as raw data
         if (metadata_size)
@@ -251,7 +262,7 @@ namespace librealsense
             _depth_units = optional_value<float>();
             return video_frame::publish(new_owner);
         }
-        
+
         void keep() override
         {
             if (_original) _original->keep();
@@ -278,8 +289,8 @@ namespace librealsense
             return pixel * get_units();
         }
 
-        float get_units() const 
-        { 
+        float get_units() const
+        {
             if (!_depth_units)
                 _depth_units = query_units(get_sensor());
             return _depth_units.value();

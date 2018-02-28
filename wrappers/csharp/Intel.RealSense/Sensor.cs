@@ -96,11 +96,11 @@ namespace Intel.RealSense
     {
         public IntPtr m_instance;
 
-        internal Sensor(IntPtr dev)
+        internal Sensor(IntPtr sensor)
         {
-            //if (dev == IntPtr.Zero)
+            //if (sensor == IntPtr.Zero)
             //    throw new ArgumentNullException();
-            m_instance = dev;
+            m_instance = sensor;
         }
 
         public class CameraInfos
@@ -135,7 +135,7 @@ namespace Intel.RealSense
 
         public class CameraOption
         {
-            IntPtr dev;
+            IntPtr m_sensor;
             Option option;
 
             private readonly float min;
@@ -143,15 +143,15 @@ namespace Intel.RealSense
             private readonly float step;
             private readonly float @default;
 
-            public CameraOption(IntPtr dev, Option option)
+            public CameraOption(IntPtr sensor, Option option)
             {
-                this.dev = dev;
+                m_sensor = sensor;
                 this.option = option;
 
                 if (Supported)
                 {
                     object error;
-                    NativeMethods.rs2_get_option_range(dev, option, out min, out max, out step, out @default, out error);
+                    NativeMethods.rs2_get_option_range(m_sensor, option, out min, out max, out step, out @default, out error);
                 }
             }
 
@@ -162,7 +162,7 @@ namespace Intel.RealSense
                     try
                     {
                         object error;
-                        return NativeMethods.rs2_supports_option(dev, option, out error) > 0;
+                        return NativeMethods.rs2_supports_option(m_sensor, option, out error) > 0;
                     }
                     catch (Exception)
                     {
@@ -184,12 +184,12 @@ namespace Intel.RealSense
                 get
                 {
                     object error;
-                    return NativeMethods.rs2_get_option(dev, option, out error);
+                    return NativeMethods.rs2_get_option(m_sensor, option, out error);
                 }
                 set
                 {
                     object error;
-                    NativeMethods.rs2_set_option(dev, option, value, out error);
+                    NativeMethods.rs2_set_option(m_sensor, option, value, out error);
                 }
             }
 
@@ -198,7 +198,7 @@ namespace Intel.RealSense
                 get
                 {
                     object error;
-                    var str = NativeMethods.rs2_get_option_value_description(dev, option, Value, out error);
+                    var str = NativeMethods.rs2_get_option_value_description(m_sensor, option, Value, out error);
                     return Marshal.PtrToStringAnsi(str);
                 }
             }
@@ -234,24 +234,42 @@ namespace Intel.RealSense
                     return @default;
                 }
             }
+
+            public bool ReadOnly
+            {
+                get
+                {
+                    object error;
+                    return NativeMethods.rs2_is_option_read_only(m_sensor, option, out error) != 0;
+                }
+            }
         }
 
         public class SensorOptions : IEnumerable<CameraOption>
         {
-            IntPtr dev;
-            public SensorOptions(IntPtr dev)
+            IntPtr m_sensor;
+            public SensorOptions(IntPtr sensor)
             {
-                this.dev = dev;
+                m_sensor = sensor;
             }
 
             public CameraOption this[Option option]
             {
                 get
                 {
-                    return new CameraOption(dev, option);
+                    return new CameraOption(m_sensor, option);
                 }
             }
-
+            public string OptionValueDescription(Option option, float value)
+            {
+                object error;
+                var desc = NativeMethods.rs2_get_option_value_description(m_sensor, option, value, out error);
+                if(desc != null)
+                {
+                    return Marshal.PtrToStringAnsi(desc);
+                }
+                return null;
+            }
             public IEnumerator<CameraOption> GetEnumerator()
             {
                 var values = Enum.GetValues(typeof(Option)) as Option[];

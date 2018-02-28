@@ -53,7 +53,7 @@ namespace librealsense
     MAP_ADVANCED_MODE(STCensusRadius, etCencusRadius9);
 
 
-    class ds5_advanced_mode_interface
+    class ds5_advanced_mode_interface : public recordable<ds5_advanced_mode_interface>
     {
     public:
         virtual bool is_enabled() const = 0;
@@ -104,6 +104,10 @@ namespace librealsense
     public:
         explicit ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm,
                                         uvc_sensor& depth_sensor);
+
+        void create_snapshot(std::shared_ptr<ds5_advanced_mode_interface>& snapshot) const override {};
+        void enable_recording(std::function<void(const ds5_advanced_mode_interface&)> recording_function) override {};
+
         virtual ~ds5_advanced_mode_base() = default;
 
         bool is_enabled() const override;

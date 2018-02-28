@@ -128,7 +128,9 @@ namespace Intel.RealSense
         Rs2FrameMetadataAutoExposure = 5,
         Rs2FrameMetadataWhiteBalance = 6,
         Rs2FrameMetadataTimeOfArrival = 7,
-        Rs2FrameMetadataCount = 8,
+        Rs2FrameMetadataBackendTimestamp= 8,
+        Rs2FrameMetadataActualFps = 9,
+        Rs2FrameMetadataCount = 10,
     }
 
     public enum Option

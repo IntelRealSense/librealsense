@@ -15,7 +15,7 @@ namespace librealsense
     const uint8_t decimation_min_val = 1;
     const uint8_t decimation_max_val = 5;
     const uint8_t decimation_default_val = 2;
-    const uint8_t decimation_step = 1;    // The filter suppors kernel sizes [2^0...2^5]
+    const uint8_t decimation_step = 1;    // The filter suppors kernel sizes [2^0...2^4]
 
     decimation_filter::decimation_filter() :
         _decimation_factor(decimation_default_val),

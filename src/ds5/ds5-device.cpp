@@ -119,7 +119,8 @@ namespace librealsense
                 }
                 auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                if (video->get_width() == 1280 && video->get_height() == 720 && video->get_format() == RS2_FORMAT_Z16 && video->get_framerate() == 30)
+                if (video->get_width() == 1280 && video->get_height() == 720 &&
+                    video->get_format() == RS2_FORMAT_Z16 && video->get_framerate() == 30)
                     video->make_default();
 
                 auto color_dev = dynamic_cast<const ds5_color*>(&get_device());
@@ -153,6 +154,21 @@ namespace librealsense
                         else
                             return rs2_intrinsics{};
                     });
+                }
+            }
+
+            // If no stream profile was marked as default, fall back to second best depth resultion
+            if (!std::any_of(results.begin(), results.end(), [](const std::shared_ptr<stream_profile_interface>& p) {
+                return p->get_stream_type() == RS2_STREAM_DEPTH && p->is_default();
+            }))
+            {
+                for (auto p : results)
+                {
+                    auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+
+                    if (video->get_width() == 848 && video->get_height() == 480
+                        && video->get_framerate() == 30 && video->get_stream_index() == 0)
+                        video->make_default();
                 }
             }
 
@@ -477,6 +493,7 @@ namespace librealsense
         depth_ep.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_FORMAT, make_attribute_parser(&md_configuration::format, md_configuration_attributes::format_attribute, md_prop_offset));
         depth_ep.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_WIDTH, make_attribute_parser(&md_configuration::width, md_configuration_attributes::width_attribute, md_prop_offset));
         depth_ep.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HEIGHT, make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
+        depth_ep.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_ACTUAL_FPS,  std::make_shared<ds5_md_attribute_actual_fps> ());
 
         register_info(RS2_CAMERA_INFO_NAME, device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, serial);

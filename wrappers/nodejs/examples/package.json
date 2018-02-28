@@ -5,7 +5,9 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "node-glfw-3": "^0.3.2",
+    "fsm-as-promised": "^0.15.1",
+    "input": "^1.0.1",
+    "node-glfw-3": "^0.3.3",
     "performance-now": "^2.1.0",
     "pkg": "^4.2.4"
   }

@@ -83,7 +83,7 @@ namespace librealsense
         }
 
         if (_other_stream && !_extrinsics)
-        {    
+        {
             rs2_extrinsics ex;
             if (environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics(
                 *_depth_stream, *_other_stream, &ex))

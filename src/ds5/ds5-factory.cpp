@@ -309,7 +309,6 @@ namespace librealsense
             return matcher_factory::create(RS2_MATCHER_DLR, streams);
         }
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
-        
     }
 
     std::shared_ptr<matcher> rs405_device::create_matcher(const frame_holder& frame) const

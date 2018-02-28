@@ -244,11 +244,12 @@ class RSOptionRange : public DictBase {
 class RSNotification : public DictBase {
  public:
   RSNotification(const char* des, rs2_time_t time, rs2_log_severity severity,
-      rs2_notification_category category) {
+      rs2_notification_category category, std::string serialized_data) {
     SetMember("descr", des);
     SetMemberT("timestamp", time);
     SetMemberT("severity", (int32_t)severity);
     SetMemberT("category", (int32_t)category);
+    SetMember("serializedData", serialized_data);
   }
 };
 
@@ -1293,9 +1294,11 @@ class NotificationCallbackInfo : public MainThreadCallbackInfo {
                            rs2_time_t time,
                            rs2_log_severity severity,
                            rs2_notification_category category,
+                           std::string serialized_data,
                            RSSensor* s) :
       desc_(desc), time_(time), severity_(severity),
-      category_(category), sensor_(s) {}
+      category_(category), serialized_data_(serialized_data),
+      sensor_(s) {}
   virtual ~NotificationCallbackInfo() {}
   virtual void Run();
 
@@ -1304,6 +1307,7 @@ class NotificationCallbackInfo : public MainThreadCallbackInfo {
   rs2_time_t time_;
   rs2_log_severity severity_;
   rs2_notification_category category_;
+  std::string serialized_data_;
   RSSensor* sensor_;
   rs2_error* error_;
 };
@@ -1320,8 +1324,10 @@ class NotificationCallback : public rs2_notifications_callback {
           &error_);
       rs2_notification_category category =
           rs2_get_notification_category(notification, &error_);
+      std::string serialized_data = rs2_get_notification_serialized_data(
+          notification, &error_);
       MainThreadCallback::NotifyMainThread(new NotificationCallbackInfo(desc,
-          time, severity, category, sensor_));
+          time, severity, category, serialized_data, sensor_));
     }
   }
   void release() override { delete this; }
@@ -2223,6 +2229,7 @@ class RSDevice : public Nan::ObjectWrap {
     // Methods for record
     Nan::SetPrototypeMethod(tpl, "pauseRecord", PauseRecord);
     Nan::SetPrototypeMethod(tpl, "resumeRecord", ResumeRecord);
+    Nan::SetPrototypeMethod(tpl, "getFileName", GetFileName);
 
     // Methods for playback
     Nan::SetPrototypeMethod(tpl, "pausePlayback", PausePlayback);
@@ -2388,6 +2395,15 @@ class RSDevice : public Nan::ObjectWrap {
     auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
     if (me) rs2_record_device_resume(me->dev_, &me->error_);
     info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(GetFileName) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me) return;
+
+    auto file = rs2_record_device_filename(me->dev_, &me->error_);
+    info.GetReturnValue().Set(Nan::New(file).ToLocalChecked());
   }
 
   static NAN_METHOD(PausePlayback) {
@@ -2570,7 +2586,8 @@ void NotificationCallbackInfo::Run() {
   SetConsumed();
   Nan::HandleScope scope;
   v8::Local<v8::Value> args[1] = {
-    RSNotification(desc_, time_, severity_, category_).GetObject()
+    RSNotification(
+        desc_, time_, severity_, category_, serialized_data_).GetObject()
   };
   Nan::MakeCallback(sensor_->handle(),
       sensor_->notification_callback_name_.c_str(), 1, args);
@@ -4179,6 +4196,8 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_FRAME_METADATA_WHITE_BALANCE);
   _FORCE_SET_ENUM(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
   _FORCE_SET_ENUM(RS2_FRAME_METADATA_TEMPERATURE);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_BACKEND_TIMESTAMP);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_ACTUAL_FPS);
   _FORCE_SET_ENUM(RS2_FRAME_METADATA_COUNT);
 
   // rs2_distortion

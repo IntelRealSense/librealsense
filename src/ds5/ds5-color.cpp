@@ -92,6 +92,8 @@ namespace librealsense
         color_ep->register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
 
         color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
+        color_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS,  std::make_shared<ds5_md_attribute_actual_fps> (false, [](const rs2_metadata_type& param)
+        {return param*100;})); //the units of the exposure of the RGB sensor are 100 microseconds so the md_attribute_actual_fps need the lambda to convert it to microseconds
 
         // attributes of md_capture_timing
         auto md_prop_offset = offsetof(metadata_raw, mode) +
