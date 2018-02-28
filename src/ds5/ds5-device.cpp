@@ -313,6 +313,8 @@ namespace librealsense
         depth_ep->register_pixel_format(pf_z16); // Depth
         depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
         depth_ep->register_pixel_format(pf_yuyv); // Left Only
+        // RS400 rolling-shutter Skus allow to get low-quality color image from the same viewport as the depth
+        depth_ep->register_pixel_format(pf_uyvyl); // synthetic color from the left imager. Note that for global shutter will produce monochrome image
 
         return depth_ep;
     }

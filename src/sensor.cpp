@@ -278,6 +278,7 @@ namespace librealsense
                         profile->set_framerate(p.fps);
 
                         results.insert(profile);
+                        registered_formats.insert(p.format);
                     }
                 }
             }
@@ -290,7 +291,7 @@ namespace librealsense
         if (unregistered_formats.size())
         {
             std::stringstream ss;
-            ss << "Unregistered Media formats : [ ";
+            ss << "Unused Media formats : [ ";
             for (auto& elem : unregistered_formats)
             {
                 uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
@@ -353,7 +354,7 @@ namespace librealsense
         else
             throw invalid_value_exception(to_string()
                 << "Pixel format " << std::hex << std::setw(8) << std::setfill('0') << pf.fourcc
-                << " has been already registered with the sensor " << get_info(RS2_CAMERA_INFO_NAME));
+                << " has been already in use with the sensor " << get_info(RS2_CAMERA_INFO_NAME));
     }
 
     void sensor_base::remove_pixel_format(native_pixel_format pf)
