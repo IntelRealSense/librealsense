@@ -60,8 +60,8 @@ typedef struct rs2_intrinsics
     float         ppy;       /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
     float         fx;        /**< Focal length of the image plane, as a multiple of pixel width */
     float         fy;        /**< Focal length of the image plane, as a multiple of pixel height */
-    rs2_distortion model;     /**< Distortion model of the image */
-    float         coeffs[5]; /**< Distortion coefficients */
+    rs2_distortion model;    /**< Distortion model of the image */
+    float         coeffs[5]; /**< Distortion coefficients, order: k1, k2, p1, p2, k3 */
 } rs2_intrinsics;
 
 /** \brief Motion device intrinsics: scale, bias, and variances */
