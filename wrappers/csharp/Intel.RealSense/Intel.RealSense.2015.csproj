@@ -86,16 +86,16 @@
     <BuildPath Condition="'$(BuildPath)'==''">..\..\..\build\$(Configuration)\realsense2.dll</BuildPath>
   </PropertyGroup>
 
-    <Target Name="BeforeBuild" DependsOnTargets="IncludeLib">
-  </Target>
-  
-  <Target Name="IncludeLib" DependsOnTargets="IncludeDependencies">
-    <Copy Condition="'$(BuildPlatform)'=='x86' and '$(LibPathx86)'!=''" SourceFiles="$(LibPathx86)" DestinationFolder="$(OutputPath)" />
-    <Copy Condition="'$(BuildPlatform)'=='x64' and '$(LibPathx64)'!=''" SourceFiles="$(LibPathx64)" DestinationFolder="$(OutputPath)" />
+  <Target Name="BeforeBuild" DependsOnTargets="IncludeLib">
   </Target>
 
-  <Target Name="IncludeDependencies" DependsOnTargets="EnsureBitCorrectness">
-    <Error Condition="'$(LibPathx86)'=='' and '$(LibPathx64)'==''" Text="realsense2.dll NOT FOUND! Please build it from source using CMake or install Intel RealSense SDK 2.0 from GitHub releases." />
+  <Target Name="IncludeLib" DependsOnTargets="EnsureBitCorrectness">
+    <PropertyGroup>
+      <LibFile Condition="'$(BuildPlatform)'=='x86'">$(LibPathx86)</LibFile>
+      <LibFile Condition="'$(BuildPlatform)'=='x64'">$(LibPathx64)</LibFile>
+    </PropertyGroup>
+    <Copy Condition="'$(LibFile)'!=''" SourceFiles="$(LibFile)" DestinationFolder="$(OutputPath)" />
+    <Message Condition="'$(LibFile)'!=''" Text="realsense2.dll in output folder from $(LibFile)" Importance="high"/>
   </Target>
 
   <Target Name="EnsureBitCorrectness">
@@ -108,15 +108,16 @@
       <LibArch Condition="$(OutputOfExec.Contains('machine (x64)'))">x64</LibArch>
       <BuildPathx86 Condition="'$(BuildPathx86)'=='' and '$(LibArch)'=='x86'">$(BuildPath)</BuildPathx86>
       <BuildPathx64 Condition="'$(BuildPathx64)'=='' and '$(LibArch)'=='x64'">$(BuildPath)</BuildPathx64>
-      <LibPath86 Condition="Exists('$(InstallPath)')">$(InstallPath)\x86\realsense2.dll</LibPath86>
-      <LibPath64 Condition="Exists('$(InstallPath)')">$(InstallPath)\x64\realsense2.dll</LibPath64>
-      <LibPath86 Condition="Exists('$(BuildPathx86)')">$(BuildPathx86)</LibPath86>
-      <LibPath64 Condition="Exists('$(BuildPathx64)')">$(BuildPathx64)</LibPath64>
+      <LibPathx86 Condition="Exists('$(InstallPath)')">$(InstallPath)\x86\realsense2.dll</LibPathx86>
+      <LibPathx64 Condition="Exists('$(InstallPath)')">$(InstallPath)\x64\realsense2.dll</LibPathx64>
+      <LibPathx86 Condition="Exists('$(BuildPathx86)')">$(BuildPathx86)</LibPathx86>
+      <LibPathx64 Condition="Exists('$(BuildPathx64)')">$(BuildPathx64)</LibPathx64>
     </PropertyGroup>
-    <CreateProperty Value="$(LibPath86)">
+    <Error Condition="'$(LibPathx86)'=='' and '$(LibPathx64)'==''" Text="realsense2.dll NOT FOUND! Please build it from source using CMake or install Intel RealSense SDK 2.0 from GitHub releases." />
+    <CreateProperty Value="$(LibPathx86)">
       <Output TaskParameter="Value" PropertyName="LibPathx86" />
     </CreateProperty>
-    <CreateProperty Value="$(LibPath64)">
+    <CreateProperty Value="$(LibPathx64)">
       <Output TaskParameter="Value" PropertyName="LibPathx64" />
     </CreateProperty>
     <Message Condition="('$(BuildPlatform)'=='x64' and '$(BuildPathx64)'=='' and '$(LibPathx64)'!='') or ('$(BuildPlatform)'=='x86' and '$(BuildPathx86)'=='' and '$(LibPathx86)'!='')" Text="No compatible local build of realsense.dll was found. Using the installed version" Importance="high" />
