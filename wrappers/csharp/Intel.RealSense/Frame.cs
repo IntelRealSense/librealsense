@@ -205,7 +205,11 @@ namespace Intel.RealSense
             public float y;
             public float z;
         }
-
+        public struct TextureCoordinate
+        {
+            public float u;
+            public float v;
+        }
         public Points(IntPtr ptr) : base(ptr)
         {
         }
@@ -229,7 +233,6 @@ namespace Intel.RealSense
             }
         }
 
-
         /// <summary>
         /// Copy frame data to Vertex array
         /// </summary>
@@ -242,6 +245,35 @@ namespace Intel.RealSense
             try
             {
                 NativeMethods.memcpy(handle.AddrOfPinnedObject(), VertexData, Count * Marshal.SizeOf(typeof(Vertex)));
+            }
+            finally
+            {
+                handle.Free();
+            }
+        }
+
+        private IntPtr TextureData
+        {
+            get
+            {
+                object error;
+                return NativeMethods.rs2_get_frame_texture_coordinates(m_instance.Handle, out error);
+            }
+        }
+        /// <summary>
+        /// Copy frame data to TextureCoordinate array
+        /// </summary>
+        /// <param name="textureArray"></param>
+        public void CopyTo(TextureCoordinate[] textureArray)
+        {
+            if (textureArray == null)
+                throw new ArgumentNullException("textureArray");
+
+            var handle = GCHandle.Alloc(textureArray, GCHandleType.Pinned);
+            try
+            {
+                var size = Count * Marshal.SizeOf(typeof(TextureCoordinate));
+                NativeMethods.memcpy(handle.AddrOfPinnedObject(), TextureData, size);
             }
             finally
             {

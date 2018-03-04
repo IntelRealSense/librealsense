@@ -186,6 +186,13 @@ namespace Intel.RealSense
             NativeMethods.rs2_process_frame(m_instance.Handle, original.m_instance.Handle, out error);
             return queue.WaitForFrame() as Points;
         }
+        public void MapTexture(VideoFrame texture)
+        {
+            object error;
+            Options[Option.TextureSource].Value = Convert.ToSingle(texture.Profile.UniqueID);
+            NativeMethods.rs2_frame_add_ref(texture.m_instance.Handle, out error);
+            NativeMethods.rs2_process_frame(m_instance.Handle, texture.m_instance.Handle, out error);
+        }
     }
 
 }
