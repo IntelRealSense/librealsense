@@ -6,7 +6,7 @@ For mode advanced usages please review the list of [Tools](../tools) we provide.
 For a detailed explanations and API documentation see our [Documentation](../doc) section
 
 ## List of Samples:
-### C++ Examples
+### C++ Examples:
 1. [Capture](./capture) - Show how to syncronize and render multiple streams: left & right imagers, depth and RGB streams.
 2. [Save To Disk](./save-to-disk) - Demonstrate how to render and save video streams on headless systems without graphical user interface (GUI).
 3. [Multicam](./multicam) - Present multiple cameras depth streams simultaneously, in separate windows.
@@ -17,7 +17,21 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 8. [Software Device](./software-device) - Shows how to create a custom `rs2::device`.
 9. [Depth Post Processing](./post-processing) - Demonstrating usage of post processing filters for depth images.
 
-### C Examples
+### C Examples:
 1. [Depth](./C/depth) - Demonstrates how to stream depth data and prints a simple text-based representation of the depth image.
 2. [Distance](./C/distance) - Print the distance from the camera to the object in the center of the image.
 3. [Color](./C/color) - Demonstrate how to stream color data and prints some frame information.
+
+### CV Examples:
+
+> See [getting started with OpenCV and RealSense](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/opencv)
+
+1. [ImShow](./imshow) - Minimal OpenCV application for visualizing depth data
+2. [GrabCuts](./grabcuts) - Simple background removal using the GrabCut algorithm
+3. [Latency-Tool](./latency-tool) - Basic latency estimation using computer vision
+3. [DNN](./dnn) - Intel RealSense camera used for real-time object-detection
+
+### Community Projects:
+
+1. [OpenCV DNN object detection with RealSense camera](https://github.com/twMr7/rscvdnn)
+2. [minimal_realsense2](https://github.com/SirDifferential/minimal_realsense2) - Streaming and Presets in C
