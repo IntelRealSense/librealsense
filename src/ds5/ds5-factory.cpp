@@ -208,9 +208,11 @@ namespace librealsense
         case RS405_PID:
             return std::make_shared<rs405_device>(ctx, group, register_device_notifications);
         case RS410_PID:
+        case RS410_USB2_PID:
         case RS460_PID:
             return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
         case RS415_PID:
+        case RS415_USB2_PID:
             return std::make_shared<rs415_device>(ctx, group, register_device_notifications);
         case RS420_PID:
             return std::make_shared<rs420_device>(ctx, group, register_device_notifications);
@@ -223,6 +225,7 @@ namespace librealsense
         case RS430_MM_RGB_PID:
             return std::make_shared<rs430_rgb_mm_device>(ctx, group, register_device_notifications);
         case RS435_RGB_PID:
+        case RS435_USB2_PID:
             return std::make_shared<rs435_device>(ctx, group, register_device_notifications);
         case RS_USB2_PID:
             return std::make_shared<rs410_device>(ctx, group, register_device_notifications);

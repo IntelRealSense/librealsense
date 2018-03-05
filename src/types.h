@@ -1561,6 +1561,19 @@ namespace librealsense
         bool _valid;
         T _value;
     };
+
+    // Comparing parameter against a range of values of the same type
+    // https://stackoverflow.com/questions/15181579/c-most-efficient-way-to-compare-a-variable-to-multiple-values
+    template <typename T>
+    bool val_in_range(const T& val, const std::initializer_list<T>& list)
+    {
+        for (const auto& i : list) {
+            if (val == i) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 namespace std {
