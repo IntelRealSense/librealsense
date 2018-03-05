@@ -6,7 +6,9 @@
 #include "image.h"
 #include "image_avx.h"
 
-#ifdef __SSSE3__
+#ifdef RS2_USE_CUDA
+#include "cuda/cuda-conversion.cuh"
+#elif __SSSE3__
 #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
 #endif
 
@@ -303,9 +305,15 @@ namespace librealsense
         auto n = width * height;
         // record time
         auto now = std::chrono::high_resolution_clock::now();
-        assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
 
-        #ifdef __SSSE3__
+        assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
+#ifdef RS2_USE_CUDA
+        rsimpl::unpack_yuy2_cuda<FORMAT>(d, s, n);
+
+                
+                    
+
+        #elif __SSSE3__
         static bool do_avx = has_avx();
 
         if (do_avx)
@@ -600,10 +608,8 @@ namespace librealsense
         // record time
         auto now2 = std::chrono::high_resolution_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now2 - now).count();
-        
-        // cuda test (should get 0)
-        auto res = calc();
-        LOG_ERROR("RESULT:" << res);
+       
+        LOG_ERROR("ELAPSED:" << elapsed/* << std::string(elapsed/2500, "#")*/);
     }
 
     // This templated function unpacks UYVY into RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.
@@ -866,18 +872,31 @@ namespace librealsense
     void unpack_y8_y8_from_y8i(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
+        auto now = std::chrono::high_resolution_clock::now();
+#ifdef RS2_USE_CUDA
+        rsimpl::split_frame_y8_y8_from_y8i_cuda(dest, count, reinterpret_cast<const y8i_pixel *>(source));
+#else
         split_frame(dest, count, reinterpret_cast<const y8i_pixel*>(source),
             [](const y8i_pixel & p) -> uint8_t { return p.l; },
             [](const y8i_pixel & p) -> uint8_t { return p.r; });
+#endif
+        // record time
+        auto now2 = std::chrono::high_resolution_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now2 - now).count();
+        LOG_ERROR(elapsed/* << std::string(elapsed/2500, "#")*/);
     }
 
     struct y12i_pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8; int l() const { return lh << 4 | ll; } int r() const { return rh << 8 | rl; } };
     void unpack_y16_y16_from_y12i_10(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
+#ifdef RS2_USE_CUDA
+    rsimpl::split_frame_y16_y16_from_y12i_cuda(dest, count, reinterpret_cast<const y12i_pixel *>(source));
+#else
         split_frame(dest, count, reinterpret_cast<const y12i_pixel*>(source),
-            [](const y12i_pixel & p) -> uint16_t { return p.l() << 6 | p.l() >> 4; },  // We want to convert 10-bit data to 16-bit data
-            [](const y12i_pixel & p) -> uint16_t { return p.r() << 6 | p.r() >> 4; }); // Multiply by 64 1/16 to efficiently approximate 65535/1023
+        [](const y12i_pixel & p) -> uint16_t { return p.l() << 6 | p.l() >> 4; },  // We want to convert 10-bit data to 16-bit data
+        [](const y12i_pixel & p) -> uint16_t { return p.r() << 6 | p.r() >> 4; }); // Multiply by 64 1/16 to efficiently approximate 65535/1023
+#endif
     }
 
     struct f200_inzi_pixel { uint16_t z16; uint8_t y8; };
@@ -900,19 +919,37 @@ namespace librealsense
     void unpack_z16_y8_from_sr300_inzi(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
+        auto now = std::chrono::high_resolution_clock::now();
         auto in = reinterpret_cast<const uint16_t*>(source);
         auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);
+#ifdef RS2_USE_CUDA
+        rsimpl::unpack_z16_y8_from_sr300_inzi_cuda(out_ir, in, count);
+#else
         for (int i = 0; i < count; ++i) *out_ir++ = *in++ >> 2;
+#endif
         librealsense::copy(dest[0], in, count * 2);
+        // record time
+        auto now2 = std::chrono::high_resolution_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now2 - now).count();
+        LOG_ERROR(elapsed);
     }
 
     void unpack_z16_y16_from_sr300_inzi (byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
+        auto now = std::chrono::high_resolution_clock::now();
         auto in = reinterpret_cast<const uint16_t*>(source);
         auto out_ir = reinterpret_cast<uint16_t*>(dest[1]);
+#ifdef RS2_USE_CUDA
+        rsimpl::unpack_z16_y16_from_sr300_inzi_cuda(out_ir, in, count);
+#else
         for (int i = 0; i < count; ++i) *out_ir++ = *in++ << 6;
+#endif
         librealsense::copy(dest[0], in, count * 2);
+        // record time
+        auto now2 = std::chrono::high_resolution_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now2 - now).count();
+        LOG_ERROR(elapsed);
     }
 
     void unpack_rgb_from_bgr(byte * const dest[], const byte * source, int width, int height)

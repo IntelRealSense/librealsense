@@ -106,16 +106,28 @@ if (BUILD_EASYLOGGINGPP)
     add_definitions(-DBUILD_EASYLOGGINGPP)
 endif()
 
+#set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-gencode=arch=compute_62,code=SM_62; -std=c++11")
+#find_package(CUDA QUIET)
+#include_directories(${CUDA_INCLUDE_DIRS})
+#SET(ALL_CUDA_LIBS ${CUDA_LIBRARIES} ${CUDA_cusparse_LIBRARY} ${CUDA_cublas_LIBRARY})
+#SET(LIBS ${LIBS} ${ALL_CUDA_LIBS})
+#message(STATUS "CUDA_LIBRARIES: ${CUDA_INCLUDE_DIRS} ${ALL_CUDA_LIBS}")
+
 find_package(CUDA QUIET)
 if(CUDA_FOUND)
     include_directories(${CUDA_INCLUDE_DIRS})
     SET(ALL_CUDA_LIBS ${CUDA_LIBRARIES} ${CUDA_cusparse_LIBRARY} ${CUDA_cublas_LIBRARY})
     SET(LIBS ${LIBS} ${ALL_CUDA_LIBS})
     message(STATUS "CUDA_LIBRARIES: ${CUDA_INCLUDE_DIRS} ${ALL_CUDA_LIBS}")
-    set(CUDA_PROPAGATE_HOST_FLAGS ON)
-    set(CUDA_SEPARABLE_COMPILATION OFF)
-    list( APPEND CUDA_NVCC_FLAGS -gencode=arch=compute_30,code=compute_30 )
-    list( APPEND CUDA_NVCC_FLAGS -gencode=arch=compute_52,code=sm_52 )
+    set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+    set(CUDA_SEPARABLE_COMPILATION ON)
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}; -std=c++11; -gencode=arch=compute_62,code=SM_62;")
+    # TODO: Make this nicer
+    #if(COMPILER_SUPPORTS_CXX11)
+    #    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-std=c++11")
+    #elseif(COMPILER_SUPPORTS_CXX0X)
+    #    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-std=c++0x")
+    #endif()
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
@@ -192,11 +204,13 @@ set(REALSENSE_CPP
     )
     
 set(REALSENSE_CU
-    src/cuda/add.cu
+    src/cuda/cuda-conversion.cu
+    src/cuda/cuda-pointcloud.cu
     )
 
 set(REALSENSE_CUH
-    src/cuda/add.cuh
+    src/cuda/cuda-conversion.cuh
+    src/cuda/cuda-pointcloud.cuh
     )
 
 set(REALSENSE_HPP
@@ -647,6 +661,11 @@ if(TRACE_API)
     add_definitions(-DTRACE_API)
 endif()
 
+option(BUILD_WITH_CUDA "Enable CUDA" OFF)
+if(BUILD_WITH_CUDA)
+    add_definitions(-DRS2_USE_CUDA)
+endif()
+
 option(HWM_OVER_XU "Send HWM commands over UVC XU control" ON)
 if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
@@ -743,6 +762,12 @@ if(BUILD_SHARED_LIBS)
 else()
         add_library(realsense2 STATIC ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_CU} ${REALSENSE_CUH})
 endif()
+
+
+#if (BUILD_WITH_CUDA)
+#    set_property(TARGET realsense2
+#        PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+#endif()
 
 
 if(BUILD_WITH_TM2)
@@ -883,8 +908,8 @@ endif()
 
 # Check for unreferenced files
 FILE(GLOB_RECURSE AllSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-  "src/*.c" "src/*.cpp" "src/*.cc" "src/*.c++"
-  "src/*.h" "src/*.hpp" "src/*.hh" "src/*.h++")
+  "src/*.c" "src/*.cpp" "src/*.cc" "src/*.c++" "src/*.cu"
+  "src/*.h" "src/*.hpp" "src/*.hh" "src/*.h++" "src/*.cuh")
 #message ( "${AllSources}" )
 #message ( "${REALSENSE_CPP}" )
 #message ( "${REALSENSE_HPP}" )
