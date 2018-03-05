@@ -335,6 +335,9 @@ namespace librealsense
 
         auto&& backend = ctx->get_backend();
 
+        _usb2_mode = val_in_range(group.uvc_devices.front().pid,
+                    { ds::RS410_USB2_PID, ds::RS415_USB2_PID, ds::RS435_USB2_PID });
+
         if (group.usb_devices.size()>0)
         {
             _hw_monitor = std::make_shared<hw_monitor>(
@@ -375,7 +378,7 @@ namespace librealsense
 
         auto& depth_ep = get_depth_sensor();
         auto advanced_mode = is_camera_in_advanced_mode();
-        if (advanced_mode)
+        if (advanced_mode && (!_usb2_mode))
         {
             depth_ep.register_pixel_format(pf_y8i); // L+R
             depth_ep.register_pixel_format(pf_y12i); // L+R - Calibration not rectified
