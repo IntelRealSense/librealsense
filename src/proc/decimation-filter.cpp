@@ -15,7 +15,7 @@ namespace librealsense
     const uint8_t decimation_min_val = 1;
     const uint8_t decimation_max_val = 5;
     const uint8_t decimation_default_val = 2;
-    const uint8_t decimation_step = 1;    // The filter suppors kernel sizes [2^0...2^5]
+    const uint8_t decimation_step = 1;    // The filter suppors kernel sizes [2^0...2^4]
 
     decimation_filter::decimation_filter() :
         _decimation_factor(decimation_default_val),
@@ -31,6 +31,8 @@ namespace librealsense
             &_decimation_factor, "Decimation magnitude");
         decimation_control->on_set([this, decimation_control](float val)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
+
             if (!decimation_control->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported decimation factor value " << val << " is out of range.");
@@ -46,6 +48,8 @@ namespace librealsense
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
+
             rs2::frame out = f, tgt, depth;
 
             bool composite = f.is<rs2::frameset>();

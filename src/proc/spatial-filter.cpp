@@ -63,6 +63,8 @@ namespace librealsense
             &_spatial_delta_param, "Convolution radius");
         spatial_filter_delta->on_set([this, spatial_filter_delta](float val)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
+
             if (!spatial_filter_delta->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported spatial delta: " << val << " is out of range.");
@@ -96,6 +98,8 @@ namespace librealsense
 
         holes_filling_mode->on_set([this, holes_filling_mode](float val)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
+
             if (!holes_filling_mode->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported mode for holes filling selected: value " << val << " is out of range.");
@@ -122,6 +126,8 @@ namespace librealsense
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
+
             rs2::frame out = f;
             rs2::frame tgt, depth;
 

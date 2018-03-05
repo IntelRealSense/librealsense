@@ -6,6 +6,7 @@
 
 This application allows you to test the camera’s depth quality, including: Z-Accuracy, Sub-Pixel and Z RMS errors (spatial noise) and Fill Rate.
 You should be able to easily get and interpret several of the depth quality metrics, or record and save the data for offline analysis.
+<br>Please refer to [RealSense DepthQualityTesting White Paper](https://www.intel.com/content/dam/support/us/en/documents/emerging-technologies/intel-realsense-technology/RealSense_DepthQualityTesting.pdf) for further information.
 
 ## Quick Start
 * Position the depth camera within a range of 0.3 - 2 meter from a flat non-reflective surface.

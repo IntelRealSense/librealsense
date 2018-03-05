@@ -861,6 +861,7 @@ class Sensor extends Options {
    * @property {Float}  timestamp - The timestamp of the notification
    * @property {String} severity - The severity of the notification
    * @property {String} category - The category of the notification
+   * @property {String} serializedData - The serialized data of the notification
    */
 
   /**
@@ -871,6 +872,7 @@ class Sensor extends Options {
    * @param {Float}  info.timestamp - See {@link NotificationEventObject} for details
    * @param {String} info.severity - See {@link NotificationEventObject} for details
    * @param {String} info.category - See {@link NotificationEventObject} for details
+   * @param {String} info.serializedData - See {@link NotificationEventObject} for details
    *
    * @see {@link NotificationEventObject}
    * @see [Sensor.setNotificationsCallback()]{@link Sensor#setNotificationsCallback}
@@ -883,6 +885,7 @@ class Sensor extends Options {
    * @param {Float}  evt.timestamp - See {@link NotificationEventObject} for details
    * @param {String} evt.severity - See {@link NotificationEventObject} for details
    * @param {String} evt.category - See {@link NotificationEventObject} for details
+   * @param {String} evt.serializedData - See {@link NotificationEventObject} for details
    * @see {@link NotificationEventObject}
    * @see [Sensor.setNotificationsCallback()]{@link Sensor#setNotificationsCallback}
    */
@@ -1340,6 +1343,13 @@ class RecorderDevice extends Device {
    */
   resume() {
     this.cxxDev.resumeRecord();
+  }
+  /**
+   * Gets the name of the file to which the recorder is writing
+   * @return {String}
+   */
+  get fileName() {
+    return this.cxxDev.getFileName();
   }
 }
 
@@ -4779,12 +4789,12 @@ const frame_metadata = {
    * Timestamp get from uvc driver. usec
    * <br>Equivalent to its uppercase counterpart
    */
-  frame_metadata_backend_timestamp: 'backend_timestamp',
+  frame_metadata_backend_timestamp: 'backend-timestamp',
     /**
   * Actual fps
   * <br>Equivalent to its uppercase counterpart
   */
-  frame_metadata_actual_fps: 'actual_fps',
+  frame_metadata_actual_fps: 'actual-fps',
   /**
    * A sequential index managed per-stream. Integer value <br>Equivalent to its lowercase
    * counterpart.
@@ -4885,6 +4895,10 @@ const frame_metadata = {
         return this.frame_metadata_time_of_arrival;
       case this.FRAME_METADATA_TEMPERATURE:
         return this.frame_metadata_temperature;
+      case this.FRAME_METADATA_BACKEND_TIMESTAMP:
+        return this.frame_metadata_backend_timestamp;
+      case this.FRAME_METADATA_ACTUAL_FPS:
+        return this.frame_metadata_actual_fps;
     }
   },
 };

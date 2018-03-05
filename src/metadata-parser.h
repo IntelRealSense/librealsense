@@ -226,17 +226,11 @@ namespace librealsense
     class actual_fps_calculator
     {
     public:
-        rs2_metadata_type get_fps(const frame & frm)
+        double get_fps(const frame & frm)
         {
-            auto num_of_frames = 0;
-            if (frm.additional_data.frame_number < frm.additional_data.last_frame_number)
-            {
-                num_of_frames = std::numeric_limits<unsigned long long>::max() - frm.additional_data.last_frame_number + frm.additional_data.frame_number;
-            }
-            else
-            {
-                num_of_frames = frm.additional_data.frame_number - frm.additional_data.last_frame_number;
-            }
+            // A computation involving unsigned operands can never overflow (ISO/IEC 9899:1999 (E) §6.2.5/9)
+            auto num_of_frames = frm.additional_data.frame_number - frm.additional_data.last_frame_number;
+
             if (num_of_frames == 0)
             {
                 LOG_INFO("frame_number - last_frame_number " << num_of_frames);
@@ -273,16 +267,15 @@ namespace librealsense
                 auto exp = frm.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
 
                 auto exp_in_micro = _exposure_modifyer(exp);
-                auto exp_in_milli = (double)exp_in_micro / 1000.f;
-                if (exp_in_milli > 0)
+                if (exp_in_micro > 0)
                 {
-                    auto fps = 1000.f / (float)exp_in_milli;
+                    auto fps = 1000000.f / exp_in_micro;
 
                     if (_discrete)
                     {
-                        if (fps >= _fps_values[_fps_values.size() - 1])
+                        if (fps >= _fps_values.back())
                         {
-                            fps = _fps_values[_fps_values.size() - 1];
+                            fps = static_cast<float>(_fps_values.back());
                         }
                         else
                         {
@@ -290,7 +283,7 @@ namespace librealsense
                             {
                                 if (fps < _fps_values[i + 1])
                                 {
-                                    fps = _fps_values[i];
+                                    fps = static_cast<float>(_fps_values[i]);
                                     break;
                                 }
                             }
