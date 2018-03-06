@@ -815,14 +815,18 @@ namespace rs2
 
             show_single_fps_list = is_there_common_fps();
 
-            // set default selections
-            int selection_index;
+            // set default selections. USB2 configuration requires low-res resolution/fps.
+            int selection_index{};
+            std::string dev_name(dev.get_info(RS2_CAMERA_INFO_NAME));
+            bool usb2 = (std::string::npos != dev_name.find("USB2"));
+            int fps_constrain = usb2 ? 15 : 30;
+            auto resolution_constrain = usb2 ? std::make_pair(640, 480) :std::make_pair(1280, 720);
 
             if (!show_single_fps_list)
             {
                 for (auto fps_array : fps_values_per_stream)
                 {
-                    if (get_default_selection_index(fps_array.second, 30, &selection_index))
+                    if (get_default_selection_index(fps_array.second, fps_constrain, &selection_index))
                     {
                         ui.selected_fps_id[fps_array.first] = selection_index;
                         break;
@@ -831,7 +835,7 @@ namespace rs2
             }
             else
             {
-                if (get_default_selection_index(shared_fps_values, 30, &selection_index))
+                if (get_default_selection_index(shared_fps_values, fps_constrain, &selection_index))
                     ui.selected_shared_fps_id = selection_index;
             }
 
@@ -844,9 +848,7 @@ namespace rs2
                 }
             }
 
-            // Limit Realtec sensor default
-            auto constrain = std::make_pair(1280, 720);
-            get_default_selection_index(res_values, constrain, &selection_index);
+            get_default_selection_index(res_values, resolution_constrain, &selection_index);
             ui.selected_res_id = selection_index;
 
             while (ui.selected_res_id >= 0 && !is_selected_combination_supported()) ui.selected_res_id--;
