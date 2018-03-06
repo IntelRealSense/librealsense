@@ -79,7 +79,7 @@ describe('Frame test', function() {
   });
 
   it('Testing property timestampDomain', () => {
-    assert.equal(typeof frame.timestampDomain, 'string');
+    assert.equal(typeof frame.timestampDomain, 'number');
   });
 
   it('Testing method frameMetadata - 0 argument', () => {
