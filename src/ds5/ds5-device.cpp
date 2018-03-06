@@ -140,9 +140,6 @@ namespace librealsense
                     if (video->has_attributes(1280, 720, RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 30, 1))
                         infrared_candidates.push_back(video);
 
-                    if (video->has_attributes(848, 480, RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 30, 1))
-                        infrared_candidates.push_back(video);
-
                     // Register Low-res resolution for USB2 mode
                     if (video->has_attributes(640, 480, RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 15, 1))
                         infrared_candidates.push_back(video);
@@ -152,13 +149,13 @@ namespace librealsense
                     if (video->has_attributes(1280, 720, RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 30, 0))
                         infrared_candidates.push_back(video);
 
-                    // Global Shutter sensor does not support synthetic color
-                    if (video->has_attributes(848, 480, RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 30, 1))
-                        infrared_candidates.push_back(video);
-
-                    if (video->has_attributes(640, 480, RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 15, 1))
+                    if (video->has_attributes(640, 480, RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 15, 0))
                         infrared_candidates.push_back(video);
                 }
+
+                // Global Shutter sensor does not support synthetic color
+                if (video->has_attributes(848, 480, RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 30, 1))
+                    infrared_candidates.push_back(video);
 
                 // Register intrinsics
                 if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
