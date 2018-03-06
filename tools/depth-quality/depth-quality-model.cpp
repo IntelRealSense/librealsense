@@ -31,19 +31,31 @@ namespace rs2
         {
             bool valid_config = false;
             std::vector<rs2::config> cfgs;
+            rs2::pipeline_profile active_profile;
+
+            // Adjust settings according to USB type
+            bool usb3_device = true;
+            auto devices = _ctx.query_devices();
+            if (devices.size())
+            {
+                auto dev = devices[0];
+                std::string dev_name(dev.get_info(RS2_CAMERA_INFO_NAME));
+                usb3_device = (std::string::npos == dev_name.find("USB2"));
+            }
+            int requested_fps = usb3_device ? 30 : 15;
 
             {
                 rs2::config cfg;
                 // Preferred configuration Depth + Synthetic Color
-                cfg.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, 30);
-                cfg.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_RGB8, 30);
+                cfg.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, requested_fps);
+                cfg.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_RGB8, requested_fps);
                 cfgs.push_back(cfg);
             }
             // Use Infrared luminocity as a secondary video in case synthetic chroma is not supported
             {
                 rs2::config cfg;
-                cfg.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
-                cfg.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_Y8, 30);
+                cfg.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, requested_fps);
+                cfg.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, requested_fps);
                 cfgs.push_back(cfg);
             }
 
@@ -52,11 +64,13 @@ namespace rs2
                 if (valid_config = cfg.can_resolve(_pipe))
                 {
                     try {
-                        _pipe.start(cfg);
+                        active_profile = _pipe.start(cfg);
+                        valid_config = active_profile;
                         break;
                     }
                     catch (...)
                     {
+                        valid_config = false;
                         if (!_device_in_use)
                         {
                             window.add_on_load_message("Device is not functional or busy!");
@@ -528,8 +542,8 @@ namespace rs2
                                 {
                                     try // Retries are needed to cope with HW stability issues
                                     {
-                                        _pipe.start(cfg);
-                                        success = true;
+                                        auto profile = _pipe.start(cfg);
+                                        success = profile;
                                     }
                                     catch (...)
                                     {
