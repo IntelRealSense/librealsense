@@ -2222,6 +2222,7 @@ class FrameSet {
   constructor(cxxFrameSet) {
     this.cxxFrameSet = cxxFrameSet || new RS2.RSFrameSet();
     this.cache = [];
+    this.cacheMetadata = [];
     this.__update();
   }
 
@@ -2240,7 +2241,7 @@ class FrameSet {
    * @return {DepthFrame|undefined}
    */
   get depthFrame() {
-    return this.getFrame(stream.STREAM_DEPTH);
+    return this.getFrame(stream.STREAM_DEPTH, 0);
   }
 
   /**
@@ -2249,20 +2250,36 @@ class FrameSet {
    * @return {VideoFrame|undefined}
    */
   get colorFrame() {
-    return this.getFrame(stream.STREAM_COLOR);
+    return this.getFrame(stream.STREAM_COLOR, 0);
+  }
+
+  /**
+   * Get the infrared frame
+   * @param {Integer} streamIndex index of the expected infrared stream
+   * @return {VideoFrame|undefined}
+   */
+  getInfraredFrame(streamIndex = 0) {
+    const funcName = 'FrameSet.getInfraredFrame()';
+    checkArgumentLength(0, 1, arguments.length, funcName);
+    if (arguments.length === 1) {
+      checkArgumentType(arguments, 'integer', 0, funcName);
+    }
+    return this.getFrame(stream.STREAM_INFRARED, streamIndex);
   }
 
   /**
    * Get the frame at specified index
    *
-   * @param {Integer} index the index of the expected frame
+   * @param {Integer} index the index of the expected frame (Note: this is not
+   * stream index)
    * @return {DepthFrame|VideoFrame|Frame|undefined}
    */
   at(index) {
     const funcName = 'FrameSet.at()';
     checkArgumentLength(1, 1, arguments.length, funcName);
-    checkArgumentType(arguments, 'number', 0, 'FrameSet.at()', 0, this.size);
-    return this.getFrame(this.cxxFrameSet.indexToStream(index));
+    checkArgumentType(arguments, 'number', 0, funcName, 0, this.size);
+    return this.getFrame(this.cxxFrameSet.indexToStream(index),
+        this.cxxFrameSet.indexToStreamIndex(index));
   }
 
   /**
@@ -2280,36 +2297,57 @@ class FrameSet {
     }
   }
 
-  __internalGetFrame(stream) {
-    return Frame._internalCreateFrame(this.cxxFrameSet.getFrame(stream));
+  __internalGetFrame(stream, streamIndex) {
+    return Frame._internalCreateFrame(this.cxxFrameSet.getFrame(stream, streamIndex));
   }
 
-  __internalGetFrameCache(stream, callback) {
-    if (! this.cache[stream]) {
-      this.cache[stream] = callback(stream);
+  __internalFindFrameInCache(stream, streamIndex) {
+    for (const [i, data] of this.cacheMetadata.entries()) {
+      if (data.stream !== stream) {
+        continue;
+      }
+      if (!streamIndex || (streamIndex && streamIndex === data.streamIndex)) {
+        return i;
+      }
+    }
+    return undefined;
+  }
+
+  __internalGetFrameCache(stream, streamIndex, callback) {
+    let idx = this.__internalFindFrameInCache(stream, streamIndex);
+    if (idx === undefined) {
+      this.cache.push(callback(stream, streamIndex));
+      this.cacheMetadata.push({stream: stream, streamIndex: streamIndex});
+      idx = this.cache.length - 1;
     } else {
-      let frame = this.cache[stream];
+      let frame = this.cache[idx];
       if (!frame.cxxFrame) {
         frame.cxxFrame = new RS2.RSFrame();
       }
-      if (! this.cxxFrameSet.replaceFrame(stream, frame.cxxFrame)) {
-        this.cache[stream] = undefined;
+      if (! this.cxxFrameSet.replaceFrame(stream, streamIndex, frame.cxxFrame)) {
+        this.cache[idx] = undefined;
+        this.cacheMetadata[idx] = undefined;
       }
     }
-    return this.cache[stream];
+    return this.cache[idx];
   }
 
   /**
    * Get the frame with specified stream
    *
    * @param {Integer|String} stream stream type of the frame
+   * @param {Integer} streamIndex index of the stream, 0 means the first
+   * matching stream
    * @return {DepthFrame|VideoFrame|Frame|undefined}
    */
-  getFrame(stream) {
+  getFrame(stream, streamIndex = 0) {
     const funcName = 'FrameSet.getFrame()';
-    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentLength(1, 2, arguments.length, funcName);
     const s = checkArgumentType(arguments, constants.stream, 0, funcName);
-    return this.__internalGetFrameCache(s, this.__internalGetFrame.bind(this));
+    if (arguments.length === 2) {
+      checkArgumentType(arguments, 'integer', 1, funcName);
+    }
+    return this.__internalGetFrameCache(s, streamIndex, this.__internalGetFrame.bind(this));
   }
 
   __update() {
@@ -2322,6 +2360,8 @@ class FrameSet {
         f.release();
       }
     });
+    this.cache = [];
+    this.cacheMetadata = [];
   }
 
   release() {
@@ -2336,7 +2376,6 @@ class FrameSet {
    */
   destroy() {
     this.release();
-    this.cache = [];
     this.cxxFrameSet = undefined;
   }
 }
