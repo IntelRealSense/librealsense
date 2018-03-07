@@ -122,40 +122,48 @@ namespace librealsense
                 {
                     assign_stream(_owner->_right_ir_stream, p);
                 }
-                auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                auto vid_profile = dynamic_cast<video_stream_profile_interface*>(p.get());
 
                 // Mark potential candidates for depth default profile
-                if (video->has_attributes(1280, 720, RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 30, 0))
-                    depth_candidates.push_back(video);
+                if (vid_profile->has_attributes(1280, 720, RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 30, 0))
+                    depth_candidates.push_back(vid_profile);
 
-                if (video->has_attributes(848, 480, RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 30, 0))
-                    depth_candidates.push_back(video);
+                if (vid_profile->has_attributes(848, 480, RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 30, 0))
+                    depth_candidates.push_back(vid_profile);
 
-                if (video->has_attributes(640, 480, RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 15, 0))
-                    depth_candidates.push_back(video);
+                if (vid_profile->has_attributes(640, 480, RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 15, 0))
+                    depth_candidates.push_back(vid_profile);
+
+                // Global Shutter sensor does not support synthetic color
+                if (vid_profile->has_attributes(848, 480, RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 30, 1))
+                    infrared_candidates.push_back(vid_profile);
+
+                // Low-level resolution for USB2 generic PID
+                if (vid_profile->has_attributes(480, 270, RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 30, 0))
+                    depth_candidates.push_back(vid_profile);
+
+                // Low-level resolution for USB2 generic PID
+                if (vid_profile->has_attributes(480, 270, RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 30, 1))
+                    infrared_candidates.push_back(vid_profile);
 
                 // For infrared sensor, the default is Y8 in case Realtec RGB sensor present, RGB8 otherwise
                 if (color_dev)
                 {
-                    if (video->has_attributes(1280, 720, RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 30, 1))
-                        infrared_candidates.push_back(video);
+                    if (vid_profile->has_attributes(1280, 720, RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 30, 1))
+                        infrared_candidates.push_back(vid_profile);
 
                     // Register Low-res resolution for USB2 mode
-                    if (video->has_attributes(640, 480, RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 15, 1))
-                        infrared_candidates.push_back(video);
+                    if (vid_profile->has_attributes(640, 480, RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 15, 1))
+                        infrared_candidates.push_back(vid_profile);
                 }
                 else
                 {
-                    if (video->has_attributes(1280, 720, RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 30, 0))
-                        infrared_candidates.push_back(video);
+                    if (vid_profile->has_attributes(1280, 720, RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 30, 0))
+                        infrared_candidates.push_back(vid_profile);
 
-                    if (video->has_attributes(640, 480, RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 15, 0))
-                        infrared_candidates.push_back(video);
+                    if (vid_profile->has_attributes(640, 480, RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 15, 0))
+                        infrared_candidates.push_back(vid_profile);
                 }
-
-                // Global Shutter sensor does not support synthetic color
-                if (video->has_attributes(848, 480, RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 30, 1))
-                    infrared_candidates.push_back(video);
 
                 // Register intrinsics
                 if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
@@ -163,7 +171,7 @@ namespace librealsense
                     auto profile = to_profile(p.get());
                     std::weak_ptr<ds5_depth_sensor> wp =
                         std::dynamic_pointer_cast<ds5_depth_sensor>(this->shared_from_this());
-                    video->set_intrinsics([profile, wp]()
+                    vid_profile->set_intrinsics([profile, wp]()
                     {
                         auto sp = wp.lock();
                         if (sp)
