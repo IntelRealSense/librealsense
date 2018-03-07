@@ -76,6 +76,13 @@ else
 	patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch
 fi
 
+#Specific local patch for 4.4 going out of sync with Ubuntu core
+IFS='.' read -a kernel_version <<< "$LINUX_BRANCH"
+if [ ${kernel_version[1]} > 9 ];
+then
+	patch -p1 < ../scripts/retpoline_fix_v4.4.patch.patch
+fi
+
 # Copy configuration
 sudo cp /usr/src/linux-headers-$(uname -r)/.config .
 sudo cp /usr/src/linux-headers-$(uname -r)/Module.symvers .

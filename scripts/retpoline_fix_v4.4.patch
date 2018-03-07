@@ -1,0 +1,24 @@
+From 690f96bb513173bf4f64455339e1ea76d99e29bb Mon Sep 17 00:00:00 2001
+From: Evgeni Raikhel <evgeni.raikhel@intel.com>
+Date: Wed, 7 Mar 2018 18:25:48 +0200
+Subject: [PATCH] abc
+
+---
+ include/linux/vermagic.h | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/include/linux/vermagic.h b/include/linux/vermagic.h
+index a3d0493..8b534d1 100644
+--- a/include/linux/vermagic.h
++++ b/include/linux/vermagic.h
+@@ -34,6 +34,5 @@
+ 	UTS_RELEASE " "							\
+ 	MODULE_VERMAGIC_SMP MODULE_VERMAGIC_PREEMPT 			\
+ 	MODULE_VERMAGIC_MODULE_UNLOAD MODULE_VERMAGIC_MODVERSIONS	\
+-	MODULE_ARCH_VERMAGIC						\
+-	MODULE_VERMAGIC_RETPOLINE
++	MODULE_ARCH_VERMAGIC
+ 
+-- 
+2.7.4
+
