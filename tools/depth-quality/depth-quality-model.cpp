@@ -42,19 +42,23 @@ namespace rs2
                 std::string dev_name(dev.get_info(RS2_CAMERA_INFO_NAME));
                 usb3_device = (std::string::npos == dev_name.find("USB2"));
             }
+            else
+                return valid_config;
+
             int requested_fps = usb3_device ? 30 : 15;
 
-            rs2::config cfg;
+            rs2::config cfg_default;
             // Preferred configuration Depth + Synthetic Color
-            cfg.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, requested_fps);
-            cfg.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_RGB8, requested_fps);
-            cfgs.push_back(cfg);
+            cfg_default.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, requested_fps);
+            cfg_default.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_RGB8, requested_fps);
+            cfgs.emplace_back(cfg_default);
 
             // Use Infrared luminocity as a secondary video in case synthetic chroma is not supported
-            cfg.disable_all_streams();
-            cfg.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, requested_fps);
-            cfg.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, requested_fps);
-            cfgs.push_back(cfg);
+            rs2::config cfg_alt;
+            cfg_alt.disable_all_streams();
+            cfg_alt.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, requested_fps);
+            cfg_alt.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, requested_fps);
+            cfgs.emplace_back(cfg_alt);
 
             for (auto& cfg : cfgs)
             {
