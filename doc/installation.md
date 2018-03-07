@@ -62,11 +62,12 @@ Several scripts below invoke `wget, git, add-apt-repository` which may be blocke
     * On Ubuntu 16.04 install glfw3 via `sudo apt-get install libglfw3-dev`
     * On Ubuntu 14.04 or when running of Ubuntu 16.04 live-disk, please use `./scripts/install_glfw3.sh`
     
-   6. TM1-specific:
-    * Tracking Module requires *hid_sensor_custom* kernel module to perate properly.  
-      Due to HW power-up sequence, the driver is required to be resident during boot for the HW to be properly initialized in kernel.  
+   6. TM1-specifics:
+    * Tracking Module requires *hid_sensor_custom* kernel module to operate properly.  
+      Due to TM1's power-up sequence constrains, this driver is required to be loaded during boot for the HW to be properly initialized.  
       In order to accomplish this add the driver's name *hid_sensor_custom* to `/etc/modules` file:  
       `sudo echo 'hid_sensor_custom' >> /etc/modules`
+      Running from bash would require switching to `su` mode (`sudo su`)
 
 ## Building librealsense2 SDK
   * On Ubuntu 14.04, update your build toolchain to *gcc-5*:
