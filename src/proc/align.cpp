@@ -115,13 +115,37 @@ namespace librealsense
     {
         align_other_to_depth(other_aligned_to_z, [z_pixels, z_scale](int z_pixel_index) { return z_scale * z_pixels[z_pixel_index]; }, z_intrin, z_to_other, other_intrin, other_pixels, other_format);
     }
-
-    std::shared_ptr<stream_profile_interface> create_aligned_profile(
+    
+    int align::get_unique_id(const std::shared_ptr<stream_profile_interface>& original_profile,
+        const std::shared_ptr<stream_profile_interface>& to_profile,
+        const std::shared_ptr<stream_profile_interface>& aligned_profile)
+    {
+        //align_stream_unique_ids holds a cache of mapping between the 2 streams that created the new aligned stream
+        // to it stream id. 
+        //When an aligned frame is created from other streams (but with the same instance of this class)
+        // the from_to pair will be different so a new id will be added to the cache.
+        //This allows the user to pass different streams to this class and for every pair of from_to
+        //the user will always get the same stream id for the aligned stream.
+        auto from_to = std::make_pair(original_profile->get_unique_id(), to_profile->get_unique_id());
+        auto it = align_stream_unique_ids.find(from_to);
+        if (it != align_stream_unique_ids.end())
+        {
+            return it->second;
+        }
+        else
+        {
+            int new_id = aligned_profile->get_unique_id();
+            align_stream_unique_ids[from_to] = new_id;
+            return new_id;
+        }
+    }
+    std::shared_ptr<stream_profile_interface> align::create_aligned_profile(
         const std::shared_ptr<stream_profile_interface>& original_profile, 
         const std::shared_ptr<stream_profile_interface>& to_profile)
     {
         auto aligned_profile = original_profile->clone();
-        aligned_profile->set_unique_id(100000 + original_profile->get_unique_id());
+        int aligned_unique_id = get_unique_id(original_profile, to_profile, aligned_profile);
+        aligned_profile->set_unique_id(aligned_unique_id);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*aligned_profile, *original_profile);
         aligned_profile->set_stream_index(original_profile->get_stream_index());
         aligned_profile->set_stream_type(original_profile->get_stream_type());
