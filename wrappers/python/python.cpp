@@ -417,6 +417,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("__getitem__", &rs2::frameset::operator[])
         .def("get_depth_frame", &rs2::frameset::get_depth_frame)
         .def("get_color_frame", &rs2::frameset::get_color_frame)
+        .def("get_infrared_frame", &rs2::frameset::get_infrared_frame, "index"_a = 0)
         .def("__iter__", [](rs2::frameset& self)
     {
         return py::make_iterator(self.begin(), self.end());
