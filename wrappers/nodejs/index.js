@@ -1541,9 +1541,11 @@ internal.PlaybackContext = PlaybackContext;
  * In addition, given non-depth frame, the block will align texture coordinate to the non-depth
  * stream
  */
-class PointCloud {
+class PointCloud extends Options {
   constructor() {
+    super();
     this.cxxPointCloud = new RS2.RSPointCloud();
+    this.setCxxOptionsObject(this.cxxPointCloud);
     this.pointsFrame = new Points();
   }
 
