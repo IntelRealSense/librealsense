@@ -1,12 +1,12 @@
 # External Devices and RS4XX
 
-RS400 series of RealSense devices include several features for integration with external sensors.
+D400 series of RealSense devices include several features for integration with external sensors.
 This document will explain how these are exposed in librealsense.
 
 ## Output Trigger
 
-In addition to the USB3 connector, RS400 cameras expose headers for interaction with external devices.
-The camera can provide trigger every time frame is being captured (with RS400 as the master).
+In addition to the USB3 connector, D400 cameras expose headers for interaction with external devices.
+The camera can provide trigger every time frame is being captured (with D400 as the master).
 
 To enable this mode, all you need to do is:
 
@@ -16,8 +16,8 @@ dev.set_option(RS2_OPTION_OUTPUT_TRIGGER, 1);
 
 ## Timestamp from External sensors
 
-RS430 comes with Depth, Fish-Eye and Motion-Tracking sensors on board, all synchronized to single clock.
-If you wish to synchronize external sensor (for example a compass) with RealSense, all you need to do is trigger one of 4 GPIOs of the RS430 whenever you read data from the external sensors. RS430 will generate timestamp for each GPIO event, allowing you to synchronize between the data streams in software:
+Some limited D400x modules can be connected with a Tracking Module (TM) which includes Fish-Eye and Motion-Tracking sensors on board, all synchronized to single clock.
+If you wish to synchronize external sensor (for example a compass) with RealSense, all you need to do is trigger one of 4 GPIOs of the D400x whenever you read data from the external sensors. D400x will generate timestamp for each GPIO event, allowing you to synchronize between the data streams in software:
 
 ```cpp
 rs2::util::config config;
