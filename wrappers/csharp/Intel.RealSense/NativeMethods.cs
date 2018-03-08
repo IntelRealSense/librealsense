@@ -149,6 +149,9 @@ namespace Intel.RealSense
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_create_spatial_filter_block([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
 
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_create_disparity_transform_block(byte transform_to_disparity, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
+
 
         #endregion
         #region rs_option

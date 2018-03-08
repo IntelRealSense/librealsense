@@ -103,6 +103,28 @@ namespace Intel.RealSense
         FrameQueue queue;
     }
 
+    public class DisparityTransform : ProcessingBlock
+    {
+        public DisparityTransform(bool transform_to_disparity = true)
+        {
+            object error;
+            byte transform_direction = transform_to_disparity ? (byte)1 : (byte)0;
+            m_instance = new HandleRef(this, NativeMethods.rs2_create_disparity_transform_block(transform_direction, out error));
+            queue = new FrameQueue();
+            NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
+        }
+
+        public VideoFrame ApplyFilter(VideoFrame original)
+        {
+            object error;
+            NativeMethods.rs2_frame_add_ref(original.m_instance.Handle, out error);
+            NativeMethods.rs2_process_frame(m_instance.Handle, original.m_instance.Handle, out error);
+            return queue.WaitForFrame() as VideoFrame;
+        }
+
+        FrameQueue queue;
+    }
+
     public class DecimationFilter : ProcessingBlock
     {
         public DecimationFilter()
