@@ -73,7 +73,7 @@ Material:
     - _Cutoff: 0.5
     - _DeltaX: 0.01
     - _DeltaY: 0.01
-    - _DepthScale: 0.00012498665
+    - _DepthScale: 0.001
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _Flip: 0

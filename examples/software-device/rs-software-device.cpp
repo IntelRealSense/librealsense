@@ -3,7 +3,7 @@
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <librealsense2/hpp/rs_internal.hpp>
-#include "example.hpp" 
+#include "example.hpp"
 #include "example.hpp"          // Include short list of convenience functions for rendering
 
 
@@ -119,11 +119,11 @@ int main(int argc, char * argv[]) try
     glfw_state app_state;
     register_glfw_callbacks(app, app_state);
     rs2::colorizer color_map; // Save colorized depth for preview
-   
+
     rs2::pointcloud pc;
     rs2::points points;
     int frame_number = 0;
-    
+
     custom_frame_source app_data;
 
     auto texture = app_data.get_synthetic_texture();
@@ -137,8 +137,8 @@ int main(int argc, char * argv[]) try
 
     rs2::software_device dev; // Create software-only device
 
-    auto depth_sensor = dev.add_sensor("Depth"); // Define single sensor 
-    auto color_sensor = dev.add_sensor("Color"); // Define single sensor 
+    auto depth_sensor = dev.add_sensor("Depth"); // Define single sensor
+    auto color_sensor = dev.add_sensor("Color"); // Define single sensor
 
     auto depth_stream = depth_sensor.add_video_stream({  RS2_STREAM_DEPTH, 0, 0,
                                 W, H, 60, BPP,
@@ -148,7 +148,7 @@ int main(int argc, char * argv[]) try
 
 
     auto color_stream = color_sensor.add_video_stream({  RS2_STREAM_COLOR, 0, 1, texture.x,
-                                texture.y, 60, texture.bpp, 
+                                texture.y, 60, texture.bpp,
                                 RS2_FORMAT_RGBA8, color_intrinsics });
 
     dev.create_matcher(RS2_MATCHER_DLR_C);

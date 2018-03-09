@@ -122,6 +122,7 @@ namespace librealsense
         virtual void update_last_arrived(frame_holder& f, matcher* m) = 0;
 
         void dispatch(frame_holder f, syncronization_environment env) override;
+        std::string frames_to_string(std::vector<librealsense::matcher*> matchers);
         void sync(frame_holder f, syncronization_environment env) override;
         std::shared_ptr<matcher> find_matcher(const frame_holder& f);
 
@@ -161,8 +162,10 @@ namespace librealsense
         void update_next_expected(const frame_holder & f) override;
 
     private:
+        unsigned int get_fps(const frame_holder & f);
         bool are_equivalent(double a, double b, int fps);
         std::map<matcher*, double> _last_arrived;
+        std::map<matcher*, unsigned int> _fps;
 
     };
 }

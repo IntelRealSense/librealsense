@@ -27,7 +27,7 @@ librealsense::record_sensor::~record_sensor()
 
 void librealsense::record_sensor::init()
 {
-    //Seperating init from the constructor since callbacks may be called from here, 
+    //Seperating init from the constructor since callbacks may be called from here,
     // and the only way to register to them is after creating the record sensor
 
     enable_sensor_options_recording();
@@ -45,7 +45,7 @@ void librealsense::record_sensor::init()
 
     if (m_sensor.is_streaming())
     {
-        //In case the sensor is already streaming, 
+        //In case the sensor is already streaming,
         // we will not get the above callback (before start) so we hook it now
         enable_sensor_hooks();
     }
@@ -147,10 +147,10 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
     /**************************************************************************************
      A record sensor wraps the live sensor, and should have the same functionalities.
      To do that, the record sensor implements the extendable_interface and when the user tries to
-     treat the sensor as some extension, this function is called, and we return a pointer to the 
+     treat the sensor as some extension, this function is called, and we return a pointer to the
      live sensor's extension. If that extension is a recordable one, we also enable_recording for it.
     **************************************************************************************/
-    
+
     switch (extension_type)
     {
     case RS2_EXTENSION_OPTIONS: // [[fallthrough]]
@@ -349,7 +349,7 @@ void record_sensor::wrap_streams()
                 extension_type = RS2_EXTENSION_MOTION_PROFILE;
             else if (Is<librealsense::pose_stream_profile_interface>(stream))
                 extension_type = RS2_EXTENSION_POSE_PROFILE;
-            else 
+            else
                 throw std::runtime_error("Unsupported stream");
 
             on_extension_change(extension_type, std::dynamic_pointer_cast<extension_snapshot>(snapshot));

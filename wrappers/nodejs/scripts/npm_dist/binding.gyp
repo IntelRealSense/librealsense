@@ -50,13 +50,21 @@
         ],
         ['OS=="mac"',
           {
+            "libraries": [
+              '<(module_root_dir)/librealsense/build/Release/librealsense2.dylib',
+              # Write the below RPATH into the generated addon
+              '-Wl,-rpath,@loader_path/../../librealsense/build/Release',
+            ],
             'xcode_settings': {
-              'GCC_ENABLE_CPP_EXCEPTIONS': 'YES'
+              'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
+              'CLANG_CXX_LIBRARY': 'libc++',
+              'MACOS_DEPLOYMENT_TARGET': '10.12',
+              'CLANG_CXX_LANGUAGE_STANDARD': 'c++14'
             }
           }
         ],
         [
-          "OS!=\"win\"",
+          'OS=="linux"',
           {
             "libraries": [
               "<(module_root_dir)/librealsense/build/librealsense2.so",

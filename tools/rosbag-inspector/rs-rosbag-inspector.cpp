@@ -353,7 +353,7 @@ inline void sort(sort_type m_sort_type, const std::string& in, const std::string
     for (auto&& m : entire_bag_view)
     {
         // 1. Write frame with new timestamp
-        // 2. Get all metadata of this frame and write it 
+        // 2. Get all metadata of this frame and write it
 
         if (m.isType<sensor_msgs::Image>())
         {

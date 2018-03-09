@@ -318,7 +318,6 @@ namespace librealsense
         {
             matchers.push_back(std::make_shared<frame_number_composite_matcher>(depth_matchers));
         }
-        
 
         auto color_matcher = std::make_shared<identity_matcher>( _color_stream->get_unique_id(), _color_stream->get_stream_type());
         matchers.push_back(color_matcher);

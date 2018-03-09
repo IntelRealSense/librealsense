@@ -237,7 +237,7 @@ namespace librealsense
                         {
                             try
                             {
-                                auto dev = dev_info->create_device();
+                                auto dev = dev_info->create_device(true);
                                 _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
                                 return _resolved_profile;
                             }
@@ -389,7 +389,7 @@ namespace librealsense
     */
 
     pipeline::pipeline(std::shared_ptr<librealsense::context> ctx)
-        :_ctx(ctx), _hub(ctx)
+        :_ctx(ctx), _hub(ctx), _dispatcher(10)
     {}
 
     pipeline::~pipeline()
@@ -499,6 +499,28 @@ namespace librealsense
             [](rs2_frame_callback* p) { p->release(); }
         };
 
+        auto dev = profile->get_device();
+        if (auto playback = As<librealsense::playback_device>(dev))
+        {
+            _playback_stopped_token = playback->playback_status_changed += [this, syncer_callback](rs2_playback_status status)
+            {
+                if (status == RS2_PLAYBACK_STATUS_STOPPED)
+                {
+                    _dispatcher.invoke([this, syncer_callback](dispatcher::cancellable_timer t)
+                    {
+                        //If the pipeline holds a playback device, and it reached the end of file (stopped)
+                        //Then we restart it
+                        if (_active_profile)
+                        {
+                            _active_profile->_multistream.open();
+                            _active_profile->_multistream.start(syncer_callback);
+                        }
+                    });
+                }
+            };
+        }
+
+        _dispatcher.start();
         profile->_multistream.open();
         profile->_multistream.start(syncer_callback);
         _active_profile = profile;
@@ -519,10 +541,16 @@ namespace librealsense
     {
         if (_active_profile)
         {
-            try 
+            try
             {
+                auto dev = _active_profile->get_device();
+                if (auto playback = As<librealsense::playback_device>(dev))
+                {
+                    playback->playback_status_changed -= _playback_stopped_token;
+                }
                 _active_profile->_multistream.stop();
                 _active_profile->_multistream.close();
+                _dispatcher.stop();
             }
             catch(...)
             {

@@ -7,7 +7,7 @@
 #include "types.h"
 #include "archive.h"
 #include "metadata.h"
-
+#include <cmath>
 using namespace librealsense;
 
 namespace librealsense
@@ -220,6 +220,93 @@ namespace librealsense
         {
             return (_sensor_ts_parser->supports(frm) && _frame_ts_parser->supports(frm));
         };
+    };
+
+
+    class actual_fps_calculator
+    {
+    public:
+        double get_fps(const frame & frm)
+        {
+            // A computation involving unsigned operands can never overflow (ISO/IEC 9899:1999 (E) §6.2.5/9)
+            auto num_of_frames = frm.additional_data.frame_number - frm.additional_data.last_frame_number;
+
+            if (num_of_frames == 0)
+            {
+                LOG_INFO("frame_number - last_frame_number " << num_of_frames);
+            }
+
+            auto diff = num_of_frames ? (double)(frm.additional_data.timestamp - frm.additional_data.last_timestamp) / (double)num_of_frames : 0;
+            return diff > 0 ? std::max(1000.f / std::ceil(diff), (double)1) : frm.get_stream()->get_framerate();
+        }
+    };
+
+
+    class ds5_md_attribute_actual_fps : public md_attribute_parser_base
+    {
+    public:
+        ds5_md_attribute_actual_fps(bool discrete = true, attrib_modifyer  exposure_mod = [](const rs2_metadata_type& param) {return param; })
+            :_exposure_modifyer(exposure_mod), _discrete(discrete), _fps_values{ 6, 15, 30, 60, 90 }
+        {}
+
+        rs2_metadata_type get(const frame & frm) const override
+        {
+            if (frm.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
+            {
+                if (frm.get_stream()->get_format() == RS2_FORMAT_Y16 &&
+                    frm.get_stream()->get_stream_type() == RS2_STREAM_INFRARED) //calibration mode
+                {
+                    if (std::find(_fps_values.begin(), _fps_values.end(), 25) == _fps_values.end())
+                    {
+                        _fps_values.push_back(25);
+                        std::sort(_fps_values.begin(), _fps_values.end());
+                    }
+
+                }
+
+                auto exp = frm.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+
+                auto exp_in_micro = _exposure_modifyer(exp);
+                if (exp_in_micro > 0)
+                {
+                    auto fps = 1000000.f / exp_in_micro;
+
+                    if (_discrete)
+                    {
+                        if (fps >= _fps_values.back())
+                        {
+                            fps = static_cast<float>(_fps_values.back());
+                        }
+                        else
+                        {
+                            for (auto i = 0; i < _fps_values.size() - 1; i++)
+                            {
+                                if (fps < _fps_values[i + 1])
+                                {
+                                    fps = static_cast<float>(_fps_values[i]);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    return std::min((int)fps, (int)frm.get_stream()->get_framerate());
+                }
+            }
+
+            return (rs2_metadata_type)_fps_calculator.get_fps(frm);
+
+        }
+
+        bool supports(const frame & frm) const override
+        {
+            return true;
+        }
+
+    private:
+        mutable actual_fps_calculator _fps_calculator;
+        mutable std::vector<uint32_t> _fps_values;
+        attrib_modifyer _exposure_modifyer;
+        bool _discrete;
     };
 
     /**\brief A helper function to create a specialized parser for RS4xx sensor timestamp*/

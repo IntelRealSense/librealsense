@@ -30,6 +30,7 @@ namespace librealsense
         transform_opt->set_description(true, "Depth to Disparity");
         transform_opt->on_set([this, transform_opt](float val)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
             if (!transform_opt->is_valid(val))
                 throw invalid_value_exception(to_string() << "Unsupported transformation mode" << (int)val << " is out of range.");
 
@@ -40,6 +41,8 @@ namespace librealsense
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
+
             rs2::frame out = f;
             rs2::frame tgt, depth_data;
 

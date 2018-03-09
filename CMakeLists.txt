@@ -55,7 +55,7 @@ endif()
 # save-to-disk targets.
 option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 
-option(BUILD_WITH_OPENMP "Use OpenMP" ON)
+option(BUILD_WITH_OPENMP "Use OpenMP" OFF)
 
 option(USE_SYSTEM_LIBUSB "Use the distribution libusb package" ON)
 if (WIN32)
@@ -65,6 +65,11 @@ endif()
 option(ENABLE_ZERO_COPY "Enable zero copy functionality" OFF)
 if (ENABLE_ZERO_COPY)
     add_definitions(-DZERO_COPY)
+endif()
+
+option(RGB_USING_AVX2 "Unpack YUY2 to RGB8/RGBA8/BGR8/BGRA8/Y16 using AVX2" OFF)
+if (RGB_USING_AVX2)
+    add_definitions(-DRGB_AVX2)
 endif()
 
 if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
@@ -92,7 +97,11 @@ if(BUILD_WITH_OPENMP)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
     endif()
+elseif(UNIX)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif()
+
 
 option(BUILD_WITH_TM2 "Build with support for Intel TM2 tracking device" OFF)
 
@@ -290,6 +299,8 @@ if(BUILD_EASYLOGGINGPP)
     list(APPEND REALSENSE_HPP third-party/easyloggingpp/src/easylogging++.h)
 endif()
 
+option(BUILD_WITH_STATIC_CRT "Build with static link CRT" ON)
+
 if(WIN32)
     source_group("Source Files\\Backend" FILES
         src/win/win-helpers.cpp
@@ -475,15 +486,17 @@ if(WIN32)
         src/proc/disparity-transform.h
         )
 
-    foreach(flag_var
-            CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-            CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
-            CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-            CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-        if(${flag_var} MATCHES "/MD")
-            string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-        endif(${flag_var} MATCHES "/MD")
-    endforeach(flag_var)
+    if(BUILD_WITH_STATIC_CRT)
+        foreach(flag_var
+                CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+                CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
+                CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+            if(${flag_var} MATCHES "/MD")
+                string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+            endif(${flag_var} MATCHES "/MD")
+        endforeach(flag_var)
+    endif()
 else()
 
 endif()
@@ -590,6 +603,10 @@ if(UNIX)
     else(${MACHINE} MATCHES "arm-linux-gnueabihf")
       set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mssse3")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
+      if (RGB_USING_AVX2)
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mavx2")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
+      endif()
     endif(${MACHINE} MATCHES "arm-linux-gnueabihf")
 endif()
 
@@ -639,15 +656,17 @@ if (BUILD_WITH_TM2)
     list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
     find_package(libtm REQUIRED)
 
-    foreach(flag_var
-            CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-            CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
-            CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-            CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-        if(${flag_var} MATCHES "/MD")
-            string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-        endif(${flag_var} MATCHES "/MD")
-    endforeach(flag_var)
+    if(BUILD_WITH_STATIC_CRT)
+        foreach(flag_var
+                CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+                CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
+                CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+            if(${flag_var} MATCHES "/MD")
+                string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+            endif(${flag_var} MATCHES "/MD")
+        endforeach(flag_var)
+    endif()
 
     list(APPEND REALSENSE_HPP
     src/tm2/tm-context.h

@@ -417,6 +417,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("__getitem__", &rs2::frameset::operator[])
         .def("get_depth_frame", &rs2::frameset::get_depth_frame)
         .def("get_color_frame", &rs2::frameset::get_color_frame)
+        .def("get_infrared_frame", &rs2::frameset::get_infrared_frame, "index"_a = 0)
         .def("__iter__", [](rs2::frameset& self)
     {
         return py::make_iterator(self.begin(), self.end());
@@ -625,7 +626,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("start", [](const rs2::sensor& self, std::function<void(rs2::frame)> callback)
     { self.start(callback); }, "Start passing frames into user provided callback.", "callback"_a)
         .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) { self.start(queue); })
-        .def("stop", &rs2::sensor::stop, "Stop streaming.")
+        .def("stop", [](const rs2::sensor& self) { py::gil_scoped_release lock; self.stop(); }, "Stop streaming.")
         .def("get_stream_profiles", &rs2::sensor::get_stream_profiles, "Check if physical sensor is supported.")
         .def_property_readonly("profiles", &rs2::sensor::get_stream_profiles, "Check if physical sensor is supported.")
         .def(py::init<>())

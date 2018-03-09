@@ -219,9 +219,9 @@ struct glfw_state {
     double pitch;
     double last_x;
     double last_y;
-    bool ml; 
+    bool ml;
     float offset_x;
-    float offset_y; 
+    float offset_y;
     texture tex;
 };
 

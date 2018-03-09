@@ -252,7 +252,7 @@ public:
                     }
                     std::cout << "\n";
                 }
-                
+
                 std::cout << "Variance of noise for X, Y, Z axis \n";
                 for (int i = 0; i < 3; i++)
                     std::cout << intrinsics.noise_variances[i] << " ";

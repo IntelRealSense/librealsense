@@ -26,7 +26,6 @@ public struct RealSenseConfiguration
     public string RequestedSerialNumber;
     //public string PlaybackFile;
     //public string RecordPath;
-    public OptionValue[] SensorOptions;
 
 
     public Config ToPipelineConfig()

@@ -244,11 +244,12 @@ class RSOptionRange : public DictBase {
 class RSNotification : public DictBase {
  public:
   RSNotification(const char* des, rs2_time_t time, rs2_log_severity severity,
-      rs2_notification_category category) {
+      rs2_notification_category category, std::string serialized_data) {
     SetMember("descr", des);
     SetMemberT("timestamp", time);
     SetMemberT("severity", (int32_t)severity);
     SetMemberT("category", (int32_t)category);
+    SetMember("serializedData", serialized_data);
   }
 };
 
@@ -1293,9 +1294,11 @@ class NotificationCallbackInfo : public MainThreadCallbackInfo {
                            rs2_time_t time,
                            rs2_log_severity severity,
                            rs2_notification_category category,
+                           std::string serialized_data,
                            RSSensor* s) :
       desc_(desc), time_(time), severity_(severity),
-      category_(category), sensor_(s) {}
+      category_(category), serialized_data_(serialized_data),
+      sensor_(s) {}
   virtual ~NotificationCallbackInfo() {}
   virtual void Run();
 
@@ -1304,6 +1307,7 @@ class NotificationCallbackInfo : public MainThreadCallbackInfo {
   rs2_time_t time_;
   rs2_log_severity severity_;
   rs2_notification_category category_;
+  std::string serialized_data_;
   RSSensor* sensor_;
   rs2_error* error_;
 };
@@ -1320,8 +1324,10 @@ class NotificationCallback : public rs2_notifications_callback {
           &error_);
       rs2_notification_category category =
           rs2_get_notification_category(notification, &error_);
+      std::string serialized_data = rs2_get_notification_serialized_data(
+          notification, &error_);
       MainThreadCallback::NotifyMainThread(new NotificationCallbackInfo(desc,
-          time, severity, category, sensor_));
+          time, severity, category, serialized_data, sensor_));
     }
   }
   void release() override { delete this; }
@@ -1421,6 +1427,7 @@ class RSFrameSet : public Nan::ObjectWrap {
     Nan::SetPrototypeMethod(tpl, "getFrame", GetFrame);
     Nan::SetPrototypeMethod(tpl, "replaceFrame", ReplaceFrame);
     Nan::SetPrototypeMethod(tpl, "indexToStream", IndexToStream);
+    Nan::SetPrototypeMethod(tpl, "indexToStreamIndex", IndexToStreamIndex);
 
     constructor_.Reset(tpl->GetFunction());
     exports->Set(Nan::New("RSFrameSet").ToLocalChecked(), tpl->GetFunction());
@@ -1505,6 +1512,7 @@ class RSFrameSet : public Nan::ObjectWrap {
   static NAN_METHOD(GetFrame) {
     auto me = Nan::ObjectWrap::Unwrap<RSFrameSet>(info.Holder());
     rs2_stream stream = static_cast<rs2_stream>(info[0]->IntegerValue());
+    auto stream_index = info[1]->IntegerValue();
     if (me && me->frames_) {
       for (uint32_t i=0; i < me->frame_count_; i++) {
         rs2_frame* frame = rs2_extract_frame(me->frames_, i, &me->error_);
@@ -1512,7 +1520,8 @@ class RSFrameSet : public Nan::ObjectWrap {
           const rs2_stream_profile* profile = rs2_get_frame_stream_profile(
               frame, &me->error_);
           StreamProfileExtrator extrator(profile);
-          if (extrator.stream_ == stream) {
+          if (extrator.stream_ == stream && (!stream_index ||
+              (stream_index && stream_index == extrator.index_))) {
             info.GetReturnValue().Set(RSFrame::NewInstance(frame));
             return;
           }
@@ -1526,7 +1535,8 @@ class RSFrameSet : public Nan::ObjectWrap {
   static NAN_METHOD(ReplaceFrame) {
     auto me = Nan::ObjectWrap::Unwrap<RSFrameSet>(info.Holder());
     rs2_stream stream = static_cast<rs2_stream>(info[0]->IntegerValue());
-    auto target_frame = Nan::ObjectWrap::Unwrap<RSFrame>(info[1]->ToObject());
+    auto stream_index = info[1]->IntegerValue();
+    auto target_frame = Nan::ObjectWrap::Unwrap<RSFrame>(info[2]->ToObject());
 
     if (me && me->frames_) {
       for (uint32_t i = 0; i < me->frame_count_; i++) {
@@ -1535,7 +1545,8 @@ class RSFrameSet : public Nan::ObjectWrap {
           const rs2_stream_profile* profile = rs2_get_frame_stream_profile(
               frame, &me->error_);
           StreamProfileExtrator extrator(profile);
-          if (extrator.stream_ == stream) {
+          if (extrator.stream_ == stream && (!stream_index ||
+              (stream_index && stream_index == extrator.index_))) {
             target_frame->Replace(frame);
             info.GetReturnValue().Set(Nan::True());
             return;
@@ -1549,11 +1560,11 @@ class RSFrameSet : public Nan::ObjectWrap {
 
   static NAN_METHOD(IndexToStream) {
     auto me = Nan::ObjectWrap::Unwrap<RSFrameSet>(info.Holder());
-    int32_t index = info[0]->IntegerValue();
     if (!(me && me->frames_)) {
       info.GetReturnValue().Set(Nan::Undefined());
       return;
     }
+    int32_t index = info[0]->IntegerValue();
     rs2_frame* frame = rs2_extract_frame(me->frames_, index, &me->error_);
     if (!frame) {
       info.GetReturnValue().Set(Nan::Undefined());
@@ -1574,6 +1585,32 @@ class RSFrameSet : public Nan::ObjectWrap {
     rs2_get_stream_profile_data(profile, &stream, &format, &idx,
         &unique_id, &fps, &me->error_);
     info.GetReturnValue().Set(Nan::New(stream));
+    rs2_release_frame(frame);
+  }
+
+  static NAN_METHOD(IndexToStreamIndex) {
+    auto me = Nan::ObjectWrap::Unwrap<RSFrameSet>(info.Holder());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me || !me->frames_) return;
+
+    int32_t index = info[0]->IntegerValue();
+    rs2_frame* frame = rs2_extract_frame(me->frames_, index, &me->error_);
+    if (!frame) return;
+
+    const rs2_stream_profile* profile = rs2_get_frame_stream_profile(
+        frame, &me->error_);
+    if (!profile) {
+      rs2_release_frame(frame);
+      return;
+    }
+    rs2_stream stream = RS2_STREAM_ANY;
+    rs2_format format = RS2_FORMAT_ANY;
+    int32_t fps = 0;
+    int32_t idx = 0;
+    int32_t unique_id = 0;
+    rs2_get_stream_profile_data(profile, &stream, &format, &idx,
+        &unique_id, &fps, &me->error_);
+    info.GetReturnValue().Set(Nan::New(idx));
     rs2_release_frame(frame);
   }
 
@@ -2223,6 +2260,7 @@ class RSDevice : public Nan::ObjectWrap {
     // Methods for record
     Nan::SetPrototypeMethod(tpl, "pauseRecord", PauseRecord);
     Nan::SetPrototypeMethod(tpl, "resumeRecord", ResumeRecord);
+    Nan::SetPrototypeMethod(tpl, "getFileName", GetFileName);
 
     // Methods for playback
     Nan::SetPrototypeMethod(tpl, "pausePlayback", PausePlayback);
@@ -2388,6 +2426,15 @@ class RSDevice : public Nan::ObjectWrap {
     auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
     if (me) rs2_record_device_resume(me->dev_, &me->error_);
     info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(GetFileName) {
+    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
+    info.GetReturnValue().Set(Nan::Undefined());
+    if (!me) return;
+
+    auto file = rs2_record_device_filename(me->dev_, &me->error_);
+    info.GetReturnValue().Set(Nan::New(file).ToLocalChecked());
   }
 
   static NAN_METHOD(PausePlayback) {
@@ -2570,7 +2617,8 @@ void NotificationCallbackInfo::Run() {
   SetConsumed();
   Nan::HandleScope scope;
   v8::Local<v8::Value> args[1] = {
-    RSNotification(desc_, time_, severity_, category_).GetObject()
+    RSNotification(
+        desc_, time_, severity_, category_, serialized_data_).GetObject()
   };
   Nan::MakeCallback(sensor_->handle(),
       sensor_->notification_callback_name_.c_str(), 1, args);
@@ -4179,6 +4227,8 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_FRAME_METADATA_WHITE_BALANCE);
   _FORCE_SET_ENUM(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
   _FORCE_SET_ENUM(RS2_FRAME_METADATA_TEMPERATURE);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_BACKEND_TIMESTAMP);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_ACTUAL_FPS);
   _FORCE_SET_ENUM(RS2_FRAME_METADATA_COUNT);
 
   // rs2_distortion
