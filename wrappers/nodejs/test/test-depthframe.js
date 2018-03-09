@@ -84,7 +84,7 @@ describe('DepthFrame test', function() {
   });
 
   it('Testing property timestampDomain', () => {
-    assert.equal(typeof frame.timestampDomain, 'string');
+    assert.equal(typeof frame.timestampDomain, 'number');
   });
 
   it('Testing method frameMetadata - 0 argument', () => {
@@ -129,7 +129,6 @@ describe('DepthFrame test', function() {
   it('Testing method getData - buffer argument', () => {
     const len = frame.dataByteLength;
     let buf = new ArrayBuffer(len);
-    console.log(typeof buf);
     assert.doesNotThrow(() => {
       frame.getData(buf);
     });

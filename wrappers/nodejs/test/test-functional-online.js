@@ -253,3 +253,34 @@ describe('enum value test', function() {
     }
   });
 });
+
+describe('infrared frame tests', function() {
+  let ctx;
+  let pipe;
+  let cfg;
+  before(function() {
+    ctx = new rs2.Context();
+    pipe = new rs2.Pipeline(ctx);
+    cfg = new rs2.Config();
+  });
+
+  after(function() {
+    rs2.cleanup();
+  });
+
+  it('getInfraredFrame', () => {
+    cfg.enableStream(rs2.stream.STREAM_INFRARED, 1, 640, 480, rs2.format.FORMAT_Y8, 60);
+    pipe.start(cfg);
+    const frames = pipe.waitForFrames();
+    assert.equal(frames.size === 1, true);
+    let frame = frames.getInfraredFrame(1);
+    assert.equal(frame.profile.streamType === rs2.stream.STREAM_INFRARED, true);
+    assert.equal(frame.profile.streamIndex === 1, true);
+
+    // Get the frame that first match
+    frame = frames.getInfraredFrame();
+    assert.equal(frame.profile.streamType === rs2.stream.STREAM_INFRARED, true);
+    assert.equal(frame.profile.streamIndex === 1, true);
+    pipe.stop();
+  });
+});
