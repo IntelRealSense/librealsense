@@ -26,10 +26,10 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 
 > See [getting started with OpenCV and RealSense](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/opencv)
 
-1. [ImShow](./imshow) - Minimal OpenCV application for visualizing depth data
-2. [GrabCuts](./grabcuts) - Simple background removal using the GrabCut algorithm
-3. [Latency-Tool](./latency-tool) - Basic latency estimation using computer vision
-3. [DNN](./dnn) - Intel RealSense camera used for real-time object-detection
+1. [ImShow](../wrappers/opencv/imshow) - Minimal OpenCV application for visualizing depth data
+2. [GrabCuts](../wrappers/opencv/grabcuts) - Simple background removal using the GrabCut algorithm
+3. [Latency-Tool](../wrappers/opencv/latency-tool) - Basic latency estimation using computer vision
+3. [DNN](../wrappers/opencv/dnn) - Intel RealSense camera used for real-time object-detection
 
 ### Community Projects:
 
