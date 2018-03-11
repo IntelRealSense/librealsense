@@ -24,13 +24,6 @@ namespace librealsense
         virtual uint32_t get_height() const = 0;
         virtual void set_dims(uint32_t width, uint32_t height) = 0;
 
-        bool has_attributes(uint32_t width, uint32_t height, rs2_stream stream, rs2_format format, uint32_t framerate, int streamindex) const
-        {
-            return ((width == get_width()) && (height == get_height()) &&
-                    (format == RS2_FORMAT_ANY || format == get_format()) &&
-                    (stream == RS2_STREAM_ANY || stream == get_stream_type()) &&
-                    (framerate == get_framerate()) && (streamindex == get_stream_index()));
-        }
     };
 
     MAP_EXTENSION(RS2_EXTENSION_VIDEO, librealsense::video_sensor_interface);
