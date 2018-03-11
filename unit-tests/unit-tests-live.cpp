@@ -183,7 +183,6 @@ std::pair<std::vector<sensor>, std::vector<profile>> configure_all_supported_str
 
 TEST_CASE("Sync sanity", "[live]") {
 
-    const double DELTA = 1000 / 30; //MS between frames
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -193,9 +192,11 @@ TEST_CASE("Sync sanity", "[live]") {
         auto dev = list[0];
         disable_sensitive_options_for(dev);
 
-
+        std::string dev_name(dev.get_info(RS2_CAMERA_INFO_NAME));
+        bool usb3_device = (std::string::npos == dev_name.find("USB2"));
+        int fps = usb3_device ? 30 : 15; // USB2 Mode
         rs2::syncer sync;
-        auto profiles = configure_all_supported_streams(dev);
+        auto profiles = configure_all_supported_streams(dev,640,480, fps);
 
         for (auto s : dev.query_sensors())
         {
@@ -203,7 +204,7 @@ TEST_CASE("Sync sanity", "[live]") {
         }
 
         std::vector<std::vector<double>> all_timestamps;
-        auto actual_fps =  30;
+        auto actual_fps = fps;
         bool hw_timestamp_domain = false;
         bool system_timestamp_domain = false;
         for (auto i = 0; i < 200; i++)
@@ -270,7 +271,6 @@ TEST_CASE("Sync sanity", "[live]") {
 
 TEST_CASE("Sync different fps", "[live][!mayfail]") {
 
-    const double DELTA = 20;
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -301,10 +301,16 @@ TEST_CASE("Sync different fps", "[live][!mayfail]") {
         std::map<rs2_stream, rs2::sensor*> profiles_sensors;
         std::map<rs2::sensor*, rs2_stream> sensors_profiles;
 
+        std::string dev_name(dev.get_info(RS2_CAMERA_INFO_NAME));
+        bool usb3_device = (std::string::npos == dev_name.find("USB2"));
+        int fps_step = usb3_device ? 30 : 15; // USB2 Mode
+
         std::vector<int> fps(sensors.size(), 0);
+
+        // The heuristic for FPS selection need to be better explained and probably refactored
         for (auto i = 0; i < fps.size(); i++)
         {
-            fps[i] = (fps.size() - i - 1) * 30 % 90 + 30;
+            fps[i] = (fps.size() - i - 1) * fps_step % 90 + fps_step;
         }
         std::vector<std::vector<rs2::sensor*>> streams_groups(fps.size());
         for (auto i = 0; i < sensors.size(); i++)
@@ -330,7 +336,6 @@ TEST_CASE("Sync different fps", "[live][!mayfail]") {
 
             }
         }
-
 
         std::vector<std::vector<rs2_stream>> frames_arrived;
 
@@ -420,12 +425,15 @@ TEST_CASE("Sync start stop", "[live]") {
 
         rs2::stream_profile mode;
         auto mode_index = 0;
+        std::string dev_name(dev.get_info(RS2_CAMERA_INFO_NAME));
+        bool usb3_device = (std::string::npos == dev_name.find("USB2"));
+        int req_fps = usb3_device ? 60 : 30; // USB2 Mode has only a single resolution for 60 fps which is not sufficient to run the test
 
         do
         {
             REQUIRE(get_mode(dev, &mode, mode_index));
             mode_index++;
-        } while (mode.fps() != 60);
+        } while (mode.fps() != req_fps);
 
         auto video = mode.as<rs2::video_stream_profile>();
         auto res = configure_all_supported_streams(dev, video.width(), video.height(), mode.fps());
@@ -452,8 +460,17 @@ TEST_CASE("Sync start stop", "[live]") {
 
         REQUIRE(get_mode(dev, &other_mode, mode_index));
         auto other_video = other_mode.as<rs2::video_stream_profile>();
-        while ((other_video.height() == video.height() && other_video.width() == video.width()) || other_video.fps() != 60)
+        while ((other_video.height() == video.height() && other_video.width() == video.width()) || other_video.fps() != req_fps)
         {
+            CAPTURE(mode_index);
+            CAPTURE(video.format());
+            CAPTURE(video.width());
+            CAPTURE(video.height());
+            CAPTURE(video.fps());
+            CAPTURE(other_video.format());
+            CAPTURE(other_video.width());
+            CAPTURE(other_video.height());
+            CAPTURE(other_video.fps());
             REQUIRE(get_mode(dev, &other_mode, mode_index));
             mode_index++;
             other_video = other_mode.as<rs2::video_stream_profile>();
@@ -513,7 +530,6 @@ TEST_CASE("Device metadata enumerates correctly", "[live]")
 ////////////////////////////////////////////
 ////// Test basic streaming functionality //
 ////////////////////////////////////////////
-
 TEST_CASE("Start-Stop stream sequence", "[live]")
 {
     // Require at least one device to be plugged in
@@ -1570,7 +1586,15 @@ TEST_CASE("Multiple devices", "[live][multicam]")
 
                             // selected, but not streaming
                             {
-                                CAPTURE(subdevice2.get_stream_profiles().front().stream_type());
+                                auto profile = subdevice2.get_stream_profiles().front();
+
+                                CAPTURE(profile.stream_type());
+                                CAPTURE(profile.format());
+                                CAPTURE(profile.fps());
+                                auto vid_p = profile.as<rs2::video_stream_profile>();
+                                CAPTURE(vid_p.width());
+                                CAPTURE(vid_p.height());
+
                                 REQUIRE_NOTHROW(subdevice2.open(subdevice2.get_stream_profiles().front()));
                                 REQUIRE_NOTHROW(subdevice2.start([](rs2::frame fref) {}));
                                 REQUIRE_NOTHROW(subdevice2.stop());
@@ -1613,8 +1637,25 @@ TEST_CASE("Multiple devices", "[live][multicam]")
 
                         disable_sensitive_options_for(dev2);
 
-                        REQUIRE_NOTHROW(dev1.open(dev1.get_stream_profiles().front()));
-                        REQUIRE_NOTHROW(dev2.open(dev2.get_stream_profiles().front()));
+                        auto dev1_profile = dev1.get_stream_profiles().front();
+                        auto dev2_profile = dev2.get_stream_profiles().front();
+
+                        CAPTURE(dev1_profile.stream_type());
+                        CAPTURE(dev1_profile.format());
+                        CAPTURE(dev1_profile.fps());
+                        auto vid_p1 = dev1_profile.as<rs2::video_stream_profile>();
+                        CAPTURE(vid_p1.width());
+                        CAPTURE(vid_p1.height());
+
+                        CAPTURE(dev2_profile.stream_type());
+                        CAPTURE(dev2_profile.format());
+                        CAPTURE(dev2_profile.fps());
+                        auto vid_p2 = dev2_profile.as<rs2::video_stream_profile>();
+                        CAPTURE(vid_p2.width());
+                        CAPTURE(vid_p2.height());
+
+                        REQUIRE_NOTHROW(dev1.open(dev1_profile));
+                        REQUIRE_NOTHROW(dev2.open(dev2_profile));
 
                         REQUIRE_NOTHROW(dev1.start([](rs2::frame fref) {}));
                         REQUIRE_NOTHROW(dev2.start([](rs2::frame fref) {}));
@@ -2743,8 +2784,10 @@ static const std::map<std::string, device_profiles> pipeline_default_configurati
 /* RS430_MM_RGB/AWGTC*/ { "0B01",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
 /* RS405/DS5U*/         { "0B03",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
 /* RS435_RGB/AWGC*/     { "0B07",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true }},
-
 /* SR300*/              { "0AA5",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
+/* D410/USB2*/          { "0B15",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
+/* D415/USB2*/          { "0B16",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
+/* D435/USB2*/          { "0B17",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
 };
 
 
@@ -2899,6 +2942,13 @@ static const std::map<std::string, device_profiles> pipeline_custom_configuratio
     /* SR300*/          { "0AA5",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16,  640, 240, 0 },
                                      { RS2_STREAM_INFRARED, RS2_FORMAT_Y8,   640, 240, 1 },
                                      { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
+
+    /* SR300*/          { "0AA5",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },
+                                     { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
+
+    /* D410/USB2*/      { "0B15",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 480, 270, 0 } }, 30, true } },
+    /* D415/USB2*/      { "0B16",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 424, 240, 0 } }, 30, true } },
+    /* D435/USB2*/      { "0B17",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 424, 240, 0 } }, 30, true } },
 };
 
 TEST_CASE("Pipeline enable stream", "[live]") {
@@ -2989,9 +3039,13 @@ static const std::map<std::string, device_profiles> pipeline_autocomplete_config
     /* RS405/DS5U*/     { "0B03",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 0, 0, 1 } }, 30, true } },
     /* RS435_RGB/AWGC*/ { "0B07",{ { /*{ RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0 },*/{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
 
-    /* SR300*/{ "0AA5",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0 },
-                           { RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 0, 0, 1 },
-                           { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
+    /* SR300*/          { "0AA5",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0 },
+                                     { RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 0, 0, 1 },
+                                     { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
+    /* D410/USB2*/      { "0B15",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 0, 0, 0 } }, 15, true } },
+    /*  AWGC/ASRC should be invoked with 30 fps in order to avoid selecting FullHD for Color sensor at least with FW 5.9.6*/
+    /* D415/USB2*/      { "0B16",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 60, true } },
+    /* D435/USB2*/      { "0B17",{ { /*{ RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },*/{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 60, true } },
 };
 
 TEST_CASE("Pipeline enable stream auto complete", "[live]")
@@ -3225,7 +3279,7 @@ TEST_CASE("Pipeline disable stream", "[live]") {
         }
     }
 }
-
+// The test relies on default profiles that may alter
 TEST_CASE("Pipeline with specific device", "[live]")
 {
 
@@ -3422,6 +3476,12 @@ static const std::map<std::string, device_profiles> pipeline_configurations_for_
     /* SR300*/          { "0AA5",{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16, 640, 240, 0 },
                                      { RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 240, 1 },
                                      { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
+    /* D410/USB2*/      { "0B15",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },
+                                     { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 480, 270, 0 } }, 30, true } },
+    /* D415/USB2*/      { "0B16",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },
+                                     { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 424, 240, 0 } }, 30, true } },
+    /* D435/USB2*/      { "0B17",{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },
+                                     { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 424, 240, 0 } }, 30, true } },
                         };
 
 TEST_CASE("Pipeline get selection", "[live]") {
@@ -3733,14 +3793,19 @@ TEST_CASE("Pipeline config enable resolve start flow", "[live]") {
         CAPTURE(depth_profile.height());
         std::vector<device_profiles> frames;
 
+
+        std::string dev_name(dev.get_info(RS2_CAMERA_INFO_NAME));
+        bool usb3_device = (std::string::npos == dev_name.find("USB2"));
+        uint32_t timeout = usb3_device ? 500 : 2000; // for USB2 it takes longer to produe the initial frames
+
         for (auto i = 0; i < 5; i++)
-            REQUIRE_NOTHROW(pipe.wait_for_frames(500));
+            REQUIRE_NOTHROW(pipe.wait_for_frames(timeout));
 
         REQUIRE_NOTHROW(pipe.stop());
         REQUIRE_NOTHROW(pipe.start(cfg));
 
         for (auto i = 0; i < 5; i++)
-            REQUIRE_NOTHROW(pipe.wait_for_frames(500));
+            REQUIRE_NOTHROW(pipe.wait_for_frames(timeout));
 
         REQUIRE_NOTHROW(cfg.disable_all_streams());
 
