@@ -13,10 +13,11 @@
 ## Documentation
 
 * [API Architecture](api_arch.md) - Overview of the high-level concepts
-* [C API](../include/librealsense2/rs.h) - With doxygen-style API comments
+* [C API](../include/librealsense2) - With doxygen-style API comments
 * To build documentation locally from sources, on Ubuntu run the following commands:
   * `sudo apt-get install doxygen`
   * `doxygen doc/doxygen/doxyfile`
+  * Please also refer to [API How-To](https://github.com/IntelRealSense/librealsense/wiki/API-How-To) for further doc how to use the APIs
 * [Frame Management](frame_lifetime.md) - Frame Memory Management, Threading Model and Synchronization
 * [Frame Metadata](frame_metadata.md) - Support for frame-metadata attributes
 * [Getting Started](stepbystep/getting_started_with_openCV.md) - Getting started with OpenCV
