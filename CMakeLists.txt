@@ -164,6 +164,8 @@ set(REALSENSE_CPP
     src/win/win-hid.cpp
     src/win/win-backend.cpp
 
+    src/l500/l500.cpp
+    src/l500/l500-private.cpp
 
     src/ds5/advanced_mode/rs_advanced_mode.cpp
     src/ds5/advanced_mode/presets.cpp
@@ -276,6 +278,9 @@ set(REALSENSE_HPP
     src/win/win-backend.h
     src/api.h
     src/core/serialization.h
+
+    src/l500/l500.h
+    src/l500/l500-private.h
 
     src/media/record/record_device.h
     src/media/record/record_sensor.h
@@ -404,6 +409,9 @@ if(WIN32)
         )
 
     source_group("Source Files\\Devices" FILES
+        src/l500/l500.cpp
+        src/l500/l500-private.cpp
+
         src/ds5/ds5-device.cpp
         src/ds5/ds5-factory.cpp
         src/ds5/ds5-options.cpp
@@ -430,6 +438,9 @@ if(WIN32)
         )
 
     source_group("Header Files\\Devices" FILES
+        src/l500/l500.h
+        src/l500/l500-private.h
+
         src/ds5/ds5-device.h
         src/ds5/ds5-options.h
         src/ds5/ds5-private.h

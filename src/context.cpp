@@ -8,6 +8,7 @@
 
 #include <array>
 #include <chrono>
+#include "l500/l500.h"
 #include "ivcam/sr300.h"
 #include "ds5/ds5-factory.h"
 #include "ds5/ds5-timestamp.h"
@@ -319,6 +320,9 @@ namespace librealsense
         auto tm2_devices = tm2_info::pick_tm2_devices(ctx, _tm2_context->get_manager(), _tm2_context->query_devices());
         std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
 #endif
+
+        auto l500_devices = l500_info::pick_l500_devices(ctx, devices.uvc_devices, devices.usb_devices);
+        std::copy(begin(l500_devices), end(l500_devices), std::back_inserter(list));
 
         auto ds5_devices = ds5_info::pick_ds5_devices(ctx, devices);
         std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
