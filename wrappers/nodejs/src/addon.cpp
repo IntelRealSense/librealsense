@@ -2632,7 +2632,7 @@ void PlaybackStatusCallbackInfo::Run() {
       dev_->status_changed_callback_method_name_.c_str(), 1, args);
 }
 
-class RSPointCloud : public Nan::ObjectWrap {
+class RSPointCloud : public Nan::ObjectWrap, Options {
  public:
   static void Init(v8::Local<v8::Object> exports) {
     v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
@@ -2643,8 +2643,23 @@ class RSPointCloud : public Nan::ObjectWrap {
     Nan::SetPrototypeMethod(tpl, "calculate", Calculate);
     Nan::SetPrototypeMethod(tpl, "mapTo", MapTo);
 
+    // options API
+    Nan::SetPrototypeMethod(tpl, "supportsOption", SupportsOption);
+    Nan::SetPrototypeMethod(tpl, "getOption", GetOption);
+    Nan::SetPrototypeMethod(tpl, "setOption", SetOption);
+    Nan::SetPrototypeMethod(tpl, "getOptionRange", GetOptionRange);
+    Nan::SetPrototypeMethod(tpl, "isOptionReadonly", IsOptionReadonly);
+    Nan::SetPrototypeMethod(tpl, "getOptionDescription", GetOptionDescription);
+    Nan::SetPrototypeMethod(tpl, "getOptionValueDescription",
+        GetOptionValueDescription);
+
     constructor_.Reset(tpl->GetFunction());
     exports->Set(Nan::New("RSPointCloud").ToLocalChecked(), tpl->GetFunction());
+  }
+
+  rs2_options* GetOptionsPointer() override {
+    // we have to reinterpret_cast as they are unrelated types to compiler
+    return reinterpret_cast<rs2_options*>(processing_block_);
   }
 
  private:
@@ -2724,6 +2739,55 @@ class RSPointCloud : public Nan::ObjectWrap {
     // rs2_process_frame will release the input frame, so we need to addref
     rs2_frame_add_ref(frame->frame_, &me->error_);
     rs2_process_frame(me->processing_block_, frame->frame_, &me->error_);
+  }
+
+  static NAN_METHOD(SupportsOption) {
+    auto me = Nan::ObjectWrap::Unwrap<RSPointCloud>(info.Holder());
+    if (me) return me->SupportsOptionInternal(info);
+
+    info.GetReturnValue().Set(Nan::False());
+  }
+
+  static NAN_METHOD(GetOption) {
+    auto me = Nan::ObjectWrap::Unwrap<RSPointCloud>(info.Holder());
+    if (me) return me->GetOptionInternal(info);
+
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(GetOptionDescription) {
+    auto me = Nan::ObjectWrap::Unwrap<RSPointCloud>(info.Holder());
+    if (me) return me->GetOptionDescriptionInternal(info);
+
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(GetOptionValueDescription) {
+    auto me = Nan::ObjectWrap::Unwrap<RSPointCloud>(info.Holder());
+    if (me) return me->GetOptionValueDescriptionInternal(info);
+
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(SetOption) {
+    auto me = Nan::ObjectWrap::Unwrap<RSPointCloud>(info.Holder());
+    if (me) return me->SetOptionInternal(info);
+
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(GetOptionRange) {
+    auto me = Nan::ObjectWrap::Unwrap<RSPointCloud>(info.Holder());
+    if (me) return me->GetOptionRangeInternal(info);
+
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+
+  static NAN_METHOD(IsOptionReadonly) {
+    auto me = Nan::ObjectWrap::Unwrap<RSPointCloud>(info.Holder());
+    if (me) return me->IsOptionReadonlyInternal(info);
+
+    info.GetReturnValue().Set(Nan::False());
   }
 
  private:
