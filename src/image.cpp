@@ -29,6 +29,7 @@ namespace librealsense
     {
         switch (format)
         {
+        case RS2_FORMAT_CONFIDENCE: return 4;
         case RS2_FORMAT_Z16: return  16;
         case RS2_FORMAT_DISPARITY16: return 16;
         case RS2_FORMAT_DISPARITY32: return 32;
@@ -1077,10 +1078,11 @@ for (int i = 0; i < n / 16; i++)
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGR8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGRA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGRA8 } } } } };
 
-    const native_pixel_format pf_y8         = { 'GREY', 1, 1,{  { requires_processing, &copy_pixels<1>,                                { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8  } } } } };
-    const native_pixel_format pf_y16        = { 'Y16 ', 1, 2,{  { true,  &unpack_y16_from_y16_10,                        { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_y8i        = { 'Y8I ', 1, 2,{  { true,  &unpack_y8_y8_from_y8i,                         { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8  },{ { RS2_STREAM_INFRARED, 2 }, RS2_FORMAT_Y8 } } } } };
-    const native_pixel_format pf_y12i       = { 'Y12I', 1, 3,{  { true,  &unpack_y16_y16_from_y12i_10,                   { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y16 },{ { RS2_STREAM_INFRARED, 2 }, RS2_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_c          = { 'C   ', 1, 1,{  { false, &copy_pixels<1>,                    { { RS2_STREAM_CONFIDENCE_MAP, RS2_FORMAT_CONFIDENCE } } } } };
+    const native_pixel_format pf_y8         = { 'GREY', 1, 1,{  { requires_processing, &copy_pixels<1>,                  { { { RS2_STREAM_INFRARED, 1 },  RS2_FORMAT_Y8  } } } } };
+    const native_pixel_format pf_y16        = { 'Y16 ', 1, 2,{  { true,  &unpack_y16_from_y16_10,                        { { { RS2_STREAM_INFRARED, 1 },  RS2_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_y8i        = { 'Y8I ', 1, 2,{  { true,  &unpack_y8_y8_from_y8i,                         { { { RS2_STREAM_INFRARED, 1 },  RS2_FORMAT_Y8  },{ { RS2_STREAM_INFRARED, 2 }, RS2_FORMAT_Y8 } } } } };
+    const native_pixel_format pf_y12i       = { 'Y12I', 1, 3,{  { true,  &unpack_y16_y16_from_y12i_10,                   { { { RS2_STREAM_INFRARED, 1 },  RS2_FORMAT_Y16 },{ { RS2_STREAM_INFRARED, 2 }, RS2_FORMAT_Y16 } } } } };
     const native_pixel_format pf_z16        = { 'Z16 ', 1, 2,{  { requires_processing, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 } } },
                                                                 // The Disparity_Z is not applicable for D4XX. TODO - merge with INVZ when confirmed
                                                                 /*{ false, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH,    RS2_FORMAT_DISPARITY16 } } }*/ } };

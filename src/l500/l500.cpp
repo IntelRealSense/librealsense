@@ -13,9 +13,9 @@ namespace librealsense
     std::shared_ptr<device_interface> l500_info::create(std::shared_ptr<context> ctx,
         bool register_device_notifications) const
     {
-        return std::make_shared<l500_camera>(ctx, _depth, _hwm,
-            this->get_device_data(),
-            register_device_notifications);
+        return std::make_shared<l500_device>(ctx,
+                                             this->get_device_data(),
+                                             register_device_notifications);
     }
 
     std::vector<std::shared_ptr<device_info>> l500_info::pick_l500_devices(
@@ -37,7 +37,7 @@ namespace librealsense
 
                 if (ivcam2::try_fetch_usb_device(usb, depth, hwm))
                 {
-                    auto info = std::make_shared<l500_info>(ctx, depth, hwm);
+                    auto info = std::make_shared<l500_info>(ctx, group, hwm);
                     chosen.push_back(depth);
                     results.push_back(info);
                 }
@@ -57,49 +57,68 @@ namespace librealsense
         return results;
     }
 
-    l500_camera::l500_camera(std::shared_ptr<context> ctx,
-                             const platform::uvc_device_info &depth,
-                             const platform::usb_device_info &hwm_device,
+    l500_device::l500_device(std::shared_ptr<context> ctx,
                              const platform::backend_device_group& group,
                              bool register_device_notifications)
         : device(ctx, group, register_device_notifications),
-        _depth_device_idx(add_sensor(create_depth_device(ctx, depth))),
-        _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(ctx->get_backend().create_usb_device(hwm_device), get_depth_sensor()))),
+        _depth_device_idx(add_sensor(create_depth_device(ctx, group.uvc_devices))),
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
-        _ir_stream(new stream(RS2_STREAM_INFRARED))
+        _ir_stream(new stream(RS2_STREAM_INFRARED)),
+        _confidence_stream(new stream(RS2_STREAM_CONFIDENCE_MAP))
     {
-        static auto device_name = "Intel RealSense L500";
+        static const auto device_name = "Intel RealSense L500";
 
         using namespace ivcam2;
+
+        auto&& backend = ctx->get_backend();
+
+#ifdef HWM_OVER_XU
+        _hw_monitor = std::make_shared<hw_monitor>(
+                    std::make_shared<locked_transfer>(std::make_shared<command_transfer_over_xu>(
+                                                      get_depth_sensor(), depth_xu, L500_HWMONITOR),
+                                                      get_depth_sensor()));
+#else
+        _hw_monitor = std::make_shared<hw_monitor>(
+                    std::make_shared<locked_transfer>(backend.create_usb_device(group.usb_devices.front()),
+                                                                                get_depth_sensor()));
+#endif
 
         auto fw_version = _hw_monitor->get_firmware_version_string(GVD, fw_version_offset);
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
-        auto pid_hex_str = hexify(depth.pid >> 8) + hexify(static_cast<uint8_t>(depth.pid));
+        auto pid = group.uvc_devices.front().pid;
+        auto pid_hex_str = hexify(pid >> 8) + hexify(static_cast<uint8_t>(pid));
 
         register_info(RS2_CAMERA_INFO_NAME, device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, fw_version);
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
-        register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, depth.device_path);
+        register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
     }
 
-    void l500_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
+    void l500_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
     {
         throw not_implemented_exception("create_snapshot(...) not implemented!");
     }
 
-    void l500_camera::enable_recording(std::function<void(const debug_interface&)> record_action)
+    void l500_device::enable_recording(std::function<void(const debug_interface&)> record_action)
     {
         throw not_implemented_exception("enable_recording(...) not implemented!");
     }
 
-    std::shared_ptr<matcher> l500_camera::create_matcher(const frame_holder& frame) const
+    void l500_device::force_hardware_reset() const
+    {
+        command cmd(ivcam2::fw_cmd::HWReset);
+        cmd.require_response = false;
+        _hw_monitor->send(cmd);
+    }
+
+    std::shared_ptr<matcher> l500_device::create_matcher(const frame_holder& frame) const
     {
         std::vector<std::shared_ptr<matcher>> depth_matchers;
 
-        std::vector<stream_interface*> streams = { _depth_stream.get(), _ir_stream.get() };
+        std::vector<stream_interface*> streams = { _depth_stream.get(), _ir_stream.get(), _confidence_stream.get() };
 
         for (auto& s : streams)
         {

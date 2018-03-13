@@ -50,6 +50,7 @@ namespace librealsense
     extern const native_pixel_format pf_gyro_axes;   // Parse gyro HID raw data to 3 axes
     extern const native_pixel_format pf_rgb888;
     extern const native_pixel_format pf_gpio_timestamp; // Parse GPIO timestamp
+    extern const native_pixel_format pf_c;
 }
 
 #endif

@@ -20,59 +20,51 @@ namespace librealsense
 {
     const uint16_t L500_PID = 0x0b0d;
 
-    class l500_camera;
+    class l500_device;
 
     class l500_timestamp_reader : public frame_timestamp_reader
     {
-        bool started;
-        uint64_t total;
-
-        uint32_t last_timestamp;
-        mutable uint64_t counter;
+        static const int pins = 3;
+        mutable std::vector<int64_t> counter;
+        std::shared_ptr<platform::time_service> _ts;
         mutable std::recursive_mutex _mtx;
     public:
-        l500_timestamp_reader() : started(false), total(0), last_timestamp(0), counter(0) {}
+        l500_timestamp_reader(std::shared_ptr<platform::time_service> ts)
+            : counter(pins), _ts(ts)
+        {
+            reset();
+        }
 
         void reset() override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
-            started = false;
-            total = 0;
-            last_timestamp = 0;
-            counter = 0;
-        }
-
-        double get_frame_timestamp(const request_mapping& /*mode*/, const platform::frame_object& fo) override
-        {
-            std::lock_guard<std::recursive_mutex> lock(_mtx);
-            // Timestamps are encoded within the first 32 bits of the image and provided in 10nsec units
-            uint32_t rolling_timestamp = *reinterpret_cast<const uint32_t *>(fo.pixels);
-            if (!started)
+            for (auto i = 0; i < pins; ++i)
             {
-                total = last_timestamp = rolling_timestamp;
-                last_timestamp = rolling_timestamp;
-                started = true;
+                counter[i] = 0;
             }
-
-            const int delta = rolling_timestamp - last_timestamp; // NOTE: Relies on undefined behavior: signed int wraparound
-            last_timestamp = rolling_timestamp;
-            total += delta;
-
-            return total * 0.00001; // to msec
         }
 
-        unsigned long long get_frame_counter(const request_mapping & /*mode*/, const platform::frame_object& fo) const override
+        rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
-            return ++counter;
+            return _ts->get_time();
+        }
+
+        unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override
+        {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
+            auto pin_index = 0;
+            if (mode.pf->fourcc == 0x5a313620) // Z16
+                pin_index = 1;
+            else if (mode.pf->fourcc == 0x43202020) // Confidence
+                pin_index = 2;
+
+            return ++counter[pin_index];
         }
 
         rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override
         {
-            if (fo.metadata_size >= platform::uvc_header_size)
-                return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
-            else
-                return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
+            return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
         }
     };
 
@@ -83,11 +75,11 @@ namespace librealsense
             bool register_device_notifications) const override;
 
         l500_info(std::shared_ptr<context> ctx,
-                  platform::uvc_device_info depth,
+                  std::vector<platform::uvc_device_info> depth,
                   platform::usb_device_info hwm)
             : device_info(ctx),
-            _depth(std::move(depth)),
-            _hwm(std::move(hwm))
+              _depth(std::move(depth)),
+              _hwm(std::move(hwm))
         {}
 
         static std::vector<std::shared_ptr<device_info>> pick_l500_devices(
@@ -101,19 +93,18 @@ namespace librealsense
         }
 
     private:
-        platform::uvc_device_info _depth;
+        std::vector<platform::uvc_device_info> _depth;
         platform::usb_device_info _hwm;
     };
 
-    class l500_camera final : public virtual device, public debug_interface
+    class l500_device final : public virtual device, public debug_interface
     {
     public:
         class l500_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_sensor
         {
         public:
-            explicit l500_depth_sensor(l500_camera* owner, std::shared_ptr<platform::uvc_device> uvc_device,
-                                       std::unique_ptr<frame_timestamp_reader> timestamp_reader,
-                                       std::shared_ptr<context> ctx)
+            explicit l500_depth_sensor(l500_device* owner, std::shared_ptr<platform::uvc_device> uvc_device,
+                                       std::unique_ptr<frame_timestamp_reader> timestamp_reader)
                 : uvc_sensor("L500 Depth Sensor", uvc_device, move(timestamp_reader), owner), _owner(owner)
             {}
 
@@ -138,6 +129,10 @@ namespace librealsense
                     else if (p->get_stream_type() == RS2_STREAM_INFRARED)
                     {
                         assign_stream(_owner->_ir_stream, p);
+                    }
+                    else if (p->get_stream_type() == RS2_STREAM_CONFIDENCE_MAP)
+                    {
+                        assign_stream(_owner->_confidence_stream, p);
                     }
 
                     // Register intrinsics
@@ -176,20 +171,23 @@ namespace librealsense
                 });
             }
         private:
-            const l500_camera* _owner;
+            const l500_device* _owner;
         };
 
         std::shared_ptr<uvc_sensor> create_depth_device(std::shared_ptr<context> ctx,
-            const platform::uvc_device_info& depth)
+                                                        const std::vector<platform::uvc_device_info>& all_device_infos)
         {
             auto&& backend = ctx->get_backend();
 
-            // create uvc-endpoint from backend uvc-device
-            auto depth_ep = std::make_shared<l500_depth_sensor>(this, backend.create_uvc_device(depth),
-                std::unique_ptr<frame_timestamp_reader>(new l500_timestamp_reader()),
-                ctx);
+            std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
+            for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
+                depth_devices.push_back(backend.create_uvc_device(info));
+
+            auto depth_ep = std::make_shared<l500_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
+                                                                std::unique_ptr<frame_timestamp_reader>(new l500_timestamp_reader(backend.create_time_service())));
 
             depth_ep->register_pixel_format(pf_z16);
+            depth_ep->register_pixel_format(pf_c);
             depth_ep->register_pixel_format(pf_y8);
 
             return depth_ep;
@@ -202,15 +200,13 @@ namespace librealsense
 
         void hardware_reset() override
         {
-            throw not_implemented_exception("hardware_reset(...) not implemented!");
+            force_hardware_reset();
         }
 
         uvc_sensor& get_depth_sensor() { return dynamic_cast<uvc_sensor&>(get_sensor(_depth_device_idx)); }
 
 
-        l500_camera(std::shared_ptr<context> ctx,
-                    const platform::uvc_device_info& depth,
-                    const platform::usb_device_info& hwm_device,
+        l500_device(std::shared_ptr<context> ctx,
                     const platform::backend_device_group& group,
                     bool register_device_notifications);
 
@@ -222,19 +218,10 @@ namespace librealsense
     private:
         const uint8_t _depth_device_idx;
         std::shared_ptr<hw_monitor> _hw_monitor;
-
-        template<class T>
-        void register_depth_xu(uvc_sensor& depth, rs2_option opt, uint8_t id, std::string desc) const
-        {
-            depth.register_option(opt,
-                std::make_shared<uvc_xu_option<T>>(
-                    depth,
-                    ivcam::depth_xu,
-                    id, std::move(desc)));
-        }
-
-
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _ir_stream;
+        std::shared_ptr<stream_interface> _confidence_stream;
+
+        void force_hardware_reset() const;
     };
 }
