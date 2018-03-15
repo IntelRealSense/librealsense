@@ -1046,6 +1046,7 @@ const char* rs2_notification_category_to_string(rs2_notification_category catego
 const char* rs2_sr300_visual_preset_to_string(rs2_sr300_visual_preset preset)             { return librealsense::get_string(preset);       }
 const char* rs2_log_severity_to_string(rs2_log_severity severity)                         { return librealsense::get_string(severity);     }
 const char* rs2_exception_type_to_string(rs2_exception_type type)                         { return librealsense::get_string(type);         }
+const char* rs2_rotation_degrees_to_string(rs2_rotation_degrees degrees)                  { return librealsense::get_string(degrees); }
 const char* rs2_playback_status_to_string(rs2_playback_status status)                     { return librealsense::get_string(status);       }
 const char* rs2_extension_type_to_string(rs2_extension type)                              { return librealsense::get_string(type);         }
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata)               { return librealsense::get_string(metadata);     }

@@ -110,7 +110,8 @@ namespace librealsense
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
             {
-                throw not_implemented_exception("get_intrinsics(...) not implemented!");
+                // TODO
+                return rs2_intrinsics{};
             }
 
             stream_profiles init_stream_profiles() override
@@ -138,7 +139,16 @@ namespace librealsense
                     // Register intrinsics
                     auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                    if (video->get_width() == 480 && video->get_height() == 640 && video->get_format() == RS2_FORMAT_Z16 && video->get_framerate() == 30)
+                    switch_width_height(p);
+                    video->set_rotation_degrees(RS2_ROTATION_DEGREES_90);
+
+                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Z16_ROTATED && video->get_framerate() == 30)
+                        video->make_default();
+
+                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Y8_ROTATED && video->get_framerate() == 30)
+                        video->make_default();
+
+                    if (video->get_width() == 640 && video->get_height() == 240 && video->get_format() == RS2_FORMAT_CONFIDENCE_ROTATED && video->get_framerate() == 30)
                         video->make_default();
 
                     auto profile = to_profile(p.get());
@@ -158,7 +168,7 @@ namespace librealsense
                 return results;
             }
 
-            float get_depth_scale() const override { return get_option(RS2_OPTION_DEPTH_UNITS).query(); }
+            float get_depth_scale() const override { return 0.001f; } // TODO
 
             void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const  override
             {
@@ -172,6 +182,18 @@ namespace librealsense
             }
         private:
             const l500_device* _owner;
+
+            void switch_width_height(std::shared_ptr<stream_profile_interface> p)
+            {
+                // Switch between width and height
+                auto video_sp = dynamic_cast<video_stream_profile*>(p.get());
+                if (video_sp)
+                {
+                    auto width = video_sp->get_width();
+                    auto height = video_sp->get_height();
+                    video_sp->set_dims(height, width);
+                }
+            }
         };
 
         std::shared_ptr<uvc_sensor> create_depth_device(std::shared_ptr<context> ctx,
@@ -186,9 +208,9 @@ namespace librealsense
             auto depth_ep = std::make_shared<l500_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
                                                                 std::unique_ptr<frame_timestamp_reader>(new l500_timestamp_reader(backend.create_time_service())));
 
-            depth_ep->register_pixel_format(pf_z16);
-            depth_ep->register_pixel_format(pf_c);
-            depth_ep->register_pixel_format(pf_y8);
+            depth_ep->register_pixel_format(pf_z16_l500);
+            depth_ep->register_pixel_format(pf_confidence_l500);
+            depth_ep->register_pixel_format(pf_y8_l500);
 
             return depth_ep;
         }

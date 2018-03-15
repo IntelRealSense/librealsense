@@ -72,16 +72,17 @@ namespace librealsense
 
         auto&& backend = ctx->get_backend();
 
-#ifdef HWM_OVER_XU
-        _hw_monitor = std::make_shared<hw_monitor>(
-                    std::make_shared<locked_transfer>(std::make_shared<command_transfer_over_xu>(
-                                                      get_depth_sensor(), depth_xu, L500_HWMONITOR),
-                                                      get_depth_sensor()));
-#else
+        // TODO
+//#ifdef HWM_OVER_XU
+//        _hw_monitor = std::make_shared<hw_monitor>(
+//                    std::make_shared<locked_transfer>(std::make_shared<command_transfer_over_xu>(
+//                                                      get_depth_sensor(), depth_xu, L500_HWMONITOR),
+//                                                      get_depth_sensor()));
+//#else
         _hw_monitor = std::make_shared<hw_monitor>(
                     std::make_shared<locked_transfer>(backend.create_usb_device(group.usb_devices.front()),
                                                                                 get_depth_sensor()));
-#endif
+//#endif
 
         auto fw_version = _hw_monitor->get_firmware_version_string(GVD, fw_version_offset);
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);

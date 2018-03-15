@@ -3480,7 +3480,8 @@ namespace rs2
             auto textured_frame = streams[stream].texture->get_last_frame(true).as<video_frame>();
             if (streams[stream].show_map_ruler && frame && textured_frame &&
                 RS2_STREAM_DEPTH == stream_mv.profile.stream_type() &&
-                RS2_FORMAT_Z16 == stream_mv.profile.format())
+                (RS2_FORMAT_Z16 == stream_mv.profile.format() ||
+                RS2_FORMAT_Z16_ROTATED == stream_mv.profile.format()))
             {
                 assert(RS2_FORMAT_RGB8 == textured_frame.get_profile().format());
                 static const std::string depth_units = "m";
