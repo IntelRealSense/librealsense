@@ -129,9 +129,9 @@ public class PointCloudGenerator : MonoBehaviour
                     }
                     else //Required since we reuse the array
                     {
-                        particles[index].position = new Vector3(0, 0, 0);
-                        particles[index].startSize = (float)0.0;
-                        particles[index].startColor = new Color32(0, 0, 0, 0);
+                        particles[index].position = Vector3.zero;
+                        particles[index].startSize = 0;
+                        particles[index].startColor = Color.black;
                     }
                 }
             }
