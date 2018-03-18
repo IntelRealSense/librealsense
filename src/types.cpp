@@ -107,9 +107,9 @@ namespace librealsense
 #undef CASE
     }
 
-    const char* get_string(rs2_rotation_degrees value)
+    const char* get_string(rs2_clockwise_rotation_degrees value)
     {
-#define CASE(X) STRCASE(ROTATION_DEGREES, X)
+#define CASE(X) STRCASE(CLOCKWISE_ROTATION_DEGREES, X)
         switch (value)
         {
             CASE(UNKNOWN)

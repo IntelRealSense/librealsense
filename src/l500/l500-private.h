@@ -6,7 +6,6 @@
 #include "backend.h"
 #include "types.h"
 
-const double TIMESTAMP_USEC_TO_MSEC = 0.001;
 
 namespace librealsense
 {

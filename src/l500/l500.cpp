@@ -72,7 +72,6 @@ namespace librealsense
 
         auto&& backend = ctx->get_backend();
 
-        // TODO
 //#ifdef HWM_OVER_XU
 //        _hw_monitor = std::make_shared<hw_monitor>(
 //                    std::make_shared<locked_transfer>(std::make_shared<command_transfer_over_xu>(

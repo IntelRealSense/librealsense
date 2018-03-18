@@ -15,6 +15,7 @@
 #include "stream.h"
 #include "environment.h"
 #include "core/debug.h"
+#include "l500-private.h"
 
 namespace librealsense
 {
@@ -140,7 +141,7 @@ namespace librealsense
                     auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
                     switch_width_height(p);
-                    video->set_rotation_degrees(RS2_ROTATION_DEGREES_90);
+                    video->set_clockwise_rotation_degrees(RS2_CLOCKWISE_ROTATION_DEGREES_90);
 
                     if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Z16_ROTATED && video->get_framerate() == 30)
                         video->make_default();
@@ -199,6 +200,7 @@ namespace librealsense
         std::shared_ptr<uvc_sensor> create_depth_device(std::shared_ptr<context> ctx,
                                                         const std::vector<platform::uvc_device_info>& all_device_infos)
         {
+            using namespace ivcam2;
             auto&& backend = ctx->get_backend();
 
             std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
@@ -208,6 +210,7 @@ namespace librealsense
             auto depth_ep = std::make_shared<l500_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
                                                                 std::unique_ptr<frame_timestamp_reader>(new l500_timestamp_reader(backend.create_time_service())));
 
+            depth_ep->register_xu(depth_xu);
             depth_ep->register_pixel_format(pf_z16_l500);
             depth_ep->register_pixel_format(pf_confidence_l500);
             depth_ep->register_pixel_format(pf_y8_l500);

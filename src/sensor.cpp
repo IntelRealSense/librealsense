@@ -194,7 +194,7 @@ namespace librealsense
                     request_mapping mapping;
                     mapping.unpacker = best_unpacker;
                     mapping.pf = best_pf;
-                    mapping.rotation_degrees = request->get_rotation_degrees();
+                    mapping.clockwise_rotation_degrees = request->get_clockwise_rotation_degrees();
 
                     if (!request) {
 
@@ -385,8 +385,8 @@ namespace librealsense
         {
             try
             {
-                if (mode.rotation_degrees == RS2_ROTATION_DEGREES_90 ||
-                    mode.rotation_degrees == RS2_ROTATION_DEGREES_270)
+                if (mode.clockwise_rotation_degrees == RS2_CLOCKWISE_ROTATION_DEGREES_90 ||
+                    mode.clockwise_rotation_degrees == RS2_CLOCKWISE_ROTATION_DEGREES_270)
                 {
                     auto width = mode.profile.width;
                     auto height = mode.profile.height;
@@ -460,8 +460,8 @@ namespace librealsense
                         {
                             auto width = mode.profile.width;
                             auto height = mode.profile.height;
-                            if (mode.rotation_degrees == RS2_ROTATION_DEGREES_90 ||
-                                mode.rotation_degrees == RS2_ROTATION_DEGREES_270)
+                            if (mode.clockwise_rotation_degrees == RS2_CLOCKWISE_ROTATION_DEGREES_90 ||
+                                mode.clockwise_rotation_degrees == RS2_CLOCKWISE_ROTATION_DEGREES_270)
                             {
                                 width = mode.profile.height;
                                 height = mode.profile.width;

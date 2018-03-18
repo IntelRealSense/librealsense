@@ -39,17 +39,17 @@ typedef enum rs2_exception_type
 } rs2_exception_type;
 const char* rs2_exception_type_to_string(rs2_exception_type type);
 
-/** \brief Image Rotation Degrees */
-typedef enum rs2_rotation_degrees
+/** \brief Image Clockwise Rotation Degrees */
+typedef enum rs2_clockwise_rotation_degrees
 {
-    RS2_ROTATION_DEGREES_UNKNOWN,
-    RS2_ROTATION_DEGREES_0,
-    RS2_ROTATION_DEGREES_90,
-    RS2_ROTATION_DEGREES_180,
-    RS2_ROTATION_DEGREES_270,
-    RS2_ROTATION_DEGREES_COUNT     /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
-} rs2_rotation_degrees;
-const char* rs2_rotation_degrees_to_string(rs2_rotation_degrees type);
+    RS2_CLOCKWISE_ROTATION_DEGREES_UNKNOWN,
+    RS2_CLOCKWISE_ROTATION_DEGREES_0,
+    RS2_CLOCKWISE_ROTATION_DEGREES_90,
+    RS2_CLOCKWISE_ROTATION_DEGREES_180,
+    RS2_CLOCKWISE_ROTATION_DEGREES_270,
+    RS2_CLOCKWISE_ROTATION_DEGREES_COUNT     /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+} rs2_clockwise_rotation_degrees;
+const char* rs2_clockwise_rotation_degrees_to_string(rs2_clockwise_rotation_degrees type);
 
 /** \brief Distortion model: defines how pixel coordinates should be mapped to sensor coordinates. */
 typedef enum rs2_distortion
