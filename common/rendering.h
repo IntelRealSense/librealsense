@@ -1048,6 +1048,7 @@ namespace rs2
             {
             case RS2_FORMAT_ANY:
                 throw std::runtime_error("not a valid format");
+            case RS2_FORMAT_Z16_ROTATED:
             case RS2_FORMAT_Z16:
             case RS2_FORMAT_DISPARITY16:
                 if (frame.is<depth_frame>())
@@ -1084,6 +1085,8 @@ namespace rs2
             case RS2_FORMAT_RGBA8: case RS2_FORMAT_BGRA8: // Display both RGBA and BGRA by interpreting them RGBA, to show the flipped byte ordering. Obviously, GL_BGRA could be used on OpenGL 1.2+
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
                 break;
+            case RS2_FORMAT_Y8_ROTATED:
+            case RS2_FORMAT_CONFIDENCE_ROTATED:
             case RS2_FORMAT_Y8:
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
                 break;

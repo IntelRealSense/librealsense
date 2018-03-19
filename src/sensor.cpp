@@ -194,6 +194,7 @@ namespace librealsense
                     request_mapping mapping;
                     mapping.unpacker = best_unpacker;
                     mapping.pf = best_pf;
+                    mapping.clockwise_rotation_degrees = request->get_clockwise_rotation_degrees();
 
                     if (!request) {
 
@@ -384,6 +385,15 @@ namespace librealsense
         {
             try
             {
+                if (mode.clockwise_rotation_degrees == RS2_CLOCKWISE_ROTATION_DEGREES_90 ||
+                    mode.clockwise_rotation_degrees == RS2_CLOCKWISE_ROTATION_DEGREES_270)
+                {
+                    auto width = mode.profile.width;
+                    auto height = mode.profile.height;
+                    mode.profile.width = height;
+                    mode.profile.height = width;
+                }
+
                 unsigned long long last_frame_number = 0;
                 rs2_time_t last_timestamp = 0;
                 _device->probe_and_commit(mode.profile,
@@ -408,9 +418,6 @@ namespace librealsense
                     auto frame_counter = timestamp_reader->get_frame_counter(mode, f);
 
                     auto requires_processing = mode.requires_processing();
-
-                    auto width = mode.profile.width;
-                    auto height = mode.profile.height;
 
                     std::vector<byte *> dest;
                     std::vector<frame_holder> refs;
@@ -448,9 +455,18 @@ namespace librealsense
                         last_frame_number = frame_counter;
                         last_timestamp = timestamp;
 
-                        frame_holder frame = _source.alloc_frame(stream_to_frame_types(output.first.type), width * height * bpp / 8, additional_data, requires_processing);
+                        frame_holder frame = _source.alloc_frame(stream_to_frame_types(output.first.type), mode.profile.width * mode.profile.height * bpp / 8, additional_data, requires_processing);
                         if (frame.frame)
                         {
+                            auto width = mode.profile.width;
+                            auto height = mode.profile.height;
+                            if (mode.clockwise_rotation_degrees == RS2_CLOCKWISE_ROTATION_DEGREES_90 ||
+                                mode.clockwise_rotation_degrees == RS2_CLOCKWISE_ROTATION_DEGREES_270)
+                            {
+                                width = mode.profile.height;
+                                height = mode.profile.width;
+                            }
+
                             auto video = (video_frame*)frame.frame;
                             video->assign(width, height, width * bpp / 8, bpp);
                             video->set_timestamp_domain(timestamp_domain);
@@ -471,7 +487,7 @@ namespace librealsense
                     // Unpack the frame
                     if (requires_processing && (dest.size() > 0))
                     {
-                        unpacker.unpack(dest.data(), reinterpret_cast<const byte *>(f.pixels), width * height);
+                        unpacker.unpack(dest.data(), reinterpret_cast<const byte *>(f.pixels), mode.profile.width, mode.profile.height);
                     }
 
                     // If any frame callbacks were specified, dispatch them now
@@ -917,7 +933,7 @@ namespace librealsense
             frame->set_stream(request);
 
             std::vector<byte*> dest{const_cast<byte*>(frame->get_frame_data())};
-            mode.unpacker->unpack(dest.data(),(const byte*)sensor_data.fo.pixels, (int)data_size);
+            mode.unpacker->unpack(dest.data(),(const byte*)sensor_data.fo.pixels, mode.profile.width, mode.profile.height);
 
             if (_on_before_frame_callback)
             {

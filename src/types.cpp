@@ -107,6 +107,21 @@ namespace librealsense
 #undef CASE
     }
 
+    const char* get_string(rs2_clockwise_rotation_degrees value)
+    {
+#define CASE(X) STRCASE(CLOCKWISE_ROTATION_DEGREES, X)
+        switch (value)
+        {
+            CASE(UNKNOWN)
+                CASE(0)
+                CASE(90)
+                CASE(180)
+                CASE(270)
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
+        }
+#undef CASE
+    }
+
     const char* get_string(rs2_stream value)
     {
 #define CASE(X) STRCASE(STREAM, X)
@@ -121,6 +136,7 @@ namespace librealsense
                 STRCASE(STREAM, ACCEL)
                 STRCASE(STREAM, GPIO)
                 STRCASE(STREAM, POSE)
+                STRCASE(STREAM, CONFIDENCE_MAP)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -288,6 +304,9 @@ namespace librealsense
                 CASE(MOTION_XYZ32F)
                 CASE(GPIO_RAW)
                 CASE(6DOF)
+                CASE(CONFIDENCE_ROTATED)
+                CASE(Y8_ROTATED)
+                CASE(Z16_ROTATED)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
