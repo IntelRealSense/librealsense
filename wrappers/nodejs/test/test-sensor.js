@@ -4,7 +4,7 @@
 
 'use strict';
 
-/* global describe, it, before, after */
+/* global describe, it, beforeEach, afterEach */
 const assert = require('assert');
 let rs2;
 try {
@@ -317,29 +317,35 @@ describe('Sensor test', function() {
   });
 
   it('Testing method start, with callback', () => {
+    let promises = [];
     sensors.forEach((sensor) => {
-      const profiles = sensor.getStreamProfiles();
-      for (let i in profiles) {
-        assert.doesNotThrow(() => { // jshint ignore:line
-          sensor.open(profiles[i]);
-        });
-        sensor.start((frame) => { // jshint ignore:line
-          assert.equal(typeof frame, 'object');
-          assert.equal(typeof frame.isValid, 'boolean');
-          assert.equal(Object.prototype.toString.call(frame.data), '[object Uint16Array]');
-          assert.equal(typeof frame.width, 'number');
-          assert.equal(typeof frame.height, 'number');
-          assert.equal(typeof frame.frameNumber, 'number');
-          assert.equal(typeof frame.timestamp, 'number');
-          assert.equal(typeof frame.streamType, 'number');
-          assert.equal(typeof frame.dataByteLength, 'number');
-          assert.equal(typeof frame.strideInBytes, 'number');
-          assert.equal(typeof frame.bitsPerPixel, 'number');
-          assert.equal(typeof frame.timestampDomain, 'string');
-        });
-        sensor.stop();
-      }
+      let promise = new Promise((resolve) => {
+        const profiles = sensor.getStreamProfiles();
+        for (let i in profiles) {
+          assert.doesNotThrow(() => { // jshint ignore:line
+            sensor.open(profiles[i]);
+          });
+          sensor.start((frame) => { // jshint ignore:line
+            assert.equal(typeof frame, 'object');
+            assert.equal(typeof frame.isValid, 'boolean');
+            assert.equal(Object.prototype.toString.call(frame.data), '[object Uint16Array]');
+            assert.equal(typeof frame.width, 'number');
+            assert.equal(typeof frame.height, 'number');
+            assert.equal(typeof frame.frameNumber, 'number');
+            assert.equal(typeof frame.timestamp, 'number');
+            assert.equal(typeof frame.streamType, 'number');
+            assert.equal(typeof frame.dataByteLength, 'number');
+            assert.equal(typeof frame.strideInBytes, 'number');
+            assert.equal(typeof frame.bitsPerPixel, 'number');
+            assert.equal(typeof frame.timestampDomain, 'number');
+            sensor.stop();
+            resolve();
+          });
+        }
+      });
+      promises.push(promise);
     });
+    return Promise.all(promises);
   });
 
   it('Testing method start, w/ syncer', () => {

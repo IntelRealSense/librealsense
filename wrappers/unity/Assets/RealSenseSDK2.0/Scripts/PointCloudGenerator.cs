@@ -10,14 +10,17 @@ using System.Linq;
 
 public class PointCloudGenerator : MonoBehaviour
 {
-    private int streamWidth;
-    private int streamHeight;
-    private int totalImageSize;
-    private int particleSize;
-    private int particleCount;
-    private ParticleSystem.Particle[] particles;
+    private ParticleSystem.Particle[] particles = new ParticleSystem.Particle[0];
     private PointCloud pc = new PointCloud();
-    public UnityEngine.Gradient gradient;
+    FrameQueue pointsQueue = new FrameQueue(1);
+    Points.Vertex[] vertices;
+    Points.TextureCoordinate[] textureCoordinate;
+    private byte[] lastColorImage;
+    Texture2D colorTexture;
+    private int colorFrameWidth;
+    private int colorFrameHeight;
+
+    public bool mirrored;
     public float pointsSize = 0.01f;
     public int skipParticles = 2;
     public ParticleSystem pointCloudParticles;
@@ -25,119 +28,115 @@ public class PointCloudGenerator : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        Application.runInBackground = true;
-        particleCount = 0;
+        //RealSenseDevice.Instance.onNewSample += OnFrame;
+        RealSenseDevice.Instance.onNewSampleSet += OnFrames;
 
-        if (RealSenseDevice.Instance.ActiveProfile != null)
-        {
-            OnStartStreaming(RealSenseDevice.Instance.ActiveProfile);
-        }
-        else
-        {
-            RealSenseDevice.Instance.OnStart += OnStartStreaming;
-        }
-        particles = new ParticleSystem.Particle[particleSize];
     }
-
-    private void OnStartStreaming(PipelineProfile activeProfile)
+    object l = new object();
+    private void OnFrames(FrameSet frames)
     {
-        if(InitializeStream(activeProfile))
+        if(frames.DepthFrame == null)
         {
-            RealSenseDevice.Instance.onNewSample += OnFrame;
-        }
-    }
-
-    private void OnFrame(Frame frame)
-    {
-        if (frame.Profile.Stream == Intel.RealSense.Stream.Depth)
-        {
-            var depthFrame = frame as DepthFrame;
-            if (depthFrame == null)
-            {
-                Debug.Log("Frame is not a depth frame");
-                return;
-            }
-
-            UpdateParticleParams(depthFrame.Width, depthFrame.Height, depthFrame.Profile.Format);
-
-            var points = pc.Calculate(frame);
-
-            Points.Vertex[] vertices = new Points.Vertex[points.Count];
-            points.CopyTo(vertices);
-            for (int index = 0; index < vertices.Length; index += skipParticles)
-            {
-                var v = vertices[index];
-                if (v.z > 0)
-                {
-                    particles[index].position = new Vector3(v.x, v.y, v.z);
-                    particles[index].startSize = pointsSize;
-                    particles[index].startColor = gradient.Evaluate(v.z);
-                }
-                else
-                {
-                    particles[index].position = new Vector3(0, 0, 0);
-                    particles[index].startSize = (float)0.0;
-                    particles[index].startColor = new Color32(0, 0, 0, 0);
-                }
-            }
-        }
-        else if(frame.Profile.Stream == Intel.RealSense.Stream.Color)
-        {
-            //pc.MapTexture(frame);
-        }
-    }
-
-    private void UpdateParticleParams(int width, int height, Format format)
-    {
-        streamWidth = width;
-        streamHeight = height;
-
-        if (format != Format.Z16)
-        {
-            Debug.Log("Unsupported format");
+            Debug.Log("No depth frame in frameset, can't create point cloud");
             return;
         }
 
-        const int bpp = 2;
-
-        if (totalImageSize != streamWidth * streamHeight * bpp)
+        if (!UpdateParticleParams(frames.DepthFrame.Width, frames.DepthFrame.Height))
         {
-            totalImageSize = streamWidth * streamHeight * bpp;
-            particleSize = totalImageSize / skipParticles;
-            particles = new ParticleSystem.Particle[particleSize];
+            Debug.Log("Unable to craete point cloud");
+            return;
         }
 
-        if (particleSize != totalImageSize / skipParticles)
+        using (var points = pc.Calculate(frames.DepthFrame))
         {
-            particleSize = totalImageSize / skipParticles;
-            particles = new ParticleSystem.Particle[particleSize];
+            if (frames.ColorFrame != null)
+            {
+                if (frames.ColorFrame.BitsPerPixel == 24)
+                {
+                    pc.MapTexture(frames.ColorFrame);
+                    colorFrameWidth = frames.ColorFrame.Width;
+                    colorFrameHeight = frames.ColorFrame.Height;
+                    var newSize = frames.ColorFrame.Stride * colorFrameHeight;
+                    lock (l)
+                    {
+                        if (lastColorImage == null || lastColorImage.Length != newSize)
+                            lastColorImage = new byte[newSize];
+
+                        frames.ColorFrame.CopyTo(lastColorImage);
+                    }
+                }
+            }
+            pointsQueue.Enqueue(points);
         }
-        particleCount = particleSize;
+    }
+
+    private bool UpdateParticleParams(int width, int height)
+    {
+        var numParticles = (width * height);
+        if (particles.Length != numParticles)
+        {
+            particles = new ParticleSystem.Particle[numParticles];
+        }
+
+        return true;
     }
 
     void Update()
     {
-        //TODO: Lock & copy particles?
-        pointCloudParticles.SetParticles(particles, particleCount);
-    }
-
-    private bool InitializeStream(PipelineProfile activeProfile)
-    {
-        var depthStream = activeProfile.Streams.FirstOrDefault(s => s.Stream == Intel.RealSense.Stream.Depth);
-        if (depthStream == null)
+        Frame frame;
+        if (pointsQueue.PollForFrame(out frame))
         {
-            Debug.Log("No Depth stream available");
-            return false;
-        }
-        var depthProfile = depthStream as VideoStreamProfile;
-        //depthIntrinsic = depthProfile.GetIntrinsics();
-        streamWidth = depthProfile.Width;
-        streamHeight = depthProfile.Height;
-        return true;
-    }
+            using (Points points = frame as Points)
+            {
+                if (points == null)
+                    throw new Exception("Frame in queue is not a points frame");
 
-    private float Remap(float value, float from1, float to1, float from2, float to2)
-    {
-        return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
+                vertices = vertices ?? new Points.Vertex[points.Count];
+                points.CopyTo(vertices);
+
+                lock (l)
+                {
+                    if (textureCoordinate == null || textureCoordinate.Length != points.Count)
+                        textureCoordinate = new Points.TextureCoordinate[points.Count];
+
+                    points.CopyTo(textureCoordinate);
+
+                    if (lastColorImage != null)
+                    {
+                        if (colorTexture == null || colorTexture.width != colorFrameWidth || colorTexture.height != colorFrameHeight)
+                        {
+                            colorTexture = new Texture2D(colorFrameWidth, colorFrameHeight, TextureFormat.RGB24, false, true)
+                            {
+                                wrapMode = TextureWrapMode.Clamp,
+                                filterMode = FilterMode.Point
+                            };
+                        }
+
+                        colorTexture.LoadRawTextureData(lastColorImage);
+                        colorTexture.Apply();
+                    }
+                }
+                Debug.Assert(vertices.Length == particles.Length);
+                int mirror = mirrored ? -1 : 1;
+                for (int index = 0; index < vertices.Length; index += skipParticles)
+                {
+                    var v = vertices[index];
+                    if (v.z > 0)
+                    {
+                        particles[index].position = new Vector3(v.x * mirror, v.y, v.z);
+                        particles[index].startSize = pointsSize;
+                        particles[index].startColor = colorTexture.GetPixelBilinear(textureCoordinate[index].u, textureCoordinate[index].v);
+                    }
+                    else //Required since we reuse the array
+                    {
+                        particles[index].position = Vector3.zero;
+                        particles[index].startSize = 0;
+                        particles[index].startColor = Color.black;
+                    }
+                }
+            }
+        }
+        //Either way, update particles
+        pointCloudParticles.SetParticles(particles, particles.Length);
     }
 }

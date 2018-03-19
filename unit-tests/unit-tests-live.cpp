@@ -4152,6 +4152,7 @@ TEST_CASE("Syncer sanity with software-device device", "[live][software-device]"
         auto ir = profiles[1];
 
         syncer sync;
+        s.open(profiles);
         s.start(sync);
        
         std::vector<uint8_t> pixels(W * H * BPP, 0);
@@ -4244,6 +4245,7 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with software-device de
         auto ir = profiles[1];
 
         syncer sync(10);
+        s.open(profiles);
         s.start(sync);
 
         std::vector<uint8_t> pixels(W * H * BPP, 0);
