@@ -100,6 +100,7 @@ namespace librealsense
 
         frame_source _source;
         device* _owner;
+        std::vector<platform::stream_profile> _uvc_profiles;
 
     private:
         lazy<stream_profiles> _profiles;

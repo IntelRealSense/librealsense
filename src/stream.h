@@ -93,8 +93,8 @@ namespace librealsense
     public:
         explicit video_stream_profile(platform::stream_profile sp)
             : stream_profile_base(std::move(sp)),
-            _calc_intrinsics([]() -> rs2_intrinsics { throw not_implemented_exception("No intrinsics are available for this stream profile!"); }),
-            _width(0), _height(0), _clockwise_rotation_degrees(RS2_CLOCKWISE_ROTATION_DEGREES_0)
+              _calc_intrinsics([]() -> rs2_intrinsics { throw not_implemented_exception("No intrinsics are available for this stream profile!"); }),
+              _width(0), _height(0)
         {
         }
 
@@ -108,9 +108,6 @@ namespace librealsense
             _width = width;
             _height = height;
         }
-
-        rs2_clockwise_rotation_degrees get_clockwise_rotation_degrees() const override { return _clockwise_rotation_degrees; }
-        void set_clockwise_rotation_degrees(rs2_clockwise_rotation_degrees degrees) override { _clockwise_rotation_degrees = degrees; }
 
         std::shared_ptr<stream_profile_interface> clone() const override
         {
@@ -141,7 +138,6 @@ namespace librealsense
     private:
         std::function<rs2_intrinsics()> _calc_intrinsics;
         uint32_t _width, _height;
-        rs2_clockwise_rotation_degrees _clockwise_rotation_degrees;
     };
 
 

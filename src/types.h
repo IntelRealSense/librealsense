@@ -402,7 +402,6 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_sr300_visual_preset, SR300_VISUAL_PRESET)
     RS2_ENUM_HELPERS(rs2_extension, EXTENSION)
     RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
-    RS2_ENUM_HELPERS(rs2_clockwise_rotation_degrees, CLOCKWISE_ROTATION_DEGREES)
     RS2_ENUM_HELPERS(rs2_log_severity, LOG_SEVERITY)
     RS2_ENUM_HELPERS(rs2_notification_category, NOTIFICATION_CATEGORY)
     RS2_ENUM_HELPERS(rs2_playback_status, PLAYBACK_STATUS)
@@ -466,7 +465,7 @@ namespace librealsense
 
     typedef std::tuple<uint32_t, int, size_t> native_pixel_format_tuple;
     typedef std::tuple<rs2_stream, int, rs2_format> output_tuple;
-    typedef std::tuple<platform::stream_profile_tuple, native_pixel_format_tuple, std::vector<output_tuple>, rs2_clockwise_rotation_degrees> request_mapping_tuple;
+    typedef std::tuple<platform::stream_profile_tuple, native_pixel_format_tuple, std::vector<output_tuple>> request_mapping_tuple;
 
     struct stream_profile
     {
@@ -496,31 +495,80 @@ namespace librealsense
         int index;
     };
 
+    struct resolution
+    {
+        uint32_t width, height;
+    };
+
+    using resolution_func = std::function<resolution(resolution res)>;
+
+    struct stream_output {
+        stream_output(stream_descriptor stream_desc_in,
+                      rs2_format format_in,
+                      resolution_func res_func = [&](resolution res) {return res; })
+            : stream_desc(stream_desc_in),
+              format(format_in),
+              stream_resolution(res_func)
+        {}
+
+        stream_descriptor stream_desc;
+        rs2_format format;
+        resolution_func stream_resolution;
+    };
+
     struct pixel_format_unpacker
     {
         bool requires_processing;
         void(*unpack)(byte * const dest[], const byte * source, int width, int height);
-        std::vector<std::pair<stream_descriptor, rs2_format>> outputs;
+        std::vector<stream_output> outputs;
 
-        bool satisfies(const stream_profile& request) const
+        platform::stream_profile get_uvc_profile(const stream_profile& request, uint32_t fourcc, const std::vector<platform::stream_profile>& uvc_profiles) const
         {
-            return provides_stream(request.stream, request.index) &&
+            platform::stream_profile uvc_profile{};
+            auto it = std::find_if(begin(uvc_profiles), end(uvc_profiles),
+                [&fourcc, &request, this](const platform::stream_profile& uvc_p)
+            {
+                for (auto & o : outputs)
+                {
+                    auto res = o.stream_resolution(resolution{ request.width, request.height });
+                    if (o.stream_desc.type == request.stream && o.stream_desc.index == request.index &&
+                        res.width == uvc_p.width && res.height == uvc_p.height &&
+                        uvc_p.format == fourcc && request.fps == uvc_p.fps)
+                        return true;
+                }
+                return false;
+            });
+            if (it != end(uvc_profiles))
+            {
+                uvc_profile = *it;
+            }
+            return uvc_profile;
+        }
+
+        bool satisfies(const stream_profile& request, uint32_t fourcc, const std::vector<platform::stream_profile>& uvc_profiles) const
+        {
+            auto uvc_profile = get_uvc_profile(request, fourcc, uvc_profiles);
+            return provides_stream(request, fourcc, uvc_profile) &&
                 get_format(request.stream, request.index) == request.format;
         }
 
-        bool provides_stream(rs2_stream stream, int index) const
+        bool provides_stream(const stream_profile& request, uint32_t fourcc, const platform::stream_profile& uvc_profile) const
         {
-            for (auto & o : outputs)
-                if (o.first.type == stream && o.first.index == index)
+            for (auto& o : outputs)
+            {
+                auto res = o.stream_resolution(resolution{ request.width, request.height });
+                if (o.stream_desc.type == request.stream && o.stream_desc.index == request.index &&
+                    res.width == uvc_profile.width && res.height == uvc_profile.height)
                     return true;
+            }
 
             return false;
         }
         rs2_format get_format(rs2_stream stream, int index) const
         {
-            for (auto & o : outputs)
-                if (o.first.type == stream && o.first.index == index)
-                    return o.second;
+            for (auto& o : outputs)
+                if (o.stream_desc.type == stream && o.stream_desc.index == index)
+                    return o.format;
 
             throw invalid_value_exception("missing output");
         }
@@ -531,7 +579,7 @@ namespace librealsense
 
             for (auto output : outputs)
             {
-                tuple_outputs.push_back(std::make_tuple(output.first.type, output.first.index, output.second));
+                tuple_outputs.push_back(std::make_tuple(output.stream_desc.type, output.stream_desc.index, output.format));
             }
             return tuple_outputs;
         }
@@ -560,14 +608,13 @@ namespace librealsense
         platform::stream_profile profile;
         native_pixel_format* pf;
         pixel_format_unpacker* unpacker;
-        rs2_clockwise_rotation_degrees clockwise_rotation_degrees;
 
         // The request lists is there just for lookup and is not involved in object comparison
         mutable std::vector<std::shared_ptr<stream_profile_interface>> original_requests;
 
         operator request_mapping_tuple() const
         {
-            return std::make_tuple(profile, *pf, *unpacker, clockwise_rotation_degrees);
+            return std::make_tuple(profile, *pf, *unpacker);
         }
 
         bool requires_processing() const { return unpacker->requires_processing; }

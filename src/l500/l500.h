@@ -120,7 +120,6 @@ namespace librealsense
                 auto lock = environment::get_instance().get_extrinsics_graph().lock();
 
                 auto results = uvc_sensor::init_stream_profiles();
-
                 for (auto p : results)
                 {
                     // Register stream types
@@ -139,17 +138,13 @@ namespace librealsense
 
                     // Register intrinsics
                     auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
-
-                    switch_width_height(p);
-                    video->set_clockwise_rotation_degrees(RS2_CLOCKWISE_ROTATION_DEGREES_90);
-
-                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Z16_ROTATED && video->get_framerate() == 30)
+                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Z16 && video->get_framerate() == 30)
                         video->make_default();
 
-                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Y8_ROTATED && video->get_framerate() == 30)
+                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Y8 && video->get_framerate() == 30)
                         video->make_default();
 
-                    if (video->get_width() == 640 && video->get_height() == 240 && video->get_format() == RS2_FORMAT_CONFIDENCE_ROTATED && video->get_framerate() == 30)
+                    if (video->get_width() == 640 && video->get_height() == 240 && video->get_format() == RS2_FORMAT_RAW8 && video->get_framerate() == 30)
                         video->make_default();
 
                     auto profile = to_profile(p.get());
@@ -183,18 +178,6 @@ namespace librealsense
             }
         private:
             const l500_device* _owner;
-
-            void switch_width_height(std::shared_ptr<stream_profile_interface> p)
-            {
-                // Switch between width and height
-                auto video_sp = dynamic_cast<video_stream_profile*>(p.get());
-                if (video_sp)
-                {
-                    auto width = video_sp->get_width();
-                    auto height = video_sp->get_height();
-                    video_sp->set_dims(height, width);
-                }
-            }
         };
 
         std::shared_ptr<uvc_sensor> create_depth_device(std::shared_ptr<context> ctx,
