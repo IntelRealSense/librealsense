@@ -304,9 +304,7 @@ namespace librealsense
                 CASE(MOTION_XYZ32F)
                 CASE(GPIO_RAW)
                 CASE(6DOF)
-                CASE(CONFIDENCE_ROTATED)
-                CASE(Y8_ROTATED)
-                CASE(Z16_ROTATED)
+                CASE(DEPTH_CONFIDENCE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

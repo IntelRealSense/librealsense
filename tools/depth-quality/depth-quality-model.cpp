@@ -43,13 +43,7 @@ namespace rs2
             {
                 rs2::config cfg;
                 cfg.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
-                cfg.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, 30);
-                cfgs.push_back(cfg);
-            }
-            {
-                rs2::config cfg;
-                cfg.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16_ROTATED, 30);
-                cfg.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_Y8_ROTATED, 30);
+                cfg.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_Y8, 30);
                 cfgs.push_back(cfg);
             }
 

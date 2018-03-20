@@ -143,13 +143,13 @@ namespace librealsense
                     switch_width_height(p);
                     video->set_clockwise_rotation_degrees(RS2_CLOCKWISE_ROTATION_DEGREES_90);
 
-                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Z16_ROTATED && video->get_framerate() == 30)
+                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Z16 && video->get_framerate() == 30)
                         video->make_default();
 
-                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Y8_ROTATED && video->get_framerate() == 30)
+                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Y8 && video->get_framerate() == 30)
                         video->make_default();
 
-                    if (video->get_width() == 640 && video->get_height() == 240 && video->get_format() == RS2_FORMAT_CONFIDENCE_ROTATED && video->get_framerate() == 30)
+                    if (video->get_width() == 640 && video->get_height() == 240 && video->get_format() == RS2_FORMAT_DEPTH_CONFIDENCE && video->get_framerate() == 30)
                         video->make_default();
 
                     auto profile = to_profile(p.get());
