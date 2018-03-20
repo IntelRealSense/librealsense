@@ -10,22 +10,22 @@
 namespace librealsense
 {
 
-    size_t           get_image_size                 (int width, int height, rs2_format format);
-    int              get_image_bpp                  (rs2_format format);
-    void             deproject_z                    (float * points, const rs2_intrinsics & z_intrin, const uint16_t * z_pixels, float z_scale);
-    void             deproject_disparity            (float * points, const rs2_intrinsics & disparity_intrin, const uint16_t * disparity_pixels, float disparity_scale);
+    size_t           get_image_size(int width, int height, rs2_format format);
+    int              get_image_bpp(rs2_format format);
+    void             deproject_z(float * points, const rs2_intrinsics & z_intrin, const uint16_t * z_pixels, float z_scale);
+    void             deproject_disparity(float * points, const rs2_intrinsics & disparity_intrin, const uint16_t * disparity_pixels, float disparity_scale);
 
-    void             align_z_to_other               (byte * z_aligned_to_other, const uint16_t * z_pixels, float z_scale, const rs2_intrinsics & z_intrin,
-                                                     const rs2_extrinsics & z_to_other, const rs2_intrinsics & other_intrin);
-    void             align_disparity_to_other       (byte * disparity_aligned_to_other, const uint16_t * disparity_pixels, float disparity_scale, const rs2_intrinsics & disparity_intrin,
-                                                     const rs2_extrinsics & disparity_to_other, const rs2_intrinsics & other_intrin);
-    void             align_other_to_z               (byte * other_aligned_to_z, const uint16_t * z_pixels, float z_scale, const rs2_intrinsics & z_intrin,
-                                                     const rs2_extrinsics & z_to_other, const rs2_intrinsics & other_intrin, const byte * other_pixels, rs2_format other_format);
-    void             align_other_to_disparity       (byte * other_aligned_to_disparity, const uint16_t * disparity_pixels, float disparity_scale, const rs2_intrinsics & disparity_intrin,
-                                                     const rs2_extrinsics & disparity_to_other, const rs2_intrinsics & other_intrin, const byte * other_pixels, rs2_format other_format);
+    void             align_z_to_other(byte * z_aligned_to_other, const uint16_t * z_pixels, float z_scale, const rs2_intrinsics & z_intrin,
+        const rs2_extrinsics & z_to_other, const rs2_intrinsics & other_intrin);
+    void             align_disparity_to_other(byte * disparity_aligned_to_other, const uint16_t * disparity_pixels, float disparity_scale, const rs2_intrinsics & disparity_intrin,
+        const rs2_extrinsics & disparity_to_other, const rs2_intrinsics & other_intrin);
+    void             align_other_to_z(byte * other_aligned_to_z, const uint16_t * z_pixels, float z_scale, const rs2_intrinsics & z_intrin,
+        const rs2_extrinsics & z_to_other, const rs2_intrinsics & other_intrin, const byte * other_pixels, rs2_format other_format);
+    void             align_other_to_disparity(byte * other_aligned_to_disparity, const uint16_t * disparity_pixels, float disparity_scale, const rs2_intrinsics & disparity_intrin,
+        const rs2_extrinsics & disparity_to_other, const rs2_intrinsics & other_intrin, const byte * other_pixels, rs2_format other_format);
 
-    std::vector<int> compute_rectification_table    (const rs2_intrinsics & rect_intrin, const rs2_extrinsics & rect_to_unrect, const rs2_intrinsics & unrect_intrin);
-    void             rectify_image                  (uint8_t * rect_pixels, const std::vector<int> & rectification_table, const uint8_t * unrect_pixels, rs2_format format);
+    std::vector<int> compute_rectification_table(const rs2_intrinsics & rect_intrin, const rs2_extrinsics & rect_to_unrect, const rs2_intrinsics & unrect_intrin);
+    void             rectify_image(uint8_t * rect_pixels, const std::vector<int> & rectification_table, const uint8_t * unrect_pixels, rs2_format format);
 
     extern const native_pixel_format pf_fe_raw8_unpatched_kernel; // W/O for unpatched kernel
     extern const native_pixel_format pf_raw8;       // 8 bit luminance
@@ -50,6 +50,8 @@ namespace librealsense
     extern const native_pixel_format pf_gyro_axes;   // Parse gyro HID raw data to 3 axes
     extern const native_pixel_format pf_rgb888;
     extern const native_pixel_format pf_gpio_timestamp; // Parse GPIO timestamp
+    extern const native_pixel_format pf_confidence_l500;
+    extern const native_pixel_format pf_z16_l500;
+    extern const native_pixel_format pf_y8_l500;
 }
-
 #endif

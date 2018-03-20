@@ -47,6 +47,7 @@ const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+D
 namespace librealsense
 {
     #define UNKNOWN_VALUE "UNKNOWN"
+    const double TIMESTAMP_USEC_TO_MSEC = 0.001;
 
     ///////////////////////////////////
     // Utility types for general use //
@@ -401,6 +402,7 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_sr300_visual_preset, SR300_VISUAL_PRESET)
     RS2_ENUM_HELPERS(rs2_extension, EXTENSION)
     RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
+    RS2_ENUM_HELPERS(rs2_clockwise_rotation_degrees, CLOCKWISE_ROTATION_DEGREES)
     RS2_ENUM_HELPERS(rs2_log_severity, LOG_SEVERITY)
     RS2_ENUM_HELPERS(rs2_notification_category, NOTIFICATION_CATEGORY)
     RS2_ENUM_HELPERS(rs2_playback_status, PLAYBACK_STATUS)
@@ -464,7 +466,7 @@ namespace librealsense
 
     typedef std::tuple<uint32_t, int, size_t> native_pixel_format_tuple;
     typedef std::tuple<rs2_stream, int, rs2_format> output_tuple;
-    typedef std::tuple<platform::stream_profile_tuple, native_pixel_format_tuple, std::vector<output_tuple>> request_mapping_tuple;
+    typedef std::tuple<platform::stream_profile_tuple, native_pixel_format_tuple, std::vector<output_tuple>, rs2_clockwise_rotation_degrees> request_mapping_tuple;
 
     struct stream_profile
     {
@@ -497,7 +499,7 @@ namespace librealsense
     struct pixel_format_unpacker
     {
         bool requires_processing;
-        void(*unpack)(byte * const dest[], const byte * source, int count);
+        void(*unpack)(byte * const dest[], const byte * source, int width, int height);
         std::vector<std::pair<stream_descriptor, rs2_format>> outputs;
 
         bool satisfies(const stream_profile& request) const
@@ -558,13 +560,14 @@ namespace librealsense
         platform::stream_profile profile;
         native_pixel_format* pf;
         pixel_format_unpacker* unpacker;
+        rs2_clockwise_rotation_degrees clockwise_rotation_degrees;
 
         // The request lists is there just for lookup and is not involved in object comparison
         mutable std::vector<std::shared_ptr<stream_profile_interface>> original_requests;
 
         operator request_mapping_tuple() const
         {
-            return std::make_tuple(profile, *pf, *unpacker);
+            return std::make_tuple(profile, *pf, *unpacker, clockwise_rotation_degrees);
         }
 
         bool requires_processing() const { return unpacker->requires_processing; }
