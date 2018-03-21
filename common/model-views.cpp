@@ -1077,13 +1077,6 @@ namespace rs2
                 {
                     //ImGui::NextColumn();
                 }
-
-                //if (streaming && rgb_rotation_btn && ImGui::Button("Flip Stream Orientation", ImVec2(160, 20)))
-                //{
-                //    rotate_rgb_image(dev, res_values[selected_res_id].first);
-                //    if (ImGui::IsItemHovered())
-                //        ImGui::SetTooltip("Rotate Sensor 180 deg");
-                //}
             }
         }
 
@@ -1136,7 +1129,9 @@ namespace rs2
             }
         }
 
-        return results.size() > 0;
+        // Verify that the number of found matches corrseponds to the number of the requested streams
+        // TODO - review whether the comparison can be made strict (==)
+        return results.size() >= std::count_if(stream_enabled.begin(), stream_enabled.end(), [](const std::pair<int, bool>& kpv)-> bool { return kpv.second == true; });
     }
 
     std::vector<stream_profile> subdevice_model::get_selected_profiles()
