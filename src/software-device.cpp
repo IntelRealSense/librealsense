@@ -150,7 +150,7 @@ namespace librealsense
         }
         auto vid_profile = dynamic_cast<video_stream_profile_interface*>(software_frame.profile->profile);
         auto vid_frame = dynamic_cast<video_frame*>(frame);
-        vid_frame->assign(vid_profile->get_width(), vid_profile->get_height(), software_frame.stride, software_frame.bpp);
+        vid_frame->assign(vid_profile->get_width(), vid_profile->get_height(), software_frame.stride, software_frame.bpp * 8);
 
         frame->set_stream(std::dynamic_pointer_cast<stream_profile_interface>(software_frame.profile->profile->shared_from_this()));
         frame->attach_continuation(frame_continuation{ [=]() {
