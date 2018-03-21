@@ -1129,7 +1129,9 @@ namespace rs2
             }
         }
 
-        return results.size() >= std::count_if(stream_enabled.begin(), stream_enabled.end(), [](const auto& kpv)-> bool { return kpv.second == true; });
+        // Verify that the number of found matches corrseponds to the number of the requested streams
+        // TODO - review whether the comparison can be made strict (==)
+        return results.size() >= std::count_if(stream_enabled.begin(), stream_enabled.end(), [](const std::pair<int, bool>& kpv)-> bool { return kpv.second == true; });
     }
 
     std::vector<stream_profile> subdevice_model::get_selected_profiles()
