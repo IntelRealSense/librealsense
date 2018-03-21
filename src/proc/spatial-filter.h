@@ -47,10 +47,9 @@ namespace librealsense
 
             // Filtering integer values requires round-up to the nearest discrete value
             const float round = fp ? 0.f : 0.5f;
-            // Disparity value of 0.001 corresponds to 0.5 mm at 0.5 meter to 5 mm at 5m
-            // For Depth values the smoothing will take place when the gradient is more than 4 level (~0.4mm)
-            const T noise = fp ? static_cast<T>(0.001f) : static_cast<T>(4);
-            const T max_radius = static_cast<T>(fp ? 2.f : deltaZ);
+            // define invalid inputs
+            const T valid_threshold = fp ? static_cast<T>(std::numeric_limits<T>::epsilon()) : static_cast<T>(1);
+            const T delta_z = static_cast<T>(deltaZ);
 
             auto image = reinterpret_cast<T*>(image_data);
             size_t cur_fill = 0;
@@ -66,14 +65,14 @@ namespace librealsense
                 {
                     T val1 = im[1];
 
-                    if (val0 >= noise)
+                    if (val0 >= valid_threshold)
                     {
-                        if (val1 >= noise)
+                        if (val1 >= valid_threshold)
                         {
                             cur_fill = 0;
                             T diff = static_cast<T>(fabs(val1 - val0));
 
-                            if (diff >= noise && diff <= max_radius)
+                            if (diff >= valid_threshold && diff <= delta_z)
                             {
                                 float filtered = val1 * alpha + val0 * (1.0f - alpha);
                                 val1 = static_cast<T>(filtered + round);
@@ -103,14 +102,14 @@ namespace librealsense
                 {
                     T val0 = im[0];
 
-                    if (val1 >= noise)
+                    if (val1 >= valid_threshold)
                     {
-                        if (val0 > noise)
+                        if (val0 > valid_threshold)
                         {
                             cur_fill = 0;
                             T diff = static_cast<T>(fabs(val1 - val0));
 
-                            if (diff >= noise && diff <= max_radius)
+                            if (diff <= delta_z)
                             {
                                 float filtered = val0 * alpha + val1 * (1.0f - alpha);
                                 val0 = static_cast<T>(filtered + round);
@@ -143,10 +142,9 @@ namespace librealsense
 
             // Filtering integer values requires round-up to the nearest discrete value
             const float round = fp ? 0.f : 0.5f;
-            // Disparity value of 0.001 corresponds to 0.5 mm at 0.5 meter to 5 mm at 5m
-            // For Depth values the smoothing will take effect when the gradient is more than 4 level (~0.4mm)
-            const T noise = fp ? static_cast<T>(0.001f) : static_cast<T>(4);
-            const T max_radius = static_cast<T>(fp ? 2.f : deltaZ);
+            // define invalid range
+            const T valid_threshold = fp ? static_cast<T>(std::numeric_limits<T>::epsilon()) : static_cast<T>(1);
+            const T delta_z = static_cast<T>(deltaZ);
 
             auto image = reinterpret_cast<T*>(image_data);
 
@@ -164,10 +162,10 @@ namespace librealsense
                     im0 = im[0];
                     imw = im[_width];
 
-                    if ((im0 >noise) && (imw > noise))
+                    if ((im0 >= valid_threshold) && (imw >= valid_threshold))
                     {
-                        float delta = static_cast<float>(fabs(im0 - imw));
-                        if (delta > noise && delta < max_radius)
+                        T diff = static_cast<T>(fabs(im0 - imw));
+                        if (diff < delta_z)
                         {
                             float filtered = imw * alpha + im0 * (1.f - alpha);
                             im[_width] = static_cast<T>(filtered + round);
@@ -186,10 +184,10 @@ namespace librealsense
                     im0 = im[0];
                     imw = im[_width];
 
-                    if ((im0 >noise) && (imw > noise))
+                    if ((im0 >=valid_threshold) && (imw >= valid_threshold))
                     {
-                        float delta = static_cast<float>(fabs(im0 - imw));
-                        if (delta > noise && delta < max_radius)
+                        T diff = static_cast<T>(fabs(im0 - imw));
+                        if ( diff < delta_z)
                         {
                             float filtered = im0 * alpha + imw * (1.f - alpha);
                             im[0] = static_cast<T>(filtered + round);
