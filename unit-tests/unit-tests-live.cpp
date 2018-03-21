@@ -1514,7 +1514,9 @@ TEST_CASE("Check option API", "[live][options]")
     }
 }
 
-TEST_CASE("Multiple devices", "[live][multicam]")
+/// The test may fail due to changes in profiles list that do not indicate regression.
+/// TODO - refactoring required to make the test agnostic to changes imposed by librealsense core
+TEST_CASE("Multiple devices", "[live][multicam][!mayfail]")
 {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -1637,8 +1639,14 @@ TEST_CASE("Multiple devices", "[live][multicam]")
 
                         disable_sensitive_options_for(dev2);
 
-                        auto dev1_profile = dev1.get_stream_profiles().front();
-                        auto dev2_profile = dev2.get_stream_profiles().front();
+                        auto dev1_profiles = dev1.get_stream_profiles();
+                        auto dev2_profiles = dev2.get_stream_profiles();
+
+                        if (!dev1_profiles.size() || !dev2_profiles.size())
+                            continue;
+
+                        auto dev1_profile = dev1_profiles.front();
+                        auto dev2_profile = dev2_profiles.front();
 
                         CAPTURE(dev1_profile.stream_type());
                         CAPTURE(dev1_profile.format());
