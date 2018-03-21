@@ -21,6 +21,11 @@ unsigned auto_exposure_state::get_auto_exposure_antiflicker_rate() const
     return rate;
 }
 
+float auto_exposure_state::get_auto_exposure_step() const
+{
+    return step;
+}
+
 void auto_exposure_state::set_enable_auto_exposure(bool value)
 {
     is_auto_exposure = value;
@@ -36,6 +41,10 @@ void auto_exposure_state::set_auto_exposure_antiflicker_rate(unsigned value)
     rate = value;
 }
 
+void auto_exposure_state::set_auto_exposure_step(float value)
+{
+    step = value;
+}
 
 auto_exposure_mechanism::auto_exposure_mechanism(option& gain_option, option& exposure_option, const auto_exposure_state& auto_exposure_state)
     : _auto_exposure_algo(auto_exposure_state),
@@ -156,6 +165,7 @@ void auto_exposure_mechanism::add_frame(frame_holder frame, callback_invocation_
 }
 
 auto_exposure_algorithm::auto_exposure_algorithm(const auto_exposure_state& auto_exposure_state)
+    : exposure_step(ae_step_default_value)
 {
     update_options(auto_exposure_state);
 }
@@ -274,6 +284,7 @@ void auto_exposure_algorithm::update_options(const auto_exposure_state& options)
 
     state = options;
     flicker_cycle = 1000.0f / (state.get_auto_exposure_antiflicker_rate() * 2.0f);
+    exposure_step = state.get_auto_exposure_step();
 }
 
 void auto_exposure_algorithm::update_roi(const region_of_interest& ae_roi)
