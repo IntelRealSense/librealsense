@@ -232,8 +232,14 @@ namespace librealsense
 
             ~power()
             {
-                auto strong = _owner.lock();
-                if (strong) strong->release_power();
+                if (auto strong = _owner.lock())
+                {
+                    try
+                    {
+                        strong->release_power();
+                    }
+                    catch (...) {}
+                }
             }
         private:
             std::weak_ptr<uvc_sensor> _owner;
