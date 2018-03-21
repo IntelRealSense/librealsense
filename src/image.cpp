@@ -919,7 +919,7 @@ namespace librealsense
     void unpack_z16_y8_from_sr300_inzi(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
-        auto now = std::chrono::high_resolution_clock::now();
+       // auto now = std::chrono::high_resolution_clock::now();
         auto in = reinterpret_cast<const uint16_t*>(source);
         auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);
 #ifdef RS2_USE_CUDA
@@ -929,9 +929,10 @@ namespace librealsense
 #endif
         librealsense::copy(dest[0], in, count * 2);
         // record time
-        auto now2 = std::chrono::high_resolution_clock::now();
+    /*    auto now2 = std::chrono::high_resolution_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now2 - now).count();
         LOG_ERROR(elapsed);
+        */
     }
 
     void unpack_z16_y16_from_sr300_inzi (byte * const dest[], const byte * source, int width, int height)

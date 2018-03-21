@@ -1,17 +1,21 @@
 #ifdef RS2_USE_CUDA
 
 #include "cuda-pointcloud.cuh"
+#include <iostream>
 
 
+__device__
+float map_depth (float depth_scale, uint16_t z) {
+    return depth_scale * z;
+}
 
-__host__ __device__
-void deproject_pixel_to_point_cuda(float point[3], const struct rs2_intrinsics * intrin, const float pixel[2], float depth) {
+__device__
+void deproject_pixel_to_point_cuda(float points[3], const struct rs2_intrinsics * intrin, const float pixel[2], float depth) {
     assert(intrin->model != RS2_DISTORTION_MODIFIED_BROWN_CONRADY); // Cannot deproject from a forward-distorted image
     assert(intrin->model != RS2_DISTORTION_FTHETA); // Cannot deproject to an ftheta image
     //assert(intrin->model != RS2_DISTORTION_BROWN_CONRADY); // Cannot deproject to an brown conrady model
-
-    float x = (pixel[0] - intrin->ppx) / intrin->fx;
-    float y = (pixel[1] - intrin->ppy) / intrin->fy;
+    float x = (pixel[0] - intrin->ppx) * intrin->fx;
+    float y = (pixel[1] - intrin->ppy) * intrin->fy;
     if(intrin->model == RS2_DISTORTION_INVERSE_BROWN_CONRADY)
     {
         float r2  = x*x + y*y;
@@ -21,61 +25,118 @@ void deproject_pixel_to_point_cuda(float point[3], const struct rs2_intrinsics *
         x = ux;
         y = uy;
     }
-    point[0] = depth * x;
-    point[1] = depth * y;
-    point[2] = depth;
+    points[0] = depth * x;
+    points[1] = depth * y;
+    points[2] = depth;
+    
 }
 
-template<class MAP_DEPTH>
+
 __global__
-void kernel_deproject_depth_cuda(float * points, const rs2_intrinsics & intrin, const uint16_t * depth, std::function<uint16_t(float)> map_depth)
+//void kernel_deproject_depth_cuda(float * points, const rs2_intrinsics & intrin, const uint16_t * depth, std::function<uint16_t(float)> map_depth)
+
+void kernel_deproject_depth_cuda(float * points, const rs2_intrinsics* intrin, const uint16_t * depth, float depth_scale)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
-    deproject_pixel_to_point_cuda(points[i * 3], &intrin, pixel, map_depth(depth[i]); 
-    /*
-    
-    for (int y = 0; y<intrin.height; ++y)
-    {
-        for (int x = 0; x<intrin.width; ++x)
-        {
-            const float pixel[] = { (float)x, (float)y };
-            rs2_deproject_pixel_to_point(points, &intrin, pixel, map_depth(*depth++));
-            points += 3;
-        }
-    }
-    */
+    if (i >= (*intrin).height * (*intrin).width)
+        return;
+    int stride = blockDim.x * gridDim.x;
+    int a, b;
+
+    for (int j = i; j < (*intrin).height * (*intrin).width; j += stride) {
+        
+    //    x = (blockIdx.x * blockDim.x) + threadIdx.x;
+     //   y = (blockIdx.y * blockDim.y) + threadIdx.y;
+        
+     //   printf("x, y: %d, %d\n", x, y);
+        
+    //    if (x >= (*intrin).height || y >= (*intrin).width) return;
+        b = floorf( j / (*intrin).width );
+        a = j - b * (*intrin).width;
+        const float pixel[] = { (float)a, (float)b };
+        deproject_pixel_to_point_cuda(points + j * 3, intrin, pixel, map_depth(depth_scale, depth[j]));                     
+   }
 }
 
 
 
-void deproject_depth_cuda(float * points, const rs2_intrinsics & intrin, const uint16_t * depth, std::function<uint16_t(float)> map_depth)
+void rsimpl::deproject_depth_cuda(float * points, const rs2_intrinsics & intrin, const uint16_t * depth, float depth_scale)
 {
-// need to copy: points, intrin?, depth
     int count = intrin.height * intrin.width;
     int numBlocks = count / RS2_CUDA_THREADS_PER_BLOCK;
     
-    float *devPoints = 0;	
-	uint16_t *devDepth = 0;
-
-	cudaError_t result = cudaMalloc(&devPoints, count * sizeof(float) * 3);
-	assert(result == cudaSuccess);
-	
-	result = cudaMemcpy(devPoints, points, count * sizeof(float) * 3, cudaMemcpyHostToDevice);
-	assert(result == cudaSuccess);
-	
-    result = cudaMalloc(&devDepth, count * sizeof(float));
-	assert(result == cudaSuccess);
-	
-	result = cudaMemcpy(devDepth, depth, count * sizeof(float), cudaMemcpyHostToDevice);
-	assert(result == cudaSuccess);
-	
-	kernel_deproject_depth_cuda<<<numBlocks, RS2_CUDA_THREADS_PER_BLOCK>>>(devPoints, intrin, depth, map_depth);
+ //   std::cout << "image size: " << intrin.height << "*" << intrin.width << std::endl;
     
-    result = cudaMemcpy(points, devPoints, count * sizeof(float) * 3, cudaMemcpyHostToDevice);
-	assert(result == cudaSuccess);
-        
-    cudaFree(devPoints);
-    cudaFree(devDepth);
+    float *dev_points = 0;	
+    uint16_t *dev_depth = 0;
+    rs2_intrinsics* dev_intrin = 0;
+    
+  //   float *pinned_points = 0;	
+    
+ //   cudaStream_t streams[3];
+    cudaError_t result;
+    cudaStream_t stream1;
+    cudaStream_t stream2;
+ //   size_t pitch;
+    
+    cudaStreamCreate(&stream1);
+    cudaStreamCreate(&stream2);
+   
+  //  result = cudaMallocHost(&pinned_points, count * sizeof(float) * 3);
+  //  assert(result == cudaSuccess);
+    
+    result = cudaMalloc(&dev_points, count * sizeof(float) * 3);
+ //   result = cudaMallocPitch(&dev_points, &pitch, intrin.width * sizeof(float) * 3, intrin.height);
+    assert(result == cudaSuccess);
+    
+    result = cudaMalloc(&dev_depth, count * sizeof(uint16_t));
+    assert(result == cudaSuccess);
+   
+    
+    result = cudaMemcpyAsync(dev_depth, depth, count * sizeof(uint16_t), cudaMemcpyHostToDevice, stream1);
+    result = cudaMemcpy(dev_depth, depth, count * sizeof(uint16_t), cudaMemcpyHostToDevice);
+    assert(result == cudaSuccess);
+
+    result = cudaMalloc(&dev_intrin, sizeof(rs2_intrinsics));
+    assert(result == cudaSuccess);
+
+    result = cudaMemcpyAsync(dev_intrin, &intrin, sizeof(rs2_intrinsics), cudaMemcpyHostToDevice, stream2);
+    result = cudaMemcpy(dev_intrin, &intrin, sizeof(rs2_intrinsics), cudaMemcpyHostToDevice);
+    assert(result == cudaSuccess);
+    
+    
+    dev_intrin->fx = 1 / dev_intrin->fx;
+    dev_intrin->fy = 1 / dev_intrin->fy;
+    
+  
+    cudaStreamSynchronize(stream2);
+    cudaStreamSynchronize(stream1);
+
+    
+    kernel_deproject_depth_cuda<<<numBlocks, RS2_CUDA_THREADS_PER_BLOCK>>>(dev_points, dev_intrin, dev_depth, depth_scale); 
+
+    result = cudaMemcpy(points, dev_points, count * sizeof(float) * 3, cudaMemcpyDeviceToHost);
+    memcpy(points, points, count * sizeof(float) * 3);
+  
+//  result = cudaMemcpy(pinned_points, dev_points, count * sizeof(float) * 3, cudaMemcpyDeviceToHost);
+    
+  //  cudaMemcpy2D(points, intrin.width * sizeof(float) * 3, dev_points, pitch, intrin.width * sizeof(float) * 3, intrin.height, cudaMemcpyDeviceToHost);
+  //  printf("result: %d \n", result);
+    assert(result == cudaSuccess);
+ /*   
+    for (int i = 0; i < 3; i++) 
+    {
+        result = cudaStreamDestroy(streams[i]);
+    }    
+    */
+    
+    result = cudaStreamDestroy(stream1);
+    result = cudaStreamDestroy(stream2);
+    assert(result == cudaSuccess);
+    
+    cudaFree(dev_points);
+    cudaFree(dev_depth);
+    cudaFree(dev_intrin);
 }
 
 #endif

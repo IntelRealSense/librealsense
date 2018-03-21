@@ -28,6 +28,7 @@ function(assign_version_property VER_COMPONENT)
     set(REALSENSE_VERSION_${VER_COMPONENT} ${tmp} PARENT_SCOPE)
 endfunction()
 
+
 set(REALSENSE_VERSION_MAJOR -1)
 set(REALSENSE_VERSION_MINOR -1)
 set(REALSENSE_VERSION_PATCH -1)
@@ -42,11 +43,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
+
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+if(COMPILER_SUPPORTS_CXX11)   
+    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CUDA_STANDARD 11)
 elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
@@ -106,12 +109,6 @@ if (BUILD_EASYLOGGINGPP)
     add_definitions(-DBUILD_EASYLOGGINGPP)
 endif()
 
-#set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-gencode=arch=compute_62,code=SM_62; -std=c++11")
-#find_package(CUDA QUIET)
-#include_directories(${CUDA_INCLUDE_DIRS})
-#SET(ALL_CUDA_LIBS ${CUDA_LIBRARIES} ${CUDA_cusparse_LIBRARY} ${CUDA_cublas_LIBRARY})
-#SET(LIBS ${LIBS} ${ALL_CUDA_LIBS})
-#message(STATUS "CUDA_LIBRARIES: ${CUDA_INCLUDE_DIRS} ${ALL_CUDA_LIBS}")
 
 find_package(CUDA QUIET)
 if(CUDA_FOUND)
@@ -121,14 +118,9 @@ if(CUDA_FOUND)
     message(STATUS "CUDA_LIBRARIES: ${CUDA_INCLUDE_DIRS} ${ALL_CUDA_LIBS}")
     set(CUDA_PROPAGATE_HOST_FLAGS OFF)
     set(CUDA_SEPARABLE_COMPILATION ON)
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}; -std=c++11; -gencode=arch=compute_62,code=SM_62;")
-    # TODO: Make this nicer
-    #if(COMPILER_SUPPORTS_CXX11)
-    #    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-std=c++11")
-    #elseif(COMPILER_SUPPORTS_CXX0X)
-    #    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-std=c++0x")
-    #endif()
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}; -gencode=arch=compute_62,code=SM_62;")
 endif()
+
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
@@ -762,12 +754,6 @@ if(BUILD_SHARED_LIBS)
 else()
         add_library(realsense2 STATIC ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_CU} ${REALSENSE_CUH})
 endif()
-
-
-#if (BUILD_WITH_CUDA)
-#    set_property(TARGET realsense2
-#        PROPERTY CUDA_SEPARABLE_COMPILATION ON)
-#endif()
 
 
 if(BUILD_WITH_TM2)

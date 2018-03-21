@@ -8,6 +8,7 @@
 // capture depth and color video streams and render them to the screen
 int main(int argc, char * argv[]) try
 {
+    rs2::log_to_console(RS2_LOG_SEVERITY_ERROR);
     // Create a simple OpenGL window for rendering:
     window app(1280, 720, "RealSense Capture Example");
     // Declare two textures on the GPU, one for color and one for depth
@@ -17,9 +18,11 @@ int main(int argc, char * argv[]) try
     rs2::colorizer color_map;
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
+    rs2::config cfg;
+    cfg.enable_stream(RS2_STREAM_COLOR, -1, 1920, 1080, RS2_FORMAT_RGB8, 30);
     rs2::pipeline pipe;
     // Start streaming with default recommended configuration
-    pipe.start();
+    pipe.start(cfg);
 
     while(app) // Application still alive?
     {

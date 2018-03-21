@@ -1,6 +1,6 @@
 #pragma once
-#ifndef LIBREALSENSE_CUDA_CONVERSION_H
-#define LIBREALSENSE_CUDA_CONVERSION_H
+#ifndef LIBREALSENSE_CUDA_POINTCLOUD_H
+#define LIBREALSENSE_CUDA_POINTCLOUD_H
 
 #ifdef RS2_USE_CUDA
 
@@ -8,8 +8,8 @@
 #include <stdint.h>
 #include "../../include/librealsense2/rs.h"
 #include "assert.h"
-#include "../types.h"
 #include "../../include/librealsense2/rsutil.h"
+#include <functional>
 
 // CUDA headers
 #include <cuda_runtime.h>
@@ -19,14 +19,14 @@
 #pragma comment(lib, "cudart_static")
 #endif
 
-#define RS2_CUDA_THREADS_PER_BLOCK 128
+#define RS2_CUDA_THREADS_PER_BLOCK 256
 
 namespace rsimpl
 {
-    void deproject_depth_cuda(float * points, const rs2_intrinsics & intrin, const uint16_t * depth, std::function<uint16_t(float)> map_depth);
+    void deproject_depth_cuda(float * points, const rs2_intrinsics & intrin, const uint16_t * depth, float depth_scale);
 
 }
 
 #endif // RS2_USE_CUDA
 
-#endif // LIBREALSENSE_CUDA_CONVERSION_H
+#endif // LIBREALSENSE_CUDA_POINTCLOUD_H

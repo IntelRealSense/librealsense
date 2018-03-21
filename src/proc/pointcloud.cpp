@@ -9,6 +9,9 @@
 #include "proc/occlusion-filter.h"
 #include "proc/pointcloud.h"
 #include "option.h"
+
+#include <iostream>
+
 #ifdef RS2_USE_CUDA
 #include "../cuda/cuda-pointcloud.cuh"
 #elif __SSSE3__
@@ -31,13 +34,18 @@ namespace librealsense
         }
     }
 
-    const float3 * depth_to_points(uint8_t* image, const rs2_intrinsics &depth_intrinsics, const uint16_t * depth_image, float depth_scale)
+    const float3 * depth_to_points( uint8_t* image, const rs2_intrinsics &depth_intrinsics, const uint16_t * depth_image, float depth_scale)
     {
+        auto now = std::chrono::high_resolution_clock::now();
 #ifdef RS2_USE_CUDA
-        rsimpl::deproject_depth_cuda(reinterpret_cast<float *>(image), depth_intrinsics, depth_image, [depth_scale](uint16_t z) { return depth_scale * z; });
+        rsimpl::deproject_depth_cuda(reinterpret_cast<float *>(image), depth_intrinsics, depth_image, depth_scale);
 #else
         deproject_depth(reinterpret_cast<float *>(image), depth_intrinsics, depth_image, [depth_scale](uint16_t z) { return depth_scale * z; });
 #endif
+        // record time
+        auto now2 = std::chrono::high_resolution_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now2 - now).count();
+        std::cout << elapsed << std::endl;
         return reinterpret_cast<float3 *>(image);
     }
 
