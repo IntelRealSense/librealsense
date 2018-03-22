@@ -5,6 +5,26 @@
 #include "sensor.h"
 #include "error-handling.h"
 
+bool option_base::is_valid(float value) const
+{
+    if (!std::isnormal(_opt_range.step))
+        throw invalid_value_exception(to_string() << "is_valid(...) failed! step is not properly defined. (" << _opt_range.step << ")");
+
+    if ((value < _opt_range.min) || (value > _opt_range.max))
+        return false;
+
+    auto n = (value - _opt_range.min) / _opt_range.step;
+    return (fabs(fmod(n, 1)) < std::numeric_limits<float>::min());
+}
+
+option_range option_base::get_range() const
+{
+    return _opt_range;
+}
+void option_base::enable_recording(std::function<void(const option&)> recording_action)
+{
+    _recording_function = recording_action;
+}
 
 void option::create_snapshot(std::shared_ptr<option>& snapshot) const
 {

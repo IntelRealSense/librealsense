@@ -300,7 +300,7 @@ namespace librealsense
 
     void auto_exposure_step_option::set(float value)
     {
-        if ((!std::isnormal(_opt_range.step)))
+        if (!std::isnormal(_opt_range.step) || ((value < _opt_range.min) || (value > _opt_range.max)))
             throw invalid_value_exception(to_string() << "set(auto_exposure_step_option) failed! Given value " << value << " is out of range.");
 
         _auto_exposure_state->set_auto_exposure_step(value);
