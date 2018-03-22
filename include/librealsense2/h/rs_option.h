@@ -62,6 +62,7 @@ typedef enum rs2_option
     RS2_OPTION_FILTER_SMOOTH_DELTA                        , /**< 2D-filter range/validity threshold*/
     RS2_OPTION_HOLES_FILL                                 , /**< Enhance depth data post-processing with holes filling where appropriate*/
     RS2_OPTION_STEREO_BASELINE                            , /**< The distance in mm between the first and the second imagers in stereo-based depth cameras*/
+    RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP                , /**< Allows dynamically ajust the converge step value of the target exposure in Auto-Exposure algorithm*/
     RS2_OPTION_COUNT                                        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
 const char* rs2_option_to_string(rs2_option option);

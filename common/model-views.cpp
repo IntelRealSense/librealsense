@@ -431,9 +431,19 @@ namespace rs2
                         }
                         else
                         {
+                            auto step = fmod(range.step, 1);
+                            int pow_val = 10;
+                            while ((step *= 10.f) < 0.f)
+                            {
+                                pow_val *= 10;
+                            }
+
                             if (ImGui::SliderFloat(id.c_str(), &value,
                                 range.min, range.max, "%.4f"))
                             {
+                                value = (value < range.min) ? range.min : value;
+                                value = (value > range.max) ? range.max : value;
+                                value = (int)(value * pow_val) / (float)(pow_val);
                                 model.add_log(to_string() << "Setting " << opt << " to " << value);
                                 endpoint->set_option(opt, value);
                                 res = true;

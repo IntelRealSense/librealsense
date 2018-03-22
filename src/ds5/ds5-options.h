@@ -131,6 +131,29 @@ namespace librealsense
         std::shared_ptr<auto_exposure_mechanism>    _auto_exposure;
     };
 
+    class auto_exposure_step_option : public option_base
+    {
+    public:
+        auto_exposure_step_option(std::shared_ptr<auto_exposure_mechanism> auto_exposure,
+                                  std::shared_ptr<auto_exposure_state> auto_exposure_state,
+                                  const option_range& opt_range);
+
+        void set(float value) override;
+
+        float query() const override;
+
+        bool is_enabled() const override { return true; }
+
+        const char* get_description() const override
+        {
+            return "Auto-Exposure converge step";
+        }
+
+    private:
+        std::shared_ptr<auto_exposure_state>        _auto_exposure_state;
+        std::shared_ptr<auto_exposure_mechanism>    _auto_exposure;
+    };
+
     class auto_exposure_antiflicker_rate_option : public option_base
     {
     public:
