@@ -9,7 +9,7 @@ After plugging the camera into a USB3 port, you should be able to see the newly 
 
 ## Intel RealSense Viewer
 
-- Go to the [latest stable release](https://github.com/IntelRealSense/librealsense/releases/latest), navigate to the **Downloads** section, download and run **Intel.RealSense.Viewer.Portable.exe**:
+- Go to the [latest stable release](https://github.com/IntelRealSense/librealsense/releases/latest), navigate to the **Downloads** section, download and run **Intel.RealSense.Viewer.exe**:
 ![GitHub Downloads](./img/win_deploy_downloads.PNG)
 
 - Explore the depth data:
