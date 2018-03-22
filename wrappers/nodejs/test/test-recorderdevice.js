@@ -296,4 +296,52 @@ describe('RecorderDevice test', function() {
       });
     });
   }).timeout(5000);
+
+  it('Testing member - fileName', () => {
+    return new Promise((resolve, reject) => {
+      startRecording(fileName, 2, (recorder, cnt) => {
+        if (cnt === 1) {
+          assert(recorder.fileName === fileName);
+        }
+      }).then(() => {
+        assert(fs.existsSync(fileName));
+        resolve();
+      }).catch((e) => {
+        reject(e);
+      });
+    });
+  }).timeout(5000);
+
+  it('Testing member - fileName with absolute path', () => {
+    fileName = '/tmp/abs.bag';
+    return new Promise((resolve, reject) => {
+      startRecording(fileName, 2, (recorder, cnt) => {
+        if (cnt === 1) {
+          assert(recorder.fileName === fileName);
+          assert(fs.existsSync(fileName));
+        }
+      }).then(() => {
+        resolve();
+      }).catch((e) => {
+        reject(e);
+      });
+    });
+  }).timeout(5000);
+
+  it('Testing member - fileName is existing', () => {
+    return new Promise((resolve, reject) => {
+      fs.closeSync(fs.openSync(fileName, 'w'));
+      assert(fs.existsSync(fileName));
+      startRecording(fileName, 2, (recorder, cnt) => {
+        if (cnt === 1) {
+          assert(recorder.fileName === fileName);
+          assert(fs.existsSync(fileName));
+        }
+      }).then(() => {
+        resolve();
+      }).catch((e) => {
+        reject(e);
+      });
+    });
+  }).timeout(5000);
 });

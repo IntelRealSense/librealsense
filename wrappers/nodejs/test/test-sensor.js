@@ -4,7 +4,7 @@
 
 'use strict';
 
-/* global describe, it, before, after */
+/* global describe, it, beforeEach, afterEach */
 const assert = require('assert');
 let rs2;
 try {
@@ -16,13 +16,16 @@ try {
 let ctx;
 let sensors;
 describe('Sensor test', function() {
-  before(function() {
+  beforeEach(function() {
     ctx = new rs2.Context();
     sensors = ctx.querySensors();
     assert(sensors.length > 0); // Sensor must be connected
   });
 
-  after(function() {
+  afterEach(function() {
+    sensors.forEach((sensor) => {
+      sensor.stop();
+    });
     rs2.cleanup();
   });
 
@@ -260,28 +263,100 @@ describe('Sensor test', function() {
     });
   });
 
+  it('Testing method open, w/ two args', () => {
+    sensors.forEach((sensor) => {
+      const profiles = sensor.getStreamProfiles();
+      for (let i in profiles) {
+        assert.throws(() => { // jshint ignore:line
+          sensor.open(profiles[i], profiles);
+        });
+      }
+    });
+  });
+
+  it('Testing method open, w/o args', () => {
+    sensors.forEach((sensor) => {
+      assert.throws(() => {
+        sensor.open();
+      });
+    });
+  });
+
+  it('Testing method open, w/ invaild args', () => {
+    sensors.forEach((sensor) => {
+      assert.throws(() => {
+        sensor.open('dummy');
+      });
+    });
+  });
+
+  it('Testing method close check reopen', () => {
+    sensors.forEach((sensor) => {
+      const profiles = sensor.getStreamProfiles();
+      assert.doesNotThrow(() => {
+        sensor.close();
+      });
+      assert.doesNotThrow(() => {
+        sensor.open(profiles);
+      });
+    });
+  });
+
+  it('Testing method destroy check reopen', () => {
+    sensors.forEach((sensor) => {
+      const profiles = sensor.getStreamProfiles();
+      assert.doesNotThrow(() => {
+        sensor.destroy();
+        assert.equal(sensor.cxxSensor, undefined);
+        assert.equal(sensor._events, null);
+      });
+      assert.throws(() => {
+        sensor.open(profiles);
+      });
+    });
+  });
+
   it('Testing method start, with callback', () => {
+    let promises = [];
+    sensors.forEach((sensor) => {
+      let promise = new Promise((resolve) => {
+        const profiles = sensor.getStreamProfiles();
+        for (let i in profiles) {
+          assert.doesNotThrow(() => { // jshint ignore:line
+            sensor.open(profiles[i]);
+          });
+          sensor.start((frame) => { // jshint ignore:line
+            assert.equal(typeof frame, 'object');
+            assert.equal(typeof frame.isValid, 'boolean');
+            assert.equal(Object.prototype.toString.call(frame.data), '[object Uint16Array]');
+            assert.equal(typeof frame.width, 'number');
+            assert.equal(typeof frame.height, 'number');
+            assert.equal(typeof frame.frameNumber, 'number');
+            assert.equal(typeof frame.timestamp, 'number');
+            assert.equal(typeof frame.streamType, 'number');
+            assert.equal(typeof frame.dataByteLength, 'number');
+            assert.equal(typeof frame.strideInBytes, 'number');
+            assert.equal(typeof frame.bitsPerPixel, 'number');
+            assert.equal(typeof frame.timestampDomain, 'number');
+            sensor.stop();
+            resolve();
+          });
+        }
+      });
+      promises.push(promise);
+    });
+    return Promise.all(promises);
+  });
+
+  it('Testing method start, w/ syncer', () => {
+    let syncer = new rs2.Syncer();
     sensors.forEach((sensor) => {
       const profiles = sensor.getStreamProfiles();
       for (let i in profiles) {
         assert.doesNotThrow(() => { // jshint ignore:line
           sensor.open(profiles[i]);
         });
-        sensor.start((frame) => { // jshint ignore:line
-          assert.equal(typeof frame, 'object');
-          assert.equal(typeof frame.isValid, 'boolean');
-          assert.equal(Object.prototype.toString.call(frame.data), '[object Uint16Array]');
-          assert.equal(typeof frame.width, 'number');
-          assert.equal(typeof frame.height, 'number');
-          assert.equal(typeof frame.frameNumber, 'number');
-          assert.equal(typeof frame.timestamp, 'number');
-          assert.equal(typeof frame.streamType, 'number');
-          assert.equal(typeof frame.dataByteLength, 'number');
-          assert.equal(typeof frame.strideInBytes, 'number');
-          assert.equal(typeof frame.bitsPerPixel, 'number');
-          assert.equal(typeof frame.timestampDomain, 'string');
-        });
-        sensor.stop();
+        sensor.start(syncer);
       }
     });
   });
@@ -294,10 +369,124 @@ describe('Sensor test', function() {
     });
   });
 
-  it('Testing method setNotificationsCallback', () => {
+  it('Testing method destroy', () => {
+    sensors.forEach((sensor) => {
+      assert.doesNotThrow(() => {
+        sensor.destroy();
+      });
+    });
+  });
+
+  it('Testing method setNotificationsCallback notification', () => {
+    return new Promise((resolve, reject) => {
+      let dev = ctx.queryDevices().devices[0];
+      sensors[0].setNotificationsCallback((n) => {
+        assert.equal(typeof n.descr, 'string');
+        assert.equal(typeof n.timestamp, 'number');
+        assert.equal(typeof n.severity, 'string');
+        assert.equal(typeof n.category, 'string');
+        resolve();
+      });
+      setTimeout(() => {
+        dev.cxxDev.triggerErrorForTest();
+      }, 100);
+    });
+  });
+
+  it('Testing method setNotificationsCallback w/o args', () => {
     sensors.forEach((sensor) => {
       assert.throws(() => {
         sensor.setNotificationsCallback();
+      });
+    });
+  });
+
+  it('Testing method setNotificationsCallback w/ invaild args', () => {
+    sensors.forEach((sensor) => {
+      assert.throws(() => {
+        sensor.setNotificationsCallback('dummy');
+      });
+    });
+  });
+
+  it('Testing method supportsCameraInfo w/ number', () => {
+    sensors.forEach((sensor) => {
+      assert.doesNotThrow(() => {
+        for (let i = rs2.camera_info.CAMERA_INFO_NAME; i < rs2.camera_info.CAMERA_INFO_COUNT; i++) {
+          let obj = sensor.supportsCameraInfo(i);
+          assert.equal(typeof obj, 'boolean');
+        }
+      });
+    });
+  });
+
+  it('Testing method getCameraInfo w/ number', () => {
+    sensors.forEach((sensor) => {
+      assert.doesNotThrow(() => {
+        for (let i = rs2.camera_info.CAMERA_INFO_NAME; i < rs2.camera_info.CAMERA_INFO_COUNT; i++) {
+          if (sensor.supportsCameraInfo(i)) {
+            let obj = sensor.getCameraInfo(i);
+            assert.equal(typeof obj, 'string');
+          }
+        }
+      });
+    });
+  });
+
+  it('Testing method getCameraInfo w/ string', () => {
+    sensors.forEach((sensor) => {
+      assert.doesNotThrow(() => {
+        for (let i = rs2.camera_info.CAMERA_INFO_NAME; i < rs2.camera_info.CAMERA_INFO_COUNT; i++) {
+          let info = rs2.camera_info.cameraInfoToString(i);
+          if (sensor.supportsCameraInfo(info)) {
+            let obj = sensor.getCameraInfo(info);
+            assert.equal(typeof obj, 'string');
+          }
+        }
+      });
+    });
+  });
+
+  it('Testing method supportsCameraInfo w/ string', () => {
+    sensors.forEach((sensor) => {
+      assert.doesNotThrow(() => {
+        for (let i = rs2.camera_info.CAMERA_INFO_NAME; i < rs2.camera_info.CAMERA_INFO_COUNT; i++) {
+          let info = rs2.camera_info.cameraInfoToString(i);
+          let obj = sensor.supportsCameraInfo(info);
+          assert.equal(typeof obj, 'boolean');
+        }
+      });
+    });
+  });
+
+  it('Testing method getCameraInfo w/ invaild info', () => {
+    sensors.forEach((sensor) => {
+      assert.throws(() => {
+        sensor.getCameraInfo('dummy');
+      });
+    });
+  });
+
+  it('Testing method supportsCameraInfo w/ invaild info', () => {
+    sensors.forEach((sensor) => {
+      assert.throws(() => {
+        sensor.supportsCameraInfo('dummy');
+      });
+    });
+  });
+
+  it('Testing method supportsCameraInfo w/o args ', () => {
+    sensors.forEach((sensor) => {
+      assert.throws(() => {
+        sensor.supportsCameraInfo();
+      });
+    });
+  });
+
+  it('Testing method getCameraInfo w/o args', () => {
+    sensors.forEach((sensor) => {
+      assert.throws(() => {
+        sensor.getCameraInfo();
       });
     });
   });
