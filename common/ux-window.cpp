@@ -45,6 +45,9 @@ namespace rs2
         // Create GUI Windows
         _win = glfwCreateWindow(_width, _height, _title_str.c_str(),
             (_fullscreen ? primary : nullptr), nullptr);
+        if (!_win) 
+            throw std::runtime_error("Could not open OpenGL window, please check your graphic drivers or use the textual SDK tools");
+
         glfwMakeContextCurrent(_win);
         ImGui_ImplGlfw_Init(_win, true);
 

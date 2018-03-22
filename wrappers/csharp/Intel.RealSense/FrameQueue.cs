@@ -20,7 +20,12 @@ namespace Intel.RealSense
         public bool PollForFrame(out Frame frame)
         {
             object error;
-            return NativeMethods.rs2_poll_for_frame(m_instance.Handle, out frame, out error) > 0;
+            if(NativeMethods.rs2_poll_for_frame(m_instance.Handle, out frame, out error) > 0)
+            {
+                frame = FrameSet.CreateFrame(frame.m_instance.Handle);
+                return true;
+            }
+            return false;
         }
 
         public Frame WaitForFrame()
@@ -39,6 +44,12 @@ namespace Intel.RealSense
             return frame;
         }
 
+        public void Enqueue(Frame f)
+        {
+            object error;
+            NativeMethods.rs2_frame_add_ref(f.m_instance.Handle, out error);
+            NativeMethods.rs2_enqueue_frame(f.m_instance.Handle, m_instance.Handle);
+        }
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 

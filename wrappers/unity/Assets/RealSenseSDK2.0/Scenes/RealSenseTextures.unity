@@ -285,6 +285,21 @@ Prefab:
       propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 312912468}
+    - target: {fileID: 198902074929829518, guid: c88c4d8330157094da830413654dd969,
+        type: 2}
+      propertyPath: randomSeed
+      value: -239482275
+      objectReference: {fileID: 0}
+    - target: {fileID: 198902074929829518, guid: c88c4d8330157094da830413654dd969,
+        type: 2}
+      propertyPath: EmissionModule.enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 198902074929829518, guid: c88c4d8330157094da830413654dd969,
+        type: 2}
+      propertyPath: ShapeModule.enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: c88c4d8330157094da830413654dd969, type: 2}
   m_IsPrefabParent: 0

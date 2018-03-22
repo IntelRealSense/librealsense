@@ -516,7 +516,7 @@ class VideoStreamProfile extends StreamProfile {
 
   /**
    * When called on a VideoStreamProfile, returns the intrinsics of specific stream configuration
-   * @return {IntrinsicsObject}
+   * @return {IntrinsicsObject|undefined}
    */
   getIntrinsics() {
     return this.cxxProfile.getVideoStreamIntrinsics();
@@ -1038,6 +1038,19 @@ const internal = {
   ctx: [],
   objs: [],
 
+  // Register error callback to native code
+  registerErrorCallback: function() {
+    RS2.registerErrorCallback(this, 'errorCallback');
+  },
+
+  // The callback method called from native side
+  errorCallback: function(error) {
+    if (error.recoverable === false) {
+      throw new TypeError('Unrecoverable error, native function ' + error.nativeFunction + ': ' +
+          error.description);
+    }
+  },
+
   addContext: function(c) {
     this.ctx.push(c);
   },
@@ -1215,14 +1228,18 @@ class Context {
    * Create a PlaybackDevice to playback recored data file.
    *
    * @param {String} file - the file path
-   * @return {PlaybackDevice}
+   * @return {PlaybackDevice|undefined}
    */
   loadDevice(file) {
     const funcName = 'Context.loadDevice()';
     checkArgumentLength(1, 1, arguments.length, funcName);
     checkArgumentType(arguments, 'string', 0, funcName);
     checkFileExistence(file);
-    return new PlaybackDevice(this.cxxCtx.loadDeviceFile(file), file);
+    const cxxDev = this.cxxCtx.loadDeviceFile(file);
+    if (!cxxDev) {
+      return undefined;
+    }
+    return new PlaybackDevice(cxxDev, file);
   }
 
   /**
@@ -1541,9 +1558,11 @@ internal.PlaybackContext = PlaybackContext;
  * In addition, given non-depth frame, the block will align texture coordinate to the non-depth
  * stream
  */
-class PointCloud {
+class PointCloud extends Options {
   constructor() {
+    super();
     this.cxxPointCloud = new RS2.RSPointCloud();
+    this.setCxxOptionsObject(this.cxxPointCloud);
     this.pointsFrame = new Points();
   }
 
@@ -2203,11 +2222,10 @@ class PoseFrame extends Frame {
 
   /**
    * Get the pose data
-   * @return {PoseData}
+   * @return {PoseData|undefined}
    */
   get poseData() {
-    this.cxxFrame.getPoseData(this._pose);
-    return this._pose;
+    return (this.cxxFrame.getPoseData(this._pose)) ? this._pose : undefined;
   }
 }
 
@@ -5649,13 +5667,36 @@ const constants = {
   playback_status: playback_status,
 };
 
+/**
+ * Cleanup resources
+ */
 function cleanup() {
   internal.cleanup();
   RS2.globalCleanup();
 }
 
+/**
+ * Error Information returned from native SDK
+ * @typedef {Object} ErrorInfoObject
+ * @property {Boolean} recoverable - True if the error is a recoverable error
+ * @property {String} description - Detailed description of the error
+ * @property {String} nativeFunction - Native function that triggered the error
+ * @see [getError()]{@link getError}
+ */
+
+/**
+ * Get the error info
+ * User could call this method to get the detailed error info if the previous
+ * API failed.
+ * @return {ErrorInfoObject|undefined} If there is no error, undefined is returned
+ */
+function getError() {
+  return RS2.getError();
+}
+
 module.exports = {
   cleanup: cleanup,
+  getError: getError,
 
   Context: Context,
   Pipeline: Pipeline,
@@ -5711,3 +5752,5 @@ module.exports = {
 
   stringConstantToIntegerValue: str2Int,
 };
+
+internal.registerErrorCallback();

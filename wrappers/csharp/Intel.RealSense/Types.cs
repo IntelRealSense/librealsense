@@ -176,6 +176,7 @@ namespace Intel.RealSense
         FilterSmoothDelta = 38,
         HolesFill = 39,
         StereoBaseline = 40,
+        AutoExposureConvergeStep = 41,
     }
 
     public enum Sr300VisualPreset

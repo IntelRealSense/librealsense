@@ -48,8 +48,8 @@ describe('Disparity transform tests', function() {
   });
 });
 
-describe('Points.exportToPly', function() {
-  it('exportToPly', () => {
+describe('Points and Pointcloud test', function() {
+  it('Points.exportToPly', () => {
     const pc = new rs2.PointCloud();
     const pipe = new rs2.Pipeline();
     const file = 'points.ply';
@@ -60,6 +60,15 @@ describe('Points.exportToPly', function() {
     assert.equal(fs.existsSync(file), true);
     fs.unlinkSync(file);
     pipe.stop();
+    rs2.cleanup();
+  });
+  it('Pointcloud options API test', () => {
+    const pc = new rs2.PointCloud();
+    for (let i = rs2.option.OPTION_BACKLIGHT_COMPENSATION; i < rs2.option.OPTION_COUNT; i++) {
+      if (pc.supportsOption(i)) {
+        assert.equal(typeof pc.getOption(i), 'number');
+      }
+    }
     rs2.cleanup();
   });
 });
@@ -282,5 +291,25 @@ describe('infrared frame tests', function() {
     assert.equal(frame.profile.streamType === rs2.stream.STREAM_INFRARED, true);
     assert.equal(frame.profile.streamIndex === 1, true);
     pipe.stop();
+  });
+});
+
+describe('Native error tests', function() {
+  it('trigger native error test', () => {
+    const file = 'test.rec';
+    fs.writeFileSync(file, 'dummy');
+    const ctx = new rs2.Context();
+    assert.throws(() => {
+      ctx.loadDevice(file);
+    }, (err) => {
+      assert.equal(err instanceof TypeError, true);
+      let errInfo = rs2.getError();
+      assert.equal(errInfo.recoverable, false);
+      assert.equal(typeof errInfo.description, 'string');
+      assert.equal(typeof errInfo.nativeFunction, 'string');
+      return true;
+    });
+    rs2.cleanup();
+    fs.unlinkSync(file);
   });
 });

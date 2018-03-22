@@ -90,24 +90,44 @@ namespace librealsense
 
     void software_sensor::open(const stream_profiles& requests)
     {
+        if (_is_streaming)
+            throw wrong_api_call_sequence_exception("open(...) failed. Software device is streaming!");
+        else if (_is_opened)
+            throw wrong_api_call_sequence_exception("open(...) failed. Software device is already opened!");
+        _is_opened = true;
         set_active_streams(requests);
     }
 
     void software_sensor::close()
     {
+        if (_is_streaming)
+            throw wrong_api_call_sequence_exception("close() failed. Software device is streaming!");
+        else if (!_is_opened)
+            throw wrong_api_call_sequence_exception("close() failed. Software device was not opened!");
+        _is_opened = false;
         set_active_streams({});
     }
 
     void software_sensor::start(frame_callback_ptr callback)
     {
+        if (_is_streaming)
+            throw wrong_api_call_sequence_exception("start_streaming(...) failed. Software device is already streaming!");
+        else if (!_is_opened)
+            throw wrong_api_call_sequence_exception("start_streaming(...) failed. Software device was not opened!");
+        _source.get_published_size_option()->set(0);
         _source.init(_metadata_parsers);
         _source.set_sensor(this->shared_from_this());
         _source.set_callback(callback);
+        _is_streaming = true;
         raise_on_before_streaming_changes(true);
     }
 
     void software_sensor::stop()
     {
+        if (!_is_streaming)
+            throw wrong_api_call_sequence_exception("stop_streaming() failed. Software device is not streaming!");
+
+        _is_streaming = false;
         raise_on_before_streaming_changes(false);
         _source.flush();
         _source.reset();
@@ -124,11 +144,13 @@ namespace librealsense
             RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME;
 
         auto frame = _source.alloc_frame(extension, 0, data, false);
-        if (!frame) return;
-
+        if (!frame)
+        {
+            return;
+        }
         auto vid_profile = dynamic_cast<video_stream_profile_interface*>(software_frame.profile->profile);
         auto vid_frame = dynamic_cast<video_frame*>(frame);
-        vid_frame->assign(vid_profile->get_width(), vid_profile->get_height(), software_frame.stride, software_frame.bpp);
+        vid_frame->assign(vid_profile->get_width(), vid_profile->get_height(), software_frame.stride, software_frame.bpp * 8);
 
         frame->set_stream(std::dynamic_pointer_cast<stream_profile_interface>(software_frame.profile->profile->shared_from_this()));
         frame->attach_continuation(frame_continuation{ [=]() {

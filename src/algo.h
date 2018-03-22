@@ -15,6 +15,8 @@
 
 namespace librealsense
 {
+    static const float ae_step_default_value = 0.5f;
+
     enum class auto_exposure_modes {
         static_auto_exposure = 0,
         auto_exposure_anti_flicker,
@@ -27,16 +29,19 @@ namespace librealsense
         auto_exposure_state() :
             is_auto_exposure(true),
             mode(auto_exposure_modes::auto_exposure_hybrid),
-            rate(60)
+            rate(60),
+            step(ae_step_default_value)
         {}
 
         bool get_enable_auto_exposure() const;
         auto_exposure_modes get_auto_exposure_mode() const;
         unsigned get_auto_exposure_antiflicker_rate() const;
+        float get_auto_exposure_step() const;
 
         void set_enable_auto_exposure(bool value);
         void set_auto_exposure_mode(auto_exposure_modes value);
         void set_auto_exposure_antiflicker_rate(unsigned value);
+        void set_auto_exposure_step(float value);
 
         static const unsigned      sample_rate = 1;
         static const unsigned      skip_frames = 2;
@@ -45,6 +50,7 @@ namespace librealsense
         bool                is_auto_exposure;
         auto_exposure_modes mode;
         unsigned            rate;
+        float               step;
     };
 
 
@@ -88,7 +94,8 @@ namespace librealsense
         float exposure = 10.0f, gain = 2.0f, target_exposure = 0.0f;
         uint8_t under_exposure_limit = 5, over_exposure_limit = 250; int under_exposure_noise_limit = 50, over_exposure_noise_limit = 50;
         int direction = 0, prev_direction = 0; float hysteresis = 0.075f;// 05;
-        float eps = 0.01f, exposure_step = 0.1f, minimal_exposure_step = 0.01f;
+        float eps = 0.01f, minimal_exposure_step = 0.01f;
+        std::atomic<float> exposure_step;
         auto_exposure_state state; float flicker_cycle; bool anti_flicker_mode = true;
         region_of_interest roi{};
         bool is_roi_initialized = false;
