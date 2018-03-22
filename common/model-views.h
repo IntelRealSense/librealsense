@@ -122,6 +122,8 @@ namespace rs2
         static const textual_icon download                 { u8"\uf019" };
         static const textual_icon upload                   { u8"\uf093" };
         static const textual_icon bar_chart                { u8"\uf080" };
+        static const textual_icon edit                     { u8"\uf044" };
+        static const textual_icon question_mark            { u8"\uf059" };
     }
 
     class subdevice_model;
@@ -197,6 +199,8 @@ namespace rs2
         std::string id = "";
         subdevice_model* dev;
         std::function<bool(option_model&, std::string&, notifications_model&)> custom_draw_method = nullptr;
+        bool edit_mode = false;
+        std::string edit_value = "";
     private:
         bool is_all_integers() const;
         bool is_enum() const;
@@ -448,7 +452,7 @@ namespace rs2
         void pause_record();
         void resume_record();
         int draw_playback_panel(ImFont* font, viewer_model& view);
-        bool draw_advanced_controls(viewer_model& view, ux_window& window);
+        bool draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message);
         void draw_controls(float panel_width, float panel_height,
             ux_window& window,
             std::string& error_message,
