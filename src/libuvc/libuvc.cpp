@@ -272,12 +272,20 @@ namespace librealsense
                                            _interface = i.mi;
                                        }
                                    });
-                if (_name == "")
-                    throw linux_backend_exception("device is no longer connected!");
+                if (_name == "") {
+                  throw linux_backend_exception("device is no longer connected!");
+                }
+
+              _state_change_time = 0;
+              _is_power_thread_alive = true;
+              _thread_handle = std::thread(std::bind(&libuvc_uvc_device::power_thread,this));
+
             }
 
             ~libuvc_uvc_device()
             {
+                _is_power_thread_alive = false;
+                _thread_handle.join();
                 _is_capturing = false;
                 uvc_exit(_ctx);
             }
@@ -355,55 +363,76 @@ namespace librealsense
 
             }
 
+            void power_D0() {
+              uvc_error_t res;
+              uvc_format_t *formats;
+
+              res = uvc_find_device(_ctx, &_device, _info.vid, _info.pid, NULL);
+
+              if (res < 0) {
+                  throw linux_backend_exception(
+                    "Could not find the device.");
+              }
+              res = uvc_open2(_device, &_device_handle, _interface);
+
+              if (res < 0) {
+                  uvc_unref_device(_device);
+                  _device = NULL;
+                  throw linux_backend_exception(
+                    "Could not open device.");
+              }
+
+              for(auto ct = uvc_get_input_terminals(_device_handle);
+                  ct; ct = ct->next) {
+                  _input_terminal = ct->bTerminalID;
+              }
+
+              for(auto pu = uvc_get_processing_units(_device_handle);
+                  pu; pu = pu->next) {
+                  _processing_unit = pu->bUnitID;
+              }
+
+              for(auto eu = uvc_get_extension_units(_device_handle);
+                  eu; eu = eu->next) {
+                  _extension_unit = eu->bUnitID;
+              }
+
+              _real_state = D0;
+            }
+
+            void power_D3() {
+
+              uvc_unref_device(_device);
+              //uvc_stop_streaming(_device_handle);
+              _profiles.clear();
+              uvc_close(_device_handle);
+              _device = NULL;
+              _device_handle = NULL;
+              _real_state = D3;
+            }
             void set_power_state(power_state state) override {
-                uvc_error_t res;
-                uvc_format_t *formats;
+                _power_mutex.lock();
+
                 /* if power became on and it was originally off. open the uvc device. */
                 if (state == D0 && _state == D3) {
-                    res = uvc_find_device(_ctx, &_device, _info.vid, _info.pid, NULL);
 
-                    if (res < 0) {
-                        throw linux_backend_exception(
-                                "Could not find the device.");
+                    // disable change state aggregation in case exists at the moment.
+                    _state_change_time = 0;
+
+                    if ( _real_state == D3) {
+                      power_D0();
                     }
-                    res = uvc_open2(_device, &_device_handle, _interface);
-
-                    if (res < 0) {
-                        uvc_unref_device(_device);
-                        _device = NULL;
-                        throw linux_backend_exception(
-                                "Could not open device.");
-                    }
-
-                    for(auto ct = uvc_get_input_terminals(_device_handle);
-                        ct; ct = ct->next) {
-                        _input_terminal = ct->bTerminalID;
-                    }
-
-                    for(auto pu = uvc_get_processing_units(_device_handle);
-                        pu; pu = pu->next) {
-                        _processing_unit = pu->bUnitID;
-                    }
-
-                    for(auto eu = uvc_get_extension_units(_device_handle);
-                        eu; eu = eu->next) {
-                        _extension_unit = eu->bUnitID;
-                    }
-
                 }
                 else {
-                    // we have been asked to close the device.
-                    uvc_unref_device(_device);
-                    uvc_stop_streaming(_device_handle);
-                    _profiles.clear();
-                    uvc_close(_device_handle);
-                    _device = NULL;
-                    _device_handle = NULL;
+                    // we have been asked to close the device. queue the request for several seconds
+                    // just in case a quick turn on come right over.
 
-
+                    _state_change_time = std::clock();
                 }
 
-                _state = state;
+              _state = state;
+              _power_mutex.unlock();
+
             }
             power_state get_power_state() const override { return _state; }
 
@@ -637,7 +666,40 @@ namespace librealsense
                           []() mutable {} );
             }
 
+          void power_thread() {
+              do {
+                sleep(1);
+
+                _power_mutex.lock();
+
+                if (_state_change_time != 0) {
+                    clock_t now_time = std::clock();
+
+                    if (now_time - _state_change_time > 1000 ) {
+
+                        // power state should change.
+                        _state_change_time = 0;
+
+                        if (_real_state == D0) {
+                          power_D3();
+                          _real_state = D3;
+
+                        }
+                    }
+                }
+
+                _power_mutex.unlock();
+            } while(_is_power_thread_alive);
+          }
+
         private:
+
+            std::mutex _power_mutex;
+            std::thread _thread_handle;
+            std::atomic<bool> _is_power_thread_alive;
+            power_state _real_state = D3;
+            std::clock_t _state_change_time;
+
             power_state _state = D3;
             std::string _name;
             std::string _device_path;
@@ -667,8 +729,8 @@ namespace librealsense
 
             device->uvc_callback(frame, context->_callback, context->_profile);
         }
-
-        /* implements backend. provide a libuvc backend. */
+      
+      /* implements backend. provide a libuvc backend. */
         class libuvc_backend : public backend
         {
         public:
