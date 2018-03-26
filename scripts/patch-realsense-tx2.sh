@@ -35,9 +35,6 @@ kernel_name=="kernel-4.4"
 [ ! -d ${kernel_name} ] && git clone https://github.com/jetsonhacks/buildJetsonTX2Kernel.git && cd buildJetsonTX2Kernel && ./getKernelSources.sh && ./scripts/fixMakeFiles.sh && cd .. && cp /usr/src/kernel/${kernel_name} ./${kernel_name}
 cd ${kernel_name}
 
-# Verify that there are no trailing changes., warn the user to make corrective action if needed
-# Commented by Flexiv Robotics, deleted for convenience.
-
 #Check if we need to apply patches or get reload stock drivers (Developers' option)
 [ "$#" -ne 0 -a "$1" == "reset" ] && reset_driver=1 || reset_driver=0
 
