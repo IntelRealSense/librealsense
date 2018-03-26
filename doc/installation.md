@@ -9,6 +9,11 @@ Make sure to have git and cmake installed as these are required for *librelasens
 
 Several scripts below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. Infrequently, apt-get mirrors or repositories may also timeout. For *librealsense* users behind an enterprise firewall, configuring the system-wide Ubuntu proxy generally resolves most timeout issues.
 
+## Git LibRealSense Repository
+```
+git clone https://github.com/IntelRealSense/librealsense.git
+```
+
 ## Prerequisites
 **Important:** Running RealSense Depth Cameras on Linux requires patching and inserting modified kernel drivers. Some OEM/Vendors choose to lock the kernel for modifications. Unlocking this capability may requires to modify BIOS settings
 
