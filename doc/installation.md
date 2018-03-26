@@ -39,6 +39,9 @@ Several scripts below invoke `wget, git, add-apt-repository` which may be blocke
       Then it will attempt to insert the patched module instead of the active one. If failed
       the original uvc module will be preserved.
       * `./scripts/patch-realsense-ubuntu-xenial.sh`<br />
+    * **Jetson TX2**
+      The script will download, patch and build several kernel modules (drivers).<br />
+      * `./scripts/patch-realsense-tx2.sh`<br />
     * **Intel® Joule™ with Ubuntu**
       Based on the custom kernel provided by Canonical Ltd.
         * `./scripts/patch-realsense-ubuntu-xenial-joule.sh`<br />
