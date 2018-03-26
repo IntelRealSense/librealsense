@@ -3848,7 +3848,7 @@ namespace rs2
             glColor4f(1.f, 1.f, 1.f, 1.f);
         }
 
-        if ( last_points && last_texture)
+        if (last_points && last_texture)
         {
             // Non-linear correspondence customized for non-flat surface exploration
             glPointSize(std::sqrt(viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width()));
@@ -3862,7 +3862,7 @@ namespace rs2
 
             //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
 
-            glBegin(GL_POINTS);
+             glBegin(GL_POINTS);
 
             auto vertices = last_points.get_vertices();
             auto tex_coords = last_points.get_texture_coordinates();
@@ -3876,6 +3876,30 @@ namespace rs2
                 }
             }
             glEnd();
+            // Alternative
+            glBegin(GL_QUADS);
+
+            auto vertices = last_points.get_vertices();
+            auto tex_coords = last_points.get_texture_coordinates();
+
+#define THRESH 0.5f
+            auto width = vf_profile.width(), height = vf_profile.height();
+            for (int x = 0; x < width - 1; ++x) {
+                for (int y = 0; y < height - 1; ++y) {
+                    auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
+                    if (vertices[a].z && vertices[b].z && vertices[c].z && vertices[d].z
+                        && abs(vertices[a].z - vertices[b].z) < THRESH && abs(vertices[a].z - vertices[c].z) < THRESH
+                        && abs(vertices[b].z - vertices[d].z) < THRESH && abs(vertices[c].z - vertices[d].z) < THRESH) {
+                        glVertex3fv(vertices[a]); glTexCoord2fv(tex_coords[a]);
+                        glVertex3fv(vertices[b]); glTexCoord2fv(tex_coords[b]);
+                        glVertex3fv(vertices[d]); glTexCoord2fv(tex_coords[d]);
+                        glVertex3fv(vertices[c]); glTexCoord2fv(tex_coords[c]);
+                    }
+
+                }
+            }
+            glEnd();
+#undef THRESH
         }
 
         glDisable(GL_DEPTH_TEST);
