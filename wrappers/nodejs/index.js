@@ -4317,6 +4317,12 @@ const option = {
    */
   option_stereo_baseline: 'stereo-baseline',
   /**
+   * String literal of <code>'auto-exposure-converage-step'</code>. <br>Allows dynamically ajust
+   * the converge step value of the target exposure in Auto-Exposure algorithm
+   * <br>Equivalent to its uppercase counterpart.
+   */
+  option_auto_exposure_converge_step: 'auto-exposure-converge-step',
+  /**
    * Enable / disable color backlight compensatio.<br>Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
@@ -4549,6 +4555,13 @@ const option = {
    */
   OPTION_STEREO_BASELINE: RS2.RS2_OPTION_STEREO_BASELINE,
   /**
+   * Allows dynamically ajust the converge step value of the target exposure in Auto-Exposure
+   * algorithm
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  OPTION_AUTO_EXPOSURE_CONVERGE_STEP: RS2.RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP,
+  /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
    */
@@ -4646,6 +4659,8 @@ const option = {
         return this.option_holes_fill;
       case this.OPTION_STEREO_BASELINE:
         return this.option_stereo_baseline;
+      case this.OPTION_AUTO_EXPOSURE_CONVERGE_STEP:
+        return this.option_auto_exposure_converge_step;
       default:
         throw new TypeError(
             'option.optionToString(option) expects a valid value as the 1st argument');
