@@ -44,7 +44,7 @@ git clone https://github.com/IntelRealSense/librealsense.git
       Then it will attempt to insert the patched module instead of the active one. If failed
       the original uvc module will be preserved.
       * `./scripts/patch-realsense-ubuntu-xenial.sh`<br />
-    * **Jetson TX2**
+    * **Jetson TX2 with Ubuntu 16**
       The script will download, patch and build several kernel modules (drivers).<br />
       * `./scripts/patch-realsense-tx2.sh`<br />
     * **Intel® Joule™ with Ubuntu**
