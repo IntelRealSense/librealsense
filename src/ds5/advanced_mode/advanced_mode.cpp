@@ -64,13 +64,10 @@ namespace librealsense
             {
             case ds::RS410_PID:
             case ds::RS415_PID:
-            case ds::RS410_USB2_PID:
-            case ds::RS415_USB2_PID:
                 default_410(p);
                 break;
             case ds::RS430_PID:
             case ds::RS435_RGB_PID:
-            case ds::RS435_USB2_PID:
                 default_430(p);
                 break;
             case ds::RS405_PID:

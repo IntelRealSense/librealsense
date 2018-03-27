@@ -380,7 +380,7 @@ namespace librealsense
         };
 
         // Binary-coded decimal represent the USB specification to which the UVC device complies
-        enum usb_spec {
+        enum usb_spec : uint16_t {
             usb_undefined   = 0,
             usb1_type       = 0x0100,
             usb1_1_type     = 0x0110,
@@ -388,6 +388,16 @@ namespace librealsense
             usb2_1_type     = 0x0210,
             usb3_type       = 0x0300,
             usb3_1_type     = 0x0310
+        };
+
+        static const std::map<usb_spec, std::string> usb_spec_names = {
+                { usb_undefined,"Undefined" },
+                { usb1_type,    "1.0" },
+                { usb1_1_type,  "1.1" },
+                { usb2_type,    "2.0" },
+                { usb2_1_type,  "2.1" },
+                { usb3_type,    "3.0" },
+                { usb3_1_type,  "3.1" }
         };
 
         struct request_mapping;

@@ -176,7 +176,6 @@ namespace librealsense
                     case RS400_PID:
                     case RS405_PID:
                     case RS410_PID:
-                    case RS410_USB2_PID:
                     case RS460_PID:
                     case RS430_PID:
                     case RS420_PID:
@@ -187,9 +186,7 @@ namespace librealsense
                         found = (result.mi == 6);
                         break;
                     case RS415_PID:
-                    case RS415_USB2_PID:
                     case RS435_RGB_PID:
-                    case RS435_USB2_PID:
                         found = (result.mi == 5);
                         break;
                     default:

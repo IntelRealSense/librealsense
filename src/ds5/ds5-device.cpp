@@ -382,9 +382,6 @@ namespace librealsense
 
         auto&& backend = ctx->get_backend();
 
-        _usb2_mode = val_in_range(group.uvc_devices.front().pid,
-                    { ds::RS410_USB2_PID, ds::RS415_USB2_PID, ds::RS435_USB2_PID });
-
         if (group.usb_devices.size() > 0)
         {
             _hw_monitor = std::make_shared<hw_monitor>(
@@ -425,7 +422,11 @@ namespace librealsense
 
         auto& depth_ep = get_depth_sensor();
         auto advanced_mode = is_camera_in_advanced_mode();
-        if (advanced_mode && (!_usb2_mode))
+
+        auto _usb_mode = depth_ep.get_usb_specification();
+        std::string usb_type_str(platform::usb_spec_names.at(_usb_mode));
+
+        if (advanced_mode && (_usb_mode >= platform::usb3_type))
         {
             depth_ep.register_pixel_format(pf_y8i); // L+R
             depth_ep.register_pixel_format(pf_y12i); // L+R - Calibration not rectified
@@ -497,13 +498,6 @@ namespace librealsense
                     RS2_OPTION_ASIC_TEMPERATURE));
         }
 
-        // Evgeni
-        {
-            auto usb_bcd = depth_ep.get_usb_specification();
-            auto path = depth_ep.get_device_path();
-            std::cout << "Device path is " << path << " ,USB bcd " << std::hex << usb_bcd << std::dec << std::endl;
-        }
-
         depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
 
         depth_ep.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
@@ -559,6 +553,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
+        register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
     }
 
     notification ds5_notification_decoder::decode(int value)

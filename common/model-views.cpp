@@ -5162,7 +5162,13 @@ namespace rs2
         ////////////////////////////////////////
         const ImVec2 name_pos = { pos.x + 9, pos.y + 17 };
         ImGui::SetCursorPos(name_pos);
-        ImGui::Text(" %s", dev.get_info(RS2_CAMERA_INFO_NAME));
+        std::stringstream ss;
+        ss << dev.get_info(RS2_CAMERA_INFO_NAME);
+        if (dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+            ss << "   " << textual_icons::usb_type << " " << dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+
+        ImGui::Text(" %s", ss.str().c_str());
+        //ImGui::Text(" %s", dev.get_info(RS2_CAMERA_INFO_NAME));
         ImGui::PopFont();
 
         ////////////////////////////////////////

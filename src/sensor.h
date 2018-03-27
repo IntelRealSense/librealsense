@@ -24,7 +24,6 @@ namespace librealsense
 {
     class device;
     class option;
-    enum platform::usb_spec;
 
     typedef std::function<void(rs2_stream, frame_interface*, callback_invocation_holder)> on_before_frame_callback;
     typedef std::function<void(std::vector<platform::stream_profile>)> on_open;

@@ -284,18 +284,18 @@ namespace librealsense
                 }
 
                 // if connected, handle correctly, setting the location info if the device is found
-                std::string ret = "";
-
-                if (pConInfo->DeviceIsHub) res = handle_usb_hub(targetKey, get_path(h, i));
+                if (pConInfo->DeviceIsHub)
+                    res = handle_usb_hub(targetKey, get_path(h, i));    // Invoke recursion to traverse USB hubs chain
                 else
                 {
-                    if (handle_node(targetKey, h, i))
+                    if (handle_node(targetKey, h, i)) // exit condition
                     {
-                        ret = win_to_utf(fullPath.c_str()) + " " + std::to_string(i);
+                        return std::make_tuple(win_to_utf(fullPath.c_str()) + " " + std::to_string(i),
+                                                static_cast<usb_spec>(pConInfo->DeviceDescriptor.bcdUSB));
                     }
                 }
-                if (ret != "")
-                    return std::make_tuple(ret, static_cast<usb_spec>(pConInfo->DeviceDescriptor.bcdUSB));
+
+                if (std::string("") != std::get<0>(res))  return res;
             }
 
             return res;
@@ -329,6 +329,7 @@ namespace librealsense
 
                 if (SetupDiEnumDeviceInfo(device_info, member_index, &devInfo) == FALSE)
                 {
+                    std::cout << "Last error is " << GetLastError() << std::endl;
                     if (GetLastError() == ERROR_NO_MORE_ITEMS) break; // stop when none left
                     continue; // silently ignore other errors
                 }

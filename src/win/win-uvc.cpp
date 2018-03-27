@@ -961,7 +961,11 @@ namespace librealsense
             {
                 std::tie(_location, _device_usb_spec) = get_usb_descriptors(info.vid, info.pid, info.unique_id);
             }
-            catch (...) {}
+            catch (...) 
+            {
+                LOG_WARNING("Could not retrieve USB descriptor for device " << std::hex << info.vid << ":" 
+                    << info.pid << " , id:" << info.unique_id);
+            }
         }
 
         wmf_uvc_device::~wmf_uvc_device()

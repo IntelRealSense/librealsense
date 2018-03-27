@@ -28,9 +28,6 @@ namespace librealsense
         const uint16_t RS460_PID        = 0x0b03; // DS5U
         const uint16_t RS435_RGB_PID    = 0x0b07; // AWGC
         const uint16_t RS405_PID        = 0x0b0c; // DS5U
-        const uint16_t RS410_USB2_PID   = 0x0b15; // ASR/USB2
-        const uint16_t RS415_USB2_PID   = 0x0b16; // ASRC/USB2
-        const uint16_t RS435_USB2_PID   = 0x0b17; // AWGC/USB2
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -57,10 +54,7 @@ namespace librealsense
             ds::RS435_RGB_PID,
             ds::RS460_PID,
             ds::RS405_PID,
-            ds::RS_USB2_PID,
-            ds::RS410_USB2_PID,
-            ds::RS415_USB2_PID,
-            ds::RS435_USB2_PID
+            ds::RS_USB2_PID
         };
 
         static const std::map<std::uint16_t, std::string> rs400_sku_names = {
@@ -77,10 +71,7 @@ namespace librealsense
             { RS435_RGB_PID,    "Intel RealSense D435"},
             { RS460_PID,        "Intel RealSense D460" },
             { RS405_PID,        "Intel RealSense D405" },
-            { RS_USB2_PID,      "Intel RealSense USB2" },
-            { RS410_USB2_PID,   "Intel RealSense D410 USB2" },
-            { RS415_USB2_PID,   "Intel RealSense D415 USB2" },
-            { RS435_USB2_PID,   "Intel RealSense D435 USB2" },
+            { RS_USB2_PID,      "Intel RealSense USB2" }
         };
 
         // DS5 fisheye XU identifiers
