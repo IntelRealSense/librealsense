@@ -951,7 +951,7 @@ namespace librealsense
             std::shared_ptr<const wmf_backend> backend)
             : _streamIndex(MAX_PINS), _info(info), _is_flushed(), _has_started(), _backend(std::move(backend)),
             _systemwide_lock(info.unique_id.c_str(), WAIT_FOR_MUTEX_TIME_OUT),
-            _location("")
+            _location(""), _device_usb_spec(usb_undefined)
         {
             if (!is_connected(info))
             {
@@ -959,11 +959,10 @@ namespace librealsense
             }
             try
             {
-                //_location = get_usb_port_id(info.vid, info.pid, info.unique_id);
+                std::tie(_location, _device_usb_spec) = get_usb_descriptors(info.vid, info.pid, info.unique_id);
             }
             catch (...) {}
         }
-
 
         wmf_uvc_device::~wmf_uvc_device()
         {

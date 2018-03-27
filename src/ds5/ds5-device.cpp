@@ -385,7 +385,7 @@ namespace librealsense
         _usb2_mode = val_in_range(group.uvc_devices.front().pid,
                     { ds::RS410_USB2_PID, ds::RS415_USB2_PID, ds::RS435_USB2_PID });
 
-        if (group.usb_devices.size()>0)
+        if (group.usb_devices.size() > 0)
         {
             _hw_monitor = std::make_shared<hw_monitor>(
                 std::make_shared<locked_transfer>(
@@ -495,6 +495,13 @@ namespace librealsense
             depth_ep.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                 std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                     RS2_OPTION_ASIC_TEMPERATURE));
+        }
+
+        // Evgeni
+        {
+            auto usb_bcd = depth_ep.get_usb_specification();
+            auto path = depth_ep.get_device_path();
+            std::cout << "Device path is " << path << " ,USB bcd " << std::hex << usb_bcd << std::dec << std::endl;
         }
 
         depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));

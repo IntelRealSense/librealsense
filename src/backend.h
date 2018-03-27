@@ -379,8 +379,16 @@ namespace librealsense
                                                                 custom_sensor_report_field report_field) = 0;
         };
 
-
-
+        // Binary-coded decimal represent the USB specification to which the UVC device complies
+        enum usb_spec {
+            usb_undefined   = 0,
+            usb1_type       = 0x0100,
+            usb1_1_type     = 0x0110,
+            usb2_type       = 0x0200,
+            usb2_1_type     = 0x0210,
+            usb3_type       = 0x0300,
+            usb3_1_type     = 0x0310
+        };
 
         struct request_mapping;
 
@@ -411,7 +419,7 @@ namespace librealsense
             virtual void unlock() const = 0;
 
             virtual std::string get_device_location() const = 0;
-
+            virtual usb_spec  get_usb_specification() const = 0;
 
             virtual ~uvc_device() = default;
 
@@ -531,6 +539,11 @@ namespace librealsense
             std::string get_device_location() const override
             {
                 return _dev->get_device_location();
+            }
+
+            usb_spec get_usb_specification() const override
+            {
+                return _dev->get_usb_specification();
             }
 
             void lock() const override { _dev->lock(); }
@@ -789,6 +802,11 @@ namespace librealsense
             std::string get_device_location() const override
             {
                 return _dev.front()->get_device_location();
+            }
+
+            usb_spec get_usb_specification() const override
+            {
+                return _dev.front()->get_usb_specification();
             }
 
             void lock() const override
