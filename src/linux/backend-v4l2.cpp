@@ -268,7 +268,7 @@ namespace librealsense
             }
         }
 
-        static std::tuple<std::string,int>  get_usb_descriptors(libusb_device* usb_device)
+        static std::tuple<std::string,uint16_t>  get_usb_descriptors(libusb_device* usb_device)
         {
             auto usb_bus = std::to_string(libusb_get_bus_number(usb_device));
 
@@ -279,15 +279,15 @@ namespace librealsense
             auto port_count = libusb_get_port_numbers(usb_device, usb_ports, max_usb_depth);
             auto usb_dev = std::to_string(libusb_get_device_address(usb_device));
             auto speed = libusb_get_device_speed(usb_device);
-            libusb_device_descriptor aaa;
-            auto r= libusb_get_device_descriptor(usb_device,&aaa);
+            libusb_device_descriptor dev_desc;
+            auto r= libusb_get_device_descriptor(usb_device,&dev_desc);
 
             for (size_t i = 0; i < port_count; ++i)
             {
                 port_path << std::to_string(usb_ports[i]) << (((i+1) < port_count)?".":"");
             }
 
-            return std::make_tuple(usb_bus + "-" + port_path.str() + "-" + usb_dev,aaa.bcdUSB);
+            return std::make_tuple(usb_bus + "-" + port_path.str() + "-" + usb_dev,dev_desc.bcdUSB);
         }
 
         // retrieve the USB specification attributed to a specific USB device.
@@ -309,7 +309,6 @@ namespace librealsense
                      [&val](const std::pair<usb_spec, std::string>& kpv){ return (std::string::npos !=val.find(kpv.second));});
                         if (kvp != std::end(usb_spec_names))
                             res = kvp->first;
-                std::cout << "USB version is " << res << std::endl;
             }
             return res;
         }
