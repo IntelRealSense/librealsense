@@ -19,7 +19,7 @@
 #pragma comment(lib, "cudart_static")
 #endif
 
-#define RS2_CUDA_THREADS_PER_BLOCK 256
+#define RS2_CUDA_THREADS_PER_BLOCK 32
 
 namespace rsimpl
 {
