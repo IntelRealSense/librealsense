@@ -176,6 +176,27 @@ namespace librealsense
 
         typedef std::function<void(stream_profile, frame_object, std::function<void()>)> frame_callback;
 
+        // Binary-coded decimal represent the USB specification to which the UVC device complies
+        enum usb_spec : uint16_t {
+            usb_undefined   = 0,
+            usb1_type       = 0x0100,
+            usb1_1_type     = 0x0110,
+            usb2_type       = 0x0200,
+            usb2_1_type     = 0x0210,
+            usb3_type       = 0x0300,
+            usb3_1_type     = 0x0310
+        };
+
+        static const std::map<usb_spec, std::string> usb_spec_names = {
+                { usb_undefined,"Undefined" },
+                { usb1_type,    "1.0" },
+                { usb1_1_type,  "1.1" },
+                { usb2_type,    "2.0" },
+                { usb2_1_type,  "2.1" },
+                { usb3_type,    "3.0" },
+                { usb3_1_type,  "3.1" }
+        };
+
         struct uvc_device_info
         {
             std::string id = ""; // to distinguish between different pins of the same device
@@ -184,6 +205,7 @@ namespace librealsense
             uint16_t mi;
             std::string unique_id;
             std::string device_path;
+            usb_spec conn_spec;
 
             operator std::string()
             {
@@ -193,7 +215,8 @@ namespace librealsense
                     "\npid- " << std::hex << pid <<
                     "\nmi- " << mi <<
                     "\nunique_id- " << unique_id <<
-                    "\npath- " << device_path;
+                    "\npath- " << device_path <<
+                    "\nsusb specification- " << conn_spec;
 
                 return s.str();
             }
@@ -212,7 +235,8 @@ namespace librealsense
                    (a.mi == b.mi) &&
                    (a.unique_id == b.unique_id) &&
                    (a.id == b.id) &&
-                   (a.device_path == b.device_path);
+                   (a.device_path == b.device_path) &&
+                   (a.conn_spec == b.conn_spec);
         }
 
         struct usb_device_info
@@ -223,6 +247,7 @@ namespace librealsense
             uint16_t pid;
             uint16_t mi;
             std::string unique_id;
+            uint16_t conn_spec;
 
             operator std::string()
             {
@@ -231,7 +256,8 @@ namespace librealsense
                 s << "vid- " << std::hex << vid <<
                     "\npid- " << std::hex << pid <<
                     "\nmi- " << mi <<
-                    "\nunique_id- " << unique_id;
+                    "\nsusb specification- " << conn_spec <<
+                     "\nunique_id- " << unique_id;
 
                 return s.str();
             }
@@ -244,7 +270,8 @@ namespace librealsense
                 (a.vid == b.vid) &&
                 (a.pid == b.pid) &&
                 (a.mi == b.mi) &&
-                (a.unique_id == b.unique_id);
+                (a.unique_id == b.unique_id) &&
+                (a.conn_spec == b.conn_spec);
         }
 
         struct hid_device_info
@@ -377,27 +404,6 @@ namespace librealsense
             virtual std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
                                                                 const std::string& report_name,
                                                                 custom_sensor_report_field report_field) = 0;
-        };
-
-        // Binary-coded decimal represent the USB specification to which the UVC device complies
-        enum usb_spec : uint16_t {
-            usb_undefined   = 0,
-            usb1_type       = 0x0100,
-            usb1_1_type     = 0x0110,
-            usb2_type       = 0x0200,
-            usb2_1_type     = 0x0210,
-            usb3_type       = 0x0300,
-            usb3_1_type     = 0x0310
-        };
-
-        static const std::map<usb_spec, std::string> usb_spec_names = {
-                { usb_undefined,"Undefined" },
-                { usb1_type,    "1.0" },
-                { usb1_1_type,  "1.1" },
-                { usb2_type,    "2.0" },
-                { usb2_1_type,  "2.1" },
-                { usb3_type,    "3.0" },
-                { usb3_1_type,  "3.1" }
         };
 
         struct request_mapping;
