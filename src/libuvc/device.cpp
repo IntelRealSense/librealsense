@@ -1505,6 +1505,9 @@ uvc_error_t uvc_parse_vs(
     case UVC_VS_FRAME_FRAME_BASED:
       ret = uvc_parse_vs_frame_frame ( stream_if, block, block_size );
       break;
+    case UVC_VS_COLORFORMAT:
+      break;
+
     default:
       /** @todo handle JPEG and maybe still frames or even DV... */
       fprintf ( stderr, "unsupported descriptor subtype: %d\n",
@@ -1546,6 +1549,10 @@ void uvc_close(uvc_device_handle_t *devh) {
   UVC_ENTER();
   uvc_context_t *ctx = devh->dev->ctx;
 
+  if (devh->status_xfer != NULL) {
+    libusb_cancel_transfer(devh->status_xfer);
+  }
+  
   if (devh->streams)
     uvc_stop_streaming(devh);
 
