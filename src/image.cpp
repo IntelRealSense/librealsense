@@ -99,7 +99,7 @@ namespace librealsense
 
 #pragma pack(pop)
 
-    inline void copy_hid_axes(byte* const dest[], const byte* source, double factor, int count)
+    inline void copy_hid_axes(byte * const dest[], const byte * source, double factor, int count)
     {
         auto hid = (hid_data*)(source);
 
@@ -109,7 +109,7 @@ namespace librealsense
         librealsense::copy(dest[0], axes, sizeof(axes));
     }
 
-    template<size_t SIZE> void unpack_accel_axes(byte* const dest[], const byte* source, int width, int height)
+    template<size_t SIZE> void unpack_accel_axes(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
         static const float gravity = 9.80665f; // Standard Gravitation Acceleration
@@ -117,14 +117,14 @@ namespace librealsense
         copy_hid_axes(dest, source, accelerator_transform_factor, count);
     }
 
-    template<size_t SIZE> void unpack_gyro_axes(byte* const dest[], const byte* source, int width, int height)
+    template<size_t SIZE> void unpack_gyro_axes(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
         static const double gyro_transform_factor = 0.1* M_PI / 180.f;
         copy_hid_axes(dest, source, gyro_transform_factor, count);
     }
 
-    void unpack_hid_raw_data(byte* const dest[], const byte* source, int width, int height)
+    void unpack_hid_raw_data(byte * const dest[], const byte * source, int width, int height)
     {
         librealsense::copy(dest[0] + 0, source + 0, 2);
         librealsense::copy(dest[0] + 2, source + 4, 2);
@@ -132,7 +132,7 @@ namespace librealsense
         librealsense::copy(dest[0] + 6, source + 16, 8);
     }
 
-    void unpack_input_reports_data(byte* const dest[], const byte* source, int width, int height)
+    void unpack_input_reports_data(byte * const dest[], const byte * source, int width, int height)
     {
         // Input Report Struct
         // uint8_t  sensor_state
@@ -146,7 +146,7 @@ namespace librealsense
     }
 
     template<size_t SIZE>
-    void rotate_270_degrees_clockwise(byte* const dest[], const byte* source, int width, int height)
+    void rotate_270_degrees_clockwise(byte * const dest[], const byte * source, int width, int height)
     {
         auto out = dest[0];
         for (int i = 0; i < height; ++i)
@@ -160,39 +160,64 @@ namespace librealsense
         }
     }
 
-    template<size_t SIZE> void copy_pixels(byte* const dest[], const byte* source, int width, int height)
+    void unpack_confidence(byte * const dest[], const byte * source, int width, int height)
+    {
+#pragma pack (push, 1)
+        struct lsb_msb
+        {
+            unsigned lsb : 4;
+            unsigned msb : 4;
+        };
+#pragma pack(pop)
+
+        rotate_270_degrees_clockwise<1>(dest, source, width, height);
+        auto out = dest[0];
+        for (int i = (width - 1), out_i = ((width - 1) * 2); i >= 0; --i, out_i-=2)
+        {
+            auto row_offset = i * height;
+            for (int j = 0; j < height; ++j)
+            {
+                auto val = *(reinterpret_cast<const lsb_msb*>(&out[(row_offset + j)]));
+                auto out_index = out_i * height + j;
+                out[out_index] = val.lsb << 4;
+                out[out_index + height] = val.msb << 4;
+            }
+        }
+    }
+
+    template<size_t SIZE> void copy_pixels(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
         librealsense::copy(dest[0], source, SIZE * count);
     }
 
-    void copy_raw10(byte* const dest[], const byte* source, int width, int height)
+    void copy_raw10(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
         librealsense::copy(dest[0], source, (5 * (count / 4)));
     }
 
-    template<class SOURCE, class UNPACK> void unpack_pixels(byte* const dest[], int count, const SOURCE* source, UNPACK unpack)
+    template<class SOURCE, class UNPACK> void unpack_pixels(byte * const dest[], int count, const SOURCE * source, UNPACK unpack)
     {
         auto out = reinterpret_cast<decltype(unpack(SOURCE())) *>(dest[0]);
         for (int i = 0; i < count; ++i) *out++ = unpack(*source++);
     }
 
-    void unpack_y16_from_y8(byte* const d[], const byte* s, int width, int height) { unpack_pixels(d, width * height, reinterpret_cast<const uint8_t*>(s), [](uint8_t  pixel) -> uint16_t { return pixel | pixel << 8; }); }
-    void unpack_y16_from_y16_10(byte* const d[], const byte* s, int width, int height) { unpack_pixels(d, width * height, reinterpret_cast<const uint16_t*>(s), [](uint16_t pixel) -> uint16_t { return pixel << 6; }); }
-    void unpack_y8_from_y16_10(byte* const d[], const byte* s, int width, int height) { unpack_pixels(d, width * height, reinterpret_cast<const uint16_t*>(s), [](uint16_t pixel) -> uint8_t  { return pixel >> 2; }); }
-    void unpack_rw10_from_rw8(byte*  const d[], const byte* s, int width, int height)
+    void unpack_y16_from_y8(byte * const d[], const byte * s, int width, int height) { unpack_pixels(d, width * height, reinterpret_cast<const uint8_t *>(s), [](uint8_t  pixel) -> uint16_t { return pixel | pixel << 8; }); }
+    void unpack_y16_from_y16_10(byte * const d[], const byte * s, int width, int height) { unpack_pixels(d, width * height, reinterpret_cast<const uint16_t*>(s), [](uint16_t pixel) -> uint16_t { return pixel << 6; }); }
+    void unpack_y8_from_y16_10(byte * const d[], const byte * s, int width, int height) { unpack_pixels(d, width * height, reinterpret_cast<const uint16_t*>(s), [](uint16_t pixel) -> uint8_t  { return pixel >> 2; }); }
+    void unpack_rw10_from_rw8(byte *  const d[], const byte * s, int width, int height)
     {
 #ifdef __SSSE3__
-        auto src = reinterpret_cast<const __m128i*>(s);
-        auto dst = reinterpret_cast<__m128i*>(d[0]);
+        auto src = reinterpret_cast<const __m128i *>(s);
+        auto dst = reinterpret_cast<__m128i *>(d[0]);
 
-        __m128i* xin = (__m128i*)src;
-        __m128i* xout = (__m128i*) dst;
+        __m128i * xin = (__m128i *)src;
+        __m128i * xout = (__m128i *) dst;
         for (int i = 0; i < width * height; i += 16, ++xout, xin += 2)
         {
-            __m128i  in1_16 = _mm_load_si128((__m128i*)(xin));
-            __m128i  in2_16 = _mm_load_si128((__m128i*)(xin + 1));
+            __m128i  in1_16 = _mm_load_si128((__m128i *)(xin));
+            __m128i  in2_16 = _mm_load_si128((__m128i *)(xin + 1));
             __m128i  out1_16 = _mm_srli_epi16(in1_16, 2);
             __m128i  out2_16 = _mm_srli_epi16(in2_16, 2);
             __m128i  out8 = _mm_packus_epi16(out1_16, out2_16);
@@ -200,7 +225,7 @@ namespace librealsense
         }
 #else  // Generic code for when SSSE3 is not available.
         unsigned short* from = (unsigned short*)s;
-        byte* to = d[0];
+        byte * to = d[0];
 
         for(int i = 0; i < width * height; ++i)
         {
@@ -214,23 +239,23 @@ namespace librealsense
 
     // Unpack luminocity 8 bit from 10-bit packed macro-pixels (4 pixels in 5 bytes):
     // The first four bytes store the 8 MSB of each pixel, and the last byte holds the 2 LSB for each pixel :8888[2222]
-    void unpack_y8_from_rw10(byte*  const d[], const byte* s, int width, int height)
+    void unpack_y8_from_rw10(byte *  const d[], const byte * s, int width, int height)
     {
 #ifdef __SSSE3__
         auto n = width * height;
         assert(!(n % 48));  //We process 12 macro-pixels simultaneously to achieve performance boost
-        auto src = reinterpret_cast<const uint8_t*>(s);
-        auto dst = reinterpret_cast<uint8_t*>(d[0]);
+        auto src = reinterpret_cast<const uint8_t *>(s);
+        auto dst = reinterpret_cast<uint8_t *>(d[0]);
 
-        const __m128i* blk_0_in = reinterpret_cast<const __m128i*>(src);
-        const __m128i* blk_1_in = reinterpret_cast<const __m128i*>(src + 15);
-        const __m128i* blk_2_in = reinterpret_cast<const __m128i*>(src + 30);
-        const __m128i* blk_3_in = reinterpret_cast<const __m128i*>(src + 45);
+        const __m128i * blk_0_in = reinterpret_cast<const __m128i *>(src);
+        const __m128i * blk_1_in = reinterpret_cast<const __m128i *>(src + 15);
+        const __m128i * blk_2_in = reinterpret_cast<const __m128i *>(src + 30);
+        const __m128i * blk_3_in = reinterpret_cast<const __m128i *>(src + 45);
 
-        auto blk_0_out = reinterpret_cast<__m128i*>(dst);
-        auto blk_1_out = reinterpret_cast<__m128i*>(dst + 12);
-        auto blk_2_out = reinterpret_cast<__m128i*>(dst + 24);
-        auto blk_3_out = reinterpret_cast<__m128i*>(dst + 36);
+        auto blk_0_out = reinterpret_cast<__m128i *>(dst);
+        auto blk_1_out = reinterpret_cast<__m128i *>(dst + 12);
+        auto blk_2_out = reinterpret_cast<__m128i *>(dst + 24);
+        auto blk_3_out = reinterpret_cast<__m128i *>(dst + 36);
 
         __m128i res[4];
         // The mask will reorder the input so the 12 bytes with pixels' MSB values will come first
@@ -239,15 +264,15 @@ namespace librealsense
 
         for (int i = 0; (i + 48) < n; i += 48, src += 60, dst += 48)
         {
-            blk_0_in = reinterpret_cast<const __m128i*>(src);
-            blk_1_in = reinterpret_cast<const __m128i*>(src + 15);
-            blk_2_in = reinterpret_cast<const __m128i*>(src + 30);
-            blk_3_in = reinterpret_cast<const __m128i*>(src + 45);
+            blk_0_in = reinterpret_cast<const __m128i *>(src);
+            blk_1_in = reinterpret_cast<const __m128i *>(src + 15);
+            blk_2_in = reinterpret_cast<const __m128i *>(src + 30);
+            blk_3_in = reinterpret_cast<const __m128i *>(src + 45);
 
-            blk_0_out = reinterpret_cast<__m128i*>(dst);
-            blk_1_out = reinterpret_cast<__m128i*>(dst + 12);
-            blk_2_out = reinterpret_cast<__m128i*>(dst + 24);
-            blk_3_out = reinterpret_cast<__m128i*>(dst + 36);
+            blk_0_out = reinterpret_cast<__m128i *>(dst);
+            blk_1_out = reinterpret_cast<__m128i *>(dst + 12);
+            blk_2_out = reinterpret_cast<__m128i *>(dst + 24);
+            blk_3_out = reinterpret_cast<__m128i *>(dst + 36);
 
             res[0] = _mm_shuffle_epi8(_mm_loadu_si128(blk_0_in), mask);
             res[1] = _mm_shuffle_epi8(_mm_loadu_si128(blk_1_in), mask);
@@ -260,8 +285,8 @@ namespace librealsense
             _mm_storeu_si128(blk_3_out, res[3]);
         }
 #else  // Generic code for when SSSE3 is not available.
-        auto from = reinterpret_cast<const uint8_t*>(s);
-        uint8_t* tgt = d[0];
+        auto from = reinterpret_cast<const uint8_t *>(s);
+        uint8_t * tgt = d[0];
 
         for (int i = 0; i < width * height; i += 4, from += 5)
         {
@@ -278,7 +303,7 @@ namespace librealsense
     /////////////////////////////
     // This templated function unpacks YUY2 into Y8/Y16/RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.
     // It is expected that all branching outside of the loop control variable will be removed due to constant-folding.
-    template<rs2_format FORMAT> void unpack_yuy2(byte* const d[], const byte* s, int width, int height)
+    template<rs2_format FORMAT> void unpack_yuy2(byte * const d[], const byte * s, int width, int height)
     {
         auto n = width * height;
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
@@ -289,8 +314,8 @@ namespace librealsense
         if (do_avx)
         {
 
-            auto src = reinterpret_cast<const __m256i*>(s);
-            auto dst = reinterpret_cast<__m256i*>(d[0]);
+            auto src = reinterpret_cast<const __m256i *>(s);
+            auto dst = reinterpret_cast<__m256i *>(d[0]);
 
             #pragma omp parallel for
             for (int i = 0; i < n / 32; i++)
@@ -521,8 +546,8 @@ namespace librealsense
         }
         else
         {
-            auto src = reinterpret_cast<const __m128i*>(s);
-            auto dst = reinterpret_cast<__m128i*>(d[0]);
+            auto src = reinterpret_cast<const __m128i *>(s);
+            auto dst = reinterpret_cast<__m128i *>(d[0]);
 #pragma omp parallel for
             for (int i = 0; i < n / 16; i++)
             {
@@ -665,8 +690,8 @@ namespace librealsense
             }
         }
 #else  // Generic code for when SSSE3 is not available.
-        auto src = reinterpret_cast<const uint8_t*>(s);
-        auto dst = reinterpret_cast<uint8_t*>(d[0]);
+        auto src = reinterpret_cast<const uint8_t *>(s);
+        auto dst = reinterpret_cast<uint8_t *>(d[0]);
         for (; n; n -= 16, src += 32)
         {
             if (FORMAT == RS2_FORMAT_Y8)
@@ -801,13 +826,13 @@ namespace librealsense
 
     // This templated function unpacks UYVY into RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.
     // It is expected that all branching outside of the loop control variable will be removed due to constant-folding.
-    template<rs2_format FORMAT> void unpack_uyvy(byte* const d[], const byte* s, int width, int height)
+    template<rs2_format FORMAT> void unpack_uyvy(byte * const d[], const byte * s, int width, int height)
     {
         auto n = width * height;
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
 #ifdef __SSSE3__
-        auto src = reinterpret_cast<const __m128i*>(s);
-        auto dst = reinterpret_cast<__m128i*>(d[0]);
+        auto src = reinterpret_cast<const __m128i *>(s);
+        auto dst = reinterpret_cast<__m128i *>(d[0]);
         for (; n; n -= 16)
         {
             const __m128i zero = _mm_set1_epi8(0);
@@ -933,8 +958,8 @@ namespace librealsense
             }
         }
 #else  // Generic code for when SSSE3 is not available.
-        auto src = reinterpret_cast<const uint8_t*>(s);
-        auto dst = reinterpret_cast<uint8_t*>(d[0]);
+        auto src = reinterpret_cast<const uint8_t *>(s);
+        auto dst = reinterpret_cast<uint8_t *>(d[0]);
         for (; n; n -= 16, src += 32)
         {
             int16_t y[16] = {
@@ -1044,7 +1069,7 @@ namespace librealsense
     // 2-in-1 format splitting routines //
     //////////////////////////////////////
 
-    template<class SOURCE, class SPLIT_A, class SPLIT_B> void split_frame(byte* const dest[], int count, const SOURCE* source, SPLIT_A split_a, SPLIT_B split_b)
+    template<class SOURCE, class SPLIT_A, class SPLIT_B> void split_frame(byte * const dest[], int count, const SOURCE * source, SPLIT_A split_a, SPLIT_B split_b)
     {
         auto a = reinterpret_cast<decltype(split_a(SOURCE())) *>(dest[0]);
         auto b = reinterpret_cast<decltype(split_b(SOURCE())) *>(dest[1]);
@@ -1056,7 +1081,7 @@ namespace librealsense
     }
 
     struct y8i_pixel { uint8_t l, r; };
-    void unpack_y8_y8_from_y8i(byte* const dest[], const byte* source, int width, int height)
+    void unpack_y8_y8_from_y8i(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
         split_frame(dest, count, reinterpret_cast<const y8i_pixel*>(source),
@@ -1065,7 +1090,7 @@ namespace librealsense
     }
 
     struct y12i_pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8; int l() const { return lh << 4 | ll; } int r() const { return rh << 8 | rl; } };
-    void unpack_y16_y16_from_y12i_10(byte* const dest[], const byte* source, int width, int height)
+    void unpack_y16_y16_from_y12i_10(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
         split_frame(dest, count, reinterpret_cast<const y12i_pixel*>(source),
@@ -1074,7 +1099,7 @@ namespace librealsense
     }
 
     struct f200_inzi_pixel { uint16_t z16; uint8_t y8; };
-    void unpack_z16_y8_from_f200_inzi(byte* const dest[], const byte* source, int width, int height)
+    void unpack_z16_y8_from_f200_inzi(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
         split_frame(dest, count, reinterpret_cast<const f200_inzi_pixel*>(source),
@@ -1082,7 +1107,7 @@ namespace librealsense
             [](const f200_inzi_pixel & p) -> uint8_t { return p.y8; });
     }
 
-    void unpack_z16_y16_from_f200_inzi(byte* const dest[], const byte* source, int width, int height)
+    void unpack_z16_y16_from_f200_inzi(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
         split_frame(dest, count, reinterpret_cast<const f200_inzi_pixel*>(source),
@@ -1090,16 +1115,16 @@ namespace librealsense
             [](const f200_inzi_pixel & p) -> uint16_t { return p.y8 | p.y8 << 8; });
     }
 
-    void unpack_z16_y8_from_sr300_inzi(byte* const dest[], const byte* source, int width, int height)
+    void unpack_z16_y8_from_sr300_inzi(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
         auto in = reinterpret_cast<const uint16_t*>(source);
-        auto out_ir = reinterpret_cast<uint8_t*>(dest[1]);
+        auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);
         for (int i = 0; i < count; ++i) *out_ir++ = *in++ >> 2;
         librealsense::copy(dest[0], in, count * 2);
     }
 
-    void unpack_z16_y16_from_sr300_inzi (byte* const dest[], const byte* source, int width, int height)
+    void unpack_z16_y16_from_sr300_inzi (byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
         auto in = reinterpret_cast<const uint16_t*>(source);
@@ -1108,11 +1133,11 @@ namespace librealsense
         librealsense::copy(dest[0], in, count * 2);
     }
 
-    void unpack_rgb_from_bgr(byte* const dest[], const byte* source, int width, int height)
+    void unpack_rgb_from_bgr(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
-        auto in = reinterpret_cast<const uint8_t*>(source);
-        auto out = reinterpret_cast<uint8_t*>(dest[0]);
+        auto in = reinterpret_cast<const uint8_t *>(source);
+        auto out = reinterpret_cast<uint8_t *>(dest[0]);
 
         librealsense::copy(out, in, count * 3);
         for (auto i = 0; i < count; i++)
@@ -1130,6 +1155,11 @@ namespace librealsense
     resolution rotate_resolution(resolution res)
     {
         return resolution{ res.height , res.width};
+    }
+
+    resolution l500_confidence_resolution(resolution res)
+    {
+        return resolution{ res.height , res.width * 2 };
     }
 
     //////////////////////////
@@ -1150,8 +1180,8 @@ namespace librealsense
                                                                                { true,                &unpack_yuy2<RS2_FORMAT_BGR8 >,                { { RS2_STREAM_COLOR,          RS2_FORMAT_BGR8 } } },
                                                                                { true,                &unpack_yuy2<RS2_FORMAT_BGRA8>,                { { RS2_STREAM_COLOR,          RS2_FORMAT_BGRA8 } } } } };
 
-    const native_pixel_format pf_confidence_l500          = { 'C   ', 1, 1, {  { true,                &rotate_270_degrees_clockwise<1>,              { { RS2_STREAM_CONFIDENCE_MAP, RS2_FORMAT_RAW8, rotate_resolution } } },
-                                                                               { requires_processing, &copy_pixels<1>,                               { { RS2_STREAM_CONFIDENCE_MAP, RS2_FORMAT_RAW8 } } } } };
+    const native_pixel_format pf_confidence_l500          = { 'C   ', 1, 1, {  { true,                &unpack_confidence,                            { { RS2_STREAM_CONFIDENCE,     RS2_FORMAT_RAW8, l500_confidence_resolution } } },
+                                                                               { requires_processing, &copy_pixels<1>,                               { { RS2_STREAM_CONFIDENCE,     RS2_FORMAT_RAW8 } } } } };
     const native_pixel_format pf_z16_l500                 = { 'Z16 ', 1, 2, {  { true,                &rotate_270_degrees_clockwise<2>,              { { RS2_STREAM_DEPTH,          RS2_FORMAT_Z16,  rotate_resolution } } },
                                                                                { requires_processing, &copy_pixels<2>,                               { { RS2_STREAM_DEPTH,          RS2_FORMAT_Z16                    } } } } };
     const native_pixel_format pf_y8_l500                  = { 'GREY', 1, 1, {  { true,                &rotate_270_degrees_clockwise<1>,              { { RS2_STREAM_INFRARED,       RS2_FORMAT_Y8,   rotate_resolution } } },

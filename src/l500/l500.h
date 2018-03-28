@@ -131,7 +131,7 @@ namespace librealsense
                     {
                         assign_stream(_owner->_ir_stream, p);
                     }
-                    else if (p->get_stream_type() == RS2_STREAM_CONFIDENCE_MAP)
+                    else if (p->get_stream_type() == RS2_STREAM_CONFIDENCE)
                     {
                         assign_stream(_owner->_confidence_stream, p);
                     }
@@ -142,6 +142,9 @@ namespace librealsense
                         video->make_default();
 
                     if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Y8 && video->get_framerate() == 30)
+                        video->make_default();
+
+                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_RAW8 && video->get_framerate() == 30)
                         video->make_default();
 
                     auto profile = to_profile(p.get());

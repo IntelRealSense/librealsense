@@ -64,7 +64,7 @@ namespace librealsense
         _depth_device_idx(add_sensor(create_depth_device(ctx, group.uvc_devices))),
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
         _ir_stream(new stream(RS2_STREAM_INFRARED)),
-        _confidence_stream(new stream(RS2_STREAM_CONFIDENCE_MAP))
+        _confidence_stream(new stream(RS2_STREAM_CONFIDENCE))
     {
         static const auto device_name = "Intel RealSense L500";
 

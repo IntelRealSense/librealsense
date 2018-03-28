@@ -530,9 +530,9 @@ namespace librealsense
             {
                 for (auto & o : outputs)
                 {
-                    auto res = o.stream_resolution(resolution{ request.width, request.height });
+                    auto res = o.stream_resolution(resolution{ uvc_p.width, uvc_p.height });
                     if (o.stream_desc.type == request.stream && o.stream_desc.index == request.index &&
-                        res.width == uvc_p.width && res.height == uvc_p.height &&
+                        res.width == request.width && res.height == request.height &&
                         uvc_p.format == fourcc && request.fps == uvc_p.fps)
                         return true;
                 }
@@ -556,9 +556,9 @@ namespace librealsense
         {
             for (auto& o : outputs)
             {
-                auto res = o.stream_resolution(resolution{ request.width, request.height });
+                auto res = o.stream_resolution(resolution{ uvc_profile.width, uvc_profile.height });
                 if (o.stream_desc.type == request.stream && o.stream_desc.index == request.index &&
-                    res.width == uvc_profile.width && res.height == uvc_profile.height)
+                    res.width == request.width && res.height == request.height)
                     return true;
             }
 

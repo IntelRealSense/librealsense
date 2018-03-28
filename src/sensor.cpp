@@ -259,7 +259,7 @@ namespace librealsense
         std::set<uint32_t> registered_formats;
 
         power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
-        if (_uvc_profiles.empty())
+        if (_uvc_profiles.empty()){}
             _uvc_profiles = _device->get_profiles();
 
         for (auto&& p : _uvc_profiles)
@@ -447,12 +447,15 @@ namespace librealsense
                         last_frame_number = frame_counter;
                         last_timestamp = timestamp;
 
-                        frame_holder frame = _source.alloc_frame(stream_to_frame_types(output.stream_desc.type), mode.profile.width * mode.profile.height * bpp / 8, additional_data, requires_processing);
+                        auto res = output.stream_resolution({ mode.profile.width, mode.profile.height });
+                        auto width = res.width;
+                        auto height = res.height;
+
+                        frame_holder frame = _source.alloc_frame(stream_to_frame_types(output.stream_desc.type), width * height * bpp / 8, additional_data, requires_processing);
                         if (frame.frame)
                         {
-                            auto res = output.stream_resolution({ mode.profile.width, mode.profile.height });
                             auto video = (video_frame*)frame.frame;
-                            video->assign(res.width, res.height, res.width * bpp / 8, bpp);
+                            video->assign(width, height, width * bpp / 8, bpp);
                             video->set_timestamp_domain(timestamp_domain);
                             dest.push_back(const_cast<byte*>(video->get_frame_data()));
                             frame->set_stream(request);
