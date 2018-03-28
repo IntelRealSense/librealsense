@@ -68,26 +68,11 @@ namespace librealsense
             : _opt_range(opt_range)
         {}
 
-        bool is_valid(float value) const
-        {
-            if (!std::isnormal(_opt_range.step))
-                throw invalid_value_exception(to_string() << "is_valid(...) failed! step is not properly defined. (" << _opt_range.step << ")");
+        bool is_valid(float value) const;
 
-            if ((value < _opt_range.min) || (value > _opt_range.max))
-                return false;
+        option_range get_range() const override;
 
-            auto n = (value - _opt_range.min)/_opt_range.step;
-            return (fabs(fmod(n, 1)) < std::numeric_limits<float>::min());
-        }
-
-        option_range get_range() const override
-        {
-            return _opt_range;
-        }
-        virtual void enable_recording(std::function<void(const option&)> recording_action) override
-        {
-            _recording_function = recording_action;
-        }
+        virtual void enable_recording(std::function<void(const option&)> recording_action) override;
      protected:
         const option_range _opt_range;
         std::function<void(const option&)> _recording_function = [](const option&) {};

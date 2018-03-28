@@ -35,3 +35,5 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 
 1. [OpenCV DNN object detection with RealSense camera](https://github.com/twMr7/rscvdnn)
 2. [minimal_realsense2](https://github.com/SirDifferential/minimal_realsense2) - Streaming and Presets in C
+3. [ANDREASJAKL.COM](https://www.andreasjakl.com/capturing-3d-point-cloud-intel-realsense-converting-mesh-meshlab/) - Capturing a 3D Point Cloud with Intel RealSense and Converting to a Mesh with MeshLab
+4. [FluentRealSense](https://www.codeproject.com/Articles/1233892/FluentRealSense-The-First-Steps-to-a-Simpler-RealS) - The First Steps to a Simpler RealSense

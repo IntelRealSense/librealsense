@@ -505,7 +505,7 @@ namespace librealsense
     struct stream_output {
         stream_output(stream_descriptor stream_desc_in,
                       rs2_format format_in,
-                      resolution_func res_func = [&](resolution res) {return res; })
+                      resolution_func res_func = [](resolution res) {return res; })
             : stream_desc(stream_desc_in),
               format(format_in),
               stream_resolution(res_func)

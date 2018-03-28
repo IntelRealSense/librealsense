@@ -500,8 +500,7 @@ namespace librealsense
             long val = 0, flags = 0;
             if ((opt == RS2_OPTION_EXPOSURE) || (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE))
             {
-                if (!_camera_control.p) throw std::runtime_error("No camera control!");
-                auto hr = _camera_control->Get(CameraControl_Exposure, &val, &flags);
+                auto hr = get_camera_control()->Get(CameraControl_Exposure, &val, &flags);
                 if (hr == DEVICE_NOT_READY_ERROR)
                     return false;
 
@@ -514,8 +513,7 @@ namespace librealsense
             {
                 if (opt == pu.option)
                 {
-                    if (!_video_proc.p) throw std::runtime_error("No video proc!");
-                    auto hr = _video_proc->Get(pu.property, &val, &flags);
+                    auto hr = get_video_proc()->Get(pu.property, &val, &flags);
                     if (hr == DEVICE_NOT_READY_ERROR)
                         return false;
 
@@ -530,8 +528,7 @@ namespace librealsense
             {
                 if (opt == ct.option)
                 {
-                    if (!_camera_control.p) throw std::runtime_error("No camera_control!");
-                    auto hr = _camera_control->Get(ct.property, &val, &flags);
+                    auto hr = get_camera_control()->Get(ct.property, &val, &flags);
                     if (hr == DEVICE_NOT_READY_ERROR)
                         return false;
 
@@ -549,7 +546,7 @@ namespace librealsense
         {
             if (opt == RS2_OPTION_EXPOSURE)
             {
-                auto hr = _camera_control->Set(CameraControl_Exposure, from_100micros(value), CameraControl_Flags_Manual);
+                auto hr = get_camera_control()->Set(CameraControl_Exposure, from_100micros(value), CameraControl_Flags_Manual);
                 if (hr == DEVICE_NOT_READY_ERROR)
                     return false;
 
@@ -560,7 +557,7 @@ namespace librealsense
             {
                 if (value)
                 {
-                    auto hr = _camera_control->Set(CameraControl_Exposure, 0, CameraControl_Flags_Auto);
+                    auto hr = get_camera_control()->Set(CameraControl_Exposure, 0, CameraControl_Flags_Auto);
                     if (hr == DEVICE_NOT_READY_ERROR)
                         return false;
 
@@ -569,13 +566,13 @@ namespace librealsense
                 else
                 {
                     long min, max, step, def, caps;
-                    auto hr = _camera_control->GetRange(CameraControl_Exposure, &min, &max, &step, &def, &caps);
+                    auto hr = get_camera_control()->GetRange(CameraControl_Exposure, &min, &max, &step, &def, &caps);
                     if (hr == DEVICE_NOT_READY_ERROR)
                         return false;
 
                     CHECK_HR(hr);
 
-                    hr = _camera_control->Set(CameraControl_Exposure, def, CameraControl_Flags_Manual);
+                    hr = get_camera_control()->Set(CameraControl_Exposure, def, CameraControl_Flags_Manual);
                     if (hr == DEVICE_NOT_READY_ERROR)
                         return false;
 
@@ -583,6 +580,9 @@ namespace librealsense
                 }
                 return true;
             }
+
+            
+
             for (auto & pu : pu_controls)
             {
                 if (opt == pu.option)
@@ -591,7 +591,7 @@ namespace librealsense
                     {
                         if (value)
                         {
-                            auto hr = _video_proc->Set(pu.property, 0, VideoProcAmp_Flags_Auto);
+                            auto hr = get_video_proc()->Set(pu.property, 0, VideoProcAmp_Flags_Auto);
                             if (hr == DEVICE_NOT_READY_ERROR)
                                 return false;
 
@@ -600,13 +600,13 @@ namespace librealsense
                         else
                         {
                             long min, max, step, def, caps;
-                            auto hr = _video_proc->GetRange(pu.property, &min, &max, &step, &def, &caps);
+                            auto hr = get_video_proc()->GetRange(pu.property, &min, &max, &step, &def, &caps);
                             if (hr == DEVICE_NOT_READY_ERROR)
                                 return false;
 
                             CHECK_HR(hr);
 
-                            hr = _video_proc->Set(pu.property, def, VideoProcAmp_Flags_Manual);
+                            hr = get_video_proc()->Set(pu.property, def, VideoProcAmp_Flags_Manual);
                             if (hr == DEVICE_NOT_READY_ERROR)
                                 return false;
 
@@ -615,7 +615,7 @@ namespace librealsense
                     }
                     else
                     {
-                        auto hr = _video_proc->Set(pu.property, value, VideoProcAmp_Flags_Manual);
+                        auto hr = get_video_proc()->Set(pu.property, value, VideoProcAmp_Flags_Manual);
                         if (hr == DEVICE_NOT_READY_ERROR)
                             return false;
 
@@ -632,7 +632,7 @@ namespace librealsense
                     {
                         if (value)
                         {
-                            auto hr = _camera_control->Set(ct.property, 0, CameraControl_Flags_Auto);
+                            auto hr = get_camera_control()->Set(ct.property, 0, CameraControl_Flags_Auto);
                             if (hr == DEVICE_NOT_READY_ERROR)
                                 return false;
 
@@ -641,13 +641,13 @@ namespace librealsense
                         else
                         {
                             long min, max, step, def, caps;
-                            auto hr = _camera_control->GetRange(ct.property, &min, &max, &step, &def, &caps);
+                            auto hr = get_camera_control()->GetRange(ct.property, &min, &max, &step, &def, &caps);
                             if (hr == DEVICE_NOT_READY_ERROR)
                                 return false;
 
                             CHECK_HR(hr);
 
-                            hr = _camera_control->Set(ct.property, def, CameraControl_Flags_Manual);
+                            hr = get_camera_control()->Set(ct.property, def, CameraControl_Flags_Manual);
                             if (hr == DEVICE_NOT_READY_ERROR)
                                 return false;
 
@@ -656,7 +656,7 @@ namespace librealsense
                     }
                     else
                     {
-                        auto hr = _camera_control->Set(ct.property, value, CameraControl_Flags_Manual);
+                        auto hr = get_camera_control()->Set(ct.property, value, CameraControl_Flags_Manual);
                         if (hr == DEVICE_NOT_READY_ERROR)
                             return false;
 
@@ -681,7 +681,7 @@ namespace librealsense
             long minVal = 0, maxVal = 0, steppingDelta = 0, defVal = 0, capsFlag = 0;
             if (opt == RS2_OPTION_EXPOSURE)
             {
-                CHECK_HR(_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                CHECK_HR(get_camera_control()->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                 long min = to_100micros(minVal), max = to_100micros(maxVal), def = to_100micros(defVal);
                 control_range result(min, max, min, def);
                 return result;
@@ -690,8 +690,7 @@ namespace librealsense
             {
                 if (opt == pu.option)
                 {
-                    if (!_video_proc.p) throw std::runtime_error("No video proc!");
-                    CHECK_HR(_video_proc->GetRange(pu.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                    CHECK_HR(get_video_proc()->GetRange(pu.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                     control_range result(minVal, maxVal, steppingDelta, defVal);
                     return result;
                 }
@@ -700,8 +699,7 @@ namespace librealsense
             {
                 if (opt == ct.option)
                 {
-                    if (!_camera_control.p) throw std::runtime_error("No camera_control!");
-                    CHECK_HR(_camera_control->GetRange(ct.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                    CHECK_HR(get_camera_control()->GetRange(ct.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                     control_range result(minVal, maxVal, steppingDelta, defVal);
                     return result;
                 }

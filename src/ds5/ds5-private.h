@@ -406,9 +406,61 @@ namespace librealsense
         enum ds5_notifications_types
         {
             success = 0,
-            hot_laser_power_reduce  = 1, // reported to error depth XU control
-            hot_laser_disable       = 2, // reported to error depth XU control
-            flag_B_laser_disable    = 3 // reported to error depth XU control
+            hot_laser_power_reduce,
+            hot_laser_disable,
+            flag_B_laser_disable,
+            stereo_module_not_connected,
+            eeprom_corrupted,
+            calibration_corrupted,
+            mm_upd_fail,
+            isp_upd_fail,
+            mm_force_pause,
+            mm_failure,
+            usb_scp_overflow,
+            usb_rec_overflow,
+            usb_cam_overflow,
+            mipi_left_error,
+            mipi_right_error,
+            mipi_rt_error,
+            mipi_fe_error,
+            i2c_cfg_left_error,
+            i2c_cfg_right_error,
+            i2c_cfg_rt_error,
+            i2c_cfg_fe_error,
+            stream_not_start_z,
+            stream_not_start_y,
+            stream_not_start_cam,
+            rec_error,
+        };
+
+        // Elaborate FW XU report. The reports may be consequently extended for PU/CTL/ISP
+        const std::map< uint8_t, std::string> ds5_fw_error_report = {
+            { success,                      "Success" },
+            { hot_laser_power_reduce,       "Laser hot - power reduce" },
+            { hot_laser_disable,            "Laser hot - disabled" },
+            { flag_B_laser_disable,         "Flag B - laser disabled" },
+            { stereo_module_not_connected,  "Stered Module is not connected" },
+            { eeprom_corrupted,             "EEPROM corrupted" },
+            { calibration_corrupted,        "Calibration corrupted" },
+            { mm_upd_fail,                  "Moton Module update failed" },
+            { isp_upd_fail,                 "ISP update failed" },
+            { mm_force_pause,               "Motion Module force pause" },
+            { mm_failure,                   "Motion Module failure" },
+            { usb_scp_overflow,             "USB SCP overflow" },
+            { usb_rec_overflow,             "USB REC overflow" },
+            { usb_cam_overflow,             "USB CAM overflow" },
+            { mipi_left_error,              "Left MIPI error" },
+            { mipi_right_error,             "Right MIPI error" },
+            { mipi_rt_error,                "RT MIPI error" },
+            { mipi_fe_error,                "FishEye MIPI error" },
+            { i2c_cfg_left_error,           "Left IC2 Config error" },
+            { i2c_cfg_right_error,          "Right IC2 Config error" },
+            { i2c_cfg_rt_error,             "RT IC2 Config error" },
+            { i2c_cfg_fe_error,             "FishEye IC2 Config error" },
+            { stream_not_start_z,           "Depth stream start failure" },
+            { stream_not_start_y,           "IR stream start failure" },
+            { stream_not_start_cam,         "Camera stream start failure" },
+            { rec_error,                    "REC error" },
         };
 
     } // librealsense::ds

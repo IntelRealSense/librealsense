@@ -293,3 +293,23 @@ describe('infrared frame tests', function() {
     pipe.stop();
   });
 });
+
+describe('Native error tests', function() {
+  it('trigger native error test', () => {
+    const file = 'test.rec';
+    fs.writeFileSync(file, 'dummy');
+    const ctx = new rs2.Context();
+    assert.throws(() => {
+      ctx.loadDevice(file);
+    }, (err) => {
+      assert.equal(err instanceof TypeError, true);
+      let errInfo = rs2.getError();
+      assert.equal(errInfo.recoverable, false);
+      assert.equal(typeof errInfo.description, 'string');
+      assert.equal(typeof errInfo.nativeFunction, 'string');
+      return true;
+    });
+    rs2.cleanup();
+    fs.unlinkSync(file);
+  });
+});

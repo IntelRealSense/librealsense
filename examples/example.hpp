@@ -142,6 +142,8 @@ public:
     {
         glfwInit();
         win = glfwCreateWindow(width, height, title, nullptr, nullptr);
+        if (!win)
+            throw std::runtime_error("Could not open OpenGL window, please check your graphic drivers or use the textual SDK tools");
         glfwMakeContextCurrent(win);
 
         glfwSetWindowUserPointer(win, this);

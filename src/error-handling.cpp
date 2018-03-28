@@ -36,16 +36,14 @@ namespace librealsense
     {
          if (cancellable_timer.try_sleep(_poll_intervals_ms))
          {
-             auto val = 0;
              try
              {
-                 val = static_cast<int>(_option->query());
+                 auto val = static_cast<uint8_t>(_option->query());
 
                  if (val != 0 && !_silenced)
                  {
-                     auto n = _decoder->decode(val);
                      auto strong = _notifications_processor.lock();
-                     if (strong) strong->raise_notification(n);
+                     if (strong) strong->raise_notification(_decoder->decode(val));
 
                      val = static_cast<int>(_option->query());
                      if (val != 0)

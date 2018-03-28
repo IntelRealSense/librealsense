@@ -516,7 +516,7 @@ class VideoStreamProfile extends StreamProfile {
 
   /**
    * When called on a VideoStreamProfile, returns the intrinsics of specific stream configuration
-   * @return {IntrinsicsObject}
+   * @return {IntrinsicsObject|undefined}
    */
   getIntrinsics() {
     return this.cxxProfile.getVideoStreamIntrinsics();
@@ -765,7 +765,7 @@ class Sensor extends Options {
   * @return {undefined} No return value
   */
   destroy() {
-    this.events_ = null;
+    this._events = null;
     if (this.cxxSensor) {
       this.cxxSensor.destroy();
       this.cxxSensor = undefined;
@@ -1038,6 +1038,19 @@ const internal = {
   ctx: [],
   objs: [],
 
+  // Register error callback to native code
+  registerErrorCallback: function() {
+    RS2.registerErrorCallback(this, 'errorCallback');
+  },
+
+  // The callback method called from native side
+  errorCallback: function(error) {
+    if (error.recoverable === false) {
+      throw new TypeError('Unrecoverable error, native function ' + error.nativeFunction + ': ' +
+          error.description);
+    }
+  },
+
   addContext: function(c) {
     this.ctx.push(c);
   },
@@ -1215,14 +1228,18 @@ class Context {
    * Create a PlaybackDevice to playback recored data file.
    *
    * @param {String} file - the file path
-   * @return {PlaybackDevice}
+   * @return {PlaybackDevice|undefined}
    */
   loadDevice(file) {
     const funcName = 'Context.loadDevice()';
     checkArgumentLength(1, 1, arguments.length, funcName);
     checkArgumentType(arguments, 'string', 0, funcName);
     checkFileExistence(file);
-    return new PlaybackDevice(this.cxxCtx.loadDeviceFile(file), file);
+    const cxxDev = this.cxxCtx.loadDeviceFile(file);
+    if (!cxxDev) {
+      return undefined;
+    }
+    return new PlaybackDevice(cxxDev, file);
   }
 
   /**
@@ -1706,8 +1723,7 @@ class Align {
  * @property {Integer} streamType - The stream type of the frame.
  * see <code>enum {@link stream}</code>
  * @property {Integer} bitsPerPixel - The number of bits per pixel
- * @property {string} timestampDomain - Get the domain (clock name) of timestamp value.
- *
+ * @property {Integer} timestampDomain - Get the domain (clock name) of timestamp value.
  */
 class Frame {
   constructor(cxxFrame) {
@@ -1935,10 +1951,10 @@ class Frame {
  *
  * @property {Integer} width - The image width in pixels.
  * @property {Integer} height - The image height in pixels.
+ * @property {Integer} dataByteLength - The length in bytes
  * @property {Integer} strideInBytes - The stride of the frame. The unit is number of bytes.
  * @property {Integer} bitsPerPixel - The number of bits per pixel
- * @property {string} timestampDomain - Get the domain (clock name) of timestamp value.
- *
+ * @property {Integer} bytesPerPixel - The number of bytes per pixel
  */
 class VideoFrame extends Frame {
   constructor(frame) {
@@ -2205,11 +2221,10 @@ class PoseFrame extends Frame {
 
   /**
    * Get the pose data
-   * @return {PoseData}
+   * @return {PoseData|undefined}
    */
   get poseData() {
-    this.cxxFrame.getPoseData(this._pose);
-    return this._pose;
+    return (this.cxxFrame.getPoseData(this._pose)) ? this._pose : undefined;
   }
 }
 
@@ -4522,17 +4537,17 @@ const option = {
    */
   OPTION_FILTER_SMOOTH_DELTA: RS2.RS2_OPTION_FILTER_SMOOTH_DELTA,
   /**
-   * The distance in mm between the first and the second imagers in stereo-based depth cameras
-   * <br>Equivalent to its lowercase counterpart
-   * @type {Integer}
-   */
-  OPTION_STEREO_BASELINE: RS2.RS2_OPTION_STEREO_BASELINE,
-  /**
    * Enhance depth data post-processing with holes filling where appropriate
    * <br> Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
   OPTION_HOLES_FILL: RS2.RS2_OPTION_HOLES_FILL,
+  /**
+   * The distance in mm between the first and the second imagers in stereo-based depth cameras
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  OPTION_STEREO_BASELINE: RS2.RS2_OPTION_STEREO_BASELINE,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
@@ -5651,13 +5666,36 @@ const constants = {
   playback_status: playback_status,
 };
 
+/**
+ * Cleanup resources
+ */
 function cleanup() {
   internal.cleanup();
   RS2.globalCleanup();
 }
 
+/**
+ * Error Information returned from native SDK
+ * @typedef {Object} ErrorInfoObject
+ * @property {Boolean} recoverable - True if the error is a recoverable error
+ * @property {String} description - Detailed description of the error
+ * @property {String} nativeFunction - Native function that triggered the error
+ * @see [getError()]{@link getError}
+ */
+
+/**
+ * Get the error info
+ * User could call this method to get the detailed error info if the previous
+ * API failed.
+ * @return {ErrorInfoObject|undefined} If there is no error, undefined is returned
+ */
+function getError() {
+  return RS2.getError();
+}
+
 module.exports = {
   cleanup: cleanup,
+  getError: getError,
 
   Context: Context,
   Pipeline: Pipeline,
@@ -5713,3 +5751,5 @@ module.exports = {
 
   stringConstantToIntegerValue: str2Int,
 };
+
+internal.registerErrorCallback();

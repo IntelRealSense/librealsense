@@ -259,6 +259,7 @@ namespace librealsense
                 CASE(FILTER_SMOOTH_DELTA)
                 CASE(STEREO_BASELINE)
                 CASE(HOLES_FILL)
+                CASE(AUTO_EXPOSURE_CONVERGE_STEP)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

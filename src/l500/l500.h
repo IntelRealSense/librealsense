@@ -144,9 +144,6 @@ namespace librealsense
                     if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Y8 && video->get_framerate() == 30)
                         video->make_default();
 
-                    if (video->get_width() == 640 && video->get_height() == 240 && video->get_format() == RS2_FORMAT_RAW8 && video->get_framerate() == 30)
-                        video->make_default();
-
                     auto profile = to_profile(p.get());
                     std::weak_ptr<l500_depth_sensor> wp =
                         std::dynamic_pointer_cast<l500_depth_sensor>(this->shared_from_this());
