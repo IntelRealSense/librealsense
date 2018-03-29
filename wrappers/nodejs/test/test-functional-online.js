@@ -313,3 +313,26 @@ describe('Native error tests', function() {
     fs.unlinkSync(file);
   });
 });
+
+describe('ROI test', function() {
+  it('set/get ROI test', () => {
+    let ctx = new rs2.Context();
+    let sensors = ctx.querySensors();
+    sensors.forEach((s) => {
+      let roi = rs2.ROISensor.from(s);
+      if (roi) {
+        roi.setRegionOfInterest(1, 1, 10, 10);
+        let val = roi.getRegionOfInterest();
+        if (val) {
+          assert.equal(val.minX, 1);
+          assert.equal(val.minY, 1);
+          assert.equal(val.maxX, 10);
+          assert.equal(val.maxY, 10);
+        } else {
+          assert.equal(rs2.getError() instanceof Object, true);
+        }
+      }
+    });
+    rs2.cleanup();
+  });
+});

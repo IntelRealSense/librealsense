@@ -40,8 +40,6 @@ class Device {
     sensors.forEach((s) => {
       if (s.isDepthSensor()) {
         array.push(new DepthSensor(s));
-      } else if (s.isROISensor()) {
-        array.push(new ROISensor(s));
       } else {
         array.push(new Sensor(s));
       }
@@ -675,12 +673,16 @@ class Options {
 class Sensor extends Options {
   /**
    * Construct a Sensor object, representing a RealSense camera subdevice
+   * By default, native resources associated with a Sensor object are freed
+   * automatically during cleanup.
    */
-  constructor(sensor) {
-    super(sensor);
-    this.cxxSensor = sensor;
+  constructor(cxxSensor, autoDelete = true) {
+    super(cxxSensor);
+    this.cxxSensor = cxxSensor;
     this._events = new EventEmitter();
-    internal.addObject(this);
+    if (autoDelete === true) {
+      internal.addObject(this);
+    }
   }
 
   /**
@@ -939,11 +941,26 @@ class Sensor extends Options {
  */
 class ROISensor extends Sensor {
   /**
-   * Construct a ROISensor object, representing a RealSense camera subdevice
-   *
+   * Create a ROISensor out of another sensor
+   * @param {Sensor} sensor a sensor object
+   * @return {ROISensor|undefined} return a ROISensor if the sensor can be
+   * treated as a ROISensor, otherwise return undefined.
    */
-   constructor(sensor) {
-    super(sensor);
+  static from(sensor) {
+    if (sensor.cxxSensor.isROISensor()) {
+      return new ROISensor(sensor.cxxSensor);
+    }
+    return undefined;
+  }
+
+  /**
+   * Construct a ROISensor object, representing a RealSense camera subdevice
+   * The newly created ROISensor object shares native resources with the sensor
+   * argument. So the new object shouldn't be freed automatically to make
+   * sure resources released only once during cleanup.
+   */
+   constructor(cxxSensor) {
+    super(cxxSensor, false);
   }
 
   /**
@@ -1005,11 +1022,11 @@ class ROISensor extends Sensor {
       minY = arguments[1];
       maxX = arguments[2];
       maxY = arguments[3];
-      this.cxxSensor.setRegionOfInterest(minX, minY, maxX, maxY);
     } else {
       throw new TypeError(
           'setRegionOfInterest(region) expects a RegionOfInterestObject as argument');
     }
+    this.cxxSensor.setRegionOfInterest(minX, minY, maxX, maxY);
   }
 }
 
