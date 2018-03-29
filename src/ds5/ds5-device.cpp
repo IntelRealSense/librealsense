@@ -423,8 +423,13 @@ namespace librealsense
         auto& depth_ep = get_depth_sensor();
         auto advanced_mode = is_camera_in_advanced_mode();
 
-        auto _usb_mode = depth_ep.get_usb_specification();
-        std::string usb_type_str(platform::usb_spec_names.at(_usb_mode));
+        std::string usb_type_str("");
+        auto _usb_mode = platform::usb3_type;
+        if (_fw_version >= firmware_version("5.9.8.0"))
+        {
+            _usb_mode = depth_ep.get_usb_specification();
+            usb_type_str = platform::usb_spec_names.at(_usb_mode);
+        }
 
         if (advanced_mode && (_usb_mode >= platform::usb3_type))
         {

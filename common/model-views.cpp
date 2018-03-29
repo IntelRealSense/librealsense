@@ -827,8 +827,8 @@ namespace rs2
 
             // set default selections. USB2 configuration requires low-res resolution/fps.
             int selection_index{};
-            std::string dev_name(dev.get_info(RS2_CAMERA_INFO_NAME));
-            bool usb2 = (std::string::npos != dev_name.find("USB2"));
+            std::string dev_usb_type(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
+            bool usb2 = (std::string::npos != dev_usb_type.find("2.")); // USB2 pattern
             int fps_constrain = usb2 ? 15 : 30;
             auto resolution_constrain = usb2 ? std::make_pair(640, 480) :std::make_pair(1280, 720);
 
