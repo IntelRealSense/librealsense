@@ -370,7 +370,9 @@ namespace librealsense
                     if (parent_device)
                     {
                         usb_device_info info{};
-                        std::tie(info.unique_id,info.conn_spec) = get_usb_descriptors(usb_device);
+                        auto usb_params = get_usb_descriptors(usb_device);
+                        info.unique_id = std::get<0>(usb_params);
+                        info.conn_spec = static_cast<usb_spec>(std::get<1>(usb_params));
                         info.mi = config->bNumInterfaces - 1; // The hardware monitor USB interface is expected to be the last one
                         action(info, usb_device);
                     }

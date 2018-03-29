@@ -39,8 +39,8 @@ namespace rs2
             if (devices.size())
             {
                 auto dev = devices[0];
-                std::string dev_name(dev.get_info(RS2_CAMERA_INFO_NAME));
-                usb3_device = (std::string::npos == dev_name.find("USB2"));
+                std::string usb_type(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
+                bool usb3_device = (std::string::npos != usb_type.find("3."));
             }
             else
                 return valid_config;

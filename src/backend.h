@@ -200,12 +200,12 @@ namespace librealsense
         struct uvc_device_info
         {
             std::string id = ""; // to distinguish between different pins of the same device
-            uint16_t vid;
-            uint16_t pid;
-            uint16_t mi;
-            std::string unique_id;
-            std::string device_path;
-            usb_spec conn_spec;
+            uint16_t vid = 0;
+            uint16_t pid = 0;
+            uint16_t mi = 0;
+            std::string unique_id = "";
+            std::string device_path = "";
+            usb_spec conn_spec = usb_undefined;
 
             operator std::string()
             {
@@ -216,7 +216,7 @@ namespace librealsense
                     "\nmi- " << mi <<
                     "\nunique_id- " << unique_id <<
                     "\npath- " << device_path <<
-                    "\nsusb specification- " << conn_spec;
+                    "\nsusb specification- " << std::hex << conn_spec << std::dec;
 
                 return s.str();
             }
@@ -247,7 +247,7 @@ namespace librealsense
             uint16_t pid;
             uint16_t mi;
             std::string unique_id;
-            uint16_t conn_spec;
+            usb_spec conn_spec;
 
             operator std::string()
             {
@@ -256,7 +256,7 @@ namespace librealsense
                 s << "vid- " << std::hex << vid <<
                     "\npid- " << std::hex << pid <<
                     "\nmi- " << mi <<
-                    "\nsusb specification- " << conn_spec <<
+                    "\nsusb specification- " << std::hex << conn_spec << std::dec <<
                      "\nunique_id- " << unique_id;
 
                 return s.str();
