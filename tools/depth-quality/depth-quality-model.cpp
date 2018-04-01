@@ -32,17 +32,20 @@ namespace rs2
             bool valid_config = false;
             std::vector<rs2::config> cfgs;
 
-            rs2::config cfg;
-            // Preferred configuration Depth + Synthetic Color
-            cfg.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, 30);
-            cfg.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_RGB8, 30);
-            cfgs.push_back(cfg);
-
+            {
+                rs2::config cfg;
+                // Preferred configuration Depth + Synthetic Color
+                cfg.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, 30);
+                cfg.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_RGB8, 30);
+                cfgs.push_back(cfg);
+            }
             // Use Infrared luminocity as a secondary video in case synthetic chroma is not supported
-            cfg.disable_all_streams();
-            cfg.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
-            cfg.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, 30);
-            cfgs.push_back(cfg);
+            {
+                rs2::config cfg;
+                cfg.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
+                cfg.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_Y8, 30);
+                cfgs.push_back(cfg);
+            }
 
             for (auto& cfg : cfgs)
             {

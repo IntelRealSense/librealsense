@@ -121,6 +121,7 @@ namespace librealsense
                 STRCASE(STREAM, ACCEL)
                 STRCASE(STREAM, GPIO)
                 STRCASE(STREAM, POSE)
+                STRCASE(STREAM, CONFIDENCE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

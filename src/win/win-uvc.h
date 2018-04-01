@@ -122,6 +122,7 @@ namespace librealsense
             manual_reset_event                      _has_started;
             HRESULT                                 _readsample_result = S_OK;
 
+            uint16_t                                _streamIndex;
             std::vector<profile_and_callback>       _streams;
             std::mutex                              _streams_mutex;
 
