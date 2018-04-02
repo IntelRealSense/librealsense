@@ -59,7 +59,6 @@ namespace librealsense
 
         std::unique_ptr<polling_error_handler> _polling_error_handler;
         std::shared_ptr<lazy<rs2_extrinsics>> _left_right_extrinsics;
-
     };
 
     class ds5u_device : public ds5_device

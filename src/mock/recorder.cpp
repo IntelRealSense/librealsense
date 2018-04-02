@@ -965,7 +965,7 @@ namespace librealsense
                 c.param1 = result;
 
                 return result;
-            }, _entity_id, call_type::uvc_get_location);
+            }, _entity_id, call_type::uvc_get_usb_specification);
         }
 
         vector<uint8_t> record_usb_device::send_receive(const vector<uint8_t>& data, int timeout_ms, bool require_response)
