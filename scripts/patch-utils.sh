@@ -135,7 +135,7 @@ function try_module_insert {
 	else
 		# Everything went OK, delete backup
 		printf "\e[32m succeeded\n\e[0m"
-		sudo rm ${tgt_ko}.bckup
+		sudo rm -f ${tgt_ko}.bckup
 	fi
 
 	# Reload all dependent modules recursively
