@@ -423,9 +423,10 @@ namespace librealsense
         auto& depth_ep = get_depth_sensor();
         auto advanced_mode = is_camera_in_advanced_mode();
 
-        std::string usb_type_str("");
         auto _usb_mode = platform::usb3_type;
-        if (_fw_version >= firmware_version("5.9.8.0"))
+        std::string usb_type_str(platform::usb_spec_names.at(_usb_mode));
+        bool usb_modality = (_fw_version >= firmware_version("5.9.8.0"));
+        if (usb_modality)
         {
             _usb_mode = depth_ep.get_usb_specification();
             usb_type_str = platform::usb_spec_names.at(_usb_mode);
@@ -558,7 +559,8 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
-        register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
+        if (usb_modality)
+            register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
     }
 
     notification ds5_notification_decoder::decode(int value)

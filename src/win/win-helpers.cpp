@@ -329,7 +329,6 @@ namespace librealsense
 
                 if (SetupDiEnumDeviceInfo(device_info, member_index, &devInfo) == FALSE)
                 {
-                    std::cout << "Last error is " << GetLastError() << std::endl;
                     if (GetLastError() == ERROR_NO_MORE_ITEMS) break; // stop when none left
                     continue; // silently ignore other errors
                 }
