@@ -216,7 +216,7 @@ namespace librealsense
                     "\nmi- " << mi <<
                     "\nunique_id- " << unique_id <<
                     "\npath- " << device_path <<
-                    "\nsusb specification- " << std::hex << conn_spec << std::dec;
+                    "\nsusb specification- " << std::hex << (uint16_t)conn_spec << std::dec;
 
                 return s.str();
             }
@@ -256,7 +256,7 @@ namespace librealsense
                 s << "vid- " << std::hex << vid <<
                     "\npid- " << std::hex << pid <<
                     "\nmi- " << mi <<
-                    "\nsusb specification- " << std::hex << conn_spec << std::dec <<
+                    "\nsusb specification- " << std::hex << (uint16_t)conn_spec << std::dec <<
                      "\nunique_id- " << unique_id;
 
                 return s.str();
