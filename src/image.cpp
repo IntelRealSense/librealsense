@@ -11,7 +11,7 @@
 #include <immintrin.h>
 #endif
 
-#ifdef ANDROID
+#if defined (ANDROID) || (defined (__linux__) && !defined (__x86_64__))
 
 bool has_avx() { return false; }
 
