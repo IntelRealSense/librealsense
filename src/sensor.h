@@ -206,6 +206,9 @@ namespace librealsense
 
         void stop() override;
 
+        platform::usb_spec get_usb_specification() const { return _device->get_usb_specification(); }
+        std::string get_device_path() const { return _device->get_device_location(); }
+
     protected:
         stream_profiles init_stream_profiles() override;
 
@@ -232,8 +235,14 @@ namespace librealsense
 
             ~power()
             {
-                auto strong = _owner.lock();
-                if (strong) strong->release_power();
+                if (auto strong = _owner.lock())
+                {
+                    try
+                    {
+                        strong->release_power();
+                    }
+                    catch (...) {}
+                }
             }
         private:
             std::weak_ptr<uvc_sensor> _owner;

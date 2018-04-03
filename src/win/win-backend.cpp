@@ -85,7 +85,7 @@ namespace librealsense
                     uint16_t vid, pid, mi; std::string unique_id;
                     if (!parse_usb_path(vid, pid, mi, unique_id, path)) continue;
 
-                    usb_device_info info{ path, vid, pid, mi, unique_id};
+                    usb_device_info info{ path, vid, pid, mi, unique_id, usb_undefined };
 
                     result.push_back(info);
                 }

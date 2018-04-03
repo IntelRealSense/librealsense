@@ -23,6 +23,7 @@ namespace librealsense
         virtual uint32_t get_width() const = 0;
         virtual uint32_t get_height() const = 0;
         virtual void set_dims(uint32_t width, uint32_t height) = 0;
+
     };
 
     MAP_EXTENSION(RS2_EXTENSION_VIDEO, librealsense::video_sensor_interface);

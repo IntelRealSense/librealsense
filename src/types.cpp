@@ -316,13 +316,14 @@ namespace librealsense
         switch (value)
         {
             CASE(NAME)
-                CASE(SERIAL_NUMBER)
-                CASE(FIRMWARE_VERSION)
-                CASE(PHYSICAL_PORT)
-                CASE(DEBUG_OP_CODE)
-                CASE(ADVANCED_MODE)
-                CASE(PRODUCT_ID)
-                CASE(CAMERA_LOCKED)
+            CASE(SERIAL_NUMBER)
+            CASE(FIRMWARE_VERSION)
+            CASE(PHYSICAL_PORT)
+            CASE(DEBUG_OP_CODE)
+            CASE(ADVANCED_MODE)
+            CASE(PRODUCT_ID)
+            CASE(CAMERA_LOCKED)
+            CASE(USB_TYPE_DESCRIPTOR)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

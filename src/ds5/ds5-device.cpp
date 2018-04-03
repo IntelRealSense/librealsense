@@ -102,6 +102,19 @@ namespace librealsense
 
             auto results = uvc_sensor::init_stream_profiles();
 
+            auto color_dev = dynamic_cast<const ds5_color*>(&get_device());
+
+            std::vector< video_stream_profile_interface*> depth_candidates;
+            std::vector< video_stream_profile_interface*> infrared_candidates;
+
+            auto candidate = [](video_stream_profile_interface* prof, platform::stream_profile tgt, rs2_stream stream, int streamindex) -> bool
+            {
+                return ((tgt.width == prof->get_width()) && (tgt.height == prof->get_height()) &&
+                    (tgt.format == RS2_FORMAT_ANY || tgt.format == prof->get_format()) &&
+                    (stream == RS2_STREAM_ANY || stream == prof->get_stream_type()) &&
+                    (tgt.fps == prof->get_framerate()) && (streamindex == prof->get_stream_index()));
+            };
+
             for (auto p : results)
             {
                 // Register stream types
@@ -117,27 +130,47 @@ namespace librealsense
                 {
                     assign_stream(_owner->_right_ir_stream, p);
                 }
-                auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                auto vid_profile = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                if (video->get_width() == 1280 && video->get_height() == 720 &&
-                    video->get_format() == RS2_FORMAT_Z16 && video->get_framerate() == 30)
-                    video->make_default();
+                // Mark potential candidates for depth/ir default profiles
+                if (candidate(vid_profile, { 1280, 720, 30, RS2_FORMAT_Z16 } , RS2_STREAM_DEPTH, 0))
+                    depth_candidates.push_back(vid_profile);
 
-                auto color_dev = dynamic_cast<const ds5_color*>(&get_device());
+                if (candidate(vid_profile, { 848, 480, 30, RS2_FORMAT_ANY }, RS2_STREAM_DEPTH, 0))
+                    depth_candidates.push_back(vid_profile);
+
+                if (candidate(vid_profile, { 640, 480, 15, RS2_FORMAT_Z16 }, RS2_STREAM_DEPTH, 0))
+                    depth_candidates.push_back(vid_profile);
+
+                // Global Shutter sensor does not support synthetic color
+                if (candidate(vid_profile, { 848, 480, 30, RS2_FORMAT_Y8 }, RS2_STREAM_INFRARED, 1))
+                    infrared_candidates.push_back(vid_profile);
+
+                // Low-level resolution for USB2 generic PID - Z16/RGB8
+                if (candidate(vid_profile, { 480, 270, 30, RS2_FORMAT_ANY }, RS2_STREAM_DEPTH, 0))
+                    depth_candidates.push_back(vid_profile);
+
+                // Low-level resolution for USB2 generic PID - Y8
+                if (candidate(vid_profile, { 480, 270, 30, RS2_FORMAT_ANY }, RS2_STREAM_INFRARED, 1))
+                    infrared_candidates.push_back(vid_profile);
+
+                // For infrared sensor, the default is Y8 in case Realtec RGB sensor present, RGB8 otherwise
                 if (color_dev)
                 {
-                    if (video->get_width() == 1280 && video->get_height() == 720
-                        && p->get_stream_type() == RS2_STREAM_INFRARED
-                        && video->get_format() == RS2_FORMAT_Y8 && video->get_framerate() == 30
-                        && p->get_stream_index() == 1)
-                        video->make_default();
+                    if (candidate(vid_profile, { 1280, 720, 30, RS2_FORMAT_Y8 }, RS2_STREAM_INFRARED, 1))
+                        infrared_candidates.push_back(vid_profile);
+
+                    // Register Low-res resolution for USB2 mode
+                    if (candidate(vid_profile, { 640, 480, 15, RS2_FORMAT_Y8 }, RS2_STREAM_INFRARED, 1))
+                        infrared_candidates.push_back(vid_profile);
                 }
                 else
                 {
-                    if (video->get_width() == 1280 && video->get_height() == 720
-                        && p->get_stream_type() == RS2_STREAM_INFRARED
-                        && video->get_format() == RS2_FORMAT_RGB8 && video->get_framerate() == 30)
-                        video->make_default();
+                    if (candidate(vid_profile, { 1280, 720, 30, RS2_FORMAT_RGB8 }, RS2_STREAM_INFRARED, 0))
+                        infrared_candidates.push_back(vid_profile);
+
+                    if (candidate(vid_profile, { 640, 480, 15, RS2_FORMAT_RGB8 }, RS2_STREAM_INFRARED, 0))
+                        infrared_candidates.push_back(vid_profile);
                 }
 
                 // Register intrinsics
@@ -146,7 +179,7 @@ namespace librealsense
                     auto profile = to_profile(p.get());
                     std::weak_ptr<ds5_depth_sensor> wp =
                         std::dynamic_pointer_cast<ds5_depth_sensor>(this->shared_from_this());
-                    video->set_intrinsics([profile, wp]()
+                    vid_profile->set_intrinsics([profile, wp]()
                     {
                         auto sp = wp.lock();
                         if (sp)
@@ -157,19 +190,33 @@ namespace librealsense
                 }
             }
 
-            // If no stream profile was marked as default, fall back to second best depth resultion
-            if (!std::any_of(results.begin(), results.end(), [](const std::shared_ptr<stream_profile_interface>& p) {
-                return p->get_stream_type() == RS2_STREAM_DEPTH && p->is_default();
-            }))
-            {
-                for (auto p : results)
-                {
-                    auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+            auto dev = dynamic_cast<const ds5_device*>(&get_device());
+            auto dev_name = (dev) ? dev->get_info(RS2_CAMERA_INFO_NAME) : "";
 
-                    if (video->get_width() == 848 && video->get_height() == 480
-                        && video->get_framerate() == 30 && video->get_stream_index() == 0)
-                        video->make_default();
-                }
+            auto cmp = [](const video_stream_profile_interface* l, const video_stream_profile_interface* r) -> bool
+            {
+                return ((l->get_width() < r->get_width()) || (l->get_height() < r->get_height()));
+            };
+
+            // Select default profiles
+            if (depth_candidates.size())
+            {
+                std::sort(depth_candidates.begin(), depth_candidates.end(), cmp);
+                depth_candidates.back()->make_default();
+            }
+            else
+            {
+                LOG_WARNING("Depth sensor - no default profile assigned / " << dev_name);
+            }
+
+            if (infrared_candidates.size())
+            {
+                std::sort(infrared_candidates.begin(), infrared_candidates.end(), cmp);
+                infrared_candidates.back()->make_default();
+            }
+            else
+            {
+                LOG_WARNING("Infrared sensor - no default profile assigned / " << dev_name);
             }
 
             return results;
@@ -335,7 +382,7 @@ namespace librealsense
 
         auto&& backend = ctx->get_backend();
 
-        if (group.usb_devices.size()>0)
+        if (group.usb_devices.size() > 0)
         {
             _hw_monitor = std::make_shared<hw_monitor>(
                 std::make_shared<locked_transfer>(
@@ -375,7 +422,17 @@ namespace librealsense
 
         auto& depth_ep = get_depth_sensor();
         auto advanced_mode = is_camera_in_advanced_mode();
-        if (advanced_mode)
+
+        auto _usb_mode = platform::usb3_type;
+        std::string usb_type_str(platform::usb_spec_names.at(_usb_mode));
+        bool usb_modality = (_fw_version >= firmware_version("5.9.8.0"));
+        if (usb_modality)
+        {
+            _usb_mode = depth_ep.get_usb_specification();
+            usb_type_str = platform::usb_spec_names.at(_usb_mode);
+        }
+
+        if (advanced_mode && (_usb_mode >= platform::usb3_type))
         {
             depth_ep.register_pixel_format(pf_y8i); // L+R
             depth_ep.register_pixel_format(pf_y12i); // L+R - Calibration not rectified
@@ -502,6 +559,8 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
+        if (usb_modality)
+            register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
     }
 
     notification ds5_notification_decoder::decode(int value)

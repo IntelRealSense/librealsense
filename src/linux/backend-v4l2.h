@@ -177,6 +177,8 @@ namespace librealsense
             void unlock() const override;
 
             std::string get_device_location() const override { return _device_path; }
+            usb_spec get_usb_specification() const override { return _device_usb_spec; }
+
         private:
             static uint32_t get_cid(rs2_option option);
 
@@ -185,8 +187,9 @@ namespace librealsense
             bool has_metadata();
 
             power_state _state = D3;
-            std::string _name;
-            std::string _device_path;
+            std::string _name = "";
+            std::string _device_path = "";
+            usb_spec _device_usb_spec = usb_undefined;
             uvc_device_info _info;
             int _fd = 0;
             int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]

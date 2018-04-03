@@ -54,7 +54,8 @@ namespace librealsense
             hid_get_custom_report_data,
             device_watcher_start,
             device_watcher_event,
-            device_watcher_stop
+            device_watcher_stop,
+            uvc_get_usb_specification
         };
 
         class compression_algorithm
@@ -342,6 +343,7 @@ namespace librealsense
             void lock() const override;
             void unlock() const override;
             std::string get_device_location() const override;
+            usb_spec get_usb_specification() const override;
 
             explicit record_uvc_device(
                 std::shared_ptr<uvc_device> source,
@@ -520,6 +522,7 @@ namespace librealsense
             void lock() const override;
             void unlock() const override;
             std::string get_device_location() const override;
+            usb_spec get_usb_specification() const override;
 
             explicit playback_uvc_device(std::shared_ptr<recording> rec, int id);
 

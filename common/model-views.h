@@ -122,6 +122,7 @@ namespace rs2
         static const textual_icon download                 { u8"\uf019" };
         static const textual_icon upload                   { u8"\uf093" };
         static const textual_icon bar_chart                { u8"\uf080" };
+        static const textual_icon usb_type                 { u8"\uf287" };
     }
 
     class subdevice_model;

@@ -78,6 +78,7 @@ namespace librealsense
             void unlock() const override { _systemwide_lock.unlock(); }
 
             std::string get_device_location() const override { return _location; }
+            usb_spec get_usb_specification() const override { return _device_usb_spec; }
 
             IAMVideoProcAmp* get_video_proc() const
             {
@@ -130,6 +131,7 @@ namespace librealsense
 
             named_mutex                             _systemwide_lock;
             std::string                             _location;
+            usb_spec                                _device_usb_spec;
             std::vector<stream_profile>             _profiles;
             std::vector<frame_callback>             _frame_callbacks;
             bool                                    _streaming = false;

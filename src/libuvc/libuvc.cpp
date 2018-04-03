@@ -55,7 +55,7 @@ namespace librealsense
     {
         static void internal_uvc_callback(uvc_frame_t *frame, void *ptr);
 
-        static std::string get_usb_port_id(libusb_device* usb_device)
+        static std::tuple<std::string,uint16_t>  get_usb_descriptors(libusb_device* usb_device)
         {
             auto usb_bus = std::to_string(libusb_get_bus_number(usb_device));
 
@@ -65,13 +65,16 @@ namespace librealsense
             std::stringstream port_path;
             auto port_count = libusb_get_port_numbers(usb_device, usb_ports, max_usb_depth);
             auto usb_dev = std::to_string(libusb_get_device_address(usb_device));
+            auto speed = libusb_get_device_speed(usb_device);
+            libusb_device_descriptor dev_desc;
+            auto r= libusb_get_device_descriptor(usb_device,&dev_desc);
 
             for (size_t i = 0; i < port_count; ++i)
             {
                 port_path << std::to_string(usb_ports[i]) << (((i+1) < port_count)?".":"");
             }
 
-            return usb_bus + "-" + port_path.str() + "-" + usb_dev;
+            return std::make_tuple(usb_bus + "-" + port_path.str() + "-" + usb_dev,dev_desc.bcdUSB);
         }
 
         class uvclib_usb_device : public usb_device
@@ -127,7 +130,9 @@ namespace librealsense
                         {
                             usb_device_info info{};
                             std::stringstream ss;
-                            info.unique_id = get_usb_port_id(usb_device);
+                            auto usb_params = get_usb_descriptors(usb_device);
+                            info.unique_id = std::get<0>(usb_params);
+                            info.conn_spec = static_cast<usb_spec>(std::get<1>(usb_params));
                             info.mi = config->bNumInterfaces - 1; // The hardware monitor USB interface is expected to be the last one
                             action(info, usb_device);
                         }
@@ -216,8 +221,9 @@ namespace librealsense
                 while (device_list[i] != NULL) {
                     // get the internal device object so we can use the libusb handle.
                     dev = (uvc_device_internal *) device_list[i];
-                    // set up the unique id for the device.
-                    info.unique_id = get_usb_port_id(dev->usb_dev);
+                    auto usb_params = get_usb_descriptors(dev->usb_dev);
+                    info.unique_id = std::get<0>(usb_params);
+                    info.conn_spec = static_cast<usb_spec>(std::get<1>(usb_params));
 
                     // get device descriptor.
                     res = uvc_get_device_descriptor((uvc_device_t *)dev, &device_desc);
@@ -245,7 +251,7 @@ namespace librealsense
 
             /* responsible for a specific uvc device.*/
             libuvc_uvc_device(const uvc_device_info& info)
-                    : _name(""), _info(),
+                    : _info(),
                       _is_capturing(false)
             {
                 uvc_error_t res;
@@ -265,6 +271,7 @@ namespace librealsense
                                            _info = i;
                                            _device_path = i.device_path;
                                            _interface = i.mi;
+                                           _device_usb_spec = i.conn_spec;
                                        }
                                    });
                 if (_name == "")
@@ -621,6 +628,8 @@ namespace librealsense
 
             std::string get_device_location() const override { return _device_path; }
 
+            usb_spec get_usb_specification() const override { return _device_usb_spec; }
+
             /* received a frame and call the callback. */
             void uvc_callback(uvc_frame_t *frame, frame_callback callback, stream_profile profile) {
                 frame_object fo{ frame->data_bytes,
@@ -634,8 +643,9 @@ namespace librealsense
 
         private:
             power_state _state = D3;
-            std::string _name;
-            std::string _device_path;
+            std::string _name = "";
+            std::string _device_path = "";
+            usb_spec _device_usb_spec = usb_undefined;
             uvc_device_info _info;
 
             std::vector<stream_profile> _profiles;
