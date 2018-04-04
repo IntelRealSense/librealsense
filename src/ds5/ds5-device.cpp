@@ -429,7 +429,10 @@ namespace librealsense
         if (usb_modality)
         {
             _usb_mode = depth_ep.get_usb_specification();
-            usb_type_str = platform::usb_spec_names.at(_usb_mode);
+            if (platform::usb_undefined != _usb_mode)
+                usb_type_str = platform::usb_spec_names.at(_usb_mode);
+            else  // Backend fails to provide USB descriptor  - occurs with RS3 build. Requires further work
+                usb_modality = false;
         }
 
         if (advanced_mode && (_usb_mode >= platform::usb3_type))
