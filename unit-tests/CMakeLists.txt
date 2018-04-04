@@ -19,7 +19,13 @@ endif()
 
 set(DEPENDENCIES realsense2)
 
-add_executable(live-test unit-tests-live.cpp unit-tests-main.cpp unit-tests-common.h)
+set (unit_tests_sources unit-tests-live.cpp unit-tests-main.cpp unit-tests-common.h)
+# When compiling with static linkage, enable and activate librealsense-core classes unit-tests
+if(NOT BUILD_SHARED_LIBS)
+	set (unit_tests_sources ${unit_tests_sources} unit-tests-internal.cpp)
+endif()
+
+add_executable(live-test ${unit_tests_sources})
 target_link_libraries(live-test ${DEPENDENCIES})
 
 set_target_properties (live-test PROPERTIES
