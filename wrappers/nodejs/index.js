@@ -81,6 +81,8 @@ class Device {
    * <br> undefined is not supported.
    * @property {Boolean|undefined} cameraLocked - True if EEPROM is locked. <br> undefined is not
    * supported.
+   * @property {String|undefined} usbTypeDescriptor - Designated USB specification: USB2/USB3.
+   * <br> undefined is not supported.
    * @see [Device.getCameraInfo()]{@link Device#getCameraInfo}
    */
 
@@ -126,6 +128,10 @@ class Device {
       }
       if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_CAMERA_LOCKED)) {
         result.cameraLocked = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_CAMERA_LOCKED);
+      }
+      if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_USB_TYPE_DESCRIPTOR)) {
+        result.usbTypeDescriptor = this.cxxDev.getCameraInfo(
+            camera_info.CAMERA_INFO_USB_TYPE_DESCRIPTOR);
       }
       return result;
     } else {
@@ -3961,6 +3967,16 @@ const stream = {
      * through GPIO . <br>Equivalent to its uppercase counterpart.
      */
     stream_gpio: 'gpio',
+    /**
+     * String literal of <code>'pose'</code>. <br>6 Degrees of Freedom pose data, calculated by
+     * RealSense device. <br>Equivalent to its uppercase counterpart.
+     */
+    stream_pose: 'pose',
+    /**
+     * String literal of <code>'confidence'</code>. <br>Confidence stream
+     * <br>Equivalent to its uppercase counterpart.
+     */
+    stream_confidence: 'confidence',
 
     /**
      * Any stream. <br>Equivalent to its lowercase counterpart.
@@ -4009,7 +4025,17 @@ const stream = {
      * @type {Integer}
      */
     STREAM_GPIO: RS2.RS2_STREAM_GPIO,
-
+    /**
+     * 6 Degrees of Freedom pose data, calculated by RealSense device. <br>Equivalent to its
+     * lowercase counterpart.
+     * @type {Integer}
+     */
+    STREAM_POSE: RS2.RS2_STREAM_POSE,
+    /**
+     * Confidence stream. <br>Equivalent to its lowercase counterpart.
+     * @type {Integer}
+     */
+    STREAM_CONFIDENCE: RS2.RS2_STREAM_CONFIDENCE,
     /**
      * Number of enumeration values. Not a valid input: intended to be used in for-loops.
      * @type {Integer}
@@ -4042,6 +4068,10 @@ const stream = {
           return this.stream_accel;
         case this.STREAM_GPIO:
           return this.stream_gpio;
+        case this.STREAM_POSE:
+          return this.stream_pose;
+        case this.STREAM_CONFIDENCE:
+          return this.stream_confidence;
       }
     },
 };
@@ -4738,6 +4768,11 @@ const camera_info = {
    * <br>Equivalent to its uppercase counterpart.
    */
   camera_info_camera_locked: 'camera-locked',
+  /**
+   * String literal of <code>'usb-type-descriptor'</code>. <br>Designated USB specification:
+   * USB2/USB3. <br>Equivalent to its uppercase counterpart.
+   */
+  camera_info_usb_type_descriptor: 'usb-type-descriptor',
 
   /**
    * Device friendly name. <br>Equivalent to its lowercase counterpart.
@@ -4781,7 +4816,11 @@ const camera_info = {
    * @type {Integer}
    */
   CAMERA_INFO_CAMERA_LOCKED: RS2.RS2_CAMERA_INFO_CAMERA_LOCKED,
-
+  /**
+   * Designated USB specification: USB2/USB3. <br>Equivalent to its lowercase counterpart.
+   * @type {Integer}
+   */
+  CAMERA_INFO_USB_TYPE_DESCRIPTOR: RS2.RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
@@ -4814,6 +4853,8 @@ const camera_info = {
         return this.camera_info_product_id;
       case this.CAMERA_INFO_CAMERA_LOCKED:
         return this.camera_info_camera_locked;
+      case this.CAMERA_INFO_USB_TYPE_DESCRIPTOR:
+        return this.camera_info_usb_type_descriptor;
     }
   },
 };

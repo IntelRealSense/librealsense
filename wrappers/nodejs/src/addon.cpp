@@ -2489,7 +2489,6 @@ class RSDevice : public Nan::ObjectWrap {
     int32_t on = GetNativeResult<int>(rs2_supports_device_info, &me->error_,
         me->dev_, (rs2_camera_info)camera_info, &me->error_);
     if (me->error_) return;
-
     info.GetReturnValue().Set(Nan::New(on ? true : false));
   }
 
@@ -4469,8 +4468,9 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_STREAM_GYRO);
   _FORCE_SET_ENUM(RS2_STREAM_ACCEL);
   _FORCE_SET_ENUM(RS2_STREAM_GPIO);
+  _FORCE_SET_ENUM(RS2_STREAM_POSE);
+  _FORCE_SET_ENUM(RS2_STREAM_CONFIDENCE);
   _FORCE_SET_ENUM(RS2_STREAM_COUNT);
-  // TODO(icarpis) Add RS2_STREAM_POSE and RS2_STREAM_CONFIDENCE
 
   // rs2_format
   _FORCE_SET_ENUM(RS2_FORMAT_ANY);
@@ -4571,6 +4571,7 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_ADVANCED_MODE);
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_PRODUCT_ID);
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_CAMERA_LOCKED);
+  _FORCE_SET_ENUM(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_COUNT);
 
   // rs2_log_severity
