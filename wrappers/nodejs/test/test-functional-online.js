@@ -261,6 +261,76 @@ describe('enum value test', function() {
       assert.equal(typeof obj.frameMetadataToString(i), 'string');
     }
   });
+  it('stream test', () => {
+    const obj = rs2.stream;
+    const numberAttrs = [
+      'STREAM_ANY',
+      'STREAM_DEPTH',
+      'STREAM_COLOR',
+      'STREAM_INFRARED',
+      'STREAM_FISHEYE',
+      'STREAM_GYRO',
+      'STREAM_ACCEL',
+      'STREAM_GPIO',
+      'STREAM_POSE',
+      'STREAM_CONFIDENCE',
+    ];
+    const strAttrs = [
+      'stream_any',
+      'stream_depth',
+      'stream_color',
+      'stream_infrared',
+      'stream_fisheye',
+      'stream_gyro',
+      'stream_accel',
+      'stream_gpio',
+      'stream_pose',
+      'stream_confidence',
+    ];
+    numberAttrs.forEach((attr) => {
+      assert.equal(typeof obj[attr], 'number');
+    });
+    strAttrs.forEach((attr) => {
+      assert.equal(typeof obj[attr], 'string');
+    });
+    for (let i = 0; i < obj.STREAM_COUNT; i++) {
+      assert.equal(typeof obj.streamToString(i), 'string');
+    }
+  });
+  it('camera_info test', () => {
+    const obj = rs2.camera_info;
+    const numberAttrs = [
+      'CAMERA_INFO_NAME',
+      'CAMERA_INFO_SERIAL_NUMBER',
+      'CAMERA_INFO_FIRMWARE_VERSION',
+      'CAMERA_INFO_PHYSICAL_PORT',
+      'CAMERA_INFO_DEBUG_OP_CODE',
+      'CAMERA_INFO_ADVANCED_MODE',
+      'CAMERA_INFO_PRODUCT_ID',
+      'CAMERA_INFO_CAMERA_LOCKED',
+      'CAMERA_INFO_USB_TYPE_DESCRIPTOR',
+    ];
+    const strAttrs = [
+      'camera_info_name',
+      'camera_info_serial_number',
+      'camera_info_firmware_version',
+      'camera_info_physical_port',
+      'camera_info_debug_op_code',
+      'camera_info_advanced_mode',
+      'camera_info_product_id',
+      'camera_info_camera_locked',
+      'camera_info_usb_type_descriptor',
+    ];
+    numberAttrs.forEach((attr) => {
+      assert.equal(typeof obj[attr], 'number');
+    });
+    strAttrs.forEach((attr) => {
+      assert.equal(typeof obj[attr], 'string');
+    });
+    for (let i = 0; i < obj.CAMERA_INFO_COUNT; i++) {
+      assert.equal(typeof obj.cameraInfoToString(i), 'string');
+    }
+  });
 });
 
 describe('infrared frame tests', function() {
