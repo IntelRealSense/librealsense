@@ -2281,6 +2281,7 @@ class RSSensor : public Nan::ObjectWrap, Options {
 
     CallNativeFunc(rs2_get_region_of_interest, &me->error_, me->sensor_, &minx,
         &miny, &maxx, &maxy, &me->error_);
+    if (me->error_) return;
     info.GetReturnValue().Set(
         RSRegionOfInterest(minx, miny, maxx, maxy).GetObject());
   }
