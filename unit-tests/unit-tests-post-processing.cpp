@@ -13,6 +13,7 @@
 #include <chrono>
 #include <ctime>
 #include <algorithm>
+#include <numeric>
 
 using namespace rs2;
 
@@ -32,6 +33,9 @@ struct ppf_test_config
     uint8_t     temporal_persistence = 0;
     int         holes_filling_mode = 0;
     int         downsample_scale = 1;
+    float       depth_units = 0.001f;
+    float       stereo_baseline = 0.f;
+    float       focal_length = 0.f;
     uint32_t    input_res_x = 0;
     uint32_t    input_res_y = 0;
     uint32_t    output_res_x = 0;
@@ -71,6 +75,9 @@ enum metadata_attrib : uint8_t
 {
     res_x,
     res_y,
+    focal_length,
+    depth_units,
+    stereo_baseline,
     downscale,
     spat_filter,
     spat_alpha,
@@ -88,6 +95,9 @@ enum metadata_attrib : uint8_t
 static const std::map<metadata_attrib, std::string> metadata_attributes = {
     { res_x,        "Resolution_x" },
     { res_y,        "Resolution_y" },
+    { focal_length,  "Focal Length" },
+    { depth_units,   "Depth Units" },
+    { stereo_baseline,"Stereo Baseline" },
     { downscale,    "Scale" },
     { spat_filter,   "Spatial Filter Params:" },
     { spat_alpha,   "SpatialAlpha" },
@@ -101,6 +111,78 @@ static const std::map<metadata_attrib, std::string> metadata_attributes = {
 };
 
 using csv_kvp = std::map<std::string, std::string>;
+
+class post_processing_filters
+{
+public:
+    post_processing_filters(void) : depth_to_disparity(true),disparity_to_depth(false) {};
+    ~post_processing_filters() noexcept {};
+
+    void configure(const ppf_test_config& filters_cfg);
+    rs2::frame process(rs2::frame input_frame);
+
+private:
+    post_processing_filters(const post_processing_filters& other);
+    post_processing_filters(post_processing_filters&& other);
+
+    // Declare filters
+    rs2::decimation_filter  dec_filter;  // Decimation - reduces depth frame density
+    rs2::spatial_filter     spat_filter;    // Spatial    - edge-preserving spatial smoothing
+    rs2::temporal_filter    temp_filter;   // Temporal   - reduces temporal noise
+
+    // Declare disparity transform from depth to disparity and vice versa
+    rs2::disparity_transform depth_to_disparity;
+    rs2::disparity_transform disparity_to_depth;
+
+    bool dec_pb = false;
+    bool spat_pb = false;
+    bool temp_pb = false;
+
+};
+
+void post_processing_filters::configure(const ppf_test_config& filters_cfg)
+{
+    // Reconfigure the post-processing according to the test spec
+    dec_pb = (filters_cfg.downsample_scale != 1);
+    dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, (float)filters_cfg.downsample_scale);
+
+    if (spat_pb = filters_cfg.spatial_filter)
+    {
+        spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filters_cfg.spatial_alpha);
+        spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filters_cfg.spatial_delta);
+        spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, (float)filters_cfg.spatial_iterations);
+        //spat_filter.set_option(RS2_OPTION_HOLES_FILL, filters_cfg.holes_filling_mode);      // Currently disabled
+    }
+
+    if (temp_pb = filters_cfg.temporal_filter)
+    {
+        temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filters_cfg.temporal_alpha);
+        temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filters_cfg.temporal_delta);
+        temp_filter.set_option(RS2_OPTION_HOLES_FILL, filters_cfg.temporal_persistence);
+    }
+}
+
+rs2::frame post_processing_filters::process(rs2::frame input)
+{
+    auto processed = input;
+
+    // The filters are applied in the same order as recommended by the reference design
+    // Decimation -> Depth2Disparity -> Spatial ->Temporal -> Disparity2Depth
+
+    if (dec_pb)
+        processed = dec_filter.process(processed);
+
+    // Domain transform is mandatory according to the reference design
+    processed = depth_to_disparity.process(processed);
+
+    if (spat_pb)
+        processed = spat_filter.process(processed);
+
+    if (temp_pb)
+        processed = temp_filter.process(processed);
+
+    return  disparity_to_depth.process(processed);
+}
 
 // Parse frame's metadata files and partially fill the configuration struct
 ppf_test_config attrib_from_csv(const std::string& str)
@@ -133,6 +215,10 @@ ppf_test_config attrib_from_csv(const std::string& str)
     // It is up to the user to retrieve and use the parameters appropriately
     cfg.input_res_x = dict.count(metadata_attributes.at(res_x)) ? std::stoi(dict.at(metadata_attributes.at(res_x))) : 0;
     cfg.input_res_y = dict.count(metadata_attributes.at(res_y)) ? std::stoi(dict.at(metadata_attributes.at(res_y))) : 0;
+    cfg.stereo_baseline = dict.count(metadata_attributes.at(stereo_baseline)) ? std::stof(dict.at(metadata_attributes.at(stereo_baseline))) : 0.f;
+    cfg.depth_units = dict.count(metadata_attributes.at(depth_units)) ? std::stof(dict.at(metadata_attributes.at(depth_units))) : 0.f;
+    cfg.focal_length = dict.count(metadata_attributes.at(focal_length)) ? std::stof(dict.at(metadata_attributes.at(focal_length))) : 0.f;
+
     cfg.downsample_scale = dict.count(metadata_attributes.at(downscale)) ? std::stoi(dict.at(metadata_attributes.at(downscale))) : 1;
     cfg.spatial_filter = dict.count(metadata_attributes.at(spat_filter)) > 0;
     cfg.spatial_alpha = dict.count(metadata_attributes.at(spat_alpha)) ? std::stof(dict.at(metadata_attributes.at(spat_alpha))) : 0.f;
@@ -179,6 +265,9 @@ bool load_test_configuration(const std::string test_name, ppf_test_config& test_
     test_config.input_res_y = input_meta_params.input_res_y;
     test_config.output_res_x = output_meta_params.input_res_x;
     test_config.output_res_y = output_meta_params.input_res_y;
+    test_config.depth_units = input_meta_params.depth_units;
+    test_config.focal_length = input_meta_params.focal_length;
+    test_config.stereo_baseline = input_meta_params.stereo_baseline;
     test_config.downsample_scale = output_meta_params.downsample_scale;
     test_config.spatial_filter = output_meta_params.spatial_filter;
     test_config.spatial_alpha = output_meta_params.spatial_alpha;
@@ -217,28 +306,105 @@ bool load_test_configuration(const std::string test_name, ppf_test_config& test_
     REQUIRE(test_config.input_res_y > 0);
     REQUIRE(test_config.output_res_x > 0);
     REQUIRE(test_config.output_res_y > 0);
-    REQUIRE(test_config.input_res_x * test_config.input_res_y == test_config._input_data.size());
-    REQUIRE(test_config.output_res_x * test_config.output_res_y == test_config._output_data.size());
+    REQUIRE(std::fabs(test_config.stereo_baseline) > 0.f);
+    REQUIRE(test_config.depth_units > 0);
+    REQUIRE(test_config.focal_length > 0);
+    REQUIRE((test_config.input_res_x * test_config.input_res_y * 2 )== test_config._input_data.size()); // Assuming uint16_t type
+    REQUIRE((test_config.output_res_x * test_config.output_res_y * 2) == test_config._output_data.size());
 
     // More specifc test that are awaer of intrinsic of the filters implementation
     //Note that the specific parameter threshold are correct as of March 2018.
-    REQUIRE(test_config.spatial_alpha >= 0.25f);
-    REQUIRE(test_config.spatial_alpha <= 1.f);
-    REQUIRE(test_config.spatial_delta >= 1);
-    REQUIRE(test_config.spatial_delta <= 50);
-    REQUIRE(test_config.spatial_iterations >= 1);
-    REQUIRE(test_config.spatial_iterations <= 5);
-    REQUIRE(test_config.temporal_alpha >= 0.f);
-    REQUIRE(test_config.temporal_alpha <= 1.f);
-    REQUIRE(test_config.temporal_delta >= 1);
-    REQUIRE(test_config.temporal_delta <= 100);
-    REQUIRE(test_config.temporal_persistence >= 0);
-    REQUIRE(test_config.temporal_persistence <= 8);
+    if (test_config.spatial_filter)
+    {
+        REQUIRE(test_config.spatial_alpha >= 0.25f);
+        REQUIRE(test_config.spatial_alpha <= 1.f);
+        REQUIRE(test_config.spatial_delta >= 1);
+        REQUIRE(test_config.spatial_delta <= 50);
+    }
+    if (test_config.temporal_filter)
+    {
+        REQUIRE(test_config.spatial_iterations >= 1);
+        REQUIRE(test_config.spatial_iterations <= 5);
+        REQUIRE(test_config.temporal_alpha >= 0.f);
+        REQUIRE(test_config.temporal_alpha <= 1.f);
+        REQUIRE(test_config.temporal_delta >= 1);
+        REQUIRE(test_config.temporal_delta <= 100);
+        REQUIRE(test_config.temporal_persistence >= 0);
+        REQUIRE(test_config.temporal_persistence <= 8);
+    }
     
     //TODO: holes_filling mode verification
     
     
     return res;
+}
+
+template <typename T>
+bool profile_diffs(std::vector<T>& distances, const float max_allowed_std, const float outlier)
+{
+    static_assert((std::is_arithmetic<T>::value), "Profiling is defined for built-in arithmetic types");
+
+    std::ofstream output_file("./diffs.txt");
+    for (const auto &val : distances) output_file << val << "\n";
+    output_file.close();
+
+    REQUIRE(!distances.empty());
+
+    float mean = std::accumulate(distances.begin(),
+        distances.end(), 0.0f) / distances.size();
+
+    auto min = std::min_element(distances.begin(), distances.end());
+    auto max = std::max_element(distances.begin(), distances.end());
+    float min_val = *min;
+    float max_val = *max;
+    float e = 0;
+    float inverse = 1.f / distances.size();
+    for (auto elem : distances)
+    {
+        e += pow(elem - mean, 2);
+    }
+
+    float standard_deviation = static_cast<float>(sqrt(inverse * e));
+
+    CAPTURE(mean);
+    CAPTURE(min_val);
+    CAPTURE(max_val);
+    CAPTURE(outlier);
+    CAPTURE(standard_deviation);
+    CAPTURE(max_allowed_std);
+
+    REQUIRE(standard_deviation < max_allowed_std);
+    REQUIRE(fabs((min_val)) < outlier);
+    REQUIRE(fabs((max_val)) < outlier);
+
+    return (fabs(min_val) < outlier) &&
+        (fabs(max_val) < outlier) &&
+        (standard_deviation < max_allowed_std);
+}
+
+bool validate_ppf_results(rs2::frame result_depth, const ppf_test_config& reference_data)
+{
+    std::vector<int16_t> depth_diff;
+
+    auto result_profile = result_depth.get_profile().as<video_stream_profile>();
+    REQUIRE(result_profile);
+    CAPTURE(result_profile.width());
+    CAPTURE(result_profile.height());
+
+    REQUIRE(result_profile.width() == reference_data.output_res_x);
+    REQUIRE(result_profile.height() == reference_data.output_res_y);
+
+    auto pixels = result_profile.width()*result_profile.height();
+    depth_diff.resize(pixels);
+
+    // Pixel-by-pixel comparison of the resulted filtered depth vs data ercorded with external tool
+    auto v1 = reinterpret_cast<const uint16_t*>(result_depth.get_data());
+    auto v2 = reinterpret_cast<const uint16_t*>(reference_data._output_data.data());
+
+    for (auto i = 0; i < pixels; i++)
+        depth_diff[i] = std::abs(*v1++ - *v2++);
+
+    return profile_diffs(depth_diff, 5, 10);
 }
 
 TEST_CASE("Post-Processing Filters validation", "[live]") {
@@ -248,7 +414,8 @@ TEST_CASE("Post-Processing Filters validation", "[live]") {
     {
         // Test file name  , Filters configuraiton
         const std::map< std::string, std::string> ppf_test_cases = {
-            { "152320139",  "Downsample(2)+Spatial(0.85,32,3)+Temporal(0.25,15,0)+HolesFilling(1)" },
+            //{ "152320139",  "Downsample(2)+Spatial(0.85,32,3)+Temporal(0.25,15,0)+HolesFilling(1)" },
+            { "152327372",  "TestSample" },
         };
 
         ppf_test_config test_cfg;
@@ -261,37 +428,54 @@ TEST_CASE("Post-Processing Filters validation", "[live]") {
             // Load the data from configuration and raw frame files
             REQUIRE(load_test_configuration(ppf_test.first, test_cfg));
 
+            post_processing_filters ppf;
+
+            // Apply the retrieved configuration onto a local post-processing chain of filters
+            REQUIRE_NOTHROW(ppf.configure(test_cfg));
+
             rs2::software_device dev; // Create software-only device
             auto depth_sensor = dev.add_sensor("Depth");
 
             int width = test_cfg.input_res_x;
             int height = test_cfg.input_res_y;
             int depth_bpp = 2; //16bit unsigned 
-            rs2_intrinsics depth_intrinsics = { width, height, width / 2.f, height / 2.f, 1.f ,1.f,
-                                                RS2_DISTORTION_BROWN_CONRADY ,{ 0,0,0,0,0 } };
+            int frame_number = 1;
+            rs2_intrinsics depth_intrinsics = { width, height,
+                                        width / 2.f, height / 2.f,                      // Principal point (N/A in this test)
+                                        test_cfg.focal_length ,test_cfg.focal_length,   // Focal Length
+                                        RS2_DISTORTION_BROWN_CONRADY ,{ 0,0,0,0,0 } };
 
-            auto depth_stream = depth_sensor.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, width, height, 30, depth_bpp, RS2_FORMAT_Z16, depth_intrinsics });
+            auto depth_stream_profile = depth_sensor.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, width, height, 30, depth_bpp, RS2_FORMAT_Z16, depth_intrinsics });
+            depth_sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, test_cfg.depth_units);
+            depth_sensor.add_read_only_option(RS2_OPTION_STEREO_BASELINE, test_cfg.stereo_baseline);
 
-            depth_sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, 0.001f);
+            // Establish the required chain of filters
             dev.create_matcher(RS2_MATCHER_DLR_C);
             rs2::syncer sync;
 
+            depth_sensor.open(depth_stream_profile);
             depth_sensor.start(sync);
 
             // Inject input frame
-            // TODO
-            //depth_sensor.on_video_frame({ depth_frame.frame.data(), // Frame pixels from capture API
-            //        [](void*) {}, // Custom deleter (if required)
-            //        depth_frame.x*depth_frame.bpp, depth_frame.bpp, // Stride and Bytes-per-pixel
-            //        (rs2_time_t)frame_number * 16, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, frame_number, // Timestamp, Frame# for potential sync services
-            //        depth_stream });
+            depth_sensor.on_video_frame({ test_cfg._input_data.data(), // Frame pixels from capture API
+                    [](void*) {},                   // Custom deleter (if required)
+                (int)test_cfg.input_res_x *depth_bpp,    // Stride
+                depth_bpp,                          // Bytes-per-pixels
+                (rs2_time_t)frame_number * 16,      // Timestamp
+                RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME,   // Clock Domain 
+                frame_number,                       // Frame# for potential sync services
+                depth_stream_profile });            // Depth stream profile
 
             /// ... here the actual filters are being applied
             rs2::frameset fset = sync.wait_for_frames();
+            REQUIRE(fset);
             rs2::frame depth = fset.first_or_default(RS2_STREAM_DEPTH);
+            REQUIRE(depth);
+
+            auto filtered_depth = ppf.process(depth);
 
             // Compare the resulted frame versus input
-            // TBD
+            REQUIRE_NOTHROW(validate_ppf_results(filtered_depth, test_cfg));
         }
     }
 }
