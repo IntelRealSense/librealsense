@@ -19,7 +19,7 @@ endif()
 
 set(DEPENDENCIES realsense2)
 
-set (unit_tests_sources unit-tests-live.cpp unit-tests-post-processing.cpp unit-tests-main.cpp unit-tests-common.h)
+set (unit_tests_sources unit-tests-live.cpp unit-tests-post-processing.cpp unit-tests-post-processing.h unit-tests-main.cpp unit-tests-common.h)
 # When compiling with static linkage, enable and activate librealsense-core classes unit-tests
 if(NOT BUILD_SHARED_LIBS)
 	set (unit_tests_sources ${unit_tests_sources} unit-tests-internal.cpp)
