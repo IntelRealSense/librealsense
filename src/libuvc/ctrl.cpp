@@ -59,6 +59,9 @@ static const int REQ_TYPE_GET = 0xa1;
 int uvc_get_ctrl_len(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl) {
   unsigned char buf[2];
 
+  if (!devh)
+    return UVC_ERROR_NO_DEVICE;
+
   int ret = libusb_control_transfer(
     devh->usb_devh,
     REQ_TYPE_GET, UVC_GET_LEN,
@@ -88,6 +91,9 @@ int uvc_get_ctrl_len(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl) {
  * @ingroup ctrl
  */
 int uvc_get_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *data, int len, enum uvc_req_code req_code) {
+  if (!devh)
+    return UVC_ERROR_NO_DEVICE;
+
   return libusb_control_transfer(
     devh->usb_devh,
     REQ_TYPE_GET, req_code,
@@ -111,6 +117,9 @@ int uvc_get_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *da
  * @ingroup ctrl
  */
 int uvc_set_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *data, int len) {
+  if (!devh)
+    return UVC_ERROR_NO_DEVICE;
+
   return libusb_control_transfer(
     devh->usb_devh,
     REQ_TYPE_SET, UVC_SET_CUR,
@@ -125,6 +134,8 @@ int uvc_set_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *da
 uvc_error_t uvc_get_power_mode(uvc_device_handle_t *devh, enum uvc_device_power_mode *mode, enum uvc_req_code req_code) {
   uint8_t mode_char;
   int ret;
+  if (!devh)
+    return UVC_ERROR_NO_DEVICE;
 
   ret = libusb_control_transfer(
     devh->usb_devh,
@@ -146,6 +157,9 @@ uvc_error_t uvc_get_power_mode(uvc_device_handle_t *devh, enum uvc_device_power_
 uvc_error_t uvc_set_power_mode(uvc_device_handle_t *devh, enum uvc_device_power_mode mode) {
   uint8_t mode_char = mode;
   int ret;
+
+  if (!devh)
+    return UVC_ERROR_NO_DEVICE;
 
   ret = libusb_control_transfer(
     devh->usb_devh,

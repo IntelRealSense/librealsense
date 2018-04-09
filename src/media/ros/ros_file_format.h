@@ -401,6 +401,7 @@ namespace librealsense
         {
             switch (type)
             {
+            case RS2_STREAM_CONFIDENCE:
             case RS2_STREAM_DEPTH:
             case RS2_STREAM_COLOR:
             case RS2_STREAM_INFRARED:

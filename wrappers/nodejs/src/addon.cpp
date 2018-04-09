@@ -2281,6 +2281,7 @@ class RSSensor : public Nan::ObjectWrap, Options {
 
     CallNativeFunc(rs2_get_region_of_interest, &me->error_, me->sensor_, &minx,
         &miny, &maxx, &maxy, &me->error_);
+    if (me->error_) return;
     info.GetReturnValue().Set(
         RSRegionOfInterest(minx, miny, maxx, maxy).GetObject());
   }
@@ -2488,7 +2489,6 @@ class RSDevice : public Nan::ObjectWrap {
     int32_t on = GetNativeResult<int>(rs2_supports_device_info, &me->error_,
         me->dev_, (rs2_camera_info)camera_info, &me->error_);
     if (me->error_) return;
-
     info.GetReturnValue().Set(Nan::New(on ? true : false));
   }
 
@@ -4468,6 +4468,8 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_STREAM_GYRO);
   _FORCE_SET_ENUM(RS2_STREAM_ACCEL);
   _FORCE_SET_ENUM(RS2_STREAM_GPIO);
+  _FORCE_SET_ENUM(RS2_STREAM_POSE);
+  _FORCE_SET_ENUM(RS2_STREAM_CONFIDENCE);
   _FORCE_SET_ENUM(RS2_STREAM_COUNT);
 
   // rs2_format
@@ -4557,6 +4559,7 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_OPTION_FILTER_SMOOTH_DELTA);
   _FORCE_SET_ENUM(RS2_OPTION_HOLES_FILL);
   _FORCE_SET_ENUM(RS2_OPTION_STEREO_BASELINE);
+  _FORCE_SET_ENUM(RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP);
   _FORCE_SET_ENUM(RS2_OPTION_COUNT);
 
   // rs2_camera_info
@@ -4568,6 +4571,7 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_ADVANCED_MODE);
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_PRODUCT_ID);
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_CAMERA_LOCKED);
+  _FORCE_SET_ENUM(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_COUNT);
 
   // rs2_log_severity

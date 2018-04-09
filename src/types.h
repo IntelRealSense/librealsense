@@ -47,6 +47,7 @@ const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+D
 namespace librealsense
 {
     #define UNKNOWN_VALUE "UNKNOWN"
+    const double TIMESTAMP_USEC_TO_MSEC = 0.001;
 
     ///////////////////////////////////
     // Utility types for general use //
@@ -494,31 +495,80 @@ namespace librealsense
         int index;
     };
 
+    struct resolution
+    {
+        uint32_t width, height;
+    };
+
+    using resolution_func = std::function<resolution(resolution res)>;
+
+    struct stream_output {
+        stream_output(stream_descriptor stream_desc_in,
+                      rs2_format format_in,
+                      resolution_func res_func = [](resolution res) {return res; })
+            : stream_desc(stream_desc_in),
+              format(format_in),
+              stream_resolution(res_func)
+        {}
+
+        stream_descriptor stream_desc;
+        rs2_format format;
+        resolution_func stream_resolution;
+    };
+
     struct pixel_format_unpacker
     {
         bool requires_processing;
-        void(*unpack)(byte * const dest[], const byte * source, int count);
-        std::vector<std::pair<stream_descriptor, rs2_format>> outputs;
+        void(*unpack)(byte * const dest[], const byte * source, int width, int height);
+        std::vector<stream_output> outputs;
 
-        bool satisfies(const stream_profile& request) const
+        platform::stream_profile get_uvc_profile(const stream_profile& request, uint32_t fourcc, const std::vector<platform::stream_profile>& uvc_profiles) const
         {
-            return provides_stream(request.stream, request.index) &&
+            platform::stream_profile uvc_profile{};
+            auto it = std::find_if(begin(uvc_profiles), end(uvc_profiles),
+                [&fourcc, &request, this](const platform::stream_profile& uvc_p)
+            {
+                for (auto & o : outputs)
+                {
+                    auto res = o.stream_resolution(resolution{ uvc_p.width, uvc_p.height });
+                    if (o.stream_desc.type == request.stream && o.stream_desc.index == request.index &&
+                        res.width == request.width && res.height == request.height &&
+                        uvc_p.format == fourcc && request.fps == uvc_p.fps)
+                        return true;
+                }
+                return false;
+            });
+            if (it != end(uvc_profiles))
+            {
+                uvc_profile = *it;
+            }
+            return uvc_profile;
+        }
+
+        bool satisfies(const stream_profile& request, uint32_t fourcc, const std::vector<platform::stream_profile>& uvc_profiles) const
+        {
+            auto uvc_profile = get_uvc_profile(request, fourcc, uvc_profiles);
+            return provides_stream(request, fourcc, uvc_profile) &&
                 get_format(request.stream, request.index) == request.format;
         }
 
-        bool provides_stream(rs2_stream stream, int index) const
+        bool provides_stream(const stream_profile& request, uint32_t fourcc, const platform::stream_profile& uvc_profile) const
         {
-            for (auto & o : outputs)
-                if (o.first.type == stream && o.first.index == index)
+            for (auto& o : outputs)
+            {
+                auto res = o.stream_resolution(resolution{ uvc_profile.width, uvc_profile.height });
+                if (o.stream_desc.type == request.stream && o.stream_desc.index == request.index &&
+                    res.width == request.width && res.height == request.height)
                     return true;
+            }
 
             return false;
         }
         rs2_format get_format(rs2_stream stream, int index) const
         {
-            for (auto & o : outputs)
-                if (o.first.type == stream && o.first.index == index)
-                    return o.second;
+            for (auto& o : outputs)
+                if (o.stream_desc.type == stream && o.stream_desc.index == index)
+                    return o.format;
 
             throw invalid_value_exception("missing output");
         }
@@ -529,7 +579,7 @@ namespace librealsense
 
             for (auto output : outputs)
             {
-                tuple_outputs.push_back(std::make_tuple(output.first.type, output.first.index, output.second));
+                tuple_outputs.push_back(std::make_tuple(output.stream_desc.type, output.stream_desc.index, output.format));
             }
             return tuple_outputs;
         }

@@ -3,14 +3,12 @@
 
 #pragma once
 
-//#include "metadata.h"
 #include "backend.h"
 #include "types.h"
 
 #include <map>
 #include <iomanip>
 
-const double TIMESTAMP_USEC_TO_MSEC = 0.001;
 
 namespace librealsense
 {
@@ -60,20 +58,20 @@ namespace librealsense
         };
 
         static const std::map<std::uint16_t, std::string> rs400_sku_names = {
-            { RS400_PID,    "Intel RealSense 400"},
-            { RS400_MM_PID, "Intel RealSense 400 with Tracking Module"},
-            { RS410_PID,    "Intel RealSense 410"},
-            { RS410_MM_PID, "Intel RealSense 410 with Tracking Module"},
-            { RS415_PID,    "Intel RealSense 415"},
-            { RS420_PID,    "Intel RealSense 420"},
-            { RS420_MM_PID, "Intel RealSense 420 with Tracking Module"},
-            { RS430_PID,    "Intel RealSense 430"},
-            { RS430_MM_PID, "Intel RealSense 430 with Tracking Module"},
-            { RS430_MM_PID, "Intel RealSense 430 with Tracking Module and RGB Module"},
-            { RS435_RGB_PID,"Intel RealSense 435"},
-            { RS460_PID,    "Intel RealSense 460" },
-            { RS405_PID,    "Intel RealSense 405" },
-            { RS_USB2_PID,  "Intel RealSense USB2" }
+            { RS400_PID,        "Intel RealSense D400"},
+            { RS400_MM_PID,     "Intel RealSense D400 with Tracking Module"},
+            { RS410_PID,        "Intel RealSense D410"},
+            { RS410_MM_PID,     "Intel RealSense D410 with Tracking Module"},
+            { RS415_PID,        "Intel RealSense D415"},
+            { RS420_PID,        "Intel RealSense D420"},
+            { RS420_MM_PID,     "Intel RealSense D420 with Tracking Module"},
+            { RS430_PID,        "Intel RealSense D430"},
+            { RS430_MM_PID,     "Intel RealSense D430 with Tracking Module"},
+            { RS430_MM_PID,     "Intel RealSense D430 with Tracking Module and RGB Module"},
+            { RS435_RGB_PID,    "Intel RealSense D435"},
+            { RS460_PID,        "Intel RealSense D460" },
+            { RS405_PID,        "Intel RealSense D405" },
+            { RS_USB2_PID,      "Intel RealSense USB2" }
         };
 
         // DS5 fisheye XU identifiers

@@ -1,21 +1,21 @@
-From 6a837242353bf4f8d3ee19e6ff06983f345a7412 Mon Sep 17 00:00:00 2001
+From a87f52b988cb9ead97c74755228a7801d749b81c Mon Sep 17 00:00:00 2001
 From: Elad Zucker <eladx.zucker@intel.com>
 From: icarpis <itay.carpis@intel.com>
-Date: Mon, 25 Sep 2017 11:36:52 +0300
+Date: Sun, 18 Mar 2018 11:13:36 +0200
 Subject: [PATCH] added support for uvc metadata
 
 Signed-off-by: Evgeni Raikhel <evgeni.raikhel@intel.com>
 ---
- drivers/media/usb/uvc/uvc_driver.c | 126 +++++++++++++++++++++++++++++++++++++
- drivers/media/usb/uvc/uvc_video.c  |  18 ++++--
+ drivers/media/usb/uvc/uvc_driver.c | 135 +++++++++++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvc_video.c  |  18 +++--
  drivers/media/usb/uvc/uvcvideo.h   |   4 +-
- 3 files changed, 142 insertions(+), 6 deletions(-)
+ 3 files changed, 151 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 70842c5..1aa02f8 100644
+index 70842c5..9cdc50a 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -2742,6 +2742,132 @@ static struct usb_device_id uvc_ids[] = {
+@@ -2742,6 +2742,141 @@ static struct usb_device_id uvc_ids[] = {
  	  .bInterfaceSubClass	= 1,
  	  .bInterfaceProtocol	= 0,
  	  .driver_info		= UVC_QUIRK_FORCE_Y8 },
@@ -145,11 +145,20 @@ index 70842c5..1aa02f8 100644
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= 0,
 +	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	  /* Intel L500 depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0b0d,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
  	/* Generic USB Video Class */
  	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_UNDEFINED) },
  	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_15) },
 diff --git a/drivers/media/usb/uvc/uvc_video.c b/drivers/media/usb/uvc/uvc_video.c
-index fb86d6a..cdbd550 100644
+index fb86d6a..462dffb 100644
 --- a/drivers/media/usb/uvc/uvc_video.c
 +++ b/drivers/media/usb/uvc/uvc_video.c
 @@ -1222,8 +1222,13 @@ static void uvc_video_decode_bulk(struct urb *urb, struct uvc_streaming *stream,

@@ -46,6 +46,8 @@ The library will be compiled without the metadata support!\n")
 
 #define DEVICE_NOT_READY_ERROR _HRESULT_TYPEDEF_(0x80070015L)
 
+#define MAX_PINS 5
+
 namespace librealsense
 {
     namespace platform
@@ -806,9 +808,7 @@ namespace librealsense
                             LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp),
                                 reinterpret_cast<void **>(&_video_proc.p)));
 
-                            UINT32 streamIndex{};
-                            CHECK_HR(_device_attrs->GetCount(&streamIndex));
-                            _streams.resize(streamIndex);
+                            _streams.resize(_streamIndex);
                             for (auto& elem : _streams)
                                 elem.callback = nullptr;
 
@@ -857,9 +857,7 @@ namespace librealsense
                             LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp),
                                 reinterpret_cast<void **>(&_video_proc.p)));
 
-                            UINT32 streamIndex{};
-                            CHECK_HR(_device_attrs->GetCount(&streamIndex));
-                            _streams.resize(streamIndex);
+                            _streams.resize(_streamIndex);
                             for (auto& elem : _streams)
                                 elem.callback = nullptr;
 
@@ -951,9 +949,9 @@ namespace librealsense
 
         wmf_uvc_device::wmf_uvc_device(const uvc_device_info& info,
             std::shared_ptr<const wmf_backend> backend)
-            : _info(info), _is_flushed(), _has_started(), _backend(std::move(backend)),
+            : _streamIndex(MAX_PINS), _info(info), _is_flushed(), _has_started(), _backend(std::move(backend)),
             _systemwide_lock(info.unique_id.c_str(), WAIT_FOR_MUTEX_TIME_OUT),
-            _location("")
+            _location(""), _device_usb_spec(usb_undefined)
         {
             if (!is_connected(info))
             {
@@ -961,11 +959,14 @@ namespace librealsense
             }
             try
             {
-                //_location = get_usb_port_id(info.vid, info.pid, info.unique_id);
+                std::tie(_location, _device_usb_spec) = get_usb_descriptors(info.vid, info.pid, info.unique_id);
             }
-            catch (...) {}
+            catch (...) 
+            {
+                LOG_WARNING("Could not retrieve USB descriptor for device " << std::hex << info.vid << ":" 
+                    << info.pid << " , id:" << info.unique_id);
+            }
         }
-
 
         wmf_uvc_device::~wmf_uvc_device()
         {

@@ -31,29 +31,53 @@ namespace rs2
         {
             bool valid_config = false;
             std::vector<rs2::config> cfgs;
+            rs2::pipeline_profile active_profile;
 
-            rs2::config cfg;
-            // Preferred configuration Depth + Synthetic Color
-            cfg.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, 30);
-            cfg.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_RGB8, 30);
-            cfgs.push_back(cfg);
+            // Adjust settings according to USB type
+            bool usb3_device = true;
+            auto devices = _ctx.query_devices();
+            if (devices.size())
+            {
+                auto dev = devices[0];
+                bool usb3_device = true;
+                if (dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+                {
+                    std::string usb_type = dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+                    usb3_device = !(std::string::npos != usb_type.find("2."));
+                }
+            }
+            else
+                return valid_config;
 
+            int requested_fps = usb3_device ? 30 : 15;
+
+            {
+                rs2::config cfg_default;
+                // Preferred configuration Depth + Synthetic Color
+                cfg_default.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, requested_fps);
+                cfg_default.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_RGB8, requested_fps);
+                cfgs.emplace_back(cfg_default);
+            }
             // Use Infrared luminocity as a secondary video in case synthetic chroma is not supported
-            cfg.disable_all_streams();
-            cfg.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
-            cfg.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, 30);
-            cfgs.push_back(cfg);
+            {
+                rs2::config cfg_alt;
+                cfg_alt.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, requested_fps);
+                cfg_alt.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, requested_fps);
+                cfgs.emplace_back(cfg_alt);
+            }
 
             for (auto& cfg : cfgs)
             {
                 if (valid_config = cfg.can_resolve(_pipe))
                 {
                     try {
-                        _pipe.start(cfg);
+                        active_profile = _pipe.start(cfg);
+                        valid_config = active_profile;
                         break;
                     }
                     catch (...)
                     {
+                        valid_config = false;
                         if (!_device_in_use)
                         {
                             window.add_on_load_message("Device is not functional or busy!");
@@ -525,8 +549,8 @@ namespace rs2
                                 {
                                     try // Retries are needed to cope with HW stability issues
                                     {
-                                        _pipe.start(cfg);
-                                        success = true;
+                                        auto profile = _pipe.start(cfg);
+                                        success = profile;
                                     }
                                     catch (...)
                                     {

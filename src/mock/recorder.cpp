@@ -955,6 +955,19 @@ namespace librealsense
             }, _entity_id, call_type::uvc_get_location);
         }
 
+        usb_spec record_uvc_device::get_usb_specification() const
+        {
+            return _owner->try_record([&](recording* rec, lookup_key k)
+            {
+                auto result = _source->get_usb_specification();
+
+                auto&& c = rec->add_call(k);
+                c.param1 = result;
+
+                return result;
+            }, _entity_id, call_type::uvc_get_usb_specification);
+        }
+
         vector<uint8_t> record_usb_device::send_receive(const vector<uint8_t>& data, int timeout_ms, bool require_response)
         {
             return _owner->try_record([&](recording* rec, lookup_key k)
@@ -1350,6 +1363,12 @@ namespace librealsense
         {
             auto&& c = _rec->find_call(call_type::uvc_get_location, _entity_id);
             return c.inline_string;
+        }
+
+        usb_spec playback_uvc_device::get_usb_specification() const
+        {
+            auto&& c = _rec->find_call(call_type::uvc_get_usb_specification, _entity_id);
+            return static_cast<usb_spec>(c.param1);
         }
 
         playback_uvc_device::playback_uvc_device(shared_ptr<recording> rec, int id)
