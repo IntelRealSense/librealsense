@@ -161,7 +161,7 @@ namespace librealsense
 
     void software_sensor::add_read_only_option(rs2_option option, float val)
     {
-        register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("bypass sensor read only option",
+        register_option(option, std::make_shared<const_value_option>("bypass sensor read only option",
             lazy<float>([=]() { return val; })));
     }
 
