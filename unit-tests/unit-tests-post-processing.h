@@ -55,10 +55,24 @@ struct synthetic_frame
 std::vector<uint8_t> load_from_binary(const std::string& str)
 {
     // open the file:
-    std::basic_ifstream<uint8_t> file(str.c_str(), std::ios::binary);
+    //std::basic_ifstream<uint8_t> file(str.c_str(), std::ios::binary);
+    std::ifstream file(str.c_str(), std::ios::binary);
 
+    // Determine the file length
+    file.seekg(0, std::ios_base::end);
+    std::size_t size = file.tellg();
+    file.seekg(0, std::ios_base::beg);
+    // Create a vector to store the data
+    std::vector<uint8_t> v(size);
+
+    // Load the data
+    file.read((char*)&v[0], size);
+    // Close the file
+    file.close();
+
+    return v;
     // read binary data:
-    return std::vector<uint8_t>((std::istreambuf_iterator<uint8_t>(file)), std::istreambuf_iterator<uint8_t>());
+    //return std::vector<uint8_t>((std::istreambuf_iterator<uint8_t>(file)), std::istreambuf_iterator<uint8_t>());
 }
 
 enum metadata_attrib : uint8_t
@@ -288,9 +302,9 @@ inline bool profile_diffs(const std::string& plot_name, std::vector<T>& distance
     CAPTURE(standard_deviation);
     CAPTURE(max_allowed_std);
 
-    REQUIRE(standard_deviation < max_allowed_std);
-    REQUIRE(fabs((min_val)) < outlier);
-    REQUIRE(fabs((max_val)) < outlier);
+    REQUIRE(standard_deviation <= max_allowed_std);
+    REQUIRE(fabs((min_val)) <= outlier);
+    REQUIRE(fabs((max_val)) <= outlier);
 
     return (fabs(min_val) < outlier) &&
         (fabs(max_val) < outlier) &&

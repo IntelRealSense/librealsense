@@ -127,9 +127,9 @@ bool validate_ppf_results(rs2::frame origin_depth, rs2::frame result_depth, cons
     // Basic sanity scenario with no filters applied.
     // validating domain transform in/out conversion. Requiring input=output
     if (domain_transform_only)
-        profile_diffs("./DomainTransform.txt",diff2orig, 5, 10);
+        profile_diffs("./DomainTransform.txt",diff2orig, 0, 0);
 
-    return profile_diffs("./Filterstransform.txt", diff2ref, 5, 10);
+    return profile_diffs("./Filterstransform.txt", diff2ref, 0, 0);
 }
 
 TEST_CASE("Post-Processing Filters validation", "[live]") {
@@ -140,8 +140,13 @@ TEST_CASE("Post-Processing Filters validation", "[live]") {
         // Test file name  , Filters configuraiton
         const std::map< std::string, std::string> ppf_test_cases = {
             //{ "152320139",  "Downsample(2)+Spatial(0.85,32,3)+Temporal(0.25,15,0)+HolesFilling(1)" },
-            { "152335362",  "TestSample:downsample1" }, // Not reproducible with Dave's
-            
+            { "152336679",  "D415_TestSample:downsample2" },
+            { "152336687",  "D415_TestSample:downsample2" },
+            { "152336688",  "D415_TestSample:downsample2" },
+            { "152336689",  "D415_TestSample:downsample2" },
+            { "152336690",  "D415_TestSample:downsample2" },
+            { "152336699",  "D410_TestSample:downsample2" },
+            { "152336700",  "D410_TestSample:downsample2" },
         };
 
         ppf_test_config test_cfg;
@@ -151,6 +156,7 @@ TEST_CASE("Post-Processing Filters validation", "[live]") {
             CAPTURE(ppf_test.first);
             CAPTURE(ppf_test.second);
 
+            WARN("Testing pattern " << ppf_test.first << "," << ppf_test.second);
             // Load the data from configuration and raw frame files
             REQUIRE(load_test_configuration(ppf_test.first, test_cfg));
 
