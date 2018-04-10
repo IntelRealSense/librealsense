@@ -9,12 +9,14 @@
 
 namespace librealsense
 {
+    #ifdef __SSSE3__
     void unpack_yuy2_avx_y8(byte * const d[], const byte * s, int n);
     void unpack_yuy2_avx_y16(byte * const d[], const byte * s, int n);
     void unpack_yuy2_avx_rgb8(byte * const d[], const byte * s, int n);
     void unpack_yuy2_avx_rgba8(byte * const d[], const byte * s, int n);
     void unpack_yuy2_avx_bgr8(byte * const d[], const byte * s, int n);
     void unpack_yuy2_avx_bgra8(byte * const d[], const byte * s, int n);
+    #endif
 }
 
 #endif

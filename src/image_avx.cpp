@@ -10,7 +10,6 @@
 #ifdef __SSSE3__
 #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
 #include <immintrin.h>
-#endif
 
 #pragma pack(push, 1) // All structs in this file are assumed to be byte-packed
 namespace librealsense
@@ -277,3 +276,4 @@ namespace librealsense
 }
 
 #pragma pack(pop)
+#endif
