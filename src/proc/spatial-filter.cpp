@@ -6,6 +6,7 @@
 #include "option.h"
 #include "environment.h"
 #include "context.h"
+#include "software-device.h"
 #include "proc/synthetic-stream.h"
 #include "proc/spatial-filter.h"
 
@@ -69,9 +70,8 @@ namespace librealsense
                 throw invalid_value_exception(to_string()
                     << "Unsupported spatial delta: " << val << " is out of range.");
 
-            // The decimation factor represents the 2's exponent
             _spatial_delta_param = static_cast<uint8_t>(val);
-            _spatial_radius = _stereoscopic_depth ? (_focal_lenght_mm*_stereo_baseline_mm) / float(_spatial_delta_param) : _spatial_delta_param;
+            _spatial_edge_threshold = _stereoscopic_depth ? (_focal_lenght_mm*_stereo_baseline_mm) / float(_spatial_delta_param) : _spatial_delta_param;
         });
 
         auto spatial_filter_iterations = std::make_shared<ptr_option<uint8_t>>(
@@ -141,9 +141,9 @@ namespace librealsense
 
                 // Spatial domain transform edge-preserving filter
                 if (_extension_type == RS2_EXTENSION_DISPARITY_FRAME)
-                    dxf_smooth<float>(const_cast<void*>(tgt.get_data()), _spatial_alpha_param, _spatial_radius, _spatial_iterations);
+                    dxf_smooth<float>(const_cast<void*>(tgt.get_data()), _spatial_alpha_param, _spatial_edge_threshold, _spatial_iterations);
                 else
-                    dxf_smooth<uint16_t>(const_cast<void*>(tgt.get_data()), _spatial_alpha_param, _spatial_radius, _spatial_iterations);
+                    dxf_smooth<uint16_t>(const_cast<void*>(tgt.get_data()), _spatial_alpha_param, _spatial_edge_threshold, _spatial_iterations);
             }
 
             out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
@@ -186,19 +186,30 @@ namespace librealsense
             {
                 librealsense::depth_stereo_sensor* ptr;
                 if (_stereoscopic_depth = a->extend_to(TypeToExtension<librealsense::depth_stereo_sensor>::value, (void**)&ptr))
+                {
                     dss = ptr;
+                    _stereo_baseline_mm = dss->get_stereo_baseline_mm();
+                }
+            }
+            else if (auto depth_emul = As<librealsense::software_sensor>(snr))
+            {
+                // Software device can obtain these options via Options interface
+                if (depth_emul->supports_option(RS2_OPTION_STEREO_BASELINE))
+                {
+                    _stereo_baseline_mm = depth_emul->get_option(RS2_OPTION_STEREO_BASELINE).query()*1000.f;
+                    _stereoscopic_depth = true;
+                }
             }
             else // Live sensor
             {
                 _stereoscopic_depth = Is<librealsense::depth_stereo_sensor>(snr);
                 dss = As<librealsense::depth_stereo_sensor>(snr);
+                if (_stereoscopic_depth)
+                    _stereo_baseline_mm = dss->get_stereo_baseline_mm();
             }
 
-            if (_stereoscopic_depth)
-                _stereo_baseline_mm = dss->get_stereo_baseline_mm();
-
-            _spatial_radius = (_extension_type == RS2_EXTENSION_DISPARITY_FRAME )?
-                                    (_focal_lenght_mm * _stereo_baseline_mm) / float(_spatial_delta_param) : _spatial_delta_param;
+            _spatial_edge_threshold = _spatial_delta_param;// (_extension_type == RS2_EXTENSION_DISPARITY_FRAME) ?
+                                   // (_focal_lenght_mm * _stereo_baseline_mm) / float(_spatial_delta_param) : _spatial_delta_param;
         }
     }
 

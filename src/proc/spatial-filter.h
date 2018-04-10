@@ -203,7 +203,7 @@ namespace librealsense
         float                   _spatial_alpha_param;
         uint8_t                 _spatial_delta_param;
         uint8_t                 _spatial_iterations;
-        float                   _spatial_radius;            // The convolution radius is domain-dependent
+        float                   _spatial_edge_threshold;            // The convolution radius is domain-dependent
         size_t                  _width, _height, _stride;
         size_t                  _bpp;
         rs2_extension           _extension_type;            // Strictly Depth/Disparity
