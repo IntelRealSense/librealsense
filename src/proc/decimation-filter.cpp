@@ -163,15 +163,24 @@ namespace librealsense
                     p = pixel_raws[n] + chunk_offset;
                     for (size_t m = 0; m < scale; ++m)
                     {
-                        *wk_itr++ = *(p + m);
+                        if (*(p + m))
+                            *wk_itr++ = *(p + m);
                         //*wk_itr++ = *(pixel_raws[n] + chunk_offset + m);
                         //working_kernel[n*scale + m] = *(pixel_raws[n] + chunk_offset + m);
                     }
                 }
 
-                std::nth_element(wk_begin, wk_begin + (kernel_size / 2), wk_begin + kernel_size);
-                //std::sort(working_kernel.begin(),working_kernel.end());
-                *frame_data_out++ = working_kernel[kernel_size / 2];
+                // For even-size kernels pick the member one below the middle
+                auto ks = (int)(wk_itr - wk_begin);
+                uint32_t median_index = (ks % 2) ? (ks / 2) : ((ks - 1) / 2);
+                if (ks == 0)
+                    *frame_data_out++ = 0;
+                else
+                {
+                    std::nth_element(wk_begin, wk_begin + (median_index), wk_itr);
+                    //std::sort(working_kernel.begin(),working_kernel.end());
+                    *frame_data_out++ = working_kernel[median_index];
+                }
 
                 chunk_offset += scale;
             }
