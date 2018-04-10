@@ -121,7 +121,6 @@ bool validate_ppf_results(rs2::frame origin_depth, rs2::frame result_depth, cons
     {
         uint16_t diff = std::abs(*v1++ - *v2++);
         diff2ref[i] = diff;
-        v_src++;
     }
 
     // Basic sanity scenario with no filters applied.
@@ -147,6 +146,12 @@ TEST_CASE("Post-Processing Filters validation", "[live]") {
             { "152336690",  "D415_TestSample:downsample2" },
             { "152336699",  "D410_TestSample:downsample2" },
             { "152336700",  "D410_TestSample:downsample2" },
+            { "152336824",  "D415_DownsampleS+2Spat+Temp" },
+            { "152336866",  "D415_DownsampleS2+Spat" },
+            { "152336867",  "D415_DownsampleS2+Temp" },
+            { "152336891",  "D415_DownsampleS2+Spat" },
+            { "152336911",  "D415_DownsampleS2+Spat_Non-default_params" },
+            { "152336914",  "D415_DownsampleS2+Spat_Non-default_params 2Iters" },
         };
 
         ppf_test_config test_cfg;
@@ -170,7 +175,7 @@ TEST_CASE("Post-Processing Filters validation", "[live]") {
 
             int width = test_cfg.input_res_x;
             int height = test_cfg.input_res_y;
-            int depth_bpp = 2; //16bit unsigned 
+            int depth_bpp = 2; //16bit unsigned
             int frame_number = 1;
             rs2_intrinsics depth_intrinsics = { width, height,
                                         width / 2.f, height / 2.f,                      // Principal point (N/A in this test)
