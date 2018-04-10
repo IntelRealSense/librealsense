@@ -197,9 +197,9 @@ namespace rs2
             texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
     }
 
-    void export_to_ply(const std::string& fname, notifications_model& ns, frameset frames, video_frame texture)
+    void export_to_ply(const std::string& fname, notifications_model& ns, frameset frames, video_frame texture, bool notify)
     {
-        std::thread([&ns, frames, texture, fname]() mutable {
+        std::thread([&ns, frames, texture, fname, notify]() mutable {
 
             points p;
 
@@ -214,7 +214,7 @@ namespace rs2
             if (p)
             {
                 p.export_to_ply(fname, texture);
-                ns.add_notification({ to_string() << "Finished saving 3D view " << (texture ? "to " : "without texture to ") << fname,
+                if (notify) ns.add_notification({ to_string() << "Finished saving 3D view " << (texture ? "to " : "without texture to ") << fname,
                     std::chrono::duration_cast<std::chrono::duration<double,std::micro>>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(),
                     RS2_LOG_SEVERITY_INFO,
                     RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
@@ -3205,7 +3205,7 @@ namespace rs2
 
         popup_if_error(window.get_font(), error_message);
 
-        return depth;
+        return f;
     }
 
     void viewer_model::reset_camera(float3 p)
