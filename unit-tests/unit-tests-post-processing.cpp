@@ -140,7 +140,8 @@ TEST_CASE("Post-Processing Filters validation", "[live]") {
         // Test file name  , Filters configuraiton
         const std::map< std::string, std::string> ppf_test_cases = {
             //{ "152320139",  "Downsample(2)+Spatial(0.85,32,3)+Temporal(0.25,15,0)+HolesFilling(1)" },
-            { "152327372",  "TestSample" },
+            { "152335362",  "TestSample:downsample1" }, // Not reproducible with Dave's
+            
         };
 
         ppf_test_config test_cfg;
