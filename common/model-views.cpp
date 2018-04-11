@@ -347,6 +347,9 @@ namespace rs2
         auto res = false;
         if (supported)
         {
+            if (opt == RS2_OPTION_HOLES_FILL)
+                use_option_name = false;
+
             auto desc = endpoint->get_option_description(opt);
 
             // remain option to append to the current line

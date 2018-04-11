@@ -9,6 +9,7 @@
 #include <fstream>
 #include <string>
 #include <map>
+#include <numeric>
 
 struct ppf_test_config
 {
