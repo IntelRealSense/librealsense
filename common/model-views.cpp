@@ -1789,7 +1789,7 @@ namespace rs2
             ImGui::PushItemWidth(200);
             draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
             selected_tex_source_uid = tex_sources[selected_tex_source];
-            texture.colorize = streams[selected_tex_source].texture->colorize;
+            texture.colorize = streams[tex_sources[selected_tex_source]].texture->colorize;
             ImGui::PopItemWidth();
 
             // Occlusion control for RGB UV-Map uses option's description as label
