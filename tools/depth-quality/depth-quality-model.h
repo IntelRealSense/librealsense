@@ -16,6 +16,7 @@ namespace rs2
     namespace depth_quality
     {
         class metrics_model;
+
         struct sample
         {
             sample(std::vector<single_metric_data> samples, double timestamp, unsigned long long frame_number) :
@@ -27,7 +28,7 @@ namespace rs2
             unsigned long long frame_number;
         };
 
-        struct metric_data
+        struct metric_definition
         {
             std::string name;
             std::string units;
@@ -37,24 +38,24 @@ namespace rs2
         {
         public:
             metrics_recorder(viewer_model& viewer_model) :
-                _record(false), _viewer_model(viewer_model)
+                _recording(false), _viewer_model(viewer_model)
             {}
 
-            void add_matric(const metric_data& data)
+            void add_metric(const metric_definition& data)
             {
                 std::lock_guard<std::mutex> lock(_m);
                 _metric_data.push_back(data);
             }
 
-            void add_sample(rs2::frameset& frames, std::vector<single_metric_data> samples)
+            void add_sample(rs2::frameset& frames, std::vector<single_metric_data> sample)
             {
                 std::lock_guard<std::mutex> lock(_m);
-                if (_record)
+                if (_recording)
                 {
-                    record_frame(frames);
+                    record_frames(frames);
 
-                    if (samples.size())
-                        _samples.push_back({ samples, _model_timer.elapsed_ms(), frames.get_frame_number() });
+                    if (sample.size())
+                        _samples.push_back({ sample, _model_timer.elapsed_ms(), frames.get_frame_number() });
                 }
             }
             void start_record(metrics_model* metrics)
@@ -64,14 +65,14 @@ namespace rs2
                 if (auto ret = file_dialog_open(save_file, NULL, NULL, NULL))
                 {
                     _filename_base = ret;
-                    _record = true;
+                    _recording = true;
                 }
             }
 
             void stop_record(device_model* dev)
             {
                 std::lock_guard<std::mutex> lock(_m);
-                _record = false;
+                _recording = false;
                 serialize_to_csv();
 
                 if (dev)
@@ -89,25 +90,24 @@ namespace rs2
                     0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
             }
 
-            bool is_record()
+            bool is_recording()
             {
-                return _record;
+                return _recording;
             }
 
         private:
-
-            friend class metrics_model;
-
             void serialize_to_csv() const;
-            void record_frame(rs2::frameset & frame) const;
+            void record_frames(const frameset & frame);
             viewer_model& _viewer_model;
-            std::vector<metric_data> _metric_data;
+            std::vector<metric_definition> _metric_data;
             std::vector<sample> _samples;
             timer _model_timer;
             std::mutex _m;
-            bool _record;
+            bool _recording;
             std::string _filename_base;
             metrics_model* _metrics;
+            colorizer _colorize;
+            pointcloud _pc;
         };
 
         class metric_plot : public std::enable_shared_from_this<metric_plot>
@@ -300,9 +300,9 @@ namespace rs2
             {
                 _camera_info = camera_info;
             }
-            bool is_record()
+            bool is_recording()
             {
-                return _recorder.is_record();
+                return _recorder.is_recording();
             }
             void start_record()
             {

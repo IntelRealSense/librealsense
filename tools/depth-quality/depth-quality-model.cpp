@@ -662,7 +662,7 @@ namespace rs2
 
                         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-                        if (_metrics_model.is_record())
+                        if (_metrics_model.is_recording())
                         {
                             if (ImGui::Button(u8"\uf0c7 Stop_record", { 140, 25 }))
                             {
@@ -870,7 +870,7 @@ namespace rs2
                         continue;
                     }
 
-                    std::vector<single_metric_data> samples;
+                    std::vector<single_metric_data> sample;
                     for (auto&& f : frames)
                     {
                         auto profile = f.get_profile();
@@ -900,7 +900,7 @@ namespace rs2
 
                             std::tie(gt_mm, plane_fit_set) = get_inputs();
                            
-                            auto metrics = analyze_depth_image(f, su, baseline, &intrin, roi, gt_mm, plane_fit_set, samples, _recorder.is_record(), callback);
+                            auto metrics = analyze_depth_image(f, su, baseline, &intrin, roi, gt_mm, plane_fit_set, sample, _recorder.is_recording(), callback);
 
                             {
                                 std::lock_guard<std::mutex> lock(_m);
@@ -909,8 +909,8 @@ namespace rs2
                         }
                        
                     }
-                    if (_recorder.is_record())
-                        _recorder.add_sample(frames, samples);
+                    if (_recorder.is_recording())
+                        _recorder.add_sample(frames, std::move(sample));
 
                     // Artificially slow down the calculation, so even on small ROIs / resolutions
                     // the output is updated within reasonable interval (keeping it human readable)
@@ -933,7 +933,7 @@ namespace rs2
         {
             auto res = std::make_shared<metric_plot>(name, min, max, units, description, requires_plane_fit);
             _metrics_model.add_metric(res);
-            _metrics_model._recorder.add_matric({ name,units });
+            _metrics_model._recorder.add_metric({ name,units });
             return res;
         }
 
@@ -1115,7 +1115,7 @@ namespace rs2
             csv.close();
         }
 
-        void metrics_recorder::record_frame(rs2::frameset & frames) const
+        void metrics_recorder::record_frames(const frameset& frames)
         {
            
             // Trim the file extension when provided. Note that this may amend user-provided file name in case it uses the "." character, e.g. "my.file.name"
@@ -1128,13 +1128,11 @@ namespace rs2
             std::stringstream fn;
             fn << frames.get_frame_number();
 
-            colorizer colorize;
-
             for (auto&& frame : frames)
             {
 
                 // Snapshot the color-augmented version of the frame
-                if (auto colorized_frame = colorize.colorize(frame).as<video_frame>())
+                if (auto colorized_frame = _colorize.colorize(frame).as<video_frame>())
                 {
 
                     auto stream_desc = rs2_stream_to_string(colorized_frame.get_profile().stream_type());
@@ -1167,7 +1165,6 @@ namespace rs2
             }
             // Export 3d view in PLY format
             rs2::frame ply_texture;
-            pointcloud pc;
 
             if (_viewer_model.selected_tex_source_uid >= 0)
             {
@@ -1176,7 +1173,7 @@ namespace rs2
                     if (frame.get_profile().unique_id() == _viewer_model.selected_tex_source_uid)
                     {
                         ply_texture = frame;
-                        pc.map_to(ply_texture);
+                        _pc.map_to(ply_texture);
                         break;
                     }
                 }

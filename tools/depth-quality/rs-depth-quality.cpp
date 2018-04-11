@@ -66,7 +66,6 @@ int main(int argc, const char * argv[]) try
     // ===============================
 
     model.on_frame([&](
-        const rs2::video_frame& frame,
         const std::vector<rs2::float3>& points,
         const rs2::plane p,
         const rs2::region_of_interest roi,
