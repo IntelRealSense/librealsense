@@ -125,8 +125,8 @@ bool validate_ppf_results(rs2::frame origin_depth, rs2::frame result_depth, cons
 
     // Basic sanity scenario with no filters applied.
     // validating domain transform in/out conversion.
-    if (domain_transform_only)
-        profile_diffs("./DomainTransform.txt",diff2orig, 0, 0);
+    //if (domain_transform_only)
+    //    profile_diffs("./DomainTransform.txt",diff2orig, 0, 0);
 
     return profile_diffs("./Filterstransform.txt", diff2ref, 0, 0);
 }
@@ -138,27 +138,17 @@ TEST_CASE("Post-Processing Filters validation", "[live]") {
     {
         // Test file name  , Filters configuraiton
         const std::map< std::string, std::string> ppf_test_cases = {
-            //{ "152320139",  "Downsample(2)+Spatial(0.85,32,3)+Temporal(0.25,15,0)+HolesFilling(1)" },
-            //{ "152336824",  "D415_DownsampleS+2Spat+Temp" },
-            /*{ "152336866",  "D415_DownsampleS2+Spat" },
-            { "152336891",  "D415_DownsampleS2+Spat" },
-            { "152336911",  "D415_DownsampleS2+Spat_Non-default_params" },*/
-            //{ "152336914",  "D415_DownsampleS2+Spat_Non-default_params 2Iters" },
-                    //{ "152342844",  "D415_Downsample2+Temp(Defaults)" },// Run with a "recursively"-generated source to neutralize the temporal history
-            //{ "152342847",  "D415_Downsample2+Temp(A:0.86,D:35)" },
-                    /*{ "152344530",  "D415_Downsample1" },
-                    { "152344532",  "D415_Downsample2" },
-                    { "152344534",  "D415_Downsample3" },*/
-            //{ "152344535",  "D415_Downsample4" }, 
-            //{ "152344537",  "D415_Downsample5" },
-            //{ "152344539",  "D415_Downsample6" },
-            //{ "152344541",  "D415_Downsample7" },
-            //{ "152344542",  "D415_Downsample8" },
-            { "152346214",  "D415_DownsampleS2+Spat(A=0.7,D=8,Iter=3" },
-            { "152347981",  "D415_Downsample_3+Spat(A=0.7,D=8,Iter=3" },
-            { "152347976",  "D415_Downsample_1+Spat(A=0.85,D=32,Iter=3" },
-            { "152347975",  "D415_Downsample_3+Spat(A=0.85,D=32,Iter=3" },
-            { "152347974",  "D415_Downsample_2+Spat(A=0.85,D=32,Iter=3" },
+            //{ "152342844",  "D415_Downsample2+Temp(Defaults)" },// Run with a "recursively"-generated source to neutralize the temporal history
+            { "152346214",  "D415_Downsample_2+Spat(A=0.7,D=8,Iter=3)" },
+            { "152347981",  "D415_Downsample_3+Spat(A=0.7,D=8,Iter=3)" },
+            { "152347976",  "D415_Downsample_1+Spat(A=0.85,D=32,Iter=3)" },
+            { "152347975",  "D415_Downsample_3+Spat(A=0.85,D=32,Iter=3)" },
+            { "152347974",  "D415_Downsample_2+Spat(A=0.85,D=32,Iter=3)" },
+            { "152348222",  "D415_Downsample_3+Spat(A=0.7,D=10,Iter=3)" },
+            { "152348234",  "D415_Downsample_3+Spat(A=0.3,D=20,Iter=3)" },
+            { "152348138",  "D415_Downsample_2" },
+            { "152348137",  "D415_Downsample_3" },
+            { "152348165",  "D415_Downsample_1" },
         };
 
         ppf_test_config test_cfg;
@@ -169,8 +159,11 @@ TEST_CASE("Post-Processing Filters validation", "[live]") {
             CAPTURE(ppf_test.second);
 
             WARN("Testing pattern " << ppf_test.first << "," << ppf_test.second);
+            //INTERNAL_CATCH_INFO(msg, "INFO")
+
             // Load the data from configuration and raw frame files
-            REQUIRE(load_test_configuration(ppf_test.first, test_cfg));
+            if (!load_test_configuration(ppf_test.first, test_cfg))
+                continue;
 
             post_processing_filters ppf;
 

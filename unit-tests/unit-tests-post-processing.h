@@ -135,7 +135,6 @@ inline ppf_test_config attrib_from_csv(const std::string& str)
         
         std::getline(data, value, '\n');
         dict[key] = value;
-        std::cout << key << ":" << value << std::endl;
 
         if (invalid_line > 1)  // Two or more non-kvp lines designate eof. Note this when creating the attributes
             break;
@@ -167,7 +166,6 @@ inline ppf_test_config attrib_from_csv(const std::string& str)
 
 inline bool load_test_configuration(const std::string test_name, ppf_test_config& test_config)
 {
-    bool res = true;
     std::string base_name = get_folder_path(special_folder::temp_folder) + test_name;
     static const std::map<std::string, std::string> test_file_names = {
         { "Input_pixels",    ".Input.raw" },
@@ -175,15 +173,23 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
         { "Output_pixels",   ".Output.raw"},
         { "Output_metadata", ".Output.csv"}
     };
-    
+
+    std::vector<bool> fe;
     // Verify that all the required test files are present
     for (auto& filename: test_file_names)
     { 
         CAPTURE(base_name);
         CAPTURE(filename.second);
-        REQUIRE(file_exists(base_name + filename.second));
+        fe.emplace_back(file_exists(base_name + filename.second));
+        if (!fe.back())
+        {
+            WARN("A required test file is not present: " << base_name + filename.second << " .Test will be skipped");
+        }
     }
-    
+
+    if (std::find(fe.begin(), fe.end(), false) != fe.end())
+        return false;
+
     // Prepare the configuration data set
     test_config.reset();
 
@@ -209,7 +215,7 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
     test_config.temporal_alpha = output_meta_params.temporal_alpha;
     test_config.temporal_delta = output_meta_params.temporal_delta;
     test_config.temporal_persistence = output_meta_params.temporal_persistence;
-    
+
     // Perform sanity tests on the input data
     CAPTURE(test_config.name);
     CAPTURE(test_config.input_res_x);
@@ -273,7 +279,7 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
     }
 
     //TODO: holes_filling mode verification
-    return res;
+    return true;
 }
 
 template <typename T>
