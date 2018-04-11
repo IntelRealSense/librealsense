@@ -131,7 +131,7 @@ namespace librealsense
                 _focal_lenght_mm    = vp.get_intrinsics().fx;
                 const uint8_t fractional_bits = 5;
                 const uint8_t fractions = 1 << fractional_bits;
-                _d2d_convert_factor = ((_stereo_baseline_mm * 0.001f) * _focal_lenght_mm * fractions) / _depth_units;
+                _d2d_convert_factor = std::fabs(((_stereo_baseline_mm * 0.001f) * _focal_lenght_mm * fractions) / _depth_units);
                 _width = vp.width();
                 _height = vp.height();
                 _update_target = true;

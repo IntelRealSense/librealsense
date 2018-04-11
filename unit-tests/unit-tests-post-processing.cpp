@@ -139,22 +139,22 @@ TEST_CASE("Post-Processing Filters validation", "[live]") {
         // Test file name  , Filters configuraiton
         const std::map< std::string, std::string> ppf_test_cases = {
             //{ "152320139",  "Downsample(2)+Spatial(0.85,32,3)+Temporal(0.25,15,0)+HolesFilling(1)" },
-            
-            //{ "152336679",  "D415_TestSample:downsample2" },
-            //{ "152336687",  "D415_TestSample:downsample2" },
-            //{ "152336688",  "D415_TestSample:downsample2" },
-            //{ "152336689",  "D415_TestSample:downsample2" },
-            //{ "152336690",  "D415_TestSample:downsample2" },
-            //{ "152336699",  "D410_TestSample:downsample2" },
-            //{ "152336700",  "D410_TestSample:downsample2" },
             //{ "152336824",  "D415_DownsampleS+2Spat+Temp" },
             //{ "152336866",  "D415_DownsampleS2+Spat" },
             //{ "152336891",  "D415_DownsampleS2+Spat" },
             //{ "152336911",  "D415_DownsampleS2+Spat_Non-default_params" },
             //{ "152336914",  "D415_DownsampleS2+Spat_Non-default_params 2Iters" },
-            { "152342844",  "D415_Downsample2+Temp(Defaults)" },
+            //{ "152342844",  "D415_Downsample2+Temp(Defaults)" }, Run with a "recursively"-generated source to eliminate
+            // the temporal history
             //{ "152342847",  "D415_Downsample2+Temp(A:0.86,D:35)" },
-            
+            //{ "152344530",  "D415_Downsample1" },
+            //{ "152344532",  "D415_Downsample2" },
+            //{ "152344534",  "D415_Downsample3" },
+            { "152344535",  "D415_Downsample4" },
+            //{ "152344537",  "D415_Downsample5" },
+            //{ "152344539",  "D415_Downsample6" },
+            //{ "152344541",  "D415_Downsample7" },
+            //{ "152344542",  "D415_Downsample8" },
         };
 
         ppf_test_config test_cfg;

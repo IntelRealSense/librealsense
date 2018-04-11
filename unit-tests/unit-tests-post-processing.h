@@ -230,8 +230,16 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
 
 
     // Basic Sanity
-    REQUIRE(test_config.output_res_x == test_config.input_res_x / test_config.downsample_scale); // Need to be adjusted for rounding up scale factors
-    REQUIRE(test_config.output_res_y == test_config.input_res_y / test_config.downsample_scale); // Need to be adjusted for rounding up scale factors
+    // The resulted frame dimension will be dividible by 4;
+    auto _padded_width = uint16_t(test_config.input_res_x / test_config.downsample_scale) + 3;
+    _padded_width /= 4;
+    _padded_width *= 4;
+
+    auto _padded_height = uint16_t(test_config.input_res_y / test_config.downsample_scale) + 3;
+    _padded_height /= 4;
+    _padded_height *= 4;
+    REQUIRE(test_config.output_res_x == _padded_width);
+    REQUIRE(test_config.output_res_y == _padded_height);
     REQUIRE(test_config.input_res_x > 0);
     REQUIRE(test_config.input_res_y > 0);
     REQUIRE(test_config.output_res_x > 0);
@@ -262,9 +270,8 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
         REQUIRE(test_config.temporal_persistence >= 0);
         REQUIRE(test_config.temporal_persistence <= 8);
     }
-    
+
     //TODO: holes_filling mode verification
-    
     return res;
 }
 
