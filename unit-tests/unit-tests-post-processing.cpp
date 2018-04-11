@@ -124,7 +124,7 @@ bool validate_ppf_results(rs2::frame origin_depth, rs2::frame result_depth, cons
     }
 
     // Basic sanity scenario with no filters applied.
-    // validating domain transform in/out conversion. Requiring input=output
+    // validating domain transform in/out conversion.
     if (domain_transform_only)
         profile_diffs("./DomainTransform.txt",diff2orig, 0, 0);
 
@@ -139,19 +139,22 @@ TEST_CASE("Post-Processing Filters validation", "[live]") {
         // Test file name  , Filters configuraiton
         const std::map< std::string, std::string> ppf_test_cases = {
             //{ "152320139",  "Downsample(2)+Spatial(0.85,32,3)+Temporal(0.25,15,0)+HolesFilling(1)" },
-            { "152336679",  "D415_TestSample:downsample2" },
-            { "152336687",  "D415_TestSample:downsample2" },
-            { "152336688",  "D415_TestSample:downsample2" },
-            { "152336689",  "D415_TestSample:downsample2" },
-            { "152336690",  "D415_TestSample:downsample2" },
-            { "152336699",  "D410_TestSample:downsample2" },
-            { "152336700",  "D410_TestSample:downsample2" },
-            { "152336824",  "D415_DownsampleS+2Spat+Temp" },
-            { "152336866",  "D415_DownsampleS2+Spat" },
-            { "152336867",  "D415_DownsampleS2+Temp" },
-            { "152336891",  "D415_DownsampleS2+Spat" },
-            { "152336911",  "D415_DownsampleS2+Spat_Non-default_params" },
-            { "152336914",  "D415_DownsampleS2+Spat_Non-default_params 2Iters" },
+            
+            //{ "152336679",  "D415_TestSample:downsample2" },
+            //{ "152336687",  "D415_TestSample:downsample2" },
+            //{ "152336688",  "D415_TestSample:downsample2" },
+            //{ "152336689",  "D415_TestSample:downsample2" },
+            //{ "152336690",  "D415_TestSample:downsample2" },
+            //{ "152336699",  "D410_TestSample:downsample2" },
+            //{ "152336700",  "D410_TestSample:downsample2" },
+            //{ "152336824",  "D415_DownsampleS+2Spat+Temp" },
+            //{ "152336866",  "D415_DownsampleS2+Spat" },
+            //{ "152336891",  "D415_DownsampleS2+Spat" },
+            //{ "152336911",  "D415_DownsampleS2+Spat_Non-default_params" },
+            //{ "152336914",  "D415_DownsampleS2+Spat_Non-default_params 2Iters" },
+            { "152342844",  "D415_Downsample2+Temp(Defaults)" },
+            //{ "152342847",  "D415_Downsample2+Temp(A:0.86,D:35)" },
+            
         };
 
         ppf_test_config test_cfg;

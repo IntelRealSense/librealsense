@@ -250,11 +250,11 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
         REQUIRE(test_config.spatial_alpha <= 1.f);
         REQUIRE(test_config.spatial_delta >= 1);
         REQUIRE(test_config.spatial_delta <= 50);
+        REQUIRE(test_config.spatial_iterations >= 1);
+        REQUIRE(test_config.spatial_iterations <= 5);
     }
     if (test_config.temporal_filter)
     {
-        REQUIRE(test_config.spatial_iterations >= 1);
-        REQUIRE(test_config.spatial_iterations <= 5);
         REQUIRE(test_config.temporal_alpha >= 0.f);
         REQUIRE(test_config.temporal_alpha <= 1.f);
         REQUIRE(test_config.temporal_delta >= 1);
