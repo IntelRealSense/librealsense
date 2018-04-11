@@ -223,7 +223,7 @@ namespace librealsense
             persistence_max,
             persistence_step,
             persistence_default,
-            &_persistence_param, "Holes filling by data persistency");
+            &_persistence_param, "Persistency mode");
 
         temporal_persistence_control->set_description(0, "Disabled");
         temporal_persistence_control->set_description(1, "Valid in 8/8");
