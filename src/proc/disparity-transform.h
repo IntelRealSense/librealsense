@@ -55,7 +55,7 @@ namespace librealsense
         bool                    _update_target;
         bool                    _stereoscopic_depth;
         float                   _focal_lenght_mm;
-        float                   _stereo_baseline_mm;
+        float                   _stereo_baseline; // in meters
         float                   _depth_units;
         float                   _d2d_convert_factor;
         size_t                  _width, _height;
