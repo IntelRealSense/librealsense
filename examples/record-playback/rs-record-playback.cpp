@@ -25,6 +25,10 @@ int main(int argc, char * argv[]) try
     window app(1280, 720, "RealSense Record and Playback Example");
     ImGui_ImplGlfw_Init(app, false);
 
+	// Create booleans to control GUI (recorded - allow play button, recording - show 'recording to file' test)
+	bool recorded = false;
+	bool recording = false;
+
 	// Declare a texture for the depth image on the GPU
     texture depth_image;
 
@@ -37,17 +41,12 @@ int main(int argc, char * argv[]) try
 
 	// Create a shared pointer to a pipeline
     auto pipe = std::make_shared<rs2::pipeline>();
-	//rs2::pipeline pipe;
+	
 	// Start streaming with default configuration
     pipe->start();
 	
 	// Initialize a shared pointer to a device with the current device on the pipeline
 	auto device = std::make_shared<rs2::device>(pipe->get_active_profile().get_device());
-
-	// Create booleans to control the record-playback flow
-    bool first_iteration_rec = true;
-    bool first_iteration_play = true;
-	bool recorded = false;
 
 	// Create a variable to control the seek bar
 	int seek_pos;
@@ -79,43 +78,30 @@ int main(int argc, char * argv[]) try
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 40 / 255.f, 170 / 255.f, 90 / 255.f, 1 });
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 36 / 255.f, 44 / 255.f, 51 / 255.f, 1 });
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12);
-		
 
 		if (!device->as<rs2::playback>()) // Disable recording while device is playing
 		{ 
-			ImGui::SetCursorPos({ app.width() / 2 - 100, app.height() / 2 + 50});
-			ImGui::Text("Press 'record' to start recording");
-			ImGui::SetCursorPos({ app.width() / 2 - 100, app.height() / 2 + 70 });
+			ImGui::SetCursorPos({ app.width() / 2 - 100, 3 * app.height() / 5 + 90});
+			ImGui::Text("Click 'record' to start recording");
+			ImGui::SetCursorPos({ app.width() / 2 - 100, 3 * app.height() / 5 + 110 });
 			if (ImGui::Button("record", { 50, 50 }))
 			{
-				// If it is the start of a new recording
-				if (first_iteration_rec)
+				// If it is the start of a new recording (device is not a recorder yet)
+				if (!device->as<rs2::recorder>())
 				{
-					//pipe->stop(); // Stop the pipeline with the default configuration
-					pipe->stop();
-					pipe.reset();
-					device.reset();
-					std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+					pipe->stop(); // Stop the pipeline with the default configuration
 					pipe = std::make_shared<rs2::pipeline>();
 					rs2::config cfg; // Declare a new configuration
-					std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-					cfg.enable_record_to_file("b.bag");
-					std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+					cfg.enable_record_to_file("a.bag");
 					pipe->start(cfg); //File will be opened at this point
-					//pipe.start(cfg);
-
-					//device.reset(new rs2::device(pipe->get_active_profile().get_device()));
 
 					// Reset the shared pointer and make it point to the current device
-					//device.reset(new rs2::device(pipe->get_active_profile().get_device()));
 					device = std::make_shared<rs2::device>(pipe->get_active_profile().get_device());
-					//device = pipe.get_active_profile().get_device();
-					first_iteration_rec = false;
 				}
 				else { // If the recording is resumed after a pause, there's no need to restart the shared pointers
-					rs2::recorder recorder = device->as<rs2::recorder>(); // rs2::recorder allows access to 'resume' function
-					recorder.resume();
+					device->as<rs2::recorder>().resume(); // rs2::recorder allows access to 'resume' function
 				}
+				recording = true;
 			}
 
 			/*
@@ -123,107 +109,89 @@ int main(int argc, char * argv[]) try
 			*/
 			if (device->as<rs2::recorder>())
 			{
-				ImGui::SetCursorPos({ app.width() / 2, app.height() / 2 + 70 });
-				if (ImGui::Button("pause\nrecord", { 50, 50 }))
-				{
-					//	if (device->as<rs2::recorder>())
-					//	{
-					device->as<rs2::recorder>().pause();
-					//	}
+				if (recording) {
+					ImGui::SetCursorPos({ app.width() / 2 - 100, 3 * app.height() / 5 + 60 });
+					ImGui::TextColored({ 255 / 255.f, 64 / 255.f, 54 / 255.f, 1 }, "Recording to file 'a.bag'");
 				}
 
+				// Pause the playback if button is clicked
+				ImGui::SetCursorPos({ app.width() / 2, 3 * app.height() / 5 + 110 });
+				if (ImGui::Button("pause\nrecord", { 50, 50 }))
+				{
+					device->as<rs2::recorder>().pause();
+					recording = false;
+				}
 
-				ImGui::SetCursorPos({ app.width() / 2 + 100, app.height() / 2 + 70 });
+				ImGui::SetCursorPos({ app.width() / 2 + 100, 3 * app.height() / 5 + 110 });
 				if (ImGui::Button(" stop\nrecord", { 50, 50 }))
 				{
-					//rs2::recorder recorder = device->as<rs2::recorder>();
-					//pipe->stop(); // Stop the pipeline that holds the file and the recorder
-					pipe->stop();
+					pipe->stop(); // Stop the pipeline that holds the file and the recorder
 					pipe.reset();
-					pipe = std::make_shared<rs2::pipeline>();
-					//pipe = std::make_shared<rs2::pipeline>();
-					//pipe.reset(new rs2::pipeline()); // Reset the shared pointer with a new pipeline
 					device.reset(); // Reset the shared pointer to the device that holds the file
+					pipe = std::make_shared<rs2::pipeline>(); //Reset the shared pointer with a new pipeline
 					pipe->start(); // Resume streaming with default configuration
 					device = std::make_shared<rs2::device>(pipe->get_active_profile().get_device()); // Point to the current device
-					//device = pipe.get_active_profile().get_device();
-					first_iteration_rec = true;
 					recorded = true; // Now we can run the file
+					recording = false;
 				}
 			}
 		}
 
 		// After a recording is done, we can play it
-		//if (recorded) {
-			ImGui::SetCursorPos({ app.width() / 2 - 100, 3 * app.height() / 4 - 20 });
-			ImGui::Text("Press 'play' to start playing");
-			ImGui::SetCursorPos({ app.width() / 2 - 100, 3 * app.height() / 4 });
+		if (recorded) {
+			ImGui::SetCursorPos({ app.width() / 2 - 100, 4 * app.height() / 5 + 30 });
+			ImGui::Text("Click 'play' to start playing");
+			ImGui::SetCursorPos({ app.width() / 2 - 100, 4 * app.height() / 5 + 50});
 			if (ImGui::Button("play", { 50, 50 }))
 			{
-				if (first_iteration_play)
+				if (!device->as<rs2::playback>())
 				{
 					pipe->stop(); // Stop streaming with default configuration
-					//pipe.stop(); // Stop streaming with default configuration
 					rs2::config cfg;
-					device.reset();
-					pipe.reset();
+					//device.reset();
+					//pipe.reset();
 					pipe = std::make_shared<rs2::pipeline>();
-					cfg.enable_device_from_file("b.bag");
+					cfg.enable_device_from_file("a.bag");
 					pipe->start(cfg); //File will be opened in read mode at this point
-					//pipe.start(cfg);
-					//device = std::make_shared<rs2::device>(pipe->get_active_profile().get_device());
 					device = std::make_shared<rs2::device>(pipe->get_active_profile().get_device());
-					//device = pipe.get_active_profile().get_device();
-					first_iteration_play = false;
 				}
 				else
 				{
-					//rs2::playback playback = device->as<rs2::playback>();
 					device->as<rs2::playback>().resume();
 				}
 			}
-		//}
+		}
 		
 		// If device is playing a recording, we allow pause and stop
         if (device->as<rs2::playback>())
         {
-            //rs2::playback playback = device->as<rs2::playback>();
-
-		//	if (device.as<rs2::playback>().current_status() == RS2_PLAYBACK_STATUS_PLAYING)
-		//	{
 			if (pipe->poll_for_frames(&frames)) // Check if new frames are ready
 			{
 				depth = color_map(frames.get_depth_frame()); // Find and colorize the depth data for rendering
 			}
 
 			// Render a seek bar for the player
-			float2 location = { app.width() / 4, 3 * app.height() / 4 + 100 };
+			float2 location = { app.width() / 4, 4 * app.height() / 5 + 110 };
 			draw_seek_bar(device->as<rs2::playback>(), &seek_pos, location, app.width() / 2);
 
-
-			ImGui::SetCursorPos({ app.width() / 2, 3 * app.height() / 4 });
+			ImGui::SetCursorPos({ app.width() / 2, 4 * app.height() / 5 + 50 });
 			if (ImGui::Button(" pause\nplaying", { 50, 50 }))
 			{
-				//playback = device->as<rs2::playback>();
 				device->as<rs2::playback>().pause();
 			}
 
-			ImGui::SetCursorPos({ app.width() / 2 + 100, 3 * app.height() / 4 });
+			ImGui::SetCursorPos({ app.width() / 2 + 100, 4 * app.height() / 5 + 50 });
 			if (ImGui::Button("  stop\nplaying", { 50, 50 }))
 			{
-				device->as<rs2::playback>().stop();
-				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+			//	device->as<rs2::playback>().stop();
+			//	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 				pipe->stop();
 				pipe.reset();
 				device.reset();
 				pipe = std::make_shared<rs2::pipeline>();
-				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 				pipe->start();
-				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 				device = std::make_shared<rs2::device>(pipe->get_active_profile().get_device()); // Point to the current device
-				first_iteration_play = true;
 			}
-			//}
         }
 
 		ImGui::PopStyleColor(4);
@@ -234,7 +202,7 @@ int main(int argc, char * argv[]) try
 
 
 		// Render depth frames from the default configuration, the recorder or the playback
-        depth_image.render(depth, { app.width() / 4, 0, app.width() / 2, app.height() / 2 });
+        depth_image.render(depth, { app.width() / 4, 0, 3 * app.width() / 5, 3 * app.height() / 5 + 50 });
     }
     return EXIT_SUCCESS;
 }
@@ -271,10 +239,6 @@ std::string pretty_time(std::chrono::nanoseconds duration)
 
 void draw_seek_bar(rs2::playback& playback, int* seek_pos, float2& location, float width)
 {
-  //  auto pos = ImGui::GetCursorPos();
-
-   // auto p = dev.as<playback>();
-  //  rs2_playback_status current_playback_status = p.current_status();
     int64_t playback_total_duration = playback.get_duration().count();
     auto progress = playback.get_position();
     double part = (1.0 * progress) / playback_total_duration;
@@ -283,9 +247,6 @@ void draw_seek_bar(rs2::playback& playback, int* seek_pos, float2& location, flo
     ImGui::PushItemWidth(width);
 	ImGui::SetCursorPos({ location.x, location.y });
 	ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12);
-	//ImGui::PushStyleColor(ImGuiCol_SliderGrab, { 40 / 255.f, 170 / 255.f, 90 / 255.f, 1 });
-	//ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, { 40 / 255.f, 170 / 255.f, 90 / 255.f, 1 });
-	//ImGui::GetStyle().GrabRounding = 12;
 	if (ImGui::SliderInt("##seek bar", seek_pos, 0, 100, "", true))
     {
         //Seek was dragged
@@ -302,7 +263,6 @@ void draw_seek_bar(rs2::playback& playback, int* seek_pos, float2& location, flo
 	ImGui::Text("%s", time_elapsed.c_str());
 
 	ImGui::PopStyleVar();
-	//ImGui::PopStyleColor(2);
 	ImGui::PopItemWidth();
 
 }
