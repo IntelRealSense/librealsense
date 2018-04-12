@@ -70,6 +70,8 @@ inline ImVec4 blend(const ImVec4& c, float a)
 
 namespace rs2
 {
+    bool frame_metadata_to_csv(const std::string& filename, rs2::frame frame);
+
     struct textual_icon
     {
         explicit constexpr textual_icon(const char (&unicode_icon)[4]) :
@@ -905,7 +907,7 @@ namespace rs2
 
     };
 
-    void export_to_ply(const std::string& file_name, notifications_model& ns, frameset points, video_frame texture);
+    void export_to_ply(const std::string& file_name, notifications_model& ns, frameset points, video_frame texture, bool notify = true);
 
     // Wrapper for cross-platform dialog control
     enum file_dialog_mode {
