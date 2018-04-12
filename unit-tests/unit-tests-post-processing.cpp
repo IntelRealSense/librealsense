@@ -131,7 +131,7 @@ bool validate_ppf_results(rs2::frame origin_depth, rs2::frame result_depth, cons
     return profile_diffs("./Filterstransform.txt", diff2ref, 0, 0);
 }
 
-TEST_CASE("Post-Processing Filters validation", "[live]") {
+TEST_CASE("Post-Processing Filters validation", "[software-device][post-processing-filters]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))

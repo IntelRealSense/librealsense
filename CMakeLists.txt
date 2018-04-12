@@ -795,7 +795,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/realsense2ConfigVersion.cmake"
 
 install(CODE "execute_process(COMMAND ldconfig)")
 
-option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
+option(BUILD_UNIT_TESTS "Build realsense unit tests. Note that when enabled, additional tests data set will be downloaded from Intel's artifactory server" OFF)
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
