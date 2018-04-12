@@ -19,8 +19,8 @@ bool* draw_edit_button(const char* id, T val, std::string*& val_str)
     if (!edit_mode[id])
     {
         std::string edit_id = rs2::to_string() << u8"\uf044##" << id;
-        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_Text,  { 0.8f, 0.8f, 0.8f, 1.f });
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.8f, 0.8f, 0.8f, 1.f } );
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
         ImGui::PushStyleColor(ImGuiCol_Button, { 1.f,1.f,1.f,0.f });
         if (ImGui::Button(edit_id.c_str(), { 20, 20 }))
@@ -37,8 +37,8 @@ bool* draw_edit_button(const char* id, T val, std::string*& val_str)
     else
     {
         std::string edit_id = rs2::to_string() << u8"\uf044##" << id;
-        ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+        ImGui::PushStyleColor(ImGuiCol_Text,  { 0.8f, 0.8f, 1.f, 1.f });
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg,  { 0.8f, 0.8f, 1.f, 1.f });
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
         ImGui::PushStyleColor(ImGuiCol_Button, { 1.f,1.f,1.f,0.f });
         if (ImGui::Button(edit_id.c_str(), { 20, 20 }))
