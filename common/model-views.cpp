@@ -384,12 +384,61 @@ namespace rs2
                     ImGui::Text("%s", txt.c_str());
 
                     ImGui::SameLine();
-                    ImGui::PushStyleColor(ImGuiCol_Text, { 0.5f, 0.5f, 0.5f, 1.f });
-                    ImGui::Text("(?)");
-                    ImGui::PopStyleColor();
+                    ImGui::SetCursorPosX(read_only ? 268 : 245);
+                    ImGui::PushStyleColor(ImGuiCol_Text, grey);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 1.f,1.f,1.f,0.f });
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
+                    ImGui::PushStyleColor(ImGuiCol_Button, { 1.f,1.f,1.f,0.f });
+                    ImGui::Button(textual_icons::question_mark, { 20, 20 });
+                    ImGui::PopStyleColor(5);
                     if (ImGui::IsItemHovered() && desc)
                     {
                         ImGui::SetTooltip("%s", desc);
+                    }
+
+                    if (!read_only)
+                    {
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosX(268);
+                        if (!edit_mode)
+                        {
+                            std::string edit_id = to_string() << textual_icons::edit << "##" << id;
+                            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+                            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
+                            ImGui::PushStyleColor(ImGuiCol_Button, { 1.f,1.f,1.f,0.f });
+                            if (ImGui::Button(edit_id.c_str(), { 20, 20 }))
+                            {
+                                if (is_all_integers())
+                                    edit_value = to_string() << (int)value;
+                                else
+                                    edit_value = to_string() << value;
+                                edit_mode = true;
+                            }
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Enter text-edit mode");
+                            }
+                            ImGui::PopStyleColor(4);
+                        }
+                        else
+                        {
+                            std::string edit_id = to_string() << textual_icons::edit << "##" << id;
+                            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
+                            ImGui::PushStyleColor(ImGuiCol_Button, { 1.f,1.f,1.f,0.f });
+                            if (ImGui::Button(edit_id.c_str(), { 20, 20 }))
+                            {
+                                edit_mode = false;
+                            }
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Exit text-edit mode");
+                            }
+                            ImGui::PopStyleColor(4);
+                        }
                     }
 
                     ImGui::PushItemWidth(-1);
@@ -414,9 +463,46 @@ namespace rs2
                                 ImGui::PopStyleColor(2);
                             }
                         }
+                        else if (edit_mode)
+                        {
+                            char buff[TEXT_BUFF_SIZE];
+                            memset(buff, 0, TEXT_BUFF_SIZE);
+                            strcpy(buff, edit_value.c_str());
+                            if (ImGui::InputText(id.c_str(), buff, TEXT_BUFF_SIZE,
+                                ImGuiInputTextFlags_EnterReturnsTrue))
+                            {
+                                float new_value;
+                                if (!string_to_int(buff, new_value))
+                                {
+                                    error_message = "Invalid numeric input!";
+                                }
+                                else if (new_value < range.min || new_value > range.max)
+                                {
+                                    error_message = to_string() << new_value
+                                        << " is out of bounds [" << range.min << ", "
+                                        << range.max << "]";
+                                }
+                                else
+                                {
+                                    try
+                                    {
+                                        endpoint->set_option(opt, new_value);
+                                        value = new_value;
+                                    }
+                                    catch (const error& e)
+                                    {
+                                        error_message = error_to_string(e);
+                                    }
+                                }
+
+                                edit_mode = false;
+                            }
+                            edit_value = buff;
+                        }
                         else if (is_all_integers())
                         {
                             auto int_value = static_cast<int>(value);
+
                             if (ImGui::SliderIntWithSteps(id.c_str(), &int_value,
                                 static_cast<int>(range.min),
                                 static_cast<int>(range.max),
@@ -4375,7 +4461,8 @@ namespace rs2
         }
         return keep_showing;
     }
-    bool device_model::draw_advanced_controls(viewer_model& view, ux_window& window)
+
+    bool device_model::draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message)
     {
         bool was_set = false;
 
@@ -4389,7 +4476,7 @@ namespace rs2
                 auto advanced = dev.as<advanced_mode>();
                 if (advanced.is_enabled())
                 {
-                    draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls, was_set);
+                    draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls, was_set, error_message);
                 }
                 else
                 {
@@ -5492,7 +5579,7 @@ namespace rs2
                 }
                 if (dev.is<advanced_mode>() && sub->s->is<depth_sensor>())
                 {
-                    if (draw_advanced_controls(viewer, window))
+                    if (draw_advanced_controls(viewer, window, error_message))
                     {
                         sub->options_invalidated = true;
                         selected_file_preset.clear();
