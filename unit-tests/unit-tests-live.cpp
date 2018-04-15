@@ -2698,7 +2698,7 @@ void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::
             CAPTURE(frame.size());
             continue;
         }
-           
+
         std::vector<profile> stream_arrived;
 
         for (auto f : frame)
@@ -3009,7 +3009,7 @@ TEST_CASE("Pipeline enable stream", "[live]") {
                 REQUIRE_NOTHROW(frame = pipe.wait_for_frames(5000));
                 std::vector<stream_profile> frames_set;
                 std::vector<double> ts;
-                
+
                 for (auto f : frame)
                 {
                     if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
@@ -4203,13 +4203,13 @@ TEST_CASE("Syncer sanity with software-device device", "[live][software-device]"
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-       
+
         const int W = 640;
         const int H = 480;
         const int BPP = 2;
         std::shared_ptr<software_device> dev = std::move(std::make_shared<software_device>());
         auto s = dev->add_sensor("software_sensor");
-       
+
         rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
 
         s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
@@ -4225,18 +4225,18 @@ TEST_CASE("Syncer sanity with software-device device", "[live][software-device]"
         syncer sync;
         s.open(profiles);
         s.start(sync);
-       
+
         std::vector<uint8_t> pixels(W * H * BPP, 0);
         std::weak_ptr<rs2::software_device> weak_dev(dev);
-      
+
         std::thread t([&s, weak_dev, pixels, depth, ir]() mutable {
-            
+
             auto shared_dev = weak_dev.lock();
             if (shared_dev == nullptr)
                 return;
             s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
             s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir });
-              
+
             s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth });
             s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir });
 
@@ -4304,13 +4304,13 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with software-device de
 
         std::shared_ptr<software_device> dev = std::make_shared<software_device>();
         auto s = dev->add_sensor("software_sensor");
-        
+
         rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
         s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
         s.add_video_stream({ RS2_STREAM_INFRARED, 1, 1, W, H,60,  BPP, RS2_FORMAT_Y8, intrinsics });
         dev->create_matcher(RS2_MATCHER_DI);
         frame_queue q;
-        
+
         auto profiles = s.get_stream_profiles();
         auto depth = profiles[0];
         auto ir = profiles[1];
@@ -4364,7 +4364,7 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with software-device de
             for (auto f : fs)
             {
                 curr.push_back({ f.get_profile().stream_type(), f.get_frame_number() });
-            } 
+            }
             results.push_back(curr);
         }
 

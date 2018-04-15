@@ -42,21 +42,22 @@ install(
 if (WIN32)
     set(Deployment_Location "$ENV{TEMP}\\")
 else() # Data shall be preserved between reboots. For Linux distributions/ ANDROID_NDK_TOOLCHAIN_INCLUDED/APPLE
-	set(Deployment_Location /var/tmp/)
+    #set(Deployment_Location /var/tmp/) The standard confoiguration currently fails on CI
+	set(Deployment_Location /tmp/)
 endif()
 
 #Post-Processing data set for unit-tests
 #message(STATUS "Post processing deployment directory=${Deployment_Location}")
 list(APPEND PP_Tests_List  152346214 # D415_Downsample_2+Spat(A=0.7,D=8,Iter=3)
-						   152347981 # D415_Downsample_3+Spat(A=0.7,D=8,Iter=3)
-						   152347976 # D415_Downsample_1+Spat(A=0.85,D=32,Iter=3)
-						   152347975 # D415_Downsample_3+Spat(A=0.85,D=32,Iter=3)
-						   152347974 # D415_Downsample_2+Spat(A=0.85,D=32,Iter=3)
-						   152348222 # D415_Downsample_3+Spat(A=0.7,D=10,Iter=3)
-						   152348234 # D415_Downsample_3+Spat(A=0.3,D=20,Iter=3)
-						   152348137 # D415_Downsample_3
-						   152348138 # D415_Downsample_2
-						   152348165 )   # D415_Downsample_1
+                           152347981 # D415_Downsample_3+Spat(A=0.7,D=8,Iter=3)
+                           152347976 # D415_Downsample_1+Spat(A=0.85,D=32,Iter=3)
+                           152347975 # D415_Downsample_3+Spat(A=0.85,D=32,Iter=3)
+                           152347974 # D415_Downsample_2+Spat(A=0.85,D=32,Iter=3)
+                           152348222 # D415_Downsample_3+Spat(A=0.7,D=10,Iter=3)
+                           152348234 # D415_Downsample_3+Spat(A=0.3,D=20,Iter=3)
+                           152348137 # D415_Downsample_3
+                           152348138 # D415_Downsample_2
+                           152348165 )   # D415_Downsample_1
 list(APPEND PP_Test_extensions_List .Input.raw .Input.csv .Output.raw .Output.csv)
 # For each post-processing test pattern the following files shall be present
 
@@ -66,20 +67,20 @@ foreach(i ${PP_Tests_List})
   set(Test_Pattern ${i})
    #Iterate over test patter extension to download the requierd test files
   foreach(ext ${PP_Test_extensions_List})
-	# Calculate the target full path name for deployment
-	set(Test_File_Name "${Test_Pattern}${ext}")
-	set(source ${PP_TESTS_URL}${Test_File_Name})
-	set(destination ${Deployment_Location}${Test_File_Name})
-	#message(STATUS "Checking for a required test record ${Test_File_Name}")
-	if(NOT EXISTS "${destination}")
-		message(STATUS "Downloading ${source}")
-		file(DOWNLOAD "${source}" "${destination}" TIMEOUT 30 LOG log STATUS status) # SHOW_PROGRESS
-		list(GET status 0 op_return_value)
-		if (NOT op_return_value MATCHES "0")
-			list(GET status 1 description)
-			message(STATUS "Operation failed: opcode= ${status}")
-			message(STATUS "Log: opcode= ${log}")
-		endif()
-	endif()
+    # Calculate the target full path name for deployment
+    set(Test_File_Name "${Test_Pattern}${ext}")
+    set(source ${PP_TESTS_URL}${Test_File_Name})
+    set(destination ${Deployment_Location}${Test_File_Name})
+    #message(STATUS "Checking for a required test record ${Test_File_Name}")
+    if(NOT EXISTS "${destination}")
+        message(STATUS "Downloading ${source}")
+        file(DOWNLOAD "${source}" "${destination}" TIMEOUT 30 LOG log STATUS status) # SHOW_PROGRESS
+        list(GET status 0 op_return_value)
+        if (NOT op_return_value MATCHES "0")
+            list(GET status 1 description)
+            message(STATUS "Operation failed: opcode= ${status}")
+            message(STATUS "Log: opcode= ${log}")
+        endif()
+    endif()
   endforeach(ext)
 endforeach(i)

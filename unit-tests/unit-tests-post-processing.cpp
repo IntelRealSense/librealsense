@@ -199,7 +199,7 @@ TEST_CASE("Post-Processing Filters validation", "[software-device][post-processi
                 (int)test_cfg.input_res_x *depth_bpp,    // Stride
                 depth_bpp,                          // Bytes-per-pixels
                 (rs2_time_t)frame_number * 16,      // Timestamp
-                RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME,   // Clock Domain 
+                RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME,   // Clock Domain
                 frame_number,                       // Frame# for potential sync services
                 depth_stream_profile });            // Depth stream profile
 

@@ -89,7 +89,7 @@ namespace librealsense
 
             IAMCameraControl* get_camera_control() const
             {
-                if (!_camera_control.p) 
+                if (!_camera_control.p)
                     throw std::runtime_error("The device does not support camera settings such as zoom, pan, aperture adjustment, or shutter speed.");
                 return _camera_control.p;
             }

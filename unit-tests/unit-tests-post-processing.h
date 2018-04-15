@@ -177,7 +177,7 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
     std::vector<bool> fe;
     // Verify that all the required test files are present
     for (auto& filename: test_file_names)
-    { 
+    {
         CAPTURE(base_name);
         CAPTURE(filename.second);
         fe.emplace_back(file_exists(base_name + filename.second));
