@@ -234,7 +234,7 @@ namespace librealsense
             uint8_t             ta[10];
             uint32_t            board_num;                  // SKU id
             uint32_t            board_rev;                  // 0
-            uint8_t             reserved[34];               // Align to 64 byte ??? 
+            uint8_t             reserved[34];               // Align to 64 byte ???
         };
 
         constexpr size_t tm1_module_info_size = sizeof(tm1_module_info);

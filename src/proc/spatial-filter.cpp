@@ -358,7 +358,7 @@ namespace librealsense
 
         int v, u;
 
-        // we'll do one column at a time, top to bottom, bottom to top, left to right, 
+        // we'll do one column at a time, top to bottom, bottom to top, left to right,
 
         for (u = 0; u < _width;) {
 
