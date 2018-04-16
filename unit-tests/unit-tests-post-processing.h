@@ -355,7 +355,7 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
 }
 
 template <typename T>
-inline bool profile_diffs(const std::string& plot_name, std::vector<T>& distances, const float max_allowed_std, const float outlier)
+inline bool profile_diffs(const std::string& plot_name, std::vector<T>& distances, const float max_allowed_std, const float outlier, size_t frame_idx)
 {
     static_assert((std::is_arithmetic<T>::value), "Profiling is defined for built-in arithmetic types");
 
@@ -368,10 +368,10 @@ inline bool profile_diffs(const std::string& plot_name, std::vector<T>& distance
     float mean = std::accumulate(distances.begin(),
         distances.end(), 0.0f) / distances.size();
 
-    auto min = std::min_element(distances.begin(), distances.end());
+    auto non_identical = distances.size() - std::count(distances.begin(), distances.end(), static_cast<T>(0));
     auto max = std::max_element(distances.begin(), distances.end());
-    float min_val = *min;
-    float max_val = *max;
+    auto max_val_index = max - distances.begin();
+    auto max_val = (max != distances.end()) ? *max : 0;
     float e = 0;
     float inverse = 1.f / distances.size();
     for (auto elem : distances)
@@ -382,17 +382,20 @@ inline bool profile_diffs(const std::string& plot_name, std::vector<T>& distance
     float standard_deviation = static_cast<float>(sqrt(inverse * e));
 
     CAPTURE(mean);
-    CAPTURE(min_val);
     CAPTURE(max_val);
+    CAPTURE(max_val_index);
+    CAPTURE(non_identical);
     CAPTURE(outlier);
     CAPTURE(standard_deviation);
     CAPTURE(max_allowed_std);
-
+    CAPTURE(frame_idx);
+    if (max_val != 0)
+    {
+        WARN("Frame: " << frame_idx <<" - Non-identical comparisons = " << non_identical << ", max_val=" << max_val << ", index=" << max_val_index);
+    }
     REQUIRE(standard_deviation <= max_allowed_std);
-    REQUIRE(fabs((min_val)) <= outlier);
     REQUIRE(fabs((max_val)) <= outlier);
 
-    return (fabs(min_val) < outlier) &&
-        (fabs(max_val) < outlier) &&
-        (standard_deviation < max_allowed_std);
+    return ((fabs(max_val) < outlier) &&
+        (standard_deviation < max_allowed_std));
 }

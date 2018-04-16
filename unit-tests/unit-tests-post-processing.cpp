@@ -126,10 +126,11 @@ bool validate_ppf_results(rs2::frame origin_depth, rs2::frame result_depth, cons
     // Basic sanity scenario with no filters applied.
     // validating domain transform in/out conversion.
     if (domain_transform_only)
-        profile_diffs("./DomainTransform.txt",diff2orig, 0, 0);
+        profile_diffs("./DomainTransform.txt",diff2orig, 0, 0, frame_idx);
 
     // The differences between the reference code and librealsense implementation are assessed below
-    return profile_diffs("./Filterstransform.txt", diff2ref, 0, 0);
+    // STD 0f 0.025 is "roughly" equal of 10-15 pixels with offset of 1
+    return profile_diffs("./Filterstransform.txt", diff2ref, 0.025f, 1, frame_idx);
 }
 
 TEST_CASE("Post-Processing Filters snapshots validation", "[software-device][post-processing-filters]") {
@@ -139,7 +140,6 @@ TEST_CASE("Post-Processing Filters snapshots validation", "[software-device][pos
     {
         // Test file name  , Filters configuraiton
         const std::map< std::string, std::string> ppf_test_cases = {
-            //{ "152342844",  "D415_Downsample2+Temp(Defaults)" },// Run with a "recursively"-generated source to neutralize the temporal history
             { "152346214",  "D415_Downsample_2+Spat(A=0.7,D=8,Iter=3)" },
             { "152347981",  "D415_Downsample_3+Spat(A=0.7,D=8,Iter=3)" },
             { "152347976",  "D415_Downsample_1+Spat(A=0.85,D=32,Iter=3)" },
@@ -227,12 +227,16 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
     {
         // Test file name  , Filters configuraiton
         const std::map< std::string, std::string> ppf_test_cases = {
-            // Verified
+            // Verified Decimation + Disparity
             { "1523873668701",  "D415_Downsample1" },
             { "1523873012723",  "D415_Downsample2" },
             { "1523873362088",  "D415_Downsample3" },
-
-            //{ "1523866331619",  "Sequence1" }, Evgeni - this has 3 pixels diff
+            { "1523874476600",  "D415_Downsample2+Spat(A:0.85/D:32/I:3)" },
+            { "1523874595767",  "D415_Downsample2+Spat(A:0.3/D:8/I:3)" },
+            { "1523889912588",  "D415_Downsample2+Temp(A:0.4/D:20/P:0)" },
+            { "1523890056362",  "D415_Downsample2+Temp(A:0.3/D:10/P:4)" },
+            { "1523887243933",  "D415_DS:2_Spat(A:0.85/D:32/I:3)_Temp(A:0.25/D:15/P:0)" },
+            { "1523889529572",  "D415_DS:3_Spat(A:0.3/D:8/I:3)_Temp(A:0.5/D:6/P:4)" },
         };
 
         ppf_test_config test_cfg;
