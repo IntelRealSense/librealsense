@@ -4,8 +4,8 @@
 #include "../include/librealsense2/hpp/rs_sensor.hpp"
 #include "../include/librealsense2/hpp/rs_processing.hpp"
 
-#include<numeric>
-#include<cmath>
+#include <numeric>
+#include <cmath>
 #include "option.h"
 #include "context.h"
 #include "proc/synthetic-stream.h"
@@ -27,7 +27,7 @@ namespace librealsense
         _real_height(0),
         _padded_width(0),
         _padded_height(0),
-         _recalc_profile(false)
+        _recalc_profile(false)
     {
         auto decimation_control = std::make_shared<ptr_option<uint8_t>>(
             decimation_min_val,
@@ -180,10 +180,13 @@ namespace librealsense
                     *frame_data_out++ = 0;
                 else
                 {
-                    //// Mean value shall be used by reference design if elements are more than 4.
-                    // Since the calculations are for mean of disparity, not depth, we apply a uniform median filter
+                    // Median downsampling filter applied for all kernel sizes.
+                    // The mean filter for kernels>4 is pending on the reference design review.
+                    // The commented out code is required for reference
                     //if (scale < 4)
                     {
+                        // For even-sized kernel the median value is generally defined as a mean of the two middle values.
+                        // Instead we employ a reference design rule of the lower of the two middle values.
                         uint32_t median_index = (ks % 2) ? (ks / 2) : ((ks - 1) / 2);
                         std::nth_element(wk_begin, wk_begin + (median_index), wk_itr);
                         *frame_data_out++ = working_kernel[median_index];
