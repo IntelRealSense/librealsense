@@ -4,11 +4,6 @@
 
 This example demonstrates usage of the recorder and playback devices.
 
-## Expected Output
-![expected output]
-
-This application displays a point cloud of the depth frame, being recorded and then re-played.
-
 ## Code Overview
 
 ### Declarations
@@ -43,7 +38,7 @@ Also, we include header files used for measuring time in the playback and for co
 #include <iomanip>
 ```
 
-We'll use 2 helper functions for rendering the GUI, to allow us to make to main code less verbose.
+We'll use 2 helper functions for rendering the GUI, to allow us to make the main code less verbose.
 
 ```cpp
 // Helper function for dispaying time conveniently
@@ -61,7 +56,7 @@ We first define some variables that will be used to show the window and GUI.
 window app(1280, 720, "RealSense Post Processing Example");
 ImGui_ImplGlfw_Init(app, false);
 
-// Create booleans to control GUI (recorded - allow play button, recording - show 'recording to file' test)
+// Create booleans to control GUI (recorded - allow play button, recording - show 'recording to file' text)
 bool recorded = false;
 bool recording = false;
  ```
@@ -84,8 +79,12 @@ Also, we define an `rs2::colorizer` to allow the point cloud visualization have 
  ```
 
 Now we need to create an `rs2::pipeline` which is a top level API for using RealSense depth cameras.
-`rs2::pipeline` automatically chooses a camera from all connected cameras which matches the given configuration, so we can simply call `pipeline::start(cfg)` and the camera is configured and streaming.
-In order to allow different types of devices (recorder, playback) to use the pipeline, we define a shared pointer to `rs2::pipeline`. 
+`rs2::pipeline` automatically chooses a camera from all connected cameras which matches the given configuration,
+so we can simply call `pipeline::start(cfg)` and the camera is configured and streaming.
+
+In order to allow using different types of devices (`rs2::recorder`, `rs2::playback`) and read\write to the same file, we define a shared
+pointer to `rs2::pipeline`. This way we'll be able to release previous resources when switching to a different device.
+
 For now, we configure the pointed pipeline with the default configuration and start streaming the default stream. We'll use this stream
 whenever there is no recorder or playback running, for continuous display of images from the camera.
 
@@ -96,17 +95,7 @@ auto pipe = std::make_shared<rs2::pipeline>();
 pipe->start();
 ```
 
-In addition, we initialize another shared pointer, this time one which points to the device. This will let us release resources held
-by the device later on in the code.
-
-```cpp
-// Initialize a shared pointer to a device with the current device on the pipeline
-auto device = std::make_shared<rs2::device>(pipe->get_active_profile().get_device());
-```
-
-```
-
-`seek_pos` is used for allowing the user control the playback.
+Define `seek_pos`, which is used for allowing the user control the playback.
 
 ```cpp
 // Create a variable to control the seek bar
@@ -121,7 +110,7 @@ because we might run out of frames.
 	
 ```cpp
 // If the device is sreaming live and not from a file
-if (!device->as<rs2::playback>())
+if (!device.as<rs2::playback>())
 {
     frames = pipe->wait_for_frames(); // wait for next set of frames from the camera
     depth = color_map(frames.get_depth_frame()); // Find and colorize the depth data
@@ -132,33 +121,36 @@ We begin with recorder functions.
 First, we allow recording only if playback is not currently running.
 
 ```cpp
-if (!device->as<rs2::playback>()) 
+if (!device.as<rs2::playback>()) 
 ```
 
 There are two cases where the 'record' button would be clicked: begin a recodring, or resume a recorder that has already started.
-We check whether device is a recorder to indicate which of the cases it is.
-
-In the first case, we stop the pipeline and initiate the shared pointer with a new pipeline. Then initiate a new configuration, allowing
-recording to the file 'a.bag' using the function `enable_record_to_file`, and start the pipeline with the new configuration. Also, we update
-the device shared pointer to point to the current (recorder) device.
+We check whether `device` is a already recorder to indicate which of the cases it is.
 
 ```cpp
-// If it is the start of a new recording
 // If it is the start of a new recording (device is not a recorder yet)
-if (!device->as<rs2::recorder>())
-{
-	pipe->stop(); // Stop the pipeline with the default configuration
-	pipe = std::make_shared<rs2::pipeline>();
-	rs2::config cfg; // Declare a new configuration
-	cfg.enable_record_to_file("a.bag");
-	pipe->start(cfg); //File will be opened at this point
-
-	// Reset the shared pointer and make it point to the current device
-	device = std::make_shared<rs2::device>(pipe->get_active_profile().get_device());
-}
+if (!device.as<rs2::recorder>())
 ```
 
-In the second case, the device is already a recorder, so we can just use it's 'resume' function. In order to acces function of `rs2::recorder`,
+
+In the first case, we stop the pipeline and initiate the shared pointer with a new pipeline.
+
+```cpp
+pipe->stop(); // Stop the pipeline with the default configuration
+pipe = std::make_shared<rs2::pipeline>();
+```
+Then we initiate a new configuration, allowing recording to the file 'a.bag' using the function `enable_record_to_file`, and start the
+pipeline with the new configuration. Also, we update the `device` variable to hold the current device.
+
+```cpp
+rs2::config cfg; // Declare a new configuration
+cfg.enable_record_to_file("a.bag");
+pipe->start(cfg); //File will be opened at this point
+device = pipe->get_active_profile().get_device();
+```
+
+
+In the second case, the device is already a recorder, so we can just use it's `resume` function. In order to acces function of `rs2::recorder`,
 we use `as<rs2::recorder>()` .
 
 ```cpp
@@ -173,34 +165,67 @@ We can pause the recording using the 'pause' function of the `rs2::recorder`.
 device->as<rs2::recorder>().pause();
 ```
 
-To stop recording, we need to stop the pipleine: `pipe->stop()`. We also have to release any resources that the pipeline and device hold,
-including the 'a.bag' file, therefore we reset both shared pointers. 
-We inititate a new pipeline with default configuration, which allows us to render frames from the camera while no recorder or playback are running.
-
+To stop recording, we need to stop the pipeline and release any resources that the pipeline holds,
+including the 'a.bag' file. Therefore, we initiate the shared pointer with a new pipeline.
 
 ```cpp
 pipe->stop(); // Stop the pipeline that holds the file and the recorder
-pipe.reset();
-device.reset(); // Reset the shared pointer to the device that holds the file
 pipe = std::make_shared<rs2::pipeline>(); //Reset the shared pointer with a new pipeline
+```
+
+Then, we start the new pipeline with the default configuration, which allows us to render frames from the camera while no recorder or
+playback are running. Also, we update `device` to hold the current device.
+
+```cpp
 pipe->start(); // Resume streaming with default configuration
-device = std::make_shared<rs2::device>(pipe->get_active_profile().get_device()); // Point to the current device
+device = pipe->get_active_profile().get_device();
 recorded = true; // Now we can run the file
 recording = false;
 ```
 
-In a similar way, if we have a recorded file we can play it using the 'playback' device. The flow is the same as for the recorder, only this time
-we use `enable_device_from_file` function on the configuration.
+Now that we have a recorded file, we can play it using the 'playback' device. The flow is the same as for the recorder, only this time
+we use `enable_device_from_file` function on the configuration:
+
+```cpp
+if (!device.as<rs2::playback>()) {
+    rs2::playback playback = device.as<rs2::playback>();
+    pipe->stop(); // Stop streaming with default configuration
+    pipe = std::make_shared<rs2::pipeline>();
+    rs2::config cfg;
+    cfg.enable_device_from_file("a.bag");
+    pipe->start(cfg); //File will be opened in read mode at this point
+    device = pipe->get_active_profile().get_device();  
+}
+else
+{
+    playback.resume();
+}
+```
+
+For pause of the playback, we use `device.as<rs2::playback>().pause()`.
+
+Stopping the playback, similarly to stopping the recorder:
+
+```cpp
+pipe->stop();
+pipe = std::make_shared<rs2::pipeline>();
+pipe->start();
+device = pipe->get_active_profile().get_device();
+```
+
 
 In order to render frames from the playback, we check if there are ready frames in the pipeline using `poll_for_frames`.
-We also call `draw_seek_bar` function which allows the user to control the playback.
 
 ```cpp
 if (pipe->poll_for_frames(&frames)) // Check if new frames are ready
 {
 	depth = color_map(frames.get_depth_frame()); // Find and colorize the depth data for rendering
 }
+```
 
+Also, we call `draw_seek_bar` function which allows the user to control the playback.
+
+```cpp
 // Render a seek bar for the player
 float2 location = { app.width() / 4, 4 * app.height() / 5 + 100 };
 draw_seek_bar(device->as<rs2::playback>(), &seek_pos, location, app.width() / 2);
