@@ -89,7 +89,7 @@ rs2::frame post_processing_filters::process(rs2::frame input)
     return  disparity_to_depth.process(processed);
 }
 
-bool validate_ppf_results(rs2::frame origin_depth, rs2::frame result_depth, const ppf_test_config& reference_data)
+bool validate_ppf_results(rs2::frame origin_depth, rs2::frame result_depth, const ppf_test_config& reference_data, size_t frame_idx)
 {
     std::vector<uint16_t> diff2orig;
     std::vector<uint16_t> diff2ref;
@@ -115,7 +115,7 @@ bool validate_ppf_results(rs2::frame origin_depth, rs2::frame result_depth, cons
     // Pixel-by-pixel comparison of the resulted filtered depth vs data ercorded with external tool
     auto v_src = reinterpret_cast<const uint16_t*>(origin_depth.get_data());
     auto v1 = reinterpret_cast<const uint16_t*>(result_depth.get_data());
-    auto v2 = reinterpret_cast<const uint16_t*>(reference_data._output_data.data());
+    auto v2 = reinterpret_cast<const uint16_t*>(reference_data._output_frames[frame_idx].data());
 
     for (auto i = 0; i < pixels; i++)
     {
@@ -125,13 +125,14 @@ bool validate_ppf_results(rs2::frame origin_depth, rs2::frame result_depth, cons
 
     // Basic sanity scenario with no filters applied.
     // validating domain transform in/out conversion.
-    //if (domain_transform_only)
-    //    profile_diffs("./DomainTransform.txt",diff2orig, 0, 0);
+    if (domain_transform_only)
+        profile_diffs("./DomainTransform.txt",diff2orig, 0, 0);
 
+    // The differences between the reference code and librealsense implementation are assessed below
     return profile_diffs("./Filterstransform.txt", diff2ref, 0, 0);
 }
 
-TEST_CASE("Post-Processing Filters validation", "[software-device][post-processing-filters]") {
+TEST_CASE("Post-Processing Filters snapshots validation", "[software-device][post-processing-filters]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -212,7 +213,95 @@ TEST_CASE("Post-Processing Filters validation", "[software-device][post-processi
             auto filtered_depth = ppf.process(depth);
 
             // Compare the resulted frame versus input
-            REQUIRE_NOTHROW(validate_ppf_results(depth,filtered_depth, test_cfg));
+            REQUIRE_NOTHROW(validate_ppf_results(depth,filtered_depth, test_cfg,0));
         }
     }
 }
+
+// The test is intended to check the results of filters applied on a sequence of frames, specifically the temporal filter
+// that preserves an internal state. The test utilizes rosbag recordings
+TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post-processing-filters]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        // Test file name  , Filters configuraiton
+        const std::map< std::string, std::string> ppf_test_cases = {
+            // Verified
+            { "1523873668701",  "D415_Downsample1" },
+            { "1523873012723",  "D415_Downsample2" },
+            { "1523873362088",  "D415_Downsample3" },
+
+            //{ "1523866331619",  "Sequence1" }, Evgeni - this has 3 pixels diff
+        };
+
+        ppf_test_config test_cfg;
+
+        for (auto& ppf_test : ppf_test_cases)
+        {
+            CAPTURE(ppf_test.first);
+            CAPTURE(ppf_test.second);
+
+            WARN("Testing pattern " << ppf_test.first << "," << ppf_test.second);
+            //INTERNAL_CATCH_INFO(msg, "INFO")
+
+            // Load the data from configuration and raw frame files
+            if (!load_test_configuration(ppf_test.first, test_cfg))
+                continue;
+
+            post_processing_filters ppf;
+
+            // Apply the retrieved configuration onto a local post-processing chain of filters
+            REQUIRE_NOTHROW(ppf.configure(test_cfg));
+
+            rs2::software_device dev; // Create software-only device
+            auto depth_sensor = dev.add_sensor("Depth");
+
+            int width = test_cfg.input_res_x;
+            int height = test_cfg.input_res_y;
+            int depth_bpp = 2; //16bit unsigned
+            int frame_number = 1;
+            rs2_intrinsics depth_intrinsics = { width, height,
+                width / 2.f, height / 2.f,                      // Principal point (N/A in this test)
+                test_cfg.focal_length ,test_cfg.focal_length,   // Focal Length
+                RS2_DISTORTION_BROWN_CONRADY ,{ 0,0,0,0,0 } };
+
+            auto depth_stream_profile = depth_sensor.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, width, height, 30, depth_bpp, RS2_FORMAT_Z16, depth_intrinsics });
+            depth_sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, test_cfg.depth_units);
+            depth_sensor.add_read_only_option(RS2_OPTION_STEREO_BASELINE, test_cfg.stereo_baseline);
+
+            // Establish the required chain of filters
+            dev.create_matcher(RS2_MATCHER_DLR_C);
+            rs2::syncer sync;
+
+            depth_sensor.open(depth_stream_profile);
+            depth_sensor.start(sync);
+
+            size_t frames = (test_cfg.frames_sequence_size > 1) ? test_cfg.frames_sequence_size : 1;
+            for (auto i = 0; i < frames; i++)
+            {
+                // Inject input frame
+                depth_sensor.on_video_frame({ test_cfg._input_frames[i].data(), // Frame pixels from capture API
+                    [](void*) {},                   // Custom deleter (if required)
+                    (int)test_cfg.input_res_x *depth_bpp,    // Stride
+                    depth_bpp,                          // Bytes-per-pixels
+                    (rs2_time_t)frame_number + i,      // Timestamp
+                    RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME,   // Clock Domain
+                    frame_number,                       // Frame# for potential sync services
+                    depth_stream_profile });            // Depth stream profile
+
+                                                        /// ... here the actual filters are being applied
+                rs2::frameset fset = sync.wait_for_frames();
+                REQUIRE(fset);
+                rs2::frame depth = fset.first_or_default(RS2_STREAM_DEPTH);
+                REQUIRE(depth);
+
+                auto filtered_depth = ppf.process(depth);
+
+                // Compare the resulted frame versus input
+                REQUIRE_NOTHROW(validate_ppf_results(depth, filtered_depth, test_cfg, i));
+            }
+        }
+    }
+}
+
