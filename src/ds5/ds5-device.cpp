@@ -465,7 +465,7 @@ namespace librealsense
             auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(depth_ep,
                 depth_xu,
                 DS5_EXPOSURE,
-                "Depth Exposure");
+                "Depth Exposure (usec)");
             depth_ep.register_option(RS2_OPTION_EXPOSURE, exposure_option);
 
             auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(depth_ep,
