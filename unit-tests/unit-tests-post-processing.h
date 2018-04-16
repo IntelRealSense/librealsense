@@ -11,6 +11,19 @@
 #include <map>
 #include <numeric>
 
+//struct frames_stack
+//{
+//    frames_stack(const std::string& metadata_file)
+//    voidinitialize();
+//    // Retrieve and provide a contigious memory with the content of the framebuffer
+//    void* get_frame_data();
+//
+//    std::vector<std::string> frame_paths;
+//    std::vector<std::pair<std::string, std::vector<uint8_t*>> frames_sequence;
+//
+//    std::string
+//};
+
 struct ppf_test_config
 {
     std::string name = "";
@@ -31,8 +44,16 @@ struct ppf_test_config
     uint32_t    input_res_y = 0;
     uint32_t    output_res_x = 0;
     uint32_t    output_res_y = 0;
+
     std::vector<uint8_t> _input_data;   // stores the actul pixel values
     std::vector<uint8_t> _output_data;
+    size_t      frames_sequence_size = 1;
+
+    std::vector<std::string> input_frame_names;
+    std::vector<std::string> output_frame_names;
+
+    std::vector<std::vector<uint8_t>> _input_frames;
+    std::vector<std::vector<uint8_t>> _output_frames;
 
     void reset()
     { 
@@ -44,6 +65,8 @@ struct ppf_test_config
         downsample_scale = 1;
         _input_data.clear();
         _output_data.clear();
+        _input_frames.clear();
+        _output_frames.clear();
     }
 };
 
@@ -92,7 +115,8 @@ enum metadata_attrib : uint8_t
     temp_alpha,
     temp_delta,
     temp_persist,
-    holes_fill
+    holes_fill,
+    frames_sequence_size
 };
 
 // The table establishes the mapping of attributes name to be found in the input files
@@ -112,7 +136,8 @@ const std::map<metadata_attrib, std::string> metadata_attributes = {
     { temp_alpha,   "TemporalAlpha" },
     { temp_delta,   "TemporalDelta" },
     { temp_persist, "TemporalPersistency" },
-    { holes_fill,   "HolesFilling" }
+    { holes_fill,   "HolesFilling" },
+    { frames_sequence_size, "Frames sequence length" }
 };
 
 using csv_kvp = std::map<std::string, std::string>;
@@ -161,12 +186,19 @@ inline ppf_test_config attrib_from_csv(const std::string& str)
     cfg.temporal_delta = dict.count(metadata_attributes.at(temp_delta)) ? std::stoi(dict.at(metadata_attributes.at(temp_delta))) : 0;
     cfg.temporal_persistence = dict.count(metadata_attributes.at(temp_persist)) ? std::stoi(dict.at(metadata_attributes.at(temp_persist))) : 0;
 
+    // Parse the name of the files sequence
+    cfg.frames_sequence_size = dict.count(metadata_attributes.at(frames_sequence_size)) ? std::stoi(dict.at(metadata_attributes.at(frames_sequence_size))) : 0;
+    // Populate the input_frame_names member with the file names
+    for (size_t i = 0; i < cfg.frames_sequence_size; i++)
+        cfg.input_frame_names.emplace_back(dict.at(std::to_string(i)) + ".raw");
     return cfg;
 }
 
 inline bool load_test_configuration(const std::string test_name, ppf_test_config& test_config)
 {
-    std::string base_name = get_folder_path(special_folder::temp_folder) + test_name;
+    std::string folder_name = get_folder_path(special_folder::temp_folder);
+    std::string base_name = folder_name + test_name;
+    base_name += ".0";  // Frame sequence will always ve zero-indexed
     static const std::map<std::string, std::string> test_file_names = {
         { "Input_pixels",    ".Input.raw" },
         { "Input_metadata",  ".Input.csv" },
@@ -196,8 +228,27 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
     test_config.name = test_name;
     ppf_test_config input_meta_params = attrib_from_csv(base_name + test_file_names.at("Input_metadata"));
     ppf_test_config output_meta_params = attrib_from_csv(base_name + test_file_names.at("Output_metadata"));
-    test_config._input_data = std::move(load_from_binary(base_name + test_file_names.at("Input_pixels")));
-    test_config._output_data = std::move(load_from_binary(base_name + test_file_names.at("Output_pixels")));
+    test_config.frames_sequence_size = input_meta_params.frames_sequence_size;
+    if (test_config.frames_sequence_size)
+    {
+        if (test_config.frames_sequence_size > 50)
+        {
+            WARN("The input sequence is too long - "<< test_config.frames_sequence_size << " frames. Performance may be affected");
+        }
+        test_config.input_frame_names = input_meta_params.input_frame_names;
+        test_config.output_frame_names = output_meta_params.input_frame_names;
+        // Prefetch all frames data. Assumes that the frames sequences less than a hundred frames
+        for (size_t i = 0; i < test_config.frames_sequence_size; i++)
+        {
+            test_config._input_frames.push_back(std::move(load_from_binary(folder_name + test_config.input_frame_names[i])));
+            test_config._output_frames.push_back(std::move(load_from_binary(folder_name +test_config.output_frame_names[i])));
+        }
+    }
+    else
+    { // Back-compatibility
+        test_config._input_data = std::move(load_from_binary(base_name + test_file_names.at("Input_pixels")));
+        test_config._output_data = std::move(load_from_binary(base_name + test_file_names.at("Output_pixels")));
+    }
     test_config.input_res_x = input_meta_params.input_res_x;
     test_config.input_res_y = input_meta_params.input_res_y;
     test_config.output_res_x = output_meta_params.input_res_x;
@@ -220,10 +271,21 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
     CAPTURE(test_config.name);
     CAPTURE(test_config.input_res_x);
     CAPTURE(test_config.input_res_y);
-    CAPTURE(test_config._input_data.size());
+    if (0==test_config.frames_sequence_size)
+    {
+        CAPTURE(test_config._input_data.size());
+        CAPTURE(test_config._output_data.size());
+    }
+    else
+    {
+        for (auto i = 0; i < test_config.frames_sequence_size; i++)
+        {
+            CAPTURE(test_config._input_frames[i].size());
+            CAPTURE(test_config._output_frames[i].size())
+        }
+    }
     CAPTURE(test_config.output_res_x);
     CAPTURE(test_config.output_res_y);
-    CAPTURE(test_config._output_data.size());
     CAPTURE(test_config.spatial_filter);
     CAPTURE(test_config.spatial_alpha);
     CAPTURE(test_config.spatial_delta);
@@ -234,7 +296,6 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
     CAPTURE(test_config.temporal_persistence);
     CAPTURE(test_config.holes_filling_mode);
     CAPTURE(test_config.downsample_scale);
-
 
     // Basic Sanity
     // The resulted frame dimension will be dividible by 4;
@@ -254,8 +315,19 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
     REQUIRE(std::fabs(test_config.stereo_baseline) > 0.f);
     REQUIRE(test_config.depth_units > 0);
     REQUIRE(test_config.focal_length > 0);
-    REQUIRE((test_config.input_res_x * test_config.input_res_y * 2 )== test_config._input_data.size()); // Assuming uint16_t type
-    REQUIRE((test_config.output_res_x * test_config.output_res_y * 2) == test_config._output_data.size());
+    if (0 == test_config.frames_sequence_size)
+    {
+        REQUIRE((test_config.input_res_x * test_config.input_res_y * 2) == test_config._input_data.size()); // Assuming uint16_t type
+        REQUIRE((test_config.output_res_x * test_config.output_res_y * 2) == test_config._output_data.size());
+    }
+    else
+    {
+        for (auto i = 0; i < test_config.frames_sequence_size; i++)
+        {
+            REQUIRE((test_config.input_res_x * test_config.input_res_y * 2) == test_config._input_frames[i].size()); // Assuming uint16_t type
+            REQUIRE((test_config.output_res_x * test_config.output_res_y * 2) == test_config._output_frames[i].size());
+        }
+    }
 
     // More specifc test that are awaer of intrinsic of the filters implementation
     //Note that the specific parameter threshold are correct as of March 2018.
