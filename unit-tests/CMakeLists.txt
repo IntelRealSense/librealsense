@@ -48,39 +48,43 @@ endif()
 
 #Post-Processing data set for unit-tests
 #message(STATUS "Post processing deployment directory=${Deployment_Location}")
-list(APPEND PP_Tests_List  152346214 # D415_Downsample_2+Spat(A=0.7,D=8,Iter=3)
-                           152347981 # D415_Downsample_3+Spat(A=0.7,D=8,Iter=3)
-                           152347976 # D415_Downsample_1+Spat(A=0.85,D=32,Iter=3)
-                           152347975 # D415_Downsample_3+Spat(A=0.85,D=32,Iter=3)
-                           152347974 # D415_Downsample_2+Spat(A=0.85,D=32,Iter=3)
-                           152348222 # D415_Downsample_3+Spat(A=0.7,D=10,Iter=3)
-                           152348234 # D415_Downsample_3+Spat(A=0.3,D=20,Iter=3)
-                           152348137 # D415_Downsample_3
-                           152348138 # D415_Downsample_2
-                           152348165 )   # D415_Downsample_1
-list(APPEND PP_Test_extensions_List .Input.raw .Input.csv .Output.raw .Output.csv)
+list(APPEND PP_Tests_List  1523873668701 # D415_Downsample1
+                           1523873012723 # D415_Downsample2
+                           1523873362088 # D415_Downsample3
+                           1523874476600 # D415_Downsample2+Spat(A:0.85/D:32/I:3)
+                           1523874595767 # D415_Downsample2+Spat(A:0.3/D:8/I:3)
+                           1523889912588 # D415_Downsample2+Temp(A:0.4/D:20/P:0)
+                           1523890056362 # D415_Downsample2+Temp(A:0.3/D:10/P:4)
+                           1523887243933 # D415_DS:2_Spat(A:0.85/D:32/I:3)_Temp(A:0.25/D:15/P:0)
+                           1523889529572) # D415_DS:3_Spat(A:0.3/D:8/I:3)_Temp(A:0.5/D:6/P:4)
+
 # For each post-processing test pattern the following files shall be present
+list(APPEND PP_Test_extensions_List .Input.raw .Input.csv .Output.raw .Output.csv)
+list(APPEND PP_Test_Sequence_Index_List .0 .1 .2 .3 .4 .5 .6 .7 .8 .9)
 
 set(PP_TESTS_URL http://realsense-hw-public.s3.amazonaws.com/rs-tests/post_processing_test_patterns/)
 message(STATUS "Preparing to download Post-processing tests dataset...\nRemote server: ${PP_TESTS_URL}\nTarget Location: ${Deployment_Location}\n")
 foreach(i ${PP_Tests_List})
   set(Test_Pattern ${i})
-   #Iterate over test patter extension to download the requierd test files
+  #Iterate over test pattern extension to download the test files.
   foreach(ext ${PP_Test_extensions_List})
-    # Calculate the target full path name for deployment
-    set(Test_File_Name "${Test_Pattern}${ext}")
-    set(source ${PP_TESTS_URL}${Test_File_Name})
-    set(destination ${Deployment_Location}${Test_File_Name})
-    #message(STATUS "Checking for a required test record ${Test_File_Name}")
-    if(NOT EXISTS "${destination}")
-        message(STATUS "Downloading ${source}")
-        file(DOWNLOAD "${source}" "${destination}" TIMEOUT 30 LOG log STATUS status) # SHOW_PROGRESS
-        list(GET status 0 op_return_value)
-        if (NOT op_return_value MATCHES "0")
-            list(GET status 1 description)
-            message(STATUS "Operation failed: opcode= ${status}")
-            message(STATUS "Log: opcode= ${log}")
-        endif()
-    endif()
+    #Each test comprise of a sequence of frame indexed according to the following
+    foreach(idx ${PP_Test_Sequence_Index_List})
+      # Calculate the target full path name for deployment
+      set(Test_File_Name "${Test_Pattern}${ext}")
+      set(source ${PP_TESTS_URL}${Test_File_Name})
+      set(destination ${Deployment_Location}${Test_File_Name})
+      #message(STATUS "Checking for a required test record ${Test_File_Name}")
+      if(NOT EXISTS "${destination}")
+          message(STATUS "Downloading ${source}")
+          file(DOWNLOAD "${source}" "${destination}" TIMEOUT 30 LOG log STATUS status) # SHOW_PROGRESS
+          list(GET status 0 op_return_value)
+          if (NOT op_return_value MATCHES "0")
+              list(GET status 1 description)
+              message(STATUS "Operation failed: opcode= ${status}")
+              message(STATUS "Log: opcode= ${log}")
+          endif()
+      endif()
+    endforeach(idx)
   endforeach(ext)
 endforeach(i)
