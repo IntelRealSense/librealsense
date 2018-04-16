@@ -9,6 +9,9 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 // STL conversions
 #include <pybind11/stl.h>
 
+// std::chrono::*
+#include <pybind11/chrono.h>
+
 // makes certain STL containers opaque to prevent expensive copies
 #include <pybind11/stl_bind.h>
 
