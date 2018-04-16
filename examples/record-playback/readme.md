@@ -2,7 +2,12 @@
 
 ## Overview
 
-This example demonstrates usage of the recorder and playback devices.
+This example demonstrates usage of the recorder and playback devices. We'll show how to use `rs2::recorder` with `rs2::pipeline` to
+record frames from the camera to a .bag file ('a.bag' in the example), with an option to pause and resume the recording. 
+
+After the file is ready, we'll demonstrate how to play, pause, seek and stop a .bag file using `rs2::playback`.
+
+Throughout the example, frames from the active device (default, recorder or playback) will be rendered.
 
 ## Code Overview
 
@@ -107,7 +112,7 @@ int seek_pos;
 First, we wait for frames from the camera for rendering. This is relevant for frames which arrive from the recorder or from the
 device with the default configuration, because those two are streaming live. We can not use `wait_for_frames` with the playback,
 because we might run out of frames.
-	
+    
 ```cpp
 // If the device is sreaming live and not from a file
 if (!device.as<rs2::playback>())
@@ -155,7 +160,7 @@ we use `as<rs2::recorder>()` .
 
 ```cpp
 else { // If the recording is resumed after a pause, there's no need to reset the shared pointers
-	device->as<rs2::recorder>().resume(); // rs2::recorder allows access to 'resume' function
+    device->as<rs2::recorder>().resume(); // rs2::recorder allows access to 'resume' function
 }
 ```
 
@@ -219,7 +224,7 @@ In order to render frames from the playback, we check if there are ready frames 
 ```cpp
 if (pipe->poll_for_frames(&frames)) // Check if new frames are ready
 {
-	depth = color_map(frames.get_depth_frame()); // Find and colorize the depth data for rendering
+    depth = color_map(frames.get_depth_frame()); // Find and colorize the depth data for rendering
 }
 ```
 

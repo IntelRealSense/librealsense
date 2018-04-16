@@ -56,8 +56,8 @@ namespace librealsense
         size_t find_sensor_idx(const sensor_interface& s) const;
 
         std::shared_ptr<context> get_context() const override { 
-			return _context; 
-		}
+            return _context; 
+        }
 
         platform::backend_device_group get_device_data() const override
         {

@@ -476,7 +476,7 @@ namespace librealsense
 
     std::shared_ptr<device_interface> context::add_device(const std::string& file)
     {
-		auto it = _playback_devices.find(file);
+        auto it = _playback_devices.find(file);
         if (it != _playback_devices.end() && it->second.lock())
         {
             //Already exists
