@@ -4949,7 +4949,9 @@ namespace rs2
         ux_window& window,
         std::string& error_message,
         viewer_model& viewer,
-        bool update_read_only_options)
+        bool update_read_only_options,
+        bool load_json_if_streaming,
+        json_loading_func json_loading)
     {
         const float panel_height = 40.f;
         auto panel_pos = ImGui::GetCursorPos();
@@ -5152,26 +5154,33 @@ namespace rs2
         std::string upload_button_name = to_string() << textual_icons::upload << "##" << id;
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
-        if (ImGui::ButtonEx(upload_button_name.c_str(), icons_size, is_streaming ? ImGuiButtonFlags_Disabled : buttons_flags))
+
+        if (ImGui::ButtonEx(upload_button_name.c_str(), icons_size, (is_streaming && !load_json_if_streaming) ? ImGuiButtonFlags_Disabled : buttons_flags))
         {
             if (is_advanced_mode_enabled)
             {
                 auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
-                if (ret)
+                json_loading([&]()
                 {
-                    error_message = safe_call([&]() { load_json(ret); });
-                }
+                    auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+                    if (ret)
+                    {
+                        error_message = safe_call([&]() { load_json(ret); });
+                    }
+                });
             }
             else
             {
                 require_advanced_mode_enable_prompt = true;
             }
         }
+
         if (ImGui::IsItemHovered())
         {
-            std::string tooltip = to_string() << "Load pre-configured settings" << (is_streaming ? " (Disabled while streaming)" : "");
+            std::string tooltip = to_string() << "Load pre-configured settings" << (is_streaming && !load_json_if_streaming ? " (Disabled while streaming)" : "");
             ImGui::SetTooltip("%s", tooltip.c_str());
         }
+
         ImGui::SameLine();
 
         ////////////////////////////////////////
@@ -5220,7 +5229,10 @@ namespace rs2
         device_model*& device_to_remove,
         viewer_model& viewer, float windows_width,
         bool update_read_only_options,
-        std::vector<std::function<void()>>& draw_later, bool draw_device_outline)
+        std::vector<std::function<void()>>& draw_later,
+        bool load_json_if_streaming,
+        json_loading_func json_loading,
+        bool draw_device_outline)
     {
         ////////////////////////////////////////
         // draw device header
@@ -5333,7 +5345,7 @@ namespace rs2
             const float horizontal_space_before_device_control = 3.0f;
             auto advanced_mode_pos = ImVec2{ pos.x + horizontal_space_before_device_control, pos.y + vertical_space_before_advanced_mode_control };
             ImGui::SetCursorPos(advanced_mode_pos);
-            const float advanced_mode_panel_height = draw_preset_panel(panel_width, window, error_message, viewer, update_read_only_options);
+            const float advanced_mode_panel_height = draw_preset_panel(panel_width, window, error_message, viewer, update_read_only_options, load_json_if_streaming, json_loading);
             ImGui::SetCursorPos({ advanced_mode_pos.x, advanced_mode_pos.y + advanced_mode_panel_height });
         }
 

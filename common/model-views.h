@@ -448,6 +448,8 @@ namespace rs2
     class device_model
     {
     public:
+        typedef std::function<void(std::function<void()> load)> json_loading_func;
+
         void reset();
         explicit device_model(device& dev, std::string& error_message, viewer_model& viewer);
         void start_recording(const std::string& path, std::string& error_message);
@@ -462,7 +464,10 @@ namespace rs2
             device_model*& device_to_remove,
             viewer_model& viewer, float windows_width,
             bool update_read_only_options,
-            std::vector<std::function<void()>>& draw_later, bool draw_device_outline = true);
+            std::vector<std::function<void()>>& draw_later,
+            bool load_json_if_streaming = false,
+            json_loading_func json_loading = [](std::function<void()> load) {load(); },
+            bool draw_device_outline = true);
         void handle_harware_events(const std::string& serialized_data);
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
@@ -503,7 +508,9 @@ namespace rs2
             ux_window& window,
             std::string& error_message,
             viewer_model& viewer,
-            bool update_read_only_options);
+            bool update_read_only_options,
+            bool load_json_if_streaming,
+            json_loading_func json_loading);
         bool prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text,
             std::vector<std::string>& restarting_device_info,
             viewer_model& view,
