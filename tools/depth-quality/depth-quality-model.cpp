@@ -475,13 +475,35 @@ namespace rs2
                 device_model* device_to_remove = nullptr;
                 std::vector<std::function<void()>> draw_later;
                 auto windows_width = ImGui::GetContentRegionMax().x;
-
+                auto json_loaded = false;
                 _device_model->draw_controls(_viewer_model.panel_width, _viewer_model.panel_y,
                     win,
                     _error_message, device_to_remove, _viewer_model, windows_width,
                     _update_readonly_options_timer,
-                    draw_later, false);
+                    draw_later, true, 
+                    [&](std::function<void()>func) 
+                    {
+                        auto profile =_pipe.get_active_profile();
+                        _pipe.stop();
+                        func();
 
+                        auto streams = profile.get_streams();
+                        config cfg;
+
+                        for (auto&& s : streams)
+                        {
+                            cfg.enable_stream(s.stream_type(), s.stream_index(), s.format(), s.fps());
+                        }
+                        _pipe.start(cfg);
+
+                        json_loaded = true;
+                    }, 
+                    false);
+
+                if (json_loaded)
+                {
+                    update_configuration();
+                }
                 ImGui::SetContentRegionWidth(windows_width);
                 auto pos = ImGui::GetCursorScreenPos();
 
