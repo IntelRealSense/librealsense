@@ -510,6 +510,25 @@ PYBIND11_MODULE(NAME, m) {
     align.def(py::init<rs2_stream>(), "align_to"_a)
         .def("process", &rs2::align::process, "depth"_a);
 
+    // Do we need this?
+    py::class_<rs2::process_interface, rs2::options> process_interface(m, "process_interface");
+    
+    py::class_<rs2::decimation_filter, rs2::process_interface> decimation_filter(m, "decimation_filter");
+    decimation_filter.def(py::init<>())
+                     .def("process", &rs2::decimation_filter::process, "frame"_a);
+
+    py::class_<rs2::temporal_filter, rs2::process_interface> temporal_filter(m, "temporal_filter");
+    temporal_filter.def(py::init<>())
+                   .def("process", &rs2::temporal_filter::process, "frame"_a);
+
+    py::class_<rs2::spatial_filter, rs2::process_interface> spatial_filter(m, "spatial_filter");
+    spatial_filter.def(py::init<>())
+                  .def("process", &rs2::spatial_filter::process, "frame"_a);
+
+    py::class_<rs2::disparity_transform, rs2::process_interface> disparity_transform(m, "disparity_transform");
+    disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a=true)
+                       .def("process", &rs2::disparity_transform::process, "frame"_a);
+
     /* rs2_record_playback.hpp */
     py::class_<rs2::playback, rs2::device> playback(m, "playback");
     playback.def(py::init<rs2::device>(), "device"_a)
