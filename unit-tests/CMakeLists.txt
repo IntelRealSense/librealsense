@@ -71,7 +71,7 @@ foreach(i ${PP_Tests_List})
     #Each test comprise of a sequence of frame indexed according to the following
     foreach(idx ${PP_Test_Sequence_Index_List})
       # Calculate the target full path name for deployment
-      set(Test_File_Name "${Test_Pattern}${ext}")
+      set(Test_File_Name "${Test_Pattern}${idx}${ext}")
       set(source ${PP_TESTS_URL}${Test_File_Name})
       set(destination ${Deployment_Location}${Test_File_Name})
       #message(STATUS "Checking for a required test record ${Test_File_Name}")
