@@ -741,7 +741,8 @@ namespace librealsense
         public:
             std::shared_ptr<uvc_device> create_uvc_device(uvc_device_info info) const override
             {
-                return std::make_shared<libuvc_uvc_device>(info);
+                return std::make_shared<retry_controls_work_around>(
+                    std::make_shared<libuvc_uvc_device>(info));
             }
 
             /* query UVC devices on the system */
