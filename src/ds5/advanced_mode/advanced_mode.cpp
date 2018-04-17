@@ -80,7 +80,7 @@ namespace librealsense
                 default_420(p);
                 break;
             default:
-                throw invalid_value_exception(to_string() << "apply_preset(...) failed! Invalid product ID (" << device_pid << ")");
+                throw invalid_value_exception(to_string() << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=" << device_pid << ")");
                 break;
             }
             break;
@@ -126,6 +126,22 @@ namespace librealsense
                 break;
             case high_resolution:
                 high_res_mid_density(p);
+                break;
+            }
+            break;
+        case RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN:
+            switch (device_pid)
+            {
+            case ds::RS400_PID:
+            case ds::RS410_PID:
+            case ds::RS415_PID:
+                d415_remove_ir(p);
+                break;
+            case ds::RS460_PID:
+                d460_remove_ir(p);
+                break;
+            default:
+                throw invalid_value_exception(to_string() << "apply_preset(...) failed! Given device doesn't support Remove IR Pattern Preset (pid=" << device_pid << ")");
                 break;
             }
             break;
