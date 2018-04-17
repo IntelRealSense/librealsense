@@ -126,14 +126,15 @@ inline ppf_test_config attrib_from_csv(const std::string& str)
     std::string line;
     int invalid_line = 0;
 
+    std::string key, value;
     while (true)
     {
-        std::string key, value;
-
         if (!std::getline(data, key, ','))
             invalid_line++;
 
         std::getline(data, value, '\n');
+        std::stringstream ss(value); // trim EOL discrepancies
+        ss >> value;
         dict[key] = value;
 
         if (invalid_line > 1)  // Two or more non-kvp lines designate eof. Note this when creating the attributes
