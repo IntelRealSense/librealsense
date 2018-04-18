@@ -109,7 +109,7 @@ namespace librealsense
         _device_request.serial = serial;
     }
 
-    void pipeline_config::enable_device_from_file(const std::string& file, bool repeat_playback)
+    void pipeline_config::enable_device_from_file(const std::string& file, bool repeat_playback = true)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         if (!_device_request.record_output.empty())
