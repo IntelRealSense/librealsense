@@ -686,7 +686,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, rs2_format, int)) &rs2::config::enable_stream, "stream_type"_a, "stream_index"_a, "format"_a, "framerate"_a = 0)
         .def("enable_all_streams", &rs2::config::enable_all_streams)
         .def("enable_device", &rs2::config::enable_device, "serial"_a)
-        .def("enable_device_from_file", &rs2::config::enable_device_from_file, "file_name"_a)
+        .def("enable_device_from_file", &rs2::config::enable_device_from_file, "file_name"_a, "repeat_playback"_a = true)
         .def("enable_record_to_file", &rs2::config::enable_record_to_file, "file_name"_a)
         .def("disable_stream", &rs2::config::disable_stream, "stream"_a, "index"_a = -1)
         .def("disable_all_streams", &rs2::config::disable_all_streams)
