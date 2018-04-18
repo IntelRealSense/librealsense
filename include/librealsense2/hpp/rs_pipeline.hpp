@@ -224,7 +224,7 @@ namespace rs2
         void enable_device_from_file(const std::string& file_name, bool repeat_playback = true)
         {
             rs2_error* e = nullptr;
-            rs2_config_enable_device_from_file(_config.get(), file_name.c_str(), repeat_playback, &e);
+            rs2_config_enable_device_from_file_repeat_option(_config.get(), file_name.c_str(), repeat_playback, &e);
             error::handle(e);
         }
 
