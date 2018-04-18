@@ -241,7 +241,7 @@ extern "C" {
     * \param[in] file_name  The playback file of the device
     * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     */
-    void rs2_config_enable_device_from_file(rs2_config* config, const char* file, bool repeat_playback, rs2_error ** error);
+    void rs2_config_enable_device_from_file(rs2_config* config, const char* file, int repeat_playback, rs2_error ** error);
 
     /**
     * Requires that the resolved device would be recorded to file
