@@ -109,7 +109,7 @@ namespace librealsense
         _device_request.serial = serial;
     }
 
-    void pipeline_config::enable_device_from_file(const std::string& file, bool do_loop)
+    void pipeline_config::enable_device_from_file(const std::string& file, bool repeat_playback)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         if (!_device_request.record_output.empty())
@@ -118,7 +118,7 @@ namespace librealsense
         }
         _resolved_profile.reset();
         _device_request.filename = file;
-        _playback_loop = do_loop;
+        _playback_loop = repeat_playback;
     }
 
     void pipeline_config::enable_record_to_file(const std::string& file)
@@ -380,7 +380,7 @@ namespace librealsense
         return default_profiles;
     }
 
-    bool pipeline_config::get_do_loop() {
+    bool pipeline_config::get_repeat_playback() {
         return _playback_loop;
     }
 
@@ -515,7 +515,7 @@ namespace librealsense
                     {
                         //If the pipeline holds a playback device, and it reached the end of file (stopped)
                         //Then we restart it
-                        if (_active_profile && _prev_conf->get_do_loop())
+                        if (_active_profile && _prev_conf->get_repeat_playback())
                         {
                             _active_profile->_multistream.open();
                             _active_profile->_multistream.start(syncer_callback);

@@ -83,13 +83,13 @@ namespace librealsense
         void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int framerate);
         void enable_all_stream();
         void enable_device(const std::string& serial);
-        void enable_device_from_file(const std::string& file, bool do_loop);
+        void enable_device_from_file(const std::string& file, bool repeat_playback);
         void enable_record_to_file(const std::string& file);
         void disable_stream(rs2_stream stream, int index = -1);
         void disable_all_streams();
         std::shared_ptr<pipeline_profile> resolve(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout = std::chrono::milliseconds(0));
         bool can_resolve(std::shared_ptr<pipeline> pipe);
-        bool get_do_loop();
+        bool get_repeat_playback();
 
         //Non top level API
         std::shared_ptr<pipeline_profile> get_cached_resolved_profile();

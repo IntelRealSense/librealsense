@@ -1471,12 +1471,12 @@ void rs2_config_enable_device(rs2_config* config, const char* serial, rs2_error 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, config, serial)
 
-void rs2_config_enable_device_from_file(rs2_config* config, const char* file, bool do_loop, rs2_error ** error) BEGIN_API_CALL
+void rs2_config_enable_device_from_file(rs2_config* config, const char* file, bool repeat_playback, rs2_error ** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(config);
     VALIDATE_NOT_NULL(file);
 
-    config->config->enable_device_from_file(file, do_loop);
+    config->config->enable_device_from_file(file, repeat_playback);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, config, file)
 
