@@ -221,10 +221,10 @@ namespace rs2
         *
         * \param[in] file_name  The playback file of the device
         */
-        void enable_device_from_file(const std::string& file_name)
+        void enable_device_from_file(const std::string& file_name, bool do_loop = true)
         {
             rs2_error* e = nullptr;
-            rs2_config_enable_device_from_file(_config.get(), file_name.c_str(), &e);
+            rs2_config_enable_device_from_file(_config.get(), file_name.c_str(), do_loop, &e);
             error::handle(e);
         }
 
