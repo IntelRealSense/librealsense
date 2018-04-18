@@ -370,9 +370,9 @@ namespace librealsense
                     LOG_DEBUG(s.str());
                 }
 
-                std::sort(match.begin(), match.end(), [](frame_holder& f1, frame_holder& f2)
+                std::sort(match.begin(), match.end(), [](const frame_holder& f1, const frame_holder& f2)
                 {
-                    return f1->get_stream()->get_unique_id()> f2->get_stream()->get_unique_id();
+                    return ((frame_interface*)f1)->get_stream()->get_unique_id() > ((frame_interface*)f2)->get_stream()->get_unique_id();
                 });
 
 

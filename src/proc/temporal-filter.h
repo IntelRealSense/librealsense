@@ -25,10 +25,7 @@ namespace librealsense
 
             const bool fp = (std::is_floating_point<T>::value);
 
-            // In disparity domain 0.001 stands for 5cm at 5 m
-            const T noise = fp ? static_cast<T>(0.001f) : static_cast<T>(3);
-            // For disparity mode the gradient threshold is strictly bounded to avoid visual artefacts
-            T max_radius = static_cast<T>(fp ? _delta_param/250.f : _delta_param);
+            T delta_z = static_cast<T>(_delta_param);
 
             auto frame          = reinterpret_cast<T*>(frame_data);
             auto _last_frame    = reinterpret_cast<T*>(_last_frame_data);
@@ -52,7 +49,7 @@ namespace librealsense
                     {  // old and new val
                         T diff = static_cast<T>(fabs(cur_val - prev_val));
 
-                        if (diff > noise && (diff/cur_val) < max_radius)
+                        if (diff < delta_z)
                         {  // old and new val agree
                             history[i] |= mask;
                             float filtered = _alpha_param * cur_val + _one_minus_alpha * prev_val;

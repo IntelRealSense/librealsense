@@ -197,9 +197,9 @@ namespace rs2
             texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
     }
 
-    void export_to_ply(const std::string& fname, notifications_model& ns, frameset frames, video_frame texture)
+    void export_to_ply(const std::string& fname, notifications_model& ns, frameset frames, video_frame texture, bool notify)
     {
-        std::thread([&ns, frames, texture, fname]() mutable {
+        std::thread([&ns, frames, texture, fname, notify]() mutable {
 
             points p;
 
@@ -214,7 +214,7 @@ namespace rs2
             if (p)
             {
                 p.export_to_ply(fname, texture);
-                ns.add_notification({ to_string() << "Finished saving 3D view " << (texture ? "to " : "without texture to ") << fname,
+                if (notify) ns.add_notification({ to_string() << "Finished saving 3D view " << (texture ? "to " : "without texture to ") << fname,
                     std::chrono::duration_cast<std::chrono::duration<double,std::micro>>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(),
                     RS2_LOG_SEVERITY_INFO,
                     RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
@@ -347,6 +347,11 @@ namespace rs2
         auto res = false;
         if (supported)
         {
+            // The option's rendering model supports an alternative option title derived from its description rather than name.
+            // This is applied to the Holes Filling as its display must conform with the names used by a 3rd-party tools for consistency. 
+            if (opt == RS2_OPTION_HOLES_FILL)
+                use_option_name = false;
+
             auto desc = endpoint->get_option_description(opt);
 
             // remain option to append to the current line
@@ -384,12 +389,61 @@ namespace rs2
                     ImGui::Text("%s", txt.c_str());
 
                     ImGui::SameLine();
-                    ImGui::PushStyleColor(ImGuiCol_Text, { 0.5f, 0.5f, 0.5f, 1.f });
-                    ImGui::Text("(?)");
-                    ImGui::PopStyleColor();
+                    ImGui::SetCursorPosX(read_only ? 268 : 245);
+                    ImGui::PushStyleColor(ImGuiCol_Text, grey);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 1.f,1.f,1.f,0.f });
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
+                    ImGui::PushStyleColor(ImGuiCol_Button, { 1.f,1.f,1.f,0.f });
+                    ImGui::Button(textual_icons::question_mark, { 20, 20 });
+                    ImGui::PopStyleColor(5);
                     if (ImGui::IsItemHovered() && desc)
                     {
                         ImGui::SetTooltip("%s", desc);
+                    }
+
+                    if (!read_only)
+                    {
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosX(268);
+                        if (!edit_mode)
+                        {
+                            std::string edit_id = to_string() << textual_icons::edit << "##" << id;
+                            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+                            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
+                            ImGui::PushStyleColor(ImGuiCol_Button, { 1.f,1.f,1.f,0.f });
+                            if (ImGui::Button(edit_id.c_str(), { 20, 20 }))
+                            {
+                                if (is_all_integers())
+                                    edit_value = to_string() << (int)value;
+                                else
+                                    edit_value = to_string() << value;
+                                edit_mode = true;
+                            }
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Enter text-edit mode");
+                            }
+                            ImGui::PopStyleColor(4);
+                        }
+                        else
+                        {
+                            std::string edit_id = to_string() << textual_icons::edit << "##" << id;
+                            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
+                            ImGui::PushStyleColor(ImGuiCol_Button, { 1.f,1.f,1.f,0.f });
+                            if (ImGui::Button(edit_id.c_str(), { 20, 20 }))
+                            {
+                                edit_mode = false;
+                            }
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Exit text-edit mode");
+                            }
+                            ImGui::PopStyleColor(4);
+                        }
                     }
 
                     ImGui::PushItemWidth(-1);
@@ -414,9 +468,46 @@ namespace rs2
                                 ImGui::PopStyleColor(2);
                             }
                         }
+                        else if (edit_mode)
+                        {
+                            char buff[TEXT_BUFF_SIZE];
+                            memset(buff, 0, TEXT_BUFF_SIZE);
+                            strcpy(buff, edit_value.c_str());
+                            if (ImGui::InputText(id.c_str(), buff, TEXT_BUFF_SIZE,
+                                ImGuiInputTextFlags_EnterReturnsTrue))
+                            {
+                                float new_value;
+                                if (!string_to_int(buff, new_value))
+                                {
+                                    error_message = "Invalid numeric input!";
+                                }
+                                else if (new_value < range.min || new_value > range.max)
+                                {
+                                    error_message = to_string() << new_value
+                                        << " is out of bounds [" << range.min << ", "
+                                        << range.max << "]";
+                                }
+                                else
+                                {
+                                    try
+                                    {
+                                        endpoint->set_option(opt, new_value);
+                                        value = new_value;
+                                    }
+                                    catch (const error& e)
+                                    {
+                                        error_message = error_to_string(e);
+                                    }
+                                }
+
+                                edit_mode = false;
+                            }
+                            edit_value = buff;
+                        }
                         else if (is_all_integers())
                         {
                             auto int_value = static_cast<int>(value);
+
                             if (ImGui::SliderIntWithSteps(id.c_str(), &int_value,
                                 static_cast<int>(range.min),
                                 static_cast<int>(range.max),
@@ -1789,7 +1880,7 @@ namespace rs2
             ImGui::PushItemWidth(200);
             draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
             selected_tex_source_uid = tex_sources[selected_tex_source];
-            texture.colorize = streams[selected_tex_source].texture->colorize;
+            texture.colorize = streams[tex_sources[selected_tex_source]].texture->colorize;
             ImGui::PopItemWidth();
 
             // Occlusion control for RGB UV-Map uses option's description as label
@@ -3205,7 +3296,7 @@ namespace rs2
 
         popup_if_error(window.get_font(), error_message);
 
-        return depth;
+        return f;
     }
 
     void viewer_model::reset_camera(float3 p)
@@ -4375,7 +4466,8 @@ namespace rs2
         }
         return keep_showing;
     }
-    bool device_model::draw_advanced_controls(viewer_model& view, ux_window& window)
+
+    bool device_model::draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message)
     {
         bool was_set = false;
 
@@ -4389,7 +4481,7 @@ namespace rs2
                 auto advanced = dev.as<advanced_mode>();
                 if (advanced.is_enabled())
                 {
-                    draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls, was_set);
+                    draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls, was_set, error_message);
                 }
                 else
                 {
@@ -4862,7 +4954,9 @@ namespace rs2
         ux_window& window,
         std::string& error_message,
         viewer_model& viewer,
-        bool update_read_only_options)
+        bool update_read_only_options,
+        bool load_json_if_streaming,
+        json_loading_func json_loading)
     {
         const float panel_height = 40.f;
         auto panel_pos = ImGui::GetCursorPos();
@@ -5065,26 +5159,33 @@ namespace rs2
         std::string upload_button_name = to_string() << textual_icons::upload << "##" << id;
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
-        if (ImGui::ButtonEx(upload_button_name.c_str(), icons_size, is_streaming ? ImGuiButtonFlags_Disabled : buttons_flags))
+
+        if (ImGui::ButtonEx(upload_button_name.c_str(), icons_size, (is_streaming && !load_json_if_streaming) ? ImGuiButtonFlags_Disabled : buttons_flags))
         {
             if (is_advanced_mode_enabled)
             {
                 auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
-                if (ret)
+                json_loading([&]()
                 {
-                    error_message = safe_call([&]() { load_json(ret); });
-                }
+                    auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+                    if (ret)
+                    {
+                        error_message = safe_call([&]() { load_json(ret); });
+                    }
+                });
             }
             else
             {
                 require_advanced_mode_enable_prompt = true;
             }
         }
+
         if (ImGui::IsItemHovered())
         {
-            std::string tooltip = to_string() << "Load pre-configured settings" << (is_streaming ? " (Disabled while streaming)" : "");
+            std::string tooltip = to_string() << "Load pre-configured settings" << (is_streaming && !load_json_if_streaming ? " (Disabled while streaming)" : "");
             ImGui::SetTooltip("%s", tooltip.c_str());
         }
+
         ImGui::SameLine();
 
         ////////////////////////////////////////
@@ -5133,7 +5234,10 @@ namespace rs2
         device_model*& device_to_remove,
         viewer_model& viewer, float windows_width,
         bool update_read_only_options,
-        std::vector<std::function<void()>>& draw_later, bool draw_device_outline)
+        std::vector<std::function<void()>>& draw_later,
+        bool load_json_if_streaming,
+        json_loading_func json_loading,
+        bool draw_device_outline)
     {
         ////////////////////////////////////////
         // draw device header
@@ -5246,7 +5350,7 @@ namespace rs2
             const float horizontal_space_before_device_control = 3.0f;
             auto advanced_mode_pos = ImVec2{ pos.x + horizontal_space_before_device_control, pos.y + vertical_space_before_advanced_mode_control };
             ImGui::SetCursorPos(advanced_mode_pos);
-            const float advanced_mode_panel_height = draw_preset_panel(panel_width, window, error_message, viewer, update_read_only_options);
+            const float advanced_mode_panel_height = draw_preset_panel(panel_width, window, error_message, viewer, update_read_only_options, load_json_if_streaming, json_loading);
             ImGui::SetCursorPos({ advanced_mode_pos.x, advanced_mode_pos.y + advanced_mode_panel_height });
         }
 
@@ -5492,7 +5596,7 @@ namespace rs2
                 }
                 if (dev.is<advanced_mode>() && sub->s->is<depth_sensor>())
                 {
-                    if (draw_advanced_controls(viewer, window))
+                    if (draw_advanced_controls(viewer, window, error_message))
                     {
                         sub->options_invalidated = true;
                         selected_file_preset.clear();

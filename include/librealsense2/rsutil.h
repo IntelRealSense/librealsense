@@ -32,8 +32,8 @@ static void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsi
     }
     if (intrin->model == RS2_DISTORTION_FTHETA)
     {
-        float r = sqrt(x*x + y*y);
-        float rd = (1.0f / intrin->coeffs[0] * atan(2 * r* tan(intrin->coeffs[0] / 2.0f)));
+        float r = sqrtf(x*x + y*y);
+        float rd = (float)(1.0f / intrin->coeffs[0] * atan(2 * r* tan(intrin->coeffs[0] / 2.0f)));
         x *= rd / r;
         y *= rd / r;
     }

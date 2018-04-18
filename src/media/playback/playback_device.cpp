@@ -487,6 +487,7 @@ void playback_device::try_looping()
             playback_status_changed(RS2_PLAYBACK_STATUS_PLAYING);
         }
     }
+
     auto read_action = [this]() -> bool
     {
         LOG_DEBUG("Read action invoked");

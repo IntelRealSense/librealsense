@@ -85,6 +85,9 @@ SENSOR_TIMESTAMP|179671458
 ACTUAL_EXPOSURE|6951
 GAIN_LEVEL|16
 AUTO_EXPOSURE|1  
+TIME_OF_ARRIVAL|1523871918775
+BACKEND_TIMESTAMP|1523871918741
+ACTUAL_FPS|30
 
  - `rs-config-ui` includes a checkbox in the upper-right corner of  stream's canvas, clicking on which will bring up an overlay window with the metadata attributes available.  
 

@@ -465,7 +465,7 @@ namespace librealsense
             auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(depth_ep,
                 depth_xu,
                 DS5_EXPOSURE,
-                "Depth Exposure");
+                "Depth Exposure (usec)");
             depth_ep.register_option(RS2_OPTION_EXPOSURE, exposure_option);
 
             auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(depth_ep,
@@ -603,6 +603,7 @@ namespace librealsense
 
         // Support DS5U-specific pixel format
         depth_ep->register_pixel_format(pf_w10);
+        depth_ep->register_pixel_format(pf_uyvyl);
 
         return depth_ep;
     }
@@ -611,6 +612,8 @@ namespace librealsense
         const platform::backend_device_group& group)
         : ds5_device(ctx, group), device(ctx, group)
     {
+        using namespace ds;
+
         // Override the basic ds5 sensor with the development version
         _depth_device_idx = assign_sensor(create_ds5u_depth_device(ctx, group.uvc_devices), _depth_device_idx);
 
@@ -630,6 +633,28 @@ namespace librealsense
         depth_ep.unregister_option(RS2_OPTION_ASIC_TEMPERATURE);
         depth_ep.unregister_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
 
+        // Enable laser etc.
+        auto pid = group.uvc_devices.front().pid;
+        if (pid != RS_USB2_PID)
+        {
+            auto& depth_ep = get_depth_sensor();
+            auto emitter_enabled = std::make_shared<emitter_option>(depth_ep);
+            depth_ep.register_option(RS2_OPTION_EMITTER_ENABLED, emitter_enabled);
+
+            auto laser_power = std::make_shared<uvc_xu_option<uint16_t>>(depth_ep,
+                depth_xu,
+                DS5_LASER_POWER,
+                "Manual laser power in mw. applicable only when laser power mode is set to Manual");
+            depth_ep.register_option(RS2_OPTION_LASER_POWER,
+                std::make_shared<auto_disabling_control>(
+                    laser_power,
+                    emitter_enabled,
+                    std::vector<float>{0.f, 2.f}, 1.f));
+
+            depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                std::make_shared<asic_and_projector_temperature_options>(depth_ep,
+                    RS2_OPTION_PROJECTOR_TEMPERATURE));
+        }
     }
 
 }

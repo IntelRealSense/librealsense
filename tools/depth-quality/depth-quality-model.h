@@ -17,6 +17,99 @@ namespace rs2
     {
         class metrics_model;
 
+        struct sample
+        {
+            sample(std::vector<single_metric_data> samples, double timestamp, unsigned long long frame_number) :
+                samples(std::move(samples)), timestamp(timestamp), frame_number(frame_number) {}
+
+            std::vector<single_metric_data> samples;
+
+            double timestamp;
+            unsigned long long frame_number;
+        };
+
+        struct metric_definition
+        {
+            std::string name;
+            std::string units;
+        };
+
+        class metrics_recorder
+        {
+        public:
+            metrics_recorder(viewer_model& viewer_model) :
+                _recording(false), _viewer_model(viewer_model)
+            {}
+
+            void add_metric(const metric_definition& data)
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                _metric_data.push_back(data);
+            }
+
+            void add_sample(rs2::frameset& frames, std::vector<single_metric_data> sample)
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                if (_recording)
+                {
+                    record_frames(frames);
+
+                    if (sample.size())
+                        _samples.push_back({ sample, _model_timer.elapsed_ms(), frames.get_frame_number() });
+                }
+            }
+            void start_record(metrics_model* metrics)
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                _metrics = metrics;
+                if (auto ret = file_dialog_open(save_file, NULL, NULL, NULL))
+                {
+                    _filename_base = ret;
+                    _recording = true;
+                }
+            }
+
+            void stop_record(device_model* dev)
+            {
+                std::lock_guard<std::mutex> lock(_m);
+                _recording = false;
+                serialize_to_csv();
+
+                if (dev)
+                {
+                    if (auto adv = dev->dev.as<rs400::advanced_mode>())
+                    {
+                        std::string filename = _filename_base + "_configuration.json";
+                        std::ofstream out(filename);
+                        out << adv.serialize_json();
+                        out.close();
+                    }
+                }
+                _samples.clear();
+                _viewer_model.not_model.add_notification({ to_string() << "Finished to record frames and matrics data " ,
+                    0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+            }
+
+            bool is_recording()
+            {
+                return _recording;
+            }
+
+        private:
+            void serialize_to_csv() const;
+            void record_frames(const frameset & frame);
+            viewer_model& _viewer_model;
+            std::vector<metric_definition> _metric_data;
+            std::vector<sample> _samples;
+            timer _model_timer;
+            std::mutex _m;
+            bool _recording;
+            std::string _filename_base;
+            metrics_model* _metrics;
+            colorizer _colorize;
+            pointcloud _pc;
+        };
+
         class metric_plot : public std::enable_shared_from_this<metric_plot>
         {
         public:
@@ -91,6 +184,7 @@ namespace rs2
 
             bool enabled() const { return _enabled; }
             bool requires_plane_fit() const { return _requires_plane_fit; }
+            std::string get_name() { return _name; }
 
         private:
             bool has_trend(bool positive);
@@ -118,7 +212,7 @@ namespace rs2
         class metrics_model
         {
         public:
-            metrics_model();
+            metrics_model(viewer_model& viewer_model);
             ~metrics_model();
 
             void render(ux_window& win);
@@ -157,8 +251,6 @@ namespace rs2
             }
 
             void begin_process_frame(rs2::frame f) { _frame_queue.enqueue(std::move(f)); }
-
-            void serialize_to_csv(const std::string& filename, const std::string& camera_info) const;
 
             void add_metric(std::shared_ptr<metric_plot> metric) { _plots.push_back(metric); }
 
@@ -204,6 +296,25 @@ namespace rs2
                 while (_frame_queue.poll_for_frame(&f));
             }
 
+            void update_device_data(const std::string& camera_info)
+            {
+                _camera_info = camera_info;
+            }
+            bool is_recording()
+            {
+                return _recorder.is_recording();
+            }
+            void start_record()
+            {
+                _recorder.start_record(this);
+            }
+            void stop_record(device_model* dev)
+            {
+                _recorder.stop_record(dev);
+
+                
+               
+            }
         private:
             metrics_model(const metrics_model&);
 
@@ -220,9 +331,13 @@ namespace rs2
             float                   _roi_percentage;
             snapshot_metrics        _latest_metrics;
             bool                    _active;
-
             std::vector<std::shared_ptr<metric_plot>> _plots;
+            metrics_recorder _recorder;
+            std::string  _camera_info;
             mutable std::mutex      _m;
+
+            friend class  metrics_recorder;
+            friend class  tool_model;
         };
 
         using metric = std::shared_ptr<metric_plot>;
@@ -240,8 +355,6 @@ namespace rs2
 
             void reset(ux_window& win);
 
-            void snapshot_metrics();
-
             bool draw_instructions(ux_window& win, const rect& viewer_rect, bool& distance, bool& orientation);
 
             void draw_guides(ux_window& win, const rect& viewer_rect, bool distance_guide, bool orientation_guide);
@@ -254,6 +367,7 @@ namespace rs2
             void on_frame(callback_type callback) { _metrics_model.callback = callback; }
 
             rs2::device get_active_device(void) const;
+
         private:
 
             std::string capture_description();

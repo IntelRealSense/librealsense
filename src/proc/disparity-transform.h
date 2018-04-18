@@ -28,13 +28,16 @@ namespace librealsense
             auto in = reinterpret_cast<const Tin*>(in_data);
             auto out = reinterpret_cast<Tout*>(out_data);
 
+            bool fp = (std::is_floating_point<Tin>::value);
+            const float round = fp ? 0.5f : 0.f;
+
             //TODO SSE optimize
             for (auto i = 0; i < _height; i++)
                 for (auto j = 0; j < _width; j++)
                 {
                     float input = *in;
                     if (std::isnormal(input))
-                        *out++ = static_cast<Tout>(_d2d_convert_factor / input);
+                        *out++ = static_cast<Tout>((_d2d_convert_factor / input)+round);
                     else
                         *out++ = 0;
                     in++;
@@ -52,7 +55,8 @@ namespace librealsense
         bool                    _update_target;
         bool                    _stereoscopic_depth;
         float                   _focal_lenght_mm;
-        float                   _stereo_baseline_mm;
+        float                   _stereo_baseline; // in meters
+        float                   _depth_units;
         float                   _d2d_convert_factor;
         size_t                  _width, _height;
         size_t                  _bpp;

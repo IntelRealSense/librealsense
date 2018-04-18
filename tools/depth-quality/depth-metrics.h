@@ -31,6 +31,17 @@ namespace rs2
             plane p;
             std::array<float3, 4> plane_corners;
         };
+      
+        struct single_metric_data
+        {
+            single_metric_data(std::string name, float val) :
+                val(val), name(name) {}
+
+            float val;
+            std::string name;
+        };
+
+      
 
         using callback_type = std::function<void(
             const std::vector<rs2::float3>& points,
@@ -40,7 +51,9 @@ namespace rs2
             const float focal_length_pixels,
             const int ground_thruth_mm,
             const bool plane_fit,
-            const float plane_fit_to_ground_truth_mm)>;
+            const float plane_fit_to_ground_truth_mm,
+            bool record,
+            std::vector<single_metric_data>& samples)>;
 
         inline plane plane_from_point_and_normal(const rs2::float3& point, const rs2::float3& normal)
         {
@@ -130,6 +143,8 @@ namespace rs2
             rs2::region_of_interest roi,
             const int ground_truth_mm,
             bool plane_fit_present,
+            std::vector<single_metric_data>& samples,
+            bool record,
             callback_type callback)
         {
             auto pixels = (const uint16_t*)frame.get_data();
@@ -177,7 +192,7 @@ namespace rs2
             // Find the distance between the "rectified" fit and the ground truth planes.
             float plane_fit_to_gt_dist_mm = (ground_truth_mm > 0.f) ? (plane_fit_pivot.z * 1000 - ground_truth_mm): 0;
 
-            callback(roi_pixels, p, roi, baseline_mm, intrin->fx, ground_truth_mm, plane_fit_present, plane_fit_to_gt_dist_mm);
+            callback(roi_pixels, p, roi, baseline_mm, intrin->fx, ground_truth_mm, plane_fit_present, plane_fit_to_gt_dist_mm, record, samples);
             result.p = p;
             result.plane_corners[0] = approximate_intersection(p, intrin, float(roi.min_x), float(roi.min_y));
             result.plane_corners[1] = approximate_intersection(p, intrin, float(roi.max_x), float(roi.min_y));

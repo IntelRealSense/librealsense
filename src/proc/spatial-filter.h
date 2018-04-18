@@ -32,10 +32,23 @@ namespace librealsense
 
             for (int i = 0; i < iterations; i++)
             {
-                recursive_filter_horizontal<T>(frame_data, alpha, delta);
-                recursive_filter_vertical<T>(frame_data, alpha, delta);
+                bool fp = (std::is_floating_point<T>::value);
+                if (fp)
+                {
+                    recursive_filter_horizontal_fp(frame_data, alpha, delta);
+                    recursive_filter_vertical_fp(frame_data, alpha, delta);
+                }
+                else
+                {
+                    recursive_filter_horizontal<T>(frame_data, alpha, delta);
+                    recursive_filter_vertical<T>(frame_data, alpha, delta);
+                }
+
             }
         }
+
+        void recursive_filter_horizontal_fp(void * image_data, float alpha, float deltaZ);
+        void recursive_filter_vertical_fp(void * image_data, float alpha, float deltaZ);
 
         template <typename T>
         void  recursive_filter_horizontal(void * image_data, float alpha, float deltaZ)
@@ -65,9 +78,9 @@ namespace librealsense
                 {
                     T val1 = im[1];
 
-                    if (val0 >= valid_threshold)
+                    if (fabs(val0) >= valid_threshold)
                     {
-                        if (val1 >= valid_threshold)
+                        if (fabs(val1) >= valid_threshold)
                         {
                             cur_fill = 0;
                             T diff = static_cast<T>(fabs(val1 - val0));
@@ -162,7 +175,7 @@ namespace librealsense
                     im0 = im[0];
                     imw = im[_width];
 
-                    if ((im0 >= valid_threshold) && (imw >= valid_threshold))
+                    //if ((fabs(im0) >= valid_threshold) && (fabs(imw) >= valid_threshold))
                     {
                         T diff = static_cast<T>(fabs(im0 - imw));
                         if (diff < delta_z)
@@ -184,7 +197,7 @@ namespace librealsense
                     im0 = im[0];
                     imw = im[_width];
 
-                    if ((im0 >=valid_threshold) && (imw >= valid_threshold))
+                    if ((fabs(im0) >= valid_threshold) && (fabs(imw) >= valid_threshold))
                     {
                         T diff = static_cast<T>(fabs(im0 - imw));
                         if ( diff < delta_z)
@@ -203,7 +216,7 @@ namespace librealsense
         float                   _spatial_alpha_param;
         uint8_t                 _spatial_delta_param;
         uint8_t                 _spatial_iterations;
-        float                   _spatial_radius;            // The convolution radius is domain-dependent
+        float                   _spatial_edge_threshold;
         size_t                  _width, _height, _stride;
         size_t                  _bpp;
         rs2_extension           _extension_type;            // Strictly Depth/Disparity

@@ -28,6 +28,10 @@ namespace librealsense
         uint8_t                 _kernel_size;
         rs2::stream_profile     _source_stream_profile;
         rs2::stream_profile     _target_stream_profile;
+        uint16_t                _real_width;        // Number of rows/columns with real datain the decimated image
+        uint16_t                _real_height;       // Correspond to w,h in the reference code
+        uint16_t                _padded_width;      // Corresponds to w4/h4 in the reference code
+        uint16_t                _padded_height;
         bool                    _recalc_profile;
     };
 }
