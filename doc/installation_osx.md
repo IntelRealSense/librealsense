@@ -12,6 +12,7 @@
   * `brew install cmake`
 4. Generate XCode project:
   * `mkdir build && cd build`
+  * `sudo xcode-select --reset`
   * `cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -G Xcode`
 5. Open and build the XCode project
 
