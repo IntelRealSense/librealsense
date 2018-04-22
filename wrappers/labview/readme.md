@@ -1,6 +1,8 @@
 # Getting Started with RealSense™ SDK2.0 for LabVIEW®
 
-> **Download Link**: [RealSense SDK2 for LabVIEW 1.0](http://realsense-hw-public.s3.amazonaws.com/Releases/RS4xx/Windows/labview_2_8_1.zip)
+> **Download Links**: 
+> * [**(Latest)** RealSense SDK2 for LabVIEW 1.0, 2.10.4, Apr 2018](http://realsense-hw-public.s3.amazonaws.com/Releases/RS4xx/Windows/labview_2_10_4.zip)
+> * [RealSense SDK2 for LabVIEW 1.0, 2.8.1, Nov 2017](http://realsense-hw-public.s3.amazonaws.com/Releases/RS4xx/Windows/labview_2_8_1.zip)
 
 ## Introduction:
 The latest generation of RealSense Depth Cameras can be controlled via the RealSense SDK2.0, also referred to as libRealSense 2.x.x, or LibRS for short. This includes stereo depth cameras D415 and D435 as well as their corresponding modules, such as D410 and D430. 
