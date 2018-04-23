@@ -233,6 +233,7 @@ EXPORTS
     rs2_config_enable_all_stream
     rs2_config_enable_device
     rs2_config_enable_device_from_file
+    rs2_config_enable_device_from_file_repeat_option
     rs2_config_enable_record_to_file
     rs2_config_disable_stream
     rs2_config_disable_indexed_stream
