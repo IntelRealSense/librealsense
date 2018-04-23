@@ -77,7 +77,7 @@ describe('StreamProfile test', function() {
     });
   });
 
-  it('Testing mothod getExtrinsicsTo - 0 argument', () => {
+  it('Testing method getExtrinsicsTo - 0 argument', () => {
     streamProfiles.forEach( (stream) => {
       assert.throws(() => {
         stream.getExtrinsicsTo();
@@ -85,7 +85,7 @@ describe('StreamProfile test', function() {
     });
   });
 
-  it('Testing mothod getExtrinsicsTo - valid argument', () => {
+  it('Testing method getExtrinsicsTo - valid argument', () => {
     let ExtrinsicsObject;
     assert.doesNotThrow(() => {
       ExtrinsicsObject = streamProfiles[0].getExtrinsicsTo(streamProfiles[1]);
@@ -93,9 +93,62 @@ describe('StreamProfile test', function() {
     assert.equal(Object.prototype.toString.call(ExtrinsicsObject.rotation), '[object Array]');
   });
 
-  it('Testing mothod getExtrinsicsTo - invalid argument', () => {
+  it('Testing method getExtrinsicsTo - invalid argument', () => {
     assert.throws(() => {
       streamProfiles[0].getExtrinsicsTo('dummy');
+    });
+  });
+
+  it('Testing method streamToString - with stream number', () => {
+    const streams = [
+      'any',
+      'depth',
+      'color',
+      'infrared',
+      'fisheye',
+      'gyro',
+      'accel',
+      'gpio',
+      'pose',
+      'confidence',
+    ];
+    assert.doesNotThrow(() => {
+      for (let i = rs2.stream.STREAM_ANY; i < rs2.stream.STREAM_COUNT; i++) {
+        let res = rs2.stream.streamToString(i);
+        assert.equal(res, streams[i]);
+      }
+    });
+  });
+
+  it('Testing method streamToString - with two arguments', () => {
+    assert.throws(() => {
+      rs2.stream.streamToString(1, 1);
+    });
+  });
+
+  it('Testing method streamToString - without argument', () => {
+    assert.throws(() => {
+      rs2.stream.streamToString();
+    });
+  });
+
+  it('Testing method streamToString - with stream string', () => {
+    const streams = [
+      'stream_any',
+      'stream_depth',
+      'stream_color',
+      'stream_infrared',
+      'stream_fisheye',
+      'stream_gyro',
+      'stream_accel',
+      'stream_gpio',
+      'stream_pose',
+      'stream_confidence',
+    ];
+    streams.forEach((s) => {
+      assert.doesNotThrow(() => {
+        rs2.stream.streamToString(rs2.stream[s]);
+      });
     });
   });
 });
