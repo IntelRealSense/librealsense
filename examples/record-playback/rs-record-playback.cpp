@@ -147,7 +147,7 @@ int main(int argc, char * argv[]) try
                     pipe->stop(); // Stop streaming with default configuration
                     pipe = std::make_shared<rs2::pipeline>();
                     rs2::config cfg;
-                    cfg.enable_device_from_file("a.bag", false);
+                    cfg.enable_device_from_file("a.bag");
                     pipe->start(cfg); //File will be opened in read mode at this point
                     device = pipe->get_active_profile().get_device();
                 }

@@ -235,8 +235,8 @@ extern "C" {
     * Select a recorded device from a file, to be used by the pipeline through playback.
     * The device available streams are as recorded to the file, and \c resolve() considers only this device and configuration
     * as available.
-    * By default, playback is repeated once the file ends. To control this, see 'rs2_config_enable_device_from_file_repeat_option'.
     * This request cannot be used if enable_record_to_file() is called for the current config, and vise versa
+    * By default, playback is repeated once the file ends. To control this, see 'rs2_config_enable_device_from_file_repeat_option'.
     *
     * \param[in] config    A pointer to an instance of a config
     * \param[in] file_name  The playback file of the device
@@ -252,7 +252,8 @@ extern "C" {
     *
     * \param[in] config    A pointer to an instance of a config
     * \param[in] file_name  The playback file of the device
-    * \param[in] repeat_playback indicates whether to repeat playback once or in an infinite loop
+    * \param[in] repeat_playback  if true, when file ends the playback starts again, in an infinite loop;
+                                  if false, when file ends playback does not start again, and should by stopped manually by the user.
     * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     */
     void rs2_config_enable_device_from_file_repeat_option(rs2_config* config, const char* file, int repeat_playback, rs2_error ** error);
