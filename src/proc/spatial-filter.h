@@ -48,8 +48,8 @@ namespace librealsense
             // Disparity domain holes filling requires a second pass over the frame data
             if (fp && _holes_filling_mode)
             {
-                holes_filling_types mode = static_cast<holes_filling_types>(_holes_filling_mode);
-                holes_filling_pass<hf_4_pixel_radius>(frame_data);
+                apply_holes_filling<T>(frame_data, _width, _height, _stride,
+                    static_cast<holes_filling_types>(_holes_filling_mode), _holes_filling_radius);
             }
         }
 
@@ -215,34 +215,6 @@ namespace librealsense
                     im += 1;
                 }
             }
-        }
-
-        enum holes_filling_types : uint8_t
-        {
-            hf_disabled,
-            hf_2_pixel_radius,
-            hf_4_pixel_radius,
-            hf_8_pixel_radius,
-            hf_16_pixel_radius,
-            hf_unlimited_radius,
-            hf_fill_from_left,
-            hf_farest_from_around,
-            hf_nearest_from_around
-        };
-
-        template <holes_filling_types T>
-        void holes_filling_pass(void * image_data)
-        {
-        }
-
-        template<>
-        void holes_filling_pass<hf_fill_from_left>(void * image_data)
-        {
-        }
-
-        template<>
-        void holes_filling_pass<hf_farest_from_around>(void * image_data)
-        {
         }
 
     private:

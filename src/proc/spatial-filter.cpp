@@ -115,7 +115,7 @@ namespace librealsense
                 _holes_filling_radius = 0;      // disabled
                 break;
             case hf_unlimited_radius:
-                _holes_filling_radius = 0xff;   // The maximul smearing is not particulary useful
+                _holes_filling_radius = 0xff;   // Unrealistic smearing; not particulary useful
                 break;
             case hf_2_pixel_radius:
             case hf_4_pixel_radius:
@@ -232,8 +232,6 @@ namespace librealsense
         return tgt;
     }
 
-
-
     void spatial_filter::recursive_filter_horizontal_fp(void * image_data, float alpha, float deltaZ)
     {
         float *image = reinterpret_cast<float*>(image_data);
@@ -248,7 +246,7 @@ namespace librealsense
 
             im++;
             float innovation = *im;
-            u = _width - 1;
+            u = int(_width) - 1;
             if (!(*(int*)&previousInnovation > 0))
                 goto CurrentlyInvalidLR;
             // else fall through
@@ -305,7 +303,7 @@ namespace librealsense
             // right to left
             im = image + (v + 1) * _width - 2;  // end of row - two pixels
             previousInnovation = state = im[1];
-            u = _width - 1;
+            u = int(_width) - 1;
             innovation = *im;
             if (!(*(int*)&previousInnovation > 0))
                 goto CurrentlyInvalidRL;
@@ -376,7 +374,7 @@ namespace librealsense
             float state = im[0];
             float previousInnovation = state;
 
-            v = _height - 1;
+            v = int(_height) - 1;
             im += _width;
             float innovation = *im;
 
@@ -437,7 +435,7 @@ namespace librealsense
             state = im[_width];
             previousInnovation = state;
             innovation = *im;
-            v = _height - 1;
+            v = int(_height) - 1;
             if (!(*(int*)&previousInnovation > 0))
                 goto CurrentlyInvalidBT;
             // else fall through
