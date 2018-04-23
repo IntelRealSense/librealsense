@@ -29,10 +29,10 @@ namespace librealsense
         void dxf_smooth(void *frame_data, float alpha, float delta, int iterations)
         {
             static_assert((std::is_arithmetic<T>::value), "Spatial filter assumes numeric types");
+            bool fp = (std::is_floating_point<T>::value);
 
             for (int i = 0; i < iterations; i++)
             {
-                bool fp = (std::is_floating_point<T>::value);
                 if (fp)
                 {
                     recursive_filter_horizontal_fp(frame_data, alpha, delta);
@@ -43,7 +43,13 @@ namespace librealsense
                     recursive_filter_horizontal<T>(frame_data, alpha, delta);
                     recursive_filter_vertical<T>(frame_data, alpha, delta);
                 }
+            }
 
+            // Disparity domain holes filling requires a second pass over the frame data
+            if (fp && _holes_filling_mode)
+            {
+                holes_filling_types mode = static_cast<holes_filling_types>(_holes_filling_mode);
+                holes_filling_pass<hf_4_pixel_radius>(frame_data);
             }
         }
 
@@ -209,6 +215,34 @@ namespace librealsense
                     im += 1;
                 }
             }
+        }
+
+        enum holes_filling_types : uint8_t
+        {
+            hf_disabled,
+            hf_2_pixel_radius,
+            hf_4_pixel_radius,
+            hf_8_pixel_radius,
+            hf_16_pixel_radius,
+            hf_unlimited_radius,
+            hf_fill_from_left,
+            hf_farest_from_around,
+            hf_nearest_from_around
+        };
+
+        template <holes_filling_types T>
+        void holes_filling_pass(void * image_data)
+        {
+        }
+
+        template<>
+        void holes_filling_pass<hf_fill_from_left>(void * image_data)
+        {
+        }
+
+        template<>
+        void holes_filling_pass<hf_farest_from_around>(void * image_data)
+        {
         }
 
     private:
