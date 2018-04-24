@@ -46,7 +46,7 @@ namespace librealsense
             }
 
             // Disparity domain holes filling requires a second pass over the frame data
-            if (fp && _holes_filling_mode)
+            if (_holes_filling_mode)
             {
                 apply_holes_filling<T>(frame_data, _width, _height, _stride,
                     static_cast<holes_filling_types>(_holes_filling_mode), _holes_filling_radius);

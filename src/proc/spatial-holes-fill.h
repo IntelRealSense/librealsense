@@ -22,6 +22,10 @@ namespace librealsense
     template<typename T>
     inline void intertial_holes_fill(T* image_data, size_t width, size_t height, size_t stride, uint8_t radius)
     {
+        std::function<bool(T*)> fp_oper = [](T* ptr) { return !*((int *)ptr); };
+        std::function<bool(T*)> uint_oper = [](T* ptr) { return !(*ptr); };
+        auto empty = (std::is_floating_point<T>::value) ? fp_oper : uint_oper;
+
         size_t cur_fill = 0;
 
         T* p = image_data;
@@ -33,8 +37,7 @@ namespace librealsense
             //Left to Right
             for (size_t i = 1; i < width; ++i)
             {
-                //if (!*((int *)p)) // Evgeni - requires verification
-                if (!*p && *(p - 1))
+                if (empty(p))
                 {
                     if (++cur_fill < radius)
                         *p = *(p - 1);
@@ -50,8 +53,7 @@ namespace librealsense
             //Right to left
             for (size_t i = 1; i < width; ++i)
             {
-                //if (!*((int *)p)) // Evgeni - requires verification
-                if (!*p)
+                if (empty(p))
                 {
                     if (++cur_fill < radius)
                         *p = *(p + 1);
@@ -67,14 +69,18 @@ namespace librealsense
     template<typename T>
     inline void holes_fill_left(T* image_data, size_t width, size_t height, size_t stride)
     {
+        std::function<bool(T*)> fp_oper = [](T* ptr) { return !*((int *)ptr); };
+        std::function<bool(T*)> uint_oper = [](T* ptr) { return !(*ptr); };
+        auto empty = (std::is_floating_point<T>::value) ? fp_oper : uint_oper;
+
         T* p = image_data;
+
         for (int j = 0; j < height; ++j)
         {
             ++p;
             for (int i = 1; i < width; ++i)
             {
-                //if (!*((int *)p)) // Evgeni - requires verification
-                if (!*p)
+                if (empty(p))
                     *p = *(p - 1);
                 ++p;
             }
@@ -163,6 +169,7 @@ namespace librealsense
     void apply_holes_filling(void * image_data, size_t width, size_t height, size_t stride,
         holes_filling_types mode, uint8_t radius)
     {
+        bool fp = (std::is_floating_point<T>::value);
         T* data= reinterpret_cast<T*>(image_data);
 
         // The holes fill routines except for the radius-based derived from the reference design
@@ -173,7 +180,8 @@ namespace librealsense
         case hf_8_pixel_radius:
         case hf_16_pixel_radius:
         case hf_unlimited_radius:
-            intertial_holes_fill(data, width, height, stride, radius);
+            if (fp) // in case of depth map the holes fill occurs in-place
+                intertial_holes_fill(data, width, height, stride, radius);
             break;
         case hf_fill_from_left:
             holes_fill_left(data, width, height, stride);

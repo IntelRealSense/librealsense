@@ -7,7 +7,6 @@
 #endif
 #endif
 
-#include <regex>
 #include <thread>
 #include <algorithm>
 #include <regex>
@@ -389,7 +388,7 @@ namespace rs2
                     ImGui::Text("%s", txt.c_str());
 
                     ImGui::SameLine();
-                    ImGui::SetCursorPosX(read_only ? 268 : 245);
+                    ImGui::SetCursorPosX(read_only ? 268.f : 245.f);
                     ImGui::PushStyleColor(ImGuiCol_Text, grey);
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
                     ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 1.f,1.f,1.f,0.f });
@@ -1239,7 +1238,7 @@ namespace rs2
 
         // Verify that the number of found matches corrseponds to the number of the requested streams
         // TODO - review whether the comparison can be made strict (==)
-        return results.size() >= std::count_if(stream_enabled.begin(), stream_enabled.end(), [](const std::pair<int, bool>& kpv)-> bool { return kpv.second == true; });
+        return results.size() >= size_t(std::count_if(stream_enabled.begin(), stream_enabled.end(), [](const std::pair<int, bool>& kpv)-> bool { return kpv.second == true; }));
     }
 
     std::vector<stream_profile> subdevice_model::get_selected_profiles()
