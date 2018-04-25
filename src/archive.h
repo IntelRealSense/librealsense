@@ -256,7 +256,7 @@ namespace librealsense
         depth_frame() : video_frame(), _depth_units()
         {
         }
-        
+
         frame_interface* publish(std::shared_ptr<archive_interface> new_owner) override
         {
             _depth_units = optional_value<float>();

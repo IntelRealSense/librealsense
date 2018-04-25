@@ -347,7 +347,7 @@ namespace rs2
         if (supported)
         {
             // The option's rendering model supports an alternative option title derived from its description rather than name.
-            // This is applied to the Holes Filling as its display must conform with the names used by a 3rd-party tools for consistency. 
+            // This is applied to the Holes Filling as its display must conform with the names used by a 3rd-party tools for consistency.
             if (opt == RS2_OPTION_HOLES_FILL)
                 use_option_name = false;
 

@@ -685,7 +685,7 @@ if (BUILD_WITH_TM2)
     src/tm2/tm-conversions.h
     src/tm2/controller_event_serializer.h
     )
-    
+
     list(APPEND REALSENSE_CPP
     src/tm2/tm-context.cpp
     src/tm2/tm-device.cpp

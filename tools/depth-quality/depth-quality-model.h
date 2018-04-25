@@ -311,9 +311,6 @@ namespace rs2
             void stop_record(device_model* dev)
             {
                 _recorder.stop_record(dev);
-
-                
-               
             }
         private:
             metrics_model(const metrics_model&);

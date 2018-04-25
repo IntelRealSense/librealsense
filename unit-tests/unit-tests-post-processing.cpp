@@ -207,7 +207,6 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
                     frame_number,                       // Frame# for potential sync services
                     depth_stream_profile });            // Depth stream profile
 
-                                                        
                 rs2::frameset fset = sync.wait_for_frames();
                 REQUIRE(fset);
                 rs2::frame depth = fset.first_or_default(RS2_STREAM_DEPTH);

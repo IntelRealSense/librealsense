@@ -364,7 +364,7 @@ namespace librealsense
         _fisheye_device_idx = add_sensor(fisheye_ep);
 
         // Not applicable for TM1
-        //_depth_to_fisheye = std::make_shared<lazy<rs2_extrinsics>>([this]() 
+        //_depth_to_fisheye = std::make_shared<lazy<rs2_extrinsics>>([this]()
         //{
         //    auto extr = get_fisheye_extrinsics_data(*_fisheye_extrinsics_raw);
         //    return from_pose(inverse(extr));
