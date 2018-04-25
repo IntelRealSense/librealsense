@@ -7,7 +7,6 @@ namespace librealsense
 {
     enum holes_filling_types : uint8_t
     {
-        hf_disabled,
         hf_fill_from_left,
         hf_farest_from_around,
         hf_nearest_from_around,

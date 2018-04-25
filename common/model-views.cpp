@@ -784,6 +784,7 @@ namespace rs2
         decimation_filter(),
         spatial_filter(),
         temporal_filter(),
+        hole_filling_filter(),
         depth_to_disparity(),
         disparity_to_depth()
     {
@@ -850,6 +851,13 @@ namespace rs2
                 [=](rs2::frame f) { return temporal->process(f); }, error_message);
             temporal_filter->enabled = true;
             post_processing.push_back(temporal_filter);
+
+            auto hole_filling = std::make_shared<rs2::hole_filling_filter>();
+            hole_filling_filter = std::make_shared<processing_block_model>(
+                this, "Hole Filling Filter", hole_filling,
+                [=](rs2::frame f) { return hole_filling->process(f); }, error_message);
+            hole_filling_filter->enabled = false;
+            post_processing.push_back(hole_filling_filter);
 
             auto disparity_2_depth = std::make_shared<rs2::disparity_transform>(false);
             disparity_to_depth = std::make_shared<processing_block_model>(
@@ -2980,6 +2988,7 @@ namespace rs2
                         auto depth_2_disparity = s.second.dev->depth_to_disparity;
                         auto spatial_filter = s.second.dev->spatial_filter;
                         auto temp_filter = s.second.dev->temporal_filter;
+                        auto hole_filling = s.second.dev->hole_filling_filter;
                         auto disparity_2_depth = s.second.dev->disparity_to_depth;
 
                         if (dec_filter->enabled)
@@ -2993,6 +3002,9 @@ namespace rs2
 
                         if (temp_filter->enabled)
                             f = temp_filter->invoke(f);
+
+                        if (hole_filling->enabled)
+                            f = hole_filling->invoke(f);
 
                         if (disparity_2_depth->enabled)
                             f = disparity_2_depth->invoke(f);

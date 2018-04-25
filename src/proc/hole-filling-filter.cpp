@@ -14,10 +14,10 @@
 namespace librealsense
 {
     // The holes filling mode
-    const uint8_t hole_fill_min = hf_disabled;
+    const uint8_t hole_fill_min = hf_fill_from_left;
     const uint8_t hole_fill_max = hf_max_value-1;
     const uint8_t hole_fill_step = 1;
-    const uint8_t hole_fill_def = hf_disabled;  // disabled on start due to its intrusive characteristic
+    const uint8_t hole_fill_def = hf_fill_from_left;
 
     hole_filling_filter::hole_filling_filter() :
         _width(0), _height(0), _stride(0), _bpp(0),
@@ -32,7 +32,6 @@ namespace librealsense
             hole_fill_def,
             &_hole_filling_mode, "Hole Filling mode");
 
-        hole_filling_mode->set_description(hf_disabled,            "Disabled");
         hole_filling_mode->set_description(hf_fill_from_left,      "Fill from Left");
         hole_filling_mode->set_description(hf_farest_from_around,  "Farest from around");
         hole_filling_mode->set_description(hf_nearest_from_around, "Nearest from around");
@@ -65,7 +64,7 @@ namespace librealsense
                 update_configuration(f);
                 tgt = prepare_target_frame(depth, source);
 
-                // Spatial domain transform edge-preserving filter
+                // Hole filling pass
                 if (_extension_type == RS2_EXTENSION_DISPARITY_FRAME)
                     apply_hole_filling<float>(const_cast<void*>(tgt.get_data()));
                 else
