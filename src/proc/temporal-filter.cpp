@@ -14,7 +14,7 @@ namespace librealsense
 {
     const size_t PERSISTENCE_MAP_NUM = 9;
 
-    // Look-up table that establishes pixel persistency criteria. Utilized in holes-filling phase
+    // Look-up table that establishes pixel persistency criteria. Utilized in hole-filling phase
     static const std::vector<std::array<uint8_t, PRESISTENCY_LUT_SIZE>> _persistence_lut =
     {
         // index 0
