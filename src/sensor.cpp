@@ -209,7 +209,7 @@ namespace librealsense
                     auto it = results.find(mapping);
                     if (it != results.end())
                     {
-                        it->original_requests.push_back(r);
+                        it->original_requests.push_back(map_requests(r));
                     }
 
                     return true;
@@ -221,6 +221,21 @@ namespace librealsense
         if (requests.empty()) return{ begin(results), end(results) };
 
         throw invalid_value_exception("Subdevice unable to satisfy stream requests!");
+    }
+
+    std::shared_ptr<stream_profile_interface> sensor_base::map_requests(std::shared_ptr<stream_profile_interface> request)
+    {
+        stream_profiles results;
+        auto profiles = get_stream_profiles();
+
+        auto it = std::find_if(profiles.begin(), profiles.end(), [&](std::shared_ptr<stream_profile_interface> p) {
+            return to_profile(p.get()) == to_profile(request.get());
+        });
+
+        if (it == profiles.end())
+            throw invalid_value_exception("Subdevice could not map requests!");
+
+        return *it;
     }
 
     uvc_sensor::~uvc_sensor()
