@@ -618,6 +618,9 @@ class Options {
     if (!this.cxxObj.supportsOption(o) || this.cxxObj.isOptionReadonly(o)) {
       return undefined;
     }
+    if (!this._internalIsOptionValueInRange(o, value)) {
+      return undefined;
+    }
     this.cxxObj.setOption(o, value);
   }
 
@@ -670,6 +673,11 @@ class Options {
       return undefined;
     }
     return this.cxxObj.getOptionValueDescription(o, value);
+  }
+
+  _internalIsOptionValueInRange(option, value) {
+    let range = this.getOptionRange(option);
+    return (range && value >= range.minValue && value <= range.maxValue);
   }
 }
 

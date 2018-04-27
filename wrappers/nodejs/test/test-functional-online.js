@@ -339,6 +339,117 @@ describe('enum value test', function() {
     }
     rs2.cleanup();
   });
+  it('option test', () => {
+    const obj = rs2.option;
+    const numberAttrs = [
+      'OPTION_BACKLIGHT_COMPENSATION',
+      'OPTION_BRIGHTNESS',
+      'OPTION_CONTRAST',
+      'OPTION_EXPOSURE',
+      'OPTION_GAIN',
+      'OPTION_GAMMA',
+      'OPTION_HUE',
+      'OPTION_SATURATION',
+      'OPTION_SHARPNESS',
+      'OPTION_WHITE_BALANCE',
+      'OPTION_ENABLE_AUTO_EXPOSURE',
+      'OPTION_ENABLE_AUTO_WHITE_BALANCE',
+      'OPTION_VISUAL_PRESET',
+      'OPTION_LASER_POWER',
+      'OPTION_ACCURACY',
+      'OPTION_MOTION_RANGE',
+      'OPTION_FILTER_OPTION',
+      'OPTION_CONFIDENCE_THRESHOLD',
+      'OPTION_EMITTER_ENABLED',
+      'OPTION_FRAMES_QUEUE_SIZE',
+      'OPTION_TOTAL_FRAME_DROPS',
+      'OPTION_AUTO_EXPOSURE_MODE',
+      'OPTION_POWER_LINE_FREQUENCY',
+      'OPTION_ASIC_TEMPERATURE',
+      'OPTION_ERROR_POLLING_ENABLED',
+      'OPTION_PROJECTOR_TEMPERATURE',
+      'OPTION_OUTPUT_TRIGGER_ENABLED',
+      'OPTION_MOTION_MODULE_TEMPERATURE',
+      'OPTION_DEPTH_UNITS',
+      'OPTION_ENABLE_MOTION_CORRECTION',
+      'OPTION_AUTO_EXPOSURE_PRIORITY',
+      'OPTION_COLOR_SCHEME',
+      'OPTION_HISTOGRAM_EQUALIZATION_ENABLED',
+      'OPTION_MIN_DISTANCE',
+      'OPTION_MAX_DISTANCE',
+      'OPTION_TEXTURE_SOURCE',
+      'OPTION_FILTER_MAGNITUDE',
+      'OPTION_FILTER_SMOOTH_ALPHA',
+      'OPTION_FILTER_SMOOTH_DELTA',
+      'OPTION_HOLES_FILL',
+      'OPTION_STEREO_BASELINE',
+    ];
+    const strAttrs = [
+      'option_backlight_compensation',
+      'option_brightness',
+      'option_contrast',
+      'option_exposure',
+      'option_gain',
+      'option_gamma',
+      'option_hue',
+      'option_saturation',
+      'option_sharpness',
+      'option_white_balance',
+      'option_enable_auto_exposure',
+      'option_enable_auto_white_balance',
+      'option_visual_preset',
+      'option_laser_power',
+      'option_accuracy',
+      'option_motion_range',
+      'option_filter_option',
+      'option_confidence_threshold',
+      'option_emitter_enabled',
+      'option_frames_queue_size',
+      'option_total_frame_drops',
+      'option_auto_exposure_mode',
+      'option_power_line_frequency',
+      'option_asic_temperature',
+      'option_error_polling_enabled',
+      'option_projector_temperature',
+      'option_output_trigger_enabled',
+      'option_motion_module_temperature',
+      'option_depth_units',
+      'option_enable_motion_correction',
+      'option_auto_exposure_priority',
+      'option_color_scheme',
+      'option_histogram_equalization_enabled',
+      'option_min_distance',
+      'option_max_distance',
+      'option_texture_source',
+      'option_filter_magnitude',
+      'option_filter_smooth_alpha',
+      'option_filter_smooth_delta',
+      'option_holes_fill',
+      'option_stereo_baseline',
+    ];
+    numberAttrs.forEach((attr) => {
+      assert.equal(typeof obj[attr], 'number');
+    });
+    strAttrs.forEach((attr) => {
+      assert.equal(typeof obj[attr], 'string');
+    });
+    for (let i = 0; i < obj.OPTION_COUNT; i++) {
+      assert.equal(typeof obj.optionToString(i), 'string');
+    }
+    let ctx = new rs2.Context();
+    let sensors = ctx.querySensors();
+    // make sure it would not crash
+    sensors.forEach((s) => {
+      for (let i = 0; i < obj.OPTION_COUNT; i++) {
+        let old = s.getOption(i);
+        s.setOption(i, 10);
+        if (typeof old === 'number') {
+          s.setOption(i, old);
+        }
+      }
+    });
+    rs2.cleanup();
+  });
 });
 
 describe('infrared frame tests', function() {
