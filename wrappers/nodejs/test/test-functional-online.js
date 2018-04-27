@@ -330,6 +330,14 @@ describe('enum value test', function() {
     for (let i = 0; i < obj.CAMERA_INFO_COUNT; i++) {
       assert.equal(typeof obj.cameraInfoToString(i), 'string');
     }
+    let ctx = new rs2.Context();
+    let dev = ctx.queryDevices().devices[0];
+
+    for (let i = obj.CAMERA_INFO_NAME; i < obj.CAMERA_INFO_COUNT; i++) {
+      let info = dev.getCameraInfo(i);
+      assert.equal((info === undefined) || (typeof info === 'string'), true);
+    }
+    rs2.cleanup();
   });
 });
 
