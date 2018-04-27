@@ -2122,9 +2122,11 @@ class RSSensor : public Nan::ObjectWrap, Options {
     auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
     if (!me) return;
 
-    std::string value(GetNativeResult<const char*>(rs2_get_sensor_info,
+    auto value = GetNativeResult<const char*>(rs2_get_sensor_info,
         &me->error_, me->sensor_, static_cast<rs2_camera_info>(camera_info),
-        &me->error_));
+        &me->error_);
+    if (me->error_) return;
+
     info.GetReturnValue().Set(Nan::New(value).ToLocalChecked());
   }
 
@@ -2463,9 +2465,9 @@ class RSDevice : public Nan::ObjectWrap {
     auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
     if (!me) return;
 
-    std::string value(GetNativeResult<const char*>(rs2_get_device_info,
+    auto value = GetNativeResult<const char*>(rs2_get_device_info,
         &me->error_, me->dev_, static_cast<rs2_camera_info>(camera_info),
-        &me->error_));
+        &me->error_);
     if (me->error_) return;
 
     info.GetReturnValue().Set(Nan::New(value).ToLocalChecked());
