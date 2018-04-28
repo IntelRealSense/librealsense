@@ -1696,6 +1696,7 @@ class Align {
     const s = checkArgumentType(arguments, constants.stream, 0, funcName);
     this.cxxAlign = new RS2.RSAlign(s);
     this.frameSet = new FrameSet();
+    internal.addObject(this);
   }
 
   /**
