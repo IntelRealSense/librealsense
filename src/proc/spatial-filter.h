@@ -10,6 +10,7 @@
 #include <vector>
 #include <cmath>
 
+#include "spatial-holes-fill.h"
 #include "../include/librealsense2/hpp/rs_frame.hpp"
 #include "../include/librealsense2/hpp/rs_processing.hpp"
 
@@ -29,10 +30,10 @@ namespace librealsense
         void dxf_smooth(void *frame_data, float alpha, float delta, int iterations)
         {
             static_assert((std::is_arithmetic<T>::value), "Spatial filter assumes numeric types");
+            bool fp = (std::is_floating_point<T>::value);
 
             for (int i = 0; i < iterations; i++)
             {
-                bool fp = (std::is_floating_point<T>::value);
                 if (fp)
                 {
                     recursive_filter_horizontal_fp(frame_data, alpha, delta);
@@ -43,7 +44,13 @@ namespace librealsense
                     recursive_filter_horizontal<T>(frame_data, alpha, delta);
                     recursive_filter_vertical<T>(frame_data, alpha, delta);
                 }
+            }
 
+            // Disparity domain holes filling requires a second pass over the frame data
+            if (_holes_filling_mode)
+            {
+                apply_holes_filling<T>(frame_data, _width, _height, _stride,
+                    static_cast<holes_filling_types>(_holes_filling_mode), _holes_filling_radius);
             }
         }
 

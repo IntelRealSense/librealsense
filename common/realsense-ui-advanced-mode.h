@@ -75,7 +75,7 @@ inline bool string_to_int(const std::string& str, float& result)
 }
 
 template<class T, class S>
-inline void slider_int(std::string& error_message, char* id, T* val, S T::* field, bool& to_set)
+inline void slider_int(std::string& error_message, const char* id, T* val, S T::* field, bool& to_set)
 {
     ImGui::Text("%s", id);
     int temp = val->*field;

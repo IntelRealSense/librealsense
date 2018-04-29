@@ -243,6 +243,7 @@ set(REALSENSE_HPP
     src/proc/temporal-filter.h
     src/proc/syncer-processing-block.h
     src/proc/disparity-transform.h
+    src/proc/spatial-holes-fill.h
     src/algo.h
     src/option.h
     src/metadata.h
@@ -492,6 +493,7 @@ if(WIN32)
         src/proc/temporal-filter.h
         src/proc/syncer-processing-block.h
         src/proc/disparity-transform.h
+        src/proc/spatial-holes-fill.h
         )
 
     if(BUILD_WITH_STATIC_CRT)
