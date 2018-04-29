@@ -12,6 +12,8 @@
 #ifdef __SSSE3__
 #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
 #endif
+
+
 namespace librealsense
 {
     template<class MAP_DEPTH> void deproject_depth(float * points, const rs2_intrinsics & intrin, const uint16_t * depth, MAP_DEPTH map_depth)
@@ -136,20 +138,6 @@ namespace librealsense
         }
     }
 
-    template<class T>
-    void measure(T func)
-    {
-        const auto cycles = 1000;
-        auto start = std::chrono::high_resolution_clock::now();
-        for (int j = 0; j < cycles; j++)
-        {
-            func();
-        }
-
-        auto end = std::chrono::high_resolution_clock::now();
-        auto diff = std::chrono::duration<double, std::micro>(end - start).count() / cycles;
-        std::cout << diff << " micro" << std::endl;
-    }
 
     void pointcloud::pre_compute_x_y_map()
     {
@@ -182,6 +170,7 @@ namespace librealsense
         }
     }
 
+#ifdef __SSSE3__
     const float3* get_points_sse(const uint16_t* depth,
         const unsigned int size,
         float* pre_compute_x,
@@ -354,6 +343,8 @@ namespace librealsense
             res += 8;
         }
     }
+
+#endif
 
     void get_texture_map(const float3* points,
         const unsigned int width,
