@@ -347,11 +347,11 @@ PYBIND11_MODULE(NAME, m) {
         std::vector<uint8_t> data(l.size());
         for (int i = 0; i < l.size(); ++i)
             data[i] = l[i].cast<uint8_t>();
-        dev.set_xu(xu, ctrl, data.data(), (int)data.size());
+        return dev.set_xu(xu, ctrl, data.data(), (int)data.size());
     }, "xu"_a, "ctrl"_a, "data"_a)
         .def("set_xu", [](platform::multi_pins_uvc_device &dev, const platform::extension_unit &xu, uint8_t ctrl, std::vector<uint8_t> &data)
     {
-        dev.set_xu(xu, ctrl, data.data(), (int)data.size());
+        return dev.set_xu(xu, ctrl, data.data(), (int)data.size());
     }, "xu"_a, "ctrl"_a, "data"_a)
         .def("get_xu", [](const platform::multi_pins_uvc_device &dev, const platform::extension_unit &xu, uint8_t ctrl, size_t len)
     {
