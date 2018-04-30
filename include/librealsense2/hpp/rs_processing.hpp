@@ -131,7 +131,6 @@ namespace rs2
         std::shared_ptr<rs2_processing_block> _block;
     };
 
-
     class frame_queue
     {
     public:
