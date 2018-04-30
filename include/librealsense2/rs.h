@@ -25,7 +25,7 @@ extern "C" {
 #define RS2_API_MAJOR_VERSION    2
 #define RS2_API_MINOR_VERSION    10
 #define RS2_API_PATCH_VERSION    4
-#define RS2_API_BUILD_VERSION    0
+#define RS2_API_BUILD_VERSION    2
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
