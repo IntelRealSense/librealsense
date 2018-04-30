@@ -76,7 +76,7 @@ namespace librealsense
                 _pixels_map.resize(_depth_intrinsics->height*_depth_intrinsics->width);
                 _occlusion_filter->set_depth_intrinsics(_depth_intrinsics.value());
 #ifdef __SSSE3__
-                pre_compute_x_y_map();
+                pre_compute_x_y_map(); //compute the x and y map once for optimization
 #endif
                 found_depth_intrinsics = true;
             }
@@ -207,8 +207,8 @@ namespace librealsense
             __m128i d0 = _mm_shuffle_epi8(d, mask0);        // 00 00 d3 d3 00 00 d2 d2 00 00 d1 d1 00 00 d0 d0
             __m128i d1 = _mm_shuffle_epi8(d, mask1);        // 00 00 d7 d7 00 00 d6 d6 00 00 d5 d5 00 00 d4 d4
 
-            __m128 depth0 = _mm_cvtepi32_ps(d0);
-            __m128 depth1 = _mm_cvtepi32_ps(d1);
+            __m128 depth0 = _mm_cvtepi32_ps(d0); //convert depth to float
+            __m128 depth1 = _mm_cvtepi32_ps(d1); //convert depth to float
 
             depth0 = _mm_mul_ps(depth0, scale);
             depth1 = _mm_mul_ps(depth1, scale);
@@ -219,6 +219,7 @@ namespace librealsense
             auto p1x = _mm_mul_ps(depth1, x1);
             auto p1y = _mm_mul_ps(depth1, y1);
 
+            //scattering of the x y z 
             auto x_y0 = _mm_shuffle_ps(p0x, p0y, _MM_SHUFFLE(2, 0, 2, 0));
             auto z_x0 = _mm_shuffle_ps(depth0, p0x, _MM_SHUFFLE(3, 1, 2, 0));
             auto y_z0 = _mm_shuffle_ps(p0y, depth0, _MM_SHUFFLE(3, 1, 3, 1));
@@ -235,6 +236,8 @@ namespace librealsense
             auto xyz12 = _mm_shuffle_ps(y_z1, x_y1, _MM_SHUFFLE(3, 1, 2, 0));
             auto xyz13 = _mm_shuffle_ps(z_x1, y_z1, _MM_SHUFFLE(3, 1, 3, 1));
 
+
+            //store 8 points of x y z
             _mm_stream_ps(&point[0], xyz01);
             _mm_stream_ps(&point[4], xyz02);
             _mm_stream_ps(&point[8], xyz03);
@@ -243,7 +246,6 @@ namespace librealsense
             _mm_stream_ps(&point[20], xyz13);
             point += 24;
         }
-
         return points;
     }
 
@@ -289,10 +291,13 @@ namespace librealsense
 
         for (int i = 0; i < height*width * 3; i += 12)
         {
+            //load 4 points (x,y,z)
             auto xyz1 = _mm_load_ps(point + i);
             auto xyz2 = _mm_load_ps(point + i + 4);
             auto xyz3 = _mm_load_ps(point + i + 8);
 
+
+            //gather x,y,z
             auto yz = _mm_shuffle_ps(xyz1, xyz2, _MM_SHUFFLE(1, 0, 2, 1));
             auto xy = _mm_shuffle_ps(xyz2, xyz3, _MM_SHUFFLE(2, 1, 3, 2));
 
@@ -300,14 +305,14 @@ namespace librealsense
             auto y = _mm_shuffle_ps(yz, xy, _MM_SHUFFLE(3, 1, 2, 0));
             auto z = _mm_shuffle_ps(yz, xyz3, _MM_SHUFFLE(3, 0, 3, 1));
 
-
-            auto p_x = _mm_add_ps(_mm_mul_ps(r[0], x), _mm_add_ps(_mm_mul_ps(r[3], y), _mm_add_ps(_mm_mul_ps(r[6], z), t[0]))); 
+            auto p_x = _mm_add_ps(_mm_mul_ps(r[0], x), _mm_add_ps(_mm_mul_ps(r[3], y), _mm_add_ps(_mm_mul_ps(r[6], z), t[0])));
             auto p_y = _mm_add_ps(_mm_mul_ps(r[1], x), _mm_add_ps(_mm_mul_ps(r[4], y), _mm_add_ps(_mm_mul_ps(r[7], z), t[1])));
             auto p_z = _mm_add_ps(_mm_mul_ps(r[2], x), _mm_add_ps(_mm_mul_ps(r[5], y), _mm_add_ps(_mm_mul_ps(r[8], z), t[2])));
-           
+
             p_x = _mm_div_ps(p_x, p_z);
             p_y = _mm_div_ps(p_y, p_z);
 
+            // if(model == RS2_DISTORTION_MODIFIED_BROWN_CONRADY)
             auto dist = _mm_set_ps1(other_intrinsics.model);
 
             auto r2 = _mm_add_ps(_mm_mul_ps(p_x, p_x), _mm_mul_ps(p_y, p_y));
@@ -330,10 +335,12 @@ namespace librealsense
 
             //TODO: add handle to RS2_DISTORTION_FTHETA
 
+            //zero the x and y if z is zero
             cmp = _mm_cmpneq_ps(z, zero);
             p_x = _mm_and_ps(_mm_add_ps(_mm_mul_ps(p_x, fx), ppx), cmp);
             p_y = _mm_and_ps(_mm_add_ps(_mm_mul_ps(p_y, fy), ppy), cmp);
 
+            //scattering of the x y before normalize and store in pixels_ptr
             auto xx_yy01 = _mm_shuffle_ps(p_x, p_y, _MM_SHUFFLE(2, 0, 2, 0));
             auto xx_yy23 = _mm_shuffle_ps(p_x, p_y, _MM_SHUFFLE(3, 1, 3, 1));
 
@@ -344,9 +351,11 @@ namespace librealsense
             _mm_stream_ps(res1 + 4, xyxy2);
             res1 += 8;
 
+            //normalize x and y
             p_x = _mm_div_ps(p_x, w);
             p_y = _mm_div_ps(p_y, h);
 
+            //scattering of the x y after normalize and store in tex_ptr
             xx_yy01 = _mm_shuffle_ps(p_x, p_y, _MM_SHUFFLE(2, 0, 2, 0));
             xx_yy23 = _mm_shuffle_ps(p_x, p_y, _MM_SHUFFLE(3, 1, 3, 1));
 
@@ -395,78 +404,57 @@ namespace librealsense
         }
     }
 
-    template<class T>
-    void measure(T func)
-    {
-        const auto cycles = 100;
-        auto start = std::chrono::high_resolution_clock::now();
-        for (int j = 0; j < cycles; j++)
-        {
-            func();
-        }
-
-        auto end = std::chrono::high_resolution_clock::now();
-        auto diff = std::chrono::duration<double, std::micro>(end - start).count() / cycles;
-        std::cout << diff << " micro" << std::endl;
-    }
-
     void pointcloud::process_depth_frame(const rs2::depth_frame& depth)
     {
-        
-            frame_holder res = get_source().allocate_points(_output_stream, (frame_interface*)depth.get());
 
-            auto pframe = (points*)(res.frame);
+        frame_holder res = get_source().allocate_points(_output_stream, (frame_interface*)depth.get());
 
-            auto depth_data = (const uint16_t*)depth.get_data();
+        auto pframe = (points*)(res.frame);
 
-            const float3* points;
+        auto depth_data = (const uint16_t*)depth.get_data();
 
-            measure([&]()
-            {
-#ifndef __SSSE3__
-                points = get_points_sse(depth_data, _depth_intrinsics->height*_depth_intrinsics->width, _pre_compute_map_x.data(), _pre_compute_map_y.data(), *_depth_units, pframe->get_vertices());
+        const float3* points;
+#ifdef __SSSE3__
+        points = get_points_sse(depth_data, _depth_intrinsics->height*_depth_intrinsics->width, _pre_compute_map_x.data(), _pre_compute_map_y.data(), *_depth_units, pframe->get_vertices());
 #else 
-                points = depth_to_points((uint8_t*)pframe->get_vertices(), *_depth_intrinsics, depth_data, *_depth_units);
+        points = depth_to_points((uint8_t*)pframe->get_vertices(), *_depth_intrinsics, depth_data, *_depth_units);
 #endif
-                /*});*/
-                auto vid_frame = depth.as<rs2::video_frame>();
-                float2* tex_ptr = pframe->get_texture_coordinates();
-                // Pixels calculated in the mapped texture. Used in post-processing filters
-                float2* pixels_ptr = _pixels_map.data();
-                rs2_intrinsics mapped_intr;
-                rs2_extrinsics extr;
-                bool map_texture = false;
-                {
-                    std::lock_guard<std::mutex> lock(_mutex);
-                    if (_extrinsics && _other_intrinsics)
-                    {
-                        mapped_intr = *_other_intrinsics;
-                        extr = *_extrinsics;
-                        map_texture = true;
-                    }
-                }
+        /*});*/
+        auto vid_frame = depth.as<rs2::video_frame>();
+        float2* tex_ptr = pframe->get_texture_coordinates();
+        // Pixels calculated in the mapped texture. Used in post-processing filters
+        float2* pixels_ptr = _pixels_map.data();
+        rs2_intrinsics mapped_intr;
+        rs2_extrinsics extr;
+        bool map_texture = false;
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            if (_extrinsics && _other_intrinsics)
+            {
+                mapped_intr = *_other_intrinsics;
+                extr = *_extrinsics;
+                map_texture = true;
+            }
+        }
 
-                if (map_texture)
-                {
-                    auto height = vid_frame.get_height();
-                    auto width = vid_frame.get_width();
+        if (map_texture)
+        {
+            auto height = vid_frame.get_height();
+            auto width = vid_frame.get_width();
 
-#ifndef __SSSE3__
-                    get_texture_map_sse(points, width, height, mapped_intr, extr, tex_ptr, pixels_ptr);
+#ifdef __SSSE3__
+            get_texture_map_sse(points, width, height, mapped_intr, extr, tex_ptr, pixels_ptr);
 #else
-                    get_texture_map(points, width, height, mapped_intr, extr, tex_ptr, pixels_ptr);
+            get_texture_map(points, width, height, mapped_intr, extr, tex_ptr, pixels_ptr);
 #endif
 
-                    if (_occlusion_filter->active())
-                    {
-                        _occlusion_filter->process(pframe->get_vertices(), pframe->get_texture_coordinates(), _pixels_map);
-                    }
+            if (_occlusion_filter->active())
+            {
+                _occlusion_filter->process(pframe->get_vertices(), pframe->get_texture_coordinates(), _pixels_map);
+            }
 
-                }
-            });
-            get_source().frame_ready(std::move(res));
-        
-       
+        }
+        get_source().frame_ready(std::move(res));
     }
 
     pointcloud::pointcloud() :
