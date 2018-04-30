@@ -243,6 +243,7 @@ set(REALSENSE_HPP
     src/proc/temporal-filter.h
     src/proc/syncer-processing-block.h
     src/proc/disparity-transform.h
+    src/proc/spatial-holes-fill.h
     src/algo.h
     src/option.h
     src/metadata.h
@@ -492,6 +493,7 @@ if(WIN32)
         src/proc/temporal-filter.h
         src/proc/syncer-processing-block.h
         src/proc/disparity-transform.h
+        src/proc/spatial-holes-fill.h
         )
 
     if(BUILD_WITH_STATIC_CRT)
@@ -576,6 +578,7 @@ endif()
 if (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /wd4819")
     add_definitions(-D_UNICODE)
+    set(LRS_TRY_USE_AVX true)
 endif()
 
 add_definitions(-D${BACKEND} -DUNICODE)
@@ -603,14 +606,15 @@ if(UNIX)
 
     execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE MACHINE)
     if(${MACHINE} MATCHES "arm-linux-gnueabihf")
-      set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mfpu=neon -mfloat-abi=hard -ftree-vectorize")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -mfloat-abi=hard -ftree-vectorize")
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mfpu=neon -mfloat-abi=hard -ftree-vectorize")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -mfloat-abi=hard -ftree-vectorize")
     elseif(${MACHINE} MATCHES "aarch64-linux-gnu")
-      set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mstrict-align -ftree-vectorize")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mstrict-align -ftree-vectorize")
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mstrict-align -ftree-vectorize")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mstrict-align -ftree-vectorize")
     else(${MACHINE} MATCHES "arm-linux-gnueabihf")
         set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mssse3")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
+        set(LRS_TRY_USE_AVX true)
     endif(${MACHINE} MATCHES "arm-linux-gnueabihf")
 endif()
 
@@ -697,7 +701,9 @@ if (BUILD_WITH_TM2)
     )
 endif()
 
-set_source_files_properties(src/image_avx.cpp PROPERTIES COMPILE_FLAGS -mavx2)
+if(LRS_TRY_USE_AVX)
+    set_source_files_properties(src/image_avx.cpp PROPERTIES COMPILE_FLAGS -mavx2)
+endif()
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
