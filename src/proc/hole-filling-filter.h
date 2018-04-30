@@ -72,6 +72,10 @@ namespace librealsense
         template<typename T>
         inline void holes_fill_farest(T* image_data, size_t width, size_t height, size_t stride)
         {
+            std::function<bool(T*)> fp_oper = [](T* ptr) { return !*((int *)ptr); };
+            std::function<bool(T*)> uint_oper = [](T* ptr) { return !(*ptr); };
+            auto empty = (std::is_floating_point<T>::value) ? fp_oper : uint_oper;
+
             T tmp = 0;
             T * p = image_data + width;
             T * q = nullptr;
@@ -80,7 +84,7 @@ namespace librealsense
                 ++p;
                 for (int i = 1; i < width; ++i)
                 {
-                    if (!*((int *)p))
+                    if (empty(p))
                     {
                         tmp = *(p - width);
 
@@ -111,6 +115,10 @@ namespace librealsense
         template<typename T>
         inline void holes_fill_nearest(T* image_data, size_t width, size_t height, size_t stride)
         {
+            std::function<bool(T*)> fp_oper = [](T* ptr) { return !*((int *)ptr); };
+            std::function<bool(T*)> uint_oper = [](T* ptr) { return !(*ptr); };
+            auto empty = (std::is_floating_point<T>::value) ? fp_oper : uint_oper;
+
             T tmp = 0;
             T * p = image_data + width;
             T * q = nullptr;
@@ -119,24 +127,24 @@ namespace librealsense
                 ++p;
                 for (int i = 1; i < width; ++i)
                 {
-                    if (!*p)
+                    if (empty(p))
                     {
                         tmp = *(p - width);
 
                         q = p - width - 1;
-                        if (*((int *)q) && *q < tmp)
+                        if (!empty(q) && (*q < tmp))
                             tmp = *q;
 
                         q = p - 1;
-                        if (*((int *)q) && *q < tmp)
+                        if (!empty(q) && (*q < tmp))
                             tmp = *q;
 
                         q = p + width - 1;
-                        if (*((int *)q) && *q < tmp)
+                        if (!empty(q) && (*q < tmp))
                             tmp = *q;
 
                         q = p + width;
-                        if (*((int *)q) && *q < tmp)
+                        if (!empty(q) && (*q < tmp))
                             tmp = *q;
 
                         *p = tmp;

@@ -22,6 +22,7 @@ struct ppf_test_config
     float       temporal_alpha = 0.f;
     uint8_t     temporal_delta = 0;
     uint8_t     temporal_persistence = 0;
+    bool        holes_filter = false;
     int         holes_filling_mode = 0;
     int         downsample_scale = 1;
     float       depth_units = 0.001f;
@@ -43,7 +44,7 @@ struct ppf_test_config
     void reset()
     {
         name.clear();
-        spatial_filter = temporal_filter = false;
+        spatial_filter = temporal_filter = holes_filter = false;
         spatial_alpha = temporal_alpha = 0;
         spatial_iterations = temporal_persistence = holes_filling_mode = spatial_delta = temporal_delta = 0;
         input_res_x = input_res_y = output_res_x = output_res_y = 0;
@@ -90,6 +91,7 @@ enum metadata_attrib : uint8_t
     temp_alpha,
     temp_delta,
     temp_persist,
+    holes_filter,
     holes_fill,
     frames_sequence_size
 };
@@ -111,10 +113,10 @@ const std::map<metadata_attrib, std::string> metadata_attributes = {
     { temp_alpha,   "TemporalAlpha" },
     { temp_delta,   "TemporalDelta" },
     { temp_persist, "TemporalPersistency" },
+    { holes_filter, "Holes Filling Mode:" },
     { holes_fill,   "HolesFilling" },
     { frames_sequence_size, "Frames sequence length" }
 };
-
 
 // Parse frame's metadata files and partially fill the configuration struct
 inline ppf_test_config attrib_from_csv(const std::string& str)
@@ -161,6 +163,9 @@ inline ppf_test_config attrib_from_csv(const std::string& str)
     cfg.temporal_alpha = dict.count(metadata_attributes.at(temp_alpha)) ? std::stof(dict.at(metadata_attributes.at(temp_alpha))) : 0.f;
     cfg.temporal_delta = dict.count(metadata_attributes.at(temp_delta)) ? std::stoi(dict.at(metadata_attributes.at(temp_delta))) : 0;
     cfg.temporal_persistence = dict.count(metadata_attributes.at(temp_persist)) ? std::stoi(dict.at(metadata_attributes.at(temp_persist))) : 0;
+
+    cfg.holes_filter = dict.count(metadata_attributes.at(holes_filter)) > 0;
+    cfg.holes_filling_mode = dict.count(metadata_attributes.at(holes_fill)) ? std::stoi(dict.at(metadata_attributes.at(holes_fill))) : 0;
 
     // Parse the name of the files sequence
     cfg.frames_sequence_size = dict.count(metadata_attributes.at(frames_sequence_size)) ? std::stoi(dict.at(metadata_attributes.at(frames_sequence_size))) : 0;
@@ -232,6 +237,7 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
     test_config.spatial_alpha = output_meta_params.spatial_alpha;
     test_config.spatial_delta = output_meta_params.spatial_delta;
     test_config.spatial_iterations = output_meta_params.spatial_iterations;
+    test_config.holes_filter = output_meta_params.holes_filter;
     test_config.holes_filling_mode = output_meta_params.holes_filling_mode;
     test_config.temporal_filter = output_meta_params.temporal_filter;
     test_config.temporal_alpha = output_meta_params.temporal_alpha;
@@ -259,6 +265,7 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
     CAPTURE(test_config.temporal_alpha);
     CAPTURE(test_config.temporal_delta);
     CAPTURE(test_config.temporal_persistence);
+    CAPTURE(test_config.holes_filter);
     CAPTURE(test_config.holes_filling_mode);
     CAPTURE(test_config.downsample_scale);
 
@@ -308,7 +315,12 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
         REQUIRE(test_config.temporal_persistence <= 8);
     }
 
-    //TODO: holes_filling mode verification
+    if (test_config.holes_filter)
+    {
+        REQUIRE(test_config.holes_filling_mode >= 0);
+        REQUIRE(test_config.holes_filling_mode <= 2);
+    }
+
     return true;
 }
 
@@ -326,7 +338,16 @@ inline bool profile_diffs(const std::string& plot_name, std::vector<T>& distance
     float mean = std::accumulate(distances.begin(),
         distances.end(), 0.0f) / distances.size();
 
-    auto non_identical = distances.size() - std::count(distances.begin(), distances.end(), static_cast<T>(0));
+    auto pixels = distances.size();
+    auto first_non_identical_index = -1;
+    auto first_difference = 0.f;
+    auto non_identical_count = distances.size() - std::count(distances.begin(), distances.end(), static_cast<T>(0));
+    auto first_non_identical_iter = std::find_if(distances.begin(), distances.end(), [](const float& val) { return val != 0; });
+    if (first_non_identical_iter != distances.end())
+    {
+        first_non_identical_index = first_non_identical_iter - distances.begin();
+        first_difference = *first_non_identical_iter;
+    }
     auto max = std::max_element(distances.begin(), distances.end());
     auto max_val_index = max - distances.begin();
     auto max_val = (max != distances.end()) ? *max : 0;
@@ -339,19 +360,28 @@ inline bool profile_diffs(const std::string& plot_name, std::vector<T>& distance
 
     float standard_deviation = static_cast<float>(sqrt(inverse * e));
 
+    if (max_val != 0)
+        WARN("Frame" << frame_idx
+            << ":  Non-identical pixels = " << non_identical_count
+            << " \nFirst non-identical diff = " << first_difference << " at index " << first_non_identical_index
+            << "\nmax_diff=" << max_val << ", index=" << max_val_index);
+
+    CAPTURE(pixels);
     CAPTURE(mean);
     CAPTURE(max_val);
     CAPTURE(max_val_index);
-    CAPTURE(non_identical);
+    CAPTURE(non_identical_count);
+    CAPTURE(first_non_identical_index);
+    CAPTURE(first_difference);
     CAPTURE(outlier);
     CAPTURE(standard_deviation);
     CAPTURE(max_allowed_std);
     CAPTURE(frame_idx);
-    if (max_val != 0)
-        WARN("Frame: " << frame_idx << " - Non-identical pixels = " << non_identical << ", max_diff=" << max_val << ", index=" << max_val_index);
 
-    REQUIRE(standard_deviation <= max_allowed_std);
-    REQUIRE(fabs((max_val)) <= outlier);
+    INTERNAL_CATCH_TEST((standard_deviation <= max_allowed_std), Catch::ResultDisposition::ContinueOnFailure, "CHECK");
+    INTERNAL_CATCH_TEST((fabs((max_val)) <= outlier), Catch::ResultDisposition::ContinueOnFailure, "CHECK");
+    //REQUIRE(standard_deviation <= max_allowed_std);
+    //REQUIRE(fabs((max_val)) <= outlier);
 
     return ((fabs(max_val) <= outlier) && (standard_deviation <= max_allowed_std));
 }

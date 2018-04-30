@@ -3003,11 +3003,11 @@ namespace rs2
                         if (temp_filter->enabled)
                             f = temp_filter->invoke(f);
 
-                        if (hole_filling->enabled)
-                            f = hole_filling->invoke(f);
-
                         if (disparity_2_depth->enabled)
                             f = disparity_2_depth->invoke(f);
+
+                        if (hole_filling->enabled)
+                            f = hole_filling->invoke(f);
 
                         return f;
                     }
