@@ -108,7 +108,7 @@ int main(int argc, const char * argv[]) try
 
         // Convert Z values into Depth values by aligning the Fitted plane with the Ground Truth (GT) plane
         // Calculate distance and disparity of Z values to the fitted plane.
-        // Use the aligned fit to calculate GT errors
+        // Use the rotated plane fit to calculate GT errors
         for (auto point : points_set)
         {
             // Find distance from point to the reconstructed plane
@@ -121,7 +121,8 @@ int main(int argc, const char * argv[]) try
             // Store distance, disparity and gt- error
             distances.push_back(dist2plane * TO_MM);
             disparities.push_back(bf_factor / point.length() - bf_factor / plane_intersect.length());
-            if (ground_truth_mm) gt_errors.push_back(plane_fit_to_ground_truth_mm - (dist2plane * TO_MM));
+            // The negative dist2plane represents a point closer to the camera than the fitted plane
+            if (ground_truth_mm) gt_errors.push_back(plane_fit_to_ground_truth_mm + (dist2plane * TO_MM));
         }
 
         // Show Z accuracy metric only when Ground Truth is available
@@ -133,7 +134,6 @@ int main(int argc, const char * argv[]) try
             auto accuracy = TO_PERCENT * (gt_median / ground_truth_mm);
             z_accuracy->add_value(accuracy);
             if (record) samples.push_back({ z_accuracy->get_name(),  accuracy });
-
         }
 
         // Calculate Sub-pixel RMS for Stereo-based Depth sensors
@@ -151,6 +151,7 @@ int main(int argc, const char * argv[]) try
         auto rms_error_val = static_cast<float>(std::sqrt(plane_fit_err_sqr_sum / distances.size()));
         plane_fit_rms_error->add_value(rms_error_val);
         if (record) samples.push_back({ plane_fit_rms_error->get_name(),  rms_error_val });
+
     });
 
     // ===============================
