@@ -444,8 +444,22 @@ PYBIND11_MODULE(NAME, m) {
 
 
     /* rs2_processing.hpp */
+    // Base class for options interface. Should be used via sensor
+    py::class_<rs2::options> options(m, "options");
+    options.def("is_option_read_only", &rs2::options::is_option_read_only, "Check if particular option "
+        "is read only.", "option"_a)
+        .def("get_option", &rs2::options::get_option, "Read option value from the device.", "option"_a)
+        .def("get_option_range", &rs2::options::get_option_range, "Retrieve the available range of values "
+            "of a supported option", "option"_a)
+        .def("set_option", &rs2::options::set_option, "Write new value to device option", "option"_a, "value"_a)
+        .def("supports", (bool (rs2::options::*)(rs2_option option) const) &rs2::options::supports, "Check if particular "
+            "option is supported by a subdevice", "option"_a)
+        .def("get_option_description", &rs2::options::get_option_description, "Get option description.", "option"_a)
+        .def("get_option_value_description", &rs2::options::get_option_value_description, "Get option value description "
+            "(In case a specific option value holds special meaning)", "option"_a, "value"_a);
+
     // Not binding frame_processor_callback, templated
-    py::class_<rs2::processing_block> processing_block(m, "processing_block");
+    py::class_<rs2::processing_block, rs2::options> processing_block(m, "processing_block");
     processing_block.def("start", [](rs2::processing_block& self, std::function<void(rs2::frame)> f)
     {
         self.start(f);
@@ -470,21 +484,7 @@ PYBIND11_MODULE(NAME, m) {
     }, "Poll if a new frame is available and dequeue it if it is")
         .def("__call__", &rs2::frame_queue::operator());
 
-    // Base class for options interface. Should be used via sensor
-    py::class_<rs2::options> options(m, "options");
-    options.def("is_option_read_only", &rs2::options::is_option_read_only, "Check if particular option "
-        "is read only.", "option"_a)
-        .def("get_option", &rs2::options::get_option, "Read option value from the device.", "option"_a)
-        .def("get_option_range", &rs2::options::get_option_range, "Retrieve the available range of values "
-            "of a supported option", "option"_a)
-        .def("set_option", &rs2::options::set_option, "Write new value to device option", "option"_a, "value"_a)
-        .def("supports", (bool (rs2::options::*)(rs2_option option) const) &rs2::options::supports, "Check if particular "
-            "option is supported by a subdevice", "option"_a)
-        .def("get_option_description", &rs2::options::get_option_description, "Get option description.", "option"_a)
-        .def("get_option_value_description", &rs2::options::get_option_value_description, "Get option value description "
-            "(In case a specific option value holds special meaning)", "option"_a, "value"_a);
-
-    py::class_<rs2::pointcloud> pointcloud(m, "pointcloud");
+    py::class_<rs2::pointcloud, rs2::options> pointcloud(m, "pointcloud");
     pointcloud.def(py::init<>())
         .def("calculate", &rs2::pointcloud::calculate, "depth"_a)
         .def("map_to", &rs2::pointcloud::map_to, "mapped"_a);
@@ -509,6 +509,22 @@ PYBIND11_MODULE(NAME, m) {
     py::class_<rs2::align> align(m, "align");
     align.def(py::init<rs2_stream>(), "align_to"_a)
         .def("process", &rs2::align::process, "depth"_a);
+
+    // Do we need this?
+    py::class_<rs2::process_interface, rs2::options> process_interface(m, "process_interface");
+    process_interface.def("process", &rs2::process_interface::process, "frame"_a);
+    
+    py::class_<rs2::decimation_filter, rs2::process_interface> decimation_filter(m, "decimation_filter");
+    decimation_filter.def(py::init<>());
+
+    py::class_<rs2::temporal_filter, rs2::process_interface> temporal_filter(m, "temporal_filter");
+    temporal_filter.def(py::init<>());
+
+    py::class_<rs2::spatial_filter, rs2::process_interface> spatial_filter(m, "spatial_filter");
+    spatial_filter.def(py::init<>());
+
+    py::class_<rs2::disparity_transform, rs2::process_interface> disparity_transform(m, "disparity_transform");
+    disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a=true);
 
     /* rs2_record_playback.hpp */
     py::class_<rs2::playback, rs2::device> playback(m, "playback");
@@ -967,5 +983,5 @@ PYBIND11_MODULE(NAME, m) {
         rs2_fov(&intrin, to_fow.data());
         return to_fow;
 
-    }, "Calculate horizontal and vertical feild of view, based on video intrinsics");
+    }, "Calculate horizontal and vertical field of view, based on video intrinsics");
 }
