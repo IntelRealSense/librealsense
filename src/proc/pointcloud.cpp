@@ -419,7 +419,7 @@ namespace librealsense
 #else 
         points = depth_to_points((uint8_t*)pframe->get_vertices(), *_depth_intrinsics, depth_data, *_depth_units);
 #endif
-        /*});*/
+
         auto vid_frame = depth.as<rs2::video_frame>();
         float2* tex_ptr = pframe->get_texture_coordinates();
         // Pixels calculated in the mapped texture. Used in post-processing filters
