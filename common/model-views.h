@@ -195,6 +195,7 @@ namespace rs2
         rs2_option opt;
         option_range range;
         std::shared_ptr<options> endpoint;
+        bool* invalidate_flag;
         bool supported = false;
         bool read_only = false;
         float value = 0.0f;
@@ -274,6 +275,7 @@ namespace rs2
             const std::string& opt_base_label,
             subdevice_model* model,
             std::shared_ptr<options> options,
+            bool* options_invalidated,
             std::string& error_message);
 
         subdevice_model(device& dev, std::shared_ptr<sensor> s, std::string& error_message);
