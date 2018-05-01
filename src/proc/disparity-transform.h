@@ -31,11 +31,12 @@ namespace librealsense
             bool fp = (std::is_floating_point<Tin>::value);
             const float round = fp ? 0.5f : 0.f;
 
+            float input{};
             //TODO SSE optimize
             for (auto i = 0; i < _height; i++)
                 for (auto j = 0; j < _width; j++)
                 {
-                    float input = *in;
+                    input = *in;
                     if (std::isnormal(input))
                         *out++ = static_cast<Tout>((_d2d_convert_factor / input)+round);
                     else

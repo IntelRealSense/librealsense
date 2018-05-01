@@ -134,14 +134,13 @@ bool validate_ppf_results(rs2::frame origin_depth, rs2::frame result_depth, cons
         diff2ref[i] = diff;
     }
 
-    // Basic sanity scenario with no filters applied.
-    // validating domain transform in/out conversion.
+    // validating depth<->disparity domain transformation is lostless.
     if (domain_transform_only)
         REQUIRE(profile_diffs("./DomainTransform.txt",diff2orig, 0, 0, frame_idx));
 
-    // The differences between the reference code and librealsense implementation are assessed below
-    // STD of 0.025 is "roughly" represents 50 pixels with offset of 1 in a 200k pixels frame
-    return profile_diffs("./Filterstransform.txt", diff2ref, 0.025f, 1, frame_idx);
+    // Validate the filters
+    // The differences between the reference code and librealsense implementation are byte-compared below
+    return profile_diffs("./Filterstransform.txt", diff2ref, 0.f, 0, frame_idx);
 }
 
 // The test is intended to check the results of filters applied on a sequence of frames, specifically the temporal filter
