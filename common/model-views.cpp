@@ -1585,6 +1585,7 @@ namespace rs2
     {
         dev = d;
         original_profile = p;
+
         profile = p;
         texture->colorize = d->depth_colorizer;
 
@@ -1593,7 +1594,11 @@ namespace rs2
             size = {
                 static_cast<float>(vd.width()),
                 static_cast<float>(vd.height()) };
-        };
+
+            original_size = {
+                static_cast<float>(vd.width()),
+                static_cast<float>(vd.height()) };
+        }
         _stream_not_alive.reset();
 
     }
@@ -1633,7 +1638,7 @@ namespace rs2
                 {
                     // Convert from local (pixel) coordinate system to device coordinate system
                     auto r = roi_display_rect;
-                    r = r.normalize(stream_rect).unnormalize(_normalized_zoom.unnormalize(get_stream_bounds()));
+                    r = r.normalize(stream_rect).unnormalize(_normalized_zoom.unnormalize(get_original_stream_bounds()));
                     dev->roi_rect = r; // Store new rect in device coordinates into the subdevice object
 
                     // Send it to firmware:
@@ -1694,7 +1699,7 @@ namespace rs2
             if (!capturing_roi)
             {
                 auto r = dev->roi_rect; // Take the current from device, convert to local coordinates
-                r = r.normalize(_normalized_zoom.unnormalize(get_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
+                r = r.normalize(_normalized_zoom.unnormalize(get_original_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
                 roi_display_rect = r;
             }
 
