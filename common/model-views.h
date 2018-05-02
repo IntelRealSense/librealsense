@@ -417,7 +417,9 @@ namespace rs2
         rect layout;
         std::unique_ptr<texture_buffer> texture;
         float2 size;
-        rect get_stream_bounds() const { return { 0, 0, size.x, size.y }; }
+        float2 original_size;
+        rect get_stream_bounds() const { return { 0, 0, size.x, size.y };}
+        rect get_original_stream_bounds() const { return{ 0, 0, original_size.x, original_size.y };}
         stream_profile original_profile;
         stream_profile profile;
         std::chrono::high_resolution_clock::time_point last_frame;
