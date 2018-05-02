@@ -13,7 +13,7 @@
 
 namespace librealsense
 {
-    enum spatial_holes_filling_types : uint8_t // Evgeni - to review
+    enum spatial_holes_filling_types : uint8_t
     {
         sp_hf_disabled,
         sp_hf_2_pixel_radius,

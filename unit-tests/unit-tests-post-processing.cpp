@@ -154,11 +154,7 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
         // Test file name  , Filters configuraiton
         const std::vector< std::pair<std::string, std::string>> ppf_test_cases = {
             // All the tests below include depth-disparity domain transformation
-            // Downsample scales 1/2/3
-            /*{ "1523873668701",  "D415_DS(1)" },
-            { "1523873012723",  "D415_DS(2)" },
-            { "1523873362088",  "D415_DS(3)" },*/
-            { "1525186396953",  "D415_DS(1)" },
+            // Downsample scales 2/3
             { "1525186403504",  "D415_DS(2)" },
             { "1525186407536",  "D415_DS(3)" },
             // Downsample + Hole-Filling modes 0/1/2
@@ -166,12 +162,14 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
             { "1525072823227",  "D415_DS(1)_HoleFill(1)" },
             { "1524668713358",  "D435_DS(3)_HoleFill(2)" },
             // Downsample + Spatial Filter parameters
-            { "1523874476600",  "D415_DS(2)+Spat(A:0.85/D:32/I:3)" },
-            { "1523874595767",  "D415_DS(2)+Spat(A:0.3/D:8/I:3)" },
+            { "1525267760676",  "D415_DS(2)+Spat(A:0.85/D:32/I:3)" },
             // Downsample + Temporal Filter
-            { "1525185847855",  "D415_DS(2)+Temp(A:0.25/D:15/P:0)" },
+            { "1525266028697",  "D415_DS(2)+Temp(A:0.25/D:15/P:1)" },
+            { "1525265554250",  "D415_DS(2)+Temp(A:0.25/D:15/P:3)" },
+            { "1525266069476",  "D415_DS(2)+Temp(A:0.25/D:15/P:5)" },
+            { "1525266120520",  "D415_DS(3)+Temp(A:0.25/D:15/P:7)" },
             // Downsample + Spatial + Temporal (+ Hole-Filling)
-            { "1525185580442",  "D415_DS(2)_Spat(A:0.75/D:20/I:3)_Temp(A:0.35/D:10/P:0)" },
+            { "1525267168585",  "D415_DS(2)_Spat(A:0.85/D:32/I:3)_Temp(A:0.25/D:15/P:0)" },
             { "1525089539880",  "D415_DS(2)_Spat(A:0.85/D:32/I:3)_Temp(A:0.25/D:15/P:0)_HoleFill(1)" },
         };
 

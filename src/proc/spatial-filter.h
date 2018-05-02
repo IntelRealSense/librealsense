@@ -10,7 +10,6 @@
 #include <vector>
 #include <cmath>
 
-//Evgeni TODO#include "hole-filling-filter.h"
 #include "../include/librealsense2/hpp/rs_frame.hpp"
 #include "../include/librealsense2/hpp/rs_processing.hpp"
 

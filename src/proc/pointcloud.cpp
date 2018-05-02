@@ -219,7 +219,7 @@ namespace librealsense
             auto p1x = _mm_mul_ps(depth1, x1);
             auto p1y = _mm_mul_ps(depth1, y1);
 
-            //scattering of the x y z 
+            //scattering of the x y z
             auto x_y0 = _mm_shuffle_ps(p0x, p0y, _MM_SHUFFLE(2, 0, 2, 0));
             auto z_x0 = _mm_shuffle_ps(depth0, p0x, _MM_SHUFFLE(3, 1, 2, 0));
             auto y_z0 = _mm_shuffle_ps(p0y, depth0, _MM_SHUFFLE(3, 1, 3, 1));
@@ -416,7 +416,7 @@ namespace librealsense
         const float3* points;
 #ifdef __SSSE3__
         points = get_points_sse(depth_data, _depth_intrinsics->height*_depth_intrinsics->width, _pre_compute_map_x.data(), _pre_compute_map_y.data(), *_depth_units, pframe->get_vertices());
-#else 
+#else
         points = depth_to_points((uint8_t*)pframe->get_vertices(), *_depth_intrinsics, depth_data, *_depth_units);
 #endif
 
