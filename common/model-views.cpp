@@ -61,12 +61,14 @@ void open_url(const char* url)
     ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOW);
 #endif
 #if defined __linux__ || defined(__linux__)
-    std::string command = "xdg-open " + url;
-    system(command);
+    std::string command_name = "xdg-open ";
+    std::string command = command_name + url;
+    system(command.c_str());
 #endif
 #ifdef __APPLE__
-    std::string command = "open " + url;
-    system(url);
+    std::string command_name = "open ";
+    std::string command = command_name + url;
+    system(command.c_str());
 #endif
 }
 
