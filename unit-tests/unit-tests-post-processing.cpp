@@ -153,22 +153,26 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
     {
         // Test file name  , Filters configuraiton
         const std::vector< std::pair<std::string, std::string>> ppf_test_cases = {
-            { "1523873668701",  "D415_Downsample1" },
-            { "1523873012723",  "D415_Downsample2" },
-            { "1523873362088",  "D415_Downsample3" },
-            { "1523874476600",  "D415_Downsample2+Spat(A:0.85/D:32/I:3)" },
-            { "1523874595767",  "D415_Downsample2+Spat(A:0.3/D:8/I:3)" },
-            { "1523889912588",  "D415_Downsample2+Temp(A:0.4/D:20/P:0)" },
-            { "1523890056362",  "D415_Downsample2+Temp(A:0.3/D:10/P:4)" },
-            { "1523887243933",  "D415_DS:2_Spat(A:0.85/D:32/I:3)_Temp(A:0.25/D:15/P:0)" },
-            { "1523889529572",  "D415_DS:3_Spat(A:0.3/D:8/I:3)_Temp(A:0.5/D:6/P:4)" },
-            //{ "1524668672677",  "D435_DS:2_Spat(A:0.65/D:35/I:3)_HoleFill(0)" },
-            { "1525072818314",  "D415_DS:1_HoleFill(0)" },
-            { "1525072823227",  "D415_DS:1_HoleFill(1)" },
-            { "1525072826060",  "D415_DS:1_HoleFill(2)" },
-            { "1525074959351",  "D415_DS:3_HoleFill(2)" },
-            //{ "1524668701146",  "D435_DS:3_Spat(A:0.75/D:15/I:3)_HoleFill(1)" },
-            //{ "1524668713358",  "D435_DS:3_HoleFill(2)" },
+            // All the tests below include depth-disparity domain transformation
+            // Downsample scales 1/2/3
+            /*{ "1523873668701",  "D415_DS(1)" },
+            { "1523873012723",  "D415_DS(2)" },
+            { "1523873362088",  "D415_DS(3)" },*/
+            { "1525186396953",  "D415_DS(1)" },
+            { "1525186403504",  "D415_DS(2)" },
+            { "1525186407536",  "D415_DS(3)" },
+            // Downsample + Hole-Filling modes 0/1/2
+            { "1525072818314",  "D415_DS(1)_HoleFill(0)" },
+            { "1525072823227",  "D415_DS(1)_HoleFill(1)" },
+            { "1524668713358",  "D435_DS(3)_HoleFill(2)" },
+            // Downsample + Spatial Filter parameters
+            { "1523874476600",  "D415_DS(2)+Spat(A:0.85/D:32/I:3)" },
+            { "1523874595767",  "D415_DS(2)+Spat(A:0.3/D:8/I:3)" },
+            // Downsample + Temporal Filter
+            { "1525185847855",  "D415_DS(2)+Temp(A:0.25/D:15/P:0)" },
+            // Downsample + Spatial + Temporal (+ Hole-Filling)
+            { "1525185580442",  "D415_DS(2)_Spat(A:0.75/D:20/I:3)_Temp(A:0.35/D:10/P:0)" },
+            { "1525089539880",  "D415_DS(2)_Spat(A:0.85/D:32/I:3)_Temp(A:0.25/D:15/P:0)_HoleFill(1)" },
         };
 
         ppf_test_config test_cfg;
