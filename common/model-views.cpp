@@ -27,6 +27,7 @@
 #define ARCBALL_CAMERA_IMPLEMENTATION
 #include <arcball_camera.h>
 
+
 using namespace rs400;
 using namespace nlohmann;
 
@@ -54,6 +55,20 @@ ImVec4 operator+(const ImVec4& c, float v)
     );
 }
 
+void open_url(const char* url)
+{
+#if (defined(_WIN32) || defined(_WIN64))
+    ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOW);
+#endif
+#if defined __linux__ || defined(__linux__)
+    std::string command = "xdg-open " + url;
+    system(command);
+#endif
+#ifdef __APPLE__
+    std::string command = "open " + url;
+    system(url);
+#endif
+}
 
 namespace rs2
 {
@@ -5873,6 +5888,7 @@ namespace rs2
         timestamp = n.get_timestamp();
         severity = n.get_severity();
         created_time = std::chrono::high_resolution_clock::now();
+        category = n._category;
     }
 
     double notification_model::get_age_in_ms() const
@@ -5901,6 +5917,7 @@ namespace rs2
         }
     }
 
+    
     void notification_model::draw(int w, int y, notification_model& selected)
     {
         auto flags = ImGuiWindowFlags_NoResize |
@@ -5919,10 +5936,34 @@ namespace rs2
         ImGui::SetNextWindowPos({ float(w - 330), float(y) });
         height = lines * 30 + 20;
         ImGui::SetNextWindowSize({ float(315), float(height) });
-        std::string label = to_string() << "Hardware Notification #" << index;
+        std::string label;
+        if (category == RS2_NOTIFICATION_FIRMWARE_UPDATE_REQUIRED)
+        {
+            label = "Firmware update required";
+        }
+        else
+        {
+            label = to_string() << "Hardware Notification #" << index;
+        }
+
         ImGui::Begin(label.c_str(), nullptr, flags);
 
         ImGui::Text("%s", message.c_str());
+
+        if (category == RS2_NOTIFICATION_FIRMWARE_UPDATE_REQUIRED)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Button, button_color + 0.2f);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, button_color + 0.4f);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, button_color + 0.1f);
+   
+            const char* url = "https://downloadcenter.intel.com/download/27522/Latest-Firmware-for-Intel-RealSense-D400-Product-Family?v=t";
+
+            if (ImGui::SmallButton("Download"))
+            {       
+                open_url(url);
+            }
+            ImGui::PopStyleColor(3);
+        }
 
         if (lines == 1)
             ImGui::SameLine();

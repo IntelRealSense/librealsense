@@ -48,6 +48,7 @@ namespace librealsense
 
         std::shared_ptr<hw_monitor> _hw_monitor;
         firmware_version _fw_version;
+        firmware_version recommended_fw_version;
 
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _left_ir_stream;

@@ -541,6 +541,7 @@ namespace rs2
         double timestamp = 0.0;
         rs2_log_severity severity = RS2_LOG_SEVERITY_NONE;
         std::chrono::high_resolution_clock::time_point created_time;
+        rs2_notification_category category;
         // TODO: Add more info
     };
 

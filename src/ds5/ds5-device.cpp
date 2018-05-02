@@ -6,6 +6,7 @@
 #include <vector>
 #include <iterator>
 #include <cstddef>
+#include <string>
 
 #include "device.h"
 #include "context.h"
@@ -19,6 +20,7 @@
 #include "stream.h"
 #include "environment.h"
 #include "ds5-color.h"
+
 
 namespace librealsense
 {
@@ -371,6 +373,7 @@ namespace librealsense
 
         std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(group.uvc_devices.front().pid)) ? rs400_sku_names.at(group.uvc_devices.front().pid) : "RS4xx";
         _fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
+        recommended_fw_version = firmware_version("5.9.9.2");
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
         auto& depth_ep = get_depth_sensor();
@@ -502,6 +505,40 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
+        register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
+        
+        std::string curr_version= _fw_version;
+        std::string latest_version = recommended_fw_version;
+
+        if (_fw_version < recommended_fw_version)
+        {   
+            std::weak_ptr<notifications_processor> weak = depth_ep.get_notifications_processor();
+            std::thread notification_thread = std::thread([weak, curr_version, latest_version]()
+            {
+                while (true)
+                {
+                    auto ptr = weak.lock();
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    if (ptr)
+                    {
+                        std::string s1 ="Latest release: ";
+                        std::string msg = "Current version: " + curr_version + "\nLatest release: " + latest_version +"\n";
+
+                        notification n(RS2_NOTIFICATION_FIRMWARE_UPDATE_REQUIRED, 0, RS2_LOG_SEVERITY_INFO, msg);
+                        ptr->raise_notification(n);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                    std::this_thread::sleep_for(std::chrono::seconds(120));
+                }
+                
+            });
+            notification_thread.detach();
+
+        }
+            
     }
 
     notification ds5_notification_decoder::decode(int value)
