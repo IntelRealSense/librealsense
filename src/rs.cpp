@@ -24,6 +24,7 @@
 #include "proc/syncer-processing-block.h"
 #include "proc/decimation-filter.h"
 #include "proc/spatial-filter.h"
+#include "proc/hole-filling-filter.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"
 #include "../include/librealsense2/h/rs_types.h"
@@ -1721,6 +1722,14 @@ rs2_processing_block* rs2_create_disparity_transform_block(unsigned char transfo
     return new rs2_processing_block{ block };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, transform_to_disparity)
+
+rs2_processing_block* rs2_create_hole_filling_filter_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::hole_filling_filter>();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {

@@ -41,7 +41,7 @@ int main(int argc, char * argv[]) try
 
     // Create a shared pointer to a pipeline
     auto pipe = std::make_shared<rs2::pipeline>();
-   
+
     // Start streaming with default configuration
     pipe->start();
 
@@ -64,14 +64,14 @@ int main(int argc, char * argv[]) try
         ImGui_ImplGlfw_NewFrame(1);
         ImGui::SetNextWindowSize({ app.width(), app.height() });
         ImGui::Begin("app", nullptr, flags);
-        
+
         // If the device is sreaming live and not from a file
         if (!device.as<rs2::playback>())
         {
             frames = pipe->wait_for_frames(); // wait for next set of frames from the camera
             depth = color_map(frames.get_depth_frame()); // Find and colorize the depth data
-        }		
-    
+        }
+
         // Set options for the ImGui buttons
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1, 1, 1, 1 });
         ImGui::PushStyleColor(ImGuiCol_Button, { 36 / 255.f, 44 / 255.f, 51 / 255.f, 1 });

@@ -221,7 +221,7 @@ PYBIND11_MODULE(NAME, m) {
     {
         self.set_devices_changed_callback(callback);
     }, "Register devices changed callback.", "callback"_a)
-        // not binding create_processing_block, not in Python API.
+        // not binding create_processing_block, not inpr Python API.
         .def("load_device", &rs2::context::load_device, "Creates a devices from a RealSense file.\n"
             "On successful load, the device will be appended to the context and a devices_changed event triggered."
             "filename"_a)
@@ -522,6 +522,9 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::spatial_filter, rs2::process_interface> spatial_filter(m, "spatial_filter");
     spatial_filter.def(py::init<>());
+
+    py::class_<rs2::hole_filling_filter, rs2::process_interface> hole_filling_filter(m, "hole_filling_filter");
+    hole_filling_filter.def(py::init<>());
 
     py::class_<rs2::disparity_transform, rs2::process_interface> disparity_transform(m, "disparity_transform");
     disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a=true);

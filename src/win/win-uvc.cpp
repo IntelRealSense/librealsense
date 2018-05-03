@@ -581,7 +581,6 @@ namespace librealsense
                 return true;
             }
 
-            
 
             for (auto & pu : pu_controls)
             {

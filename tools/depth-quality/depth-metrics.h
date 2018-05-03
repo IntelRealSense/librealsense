@@ -31,7 +31,7 @@ namespace rs2
             plane p;
             std::array<float3, 4> plane_corners;
         };
-      
+
         struct single_metric_data
         {
             single_metric_data(std::string name, float val) :

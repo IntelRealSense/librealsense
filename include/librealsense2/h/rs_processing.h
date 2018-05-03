@@ -152,6 +152,12 @@ rs2_processing_block* rs2_create_spatial_filter_block(rs2_error** error);
 */
 rs2_processing_block* rs2_create_disparity_transform_block(unsigned char transform_to_disparity, rs2_error** error);
 
+/**
+* Creates Depth post-processing hole filling block. The filter replaces empty pixels with data from adjacent pixels based on the method selected
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_hole_filling_filter_block(rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

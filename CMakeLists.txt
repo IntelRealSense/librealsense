@@ -143,6 +143,7 @@ set(REALSENSE_CPP
     src/proc/decimation-filter.cpp
     src/proc/spatial-filter.cpp
     src/proc/temporal-filter.cpp
+    src/proc/hole-filling-filter.cpp
     src/proc/disparity-transform.cpp
     src/source.cpp
     src/ds5/ds5-options.cpp
@@ -241,9 +242,9 @@ set(REALSENSE_HPP
     src/proc/decimation-filter.h
     src/proc/spatial-filter.h
     src/proc/temporal-filter.h
+    src/proc/hole-filling-filter.h
     src/proc/syncer-processing-block.h
     src/proc/disparity-transform.h
-    src/proc/spatial-holes-fill.h
     src/algo.h
     src/option.h
     src/metadata.h
@@ -478,6 +479,7 @@ if(WIN32)
         src/proc/decimation-filter.cpp
         src/proc/spatial-filter.cpp
         src/proc/temporal-filter.cpp
+        src/proc/hole-filling-filter.cpp
         src/proc/syncer-processing-block.cpp
         src/proc/disparity-transform.cpp
         )
@@ -493,7 +495,7 @@ if(WIN32)
         src/proc/temporal-filter.h
         src/proc/syncer-processing-block.h
         src/proc/disparity-transform.h
-        src/proc/spatial-holes-fill.h
+        src/proc/hole-filling-filter.h
         )
 
     if(BUILD_WITH_STATIC_CRT)
@@ -683,7 +685,7 @@ if (BUILD_WITH_TM2)
     src/tm2/tm-conversions.h
     src/tm2/controller_event_serializer.h
     )
-    
+
     list(APPEND REALSENSE_CPP
     src/tm2/tm-context.cpp
     src/tm2/tm-device.cpp
