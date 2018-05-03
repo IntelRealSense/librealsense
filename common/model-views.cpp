@@ -369,6 +369,7 @@ namespace rs2
                         model.add_log(to_string() << "Setting " << opt << " to "
                             << value << " (" << (bool_value? "ON" : "OFF") << ")");
                         endpoint->set_option(opt, value);
+                        *invalidate_flag = true;
                     }
                     catch (const error& e)
                     {
@@ -516,6 +517,7 @@ namespace rs2
                                 value = static_cast<float>(int_value);
                                 model.add_log(to_string() << "Setting " << opt << " to " << value);
                                 endpoint->set_option(opt, value);
+                                *invalidate_flag = true;
                                 res = true;
                             }
                         }
@@ -536,6 +538,7 @@ namespace rs2
                                 value = (int)(value * pow_val) / (float)(pow_val);
                                 model.add_log(to_string() << "Setting " << opt << " to " << value);
                                 endpoint->set_option(opt, value);
+                                *invalidate_flag = true;
                                 res = true;
                             }
                         }
@@ -582,6 +585,7 @@ namespace rs2
                             model.add_log(to_string() << "Setting " << opt << " to "
                                 << value << " (" << labels[selected] << ")");
                             endpoint->set_option(opt, value);
+                            *invalidate_flag = true;
                             res = true;
                         }
                     }
@@ -716,6 +720,7 @@ namespace rs2
         const std::string& opt_base_label,
         subdevice_model* model,
         std::shared_ptr<options> options,
+        bool* options_invalidated,
         std::string& error_message)
     {
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
@@ -729,6 +734,7 @@ namespace rs2
             metadata.opt = opt;
             metadata.endpoint = options;
             metadata.label = rs2_option_to_string(opt) + std::string("##") + ss.str();
+            metadata.invalidate_flag = options_invalidated;
             metadata.dev = model;
 
             metadata.supported = options->supports(opt);
@@ -766,7 +772,7 @@ namespace rs2
             << "/" << ((owner) ? (*owner->s).get_info(RS2_CAMERA_INFO_NAME) : "_");
 
         subdevice_model::populate_options(options_metadata,
-            ss.str().c_str(), owner, block, error_message);
+            ss.str().c_str(),owner , block, &owner->options_invalidated, error_message);
     }
 
     subdevice_model::subdevice_model(
@@ -861,7 +867,7 @@ namespace rs2
         std::stringstream ss;
         ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
             << "/" << s->get_info(RS2_CAMERA_INFO_NAME);
-        populate_options(options_metadata, ss.str().c_str(), this, s, error_message);
+        populate_options(options_metadata, ss.str().c_str(), this, s, &options_invalidated, error_message);
 
         try
         {
@@ -1585,6 +1591,7 @@ namespace rs2
     {
         dev = d;
         original_profile = p;
+
         profile = p;
         texture->colorize = d->depth_colorizer;
 
@@ -1593,7 +1600,11 @@ namespace rs2
             size = {
                 static_cast<float>(vd.width()),
                 static_cast<float>(vd.height()) };
-        };
+
+            original_size = {
+                static_cast<float>(vd.width()),
+                static_cast<float>(vd.height()) };
+        }
         _stream_not_alive.reset();
 
     }
@@ -1633,7 +1644,7 @@ namespace rs2
                 {
                     // Convert from local (pixel) coordinate system to device coordinate system
                     auto r = roi_display_rect;
-                    r = r.normalize(stream_rect).unnormalize(_normalized_zoom.unnormalize(get_stream_bounds()));
+                    r = r.normalize(stream_rect).unnormalize(_normalized_zoom.unnormalize(get_original_stream_bounds()));
                     dev->roi_rect = r; // Store new rect in device coordinates into the subdevice object
 
                     // Send it to firmware:
@@ -1694,7 +1705,7 @@ namespace rs2
             if (!capturing_roi)
             {
                 auto r = dev->roi_rect; // Take the current from device, convert to local coordinates
-                r = r.normalize(_normalized_zoom.unnormalize(get_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
+                r = r.normalize(_normalized_zoom.unnormalize(get_original_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
                 roi_display_rect = r;
             }
 

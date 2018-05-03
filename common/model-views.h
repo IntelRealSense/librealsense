@@ -195,6 +195,7 @@ namespace rs2
         rs2_option opt;
         option_range range;
         std::shared_ptr<options> endpoint;
+        bool* invalidate_flag;
         bool supported = false;
         bool read_only = false;
         float value = 0.0f;
@@ -274,6 +275,7 @@ namespace rs2
             const std::string& opt_base_label,
             subdevice_model* model,
             std::shared_ptr<options> options,
+            bool* options_invalidated,
             std::string& error_message);
 
         subdevice_model(device& dev, std::shared_ptr<sensor> s, std::string& error_message);
@@ -415,7 +417,9 @@ namespace rs2
         rect layout;
         std::unique_ptr<texture_buffer> texture;
         float2 size;
-        rect get_stream_bounds() const { return { 0, 0, size.x, size.y }; }
+        float2 original_size;
+        rect get_stream_bounds() const { return { 0, 0, size.x, size.y };}
+        rect get_original_stream_bounds() const { return{ 0, 0, original_size.x, original_size.y };}
         stream_profile original_profile;
         stream_profile profile;
         std::chrono::high_resolution_clock::time_point last_frame;
