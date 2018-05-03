@@ -1544,6 +1544,20 @@ rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, proc)
 
+rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callback_ptr proc, void * context, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(proc);
+
+    auto block = std::make_shared<librealsense::processing_block>();
+
+    block->set_processing_callback({ 
+        new librealsense::internal_frame_processor_fptr_callback(proc, context),
+        [](rs2_frame_processor_callback* p) { } });
+
+    return new rs2_processing_block{ block };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, proc, context)
+
 rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::syncer_process_unit>();
@@ -1559,6 +1573,15 @@ void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_fr
     block->block->set_output_callback({ on_frame, [](rs2_frame_callback* p) { p->release(); } });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, block, on_frame)
+
+void rs2_start_processing_fptr(rs2_processing_block* block, rs2_frame_callback_ptr on_frame, void* user, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(block);
+    VALIDATE_NOT_NULL(on_frame);
+
+    block->block->set_output_callback({ new frame_callback(on_frame, user), [](rs2_frame_callback* p) { } });
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, block, on_frame, user)
 
 void rs2_start_processing_queue(rs2_processing_block* block, rs2_frame_queue* queue, rs2_error** error) BEGIN_API_CALL
 {

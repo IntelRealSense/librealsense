@@ -805,6 +805,30 @@ namespace librealsense
         void release() override { delete this; }
     };
 
+    class internal_frame_processor_fptr_callback : public rs2_frame_processor_callback
+    {
+        rs2_frame_processor_callback_ptr fptr;
+        void * user;
+    public:
+        internal_frame_processor_fptr_callback() : internal_frame_processor_fptr_callback(nullptr, nullptr) {}
+        internal_frame_processor_fptr_callback(rs2_frame_processor_callback_ptr on_frame, void * user)
+            : fptr(on_frame), user(user) {}
+
+        operator bool() const { return fptr != nullptr; }
+        void on_frame(rs2_frame * frame, rs2_source * source) override {
+            if (fptr)
+            {
+                try { fptr(frame, source, user); }
+                catch (...)
+                {
+                    LOG_ERROR("Received an execption from frame callback!");
+                }
+            }
+        }
+        void release() override { delete this; }
+    };
+
+
     template<class T>
     class internal_frame_callback : public rs2_frame_callback
     {
