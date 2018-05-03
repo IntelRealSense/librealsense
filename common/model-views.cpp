@@ -26,6 +26,7 @@
 #define ARCBALL_CAMERA_IMPLEMENTATION
 #include <arcball_camera.h>
 
+
 using namespace rs400;
 using namespace nlohmann;
 
@@ -53,6 +54,25 @@ ImVec4 operator+(const ImVec4& c, float v)
     );
 }
 
+void open_url(const char* url)
+{
+#if (defined(_WIN32) || defined(_WIN64))
+    if (reinterpret_cast<int>(ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOW)) < 32)
+        throw std::runtime_error("Failed opening URL");
+#endif
+#if defined __linux__ || defined(__linux__)
+    std::string command_name = "xdg-open ";
+    std::string command = command_name + url;
+    if (system(command.c_str()))
+        throw std::runtime_error("Failed opening URL");
+#endif
+#ifdef __APPLE__
+    std::string command_name = "open ";
+    std::string command = command_name + url;
+    if (system(command.c_str()))
+        throw std::runtime_error("Failed opening URL");
+#endif
+}
 
 namespace rs2
 {
@@ -6000,6 +6020,7 @@ namespace rs2
         timestamp = n.get_timestamp();
         severity = n.get_severity();
         created_time = std::chrono::high_resolution_clock::now();
+        category = n._category;
     }
 
     double notification_model::get_age_in_ms() const
@@ -6011,23 +6032,44 @@ namespace rs2
     {
         ImGui::PopStyleColor(3);
     }
+
     void notification_model::set_color_scheme(float t) const
     {
-        if (severity == RS2_LOG_SEVERITY_ERROR ||
-            severity == RS2_LOG_SEVERITY_WARN)
+        if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
-            ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0.f, 0.f, 1 - t });
-            ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.5f, 0.2f, 0.2f, 1 - t });
-            ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.6f, 0.2f, 0.2f, 1 - t });
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, { 33/255.f, 40/255.f, 46/255.f, 1 - t });
+            ImGui::PushStyleColor(ImGuiCol_TitleBg, { 62 / 255.f, 77 / 255.f, 89 / 255.f, 1 - t });
+            ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 62 / 255.f, 77 / 255.f, 89 / 255.f, 1 - t });
         }
         else
         {
-            ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0.3f, 0.3f, 1 - t });
-            ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.4f, 0.4f, 0.4f, 1 - t });
-            ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.6f, 0.6f, 0.6f, 1 - t });
+            if (severity == RS2_LOG_SEVERITY_ERROR ||
+                severity == RS2_LOG_SEVERITY_WARN)
+            {
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0.f, 0.f, 1 - t });
+                ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.5f, 0.2f, 0.2f, 1 - t });
+                ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.6f, 0.2f, 0.2f, 1 - t });
+            }
+            else
+            {
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0.3f, 0.3f, 1 - t });
+                ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.4f, 0.4f, 0.4f, 1 - t });
+                ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.6f, 0.6f, 0.6f, 1 - t });
+            }
         }
     }
 
+    
+    const int notification_model::get_max_lifetime_ms() const
+    {
+        if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
+        {
+            return 30000;
+        }
+        return 10000;
+    }
+    
+    
     void notification_model::draw(int w, int y, notification_model& selected)
     {
         auto flags = ImGuiWindowFlags_NoResize |
@@ -6036,7 +6078,7 @@ namespace rs2
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
-        auto ms = get_age_in_ms() / MAX_LIFETIME_MS;
+        auto ms = get_age_in_ms() / get_max_lifetime_ms();
         auto t = smoothstep(static_cast<float>(ms), 0.7f, 1.0f);
 
         set_color_scheme(t);
@@ -6046,19 +6088,66 @@ namespace rs2
         ImGui::SetNextWindowPos({ float(w - 330), float(y) });
         height = lines * 30 + 20;
         ImGui::SetNextWindowSize({ float(315), float(height) });
-        std::string label = to_string() << "Hardware Notification #" << index;
+        std::string label;
+        if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
+        {
+            label = "Firmware update recommended";
+        }
+        else
+        {
+            label = to_string() << "Hardware Notification #" << index;
+        }
+
         ImGui::Begin(label.c_str(), nullptr, flags);
 
-        ImGui::Text("%s", message.c_str());
+        if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
+        {
+            std::regex version_regex("([0-9]+.[0-9]+.[0-9]+.[0-9]+\n)");
+            std::smatch sm;
+            std::regex_search(message, sm, version_regex);
+            std::string message_prefix = sm.prefix();
+            std::string curr_version = sm.str();
+            std::string message_suffix = sm.suffix();
+            ImGui::Text("%s", message_prefix.c_str());
+            ImGui::SameLine(0, 0);
+            ImGui::PushStyleColor(ImGuiCol_Text, { (float)255 / 255, (float)46 / 255, (float)54 / 255, 1 - t });
+            ImGui::Text("%s", curr_version.c_str());
+            ImGui::PopStyleColor();
+            ImGui::Text("%s", message_suffix.c_str());
+
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1, 1, 1, 1 });
+            ImGui::PushStyleColor(ImGuiCol_Button, { 62 / 255.f, 77 / 255.f, 89 / 255.f, 1 - t });
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 62 / 255.f + 0.1f, 77 / 255.f + 0.1f, 89 / 255.f + 0.1f, 1 - t });
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 62 / 255.f - 0.1f, 77 / 255.f - 0.1f, 89 / 255.f - 0.1f, 1 - t });
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 2);
+  
+            const char* url = "https://downloadcenter.intel.com/download/27522/Latest-Firmware-for-Intel-RealSense-D400-Product-Family?v=t";
+            ImGui::Indent(80);
+            if (ImGui::Button("Download update", { 130, 30 }))
+            {       
+                open_url(url);
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", "Internet connection required");
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(4);
+        }
+        else
+        {
+            ImGui::Text("%s", message.c_str());
+        }
 
         if (lines == 1)
             ImGui::SameLine();
 
-        ImGui::Text("(...)");
-
-        if (ImGui::IsMouseClicked(0) && ImGui::IsItemHovered())
+        if (category != RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
-            selected = *this;
+            ImGui::Text("(...)");
+
+            if (ImGui::IsMouseClicked(0) && ImGui::IsItemHovered())
+            {
+                selected = *this;
+            }
         }
 
         ImGui::End();
@@ -6096,7 +6185,7 @@ namespace rs2
                 std::end(pending_notifications),
                 [&](notification_model& n)
             {
-                return (n.get_age_in_ms() > notification_model::MAX_LIFETIME_MS);
+                return (n.get_age_in_ms() > n.get_max_lifetime_ms());
             }), end(pending_notifications));
 
             int idx = 0;

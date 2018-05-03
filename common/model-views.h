@@ -551,14 +551,15 @@ namespace rs2
         void draw(int w, int y, notification_model& selected);
         void set_color_scheme(float t) const;
         void clear_color_scheme() const;
-
-        static const int MAX_LIFETIME_MS = 10000;
+        const int get_max_lifetime_ms() const;
+  
         int height = 40;
         int index = 0;
         std::string message;
         double timestamp = 0.0;
         rs2_log_severity severity = RS2_LOG_SEVERITY_NONE;
         std::chrono::high_resolution_clock::time_point created_time;
+        rs2_notification_category category;
         // TODO: Add more info
     };
 
