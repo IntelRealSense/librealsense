@@ -43,20 +43,20 @@ namespace Intel.RealSense
             NativeMethods.rs2_pipeline_stop(m_instance.Handle, out error);
         }
 
-        public FrameSet WaitForFrames(uint timeout_ms = 5000)
+        public FrameSet WaitForFrames(uint timeout_ms = 5000, FramesReleaser releaser = null)
         {
             object error;
             var ptr = NativeMethods.rs2_pipeline_wait_for_frames(m_instance.Handle, timeout_ms, out error);
-            return new FrameSet(ptr);
+            return FramesReleaser.ScopedReturn(releaser, new FrameSet(ptr));
         }
 
-        public bool PollForFrames(out FrameSet result)
+        public bool PollForFrames(out FrameSet result, FramesReleaser releaser = null)
         {
             object error;
             FrameSet fs;
             if (NativeMethods.rs2_pipeline_poll_for_frames(m_instance.Handle, out fs, out error) > 0)
             {
-                result = fs;
+                result = FramesReleaser.ScopedReturn(releaser, fs);
                 return true;
             }
             result = null;
