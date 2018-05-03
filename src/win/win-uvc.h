@@ -78,6 +78,7 @@ namespace librealsense
             void unlock() const override { _systemwide_lock.unlock(); }
 
             std::string get_device_location() const override { return _location; }
+            usb_spec get_usb_specification() const override { return _device_usb_spec; }
 
             IAMVideoProcAmp* get_video_proc() const
             {
@@ -88,7 +89,7 @@ namespace librealsense
 
             IAMCameraControl* get_camera_control() const
             {
-                if (!_camera_control.p) 
+                if (!_camera_control.p)
                     throw std::runtime_error("The device does not support camera settings such as zoom, pan, aperture adjustment, or shutter speed.");
                 return _camera_control.p;
             }
@@ -122,6 +123,7 @@ namespace librealsense
             manual_reset_event                      _has_started;
             HRESULT                                 _readsample_result = S_OK;
 
+            uint16_t                                _streamIndex;
             std::vector<profile_and_callback>       _streams;
             std::mutex                              _streams_mutex;
 
@@ -129,6 +131,7 @@ namespace librealsense
 
             named_mutex                             _systemwide_lock;
             std::string                             _location;
+            usb_spec                                _device_usb_spec;
             std::vector<stream_profile>             _profiles;
             std::vector<frame_callback>             _frame_callbacks;
             bool                                    _streaming = false;

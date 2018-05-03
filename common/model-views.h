@@ -70,6 +70,8 @@ inline ImVec4 blend(const ImVec4& c, float a)
 
 namespace rs2
 {
+    bool frame_metadata_to_csv(const std::string& filename, rs2::frame frame);
+
     struct textual_icon
     {
         explicit constexpr textual_icon(const char (&unicode_icon)[4]) :
@@ -122,6 +124,9 @@ namespace rs2
         static const textual_icon download                 { u8"\uf019" };
         static const textual_icon upload                   { u8"\uf093" };
         static const textual_icon bar_chart                { u8"\uf080" };
+        static const textual_icon usb_type                 { u8"\uf287" };
+        static const textual_icon edit                     { u8"\uf044" };
+        static const textual_icon question_mark            { u8"\uf059" };
     }
 
     class subdevice_model;
@@ -190,6 +195,7 @@ namespace rs2
         rs2_option opt;
         option_range range;
         std::shared_ptr<options> endpoint;
+        bool* invalidate_flag;
         bool supported = false;
         bool read_only = false;
         float value = 0.0f;
@@ -197,6 +203,8 @@ namespace rs2
         std::string id = "";
         subdevice_model* dev;
         std::function<bool(option_model&, std::string&, notifications_model&)> custom_draw_method = nullptr;
+        bool edit_mode = false;
+        std::string edit_value = "";
     private:
         bool is_all_integers() const;
         bool is_enum() const;
@@ -267,6 +275,7 @@ namespace rs2
             const std::string& opt_base_label,
             subdevice_model* model,
             std::shared_ptr<options> options,
+            bool* options_invalidated,
             std::string& error_message);
 
         subdevice_model(device& dev, std::shared_ptr<sensor> s, std::string& error_message);
@@ -408,7 +417,9 @@ namespace rs2
         rect layout;
         std::unique_ptr<texture_buffer> texture;
         float2 size;
-        rect get_stream_bounds() const { return { 0, 0, size.x, size.y }; }
+        float2 original_size;
+        rect get_stream_bounds() const { return { 0, 0, size.x, size.y };}
+        rect get_original_stream_bounds() const { return{ 0, 0, original_size.x, original_size.y };}
         stream_profile original_profile;
         stream_profile profile;
         std::chrono::high_resolution_clock::time_point last_frame;
@@ -441,6 +452,8 @@ namespace rs2
     class device_model
     {
     public:
+        typedef std::function<void(std::function<void()> load)> json_loading_func;
+
         void reset();
         explicit device_model(device& dev, std::string& error_message, viewer_model& viewer);
         void start_recording(const std::string& path, std::string& error_message);
@@ -448,14 +461,17 @@ namespace rs2
         void pause_record();
         void resume_record();
         int draw_playback_panel(ImFont* font, viewer_model& view);
-        bool draw_advanced_controls(viewer_model& view, ux_window& window);
+        bool draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message);
         void draw_controls(float panel_width, float panel_height,
             ux_window& window,
             std::string& error_message,
             device_model*& device_to_remove,
             viewer_model& viewer, float windows_width,
             bool update_read_only_options,
-            std::vector<std::function<void()>>& draw_later, bool draw_device_outline = true);
+            std::vector<std::function<void()>>& draw_later,
+            bool load_json_if_streaming = false,
+            json_loading_func json_loading = [](std::function<void()> load) {load(); },
+            bool draw_device_outline = true);
         void handle_harware_events(const std::string& serialized_data);
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
@@ -496,7 +512,9 @@ namespace rs2
             ux_window& window,
             std::string& error_message,
             viewer_model& viewer,
-            bool update_read_only_options);
+            bool update_read_only_options,
+            bool load_json_if_streaming,
+            json_loading_func json_loading);
         bool prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text,
             std::vector<std::string>& restarting_device_info,
             viewer_model& view,
@@ -905,7 +923,7 @@ namespace rs2
 
     };
 
-    void export_to_ply(const std::string& file_name, notifications_model& ns, frameset points, video_frame texture);
+    void export_to_ply(const std::string& file_name, notifications_model& ns, frameset points, video_frame texture, bool notify = true);
 
     // Wrapper for cross-platform dialog control
     enum file_dialog_mode {

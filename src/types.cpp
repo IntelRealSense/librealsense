@@ -121,6 +121,7 @@ namespace librealsense
                 STRCASE(STREAM, ACCEL)
                 STRCASE(STREAM, GPIO)
                 STRCASE(STREAM, POSE)
+                STRCASE(STREAM, CONFIDENCE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -315,14 +316,15 @@ namespace librealsense
         switch (value)
         {
                 CASE(NAME)
-                CASE(SERIAL_NUMBER)
-                CASE(FIRMWARE_VERSION)
-                CASE(PHYSICAL_PORT)
-                CASE(DEBUG_OP_CODE)
-                CASE(ADVANCED_MODE)
-                CASE(PRODUCT_ID)
-                CASE(CAMERA_LOCKED)
-                CASE(RECOMMENDED_FIRMWARE_VERSION)
+            CASE(SERIAL_NUMBER)
+            CASE(FIRMWARE_VERSION)
+            CASE(PHYSICAL_PORT)
+            CASE(DEBUG_OP_CODE)
+            CASE(ADVANCED_MODE)
+            CASE(PRODUCT_ID)
+            CASE(CAMERA_LOCKED)
+            CASE(USB_TYPE_DESCRIPTOR)
+            CASE(RECOMMENDED_FIRMWARE_VERSION)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

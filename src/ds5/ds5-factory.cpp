@@ -251,9 +251,9 @@ namespace librealsense
 
             bool all_sensors_present = mi_present(devices, 0);
 
-            constexpr std::array<int, 3> multi_sensors = { ds::RS415_PID, ds::RS430_MM_RGB_PID, ds::RS435_RGB_PID };
+            constexpr std::array<int, 3> multi_sensors = { ds::RS415_PID, ds::RS430_MM_RGB_PID, ds::RS435_RGB_PID};
             auto is_pid_of_multisensor_device = [&multi_sensors](int pid) { return std::find(std::begin(multi_sensors), std::end(multi_sensors), pid) != std::end(multi_sensors); };
-            bool is_device_multisensor = false;;
+            bool is_device_multisensor = false;
             for (auto&& uvc : devices)
             {
                 if (is_pid_of_multisensor_device(uvc.pid))

@@ -88,6 +88,7 @@ namespace librealsense
                            std::shared_ptr<stream_profile_interface> target) const;
 
         std::vector<request_mapping> resolve_requests(stream_profiles requests);
+        std::shared_ptr<stream_profile_interface> map_requests(std::shared_ptr<stream_profile_interface> request);
 
         std::vector<platform::stream_profile> _internal_config;
 
@@ -100,6 +101,7 @@ namespace librealsense
 
         frame_source _source;
         device* _owner;
+        std::vector<platform::stream_profile> _uvc_profiles;
 
     private:
         lazy<stream_profiles> _profiles;
@@ -205,6 +207,9 @@ namespace librealsense
 
         void stop() override;
 
+        platform::usb_spec get_usb_specification() const { return _device->get_usb_specification(); }
+        std::string get_device_path() const { return _device->get_device_location(); }
+
     protected:
         stream_profiles init_stream_profiles() override;
 
@@ -231,8 +236,14 @@ namespace librealsense
 
             ~power()
             {
-                auto strong = _owner.lock();
-                if (strong) strong->release_power();
+                if (auto strong = _owner.lock())
+                {
+                    try
+                    {
+                        strong->release_power();
+                    }
+                    catch (...) {}
+                }
             }
         private:
             std::weak_ptr<uvc_sensor> _owner;

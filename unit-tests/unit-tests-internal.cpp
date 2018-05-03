@@ -2,19 +2,27 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// This set of tests is valid for any number and combination of RealSense cameras, including R200 and F200 //
+// The specific tests are configured to run only when the library is staticly-linked to test implementation
+// of librealsense core classes
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 #include <cmath>
-#include "unit-tests-common.h"
-#include "../include/librealsense2/rs_advanced_mode.hpp"
-#include <librealsense2/hpp/rs_frame.hpp>
 #include <iostream>
 #include <chrono>
 #include <ctime>
 #include <algorithm>
 
+#include "unit-tests-common.h"
+#include "../include/librealsense2/rs_advanced_mode.hpp"
+#include "../include/librealsense2/hpp/rs_frame.hpp"
+#include "../include/librealsense2/hpp/rs_processing.hpp"
+#include <librealsense2/hpp/rs_frame.hpp>
+#include <../src/proc/synthetic-stream.h>
+#include <../src/proc/disparity-transform.h>
+#include <../src/proc/spatial-filter.h>
+#include <../src/proc/temporal-filter.h>
+
 using namespace rs2;
+using namespace librealsense;  // An internal namespace not acessible via the public API
 
 # define SECTION_FROM_TEST_NAME space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str()
 
@@ -35,7 +43,7 @@ void disable_sensitive_options_for(sensor& sen)
 
     if (sen.supports(RS2_OPTION_EXPOSURE))
     {
-        option_range range;
+        rs2::option_range range;
         REQUIRE_NOTHROW(range = sen.get_option_range(RS2_OPTION_EXPOSURE)); // TODO: fails sometimes with "Element Not Found!"
         REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_EXPOSURE, range.def));
     }
@@ -118,7 +126,7 @@ struct stream_request
     }
 };
 
-struct profile
+struct test_profile
 {
     rs2_stream stream;
     rs2_format format;
@@ -126,7 +134,7 @@ struct profile
     int height;
     int index;
 
-    bool operator==(const profile& other) const
+    bool operator==(const test_profile& other) const
     {
         return stream == other.stream &&
             (format == 0 || other.format == 0 || format == other.format) &&
@@ -135,11 +143,11 @@ struct profile
             (index == 0 || other.index == 0 || index == other.index);
 
     }
-    bool operator!=(const profile& other) const
+    bool operator!=(const test_profile& other) const
     {
         return !(*this == other);
     }
-    bool operator<(const profile& other) const
+    bool operator<(const test_profile& other) const
     {
         return stream < other.stream;
     }
@@ -147,14 +155,14 @@ struct profile
 };
 struct device_profiles
 {
-    std::vector<profile> streams;
+    std::vector<test_profile> streams;
     int fps;
     bool sync;
 };
 
-std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int width = 640, int height = 480, int fps = 60)
+std::vector<test_profile>  configure_all_supported_streams(rs2::sensor& sensor, int width = 640, int height = 480, int fps = 60)
 {
-    std::vector<profile> all_profiles =
+    std::vector<test_profile> all_profiles =
     {
         { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, width, height, 0 },
         { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, width, height, 0 },
@@ -165,7 +173,7 @@ std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int w
         //        {RS2_STREAM_ACCEL, 0,  0, 0, RS2_FORMAT_MOTION_XYZ32F, 0}
     };
 
-    std::vector<profile> profiles;
+    std::vector<test_profile> profiles;
     std::vector<rs2::stream_profile> modes;
     auto all_modes = sensor.get_stream_profiles();
 
@@ -198,9 +206,9 @@ std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int w
     return profiles;
 }
 
-std::pair<std::vector<sensor>, std::vector<profile>> configure_all_supported_streams(rs2::device& dev, int width = 640, int height = 480, int fps = 30)
+std::pair<std::vector<rs2::sensor>, std::vector<test_profile>> configure_all_supported_streams(rs2::device& dev, int width = 640, int height = 480, int fps = 30)
 {
-    std::vector<profile > profiles;
+    std::vector<test_profile > profiles;
     std::vector<sensor > sensors;
     auto sens = dev.query_sensors();
     for (auto s : sens)
@@ -421,7 +429,7 @@ TEST_CASE("Sync different fps", "[live][!mayfail]") {
 }
 
 
-bool get_mode(rs2::device& dev, stream_profile* profile, int mode_index = 0)
+bool get_mode(rs2::device& dev, rs2::stream_profile* profile, int mode_index = 0)
 {
     auto sensors = dev.query_sensors();
     REQUIRE(sensors.size() > 0);
@@ -484,7 +492,7 @@ TEST_CASE("Sync start stop", "[live]") {
 
         while (sync.poll_for_frames(&old_frames));
 
-        stream_profile other_mode;
+        rs2::stream_profile other_mode;
         mode_index = 0;
 
         REQUIRE(get_mode(dev, &other_mode, mode_index));
@@ -2242,7 +2250,7 @@ TEST_CASE("Connect events works", "[live]") {
     }
 }
 
-std::shared_ptr<std::function<void(rs2::frame fref)>> check_stream_sanity(const context& ctx, const sensor& sub, int num_of_frames, bool infinite = false)
+std::shared_ptr<std::function<void(rs2::frame fref)>> check_stream_sanity(const rs2::context& ctx, const rs2::sensor& sub, int num_of_frames, bool infinite = false)
 {
     std::shared_ptr<std::condition_variable> cv = std::make_shared<std::condition_variable>();
     std::shared_ptr<std::mutex> m = std::make_shared<std::mutex>();
@@ -2269,7 +2277,7 @@ std::shared_ptr<std::function<void(rs2::frame fref)>> check_stream_sanity(const 
 
                     REQUIRE_NOTHROW(sub.open(p));
 
-                    func = std::make_shared< std::function<void(frame fref)>>([num_of_frames, m, streams_frames, cv](frame fref) mutable
+                    func = std::make_shared< std::function<void(rs2::frame fref)>>([num_of_frames, m, streams_frames, cv](rs2::frame fref) mutable
                     {
                         std::unique_lock<std::mutex> lock(*m);
                         auto stream = fref.get_profile().stream_type();
@@ -2387,7 +2395,7 @@ TEST_CASE("Connect Disconnect events while streaming", "[live]") {
     }
 }
 
-void check_controls_sanity(const context& ctx, const sensor& dev)
+void check_controls_sanity(const rs2::context& ctx, const sensor& dev)
 {
     for (auto d : ctx.get_sensor_parent(dev).query_sensors())
     {
@@ -2678,7 +2686,7 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
 //}
 
 
-void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::vector<double>> timestamps, device_profiles requests, int actual_fps)
+void validate(std::vector<std::vector<rs2::stream_profile>> frames, std::vector<std::vector<double>> timestamps, device_profiles requests, int actual_fps)
 {
     REQUIRE(frames.size() > 0);
 
@@ -2688,7 +2696,7 @@ void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::
 
     auto ts = 0;
 
-    std::vector<profile> actual_streams_arrived;
+    std::vector<test_profile> actual_streams_arrived;
     for (auto i = 0; i < frames.size(); i++)
     {
         auto frame = frames[i];
@@ -2698,8 +2706,8 @@ void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::
             CAPTURE(frame.size());
             continue;
         }
-
-        std::vector<profile> stream_arrived;
+           
+        std::vector<test_profile> stream_arrived;
 
         for (auto f : frame)
         {
@@ -2749,13 +2757,13 @@ void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::
 
     std::stringstream ss;
     ss << "Requested profiles : " << std::endl;
-    for (auto profile : requests.streams)
+    for (auto prof : requests.streams)
     {
-        ss << STRINGIFY(profile.stream) << " = " << profile.stream << std::endl;
-        ss << STRINGIFY(profile.format) << " = " << profile.format << std::endl;
-        ss << STRINGIFY(profile.width) << " = " << profile.width << std::endl;
-        ss << STRINGIFY(profile.height) << " = " << profile.height << std::endl;
-        ss << STRINGIFY(profile.index) << " = " << profile.index << std::endl;
+        //ss << STRINGIFY(prof.stream) << " = " << prof.stream << std::endl;
+        //ss << STRINGIFY(prof.format) << " = " << prof.format << std::endl;
+        ss << STRINGIFY(prof.width) << " = " << prof.width << std::endl;
+        ss << STRINGIFY(prof.height) << " = " << prof.height << std::endl;
+        ss << STRINGIFY(prof.index) << " = " << prof.index << std::endl;
     }
     CAPTURE(ss.str());
     CAPTURE(requests.fps);
@@ -2767,13 +2775,13 @@ void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::
     auto last = std::unique(actual_streams_arrived.begin(), actual_streams_arrived.end());
     actual_streams_arrived.erase(last, actual_streams_arrived.end());
 
-    for (auto profile : actual_streams_arrived)
+    for (auto prof : actual_streams_arrived)
     {
-        ss << STRINGIFY(profile.stream) << " = " << profile.stream << std::endl;
-        ss << STRINGIFY(profile.format) << " = " << profile.format << std::endl;
-        ss << STRINGIFY(profile.width) << " = " << profile.width << std::endl;
-        ss << STRINGIFY(profile.height) << " = " << profile.height << std::endl;
-        ss << STRINGIFY(profile.index) << " = " << profile.index << std::endl;
+        ss << STRINGIFY(prof.stream) << " = " << int(prof.stream) << std::endl;
+        ss << STRINGIFY(prof.format) << " = " << int(prof.format) << std::endl;
+        ss << STRINGIFY(prof.width) << " = " << prof.width << std::endl;
+        ss << STRINGIFY(prof.height) << " = " << prof.height << std::endl;
+        ss << STRINGIFY(prof.index) << " = " << prof.index << std::endl;
     }
     CAPTURE(ss.str());
 
@@ -2828,7 +2836,7 @@ TEST_CASE("Pipeline wait_for_frames", "[live]") {
 
             REQUIRE_NOTHROW(pipe.start(cfg));
 
-            std::vector<std::vector<stream_profile>> frames;
+            std::vector<std::vector<rs2::stream_profile>> frames;
             std::vector<std::vector<double>> timestamps;
 
             for (auto i = 0; i < 30; i++)
@@ -2840,7 +2848,7 @@ TEST_CASE("Pipeline wait_for_frames", "[live]") {
             {
                 frameset frame;
                 REQUIRE_NOTHROW(frame = pipe.wait_for_frames(10000));
-                std::vector<stream_profile> frames_set;
+                std::vector<rs2::stream_profile> frames_set;
                 std::vector<double> ts;
 
                 for (auto f : frame)
@@ -2896,7 +2904,7 @@ TEST_CASE("Pipeline poll_for_frames", "[live]")
 
             REQUIRE_NOTHROW(pipe.start(cfg));
 
-            std::vector<std::vector<stream_profile>> frames;
+            std::vector<std::vector<rs2::stream_profile>> frames;
             std::vector<std::vector<double>> timestamps;
 
             for (auto i = 0; i < 30; i++)
@@ -2908,7 +2916,7 @@ TEST_CASE("Pipeline poll_for_frames", "[live]")
                 frameset frame;
                 if (pipe.poll_for_frames(&frame))
                 {
-                    std::vector<stream_profile> frames_set;
+                    std::vector<rs2::stream_profile> frames_set;
                     std::vector<double> ts;
                     for (auto f : frame)
                     {
@@ -2995,7 +3003,7 @@ TEST_CASE("Pipeline enable stream", "[live]") {
             REQUIRE_NOTHROW(profile = pipe.start(cfg));
             REQUIRE(profile);
             REQUIRE(std::string(profile.get_device().get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-            std::vector<std::vector<stream_profile>> frames;
+            std::vector<std::vector<rs2::stream_profile>> frames;
             std::vector<std::vector<double>> timestamps;
 
             for (auto i = 0; i < 30; i++)
@@ -3007,9 +3015,9 @@ TEST_CASE("Pipeline enable stream", "[live]") {
             {
                 frameset frame;
                 REQUIRE_NOTHROW(frame = pipe.wait_for_frames(5000));
-                std::vector<stream_profile> frames_set;
+                std::vector<rs2::stream_profile> frames_set;
                 std::vector<double> ts;
-
+                
                 for (auto f : frame)
                 {
                     if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
@@ -3095,7 +3103,7 @@ TEST_CASE("Pipeline enable stream auto complete", "[live]")
             REQUIRE(profile.get_device());
             REQUIRE(std::string(profile.get_device().get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
-            std::vector<std::vector<stream_profile>> frames;
+            std::vector<std::vector<rs2::stream_profile>> frames;
             std::vector<std::vector<double>> timestamps;
 
             for (auto i = 0; i < 30; i++)
@@ -3107,7 +3115,7 @@ TEST_CASE("Pipeline enable stream auto complete", "[live]")
             {
                 frameset frame;
                 REQUIRE_NOTHROW(frame = pipe.wait_for_frames(5000));
-                std::vector<stream_profile> frames_set;
+                std::vector<rs2::stream_profile> frames_set;
                 std::vector<double> ts;
                 for (auto f : frame)
                 {
@@ -3173,7 +3181,7 @@ TEST_CASE("Pipeline disable_all", "[live]") {
             REQUIRE(std::string(profile.get_device().get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
 
-            std::vector<std::vector<stream_profile>> frames;
+            std::vector<std::vector<rs2::stream_profile>> frames;
             std::vector<std::vector<double>> timestamps;
 
             for (auto i = 0; i < 30; i++)
@@ -3185,7 +3193,7 @@ TEST_CASE("Pipeline disable_all", "[live]") {
             {
                 frameset frame;
                 REQUIRE_NOTHROW(frame = pipe.wait_for_frames(5000));
-                std::vector<stream_profile> frames_set;
+                std::vector<rs2::stream_profile> frames_set;
                 std::vector<double> ts;
                 for (auto f : frame)
                 {
@@ -3253,7 +3261,7 @@ TEST_CASE("Pipeline disable stream", "[live]") {
             REQUIRE(profile);
             REQUIRE(std::string(profile.get_device().get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
-            std::vector<std::vector<stream_profile>> frames;
+            std::vector<std::vector<rs2::stream_profile>> frames;
             std::vector<std::vector<double>> timestamps;
 
             for (auto i = 0; i < 30; i++)
@@ -3264,7 +3272,7 @@ TEST_CASE("Pipeline disable stream", "[live]") {
             {
                 frameset frame;
                 REQUIRE_NOTHROW(frame = pipe.wait_for_frames(5000));
-                std::vector<stream_profile> frames_set;
+                std::vector<rs2::stream_profile> frames_set;
                 std::vector<double> ts;
                 for (auto f : frame)
                 {
@@ -3329,7 +3337,7 @@ TEST_CASE("Pipeline with specific device", "[live]")
     }
 }
 
-bool operator==(std::vector<profile> streams1, std::vector<profile> streams2)
+bool operator==(std::vector<test_profile> streams1, std::vector<test_profile> streams2)
 {
     if (streams1.size() != streams2.size())
         return false;
@@ -3400,7 +3408,7 @@ TEST_CASE("Pipeline start stop", "[live]") {
             for (auto i = 0; i < 20; i++)
                 REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
 
-            std::vector<profile> profiles;
+            std::vector<test_profile> profiles;
             auto equals = 0;
             for (auto i = 0; i < 30; i++)
             {
@@ -3525,13 +3533,13 @@ TEST_CASE("Pipeline get selection", "[live]") {
                 REQUIRE_NOTHROW(cfg.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
 
             REQUIRE_NOTHROW(pipe.start(cfg));
-            std::vector<stream_profile> profiles;
+            std::vector<rs2::stream_profile> profiles;
             REQUIRE_NOTHROW(pipe_profile = pipe.get_active_profile());
             REQUIRE(pipe_profile);
             REQUIRE_NOTHROW(profiles = pipe_profile.get_streams());
 
             auto streams = configurations[PID].streams;
-            std::vector<profile> pipe_streams;
+            std::vector<test_profile> pipe_streams;
             for (auto s : profiles)
             {
                 REQUIRE(s.is<video_stream_profile>());
@@ -3859,7 +3867,7 @@ TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam
         //After getting the device, find a serial and a profile it can use
         std::string required_serial;
         REQUIRE_NOTHROW(required_serial = d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-        stream_profile required_profile;
+        rs2::stream_profile required_profile;
         //find the a video profile of some sensor
         for (auto&& sensor : d.query_sensors())
         {
@@ -4008,7 +4016,7 @@ void require_pipeline_profile_same(const rs2::pipeline_profile& profile1, const 
     auto streams1_and_2_equals = true;
     for (auto&& s : streams1)
     {
-        auto it = std::find_if(streams2.begin(), streams2.end(), [&s](const stream_profile& sp) {
+        auto it = std::find_if(streams2.begin(), streams2.end(), [&s](const rs2::stream_profile& sp) {
             return
                 s.format() == sp.format() &&
                 s.fps() == sp.fps() &&
@@ -4203,13 +4211,13 @@ TEST_CASE("Syncer sanity with software-device device", "[live][software-device]"
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-
+       
         const int W = 640;
         const int H = 480;
         const int BPP = 2;
         std::shared_ptr<software_device> dev = std::move(std::make_shared<software_device>());
         auto s = dev->add_sensor("software_sensor");
-
+       
         rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
 
         s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
@@ -4225,18 +4233,18 @@ TEST_CASE("Syncer sanity with software-device device", "[live][software-device]"
         syncer sync;
         s.open(profiles);
         s.start(sync);
-
+       
         std::vector<uint8_t> pixels(W * H * BPP, 0);
         std::weak_ptr<rs2::software_device> weak_dev(dev);
-
+      
         std::thread t([&s, weak_dev, pixels, depth, ir]() mutable {
-
+            
             auto shared_dev = weak_dev.lock();
             if (shared_dev == nullptr)
                 return;
             s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
             s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir });
-
+              
             s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth });
             s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir });
 
@@ -4304,13 +4312,13 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with software-device de
 
         std::shared_ptr<software_device> dev = std::make_shared<software_device>();
         auto s = dev->add_sensor("software_sensor");
-
+        
         rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
         s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
         s.add_video_stream({ RS2_STREAM_INFRARED, 1, 1, W, H,60,  BPP, RS2_FORMAT_Y8, intrinsics });
         dev->create_matcher(RS2_MATCHER_DI);
         frame_queue q;
-
+        
         auto profiles = s.get_stream_profiles();
         auto depth = profiles[0];
         auto ir = profiles[1];
@@ -4364,7 +4372,7 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with software-device de
             for (auto f : fs)
             {
                 curr.push_back({ f.get_profile().stream_type(), f.get_frame_number() });
-            }
+            } 
             results.push_back(curr);
         }
 
@@ -4393,47 +4401,6 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with software-device de
         }
     }
 }
-
-#define ADD_ENUM_TEST_CASE(rs2_enum_type, RS2_ENUM_COUNT)                                  \
-TEST_CASE(#rs2_enum_type " enum test", "[live]") {                                         \
-    int last_item_index = static_cast<int>(RS2_ENUM_COUNT);                                \
-    for (int i = 0; i < last_item_index; i++)                                              \
-    {                                                                                      \
-        rs2_enum_type enum_value = static_cast<rs2_enum_type>(i);                          \
-        std::string str;                                                                   \
-        REQUIRE_NOTHROW(str = rs2_enum_type##_to_string(enum_value));                      \
-        REQUIRE(str.empty() == false);                                                     \
-        std::string error = "Unknown enum value passed to " #rs2_enum_type "_to_string";   \
-        error += " (Value: " + std::to_string(i) + ")";                                    \
-        error += "\nDid you add a new value but forgot to add it to:\n"                    \
-                   " librealsense::get_string(" #rs2_enum_type ") ?";                      \
-        CAPTURE(error);                                                                    \
-        REQUIRE(str != "UNKNOWN");                                                         \
-    }                                                                                      \
-    /* Test for false positive*/                                                           \
-    for (int i = last_item_index; i < last_item_index + 1; i++)                            \
-    {                                                                                      \
-        rs2_enum_type enum_value = static_cast<rs2_enum_type>(i);                          \
-        std::string str;                                                                   \
-        REQUIRE_NOTHROW(str = rs2_enum_type##_to_string(enum_value));                      \
-        REQUIRE(str == "UNKNOWN");                                                         \
-    }                                                                                      \
-}
-
-ADD_ENUM_TEST_CASE(rs2_stream, RS2_STREAM_COUNT)
-ADD_ENUM_TEST_CASE(rs2_format, RS2_FORMAT_COUNT)
-ADD_ENUM_TEST_CASE(rs2_distortion, RS2_DISTORTION_COUNT)
-ADD_ENUM_TEST_CASE(rs2_option, RS2_OPTION_COUNT)
-ADD_ENUM_TEST_CASE(rs2_camera_info, RS2_CAMERA_INFO_COUNT)
-ADD_ENUM_TEST_CASE(rs2_timestamp_domain, RS2_TIMESTAMP_DOMAIN_COUNT)
-ADD_ENUM_TEST_CASE(rs2_notification_category, RS2_NOTIFICATION_CATEGORY_COUNT)
-ADD_ENUM_TEST_CASE(rs2_sr300_visual_preset, RS2_SR300_VISUAL_PRESET_COUNT)
-ADD_ENUM_TEST_CASE(rs2_log_severity, RS2_LOG_SEVERITY_COUNT)
-ADD_ENUM_TEST_CASE(rs2_exception_type, RS2_EXCEPTION_TYPE_COUNT)
-ADD_ENUM_TEST_CASE(rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT)
-ADD_ENUM_TEST_CASE(rs2_extension, RS2_EXTENSION_COUNT)
-ADD_ENUM_TEST_CASE(rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT)
-ADD_ENUM_TEST_CASE(rs2_rs400_visual_preset, RS2_RS400_VISUAL_PRESET_COUNT)
 
 void dev_changed(rs2_device_list* removed_devs, rs2_device_list* added_devs, void* ptr) {}
 TEST_CASE("C API Compilation", "[live]") {

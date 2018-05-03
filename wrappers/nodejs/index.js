@@ -40,8 +40,6 @@ class Device {
     sensors.forEach((s) => {
       if (s.isDepthSensor()) {
         array.push(new DepthSensor(s));
-      } else if (s.isROISensor()) {
-        array.push(new ROISensor(s));
       } else {
         array.push(new Sensor(s));
       }
@@ -83,6 +81,8 @@ class Device {
    * <br> undefined is not supported.
    * @property {Boolean|undefined} cameraLocked - True if EEPROM is locked. <br> undefined is not
    * supported.
+   * @property {String|undefined} usbTypeDescriptor - Designated USB specification: USB2/USB3.
+   * <br> undefined is not supported.
    * @see [Device.getCameraInfo()]{@link Device#getCameraInfo}
    */
 
@@ -96,8 +96,8 @@ class Device {
    *
    * @param {String|Integer} [info] - the camera_info type, see {@link camera_info} for available
    * values
-   * @return {CameraInfoObject} if no argument is provided, {CameraInfoObject} is returned.
-   * If a camera_info is provided, the specific camera info value is returned.
+   * @return {CameraInfoObject|String|undefined} if no argument is provided, {CameraInfoObject} is
+   * returned. If a camera_info is provided, the specific camera info value string is returned.
    */
   getCameraInfo(info) {
     const funcName = 'Device.getCameraInfo()';
@@ -128,6 +128,10 @@ class Device {
       }
       if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_CAMERA_LOCKED)) {
         result.cameraLocked = this.cxxDev.getCameraInfo(camera_info.CAMERA_INFO_CAMERA_LOCKED);
+      }
+      if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_USB_TYPE_DESCRIPTOR)) {
+        result.usbTypeDescriptor = this.cxxDev.getCameraInfo(
+            camera_info.CAMERA_INFO_USB_TYPE_DESCRIPTOR);
       }
       return result;
     } else {
@@ -614,6 +618,9 @@ class Options {
     if (!this.cxxObj.supportsOption(o) || this.cxxObj.isOptionReadonly(o)) {
       return undefined;
     }
+    if (!this._internalIsOptionValueInRange(o, value)) {
+      return undefined;
+    }
     this.cxxObj.setOption(o, value);
   }
 
@@ -667,6 +674,11 @@ class Options {
     }
     return this.cxxObj.getOptionValueDescription(o, value);
   }
+
+  _internalIsOptionValueInRange(option, value) {
+    let range = this.getOptionRange(option);
+    return (range && value >= range.minValue && value <= range.maxValue);
+  }
 }
 
 /**
@@ -675,12 +687,16 @@ class Options {
 class Sensor extends Options {
   /**
    * Construct a Sensor object, representing a RealSense camera subdevice
+   * By default, native resources associated with a Sensor object are freed
+   * automatically during cleanup.
    */
-  constructor(sensor) {
-    super(sensor);
-    this.cxxSensor = sensor;
+  constructor(cxxSensor, autoDelete = true) {
+    super(cxxSensor);
+    this.cxxSensor = cxxSensor;
     this._events = new EventEmitter();
-    internal.addObject(this);
+    if (autoDelete === true) {
+      internal.addObject(this);
+    }
   }
 
   /**
@@ -939,11 +955,26 @@ class Sensor extends Options {
  */
 class ROISensor extends Sensor {
   /**
-   * Construct a ROISensor object, representing a RealSense camera subdevice
-   *
+   * Create a ROISensor out of another sensor
+   * @param {Sensor} sensor a sensor object
+   * @return {ROISensor|undefined} return a ROISensor if the sensor can be
+   * treated as a ROISensor, otherwise return undefined.
    */
-   constructor(sensor) {
-    super(sensor);
+  static from(sensor) {
+    if (sensor.cxxSensor.isROISensor()) {
+      return new ROISensor(sensor.cxxSensor);
+    }
+    return undefined;
+  }
+
+  /**
+   * Construct a ROISensor object, representing a RealSense camera subdevice
+   * The newly created ROISensor object shares native resources with the sensor
+   * argument. So the new object shouldn't be freed automatically to make
+   * sure resources released only once during cleanup.
+   */
+   constructor(cxxSensor) {
+    super(cxxSensor, false);
   }
 
   /**
@@ -1005,11 +1036,11 @@ class ROISensor extends Sensor {
       minY = arguments[1];
       maxX = arguments[2];
       maxY = arguments[3];
-      this.cxxSensor.setRegionOfInterest(minX, minY, maxX, maxY);
     } else {
       throw new TypeError(
           'setRegionOfInterest(region) expects a RegionOfInterestObject as argument');
     }
+    this.cxxSensor.setRegionOfInterest(minX, minY, maxX, maxY);
   }
 }
 
@@ -1673,6 +1704,7 @@ class Align {
     const s = checkArgumentType(arguments, constants.stream, 0, funcName);
     this.cxxAlign = new RS2.RSAlign(s);
     this.frameSet = new FrameSet();
+    internal.addObject(this);
   }
 
   /**
@@ -3944,6 +3976,16 @@ const stream = {
      * through GPIO . <br>Equivalent to its uppercase counterpart.
      */
     stream_gpio: 'gpio',
+    /**
+     * String literal of <code>'pose'</code>. <br>6 Degrees of Freedom pose data, calculated by
+     * RealSense device. <br>Equivalent to its uppercase counterpart.
+     */
+    stream_pose: 'pose',
+    /**
+     * String literal of <code>'confidence'</code>. <br>Confidence stream
+     * <br>Equivalent to its uppercase counterpart.
+     */
+    stream_confidence: 'confidence',
 
     /**
      * Any stream. <br>Equivalent to its lowercase counterpart.
@@ -3992,7 +4034,17 @@ const stream = {
      * @type {Integer}
      */
     STREAM_GPIO: RS2.RS2_STREAM_GPIO,
-
+    /**
+     * 6 Degrees of Freedom pose data, calculated by RealSense device. <br>Equivalent to its
+     * lowercase counterpart.
+     * @type {Integer}
+     */
+    STREAM_POSE: RS2.RS2_STREAM_POSE,
+    /**
+     * Confidence stream. <br>Equivalent to its lowercase counterpart.
+     * @type {Integer}
+     */
+    STREAM_CONFIDENCE: RS2.RS2_STREAM_CONFIDENCE,
     /**
      * Number of enumeration values. Not a valid input: intended to be used in for-loops.
      * @type {Integer}
@@ -4025,6 +4077,10 @@ const stream = {
           return this.stream_accel;
         case this.STREAM_GPIO:
           return this.stream_gpio;
+        case this.STREAM_POSE:
+          return this.stream_pose;
+        case this.STREAM_CONFIDENCE:
+          return this.stream_confidence;
       }
     },
 };
@@ -4317,6 +4373,12 @@ const option = {
    */
   option_stereo_baseline: 'stereo-baseline',
   /**
+   * String literal of <code>'auto-exposure-converage-step'</code>. <br>Allows dynamically ajust
+   * the converge step value of the target exposure in Auto-Exposure algorithm
+   * <br>Equivalent to its uppercase counterpart.
+   */
+  option_auto_exposure_converge_step: 'auto-exposure-converge-step',
+  /**
    * Enable / disable color backlight compensatio.<br>Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
@@ -4549,6 +4611,13 @@ const option = {
    */
   OPTION_STEREO_BASELINE: RS2.RS2_OPTION_STEREO_BASELINE,
   /**
+   * Allows dynamically ajust the converge step value of the target exposure in Auto-Exposure
+   * algorithm
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  OPTION_AUTO_EXPOSURE_CONVERGE_STEP: RS2.RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP,
+  /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
    */
@@ -4646,6 +4715,8 @@ const option = {
         return this.option_holes_fill;
       case this.OPTION_STEREO_BASELINE:
         return this.option_stereo_baseline;
+      case this.OPTION_AUTO_EXPOSURE_CONVERGE_STEP:
+        return this.option_auto_exposure_converge_step;
       default:
         throw new TypeError(
             'option.optionToString(option) expects a valid value as the 1st argument');
@@ -4706,6 +4777,11 @@ const camera_info = {
    * <br>Equivalent to its uppercase counterpart.
    */
   camera_info_camera_locked: 'camera-locked',
+  /**
+   * String literal of <code>'usb-type-descriptor'</code>. <br>Designated USB specification:
+   * USB2/USB3. <br>Equivalent to its uppercase counterpart.
+   */
+  camera_info_usb_type_descriptor: 'usb-type-descriptor',
 
   /**
    * Device friendly name. <br>Equivalent to its lowercase counterpart.
@@ -4749,7 +4825,11 @@ const camera_info = {
    * @type {Integer}
    */
   CAMERA_INFO_CAMERA_LOCKED: RS2.RS2_CAMERA_INFO_CAMERA_LOCKED,
-
+  /**
+   * Designated USB specification: USB2/USB3. <br>Equivalent to its lowercase counterpart.
+   * @type {Integer}
+   */
+  CAMERA_INFO_USB_TYPE_DESCRIPTOR: RS2.RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
@@ -4782,6 +4862,8 @@ const camera_info = {
         return this.camera_info_product_id;
       case this.CAMERA_INFO_CAMERA_LOCKED:
         return this.camera_info_camera_locked;
+      case this.CAMERA_INFO_USB_TYPE_DESCRIPTOR:
+        return this.camera_info_usb_type_descriptor;
     }
   },
 };

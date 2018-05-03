@@ -261,6 +261,195 @@ describe('enum value test', function() {
       assert.equal(typeof obj.frameMetadataToString(i), 'string');
     }
   });
+  it('stream test', () => {
+    const obj = rs2.stream;
+    const numberAttrs = [
+      'STREAM_ANY',
+      'STREAM_DEPTH',
+      'STREAM_COLOR',
+      'STREAM_INFRARED',
+      'STREAM_FISHEYE',
+      'STREAM_GYRO',
+      'STREAM_ACCEL',
+      'STREAM_GPIO',
+      'STREAM_POSE',
+      'STREAM_CONFIDENCE',
+    ];
+    const strAttrs = [
+      'stream_any',
+      'stream_depth',
+      'stream_color',
+      'stream_infrared',
+      'stream_fisheye',
+      'stream_gyro',
+      'stream_accel',
+      'stream_gpio',
+      'stream_pose',
+      'stream_confidence',
+    ];
+    numberAttrs.forEach((attr) => {
+      assert.equal(typeof obj[attr], 'number');
+    });
+    strAttrs.forEach((attr) => {
+      assert.equal(typeof obj[attr], 'string');
+    });
+    for (let i = 0; i < obj.STREAM_COUNT; i++) {
+      assert.equal(typeof obj.streamToString(i), 'string');
+    }
+  });
+  it('camera_info test', () => {
+    const obj = rs2.camera_info;
+    const numberAttrs = [
+      'CAMERA_INFO_NAME',
+      'CAMERA_INFO_SERIAL_NUMBER',
+      'CAMERA_INFO_FIRMWARE_VERSION',
+      'CAMERA_INFO_PHYSICAL_PORT',
+      'CAMERA_INFO_DEBUG_OP_CODE',
+      'CAMERA_INFO_ADVANCED_MODE',
+      'CAMERA_INFO_PRODUCT_ID',
+      'CAMERA_INFO_CAMERA_LOCKED',
+      'CAMERA_INFO_USB_TYPE_DESCRIPTOR',
+    ];
+    const strAttrs = [
+      'camera_info_name',
+      'camera_info_serial_number',
+      'camera_info_firmware_version',
+      'camera_info_physical_port',
+      'camera_info_debug_op_code',
+      'camera_info_advanced_mode',
+      'camera_info_product_id',
+      'camera_info_camera_locked',
+      'camera_info_usb_type_descriptor',
+    ];
+    numberAttrs.forEach((attr) => {
+      assert.equal(typeof obj[attr], 'number');
+    });
+    strAttrs.forEach((attr) => {
+      assert.equal(typeof obj[attr], 'string');
+    });
+    for (let i = 0; i < obj.CAMERA_INFO_COUNT; i++) {
+      assert.equal(typeof obj.cameraInfoToString(i), 'string');
+    }
+    let ctx = new rs2.Context();
+    let dev = ctx.queryDevices().devices[0];
+
+    for (let i = obj.CAMERA_INFO_NAME; i < obj.CAMERA_INFO_COUNT; i++) {
+      let info = dev.getCameraInfo(i);
+      assert.equal((info === undefined) || (typeof info === 'string'), true);
+    }
+    rs2.cleanup();
+  });
+  it('option test', () => {
+    const obj = rs2.option;
+    const numberAttrs = [
+      'OPTION_BACKLIGHT_COMPENSATION',
+      'OPTION_BRIGHTNESS',
+      'OPTION_CONTRAST',
+      'OPTION_EXPOSURE',
+      'OPTION_GAIN',
+      'OPTION_GAMMA',
+      'OPTION_HUE',
+      'OPTION_SATURATION',
+      'OPTION_SHARPNESS',
+      'OPTION_WHITE_BALANCE',
+      'OPTION_ENABLE_AUTO_EXPOSURE',
+      'OPTION_ENABLE_AUTO_WHITE_BALANCE',
+      'OPTION_VISUAL_PRESET',
+      'OPTION_LASER_POWER',
+      'OPTION_ACCURACY',
+      'OPTION_MOTION_RANGE',
+      'OPTION_FILTER_OPTION',
+      'OPTION_CONFIDENCE_THRESHOLD',
+      'OPTION_EMITTER_ENABLED',
+      'OPTION_FRAMES_QUEUE_SIZE',
+      'OPTION_TOTAL_FRAME_DROPS',
+      'OPTION_AUTO_EXPOSURE_MODE',
+      'OPTION_POWER_LINE_FREQUENCY',
+      'OPTION_ASIC_TEMPERATURE',
+      'OPTION_ERROR_POLLING_ENABLED',
+      'OPTION_PROJECTOR_TEMPERATURE',
+      'OPTION_OUTPUT_TRIGGER_ENABLED',
+      'OPTION_MOTION_MODULE_TEMPERATURE',
+      'OPTION_DEPTH_UNITS',
+      'OPTION_ENABLE_MOTION_CORRECTION',
+      'OPTION_AUTO_EXPOSURE_PRIORITY',
+      'OPTION_COLOR_SCHEME',
+      'OPTION_HISTOGRAM_EQUALIZATION_ENABLED',
+      'OPTION_MIN_DISTANCE',
+      'OPTION_MAX_DISTANCE',
+      'OPTION_TEXTURE_SOURCE',
+      'OPTION_FILTER_MAGNITUDE',
+      'OPTION_FILTER_SMOOTH_ALPHA',
+      'OPTION_FILTER_SMOOTH_DELTA',
+      'OPTION_HOLES_FILL',
+      'OPTION_STEREO_BASELINE',
+    ];
+    const strAttrs = [
+      'option_backlight_compensation',
+      'option_brightness',
+      'option_contrast',
+      'option_exposure',
+      'option_gain',
+      'option_gamma',
+      'option_hue',
+      'option_saturation',
+      'option_sharpness',
+      'option_white_balance',
+      'option_enable_auto_exposure',
+      'option_enable_auto_white_balance',
+      'option_visual_preset',
+      'option_laser_power',
+      'option_accuracy',
+      'option_motion_range',
+      'option_filter_option',
+      'option_confidence_threshold',
+      'option_emitter_enabled',
+      'option_frames_queue_size',
+      'option_total_frame_drops',
+      'option_auto_exposure_mode',
+      'option_power_line_frequency',
+      'option_asic_temperature',
+      'option_error_polling_enabled',
+      'option_projector_temperature',
+      'option_output_trigger_enabled',
+      'option_motion_module_temperature',
+      'option_depth_units',
+      'option_enable_motion_correction',
+      'option_auto_exposure_priority',
+      'option_color_scheme',
+      'option_histogram_equalization_enabled',
+      'option_min_distance',
+      'option_max_distance',
+      'option_texture_source',
+      'option_filter_magnitude',
+      'option_filter_smooth_alpha',
+      'option_filter_smooth_delta',
+      'option_holes_fill',
+      'option_stereo_baseline',
+    ];
+    numberAttrs.forEach((attr) => {
+      assert.equal(typeof obj[attr], 'number');
+    });
+    strAttrs.forEach((attr) => {
+      assert.equal(typeof obj[attr], 'string');
+    });
+    for (let i = 0; i < obj.OPTION_COUNT; i++) {
+      assert.equal(typeof obj.optionToString(i), 'string');
+    }
+    let ctx = new rs2.Context();
+    let sensors = ctx.querySensors();
+    // make sure it would not crash
+    sensors.forEach((s) => {
+      for (let i = 0; i < obj.OPTION_COUNT; i++) {
+        let old = s.getOption(i);
+        s.setOption(i, 10);
+        if (typeof old === 'number') {
+          s.setOption(i, old);
+        }
+      }
+    });
+    rs2.cleanup();
+  });
 });
 
 describe('infrared frame tests', function() {
@@ -311,5 +500,28 @@ describe('Native error tests', function() {
     });
     rs2.cleanup();
     fs.unlinkSync(file);
+  });
+});
+
+describe('ROI test', function() {
+  it('set/get ROI test', () => {
+    let ctx = new rs2.Context();
+    let sensors = ctx.querySensors();
+    sensors.forEach((s) => {
+      let roi = rs2.ROISensor.from(s);
+      if (roi) {
+        roi.setRegionOfInterest(1, 1, 10, 10);
+        let val = roi.getRegionOfInterest();
+        if (val) {
+          assert.equal(val.minX, 1);
+          assert.equal(val.minY, 1);
+          assert.equal(val.maxX, 10);
+          assert.equal(val.maxY, 10);
+        } else {
+          assert.equal(rs2.getError() instanceof Object, true);
+        }
+      }
+    });
+    rs2.cleanup();
   });
 });

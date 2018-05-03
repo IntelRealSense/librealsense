@@ -10,6 +10,7 @@
 #include <vector>
 #include <cmath>
 
+#include "spatial-holes-fill.h"
 #include "../include/librealsense2/hpp/rs_frame.hpp"
 #include "../include/librealsense2/hpp/rs_processing.hpp"
 
@@ -29,13 +30,32 @@ namespace librealsense
         void dxf_smooth(void *frame_data, float alpha, float delta, int iterations)
         {
             static_assert((std::is_arithmetic<T>::value), "Spatial filter assumes numeric types");
+            bool fp = (std::is_floating_point<T>::value);
 
             for (int i = 0; i < iterations; i++)
             {
-                recursive_filter_horizontal<T>(frame_data, alpha, delta);
-                recursive_filter_vertical<T>(frame_data, alpha, delta);
+                if (fp)
+                {
+                    recursive_filter_horizontal_fp(frame_data, alpha, delta);
+                    recursive_filter_vertical_fp(frame_data, alpha, delta);
+                }
+                else
+                {
+                    recursive_filter_horizontal<T>(frame_data, alpha, delta);
+                    recursive_filter_vertical<T>(frame_data, alpha, delta);
+                }
+            }
+
+            // Disparity domain holes filling requires a second pass over the frame data
+            if (_holes_filling_mode)
+            {
+                apply_holes_filling<T>(frame_data, _width, _height, _stride,
+                    static_cast<holes_filling_types>(_holes_filling_mode), _holes_filling_radius);
             }
         }
+
+        void recursive_filter_horizontal_fp(void * image_data, float alpha, float deltaZ);
+        void recursive_filter_vertical_fp(void * image_data, float alpha, float deltaZ);
 
         template <typename T>
         void  recursive_filter_horizontal(void * image_data, float alpha, float deltaZ)
@@ -65,9 +85,9 @@ namespace librealsense
                 {
                     T val1 = im[1];
 
-                    if (val0 >= valid_threshold)
+                    if (fabs(val0) >= valid_threshold)
                     {
-                        if (val1 >= valid_threshold)
+                        if (fabs(val1) >= valid_threshold)
                         {
                             cur_fill = 0;
                             T diff = static_cast<T>(fabs(val1 - val0));
@@ -162,7 +182,7 @@ namespace librealsense
                     im0 = im[0];
                     imw = im[_width];
 
-                    if ((im0 >= valid_threshold) && (imw >= valid_threshold))
+                    //if ((fabs(im0) >= valid_threshold) && (fabs(imw) >= valid_threshold))
                     {
                         T diff = static_cast<T>(fabs(im0 - imw));
                         if (diff < delta_z)
@@ -184,7 +204,7 @@ namespace librealsense
                     im0 = im[0];
                     imw = im[_width];
 
-                    if ((im0 >=valid_threshold) && (imw >= valid_threshold))
+                    if ((fabs(im0) >= valid_threshold) && (fabs(imw) >= valid_threshold))
                     {
                         T diff = static_cast<T>(fabs(im0 - imw));
                         if ( diff < delta_z)
@@ -203,7 +223,7 @@ namespace librealsense
         float                   _spatial_alpha_param;
         uint8_t                 _spatial_delta_param;
         uint8_t                 _spatial_iterations;
-        float                   _spatial_radius;            // The convolution radius is domain-dependent
+        float                   _spatial_edge_threshold;
         size_t                  _width, _height, _stride;
         size_t                  _bpp;
         rs2_extension           _extension_type;            // Strictly Depth/Disparity

@@ -41,7 +41,8 @@ before_install:
       brew uninstall xctool;
       brew install xctool --HEAD;
       brew install homebrew/core/glfw3;
-      brew install libusb;
+      brew list libusb || brew install libusb;
+      brew upgrade libusb;
     fi
 
   # Install linux required packages
@@ -102,7 +103,7 @@ script:
       cd ..;
 
       mkdir build && cd build;
-      cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_PYTHON_BINDINGS:BOOL=true -DBUILD_NODEJS_BINDINGS:BOOL=true;
+      cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_PYTHON_BINDINGS:BOOL=true -DBUILD_NODEJS_BINDINGS:BOOL=true -DBUILD_UNIT_TESTS:BOOL=true;
       make -j $CPU_NUM;
       sudo "PATH=$PATH" make install;
 

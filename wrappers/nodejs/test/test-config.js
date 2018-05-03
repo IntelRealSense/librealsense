@@ -4,8 +4,9 @@
 
 'use strict';
 
-/* global describe, it, before, after */
+/* global describe, it, beforeEach, afterEach */
 const assert = require('assert');
+const fs = require('fs');
 let rs2;
 try {
   rs2 = require('node-librealsense');
@@ -13,11 +14,12 @@ try {
   rs2 = require('../index.js');
 }
 
+let fileName = 'record.bag';
 let config;
 let pipeline;
 let serial;
 describe('Config test', function() {
-  before(function() {
+  beforeEach(function() {
     pipeline = new rs2.Pipeline();
     config = new rs2.Config();
     const ctx = new rs2.Context();
@@ -27,10 +29,42 @@ describe('Config test', function() {
     serial = dev.getCameraInfo(rs2.camera_info.CAMERA_INFO_SERIAL_NUMBER);
   });
 
-  after(function() {
+  afterEach(function() {
     pipeline.destroy();
     rs2.cleanup();
+    if (fs.existsSync(fileName)) {
+      fs.unlinkSync(fileName);
+    }
   });
+
+  function createRrdFile() {
+    const ctx = new rs2.Context();
+    let dev = ctx.queryDevices().devices[0];
+    // record to file record.bag
+    let recorder = new rs2.RecorderDevice(fileName, dev);
+    let sensors = recorder.querySensors();
+    let sensor = sensors[0];
+    let profiles = sensor.getStreamProfiles();
+    for (let i =0; i < profiles.length; i++) {
+      if (profiles[i].streamType === rs2.stream.STREAM_DEPTH &&
+          profiles[i].fps === 30 &&
+          profiles[i].width === 640 &&
+          profiles[i].height === 480 &&
+          profiles[i].format === rs2.format.FORMAT_Z16) {
+        sensor.open(profiles[i]);
+      }
+    }
+    // record 10 frames
+    let cnt = 0;
+    sensor.start((frame) => {
+      cnt++;
+      if (cnt === 10) {
+        // stop recording
+        recorder.reset();
+        rs2.cleanup();
+      }
+    });
+  }
 
   it('Testing method canResolve - 0 argument', () => {
     assert.throws(() => {
@@ -174,5 +208,109 @@ describe('Config test', function() {
     assert.doesNotThrow(() => {
       config.enableAllStreams(1);
     });
+  });
+
+  it('Testing method enableDeviceFromFile - 0 argument', () => {
+    assert.throws(() => {
+      config.enableDeviceFromFile();
+    });
+  });
+
+  it('Testing method enableDeviceFromFile - 2 argument', () => {
+    assert.throws(() => {
+      config.enableDeviceFromFile(1, 1);
+    });
+  });
+
+  it('Testing method enableDeviceFromFile - argument with number', () => {
+    assert.throws(() => {
+      config.enableDeviceFromFile(1);
+    });
+  });
+
+  it('Testing method enableDeviceFromFile - with file', () => {
+    createRrdFile();
+    assert.doesNotThrow(() => {
+      config.enableDeviceFromFile(fileName);
+    });
+  });
+
+  it('Testing method enableDeviceFromFile - with invalid argument', () => {
+    assert.throws(() => {
+      config.enableDeviceFromFile('dummy');
+    });
+  });
+
+  it('Testing method enableDeviceFromFile - after enableRecordToFile', () => {
+    assert.doesNotThrow(() => {
+      config.enableRecordToFile(fileName);
+      pipeline.start(config);
+    });
+    assert.throws(() => {
+      config.enableDeviceFromFile(fileName);
+    });
+  });
+
+  it('Testing method enableRecordToFile - 0 argument', () => {
+    assert.throws(() => {
+      config.enableRecordToFile();
+    });
+  });
+
+  it('Testing method enableRecordToFile - two arguments', () => {
+    assert.throws(() => {
+      config.enableRecordToFile(fileName, fileName);
+    });
+  });
+
+  it('Testing method enableRecordToFile - argument with number', () => {
+    assert.throws(() => {
+      config.enableRecordToFile(1);
+    });
+  });
+
+  it('Testing method enableRecordToFile - without pipeline.start', () => {
+    assert.doesNotThrow(() => {
+      config.enableRecordToFile(fileName);
+    });
+    assert.equal(fs.existsSync(fileName), false);
+  });
+
+  it('Testing method enableRecordToFile - value result', () => {
+    assert.doesNotThrow(() => {
+      config.enableRecordToFile(fileName);
+      pipeline.start(config);
+    });
+    assert.equal(fs.existsSync(fileName), true);
+    assert.doesNotThrow(() => {
+      let frameSet = pipeline.waitForFrames();
+      assert(frameSet instanceof rs2.VideoFrame);
+    });
+  });
+
+  it('Testing method enableRecordToFile - then enableDeviceFromFile', () => {
+    assert.doesNotThrow(() => {
+      config.enableRecordToFile(fileName);
+      pipeline.start(config);
+      let frameSet = pipeline.waitForFrames();
+      assert(frameSet instanceof rs2.VideoFrame);
+    });
+    assert.equal(fs.existsSync(fileName), true);
+    assert.throws(() => {
+      config.enableDeviceFromFile(fileName);
+    });
+  });
+
+  it('Testing method enableRecordToFile - fileName has been exist', () => {
+    fs.closeSync(fs.openSync(fileName, 'w'));
+    assert.doesNotThrow(() => {
+      config.enableRecordToFile(fileName);
+      pipeline.start(config);
+    });
+    assert.doesNotThrow(() => {
+      let frameSet = pipeline.waitForFrames();
+      assert(frameSet instanceof rs2.VideoFrame);
+    });
+    assert.equal(fs.existsSync(fileName), true);
   });
 });

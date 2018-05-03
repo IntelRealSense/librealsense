@@ -17,7 +17,8 @@ namespace rs2
               _skew_up(std::chrono::seconds(1)),
               _skew_down(std::chrono::seconds(1)),
               _angle_alert(std::chrono::seconds(4)),
-              _min_dist(300.f), _max_dist(2000.f), _max_angle(10.f)
+              _min_dist(300.f), _max_dist(2000.f), _max_angle(10.f),
+              _metrics_model(_viewer_model)
         {
             _viewer_model.is_3d_view = true;
             _viewer_model.allow_3d_source_change = false;
@@ -31,29 +32,53 @@ namespace rs2
         {
             bool valid_config = false;
             std::vector<rs2::config> cfgs;
+            rs2::pipeline_profile active_profile;
 
-            rs2::config cfg;
-            // Preferred configuration Depth + Synthetic Color
-            cfg.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, 30);
-            cfg.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_RGB8, 30);
-            cfgs.push_back(cfg);
+            // Adjust settings according to USB type
+            bool usb3_device = true;
+            auto devices = _ctx.query_devices();
+            if (devices.size())
+            {
+                auto dev = devices[0];
+                bool usb3_device = true;
+                if (dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+                {
+                    std::string usb_type = dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+                    usb3_device = !(std::string::npos != usb_type.find("2."));
+                }
+            }
+            else
+                return valid_config;
 
+            int requested_fps = usb3_device ? 30 : 15;
+
+            {
+                rs2::config cfg_default;
+                // Preferred configuration Depth + Synthetic Color
+                cfg_default.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, requested_fps);
+                cfg_default.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_RGB8, requested_fps);
+                cfgs.emplace_back(cfg_default);
+            }
             // Use Infrared luminocity as a secondary video in case synthetic chroma is not supported
-            cfg.disable_all_streams();
-            cfg.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, 30);
-            cfg.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, 30);
-            cfgs.push_back(cfg);
+            {
+                rs2::config cfg_alt;
+                cfg_alt.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, requested_fps);
+                cfg_alt.enable_stream(RS2_STREAM_INFRARED, 1, 0, 0, RS2_FORMAT_Y8, requested_fps);
+                cfgs.emplace_back(cfg_alt);
+            }
 
             for (auto& cfg : cfgs)
             {
                 if (valid_config = cfg.can_resolve(_pipe))
                 {
                     try {
-                        _pipe.start(cfg);
+                        active_profile = _pipe.start(cfg);
+                        valid_config = active_profile;
                         break;
                     }
                     catch (...)
                     {
+                        valid_config = false;
                         if (!_device_in_use)
                         {
                             window.add_on_load_message("Device is not functional or busy!");
@@ -450,13 +475,35 @@ namespace rs2
                 device_model* device_to_remove = nullptr;
                 std::vector<std::function<void()>> draw_later;
                 auto windows_width = ImGui::GetContentRegionMax().x;
-
+                auto json_loaded = false;
                 _device_model->draw_controls(_viewer_model.panel_width, _viewer_model.panel_y,
                     win,
                     _error_message, device_to_remove, _viewer_model, windows_width,
                     _update_readonly_options_timer,
-                    draw_later, false);
+                    draw_later, true, 
+                    [&](std::function<void()>func) 
+                    {
+                        auto profile =_pipe.get_active_profile();
+                        _pipe.stop();
+                        func();
 
+                        auto streams = profile.get_streams();
+                        config cfg;
+
+                        for (auto&& s : streams)
+                        {
+                            cfg.enable_stream(s.stream_type(), s.stream_index(), s.format(), s.fps());
+                        }
+                        _pipe.start(cfg);
+
+                        json_loaded = true;
+                    }, 
+                    false);
+
+                if (json_loaded)
+                {
+                    update_configuration();
+                }
                 ImGui::SetContentRegionWidth(windows_width);
                 auto pos = ImGui::GetCursorScreenPos();
 
@@ -525,8 +572,8 @@ namespace rs2
                                 {
                                     try // Retries are needed to cope with HW stability issues
                                     {
-                                        _pipe.start(cfg);
-                                        success = true;
+                                        auto profile = _pipe.start(cfg);
+                                        success = profile;
                                     }
                                     catch (...)
                                     {
@@ -637,14 +684,26 @@ namespace rs2
 
                         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-                        if (ImGui::Button(u8"\uf0c7 Save Report", { 140, 25 }))
+                        if (_metrics_model.is_recording())
                         {
-                            snapshot_metrics();
+                            if (ImGui::Button(u8"\uf0c7 Stop_record", { 140, 25 }))
+                            {
+                                _metrics_model.stop_record(_device_model.get());
+                            }
                         }
-                        if (ImGui::IsItemHovered())
+                        else
                         {
-                            ImGui::SetTooltip("Save Metrics snapshot. This will create:\nPNG image with the depth frame\nPLY 3D model with the point cloud\nJSON file with camera settings you can load later\nand a CSV with metrics recent values");
+                            if (ImGui::Button(u8"\uf0c7 Start_record", { 140, 25 }))
+                            {
+                                _metrics_model.start_record();
+                            }
+
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Save Metrics snapshot. This will create:\nPNG image with the depth frame\nPLY 3D model with the point cloud\nJSON file with camera settings you can load later\nand a CSV with metrics recent values");
+                            }
                         }
+                       
                         ImGui::PopStyleColor(2);
 
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
@@ -729,6 +788,7 @@ namespace rs2
             }
 
             _metrics_model.reset();
+            _metrics_model.update_device_data(capture_description());
 
             // Restore GUI controls to the selected configuration
             if (save)
@@ -811,46 +871,7 @@ namespace rs2
             return improved > window_size * 0.4;
         }
 
-        void tool_model::snapshot_metrics()
-        {
-            if (auto ret = file_dialog_open(save_file, NULL, NULL, NULL))
-            {
-                std::string filename_base(ret);
-
-                // Save depth/ir images
-                for (auto const &stream : _viewer_model.streams)
-                {
-                    stream.second.snapshot_frame(ret, _viewer_model);
-                }
-
-                // Export 3d view in PLY format
-                frame ply_texture;
-                if (_viewer_model.selected_tex_source_uid >= 0)
-                {
-                    ply_texture = _viewer_model.streams[_viewer_model.selected_tex_source_uid].texture->get_last_frame();
-                    if (ply_texture)
-                        _viewer_model.ppf.update_texture(ply_texture);
-                }
-                export_to_ply(filename_base + "_3d_mesh.ply", _viewer_model.not_model, _viewer_model.ppf.get_points(), ply_texture);
-
-                // Save Metrics
-                _metrics_model.serialize_to_csv(filename_base + "_depth_metrics.csv", capture_description());
-
-                // Save camera configuration - supported when camera is in advanced mode only
-                if (_device_model.get())
-                {
-                    if (auto adv = _device_model->dev.as<rs400::advanced_mode>())
-                    {
-                        std::string filename = filename_base + "_configuration.json";
-                        std::ofstream out(filename);
-                        out << adv.serialize_json();
-                        out.close();
-                    }
-                }
-            }
-        }
-
-        metrics_model::metrics_model() :
+        metrics_model::metrics_model(viewer_model& viewer_model) :
             _frame_queue(1),
             _depth_scale_units(0.f),
             _stereo_baseline_mm(0.f),
@@ -858,52 +879,60 @@ namespace rs2
             _use_gt(false),
             _plane_fit(false),
             _roi_percentage(0.4f),
-            _active(true)
+            _active(true),
+            _recorder(viewer_model)
         {
             _worker_thread = std::thread([this]() {
                 while (_active)
                 {
-                    rs2::frame depth_frame;
-                    if (!_frame_queue.poll_for_frame(&depth_frame))
+                    rs2::frameset frames;
+                    if (!_frame_queue.poll_for_frame(&frames))
                     {
                         std::this_thread::sleep_for(std::chrono::milliseconds(10));
                         continue;
                     }
 
-                    auto profile = depth_frame.get_profile();
-                    auto stream_type = profile.stream_type();
-
-                    if (RS2_STREAM_DEPTH == stream_type)
+                    std::vector<single_metric_data> sample;
+                    for (auto&& f : frames)
                     {
-                        float su = 0, baseline = -1.f;
-                        rs2_intrinsics intrin{};
-                        int gt_mm{};
-                        bool plane_fit_set{};
-                        region_of_interest roi{};
+                        auto profile = f.get_profile();
+                        auto stream_type = profile.stream_type();
 
+                        if (RS2_STREAM_DEPTH == stream_type)
                         {
-                            std::lock_guard<std::mutex> lock(_m);
-                            su = _depth_scale_units;
-                            baseline = _stereo_baseline_mm;
-                            auto depth_profile = profile.as<video_stream_profile>();
-                            intrin = depth_profile.get_intrinsics();
-                            _depth_intrinsic = intrin;
-                            _roi = { int(intrin.width * (0.5f - 0.5f*this->_roi_percentage)),
-                                int(intrin.height * (0.5f - 0.5f*this->_roi_percentage)),
-                                int(intrin.width * (0.5f + 0.5f*this->_roi_percentage)),
-                                int(intrin.height * (0.5f + 0.5f*this->_roi_percentage)) };
+                            float su = 0, baseline = -1.f;
+                            rs2_intrinsics intrin{};
+                            int gt_mm{};
+                            bool plane_fit_set{};
+                            region_of_interest roi{};
+                            {
+                                std::lock_guard<std::mutex> lock(_m);
+                                su = _depth_scale_units;
+                                baseline = _stereo_baseline_mm;
+                                auto depth_profile = profile.as<video_stream_profile>();
+                                intrin = depth_profile.get_intrinsics();
+                                _depth_intrinsic = intrin;
+                                _roi = { int(intrin.width * (0.5f - 0.5f*this->_roi_percentage)),
+                                    int(intrin.height * (0.5f - 0.5f*this->_roi_percentage)),
+                                    int(intrin.width * (0.5f + 0.5f*this->_roi_percentage)),
+                                    int(intrin.height * (0.5f + 0.5f*this->_roi_percentage)) };
 
-                            roi = _roi;
+                                roi = _roi;
+                            }
+
+                            std::tie(gt_mm, plane_fit_set) = get_inputs();
+                           
+                            auto metrics = analyze_depth_image(f, su, baseline, &intrin, roi, gt_mm, plane_fit_set, sample, _recorder.is_recording(), callback);
+
+                            {
+                                std::lock_guard<std::mutex> lock(_m);
+                                _latest_metrics = metrics;
+                            }
                         }
-
-                        std::tie(gt_mm, plane_fit_set) = get_inputs();
-                        auto metrics = analyze_depth_image(depth_frame, su, baseline, &intrin, roi, gt_mm, plane_fit_set,callback);
-
-                        {
-                            std::lock_guard<std::mutex> lock(_m);
-                            _latest_metrics = metrics;
-                        }
+                       
                     }
+                    if (_recorder.is_recording())
+                        _recorder.add_sample(frames, std::move(sample));
 
                     // Artificially slow down the calculation, so even on small ROIs / resolutions
                     // the output is updated within reasonable interval (keeping it human readable)
@@ -926,6 +955,7 @@ namespace rs2
         {
             auto res = std::make_shared<metric_plot>(name, min, max, units, description, requires_plane_fit);
             _metrics_model.add_metric(res);
+            _metrics_model._recorder.add_metric({ name,units });
             return res;
         }
 
@@ -1070,39 +1100,111 @@ namespace rs2
             }
         }
 
-        void metrics_model::serialize_to_csv(const std::string& filename, const std::string& camera_info) const
+        void metrics_recorder::serialize_to_csv() const
         {
             std::ofstream csv;
 
-            csv.open(filename);
+            csv.open(_filename_base + "_depth_metrics.csv");
 
             // Store the device info and the streaming profile details
-            csv << camera_info;
+            csv << _metrics->_camera_info;
 
             //Store metric environment
-            csv << "\nEnvironment:\nPlane-Fit_distance_mm," << (_plane_fit ? std::to_string(_latest_metrics.distance) : "N/A") << std::endl;
-            csv << "Ground-Truth_Distance_mm," << (_use_gt ? std::to_string(_ground_truth_mm ) : "N/A") << std::endl;
+            csv << "\nEnvironment:\nPlane-Fit_distance_mm," << (_metrics->_plane_fit ? std::to_string(_metrics->_latest_metrics.distance) : "N/A") << std::endl;
+            csv << "Ground-Truth_Distance_mm," << (_metrics->_use_gt ? std::to_string(_metrics->_ground_truth_mm ) : "N/A") << std::endl;
 
             // Generate columns header
-            csv << "\nSample Id,Timestamp (ms),";
-            for (auto&& plot : _plots)
+            csv << "\nSample Id,Frame #,Timestamp (ms),";
+            for (auto&& matric : _metric_data)
             {
-                csv << plot->_name << " " << plot->_units << ",";
+                csv << matric.name << " " << matric.units << ",";
             }
             csv << std::endl;
 
-            // Populate metrics data using the fill-rate persistent metric as pivot
-            for (size_t i = _plots[0]->_first_idx, rec = 0; i != _plots[0]->_idx; i = (1+i) % metric_plot::SIZE)
+            //// Populate metrics data using the fill-rate persistent metric as pivot
+            auto i = 0;
+            for (auto&& it: _samples)
             {
-                csv << ++rec << "," << std::fixed << std::setprecision(4) << _plots[0]->_timestamps[i] << ",";
-                for (auto&& plot : _plots)
+                csv << i++ << ","<< it.frame_number << "," << std::fixed << std::setprecision(4) << it.timestamp << ",";
+                for (auto&& matric : _metric_data)
                 {
-                    csv << plot->_vals[i] << ",";
+                    auto samp = std::find_if(it.samples.begin(), it.samples.end(), [&](single_metric_data s) {return s.name == matric.name; });
+                    if(samp != it.samples.end())  csv << samp->val << ",";
                 }
                 csv << std::endl;
             }
 
             csv.close();
         }
-    }
-}
+
+        void metrics_recorder::record_frames(const frameset& frames)
+        {
+           
+            // Trim the file extension when provided. Note that this may amend user-provided file name in case it uses the "." character, e.g. "my.file.name"
+            auto filename_base = _filename_base;
+
+            auto loc = filename_base.find_last_of(".");
+            if (loc != std::string::npos)
+                filename_base.erase(loc, std::string::npos);
+
+            std::stringstream fn;
+            fn << frames.get_frame_number();
+
+            for (auto&& frame : frames)
+            {
+
+                // Snapshot the color-augmented version of the frame
+                if (auto colorized_frame = _colorize.colorize(frame).as<video_frame>())
+                {
+
+                    auto stream_desc = rs2_stream_to_string(colorized_frame.get_profile().stream_type());
+                    auto filename_png = filename_base + "_" + stream_desc + "_" + fn.str() + ".png";
+                    save_to_png(filename_png.data(), colorized_frame.get_width(), colorized_frame.get_height(), colorized_frame.get_bytes_per_pixel(),
+                        colorized_frame.get_data(), colorized_frame.get_width() * colorized_frame.get_bytes_per_pixel());
+
+                }
+                auto original_frame = frame.as<video_frame>();
+
+                // For Depth-originated streams also provide a copy of the raw data accompanied by sensor-specific metadata
+                if (original_frame && val_in_range(original_frame.get_profile().stream_type(), { RS2_STREAM_DEPTH , RS2_STREAM_INFRARED }))
+                {
+                    auto stream_desc = rs2_stream_to_string(original_frame.get_profile().stream_type());
+
+                    //Capture raw frame
+                    auto filename = filename_base + "_" + stream_desc + "_" + fn.str() + ".raw";
+                    if (!save_frame_raw_data(filename, original_frame))
+                        _viewer_model.not_model.add_notification({ to_string() << "Failed to save frame raw data  " << filename,
+                            0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+
+
+                    // And the frame's attributes
+                    filename = filename_base + "_" + stream_desc + "_" + fn.str() + "_metadata.csv";
+                    if (!frame_metadata_to_csv(filename, original_frame))
+                        _viewer_model.not_model.add_notification({ to_string() << "Failed to save frame metadata file " << filename,
+                            0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+
+                }
+            }
+            // Export 3d view in PLY format
+            rs2::frame ply_texture;
+
+            if (_viewer_model.selected_tex_source_uid >= 0)
+            {
+                for (auto&& frame : frames)
+                {
+                    if (frame.get_profile().unique_id() == _viewer_model.selected_tex_source_uid)
+                    {
+                        ply_texture = frame;
+                        _pc.map_to(ply_texture);
+                        break;
+                    }
+                }
+
+                if (ply_texture )
+                    export_to_ply(filename_base + "_" + fn.str() + "_3d_mesh.ply", _viewer_model.not_model, frames, ply_texture, false);
+            }
+            
+        }
+
+     }
+ }

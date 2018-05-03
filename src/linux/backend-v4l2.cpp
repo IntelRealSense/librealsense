@@ -268,7 +268,7 @@ namespace librealsense
             }
         }
 
-        static std::string get_usb_port_id(libusb_device* usb_device)
+        static std::tuple<std::string,uint16_t>  get_usb_descriptors(libusb_device* usb_device)
         {
             auto usb_bus = std::to_string(libusb_get_bus_number(usb_device));
 
@@ -278,13 +278,39 @@ namespace librealsense
             std::stringstream port_path;
             auto port_count = libusb_get_port_numbers(usb_device, usb_ports, max_usb_depth);
             auto usb_dev = std::to_string(libusb_get_device_address(usb_device));
+            auto speed = libusb_get_device_speed(usb_device);
+            libusb_device_descriptor dev_desc;
+            auto r= libusb_get_device_descriptor(usb_device,&dev_desc);
 
             for (size_t i = 0; i < port_count; ++i)
             {
                 port_path << std::to_string(usb_ports[i]) << (((i+1) < port_count)?".":"");
             }
 
-            return usb_bus + "-" + port_path.str() + "-" + usb_dev;
+            return std::make_tuple(usb_bus + "-" + port_path.str() + "-" + usb_dev,dev_desc.bcdUSB);
+        }
+
+        // retrieve the USB specification attributed to a specific USB device.
+        // This functionality is required to find the USB connection type for UVC device
+        // Note that the input parameter is passed by value
+        static usb_spec get_usb_connection_type(std::string path)
+        {
+            usb_spec res{usb_undefined};
+
+            char usb_actual_path[PATH_MAX] = {0};
+            if (realpath(path.c_str(), usb_actual_path) != NULL)
+            {
+                path = std::string(usb_actual_path);
+                std::string val;
+                if(!(std::ifstream(path + "/version") >> val))
+                    throw linux_backend_exception("Failed to read usb version specification");
+
+                auto kvp = std::find_if(usb_spec_names.begin(),usb_spec_names.end(),
+                     [&val](const std::pair<usb_spec, std::string>& kpv){ return (std::string::npos !=val.find(kpv.second));});
+                        if (kvp != std::end(usb_spec_names))
+                            res = kvp->first;
+            }
+            return res;
         }
 
         v4l_usb_device::v4l_usb_device(const usb_device_info& info)
@@ -344,7 +370,9 @@ namespace librealsense
                     if (parent_device)
                     {
                         usb_device_info info{};
-                        info.unique_id = get_usb_port_id(usb_device);
+                        auto usb_params = get_usb_descriptors(usb_device);
+                        info.unique_id = std::get<0>(usb_params);
+                        info.conn_spec = static_cast<usb_spec>(std::get<1>(usb_params));
                         info.mi = config->bNumInterfaces - 1; // The hardware monitor USB interface is expected to be the last one
                         action(info, usb_device);
                     }
@@ -409,10 +437,11 @@ namespace librealsense
 
                 // Resolve a pathname to ignore virtual video devices
                 std::string path = "/sys/class/video4linux/" + name;
+                std::string real_path{};
                 char buff[PATH_MAX] = {0};
                 if (realpath(path.c_str(), buff) != NULL)
                 {
-                    auto real_path = std::string(buff);
+                    real_path = std::string(buff);
                     if (real_path.find("virtual") != std::string::npos)
                         continue;
                 }
@@ -420,6 +449,7 @@ namespace librealsense
                 try
                 {
                     int vid, pid, mi;
+                    usb_spec usb_specification{usb_undefined};
                     std::string busnum, devnum, devpath;
 
                     auto dev_name = "/dev/" + name;
@@ -435,7 +465,7 @@ namespace librealsense
                     // Search directory and up to three parent directories to find busnum/devnum
                     std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
                     auto path = ss.str();
-                    auto good = false;
+                    auto valid_path = false;
                     for(auto i=0; i < MAX_DEV_PARENT_DIR; ++i)
                     {
                         if(std::ifstream(path + "busnum") >> busnum)
@@ -444,14 +474,14 @@ namespace librealsense
                             {
                                 if(std::ifstream(path + "devpath") >> devpath)
                                 {
-                                    good = true;
+                                    valid_path = true;
                                     break;
                                 }
                             }
                         }
                         path += "../";
                     }
-                    if(!good)
+                    if(!valid_path)
                     {
                         LOG_WARNING("Failed to read busnum/devnum. Device Path: " << path);
                         continue;
@@ -469,6 +499,15 @@ namespace librealsense
                     if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
                         throw linux_backend_exception("Failed to read interface number");
 
+                    // Find the USB specification (USB2/3) type from the underlying device
+                    // Use device mapping obtained in previous step to traverse node tree
+                    // and extract the required descriptors
+                    // Traverse from
+                    // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/3-6:1.0/video4linux/video0
+                    // to
+                    // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/version
+                    usb_specification = get_usb_connection_type(real_path + "/../../../");
+
                     uvc_device_info info{};
                     info.pid = pid;
                     info.vid = vid;
@@ -476,6 +515,7 @@ namespace librealsense
                     info.id = dev_name;
                     info.device_path = std::string(buff);
                     info.unique_id = busnum + "-" + devpath + "-" + devnum;
+                    info.conn_spec = usb_specification;
                     action(info, dev_name);
                 }
                 catch(const std::exception & e)
@@ -502,6 +542,7 @@ namespace librealsense
                     _name = name;
                     _info = i;
                     _device_path = i.device_path;
+                    _device_usb_spec = i.conn_spec;
                 }
             });
             if (_name == "")
@@ -720,9 +761,26 @@ namespace librealsense
 
             int max_fd = std::max(std::max(_stop_pipe_fd[0], _stop_pipe_fd[1]), _fd);
 
-            struct timeval tv = {5,0};
-
-            auto val = select(max_fd+1, &fds, NULL, NULL, &tv);
+            struct timespec mono_time;
+            int r = clock_gettime(CLOCK_MONOTONIC, &mono_time);
+            if (r) throw linux_backend_exception("could not query time!");
+            
+            struct timeval expiration_time = { mono_time.tv_sec + 5, mono_time.tv_nsec / 1000 };
+            int val = 0;
+            do {
+                struct timeval remaining;
+                r = clock_gettime(CLOCK_MONOTONIC, &mono_time);
+                if (r) throw linux_backend_exception("could not query time!");
+                
+                struct timeval current_time = { mono_time.tv_sec, mono_time.tv_nsec / 1000 };
+                timersub(&expiration_time, &current_time, &remaining);
+                if (timercmp(&current_time, &expiration_time, <)) {
+                    val = select(max_fd + 1, &fds, NULL, NULL, &remaining);
+                }
+                else {
+                    val = 0;
+                }
+            } while (val < 0 && errno == EINTR);
 
             if(val < 0)
             {

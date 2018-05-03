@@ -69,7 +69,7 @@ int main(int argc, char * argv[]) try
     // Start streaming with the above configuration
     pipe.start(cfg);
 
-    // Decalre filters
+    // Declare filters
     rs2::decimation_filter dec_filter;  // Decimation - reduces depth frame density
     rs2::spatial_filter spat_filter;    // Spatial    - edge-preserving spatial smoothing
     rs2::temporal_filter temp_filter;   // Temporal   - reduces temporal noise
@@ -82,7 +82,7 @@ int main(int argc, char * argv[]) try
     // Initialize a vector that holds filters and their options
     std::vector<filter_options> filters;
 
-    // The following order of emplacment will dictate the orders in which filters are applied
+    // The following order of emplacement will dictate the orders in which filters are applied
     filters.emplace_back("Decimate", dec_filter);
     filters.emplace_back(disparity_filter_name, depth_to_disparity);
     filters.emplace_back("Spatial", spat_filter);

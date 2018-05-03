@@ -99,9 +99,9 @@ namespace librealsense
         switch (_option)
         {
         case RS2_OPTION_ASIC_TEMPERATURE:
-            return "Current Asic Temperature";
+            return "Current Asic Temperature (degree celsius)";
         case RS2_OPTION_PROJECTOR_TEMPERATURE:
-            return "Current Projector Temperature";
+            return "Current Projector Temperature (degree celsius)";
         default:
             throw invalid_value_exception(to_string() << rs2_option_to_string(_option) << " is not temperature option!");
         }
@@ -152,7 +152,7 @@ namespace librealsense
 
     const char* motion_module_temperature_option::get_description() const
     {
-        return "Current Motion-Module Temperature";
+        return "Current Motion-Module Temperature (degree celsius)";
     }
 
     motion_module_temperature_option::motion_module_temperature_option(hid_sensor& ep)

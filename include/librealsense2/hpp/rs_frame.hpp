@@ -740,7 +740,7 @@ namespace rs2
         class iterator
         {
         public:
-            iterator(frameset* owner, size_t index = 0) : _owner(owner), _index(index) {}
+            iterator(const frameset* owner, size_t index = 0) : _index(index), _owner(owner) {}
             iterator& operator++() { ++_index; return *this; }
             bool operator==(const iterator& other) const { return _index == other._index; }
             bool operator!=(const iterator& other) const { return !(*this == other); }
@@ -748,11 +748,11 @@ namespace rs2
             frame operator*() { return (*_owner)[_index]; }
         private:
             size_t _index = 0;
-            frameset* _owner;
+            const frameset* _owner;
         };
 
-        iterator begin() { return iterator(this); }
-        iterator end() { return iterator(this, size()); }
+        iterator begin() const { return iterator(this); }
+        iterator end() const { return iterator(this, size()); }
     private:
         size_t _size;
     };
