@@ -6064,7 +6064,7 @@ namespace rs2
     {
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
-            return 20000;
+            return 30000;
         }
         return 10000;
     }
@@ -6091,7 +6091,7 @@ namespace rs2
         std::string label;
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
-            label = "Firmware update required";
+            label = "Firmware update recommended";
         }
         else
         {
@@ -6128,7 +6128,7 @@ namespace rs2
                 open_url(url);
             }
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", "Online connection required");
+                ImGui::SetTooltip("%s", "Internet connection required");
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(4);
         }
