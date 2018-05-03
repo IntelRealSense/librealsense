@@ -13,7 +13,6 @@
 #include <cmath>
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <librealsense2/rsutil.h>
-#include <regex>
 
 #include "model-views.h"
 #include <imgui_internal.h>
@@ -58,17 +57,20 @@ ImVec4 operator+(const ImVec4& c, float v)
 void open_url(const char* url)
 {
 #if (defined(_WIN32) || defined(_WIN64))
-    ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOW);
+    if (reinterpret_cast<int>(ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOW)) < 32)
+        throw std::runtime_error("Failed opening URL");
 #endif
 #if defined __linux__ || defined(__linux__)
     std::string command_name = "xdg-open ";
     std::string command = command_name + url;
-    system(command.c_str());
+    if (system(command.c_str()))
+        throw std::runtime_error("Failed opening URL");
 #endif
 #ifdef __APPLE__
     std::string command_name = "open ";
     std::string command = command_name + url;
-    system(command.c_str());
+    if (system(command.c_str()))
+        throw std::runtime_error("Failed opening URL");
 #endif
 }
 
@@ -6033,7 +6035,7 @@ namespace rs2
 
     void notification_model::set_color_scheme(float t) const
     {
-        if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_REQUIRED)
+        if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             ImGui::PushStyleColor(ImGuiCol_WindowBg, { 33/255.f, 40/255.f, 46/255.f, 1 - t });
             ImGui::PushStyleColor(ImGuiCol_TitleBg, { 62 / 255.f, 77 / 255.f, 89 / 255.f, 1 - t });
@@ -6060,7 +6062,7 @@ namespace rs2
     
     const int notification_model::get_max_lifetime_ms() const
     {
-        if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_REQUIRED)
+        if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             return 20000;
         }
@@ -6087,7 +6089,7 @@ namespace rs2
         height = lines * 30 + 20;
         ImGui::SetNextWindowSize({ float(315), float(height) });
         std::string label;
-        if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_REQUIRED)
+        if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             label = "Firmware update required";
         }
@@ -6098,7 +6100,7 @@ namespace rs2
 
         ImGui::Begin(label.c_str(), nullptr, flags);
 
-        if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_REQUIRED)
+        if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             std::regex version_regex("([0-9]+.[0-9]+.[0-9]+.[0-9]+\n)");
             std::smatch sm;
@@ -6125,6 +6127,8 @@ namespace rs2
             {       
                 open_url(url);
             }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", "Online connection required");
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(4);
         }
@@ -6136,7 +6140,7 @@ namespace rs2
         if (lines == 1)
             ImGui::SameLine();
 
-        if (category != RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_REQUIRED)
+        if (category != RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             ImGui::Text("(...)");
 

@@ -569,9 +569,10 @@ namespace librealsense
         
         if (usb_modality)
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
+
         std::string curr_version= _fw_version;
         std::string latest_version = recommended_fw_version;
-
+        
         if (_fw_version < recommended_fw_version)
         {   
             std::weak_ptr<notifications_processor> weak = depth_ep.get_notifications_processor();
@@ -583,23 +584,22 @@ namespace librealsense
                     auto ptr = weak.lock();
                     if (ptr)
                     {
-                        std::string s1 ="Latest release: ";
                         std::string msg = "Current firmware version: " + curr_version + "\nLatest firmware release: " + latest_version +"\n";
-
-                        notification n(RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_REQUIRED, 0, RS2_LOG_SEVERITY_INFO, msg);
+                        notification n(RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED, 0, RS2_LOG_SEVERITY_INFO, msg);
                         ptr->raise_notification(n);
                     }
                     else
                     {
                         break;
                     }
-                    std::this_thread::sleep_for(std::chrono::seconds(120));
+                    std::this_thread::sleep_for(std::chrono::hours(8));
                 }
                 
             });
             notification_thread.detach();
-        }
             
+        }
+          
     }
 
     notification ds5_notification_decoder::decode(int value)
