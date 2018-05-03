@@ -426,19 +426,20 @@ namespace librealsense
         auto& depth_ep = get_depth_sensor();
         auto advanced_mode = is_camera_in_advanced_mode();
 
-        auto _usb_mode = platform::usb3_type;
-        std::string usb_type_str(platform::usb_spec_names.at(_usb_mode));
+        using namespace platform;
+        auto _usb_mode = usb3_type;
+        std::string usb_type_str(usb_spec_names.at(_usb_mode));
         bool usb_modality = (_fw_version >= firmware_version("5.9.8.0"));
         if (usb_modality)
         {
             _usb_mode = depth_ep.get_usb_specification();
-            if (platform::usb_undefined != _usb_mode)
-                usb_type_str = platform::usb_spec_names.at(_usb_mode);
+            if (usb_spec_names.count(_usb_mode) && (usb_undefined != _usb_mode))
+                usb_type_str = usb_spec_names.at(_usb_mode);
             else  // Backend fails to provide USB descriptor  - occurs with RS3 build. Requires further work
                 usb_modality = false;
         }
 
-        if (advanced_mode && (_usb_mode >= platform::usb3_type))
+        if (advanced_mode && (_usb_mode >= usb3_type))
         {
             depth_ep.register_pixel_format(pf_y8i); // L+R
             depth_ep.register_pixel_format(pf_y12i); // L+R - Calibration not rectified
@@ -521,7 +522,7 @@ namespace librealsense
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                 lazy<float>([]() { return 0.001f; })));
         // Metadata registration
-        depth_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
+        depth_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
 
         // attributes of md_capture_timing
         auto md_prop_offset = offsetof(metadata_raw, mode) +
@@ -529,7 +530,7 @@ namespace librealsense
             offsetof(md_depth_y_normal_mode, intel_capture_timing);
 
         depth_ep.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute, md_prop_offset));
-        depth_ep.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs400_sensor_ts_parser(make_uvc_header_parser(&platform::uvc_header::timestamp),
+        depth_ep.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs400_sensor_ts_parser(make_uvc_header_parser(&uvc_header::timestamp),
             make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
 
         // attributes of md_capture_stats

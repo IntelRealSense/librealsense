@@ -184,7 +184,8 @@ namespace librealsense
             usb2_type       = 0x0200,
             usb2_1_type     = 0x0210,
             usb3_type       = 0x0300,
-            usb3_1_type     = 0x0310
+            usb3_1_type     = 0x0310,
+            usb3_2_type     = 0x0320,
         };
 
         static const std::map<usb_spec, std::string> usb_spec_names = {
@@ -194,7 +195,8 @@ namespace librealsense
                 { usb2_type,    "2.0" },
                 { usb2_1_type,  "2.1" },
                 { usb3_type,    "3.0" },
-                { usb3_1_type,  "3.1" }
+                { usb3_1_type,  "3.1" },
+                { usb3_2_type,  "3.2" }
         };
 
         struct uvc_device_info
