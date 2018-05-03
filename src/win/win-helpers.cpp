@@ -302,8 +302,8 @@ namespace librealsense
         }
 
         // Provides Port Id and the USB Specification (USB type)
-        std::tuple<std::string,usb_spec> get_usb_descriptors(uint16_t device_vid, uint16_t device_pid,
-                                    const std::string& device_uid)
+        bool get_usb_descriptors(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid,
+            std::string& location, usb_spec& spec)
         {
             SP_DEVINFO_DATA devInfo = { sizeof(SP_DEVINFO_DATA) };
 
@@ -316,10 +316,9 @@ namespace librealsense
                 nullptr,
                 nullptr);
             if (device_info == INVALID_HANDLE_VALUE)
-                throw std::runtime_error("SetupDiGetClassDevs");
+                return false;
 
             auto di = std::shared_ptr<void>(device_info, SetupDiDestroyDeviceInfoList);
-            auto res = std::make_tuple(std::string(""), usb_spec::usb_undefined);
 
             // enumerate all imaging devices.
             for (int member_index = 0; ; ++member_index)
@@ -338,14 +337,15 @@ namespace librealsense
                 {
                     LOG_ERROR("CM_Get_Device_ID_Size failed");
                     SetupDiDestroyDeviceInfoList(device_info);
-                    return res;
+                    return false;
                 }
 
                 auto alloc = std::malloc(buf_size * sizeof(WCHAR) + sizeof(WCHAR));
                 if (!alloc)
                 {
+                    LOG_ERROR("malloc call failed");
                     SetupDiDestroyDeviceInfoList(device_info);
-                    throw std::bad_alloc();
+                    return false;
                 }
 
                 auto pInstID = std::shared_ptr<WCHAR>(reinterpret_cast<WCHAR *>(alloc), std::free);
@@ -353,7 +353,7 @@ namespace librealsense
                 {
                     LOG_ERROR("CM_Get_Device_ID failed");
                     SetupDiDestroyDeviceInfoList(device_info);
-                    return res;
+                    return false;
                 }
 
                 if (pInstID == nullptr) continue;
@@ -369,7 +369,7 @@ namespace librealsense
                 {
                     LOG_ERROR("CM_Get_Parent failed");
                     SetupDiDestroyDeviceInfoList(device_info);
-                    return res;
+                    return false;
                 }
 
                 // get composite device instance id
@@ -377,20 +377,21 @@ namespace librealsense
                 {
                     LOG_ERROR("CM_Get_Device_ID_Size failed");
                     SetupDiDestroyDeviceInfoList(device_info);
-                    return res;
+                    return false;
                 }
                 alloc = std::malloc(buf_size*sizeof(WCHAR) + sizeof(WCHAR));
                 if (!alloc)
                 {
+                    LOG_ERROR("malloc fail");
                     SetupDiDestroyDeviceInfoList(device_info);
-                    throw std::bad_alloc();
+                    return false;
                 }
 
                 pInstID = std::shared_ptr<WCHAR>(reinterpret_cast<WCHAR *>(alloc), std::free);
                 if (CM_Get_Device_ID(instance, pInstID.get(), buf_size * sizeof(WCHAR) + sizeof(WCHAR), 0) != CR_SUCCESS) {
                     LOG_ERROR("CM_Get_Device_ID failed");
                     SetupDiDestroyDeviceInfoList(device_info);
-                    return res;
+                    return false;
                 }
 
                 // upgrade to DEVINFO_DATA for SetupDiGetDeviceRegistryProperty
@@ -398,7 +399,7 @@ namespace librealsense
                 if (device_info == INVALID_HANDLE_VALUE) {
                     LOG_ERROR("SetupDiGetClassDevs failed");
                     SetupDiDestroyDeviceInfoList(device_info);
-                    return res;
+                    return false;
                 }
 
                 interfaceData = { sizeof(SP_DEVICE_INTERFACE_DATA) };
@@ -406,7 +407,7 @@ namespace librealsense
                 {
                     LOG_ERROR("SetupDiEnumDeviceInterfaces failed");
                     SetupDiDestroyDeviceInfoList(device_info);
-                    return res;
+                    return false;
                 }
 
                 // get the SP_DEVICE_INTERFACE_DETAIL_DATA object, and also grab the SP_DEVINFO_DATA object for the device
@@ -416,13 +417,14 @@ namespace librealsense
                 {
                     LOG_ERROR("SetupDiGetDeviceInterfaceDetail failed");
                     SetupDiDestroyDeviceInfoList(device_info);
-                    return res;
+                    return false;
                 }
                 alloc = std::malloc(buf_size);
                 if (!alloc)
                 {
+                    LOG_ERROR("malloc fail");
                     SetupDiDestroyDeviceInfoList(device_info);
-                    throw std::bad_alloc();
+                    return false;
                 }
 
                 auto detail_data = std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA>(reinterpret_cast<SP_DEVICE_INTERFACE_DETAIL_DATA *>(alloc), std::free);
@@ -432,7 +434,7 @@ namespace librealsense
                 {
                     LOG_ERROR("SetupDiGetDeviceInterfaceDetail failed");
                     SetupDiDestroyDeviceInfoList(device_info);
-                    return res;
+                    return false;
                 }
 
                 // get driver key for composite device
@@ -442,16 +444,20 @@ namespace librealsense
                 {
                     LOG_ERROR("SetupDiGetDeviceRegistryProperty failed in an unexpected manner");
                     SetupDiDestroyDeviceInfoList(device_info);
-                    return res;
+                    return false;
                 }
                 alloc = std::malloc(buf_size);
-                if (!alloc) throw std::bad_alloc();
+                if (!alloc)
+                {
+                    LOG_ERROR("malloc fail");
+                    return false;
+                }
                 auto driver_key = std::shared_ptr<BYTE>(reinterpret_cast<BYTE*>(alloc), std::free);
                 if (!SetupDiGetDeviceRegistryProperty(device_info, &parent_data, SPDRP_DRIVER, nullptr, driver_key.get(), buf_size, nullptr))
                 {
                     LOG_ERROR("SetupDiGetDeviceRegistryProperty failed");
                     SetupDiDestroyDeviceInfoList(device_info);
-                    return res;
+                    return false;
                 }
 
                 // contains composite device key
@@ -480,34 +486,41 @@ namespace librealsense
                         if (!DeviceIoControl(h, IOCTL_USB_GET_ROOT_HUB_NAME, nullptr, 0, &name, sizeof(name), nullptr, nullptr)) {
                             LOG_ERROR("DeviceIoControl failed");
                             SetupDiDestroyDeviceInfoList(device_info);
-                            return res; // alt: fail silently and hope its on a different root hub
+                            return false; // alt: fail silently and hope its on a different root hub
                         }
 
                         // alloc space
                         alloc = std::malloc(name.ActualLength);
-                        if (!alloc) throw std::bad_alloc();
+                        if (!alloc)
+                        {
+                            LOG_ERROR("malloc fail");
+                            return false;
+                        }
                         auto pName = std::shared_ptr<USB_ROOT_HUB_NAME>(reinterpret_cast<USB_ROOT_HUB_NAME *>(alloc), std::free);
 
                         // get name
                         if (!DeviceIoControl(h, IOCTL_USB_GET_ROOT_HUB_NAME, nullptr, 0, pName.get(), name.ActualLength, nullptr, nullptr)) {
                             LOG_ERROR("DeviceIoControl failed");
                             SetupDiDestroyDeviceInfoList(device_info);
-                            return res; // alt: fail silently and hope its on a different root hub
+                            return false; // alt: fail silently and hope its on a different root hub
                         }
 
                         // return location if device is connected under this root hub, also provide the port USB spec/speed
-                        res = handle_usb_hub(targetKey, std::wstring(pName->RootHubName));
-                        if (std::get<0>(res) != "")
+                        auto usb_res = handle_usb_hub(targetKey, std::wstring(pName->RootHubName));
+                        if (std::get<0>(usb_res) != "")
                         {
                             SetupDiDestroyDeviceInfoList(device_info);
-                            return res;
+                            location = std::get<0>(usb_res);
+                            spec = std::get<1>(usb_res);
+                            return true;
                         }
                     }
                 }
             }
 
             SetupDiDestroyDeviceInfoList(device_info);
-            throw std::exception("could not find camera in windows device tree");
+            LOG_ERROR("could not find camera in windows device tree");
+            return false;
         }
 
 #define MAX_HANDLES 64

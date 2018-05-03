@@ -29,8 +29,8 @@ namespace librealsense
 
         bool parse_usb_path(uint16_t & vid, uint16_t & pid, uint16_t & mi, std::string & unique_id, const std::string & path);
 
-        std::tuple<std::string, usb_spec> get_usb_descriptors(uint16_t device_vid, uint16_t device_pid,
-            const std::string& device_uid);
+        bool get_usb_descriptors(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid,
+            std::string& location, usb_spec& spec);
 
         class event_base
         {
