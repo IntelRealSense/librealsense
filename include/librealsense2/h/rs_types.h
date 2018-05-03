@@ -175,7 +175,7 @@ typedef struct rs2_notifications_callback rs2_notifications_callback;
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
 typedef void (*rs2_devices_changed_callback_ptr)(rs2_device_list*, rs2_device_list*, void*);
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
-typedef void (*rs2_frame_processor_callback_ptr)(rs2_frame**, int, rs2_source*, void*);
+typedef void (*rs2_frame_processor_callback_ptr)(rs2_frame*, rs2_source*, void*);
 
 typedef double      rs2_time_t;     /**< Timestamp format. units are milliseconds */
 typedef long long   rs2_metadata_type; /**< Metadata attribute type is defined as 64 bit signed integer*/

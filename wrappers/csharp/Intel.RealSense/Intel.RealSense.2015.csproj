@@ -46,6 +46,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <OutputPath>bin\Release\</OutputPath>
@@ -75,29 +76,27 @@
     <Reference Include="System" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-
   <PropertyGroup>
     <BuildPlatform>$(Platform)</BuildPlatform>
     <BuildPlatform Condition="'$(Platform)'=='AnyCPU'">x86</BuildPlatform>
     <BuildPlatform Condition="'$(Platform)'=='AnyCPU' and '$(PROCESSOR_ARCHITEW6432)'=='AMD64'">x64</BuildPlatform>
     <InstallPath>C:\Program Files (x86)\Intel RealSense SDK 2.0\bin</InstallPath>
-    <BuildPathx86></BuildPathx86>
-    <BuildPathx64></BuildPathx64>
+    <BuildPathx86>
+    </BuildPathx86>
+    <BuildPathx64>
+    </BuildPathx64>
     <BuildPath Condition="'$(BuildPath)'==''">..\..\..\build\$(Configuration)\realsense2.dll</BuildPath>
   </PropertyGroup>
-
   <Target Name="BeforeBuild" DependsOnTargets="IncludeLib">
   </Target>
-
   <Target Name="IncludeLib" DependsOnTargets="EnsureBitCorrectness">
     <PropertyGroup>
       <LibFile Condition="'$(BuildPlatform)'=='x86'">$(LibPathx86)</LibFile>
       <LibFile Condition="'$(BuildPlatform)'=='x64'">$(LibPathx64)</LibFile>
     </PropertyGroup>
     <Copy Condition="'$(LibFile)'!=''" SourceFiles="$(LibFile)" DestinationFolder="$(OutputPath)" />
-    <Message Condition="'$(LibFile)'!=''" Text="realsense2.dll in output folder from $(LibFile)" Importance="high"/>
+    <Message Condition="'$(LibFile)'!=''" Text="realsense2.dll in output folder from $(LibFile)" Importance="high" />
   </Target>
-
   <Target Name="EnsureBitCorrectness">
     <CallTarget Targets="BuildLib" ContinueOnError="true" />
     <Exec Condition="'$(BuildPathx86)'=='' and '$(BuildPathx64)'=='' and Exists($(BuildPath))" ConsoleToMSBuild="true" StandardOutputImportance="low" Command="call &quot;$(DevEnvDir)..\Tools\VsDevCmd.bat&quot; &amp;&amp; dumpbin.exe /headers $([System.IO.Path]::GetFullPath($(BuildPath)))">
@@ -123,7 +122,6 @@
     <Message Condition="('$(BuildPlatform)'=='x64' and '$(BuildPathx64)'=='' and '$(LibPathx64)'!='') or ('$(BuildPlatform)'=='x86' and '$(BuildPathx86)'=='' and '$(LibPathx86)'!='')" Text="No compatible local build of realsense.dll was found. Using the installed version" Importance="high" />
     <Error Condition="('$(BuildPlatform)'=='x64' and '$(LibPathx64)'=='') or ('$(BuildPlatform)'=='x86' and '$(LibPathx86)'=='')" Text="Current platform is $(Platform) which will run as $(BuildPlatform) on this computer. realsense2.dll found is $(LibArch). Either force the build to be $(LibArch) or manually specify the BuildPath$(BuildPlatform) property." />
   </Target>
-
   <Target Name="BuildLib">
     <PropertyGroup>
       <CMakeInstalled>-1</CMakeInstalled>
@@ -137,7 +135,6 @@
     <Exec Condition="!Exists('$(BuildDirectory)\CMakeCache.txt')" Command="cd $(BuildDirectory) &amp;&amp; cmake -D BUILD_GRAPHICAL_EXAMPLES=OFF -D BUILD_EXAMPLES=OFF .." />
     <Exec Command="cd $(BuildDirectory) &amp;&amp; cmake --build ./ --config $(Configuration)" />
   </Target>
-
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

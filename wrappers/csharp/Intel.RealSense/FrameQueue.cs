@@ -17,31 +17,29 @@ namespace Intel.RealSense
             m_instance = new HandleRef(this, NativeMethods.rs2_create_frame_queue(capacity, out error));
         }
 
-        public bool PollForFrame(out Frame frame)
+        public bool PollForFrame(out Frame frame, FramesReleaser releaser = null)
         {
             object error;
-            if(NativeMethods.rs2_poll_for_frame(m_instance.Handle, out frame, out error) > 0)
+            if (NativeMethods.rs2_poll_for_frame(m_instance.Handle, out frame, out error) > 0)
             {
-                frame = FrameSet.CreateFrame(frame.m_instance.Handle);
+                frame = FramesReleaser.ScopedReturn(releaser, FrameSet.CreateFrame(frame.m_instance.Handle));
                 return true;
             }
             return false;
         }
 
-        public Frame WaitForFrame()
+        public Frame WaitForFrame(FramesReleaser releaser = null)
         {
             object error;
             var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, 5000, out error);
-            var frame = FrameSet.CreateFrame(ptr);
-            return frame;
+            return FramesReleaser.ScopedReturn(releaser, FrameSet.CreateFrame(ptr));
         }
 
-        public FrameSet WaitForFrames()
+        public FrameSet WaitForFrames(FramesReleaser releaser = null)
         {
             object error;
             var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, 5000, out error);
-            var frame = new FrameSet(ptr);
-            return frame;
+            return FramesReleaser.ScopedReturn(releaser, new FrameSet(ptr));
         }
 
         public void Enqueue(Frame f)

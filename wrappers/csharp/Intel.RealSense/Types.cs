@@ -3,8 +3,12 @@ using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void frame_callback(IntPtr frame, IntPtr user_data);
     //public delegate void frame_callback([Out, MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(FrameMarshaler))] out Frame frame, IntPtr user_data);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void frame_processor_callback(IntPtr frame, IntPtr user, IntPtr user_data);
 
     public enum NotificationCategory
     {
