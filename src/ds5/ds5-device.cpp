@@ -515,16 +515,16 @@ namespace librealsense
             std::weak_ptr<notifications_processor> weak = depth_ep.get_notifications_processor();
             std::thread notification_thread = std::thread([weak, curr_version, latest_version]()
             {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 while (true)
                 {
                     auto ptr = weak.lock();
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
                     if (ptr)
                     {
                         std::string s1 ="Latest release: ";
-                        std::string msg = "Current version: " + curr_version + "\nLatest release: " + latest_version +"\n";
+                        std::string msg = "Current firmware version: " + curr_version + "\nLatest firmware release: " + latest_version +"\n";
 
-                        notification n(RS2_NOTIFICATION_FIRMWARE_UPDATE_REQUIRED, 0, RS2_LOG_SEVERITY_INFO, msg);
+                        notification n(RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_REQUIRED, 0, RS2_LOG_SEVERITY_INFO, msg);
                         ptr->raise_notification(n);
                     }
                     else
@@ -536,7 +536,6 @@ namespace librealsense
                 
             });
             notification_thread.detach();
-
         }
             
     }
