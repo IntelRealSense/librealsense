@@ -1,7 +1,7 @@
 # Linux Ubuntu Installation
 
 **Note:** Due to the USB 3.0 translation layer between native hardware and virtual machine, the *librealsense* team does not support installation in a VM. If you do choose to try it, we recommend using VMware Workstation Player, and not Oracle VirtualBox for proper emulation of the USB3 controller.
-<br><br> Please ensure to work with the supported Kernel versions listed here and verify that the kernek is updated properly according to the instructions.
+<br><br> Please ensure to work with the supported Kernel versions listed here and verify that the kernel is updated properly according to the instructions.
 
 ## Ubuntu Build Dependencies
 
