@@ -221,7 +221,7 @@ PYBIND11_MODULE(NAME, m) {
     {
         self.set_devices_changed_callback(callback);
     }, "Register devices changed callback.", "callback"_a)
-        // not binding create_processing_block, not in Python API.
+        // not binding create_processing_block, not inpr Python API.
         .def("load_device", &rs2::context::load_device, "Creates a devices from a RealSense file.\n"
             "On successful load, the device will be appended to the context and a devices_changed event triggered."
             "filename"_a)
@@ -354,9 +354,7 @@ PYBIND11_MODULE(NAME, m) {
          .def(BIND_DOWNCAST(frame, video_frame))
          .def(BIND_DOWNCAST(frame, depth_frame));
 
-  
-  
-  
+
     py::class_<rs2::video_frame, rs2::frame> video_frame(m, "video_frame");
     video_frame.def(py::init<rs2::frame>())
         .def("get_width", &rs2::video_frame::get_width, "Returns image width in pixels.")
@@ -444,8 +442,22 @@ PYBIND11_MODULE(NAME, m) {
 
 
     /* rs2_processing.hpp */
+    // Base class for options interface. Should be used via sensor
+    py::class_<rs2::options> options(m, "options");
+    options.def("is_option_read_only", &rs2::options::is_option_read_only, "Check if particular option "
+        "is read only.", "option"_a)
+        .def("get_option", &rs2::options::get_option, "Read option value from the device.", "option"_a)
+        .def("get_option_range", &rs2::options::get_option_range, "Retrieve the available range of values "
+            "of a supported option", "option"_a)
+        .def("set_option", &rs2::options::set_option, "Write new value to device option", "option"_a, "value"_a)
+        .def("supports", (bool (rs2::options::*)(rs2_option option) const) &rs2::options::supports, "Check if particular "
+            "option is supported by a subdevice", "option"_a)
+        .def("get_option_description", &rs2::options::get_option_description, "Get option description.", "option"_a)
+        .def("get_option_value_description", &rs2::options::get_option_value_description, "Get option value description "
+            "(In case a specific option value holds special meaning)", "option"_a, "value"_a);
+
     // Not binding frame_processor_callback, templated
-    py::class_<rs2::processing_block> processing_block(m, "processing_block");
+    py::class_<rs2::processing_block, rs2::options> processing_block(m, "processing_block");
     processing_block.def("start", [](rs2::processing_block& self, std::function<void(rs2::frame)> f)
     {
         self.start(f);
@@ -470,21 +482,7 @@ PYBIND11_MODULE(NAME, m) {
     }, "Poll if a new frame is available and dequeue it if it is")
         .def("__call__", &rs2::frame_queue::operator());
 
-    // Base class for options interface. Should be used via sensor
-    py::class_<rs2::options> options(m, "options");
-    options.def("is_option_read_only", &rs2::options::is_option_read_only, "Check if particular option "
-        "is read only.", "option"_a)
-        .def("get_option", &rs2::options::get_option, "Read option value from the device.", "option"_a)
-        .def("get_option_range", &rs2::options::get_option_range, "Retrieve the available range of values "
-            "of a supported option", "option"_a)
-        .def("set_option", &rs2::options::set_option, "Write new value to device option", "option"_a, "value"_a)
-        .def("supports", (bool (rs2::options::*)(rs2_option option) const) &rs2::options::supports, "Check if particular "
-            "option is supported by a subdevice", "option"_a)
-        .def("get_option_description", &rs2::options::get_option_description, "Get option description.", "option"_a)
-        .def("get_option_value_description", &rs2::options::get_option_value_description, "Get option value description "
-            "(In case a specific option value holds special meaning)", "option"_a, "value"_a);
-
-    py::class_<rs2::pointcloud> pointcloud(m, "pointcloud");
+    py::class_<rs2::pointcloud, rs2::options> pointcloud(m, "pointcloud");
     pointcloud.def(py::init<>())
         .def("calculate", &rs2::pointcloud::calculate, "depth"_a)
         .def("map_to", &rs2::pointcloud::map_to, "mapped"_a);
@@ -509,6 +507,25 @@ PYBIND11_MODULE(NAME, m) {
     py::class_<rs2::align> align(m, "align");
     align.def(py::init<rs2_stream>(), "align_to"_a)
         .def("process", &rs2::align::process, "depth"_a);
+
+    // Do we need this?
+    py::class_<rs2::process_interface, rs2::options> process_interface(m, "process_interface");
+    process_interface.def("process", &rs2::process_interface::process, "frame"_a);
+
+    py::class_<rs2::decimation_filter, rs2::process_interface> decimation_filter(m, "decimation_filter");
+    decimation_filter.def(py::init<>());
+
+    py::class_<rs2::temporal_filter, rs2::process_interface> temporal_filter(m, "temporal_filter");
+    temporal_filter.def(py::init<>());
+
+    py::class_<rs2::spatial_filter, rs2::process_interface> spatial_filter(m, "spatial_filter");
+    spatial_filter.def(py::init<>());
+
+    py::class_<rs2::hole_filling_filter, rs2::process_interface> hole_filling_filter(m, "hole_filling_filter");
+    hole_filling_filter.def(py::init<>());
+
+    py::class_<rs2::disparity_transform, rs2::process_interface> disparity_transform(m, "disparity_transform");
+    disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a=true);
 
     /* rs2_record_playback.hpp */
     py::class_<rs2::playback, rs2::device> playback(m, "playback");
@@ -689,7 +706,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, rs2_format, int)) &rs2::config::enable_stream, "stream_type"_a, "stream_index"_a, "format"_a, "framerate"_a = 0)
         .def("enable_all_streams", &rs2::config::enable_all_streams)
         .def("enable_device", &rs2::config::enable_device, "serial"_a)
-        .def("enable_device_from_file", &rs2::config::enable_device_from_file, "file_name"_a)
+        .def("enable_device_from_file", &rs2::config::enable_device_from_file, "file_name"_a, "repeat_playback"_a = true)
         .def("enable_record_to_file", &rs2::config::enable_record_to_file, "file_name"_a)
         .def("disable_stream", &rs2::config::disable_stream, "stream"_a, "index"_a = -1)
         .def("disable_all_streams", &rs2::config::disable_all_streams)
@@ -915,23 +932,23 @@ PYBIND11_MODULE(NAME, m) {
         .def("set_rau_support_vector_control", &rs400::advanced_mode::set_rau_support_vector_control, "group"_a)//STRauSupportVectorControl
         .def("get_rau_support_vector_control", &rs400::advanced_mode::get_rau_support_vector_control, "mode"_a = 0)
         .def("set_color_control", &rs400::advanced_mode::set_color_control, "group"_a) //STColorControl
-        .def("get_color_control", &rs400::advanced_mode::get_color_control, "mode"_a = 0)//STColorControl 
+        .def("get_color_control", &rs400::advanced_mode::get_color_control, "mode"_a = 0)//STColorControl
         .def("set_rau_thresholds_control", &rs400::advanced_mode::set_rau_thresholds_control, "group"_a)//STRauColorThresholdsControl
         .def("get_rau_thresholds_control", &rs400::advanced_mode::get_rau_thresholds_control, "mode"_a = 0)
         .def("set_slo_color_thresholds_control", &rs400::advanced_mode::set_slo_color_thresholds_control, "group"_a)//STSloColorThresholdsControl
-        .def("get_slo_color_thresholds_control", &rs400::advanced_mode::get_slo_color_thresholds_control, "mode"_a = 0)//STSloColorThresholdsControl 
+        .def("get_slo_color_thresholds_control", &rs400::advanced_mode::get_slo_color_thresholds_control, "mode"_a = 0)//STSloColorThresholdsControl
         .def("set_slo_penalty_control", &rs400::advanced_mode::set_slo_penalty_control, "group"_a) //STSloPenaltyControl
-        .def("get_slo_penalty_control", &rs400::advanced_mode::get_slo_penalty_control, "mode"_a = 0)//STSloPenaltyControl 
+        .def("get_slo_penalty_control", &rs400::advanced_mode::get_slo_penalty_control, "mode"_a = 0)//STSloPenaltyControl
         .def("set_hdad", &rs400::advanced_mode::set_hdad, "group"_a) //STHdad
         .def("get_hdad", &rs400::advanced_mode::get_hdad, "mode"_a = 0)
         .def("set_color_correction", &rs400::advanced_mode::set_color_correction, "group"_a)
-        .def("get_color_correction", &rs400::advanced_mode::get_color_correction, "mode"_a = 0) //STColorCorrection 
+        .def("get_color_correction", &rs400::advanced_mode::get_color_correction, "mode"_a = 0) //STColorCorrection
         .def("set_depth_table", &rs400::advanced_mode::set_depth_table, "group"_a)
-        .def("get_depth_table", &rs400::advanced_mode::get_depth_table, "mode"_a = 0) //STDepthTableControl 
+        .def("get_depth_table", &rs400::advanced_mode::get_depth_table, "mode"_a = 0) //STDepthTableControl
         .def("set_ae_control", &rs400::advanced_mode::set_ae_control, "group"_a)
-        .def("get_ae_control", &rs400::advanced_mode::get_ae_control, "mode"_a = 0) //STAEControl 
+        .def("get_ae_control", &rs400::advanced_mode::get_ae_control, "mode"_a = 0) //STAEControl
         .def("set_census", &rs400::advanced_mode::set_census, "group"_a)    //STCensusRadius
-        .def("get_census", &rs400::advanced_mode::get_census, "mode"_a = 0) //STCensusRadius 
+        .def("get_census", &rs400::advanced_mode::get_census, "mode"_a = 0) //STCensusRadius
         .def("serialize_json", &rs400::advanced_mode::serialize_json)
         .def("load_json", &rs400::advanced_mode::load_json, "json_content"_a);
 
@@ -967,5 +984,5 @@ PYBIND11_MODULE(NAME, m) {
         rs2_fov(&intrin, to_fow.data());
         return to_fow;
 
-    }, "Calculate horizontal and vertical feild of view, based on video intrinsics");
+    }, "Calculate horizontal and vertical field of view, based on video intrinsics");
 }

@@ -88,6 +88,7 @@ namespace librealsense
                            std::shared_ptr<stream_profile_interface> target) const;
 
         std::vector<request_mapping> resolve_requests(stream_profiles requests);
+        std::shared_ptr<stream_profile_interface> map_requests(std::shared_ptr<stream_profile_interface> request);
 
         std::vector<platform::stream_profile> _internal_config;
 

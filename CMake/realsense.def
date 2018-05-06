@@ -147,8 +147,10 @@ EXPORTS
     rs2_allocate_composite_frame
     rs2_synthetic_frame_ready
     rs2_create_processing_block
+    rs2_create_processing_block_fptr
     rs2_start_processing
     rs2_start_processing_queue
+    rs2_start_processing_fptr
     rs2_process_frame
     rs2_delete_processing_block
     rs2_create_sync_processing_block
@@ -157,6 +159,7 @@ EXPORTS
     rs2_create_decimation_filter_block
     rs2_create_temporal_filter_block
     rs2_create_spatial_filter_block
+    rs2_create_hole_filling_filter_block
     rs2_create_disparity_transform_block
     rs2_embedded_frames_count
     rs2_extract_frame
@@ -233,6 +236,7 @@ EXPORTS
     rs2_config_enable_all_stream
     rs2_config_enable_device
     rs2_config_enable_device_from_file
+    rs2_config_enable_device_from_file_repeat_option
     rs2_config_enable_record_to_file
     rs2_config_disable_stream
     rs2_config_disable_indexed_stream

@@ -8,10 +8,22 @@
 #include "context.h"
 #include "software-device.h"
 #include "proc/synthetic-stream.h"
+#include "proc/hole-filling-filter.h"
 #include "proc/spatial-filter.h"
 
 namespace librealsense
 {
+    enum spatial_holes_filling_types : uint8_t
+    {
+        sp_hf_disabled,
+        sp_hf_2_pixel_radius,
+        sp_hf_4_pixel_radius,
+        sp_hf_8_pixel_radius,
+        sp_hf_16_pixel_radius,
+        sp_hf_unlimited_radius,
+        sp_hf_max_value
+    };
+
     // The weight of the current pixel for smoothing is bounded within [25..100]%
     const float alpha_min_val       = 0.25f;
     const float alpha_max_val       = 1.f;
@@ -31,10 +43,10 @@ namespace librealsense
     const uint8_t filter_iter_step = 1;
 
     // The holes filling mode
-    const uint8_t holes_fill_min = 0;  // Disabled
-    const uint8_t holes_fill_max = 5;  // Unlimited
-    const uint8_t holes_fill_step = 1; // In-between the boundaries the holes filling ("smearing") range is 2^val pixels
-    const uint8_t holes_fill_def = 0;  // disabled on start due to its artefactory nature
+    const uint8_t holes_fill_min = sp_hf_disabled;
+    const uint8_t holes_fill_max = sp_hf_max_value-1;
+    const uint8_t holes_fill_step = 1;
+    const uint8_t holes_fill_def = sp_hf_disabled;
 
     spatial_filter::spatial_filter() :
         _spatial_alpha_param(alpha_default_val),
@@ -81,7 +93,6 @@ namespace librealsense
             filter_iter_def,
             &_spatial_iterations, "Filtering iterations");
 
-
         auto holes_filling_mode = std::make_shared<ptr_option<uint8_t>>(
             holes_fill_min,
             holes_fill_max,
@@ -89,12 +100,12 @@ namespace librealsense
             holes_fill_def,
             &_holes_filling_mode, "Holes filling mode");
 
-        holes_filling_mode->set_description(0, "Disabled");
-        holes_filling_mode->set_description(1, "2-pixel radius");
-        holes_filling_mode->set_description(2, "4-pixel radius");
-        holes_filling_mode->set_description(3, "8-pixel radius");
-        holes_filling_mode->set_description(4, "16-pixel radius");
-        holes_filling_mode->set_description(5, "Unlimited");
+        holes_filling_mode->set_description(sp_hf_disabled,            "Disabled");
+        holes_filling_mode->set_description(sp_hf_2_pixel_radius,      "2-pixel radius");
+        holes_filling_mode->set_description(sp_hf_4_pixel_radius,      "4-pixel radius");
+        holes_filling_mode->set_description(sp_hf_8_pixel_radius,      "8-pixel radius");
+        holes_filling_mode->set_description(sp_hf_16_pixel_radius,     "16-pixel radius");
+        holes_filling_mode->set_description(sp_hf_unlimited_radius,    "Unlimited");
 
         holes_filling_mode->on_set([this, holes_filling_mode](float val)
         {
@@ -102,19 +113,26 @@ namespace librealsense
 
             if (!holes_filling_mode->is_valid(val))
                 throw invalid_value_exception(to_string()
-                    << "Unsupported mode for holes filling selected: value " << val << " is out of range.");
+                    << "Unsupported mode for spatial holes filling selected: value " << val << " is out of range.");
 
             _holes_filling_mode = static_cast<uint8_t>(val);
             switch (_holes_filling_mode)
             {
-            case holes_fill_min:
+            case sp_hf_disabled:
                 _holes_filling_radius = 0;      // disabled
                 break;
-            case holes_fill_max:
-                _holes_filling_radius = 0xff;   // The maximul smearing is not particulary useful
+            case sp_hf_unlimited_radius:
+                _holes_filling_radius = 0xff;   // Unrealistic smearing; not particulary useful
+                break;
+            case sp_hf_2_pixel_radius:
+            case sp_hf_4_pixel_radius:
+            case sp_hf_8_pixel_radius:
+            case sp_hf_16_pixel_radius:
+                _holes_filling_radius = 0x1 << _holes_filling_mode; // 2's exponential radius
                 break;
             default:
-                _holes_filling_radius = 0x1 << _holes_filling_mode; // exponential radius
+                throw invalid_value_exception(to_string()
+                    << "Unsupported spatial hole filling requested: value " << _holes_filling_mode << " is out of range.");
                 break;
             }
         });
@@ -222,8 +240,6 @@ namespace librealsense
         return tgt;
     }
 
-
-
     void spatial_filter::recursive_filter_horizontal_fp(void * image_data, float alpha, float deltaZ)
     {
         float *image = reinterpret_cast<float*>(image_data);
@@ -238,7 +254,7 @@ namespace librealsense
 
             im++;
             float innovation = *im;
-            u = _width - 1;
+            u = int(_width) - 1;
             if (!(*(int*)&previousInnovation > 0))
                 goto CurrentlyInvalidLR;
             // else fall through
@@ -295,7 +311,7 @@ namespace librealsense
             // right to left
             im = image + (v + 1) * _width - 2;  // end of row - two pixels
             previousInnovation = state = im[1];
-            u = _width - 1;
+            u = int(_width) - 1;
             innovation = *im;
             if (!(*(int*)&previousInnovation > 0))
                 goto CurrentlyInvalidRL;
@@ -366,7 +382,7 @@ namespace librealsense
             float state = im[0];
             float previousInnovation = state;
 
-            v = _height - 1;
+            v = int(_height) - 1;
             im += _width;
             float innovation = *im;
 
@@ -427,7 +443,7 @@ namespace librealsense
             state = im[_width];
             previousInnovation = state;
             innovation = *im;
-            v = _height - 1;
+            v = int(_height) - 1;
             if (!(*(int*)&previousInnovation > 0))
                 goto CurrentlyInvalidBT;
             // else fall through

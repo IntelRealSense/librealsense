@@ -96,8 +96,8 @@ class Device {
    *
    * @param {String|Integer} [info] - the camera_info type, see {@link camera_info} for available
    * values
-   * @return {CameraInfoObject} if no argument is provided, {CameraInfoObject} is returned.
-   * If a camera_info is provided, the specific camera info value is returned.
+   * @return {CameraInfoObject|String|undefined} if no argument is provided, {CameraInfoObject} is
+   * returned. If a camera_info is provided, the specific camera info value string is returned.
    */
   getCameraInfo(info) {
     const funcName = 'Device.getCameraInfo()';
@@ -618,6 +618,9 @@ class Options {
     if (!this.cxxObj.supportsOption(o) || this.cxxObj.isOptionReadonly(o)) {
       return undefined;
     }
+    if (!this._internalIsOptionValueInRange(o, value)) {
+      return undefined;
+    }
     this.cxxObj.setOption(o, value);
   }
 
@@ -670,6 +673,11 @@ class Options {
       return undefined;
     }
     return this.cxxObj.getOptionValueDescription(o, value);
+  }
+
+  _internalIsOptionValueInRange(option, value) {
+    let range = this.getOptionRange(option);
+    return (range && value >= range.minValue && value <= range.maxValue);
   }
 }
 
@@ -1696,6 +1704,7 @@ class Align {
     const s = checkArgumentType(arguments, constants.stream, 0, funcName);
     this.cxxAlign = new RS2.RSAlign(s);
     this.frameSet = new FrameSet();
+    internal.addObject(this);
   }
 
   /**

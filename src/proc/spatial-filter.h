@@ -29,10 +29,10 @@ namespace librealsense
         void dxf_smooth(void *frame_data, float alpha, float delta, int iterations)
         {
             static_assert((std::is_arithmetic<T>::value), "Spatial filter assumes numeric types");
+            bool fp = (std::is_floating_point<T>::value);
 
             for (int i = 0; i < iterations; i++)
             {
-                bool fp = (std::is_floating_point<T>::value);
                 if (fp)
                 {
                     recursive_filter_horizontal_fp(frame_data, alpha, delta);
@@ -43,8 +43,12 @@ namespace librealsense
                     recursive_filter_horizontal<T>(frame_data, alpha, delta);
                     recursive_filter_vertical<T>(frame_data, alpha, delta);
                 }
-
             }
+
+            // Disparity domain hole filling requires a second pass over the frame data
+            // For depth domain a more efficient in-place hole filling is performed
+            if (_holes_filling_mode && fp)
+                intertial_holes_fill<T>(static_cast<T*>(frame_data));
         }
 
         void recursive_filter_horizontal_fp(void * image_data, float alpha, float deltaZ);
@@ -208,6 +212,53 @@ namespace librealsense
                     }
                     im += 1;
                 }
+            }
+        }
+
+        template<typename T>
+        inline void intertial_holes_fill(T* image_data)
+        {
+            std::function<bool(T*)> fp_oper = [](T* ptr) { return !*((int *)ptr); };
+            std::function<bool(T*)> uint_oper = [](T* ptr) { return !(*ptr); };
+            auto empty = (std::is_floating_point<T>::value) ? fp_oper : uint_oper;
+
+            size_t cur_fill = 0;
+
+            T* p = image_data;
+            for (int j = 0; j < _height; ++j)
+            {
+                ++p;
+                cur_fill = 0;
+
+                //Left to Right
+                for (size_t i = 1; i < _width; ++i)
+                {
+                    if (empty(p))
+                    {
+                        if (++cur_fill < _holes_filling_radius)
+                            *p = *(p - 1);
+                    }
+                    else
+                        cur_fill = 0;
+
+                    ++p;
+                }
+
+                --p;
+                cur_fill = 0;
+                //Right to left
+                for (size_t i = 1; i < _width; ++i)
+                {
+                    if (empty(p))
+                    {
+                        if (++cur_fill < _holes_filling_radius)
+                            *p = *(p + 1);
+                    }
+                    else
+                        cur_fill = 0;
+                    --p;
+                }
+                p += _width;
             }
         }
 

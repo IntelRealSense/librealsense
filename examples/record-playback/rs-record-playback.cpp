@@ -41,7 +41,7 @@ int main(int argc, char * argv[]) try
 
     // Create a shared pointer to a pipeline
     auto pipe = std::make_shared<rs2::pipeline>();
-   
+
     // Start streaming with default configuration
     pipe->start();
 
@@ -64,14 +64,14 @@ int main(int argc, char * argv[]) try
         ImGui_ImplGlfw_NewFrame(1);
         ImGui::SetNextWindowSize({ app.width(), app.height() });
         ImGui::Begin("app", nullptr, flags);
-        
+
         // If the device is sreaming live and not from a file
         if (!device.as<rs2::playback>())
         {
             frames = pipe->wait_for_frames(); // wait for next set of frames from the camera
             depth = color_map(frames.get_depth_frame()); // Find and colorize the depth data
-        }		
-    
+        }
+
         // Set options for the ImGui buttons
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1, 1, 1, 1 });
         ImGui::PushStyleColor(ImGuiCol_Button, { 36 / 255.f, 44 / 255.f, 51 / 255.f, 1 });
@@ -96,7 +96,7 @@ int main(int argc, char * argv[]) try
                     pipe->start(cfg); //File will be opened at this point
                     device = pipe->get_active_profile().get_device();
                 }
-                else 
+                else
                 { // If the recording is resumed after a pause, there's no need to reset the shared pointer
                     device.as<rs2::recorder>().resume(); // rs2::recorder allows access to 'resume' function
                 }
@@ -108,7 +108,7 @@ int main(int argc, char * argv[]) try
             */
             if (device.as<rs2::recorder>())
             {
-                if (recording) 
+                if (recording)
                 {
                     ImGui::SetCursorPos({ app.width() / 2 - 100, 3 * app.height() / 5 + 60 });
                     ImGui::TextColored({ 255 / 255.f, 64 / 255.f, 54 / 255.f, 1 }, "Recording to file 'a.bag'");
@@ -157,7 +157,7 @@ int main(int argc, char * argv[]) try
                 }
             }
         }
-        
+
         // If device is playing a recording, we allow pause and stop
         if (device.as<rs2::playback>())
         {

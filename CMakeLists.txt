@@ -143,6 +143,7 @@ set(REALSENSE_CPP
     src/proc/decimation-filter.cpp
     src/proc/spatial-filter.cpp
     src/proc/temporal-filter.cpp
+    src/proc/hole-filling-filter.cpp
     src/proc/disparity-transform.cpp
     src/source.cpp
     src/ds5/ds5-options.cpp
@@ -241,6 +242,7 @@ set(REALSENSE_HPP
     src/proc/decimation-filter.h
     src/proc/spatial-filter.h
     src/proc/temporal-filter.h
+    src/proc/hole-filling-filter.h
     src/proc/syncer-processing-block.h
     src/proc/disparity-transform.h
     src/algo.h
@@ -476,6 +478,7 @@ if(WIN32)
         src/proc/decimation-filter.cpp
         src/proc/spatial-filter.cpp
         src/proc/temporal-filter.cpp
+        src/proc/hole-filling-filter.cpp
         src/proc/syncer-processing-block.cpp
         src/proc/disparity-transform.cpp
         )
@@ -491,6 +494,7 @@ if(WIN32)
         src/proc/temporal-filter.h
         src/proc/syncer-processing-block.h
         src/proc/disparity-transform.h
+        src/proc/hole-filling-filter.h
         )
 
     if(BUILD_WITH_STATIC_CRT)
@@ -575,6 +579,7 @@ endif()
 if (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /wd4819")
     add_definitions(-D_UNICODE)
+    set(LRS_TRY_USE_AVX true)
 endif()
 
 add_definitions(-D${BACKEND} -DUNICODE)
@@ -602,14 +607,15 @@ if(UNIX)
 
     execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE MACHINE)
     if(${MACHINE} MATCHES "arm-linux-gnueabihf")
-      set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mfpu=neon -mfloat-abi=hard -ftree-vectorize")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -mfloat-abi=hard -ftree-vectorize")
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mfpu=neon -mfloat-abi=hard -ftree-vectorize")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -mfloat-abi=hard -ftree-vectorize")
     elseif(${MACHINE} MATCHES "aarch64-linux-gnu")
-      set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mstrict-align -ftree-vectorize")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mstrict-align -ftree-vectorize")
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mstrict-align -ftree-vectorize")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mstrict-align -ftree-vectorize")
     else(${MACHINE} MATCHES "arm-linux-gnueabihf")
         set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mssse3")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
+        set(LRS_TRY_USE_AVX true)
     endif(${MACHINE} MATCHES "arm-linux-gnueabihf")
 endif()
 
@@ -678,7 +684,7 @@ if (BUILD_WITH_TM2)
     src/tm2/tm-conversions.h
     src/tm2/controller_event_serializer.h
     )
-    
+
     list(APPEND REALSENSE_CPP
     src/tm2/tm-context.cpp
     src/tm2/tm-device.cpp
@@ -696,7 +702,9 @@ if (BUILD_WITH_TM2)
     )
 endif()
 
-set_source_files_properties(src/image_avx.cpp PROPERTIES COMPILE_FLAGS -mavx2)
+if(LRS_TRY_USE_AVX)
+    set_source_files_properties(src/image_avx.cpp PROPERTIES COMPILE_FLAGS -mavx2)
+endif()
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)

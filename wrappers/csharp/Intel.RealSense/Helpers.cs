@@ -1,9 +1,51 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
+    public class FramesReleaser : IDisposable
+    {
+        public FramesReleaser() { }
+
+        public void AddFrameToRelease<T>(T f) where T : IDisposable
+        {
+            if (!m_objects.Contains(f))
+                m_objects.Add(f);
+        }
+
+        // Add an object to a releaser (if one is provided) and return the object
+        public static T ScopedReturn<T>(FramesReleaser releaser, T obj) where T : IDisposable
+        {
+            if (releaser != null) releaser.AddFrameToRelease(obj);
+            return obj;
+        }
+
+        private HashSet<IDisposable> m_objects = new HashSet<IDisposable>();
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                foreach (var o in m_objects)
+                    o.Dispose();
+                disposedValue = true;
+            }
+        }
+
+        ~FramesReleaser()
+        {
+            Dispose(false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+    }
 
     public static class Helpers
     {

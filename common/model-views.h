@@ -195,6 +195,7 @@ namespace rs2
         rs2_option opt;
         option_range range;
         std::shared_ptr<options> endpoint;
+        bool* invalidate_flag;
         bool supported = false;
         bool read_only = false;
         float value = 0.0f;
@@ -274,6 +275,7 @@ namespace rs2
             const std::string& opt_base_label,
             subdevice_model* model,
             std::shared_ptr<options> options,
+            bool* options_invalidated,
             std::string& error_message);
 
         subdevice_model(device& dev, std::shared_ptr<sensor> s, std::string& error_message);
@@ -372,6 +374,7 @@ namespace rs2
         std::shared_ptr<processing_block_model> decimation_filter;
         std::shared_ptr<processing_block_model> spatial_filter;
         std::shared_ptr<processing_block_model> temporal_filter;
+        std::shared_ptr<processing_block_model> hole_filling_filter;
         std::shared_ptr<processing_block_model> depth_to_disparity;
         std::shared_ptr<processing_block_model> disparity_to_depth;
 
@@ -415,7 +418,9 @@ namespace rs2
         rect layout;
         std::unique_ptr<texture_buffer> texture;
         float2 size;
-        rect get_stream_bounds() const { return { 0, 0, size.x, size.y }; }
+        float2 original_size;
+        rect get_stream_bounds() const { return { 0, 0, size.x, size.y };}
+        rect get_original_stream_bounds() const { return{ 0, 0, original_size.x, original_size.y };}
         stream_profile original_profile;
         stream_profile profile;
         std::chrono::high_resolution_clock::time_point last_frame;
@@ -547,14 +552,15 @@ namespace rs2
         void draw(int w, int y, notification_model& selected);
         void set_color_scheme(float t) const;
         void clear_color_scheme() const;
+        const int get_max_lifetime_ms() const;
 
-        static const int MAX_LIFETIME_MS = 10000;
         int height = 40;
         int index = 0;
         std::string message;
         double timestamp = 0.0;
         rs2_log_severity severity = RS2_LOG_SEVERITY_NONE;
         std::chrono::high_resolution_clock::time_point created_time;
+        rs2_notification_category category;
         // TODO: Add more info
     };
 

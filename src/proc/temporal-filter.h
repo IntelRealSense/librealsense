@@ -88,7 +88,6 @@ namespace librealsense
         void on_set_delta(float val);
 
         void recalc_persistence_map();
-        std::mutex _mutex;
         uint8_t                 _persistence_param;
 
         float                   _alpha_param;               // The normalized weight of the current pixel

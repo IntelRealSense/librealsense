@@ -31,7 +31,7 @@ namespace rs2
             plane p;
             std::array<float3, 4> plane_corners;
         };
-      
+
         struct single_metric_data
         {
             single_metric_data(std::string name, float val) :
@@ -40,8 +40,6 @@ namespace rs2
             float val;
             std::string name;
         };
-
-      
 
         using callback_type = std::function<void(
             const std::vector<rs2::float3>& points,
@@ -187,22 +185,25 @@ namespace rs2
                 return result;
             }
 
-            // Calculate intersection point of the camera's optical axis with the plane fit in camera's CS
-            float3 plane_fit_pivot = approximate_intersection(p, intrin, intrin->ppx, intrin->ppy);
-            // Find the distance between the "rectified" fit and the ground truth planes.
-            float plane_fit_to_gt_dist_mm = (ground_truth_mm > 0.f) ? (plane_fit_pivot.z * 1000 - ground_truth_mm): 0;
+            // Calculate intersection of the plane fit with a ray along the center of ROI
+            // that by design coincides with the center of the frame
+            float3 plane_fit_pivot = approximate_intersection(p, intrin, intrin->width / 2.f, intrin->height / 2.f);
+            float plane_fit_to_gt_offset_mm = (ground_truth_mm > 0.f) ? (plane_fit_pivot.z * 1000 - ground_truth_mm) : 0;
 
-            callback(roi_pixels, p, roi, baseline_mm, intrin->fx, ground_truth_mm, plane_fit_present, plane_fit_to_gt_dist_mm, record, samples);
             result.p = p;
             result.plane_corners[0] = approximate_intersection(p, intrin, float(roi.min_x), float(roi.min_y));
             result.plane_corners[1] = approximate_intersection(p, intrin, float(roi.max_x), float(roi.min_y));
             result.plane_corners[2] = approximate_intersection(p, intrin, float(roi.max_x), float(roi.max_y));
             result.plane_corners[3] = approximate_intersection(p, intrin, float(roi.min_x), float(roi.max_y));
 
-            // Distance of origin (the camera) to the plane is the distance to the intersection point
-            result.distance = is_valid(result.plane_corners) ? plane_fit_pivot.length()*1000 : -1;
+            // Distance of origin (the camera) from the plane is encoded in parameter D of the plane
+            // The parameter represents the euclidian distance (along plane normal) from camera to the plane
+            result.distance = static_cast<float>(-p.d * 1000);
             // Angle can be calculated from param C
             result.angle = static_cast<float>(std::acos(std::abs(p.c)) / M_PI * 180.);
+
+            callback(roi_pixels, p, roi, baseline_mm, intrin->fx, ground_truth_mm, plane_fit_present,
+                plane_fit_to_gt_offset_mm, record, samples);
 
             // Calculate normal
             auto n = float3{ p.a, p.b, p.c };

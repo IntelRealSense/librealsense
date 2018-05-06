@@ -24,6 +24,7 @@
 #include "proc/syncer-processing-block.h"
 #include "proc/decimation-filter.h"
 #include "proc/spatial-filter.h"
+#include "proc/hole-filling-filter.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"
 #include "../include/librealsense2/h/rs_types.h"
@@ -1471,12 +1472,21 @@ void rs2_config_enable_device(rs2_config* config, const char* serial, rs2_error 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, config, serial)
 
+void rs2_config_enable_device_from_file_repeat_option(rs2_config* config, const char* file, int repeat_playback, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(config);
+    VALIDATE_NOT_NULL(file);
+
+    config->config->enable_device_from_file(file, repeat_playback);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, config, file)
+
 void rs2_config_enable_device_from_file(rs2_config* config, const char* file, rs2_error ** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(config);
     VALIDATE_NOT_NULL(file);
 
-    config->config->enable_device_from_file(file);
+    config->config->enable_device_from_file(file, true);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, config, file)
 
@@ -1535,6 +1545,20 @@ rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, proc)
 
+rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callback_ptr proc, void * context, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(proc);
+
+    auto block = std::make_shared<librealsense::processing_block>();
+
+    block->set_processing_callback({
+        new librealsense::internal_frame_processor_fptr_callback(proc, context),
+        [](rs2_frame_processor_callback* p) { } });
+
+    return new rs2_processing_block{ block };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, proc, context)
+
 rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::syncer_process_unit>();
@@ -1550,6 +1574,15 @@ void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_fr
     block->block->set_output_callback({ on_frame, [](rs2_frame_callback* p) { p->release(); } });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, block, on_frame)
+
+void rs2_start_processing_fptr(rs2_processing_block* block, rs2_frame_callback_ptr on_frame, void* user, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(block);
+    VALIDATE_NOT_NULL(on_frame);
+
+    block->block->set_output_callback({ new frame_callback(on_frame, user), [](rs2_frame_callback* p) { } });
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, block, on_frame, user)
 
 void rs2_start_processing_queue(rs2_processing_block* block, rs2_frame_queue* queue, rs2_error** error) BEGIN_API_CALL
 {
@@ -1712,6 +1745,14 @@ rs2_processing_block* rs2_create_disparity_transform_block(unsigned char transfo
     return new rs2_processing_block{ block };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, transform_to_disparity)
+
+rs2_processing_block* rs2_create_hole_filling_filter_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::hole_filling_filter>();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {
