@@ -96,7 +96,7 @@ int main(int argc, char * argv[]) try
                     pipe->start(cfg); //File will be opened at this point
                     device = pipe->get_active_profile().get_device();
                 }
-                else 
+                else
                 { // If the recording is resumed after a pause, there's no need to reset the shared pointer
                     device.as<rs2::recorder>().resume(); // rs2::recorder allows access to 'resume' function
                 }
@@ -108,7 +108,7 @@ int main(int argc, char * argv[]) try
             */
             if (device.as<rs2::recorder>())
             {
-                if (recording) 
+                if (recording)
                 {
                     ImGui::SetCursorPos({ app.width() / 2 - 100, 3 * app.height() / 5 + 60 });
                     ImGui::TextColored({ 255 / 255.f, 64 / 255.f, 54 / 255.f, 1 }, "Recording to file 'a.bag'");
@@ -157,7 +157,7 @@ int main(int argc, char * argv[]) try
                 }
             }
         }
-        
+
         // If device is playing a recording, we allow pause and stop
         if (device.as<rs2::playback>())
         {

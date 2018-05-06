@@ -354,9 +354,7 @@ PYBIND11_MODULE(NAME, m) {
          .def(BIND_DOWNCAST(frame, video_frame))
          .def(BIND_DOWNCAST(frame, depth_frame));
 
-  
-  
-  
+
     py::class_<rs2::video_frame, rs2::frame> video_frame(m, "video_frame");
     video_frame.def(py::init<rs2::frame>())
         .def("get_width", &rs2::video_frame::get_width, "Returns image width in pixels.")
@@ -513,7 +511,7 @@ PYBIND11_MODULE(NAME, m) {
     // Do we need this?
     py::class_<rs2::process_interface, rs2::options> process_interface(m, "process_interface");
     process_interface.def("process", &rs2::process_interface::process, "frame"_a);
-    
+
     py::class_<rs2::decimation_filter, rs2::process_interface> decimation_filter(m, "decimation_filter");
     decimation_filter.def(py::init<>());
 
@@ -934,23 +932,23 @@ PYBIND11_MODULE(NAME, m) {
         .def("set_rau_support_vector_control", &rs400::advanced_mode::set_rau_support_vector_control, "group"_a)//STRauSupportVectorControl
         .def("get_rau_support_vector_control", &rs400::advanced_mode::get_rau_support_vector_control, "mode"_a = 0)
         .def("set_color_control", &rs400::advanced_mode::set_color_control, "group"_a) //STColorControl
-        .def("get_color_control", &rs400::advanced_mode::get_color_control, "mode"_a = 0)//STColorControl 
+        .def("get_color_control", &rs400::advanced_mode::get_color_control, "mode"_a = 0)//STColorControl
         .def("set_rau_thresholds_control", &rs400::advanced_mode::set_rau_thresholds_control, "group"_a)//STRauColorThresholdsControl
         .def("get_rau_thresholds_control", &rs400::advanced_mode::get_rau_thresholds_control, "mode"_a = 0)
         .def("set_slo_color_thresholds_control", &rs400::advanced_mode::set_slo_color_thresholds_control, "group"_a)//STSloColorThresholdsControl
-        .def("get_slo_color_thresholds_control", &rs400::advanced_mode::get_slo_color_thresholds_control, "mode"_a = 0)//STSloColorThresholdsControl 
+        .def("get_slo_color_thresholds_control", &rs400::advanced_mode::get_slo_color_thresholds_control, "mode"_a = 0)//STSloColorThresholdsControl
         .def("set_slo_penalty_control", &rs400::advanced_mode::set_slo_penalty_control, "group"_a) //STSloPenaltyControl
-        .def("get_slo_penalty_control", &rs400::advanced_mode::get_slo_penalty_control, "mode"_a = 0)//STSloPenaltyControl 
+        .def("get_slo_penalty_control", &rs400::advanced_mode::get_slo_penalty_control, "mode"_a = 0)//STSloPenaltyControl
         .def("set_hdad", &rs400::advanced_mode::set_hdad, "group"_a) //STHdad
         .def("get_hdad", &rs400::advanced_mode::get_hdad, "mode"_a = 0)
         .def("set_color_correction", &rs400::advanced_mode::set_color_correction, "group"_a)
-        .def("get_color_correction", &rs400::advanced_mode::get_color_correction, "mode"_a = 0) //STColorCorrection 
+        .def("get_color_correction", &rs400::advanced_mode::get_color_correction, "mode"_a = 0) //STColorCorrection
         .def("set_depth_table", &rs400::advanced_mode::set_depth_table, "group"_a)
-        .def("get_depth_table", &rs400::advanced_mode::get_depth_table, "mode"_a = 0) //STDepthTableControl 
+        .def("get_depth_table", &rs400::advanced_mode::get_depth_table, "mode"_a = 0) //STDepthTableControl
         .def("set_ae_control", &rs400::advanced_mode::set_ae_control, "group"_a)
-        .def("get_ae_control", &rs400::advanced_mode::get_ae_control, "mode"_a = 0) //STAEControl 
+        .def("get_ae_control", &rs400::advanced_mode::get_ae_control, "mode"_a = 0) //STAEControl
         .def("set_census", &rs400::advanced_mode::set_census, "group"_a)    //STCensusRadius
-        .def("get_census", &rs400::advanced_mode::get_census, "mode"_a = 0) //STCensusRadius 
+        .def("get_census", &rs400::advanced_mode::get_census, "mode"_a = 0) //STCensusRadius
         .def("serialize_json", &rs400::advanced_mode::serialize_json)
         .def("load_json", &rs400::advanced_mode::load_json, "json_content"_a);
 

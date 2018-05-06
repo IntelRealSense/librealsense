@@ -156,7 +156,7 @@ int main()
                 rs2_release_frame(frame);
                 continue;
             }
-            
+
             /* Retrieve depth data, configured as 16-bit depth values */
             const uint16_t* depth_frame_data = (const uint16_t*)(rs2_get_frame_data(frame, &e));
             check_error(e);

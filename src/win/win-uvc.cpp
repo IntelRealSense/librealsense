@@ -966,7 +966,7 @@ namespace librealsense
             }
             catch (...)
             {
-                LOG_WARNING("Accessing USB info failed for " << std::hex << info.vid << ":" 
+                LOG_WARNING("Accessing USB info failed for " << std::hex << info.vid << ":"
                     << info.pid << " , id:" << info.unique_id);
             }
         }

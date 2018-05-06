@@ -1551,7 +1551,7 @@ rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callb
 
     auto block = std::make_shared<librealsense::processing_block>();
 
-    block->set_processing_callback({ 
+    block->set_processing_callback({
         new librealsense::internal_frame_processor_fptr_callback(proc, context),
         [](rs2_frame_processor_callback* p) { } });
 
