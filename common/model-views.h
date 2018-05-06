@@ -553,7 +553,7 @@ namespace rs2
         void set_color_scheme(float t) const;
         void clear_color_scheme() const;
         const int get_max_lifetime_ms() const;
-  
+
         int height = 40;
         int index = 0;
         std::string message;

@@ -567,15 +567,15 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
         register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
-        
+
         if (usb_modality)
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
 
         std::string curr_version= _fw_version;
         std::string latest_version = recommended_fw_version;
-        
+
         if (_fw_version < recommended_fw_version)
-        {   
+        {
             std::weak_ptr<notifications_processor> weak = depth_ep.get_notifications_processor();
             std::thread notification_thread = std::thread([weak, curr_version, latest_version]()
             {
@@ -598,9 +598,7 @@ namespace librealsense
                 
             });
             notification_thread.detach();
-            
         }
-          
     }
 
     notification ds5_notification_decoder::decode(int value)

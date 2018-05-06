@@ -26,6 +26,7 @@
 #define ARCBALL_CAMERA_IMPLEMENTATION
 #include <arcball_camera.h>
 
+constexpr const char* recommended_fw_url = "https://downloadcenter.intel.com/download/27522/Latest-Firmware-for-Intel-RealSense-D400-Product-Family?v=t";
 
 using namespace rs400;
 using namespace nlohmann;
@@ -59,18 +60,19 @@ void open_url(const char* url)
 #if (defined(_WIN32) || defined(_WIN64))
     if (reinterpret_cast<int>(ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOW)) < 32)
         throw std::runtime_error("Failed opening URL");
-#endif
-#if defined __linux__ || defined(__linux__)
+#elif defined __linux__ || defined(__linux__)
     std::string command_name = "xdg-open ";
     std::string command = command_name + url;
     if (system(command.c_str()))
         throw std::runtime_error("Failed opening URL");
-#endif
-#ifdef __APPLE__
+#elif __APPLE__
     std::string command_name = "open ";
     std::string command = command_name + url;
     if (system(command.c_str()))
         throw std::runtime_error("Failed opening URL");
+#else
+#pragma message ( "\nLibrealsense couldn't establish OS/Build environment. \
+Some auxillary functionalities might be affected. Please report this message if encountered")
 #endif
 }
 
@@ -5206,7 +5208,6 @@ namespace rs2
         {
             if (is_advanced_mode_enabled)
             {
-                auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
                 json_loading([&]()
                 {
                     auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
@@ -6071,7 +6072,6 @@ namespace rs2
         }
     }
 
-    
     const int notification_model::get_max_lifetime_ms() const
     {
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
@@ -6080,8 +6080,7 @@ namespace rs2
         }
         return 10000;
     }
-    
-    
+
     void notification_model::draw(int w, int y, notification_model& selected)
     {
         auto flags = ImGuiWindowFlags_NoResize |
@@ -6132,12 +6131,11 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 62 / 255.f + 0.1f, 77 / 255.f + 0.1f, 89 / 255.f + 0.1f, 1 - t });
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 62 / 255.f - 0.1f, 77 / 255.f - 0.1f, 89 / 255.f - 0.1f, 1 - t });
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 2);
-  
-            const char* url = "https://downloadcenter.intel.com/download/27522/Latest-Firmware-for-Intel-RealSense-D400-Product-Family?v=t";
+
             ImGui::Indent(80);
             if (ImGui::Button("Download update", { 130, 30 }))
-            {       
-                open_url(url);
+            {
+                open_url(recommended_fw_url);
             }
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("%s", "Internet connection required");

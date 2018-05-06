@@ -54,7 +54,7 @@ rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* 
 * This method creates new custom processing block from function pointer. This lets the users pass frames between module boundaries for processing
 * This is an infrastructure function aimed at middleware developers, and also used by provided blocks such as sync, colorizer, etc..
 * \param proc       Processing function pointer to be applied to every frame entering the block
-* \param context    User context (can be anything or null) to be passed later as ctx param of the callback 
+* \param context    User context (can be anything or null) to be passed later as ctx param of the callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return           new processing block, to be released by rs2_delete_processing_block
 */

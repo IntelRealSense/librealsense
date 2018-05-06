@@ -45,7 +45,7 @@ typedef enum rs2_stream
     RS2_STREAM_GYRO                             , /**< Native stream of gyroscope motion data produced by RealSense device */
     RS2_STREAM_ACCEL                            , /**< Native stream of accelerometer motion data produced by RealSense device */
     RS2_STREAM_GPIO                             , /**< Signals from external device connected through GPIO */
-    RS2_STREAM_POSE                             , /**< 6 Degrees of Freedom pose data, calculated by RealSense device */ 
+    RS2_STREAM_POSE                             , /**< 6 Degrees of Freedom pose data, calculated by RealSense device */
     RS2_STREAM_CONFIDENCE,
     RS2_STREAM_COUNT
 } rs2_stream;
