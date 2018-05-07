@@ -60,6 +60,8 @@ catch (const rs2::error& e)
     cerr << "Some other error occurred!" << endl;
 }
 ```
+For the full list of FW errors, please refer to [ds5-private.h](../src/ds5/ds5-private.h)
+
 
 ## Callbacks
 With current design, there is no way to propagate exceptions raised inside user callbacks into the library.
