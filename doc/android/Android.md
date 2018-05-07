@@ -1,4 +1,5 @@
->:pushpin: While we do not officially support using the Intel® RealSense™ SDK on Android platforms, the RealSense compatible devices can be connected to Android phones and tablets via a USB 3 port.
+>:pushpin: The SDK 2.0 delivers cross-platform open source libraries & tools that allow users to develop on multiple Operating Systems & development environments.  Intel has validated SDK2.0 on Windows and Linux platforms. Please check [latest Release](https://github.com/IntelRealSense/librealsense/releases) for the build versions.  While Intel has not explicitly validated SDK2.0 on Android platforms, it is expected to work on Android as well. Please refer to the build instructions in the section below. Calibration and firmware update tools that would be used in production and manufacturing processes are not available on Android at this time.  Please contact your Intel representative for additional information.
+
 
 #  Build Intel&reg; RealSense&trade; SDK 2.0 for Android OS
 This document describes how to build the [Intel&reg; RealSense&trade; SDK 2.0](https://github.com/IntelRealSense/librealsense) including headless tools and examples for Android devices.
