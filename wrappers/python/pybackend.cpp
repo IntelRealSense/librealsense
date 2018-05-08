@@ -10,6 +10,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
 
+
 // makes std::function conversions work
 #include <pybind11/functional.h>
 
@@ -29,10 +30,22 @@ using namespace pybind11::literals;
 using namespace librealsense;
 using namespace pybackend2;
 
+
 // Prevents expensive copies of pixel buffers into python
 PYBIND11_MAKE_OPAQUE(std::vector<uint8_t>)
 
 PYBIND11_MODULE(NAME, m) {
+
+
+    py::enum_<platform::usb_spec>(m, "USB_TYPE")
+        .value("USB1", platform::usb_spec::usb1_type)
+        .value("USB1_1", platform::usb_spec::usb1_1_type)
+        .value("USB2", platform::usb_spec::usb2_type)
+        .value("USB2_1", platform::usb_spec::usb2_1_type)
+        .value("USB3", platform::usb_spec::usb3_type)
+        .value("USB3_1", platform::usb_spec::usb3_1_type)
+        .value("USB3_2", platform::usb_spec::usb3_2_type);
+
     m.doc() = "Wrapper for the backend of librealsense";
 
     py::class_<platform::control_range> control_range(m, "control_range");
@@ -259,6 +272,7 @@ PYBIND11_MODULE(NAME, m) {
             })
         .def("start_callbacks", &platform::retry_controls_work_around::start_callbacks)
         .def("stop_callbacks", &platform::retry_controls_work_around::stop_callbacks)
+        .def("get_usb_specification", &platform::retry_controls_work_around::get_usb_specification)
         .def("close", [](platform::retry_controls_work_around &dev, platform::stream_profile profile)
             {
                 py::gil_scoped_release release;
@@ -272,11 +286,11 @@ PYBIND11_MODULE(NAME, m) {
                 std::vector<uint8_t> data(l.size());
                 for (int i = 0; i < l.size(); ++i)
                     data[i] = l[i].cast<uint8_t>();
-                dev.set_xu(xu, ctrl, data.data(), (int)data.size());
+                return dev.set_xu(xu, ctrl, data.data(), (int)data.size());
             }, "xu"_a, "ctrl"_a, "data"_a)
         .def("set_xu", [](platform::retry_controls_work_around &dev, const platform::extension_unit &xu, uint8_t ctrl, std::vector<uint8_t> &data)
             {
-                dev.set_xu(xu, ctrl, data.data(), (int)data.size());
+                return dev.set_xu(xu, ctrl, data.data(), (int)data.size());
             }, "xu"_a, "ctrl"_a, "data"_a)
         .def("get_xu", [](const platform::retry_controls_work_around &dev, const platform::extension_unit &xu, uint8_t ctrl, size_t len)
             {
@@ -334,6 +348,7 @@ PYBIND11_MODULE(NAME, m) {
     })
         .def("start_callbacks", &platform::multi_pins_uvc_device::start_callbacks)
         .def("stop_callbacks", &platform::multi_pins_uvc_device::stop_callbacks)
+        .def("get_usb_specification", &platform::multi_pins_uvc_device::get_usb_specification)
         .def("close", [](platform::multi_pins_uvc_device &dev, platform::stream_profile profile)
     {
         py::gil_scoped_release release;
