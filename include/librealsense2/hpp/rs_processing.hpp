@@ -224,7 +224,10 @@ namespace rs2
         points calculate(frame depth)
         {
             _block->invoke(std::move(depth));
-            return _queue.wait_for_frame();
+            rs2::frame f;
+            if (!_queue.poll_for_frame(&f))
+                throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
+            return points(f);
         }
 
         void map_to(frame mapped)
@@ -349,7 +352,8 @@ namespace rs2
         {
             (*_block)(frame);
             rs2::frame f;
-            _queue.poll_for_frame(&f);
+            if (!_queue.poll_for_frame(&f))
+                throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
             return frameset(f);
         }
 
@@ -387,7 +391,10 @@ namespace rs2
             if(depth)
             {
                 _block->invoke(std::move(depth));
-                return _queue.wait_for_frame();
+                rs2::frame f;
+                if (!_queue.poll_for_frame(&f))
+                    throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
+                return video_frame(f);
             }
             return depth;
         }
@@ -432,7 +439,8 @@ namespace rs2
         {
             (*_block)(frame);
             rs2::frame f;
-            _queue.poll_for_frame(&f);
+            if (!_queue.poll_for_frame(&f))
+                throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
             return f;
         }
 
@@ -469,7 +477,8 @@ namespace rs2
         {
             (*_block)(frame);
             rs2::frame f;
-            _queue.poll_for_frame(&f);
+            if (!_queue.poll_for_frame(&f))
+                throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
             return f;
         }
 
@@ -506,7 +515,8 @@ namespace rs2
         {
             (*_block)(frame);
             rs2::frame f;
-            _queue.poll_for_frame(&f);
+            if (!_queue.poll_for_frame(&f))
+                throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
             return f;
         }
 
@@ -543,7 +553,8 @@ namespace rs2
         {
             (*_block)(frame);
             rs2::frame f;
-            _queue.poll_for_frame(&f);
+            if (!_queue.poll_for_frame(&f))
+                throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
             return f;
         }
 
