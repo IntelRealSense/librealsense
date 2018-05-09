@@ -591,7 +591,8 @@ namespace rs2
         {
             (*_block)(frame);
             rs2::frame f;
-            _queue.poll_for_frame(&f);
+            if (!_queue.poll_for_frame(&f))
+                throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
             return f;
         }
 
