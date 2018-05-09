@@ -1,7 +1,7 @@
 # OpenCV Samples for Intel® RealSense™ cameras
 Examples in this folder are designed to complement existing [SDK examples](../../examples) and demonstrate how Intel RealSense cameras can be used together with `opencv` in domain of computer-vision. 
 
-> RealSense examples have been desinged and tested with OpenCV 3.2.
+> RealSense examples have been desinged and tested with OpenCV 3.4,
 > Working with latest OpenCV 4 requires minor code changes
  
 ## List of Samples:
