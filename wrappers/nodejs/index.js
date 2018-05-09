@@ -83,6 +83,8 @@ class Device {
    * supported.
    * @property {String|undefined} usbTypeDescriptor - Designated USB specification: USB2/USB3.
    * <br> undefined is not supported.
+   * @property {String|undefined} recommendedFirmwareVersion - Latest firmware version.
+   * <br> undefined is not supported.
    * @see [Device.getCameraInfo()]{@link Device#getCameraInfo}
    */
 
@@ -133,10 +135,14 @@ class Device {
         result.usbTypeDescriptor = this.cxxDev.getCameraInfo(
             camera_info.CAMERA_INFO_USB_TYPE_DESCRIPTOR);
       }
+      if (this.cxxDev.supportsCameraInfo(camera_info.CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION)) {
+        result.recommendedFirmwareVersion = this.cxxDev.getCameraInfo(
+            camera_info.CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION);
+      }
       return result;
     } else {
       const val = checkArgumentType(arguments, constants.camera_info, 0, funcName);
-      return this.cxxDev.getCameraInfo(val);
+      return (this.cxxDev.supportsCameraInfo(val) ? this.cxxDev.getCameraInfo(val) : undefined);
     }
   }
 
@@ -764,7 +770,7 @@ class Sensor extends Options {
     const funcName = 'Sensor.getCameraInfo()';
     checkArgumentLength(1, 1, arguments.length, funcName);
     const i = checkArgumentType(arguments, constants.camera_info, 0, funcName);
-    return this.cxxSensor.getCameraInfo(i);
+    return (this.cxxSensor.supportsCameraInfo(i) ? this.cxxSensor.getCameraInfo(i) : undefined);
   }
 
   /**
@@ -4782,7 +4788,11 @@ const camera_info = {
    * USB2/USB3. <br>Equivalent to its uppercase counterpart.
    */
   camera_info_usb_type_descriptor: 'usb-type-descriptor',
-
+  /**
+   * String literal of <code>'recommended-firmware-version'</code>. <br>Latest firmware version
+   * available. <br>Equivalent to its uppercase counterpart.
+   */
+  camera_info_recommended_firmware_version: 'recommended-firmware-version',
   /**
    * Device friendly name. <br>Equivalent to its lowercase counterpart.
    * @type {Integer}
@@ -4831,6 +4841,11 @@ const camera_info = {
    */
   CAMERA_INFO_USB_TYPE_DESCRIPTOR: RS2.RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR,
   /**
+   * Latest firmware version available. <br>Equivalent to its lowercase counterpart.
+   * @type {Integer}
+   */
+  CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION: RS2.RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION,
+  /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
    */
@@ -4864,6 +4879,8 @@ const camera_info = {
         return this.camera_info_camera_locked;
       case this.CAMERA_INFO_USB_TYPE_DESCRIPTOR:
         return this.camera_info_usb_type_descriptor;
+      case this.CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION:
+        return this.camera_info_recommended_firmware_version;
     }
   },
 };
@@ -5228,7 +5245,11 @@ const notification_category = {
    * <br>Equivalent to its uppercase counterpart.
    */
   notification_category_unknown_error: 'unknown-error',
-
+  /**
+   * String literal of <code>'firmware-update-recommended'</code>. <br>Current firmware version
+   * installed is not the latest available. <br>Equivalent to its uppercase counterpart.
+   */
+  notification_category_firmware_update_recommended: 'firmware-update-recommended',
   /**
    * Frames didn't arrived within 5 seconds <br>Equivalent to its lowercase counterpart
    * @type {Integer}
@@ -5256,6 +5277,13 @@ const notification_category = {
    */
   NOTIFICATION_CATEGORY_UNKNOWN_ERROR: RS2.RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR,
   /**
+   * Current firmware version installed is not the latest available <br>Equivalent to its lowercase
+   * counterpart
+   * @type {Integer}
+   */
+  NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED:
+      RS2.RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED,
+  /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
    */
@@ -5280,6 +5308,8 @@ const notification_category = {
         return this.notification_category_hardware_event;
       case this.NOTIFICATION_CATEGORY_UNKNOWN_ERROR:
         return this.notification_category_unknown_error;
+      case this.NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED:
+        return this.notification_category_firmware_update_recommended;
     }
   },
 };
