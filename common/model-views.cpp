@@ -5271,6 +5271,7 @@ namespace rs2
         return panel_height;
     }
 
+
     void device_model::draw_controls(float panel_width, float panel_height,
         ux_window& window,
         std::string& error_message,
@@ -5367,7 +5368,7 @@ namespace rs2
                 ImGui::SetTooltip("%s", full_path.c_str());
             ImGui::PopFont();
         }
-        ImGui::SetCursorPos({ 0, pos.y + header_h});
+        ImGui::SetCursorPos({ 0, pos.y + header_h });
 
         ////////////////////////////////////////
         // draw device control panel
@@ -5424,26 +5425,26 @@ namespace rs2
             ImGui::PushFont(window.get_font());
             int line_h = 22;
             info_control_panel_height = (int)infos.size() * line_h + 5;
-
             for (auto&& pair : infos)
             {
                 auto rc = ImGui::GetCursorPos();
                 ImGui::SetCursorPos({ rc.x + 12, rc.y + 4 });
-                ImGui::Text("%s:", pair.first.c_str()); ImGui::SameLine();
-
+                ImGui::Text("%s:", pair.first.c_str());
+                ImGui::SameLine();
                 ImGui::PushStyleColor(ImGuiCol_FrameBg, sensor_bg);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-                ImGui::SetCursorPos({ rc.x + 130, rc.y + 1 });
+                ImGui::SetCursorPos({ rc.x + 145, rc.y + 1 });
                 std::string label = to_string() << "##" << id << " " << pair.first;
+
                 ImGui::InputText(label.c_str(),
                     (char*)pair.second.data(),
                     pair.second.size() + 1,
                     ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopStyleColor(3);
-
                 ImGui::SetCursorPos({ rc.x, rc.y + line_h });
             }
+
             ImGui::PopFont();
         }
 
@@ -5482,7 +5483,7 @@ namespace rs2
 
                     if (!sub->streaming)
                     {
-                        std::string label = to_string() << "  " << textual_icons::toggle_off <<"\noff   ##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
+                        std::string label = to_string() << "  " << textual_icons::toggle_off << "\noff   ##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME);
 
                         ImGui_ScopePushStyleColor(ImGuiCol_Text, redish);
                         ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
@@ -6099,20 +6100,31 @@ namespace rs2
         ImGui::SetNextWindowPos({ float(w - 330), float(y) });
         height = lines * 30 + 20;
         ImGui::SetNextWindowSize({ float(315), float(height) });
+
+        bool opened = true;
+        bool* opened_ptr;
         std::string label;
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             label = "Firmware update recommended";
+            opened_ptr = &opened;
         }
         else
         {
             label = to_string() << "Hardware Notification #" << index;
+            opened_ptr = nullptr;
         }
 
-        ImGui::Begin(label.c_str(), nullptr, flags);
-
+        ImGui::PushStyleColor(ImGuiCol_CloseButton, { 62 / 255.f, 77 / 255.f, 89 / 255.f, 1 - t });
+        ImGui::PushStyleColor(ImGuiCol_CloseButtonHovered, { 62 / 255.f + 0.1f, 77 / 255.f + 0.1f, 89 / 255.f + 0.1f, 1 - t });
+        ImGui::PushStyleColor(ImGuiCol_CloseButtonActive, { 62 / 255.f, 77 / 255.f, 89 / 255.f, 1 - t });
+        ImGui::Begin(label.c_str(), opened_ptr, flags);
+        
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
+            if (!opened)
+                to_close = true;
+
             std::regex version_regex("([0-9]+.[0-9]+.[0-9]+.[0-9]+\n)");
             std::smatch sm;
             std::regex_search(message, sm, version_regex);
@@ -6126,7 +6138,7 @@ namespace rs2
             ImGui::PopStyleColor();
             ImGui::Text("%s", message_suffix.c_str());
 
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1, 1, 1, 1 });
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1, 1, 1, 1 - t });
             ImGui::PushStyleColor(ImGuiCol_Button, { 62 / 255.f, 77 / 255.f, 89 / 255.f, 1 - t });
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 62 / 255.f + 0.1f, 77 / 255.f + 0.1f, 89 / 255.f + 0.1f, 1 - t });
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 62 / 255.f - 0.1f, 77 / 255.f - 0.1f, 89 / 255.f - 0.1f, 1 - t });
@@ -6161,7 +6173,7 @@ namespace rs2
         }
 
         ImGui::End();
-        ImGui::PopStyleColor();
+        ImGui::PopStyleColor(4);
         clear_color_scheme();
         ImGui::PopStyleVar();
     }
@@ -6195,7 +6207,7 @@ namespace rs2
                 std::end(pending_notifications),
                 [&](notification_model& n)
             {
-                return (n.get_age_in_ms() > n.get_max_lifetime_ms());
+                return (n.get_age_in_ms() > n.get_max_lifetime_ms() || n.to_close);
             }), end(pending_notifications));
 
             int idx = 0;

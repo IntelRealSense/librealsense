@@ -324,7 +324,7 @@ namespace librealsense
             CASE(PRODUCT_ID)
             CASE(CAMERA_LOCKED)
             CASE(USB_TYPE_DESCRIPTOR)
-            CASE(RECOMMENDED_FIRMWARE_VERSION)
+            CASE(LATEST_FW_VERSION)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
