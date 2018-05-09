@@ -38,7 +38,7 @@ This page is certainly **not** a comprehensive guide to getting started with Ope
 
 <p align="center"><img src="res/3.PNG" /></p>
 
-12. Specify CMake binaries folder for OpenCV as `OpenCV_DIR` (`c:/git/opencv-master`)
+12. Specify CMake binaries folder for OpenCV as `OpenCV_DIR` (`c:/git/opencv-3.4`)
 
 <p align="center"><img src="res/4.PNG" /></p>
 
