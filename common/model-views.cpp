@@ -5429,14 +5429,22 @@ namespace rs2
             {
                 auto rc = ImGui::GetCursorPos();
                 ImGui::SetCursorPos({ rc.x + 12, rc.y + 4 });
-                ImGui::Text("%s:", pair.first.c_str());
+                std::string info_category;
+                if (pair.first == "Recommended Firmware Version")
+                {
+                    info_category = "Latest FW Version";
+                }
+                else
+                {
+                    info_category = pair.first.c_str();
+                }
+                ImGui::Text("%s:", info_category.c_str());
                 ImGui::SameLine();
                 ImGui::PushStyleColor(ImGuiCol_FrameBg, sensor_bg);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
                 ImGui::SetCursorPos({ rc.x + 145, rc.y + 1 });
                 std::string label = to_string() << "##" << id << " " << pair.first;
-
                 ImGui::InputText(label.c_str(),
                     (char*)pair.second.data(),
                     pair.second.size() + 1,

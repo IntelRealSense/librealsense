@@ -315,7 +315,7 @@ namespace librealsense
 #define CASE(X) STRCASE(CAMERA_INFO, X)
         switch (value)
         {
-                CASE(NAME)
+            CASE(NAME)
             CASE(SERIAL_NUMBER)
             CASE(FIRMWARE_VERSION)
             CASE(PHYSICAL_PORT)
@@ -324,7 +324,7 @@ namespace librealsense
             CASE(PRODUCT_ID)
             CASE(CAMERA_LOCKED)
             CASE(USB_TYPE_DESCRIPTOR)
-            CASE(LATEST_FW_VERSION)
+            CASE(RECOMMENDED_FIRMWARE_VERSION)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
