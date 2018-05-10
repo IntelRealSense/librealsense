@@ -15,9 +15,11 @@ const fs = require('fs');
  * A RealSense camera
  */
 class Device {
-  constructor(dev) {
-    this.cxxDev = dev;
-    internal.addObject(this);
+  constructor(cxxDev, autoDelete = true) {
+    this.cxxDev = cxxDev;
+    if (autoDelete) {
+      internal.addObject(this);
+    }
   }
 
   /**
@@ -1276,7 +1278,7 @@ class Context {
     if (!cxxDev) {
       return undefined;
     }
-    return new PlaybackDevice(cxxDev, file);
+    return new PlaybackDevice(cxxDev, true);
   }
 
   /**
@@ -1340,51 +1342,99 @@ class PlaybackContext extends Context {
 
 /**
  * This class provides the ability to record a live session of streaming to a file
- * Here is an examples:
+ *
+ * There are 2 ways for users to create a RecorderDevice:
  * <pre><code>
- * let ctx = new rs2.Context();
- * let dev = ctx.queryDevices().devices[0];
- * // record to file record.bag
- * let recorder = new rs2.RecorderDevice('record.bag', dev);
- * let sensors = recorder.querySensors();
- * let sensor = sensors[0];
- * let profiles = sensor.getStreamProfiles();
+ *  Syntax 1. RecorderDevice.from(device);
+ *  Syntax 2. new RecorderDevice(file, device);
+ * </code></pre>
  *
- * for (let i =0; i < profiles.length; i++) {
- *   if (profiles[i].streamType === rs2.stream.STREAM_DEPTH &&
- *       profiles[i].fps === 30 &&
- *       profiles[i].width === 640 &&
- *       profiles[i].height === 480 &&
- *       profiles[i].format === rs2.format.FORMAT_Z16) {
- *     sensor.open(profiles[i]);
- *   }
- * }
+ * Syntax 1 can only be applied to device that can be converted to RecorderDevice, see
+ * below example:
+ * <pre><code>
+ *  const file = 'record.bag';
+ *  let cfg = new rs2.Config();
+ *  cfg.enableRecordToFile(file);
+ *  let pipe = new rs2.Pipeline();
+ *  pipe.start(cfg);
+ *  let device = pipe.getActiveProfile().getDevice();
+ *  let recorder = rs2.RecorderDevice.from(device);
  *
- * // record 10 frames
- * let cnt = 0;
- * sensor.start((frame) => {
- *   cnt++;
- *   if (cnt === 10) {
- *     // stop recording
- *     recorder.reset();
- *     rs2.cleanup();
- *     console.log('Recorded ', cnt, ' frames');
- *   }
- * })
+ *  // record 10 frames.
+ *  for (let i = 0; i < 10; i++) {
+ *    let frames = pipe.waitForFrames();
+ *  }
+ *
+ *  pipe.stop();
+ *  // cleanup and make sure the recorded frames are flushed to file
+ *  rs2.cleanup();
+ * </code></pre>
+ *
+ * Syntax 2 is to create a RecorderDevice from a live device, see below example:
+ * <pre><code>
+ *  let ctx = new rs2.Context();
+ *  let dev = ctx.queryDevices().devices[0];
+ *  // record to file record.bag
+ *  let recorder = new rs2.RecorderDevice('record.bag', dev);
+ *  let sensors = recorder.querySensors();
+ *  let sensor = sensors[0];
+ *  let profiles = sensor.getStreamProfiles();
+ *
+ *  for (let i =0; i < profiles.length; i++) {
+ *    if (profiles[i].streamType === rs2.stream.STREAM_DEPTH &&
+ *        profiles[i].fps === 30 &&
+ *        profiles[i].width === 640 &&
+ *        profiles[i].height === 480 &&
+ *        profiles[i].format === rs2.format.FORMAT_Z16) {
+ *      sensor.open(profiles[i]);
+ *    }
+ *  }
+ *
+ *  // record 10 frames
+ *  let cnt = 0;
+ *  sensor.start((frame) => {
+ *    cnt++;
+ *    if (cnt === 10) {
+ *      // stop recording
+ *      recorder.reset();
+ *      rs2.cleanup();
+ *      console.log('Recorded ', cnt, ' frames');
+ *    }
+ *  })
  * </code></pre>
  * @extends Device
  */
 class RecorderDevice extends Device {
   /**
+   * Create a RecorderDevice from another device
+   *
+   * @param {Device} device another existing device
+   * @return {RecorderDevice|undefined} If the the input device can be
+   * converted to a RecorderDevice, return the newly created RecorderDevice,
+   * otherwise, undefined is returned.
+   */
+  static from(device) {
+    return device.cxxDev.isRecorder() ?
+        new RecorderDevice(null, null, device.cxxDev, false) : undefined;
+  }
+
+  /**
    * @param {String} file the file name to store the recorded data
    * @param {Device} device the actual device to be recorded
    */
-  constructor(file, device) {
+  constructor(file, device, cxxDev = undefined, autoDelete = true) {
     const funcName = 'RecorderDevice.constructor()';
-    checkArgumentLength(2, 2, arguments.length, funcName);
-    checkArgumentType(arguments, 'string', 0, funcName);
-    checkArgumentType(arguments, Device, 1, funcName);
-    super(device.cxxDev.spawnRecorderDevice(file));
+    checkArgumentLength(2, 4, arguments.length, funcName);
+    if (arguments[0] && arguments[1]) {
+      checkArgumentType(arguments, 'string', 0, funcName);
+      checkArgumentType(arguments, Device, 1, funcName);
+    } else if (arguments[2]) {
+      checkArgumentType(arguments, 'object', 2, funcName);
+      checkArgumentType(arguments, 'boolean', 3, funcName);
+    } else {
+      throw new TypeError('Invalid parameters for new RecorderDevice()');
+    }
+    super(cxxDev ? cxxDev : device.cxxDev.spawnRecorderDevice(file), autoDelete);
   }
   /**
    * Pause the recording device without stopping the actual device from streaming.
@@ -1409,40 +1459,78 @@ class RecorderDevice extends Device {
 
 /**
  * This class is used to playback the file recorded by RecorderDevice
- * Here is an example:
+ * There are 2 ways for users to create a PlaybackDevice:
  * <pre><code>
- * let ctx = new rs2.Context();
- * // load the recorded file
- * let dev = ctx.loadDevice('record.bag');
- * let sensors = dev.querySensors();
- * let sensor = sensors[0];
- * let profiles = sensor.getStreamProfiles();
- * let cnt = 0;
+ *  Syntax 1: PlaybackDevice.from(device)
+ *  Syntax 2: Context.loadDevice(filePath)
+ * </code></pre>
  *
- * // when received 'stopped' status, stop playback
- * dev.setStatusChangedCallback((status) => {
- *   console.log('playback status: ', status);
- *   if (status.description === 'stopped') {
- *     dev.stop();
- *     ctx.unloadDevice('record.bag');
- *     rs2.cleanup();
- *     console.log('Playback ', cnt, ' frames');
- *   }
- * });
- *
- * // start playback
- * sensor.open(profiles);
- * sensor.start((frame) => {
- *   cnt ++;
- * });
+ * Syntax 1 is to convert an existing device to a PlaybackDevice which can only be
+ * applied to device that can be converted. Here is an example:
  * <pre><code>
+ *  const file = 'record.bag';
+ *  let cfg = new rs2.Config();
+ *  cfg.enableDeviceFromFile(file);
+ *  let pipe = new rs2.Pipeline();
+ *  pipe.start(cfg);
+ *  let device = pipe.getActiveProfile().getDevice();
+ *  let playback = rs2.PlaybackDevice.from(device);
+ *
+ *  for (let i = 0; i < 10; i++) {
+ *    let frames = pipe.waitForFrames();
+ *  }
+ *
+ *  pipe.stop();
+ *  rs2.cleanup();
+ * </code></pre>
+ *
+ * Syntax 2 is to create a PlaybackDevice through Context. Here is an example:
+ * <pre><code>
+ *  let ctx = new rs2.Context();
+ *  // load the recorded file
+ *  let dev = ctx.loadDevice('record.bag');
+ *  let sensors = dev.querySensors();
+ *  let sensor = sensors[0];
+ *  let profiles = sensor.getStreamProfiles();
+ *  let cnt = 0;
+ *
+ *  // when received 'stopped' status, stop playback
+ *  dev.setStatusChangedCallback((status) => {
+ *    console.log('playback status: ', status);
+ *    if (status.description === 'stopped') {
+ *      dev.stop();
+ *      ctx.unloadDevice('record.bag');
+ *      rs2.cleanup();
+ *      console.log('Playback ', cnt, ' frames');
+ *    }
+ *  });
+ *
+ *  // start playback
+ *  sensor.open(profiles);
+ *  sensor.start((frame) => {
+ *    cnt ++;
+ *  });
+ * </code></pre>
  * @extends Device
  * @see [Context.loadDevice]{@link Context#loadDevice}
  */
 class PlaybackDevice extends Device {
-  constructor(cxxdevice, file) {
-    super(cxxdevice);
-    this.file = file;
+  /**
+   * Create a PlaybackDevice from another device
+   *
+   * @param {Device} device another existing device that can be converted to a
+   * PlaybackDevice
+   * @return {PlaybackDevice|undefined} If the the input device can be
+   * converted to a PlaybackDevice, return the newly created PlaybackDevice,
+   * otherwise, undefined is returned.
+   */
+  static from(device) {
+    return device.cxxDev.isPlayback() ?
+        new PlaybackDevice(device.cxxDev, false) : undefined;
+  }
+
+  constructor(cxxdevice, autoDelete) {
+    super(cxxdevice, autoDelete);
     this._events = new EventEmitter();
   }
   /**
@@ -1475,7 +1563,7 @@ class PlaybackDevice extends Device {
    * @return {String}
    */
   get fileName() {
-    return this.file;
+    return this.cxxDev.getFileName();
   }
   /**
    * Retrieves the current position of the playback in the file in terms of time. Unit is
@@ -2801,13 +2889,15 @@ class Config {
    * config, and vise versa
    *
    * @param {String} fileName the playback file of the device
+   * @param {Boolean} repeat whether to repeat the playback automatically
    */
-  enableDeviceFromFile(fileName) {
+  enableDeviceFromFile(fileName, repeat = true) {
     const funcName = 'Config.enableDeviceFromFile()';
-    checkArgumentLength(1, 1, arguments.length, funcName);
+    checkArgumentLength(1, 2, arguments.length, funcName);
     checkArgumentType(arguments, 'string', 0, funcName);
+    checkArgumentType(arguments, 'boolean', 1, funcName);
     checkFileExistence(fileName);
-    this.cxxConfig.enableDeviceFromFile(fileName);
+    this.cxxConfig.enableDeviceFromFileRepeatOption(fileName, repeat);
   }
 
   /**
