@@ -1,11 +1,15 @@
+#Break execution on any error received
 function require_package {
 	package_name=$1
 	printf "\e[32mPackage required %s: \e[0m" "${package_name}"
+	#Supress error code and message in case the package is not installed
 	exec 3>&2
-	exec 2> /dev/null
-	installed=$(dpkg-query -W -f='${Status}' ${package_name} | grep -c "ok installed")
+	exec 2>/dev/null
+	set +e
+	installed=$(dpkg-query -W -f='${Status}' ${package_name} | grep -c "ok installed" || true)
 	exec 2>&3
-
+	set -e
+	
 	if [ $installed -eq 0 ];
 	then
 		echo -e "\e[31m - not found, installing now...\e[0m"
@@ -35,6 +39,9 @@ function choose_kernel_branch {
 		;;
 	"13")								 	# kernel 4.13 is managed on branch hwe
 		echo hwe
+		;;
+	"15")								 	# kernel 4.15 for Ubuntu 18/Bionic Beaver
+		echo master
 		;;
 	*)
 		#error message shall be redirected to stderr to be printed properly

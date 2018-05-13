@@ -21,18 +21,27 @@ source ./scripts/patch-utils.sh
 
 # Get the required tools and headers to build the kernel
 sudo apt-get install linux-headers-generic build-essential git
-
-#Additional packages to build patch
+#Packages to build the patched modules
 require_package libusb-1.0-0-dev
 require_package libssl-dev
 
 LINUX_BRANCH=$(uname -r)
 
 kernel_branch=$(choose_kernel_branch $LINUX_BRANCH)
-kernel_name="ubuntu-xenial-$kernel_branch"
+# Construct branch name from distribution codename {xenial,bionic,..} and kernel version
+ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
+kernel_name="ubuntu-${ubuntu_codename}-$kernel_branch"
+
+#Distribution-specific packages
+if [ ${ubuntu_codename} == "bionic" ];
+then
+	require_package libelf-dev
+	require_package elfutils
+fi
+
 
 # Get the linux kernel and change into source tree
-[ ! -d ${kernel_name} ] && git clone -b $kernel_branch git://kernel.ubuntu.com/ubuntu/ubuntu-xenial.git --depth 1 ./${kernel_name}
+[ ! -d ${kernel_name} ] && git clone -b $kernel_branch git://kernel.ubuntu.com/ubuntu/ubuntu-${ubuntu_codename}.git --depth 1 ./${kernel_name}
 cd ${kernel_name}
 
 # Verify that there are no trailing changes., warn the user to make corrective action if needed
@@ -63,15 +72,15 @@ fi
 
 if [ $reset_driver -eq 1 ];
 then 
-	echo -e "\e[43mUser requested to rebuild and reinstall ubuntu-xenial stock drivers\e[0m"
+	echo -e "\e[43mUser requested to rebuild and reinstall ubuntu-${ubuntu_codename} stock drivers\e[0m"
 else
 	# Patching kernel for RealSense devices
 	echo -e "\e[32mApplying realsense-uvc patch\e[0m"
-	patch -p1 < ../scripts/realsense-camera-formats_ubuntu-xenial-${kernel_branch}.patch
+	patch -p1 < ../scripts/realsense-camera-formats_ubuntu-${ubuntu_codename}-${kernel_branch}.patch
 	echo -e "\e[32mApplying realsense-metadata patch\e[0m"
-	patch -p1 < ../scripts/realsense-metadata-ubuntu-xenial-${kernel_branch}.patch
+	patch -p1 < ../scripts/realsense-metadata-ubuntu-${ubuntu_codename}-${kernel_branch}.patch
 	echo -e "\e[32mApplying realsense-hid patch\e[0m"
-	patch -p1 < ../scripts/realsense-hid-ubuntu-xenial-${kernel_branch}.patch
+	patch -p1 < ../scripts/realsense-hid-ubuntu-${ubuntu_codename}-${kernel_branch}.patch
 	echo -e "\e[32mApplying realsense-powerlinefrequency-fix patch\e[0m"
 	patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch
 fi
@@ -81,8 +90,14 @@ sudo cp /usr/src/linux-headers-$(uname -r)/.config .
 sudo cp /usr/src/linux-headers-$(uname -r)/Module.symvers .
 
 # Basic build for kernel modules
-#yes "" | make silentoldconfig modules_prepare
 echo -e "\e[32mPrepare kernel modules configuration\e[0m"
+#Retpoline script manual retrieval. based on https://github.com/IntelRealSense/librealsense/issues/1493
+#Required since the retpoline patches were introduced into Ubuntu kernels
+if [ ! -f scripts/ubuntu-retpoline-extract-one ]; then
+	pwd
+	for f in $(find . -name 'retpoline-extract-one'); do cp ${f} scripts/ubuntu-retpoline-extract-one; done;
+	echo $$$
+fi
 sudo make silentoldconfig modules_prepare
 
 #Vermagic identity is required since kernel 4.10
