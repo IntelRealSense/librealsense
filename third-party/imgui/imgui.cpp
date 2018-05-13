@@ -5621,11 +5621,11 @@ bool ImGui::CloseButton(ImGuiID id, const ImVec2& pos, float radius)
     window->DrawList->AddCircleFilled(center, ImMax(2.0f, radius), col, 12);
 
     const float cross_extent = (radius * 0.7071f) - 1.0f;
-    if (hovered)
-    {
-        window->DrawList->AddLine(center + ImVec2(+cross_extent,+cross_extent), center + ImVec2(-cross_extent,-cross_extent), GetColorU32(ImGuiCol_Text));
-        window->DrawList->AddLine(center + ImVec2(+cross_extent,-cross_extent), center + ImVec2(-cross_extent,+cross_extent), GetColorU32(ImGuiCol_Text));
-    }
+  //  if (hovered)
+  //  {
+    window->DrawList->AddLine(center + ImVec2(+cross_extent,+cross_extent), center + ImVec2(-cross_extent,-cross_extent), GetColorU32(ImGuiCol_Text));
+    window->DrawList->AddLine(center + ImVec2(+cross_extent,-cross_extent), center + ImVec2(-cross_extent,+cross_extent), GetColorU32(ImGuiCol_Text));
+//    }
 
     return pressed;
 }

@@ -561,6 +561,7 @@ namespace rs2
         rs2_log_severity severity = RS2_LOG_SEVERITY_NONE;
         std::chrono::high_resolution_clock::time_point created_time;
         rs2_notification_category category;
+        bool to_close = false; // true when user clicks on close notification
         // TODO: Add more info
     };
 
