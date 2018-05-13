@@ -84,7 +84,7 @@ function try_module_insert {
 	backup_available=1
 	dependent_modules=""
 
-	printf "\e[32mHandle \e[93m\e[1m%s \e[32m\e[21m:\n\e[0m" ${module_name}
+	printf "\e[32mReplacing\e[93m\e[1m%s \e[32m:\n\e[0m" ${module_name}
 
 	#Check if the module is loaded, and if does - are there dependent kernel modules.
 	#Unload those first, then unload the requsted module and proceed with replacement
@@ -98,7 +98,7 @@ function try_module_insert {
 
 		while [ ! -z "$dependent_module" ]
 		do
-			printf "\e[32m\tModule \e[93m\e[1m%s \e[32m\e[21m is in use by \e[34m$dependent_module\n\e[0m" ${module_name}
+			printf "\e[32m\tModule \e[93m\e[1m%s \e[32m\e[21m is used by \e[34m$dependent_module\n\e[0m" ${module_name}
 			printf "\e[32m\tUnloading dependency \e[34m$dependent_module\e[0m\n\t"
 			dependent_modules+="$dependent_module "
 			try_unload_module $dependent_module
