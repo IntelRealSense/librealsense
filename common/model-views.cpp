@@ -6114,7 +6114,8 @@ namespace rs2
         std::string label;
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
-            label = "Firmware update recommended";
+            //label = "Firmware update recommended";
+            label = to_string() << "Firmware update recommended" << "##" << index;
             opened_ptr = &opened;
         }
         else
@@ -6151,9 +6152,9 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 62 / 255.f + 0.1f, 77 / 255.f + 0.1f, 89 / 255.f + 0.1f, 1 - t });
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 62 / 255.f - 0.1f, 77 / 255.f - 0.1f, 89 / 255.f - 0.1f, 1 - t });
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 2);
-
+            std::string button_name = to_string() << "Download update" << "##" << index;
             ImGui::Indent(80);
-            if (ImGui::Button("Download update", { 130, 30 }))
+            if (ImGui::Button(button_name.c_str(), { 130, 30 }))
             {
                 open_url(recommended_fw_url);
             }
