@@ -20,7 +20,7 @@ endif()
 # convert
 add_executable(${RS_TARGET} rs-convert.cpp)
 target_link_libraries(${RS_TARGET} ${DEPENDENCIES})
-include_directories(${RS_TARGET} ../../common ../../third-party/tclap/include)
+include_directories(${RS_TARGET} ../../common ../../third-party ../../third-party/tclap/include)
 set_target_properties (${RS_TARGET} PROPERTIES
     FOLDER "Tools"
 )

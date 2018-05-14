@@ -8,6 +8,7 @@
 #include "tclap/CmdLine.h"
 
 #include "converters/converter-csv.h"
+#include "converters/converter-png.h"
 
 
 using namespace std;
@@ -21,21 +22,46 @@ int main(int argc, char** argv) try
     // Parse command line arguments
     CmdLine cmd("librealsense rs-convert tool", ' ');
     ValueArg<string> inputFilename("i", "InputFilePath", "ROS-bag filename", true, "", "");
+    ValueArg<string> outputFilenamePng("p", "OutputPngFilePath", "PNG filename", false, "", "");
+    ValueArg<string> outputFilenameCsv("c", "OutputCsvFilePath", "CSV filename", false, "", "");
 
     cmd.add(inputFilename);
+    cmd.add(outputFilenamePng);
+    cmd.add(outputFilenameCsv);
     cmd.parse(argc, argv);
 
-    shared_ptr<rs2::converter::Converter> converter;
+    shared_ptr<rs2::tools::converter::Converter> converter;
 
-    converter.reset(new rs2::converter::ConverterCsv());
+    if (outputFilenameCsv.isSet()) {
+        converter.reset(new rs2::tools::converter::ConverterCsv());
+    }
+    else if (outputFilenamePng.isSet()) {
+        converter.reset(new rs2::tools::converter::ConverterPng(outputFilenamePng.getValue()));
+    }
+    else {
+        throw exception("output not defined");
+    }
 
     auto pipe = make_shared<rs2::pipeline>();
     rs2::config cfg;
     cfg.enable_device_from_file(inputFilename.getValue());
     pipe->start(cfg);
 
-    auto frames = pipe->wait_for_frames();
-    converter->convert(frames);
+    rs2::frameset frameset;
+    unsigned long long frameNumber = 0;
+
+    while (true) {
+        frameset = pipe->wait_for_frames();
+
+        // any better method to check for the last frame?
+        if (frameset[0].get_frame_number() < frameNumber) {
+            break;
+        }
+
+        converter->convert(frameset);
+
+        frameNumber = frameset[0].get_frame_number();
+    }
 
     return EXIT_SUCCESS;
 }
@@ -49,5 +75,10 @@ catch (const rs2::error & e)
 catch (const exception & e)
 {
     cerr << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch (...)
+{
+    cerr << "some error" << endl;
     return EXIT_FAILURE;
 }

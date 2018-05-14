@@ -6,14 +6,16 @@
 
 
 namespace rs2 {
-	namespace converter {
+    namespace tools {
+        namespace converter {
 
-		class Converter {
-		public:
-			virtual void convert(rs2::frameset& frameset) = 0;
-		};
+            class Converter {
+            public:
+                virtual void convert(rs2::frameset& frameset) = 0;
+            };
 
-	}
+        }
+    }
 }
 
 

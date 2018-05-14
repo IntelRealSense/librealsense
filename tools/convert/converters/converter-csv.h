@@ -9,16 +9,18 @@
 
 
 namespace rs2 {
-	namespace converter {
+    namespace tools {
+        namespace converter {
 
-		class ConverterCsv : public Converter  {
-		public:
-			void convert(rs2::frameset& frameset) override
-			{
-			}
-		};
+            class ConverterCsv : public Converter  {
+            public:
+                void convert(rs2::frameset& frameset) override
+                {
+                }
+            };
 
-	}
+        }
+    }
 }
 
 
