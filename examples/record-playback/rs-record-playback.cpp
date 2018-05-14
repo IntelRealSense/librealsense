@@ -1,46 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include <librealsense2/rs.hpp>                 // Include RealSense Cross Platform API
-#include <librealsense2/h/rs_record_playback.h> // Include RealSense Cross Platform API
-#include "example.hpp"                          // Include short list of convenience functions for rendering
-
-int main(int argc, char * argv[])
-{
-    rs2::context ctx;
-    auto dev = ctx.load_device(std::string("a.bag"));
-    auto sensors = dev.query_sensors();
-    auto profiles = sensors[1].get_stream_profiles();
-    bool stopped = false;
-
-    dev.set_status_changed_callback([&stopped, &dev, &ctx](rs2_playback_status status) {
-        if (status == RS2_PLAYBACK_STATUS_STOPPED) {
-            stopped = true;
-            std::cout << "playbakc status: stopped" << std::endl;
-        }
-        else {
-            std::cout << "playback status:" << status << std::endl;
-        }
-    });
-
-    sensors[1].open(profiles);
-    sensors[1].start([](rs2::frame) {
-    });
-
-    while (true)
-    {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        if (stopped == true) {
-            dev.stop();
-            ctx.unload_device("a.bag"); // crash here
-            std::cout << "successfully stop" << std::endl;
-            break;
-        }
-    }
-    return 0;
-}
-
-/*
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include "example.hpp"          // Include short list of convenience functions for rendering
 #include <chrono>
@@ -142,11 +102,11 @@ int main(int argc, char * argv[]) try
                 }
                 recording = true;
             }
-            */
+
             /*
             When pausing, device still holds the file.
             */
-     /*       if (device.as<rs2::recorder>())
+            if (device.as<rs2::recorder>())
             {
                 if (recording)
                 {
@@ -296,4 +256,3 @@ void draw_seek_bar(rs2::playback& playback, int* seek_pos, float2& location, flo
     ImGui::PopStyleVar();
     ImGui::PopItemWidth();
 }
-*/
