@@ -6114,6 +6114,7 @@ namespace rs2
         std::string label;
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
+            //label = "Firmware update recommended";
             label = to_string() << "Firmware update recommended" << "##" << index;
             opened_ptr = &opened;
         }
