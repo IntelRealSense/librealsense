@@ -5419,6 +5419,10 @@ namespace rs2
 
         pos = ImGui::GetCursorPos();
 
+        ImVec2 rc;
+        std::string fw_version;
+        std::string latest_fw_version;
+
         int info_control_panel_height = 0;
         if (show_device_info)
         {
@@ -5427,12 +5431,13 @@ namespace rs2
             info_control_panel_height = (int)infos.size() * line_h + 5;
             for (auto&& pair : infos)
             {
-                auto rc = ImGui::GetCursorPos();
+                rc = ImGui::GetCursorPos();
                 ImGui::SetCursorPos({ rc.x + 12, rc.y + 4 });
                 std::string info_category;
                 if (pair.first == "Recommended Firmware Version")
                 {
                     info_category = "Latest FW Version";
+                    latest_fw_version = pair.second;
                 }
                 else
                 {
@@ -5445,12 +5450,45 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
                 ImGui::SetCursorPos({ rc.x + 145, rc.y + 1 });
                 std::string label = to_string() << "##" << id << " " << pair.first;
+                if (pair.first == "Firmware Version")
+                {
+                    fw_version = pair.second;
+                    ImGui::PushItemWidth(80);
+                }
                 ImGui::InputText(label.c_str(),
                     (char*)pair.second.data(),
                     pair.second.size() + 1,
                     ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+                if (pair.first == "Firmware Version")
+                {
+                    ImGui::PopItemWidth();
+                }
                 ImGui::PopStyleColor(3);
                 ImGui::SetCursorPos({ rc.x, rc.y + line_h });
+            }
+
+            ImGui::SetCursorPos({ rc.x + 225, rc.y - 128 });
+
+            if (fw_version != latest_fw_version)
+            {
+                std::string label1 = to_string() << textual_icons::exclamation_triangle << "##" << id;
+                ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
+                ImGui::PushStyleColor(ImGuiCol_Text, yellow);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, yellow + 0.1f);
+
+                if (ImGui::SmallButton(label1.c_str()))
+                {
+                    open_url(recommended_fw_url);
+                }
+
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Click here to update firmware\n(internet connection required)");
+                }
+
+                ImGui::PopStyleColor(5);
             }
 
             ImGui::PopFont();
