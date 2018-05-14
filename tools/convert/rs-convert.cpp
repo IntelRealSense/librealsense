@@ -7,8 +7,8 @@
 
 #include "tclap/CmdLine.h"
 
-#include "converters/converter-csv.h"
-#include "converters/converter-png.h"
+#include "converters/converter-csv.hpp"
+#include "converters/converter-png.hpp"
 
 
 using namespace std;
@@ -21,24 +21,26 @@ int main(int argc, char** argv) try
 
     // Parse command line arguments
     CmdLine cmd("librealsense rs-convert tool", ' ');
-    ValueArg<string> inputFilename("i", "InputFilePath", "ROS-bag filename", true, "", "");
-    ValueArg<string> outputFilenamePng("p", "OutputPngFilePath", "PNG filename", false, "", "");
-    ValueArg<string> outputFilenameCsv("c", "OutputCsvFilePath", "CSV filename", false, "", "");
+    ValueArg<string> inputFilename("i", "input", "ROS-bag filename", true, "", "ros-bag-file");
+    ValueArg<string> outputFilenamePng("p", "output-png", "output PNG file(s) path", false, "", "png-path");
+    ValueArg<string> outputFilenameCsv("c", "output-csv", "output CSV file(s) path", false, "", "csv-path");
 
     cmd.add(inputFilename);
     cmd.add(outputFilenamePng);
     cmd.add(outputFilenameCsv);
     cmd.parse(argc, argv);
 
-    shared_ptr<rs2::tools::converter::Converter> converter;
+    vector<shared_ptr<rs2::tools::converter::converter_base>> converters;
 
     if (outputFilenameCsv.isSet()) {
-        converter.reset(new rs2::tools::converter::ConverterCsv());
+        converters.push_back(make_shared<rs2::tools::converter::converter_csv>());
     }
-    else if (outputFilenamePng.isSet()) {
-        converter.reset(new rs2::tools::converter::ConverterPng(outputFilenamePng.getValue()));
+
+    if (outputFilenamePng.isSet()) {
+        converters.push_back(make_shared<rs2::tools::converter::converter_png>(rs2_stream::RS2_STREAM_DEPTH, outputFilenamePng.getValue()));
     }
-    else {
+
+    if (converters.empty()) {
         throw exception("output not defined");
     }
 
@@ -46,21 +48,35 @@ int main(int argc, char** argv) try
     rs2::config cfg;
     cfg.enable_device_from_file(inputFilename.getValue());
     pipe->start(cfg);
+    auto device = pipe->get_active_profile().get_device();
+    rs2::playback playback = device.as<rs2::playback>();
+    playback.set_real_time(false);
 
     rs2::frameset frameset;
-    unsigned long long frameNumber = 0;
+    auto frameNumber = 0ULL;
 
     while (true) {
         frameset = pipe->wait_for_frames();
+        playback.pause();
 
         // any better method to check for the last frame?
         if (frameset[0].get_frame_number() < frameNumber) {
             break;
         }
 
-        converter->convert(frameset);
-
         frameNumber = frameset[0].get_frame_number();
+
+        for_each(converters.begin(), converters.end(),
+            [&frameset] (shared_ptr<rs2::tools::converter::converter_base>& converter) {
+                converter->convert(frameset);
+            });
+
+        for_each(converters.begin(), converters.end(),
+            [&frameset] (shared_ptr<rs2::tools::converter::converter_base>& converter) {
+                converter->wait();
+            });
+
+        playback.resume();
     }
 
     return EXIT_SUCCESS;

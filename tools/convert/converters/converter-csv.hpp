@@ -5,14 +5,14 @@
 #define __RS_CONVERTER_CONVERTER_CSV_H
 
 
-#include "../converter.h"
+#include "../converter.hpp"
 
 
 namespace rs2 {
     namespace tools {
         namespace converter {
 
-            class ConverterCsv : public Converter  {
+            class converter_csv : public converter_base {
             public:
                 void convert(rs2::frameset& frameset) override
                 {
