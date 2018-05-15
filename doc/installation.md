@@ -28,20 +28,19 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
      Unplug any connected Intel RealSense camera.<br />  
 
   2. Install the core packages required to build *librealsense* binaries and the affected kernel modules:  
-    `sudo apt-get install git libssl-dev libusb-1.0-0-dev pkg-config libgtk-3-dev`<br /><br />
-
-    Distribution-specific packages:
-    * Ubuntu 14 or when running of Ubuntu 16.04 live-disk:<br />
+    `sudo apt-get install git libssl-dev libusb-1.0-0-dev pkg-config libgtk-3-dev`  <br /><br />
+    Distribution-specific packages:  <br />
+     * Ubuntu 14 or when running of Ubuntu 16.04 live-disk:<br />
       `sudo apt-get install cmake3`<br />
-      `./scripts/install_glfw3.sh`<br />
+      `./scripts/install_glfw3.sh`  <br />
 
-    * Ubuntu 16:<br />
+     * Ubuntu 16:<br />
       `sudo apt-get install cmake3 libglfw3-dev`<br />
 
-    * Ubuntu 18:<br />
+     * Ubuntu 18:<br />
       `sudo apt-get install cmake libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev`  <br /><br />
 
-    **Note** on graphic sub-system utilization:<br />
+     **Note** on graphic sub-system utilization:<br />
      *glfw3*, *mesa* and *gtk* packages are required if you plan to build the SDK's OpenGl-enabled examples. The *librealsense* core library and a range of demos/tools are designed for headless environment deployment.
 
   3. Install Intel Realsense permission scripts located in librealsense source directory:<br />
