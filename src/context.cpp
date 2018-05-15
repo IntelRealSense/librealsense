@@ -497,7 +497,7 @@ namespace librealsense
     void context::remove_device(const std::string& file)
     {
         auto it = _playback_devices.find(file);
-        if(it == _playback_devices.end())
+        if (!it->second.lock() || it == _playback_devices.end())
         {
             //Not found
             return;
