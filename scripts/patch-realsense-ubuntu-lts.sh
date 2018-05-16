@@ -25,11 +25,20 @@ sudo apt-get install linux-headers-generic build-essential git
 require_package libusb-1.0-0-dev
 require_package libssl-dev
 
+retpoline_retrofit=0
+
 LINUX_BRANCH=$(uname -r)
 
 kernel_branch=$(choose_kernel_branch $LINUX_BRANCH)
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
 ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
+if [ -z "$UBUNTU_CODENAME" ];
+then
+	# Trusty Tahr shall use xenial code base
+	ubuntu_codename="xenial"
+	retpoline_retrofit=1
+fi
+
 kernel_name="ubuntu-${ubuntu_codename}-$kernel_branch"
 
 #Distribution-specific packages
@@ -100,13 +109,12 @@ if [ ! -f scripts/ubuntu-retpoline-extract-one ]; then
 fi
 sudo make silentoldconfig modules_prepare
 
-#Vermagic identity is required since kernel 4.10
+#Vermagic identity is required
 IFS='.' read -a kernel_version <<< "$LINUX_BRANCH"
-if [ ${kernel_version[1]} > 9 ];
-then
-	sudo sed -i "s/\".*\"/\"$LINUX_BRANCH\"/g" ./include/generated/utsrelease.h
-	sudo sed -i "s/.*/$LINUX_BRANCH/g" ./include/config/kernel.release
-fi
+sudo sed -i "s/\".*\"/\"$LINUX_BRANCH\"/g" ./include/generated/utsrelease.h
+sudo sed -i "s/.*/$LINUX_BRANCH/g" ./include/config/kernel.release
+#Patch for Trusty Tahr (Ubuntu 14.05) with GCC not retrofitted with the retpoline patch.
+[ $retpoline_retrofit -eq 1 ] && sudo sed -i "s/#ifdef RETPOLINE/#if (1)/g" ./include/linux/vermagic.h
 
 # Build the uvc, accel and gyro modules
 KBASE=`pwd`
