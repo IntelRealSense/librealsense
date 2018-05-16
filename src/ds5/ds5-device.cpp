@@ -585,7 +585,7 @@ namespace librealsense
                     auto ptr = weak.lock();
                     if (ptr)
                     {
-                        std::string msg = "Current firmware version: " + curr_version + "\nLatest firmware release: " + latest_version +"\n";
+                        std::string msg = "Current firmware version: " + curr_version + "\nMinimal firmware version: " + latest_version +"\n";
                         notification n(RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED, 0, RS2_LOG_SEVERITY_INFO, msg);
                         ptr->raise_notification(n);
                     }
