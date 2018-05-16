@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
-using System.Threading;
 using UnityEngine;
 using Intel.RealSense;
-using UnityEditor;
 
 /// <summary>
 /// Manages streaming using a RealSense Device
