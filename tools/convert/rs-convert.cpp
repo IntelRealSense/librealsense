@@ -9,6 +9,7 @@
 
 #include "converters/converter-csv.hpp"
 #include "converters/converter-png.hpp"
+#include "converters/converter-raw.hpp"
 
 
 using namespace std;
@@ -23,41 +24,71 @@ int main(int argc, char** argv) try
     CmdLine cmd("librealsense rs-convert tool", ' ');
     ValueArg<string> inputFilename("i", "input", "ROS-bag filename", true, "", "ros-bag-file");
     ValueArg<string> outputFilenamePng("p", "output-png", "output PNG file(s) path", false, "", "png-path");
-    ValueArg<string> outputFilenameCsv("c", "output-csv", "output CSV file(s) path", false, "", "csv-path");
+    ValueArg<string> outputFilenameCsv("v", "output-csv", "output CSV file(s) path", false, "", "csv-path");
+    ValueArg<string> outputFilenameRaw("r", "output-raw", "output RAW file(s) path", false, "", "raw-path");
+    SwitchArg switchDepth("d", "depth", "convert depth frames (default - all supported)", false);
+    SwitchArg switchColor("c", "color", "convert color frames (default - all supported)", false);
 
     cmd.add(inputFilename);
     cmd.add(outputFilenamePng);
     cmd.add(outputFilenameCsv);
+    cmd.add(outputFilenameRaw);
+    cmd.add(switchDepth);
+    cmd.add(switchColor);
     cmd.parse(argc, argv);
 
     vector<shared_ptr<rs2::tools::converter::converter_base>> converters;
+
+    rs2_stream streamType = switchColor.isSet() ? rs2_stream::RS2_STREAM_COLOR
+        : switchDepth.isSet() ? rs2_stream::RS2_STREAM_DEPTH
+        : rs2_stream::RS2_STREAM_ANY;
 
     if (outputFilenameCsv.isSet()) {
         converters.push_back(make_shared<rs2::tools::converter::converter_csv>());
     }
 
     if (outputFilenamePng.isSet()) {
-        converters.push_back(make_shared<rs2::tools::converter::converter_png>(rs2_stream::RS2_STREAM_DEPTH, outputFilenamePng.getValue()));
+        converters.push_back(
+            make_shared<rs2::tools::converter::converter_png>(
+                outputFilenamePng.getValue()
+                , streamType));
+    }
+
+    if (outputFilenameRaw.isSet()) {
+        converters.push_back(
+            make_shared<rs2::tools::converter::converter_raw>(
+                outputFilenameRaw.getValue()
+                , streamType));
     }
 
     if (converters.empty()) {
-        throw exception("output not defined");
+        throw runtime_error("output not defined");
     }
 
     auto pipe = make_shared<rs2::pipeline>();
     rs2::config cfg;
     cfg.enable_device_from_file(inputFilename.getValue());
     pipe->start(cfg);
+
     auto device = pipe->get_active_profile().get_device();
     rs2::playback playback = device.as<rs2::playback>();
     playback.set_real_time(false);
 
-    rs2::frameset frameset;
+    auto duration = playback.get_duration();
+    int progress = 0;
     auto frameNumber = 0ULL;
 
     while (true) {
-        frameset = pipe->wait_for_frames();
+        playback.resume();
+        auto frameset = pipe->wait_for_frames();
         playback.pause();
+
+        int posP = static_cast<int>(playback.get_position() * 100. / duration.count());
+
+        if (posP > progress) {
+            progress = posP;
+            cout << posP << "%" << "\r" << flush;
+        }
 
         // any better method to check for the last frame?
         if (frameset[0].get_frame_number() < frameNumber) {
@@ -72,12 +103,17 @@ int main(int argc, char** argv) try
             });
 
         for_each(converters.begin(), converters.end(),
-            [&frameset] (shared_ptr<rs2::tools::converter::converter_base>& converter) {
+            [] (shared_ptr<rs2::tools::converter::converter_base>& converter) {
                 converter->wait();
             });
-
-        playback.resume();
     }
+
+    cout << endl;
+
+    for_each(converters.begin(), converters.end(),
+        [] (shared_ptr<rs2::tools::converter::converter_base>& converter) {
+            cout << converter->get_statistics() << endl;
+        });
 
     return EXIT_SUCCESS;
 }

@@ -14,6 +14,11 @@ namespace rs2 {
 
             class converter_csv : public converter_base {
             public:
+                std::string name() const override
+                {
+                    return "CSV converter";
+                }
+
                 void convert(rs2::frameset& frameset) override
                 {
                 }

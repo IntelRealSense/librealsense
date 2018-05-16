@@ -1,13 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2018 Intel Corporation. All Rights Reserved.
 
-#ifndef __RS_CONVERTER_CONVERTER_PNG_H
-#define __RS_CONVERTER_CONVERTER_PNG_H
+#ifndef __RS_CONVERTER_CONVERTER_RAW_H
+#define __RS_CONVERTER_CONVERTER_RAW_H
 
 
-// 3rd party header for writing png files
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#include <fstream>
 
 #include "../converter.hpp"
 
@@ -16,13 +14,12 @@ namespace rs2 {
     namespace tools {
         namespace converter {
 
-            class converter_png : public converter_base {
+            class converter_raw : public converter_base {
                 rs2_stream _streamType;
                 std::string _filePath;
-                rs2::colorizer _colorizer;
 
             public:
-                converter_png(const std::string& filePath, rs2_stream streamType = rs2_stream::RS2_STREAM_ANY)
+                converter_raw(const std::string& filePath, rs2_stream streamType = rs2_stream::RS2_STREAM_ANY)
                     : _filePath(filePath)
                     , _streamType(streamType)
                 {
@@ -30,7 +27,7 @@ namespace rs2 {
 
                 std::string name() const override
                 {
-                    return "PNG converter";
+                    return "RAW converter";
                 }
 
                 void convert(rs2::frameset& frameset) override
@@ -45,28 +42,25 @@ namespace rs2 {
                                         continue;
                                     }
 
-                                    if (frame.get_profile().stream_type() == rs2_stream::RS2_STREAM_DEPTH) {
-                                        frame = _colorizer(frame);
-                                    }
-
                                     std::stringstream filename;
                                     filename << _filePath
                                         << "_" << frame.get_profile().stream_name()
                                         << "_" << frame.get_frame_number()
-                                        << ".png";
+                                        << ".raw";
 
                                     std::string filenameS = filename.str();
 
                                     add_sub_worker(
                                         [filenameS, frame] {
-                                            stbi_write_png(
-                                                filenameS.c_str()
-                                                , frame.get_width()
-                                                , frame.get_height()
-                                                , frame.get_bytes_per_pixel()
-                                                , frame.get_data()
-                                                , frame.get_stride_in_bytes()
-                                            );
+                                            std::ofstream fs(filenameS, std::ios::binary | std::ios::trunc);
+
+                                            if (fs) {
+                                                fs.write(
+                                                    static_cast<const char *>(frame.get_data())
+                                                    , frame.get_stride_in_bytes() * frame.get_height());
+
+                                                fs.flush();
+                                            }
                                         });
                                 }
                             }

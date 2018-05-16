@@ -6,6 +6,9 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <thread>
+#include <string>
+#include <sstream>
 
 #include "librealsense2/rs.hpp"
 
@@ -19,7 +22,8 @@ namespace rs2 {
             class converter_base {
             protected:
                 std::thread _worker;
-                std::unordered_map<rs2_stream, std::unordered_set<frame_number_t>> _framesMap;
+                std::vector<std::thread> _subWorkers;
+                std::unordered_map<int, std::unordered_set<frame_number_t>> _framesMap;
 
             protected:
                 bool frames_map_get_and_set(rs2_stream streamType, frame_number_t frameNumber)
@@ -38,13 +42,45 @@ namespace rs2 {
                     return result;
                 }
 
-                template <typename F> void start_worker(F& f)
+                template <typename F> void start_worker(const F& f)
                 {
                     _worker = std::thread(f);
                 }
 
+                template <typename F> void add_sub_worker(const F& f)
+                {
+                    _subWorkers.emplace_back(f);
+                }
+
+                void wait_sub_workers()
+                {
+                    for_each(_subWorkers.begin(), _subWorkers.end(),
+                        [] (std::thread& t) {
+                            t.join();
+                        });
+
+                    _subWorkers.clear();
+                }
+
             public:
                 virtual void convert(rs2::frameset& frameset) = 0;
+                virtual std::string name() const = 0;
+
+                virtual std::string get_statistics()
+                {
+                    std::stringstream result;
+                    result << name() << '\n';
+
+                    for (auto& i : _framesMap) {
+                        result << '\t'
+                            << i.second.size() << ' '
+                            << rs2_stream_to_string(static_cast<rs2_stream>(i.first))
+                            << " frame(s) processed"
+                            << '\n';
+                    }
+
+                    return (result.str());
+                }
 
                 void wait()
                 {
