@@ -2441,10 +2441,15 @@ class FrameSet {
   }
 
   __internalGetFrame(stream, streamIndex) {
-    return Frame._internalCreateFrame(this.cxxFrameSet.getFrame(stream, streamIndex));
+    let cxxFrame = this.cxxFrameSet.getFrame(stream, streamIndex);
+    return (cxxFrame ? Frame._internalCreateFrame(cxxFrame) : undefined);
   }
 
   __internalFindFrameInCache(stream, streamIndex) {
+    if (stream === stream.STREAM_ANY) {
+      return (this.cacheMetadata.size ? 0 : undefined);
+    }
+
     for (const [i, data] of this.cacheMetadata.entries()) {
       if (data.stream !== stream) {
         continue;
@@ -2459,15 +2464,24 @@ class FrameSet {
   __internalGetFrameCache(stream, streamIndex, callback) {
     let idx = this.__internalFindFrameInCache(stream, streamIndex);
     if (idx === undefined) {
-      this.cache.push(callback(stream, streamIndex));
-      this.cacheMetadata.push({stream: stream, streamIndex: streamIndex});
+      let frame = callback(stream, streamIndex);
+      if (!frame) return undefined;
+
+      this.cache.push(frame);
+      // the stream parameter may be stream.STREAM_ANY, but when we store the frame in
+      // cache, we shall store its actual stream type.
+      this.cacheMetadata.push({stream: frame.streamType, streamIndex: streamIndex});
       idx = this.cache.length - 1;
     } else {
       let frame = this.cache[idx];
       if (!frame.cxxFrame) {
         frame.cxxFrame = new RS2.RSFrame();
       }
-      if (! this.cxxFrameSet.replaceFrame(stream, streamIndex, frame.cxxFrame)) {
+
+      // as cache metadata entries always use actual stream type, we use the actual
+      // stream types to easy native from processing stream.STREAM_ANY
+      if (! this.cxxFrameSet.replaceFrame(
+          this.cacheMetadata[idx].stream, streamIndex, frame.cxxFrame)) {
         this.cache[idx] = undefined;
         this.cacheMetadata[idx] = undefined;
       }

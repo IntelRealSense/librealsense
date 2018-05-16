@@ -1624,6 +1624,16 @@ class RSFrameSet : public Nan::ObjectWrap {
 
     rs2_stream stream = static_cast<rs2_stream>(info[0]->IntegerValue());
     auto stream_index = info[1]->IntegerValue();
+    // if RS2_STREAM_ANY is used, we return the first frame.
+    if (stream == RS2_STREAM_ANY && me->frame_count_) {
+      rs2_frame* frame = GetNativeResult<rs2_frame*>(rs2_extract_frame,
+          &me->error_, me->frames_, 0, &me->error_);
+      if (!frame) return;
+
+      info.GetReturnValue().Set(RSFrame::NewInstance(frame));
+      return;
+    }
+
     for (uint32_t i=0; i < me->frame_count_; i++) {
       rs2_frame* frame = GetNativeResult<rs2_frame*>(rs2_extract_frame,
           &me->error_, me->frames_, i, &me->error_);
