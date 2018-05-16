@@ -74,12 +74,14 @@ namespace Intel.RealSense
     {
         Name = 0,
         SerialNumber = 1,
-        FirmwareVersion = 2,
-        PhysicalPort = 3,
-        DebugOpCode = 4,
-        AdvancedMode = 5,
-        ProductId = 6,
-        CameraLocked = 7,
+        RecommendedFirmwareVersion = 2,
+        FirmwareVersion = 3,
+        PhysicalPort = 4,
+        DebugOpCode = 5,
+        AdvancedMode = 6,
+        ProductId = 7,
+        CameraLocked = 8,
+        UsbTypeDescriptor = 9,
     }
 
     public enum Stream
