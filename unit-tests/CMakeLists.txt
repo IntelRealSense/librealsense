@@ -80,7 +80,7 @@ foreach(i ${PP_Tests_List})
       #message(STATUS "Checking for a required test record ${Test_File_Name}")
       if(NOT EXISTS "${destination}")
           message(STATUS "Downloading ${source}")
-          file(DOWNLOAD "${source}" "${destination}" TIMEOUT 30 LOG log STATUS status) # SHOW_PROGRESS
+          file(DOWNLOAD "${source}" "${destination}" TIMEOUT 300) # SHOW_PROGRESS LOG log STATUS status
           list(GET status 0 op_return_value)
           if (NOT op_return_value MATCHES "0")
               list(GET status 1 description)
