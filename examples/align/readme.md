@@ -2,9 +2,14 @@
 
 ## Overview
 
-This sample demonstrates usage of the `rs2::align` object, which allows users to align 2 streams (projection wise).
+This sample demonstrates usage of the `rs2::align` object, which allows users to align between the depth and some other streams (projection wise) and vice versa. <br>
 
-In this example, we align depth frames to their corresponding color frames. Then, we use the two frames to determine the depth of each color pixel.
+The alignment utility performs per-pixel geometric transformation based on the depth data provided and is not suited for aligning images that are intrinsically 2D, such Color, IR or Fisheye. In addition the transformation requires undistorted (rectified) images to proceed, and therefore is not applicable to the IR calibration streams.  
+
+
+In this example, we align depth frames to their corresponding color frames.
+We generate a new frame sized as color stream but the content being depth data calculated in the color sensor coordinate system. In other word to reconstruct a depth image being "captured" using the origin and dimensions of  the color sensor.
+Then, we use the original color and the re-projected depth frames (which are aligned at this stage) to determine the depth value of each color pixel.
 
 Using this information, we "remove" the background of the color frame that is further (away from the camera) than some user-define distance.
 
@@ -17,7 +22,7 @@ The application should open a window and display a video stream from the camera.
 <p align="center"><img src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/align-expected.gif" alt="screenshot gif"/></p>
 
 The window should have the following elements:
-- On the left side of the window is a vertical silder for controlling the depth clipping distance.
+- On the left side of the window is a vertical slider for controlling the depth clipping distance.
 - A color image with grayed out background
 - A corresponding (colorized) depth image.
 
@@ -117,7 +122,7 @@ rs2_stream align_to = find_stream_to_align(profile.get_streams());
 rs2::align align(align_to);
 ```
 
-`rs2::align` is a utility class that performs image alignment (registration) of 2 frames. 
+`rs2::align` is a utility class that performs image alignment (registration) of 2 frames.
 Basically, each pixel from the first image will be transformed so that it matches its corresponding pixel in the second image.
 A `rs2::align` object transforms between two input images, from a source image to some target image which is specified with the `align_to` parameter.
 
