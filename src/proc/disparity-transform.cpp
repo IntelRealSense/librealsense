@@ -120,9 +120,12 @@ namespace librealsense
             else // Live sensor
             {
                 _stereoscopic_depth = Is<librealsense::depth_stereo_sensor>(snr);
-                dss = As<librealsense::depth_stereo_sensor>(snr);
-                _depth_units = dss->get_depth_scale();
-                _stereo_baseline = dss->get_stereo_baseline_mm()* 0.001f;
+                if (_stereoscopic_depth)
+                {
+                    dss = As<librealsense::depth_stereo_sensor>(snr);
+                    _depth_units = dss->get_depth_scale();
+                    _stereo_baseline = dss->get_stereo_baseline_mm()* 0.001f;
+                }
             }
 
             if (_stereoscopic_depth)
