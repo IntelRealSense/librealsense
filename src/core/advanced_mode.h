@@ -61,7 +61,8 @@ namespace librealsense
         virtual void toggle_advanced_mode(bool enable) = 0;
 
         virtual void apply_preset(const std::vector<platform::stream_profile>& configuration,
-                                  rs2_rs400_visual_preset preset, uint16_t device_pid) = 0;
+                                  rs2_rs400_visual_preset preset, uint16_t device_pid,
+                                  const firmware_version& fw_version) = 0;
 
         virtual void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const = 0;
         virtual void get_rsm(STRsm* ptr, int mode = 0) const = 0;
@@ -113,7 +114,8 @@ namespace librealsense
         bool is_enabled() const override;
         void toggle_advanced_mode(bool enable) override;
         void apply_preset(const std::vector<platform::stream_profile>& configuration,
-                          rs2_rs400_visual_preset preset, uint16_t device_pid) override;
+                          rs2_rs400_visual_preset preset, uint16_t device_pid,
+                          const firmware_version& fw_version) override;
 
         void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const override;
         void get_rsm(STRsm* ptr, int mode = 0) const override;
@@ -260,6 +262,7 @@ namespace librealsense
 
     private:
         uint16_t get_device_pid(const uvc_sensor& sensor) const;
+        firmware_version get_firmware_version(const uvc_sensor& sensor) const;
 
         std::mutex _mtx;
         uvc_sensor& _ep;
