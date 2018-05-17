@@ -1,11 +1,15 @@
+#Break execution on any error received
 function require_package {
 	package_name=$1
 	printf "\e[32mPackage required %s: \e[0m" "${package_name}"
+	#Supress error code and message in case the package is not installed
 	exec 3>&2
-	exec 2> /dev/null
-	installed=$(dpkg-query -W -f='${Status}' ${package_name} | grep -c "ok installed")
+	exec 2>/dev/null
+	set +e
+	installed=$(dpkg-query -W -f='${Status}' ${package_name} | grep -c "ok installed" || true)
 	exec 2>&3
-
+	set -e
+	
 	if [ $installed -eq 0 ];
 	then
 		echo -e "\e[31m - not found, installing now...\e[0m"
@@ -35,6 +39,9 @@ function choose_kernel_branch {
 		;;
 	"13")								 	# kernel 4.13 is managed on branch hwe
 		echo hwe
+		;;
+	"15")								 	# kernel 4.15 for Ubuntu 18/Bionic Beaver
+		echo master
 		;;
 	*)
 		#error message shall be redirected to stderr to be printed properly
@@ -77,7 +84,7 @@ function try_module_insert {
 	backup_available=1
 	dependent_modules=""
 
-	printf "\e[32mHandle \e[93m\e[1m%s \e[32m\e[21m:\n\e[0m" ${module_name}
+	printf "\e[32mReplacing\e[93m\e[1m%s \e[32m:\n\e[0m" ${module_name}
 
 	#Check if the module is loaded, and if does - are there dependent kernel modules.
 	#Unload those first, then unload the requsted module and proceed with replacement
@@ -91,7 +98,7 @@ function try_module_insert {
 
 		while [ ! -z "$dependent_module" ]
 		do
-			printf "\e[32m\tModule \e[93m\e[1m%s \e[32m\e[21m is in use by \e[34m$dependent_module\n\e[0m" ${module_name}
+			printf "\e[32m\tModule \e[93m\e[1m%s \e[32m\e[21m is used by \e[34m$dependent_module\n\e[0m" ${module_name}
 			printf "\e[32m\tUnloading dependency \e[34m$dependent_module\e[0m\n\t"
 			dependent_modules+="$dependent_module "
 			try_unload_module $dependent_module
