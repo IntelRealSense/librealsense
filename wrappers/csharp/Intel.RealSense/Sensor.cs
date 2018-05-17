@@ -142,6 +142,7 @@ namespace Intel.RealSense
             private readonly float max;
             private readonly float step;
             private readonly float @default;
+            private readonly string description;
 
             public CameraOption(IntPtr sensor, Option option)
             {
@@ -152,6 +153,9 @@ namespace Intel.RealSense
                 {
                     object error;
                     NativeMethods.rs2_get_option_range(m_sensor, option, out min, out max, out step, out @default, out error);
+
+                    var str = NativeMethods.rs2_get_option_description(m_sensor, option, out error);
+                    description = Marshal.PtrToStringAnsi(str);
                 }
             }
 
@@ -179,6 +183,14 @@ namespace Intel.RealSense
                 }
             }
 
+            public string Description
+            {
+                get
+                {
+                    return description;
+                }
+            }
+
             public float Value
             {
                 get
@@ -197,10 +209,15 @@ namespace Intel.RealSense
             {
                 get
                 {
-                    object error;
-                    var str = NativeMethods.rs2_get_option_value_description(m_sensor, option, Value, out error);
-                    return Marshal.PtrToStringAnsi(str);
+                    return GetValueDescription(Value);
                 }
+            }
+
+            public string GetValueDescription(float value)
+            {
+                object error;
+                var str = NativeMethods.rs2_get_option_value_description(m_sensor, option, value, out error);
+                return Marshal.PtrToStringAnsi(str);
             }
 
             public float Min

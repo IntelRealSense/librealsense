@@ -447,14 +447,19 @@ describe('Sensor tests', function() {
     return new Promise((resolve, reject) => {
       const profiles0 = sensors[0].getStreamProfiles();
       sensors[0].open(profiles0[0]);
+      let started = true;
       sensors[0].start((frame) => {
         assert.equal(frame instanceof rs2.Frame, true);
         // Add a timeout to stop to avoid failure during playback test
-        setTimeout(() => {
-          sensors[0].stop();
-          sensors[0].close();
-          resolve();
-        }, 0);
+        // and make sure to stop+close sensors[0] once
+        if (started) {
+          started = false;
+          setTimeout(() => {
+            sensors[0].stop();
+            sensors[0].close();
+            resolve();
+          }, 0);
+        }
       });
     });
   });
@@ -514,11 +519,14 @@ describe('Sensor tests', function() {
         assert.equal(typeof n.serializedData, 'string');
         resolve();
       });
-      setTimeout(() => {
-        dev.cxxDev.triggerErrorForTest();
-      }, 100);
+      // No need to manually trigger error during playback.
+      if (!isPlayback) {
+        setTimeout(() => {
+          dev.cxxDev.triggerErrorForTest();
+        }, 100);
+      }
     });
-  });
+  }).timeout(5000);
 });
 
 describe('Align tests', function() {

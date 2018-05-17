@@ -209,6 +209,7 @@ describe('enum value test', function() {
       'NOTIFICATION_CATEGORY_HARDWARE_ERROR',
       'NOTIFICATION_CATEGORY_HARDWARE_EVENT',
       'NOTIFICATION_CATEGORY_UNKNOWN_ERROR',
+      'NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED',
     ];
     const strAttrs = [
       'notification_category_frames_timeout',
@@ -216,6 +217,7 @@ describe('enum value test', function() {
       'notification_category_hardware_error',
       'notification_category_hardware_event',
       'notification_category_unknown_error',
+      'notification_category_firmware_update_recommended',
     ];
     numberAttrs.forEach((attr) => {
       assert.equal(typeof obj[attr], 'number');
@@ -309,6 +311,7 @@ describe('enum value test', function() {
       'CAMERA_INFO_PRODUCT_ID',
       'CAMERA_INFO_CAMERA_LOCKED',
       'CAMERA_INFO_USB_TYPE_DESCRIPTOR',
+      'CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION',
     ];
     const strAttrs = [
       'camera_info_name',
@@ -320,6 +323,7 @@ describe('enum value test', function() {
       'camera_info_product_id',
       'camera_info_camera_locked',
       'camera_info_usb_type_descriptor',
+      'camera_info_recommended_firmware_version',
     ];
     numberAttrs.forEach((attr) => {
       assert.equal(typeof obj[attr], 'number');
@@ -524,4 +528,54 @@ describe('ROI test', function() {
     });
     rs2.cleanup();
   });
+});
+
+describe('new record/playback test', function() {
+  let pipe;
+  let cfg;
+  let device;
+  const file = 'record.bag';
+
+  it('record and playback', () => {
+    // record
+    pipe = new rs2.Pipeline();
+    cfg = new rs2.Config();
+    cfg.enableRecordToFile(file);
+    pipe.start(cfg);
+    device = pipe.getActiveProfile().getDevice();
+
+    // make sure it's not a playback device
+    let playback = rs2.PlaybackDevice.from(device);
+    assert.equal(playback, undefined);
+
+    let recorder = rs2.RecorderDevice.from(device);
+    assert.equal(recorder instanceof rs2.RecorderDevice, true);
+    pipe.waitForFrames();
+    pipe.waitForFrames();
+    pipe.waitForFrames();
+    pipe.stop();
+    // make sure the recorded frames are flushed to file
+    rs2.cleanup();
+
+    assert.equal(fs.existsSync(file), true);
+
+    // playback
+    cfg = new rs2.Config();
+    cfg.enableDeviceFromFile(file);
+    pipe = new rs2.Pipeline();
+    pipe.start(cfg);
+    device = pipe.getActiveProfile().getDevice();
+    playback = rs2.PlaybackDevice.from(device);
+    assert.equal(playback instanceof rs2.PlaybackDevice, true);
+
+    // make sure it's not a RecorderDevice
+    recorder = rs2.RecorderDevice.from(device);
+    assert.equal(recorder, undefined);
+
+    let frames = pipe.waitForFrames();
+    assert.equal(frames instanceof rs2.FrameSet, true);
+    pipe.stop();
+    rs2.cleanup();
+    fs.unlinkSync(file);
+  }).timeout(5000);
 });
