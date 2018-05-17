@@ -74,7 +74,7 @@ namespace librealsense
             temp_alpha_max,
             temp_alpha_step,
             temp_alpha_default,
-            &_alpha_param, "The normalized weight of the current pixel");
+            &_alpha_param, "Alpha factor of Exp. moving average, 1=no filter, 0=infinite filter");
         temporal_filter_alpha->on_set([this](float val)
         {
             on_set_alpha(val);
@@ -85,7 +85,7 @@ namespace librealsense
             temp_delta_max,
             temp_delta_step,
             temp_delta_default,
-            &_delta_param, "Depth edge (gradient) classification threshold");
+            &_delta_param, "Edge-preserving (gradient) threshold");
         temporal_filter_delta->on_set([this, temporal_filter_delta](float val)
         {
             if (!temporal_filter_delta->is_valid(val))
