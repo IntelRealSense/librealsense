@@ -579,3 +579,17 @@ describe('new record/playback test', function() {
     fs.unlinkSync(file);
   }).timeout(5000);
 });
+
+describe('frameset misc test', function() {
+  it('get any frame twice test', () => {
+    let pipe = new rs2.Pipeline();
+    pipe.start();
+    let frames = pipe.waitForFrames();
+    let frame = frames.getFrame(rs2.stream.STREAM_ANY);
+    assert.equal(frame instanceof rs2.Frame, true);
+    frame = frames.getFrame(rs2.stream.STREAM_ANY);
+    assert.equal(frame instanceof rs2.Frame, true);
+    pipe.stop();
+    rs2.cleanup();
+  });
+});
