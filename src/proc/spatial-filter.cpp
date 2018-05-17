@@ -66,14 +66,14 @@ namespace librealsense
             alpha_max_val,
             alpha_step,
             alpha_default_val,
-            &_spatial_alpha_param, "Current pixel weight");
+            &_spatial_alpha_param, "Alpha factor of Exp.moving average, 1 = no filter, 0 = infinite filter");
 
         auto spatial_filter_delta = std::make_shared<ptr_option<uint8_t>>(
             delta_min_val,
             delta_max_val,
             delta_step,
             delta_default_val,
-            &_spatial_delta_param, "Convolution radius");
+            &_spatial_delta_param, "Edge-preserving Threshold");
         spatial_filter_delta->on_set([this, spatial_filter_delta](float val)
         {
             std::lock_guard<std::mutex> lock(_mutex);
