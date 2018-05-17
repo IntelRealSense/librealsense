@@ -74,7 +74,7 @@ namespace rs2 {
                     for (auto& i : _framesMap) {
                         result << '\t'
                             << i.second.size() << ' '
-                            << rs2_stream_to_string(static_cast<rs2_stream>(i.first))
+                            << (static_cast<rs2_stream>(i.first) != rs2_stream::RS2_STREAM_ANY ? rs2_stream_to_string(static_cast<rs2_stream>(i.first)) : "")
                             << " frame(s) processed"
                             << '\n';
                     }

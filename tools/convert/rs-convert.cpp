@@ -10,6 +10,7 @@
 #include "converters/converter-csv.hpp"
 #include "converters/converter-png.hpp"
 #include "converters/converter-raw.hpp"
+#include "converters/converter-ply.hpp"
 
 
 using namespace std;
@@ -26,6 +27,7 @@ int main(int argc, char** argv) try
     ValueArg<string> outputFilenamePng("p", "output-png", "output PNG file(s) path", false, "", "png-path");
     ValueArg<string> outputFilenameCsv("v", "output-csv", "output CSV file(s) path", false, "", "csv-path");
     ValueArg<string> outputFilenameRaw("r", "output-raw", "output RAW file(s) path", false, "", "raw-path");
+    ValueArg<string> outputFilenamePly("l", "output-ply", "output PLY file(s) path", false, "", "ply-path");
     SwitchArg switchDepth("d", "depth", "convert depth frames (default - all supported)", false);
     SwitchArg switchColor("c", "color", "convert color frames (default - all supported)", false);
 
@@ -33,6 +35,7 @@ int main(int argc, char** argv) try
     cmd.add(outputFilenamePng);
     cmd.add(outputFilenameCsv);
     cmd.add(outputFilenameRaw);
+    cmd.add(outputFilenamePly);
     cmd.add(switchDepth);
     cmd.add(switchColor);
     cmd.parse(argc, argv);
@@ -44,7 +47,10 @@ int main(int argc, char** argv) try
         : rs2_stream::RS2_STREAM_ANY;
 
     if (outputFilenameCsv.isSet()) {
-        converters.push_back(make_shared<rs2::tools::converter::converter_csv>());
+        converters.push_back(
+            make_shared<rs2::tools::converter::converter_csv>(
+                outputFilenameCsv.getValue()
+                , streamType));
     }
 
     if (outputFilenamePng.isSet()) {
@@ -59,6 +65,12 @@ int main(int argc, char** argv) try
             make_shared<rs2::tools::converter::converter_raw>(
                 outputFilenameRaw.getValue()
                 , streamType));
+    }
+
+    if (outputFilenamePly.isSet()) {
+        converters.push_back(
+            make_shared<rs2::tools::converter::converter_ply>(
+                outputFilenamePly.getValue()));
     }
 
     if (converters.empty()) {

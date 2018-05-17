@@ -2,7 +2,7 @@
 
 ## Goal
 
-Console app for converting ROS-bag files to various formats (currently supported: PNG, RAW)
+Console app for converting ROS-bag files to various formats (currently supported: PNG, RAW, CSV, PLY)
 
 ## Command Line Parameters
 
@@ -12,6 +12,7 @@ Console app for converting ROS-bag files to various formats (currently supported
 |`-p <png-path>`|convert to PNG, set output path to <png-path>||
 |`-v <csv-path>`|convert to CSV, set output path to <csv-path>||
 |`-r <raw-path>`|convert to RAW, set output path to <raw-path>||
+|`-l <ply-path>`|convert to PLY, set output path to <ply-path>||
 |`-d`|convert depth frames only||
 |`-c`|convert color frames only||
 
