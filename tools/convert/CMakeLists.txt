@@ -18,9 +18,18 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 endif()
 
 # convert
-add_executable(${RS_TARGET} rs-convert.cpp)
+add_executable(${RS_TARGET} rs-convert.cpp
+    converter.hpp
+    converters/converter-bin.hpp
+    converters/converter-csv.hpp
+    converters/converter-ply.hpp
+    converters/converter-png.hpp
+    converters/converter-raw.hpp
+)
+
 target_link_libraries(${RS_TARGET} ${DEPENDENCIES})
 include_directories(${RS_TARGET} ../../common ../../third-party ../../third-party/tclap/include)
+
 set_target_properties (${RS_TARGET} PROPERTIES
     FOLDER "Tools"
 )

@@ -45,8 +45,8 @@ int main(int argc, char** argv) try
 
     vector<shared_ptr<rs2::tools::converter::converter_base>> converters;
 
-    rs2_stream streamType = switchColor.isSet() ? rs2_stream::RS2_STREAM_COLOR
-        : switchDepth.isSet() ? rs2_stream::RS2_STREAM_DEPTH
+    rs2_stream streamType = switchDepth.isSet() ? rs2_stream::RS2_STREAM_DEPTH
+        : switchColor.isSet() ? rs2_stream::RS2_STREAM_COLOR
         : rs2_stream::RS2_STREAM_ANY;
 
     if (outputFilenameCsv.isSet()) {
@@ -111,7 +111,6 @@ int main(int argc, char** argv) try
             cout << posP << "%" << "\r" << flush;
         }
 
-        // any better method to check for the last frame?
         if (frameset[0].get_frame_number() < frameNumber) {
             break;
         }
