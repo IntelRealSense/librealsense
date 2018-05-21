@@ -11,6 +11,7 @@
 #include "converters/converter-png.hpp"
 #include "converters/converter-raw.hpp"
 #include "converters/converter-ply.hpp"
+#include "converters/converter-bin.hpp"
 
 
 using namespace std;
@@ -25,9 +26,10 @@ int main(int argc, char** argv) try
     CmdLine cmd("librealsense rs-convert tool", ' ');
     ValueArg<string> inputFilename("i", "input", "ROS-bag filename", true, "", "ros-bag-file");
     ValueArg<string> outputFilenamePng("p", "output-png", "output PNG file(s) path", false, "", "png-path");
-    ValueArg<string> outputFilenameCsv("v", "output-csv", "output CSV file(s) path", false, "", "csv-path");
+    ValueArg<string> outputFilenameCsv("v", "output-csv", "output CSV (depth matrix) file(s) path", false, "", "csv-path");
     ValueArg<string> outputFilenameRaw("r", "output-raw", "output RAW file(s) path", false, "", "raw-path");
     ValueArg<string> outputFilenamePly("l", "output-ply", "output PLY file(s) path", false, "", "ply-path");
+    ValueArg<string> outputFilenameBin("b", "output-bin", "output BIN (depth matrix) file(s) path", false, "", "bin-path");
     SwitchArg switchDepth("d", "depth", "convert depth frames (default - all supported)", false);
     SwitchArg switchColor("c", "color", "convert color frames (default - all supported)", false);
 
@@ -36,6 +38,7 @@ int main(int argc, char** argv) try
     cmd.add(outputFilenameCsv);
     cmd.add(outputFilenameRaw);
     cmd.add(outputFilenamePly);
+    cmd.add(outputFilenameBin);
     cmd.add(switchDepth);
     cmd.add(switchColor);
     cmd.parse(argc, argv);
@@ -71,6 +74,12 @@ int main(int argc, char** argv) try
         converters.push_back(
             make_shared<rs2::tools::converter::converter_ply>(
                 outputFilenamePly.getValue()));
+    }
+
+    if (outputFilenameBin.isSet()) {
+        converters.push_back(
+            make_shared<rs2::tools::converter::converter_bin>(
+                outputFilenameBin.getValue()));
     }
 
     if (converters.empty()) {
