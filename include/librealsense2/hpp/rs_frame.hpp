@@ -675,7 +675,7 @@ namespace rs2
             return f.as<depth_frame>();
         }
 
-        video_frame get_color_frame()
+        video_frame get_color_frame() const
         {
             auto f = first_or_default(RS2_STREAM_COLOR);
 
