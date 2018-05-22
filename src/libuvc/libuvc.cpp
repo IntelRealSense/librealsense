@@ -287,7 +287,8 @@ namespace librealsense
             ~libuvc_uvc_device()
             {
                 _is_power_thread_alive = false;
-                _thread_handle.join();
+                if(_thread_handle.joinable())
+                    _thread_handle.join();
                 _is_capturing = false;
                 uvc_exit(_ctx);
             }
