@@ -547,6 +547,7 @@ namespace librealsense
                 catch (...) {}
             }
             reset_streaming();
+            _power.reset();
             _is_opened = false;
             throw;
         }
