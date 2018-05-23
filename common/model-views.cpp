@@ -6133,16 +6133,19 @@ namespace rs2
 
     void notification_model::clear_color_scheme() const
     {
-        ImGui::PopStyleColor(3);
+        ImGui::PopStyleColor(6);
     }
 
     void notification_model::set_color_scheme(float t) const
     {
+        ImGui::PushStyleColor(ImGuiCol_CloseButton, { 0, 0, 0, 0 });
+        ImGui::PushStyleColor(ImGuiCol_CloseButtonActive, { 0, 0, 0, 0 });
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             ImGui::PushStyleColor(ImGuiCol_WindowBg, { 33/255.f, 40/255.f, 46/255.f, 1 - t });
             ImGui::PushStyleColor(ImGuiCol_TitleBg, { 62 / 255.f, 77 / 255.f, 89 / 255.f, 1 - t });
             ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 62 / 255.f, 77 / 255.f, 89 / 255.f, 1 - t });
+            ImGui::PushStyleColor(ImGuiCol_CloseButtonHovered, { 62 / 255.f + 0.1f, 77 / 255.f + 0.1f, 89 / 255.f + 0.1f, 1 - t });
         }
         else
         {
@@ -6152,12 +6155,14 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0.f, 0.f, 1 - t });
                 ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.5f, 0.2f, 0.2f, 1 - t });
                 ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.6f, 0.2f, 0.2f, 1 - t });
+                ImGui::PushStyleColor(ImGuiCol_CloseButtonHovered, { 0.5f + 0.1f, 0.2f + 0.1f, 0.2f + 0.1f, 1 - t });
             }
             else
             {
                 ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0.3f, 0.3f, 1 - t });
                 ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.4f, 0.4f, 0.4f, 1 - t });
                 ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.6f, 0.6f, 0.6f, 1 - t });
+                ImGui::PushStyleColor(ImGuiCol_CloseButtonHovered, { 0.6f + 0.1f, 0.6f + 0.1f, 0.6f + 0.1f, 1 - t });
             }
         }
     }
@@ -6191,29 +6196,24 @@ namespace rs2
         ImGui::SetNextWindowSize({ float(315), float(height) });
 
         bool opened = true;
-        bool* opened_ptr;
         std::string label;
+        
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             label = to_string() << "Firmware update recommended" << "##" << index;
-            opened_ptr = &opened;
         }
         else
         {
             label = to_string() << "Hardware Notification #" << index;
-            opened_ptr = nullptr;
         }
+        
+        ImGui::Begin(label.c_str(), &opened, flags);
 
-        ImGui::PushStyleColor(ImGuiCol_CloseButton, { 62 / 255.f, 77 / 255.f, 89 / 255.f, 1 - t });
-        ImGui::PushStyleColor(ImGuiCol_CloseButtonHovered, { 62 / 255.f + 0.1f, 77 / 255.f + 0.1f, 89 / 255.f + 0.1f, 1 - t });
-        ImGui::PushStyleColor(ImGuiCol_CloseButtonActive, { 62 / 255.f, 77 / 255.f, 89 / 255.f, 1 - t });
-        ImGui::Begin(label.c_str(), opened_ptr, flags);
+        if (!opened)
+            to_close = true;
         
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
-            if (!opened)
-                to_close = true;
-
             std::regex version_regex("([0-9]+.[0-9]+.[0-9]+.[0-9]+\n)");
             std::smatch sm;
             std::regex_search(message, sm, version_regex);
@@ -6262,7 +6262,7 @@ namespace rs2
         }
 
         ImGui::End();
-        ImGui::PopStyleColor(4);
+        ImGui::PopStyleColor(1);
         clear_color_scheme();
         ImGui::PopStyleVar();
     }
