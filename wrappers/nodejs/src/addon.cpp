@@ -4263,6 +4263,7 @@ class RSFilter : public Nan::ObjectWrap, Options {
     kFilterDecimation = 0,
     kFilterTemporal,
     kFilterSpatial,
+    kFilterHoleFilling,
     kFilterDisparity2Depth,
     kFilterDepth2Disparity
   };
@@ -4332,6 +4333,10 @@ class RSFilter : public Nan::ObjectWrap, Options {
       obj->type_ = kFilterSpatial;
       obj->block_ = GetNativeResult<rs2_processing_block*>(
           rs2_create_spatial_filter_block, &obj->error_, &obj->error_);
+    } else if (!(type.compare("hole-filling"))) {
+      obj->type_ = kFilterHoleFilling;
+      obj->block_ = GetNativeResult<rs2_processing_block*>(
+          rs2_create_hole_filling_filter_block, &obj->error_, &obj->error_);
     } else if (!(type.compare("disparity-to-depth"))) {
       obj->type_ = kFilterDisparity2Depth;
       obj->block_ = GetNativeResult<rs2_processing_block*>(

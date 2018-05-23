@@ -3166,6 +3166,16 @@ class SpatialFilter extends Filter {
 }
 
 /**
+ * Depth post-processing filter block. This block replaces empty pixels with data from adjacent
+ * pixels based on the method selected.
+ */
+class HoleFillingFilter extends Filter {
+  constructor() {
+    super('hole-filling');
+  }
+}
+
+/**
  * Post processing block that could transform disparity frame to depth frame
  */
 class DisparityToDepthTransform extends Filter {
@@ -5957,6 +5967,7 @@ module.exports = {
   DecimationFilter: DecimationFilter,
   TemporalFilter: TemporalFilter,
   SpatialFilter: SpatialFilter,
+  HoleFillingFilter: HoleFillingFilter,
   DisparityToDepthTransform: DisparityToDepthTransform,
   DepthToDisparityTransform: DepthToDisparityTransform,
 
