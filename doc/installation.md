@@ -20,7 +20,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
   * Update OS Boot and reboot to enforce the correct kernel selection with <br />`sudo update-grub && sudo reboot`<br />
 
   * Interrupt the boot process at Grub2 Boot Menu -> "Advanced Options for Ubuntu" and select the kernel version installed in the previous step. Press and hold SHIFT if the Boot menu is not presented.
-  * Complete the boot, login and verify that a supported kernel version (4.4.0-.., 4.8.0-.., 4.10.0-.. or 4.13.0-.. as of Feb 2018) is in place with `uname -r`  
+  * Complete the boot, login and verify that a supported kernel version (4.4.0-.., 4.8.0-.., 4.10.0-.. , 4.13.0-..or 4.15.0-.. as of May 2018) is in place with `uname -r`  
 
 
 **Prepare Linux Backend and the Dev. Environment:**  
