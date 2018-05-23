@@ -338,8 +338,10 @@ namespace librealsense
             auto a = to_profile(ap.get());
             auto b = to_profile(bp.get());
 
-            auto at = std::make_tuple(a.stream, a.width, a.height, a.fps, a.format);
-            auto bt = std::make_tuple(b.stream, b.width, b.height, b.fps, b.format);
+            // stream == RS2_STREAM_COLOR && format == RS2_FORMAT_RGB8 element works around the fact that Y16 gets priority over RGB8 when both
+            // are available for pipeline stream resolution
+            auto at = std::make_tuple(a.stream, a.width, a.height, a.fps, a.stream == RS2_STREAM_COLOR && a.format == RS2_FORMAT_RGB8, a.format);
+            auto bt = std::make_tuple(b.stream, b.width, b.height, b.fps, b.stream == RS2_STREAM_COLOR && b.format == RS2_FORMAT_RGB8, b.format);
 
             return at > bt;
         });
