@@ -4859,6 +4859,11 @@ const camera_info = {
    */
   camera_info_firmware_version: 'firmware-version',
   /**
+   * String literal of <code>'recommended-firmware-version'</code>. <br>Latest firmware version
+   * available. <br>Equivalent to its uppercase counterpart.
+   */
+  camera_info_recommended_firmware_version: 'recommended-firmware-version',
+  /**
    * String literal of <code>'port'</code>. <br>Unique identifier of the port the device is
    * connected to (platform specific). <br>Equivalent to its uppercase counterpart.
    *
@@ -4893,11 +4898,6 @@ const camera_info = {
    */
   camera_info_usb_type_descriptor: 'usb-type-descriptor',
   /**
-   * String literal of <code>'recommended-firmware-version'</code>. <br>Latest firmware version
-   * available. <br>Equivalent to its uppercase counterpart.
-   */
-  camera_info_recommended_firmware_version: 'recommended-firmware-version',
-  /**
    * Device friendly name. <br>Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
@@ -4912,6 +4912,11 @@ const camera_info = {
    * @type {Integer}
    */
   CAMERA_INFO_FIRMWARE_VERSION: RS2.RS2_CAMERA_INFO_FIRMWARE_VERSION,
+  /**
+   * Latest firmware version available. <br>Equivalent to its lowercase counterpart.
+   * @type {Integer}
+   */
+  CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION: RS2.RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION,
   /**
    * Unique identifier of the port the device is connected to (platform specific). <br>Equivalent to
    * its lowercase counterpart.
@@ -4944,11 +4949,6 @@ const camera_info = {
    * @type {Integer}
    */
   CAMERA_INFO_USB_TYPE_DESCRIPTOR: RS2.RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR,
-  /**
-   * Latest firmware version available. <br>Equivalent to its lowercase counterpart.
-   * @type {Integer}
-   */
-  CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION: RS2.RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
@@ -5681,6 +5681,11 @@ const rs400_visual_preset = {
    */
   rs400_visual_preset_medium_density: 'medium-density',
   /**
+   * String literal of <code>'remove-ir-pattern'</code>. <br>Preset for remove-ir-pattern.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  rs400_visual_preset_remove_ir_pattern: 'remove-ir-pattern',
+  /**
    * Preset for custom
    * <br>Equivalent to its lowercase counterpart
    * @type {Integer}
@@ -5717,6 +5722,12 @@ const rs400_visual_preset = {
    */
   RS400_VISUAL_PRESET_MEDIUM_DENSITY: RS2.RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY,
   /**
+   * Preset for remove-ir-pattern
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS400_VISUAL_PRESET_REMOVE_IR_PATTERN: RS2.RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN,
+  /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
    */
@@ -5743,6 +5754,8 @@ const rs400_visual_preset = {
         return this.rs400_visual_preset_high_density;
       case this.RS400_VISUAL_PRESET_MEDIUM_DENSITY:
         return this.rs400_visual_preset_medium_density;
+      case this.RS400_VISUAL_PRESET_REMOVE_IR_PATTERN:
+        return this.rs400_visual_preset_remove_ir_pattern;
     }
   },
 };
