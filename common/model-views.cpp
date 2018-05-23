@@ -573,9 +573,8 @@ namespace rs2
                 else
                 {
                     std::string txt = to_string() << (use_option_name ? rs2_option_to_string(opt) : desc) << ":";
-                    auto col_id = id + "columns";
-                    //ImGui::Columns(2, col_id.c_str(), false);
-                    //ImGui::SetColumnOffset(1, 120);
+                    
+                    auto pos_x = ImGui::GetCursorPosX();
 
                     ImGui::Text("%s", txt.c_str());
                     if (ImGui::IsItemHovered() && desc)
@@ -585,7 +584,7 @@ namespace rs2
 
                     ImGui::SameLine();
                     if (new_line)
-                        ImGui::SetCursorPosX(135);
+                        ImGui::SetCursorPosX(pos_x + 135);
 
                     ImGui::PushItemWidth(new_line? -1.f:100.f);
 
@@ -607,7 +606,7 @@ namespace rs2
                             model.add_log(to_string() << "Setting " << opt << " to "
                                 << value << " (" << labels[selected] << ")");
                             endpoint->set_option(opt, value);
-                            *invalidate_flag = true;
+                            if (invalidate_flag) *invalidate_flag = true;
                             res = true;
                         }
                     }
@@ -619,9 +618,6 @@ namespace rs2
                     ImGui::PopStyleColor();
 
                     ImGui::PopItemWidth();
-
-                    ImGui::NextColumn();
-                    ImGui::Columns(1);
                 }
 
 
@@ -794,7 +790,7 @@ namespace rs2
             << "/" << ((owner) ? (*owner->s).get_info(RS2_CAMERA_INFO_NAME) : "_");
 
         subdevice_model::populate_options(options_metadata,
-            ss.str().c_str(),owner , block, &owner->options_invalidated, error_message);
+            ss.str().c_str(),owner , block, owner ? &owner->options_invalidated : nullptr, error_message);
     }
 
     subdevice_model::subdevice_model(
@@ -1766,58 +1762,10 @@ namespace rs2
 
     void viewer_model::show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message)
     {
-        //frame texture_map;
-        //static auto last_frame_number = 0;
-        //for (auto&& s : streams)
-        //{
-        //    if (s.second.profile.stream_type() == RS2_STREAM_DEPTH && s.second.texture->last)
-        //    {
-        //        auto frame_number = s.second.texture->last.get_frame_number();
-
-        //        if (last_frame_number == frame_number) break;
-        //        last_frame_number = frame_number;
-
-        //        for (auto&& s : streams)
-        //        {
-        //            if (s.second.profile.stream_type() != RS2_STREAM_DEPTH && s.second.texture->last)
-        //            {
-        //                rendered_tex_id = s.second.texture->get_gl_handle();
-        //                texture_map = s.second.texture->last; // also save it for later
-        //                pc.map_to(texture_map);
-        //                break;
-        //            }
-        //        }
-
-        //        if (s.second.dev && !s.second.dev->is_paused())
-        //            depth_frames_to_render.enqueue(s.second.texture->last);
-        //        break;
-        //    }
-        //}
-
-
-        const auto top_bar_height = 32.f;
-        const auto num_of_buttons = 4;
-        auto total_top_bar_height = top_bar_height; // may include single bar or additional bar for pose
-
-        auto flags = ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse |
-            ImGuiWindowFlags_NoTitleBar;
-
-        ImGui::PushFont(font);
-        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
-
-        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, header_window_bg);
-        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
-        ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
-        std::string label = to_string() << "header of 3dviewer";
-        ImGui::Begin(label.c_str(), nullptr, flags);
-
+        int combo_boxes = 0;
+        const auto combo_box_width = 200;
+        
+        // Initialize and prepare depth and texture sources
         int selected_depth_source = -1;
         std::vector<std::string> depth_sources_str;
         std::vector<int> depth_sources;
@@ -1847,34 +1795,8 @@ namespace rs2
                 i++;
             }
         }
-
-        if (depth_sources_str.size() > 0 && allow_3d_source_change)
-        {
-            ImGui::SetCursorPos({ 7, 7 });
-            ImGui::Text("Depth Source:"); ImGui::SameLine();
-
-            ImGui::SetCursorPosY(7);
-            ImGui::PushItemWidth(190);
-            draw_combo_box("##Depth Source", depth_sources_str, selected_depth_source);
-            i = 0;
-            for (auto&& s : streams)
-            {
-                if (s.second.is_stream_visible() &&
-                    s.second.texture->get_last_frame() &&
-                    s.second.profile.stream_type() == RS2_STREAM_DEPTH)
-                {
-                    if (i == selected_depth_source)
-                    {
-                        selected_depth_source_uid =  streams_origin[s.second.profile.unique_id()];
-                    }
-                    i++;
-                }
-            }
-
-            ImGui::PopItemWidth();
-            ImGui::SameLine();
-        }
-
+        if (depth_sources_str.size() > 0 && allow_3d_source_change) combo_boxes++;
+    
         int selected_tex_source = 0;
         std::vector<std::string> tex_sources_str;
         std::vector<int> tex_sources;
@@ -1909,51 +1831,102 @@ namespace rs2
             }
         }
 
+        if (tex_sources_str.size() && depth_sources_str.size())
+        {
+            combo_boxes++;
+            if (RS2_STREAM_COLOR==streams[selected_tex_source_uid].profile.stream_type())
+                combo_boxes++;
+        }
+    
+        auto top_bar_height = 32.f;
+        const auto buttons_heights = top_bar_height;
+        const auto num_of_buttons = 5;
+        
+        if (num_of_buttons * 40 + combo_boxes * (combo_box_width + 100) > stream_rect.w)
+            top_bar_height = 2 * top_bar_height;
+
+        auto flags = ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoTitleBar;
+
+        ImGui::PushFont(font);
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
+
+        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, header_window_bg);
+        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
+        ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
+        std::string label = to_string() << "header of 3dviewer";
+        ImGui::Begin(label.c_str(), nullptr, flags);
+
+        
+
+        if (depth_sources_str.size() > 0 && allow_3d_source_change)
+        {
+            ImGui::SetCursorPos({ 7, 7 });
+            ImGui::Text("Depth Source:"); ImGui::SameLine();
+
+            ImGui::SetCursorPosY(7);
+            ImGui::PushItemWidth(combo_box_width);
+            draw_combo_box("##Depth Source", depth_sources_str, selected_depth_source);
+            i = 0;
+            for (auto&& s : streams)
+            {
+                if (s.second.is_stream_visible() &&
+                    s.second.texture->get_last_frame() &&
+                    s.second.profile.stream_type() == RS2_STREAM_DEPTH)
+                {
+                    if (i == selected_depth_source)
+                    {
+                        selected_depth_source_uid =  streams_origin[s.second.profile.unique_id()];
+                    }
+                    i++;
+                }
+            }
+
+            ImGui::PopItemWidth();
+            
+            if (buttons_heights == top_bar_height) ImGui::SameLine();
+        }
+
+        
+
         if (!allow_3d_source_change) ImGui::SetCursorPos({ 7, 7 });
+        
         // Only allow to change texture if we have something to put it on:
         if (tex_sources_str.size() && depth_sources_str.size())
         {
-            ImGui::SetCursorPosY(7);
+            if (buttons_heights == top_bar_height) ImGui::SetCursorPosY(7);
+            else ImGui::SetCursorPos({ 7, buttons_heights + 7 });
+            
             ImGui::Text("Texture Source:"); ImGui::SameLine();
 
-            ImGui::SetCursorPosY(7);
-            ImGui::PushItemWidth(200);
+            if (buttons_heights == top_bar_height) ImGui::SetCursorPosY(7);
+            else ImGui::SetCursorPosY(buttons_heights + 7);
+            
+            ImGui::PushItemWidth(combo_box_width);
             draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
             selected_tex_source_uid = tex_sources[selected_tex_source];
             texture.colorize = streams[tex_sources[selected_tex_source]].texture->colorize;
             ImGui::PopItemWidth();
 
+            ImGui::SameLine();
+            
             // Occlusion control for RGB UV-Map uses option's description as label
             // Position is dynamically adjusted to avoid overlapping on resize
             if (RS2_STREAM_COLOR==streams[selected_tex_source_uid].profile.stream_type())
+            {
+                ImGui::PushItemWidth(combo_box_width);
                 ppf.get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).draw(error_message,
                     not_model, stream_rect.w < 1000, false);
+                ImGui::PopItemWidth();
+            }
         }
-
-        //ImGui::SetCursorPosY(9);
-        //ImGui::Text("Viewport:"); ImGui::SameLine();
-        //ImGui::SetCursorPosY(7);
-
-        //ImGui::PushItemWidth(70);
-        //std::vector<std::string> viewports{ "Top", "Front", "Side" };
-        //auto selected_view = -1;
-        //if (draw_combo_box("viewport_combo", viewports, selected_view))
-        //{
-        //    if (selected_view == 0)
-        //    {
-        //        reset_camera({ 0.0f, 1.5f, 0.0f });
-        //    }
-        //    else if (selected_view == 1)
-        //    {
-        //        reset_camera({ 0.0f, 0.0f, -1.5f });
-        //    }
-        //    else if (selected_view == 2)
-        //    {
-        //        reset_camera({ -1.5f, 0.0f, -0.0f });
-        //    }
-        //}
-        //ImGui::PopItemWidth();
-
 
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons - 5, 0 });
 
@@ -1962,7 +1935,7 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
             label = to_string() << textual_icons::play << "##Resume 3d";
-            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
             {
                 paused = false;
                 for (auto&& s : streams)
@@ -1979,7 +1952,7 @@ namespace rs2
         else
         {
             label = to_string() << textual_icons::pause << "##Pause 3d";
-            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
             {
                 paused = true;
                 for (auto&& s : streams)
@@ -1995,7 +1968,7 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if (ImGui::Button(textual_icons::floppy, { 24, top_bar_height }))
+        if (ImGui::Button(textual_icons::floppy, { 24, buttons_heights }))
         {
             if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
             {
@@ -2017,14 +1990,43 @@ namespace rs2
             ImGui::SetTooltip("Export 3D model to PLY format");
 
         ImGui::SameLine();
-
-        if (ImGui::Button(textual_icons::refresh, { 24, top_bar_height }))
+        
+        if (ImGui::Button(textual_icons::refresh, { 24, buttons_heights }))
         {
             reset_camera();
         }
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Reset View");
 
+        ImGui::SameLine();
+        
+        if (fixed_up)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            label = to_string() << textual_icons::fix_up << "##Fixed_up";
+            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
+            {
+                fixed_up = false;
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Don't fix Up direction");
+            }
+            ImGui::PopStyleColor(2);
+        }
+        else
+        {
+            label = to_string() << textual_icons::fix_up << "##Fixed_up";
+            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
+            {
+                fixed_up = true;
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Fix Up direction");
+            }
+        }
         ImGui::SameLine();
 
         if (support_non_syncronized_mode)
@@ -2033,7 +2035,7 @@ namespace rs2
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-                if (ImGui::Button(textual_icons::lock, { 24, top_bar_height }))
+                if (ImGui::Button(textual_icons::lock, { 24, buttons_heights }))
                 {
                     synchronization_enable = false;
                 }
@@ -2043,7 +2045,7 @@ namespace rs2
             }
             else
             {
-                if (ImGui::Button(textual_icons::unlock, { 24, top_bar_height }))
+                if (ImGui::Button(textual_icons::unlock, { 24, buttons_heights }))
                 {
                     synchronization_enable = true;
                 }
@@ -2066,13 +2068,16 @@ namespace rs2
                 render_pose = true;
             }
         }
+        
+        auto total_top_bar_height = top_bar_height; // may include single bar or additional bar for pose
+
         if (render_pose)
         {
             total_top_bar_height += top_bar_height; // add additional bar height for pose
             const int num_of_pose_buttons = 3; // trajectory, draw camera, boundary selection
 
-            ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + top_bar_height });
-            ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
+            ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + buttons_heights });
+            ImGui::SetNextWindowSize({ stream_rect.w, buttons_heights });
             std::string pose_label = to_string() << "header of 3dviewer - pose";
             ImGui::Begin(pose_label.c_str(), nullptr, flags);
 
@@ -2080,7 +2085,7 @@ namespace rs2
             ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_pose_buttons - 5, 0 });
 
             // Draw camera object button
-            if (ImGui::Button(tm2.camera_object_button.get_icon().c_str(), { 24, top_bar_height }))
+            if (ImGui::Button(tm2.camera_object_button.get_icon().c_str(), { 24, buttons_heights }))
             {
                 tm2.camera_object_button.toggle_button();
             }
@@ -2095,7 +2100,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
             }
-            if (ImGui::Button(tm2.trajectory_button.get_icon().c_str(), { 24, top_bar_height }))
+            if (ImGui::Button(tm2.trajectory_button.get_icon().c_str(), { 24, buttons_heights }))
             {
                 tm2.trajectory_button.toggle_button();
             }
@@ -2114,7 +2119,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
             }
-            if (ImGui::Button(tm2.boundary_button.get_icon().c_str(), { 24, top_bar_height }))
+            if (ImGui::Button(tm2.boundary_button.get_icon().c_str(), { 24, buttons_heights }))
             {
                 tm2.boundary_button.toggle_button();
             }
@@ -2140,6 +2145,7 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, dark_sensor_bg);
+        
 
         ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 265, stream_rect.y + total_top_bar_height + 5 });
         ImGui::SetNextWindowSize({ 260, 65 });
@@ -3952,6 +3958,34 @@ namespace rs2
         static auto view_clock = std::chrono::high_resolution_clock::now();
         auto sec_since_update = std::chrono::duration<float, std::milli>(now - view_clock).count() / 1000;
         view_clock = now;
+          
+        if (fixed_up)
+            up = { 0.f, -1.f, 0.f };
+            
+        auto dir = target - pos;
+        auto x_axis = cross(dir, up);
+        auto step = sec_since_update * 0.3f;
+                                                      
+        if (ImGui::IsKeyPressed('w') || ImGui::IsKeyPressed('W'))
+        {
+            pos = pos + dir * step;
+            target = target + dir * step;
+        }
+        if (ImGui::IsKeyPressed('s') || ImGui::IsKeyPressed('S'))
+        {
+            pos = pos - dir * step;
+            target = target - dir * step;
+        }
+        if (ImGui::IsKeyPressed('d') || ImGui::IsKeyPressed('D'))
+        {
+            pos = pos + x_axis * step;
+            target = target + x_axis * step;
+        }
+        if (ImGui::IsKeyPressed('a') || ImGui::IsKeyPressed('A'))
+        {
+            pos = pos - x_axis * step;
+            target = target - x_axis * step;
+        }
 
         if (viewer_rect.contains(mouse.cursor) || force)
         {
@@ -3964,7 +3998,7 @@ namespace rs2
                 static_cast<int>(viewer_rect.w), static_cast<int>(viewer_rect.h), // screen (window) size
                 static_cast<int>(mouse.prev_cursor.x), static_cast<int>(mouse.cursor.x),
                 static_cast<int>(mouse.prev_cursor.y), static_cast<int>(mouse.cursor.y),
-                ImGui::GetIO().MouseDown[2] ? 1 : 0,
+                (ImGui::GetIO().MouseDown[2] || ImGui::GetIO().MouseDown[1]) ? 1 : 0,
                 ImGui::GetIO().MouseDown[0] ? 1 : 0,
                 mouse.mouse_wheel,
                 0);
@@ -6556,5 +6590,98 @@ namespace rs2
             glVertex3f(v.x, 1.0f, v.y);
         }
         glEnd();
+    }
+    
+    std::string get_timestamped_file_name()
+    {
+        std::time_t now = std::time(NULL);
+        std::tm * ptm = std::localtime(&now);
+        char buffer[16];
+        // Format: 20170529_205500
+        std::strftime(buffer, 16, "%Y%m%d_%H%M%S", ptm);
+        return buffer;
+    }
+    std::string get_folder_path(special_folder f)
+    {
+        std::string res;
+#ifdef _WIN32
+        if (f == temp_folder)
+        {
+            TCHAR buf[MAX_PATH];
+            if (GetTempPath(MAX_PATH, buf) != 0)
+            {
+                char str[1024];
+                wcstombs(str, buf, 1023);
+                res = str;
+            }
+        }
+        else
+        {
+            GUID folder;
+            switch (f)
+            {
+            case user_desktop: folder = FOLDERID_Desktop;
+                break;
+            case user_documents: folder = FOLDERID_Documents;
+                break;
+            case user_pictures: folder = FOLDERID_Pictures;
+                break;
+            case user_videos: folder = FOLDERID_Videos;
+                break;
+            default:
+                throw std::invalid_argument(
+                    std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
+            }
+            PWSTR folder_path = NULL;
+            HRESULT hr = SHGetKnownFolderPath(folder, KF_FLAG_DEFAULT_PATH, NULL, &folder_path);
+            if (SUCCEEDED(hr))
+            {
+                char str[1024];
+                wcstombs(str, folder_path, 1023);
+                CoTaskMemFree(folder_path);
+                res = str;
+                res += "\\";
+            }
+            else
+            {
+                throw std::runtime_error("Failed to get requested special folder");
+            }
+        }
+#endif //_WIN32
+#if defined __linux__ || defined __APPLE__
+        if (f == special_folder::temp_folder)
+        {
+            const char* tmp_dir = getenv("TMPDIR");
+            res = tmp_dir ? tmp_dir : "/tmp/";
+        }
+        else
+        {
+            const char* home_dir = getenv("HOME");
+            if (!home_dir)
+            {
+                struct passwd* pw = getpwuid(getuid());
+                home_dir = (pw && pw->pw_dir) ? pw->pw_dir : "";
+            }
+            if (home_dir)
+            {
+                res = home_dir;
+                switch (f)
+                {
+                case user_desktop: res += "/Desktop/";
+                    break;
+                case user_documents: res += "/Documents/";
+                    break;
+                case user_pictures: res += "/Pictures/";
+                    break;
+                case user_videos: res += "/Videos/";
+                    break;
+                default:
+                    throw std::invalid_argument(
+                        std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
+                }
+            }
+        }
+#endif // defined __linux__ || defined __APPLE__
+        return res;
     }
 }
