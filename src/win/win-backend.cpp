@@ -171,7 +171,7 @@ namespace librealsense
 
                 bool _stopped;
                 HWND hWnd;
-                HDEVNOTIFY hdevnotifyHW, hdevnotifyUVC;
+                HDEVNOTIFY hdevnotifyHW, hdevnotifyUVC, hdevnotify_sensor;
             } _data;
 
             void run()
@@ -204,6 +204,7 @@ namespace librealsense
 
                 UnregisterDeviceNotification(_data.hdevnotifyHW);
                 UnregisterDeviceNotification(_data.hdevnotifyUVC);
+                UnregisterDeviceNotification(_data.hdevnotify_sensor);
                 DestroyWindow(_data.hWnd);
             }
 
@@ -311,6 +312,21 @@ namespace librealsense
                     return FALSE;
                 }
 
+                ////===========================register UVC sensor camera events==============================
+                DEV_BROADCAST_DEVICEINTERFACE di_sensor = { 0 };
+                di_sensor.dbcc_size = sizeof(di_sensor);
+                di_sensor.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+                di_sensor.dbcc_classguid = KSCATEGORY_SENSOR_CAMERA;
+
+                data->hdevnotify_sensor = RegisterDeviceNotification(hWnd,
+                    &di_sensor,
+                    DEVICE_NOTIFY_WINDOW_HANDLE);
+                if (data->hdevnotify_sensor == nullptr)
+                {
+                    UnregisterDeviceNotification(data->hdevnotify_sensor);
+                    LOG_WARNING("Register UVC events Failed!\n");
+                    return FALSE;
+                }
                 return TRUE;
             }
         };

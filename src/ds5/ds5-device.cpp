@@ -656,7 +656,7 @@ namespace librealsense
 
         auto& depth_ep = get_depth_sensor();
 
-        if (is_camera_in_advanced_mode())
+        if (!is_camera_in_advanced_mode())
         {
             depth_ep.remove_pixel_format(pf_y8i); // L+R
             depth_ep.remove_pixel_format(pf_y12i); // L+R

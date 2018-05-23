@@ -49,7 +49,7 @@ namespace rs2
         }
 
         template<class T>
-        T first()
+        T first() const
         {
             for (auto&& s : query_sensors())
             {

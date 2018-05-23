@@ -94,6 +94,7 @@ typedef enum rs2_rs400_visual_preset
     RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY,
     RS2_RS400_VISUAL_PRESET_HIGH_DENSITY,
     RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY,
+    RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN,
     RS2_RS400_VISUAL_PRESET_COUNT
 } rs2_rs400_visual_preset;
 const char* rs2_rs400_visual_preset_to_string(rs2_rs400_visual_preset preset);

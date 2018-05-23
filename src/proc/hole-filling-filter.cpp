@@ -17,7 +17,7 @@ namespace librealsense
     const uint8_t hole_fill_min = hf_fill_from_left;
     const uint8_t hole_fill_max = hf_max_value-1;
     const uint8_t hole_fill_step = 1;
-    const uint8_t hole_fill_def = hf_fill_from_left;
+    const uint8_t hole_fill_def = hf_farest_from_around;
 
     hole_filling_filter::hole_filling_filter() :
         _width(0), _height(0), _stride(0), _bpp(0),

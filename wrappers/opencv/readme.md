@@ -1,5 +1,8 @@
 # OpenCV Samples for Intel® RealSense™ cameras
 Examples in this folder are designed to complement existing [SDK examples](../../examples) and demonstrate how Intel RealSense cameras can be used together with `opencv` in domain of computer-vision. 
+
+> RealSense examples have been desinged and tested with OpenCV 3.4,
+> Working with latest OpenCV 4 requires minor code changes
  
 ## List of Samples:
 1. [ImShow](./imshow) - Minimal OpenCV application for visualizing depth data
@@ -15,7 +18,7 @@ This page is certainly **not** a comprehensive guide to getting started with Ope
 
 ### Windows
 1. Download and install `CMake` from [cmake.org/download](https://cmake.org/download/)
-2. Clone or download OpenCV sources from [github.com/opencv/opencv](https://github.com/opencv/opencv) into a local directory (`C:/git/opencv-master`)
+2. Clone or download OpenCV sources from [github.com/opencv/opencv/tree/3.4](https://github.com/opencv/opencv/tree/3.4) into a local directory (`C:/git/opencv-3.4`)
 3. Run `cmake-gui`, input source code and binaries locations: 
 
 <p align="center"><img src="res/1.PNG" /></p>
@@ -35,7 +38,7 @@ This page is certainly **not** a comprehensive guide to getting started with Ope
 
 <p align="center"><img src="res/3.PNG" /></p>
 
-12. Specify CMake binaries folder for OpenCV as `OpenCV_DIR` (`c:/git/opencv-master`)
+12. Specify CMake binaries folder for OpenCV as `OpenCV_DIR` (`c:/git/opencv-3.4`)
 
 <p align="center"><img src="res/4.PNG" /></p>
 
@@ -51,6 +54,8 @@ This page is certainly **not** a comprehensive guide to getting started with Ope
 ### Linux
 
 1. Build `opencv` from source using the [official guide](https://docs.opencv.org/trunk/d7/d9f/tutorial_linux_install.html)
+> Please use `git checkout 3.4` to use version 3.4
+
 2. Run `export OpenCV_DIR=~/opencv/build` (`~/opencv/build` is the folder containing `OpenCVConfig.cmake`)
 3. Follow [the instructions](https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md) to build `librealsense` from source
 4. Add `-DBUILD_CV_EXAMPLES=true` to your `cmake` command

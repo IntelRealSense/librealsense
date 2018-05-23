@@ -52,7 +52,8 @@ namespace librealsense
     }
 
     void ds5_advanced_mode_base::apply_preset(const std::vector<platform::stream_profile>& configuration,
-                                              rs2_rs400_visual_preset preset, uint16_t device_pid)
+                                              rs2_rs400_visual_preset preset, uint16_t device_pid,
+                                              const firmware_version& fw_version)
     {
         auto p = get_all();
         auto res = get_res_type(configuration.front().width, configuration.front().height);
@@ -80,7 +81,8 @@ namespace librealsense
                 default_420(p);
                 break;
             default:
-                throw invalid_value_exception(to_string() << "apply_preset(...) failed! Invalid product ID (" << device_pid << ")");
+                throw invalid_value_exception(to_string() << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=0x" <<
+                                              std::hex << device_pid << ")");
                 break;
             }
             break;
@@ -128,6 +130,30 @@ namespace librealsense
                 high_res_mid_density(p);
                 break;
             }
+            break;
+        case RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN:
+        {
+            static const firmware_version remove_ir_pattern_fw_ver{ "5.9.10.0" };
+            if (fw_version < remove_ir_pattern_fw_ver)
+                throw invalid_value_exception(to_string() << "apply_preset(...) failed! FW version doesn't support Remove IR Pattern Preset (curr_fw_ver=" <<
+                    fw_version << " ; required_fw_ver=" << remove_ir_pattern_fw_ver << ")");
+
+            switch (device_pid)
+            {
+            case ds::RS400_PID:
+            case ds::RS410_PID:
+            case ds::RS415_PID:
+                d415_remove_ir(p);
+                break;
+            case ds::RS460_PID:
+                d460_remove_ir(p);
+                break;
+            default:
+                throw invalid_value_exception(to_string() << "apply_preset(...) failed! Given device doesn't support Remove IR Pattern Preset (pid=0x" <<
+                    std::hex << device_pid << ")");
+                break;
+            }
+        }
             break;
         default:
             throw invalid_value_exception(to_string() << "apply_preset(...) failed! Invalid preset! (" << preset << ")");
@@ -804,7 +830,7 @@ namespace librealsense
         _ep.register_on_open([this](std::vector<platform::stream_profile> configurations) {
             std::lock_guard<std::mutex> lock(_mtx);
             if (_last_preset != RS2_RS400_VISUAL_PRESET_CUSTOM)
-                _advanced.apply_preset(configurations, _last_preset, get_device_pid(_ep));
+                _advanced.apply_preset(configurations, _last_preset, get_device_pid(_ep), get_firmware_version(_ep));
         });
     }
 
@@ -831,7 +857,7 @@ namespace librealsense
 
         auto uvc_sensor = dynamic_cast<librealsense::uvc_sensor*>(&_ep);
         auto configurations = uvc_sensor->get_configuration();
-        _advanced.apply_preset(configurations, preset, get_device_pid(_ep));
+        _advanced.apply_preset(configurations, preset, get_device_pid(_ep), get_firmware_version(_ep));
         _last_preset = preset;
         _recording_function(*this);
     }
@@ -870,5 +896,10 @@ namespace librealsense
         ss << std::hex << str_pid;
         ss >> device_pid;
         return device_pid;
+    }
+
+    firmware_version advanced_mode_preset_option::get_firmware_version(const uvc_sensor& sensor) const
+    {
+        return firmware_version(_ep.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION));
     }
 }

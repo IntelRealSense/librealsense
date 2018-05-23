@@ -28,6 +28,7 @@ namespace librealsense
         CASE(HIGH_DENSITY)
         CASE(MEDIUM_DENSITY)
         CASE(DEFAULT)
+        CASE(REMOVE_IR_PATTERN)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
