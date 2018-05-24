@@ -51,12 +51,8 @@
 				}
 
 				r = pow(10 -_Red, norm - 1);
-				g = sin(norm * _Green * 3.14);
+				g = abs(sin(norm * _Green * 3.14));
 				b = pow(10 - _Blue, -norm);
-
-				r = r < 0 ? 0 : r;
-				g = g < 0 ? 0 : g;
-				b = b < 0 ? 0 : b;
 
 				return float4(r, g, b, 1);
 	        }
