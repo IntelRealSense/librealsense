@@ -76,7 +76,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 
       In order to accomplish this add the driver's name *hid_sensor_custom* to `/etc/modules` file, eg:
       ```sh
-      echo 'hid_sensor_custom' | sudo tee -a /etc/modules`
+      echo 'hid_sensor_custom' | sudo tee -a /etc/modules
       ```
 
 ## Building librealsense2 SDK
