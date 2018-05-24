@@ -1,76 +1,25 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-//using UnityEditor;
+
+using UnityEditor;
 using Intel.RealSense;
 using System;
 
-public class RealSenseDeviceInspector : MonoBehaviour
-{
-    void Start()
-    {
-        if (RealSenseDevice.Instance.ActiveProfile != null)
-        {
-            onStartStreaming(RealSenseDevice.Instance.ActiveProfile);
-        }
-        else
-        {
-            RealSenseDevice.Instance.OnStart += onStartStreaming;
-        }
-    }
+public class rsEditor : MonoBehaviour {
 
-    private void onStartStreaming(PipelineProfile profile)
-    {
-        device = profile.Device;
-        streams = profile.Streams;
-        sensors.Clear();
-        foreach (var s in profile.Device.Sensors)
-        {
-            sensors.Add(s.Info[CameraInfo.Name], s);
-        }
-        streaming = true;
-    }
-
-    void Update()
-    {
-    }
-    public bool streaming;
-    public Device device;
-    public StreamProfileList streams;
-    public Dictionary<string, Sensor> sensors = new Dictionary<string, Sensor>();
-}
-
-public static class extensions
-{
-    public static bool IsCheckbox(this Sensor.CameraOption opt)
-    {
-        return opt.Max == 1.0f &&
-            opt.Min == 0.0f &&
-            opt.Step == 1.0f;
-    }
-
-    public static bool IsEnum(this Sensor.CameraOption opt, Sensor.SensorOptions s)
-    {
-        if (opt.Step < 0.001f) return false;
-
-        for (float i = opt.Min; i <= opt.Max; i += opt.Step)
-        {
-            if (string.IsNullOrEmpty(s.OptionValueDescription(opt.Key, i)))
-                return false;
-        }
-        return true;
-    }
-
-    public static bool IsIntegersOnly(this Intel.RealSense.Sensor.CameraOption opt)
-    {
-        Func<float, bool> is_integer = (v) => { return v == Math.Floor(v); };
-        return is_integer(opt.Min) && is_integer(opt.Max) &&
-                is_integer(opt.Default) && is_integer(opt.Step);
-    }
+	// Use this for initialization
+	void Start () {
+		
+	}
+	
+	// Update is called once per frame
+	void Update () {
+		
+	}
 }
 
 /*
-[CustomEditor(typeof(RealSenseDeviceInspector))]
 public class RealSenseDeviceInspectorEditor : Editor
 {
     public static void DrawHorizontal(string field, string value)
@@ -103,17 +52,17 @@ public class RealSenseDeviceInspectorEditor : Editor
 
             foreach (var opt in sensor.Options)
             {
-                if(opt.IsCheckbox())
+                if (opt.IsCheckbox())
                 {
                     bool isChecked = Convert.ToBoolean(opt.Value);
-                    if(isChecked != EditorGUILayout.Toggle(opt.Key.ToString(), isChecked))
+                    if (isChecked != EditorGUILayout.Toggle(opt.Key.ToString(), isChecked))
                     {
                         opt.Value = Convert.ToSingle(!isChecked);
                     }
                 }
-                else if(!opt.IsEnum(sensor.Options))
+                else if (!opt.IsEnum(sensor.Options))
                 {
-                    if(opt.ReadOnly)
+                    if (opt.ReadOnly)
                     {
                         EditorGUILayout.BeginHorizontal();
                         {
@@ -142,20 +91,21 @@ public class RealSenseDeviceInspectorEditor : Editor
                     int counter = 0;
                     for (float i = opt.Min; i <= opt.Max; i += opt.Step, counter++)
                     {
-                        if(Math.Abs(i - opt.Value) < 0.001)
+                        if (Math.Abs(i - opt.Value) < 0.001)
                             selected = counter;
 
                         string label = sensor.Options.OptionValueDescription(opt.Key, i);
                         valuesStrings.Add(label);
                     }
                     var newSelection = EditorGUILayout.Popup(opt.Key.ToString(), selected, valuesStrings.ToArray());
-                    if(newSelection != selected)
+                    if (newSelection != selected)
                     {
                         opt.Value = Convert.ToSingle(newSelection);
                     }
                 }
-                
+
             }
         }
     }
-}*/
+}
+*/
