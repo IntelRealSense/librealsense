@@ -254,18 +254,6 @@ namespace librealsense
         }
     }
 
-    region_of_interest_method& uvc_sensor::get_roi_method() const
-    {
-        if (!_roi_method.get())
-            throw librealsense::not_implemented_exception("Region-of-interest is not implemented for this device!");
-        return *_roi_method;
-    }
-
-    void uvc_sensor::set_roi_method(std::shared_ptr<region_of_interest_method> roi_method)
-    {
-        _roi_method = roi_method;
-    }
-
     stream_profiles uvc_sensor::init_stream_profiles()
     {
         std::unordered_set<std::shared_ptr<video_stream_profile>> results;
