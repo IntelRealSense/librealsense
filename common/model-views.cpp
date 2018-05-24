@@ -6165,11 +6165,13 @@ namespace rs2
         return std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - created_time).count();
     }
 
-    void notification_model::clear_color_scheme() const
+    // Pops the 6 colors that were pushed in set_color_scheme
+    void notification_model::unset_color_scheme() const
     {
         ImGui::PopStyleColor(6);
     }
 
+    // Sets color scheme for notifications, must be used with unset_color_scheme to pop all colors in the end
     void notification_model::set_color_scheme(float t) const
     {
         ImGui::PushStyleColor(ImGuiCol_CloseButton, { 0, 0, 0, 0 });
@@ -6297,7 +6299,7 @@ namespace rs2
 
         ImGui::End();
         ImGui::PopStyleColor(1);
-        clear_color_scheme();
+        unset_color_scheme();
         ImGui::PopStyleVar();
     }
 
@@ -6387,7 +6389,7 @@ namespace rs2
 
         ImGui::PopStyleVar(2);
         ImGui::PopStyleColor(3);
-        selected.clear_color_scheme();
+        selected.unset_color_scheme();
         ImGui::End();
 
         ImGui::PopStyleColor();
