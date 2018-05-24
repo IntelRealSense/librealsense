@@ -595,3 +595,27 @@ describe('frameset misc test', function() {
     rs2.cleanup();
   });
 });
+
+describe('post processing filter tests', function() {
+  let ctx;
+  let pipe;
+  before(function() {
+    ctx = new rs2.Context();
+    pipe = new rs2.Pipeline(ctx);
+  });
+
+  after(function() {
+    rs2.cleanup();
+  });
+
+  it('hole-filling filter test', () => {
+    pipe.start();
+    const frames = pipe.waitForFrames();
+    assert.equal(frames.size > 0, true);
+    let filter = new rs2.HoleFillingFilter();
+    let out = filter.process(frames.depthFrame);
+    assert.equal(out instanceof rs2.Frame, true);
+    assert.equal(out.isValid, true);
+    pipe.stop();
+  });
+});
