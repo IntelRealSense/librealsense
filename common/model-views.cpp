@@ -6171,7 +6171,8 @@ namespace rs2
         ImGui::PopStyleColor(6);
     }
 
-    // Sets color scheme for notifications, must be used with unset_color_scheme to pop all colors in the end
+    /* Sets color scheme for notifications, must be used with unset_color_scheme to pop all colors in the end
+       Parameter t indicates the transparency of the nofication interface */
     void notification_model::set_color_scheme(float t) const
     {
         ImGui::PushStyleColor(ImGuiCol_CloseButton, { 0, 0, 0, 0 });
