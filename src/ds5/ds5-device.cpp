@@ -478,10 +478,6 @@ namespace librealsense
                 "Enable Auto Exposure");
             depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
 
-            depth_ep.register_option(RS2_OPTION_GAIN,
-                std::make_shared<auto_disabling_control>(
-                    std::make_shared<uvc_pu_option>(depth_ep, RS2_OPTION_GAIN),
-                    enable_auto_exposure));
 
             depth_ep.register_option(RS2_OPTION_EXPOSURE,
                 std::make_shared<auto_disabling_control>(
