@@ -483,7 +483,10 @@ namespace librealsense
                     }
                     if(!valid_path)
                     {
+#ifndef RS2_USE_CUDA
+                       // On the Jetson TX, the camera module is CSI & I2C and does not report as this code expects
                         LOG_WARNING("Failed to read busnum/devnum. Device Path: " << path);
+#endif
                         continue;
                     }
 
