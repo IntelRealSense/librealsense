@@ -2,6 +2,9 @@
 #include "archive.h"
 #include <fstream>
 
+#include "../include/librealsense2/rsutil.h"
+#include "stream.h"
+
 #define MIN_DISTANCE 1e-6
 
 namespace librealsense
@@ -482,4 +485,126 @@ void frame::log_callback_end(rs2_time_t timestamp) const
                  << "overdue. (Duration: " << callback_duration
                  << "ms, FPS: " << get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
     }
+}
+
+inline float4 plane_from_point_and_normal(const float3& point, const float3& normal)
+{
+    return{ normal.x, normal.y, normal.z, -(normal.x*point.x + normal.y*point.y + normal.z*point.z) };
+}
+
+inline float4 plane_from_points(const std::vector<float3>& points)
+{
+    if (points.size() < 3) throw std::runtime_error("Not enough points to calculate plane");
+
+    float3 sum = { 0,0,0 };
+    for (auto&& point : points)
+        sum = sum + point;
+
+    float3 centroid = sum / points.size();
+
+    double xx = 0, xy = 0, xz = 0, yy = 0, yz = 0, zz = 0;
+    for (auto&& point : points) {
+        float3 temp = point - centroid;
+        xx += temp.x * temp.x;
+        xy += temp.x * temp.y;
+        xz += temp.x * temp.z;
+        yy += temp.y * temp.y;
+        yz += temp.y * temp.z;
+        zz += temp.z * temp.z;
+    }
+
+    double det_x = yy*zz - yz*yz;
+    double det_y = xx*zz - xz*xz;
+    double det_z = xx*yy - xy*xy;
+
+    double det_max = std::max({ det_x, det_y, det_z });
+    if (det_max <= 0) return{ 0, 0, 0, 0 };
+
+    float3 dir{};
+    if (det_max == det_x)
+    {
+        float a = static_cast<float>((xz*yz - xy*zz) / det_x);
+        float b = static_cast<float>((xy*yz - xz*yy) / det_x);
+        dir = { 1, a, b };
+    }
+    else if (det_max == det_y)
+    {
+        float a = static_cast<float>((yz*xz - xy*zz) / det_y);
+        float b = static_cast<float>((xy*xz - yz*xx) / det_y);
+        dir = { a, 1, b };
+    }
+    else
+    {
+        float a = static_cast<float>((yz*xy - xz*yy) / det_z);
+        float b = static_cast<float>((xz*xy - yz*xx) / det_z);
+        dir = { a, b, 1 };
+    }
+
+    return plane_from_point_and_normal(centroid, dir.normalize());
+}
+
+bool depth_frame::fit_plane(int x0, int y0, int w, int h, int iterations, float outliers,
+    float* a, float* b, float* c, float* d, float* rms) const
+{
+    auto pixels = (const uint16_t*)get_frame_data();
+    const auto W = get_width();
+    const auto H = get_height();
+
+    const auto units = get_units();
+
+    auto vp = std::dynamic_pointer_cast<video_stream_profile>(get_stream());
+    auto intrin = vp->get_intrinsics();
+
+    std::vector<float3> roi_pixels;
+
+    for (int y = y0; y < y0 + h; ++y)
+        for (int x = x0; x < x0 + w; ++x)
+        {
+            auto depth_raw = pixels[y*W + x];
+
+            if (depth_raw)
+            {
+                // units is float
+                float pixel[2] = { float(x), float(y) };
+                float point[3];
+                auto distance = depth_raw * units;
+
+                rs2_deproject_pixel_to_point(point, &intrin, pixel, distance);
+
+                roi_pixels.push_back({ point[0], point[1], point[2] });
+            }
+        }
+
+    if (roi_pixels.size() < 3) return false;
+    auto p = plane_from_points(roi_pixels);
+
+    if (outliers > 0.f)
+    {
+        for (int i = 0; i < iterations; i++)
+        {
+            std::sort(roi_pixels.begin(), roi_pixels.end(),
+                [&](const float3& a, const float3& b)
+            {
+                return p.x*a.x + p.y*a.y + p.z*a.z + p.w <
+                    p.x*b.x + p.y*b.y + p.z*b.z + p.w;
+            });
+            size_t outliers_total = roi_pixels.size() * (outliers / 2);
+            roi_pixels.erase(roi_pixels.begin(), roi_pixels.begin() + outliers_total); // crop min 0.5% of the dataset
+            roi_pixels.resize(roi_pixels.size() - outliers_total); // crop max 0.5% of the dataset
+
+            // Re-run plane-fit for better match
+            if (roi_pixels.size() < 3) return false;
+            p = plane_from_points(roi_pixels);
+        }
+    }
+
+    double sum_dist = 0.f;
+    for (auto&& point : roi_pixels)
+    {
+        auto dist = p.x*point.x + p.y*point.y + p.z*point.z + p.w;
+        sum_dist += dist * dist;
+    }
+    *rms = sqrt(sum_dist / roi_pixels.size());
+    *a = p.x; *b = p.y; *c = p.z; *d = p.w;
+    return true;
 }

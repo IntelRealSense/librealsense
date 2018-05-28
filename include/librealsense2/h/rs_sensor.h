@@ -155,13 +155,6 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error);
 
 /**
-* Retrieve the stereoscopic baseline value. Applicable to stereo-based depth modules
-* \param[out] float  Stereoscopic baseline in millimeters
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-float rs2_depth_stereo_frame_get_baseline(const rs2_frame* frame_ref, rs2_error** error);
-
-/**
  * \brief sets the active region of interest to be used by auto-exposure algorithm
  * \param[in] sensor     the RealSense sensor
  * \param[in] min_x      lower horizontal bound in pixels

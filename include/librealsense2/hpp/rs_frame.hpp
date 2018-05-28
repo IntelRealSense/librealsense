@@ -557,6 +557,17 @@ namespace rs2
             error::handle(e);
             return r;
         }
+
+        bool fit_plane(const region_of_interest& roi, int iterations, float outliers, 
+            float& a, float& b, float& c, float& d, float& rms) const
+        {
+            rs2_error * e = nullptr;
+            auto r = rs2_depth_frame_fit_plane(get(), roi.min_x, roi.min_y, 
+                roi.max_x - roi.min_x, roi.max_y - roi.min_y, 
+                iterations, outliers, &a, &b, &c, &d, &rms, &e);
+            error::handle(e);
+            return r > 0;
+        }
     };
 
     class disparity_frame : public depth_frame

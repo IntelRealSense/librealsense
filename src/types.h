@@ -412,7 +412,27 @@ namespace librealsense
 #pragma pack(push, 1)
     struct int2 { int x, y; };
     struct float2 { float x, y; float & operator [] (int i) { return (&x)[i]; } };
-    struct float3 { float x, y, z; float & operator [] (int i) { return (&x)[i]; } };
+    struct float3 { 
+        float x, y, z; 
+
+        float length() const { return sqrt(x*x + y*y + z*z); }
+        float3 normalize() const
+        {
+            return (length() > 0) ? float3{ x / length(), y / length(), z / length() } : *this;
+        }
+
+        float& operator [] (int i) { return (&x)[i]; } 
+    };
+
+    inline float3 operator/(const float3& a, float t)
+    {
+        return{ a.x / t, a.y / t, a.z / t };
+    }
+    inline float3 operator-(const float3& a, const float3& b)
+    {
+        return{ a.x - b.x, a.y - b.y, a.z - b.z };
+    }
+
     struct float4 { float x, y, z, w; float & operator [] (int i) { return (&x)[i]; } };
     struct float3x3 { float3 x, y, z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
     struct pose { float3x3 orientation; float3 position; };

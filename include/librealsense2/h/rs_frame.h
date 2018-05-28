@@ -303,7 +303,27 @@ void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error**
 */
 void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_error** error);
 
+/**
+* Given the 2D depth coordinate (x,y) provide the corresponding depth in metric units
+* \param[in] frame_ref  2D depth pixel coordinates (Left-Upper corner origin)
+* \param[in] x,y  2D depth pixel coordinates (Left-Upper corner origin)
+* \param[out] float  Depth value in millimeters
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2_error** error);
 
+/**
+* Retrieve the stereoscopic baseline value. Applicable to stereo-based depth modules
+* \param[out] float  Stereoscopic baseline in millimeters
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+float rs2_depth_stereo_frame_get_baseline(const rs2_frame* frame_ref, rs2_error** error);
+
+/**
+* TODO
+*/
+int rs2_depth_frame_fit_plane(const rs2_frame* frame_ref, int x, int y, int w, int h, 
+    int iterations, float outliers, float* a, float* b, float* c, float* d, float* rms, rs2_error** error);
 
 
 #ifdef __cplusplus
