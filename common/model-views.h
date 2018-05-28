@@ -884,7 +884,6 @@ namespace rs2
 
         float dim_level = 1.f;
 
-
         rs2::asynchronous_syncer s;
     private:
         struct rgb {

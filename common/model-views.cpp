@@ -573,7 +573,7 @@ namespace rs2
                 else
                 {
                     std::string txt = to_string() << (use_option_name ? rs2_option_to_string(opt) : desc) << ":";
-                    
+
                     auto pos_x = ImGui::GetCursorPosX();
 
                     ImGui::Text("%s", txt.c_str());
@@ -1833,7 +1833,8 @@ namespace rs2
                     selected_tex_source = i;
                 }
 
-                tex_sources.push_back(s.second.profile.unique_id());
+                // The texture source shall always refer to the raw (original) streams
+                tex_sources.push_back(streams_origin[s.second.profile.unique_id()]);
 
                 auto dev_name = s.second.dev ? s.second.dev->dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
                 std::string stream_name = rs2_stream_to_string(s.second.profile.stream_type());
@@ -1848,14 +1849,14 @@ namespace rs2
         if (tex_sources_str.size() && depth_sources_str.size())
         {
             combo_boxes++;
-            if (RS2_STREAM_COLOR==streams[selected_tex_source_uid].profile.stream_type())
+            if (RS2_STREAM_COLOR == streams[selected_tex_source_uid].profile.stream_type())
                 combo_boxes++;
         }
-    
+
         auto top_bar_height = 32.f;
         const auto buttons_heights = top_bar_height;
         const auto num_of_buttons = 5;
-        
+
         if (num_of_buttons * 40 + combo_boxes * (combo_box_width + 100) > stream_rect.w)
             top_bar_height = 2 * top_bar_height;
 
@@ -1877,8 +1878,6 @@ namespace rs2
         ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
         std::string label = to_string() << "header of 3dviewer";
         ImGui::Begin(label.c_str(), nullptr, flags);
-
-        
 
         if (depth_sources_str.size() > 0 && allow_3d_source_change)
         {
@@ -2004,7 +2003,7 @@ namespace rs2
             ImGui::SetTooltip("Export 3D model to PLY format");
 
         ImGui::SameLine();
-        
+
         if (ImGui::Button(textual_icons::refresh, { 24, buttons_heights }))
         {
             reset_camera();
@@ -2013,7 +2012,7 @@ namespace rs2
             ImGui::SetTooltip("Reset View");
 
         ImGui::SameLine();
-        
+
         if (fixed_up)
         {
             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
@@ -2082,7 +2081,7 @@ namespace rs2
                 render_pose = true;
             }
         }
-        
+
         auto total_top_bar_height = top_bar_height; // may include single bar or additional bar for pose
 
         if (render_pose)
@@ -2159,7 +2158,6 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, dark_sensor_bg);
-        
 
         ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 265, stream_rect.y + total_top_bar_height + 5 });
         ImGui::SetNextWindowSize({ 260, 65 });
@@ -3876,11 +3874,8 @@ namespace rs2
                     glVertex3fv(vertices[i]);
                     glTexCoord2fv(tex_coords[i]);
                 }
-
             }
             glEnd();
-
-
         }
 
         glDisable(GL_DEPTH_TEST);
@@ -3976,14 +3971,14 @@ namespace rs2
         static auto view_clock = std::chrono::high_resolution_clock::now();
         auto sec_since_update = std::chrono::duration<float, std::milli>(now - view_clock).count() / 1000;
         view_clock = now;
-          
+
         if (fixed_up)
             up = { 0.f, -1.f, 0.f };
-            
+
         auto dir = target - pos;
         auto x_axis = cross(dir, up);
         auto step = sec_since_update * 0.3f;
-                                                      
+
         if (ImGui::IsKeyPressed('w') || ImGui::IsKeyPressed('W'))
         {
             pos = pos + dir * step;
@@ -6612,7 +6607,7 @@ namespace rs2
         }
         glEnd();
     }
-    
+
     std::string get_timestamped_file_name()
     {
         std::time_t now = std::time(NULL);
