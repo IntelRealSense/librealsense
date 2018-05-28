@@ -155,7 +155,6 @@ namespace rs2
 
             std::vector<rs2::float3> roi_pixels;
 
-//#pragma omp parallel for - TODO optimization envisaged
             for (int y = roi.min_y; y < roi.max_y; ++y)
                 for (int x = roi.min_x; x < roi.max_x; ++x)
                 {

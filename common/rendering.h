@@ -810,66 +810,6 @@ namespace rs2
             { 255, 0, 0 },
         }};
 
-
-    static std::vector<color_map*> color_maps { &classic, &jet, &hsv };
-    static std::vector<const char*> color_maps_names { "Classic", "Jet", "HSV" };
-
-/*    inline void make_depth_histogram(const color_map& map, uint8_t rgb_image[], const uint16_t depth_image[], int width, int height, bool equalize, float min, float max)
-    {
-        const auto max_depth = 0x10000;
-        if (equalize)
-        {
-            static uint32_t histogram[max_depth];
-            memset(histogram, 0, sizeof(histogram));
-
-            for (auto i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
-            for (auto i = 2; i < max_depth; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
-            for (auto i = 0; i < width*height; ++i)
-            {
-                auto d = depth_image[i];
-
-                if (d)
-                {
-                    auto f = histogram[d] / (float)histogram[0xFFFF]; // 0-255 based on histogram location
-
-                    auto c = map.get(f);
-                    rgb_image[i * 3 + 0] = (uint8_t)c.x;
-                    rgb_image[i * 3 + 1] = (uint8_t)c.y;
-                    rgb_image[i * 3 + 2] = (uint8_t)c.z;
-                }
-                else
-                {
-                    rgb_image[i * 3 + 0] = 0;
-                    rgb_image[i * 3 + 1] = 0;
-                    rgb_image[i * 3 + 2] = 0;
-                }
-            }
-        }
-        else
-        {
-            for (auto i = 0; i < width*height; ++i)
-            {
-                auto d = depth_image[i];
-
-                if (d)
-                {
-                    auto f = (d - min) / (max - min);
-
-                    auto c = map.get(f);
-                    rgb_image[i * 3 + 0] = (uint8_t)c.x;
-                    rgb_image[i * 3 + 1] = (uint8_t)c.y;
-                    rgb_image[i * 3 + 2] = (uint8_t)c.z;
-                }
-                else
-                {
-                    rgb_image[i * 3 + 0] = 0;
-                    rgb_image[i * 3 + 1] = 0;
-                    rgb_image[i * 3 + 2] = 0;
-                }
-            }
-        }
-    } */
-
     using clock = std::chrono::steady_clock;
 
     // Helper class to keep track of time
@@ -1543,30 +1483,6 @@ namespace rs2
                 glVertex2f(normalized_thumbnail_roi.x, normalized_thumbnail_roi.y);
                 glEnd();
             }
-
-            /*if (last)
-            {
-                if (last.get_profile().stream_type() == RS2_STREAM_DEPTH)
-                {
-                    const int segments = 16;
-                    for (int i = 1; i <= segments; i++)
-                    {
-                        auto t1 = (float)i/segments;
-                        auto k1 = cm->min_key() + t1*(cm->max_key() - cm->min_key());
-                        auto t2 = (float)(i - 1)/segments;
-                        auto k2 = cm->min_key() + t2*(cm->max_key() - cm->min_key());
-                        auto c1 = cm->get(k1);
-                        auto c2 = cm->get(k2);
-
-                        glBegin(GL_QUADS);
-                            glColor3f(c1.x / 255, c1.y / 255, c1.z / 255); glVertex2f(r.x + r.w - 150 + t1 * 140, r.y + r.h - 22);
-                            glColor3f(c2.x / 255, c2.y / 255, c2.z / 255); glVertex2f(r.x + r.w - 150 + t2 * 140, r.y + r.h - 22);
-                            glColor3f(c2.x / 255, c2.y / 255, c2.z / 255); glVertex2f(r.x + r.w - 150 + t2 * 140, r.y + r.h - 4);
-                            glColor3f(c1.x / 255, c1.y / 255, c1.z / 255); glVertex2f(r.x + r.w - 150 + t1 * 140, r.y + r.h - 4);
-                        glEnd();
-                    }
-                }
-            }*/
         }
     };
 
@@ -1606,33 +1522,5 @@ namespace rs2
             }
         }
         return false;
-    }
-
-    // RS4xx with RealTec RGB sensor may additionally require sensor orientation control to make runtime adjustments
-    inline void rotate_rgb_image(device& dev,uint32_t res_width)
-    {
-        static bool flip = true;
-        uint8_t hor_flip_val{}, ver_flip_val{};
-
-        if (flip)
-        {
-            hor_flip_val = ((res_width < 1280) ? (uint8_t)0x84 : (uint8_t)0x20);
-            ver_flip_val = ((res_width < 1280) ? (uint8_t)0x47 : (uint8_t)0x46);
-        }
-        else
-        {
-            hor_flip_val = ((res_width < 1280) ? (uint8_t)0x82 : (uint8_t)0x86);
-            ver_flip_val = ((res_width < 1280) ? (uint8_t)0x41 : (uint8_t)0x40);
-        }
-
-        std::vector<uint8_t> hor_flip{ 0x14, 0, 0xab, 0xcd, 0x29, 0, 0, 0, 0x20, 0x38, 0x0, 0x0,
-            hor_flip_val, 0,0,0,0,0,0,0,0,0,0,0 };
-        std::vector<uint8_t> ver_flip{ 0x14, 0, 0xab, 0xcd, 0x29, 0, 0, 0, 0x21, 0x38, 0x0, 0x0,
-            ver_flip_val, 0,0,0,0,0,0,0,0,0,0,0 };
-
-        dev.as<debug_protocol>().send_and_receive_raw_data(hor_flip);
-        dev.as<debug_protocol>().send_and_receive_raw_data(ver_flip);
-
-        flip = !flip;
     }
 }
