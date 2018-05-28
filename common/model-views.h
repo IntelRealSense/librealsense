@@ -359,7 +359,6 @@ namespace rs2
         float depth_units = 1.f;
         float stereo_baseline = -1.f;
 
-
         bool roi_checked = false;
 
         std::atomic<bool> _pause;

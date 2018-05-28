@@ -5808,11 +5808,12 @@ namespace rs2
                 {
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                     const ImVec2 pos = ImGui::GetCursorPos();
-                    const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
 
                     draw_later.push_back([windows_width, &window, sub, pos, &viewer, this]() {
-                        if (sub->streaming) ImGui::SetCursorPos({ windows_width - 35, pos.y - 1 });
-                        else ImGui::SetCursorPos({ windows_width - 27, pos.y + 2 });
+                        if (!sub->streaming) ImGui::SetCursorPos({ windows_width -27 , pos.y - 1 });
+                        else
+                            ImGui::SetCursorPos({ windows_width - 32, pos.y - 3 });
+
                         ImGui::PushFont(window.get_font());
 
                         ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
@@ -5887,8 +5888,10 @@ namespace rs2
                             const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
 
                             draw_later.push_back([windows_width, &window, sub, pos, &viewer, this, pb]() {
-                                if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 27, pos.y + 3 });
-                                else ImGui::SetCursorPos({ windows_width - 35, pos.y - 1 });
+                                if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 27, pos.y + 1 });
+                                else
+                                    ImGui::SetCursorPos({ windows_width - 35, pos.y - 3 });
+
                                 ImGui::PushFont(window.get_font());
 
                                 ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
