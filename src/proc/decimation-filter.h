@@ -15,9 +15,12 @@ namespace librealsense
         decimation_filter();
 
     protected:
-        rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source);
+        rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source, rs2_extension tgt_type);
 
         void decimate_depth(const uint16_t * frame_data_in, uint16_t * frame_data_out,
+            size_t width_in, size_t height_in, size_t scale);
+
+        void decimate_others(rs2_format format, const void * frame_data_in, void * frame_data_out,
             size_t width_in, size_t height_in, size_t scale);
 
     private:

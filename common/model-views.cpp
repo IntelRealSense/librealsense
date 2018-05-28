@@ -889,6 +889,20 @@ namespace rs2
                 //post_processing.push_back(disparity_to_depth);
             }
         }
+        else
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(s->get().get(), RS2_EXTENSION_VIDEO, &e) && !e)
+            {
+                auto decimate = std::make_shared<rs2::decimation_filter>();
+                decimation_filter = std::make_shared<processing_block_model>(
+                    this, "Decimation Filter", decimate,
+                    [=](rs2::frame f) { return decimate->process(f); },
+                    error_message);
+                decimation_filter->enabled = true;
+                post_processing.push_back(decimation_filter);
+            }
+        }
 
         std::stringstream ss;
         ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
@@ -3001,7 +3015,8 @@ namespace rs2
 
     rs2::frame post_processing_filters::apply_filters(rs2::frame f)
     {
-        if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+        rs2_stream stream_type = f.get_profile().stream_type();
+        if (stream_type == RS2_STREAM_DEPTH || stream_type == RS2_STREAM_COLOR || stream_type == RS2_STREAM_INFRARED)
         {
             for (auto&& s : viewer.streams)
             {
@@ -3013,29 +3028,32 @@ namespace rs2
                     if (dev->post_processing_enabled)
                     {
                         auto dec_filter = s.second.dev->decimation_filter;
-                        auto depth_2_disparity = s.second.dev->depth_to_disparity;
-                        auto spatial_filter = s.second.dev->spatial_filter;
-                        auto temp_filter = s.second.dev->temporal_filter;
-                        auto hole_filling = s.second.dev->hole_filling_filter;
-                        auto disparity_2_depth = s.second.dev->disparity_to_depth;
-
                         if (dec_filter->enabled)
                             f = dec_filter->invoke(f);
 
-                        if (depth_2_disparity->enabled)
-                            f = depth_2_disparity->invoke(f);
+                        if (stream_type == RS2_STREAM_DEPTH)
+                        {
+                            auto depth_2_disparity = s.second.dev->depth_to_disparity;
+                            auto spatial_filter = s.second.dev->spatial_filter;
+                            auto temp_filter = s.second.dev->temporal_filter;
+                            auto hole_filling = s.second.dev->hole_filling_filter;
+                            auto disparity_2_depth = s.second.dev->disparity_to_depth;
 
-                        if (spatial_filter->enabled)
-                            f = spatial_filter->invoke(f);
+                            if (depth_2_disparity->enabled)
+                                f = depth_2_disparity->invoke(f);
 
-                        if (temp_filter->enabled)
-                            f = temp_filter->invoke(f);
+                            if (spatial_filter->enabled)
+                                f = spatial_filter->invoke(f);
 
-                        if (disparity_2_depth->enabled)
-                            f = disparity_2_depth->invoke(f);
+                            if (temp_filter->enabled)
+                                f = temp_filter->invoke(f);
 
-                        if (hole_filling->enabled)
-                            f = hole_filling->invoke(f);
+                            if (disparity_2_depth->enabled)
+                                f = disparity_2_depth->invoke(f);
+
+                            if (hole_filling->enabled)
+                                f = hole_filling->invoke(f);
+                        }
 
                         return f;
                     }
