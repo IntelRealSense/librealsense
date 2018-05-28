@@ -172,17 +172,13 @@ namespace librealsense
         uint32_t fps_to_sampling_frequency(rs2_stream stream, uint32_t fps) const;
     };
 
-    class uvc_sensor : public sensor_base,
-                       public roi_sensor_interface
+    class uvc_sensor : public sensor_base
     {
     public:
         explicit uvc_sensor(std::string name, std::shared_ptr<platform::uvc_device> uvc_device,
                             std::unique_ptr<frame_timestamp_reader> timestamp_reader, device* dev);
 
         ~uvc_sensor();
-
-        region_of_interest_method& get_roi_method() const override;
-        void set_roi_method(std::shared_ptr<region_of_interest_method> roi_method) override;
 
         void open(const stream_profiles& requests) override;
 
@@ -256,6 +252,5 @@ namespace librealsense
         std::vector<platform::extension_unit> _xus;
         std::unique_ptr<power> _power;
         std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
-        std::shared_ptr<region_of_interest_method> _roi_method = nullptr;
     };
 }

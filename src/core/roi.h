@@ -32,5 +32,24 @@ namespace librealsense
         virtual void set_roi_method(std::shared_ptr<region_of_interest_method> roi_method) = 0;
     };
 
+    class roi_sensor_base : public roi_sensor_interface
+    {
+    public:
+        region_of_interest_method& get_roi_method() const override
+        {
+            if (!_roi_method.get())
+                throw librealsense::not_implemented_exception("Region-of-interest is not implemented for this device!");
+            return *_roi_method;
+        }
+
+        void set_roi_method(std::shared_ptr<region_of_interest_method> roi_method) override
+        {
+            _roi_method = roi_method;
+        }
+
+    private:
+        std::shared_ptr<region_of_interest_method> _roi_method = nullptr;
+    };
+
     MAP_EXTENSION(RS2_EXTENSION_ROI, librealsense::roi_sensor_interface);
 }

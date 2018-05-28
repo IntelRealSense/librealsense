@@ -127,6 +127,7 @@ namespace rs2
         static const textual_icon usb_type                 { u8"\uf287" };
         static const textual_icon edit                     { u8"\uf044" };
         static const textual_icon question_mark            { u8"\uf059" };
+        static const textual_icon fix_up                   { u8"\uf062" };
     }
 
     class subdevice_model;
@@ -195,7 +196,7 @@ namespace rs2
         rs2_option opt;
         option_range range;
         std::shared_ptr<options> endpoint;
-        bool* invalidate_flag;
+        bool* invalidate_flag = nullptr;
         bool supported = false;
         bool read_only = false;
         float value = 0.0f;
@@ -551,7 +552,7 @@ namespace rs2
         double get_age_in_ms() const;
         void draw(int w, int y, notification_model& selected);
         void set_color_scheme(float t) const;
-        void clear_color_scheme() const;
+        void unset_color_scheme() const;
         const int get_max_lifetime_ms() const;
 
         int height = 40;
@@ -915,6 +916,7 @@ namespace rs2
         float3 pos = { 0.0f, 0.0f, -0.5f };
         float3 target = { 0.0f, 0.0f, 0.0f };
         float3 up;
+        bool fixed_up = true;
         float view[16];
         bool texture_wrapping_on = true;
         GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
@@ -968,96 +970,6 @@ namespace rs2
         temp_folder
     };
 
-    inline std::string get_timestamped_file_name()
-    {
-        std::time_t now = std::time(NULL);
-        std::tm * ptm = std::localtime(&now);
-        char buffer[16];
-        // Format: 20170529_205500
-        std::strftime(buffer, 16, "%Y%m%d_%H%M%S", ptm);
-        return buffer;
-    }
-    inline std::string get_folder_path(special_folder f)
-    {
-        std::string res;
-#ifdef _WIN32
-        if (f == temp_folder)
-        {
-            TCHAR buf[MAX_PATH];
-            if (GetTempPath(MAX_PATH, buf) != 0)
-            {
-                char str[1024];
-                wcstombs(str, buf, 1023);
-                res = str;
-            }
-        }
-        else
-        {
-            GUID folder;
-            switch (f)
-            {
-            case user_desktop: folder = FOLDERID_Desktop;
-                break;
-            case user_documents: folder = FOLDERID_Documents;
-                break;
-            case user_pictures: folder = FOLDERID_Pictures;
-                break;
-            case user_videos: folder = FOLDERID_Videos;
-                break;
-            default:
-                throw std::invalid_argument(
-                    std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
-            }
-            PWSTR folder_path = NULL;
-            HRESULT hr = SHGetKnownFolderPath(folder, KF_FLAG_DEFAULT_PATH, NULL, &folder_path);
-            if (SUCCEEDED(hr))
-            {
-                char str[1024];
-                wcstombs(str, folder_path, 1023);
-                CoTaskMemFree(folder_path);
-                res = str;
-                res += "\\";
-            }
-            else
-            {
-                throw std::runtime_error("Failed to get requested special folder");
-            }
-        }
-#endif //_WIN32
-#if defined __linux__ || defined __APPLE__
-        if (f == special_folder::temp_folder)
-        {
-            const char* tmp_dir = getenv("TMPDIR");
-            res = tmp_dir ? tmp_dir : "/tmp/";
-        }
-        else
-        {
-            const char* home_dir = getenv("HOME");
-            if (!home_dir)
-            {
-                struct passwd* pw = getpwuid(getuid());
-                home_dir = (pw && pw->pw_dir) ? pw->pw_dir : "";
-            }
-            if (home_dir)
-            {
-                res = home_dir;
-                switch (f)
-                {
-                case user_desktop: res += "/Desktop/";
-                    break;
-                case user_documents: res += "/Documents/";
-                    break;
-                case user_pictures: res += "/Pictures/";
-                    break;
-                case user_videos: res += "/Videos/";
-                    break;
-                default:
-                    throw std::invalid_argument(
-                        std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
-                }
-            }
-        }
-#endif // defined __linux__ || defined __APPLE__
-        return res;
-    }
+    std::string get_timestamped_file_name();
+    std::string get_folder_path(special_folder f);
 }
