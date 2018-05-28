@@ -552,7 +552,7 @@ namespace rs2
         double get_age_in_ms() const;
         void draw(int w, int y, notification_model& selected);
         void set_color_scheme(float t) const;
-        void clear_color_scheme() const;
+        void unset_color_scheme() const;
         const int get_max_lifetime_ms() const;
 
         int height = 40;
