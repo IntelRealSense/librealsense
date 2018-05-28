@@ -320,7 +320,22 @@ float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2
 float rs2_depth_stereo_frame_get_baseline(const rs2_frame* frame_ref, rs2_error** error);
 
 /**
-* TODO
+* Approximate a plane passing through selected 3D data
+* Only points within the given ROI are included
+* \param[in] frame_ref      Input frame, must be depth frame
+* \param[in] x              X coordinate start of the ROI in pixels
+* \param[in] y              Y coordinate start of the ROI in pixels
+* \param[in] w              width of the ROI in pixels
+* \param[in] h              height of the ROI in pixels
+* \param[in] iterations     number of times to repeat plane fit + outlier removal
+* \param[in] outliers       0-1 percentage of outliers to remove after each plane fit
+* \param[out] a             A parameter of the resulting plane
+* \param[out] b             B parameter of the resulting plane
+* \param[out] c             C parameter of the resulting plane
+* \param[out] d             d parameter of the resulting plane
+* \param[out] rms           RMS of the remaining points to the resulting plane
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                   1 if plane was found, 0 otherwise
 */
 int rs2_depth_frame_fit_plane(const rs2_frame* frame_ref, int x, int y, int w, int h, 
     int iterations, float outliers, float* a, float* b, float* c, float* d, float* rms, rs2_error** error);
