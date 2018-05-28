@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using UnityEngine;
 using Intel.RealSense;
-using UnityEditor;
 
 /// <summary>
 /// Manages streaming using a RealSense Device
@@ -31,6 +30,8 @@ public class RealSenseDevice : MonoBehaviour
     /// </summary>
     [Tooltip("Threading mode of operation, Multithreasds or Unitythread")]
     public ProcessMode processMode;
+
+    public bool pause = false;
 
     /// <summary>
     /// Depth Texture
@@ -75,7 +76,7 @@ public class RealSenseDevice : MonoBehaviour
     private Config m_config;
     public event Action<Frame> onNewSample;
     public event Action<FrameSet> onNewSampleSet;
-    
+
     void Awake()
     {
         if (Instance != null)
@@ -102,7 +103,7 @@ public class RealSenseDevice : MonoBehaviour
                 worker.RunWorkerAsync();//Start the thread
             }
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             Debug.Log("Failed to start. Error: " + e.Message);
         }
@@ -114,7 +115,7 @@ public class RealSenseDevice : MonoBehaviour
     void OnDestroy()
     {
         Debug.Log("RealSenseDevice OnDestory");
-        if (worker!=null)
+        if (worker != null)
         {
             //Destroy BG thread
             worker.CancelAsync();
@@ -154,36 +155,16 @@ public class RealSenseDevice : MonoBehaviour
     /// <summary>
     /// Process frame on each new frame, ends by calling the event
     /// </summary>
-    public void ProcessFrames(FrameSet frames)
+    public void OnFrames(FrameSet frames)
     {
-        try
-        {
-            try
-            {
-                HandleFrameSet(frames);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError(e.Message);
-            }
+        HandleFrameSet(frames);
 
-            foreach (var frame in frames)
-            {
-                try
-                {
-                    HandleFrame(frame);
-                    frame.Dispose();
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError(e.Message);
-                }
-            }
-            frames.Dispose();
-        }
-        catch (Exception e)
+        foreach (var frame in frames)
         {
-            Debug.LogError(e.Message);
+            using (frame)
+            {
+                HandleFrame(frame);
+            }
         }
     }
 
@@ -196,8 +177,13 @@ public class RealSenseDevice : MonoBehaviour
     {
         while (worker.CancellationPending == false)
         {
-            var frames = m_pipeline.WaitForFrames();
-            ProcessFrames(frames);
+            if (pause)
+                continue;
+
+            using (var frames = m_pipeline.WaitForFrames())
+            {
+                OnFrames(frames);
+            }
         }
         Debug.Log("RealSenseDevice thread ended");
     }
@@ -208,20 +194,14 @@ public class RealSenseDevice : MonoBehaviour
         if (processMode != ProcessMode.UnityThread)
             return;
 
+        if (pause)
+            return;
+
         FrameSet frames;
-        if(m_pipeline.PollForFrames(out frames))
+        if (m_pipeline.PollForFrames(out frames))
         {
-            ProcessFrames(frames);
+            using (frames)
+                OnFrames(frames);
         }
     }
 }
-
-//TODO:
-//[CustomEditor(typeof(RealSenseDevice))]
-//public class RealSenseDeviceEditor : Editor
-//{
-//    override public void OnInspectorGUI() { }
-//    //Allow user to select mode of operation:
-//    //   Live - Allow recording and output selection
-//    //   Playback - Allow for playback file selection
-//}
