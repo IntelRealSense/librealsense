@@ -823,6 +823,7 @@ namespace rs2
 
         ~viewer_model()
         {
+            // Stopping post processing filter rendering thread
             ppf.stop();
             streams.clear();
         }

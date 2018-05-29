@@ -3974,6 +3974,7 @@ namespace rs2
 
     void viewer_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p)
     {
+        // Starting post processing filter rendering thread
         ppf.start();
         streams[p.unique_id()].begin_stream(d, p);
         ppf.frames_queue.emplace(p.unique_id(), rs2::frame_queue(5));
@@ -5642,6 +5643,7 @@ namespace rs2
                                 return sm->streaming;
                             }))
                             {
+                                // Stopping post processing filter rendering thread
                                 viewer.ppf.stop();
                                 stop_recording = true;
                             }
