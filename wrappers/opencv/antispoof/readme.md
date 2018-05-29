@@ -4,7 +4,7 @@
 
 This tutorial shows how a relatively complex computer vision task can be solved with ease when depth is available
 
-**The problem**: distingwish between a human face and a printed picture of a human face
+**The problem**: distinguish between a human face and a printed picture of a human face
 
 > **Disclaimer**: Like with rest of SDK tutorials the goal is to provide an educational example that can help users get started, rather than a production-ready software.
 > For that purpose the code is kept short and readable and many corner cases unhandled.

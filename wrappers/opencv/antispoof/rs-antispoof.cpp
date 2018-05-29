@@ -53,7 +53,7 @@ int main(int argc, char * argv[]) try
             if (depth.fit_plane(roi, 2, 0.05f, a, b, c, d, rms))
             {
                 // Total variation within the ROI is below 2cm
-                // Classify as "fake", to little 3D details
+                // Classify as "fake", too little 3D details
                 if (rms < 0.002f)
                 {
                     putText(color_mat, "FAKE",
