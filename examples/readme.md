@@ -34,7 +34,8 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 1. [ImShow](../wrappers/opencv/imshow) - Minimal OpenCV application for visualizing depth data
 2. [GrabCuts](../wrappers/opencv/grabcuts) - Simple background removal using the GrabCut algorithm
 3. [Latency-Tool](../wrappers/opencv/latency-tool) - Basic latency estimation using computer vision
-3. [DNN](../wrappers/opencv/dnn) - Intel RealSense camera used for real-time object-detection
+4. [DNN](../wrappers/opencv/dnn) - Intel RealSense camera used for real-time object-detection
+5. [Anti-Spoofing](./antispoof) - very basic type of face detection anti-spoofing
 
 ### Community Projects:
 
