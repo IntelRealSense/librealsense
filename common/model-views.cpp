@@ -3106,7 +3106,7 @@ namespace rs2
 
     void post_processing_filters::render_loop()
     {
-        while (keep_calculating)
+        while (render_thread_active)
         {
             try
             {
@@ -3128,7 +3128,6 @@ namespace rs2
                     }
                     for (auto&& q : frames_queue_local)
                     {
-
                         frame frm;
                         if (q.second.poll_for_frame(&frm))
                         {
@@ -3975,6 +3974,7 @@ namespace rs2
 
     void viewer_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p)
     {
+        ppf.start();
         streams[p.unique_id()].begin_stream(d, p);
         ppf.frames_queue.emplace(p.unique_id(), rs2::frame_queue(5));
     }
@@ -5642,6 +5642,7 @@ namespace rs2
                                 return sm->streaming;
                             }))
                             {
+                                viewer.ppf.stop();
                                 stop_recording = true;
                             }
                         }

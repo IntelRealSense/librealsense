@@ -620,15 +620,15 @@ namespace rs2
                 process(std::move(f),source);
             }),
             viewer(viewer),
-            keep_calculating(true),
             depth_stream_active(false),
             resulting_queue_max_size(20),
             resulting_queue(static_cast<unsigned int>(resulting_queue_max_size)),
-            t([this]() {render_loop(); }),
+            render_thread(),
+            render_thread_active(false),
             pc(new pointcloud())
         {
             std::string s;
-            pc_gen = std::make_shared<processing_block_model>(nullptr, "Pointclould Engine", pc, [=](rs2::frame f) { return pc->calculate(f); }, s);
+            pc_gen = std::make_shared<processing_block_model>(nullptr, "Pointcloud Engine", pc, [=](rs2::frame f) { return pc->calculate(f); }, s);
             processing_block.start(resulting_queue);
         }
 
@@ -636,12 +636,21 @@ namespace rs2
 
         void update_texture(frame f) { pc->map_to(f); }
 
+        /* Start the rendering thread in case its disabled */
+        void start()
+        {
+            if (render_thread_active.exchange(true) == false)
+            {
+                render_thread = std::thread(&post_processing_filters::render_loop, this);
+            }
+        }
+
+        /* Stop the rendering thread in case its enabled */
         void stop()
         {
-            if (keep_calculating)
+            if (render_thread_active.exchange(false) == true)
             {
-                keep_calculating = false;
-                t.join();
+                render_thread.join();
             }
         }
 
@@ -675,8 +684,6 @@ namespace rs2
 
     private:
         viewer_model& viewer;
-
-        void render_loop();
         void process(rs2::frame f, const rs2::frame_source& source);
         std::vector<rs2::frame> handle_frame(rs2::frame f);
 
@@ -685,10 +692,12 @@ namespace rs2
         rs2::processing_block processing_block;
         std::shared_ptr<pointcloud> pc;
         rs2::frameset model;
-        std::atomic<bool> keep_calculating;
         std::shared_ptr<processing_block_model> pc_gen;
 
-        std::thread t;
+        /* Post processing filter rendering */
+        std::atomic<bool> render_thread_active; // True when render post processing filter rendering thread is active, False otherwise
+        std::thread render_thread;              // Post processing filter rendering Thread running render_loop()
+        void render_loop();                     // Post processing filter rendering function
 
         int last_frame_number = 0;
         double last_timestamp = 0;
