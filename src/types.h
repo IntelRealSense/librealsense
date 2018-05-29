@@ -19,6 +19,7 @@
 #include <mutex>                            // For mutex, unique_lock
 #include <memory>                           // For unique_ptr
 #include <map>
+#include <math.h>
 #include <limits>
 #include <algorithm>
 #include <condition_variable>
@@ -415,7 +416,7 @@ namespace librealsense
     struct float3 { 
         float x, y, z; 
 
-        float length() const { return sqrt(x*x + y*y + z*z); }
+        float length() const { return sqrtf(x*x + y*y + z*z); }
         float3 normalize() const
         {
             return (length() > 0) ? float3{ x / length(), y / length(), z / length() } : *this;

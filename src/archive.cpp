@@ -604,7 +604,7 @@ bool depth_frame::fit_plane(int x0, int y0, int w, int h, int iterations, float 
         auto dist = p.x*point.x + p.y*point.y + p.z*point.z + p.w;
         sum_dist += dist * dist;
     }
-    *rms = sqrt(sum_dist / roi_pixels.size());
+    *rms = sqrtf(sum_dist / roi_pixels.size());
     *a = p.x; *b = p.y; *c = p.z; *d = p.w;
     return true;
 }
