@@ -12,7 +12,7 @@ This tutorial shows how a relatively complex computer vision task can be solved 
 
 ## Expected Output
 
-TODO
+<p align="center"><img src="https://github.com/dorodnic/librealsense/wiki/antispoof.gif" /><br/>opencv face detection with basic anti-spoofing based on depth data</p>
 
 ## How it works
 
