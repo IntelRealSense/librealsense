@@ -573,7 +573,7 @@ namespace rs2
                 else
                 {
                     std::string txt = to_string() << (use_option_name ? rs2_option_to_string(opt) : desc) << ":";
-                    
+
                     auto pos_x = ImGui::GetCursorPosX();
 
                     ImGui::Text("%s", txt.c_str());
@@ -887,6 +887,20 @@ namespace rs2
                 disparity_to_depth->enabled = true;
                 // the block will be internally available, but removed from UI
                 //post_processing.push_back(disparity_to_depth);
+            }
+        }
+        else
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(s->get().get(), RS2_EXTENSION_VIDEO, &e) && !e)
+            {
+                auto decimate = std::make_shared<rs2::decimation_filter>();
+                decimation_filter = std::make_shared<processing_block_model>(
+                    this, "Decimation Filter", decimate,
+                    [=](rs2::frame f) { return decimate->process(f); },
+                    error_message);
+                decimation_filter->enabled = true;
+                post_processing.push_back(decimation_filter);
             }
         }
 
@@ -1819,7 +1833,8 @@ namespace rs2
                     selected_tex_source = i;
                 }
 
-                tex_sources.push_back(s.second.profile.unique_id());
+                // The texture source shall always refer to the raw (original) streams
+                tex_sources.push_back(streams_origin[s.second.profile.unique_id()]);
 
                 auto dev_name = s.second.dev ? s.second.dev->dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
                 std::string stream_name = rs2_stream_to_string(s.second.profile.stream_type());
@@ -1834,14 +1849,14 @@ namespace rs2
         if (tex_sources_str.size() && depth_sources_str.size())
         {
             combo_boxes++;
-            if (RS2_STREAM_COLOR==streams[selected_tex_source_uid].profile.stream_type())
+            if (RS2_STREAM_COLOR == streams[selected_tex_source_uid].profile.stream_type())
                 combo_boxes++;
         }
-    
+
         auto top_bar_height = 32.f;
         const auto buttons_heights = top_bar_height;
         const auto num_of_buttons = 5;
-        
+
         if (num_of_buttons * 40 + combo_boxes * (combo_box_width + 100) > stream_rect.w)
             top_bar_height = 2 * top_bar_height;
 
@@ -1863,8 +1878,6 @@ namespace rs2
         ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
         std::string label = to_string() << "header of 3dviewer";
         ImGui::Begin(label.c_str(), nullptr, flags);
-
-        
 
         if (depth_sources_str.size() > 0 && allow_3d_source_change)
         {
@@ -1990,7 +2003,7 @@ namespace rs2
             ImGui::SetTooltip("Export 3D model to PLY format");
 
         ImGui::SameLine();
-        
+
         if (ImGui::Button(textual_icons::refresh, { 24, buttons_heights }))
         {
             reset_camera();
@@ -1999,7 +2012,7 @@ namespace rs2
             ImGui::SetTooltip("Reset View");
 
         ImGui::SameLine();
-        
+
         if (fixed_up)
         {
             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
@@ -2068,7 +2081,7 @@ namespace rs2
                 render_pose = true;
             }
         }
-        
+
         auto total_top_bar_height = top_bar_height; // may include single bar or additional bar for pose
 
         if (render_pose)
@@ -2145,7 +2158,6 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, dark_sensor_bg);
-        
 
         ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 265, stream_rect.y + total_top_bar_height + 5 });
         ImGui::SetNextWindowSize({ 260, 65 });
@@ -3001,7 +3013,8 @@ namespace rs2
 
     rs2::frame post_processing_filters::apply_filters(rs2::frame f)
     {
-        if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+        rs2_stream stream_type = f.get_profile().stream_type();
+        if (stream_type == RS2_STREAM_DEPTH || stream_type == RS2_STREAM_COLOR || stream_type == RS2_STREAM_INFRARED)
         {
             for (auto&& s : viewer.streams)
             {
@@ -3013,29 +3026,32 @@ namespace rs2
                     if (dev->post_processing_enabled)
                     {
                         auto dec_filter = s.second.dev->decimation_filter;
-                        auto depth_2_disparity = s.second.dev->depth_to_disparity;
-                        auto spatial_filter = s.second.dev->spatial_filter;
-                        auto temp_filter = s.second.dev->temporal_filter;
-                        auto hole_filling = s.second.dev->hole_filling_filter;
-                        auto disparity_2_depth = s.second.dev->disparity_to_depth;
-
                         if (dec_filter->enabled)
                             f = dec_filter->invoke(f);
 
-                        if (depth_2_disparity->enabled)
-                            f = depth_2_disparity->invoke(f);
+                        if (stream_type == RS2_STREAM_DEPTH)
+                        {
+                            auto depth_2_disparity = s.second.dev->depth_to_disparity;
+                            auto spatial_filter = s.second.dev->spatial_filter;
+                            auto temp_filter = s.second.dev->temporal_filter;
+                            auto hole_filling = s.second.dev->hole_filling_filter;
+                            auto disparity_2_depth = s.second.dev->disparity_to_depth;
 
-                        if (spatial_filter->enabled)
-                            f = spatial_filter->invoke(f);
+                            if (depth_2_disparity->enabled)
+                                f = depth_2_disparity->invoke(f);
 
-                        if (temp_filter->enabled)
-                            f = temp_filter->invoke(f);
+                            if (spatial_filter->enabled)
+                                f = spatial_filter->invoke(f);
 
-                        if (disparity_2_depth->enabled)
-                            f = disparity_2_depth->invoke(f);
+                            if (temp_filter->enabled)
+                                f = temp_filter->invoke(f);
 
-                        if (hole_filling->enabled)
-                            f = hole_filling->invoke(f);
+                            if (disparity_2_depth->enabled)
+                                f = disparity_2_depth->invoke(f);
+
+                            if (hole_filling->enabled)
+                                f = hole_filling->invoke(f);
+                        }
 
                         return f;
                     }
@@ -3858,11 +3874,8 @@ namespace rs2
                     glVertex3fv(vertices[i]);
                     glTexCoord2fv(tex_coords[i]);
                 }
-
             }
             glEnd();
-
-
         }
 
         glDisable(GL_DEPTH_TEST);
@@ -3958,14 +3971,14 @@ namespace rs2
         static auto view_clock = std::chrono::high_resolution_clock::now();
         auto sec_since_update = std::chrono::duration<float, std::milli>(now - view_clock).count() / 1000;
         view_clock = now;
-          
+
         if (fixed_up)
             up = { 0.f, -1.f, 0.f };
-            
+
         auto dir = target - pos;
         auto x_axis = cross(dir, up);
         auto step = sec_since_update * 0.3f;
-                                                      
+
         if (ImGui::IsKeyPressed('w') || ImGui::IsKeyPressed('W'))
         {
             pos = pos + dir * step;
@@ -5795,11 +5808,12 @@ namespace rs2
                 {
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                     const ImVec2 pos = ImGui::GetCursorPos();
-                    const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
 
                     draw_later.push_back([windows_width, &window, sub, pos, &viewer, this]() {
-                        if (sub->streaming) ImGui::SetCursorPos({ windows_width - 35, pos.y - 1 });
-                        else ImGui::SetCursorPos({ windows_width - 27, pos.y + 2 });
+                        if (!sub->streaming) ImGui::SetCursorPos({ windows_width -27 , pos.y - 1 });
+                        else
+                            ImGui::SetCursorPos({ windows_width - 32, pos.y - 3 });
+
                         ImGui::PushFont(window.get_font());
 
                         ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
@@ -5874,8 +5888,10 @@ namespace rs2
                             const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
 
                             draw_later.push_back([windows_width, &window, sub, pos, &viewer, this, pb]() {
-                                if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 27, pos.y + 3 });
-                                else ImGui::SetCursorPos({ windows_width - 35, pos.y - 1 });
+                                if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 27, pos.y + 1 });
+                                else
+                                    ImGui::SetCursorPos({ windows_width - 35, pos.y - 3 });
+
                                 ImGui::PushFont(window.get_font());
 
                                 ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
@@ -6594,7 +6610,7 @@ namespace rs2
         }
         glEnd();
     }
-    
+
     std::string get_timestamped_file_name()
     {
         std::time_t now = std::time(NULL);

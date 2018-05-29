@@ -359,7 +359,6 @@ namespace rs2
         float depth_units = 1.f;
         float stereo_baseline = -1.f;
 
-
         bool roi_checked = false;
 
         std::atomic<bool> _pause;
@@ -883,7 +882,6 @@ namespace rs2
         int selected_tex_source_uid = -1;
 
         float dim_level = 1.f;
-
 
         rs2::asynchronous_syncer s;
     private:
