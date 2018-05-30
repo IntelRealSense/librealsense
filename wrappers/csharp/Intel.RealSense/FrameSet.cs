@@ -46,7 +46,13 @@ namespace Intel.RealSense
         {
             get
             {
-                return this.FirstOrDefault(x => x.Profile.Stream == Stream.Depth) as DepthFrame;
+                foreach(var frame in this)
+                {
+                    if (frame.Profile.Stream == Stream.Depth)
+                        return frame as DepthFrame;
+                    frame.Dispose();
+                }
+                return null;
             }
         }
 
@@ -54,7 +60,13 @@ namespace Intel.RealSense
         {
             get
             {
-                return this.FirstOrDefault(x => x.Profile.Stream == Stream.Color) as VideoFrame;
+                foreach (var frame in this)
+                {
+                    if (frame.Profile.Stream == Stream.Color)
+                        return frame as VideoFrame;
+                    frame.Dispose();
+                }
+                return null;
             }
         }
 

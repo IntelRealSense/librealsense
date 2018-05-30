@@ -126,6 +126,11 @@ namespace rs2
         }
     };
 
+    inline float3 cross(const float3& a, const float3& b)
+    {
+        return { a.y * b.z - b.y * a.z, a.x * b.z - b.x * a.z, a.x * b.y - a.y * b.x };
+    }
+
     inline float evaluate_plane(const plane& plane, const float3& point)
     {
         return plane.a * point.x + plane.b * point.y + plane.c * point.z + plane.d;

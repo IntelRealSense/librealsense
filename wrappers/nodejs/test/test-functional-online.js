@@ -123,6 +123,7 @@ describe('enum value test', function() {
       'RS400_VISUAL_PRESET_HIGH_ACCURACY',
       'RS400_VISUAL_PRESET_HIGH_DENSITY',
       'RS400_VISUAL_PRESET_MEDIUM_DENSITY',
+      'RS400_VISUAL_PRESET_REMOVE_IR_PATTERN',
       'RS400_VISUAL_PRESET_COUNT',
     ];
     const strAttrs = [
@@ -132,6 +133,7 @@ describe('enum value test', function() {
       'rs400_visual_preset_high_accuracy',
       'rs400_visual_preset_high_density',
       'rs400_visual_preset_medium_density',
+      'rs400_visual_preset_remove_ir_pattern',
     ];
     numberAttrs.forEach((attr) => {
       assert.equal(typeof obj[attr], 'number');
@@ -305,25 +307,25 @@ describe('enum value test', function() {
       'CAMERA_INFO_NAME',
       'CAMERA_INFO_SERIAL_NUMBER',
       'CAMERA_INFO_FIRMWARE_VERSION',
+      'CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION',
       'CAMERA_INFO_PHYSICAL_PORT',
       'CAMERA_INFO_DEBUG_OP_CODE',
       'CAMERA_INFO_ADVANCED_MODE',
       'CAMERA_INFO_PRODUCT_ID',
       'CAMERA_INFO_CAMERA_LOCKED',
       'CAMERA_INFO_USB_TYPE_DESCRIPTOR',
-      'CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION',
     ];
     const strAttrs = [
       'camera_info_name',
       'camera_info_serial_number',
       'camera_info_firmware_version',
+      'camera_info_recommended_firmware_version',
       'camera_info_physical_port',
       'camera_info_debug_op_code',
       'camera_info_advanced_mode',
       'camera_info_product_id',
       'camera_info_camera_locked',
       'camera_info_usb_type_descriptor',
-      'camera_info_recommended_firmware_version',
     ];
     numberAttrs.forEach((attr) => {
       assert.equal(typeof obj[attr], 'number');
@@ -591,5 +593,29 @@ describe('frameset misc test', function() {
     assert.equal(frame instanceof rs2.Frame, true);
     pipe.stop();
     rs2.cleanup();
+  });
+});
+
+describe('post processing filter tests', function() {
+  let ctx;
+  let pipe;
+  before(function() {
+    ctx = new rs2.Context();
+    pipe = new rs2.Pipeline(ctx);
+  });
+
+  after(function() {
+    rs2.cleanup();
+  });
+
+  it('hole-filling filter test', () => {
+    pipe.start();
+    const frames = pipe.waitForFrames();
+    assert.equal(frames.size > 0, true);
+    let filter = new rs2.HoleFillingFilter();
+    let out = filter.process(frames.depthFrame);
+    assert.equal(out instanceof rs2.Frame, true);
+    assert.equal(out.isValid, true);
+    pipe.stop();
   });
 });

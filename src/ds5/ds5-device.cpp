@@ -75,7 +75,7 @@ namespace librealsense
         _hw_monitor->send(cmd);
     }
 
-    class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_stereo_sensor
+    class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
     {
     public:
         explicit ds5_depth_sensor(ds5_device* owner,
@@ -356,7 +356,6 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
         auto depth_ep = std::make_shared<ds5_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
-
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized every time we power the camera
 
         depth_ep->register_pixel_format(pf_z16); // Depth
@@ -478,10 +477,6 @@ namespace librealsense
                 "Enable Auto Exposure");
             depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
 
-            depth_ep.register_option(RS2_OPTION_GAIN,
-                std::make_shared<auto_disabling_control>(
-                    std::make_shared<uvc_pu_option>(depth_ep, RS2_OPTION_GAIN),
-                    enable_auto_exposure));
 
             depth_ep.register_option(RS2_OPTION_EXPOSURE,
                 std::make_shared<auto_disabling_control>(
@@ -510,8 +505,9 @@ namespace librealsense
                 std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                     RS2_OPTION_ASIC_TEMPERATURE));
         }
-
-        depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
+        roi_sensor_interface* roi_sensor;
+        if (roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_ep))
+            roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
 
         depth_ep.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
             lazy<float>([this]() { return get_stereo_baseline_mm(); })));
