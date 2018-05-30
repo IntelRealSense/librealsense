@@ -53,9 +53,6 @@ namespace librealsense
         auto points_width = _depth_intrinsics->width;
         auto points_height = _depth_intrinsics->height;
 
-        float3* p = points;
-        float2* u = uv_map;
-
         for (size_t y = 0; y < points_height; ++y)
         {
             float maxInLine = -1;
@@ -110,7 +107,7 @@ namespace librealsense
         size_t points_width = _depth_intrinsics->width;
         size_t points_height = _depth_intrinsics->height;
 
-        static const float z_threshold = 0.05f; // Compensate for temporal noise when comparing Z values - significal occlusion
+        static const float z_threshold = 0.05f; // Compensate for temporal noise when comparing Z values
 
         // Clear previous data
         memset((void*)(_texels_depth.data()), 0, _texels_depth.size() * sizeof(float));
