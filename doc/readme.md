@@ -13,6 +13,7 @@
 
 ## Documentation
 
+* [Depth from Stereo](depth-from-stereo.md) - Tutorial introducing users to depth from stereo technology 
 * [API Architecture](api_arch.md) - Overview of the high-level concepts
 * [C API](../include/librealsense2) - With doxygen-style API comments
   * To build documentation locally from sources, on Ubuntu run the following commands:
