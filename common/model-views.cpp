@@ -1778,7 +1778,7 @@ namespace rs2
     {
         int combo_boxes = 0;
         const auto combo_box_width = 200;
-        
+
         // Initialize and prepare depth and texture sources
         int selected_depth_source = -1;
         std::vector<std::string> depth_sources_str;
@@ -1810,7 +1810,7 @@ namespace rs2
             }
         }
         if (depth_sources_str.size() > 0 && allow_3d_source_change) combo_boxes++;
-    
+
         int selected_tex_source = 0;
         std::vector<std::string> tex_sources_str;
         std::vector<int> tex_sources;
@@ -1855,7 +1855,7 @@ namespace rs2
 
         auto top_bar_height = 32.f;
         const auto buttons_heights = top_bar_height;
-        const auto num_of_buttons = 5;
+        const auto num_of_buttons = 6;
 
         if (num_of_buttons * 40 + combo_boxes * (combo_box_width + 100) > stream_rect.w)
             top_bar_height = 2 * top_bar_height;
@@ -1903,25 +1903,23 @@ namespace rs2
             }
 
             ImGui::PopItemWidth();
-            
+
             if (buttons_heights == top_bar_height) ImGui::SameLine();
         }
 
-        
-
         if (!allow_3d_source_change) ImGui::SetCursorPos({ 7, 7 });
-        
+
         // Only allow to change texture if we have something to put it on:
         if (tex_sources_str.size() && depth_sources_str.size())
         {
             if (buttons_heights == top_bar_height) ImGui::SetCursorPosY(7);
             else ImGui::SetCursorPos({ 7, buttons_heights + 7 });
-            
+
             ImGui::Text("Texture Source:"); ImGui::SameLine();
 
             if (buttons_heights == top_bar_height) ImGui::SetCursorPosY(7);
             else ImGui::SetCursorPosY(buttons_heights + 7);
-            
+
             ImGui::PushItemWidth(combo_box_width);
             draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
             selected_tex_source_uid = tex_sources[selected_tex_source];
@@ -1929,7 +1927,7 @@ namespace rs2
             ImGui::PopItemWidth();
 
             ImGui::SameLine();
-            
+
             // Occlusion control for RGB UV-Map uses option's description as label
             // Position is dynamically adjusted to avoid overlapping on resize
             if (RS2_STREAM_COLOR==streams[selected_tex_source_uid].profile.stream_type())
@@ -2038,6 +2036,35 @@ namespace rs2
             if (ImGui::IsItemHovered())
             {
                 ImGui::SetTooltip("Fix Up direction");
+            }
+        }
+        ImGui::SameLine();
+
+        if (render_quads)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            label = to_string() << textual_icons::connectdevelop << "##Render Quads";
+            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
+            {
+                render_quads = false;
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Use Quads for visualization");
+            }
+            ImGui::PopStyleColor(2);
+        }
+        else
+        {
+            label = to_string() << textual_icons::braille << "##Render Points";
+            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
+            {
+                render_quads = true;
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Use Points for visualization");
             }
         }
         ImGui::SameLine();
@@ -3850,8 +3877,9 @@ namespace rs2
 
         if (last_points && last_texture)
         {
+            auto vf_profile = last_points.get_profile().as<video_stream_profile>();
             // Non-linear correspondence customized for non-flat surface exploration
-            glPointSize(std::sqrt(viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width()));
+            glPointSize(std::sqrt(viewer_rect.w / vf_profile.width()));
 
             auto tex = last_texture->get_gl_handle();
             glBindTexture(GL_TEXTURE_2D, tex);
@@ -3862,44 +3890,43 @@ namespace rs2
 
             //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
 
-             glBegin(GL_POINTS);
-
             auto vertices = last_points.get_vertices();
             auto tex_coords = last_points.get_texture_coordinates();
-
-            for (int i = 0; i < last_points.size(); i++)
+            if (!render_quads)
             {
-                if (vertices[i].z)
+                glBegin(GL_POINTS);
+                for (int i = 0; i < last_points.size(); i++)
                 {
-                    glVertex3fv(vertices[i]);
-                    glTexCoord2fv(tex_coords[i+1]);
-                }
-            }
-            glEnd();
-            // Alternative
-            glBegin(GL_QUADS);
-
-            auto vertices = last_points.get_vertices();
-            auto tex_coords = last_points.get_texture_coordinates();
-
-#define THRESH 0.5f
-            auto width = vf_profile.width(), height = vf_profile.height();
-            for (int x = 0; x < width - 1; ++x) {
-                for (int y = 0; y < height - 1; ++y) {
-                    auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
-                    if (vertices[a].z && vertices[b].z && vertices[c].z && vertices[d].z
-                        && abs(vertices[a].z - vertices[b].z) < THRESH && abs(vertices[a].z - vertices[c].z) < THRESH
-                        && abs(vertices[b].z - vertices[d].z) < THRESH && abs(vertices[c].z - vertices[d].z) < THRESH) {
-                        glVertex3fv(vertices[a]); glTexCoord2fv(tex_coords[a]);
-                        glVertex3fv(vertices[b]); glTexCoord2fv(tex_coords[b]);
-                        glVertex3fv(vertices[d]); glTexCoord2fv(tex_coords[d]);
-                        glVertex3fv(vertices[c]); glTexCoord2fv(tex_coords[c]);
+                    if (vertices[i].z)
+                    {
+                        glVertex3fv(vertices[i]);
+                        glTexCoord2fv(tex_coords[i + 1]);
                     }
-
                 }
+                glEnd();
             }
-            glEnd();
-#undef THRESH
+            else
+            {
+                // Visualization with quads produces better results but requires further optimization
+                glBegin(GL_QUADS);
+
+                const auto threshold = 0.05f;
+                auto width = vf_profile.width(), height = vf_profile.height();
+                for (int x = 0; x < width - 1; ++x) {
+                    for (int y = 0; y < height - 1; ++y) {
+                        auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
+                        if (vertices[a].z && vertices[b].z && vertices[c].z && vertices[d].z
+                            && abs(vertices[a].z - vertices[b].z) < threshold && abs(vertices[a].z - vertices[c].z) < threshold
+                            && abs(vertices[b].z - vertices[d].z) < threshold && abs(vertices[c].z - vertices[d].z) < threshold) {
+                            glVertex3fv(vertices[a]); glTexCoord2fv(tex_coords[a]);
+                            glVertex3fv(vertices[b]); glTexCoord2fv(tex_coords[b]);
+                            glVertex3fv(vertices[d]); glTexCoord2fv(tex_coords[d]);
+                            glVertex3fv(vertices[c]); glTexCoord2fv(tex_coords[c]);
+                        }
+                    }
+                }
+                glEnd();
+            }
         }
 
         glDisable(GL_DEPTH_TEST);
@@ -5065,12 +5092,10 @@ namespace rs2
         }
     }
 
-
     // Generic helper functions for comparison of fw versions
     std::vector<int> fw_version_to_int_vec(std::string fw_version)
     {
-        int start = 0;
-        int end;
+        size_t start{}, end{};
         std::vector<int> values;
         std::string delimiter(".");
         std::string substr;
@@ -5083,7 +5108,6 @@ namespace rs2
         values.push_back(atoi(fw_version.substr(start, fw_version.length() - start).c_str()));
         return values;
     }
-
 
     bool fw_version_less_than(std::string fw_version, std::string min_fw_version)
     {
@@ -6274,7 +6298,7 @@ namespace rs2
 
         bool opened = true;
         std::string label;
-        
+
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             label = to_string() << "Firmware update recommended" << "##" << index;
@@ -6283,12 +6307,12 @@ namespace rs2
         {
             label = to_string() << "Hardware Notification #" << index;
         }
-        
+
         ImGui::Begin(label.c_str(), &opened, flags);
 
         if (!opened)
             to_close = true;
-        
+
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             std::regex version_regex("([0-9]+.[0-9]+.[0-9]+.[0-9]+\n)");

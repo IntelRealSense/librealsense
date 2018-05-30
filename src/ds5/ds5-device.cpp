@@ -591,7 +591,6 @@ namespace librealsense
                     }
                     std::this_thread::sleep_for(std::chrono::hours(8));
                 }
-                
             });
             notification_thread.detach();
         }

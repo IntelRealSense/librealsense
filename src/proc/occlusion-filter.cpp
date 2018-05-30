@@ -53,6 +53,9 @@ namespace librealsense
         auto points_width = _depth_intrinsics->width;
         auto points_height = _depth_intrinsics->height;
 
+        float3* p = points;
+        float2* u = uv_map;
+
         for (size_t y = 0; y < points_height; ++y)
         {
             float maxInLine = -1;
