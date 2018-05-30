@@ -128,6 +128,9 @@ void refresh_devices(std::mutex& m,
 
                     viewer_model.ppf.depth_stream_active = false;
 
+                    // Stopping post processing filter rendering thread in case of disconnection
+                    viewer_model.ppf.stop();
+
                     //Remove from devices
                     auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
                         [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(dev); });
@@ -475,7 +478,7 @@ int main(int argv, const char** argc) try
         viewer_model.handle_ready_frames(viewer_rect, window, static_cast<int>(device_models.size()), error_message);
     }
 
-    // Stop calculating 3D model
+    // Stopping post processing filter rendering thread
     viewer_model.ppf.stop();
 
     // Stop all subdevices
