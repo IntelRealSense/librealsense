@@ -3872,7 +3872,7 @@ namespace rs2
                 if (vertices[i].z)
                 {
                     glVertex3fv(vertices[i]);
-                    glTexCoord2fv(tex_coords[i]);
+                    glTexCoord2fv(tex_coords[i+1]);
                 }
             }
             glEnd();

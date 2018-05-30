@@ -26,12 +26,11 @@ namespace librealsense
         case occlusion_none:
             break;
         case occlusion_monotonic_scan:
-        case occlusion_exhaustic_search:
             monotonic_heuristic_invalidation(points, uv_map, pix_coord);
             break;
-        /*case occlusion_exhaustic_search:                              TODO - additional validation work is required
+        case occlusion_exhaustic_search:
             comprehensive_invalidation(points, uv_map, pix_coord);
-            break;*/
+            break;
         default:
             throw std::runtime_error(to_string() << "Unsupported occlusion filter type " << _occlusion_filter << " requested");
             break;
