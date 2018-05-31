@@ -3087,8 +3087,7 @@ namespace rs2
         }
 
         // Override the the first pixel in Depth->RGB map to be used as a mark when occlusion filter is active
-        if ((f.get_profile().stream_type() == RS2_STREAM_COLOR) &&
-            get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).value)
+        if ((f.get_profile().stream_type() == RS2_STREAM_COLOR))
         {
             auto rgb_stream = const_cast<uint8_t*>(static_cast<const uint8_t*>(f.get_data()));
             memset(rgb_stream, 0, 3); // Override the zero pixel with black color for occlusion marking
