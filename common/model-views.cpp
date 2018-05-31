@@ -1855,7 +1855,7 @@ namespace rs2
 
         auto top_bar_height = 32.f;
         const auto buttons_heights = top_bar_height;
-        const auto num_of_buttons = 6;
+        const auto num_of_buttons = 5;
 
         if (num_of_buttons * 40 + combo_boxes * (combo_box_width + 100) > stream_rect.w)
             top_bar_height = 2 * top_bar_height;
@@ -2011,60 +2011,31 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if (fixed_up)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            label = to_string() << textual_icons::fix_up << "##Fixed_up";
-            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
-            {
-                fixed_up = false;
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Don't fix Up direction");
-            }
-            ImGui::PopStyleColor(2);
-        }
-        else
-        {
-            label = to_string() << textual_icons::fix_up << "##Fixed_up";
-            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
-            {
-                fixed_up = true;
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Fix Up direction");
-            }
-        }
-        ImGui::SameLine();
-
         if (render_quads)
         {
             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            label = to_string() << textual_icons::connectdevelop << "##Render Quads";
+            label = to_string() << textual_icons::cubes << "##Render Quads";
             if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
             {
                 render_quads = false;
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Use Quads for visualization");
+                ImGui::SetTooltip("Render Quads");
             }
             ImGui::PopStyleColor(2);
         }
         else
         {
-            label = to_string() << textual_icons::braille << "##Render Points";
+            label = to_string() << textual_icons::cubes << "##Render Points";
             if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
             {
                 render_quads = true;
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Use Points for visualization");
+                ImGui::SetTooltip("Render Points");
             }
         }
         ImGui::SameLine();

@@ -124,6 +124,7 @@ namespace rs2
         static const textual_icon caret_down               { u8"\uf0d7" };
         static const textual_icon repeat                   { u8"\uf0e2" };
         static const textual_icon circle                   { u8"\uf111" };
+        static const textual_icon cubes                    { u8"\uf1b3" };
         static const textual_icon toggle_off               { u8"\uf204" };
         static const textual_icon toggle_on                { u8"\uf205" };
         static const textual_icon connectdevelop           { u8"\uf20e" };
