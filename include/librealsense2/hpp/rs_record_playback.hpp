@@ -186,7 +186,7 @@ namespace rs2
             rs2_error* e = nullptr;
             if(rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_PLAYBACK, &e) == 0 && !e)
             {
-                _dev = nullptr;
+                _dev.reset();
             }
             error::handle(e);
 
@@ -256,7 +256,7 @@ namespace rs2
             rs2_error* e = nullptr;
             if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_RECORD, &e) == 0 && !e)
             {
-                _dev = nullptr;
+                _dev.reset();
             }
             error::handle(e);
         }

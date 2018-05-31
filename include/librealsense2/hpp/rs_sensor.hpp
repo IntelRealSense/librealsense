@@ -445,7 +445,7 @@ namespace rs2
             rs2_error* e = nullptr;
             if(rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_ROI, &e) == 0 && !e)
             {
-                _sensor = nullptr;
+                _sensor.reset();
             }
             error::handle(e);
         }
@@ -478,7 +478,7 @@ namespace rs2
             rs2_error* e = nullptr;
             if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_DEPTH_SENSOR, &e) == 0 && !e)
             {
-                _sensor = nullptr;
+                _sensor.reset();
             }
             error::handle(e);
         }
@@ -505,7 +505,7 @@ namespace rs2
             rs2_error* e = nullptr;
             if (_sensor && rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_DEPTH_STEREO_SENSOR, &e) == 0 && !e)
             {
-                _sensor = nullptr;
+                _sensor.reset();
             }
             error::handle(e);
         }
