@@ -304,16 +304,14 @@ namespace librealsense
     {
         auto n = width * height;
         // record time
-        auto now = std::chrono::high_resolution_clock::now();
+    //    auto now = std::chrono::high_resolution_clock::now();
 
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
 #ifdef RS2_USE_CUDA
         rsimpl::unpack_yuy2_cuda<FORMAT>(d, s, n);
+                  
 
-                
-                    
-
-        #elif __SSSE3__
+#elif __SSSE3__
         static bool do_avx = has_avx();
 
         if (do_avx)
@@ -606,10 +604,10 @@ namespace librealsense
     #endif
 
         // record time
-        auto now2 = std::chrono::high_resolution_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now2 - now).count();
-       
-        LOG_ERROR("ELAPSED:" << elapsed/* << std::string(elapsed/2500, "#")*/);
+       // auto now2 = std::chrono::high_resolution_clock::now();
+      //  auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now2 - now).count();
+        //std::cout << elapsed << std::endl;
+       // LOG_ERROR("ELAPSED:" << elapsed/* << std::string(elapsed/2500, "#")*/);
     }
 
     // This templated function unpacks UYVY into RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.
@@ -872,7 +870,7 @@ namespace librealsense
     void unpack_y8_y8_from_y8i(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height;
-        auto now = std::chrono::high_resolution_clock::now();
+  //      auto now = std::chrono::high_resolution_clock::now();
 #ifdef RS2_USE_CUDA
         rsimpl::split_frame_y8_y8_from_y8i_cuda(dest, count, reinterpret_cast<const y8i_pixel *>(source));
 #else
@@ -881,9 +879,9 @@ namespace librealsense
             [](const y8i_pixel & p) -> uint8_t { return p.r; });
 #endif
         // record time
-        auto now2 = std::chrono::high_resolution_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now2 - now).count();
-        LOG_ERROR(elapsed/* << std::string(elapsed/2500, "#")*/);
+      //  auto now2 = std::chrono::high_resolution_clock::now();
+      //  auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now2 - now).count();
+      //  LOG_ERROR(elapsed/* << std::string(elapsed/2500, "#")*/);
     }
 
     struct y12i_pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8; int l() const { return lh << 4 | ll; } int r() const { return rh << 8 | rl; } };
