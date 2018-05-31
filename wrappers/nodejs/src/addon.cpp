@@ -4263,6 +4263,7 @@ class RSFilter : public Nan::ObjectWrap, Options {
     kFilterDecimation = 0,
     kFilterTemporal,
     kFilterSpatial,
+    kFilterHoleFilling,
     kFilterDisparity2Depth,
     kFilterDepth2Disparity
   };
@@ -4332,6 +4333,10 @@ class RSFilter : public Nan::ObjectWrap, Options {
       obj->type_ = kFilterSpatial;
       obj->block_ = GetNativeResult<rs2_processing_block*>(
           rs2_create_spatial_filter_block, &obj->error_, &obj->error_);
+    } else if (!(type.compare("hole-filling"))) {
+      obj->type_ = kFilterHoleFilling;
+      obj->block_ = GetNativeResult<rs2_processing_block*>(
+          rs2_create_hole_filling_filter_block, &obj->error_, &obj->error_);
     } else if (!(type.compare("disparity-to-depth"))) {
       obj->type_ = kFilterDisparity2Depth;
       obj->block_ = GetNativeResult<rs2_processing_block*>(
@@ -4631,13 +4636,13 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_NAME);
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_SERIAL_NUMBER);
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+  _FORCE_SET_ENUM(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION);
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_PHYSICAL_PORT);
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_DEBUG_OP_CODE);
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_ADVANCED_MODE);
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_PRODUCT_ID);
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_CAMERA_LOCKED);
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
-  _FORCE_SET_ENUM(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION);
   _FORCE_SET_ENUM(RS2_CAMERA_INFO_COUNT);
 
   // rs2_log_severity
@@ -4690,6 +4695,7 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY);
   _FORCE_SET_ENUM(RS2_RS400_VISUAL_PRESET_HIGH_DENSITY);
   _FORCE_SET_ENUM(RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY);
+  _FORCE_SET_ENUM(RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN);
   _FORCE_SET_ENUM(RS2_RS400_VISUAL_PRESET_COUNT);
 
   // rs2_playback_status

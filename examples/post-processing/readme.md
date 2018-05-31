@@ -227,7 +227,8 @@ The `processing_thread` will do the following actions, to make the main thread m
           {
               filtered = disparity_to_depth.process(filtered);
           }
-    ```
+  ```
+
 3. Push the original depth frame, and the filtered one, each to its respective queue:
 
   ```cpp
