@@ -1778,7 +1778,7 @@ namespace rs2
     {
         int combo_boxes = 0;
         const auto combo_box_width = 200;
-        
+
         // Initialize and prepare depth and texture sources
         int selected_depth_source = -1;
         std::vector<std::string> depth_sources_str;
@@ -1810,7 +1810,7 @@ namespace rs2
             }
         }
         if (depth_sources_str.size() > 0 && allow_3d_source_change) combo_boxes++;
-    
+
         int selected_tex_source = 0;
         std::vector<std::string> tex_sources_str;
         std::vector<int> tex_sources;
@@ -1903,25 +1903,23 @@ namespace rs2
             }
 
             ImGui::PopItemWidth();
-            
+
             if (buttons_heights == top_bar_height) ImGui::SameLine();
         }
 
-        
-
         if (!allow_3d_source_change) ImGui::SetCursorPos({ 7, 7 });
-        
+
         // Only allow to change texture if we have something to put it on:
         if (tex_sources_str.size() && depth_sources_str.size())
         {
             if (buttons_heights == top_bar_height) ImGui::SetCursorPosY(7);
             else ImGui::SetCursorPos({ 7, buttons_heights + 7 });
-            
+
             ImGui::Text("Texture Source:"); ImGui::SameLine();
 
             if (buttons_heights == top_bar_height) ImGui::SetCursorPosY(7);
             else ImGui::SetCursorPosY(buttons_heights + 7);
-            
+
             ImGui::PushItemWidth(combo_box_width);
             draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
             selected_tex_source_uid = tex_sources[selected_tex_source];
@@ -1929,7 +1927,7 @@ namespace rs2
             ImGui::PopItemWidth();
 
             ImGui::SameLine();
-            
+
             // Occlusion control for RGB UV-Map uses option's description as label
             // Position is dynamically adjusted to avoid overlapping on resize
             if (RS2_STREAM_COLOR==streams[selected_tex_source_uid].profile.stream_type())
@@ -2013,31 +2011,31 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if (fixed_up)
+        if (render_quads)
         {
             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            label = to_string() << textual_icons::fix_up << "##Fixed_up";
+            label = to_string() << textual_icons::cubes << "##Render Quads";
             if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
             {
-                fixed_up = false;
+                render_quads = false;
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Don't fix Up direction");
+                ImGui::SetTooltip("Render Quads");
             }
             ImGui::PopStyleColor(2);
         }
         else
         {
-            label = to_string() << textual_icons::fix_up << "##Fixed_up";
+            label = to_string() << textual_icons::cubes << "##Render Points";
             if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
             {
-                fixed_up = true;
+                render_quads = true;
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Fix Up direction");
+                ImGui::SetTooltip("Render Points");
             }
         }
         ImGui::SameLine();
@@ -3060,8 +3058,7 @@ namespace rs2
         }
 
         // Override the the first pixel in Depth->RGB map to be used as a mark when occlusion filter is active
-        if ((f.get_profile().stream_type() == RS2_STREAM_COLOR) &&
-            get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).value)
+        if ((f.get_profile().stream_type() == RS2_STREAM_COLOR))
         {
             auto rgb_stream = const_cast<uint8_t*>(static_cast<const uint8_t*>(f.get_data()));
             memset(rgb_stream, 0, 3); // Override the zero pixel with black color for occlusion marking
@@ -3847,10 +3844,11 @@ namespace rs2
             glColor4f(1.f, 1.f, 1.f, 1.f);
         }
 
-        if ( last_points && last_texture)
+        if (last_points && last_texture)
         {
+            auto vf_profile = last_points.get_profile().as<video_stream_profile>();
             // Non-linear correspondence customized for non-flat surface exploration
-            glPointSize(std::sqrt(viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width()));
+            glPointSize(std::sqrt(viewer_rect.w / vf_profile.width()));
 
             auto tex = last_texture->get_gl_handle();
             glBindTexture(GL_TEXTURE_2D, tex);
@@ -3861,20 +3859,43 @@ namespace rs2
 
             //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
 
-            glBegin(GL_POINTS);
-
             auto vertices = last_points.get_vertices();
             auto tex_coords = last_points.get_texture_coordinates();
-
-            for (int i = 0; i < last_points.size(); i++)
+            if (!render_quads)
             {
-                if (vertices[i].z)
+                glBegin(GL_POINTS);
+                for (int i = 0; i < last_points.size(); i++)
                 {
-                    glVertex3fv(vertices[i]);
-                    glTexCoord2fv(tex_coords[i]);
+                    if (vertices[i].z)
+                    {
+                        glVertex3fv(vertices[i]);
+                        glTexCoord2fv(tex_coords[i + 1]);
+                    }
                 }
+                glEnd();
             }
-            glEnd();
+            else
+            {
+                // Visualization with quads produces better results but requires further optimization
+                glBegin(GL_QUADS);
+
+                const auto threshold = 0.05f;
+                auto width = vf_profile.width(), height = vf_profile.height();
+                for (int x = 0; x < width - 1; ++x) {
+                    for (int y = 0; y < height - 1; ++y) {
+                        auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
+                        if (vertices[a].z && vertices[b].z && vertices[c].z && vertices[d].z
+                            && abs(vertices[a].z - vertices[b].z) < threshold && abs(vertices[a].z - vertices[c].z) < threshold
+                            && abs(vertices[b].z - vertices[d].z) < threshold && abs(vertices[c].z - vertices[d].z) < threshold) {
+                            glVertex3fv(vertices[a]); glTexCoord2fv(tex_coords[a]);
+                            glVertex3fv(vertices[b]); glTexCoord2fv(tex_coords[b]);
+                            glVertex3fv(vertices[d]); glTexCoord2fv(tex_coords[d]);
+                            glVertex3fv(vertices[c]); glTexCoord2fv(tex_coords[c]);
+                        }
+                    }
+                }
+                glEnd();
+            }
         }
 
         glDisable(GL_DEPTH_TEST);
@@ -5042,12 +5063,10 @@ namespace rs2
         }
     }
 
-
     // Generic helper functions for comparison of fw versions
     std::vector<int> fw_version_to_int_vec(std::string fw_version)
     {
-        int start = 0;
-        int end;
+        size_t start{}, end{};
         std::vector<int> values;
         std::string delimiter(".");
         std::string substr;
@@ -5060,7 +5079,6 @@ namespace rs2
         values.push_back(atoi(fw_version.substr(start, fw_version.length() - start).c_str()));
         return values;
     }
-
 
     bool fw_version_less_than(std::string fw_version, std::string min_fw_version)
     {
@@ -6253,7 +6271,7 @@ namespace rs2
 
         bool opened = true;
         std::string label;
-        
+
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             label = to_string() << "Firmware update recommended" << "##" << index;
@@ -6262,12 +6280,12 @@ namespace rs2
         {
             label = to_string() << "Hardware Notification #" << index;
         }
-        
+
         ImGui::Begin(label.c_str(), &opened, flags);
 
         if (!opened)
             to_close = true;
-        
+
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             std::regex version_regex("([0-9]+.[0-9]+.[0-9]+.[0-9]+\n)");

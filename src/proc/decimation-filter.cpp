@@ -530,7 +530,7 @@ namespace librealsense
         size_t width_in, size_t height_in, size_t scale)
     {
         int sum = 0;
-        int patch_size = scale * scale;
+        auto patch_size = scale * scale;
 
         switch (format)
         {
@@ -540,10 +540,10 @@ namespace librealsense
             uint8_t* p = nullptr;
             uint8_t* q = (uint8_t*)frame_data_out;
 
-            int w_2 = width_in >> 1;
-            int rw_2 = _real_width >> 1;
-            int pw_2 = _padded_width >> 1;
-            int s2 = scale >> 1;
+            auto w_2 = width_in >> 1;
+            auto rw_2 = _real_width >> 1;
+            auto pw_2 = _padded_width >> 1;
+            auto s2 = scale >> 1;
             bool odd = (scale & 1);
             for (int j = 0; j < _real_height; ++j)
             {
@@ -626,10 +626,10 @@ namespace librealsense
             uint8_t* p = nullptr;
             uint8_t* q = (uint8_t*)frame_data_out;
 
-            int w_2 = width_in >> 1;
-            int rw_2 = _real_width >> 1;
-            int pw_2 = _padded_width >> 1;
-            int s2 = scale >> 1;
+            auto w_2 = width_in >> 1;
+            auto rw_2 = _real_width >> 1;
+            auto pw_2 = _padded_width >> 1;
+            auto s2 = scale >> 1;
             bool odd = (scale & 1);
             for (int j = 0; j < _real_height; ++j)
             {
