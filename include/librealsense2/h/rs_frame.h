@@ -1,7 +1,7 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-/** \file rs2_frame.h
+/** \file rs_frame.h
 * \brief
 * Exposes RealSense frame functionality for C compilers
 */
@@ -86,14 +86,16 @@ typedef struct rs2_pose
 * retrieve metadata from frame handle
 * \param[in] frame      handle returned from a callback
 * \param[in] frame_metadata  the rs2_frame_metadata whose latest frame we are interested in
+* \param[out] error         if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the metadata value
 */
 rs2_metadata_type rs2_get_frame_metadata(const rs2_frame* frame, rs2_frame_metadata_value frame_metadata, rs2_error** error);
 
 /**
 * determine device metadata
-* \param[in] frame      handle returned from a callback
-* \param[in] metadata    the metadata to check for support
+* \param[in] frame             handle returned from a callback
+* \param[in] frame_metadata    the metadata to check for support
+* \param[out] error         if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return                true if device has this metadata
 */
 int rs2_supports_frame_metadata(const rs2_frame* frame, rs2_frame_metadata_value frame_metadata, rs2_error** error);
@@ -102,7 +104,7 @@ int rs2_supports_frame_metadata(const rs2_frame* frame, rs2_frame_metadata_value
 * retrieve timestamp domain from frame handle. timestamps can only be comparable if they are in common domain
 * (for example, depth timestamp might come from system time while color timestamp might come from the device)
 * this method is used to check if two timestamp values are comparable (generated from the same clock)
-* \param[in] frame      handle returned from a callback
+* \param[in] frameset   handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               the timestamp domain of the frame (camera / microcontroller / system time)
 */
@@ -176,7 +178,6 @@ void rs2_frame_add_ref(rs2_frame* frame, rs2_error ** error);
 /**
 * relases the frame handle
 * \param[in] frame handle returned from a callback
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_release_frame(rs2_frame* frame);
 
@@ -185,7 +186,6 @@ void rs2_release_frame(rs2_frame* frame);
 * this will remove the frame from the regular count of the frame pool
 * once this function is called, the SDK can no longer guarantee 0-allocations during frame cycling
 * \param[in] frame handle returned from a callback
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_keep_frame(rs2_frame* frame);
 
@@ -234,9 +234,9 @@ const rs2_stream_profile* rs2_get_frame_stream_profile(const rs2_frame* frame, r
 
 /**
 * Test if the given frame can be extended to the requested extension
-* \param[in]  frame      Realsense frame
-* \param[in]  extension  The extension to which the frame should be tested if it is extendable
-* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \param[in]  frame             Realsense frame
+* \param[in]  extension_type    The extension to which the frame should be tested if it is extendable
+* \param[out] error             If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return non-zero value iff the frame can be extended to the given extension
 */
 int rs2_is_frame_extendable_to(const rs2_frame* frame, rs2_extension extension_type, rs2_error ** error);
@@ -249,7 +249,8 @@ int rs2_is_frame_extendable_to(const rs2_frame* frame, rs2_extension extension_t
 * \param[in] new_bpp     New value for bits per pixel for the allocated frame
 * \param[in] new_width   New value for width for the allocated frame
 * \param[in] new_height  New value for height for the allocated frame
-* \param[in] new stride  New value for stride in bytes for the allocated frame
+* \param[in] new_stride  New value for stride in bytes for the allocated frame
+* \param[in] frame_type  New value for frame type for the allocated frame
 * \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return                reference to a newly allocated frame, must be released with release_frame
 *                        memory for the frame is likely to be re-used from previous frame, but in lack of available frames in the pool will be allocated from the free store
@@ -291,6 +292,7 @@ int rs2_embedded_frames_count(rs2_frame* composite, rs2_error** error);
 * This method will dispatch frame callback on a frame
 * \param[in] source      Frame pool provided by the processing block
 * \param[in] frame       Frame to dispatch, frame ownership is passed to this function, so you don't have to call release_frame after it
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error** error);
 

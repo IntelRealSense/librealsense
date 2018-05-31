@@ -1,7 +1,7 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-/** \file rs2_record_playback.h
+/** \file rs_record_playback.h
 * \brief
 * Exposes record and playback functionality for C compilers
 */

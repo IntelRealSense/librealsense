@@ -292,7 +292,7 @@ namespace rs2
 
         /**
         * Check if a coherent set of frames is available
-        * \param[out] result      New coherent frame-set
+        * \param[out] fs      New coherent frame-set
         * \return true if new frame-set was stored to result
         */
         bool poll_for_frames(frameset* fs) const
