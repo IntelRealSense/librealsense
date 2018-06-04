@@ -406,7 +406,6 @@ namespace librealsense
 
     void pointcloud::process_depth_frame(const rs2::depth_frame& depth)
     {
-
         frame_holder res = get_source().allocate_points(_output_stream, (frame_interface*)depth.get());
 
         auto pframe = (points*)(res.frame);

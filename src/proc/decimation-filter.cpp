@@ -185,7 +185,7 @@ namespace librealsense
         PIX_SORT(p[4], p[7]);
         p[6] = PIX_MAX(p[3], p[6]);
         p[4] = PIX_MAX(p[1], p[4]);
-        p[2] = PIX_MIN(p[2], p[5]); 
+        p[2] = PIX_MIN(p[2], p[5]);
         p[4] = PIX_MIN(p[4], p[7]);
         PIX_SORT(p[4], p[2]);
         p[4] = PIX_MAX(p[6], p[4]);
@@ -199,20 +199,22 @@ namespace librealsense
 
     decimation_filter::decimation_filter() :
         _decimation_factor(decimation_default_val),
+        _control_val(decimation_default_val),
         _patch_size(decimation_default_val),
         _kernel_size(_patch_size*_patch_size),
         _real_width(),
         _real_height(0),
         _padded_width(0),
         _padded_height(0),
-        _recalc_profile(false)
+        _recalc_profile(false),
+        _options_changed(false)
     {
         auto decimation_control = std::make_shared<ptr_option<uint8_t>>(
             decimation_min_val,
             decimation_max_val,
             decimation_step,
             decimation_default_val,
-            &_decimation_factor, "Decimation scale");
+            &_control_val, "Decimation scale");
         decimation_control->on_set([this, decimation_control](float val)
         {
             std::lock_guard<std::mutex> lock(_mutex);
@@ -222,9 +224,12 @@ namespace librealsense
                     << "Unsupported decimation scale " << val << " is out of range.");
 
             // Linear decimation factor
-            _patch_size = _decimation_factor = static_cast<uint8_t>(val);
-            _kernel_size = _patch_size*_patch_size;
-            _recalc_profile = true;
+            if (_control_val != _decimation_factor)
+            {
+                _patch_size = _decimation_factor = _control_val;
+                _kernel_size = _patch_size*_patch_size;
+                _options_changed = true;
+            }
         });
 
         register_option(RS2_OPTION_FILTER_MAGNITUDE, decimation_control);
@@ -320,13 +325,13 @@ namespace librealsense
                         }
                         else
                         {
-                            decimate_others(format, src.get_data(), 
-                                const_cast<void*>(tgt.get_data()), 
+                            decimate_others(format, src.get_data(),
+                                const_cast<void*>(tgt.get_data()),
                                 src.get_width(), src.get_height(), this->_patch_size);
                         }
                     }
                 }
- 
+
                 out = tgt;
             }
 
@@ -339,10 +344,28 @@ namespace librealsense
 
     void  decimation_filter::update_output_profile(const rs2::frame& f)
     {
-        if (f.get_profile().get() != _source_stream_profile.get())
+        if (_options_changed || (f.get_profile().get() != _source_stream_profile.get()))
         {
+            _options_changed = false;
             _source_stream_profile = f.get_profile();
-            _recalc_profile = true;
+            const auto pf = _registered_profiles.find(std::make_tuple(_source_stream_profile.get(), _decimation_factor));
+            if (_registered_profiles.end() != pf)
+            {
+                _target_stream_profile = pf->second;
+                auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(_target_stream_profile.get()->profile);
+                auto f_pf = dynamic_cast<video_stream_profile_interface*>(_source_stream_profile.get()->profile);
+                rs2_intrinsics tgt_intrin = tgt_vspi->get_intrinsics();
+
+                // Update real/padded output frame size based on retrieved input properties
+                _real_width = f_pf->get_width() / _patch_size;
+                _real_height = f_pf->get_height() / _patch_size;
+                _padded_width = tgt_intrin.width;
+                _padded_height = tgt_intrin.height;
+            }
+            else
+            {
+                _recalc_profile = true;
+            }
         }
 
         // Buld a new target profile for every system/filter change
@@ -350,10 +373,10 @@ namespace librealsense
         {
             auto vp = _source_stream_profile.as<rs2::video_stream_profile>();
 
-            _target_stream_profile = _source_stream_profile.clone(f.get_profile().stream_type(), f.get_profile().stream_index(), _source_stream_profile.format());
-            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*(stream_interface*)(_source_stream_profile.get()->profile), *(stream_interface*)(_target_stream_profile.get()->profile));
+            auto tmp_profile = _source_stream_profile.clone(_source_stream_profile.stream_type(), _source_stream_profile.stream_index(), _source_stream_profile.format());
+            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*(stream_interface*)(_source_stream_profile.get()->profile), *(stream_interface*)(tmp_profile.get()->profile));
             auto src_vspi = dynamic_cast<video_stream_profile_interface*>(_source_stream_profile.get()->profile);
-            auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(_target_stream_profile.get()->profile);
+            auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(tmp_profile.get()->profile);
             rs2_intrinsics src_intrin   = src_vspi->get_intrinsics();
             rs2_intrinsics tgt_intrin   = tgt_vspi->get_intrinsics();
 
@@ -380,6 +403,8 @@ namespace librealsense
             tgt_vspi->set_intrinsics([tgt_intrin]() { return tgt_intrin; });
             tgt_vspi->set_dims(tgt_intrin.width, tgt_intrin.height);
 
+            _registered_profiles[std::make_tuple(_source_stream_profile.get(),_decimation_factor)]= _target_stream_profile = tmp_profile;
+
             _recalc_profile = false;
         }
     }
@@ -387,12 +412,14 @@ namespace librealsense
     rs2::frame decimation_filter::prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source, rs2_extension tgt_type)
     {
         auto vf = f.as<rs2::video_frame>();
-        return source.allocate_video_frame(_target_stream_profile, f,
+        auto ret = source.allocate_video_frame(_target_stream_profile, f,
             vf.get_bytes_per_pixel(),
             _padded_width,
             _padded_height,
             _padded_width*vf.get_bytes_per_pixel(),
             tgt_type);
+
+        return ret;
     }
 
     void decimation_filter::decimate_depth(const uint16_t * frame_data_in, uint16_t * frame_data_out,
@@ -490,7 +517,7 @@ namespace librealsense
                 {
                     int sum = 0;
                     int counter = 0;
-                    
+
                     // extract data the kernel to process
                     for (size_t n = 0; n < scale; ++n)
                     {
