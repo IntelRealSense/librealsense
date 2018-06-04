@@ -13,6 +13,7 @@
 
 ## Documentation
 
+* [Depth from Stereo](depth-from-stereo.md) - Tutorial introducing users to depth from stereo technology 
 * [API Architecture](api_arch.md) - Overview of the high-level concepts
 * [C API](../include/librealsense2) - With doxygen-style API comments
   * To build documentation locally from sources, on Ubuntu run the following commands:
@@ -21,6 +22,7 @@
   * Please also refer to [API How-To](https://github.com/IntelRealSense/librealsense/wiki/API-How-To) for further doc how to use the APIs
 * [Frame Management](frame_lifetime.md) - Frame Memory Management, Threading Model and Synchronization
 * [Frame Metadata](frame_metadata.md) - Support for frame-metadata attributes
+* [Post-Processing Filters](post-processing-filters.md) - Post-acquisition Depth enhancement techniques
 * [Getting Started](stepbystep/getting_started_with_openCV.md) - Getting started with OpenCV
 * [Error Handling](error_handling.md) - Documents librealsense error handling policy
 * Device specific topics:

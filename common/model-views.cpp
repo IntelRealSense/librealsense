@@ -573,7 +573,7 @@ namespace rs2
                 else
                 {
                     std::string txt = to_string() << (use_option_name ? rs2_option_to_string(opt) : desc) << ":";
-                    
+
                     auto pos_x = ImGui::GetCursorPosX();
 
                     ImGui::Text("%s", txt.c_str());
@@ -887,6 +887,20 @@ namespace rs2
                 disparity_to_depth->enabled = true;
                 // the block will be internally available, but removed from UI
                 //post_processing.push_back(disparity_to_depth);
+            }
+        }
+        else
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(s->get().get(), RS2_EXTENSION_VIDEO, &e) && !e)
+            {
+                auto decimate = std::make_shared<rs2::decimation_filter>();
+                decimation_filter = std::make_shared<processing_block_model>(
+                    this, "Decimation Filter", decimate,
+                    [=](rs2::frame f) { return decimate->process(f); },
+                    error_message);
+                decimation_filter->enabled = true;
+                post_processing.push_back(decimation_filter);
             }
         }
 
@@ -1764,7 +1778,7 @@ namespace rs2
     {
         int combo_boxes = 0;
         const auto combo_box_width = 200;
-        
+
         // Initialize and prepare depth and texture sources
         int selected_depth_source = -1;
         std::vector<std::string> depth_sources_str;
@@ -1796,7 +1810,7 @@ namespace rs2
             }
         }
         if (depth_sources_str.size() > 0 && allow_3d_source_change) combo_boxes++;
-    
+
         int selected_tex_source = 0;
         std::vector<std::string> tex_sources_str;
         std::vector<int> tex_sources;
@@ -1819,7 +1833,8 @@ namespace rs2
                     selected_tex_source = i;
                 }
 
-                tex_sources.push_back(s.second.profile.unique_id());
+                // The texture source shall always refer to the raw (original) streams
+                tex_sources.push_back(streams_origin[s.second.profile.unique_id()]);
 
                 auto dev_name = s.second.dev ? s.second.dev->dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
                 std::string stream_name = rs2_stream_to_string(s.second.profile.stream_type());
@@ -1834,14 +1849,14 @@ namespace rs2
         if (tex_sources_str.size() && depth_sources_str.size())
         {
             combo_boxes++;
-            if (RS2_STREAM_COLOR==streams[selected_tex_source_uid].profile.stream_type())
+            if (RS2_STREAM_COLOR == streams[selected_tex_source_uid].profile.stream_type())
                 combo_boxes++;
         }
-    
+
         auto top_bar_height = 32.f;
         const auto buttons_heights = top_bar_height;
         const auto num_of_buttons = 5;
-        
+
         if (num_of_buttons * 40 + combo_boxes * (combo_box_width + 100) > stream_rect.w)
             top_bar_height = 2 * top_bar_height;
 
@@ -1863,8 +1878,6 @@ namespace rs2
         ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
         std::string label = to_string() << "header of 3dviewer";
         ImGui::Begin(label.c_str(), nullptr, flags);
-
-        
 
         if (depth_sources_str.size() > 0 && allow_3d_source_change)
         {
@@ -1890,25 +1903,23 @@ namespace rs2
             }
 
             ImGui::PopItemWidth();
-            
+
             if (buttons_heights == top_bar_height) ImGui::SameLine();
         }
 
-        
-
         if (!allow_3d_source_change) ImGui::SetCursorPos({ 7, 7 });
-        
+
         // Only allow to change texture if we have something to put it on:
         if (tex_sources_str.size() && depth_sources_str.size())
         {
             if (buttons_heights == top_bar_height) ImGui::SetCursorPosY(7);
             else ImGui::SetCursorPos({ 7, buttons_heights + 7 });
-            
+
             ImGui::Text("Texture Source:"); ImGui::SameLine();
 
             if (buttons_heights == top_bar_height) ImGui::SetCursorPosY(7);
             else ImGui::SetCursorPosY(buttons_heights + 7);
-            
+
             ImGui::PushItemWidth(combo_box_width);
             draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
             selected_tex_source_uid = tex_sources[selected_tex_source];
@@ -1916,7 +1927,7 @@ namespace rs2
             ImGui::PopItemWidth();
 
             ImGui::SameLine();
-            
+
             // Occlusion control for RGB UV-Map uses option's description as label
             // Position is dynamically adjusted to avoid overlapping on resize
             if (RS2_STREAM_COLOR==streams[selected_tex_source_uid].profile.stream_type())
@@ -1990,7 +2001,7 @@ namespace rs2
             ImGui::SetTooltip("Export 3D model to PLY format");
 
         ImGui::SameLine();
-        
+
         if (ImGui::Button(textual_icons::refresh, { 24, buttons_heights }))
         {
             reset_camera();
@@ -1999,32 +2010,32 @@ namespace rs2
             ImGui::SetTooltip("Reset View");
 
         ImGui::SameLine();
-        
-        if (fixed_up)
+
+        if (render_quads)
         {
             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            label = to_string() << textual_icons::fix_up << "##Fixed_up";
+            label = to_string() << textual_icons::cubes << "##Render Quads";
             if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
             {
-                fixed_up = false;
+                render_quads = false;
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Don't fix Up direction");
+                ImGui::SetTooltip("Render Quads");
             }
             ImGui::PopStyleColor(2);
         }
         else
         {
-            label = to_string() << textual_icons::fix_up << "##Fixed_up";
+            label = to_string() << textual_icons::cubes << "##Render Points";
             if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
             {
-                fixed_up = true;
+                render_quads = true;
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Fix Up direction");
+                ImGui::SetTooltip("Render Points");
             }
         }
         ImGui::SameLine();
@@ -2068,7 +2079,7 @@ namespace rs2
                 render_pose = true;
             }
         }
-        
+
         auto total_top_bar_height = top_bar_height; // may include single bar or additional bar for pose
 
         if (render_pose)
@@ -2145,7 +2156,6 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, dark_sensor_bg);
-        
 
         ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 265, stream_rect.y + total_top_bar_height + 5 });
         ImGui::SetNextWindowSize({ 260, 65 });
@@ -3001,7 +3011,8 @@ namespace rs2
 
     rs2::frame post_processing_filters::apply_filters(rs2::frame f)
     {
-        if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+        rs2_stream stream_type = f.get_profile().stream_type();
+        if (stream_type == RS2_STREAM_DEPTH || stream_type == RS2_STREAM_COLOR || stream_type == RS2_STREAM_INFRARED)
         {
             for (auto&& s : viewer.streams)
             {
@@ -3013,29 +3024,32 @@ namespace rs2
                     if (dev->post_processing_enabled)
                     {
                         auto dec_filter = s.second.dev->decimation_filter;
-                        auto depth_2_disparity = s.second.dev->depth_to_disparity;
-                        auto spatial_filter = s.second.dev->spatial_filter;
-                        auto temp_filter = s.second.dev->temporal_filter;
-                        auto hole_filling = s.second.dev->hole_filling_filter;
-                        auto disparity_2_depth = s.second.dev->disparity_to_depth;
-
                         if (dec_filter->enabled)
                             f = dec_filter->invoke(f);
 
-                        if (depth_2_disparity->enabled)
-                            f = depth_2_disparity->invoke(f);
+                        if (stream_type == RS2_STREAM_DEPTH)
+                        {
+                            auto depth_2_disparity = s.second.dev->depth_to_disparity;
+                            auto spatial_filter = s.second.dev->spatial_filter;
+                            auto temp_filter = s.second.dev->temporal_filter;
+                            auto hole_filling = s.second.dev->hole_filling_filter;
+                            auto disparity_2_depth = s.second.dev->disparity_to_depth;
 
-                        if (spatial_filter->enabled)
-                            f = spatial_filter->invoke(f);
+                            if (depth_2_disparity->enabled)
+                                f = depth_2_disparity->invoke(f);
 
-                        if (temp_filter->enabled)
-                            f = temp_filter->invoke(f);
+                            if (spatial_filter->enabled)
+                                f = spatial_filter->invoke(f);
 
-                        if (disparity_2_depth->enabled)
-                            f = disparity_2_depth->invoke(f);
+                            if (temp_filter->enabled)
+                                f = temp_filter->invoke(f);
 
-                        if (hole_filling->enabled)
-                            f = hole_filling->invoke(f);
+                            if (disparity_2_depth->enabled)
+                                f = disparity_2_depth->invoke(f);
+
+                            if (hole_filling->enabled)
+                                f = hole_filling->invoke(f);
+                        }
 
                         return f;
                     }
@@ -3044,8 +3058,7 @@ namespace rs2
         }
 
         // Override the the first pixel in Depth->RGB map to be used as a mark when occlusion filter is active
-        if ((f.get_profile().stream_type() == RS2_STREAM_COLOR) &&
-            get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).value)
+        if ((f.get_profile().stream_type() == RS2_STREAM_COLOR))
         {
             auto rgb_stream = const_cast<uint8_t*>(static_cast<const uint8_t*>(f.get_data()));
             memset(rgb_stream, 0, 3); // Override the zero pixel with black color for occlusion marking
@@ -3112,7 +3125,7 @@ namespace rs2
 
     void post_processing_filters::render_loop()
     {
-        while (keep_calculating)
+        while (render_thread_active)
         {
             try
             {
@@ -3134,7 +3147,6 @@ namespace rs2
                     }
                     for (auto&& q : frames_queue_local)
                     {
-
                         frame frm;
                         if (q.second.poll_for_frame(&frm))
                         {
@@ -3832,10 +3844,11 @@ namespace rs2
             glColor4f(1.f, 1.f, 1.f, 1.f);
         }
 
-        if ( last_points && last_texture)
+        if (last_points && last_texture)
         {
+            auto vf_profile = last_points.get_profile().as<video_stream_profile>();
             // Non-linear correspondence customized for non-flat surface exploration
-            glPointSize(std::sqrt(viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width()));
+            glPointSize(std::sqrt(viewer_rect.w / vf_profile.width()));
 
             auto tex = last_texture->get_gl_handle();
             glBindTexture(GL_TEXTURE_2D, tex);
@@ -3846,23 +3859,43 @@ namespace rs2
 
             //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
 
-            glBegin(GL_POINTS);
-
             auto vertices = last_points.get_vertices();
             auto tex_coords = last_points.get_texture_coordinates();
-
-            for (int i = 0; i < last_points.size(); i++)
+            if (!render_quads)
             {
-                if (vertices[i].z)
+                glBegin(GL_POINTS);
+                for (int i = 0; i < last_points.size(); i++)
                 {
-                    glVertex3fv(vertices[i]);
-                    glTexCoord2fv(tex_coords[i]);
+                    if (vertices[i].z)
+                    {
+                        glVertex3fv(vertices[i]);
+                        glTexCoord2fv(tex_coords[i + 1]);
+                    }
                 }
-
+                glEnd();
             }
-            glEnd();
+            else
+            {
+                // Visualization with quads produces better results but requires further optimization
+                glBegin(GL_QUADS);
 
-
+                const auto threshold = 0.05f;
+                auto width = vf_profile.width(), height = vf_profile.height();
+                for (int x = 0; x < width - 1; ++x) {
+                    for (int y = 0; y < height - 1; ++y) {
+                        auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
+                        if (vertices[a].z && vertices[b].z && vertices[c].z && vertices[d].z
+                            && abs(vertices[a].z - vertices[b].z) < threshold && abs(vertices[a].z - vertices[c].z) < threshold
+                            && abs(vertices[b].z - vertices[d].z) < threshold && abs(vertices[c].z - vertices[d].z) < threshold) {
+                            glVertex3fv(vertices[a]); glTexCoord2fv(tex_coords[a]);
+                            glVertex3fv(vertices[b]); glTexCoord2fv(tex_coords[b]);
+                            glVertex3fv(vertices[d]); glTexCoord2fv(tex_coords[d]);
+                            glVertex3fv(vertices[c]); glTexCoord2fv(tex_coords[c]);
+                        }
+                    }
+                }
+                glEnd();
+            }
         }
 
         glDisable(GL_DEPTH_TEST);
@@ -3958,14 +3991,14 @@ namespace rs2
         static auto view_clock = std::chrono::high_resolution_clock::now();
         auto sec_since_update = std::chrono::duration<float, std::milli>(now - view_clock).count() / 1000;
         view_clock = now;
-          
+
         if (fixed_up)
             up = { 0.f, -1.f, 0.f };
-            
+
         auto dir = target - pos;
         auto x_axis = cross(dir, up);
         auto step = sec_since_update * 0.3f;
-                                                      
+
         if (ImGui::IsKeyPressed('w') || ImGui::IsKeyPressed('W'))
         {
             pos = pos + dir * step;
@@ -4009,6 +4042,8 @@ namespace rs2
 
     void viewer_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p)
     {
+        // Starting post processing filter rendering thread
+        ppf.start();
         streams[p.unique_id()].begin_stream(d, p);
         ppf.frames_queue.emplace(p.unique_id(), rs2::frame_queue(5));
     }
@@ -5028,12 +5063,10 @@ namespace rs2
         }
     }
 
-
     // Generic helper functions for comparison of fw versions
     std::vector<int> fw_version_to_int_vec(std::string fw_version)
     {
-        int start = 0;
-        int end;
+        size_t start{}, end{};
         std::vector<int> values;
         std::string delimiter(".");
         std::string substr;
@@ -5046,7 +5079,6 @@ namespace rs2
         values.push_back(atoi(fw_version.substr(start, fw_version.length() - start).c_str()));
         return values;
     }
-
 
     bool fw_version_less_than(std::string fw_version, std::string min_fw_version)
     {
@@ -5676,6 +5708,8 @@ namespace rs2
                                 return sm->streaming;
                             }))
                             {
+                                // Stopping post processing filter rendering thread
+                                viewer.ppf.stop();
                                 stop_recording = true;
                             }
                         }
@@ -5795,11 +5829,12 @@ namespace rs2
                 {
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                     const ImVec2 pos = ImGui::GetCursorPos();
-                    const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
 
                     draw_later.push_back([windows_width, &window, sub, pos, &viewer, this]() {
-                        if (sub->streaming) ImGui::SetCursorPos({ windows_width - 35, pos.y - 1 });
-                        else ImGui::SetCursorPos({ windows_width - 27, pos.y + 2 });
+                        if (!sub->streaming) ImGui::SetCursorPos({ windows_width -27 , pos.y - 1 });
+                        else
+                            ImGui::SetCursorPos({ windows_width - 32, pos.y - 3 });
+
                         ImGui::PushFont(window.get_font());
 
                         ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
@@ -5874,8 +5909,10 @@ namespace rs2
                             const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
 
                             draw_later.push_back([windows_width, &window, sub, pos, &viewer, this, pb]() {
-                                if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 27, pos.y + 3 });
-                                else ImGui::SetCursorPos({ windows_width - 35, pos.y - 1 });
+                                if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 27, pos.y + 1 });
+                                else
+                                    ImGui::SetCursorPos({ windows_width - 35, pos.y - 3 });
+
                                 ImGui::PushFont(window.get_font());
 
                                 ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
@@ -6234,7 +6271,7 @@ namespace rs2
 
         bool opened = true;
         std::string label;
-        
+
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             label = to_string() << "Firmware update recommended" << "##" << index;
@@ -6243,12 +6280,12 @@ namespace rs2
         {
             label = to_string() << "Hardware Notification #" << index;
         }
-        
+
         ImGui::Begin(label.c_str(), &opened, flags);
 
         if (!opened)
             to_close = true;
-        
+
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             std::regex version_regex("([0-9]+.[0-9]+.[0-9]+.[0-9]+\n)");
@@ -6594,7 +6631,7 @@ namespace rs2
         }
         glEnd();
     }
-    
+
     std::string get_timestamped_file_name()
     {
         std::time_t now = std::time(NULL);
