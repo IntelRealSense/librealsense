@@ -3057,7 +3057,8 @@ namespace rs2
             }
         }
 
-        // Override the zero pixel in texture frame with black color for occlusion invalidatipon
+        // Override the zero pixel in texture frame with black color for occlusion invalidation
+        // TODO - this is a temporal solution to be refactored from the app level into the core library
         switch (stream_type)
         {
         case RS2_STREAM_COLOR:

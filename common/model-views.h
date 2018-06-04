@@ -929,7 +929,7 @@ namespace rs2
         float3 target = { 0.0f, 0.0f, 0.0f };
         float3 up;
         bool fixed_up = true;
-        bool render_quads = false;
+        bool render_quads = true;
 
         float view[16];
         bool texture_wrapping_on = true;
