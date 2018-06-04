@@ -26,11 +26,11 @@ classdef pipeline < handle
             % TODO: add output parameter after binding pipeline_profile
             switch nargin
                 case 1
-                    realsense.librealsense_mex('rs2::pipeline', 'start:void', this.objectHandle);
+                    realsense.librealsense_mex('rs2::pipeline', 'start#void', this.objectHandle);
                 case 2
                     if (isa(config, 'config')) 
                         % TODO: implement this overload
-%                        realsense.librealsense_mex('rs2::pipeline', 'start:config', this.objectHandle, config.objectHandle);
+%                        realsense.librealsense_mex('rs2::pipeline', 'start#config', this.objectHandle, config.objectHandle);
                     else
                         % TODO: Error out meaningfully?
                         return

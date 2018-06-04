@@ -66,6 +66,7 @@ public:
     MatlabParamParser() {};
     ~MatlabParamParser() {};
 
+    // TODO: try/catch->err msg?
     template <typename T> static T parse(const mxArray* cell) { return mx_wrapper_fns<T>::parse(cell); }
     template <typename T> static mxArray* wrap(T&& var) { return mx_wrapper_fns<T>::wrap(std::move(var)); };
     template <typename T> static void destroy(const mxArray* cell) { return mx_wrapper_fns<T>::destroy(cell); }
@@ -159,7 +160,7 @@ template <typename T> static mxArray* MatlabParamParser::wrap_array(const T* var
     static_assert(!std::is_same<ty<T>, std::false_type>::value, "Not a supported array type");
     auto cells = mxCreateNumericArray(/*ndims*/1, dims, ty<T>::value, mxREAL);
     auto ptr = static_cast<T*>(mxGetData(cells));
-    // todo: generalize to more dimensions. maybe nested helper functions?
+    // TODO: generalize to more dimensions. maybe nested helper functions?
     for (int x = 0; x < dims[0]; ++x)
         // or something...
         ptr[x] = (contiguous) ? var[x/*+y*dims[0]*/] : var[x]/*[y]*/;

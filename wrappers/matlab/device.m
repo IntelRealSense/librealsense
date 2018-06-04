@@ -26,9 +26,9 @@ classdef device < handle
         function delete(this)
             if (this.objectHandle ~= 0)
                 if (this.id < 0) % still device list
-                    realsense.librealsense_mex('rs2::device', 'delete_uninit', this.objectHandle);
+                    realsense.librealsense_mex('rs2::device', 'delete#uninit', this.objectHandle);
                 else
-                    realsense.librealsense_mex('rs2::device', 'delete_init', this.objectHandle);
+                    realsense.librealsense_mex('rs2::device', 'delete#init', this.objectHandle);
                 end
             end
         end
