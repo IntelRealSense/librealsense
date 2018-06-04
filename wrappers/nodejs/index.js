@@ -932,6 +932,10 @@ class Sensor extends Options {
     let inst = this;
     if (!this.cxxSensor.notificationCallback) {
       this.cxxSensor.notificationCallback = function(info) {
+        // convert the severity and category properties from numbers to strings to be
+        // consistent with documentation which are more meaningful to users
+        info.severity = log_severity.logSeverityToString(info.severity);
+        info.category = notification_category.notificationCategoryToString(info.category);
         inst._events.emit('notification', info);
       };
       this.cxxSensor.setNotificationCallback('notificationCallback');
@@ -3461,6 +3465,12 @@ function checkEnumObjectArgument(args, expectedType, argIndex, funcName, start, 
       convertFunc = rs400VisualPreset2Int;
       typeErrMsg = wrongTypeErrMsgPrefix + 'rs400_visual_preset';
       break;
+    case constants.log_severity:
+      rangeStart = constants.log_severity.LOG_SEVERITY_DEBUG;
+      rangeEnd = constants.log_severity.LOG_SEVERITY_COUNT;
+      convertFunc = logSeverity2Int;
+      typeErrMsg = wrongTypeErrMsgPrefix + 'log_severity';
+      break;
     default:
       throw new TypeError(unsupportedErrMsg);
   }
@@ -5326,6 +5336,35 @@ const log_severity = {
    * @type {Integer}
    */
   LOG_SEVERITY_NONE: RS2.RS2_LOG_SEVERITY_NONE,
+  /**
+   * Number of enumeration values. Not a valid input: intended to be used in for-loops.
+   * @type {Integer}
+   */
+  LOG_SEVERITY_COUNT: RS2.RS2_LOG_SEVERITY_COUNT,
+  /**
+   * Get the string representation out of the integer log_severity type
+   * @param {Integer} severity the log_severity value
+   * @return {String}
+   */
+  logSeverityToString: function(severity) {
+    const funcName = 'log_severity.logSeverityToString()';
+    checkArgumentLength(1, 1, arguments.length, funcName);
+    const i = checkArgumentType(arguments, constants.log_severity, 0, funcName);
+    switch (i) {
+      case this.LOG_SEVERITY_DEBUG:
+        return this.log_severity_debug;
+      case this.LOG_SEVERITY_INFO:
+        return this.log_severity_info;
+      case this.LOG_SEVERITY_WARN:
+        return this.log_severity_warn;
+      case this.LOG_SEVERITY_ERROR:
+        return this.log_severity_error;
+      case this.LOG_SEVERITY_FATAL:
+        return this.log_severity_fatal;
+      case this.LOG_SEVERITY_NONE:
+        return this.log_severity_none;
+    }
+  },
 };
 
 /**
