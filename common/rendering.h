@@ -1060,6 +1060,8 @@ namespace rs2
                     if (auto colorized_frame = colorize->colorize(frame).as<video_frame>())
                     {
                         data = colorized_frame.get_data();
+                        // Override the first pixel in the colorized image for occlusion invalidation.
+                        memset((void*)data,0, colorized_frame.get_bytes_per_pixel());
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
                                      colorized_frame.get_width(),
                                      colorized_frame.get_height(),

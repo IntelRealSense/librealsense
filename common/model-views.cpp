@@ -2713,7 +2713,7 @@ namespace rs2
                     float(dev->algo_roi.max_x - dev->algo_roi.min_x),
                     float(dev->algo_roi.max_y - dev->algo_roi.min_y) };
 
-            r = r.normalize(_normalized_zoom.unnormalize(get_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
+            r = r.normalize(_normalized_zoom.unnormalize(get_original_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
 
             glColor3f(yellow.x, yellow.y, yellow.z);
             draw_rect(r, 2);
@@ -3016,10 +3016,10 @@ namespace rs2
         {
             for (auto&& s : viewer.streams)
             {
-                if(!s.second.dev) continue;
+                if (!s.second.dev) continue;
                 auto dev = s.second.dev;
 
-                if(s.second.original_profile.unique_id() == f.get_profile().unique_id())
+                if (s.second.original_profile.unique_id() == f.get_profile().unique_id())
                 {
                     if (dev->post_processing_enabled)
                     {
@@ -3051,20 +3051,32 @@ namespace rs2
                                 f = hole_filling->invoke(f);
                         }
 
-                        return f;
+                        break;
                     }
                 }
             }
         }
 
-        // Override the the first pixel in Depth->RGB map to be used as a mark when occlusion filter is active
-        if ((f.get_profile().stream_type() == RS2_STREAM_COLOR))
+        // Override the zero pixel in texture frame with black color for occlusion invalidatipon
+        switch (stream_type)
         {
-            auto rgb_stream = const_cast<uint8_t*>(static_cast<const uint8_t*>(f.get_data()));
-            memset(rgb_stream, 0, 3); // Override the zero pixel with black color for occlusion marking
-            // Alternatively, enable the next two lines to render invalidation with magenta color for inspection
-            //rgb_stream[0] = rgb_stream[2] = 0xff; // Use magenta to highlight the occlusion areas
-            //rgb_stream[1] = 0;
+        case RS2_STREAM_COLOR:
+        {
+                auto rgb_stream = const_cast<uint8_t*>(static_cast<const uint8_t*>(f.get_data()));
+                memset(rgb_stream, 0, 3);
+                // Alternatively, enable the next two lines to render invalidation with magenta color for inspection
+                //rgb_stream[0] = rgb_stream[2] = 0xff; // Use magenta to highlight the occlusion areas
+                //rgb_stream[1] = 0;
+            }
+            break;
+            case RS2_STREAM_INFRARED:
+            {
+                auto ir_stream = const_cast<uint8_t*>(static_cast<const uint8_t*>(f.get_data()));
+                memset(ir_stream, 0, 2); // Override the first two bytes to cover Y8/Y16 formats
+            }
+            break;
+            default:
+                break;
         }
 
         return f;
