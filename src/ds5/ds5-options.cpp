@@ -28,7 +28,7 @@ namespace librealsense
 
     emitter_option::emitter_option(uvc_sensor& ep)
         : uvc_xu_option(ep, ds::depth_xu, ds::DS5_DEPTH_EMITTER_ENABLED,
-                        "Power of the DS5 projector, 0 meaning projector off, 1 meaning projector on, 2 meaning projector in auto mode")
+                        "Power Control for D400 Projector, 0-off, 1-on, (2-deprecated)")
     {}
 
     float asic_and_projector_temperature_options::query() const

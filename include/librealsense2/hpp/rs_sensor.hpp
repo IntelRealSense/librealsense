@@ -143,7 +143,7 @@ namespace rs2
         /**
         * get option value description (in case specific option value hold special meaning)
         * \param[in] option     option id to be checked
-        * \param[in] value      value of the option
+        * \param[in] val      value of the option
         * \return human-readable description of a specific value of an option or null if no special meaning
         */
         const char* get_option_value_description(rs2_option option, float val) const
@@ -445,7 +445,7 @@ namespace rs2
             rs2_error* e = nullptr;
             if(rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_ROI, &e) == 0 && !e)
             {
-                _sensor = nullptr;
+                _sensor.reset();
             }
             error::handle(e);
         }
@@ -478,7 +478,7 @@ namespace rs2
             rs2_error* e = nullptr;
             if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_DEPTH_SENSOR, &e) == 0 && !e)
             {
-                _sensor = nullptr;
+                _sensor.reset();
             }
             error::handle(e);
         }
@@ -505,7 +505,7 @@ namespace rs2
             rs2_error* e = nullptr;
             if (_sensor && rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_DEPTH_STEREO_SENSOR, &e) == 0 && !e)
             {
-                _sensor = nullptr;
+                _sensor.reset();
             }
             error::handle(e);
         }

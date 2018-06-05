@@ -32,7 +32,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
 
-            std::vector<rs2_frame*> refs(frames.size(), nullptr);
+            std::vector<rs2_frame*> refs(frames.size(), (rs2_frame*)nullptr);
             for (size_t i = 0; i < frames.size(); i++)
                 std::swap(refs[i], frames[i].frame_ref);
 
@@ -292,7 +292,7 @@ namespace rs2
 
         /**
         * Check if a coherent set of frames is available
-        * \param[out] result      New coherent frame-set
+        * \param[out] fs      New coherent frame-set
         * \return true if new frame-set was stored to result
         */
         bool poll_for_frames(frameset* fs) const

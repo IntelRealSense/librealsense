@@ -514,8 +514,8 @@ describe('Sensor tests', function() {
       sensors[0].setNotificationsCallback((n) => {
         assert.equal(typeof n.descr, 'string');
         assert.equal(typeof n.timestamp, 'number');
-        assert.equal(typeof n.severity, 'number');
-        assert.equal(typeof n.category, 'number');
+        assert.equal(typeof n.severity, 'string');
+        assert.equal(typeof n.category, 'string');
         assert.equal(typeof n.serializedData, 'string');
         resolve();
       });

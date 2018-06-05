@@ -193,7 +193,7 @@ namespace librealsense
         auto mapx = pre_compute_x;
         auto mapy = pre_compute_y;
 
-        for (int i = 0; i < size; i += 8)
+        for (unsigned int i = 0; i < size; i += 8)
         {
             auto x0 = _mm_load_ps(mapx + i);
             auto x1 = _mm_load_ps(mapx + i + 4);
@@ -289,7 +289,7 @@ namespace librealsense
         auto one = _mm_set_ps1(1);
         auto two = _mm_set_ps1(2);
 
-        for (int i = 0; i < height*width * 3; i += 12)
+        for (auto i = 0UL; i < height*width * 3; i += 12)
         {
             //load 4 points (x,y,z)
             auto xyz1 = _mm_load_ps(point + i);
@@ -378,9 +378,9 @@ namespace librealsense
         float2* tex_ptr,
         float2* pixels_ptr)
     {
-        for (int y = 0; y < height; ++y)
+        for (unsigned int y = 0; y < height; ++y)
         {
-            for (int x = 0; x < width; ++x)
+            for (unsigned int x = 0; x < width; ++x)
             {
                 if (points->z)
                 {
@@ -406,7 +406,6 @@ namespace librealsense
 
     void pointcloud::process_depth_frame(const rs2::depth_frame& depth)
     {
-
         frame_holder res = get_source().allocate_points(_output_stream, (frame_interface*)depth.get());
 
         auto pframe = (points*)(res.frame);
@@ -489,10 +488,10 @@ namespace librealsense
             _occlusion_filter->set_mode(static_cast<uint8_t>(val));
 
         });
+
         occlusion_invalidation->set_description(0.f, "Off");
         occlusion_invalidation->set_description(1.f, "Heuristic");
-        // TODO verify filter's implementation and performance
-        occlusion_invalidation->set_description(2.f, "__"); // Placeholder for Exhaustive
+        occlusion_invalidation->set_description(2.f, "Exhaustive");
         register_option(RS2_OPTION_FILTER_MAGNITUDE, occlusion_invalidation);
 
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)

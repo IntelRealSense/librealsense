@@ -311,7 +311,7 @@ namespace librealsense
             pending_frames = published_frames.get_size();
             if (pending_frames > 0)
             {
-                LOG_WARNING("The user was holding on to "
+                LOG_INFO("The user was holding on to "
                     << std::dec << pending_frames << " frames after stream 0x"
                     << std::hex << this << " stopped" << std::dec);
             }
@@ -322,7 +322,7 @@ namespace librealsense
         {
             if (pending_frames > 0)
             {
-                LOG_WARNING("All frames from stream 0x"
+                LOG_INFO("All frames from stream 0x"
                     << std::hex << this << " are now released by the user");
             }
         }

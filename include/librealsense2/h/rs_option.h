@@ -1,7 +1,7 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-/** \file rs2_option.h
+/** \file rs_option.h
 * \brief
 * Exposes sensor options functionality for C compilers
 */

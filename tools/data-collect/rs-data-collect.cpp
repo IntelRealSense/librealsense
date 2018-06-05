@@ -13,6 +13,7 @@
 #include <cctype>
 #include <thread>
 #include <array>
+#include <atomic>
 
 using namespace std;
 using namespace TCLAP;

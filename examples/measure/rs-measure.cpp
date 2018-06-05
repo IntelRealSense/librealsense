@@ -12,6 +12,8 @@
 #include <unordered_set>
 #include <map>
 #include <thread>
+#include <atomic>
+#include <mutex>
 
 using pixel = std::pair<int, int>;
 

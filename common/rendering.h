@@ -126,6 +126,11 @@ namespace rs2
         }
     };
 
+    inline float3 cross(const float3& a, const float3& b)
+    {
+        return { a.y * b.z - b.y * a.z, a.x * b.z - b.x * a.z, a.x * b.y - a.y * b.x };
+    }
+
     inline float evaluate_plane(const plane& plane, const float3& point)
     {
         return plane.a * point.x + plane.b * point.y + plane.c * point.z + plane.d;
@@ -1055,6 +1060,8 @@ namespace rs2
                     if (auto colorized_frame = colorize->colorize(frame).as<video_frame>())
                     {
                         data = colorized_frame.get_data();
+                        // Override the first pixel in the colorized image for occlusion invalidation.
+                        memset((void*)data,0, colorized_frame.get_bytes_per_pixel());
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
                                      colorized_frame.get_width(),
                                      colorized_frame.get_height(),
