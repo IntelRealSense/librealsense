@@ -434,10 +434,21 @@ PYBIND11_MODULE(NAME, m) {
             "frames"_a) // does anything special need to be done for the vector argument?
         .def("frame_ready", &rs2::frame_source::frame_ready, "result"_a);
 
+    py::class_<rs2::plane> plane(m, "plane");
+    plane.def(py::init<rs2::plane>())
+        .def("a", &rs2::plane::a)
+        .def("b", &rs2::plane::b)
+        .def("c", &rs2::plane::c)
+        .def("d", &rs2::plane::d)
+        .def("rms", &rs2::plane::rms)
+        .def("at", &rs2::plane::operator(), "x"_a, "y"_a)
+        .def("is_valid", &rs2::plane::operator bool);
+
     py::class_<rs2::depth_frame, rs2::video_frame> depth_frame(m, "depth_frame");
     depth_frame.def(py::init<rs2::frame>())
         .def("get_distance", &rs2::depth_frame::get_distance, "x"_a, "y"_a)
-        .def("fit_plane", &rs2::depth_frame::fit_plane, "roi"_a, "iterations"_a, "outliers"_a, "a"_a, "b"_a, "c"_a, "d"_a, "rms"_a);
+        .def("fit_plane", (rs2::plane (rs2::depth_frame::*)(const rs2::region_of_interest&, int, float) const)
+            &rs2::depth_frame::fit_plane, "roi"_a, "iterations"_a, "outliers"_a);
 
     /* rs2_processing.hpp */
     // Base class for options interface. Should be used via sensor

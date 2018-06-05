@@ -17,6 +17,7 @@ namespace rs2
     class frame;
     class pipeline_profile;
     class points;
+    class depth_frame;
 
     class stream_profile
     {
@@ -536,6 +537,61 @@ namespace rs2
         size_t _size;
     };
 
+    class plane
+    {
+    public:
+        plane() : _valid(false) {}
+        plane(const plane& other) = default;
+        plane& operator=(const plane& other) = default;
+
+        operator bool() const { return _valid; }
+
+        float a() const { return _coefficient[0]; }
+        float b() const { return _coefficient[1]; }
+        float c() const { return _coefficient[2]; }
+        float d() const { return _coefficient[3]; }
+
+        vertex normal() const { return{ a(), b(), c() }; }
+
+        float rms() const { return _rms; }
+
+        vertex operator()(int x, int y) const
+        {
+            rs2_error* e = nullptr;
+            vertex res;
+            rs2_get_plane_intersection(_plane.get(), x, y, (rs2_vertex*)&res, &e);
+            return res;
+        }
+    private:
+        friend class rs2::depth_frame;
+
+        plane(std::shared_ptr<rs2_plane> ptr) : _plane(std::move(ptr))
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_is_plane_valid(_plane.get(), &e);
+            error::handle(e);
+            _valid = res > 0;
+
+            _rms = rs2_get_plane_rms(_plane.get(), &e);
+            error::handle(e);
+
+            for (int i = 0; i < 4; i++)
+            {
+                if (_valid)
+                {
+                    _coefficient[i] = rs2_get_plane_coefficient(_plane.get(), i, &e);
+                    error::handle(e);
+                }
+                else _coefficient[i] = 0;
+            }
+        }
+
+        std::shared_ptr<rs2_plane> _plane;
+        std::array<float, 4> _coefficient;
+        bool _valid;
+        float _rms;
+    };
+
     class depth_frame : public video_frame
     {
     public:
@@ -558,15 +614,20 @@ namespace rs2
             return r;
         }
 
-        bool fit_plane(const region_of_interest& roi, int iterations, float outliers, 
-            float& a, float& b, float& c, float& d, float& rms) const
+        plane fit_plane(const region_of_interest& roi, int iterations, float outliers) const
         {
             rs2_error * e = nullptr;
             auto r = rs2_depth_frame_fit_plane(get(), roi.min_x, roi.min_y, 
-                roi.max_x - roi.min_x, roi.max_y - roi.min_y, 
-                iterations, outliers, &a, &b, &c, &d, &rms, &e);
+                roi.max_x, roi.max_y, 
+                iterations, outliers, &e);
             error::handle(e);
-            return r > 0;
+            
+            return plane(std::shared_ptr<rs2_plane>(r, [](rs2_plane* ptr) { rs2_delete_plane(ptr); }));
+        }
+
+        plane fit_plane(const region_of_interest& roi) const
+        {
+            return fit_plane(roi, 1, 0);
         }
     };
 

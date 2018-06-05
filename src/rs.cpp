@@ -1962,18 +1962,59 @@ void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error**
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-int rs2_depth_frame_fit_plane(const rs2_frame* frame_ref, int x, int y, int w, int h,
-    int iterations, float outliers, float* a, float* b, float* c, float* d, float* rms, rs2_error** error) BEGIN_API_CALL
+rs2_plane* rs2_depth_frame_fit_plane(const rs2_frame* frame_ref, int x0, int y0, int x1, int y1,
+    int iterations, float outliers, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame_ref);
-    VALIDATE_NOT_NULL(a);
-    VALIDATE_NOT_NULL(b);
-    VALIDATE_NOT_NULL(c);
-    VALIDATE_NOT_NULL(d);
-    VALIDATE_NOT_NULL(rms);
     VALIDATE_RANGE(outliers, 0, 1);
     auto df = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::depth_frame);
 
-    return df->fit_plane(x, y, w, h, iterations, outliers, a, b, c, d, rms) ? 1 : 0;
+    auto res = new plane();
+    *res = df->fit_plane(x0, y0, x1, y1, iterations, outliers);
+    return (rs2_plane*)res;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref, x, y, w, h, iterations, outliers, a, b, c, d, rms)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame_ref, x0, y0, x1, y1, iterations, outliers)
+
+int rs2_is_plane_valid(const rs2_plane* p, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(p);
+    auto ptr = (plane*)p;
+    return ptr->valid;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, p)
+
+float rs2_get_plane_rms(const rs2_plane* p, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(p);
+    auto ptr = (plane*)p;
+    return ptr->rms;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, p)
+
+float rs2_get_plane_coefficient(const rs2_plane* p, int index, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(p);
+    VALIDATE_RANGE(index, 0, 4);
+    auto ptr = (plane*)p;
+    return ptr->coefficients[index];
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, p, index)
+
+void rs2_get_plane_intersection(const rs2_plane* p, int x, int y, rs2_vertex* output, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(p);
+    VALIDATE_NOT_NULL(p);
+    auto ptr = (plane*)p;
+    auto res = approximate_intersection(ptr->coefficients, &ptr->intrin, x, y);
+    *output = *(rs2_vertex*)(&res);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, p, x, y, output)
+
+void rs2_delete_plane(const rs2_plane* plane) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(plane);
+
+    delete plane;
+}
+NOEXCEPT_RETURN(, plane)
+

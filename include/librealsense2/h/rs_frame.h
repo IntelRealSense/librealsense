@@ -331,17 +331,52 @@ float rs2_depth_stereo_frame_get_baseline(const rs2_frame* frame_ref, rs2_error*
 * \param[in] h              height of the ROI in pixels
 * \param[in] iterations     number of times to repeat plane fit + outlier removal
 * \param[in] outliers       0-1 percentage of outliers to remove after each plane fit
-* \param[out] a             A parameter of the resulting plane
-* \param[out] b             B parameter of the resulting plane
-* \param[out] c             C parameter of the resulting plane
-* \param[out] d             d parameter of the resulting plane
-* \param[out] rms           RMS of the remaining points to the resulting plane
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return                   1 if plane was found, 0 otherwise
+* \return                   plane object
 */
-int rs2_depth_frame_fit_plane(const rs2_frame* frame_ref, int x, int y, int w, int h, 
-    int iterations, float outliers, float* a, float* b, float* c, float* d, float* rms, rs2_error** error);
+rs2_plane* rs2_depth_frame_fit_plane(const rs2_frame* frame_ref, int x, int y, int w, int h,
+    int iterations, float outliers, rs2_error** error);
 
+/**
+* Check if the plane is valid
+* \param[in] plane  plane returned from rs2_depth_frame_fit_plane
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return 0 if plane is not valid, 1 if is valid
+*/
+int rs2_is_plane_valid(const rs2_plane* plane, rs2_error** error);
+
+/**
+* Get plane-fit RMS
+* \param[in] plane  plane returned from rs2_depth_frame_fit_plane
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return RMS of the data in mm
+*/
+float rs2_get_plane_rms(const rs2_plane* p, rs2_error** error);
+
+/**
+* Get coefficient of the plane
+* The coefficients are marked as 0 - A, 1 - B, 2 - C, 3 - D
+* given the parametric representation { A x + B y + C z + D = 0 }
+* \param[in] plane  plane returned from rs2_depth_frame_fit_plane
+* \param[in] index  coefficient index as explained above
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return returns coefficient based on index
+*/
+float rs2_get_plane_coefficient(const rs2_plane* plane, int index, rs2_error** error);
+
+/**
+* \param[in] plane  plane returned from rs2_depth_frame_fit_plane
+* \param[in] x,y    pixel coordinates
+* \param[out] output point in 3D space at intersection of the ray from camera center through pixel (x,y) with the plane
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_get_plane_intersection(const rs2_plane* plane, int x, int y, rs2_vertex* output, rs2_error** error);
+
+/**
+* Delete plane object
+* \param[in] plane  plane returned from rs2_depth_frame_fit_plane
+*/
+void rs2_delete_plane(const rs2_plane* plane);
 
 #ifdef __cplusplus
 }

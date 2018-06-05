@@ -172,6 +172,8 @@ typedef struct rs2_options rs2_options;
 typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;
 typedef struct rs2_notification rs2_notification;
 typedef struct rs2_notifications_callback rs2_notifications_callback;
+typedef struct rs2_plane rs2_plane;
+
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
 typedef void (*rs2_devices_changed_callback_ptr)(rs2_device_list*, rs2_device_list*, void*);
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);

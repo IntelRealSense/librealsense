@@ -112,11 +112,11 @@ int main(int argc, const char * argv[]) try
         for (auto point : points_set)
         {
             // Find distance from point to the reconstructed plane
-            auto dist2plane = p.a*point.x + p.b*point.y + p.c*point.z + p.d;
+            auto dist2plane = p.a()*point.x + p.b()*point.y + p.c()*point.z + p.d();
             // Project the point to plane in 3D and find distance to the intersection point
-            rs2::float3 plane_intersect = { float(point.x - dist2plane*p.a),
-                                            float(point.y - dist2plane*p.b),
-                                            float(point.z - dist2plane*p.c) };
+            rs2::float3 plane_intersect = { float(point.x - dist2plane*p.a()),
+                                            float(point.y - dist2plane*p.b()),
+                                            float(point.z - dist2plane*p.c()) };
 
             // Store distance, disparity and gt- error
             distances.push_back(dist2plane * TO_MM);

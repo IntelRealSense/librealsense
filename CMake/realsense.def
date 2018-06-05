@@ -164,8 +164,14 @@ EXPORTS
     rs2_embedded_frames_count
     rs2_extract_frame
     rs2_depth_frame_get_distance
-    rs2_depth_frame_fit_plane
     rs2_depth_stereo_frame_get_baseline
+
+    rs2_depth_frame_fit_plane
+    rs2_get_plane_coefficient
+    rs2_get_plane_intersection
+    rs2_get_plane_rms
+    rs2_is_plane_valid
+    rs2_delete_plane
 
     rs2_set_depth_control
     rs2_get_depth_control

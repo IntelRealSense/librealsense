@@ -289,8 +289,7 @@ namespace librealsense
             return pixel * get_units();
         }
 
-        bool fit_plane(int x, int y, int w, int h, int iterations, float outliers,
-            float* a, float* b, float* c, float* d, float* rms) const;
+        plane fit_plane(int x0, int y0, int x1, int y1, int iterations, float outliers) const;
 
         float get_units() const
         {

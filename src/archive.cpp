@@ -364,247 +364,315 @@ namespace librealsense
             throw std::runtime_error("Requested frame type is not supported!");
         }
     }
-}
 
-void frame::release()
-{
-    if (ref_count.fetch_sub(1) == 1)
+    void frame::release()
     {
-        on_release();
-        owner->unpublish_frame(this);
-    }
-}
-
-void frame::keep()
-{
-    if (!_kept.exchange(true))
-    {
-        owner->keep_frame(this);
-    }
-}
-
-frame_interface* frame::publish(std::shared_ptr<archive_interface> new_owner)
-{
-    owner = new_owner;
-    _kept = false;
-    return owner->publish_frame(this);
-}
-
-rs2_metadata_type frame::get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
-{
-    auto md_parsers = owner->get_md_parsers();
-
-    if (!md_parsers)
-        throw invalid_value_exception(to_string() << "metadata not available for "
-                                      << get_string(get_stream()->get_stream_type())<<" stream");
-
-    auto it = md_parsers.get()->find(frame_metadata);
-    if (it == md_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
-        throw invalid_value_exception(to_string() << get_string(frame_metadata)
-                                      << " attribute is not applicable for "
-                                      << get_string(get_stream()->get_stream_type()) << " stream ");
-
-    // Proceed to parse and extract the required data attribute
-    return it->second->get(*this);
-}
-
-bool frame::supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
-{
-    auto md_parsers = owner->get_md_parsers();
-
-    // verify preconditions
-    if (!md_parsers)
-        return false;                         // No parsers are available or no metadata was attached
-
-    auto it = md_parsers.get()->find(frame_metadata);
-    if (it == md_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
-        return false;
-
-    return it->second->supports(*this);
-}
-
-const byte* frame::get_frame_data() const
-{
-    const byte* frame_data = data.data();
-
-    if (on_release.get_data())
-    {
-        frame_data = static_cast<const byte*>(on_release.get_data());
-    }
-
-    return frame_data;
-}
-
-rs2_timestamp_domain frame::get_frame_timestamp_domain() const
-{
-    return additional_data.timestamp_domain;
-}
-
-rs2_time_t frame::get_frame_timestamp() const
-{
-    return additional_data.timestamp;
-}
-
-unsigned long long frame::get_frame_number() const
-{
-    return additional_data.frame_number;
-}
-
-rs2_time_t frame::get_frame_system_time() const
-{
-    return additional_data.system_time;
-}
-
-void frame::update_frame_callback_start_ts(rs2_time_t ts)
-{
-    additional_data.frame_callback_started = ts;
-}
-
-rs2_time_t frame::get_frame_callback_start_time_point() const
-{
-    return additional_data.frame_callback_started;
-}
-
-void frame::log_callback_start(rs2_time_t timestamp)
-{
-    update_frame_callback_start_ts(timestamp);
-    LOG_DEBUG("CallbackStarted," << std::dec << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
-}
-
-void frame::log_callback_end(rs2_time_t timestamp) const
-{
-    auto callback_warning_duration = 1000.f / (get_stream()->get_framerate() + 1);
-    auto callback_duration = timestamp - get_frame_callback_start_time_point();
-
-    LOG_DEBUG("CallbackFinished," << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
-
-    if (callback_duration > callback_warning_duration)
-    {
-        LOG_INFO("Frame Callback " << librealsense::get_string(get_stream()->get_stream_type())
-                 << "#" << std::dec << get_frame_number()
-                 << "overdue. (Duration: " << callback_duration
-                 << "ms, FPS: " << get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
-    }
-}
-
-inline float4 plane_from_point_and_normal(const float3& point, const float3& normal)
-{
-    return{ normal.x, normal.y, normal.z, -(normal.x*point.x + normal.y*point.y + normal.z*point.z) };
-}
-
-inline float4 plane_from_points(const std::vector<float3>& points)
-{
-    if (points.size() < 3) throw std::runtime_error("Not enough points to calculate plane");
-
-    float3 sum = { 0,0,0 };
-    for (auto&& point : points)
-        sum = sum + point;
-
-    float3 centroid = sum / points.size();
-
-    double xx = 0, xy = 0, xz = 0, yy = 0, yz = 0, zz = 0;
-    for (auto&& point : points) {
-        float3 temp = point - centroid;
-        xx += temp.x * temp.x;
-        xy += temp.x * temp.y;
-        xz += temp.x * temp.z;
-        yy += temp.y * temp.y;
-        yz += temp.y * temp.z;
-        zz += temp.z * temp.z;
-    }
-
-    double det_x = yy*zz - yz*yz;
-    double det_y = xx*zz - xz*xz;
-    double det_z = xx*yy - xy*xy;
-
-    double det_max = std::max({ det_x, det_y, det_z });
-    if (det_max <= 0) return{ 0, 0, 0, 0 };
-
-    float3 dir{};
-    if (det_max == det_x)
-    {
-        float a = static_cast<float>((xz*yz - xy*zz) / det_x);
-        float b = static_cast<float>((xy*yz - xz*yy) / det_x);
-        dir = { 1, a, b };
-    }
-    else if (det_max == det_y)
-    {
-        float a = static_cast<float>((yz*xz - xy*zz) / det_y);
-        float b = static_cast<float>((xy*xz - yz*xx) / det_y);
-        dir = { a, 1, b };
-    }
-    else
-    {
-        float a = static_cast<float>((yz*xy - xz*yy) / det_z);
-        float b = static_cast<float>((xz*xy - yz*xx) / det_z);
-        dir = { a, b, 1 };
-    }
-
-    return plane_from_point_and_normal(centroid, dir.normalize());
-}
-
-bool depth_frame::fit_plane(int x0, int y0, int w, int h, int iterations, float outliers,
-    float* a, float* b, float* c, float* d, float* rms) const
-{
-    auto pixels = (const uint16_t*)get_frame_data();
-    const auto W = get_width();
-    const auto H = get_height();
-
-    const auto units = get_units();
-
-    auto vp = std::dynamic_pointer_cast<video_stream_profile>(get_stream());
-    auto intrin = vp->get_intrinsics();
-
-    std::vector<float3> roi_pixels;
-
-    for (int y = y0; y < y0 + h; ++y)
-        for (int x = x0; x < x0 + w; ++x)
+        if (ref_count.fetch_sub(1) == 1)
         {
-            auto depth_raw = pixels[y*W + x];
+            on_release();
+            owner->unpublish_frame(this);
+        }
+    }
 
-            if (depth_raw)
+    void frame::keep()
+    {
+        if (!_kept.exchange(true))
+        {
+            owner->keep_frame(this);
+        }
+    }
+
+    frame_interface* frame::publish(std::shared_ptr<archive_interface> new_owner)
+    {
+        owner = new_owner;
+        _kept = false;
+        return owner->publish_frame(this);
+    }
+
+    rs2_metadata_type frame::get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
+    {
+        auto md_parsers = owner->get_md_parsers();
+
+        if (!md_parsers)
+            throw invalid_value_exception(to_string() << "metadata not available for "
+                << get_string(get_stream()->get_stream_type()) << " stream");
+
+        auto it = md_parsers.get()->find(frame_metadata);
+        if (it == md_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
+            throw invalid_value_exception(to_string() << get_string(frame_metadata)
+                << " attribute is not applicable for "
+                << get_string(get_stream()->get_stream_type()) << " stream ");
+
+        // Proceed to parse and extract the required data attribute
+        return it->second->get(*this);
+    }
+
+    bool frame::supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
+    {
+        auto md_parsers = owner->get_md_parsers();
+
+        // verify preconditions
+        if (!md_parsers)
+            return false;                         // No parsers are available or no metadata was attached
+
+        auto it = md_parsers.get()->find(frame_metadata);
+        if (it == md_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
+            return false;
+
+        return it->second->supports(*this);
+    }
+
+    const byte* frame::get_frame_data() const
+    {
+        const byte* frame_data = data.data();
+
+        if (on_release.get_data())
+        {
+            frame_data = static_cast<const byte*>(on_release.get_data());
+        }
+
+        return frame_data;
+    }
+
+    rs2_timestamp_domain frame::get_frame_timestamp_domain() const
+    {
+        return additional_data.timestamp_domain;
+    }
+
+    rs2_time_t frame::get_frame_timestamp() const
+    {
+        return additional_data.timestamp;
+    }
+
+    unsigned long long frame::get_frame_number() const
+    {
+        return additional_data.frame_number;
+    }
+
+    rs2_time_t frame::get_frame_system_time() const
+    {
+        return additional_data.system_time;
+    }
+
+    void frame::update_frame_callback_start_ts(rs2_time_t ts)
+    {
+        additional_data.frame_callback_started = ts;
+    }
+
+    rs2_time_t frame::get_frame_callback_start_time_point() const
+    {
+        return additional_data.frame_callback_started;
+    }
+
+    void frame::log_callback_start(rs2_time_t timestamp)
+    {
+        update_frame_callback_start_ts(timestamp);
+        LOG_DEBUG("CallbackStarted," << std::dec << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
+    }
+
+    void frame::log_callback_end(rs2_time_t timestamp) const
+    {
+        auto callback_warning_duration = 1000.f / (get_stream()->get_framerate() + 1);
+        auto callback_duration = timestamp - get_frame_callback_start_time_point();
+
+        LOG_DEBUG("CallbackFinished," << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
+
+        if (callback_duration > callback_warning_duration)
+        {
+            LOG_INFO("Frame Callback " << librealsense::get_string(get_stream()->get_stream_type())
+                << "#" << std::dec << get_frame_number()
+                << "overdue. (Duration: " << callback_duration
+                << "ms, FPS: " << get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
+        }
+    }
+
+    inline float4 plane_from_point_and_normal(const float3& point, const float3& normal)
+    {
+        return{ normal.x, normal.y, normal.z, -(normal.x*point.x + normal.y*point.y + normal.z*point.z) };
+    }
+
+    inline float4 plane_from_points(const std::vector<float3>& points)
+    {
+        if (points.size() < 3) throw std::runtime_error("Not enough points to calculate plane");
+
+        float3 sum = { 0,0,0 };
+        for (auto&& point : points)
+            sum = sum + point;
+
+        float3 centroid = sum / points.size();
+
+        double xx = 0, xy = 0, xz = 0, yy = 0, yz = 0, zz = 0;
+        for (auto&& point : points) {
+            float3 temp = point - centroid;
+            xx += temp.x * temp.x;
+            xy += temp.x * temp.y;
+            xz += temp.x * temp.z;
+            yy += temp.y * temp.y;
+            yz += temp.y * temp.z;
+            zz += temp.z * temp.z;
+        }
+
+        double det_x = yy*zz - yz*yz;
+        double det_y = xx*zz - xz*xz;
+        double det_z = xx*yy - xy*xy;
+
+        double det_max = std::max({ det_x, det_y, det_z });
+        if (det_max <= 0) return{ 0, 0, 0, 0 };
+
+        float3 dir{};
+        if (det_max == det_x)
+        {
+            float a = static_cast<float>((xz*yz - xy*zz) / det_x);
+            float b = static_cast<float>((xy*yz - xz*yy) / det_x);
+            dir = { 1, a, b };
+        }
+        else if (det_max == det_y)
+        {
+            float a = static_cast<float>((yz*xz - xy*zz) / det_y);
+            float b = static_cast<float>((xy*xz - yz*xx) / det_y);
+            dir = { a, 1, b };
+        }
+        else
+        {
+            float a = static_cast<float>((yz*xy - xz*yy) / det_z);
+            float b = static_cast<float>((xz*xy - yz*xx) / det_z);
+            dir = { a, b, 1 };
+        }
+
+        return plane_from_point_and_normal(centroid, dir.normalize());
+    }
+
+    plane invalid_plane()
+    {
+        plane res;
+        res.valid = false;
+        return res;
+    }
+
+    float evaluate_plane(const float4& plane, const float3& point)
+    {
+        return plane.x * point.x + plane.y * point.y +
+            plane.z * point.z + plane.w;
+    }
+
+    double evaluate_pixel(const float4& p, const rs2_intrinsics* intrin, float x, float y, float distance, float3& output)
+    {
+        float pixel[2] = { x, y };
+        rs2_deproject_pixel_to_point(&output.x, intrin, pixel, distance);
+        return evaluate_plane(p, output);
+    }
+
+    inline float3 approximate_intersection(const float4& p, const rs2_intrinsics* intrin, float x, float y, float min, float max)
+    {
+        float3 point;
+        auto far1 = evaluate_pixel(p, intrin, x, y, max, point);
+        if (fabs(max - min) < 1e-3) return point;
+        auto near1 = evaluate_pixel(p, intrin, x, y, min, point);
+        if (far1*near1 > 0) return{ 0, 0, 0 };
+
+        auto avg = (max + min) / 2;
+        auto mid = evaluate_pixel(p, intrin, x, y, avg, point);
+        if (mid*near1 < 0) return approximate_intersection(p, intrin, x, y, min, avg);
+        return approximate_intersection(p, intrin, x, y, avg, max);
+    }
+
+    float3 approximate_intersection(const float4& p, const rs2_intrinsics* intrin, float x, float y)
+    {
+        return approximate_intersection(p, intrin, x, y, 0.f, 1000.f);
+    }
+
+    bool is_plane_valid(const std::array<float3, 4>& p)
+    {
+        std::vector<float> angles;
+        angles.reserve(4);
+        for (int i = 0; i < p.size(); i++)
+        {
+            auto p1 = p[i];
+            auto p2 = p[(i + 1) % p.size()];
+            if ((p2 - p1).length() < 1e-3) return false;
+
+            p1 = p1.normalize();
+            p2 = p2.normalize();
+
+            angles.push_back(acos((p1 * p2) / sqrt(p1.length() * p2.length())));
+        }
+        return std::all_of(angles.begin(), angles.end(), [](float f) { return f > 0; }) ||
+            std::all_of(angles.begin(), angles.end(), [](float f) { return f < 0; });
+    }
+
+    plane depth_frame::fit_plane(int x0, int y0, int x1, int y1, int iterations, float outliers) const
+    {
+        auto pixels = (const uint16_t*)get_frame_data();
+        const auto W = get_width();
+        const auto H = get_height();
+
+        const auto units = get_units();
+
+        auto vp = std::dynamic_pointer_cast<video_stream_profile>(get_stream());
+        auto intrin = vp->get_intrinsics();
+
+        std::vector<float3> roi_pixels;
+
+        for (int y = y0; y < y1; ++y)
+            for (int x = x0; x < x1; ++x)
             {
-                // units is float
-                float pixel[2] = { float(x), float(y) };
-                float point[3];
-                auto distance = depth_raw * units;
+                auto depth_raw = pixels[y*W + x];
 
-                rs2_deproject_pixel_to_point(point, &intrin, pixel, distance);
+                if (depth_raw)
+                {
+                    // units is float
+                    float pixel[2] = { float(x), float(y) };
+                    float point[3];
+                    auto distance = depth_raw * units;
 
-                roi_pixels.push_back({ point[0], point[1], point[2] });
+                    rs2_deproject_pixel_to_point(point, &intrin, pixel, distance);
+
+                    roi_pixels.push_back({ point[0], point[1], point[2] });
+                }
+            }
+
+        if (roi_pixels.size() < 3) return invalid_plane();
+        auto p = plane_from_points(roi_pixels);
+
+        if (outliers > 0.f)
+        {
+            for (int i = 0; i < iterations; i++)
+            {
+                std::sort(roi_pixels.begin(), roi_pixels.end(),
+                    [&](const float3& a, const float3& b)
+                {
+                    return p.x*a.x + p.y*a.y + p.z*a.z + p.w <
+                        p.x*b.x + p.y*b.y + p.z*b.z + p.w;
+                });
+                size_t outliers_total = roi_pixels.size() * (outliers / 2);
+                roi_pixels.erase(roi_pixels.begin(), roi_pixels.begin() + outliers_total); // crop min 0.5% of the dataset
+                roi_pixels.resize(roi_pixels.size() - outliers_total); // crop max 0.5% of the dataset
+
+                                                                       // Re-run plane-fit for better match
+                if (roi_pixels.size() < 3) return invalid_plane();
+                p = plane_from_points(roi_pixels);
             }
         }
 
-    if (roi_pixels.size() < 3) return false;
-    auto p = plane_from_points(roi_pixels);
-
-    if (outliers > 0.f)
-    {
-        for (int i = 0; i < iterations; i++)
+        double sum_dist = 0.f;
+        for (auto&& point : roi_pixels)
         {
-            std::sort(roi_pixels.begin(), roi_pixels.end(),
-                [&](const float3& a, const float3& b)
-            {
-                return p.x*a.x + p.y*a.y + p.z*a.z + p.w <
-                    p.x*b.x + p.y*b.y + p.z*b.z + p.w;
-            });
-            size_t outliers_total = roi_pixels.size() * (outliers / 2);
-            roi_pixels.erase(roi_pixels.begin(), roi_pixels.begin() + outliers_total); // crop min 0.5% of the dataset
-            roi_pixels.resize(roi_pixels.size() - outliers_total); // crop max 0.5% of the dataset
-
-            // Re-run plane-fit for better match
-            if (roi_pixels.size() < 3) return false;
-            p = plane_from_points(roi_pixels);
+            auto dist = p.x*point.x + p.y*point.y + p.z*point.z + p.w;
+            sum_dist += dist * dist;
         }
-    }
 
-    double sum_dist = 0.f;
-    for (auto&& point : roi_pixels)
-    {
-        auto dist = p.x*point.x + p.y*point.y + p.z*point.z + p.w;
-        sum_dist += dist * dist;
+        plane res;
+        res.rms = sqrtf(sum_dist / roi_pixels.size());
+        res.coefficients = p;
+        res.intrin = intrin;
+        std::array<float3, 4> corners;
+        corners[0] = approximate_intersection(p, &intrin, float(x0), float(y0));
+        corners[1] = approximate_intersection(p, &intrin, float(x1), float(y0));
+        corners[2] = approximate_intersection(p, &intrin, float(x1), float(y1));
+        corners[3] = approximate_intersection(p, &intrin, float(x0), float(y1));
+
+        res.valid = is_plane_valid(corners);
+
+        return res;
     }
-    *rms = sqrtf(sum_dist / roi_pixels.size());
-    *a = p.x; *b = p.y; *c = p.z; *d = p.w;
-    return true;
 }

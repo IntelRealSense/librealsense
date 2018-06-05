@@ -21,6 +21,7 @@
 #include <iterator>
 #include <sstream>
 #include <chrono>
+#include <array>
 
 struct rs2_frame_callback
 {

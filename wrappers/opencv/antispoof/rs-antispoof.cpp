@@ -46,22 +46,22 @@ int main(int argc, char * argv[]) try
 
         for (auto&& face : faces)
         {
-            float a, b, c, d, rms;
             region_of_interest roi{ face.x, face.y, 
                 face.x + face.width, 
                 face.y + face.height };
-            if (depth.fit_plane(roi, 2, 0.05f, a, b, c, d, rms))
+
+            if (auto plane = depth.fit_plane(roi, 2, 0.05f))
             {
                 // Total variation within the ROI is below 2cm
                 // Classify as "fake", too little 3D details
-                if (rms < 0.002f)
+                if (plane.rms() < 0.002f)
                 {
                     putText(color_mat, "FAKE",
                         Point(face.x + face.width / 2 - 25, face.y + face.height / 2),
                         CV_FONT_HERSHEY_SIMPLEX,
                         0.8, Scalar(0, 0, 255), 2, LINE_AA);
                 }
-                else if (rms > 0.004f)
+                else if (plane.rms() > 0.004f)
                 {
                     // Else, detect the face
                     Point center(face.x + face.width*0.5, face.y + face.height*0.5);

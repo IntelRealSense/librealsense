@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <condition_variable>
 #include <functional>
+#include <array>
 #include <utility>                          // For std::forward
 #include "backend.h"
 #include "concurrency.h"
@@ -441,6 +442,7 @@ namespace librealsense
     inline bool operator == (const float3 & a, const float3 & b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
     inline float3 operator + (const float3 & a, const float3 & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z }; }
     inline float3 operator * (const float3 & a, float b) { return{ a.x*b, a.y*b, a.z*b }; }
+    inline float operator*(const float3& a, const float3& b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
     inline bool operator == (const float4 & a, const float4 & b) { return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w; }
     inline float4 operator + (const float4 & a, const float4 & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w }; }
     inline bool operator == (const float3x3 & a, const float3x3 & b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
@@ -479,6 +481,15 @@ namespace librealsense
         return r;
     }
     inline rs2_extrinsics inverse(const rs2_extrinsics& a) { auto p = to_pose(a); return from_pose(inverse(p)); }
+
+    struct plane
+    {
+        float4 coefficients;
+        bool valid;
+        rs2_intrinsics intrin;
+        float rms;
+    };
+    float3 approximate_intersection(const float4& p, const rs2_intrinsics* intrin, float x, float y);
 
     ///////////////////
     // Pixel formats //
