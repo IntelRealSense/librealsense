@@ -20,12 +20,12 @@
 
 #define RS2_CUDA_THREADS_PER_BLOCK 256
 
-namespace rsimpl
+namespace rscuda
 {   
     struct y8i_pixel { uint8_t l; uint8_t r; };  
     struct y12i_pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8; __host__ __device__ int l() const { return lh << 4 | ll; } __host__ __device__ int r() const { return rh << 8 | rl; } };
     void y8_y8_from_y8i_cuda_helper(uint8_t* const dest[], int count, const y8i_pixel * source);
-    void y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, const rsimpl::y12i_pixel * source);
+    void y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, const rscuda::y12i_pixel * source);
     void unpack_yuy2_cuda_helper(const uint8_t* src, uint8_t* dst, int n, rs2_format format);
     
 	template<rs2_format FORMAT> void unpack_yuy2_cuda(uint8_t * const d[], const uint8_t * s, int n)

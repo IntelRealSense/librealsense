@@ -4,6 +4,8 @@
 #include <iostream>
 #include <iomanip>
 
+/*
+// conversion to Y8 is currently not available in the API
 __global__ void kernel_unpack_yuy2_y8_cuda(const uint8_t * src, uint8_t *dst, int superPixCount)
 {
 	int i = blockDim.x * blockIdx.x + threadIdx.x;
@@ -30,49 +32,27 @@ __global__ void kernel_unpack_yuy2_y8_cuda(const uint8_t * src, uint8_t *dst, in
     dst[idx + 14] = src[idx + 28];
     dst[idx + 15] = src[idx + 30];
 }
+*/
 
 __global__ void kernel_unpack_yuy2_y16_cuda(const uint8_t * src, uint8_t *dst, int superPixCount)
 {
 	int i = blockDim.x * blockIdx.x + threadIdx.x;
-
+    int stride = blockDim.x * gridDim.x;
+    
 	if (i >= superPixCount)
 		return;
+		
+	for (; i < superPixCount; i += stride) {
 
-    int idx = i * 4;
+        int idx = i * 4;
 
-    dst[idx] = 0;
-    dst[idx + 1] = src[idx + 0];
-    dst[idx + 2] = 0;
-    dst[idx + 3] = src[idx + 2];
-    dst[idx + 4] = 0;
-    dst[idx + 5] = src[idx + 4];
-    dst[idx + 6] = 0;
-    dst[idx + 7] = src[idx + 6];
-    dst[idx + 8] = 0;
-    dst[idx + 9] = src[idx + 8];
-    dst[idx + 10] = 0;
-    dst[idx + 11] = src[idx + 10];
-    dst[idx + 12] = 0;
-    dst[idx + 13] = src[idx + 12];
-    dst[idx + 14] = 0;
-    dst[idx + 15] = src[idx + 14];
-    dst[idx + 16] = 0;
-    dst[idx + 17] = src[idx + 16];
-    dst[idx + 18] = 0;
-    dst[idx + 19] = src[idx + 18];
-    dst[idx + 20] = 0;
-    dst[idx + 21]= src[idx + 20];
-    dst[idx + 22] = 0;
-    dst[idx + 23] = src[idx + 22];
-    dst[idx + 24] = 0;
-    dst[idx + 25] = src[idx + 24];
-    dst[idx + 26] = 0;
-    dst[idx + 27] = src[idx + 26];
-    dst[idx + 28] = 0;
-    dst[idx + 29] = src[idx + 28];
-    dst[idx + 30] = 0;
-    dst[idx + 31] = src[idx + 30];
+        dst[idx] = 0;
+        dst[idx + 1] = src[idx + 0];
+        dst[idx + 2] = 0;
+        dst[idx + 3] = src[idx + 2];
+    }
 }
+
 
 __global__ void kernel_unpack_yuy2_rgb8_cuda(const uint8_t * src, uint8_t *dst, int superPixCount)
 {
@@ -242,9 +222,9 @@ __global__ void kernel_unpack_yuy2_bgra8_cuda(const uint8_t * src, uint8_t *dst,
 }
 
 
-void rsimpl::unpack_yuy2_cuda_helper(const uint8_t* src, uint8_t* dst, int n, rs2_format format) 
+void rscuda::unpack_yuy2_cuda_helper(const uint8_t* src, uint8_t* dst, int n, rs2_format format) 
 {
- /*   cudaEvent_t start, stop;
+/*    cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start); */
@@ -265,12 +245,14 @@ void rsimpl::unpack_yuy2_cuda_helper(const uint8_t* src, uint8_t* dst, int n, rs
 	
 	switch (format)
 	{
-	case RS2_FORMAT_Y8:
-		size = 1;
+	// conversion to Y8 is currently not available in the API
+	/*	case RS2_FORMAT_Y8:
+	    size = 1;
 		result = cudaMalloc(&devDst, n * sizeof(uint8_t) * size);
 	    assert(result == cudaSuccess);
 		kernel_unpack_yuy2_y8_cuda<<<numBlocks, RS2_CUDA_THREADS_PER_BLOCK>>>(devSrc, devDst, superPix);
 		break;
+	*/
 	case RS2_FORMAT_Y16:
 		size = 2;
 		result = cudaMalloc(&devDst, n * sizeof(uint8_t) * size);
@@ -323,7 +305,7 @@ void rsimpl::unpack_yuy2_cuda_helper(const uint8_t* src, uint8_t* dst, int n, rs
 }
 
 
-__global__ void kernel_split_frame_y8_y8_from_y8i_cuda(uint8_t* a, uint8_t* b, int count, const rsimpl::y8i_pixel * source)
+__global__ void kernel_split_frame_y8_y8_from_y8i_cuda(uint8_t* a, uint8_t* b, int count, const rscuda::y8i_pixel * source)
 {
 	int i = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -334,31 +316,25 @@ __global__ void kernel_split_frame_y8_y8_from_y8i_cuda(uint8_t* a, uint8_t* b, i
     b[i] = source[i].r;
 }
 
-void rsimpl::y8_y8_from_y8i_cuda_helper(uint8_t* const dest[], int count, const rsimpl::y8i_pixel * source)
+void rscuda::y8_y8_from_y8i_cuda_helper(uint8_t* const dest[], int count, const rscuda::y8i_pixel * source)
 {
-    
-    cudaEvent_t start, stop;
+/*    cudaEvent_t start, stop;
 	cudaEventCreate(&start);
     cudaEventCreate(&stop);
-    	
-	cudaEventRecord(start);  
-    
-    cudaStream_t stream1, stream2;
-    cudaStreamCreate(&stream1);
-    cudaStreamCreate(&stream2);
+	cudaEventRecord(start); */
 
     int numBlocks = count / RS2_CUDA_THREADS_PER_BLOCK;
     uint8_t* a = dest[0];
     uint8_t* b = dest[1];
     
-    rsimpl::y8i_pixel *devSrc = 0;
+    rscuda::y8i_pixel *devSrc = 0;
     uint8_t *devDst1 = 0; // for dest[0]
     uint8_t *devDst2 = 0; // for dest[1]
     
-    cudaError_t result = cudaMalloc(&devSrc, count * sizeof(rsimpl::y8i_pixel));
+    cudaError_t result = cudaMalloc(&devSrc, count * sizeof(rscuda::y8i_pixel));
     assert(result == cudaSuccess);
 
-    result = cudaMemcpy(devSrc, source, count * sizeof(rsimpl::y8i_pixel), cudaMemcpyHostToDevice);
+    result = cudaMemcpy(devSrc, source, count * sizeof(rscuda::y8i_pixel), cudaMemcpyHostToDevice);
     assert(result == cudaSuccess);
 
     result = cudaMalloc(&devDst1, count * sizeof(uint8_t));
@@ -367,35 +343,28 @@ void rsimpl::y8_y8_from_y8i_cuda_helper(uint8_t* const dest[], int count, const 
     result = cudaMalloc(&devDst2, count * sizeof(uint8_t));
     assert(result == cudaSuccess);
     
-    //no generic function
-    kernel_split_frame_y8_y8_from_y8i_cuda<<<numBlocks, RS2_CUDA_THREADS_PER_BLOCK,0>>>(devDst1, devDst2, count, devSrc);
+    kernel_split_frame_y8_y8_from_y8i_cuda<<<numBlocks, RS2_CUDA_THREADS_PER_BLOCK>>>(devDst1, devDst2, count, devSrc);
 
     result = cudaGetLastError();
     assert(result == cudaSuccess);
     
-    result = cudaMemcpyAsync(a, devDst1, count * sizeof(uint8_t), cudaMemcpyDeviceToHost, stream1);
+    result = cudaMemcpy(a, devDst1, count * sizeof(uint8_t), cudaMemcpyDeviceToHost);
     assert(result == cudaSuccess);
-    result = cudaMemcpyAsync(b, devDst2, count * sizeof(uint8_t), cudaMemcpyDeviceToHost, stream2);
+    result = cudaMemcpy(b, devDst2, count * sizeof(uint8_t), cudaMemcpyDeviceToHost);
     assert(result == cudaSuccess);
-    cudaStreamSynchronize(stream1);
-    cudaStreamDestroy(stream1);
-    
-    cudaStreamSynchronize(stream2);
-    cudaStreamDestroy(stream2);
 
     cudaFree(devSrc);
     cudaFree(devDst1);
     cudaFree(devDst2);
     
-    	
-	cudaEventRecord(stop);
+/*    cudaEventRecord(stop);
 	cudaEventSynchronize(stop);
 	float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
-    std::cout << milliseconds << std::endl;
+    std::cout << milliseconds << std::endl; */
 }
 
-__global__ void kernel_split_frame_y16_y16_from_y12i_cuda(uint16_t* a, uint16_t* b, int count, const rsimpl::y12i_pixel * source)
+__global__ void kernel_split_frame_y16_y16_from_y12i_cuda(uint16_t* a, uint16_t* b, int count, const rscuda::y12i_pixel * source)
 {
 	int i = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -407,32 +376,28 @@ __global__ void kernel_split_frame_y16_y16_from_y12i_cuda(uint16_t* a, uint16_t*
 }
 
 
-void rsimpl::y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, const rsimpl::y12i_pixel * source)
+void rscuda::y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, const rscuda::y12i_pixel * source)
 {
+/*
+    cudaEvent_t start, stop;
+	cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+	cudaEventRecord(start); */
     
-//   source =  reinterpret_cast<const y12i_pixel*>(source);
- 
-//    cudaEvent_t start, stop;
-//	cudaEventCreate(&start);
-//    cudaEventCreate(&stop);
-    	
-//	cudaEventRecord(start);    
-    
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
+    source =  reinterpret_cast<const y12i_pixel*>(source);
 
     int numBlocks = count / RS2_CUDA_THREADS_PER_BLOCK;
     uint16_t* a = reinterpret_cast<uint16_t*>(dest[0]);
     uint16_t* b = reinterpret_cast<uint16_t*>(dest[1]);
     
-    rsimpl::y12i_pixel *devSrc = 0;
+    rscuda::y12i_pixel *devSrc = 0;
     uint16_t *devDst1 = 0; // for dest[0]
     uint16_t *devDst2 = 0; // for dest[1]
     
-    cudaError_t result = cudaMalloc(&devSrc, count * sizeof(rsimpl::y12i_pixel));
+    cudaError_t result = cudaMalloc(&devSrc, count * sizeof(rscuda::y12i_pixel));
     assert(result == cudaSuccess);
 
-    result = cudaMemcpyAsync(devSrc, source, count * sizeof(rsimpl::y12i_pixel), cudaMemcpyHostToDevice);
+    result = cudaMemcpy(devSrc, source, count * sizeof(rscuda::y12i_pixel), cudaMemcpyHostToDevice);
     assert(result == cudaSuccess);
 
     result = cudaMalloc(&devDst1, count * sizeof(uint16_t));
@@ -441,31 +406,27 @@ void rsimpl::y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, 
     result = cudaMalloc(&devDst2, count * sizeof(uint16_t));
     assert(result == cudaSuccess);
     
-    //no generic function
-    kernel_split_frame_y16_y16_from_y12i_cuda<<<numBlocks, RS2_CUDA_THREADS_PER_BLOCK,0,stream>>>(devDst1, devDst2, count, devSrc);
+    kernel_split_frame_y16_y16_from_y12i_cuda<<<numBlocks, RS2_CUDA_THREADS_PER_BLOCK>>>(devDst1, devDst2, count, devSrc);
 
     result = cudaGetLastError();
     assert(result == cudaSuccess);
     
-    result = cudaMemcpyAsync(a, devDst1, count * sizeof(uint16_t), cudaMemcpyDeviceToHost, stream);
+    result = cudaMemcpy(a, devDst1, count * sizeof(uint16_t), cudaMemcpyDeviceToHost);
     assert(result == cudaSuccess);
-    result = cudaMemcpyAsync(b, devDst2, count * sizeof(uint16_t), cudaMemcpyDeviceToHost, stream);
+    result = cudaMemcpy(b, devDst2, count * sizeof(uint16_t), cudaMemcpyDeviceToHost);
     assert(result == cudaSuccess);
-    cudaStreamSynchronize(stream);
-    cudaStreamDestroy(stream);
 
     cudaFree(devSrc);
     cudaFree(devDst1);
     cudaFree(devDst2);
     
-    	
-//	cudaEventRecord(stop);
-	
-//	cudaEventSynchronize(stop);
-//    float milliseconds = 0;
-  //  std::cout << std::setprecision(5);
-//    cudaEventElapsedTime(&milliseconds, start, stop);
-//    std::cout << "time: " << milliseconds << std::endl;
+    /*
+	cudaEventRecord(stop);
+	cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    std::cout << milliseconds << std::endl;
+    */
 }
 
 
@@ -479,8 +440,13 @@ __global__ void kernel_z16_y8_from_sr300_inzi_cuda (const uint16_t* source, uint
     dest[i] = source[i] >> 2;
 }
 
-void rsimpl::unpack_z16_y8_from_sr300_inzi_cuda (uint8_t * const dest, const uint16_t * source, int count) 
+void rscuda::unpack_z16_y8_from_sr300_inzi_cuda (uint8_t * const dest, const uint16_t * source, int count) 
 {
+/*  cudaEvent_t start, stop;
+	cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+	cudaEventRecord(start); */
+	
     uint16_t *devSrc = 0;
     uint8_t *devDst = 0;
      
@@ -502,7 +468,12 @@ void rsimpl::unpack_z16_y8_from_sr300_inzi_cuda (uint8_t * const dest, const uin
     
     cudaFree(devSrc);
     cudaFree(devDst);
-
+    
+/*  cudaEventRecord(stop);
+   	cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    std::cout << milliseconds << std::endl; */
 }
 
 __global__ void kernel_z16_y16_from_sr300_inzi_cuda (uint16_t* const source, uint16_t* const dest, int count)
@@ -515,8 +486,13 @@ __global__ void kernel_z16_y16_from_sr300_inzi_cuda (uint16_t* const source, uin
     dest[i] = source[i] << 6;
 }
 
-void rsimpl::unpack_z16_y16_from_sr300_inzi_cuda(uint16_t * const dest, const uint16_t * source, int count) 
+void rscuda::unpack_z16_y16_from_sr300_inzi_cuda(uint16_t * const dest, const uint16_t * source, int count) 
 {
+/*  cudaEvent_t start, stop;
+	cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+	cudaEventRecord(start); */
+	
     uint16_t *devSrc = 0;
     uint16_t *devDst = 0;
      
@@ -538,6 +514,13 @@ void rsimpl::unpack_z16_y16_from_sr300_inzi_cuda(uint16_t * const dest, const ui
     
     cudaFree(devSrc);
     cudaFree(devDst);
+    
+        	
+/*	cudaEventRecord(stop);
+	cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    std::cout << milliseconds << std::endl; */
 }
 
 #endif

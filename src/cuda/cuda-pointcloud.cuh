@@ -19,9 +19,9 @@
 #pragma comment(lib, "cudart_static")
 #endif
 
-#define RS2_CUDA_THREADS_PER_BLOCK 32
+#define RS2_CUDA_THREADS_PER_BLOCK 256
 
-namespace rsimpl
+namespace rscuda
 {
     void deproject_depth_cuda(float * points, const rs2_intrinsics & intrin, const uint16_t * depth, float depth_scale);
 
