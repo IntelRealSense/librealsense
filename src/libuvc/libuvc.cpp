@@ -139,10 +139,6 @@ namespace librealsense
 
                         libusb_free_config_descriptor(config);
                     }
-                    else if (status < 0)
-                    {
-                        throw linux_backend_exception(to_string() << "libusb_get_active_config_descriptor(...) returned " << libusb_error_name(status));
-                    }
                 }
                 libusb_free_device_list(list, 1);
             }
