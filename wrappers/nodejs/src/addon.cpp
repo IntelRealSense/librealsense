@@ -169,8 +169,6 @@ class ErrorUtil {
   void MarkError(bool recoverable, std::string description,
       std::string native_function) {
     error_info_.Update(true, recoverable, description, native_function);
-    if (recoverable) return;
-
     v8::Local<v8::Value> args[1] = { GetJSErrorObject() };
     auto container = Nan::New<v8::Object>(js_error_container_);
     Nan::MakeCallback(container, js_error_callback_name_.c_str(),
