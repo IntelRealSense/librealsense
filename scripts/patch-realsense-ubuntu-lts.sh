@@ -32,7 +32,7 @@ LINUX_BRANCH=$(uname -r)
 kernel_branch=$(choose_kernel_branch $LINUX_BRANCH)
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
 ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
-if [ -z "$UBUNTU_CODENAME" ];
+if [ -z "$ubuntu_codename" ];
 then
 	# Trusty Tahr shall use xenial code base
 	ubuntu_codename="xenial"
