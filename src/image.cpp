@@ -301,6 +301,8 @@ namespace librealsense
     template<rs2_format FORMAT> void unpack_yuy2(byte * const d[], const byte * s, int width, int height)
     {
         auto n = width * height;
+        // record time
+        auto now = std::chrono::high_resolution_clock::now();
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
 
         #ifdef __SSSE3__
@@ -594,6 +596,14 @@ namespace librealsense
             }
         }
     #endif
+
+        // record time
+        auto now2 = std::chrono::high_resolution_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now2 - now).count();
+        
+        // cuda test (should get 0)
+        auto res = calc();
+        LOG_ERROR("RESULT:" << res);
     }
 
     // This templated function unpacks UYVY into RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.

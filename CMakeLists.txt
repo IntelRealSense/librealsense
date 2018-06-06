@@ -1,7 +1,7 @@
-#  minimum required cmake version: 3.1.0
-cmake_minimum_required(VERSION 3.1.0)
+#  minimum required cmake version: 3.8.0
+cmake_minimum_required(VERSION 3.8.0)
 
-project(librealsense2)
+project(librealsense2 LANGUAGES CXX C CUDA)
 
 macro(info msg)
     message(STATUS "Info: ${msg}")
@@ -106,6 +106,18 @@ if (BUILD_EASYLOGGINGPP)
     add_definitions(-DBUILD_EASYLOGGINGPP)
 endif()
 
+find_package(CUDA QUIET)
+if(CUDA_FOUND)
+    include_directories(${CUDA_INCLUDE_DIRS})
+    SET(ALL_CUDA_LIBS ${CUDA_LIBRARIES} ${CUDA_cusparse_LIBRARY} ${CUDA_cublas_LIBRARY})
+    SET(LIBS ${LIBS} ${ALL_CUDA_LIBS})
+    message(STATUS "CUDA_LIBRARIES: ${CUDA_INCLUDE_DIRS} ${ALL_CUDA_LIBS}")
+    set(CUDA_PROPAGATE_HOST_FLAGS ON)
+    set(CUDA_SEPARABLE_COMPILATION OFF)
+    list( APPEND CUDA_NVCC_FLAGS -gencode=arch=compute_30,code=compute_30 )
+    list( APPEND CUDA_NVCC_FLAGS -gencode=arch=compute_52,code=sm_52 )
+endif()
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
 set(REALSENSE_CPP
@@ -177,6 +189,14 @@ set(REALSENSE_CPP
     src/media/record/record_sensor.cpp
     src/media/playback/playback_device.cpp
     src/media/playback/playback_sensor.cpp
+    )
+    
+set(REALSENSE_CU
+    src/cuda/add.cu
+    )
+
+set(REALSENSE_CUH
+    src/cuda/add.cuh
     )
 
 set(REALSENSE_HPP
@@ -710,20 +730,20 @@ option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
     if(WIN32)
         add_library(realsense2 SHARED
-            ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF}
+            ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF} ${REALSENSE_CU} ${REALSENSE_CUH}
             src/res/resource.h
-            src/res/librealsense.rc)
-
+            src/res/librealsense.rc) 
         source_group("Resources" FILES
         src/res/resource.h
         src/res/librealsense.rc
         )
     else()
-        add_library(realsense2 SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
+        add_library(realsense2 SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_CU} ${REALSENSE_CUH} ${REALSENSE_DEF})
     endif()
 else()
-    add_library(realsense2 STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
+        add_library(realsense2 STATIC ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_CU} ${REALSENSE_CUH})
 endif()
+
 
 if(BUILD_WITH_TM2)
     target_compile_definitions(realsense2 PRIVATE WITH_TRACKING=1 BUILD_STATIC=1)
@@ -872,6 +892,12 @@ foreach(afile ${REALSENSE_CPP})
   list(REMOVE_ITEM AllSources ${afile})
 endforeach(afile)
 foreach(afile ${REALSENSE_HPP})
+  list(REMOVE_ITEM AllSources ${afile})
+endforeach(afile)
+foreach(afile ${REALSENSE_CU})
+  list(REMOVE_ITEM AllSources ${afile})
+endforeach(afile)
+foreach(afile ${REALSENSE_CUH})
   list(REMOVE_ITEM AllSources ${afile})
 endforeach(afile)
 list(LENGTH AllSources ignore_count)
