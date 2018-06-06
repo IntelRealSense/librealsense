@@ -25,7 +25,7 @@ csharp_set_designer_cs_properties(
 
 set_property(SOURCE App.xaml PROPERTY VS_XAML_TYPE "ApplicationDefinition")
 
-set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION "v${DOTNET_TARGET_FRAMEWORK_VERSION}")
+set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION "v${DOTNET_VERSION_LIBRARY}")
 
 add_dependencies(${PROJECT_NAME} realsense2)
 

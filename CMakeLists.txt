@@ -810,6 +810,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/realsense2ConfigVersion.cmake"
 
 install(CODE "execute_process(COMMAND ldconfig)")
 
+option(BUILD_ALL "Enable all optional builds" OFF)
 option(BUILD_UNIT_TESTS "Build realsense unit tests. Note that when enabled, additional tests data set will be downloaded from a web server and stored in a temp directory" OFF)
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
@@ -818,7 +819,18 @@ option(BUILD_CSHARP_BINDINGS "Build C# bindings" OFF)
 option(BUILD_CV_EXAMPLES "Build OpenCV examples" OFF)
 option(BUILD_PCL_EXAMPLES "Build PCL examples" OFF)
 option(BUILD_NODEJS_BINDINGS "Build Node.js bindings" OFF)
-SET(DOTNET_TARGET_FRAMEWORK_VERSION "3.5" CACHE STRING ".Net Version, defaulting to '3.5'")
+SET(DOTNET_VERSION_LIBRARY "3.5" CACHE STRING ".Net Version, defaulting to '3.5'")
+SET(DOTNET_VERSION_EXAMPLES "4.0" CACHE STRING ".Net Version, defaulting to '4.0'")
+
+if(BUILD_ALL)
+	set(BUILD_UNIT_TESTS ON)
+	set(BUILD_EXAMPLES ON)
+	set(ENFORCE_METADATA ON)
+	set(BUILD_PYTHON_BINDINGS ON)
+	set(BUILD_CSHARP_BINDINGS ON)
+	set(BUILD_CV_EXAMPLES ON)
+	set(BUILD_PCL_EXAMPLES ON)
+endif()
 
 if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) AND WIN32)
   add_subdirectory(third-party/glfw)
