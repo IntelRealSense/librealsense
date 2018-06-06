@@ -13,12 +13,15 @@ Next, download the following prerequisites :
 * Visual Studio 2017 only - [.NET Core 2.x](https://www.microsoft.com/net/download/visual-studio-sdks)
 
 After installing all prerequisites, generate realsense2.sln with BUILD_CSHARP_BINDINGS flag using cmake.
+
 Form the root dir:
 - mkdir build
 - cd build
 - cmake .. -DBUILD_CSHARP_BINDINGS=ON
 
-A realsense2.sln file should be created in the build folder, open the "sln" file with Visual Studio and build any of the C# examples.
+The file 'realsense2.sln' should be created in the build folder, open the file with Visual Studio and build any of the C# examples.
+
+Both the native and the .NET wrapper will be built as part of the example dependencies.
 
 ## Hello World
 
