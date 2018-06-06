@@ -27,3 +27,7 @@ endif()
 if(BUILD_NODEJS_BINDINGS)
     add_subdirectory(nodejs)
 endif()
+
+if(BUILD_CSHARP_BINDINGS)
+    add_subdirectory(csharp)
+endif()

@@ -814,9 +814,11 @@ option(BUILD_UNIT_TESTS "Build realsense unit tests. Note that when enabled, add
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
+option(BUILD_CSHARP_BINDINGS "Build C# bindings" OFF)
 option(BUILD_CV_EXAMPLES "Build OpenCV examples" OFF)
 option(BUILD_PCL_EXAMPLES "Build PCL examples" OFF)
 option(BUILD_NODEJS_BINDINGS "Build Node.js bindings" OFF)
+SET(DOTNET_TARGET_FRAMEWORK_VERSION "3.5" CACHE STRING ".Net Version, defaulting to '3.5'")
 
 if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) AND WIN32)
   add_subdirectory(third-party/glfw)
@@ -849,6 +851,10 @@ endif()
 
 if (BUILD_PCL_EXAMPLES)
   add_subdirectory(wrappers/pcl)
+endif()
+
+if(BUILD_CSHARP_BINDINGS)
+    add_subdirectory(wrappers/csharp)
 endif()
 
 # Check for unreferenced files
