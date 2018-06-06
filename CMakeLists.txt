@@ -1,7 +1,13 @@
 #  minimum required cmake version: 3.8.0
 cmake_minimum_required(VERSION 3.8.0)
 
-project(librealsense2 LANGUAGES CXX C CUDA)
+option(BUILD_WITH_CUDA "Enable CUDA" OFF)
+
+if(BUILD_WITH_CUDA)
+    project(librealsense2 LANGUAGES CXX C CUDA)
+else()
+    project(librealsense2 LANGUAGES CXX C)
+endif()
 
 macro(info msg)
     message(STATUS "Info: ${msg}")
@@ -59,8 +65,6 @@ endif()
 option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 
 option(BUILD_WITH_OPENMP "Use OpenMP" OFF)
-
-option(BUILD_WITH_CUDA "Enable CUDA" OFF)
 
 option(USE_SYSTEM_LIBUSB "Use the distribution libusb package" ON)
 if (WIN32)
