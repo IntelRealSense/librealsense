@@ -4,9 +4,10 @@
 
 'use strict';
 
-/* global describe, it, before, afterEach, after */
+/* global describe, it, beforeEach, afterEach, after */
 const assert = require('assert');
 const fs = require('fs');
+const path = require('path');
 let rs2;
 try {
   rs2 = require('node-librealsense');
@@ -16,34 +17,77 @@ try {
 
 let ctx;
 let dev;
-let devdev;
+let recorder;
+let sensor;
 let fileName = 'record.bag';
-describe('RecorderDevice test', function() {
-  before(function() {
+
+describe('RecorderDevice constructor test', () => {
+  beforeEach(() => {
     ctx = new rs2.Context();
     const devices = ctx.queryDevices().devices;
-    assert(devices.length > 0); // Device must be connected
-    devdev = devices[0];
-    dev = new rs2.RecorderDevice('record.bag', devdev);
+    assert(devices.length > 0);
+    dev = devices[0];
   });
 
-  afterEach(function() {
+  afterEach(() => {
     rs2.cleanup();
   });
 
+  after(() => {
+    if (fs.existsSync(fileName)) {
+      fs.unlinkSync(fileName);
+    }
+  });
+
+  it('Testing constructor - valid argument', () => {
+    assert.doesNotThrow(() => {
+      new rs2.RecorderDevice(fileName, dev);
+    });
+  });
+
+  it('Testing constructor - 1 argument', () => {
+    assert.throws(() => {
+      new rs2.RecorderDevice(fileName);
+    });
+  });
+
+  it('Testing constructor - invalid file argument', () => {
+    assert.throws(() => {
+      new rs2.RecorderDevice(1, dev);
+    });
+  });
+
+  it('Testing constructor - invalid devices argument', () => {
+    assert.throws(() => {
+      new rs2.RecorderDevice(fileName, 1);
+    });
+  });
+
+  it('Testing constructor - 5 arguments', () => {
+    assert.throws(() => {
+      new rs2.RecorderDevice(fileName, dev, undefined, true, true);
+    });
+  });
+});
+
+describe('RecorderDevice test', function() {
   after(function() {
     if (fs.existsSync(fileName)) {
       fs.unlinkSync(fileName);
     }
   });
+  afterEach(() => {
+    rs2.cleanup();
+  });
+
   function startRecording(file, cnt, callback) {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        let ctx = new rs2.Context();
-        let dev = ctx.queryDevices().devices[0];
-        let recorder = new rs2.RecorderDevice(file, dev);
+        ctx = new rs2.Context();
+        dev = ctx.queryDevices().devices[0];
+        recorder = new rs2.RecorderDevice(file, dev);
         let sensors = recorder.querySensors();
-        let sensor = sensors[0];
+        sensor = sensors[0];
         let profiles = sensor.getStreamProfiles();
         for (let i = 0; i < profiles.length; i++) {
           if (profiles[i].streamType === rs2.stream.STREAM_DEPTH &&
@@ -61,6 +105,7 @@ describe('RecorderDevice test', function() {
           }
           counter++;
           if (counter === cnt) {
+            sensor.stop();
             recorder.reset();
             rs2.cleanup();
             resolve();
@@ -69,42 +114,6 @@ describe('RecorderDevice test', function() {
       }, 2000);
     });
   }
-
-  it('Testing constructor - valid argument', () => {
-    assert.doesNotThrow(() => {
-      new rs2.RecorderDevice('record.bag', devdev);
-    });
-  });
-
-  it('Testing constructor - 1 argument', () => {
-    assert.throws(() => {
-      new rs2.RecorderDevice('record.bag');
-    });
-  });
-
-  it('Testing constructor - 3 arguments', () => {
-    assert.throws(() => {
-      new rs2.RecorderDevice('record.bag', devdev, 'dummy');
-    });
-  });
-
-  it('Testing constructor - invalid file argument', () => {
-    assert.throws(() => {
-      new rs2.RecorderDevice(1, devdev);
-    });
-  });
-
-  it('Testing constructor - invalid device argument', () => {
-    assert.throws(() => {
-      new rs2.RecorderDevice('record.bag', 'dummy');
-    });
-  });
-
-  it('Testing method destroy', () => {
-    assert.doesNotThrow(() => {
-      dev.destroy();
-    });
-  });
 
   it('Testing method getCameraInfo - without argument', () => {
     return new Promise((resolve, reject) => {
@@ -254,7 +263,7 @@ describe('RecorderDevice test', function() {
 
   it('Testing method pause - valid', () => {
     return new Promise((resolve, reject) => {
-      startRecording(fileName, 2, (recorder, cnt) => {
+      startRecording(fileName, 1, (recorder, cnt) => {
         if (cnt === 1) {
           assert.doesNotThrow(() => {
             recorder.pause();
@@ -269,7 +278,7 @@ describe('RecorderDevice test', function() {
 
   it('Testing method pause - 1 argument', () => {
     return new Promise((resolve, reject) => {
-      startRecording(fileName, 2, (recorder, cnt) => {
+      startRecording(fileName, 1, (recorder, cnt) => {
         if (cnt === 1) {
           assert.doesNotThrow(() => {
             recorder.pause('dummy');
@@ -284,7 +293,7 @@ describe('RecorderDevice test', function() {
 
   it('Testing method resume - 1 argument', () => {
     return new Promise((resolve, reject) => {
-      startRecording(fileName, 2, (recorder, cnt) => {
+      startRecording(fileName, 1, (recorder, cnt) => {
         if (cnt === 1) {
           assert.doesNotThrow(() => {
             recorder.pause();
@@ -297,9 +306,28 @@ describe('RecorderDevice test', function() {
     });
   }).timeout(5000);
 
+  it('Testing method pause resume - more than once', () => {
+    return new Promise((resolve, reject) => {
+      startRecording(fileName, 1, (recorder, cnt) => {
+        if (cnt === 1) {
+          assert.doesNotThrow(() => {
+            recorder.pause();
+            recorder.resume();
+            recorder.pause();
+            recorder.resume();
+            recorder.pause();
+            recorder.resume();
+          });
+        }
+      }).then(() => {
+        resolve();
+      });
+    });
+  }).timeout(5000);
+
   it('Testing member - fileName', () => {
     return new Promise((resolve, reject) => {
-      startRecording(fileName, 2, (recorder, cnt) => {
+      startRecording(fileName, 1, (recorder, cnt) => {
         if (cnt === 1) {
           assert(recorder.fileName === fileName);
         }
@@ -313,9 +341,9 @@ describe('RecorderDevice test', function() {
   }).timeout(5000);
 
   it('Testing member - fileName with absolute path', () => {
-    fileName = '/tmp/abs.bag';
+    fileName = path.join(__dirname, 'record.bag');
     return new Promise((resolve, reject) => {
-      startRecording(fileName, 2, (recorder, cnt) => {
+      startRecording(fileName, 1, (recorder, cnt) => {
         if (cnt === 1) {
           assert(recorder.fileName === fileName);
           assert(fs.existsSync(fileName));
@@ -332,7 +360,7 @@ describe('RecorderDevice test', function() {
     return new Promise((resolve, reject) => {
       fs.closeSync(fs.openSync(fileName, 'w'));
       assert(fs.existsSync(fileName));
-      startRecording(fileName, 2, (recorder, cnt) => {
+      startRecording(fileName, 1, (recorder, cnt) => {
         if (cnt === 1) {
           assert(recorder.fileName === fileName);
           assert(fs.existsSync(fileName));
