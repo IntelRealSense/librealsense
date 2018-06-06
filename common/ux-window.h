@@ -8,6 +8,7 @@
 #include <functional>
 #include <thread>
 #include "rendering.h"
+#include <atomic>
 
 namespace rs2
 {

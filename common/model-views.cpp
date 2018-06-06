@@ -573,9 +573,8 @@ namespace rs2
                 else
                 {
                     std::string txt = to_string() << (use_option_name ? rs2_option_to_string(opt) : desc) << ":";
-                    auto col_id = id + "columns";
-                    //ImGui::Columns(2, col_id.c_str(), false);
-                    //ImGui::SetColumnOffset(1, 120);
+
+                    auto pos_x = ImGui::GetCursorPosX();
 
                     ImGui::Text("%s", txt.c_str());
                     if (ImGui::IsItemHovered() && desc)
@@ -585,7 +584,7 @@ namespace rs2
 
                     ImGui::SameLine();
                     if (new_line)
-                        ImGui::SetCursorPosX(135);
+                        ImGui::SetCursorPosX(pos_x + 135);
 
                     ImGui::PushItemWidth(new_line? -1.f:100.f);
 
@@ -607,7 +606,7 @@ namespace rs2
                             model.add_log(to_string() << "Setting " << opt << " to "
                                 << value << " (" << labels[selected] << ")");
                             endpoint->set_option(opt, value);
-                            *invalidate_flag = true;
+                            if (invalidate_flag) *invalidate_flag = true;
                             res = true;
                         }
                     }
@@ -619,9 +618,6 @@ namespace rs2
                     ImGui::PopStyleColor();
 
                     ImGui::PopItemWidth();
-
-                    ImGui::NextColumn();
-                    ImGui::Columns(1);
                 }
 
 
@@ -794,7 +790,7 @@ namespace rs2
             << "/" << ((owner) ? (*owner->s).get_info(RS2_CAMERA_INFO_NAME) : "_");
 
         subdevice_model::populate_options(options_metadata,
-            ss.str().c_str(),owner , block, &owner->options_invalidated, error_message);
+            ss.str().c_str(),owner , block, owner ? &owner->options_invalidated : nullptr, error_message);
     }
 
     subdevice_model::subdevice_model(
@@ -891,6 +887,20 @@ namespace rs2
                 disparity_to_depth->enabled = true;
                 // the block will be internally available, but removed from UI
                 //post_processing.push_back(disparity_to_depth);
+            }
+        }
+        else
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(s->get().get(), RS2_EXTENSION_VIDEO, &e) && !e)
+            {
+                auto decimate = std::make_shared<rs2::decimation_filter>();
+                decimation_filter = std::make_shared<processing_block_model>(
+                    this, "Decimation Filter", decimate,
+                    [=](rs2::frame f) { return decimate->process(f); },
+                    error_message);
+                decimation_filter->enabled = true;
+                post_processing.push_back(decimation_filter);
             }
         }
 
@@ -1766,58 +1776,10 @@ namespace rs2
 
     void viewer_model::show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message)
     {
-        //frame texture_map;
-        //static auto last_frame_number = 0;
-        //for (auto&& s : streams)
-        //{
-        //    if (s.second.profile.stream_type() == RS2_STREAM_DEPTH && s.second.texture->last)
-        //    {
-        //        auto frame_number = s.second.texture->last.get_frame_number();
+        int combo_boxes = 0;
+        const auto combo_box_width = 200;
 
-        //        if (last_frame_number == frame_number) break;
-        //        last_frame_number = frame_number;
-
-        //        for (auto&& s : streams)
-        //        {
-        //            if (s.second.profile.stream_type() != RS2_STREAM_DEPTH && s.second.texture->last)
-        //            {
-        //                rendered_tex_id = s.second.texture->get_gl_handle();
-        //                texture_map = s.second.texture->last; // also save it for later
-        //                pc.map_to(texture_map);
-        //                break;
-        //            }
-        //        }
-
-        //        if (s.second.dev && !s.second.dev->is_paused())
-        //            depth_frames_to_render.enqueue(s.second.texture->last);
-        //        break;
-        //    }
-        //}
-
-
-        const auto top_bar_height = 32.f;
-        const auto num_of_buttons = 4;
-        auto total_top_bar_height = top_bar_height; // may include single bar or additional bar for pose
-
-        auto flags = ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse |
-            ImGuiWindowFlags_NoTitleBar;
-
-        ImGui::PushFont(font);
-        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
-
-        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, header_window_bg);
-        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
-        ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
-        std::string label = to_string() << "header of 3dviewer";
-        ImGui::Begin(label.c_str(), nullptr, flags);
-
+        // Initialize and prepare depth and texture sources
         int selected_depth_source = -1;
         std::vector<std::string> depth_sources_str;
         std::vector<int> depth_sources;
@@ -1847,33 +1809,7 @@ namespace rs2
                 i++;
             }
         }
-
-        if (depth_sources_str.size() > 0 && allow_3d_source_change)
-        {
-            ImGui::SetCursorPos({ 7, 7 });
-            ImGui::Text("Depth Source:"); ImGui::SameLine();
-
-            ImGui::SetCursorPosY(7);
-            ImGui::PushItemWidth(190);
-            draw_combo_box("##Depth Source", depth_sources_str, selected_depth_source);
-            i = 0;
-            for (auto&& s : streams)
-            {
-                if (s.second.is_stream_visible() &&
-                    s.second.texture->get_last_frame() &&
-                    s.second.profile.stream_type() == RS2_STREAM_DEPTH)
-                {
-                    if (i == selected_depth_source)
-                    {
-                        selected_depth_source_uid =  streams_origin[s.second.profile.unique_id()];
-                    }
-                    i++;
-                }
-            }
-
-            ImGui::PopItemWidth();
-            ImGui::SameLine();
-        }
+        if (depth_sources_str.size() > 0 && allow_3d_source_change) combo_boxes++;
 
         int selected_tex_source = 0;
         std::vector<std::string> tex_sources_str;
@@ -1897,7 +1833,8 @@ namespace rs2
                     selected_tex_source = i;
                 }
 
-                tex_sources.push_back(s.second.profile.unique_id());
+                // The texture source shall always refer to the raw (original) streams
+                tex_sources.push_back(streams_origin[s.second.profile.unique_id()]);
 
                 auto dev_name = s.second.dev ? s.second.dev->dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
                 std::string stream_name = rs2_stream_to_string(s.second.profile.stream_type());
@@ -1909,51 +1846,98 @@ namespace rs2
             }
         }
 
+        if (tex_sources_str.size() && depth_sources_str.size())
+        {
+            combo_boxes++;
+            if (RS2_STREAM_COLOR == streams[selected_tex_source_uid].profile.stream_type())
+                combo_boxes++;
+        }
+
+        auto top_bar_height = 32.f;
+        const auto buttons_heights = top_bar_height;
+        const auto num_of_buttons = 5;
+
+        if (num_of_buttons * 40 + combo_boxes * (combo_box_width + 100) > stream_rect.w)
+            top_bar_height = 2 * top_bar_height;
+
+        auto flags = ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoTitleBar;
+
+        ImGui::PushFont(font);
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
+
+        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, header_window_bg);
+        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
+        ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
+        std::string label = to_string() << "header of 3dviewer";
+        ImGui::Begin(label.c_str(), nullptr, flags);
+
+        if (depth_sources_str.size() > 0 && allow_3d_source_change)
+        {
+            ImGui::SetCursorPos({ 7, 7 });
+            ImGui::Text("Depth Source:"); ImGui::SameLine();
+
+            ImGui::SetCursorPosY(7);
+            ImGui::PushItemWidth(combo_box_width);
+            draw_combo_box("##Depth Source", depth_sources_str, selected_depth_source);
+            i = 0;
+            for (auto&& s : streams)
+            {
+                if (s.second.is_stream_visible() &&
+                    s.second.texture->get_last_frame() &&
+                    s.second.profile.stream_type() == RS2_STREAM_DEPTH)
+                {
+                    if (i == selected_depth_source)
+                    {
+                        selected_depth_source_uid =  streams_origin[s.second.profile.unique_id()];
+                    }
+                    i++;
+                }
+            }
+
+            ImGui::PopItemWidth();
+
+            if (buttons_heights == top_bar_height) ImGui::SameLine();
+        }
+
         if (!allow_3d_source_change) ImGui::SetCursorPos({ 7, 7 });
+
         // Only allow to change texture if we have something to put it on:
         if (tex_sources_str.size() && depth_sources_str.size())
         {
-            ImGui::SetCursorPosY(7);
+            if (buttons_heights == top_bar_height) ImGui::SetCursorPosY(7);
+            else ImGui::SetCursorPos({ 7, buttons_heights + 7 });
+
             ImGui::Text("Texture Source:"); ImGui::SameLine();
 
-            ImGui::SetCursorPosY(7);
-            ImGui::PushItemWidth(200);
+            if (buttons_heights == top_bar_height) ImGui::SetCursorPosY(7);
+            else ImGui::SetCursorPosY(buttons_heights + 7);
+
+            ImGui::PushItemWidth(combo_box_width);
             draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
             selected_tex_source_uid = tex_sources[selected_tex_source];
             texture.colorize = streams[tex_sources[selected_tex_source]].texture->colorize;
             ImGui::PopItemWidth();
 
+            ImGui::SameLine();
+
             // Occlusion control for RGB UV-Map uses option's description as label
             // Position is dynamically adjusted to avoid overlapping on resize
             if (RS2_STREAM_COLOR==streams[selected_tex_source_uid].profile.stream_type())
+            {
+                ImGui::PushItemWidth(combo_box_width);
                 ppf.get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).draw(error_message,
                     not_model, stream_rect.w < 1000, false);
+                ImGui::PopItemWidth();
+            }
         }
-
-        //ImGui::SetCursorPosY(9);
-        //ImGui::Text("Viewport:"); ImGui::SameLine();
-        //ImGui::SetCursorPosY(7);
-
-        //ImGui::PushItemWidth(70);
-        //std::vector<std::string> viewports{ "Top", "Front", "Side" };
-        //auto selected_view = -1;
-        //if (draw_combo_box("viewport_combo", viewports, selected_view))
-        //{
-        //    if (selected_view == 0)
-        //    {
-        //        reset_camera({ 0.0f, 1.5f, 0.0f });
-        //    }
-        //    else if (selected_view == 1)
-        //    {
-        //        reset_camera({ 0.0f, 0.0f, -1.5f });
-        //    }
-        //    else if (selected_view == 2)
-        //    {
-        //        reset_camera({ -1.5f, 0.0f, -0.0f });
-        //    }
-        //}
-        //ImGui::PopItemWidth();
-
 
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons - 5, 0 });
 
@@ -1962,7 +1946,7 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
             label = to_string() << textual_icons::play << "##Resume 3d";
-            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
             {
                 paused = false;
                 for (auto&& s : streams)
@@ -1979,7 +1963,7 @@ namespace rs2
         else
         {
             label = to_string() << textual_icons::pause << "##Pause 3d";
-            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
             {
                 paused = true;
                 for (auto&& s : streams)
@@ -1995,7 +1979,7 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if (ImGui::Button(textual_icons::floppy, { 24, top_bar_height }))
+        if (ImGui::Button(textual_icons::floppy, { 24, buttons_heights }))
         {
             if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
             {
@@ -2018,7 +2002,7 @@ namespace rs2
 
         ImGui::SameLine();
 
-        if (ImGui::Button(textual_icons::refresh, { 24, top_bar_height }))
+        if (ImGui::Button(textual_icons::refresh, { 24, buttons_heights }))
         {
             reset_camera();
         }
@@ -2027,13 +2011,42 @@ namespace rs2
 
         ImGui::SameLine();
 
+        if (render_quads)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            label = to_string() << textual_icons::cubes << "##Render Quads";
+            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
+            {
+                render_quads = false;
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Render Quads");
+            }
+            ImGui::PopStyleColor(2);
+        }
+        else
+        {
+            label = to_string() << textual_icons::cubes << "##Render Points";
+            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
+            {
+                render_quads = true;
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Render Points");
+            }
+        }
+        ImGui::SameLine();
+
         if (support_non_syncronized_mode)
         {
             if (synchronization_enable)
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-                if (ImGui::Button(textual_icons::lock, { 24, top_bar_height }))
+                if (ImGui::Button(textual_icons::lock, { 24, buttons_heights }))
                 {
                     synchronization_enable = false;
                 }
@@ -2043,7 +2056,7 @@ namespace rs2
             }
             else
             {
-                if (ImGui::Button(textual_icons::unlock, { 24, top_bar_height }))
+                if (ImGui::Button(textual_icons::unlock, { 24, buttons_heights }))
                 {
                     synchronization_enable = true;
                 }
@@ -2066,13 +2079,16 @@ namespace rs2
                 render_pose = true;
             }
         }
+
+        auto total_top_bar_height = top_bar_height; // may include single bar or additional bar for pose
+
         if (render_pose)
         {
             total_top_bar_height += top_bar_height; // add additional bar height for pose
             const int num_of_pose_buttons = 3; // trajectory, draw camera, boundary selection
 
-            ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + top_bar_height });
-            ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
+            ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + buttons_heights });
+            ImGui::SetNextWindowSize({ stream_rect.w, buttons_heights });
             std::string pose_label = to_string() << "header of 3dviewer - pose";
             ImGui::Begin(pose_label.c_str(), nullptr, flags);
 
@@ -2080,7 +2096,7 @@ namespace rs2
             ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_pose_buttons - 5, 0 });
 
             // Draw camera object button
-            if (ImGui::Button(tm2.camera_object_button.get_icon().c_str(), { 24, top_bar_height }))
+            if (ImGui::Button(tm2.camera_object_button.get_icon().c_str(), { 24, buttons_heights }))
             {
                 tm2.camera_object_button.toggle_button();
             }
@@ -2095,7 +2111,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
             }
-            if (ImGui::Button(tm2.trajectory_button.get_icon().c_str(), { 24, top_bar_height }))
+            if (ImGui::Button(tm2.trajectory_button.get_icon().c_str(), { 24, buttons_heights }))
             {
                 tm2.trajectory_button.toggle_button();
             }
@@ -2114,7 +2130,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
             }
-            if (ImGui::Button(tm2.boundary_button.get_icon().c_str(), { 24, top_bar_height }))
+            if (ImGui::Button(tm2.boundary_button.get_icon().c_str(), { 24, buttons_heights }))
             {
                 tm2.boundary_button.toggle_button();
             }
@@ -2697,7 +2713,7 @@ namespace rs2
                     float(dev->algo_roi.max_x - dev->algo_roi.min_x),
                     float(dev->algo_roi.max_y - dev->algo_roi.min_y) };
 
-            r = r.normalize(_normalized_zoom.unnormalize(get_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
+            r = r.normalize(_normalized_zoom.unnormalize(get_original_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
 
             glColor3f(yellow.x, yellow.y, yellow.z);
             draw_rect(r, 2);
@@ -2995,57 +3011,73 @@ namespace rs2
 
     rs2::frame post_processing_filters::apply_filters(rs2::frame f)
     {
-        if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+        rs2_stream stream_type = f.get_profile().stream_type();
+        if (stream_type == RS2_STREAM_DEPTH || stream_type == RS2_STREAM_COLOR || stream_type == RS2_STREAM_INFRARED)
         {
             for (auto&& s : viewer.streams)
             {
-                if(!s.second.dev) continue;
+                if (!s.second.dev) continue;
                 auto dev = s.second.dev;
 
-                if(s.second.original_profile.unique_id() == f.get_profile().unique_id())
+                if (s.second.original_profile.unique_id() == f.get_profile().unique_id())
                 {
                     if (dev->post_processing_enabled)
                     {
                         auto dec_filter = s.second.dev->decimation_filter;
-                        auto depth_2_disparity = s.second.dev->depth_to_disparity;
-                        auto spatial_filter = s.second.dev->spatial_filter;
-                        auto temp_filter = s.second.dev->temporal_filter;
-                        auto hole_filling = s.second.dev->hole_filling_filter;
-                        auto disparity_2_depth = s.second.dev->disparity_to_depth;
-
                         if (dec_filter->enabled)
                             f = dec_filter->invoke(f);
 
-                        if (depth_2_disparity->enabled)
-                            f = depth_2_disparity->invoke(f);
+                        if (stream_type == RS2_STREAM_DEPTH)
+                        {
+                            auto depth_2_disparity = s.second.dev->depth_to_disparity;
+                            auto spatial_filter = s.second.dev->spatial_filter;
+                            auto temp_filter = s.second.dev->temporal_filter;
+                            auto hole_filling = s.second.dev->hole_filling_filter;
+                            auto disparity_2_depth = s.second.dev->disparity_to_depth;
 
-                        if (spatial_filter->enabled)
-                            f = spatial_filter->invoke(f);
+                            if (depth_2_disparity->enabled)
+                                f = depth_2_disparity->invoke(f);
 
-                        if (temp_filter->enabled)
-                            f = temp_filter->invoke(f);
+                            if (spatial_filter->enabled)
+                                f = spatial_filter->invoke(f);
 
-                        if (disparity_2_depth->enabled)
-                            f = disparity_2_depth->invoke(f);
+                            if (temp_filter->enabled)
+                                f = temp_filter->invoke(f);
 
-                        if (hole_filling->enabled)
-                            f = hole_filling->invoke(f);
+                            if (disparity_2_depth->enabled)
+                                f = disparity_2_depth->invoke(f);
 
-                        return f;
+                            if (hole_filling->enabled)
+                                f = hole_filling->invoke(f);
+                        }
+
+                        break;
                     }
                 }
             }
         }
 
-        // Override the the first pixel in Depth->RGB map to be used as a mark when occlusion filter is active
-        if ((f.get_profile().stream_type() == RS2_STREAM_COLOR) &&
-            get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).value)
+        // Override the zero pixel in texture frame with black color for occlusion invalidation
+        // TODO - this is a temporal solution to be refactored from the app level into the core library
+        switch (stream_type)
         {
-            auto rgb_stream = const_cast<uint8_t*>(static_cast<const uint8_t*>(f.get_data()));
-            memset(rgb_stream, 0, 3); // Override the zero pixel with black color for occlusion marking
-            // Alternatively, enable the next two lines to render invalidation with magenta color for inspection
-            //rgb_stream[0] = rgb_stream[2] = 0xff; // Use magenta to highlight the occlusion areas
-            //rgb_stream[1] = 0;
+        case RS2_STREAM_COLOR:
+        {
+                auto rgb_stream = const_cast<uint8_t*>(static_cast<const uint8_t*>(f.get_data()));
+                memset(rgb_stream, 0, 3);
+                // Alternatively, enable the next two lines to render invalidation with magenta color for inspection
+                //rgb_stream[0] = rgb_stream[2] = 0xff; // Use magenta to highlight the occlusion areas
+                //rgb_stream[1] = 0;
+            }
+            break;
+            case RS2_STREAM_INFRARED:
+            {
+                auto ir_stream = const_cast<uint8_t*>(static_cast<const uint8_t*>(f.get_data()));
+                memset(ir_stream, 0, 2); // Override the first two bytes to cover Y8/Y16 formats
+            }
+            break;
+            default:
+                break;
         }
 
         return f;
@@ -3106,7 +3138,7 @@ namespace rs2
 
     void post_processing_filters::render_loop()
     {
-        while (keep_calculating)
+        while (render_thread_active)
         {
             try
             {
@@ -3128,7 +3160,6 @@ namespace rs2
                     }
                     for (auto&& q : frames_queue_local)
                     {
-
                         frame frm;
                         if (q.second.poll_for_frame(&frm))
                         {
@@ -3826,10 +3857,11 @@ namespace rs2
             glColor4f(1.f, 1.f, 1.f, 1.f);
         }
 
-        if ( last_points && last_texture)
+        if (last_points && last_texture)
         {
+            auto vf_profile = last_points.get_profile().as<video_stream_profile>();
             // Non-linear correspondence customized for non-flat surface exploration
-            glPointSize(std::sqrt(viewer_rect.w / last_points.get_profile().as<video_stream_profile>().width()));
+            glPointSize(std::sqrt(viewer_rect.w / vf_profile.width()));
 
             auto tex = last_texture->get_gl_handle();
             glBindTexture(GL_TEXTURE_2D, tex);
@@ -3840,23 +3872,43 @@ namespace rs2
 
             //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
 
-            glBegin(GL_POINTS);
-
             auto vertices = last_points.get_vertices();
             auto tex_coords = last_points.get_texture_coordinates();
-
-            for (int i = 0; i < last_points.size(); i++)
+            if (!render_quads)
             {
-                if (vertices[i].z)
+                glBegin(GL_POINTS);
+                for (int i = 0; i < last_points.size(); i++)
                 {
-                    glVertex3fv(vertices[i]);
-                    glTexCoord2fv(tex_coords[i]);
+                    if (vertices[i].z)
+                    {
+                        glVertex3fv(vertices[i]);
+                        glTexCoord2fv(tex_coords[i + 1]);
+                    }
                 }
-
+                glEnd();
             }
-            glEnd();
+            else
+            {
+                // Visualization with quads produces better results but requires further optimization
+                glBegin(GL_QUADS);
 
-
+                const auto threshold = 0.05f;
+                auto width = vf_profile.width(), height = vf_profile.height();
+                for (int x = 0; x < width - 1; ++x) {
+                    for (int y = 0; y < height - 1; ++y) {
+                        auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
+                        if (vertices[a].z && vertices[b].z && vertices[c].z && vertices[d].z
+                            && abs(vertices[a].z - vertices[b].z) < threshold && abs(vertices[a].z - vertices[c].z) < threshold
+                            && abs(vertices[b].z - vertices[d].z) < threshold && abs(vertices[c].z - vertices[d].z) < threshold) {
+                            glVertex3fv(vertices[a]); glTexCoord2fv(tex_coords[a]);
+                            glVertex3fv(vertices[b]); glTexCoord2fv(tex_coords[b]);
+                            glVertex3fv(vertices[d]); glTexCoord2fv(tex_coords[d]);
+                            glVertex3fv(vertices[c]); glTexCoord2fv(tex_coords[c]);
+                        }
+                    }
+                }
+                glEnd();
+            }
         }
 
         glDisable(GL_DEPTH_TEST);
@@ -3953,6 +4005,34 @@ namespace rs2
         auto sec_since_update = std::chrono::duration<float, std::milli>(now - view_clock).count() / 1000;
         view_clock = now;
 
+        if (fixed_up)
+            up = { 0.f, -1.f, 0.f };
+
+        auto dir = target - pos;
+        auto x_axis = cross(dir, up);
+        auto step = sec_since_update * 0.3f;
+
+        if (ImGui::IsKeyPressed('w') || ImGui::IsKeyPressed('W'))
+        {
+            pos = pos + dir * step;
+            target = target + dir * step;
+        }
+        if (ImGui::IsKeyPressed('s') || ImGui::IsKeyPressed('S'))
+        {
+            pos = pos - dir * step;
+            target = target - dir * step;
+        }
+        if (ImGui::IsKeyPressed('d') || ImGui::IsKeyPressed('D'))
+        {
+            pos = pos + x_axis * step;
+            target = target + x_axis * step;
+        }
+        if (ImGui::IsKeyPressed('a') || ImGui::IsKeyPressed('A'))
+        {
+            pos = pos - x_axis * step;
+            target = target - x_axis * step;
+        }
+
         if (viewer_rect.contains(mouse.cursor) || force)
         {
             arcball_camera_update(
@@ -3964,7 +4044,7 @@ namespace rs2
                 static_cast<int>(viewer_rect.w), static_cast<int>(viewer_rect.h), // screen (window) size
                 static_cast<int>(mouse.prev_cursor.x), static_cast<int>(mouse.cursor.x),
                 static_cast<int>(mouse.prev_cursor.y), static_cast<int>(mouse.cursor.y),
-                ImGui::GetIO().MouseDown[2] ? 1 : 0,
+                (ImGui::GetIO().MouseDown[2] || ImGui::GetIO().MouseDown[1]) ? 1 : 0,
                 ImGui::GetIO().MouseDown[0] ? 1 : 0,
                 mouse.mouse_wheel,
                 0);
@@ -3975,6 +4055,8 @@ namespace rs2
 
     void viewer_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p)
     {
+        // Starting post processing filter rendering thread
+        ppf.start();
         streams[p.unique_id()].begin_stream(d, p);
         ppf.frames_queue.emplace(p.unique_id(), rs2::frame_queue(5));
     }
@@ -4994,12 +5076,10 @@ namespace rs2
         }
     }
 
-
     // Generic helper functions for comparison of fw versions
     std::vector<int> fw_version_to_int_vec(std::string fw_version)
     {
-        int start = 0;
-        int end;
+        size_t start{}, end{};
         std::vector<int> values;
         std::string delimiter(".");
         std::string substr;
@@ -5012,7 +5092,6 @@ namespace rs2
         values.push_back(atoi(fw_version.substr(start, fw_version.length() - start).c_str()));
         return values;
     }
-
 
     bool fw_version_less_than(std::string fw_version, std::string min_fw_version)
     {
@@ -5642,6 +5721,8 @@ namespace rs2
                                 return sm->streaming;
                             }))
                             {
+                                // Stopping post processing filter rendering thread
+                                viewer.ppf.stop();
                                 stop_recording = true;
                             }
                         }
@@ -5761,11 +5842,12 @@ namespace rs2
                 {
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                     const ImVec2 pos = ImGui::GetCursorPos();
-                    const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
 
                     draw_later.push_back([windows_width, &window, sub, pos, &viewer, this]() {
-                        if (sub->streaming) ImGui::SetCursorPos({ windows_width - 35, pos.y - 1 });
-                        else ImGui::SetCursorPos({ windows_width - 27, pos.y + 2 });
+                        if (!sub->streaming) ImGui::SetCursorPos({ windows_width -27 , pos.y - 1 });
+                        else
+                            ImGui::SetCursorPos({ windows_width - 32, pos.y - 3 });
+
                         ImGui::PushFont(window.get_font());
 
                         ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
@@ -5840,8 +5922,10 @@ namespace rs2
                             const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
 
                             draw_later.push_back([windows_width, &window, sub, pos, &viewer, this, pb]() {
-                                if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 27, pos.y + 3 });
-                                else ImGui::SetCursorPos({ windows_width - 35, pos.y - 1 });
+                                if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 27, pos.y + 1 });
+                                else
+                                    ImGui::SetCursorPos({ windows_width - 35, pos.y - 3 });
+
                                 ImGui::PushFont(window.get_font());
 
                                 ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
@@ -6131,18 +6215,24 @@ namespace rs2
         return std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - created_time).count();
     }
 
-    void notification_model::clear_color_scheme() const
+    // Pops the 6 colors that were pushed in set_color_scheme
+    void notification_model::unset_color_scheme() const
     {
-        ImGui::PopStyleColor(3);
+        ImGui::PopStyleColor(6);
     }
 
+    /* Sets color scheme for notifications, must be used with unset_color_scheme to pop all colors in the end
+       Parameter t indicates the transparency of the nofication interface */
     void notification_model::set_color_scheme(float t) const
     {
+        ImGui::PushStyleColor(ImGuiCol_CloseButton, { 0, 0, 0, 0 });
+        ImGui::PushStyleColor(ImGuiCol_CloseButtonActive, { 0, 0, 0, 0 });
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             ImGui::PushStyleColor(ImGuiCol_WindowBg, { 33/255.f, 40/255.f, 46/255.f, 1 - t });
             ImGui::PushStyleColor(ImGuiCol_TitleBg, { 62 / 255.f, 77 / 255.f, 89 / 255.f, 1 - t });
             ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 62 / 255.f, 77 / 255.f, 89 / 255.f, 1 - t });
+            ImGui::PushStyleColor(ImGuiCol_CloseButtonHovered, { 62 / 255.f + 0.1f, 77 / 255.f + 0.1f, 89 / 255.f + 0.1f, 1 - t });
         }
         else
         {
@@ -6152,12 +6242,14 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0.f, 0.f, 1 - t });
                 ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.5f, 0.2f, 0.2f, 1 - t });
                 ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.6f, 0.2f, 0.2f, 1 - t });
+                ImGui::PushStyleColor(ImGuiCol_CloseButtonHovered, { 0.5f + 0.1f, 0.2f + 0.1f, 0.2f + 0.1f, 1 - t });
             }
             else
             {
                 ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0.3f, 0.3f, 1 - t });
                 ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.4f, 0.4f, 0.4f, 1 - t });
                 ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.6f, 0.6f, 0.6f, 1 - t });
+                ImGui::PushStyleColor(ImGuiCol_CloseButtonHovered, { 0.6f + 0.1f, 0.6f + 0.1f, 0.6f + 0.1f, 1 - t });
             }
         }
     }
@@ -6191,29 +6283,24 @@ namespace rs2
         ImGui::SetNextWindowSize({ float(315), float(height) });
 
         bool opened = true;
-        bool* opened_ptr;
         std::string label;
+
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
             label = to_string() << "Firmware update recommended" << "##" << index;
-            opened_ptr = &opened;
         }
         else
         {
             label = to_string() << "Hardware Notification #" << index;
-            opened_ptr = nullptr;
         }
 
-        ImGui::PushStyleColor(ImGuiCol_CloseButton, { 62 / 255.f, 77 / 255.f, 89 / 255.f, 1 - t });
-        ImGui::PushStyleColor(ImGuiCol_CloseButtonHovered, { 62 / 255.f + 0.1f, 77 / 255.f + 0.1f, 89 / 255.f + 0.1f, 1 - t });
-        ImGui::PushStyleColor(ImGuiCol_CloseButtonActive, { 62 / 255.f, 77 / 255.f, 89 / 255.f, 1 - t });
-        ImGui::Begin(label.c_str(), opened_ptr, flags);
-        
+        ImGui::Begin(label.c_str(), &opened, flags);
+
+        if (!opened)
+            to_close = true;
+
         if (category == RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED)
         {
-            if (!opened)
-                to_close = true;
-
             std::regex version_regex("([0-9]+.[0-9]+.[0-9]+.[0-9]+\n)");
             std::smatch sm;
             std::regex_search(message, sm, version_regex);
@@ -6262,8 +6349,8 @@ namespace rs2
         }
 
         ImGui::End();
-        ImGui::PopStyleColor(4);
-        clear_color_scheme();
+        ImGui::PopStyleColor(1);
+        unset_color_scheme();
         ImGui::PopStyleVar();
     }
 
@@ -6353,7 +6440,7 @@ namespace rs2
 
         ImGui::PopStyleVar(2);
         ImGui::PopStyleColor(3);
-        selected.clear_color_scheme();
+        selected.unset_color_scheme();
         ImGui::End();
 
         ImGui::PopStyleColor();
@@ -6556,5 +6643,98 @@ namespace rs2
             glVertex3f(v.x, 1.0f, v.y);
         }
         glEnd();
+    }
+
+    std::string get_timestamped_file_name()
+    {
+        std::time_t now = std::time(NULL);
+        std::tm * ptm = std::localtime(&now);
+        char buffer[16];
+        // Format: 20170529_205500
+        std::strftime(buffer, 16, "%Y%m%d_%H%M%S", ptm);
+        return buffer;
+    }
+    std::string get_folder_path(special_folder f)
+    {
+        std::string res;
+#ifdef _WIN32
+        if (f == temp_folder)
+        {
+            TCHAR buf[MAX_PATH];
+            if (GetTempPath(MAX_PATH, buf) != 0)
+            {
+                char str[1024];
+                wcstombs(str, buf, 1023);
+                res = str;
+            }
+        }
+        else
+        {
+            GUID folder;
+            switch (f)
+            {
+            case user_desktop: folder = FOLDERID_Desktop;
+                break;
+            case user_documents: folder = FOLDERID_Documents;
+                break;
+            case user_pictures: folder = FOLDERID_Pictures;
+                break;
+            case user_videos: folder = FOLDERID_Videos;
+                break;
+            default:
+                throw std::invalid_argument(
+                    std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
+            }
+            PWSTR folder_path = NULL;
+            HRESULT hr = SHGetKnownFolderPath(folder, KF_FLAG_DEFAULT_PATH, NULL, &folder_path);
+            if (SUCCEEDED(hr))
+            {
+                char str[1024];
+                wcstombs(str, folder_path, 1023);
+                CoTaskMemFree(folder_path);
+                res = str;
+                res += "\\";
+            }
+            else
+            {
+                throw std::runtime_error("Failed to get requested special folder");
+            }
+        }
+#endif //_WIN32
+#if defined __linux__ || defined __APPLE__
+        if (f == special_folder::temp_folder)
+        {
+            const char* tmp_dir = getenv("TMPDIR");
+            res = tmp_dir ? tmp_dir : "/tmp/";
+        }
+        else
+        {
+            const char* home_dir = getenv("HOME");
+            if (!home_dir)
+            {
+                struct passwd* pw = getpwuid(getuid());
+                home_dir = (pw && pw->pw_dir) ? pw->pw_dir : "";
+            }
+            if (home_dir)
+            {
+                res = home_dir;
+                switch (f)
+                {
+                case user_desktop: res += "/Desktop/";
+                    break;
+                case user_documents: res += "/Documents/";
+                    break;
+                case user_pictures: res += "/Pictures/";
+                    break;
+                case user_videos: res += "/Videos/";
+                    break;
+                default:
+                    throw std::invalid_argument(
+                        std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
+                }
+            }
+        }
+#endif // defined __linux__ || defined __APPLE__
+        return res;
     }
 }

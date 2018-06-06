@@ -1543,6 +1543,124 @@ TEST_CASE("Check option API", "[live][options]")
     }
 }
 
+// List of controls coupled together, such as modifying one of them would impose changes(affect) other options if modified
+// The list is managed per-sensor/SKU
+struct option_bundle
+{
+    rs2_stream sensor_type;
+    rs2_option master_option;
+    rs2_option slave_option;
+    float slave_val_before;
+    float slave_val_after;
+};
+
+enum dev_group { e_unresolved_grp, e_d400, e_sr300 };
+
+const std::map<dev_type,dev_group> dev_map = {
+    /* RS400/PSR*/      { { "0AD1", true }, e_d400},
+    /* RS410/ASR*/      { { "0AD2", true }, e_d400 },
+                        { { "0AD2", false }, e_d400},
+    /* RS415/ASRC*/     { { "0AD3", true }, e_d400},
+                        { { "0AD3", false }, e_d400},
+    /* RS430/AWG*/      { { "0AD4", true }, e_d400},
+    /* RS430_MM / AWGT*/{ { "0AD5", true }, e_d400},
+    /* D4/USB2*/        { { "0AD6", false }, e_d400 },
+    /* RS420/PWG*/      { { "0AF6", true }, e_d400},
+    /* RS420_MM/PWGT*/  { { "0AFE", true }, e_d400},
+    /* RS410_MM/ASRT*/  { { "0AFF", true }, e_d400},
+    /* RS400_MM/PSR*/   { { "0B00", true }, e_d400},
+    /* RS405/DS5U*/     { { "0B01", true }, e_d400},
+    /* RS430_MMC/AWGTC*/{ { "0B03", true }, e_d400},
+    /* RS435_RGB/AWGC*/ { { "0B07", true }, e_d400},
+                        { { "0B07", false }, e_d400},
+    /* DS5U */          { { "0B0C", true }, e_d400},
+    /*SR300*/           { { "0AA5", true }, e_sr300 },
+};
+
+// Testing bundled depth controls
+const std::map<dev_group, std::vector<option_bundle> > auto_disabling_controls =
+{
+    { e_d400,  { { RS2_STREAM_DEPTH, RS2_OPTION_EXPOSURE, RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.f, 0.f },
+                { RS2_STREAM_DEPTH, RS2_OPTION_GAIN, RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.f, 1.f } } },  // The value remain intact == the controls shall not affect each other
+    //{ e_sr300, { { RS2_STREAM_DEPTH, TBD, TBD, 1.f, 0.f } } }, Provision for
+};
+
+// Verify that the bundled controls (Exposure<->Aut-Exposure) are in sync
+TEST_CASE("Auto-Disabling Controls", "[live][options]")
+{
+    // Require at least one device to be plugged in
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        std::vector<rs2::device> list;
+        REQUIRE_NOTHROW(list = ctx.query_devices());
+        REQUIRE(list.size() > 0);
+
+        // for each sensor
+        for (auto&& dev : list)
+        {
+            disable_sensitive_options_for(dev);
+            dev_type PID = get_PID(dev);
+            CAPTURE(PID.first);
+            CAPTURE(PID.second);
+            auto dev_grp{ e_unresolved_grp };
+            REQUIRE_NOTHROW(dev_grp = dev_map.at(PID));
+
+            for (auto&& snr : dev.query_sensors())
+            {
+                // The test will apply to depth sensor only. In future may be extended for additional type of sensors
+                if (snr.is<depth_sensor>())
+                {
+                    auto entry = auto_disabling_controls.find(dev_grp);
+                    if (auto_disabling_controls.end() == entry)
+                    {
+                        WARN("Skipping test - the Device-Under-Test profile is not defined for PID " << PID.first << (PID.second ? " USB3" : " USB2"));
+                    }
+                    else
+                    {
+                        auto test_patterns = auto_disabling_controls.at(dev_grp);
+                        REQUIRE(test_patterns.size() > 0);
+
+                        for (auto i = 0; i < test_patterns.size(); ++i)
+                        {
+                            if (test_patterns[i].sensor_type != RS2_STREAM_DEPTH)
+                                continue;
+
+                            auto orig_opt = test_patterns[i].master_option;
+                            auto tgt_opt = test_patterns[i].slave_option;
+                            bool opt_orig_supported{};
+                            bool opt_tgt_supported{};
+                            REQUIRE_NOTHROW(opt_orig_supported = snr.supports(orig_opt));
+                            REQUIRE_NOTHROW(opt_tgt_supported = snr.supports(tgt_opt));
+
+                            if (opt_orig_supported && opt_tgt_supported)
+                            {
+                                rs2::option_range master_range,slave_range;
+                                REQUIRE_NOTHROW(master_range = snr.get_option_range(orig_opt));
+                                REQUIRE_NOTHROW(slave_range = snr.get_option_range(tgt_opt));
+
+                                // Switch the receiving options into the responding state
+                                auto slave_cur_val = snr.get_option(tgt_opt);
+                                if (slave_cur_val != test_patterns[i].slave_val_before)
+                                {
+                                    REQUIRE_NOTHROW(snr.set_option(tgt_opt, test_patterns[i].slave_val_before));
+                                    //std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                                    REQUIRE(snr.get_option(tgt_opt) == test_patterns[i].slave_val_before);
+                                }
+
+                                // Modify the originating control and verify that the target control has been modified as well
+                                REQUIRE_NOTHROW(snr.set_option(orig_opt, master_range.def));
+                                REQUIRE(snr.get_option(tgt_opt) == test_patterns[i].slave_val_after);
+                            }
+                        }
+                    }
+                }
+            }
+        } // for (auto&& dev : list)
+    }
+}
+
+
 /// The test may fail due to changes in profiles list that do not indicate regression.
 /// TODO - refactoring required to make the test agnostic to changes imposed by librealsense core
 TEST_CASE("Multiple devices", "[live][multicam][!mayfail]")

@@ -44,7 +44,7 @@ public:
         _first_frame(true),
         _w(0), _h(0)
     {
-        if (!_window) 
+        if (!_window)
             throw std::runtime_error("Could not open OpenGL window, please check your graphic drivers");
         init_window();
     }

@@ -17,7 +17,7 @@
 | Kernel Version (Linux Only)    |  (e.g. 4.14.13)                                         | 
 | Platform                                 | PC/Raspberry Pi/ NVIDIA Jetson / etc..  |
 | SDK Version                            |  { legacy / 2.<?>.<?> }                          | 
-
+| Language                            |  {C/C#/labview/nodejs/opencv/pcl/python/unity }                          | 
 
 ### Issue Description
 <Describe your issue / question / feature request / etc..>

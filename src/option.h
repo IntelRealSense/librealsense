@@ -390,7 +390,7 @@ namespace librealsense
        }
        void set(float value) override
        {
-          auto strong = _auto_exposure.lock();
+          auto strong = _affected_control.lock();
           assert(strong);
 
           auto move_to_manual = false;
@@ -432,11 +432,11 @@ namespace librealsense
        }
 
        explicit auto_disabling_control(std::shared_ptr<option> auto_disabling,
-                                       std::shared_ptr<option> auto_exposure,
+                                       std::shared_ptr<option> affected_option,
                                        std::vector<float> move_to_manual_values = {1.f},
                                        float manual_value = 0.f)
 
-           : _auto_disabling_control(auto_disabling), _auto_exposure(auto_exposure),
+           : _auto_disabling_control(auto_disabling), _affected_control(affected_option),
              _move_to_manual_values(move_to_manual_values), _manual_value(manual_value)
        {}
        void enable_recording(std::function<void(const option &)> record_action) override
@@ -445,7 +445,7 @@ namespace librealsense
        }
    private:
        std::shared_ptr<option> _auto_disabling_control;
-       std::weak_ptr<option>   _auto_exposure;
+       std::weak_ptr<option>   _affected_control;
        std::vector<float>      _move_to_manual_values;
        float                   _manual_value;
        std::function<void(const option&)> _recording_function = [](const option&) {};
