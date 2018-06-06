@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,136 +6,129 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Intel.RealSense;
 using System.Linq;
+using UnityEngine.Rendering;
+using UnityEngine.Assertions;
 
+[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class PointCloudGenerator : MonoBehaviour
 {
-    private ParticleSystem.Particle[] particles = new ParticleSystem.Particle[0];
-    private PointCloud pc = new PointCloud();
-    FrameQueue pointsQueue = new FrameQueue(1);
-    Points.Vertex[] vertices;
-    Points.TextureCoordinate[] textureCoordinate;
-    private byte[] lastColorImage;
-    Texture2D colorTexture;
-    private int colorFrameWidth;
-    private int colorFrameHeight;
+    public Stream stream = Stream.Color;
+    Mesh mesh;
+    Texture2D uvmap;
 
-    public bool mirrored;
-    public float pointsSize = 0.01f;
-    public int skipParticles = 2;
-    public ParticleSystem pointCloudParticles;
+    PointCloud pc;
 
-    // Use this for initialization
+    int[] indices;
+    Vector3[] vertices;
+    private GCHandle handle;
+
+    int frameSize;
+    private IntPtr frameData;
+
+    AutoResetEvent e = new AutoResetEvent(false);
+
     void Start()
     {
-        //RealSenseDevice.Instance.onNewSample += OnFrame;
-        RealSenseDevice.Instance.onNewSampleSet += OnFrames;
+        pc = new PointCloud();
 
+        RealSenseDevice.Instance.onNewSampleSet += OnFrames;
+        var streams = RealSenseDevice.Instance.ActiveProfile.Streams;
+
+        using (var profile = streams.FirstOrDefault(s => s.Stream == stream) as VideoStreamProfile)
+        {
+            if (profile != null)
+            {
+                Assert.IsTrue(SystemInfo.SupportsTextureFormat(TextureFormat.RGFloat));
+                uvmap = new Texture2D(profile.Width, profile.Height, TextureFormat.RGFloat, false)
+                {
+                    wrapMode = TextureWrapMode.Clamp,
+                    filterMode = FilterMode.Point,
+                };
+                GetComponent<MeshRenderer>().sharedMaterial.SetTexture("_UVMap", uvmap);
+            }
+            else
+            {
+                Debug.LogWarningFormat("Stream {0} not found", stream);
+            }
+        }
+
+        using (var profile = streams.First(s => s.Stream == Stream.Depth) as VideoStreamProfile)
+        {
+
+            mesh = new Mesh()
+            {
+                indexFormat = IndexFormat.UInt32,
+            };
+
+            vertices = new Vector3[profile.Width * profile.Height];
+            handle = GCHandle.Alloc(vertices, GCHandleType.Pinned);
+
+            indices = Enumerable.Range(0, profile.Width * profile.Height).ToArray();
+
+            mesh.vertices = vertices;
+            mesh.uv =
+                Enumerable.Range(0, profile.Height).Select(y =>
+                Enumerable.Range(0, profile.Width).Select(x =>
+                    new Vector2((float)x / profile.Width, (float)y / profile.Height)
+                )).SelectMany(v => v).ToArray();
+
+            GetComponent<MeshFilter>().sharedMesh = mesh;
+        }
     }
-    object l = new object();
+
+    void OnDestroy()
+    {
+        if (pc != null)
+            pc.Dispose();
+
+        if (handle.IsAllocated)
+            handle.Free();
+
+        if (frameData != IntPtr.Zero)
+        {
+            Marshal.FreeHGlobal(frameData);
+            frameData = IntPtr.Zero;
+        }
+    }
+
     private void OnFrames(FrameSet frames)
     {
-        if(frames.DepthFrame == null)
-        {
-            Debug.Log("No depth frame in frameset, can't create point cloud");
-            return;
-        }
-
-        if (!UpdateParticleParams(frames.DepthFrame.Width, frames.DepthFrame.Height))
-        {
-            Debug.Log("Unable to craete point cloud");
-            return;
-        }
-
         using (var points = pc.Calculate(frames.DepthFrame))
         {
-            if (frames.ColorFrame != null)
+            memcpy(handle.AddrOfPinnedObject(), points.VertexData, points.Count * 3 * sizeof(float));
+
+            // var f = frames[stream] as VideoFrame;
+            var f = frames.FirstOrDefault<VideoFrame>(stream);
+            if (f != null)
             {
-                if (frames.ColorFrame.BitsPerPixel == 24)
-                {
-                    pc.MapTexture(frames.ColorFrame);
-                    colorFrameWidth = frames.ColorFrame.Width;
-                    colorFrameHeight = frames.ColorFrame.Height;
-                    var newSize = frames.ColorFrame.Stride * colorFrameHeight;
-                    lock (l)
-                    {
-                        if (lastColorImage == null || lastColorImage.Length != newSize)
-                            lastColorImage = new byte[newSize];
+                pc.MapTexture(f);
 
-                        frames.ColorFrame.CopyTo(lastColorImage);
-                    }
-                }
+                frameSize = f.Width * f.Height * 2 * sizeof(float);
+                if (frameData == IntPtr.Zero)
+                    frameData = Marshal.AllocHGlobal(frameSize);
+                memcpy(frameData, points.TextureData, frameSize);
             }
-            pointsQueue.Enqueue(points);
-        }
-    }
 
-    private bool UpdateParticleParams(int width, int height)
-    {
-        var numParticles = (width * height);
-        if (particles.Length != numParticles)
-        {
-            particles = new ParticleSystem.Particle[numParticles];
+            e.Set();
         }
-
-        return true;
     }
 
     void Update()
     {
-        Frame frame;
-        if (pointsQueue.PollForFrame(out frame))
+        if (e.WaitOne(0))
         {
-            using (Points points = frame as Points)
+            if (frameData != IntPtr.Zero && frameSize != 0)
             {
-                if (points == null)
-                    throw new Exception("Frame in queue is not a points frame");
-
-                vertices = vertices ?? new Points.Vertex[points.Count];
-                points.CopyTo(vertices);
-
-                lock (l)
-                {
-                    if (textureCoordinate == null || textureCoordinate.Length != points.Count)
-                        textureCoordinate = new Points.TextureCoordinate[points.Count];
-
-                    points.CopyTo(textureCoordinate);
-
-                    if (lastColorImage != null)
-                    {
-                        if (colorTexture == null || colorTexture.width != colorFrameWidth || colorTexture.height != colorFrameHeight)
-                        {
-                            colorTexture = new Texture2D(colorFrameWidth, colorFrameHeight, TextureFormat.RGB24, false, true)
-                            {
-                                wrapMode = TextureWrapMode.Clamp,
-                                filterMode = FilterMode.Point
-                            };
-                        }
-
-                        colorTexture.LoadRawTextureData(lastColorImage);
-                        colorTexture.Apply();
-                    }
-                }
-                Debug.Assert(vertices.Length == particles.Length);
-                int mirror = mirrored ? -1 : 1;
-                for (int index = 0; index < vertices.Length; index += skipParticles)
-                {
-                    var v = vertices[index];
-                    if (v.z > 0)
-                    {
-                        particles[index].position = new Vector3(v.x * mirror, v.y, v.z);
-                        particles[index].startSize = pointsSize;
-                        particles[index].startColor = colorTexture.GetPixelBilinear(textureCoordinate[index].u, textureCoordinate[index].v);
-                    }
-                    else //Required since we reuse the array
-                    {
-                        particles[index].position = Vector3.zero;
-                        particles[index].startSize = 0;
-                        particles[index].startColor = Color.black;
-                    }
-                }
+                uvmap.LoadRawTextureData(frameData, frameSize);
+                uvmap.Apply();
             }
+
+            mesh.vertices = vertices;
+            mesh.SetIndices(indices, MeshTopology.Points, 0, false);
+            mesh.RecalculateBounds();
         }
-        //Either way, update particles
-        pointCloudParticles.SetParticles(particles, particles.Length);
     }
+
+    [DllImport("msvcrt.dll", EntryPoint = "memcpy", CallingConvention = CallingConvention.Cdecl, SetLastError = false)]
+    internal static extern IntPtr memcpy(IntPtr dest, IntPtr src, int count);
 }
