@@ -12,7 +12,7 @@ Next, download the following prerequisites :
 
 * Visual Studio 2017 only - [.NET Core 2.x](https://www.microsoft.com/net/download/visual-studio-sdks)
 
-After installing all prerequisites, generate realsense2.sln with BUILD_CSHARP_BINDINGS flag using cmake.
+After installing all prerequisites, generate 'realsense2.sln' with BUILD_CSHARP_BINDINGS flag using cmake.
 
 Form the root dir:
 - mkdir build
