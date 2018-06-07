@@ -3146,7 +3146,7 @@ namespace rs2
                 if(viewer.synchronization_enable)
                 {
                     auto index = 0;
-                    while ((frm = syncer_queue.wait_for_frame(100)) && ++index <= syncer_queue.capacity())
+                    while ((frm = syncer_queue.wait_for_frame(30)) && ++index <= syncer_queue.capacity())
                     {
                         processing_block.invoke(frm);
                     }
@@ -3161,7 +3161,7 @@ namespace rs2
                     for (auto&& q : frames_queue_local)
                     {
                         frame frm;
-                        if (frm = q.second.wait_for_frame(100))
+                        if (frm = q.second.wait_for_frame(30))
                         {
                             processing_block.invoke(frm);
                         }
