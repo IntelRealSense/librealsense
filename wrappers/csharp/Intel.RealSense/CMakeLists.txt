@@ -30,5 +30,5 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION 
 add_dependencies(${PROJECT_NAME} realsense2)
 
 set_target_properties (${PROJECT_NAME} PROPERTIES
-	FOLDER Library/CSharp
+	FOLDER Wrappers/csharp
 )

@@ -19,9 +19,9 @@ Form the root dir:
 - cd build
 - cmake .. -DBUILD_CSHARP_BINDINGS=ON
 
-The file 'realsense2.sln' should be created in the build folder, open the file with Visual Studio and build any of the C# examples.
+The file 'realsense2.sln' should be created in the build folder, open the file with Visual Studio, C# examples and library will be available in the solution under 'Wrappers/csharp'.
 
-Both the native and the .NET wrapper will be built as part of the example dependencies.
+Both the native and the .NET wrapper are built by default as part of the examples dependencies.
 
 ## Hello World
 
