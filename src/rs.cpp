@@ -905,12 +905,22 @@ int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_err
     VALIDATE_NOT_NULL(queue);
     VALIDATE_NOT_NULL(output_frame);
     librealsense::frame_holder fh;
-    if (queue->queue.try_dequeue(&fh))
+
+    int tries = 0;
+    while (tries < 16)
     {
-        frame_interface* result = nullptr;
-        std::swap(result, fh.frame);
-        *output_frame = (rs2_frame*)result;
-        return true;
+        if (queue->queue.try_dequeue(&fh))
+        {
+            frame_interface* result = nullptr;
+            std::swap(result, fh.frame);
+            *output_frame = (rs2_frame*)result;
+            return true;
+        }
+        else
+        {
+            ++tries;
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
     }
 
     return false;
