@@ -7,7 +7,7 @@
 
 //#include "../include/librealsense2/rsutil.h" // For projection/deprojection logic
 
-#ifdef __SSSE3__
+#ifdef __AVX2__
 #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
 #include <immintrin.h>
 

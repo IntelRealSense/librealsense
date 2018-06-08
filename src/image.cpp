@@ -6,7 +6,7 @@
 #include "image.h"
 #include "image_avx.h"
 
-#ifdef __SSSE3__
+#if (defined(__SSSE3__) || defined(__AVX2__))
 #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
 #endif
 
@@ -303,7 +303,7 @@ namespace librealsense
         auto n = width * height;
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
 
-        #ifdef __SSSE3__
+        #ifdef __AVX2__
         static bool do_avx = has_avx();
 
         if (do_avx)
