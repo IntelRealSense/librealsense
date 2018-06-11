@@ -10,7 +10,7 @@
 
 #include <android/ndk-version.h>
 
-#if __NDK_MAJOR__ < 16
+#if (__NDK_MAJOR__ < 17)
 namespace std
 {
     template <typename T>
