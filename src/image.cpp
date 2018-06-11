@@ -305,7 +305,7 @@ namespace librealsense
         auto n = width * height;
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
 #ifdef RS2_USE_CUDA
-        rsimpl::unpack_yuy2_cuda<FORMAT>(d, s, n);
+        rscuda::unpack_yuy2_cuda<FORMAT>(d, s, n);
                   
 
 #elif __SSSE3__
@@ -862,7 +862,7 @@ namespace librealsense
     {
         auto count = width * height;
 #ifdef RS2_USE_CUDA
-        rsimpl::split_frame_y8_y8_from_y8i_cuda(dest, count, reinterpret_cast<const y8i_pixel *>(source));
+        rscuda::split_frame_y8_y8_from_y8i_cuda(dest, count, reinterpret_cast<const y8i_pixel *>(source));
 #else
         split_frame(dest, count, reinterpret_cast<const y8i_pixel*>(source),
             [](const y8i_pixel & p) -> uint8_t { return p.l; },
@@ -875,7 +875,7 @@ namespace librealsense
     {
         auto count = width * height;
 #ifdef RS2_USE_CUDA
-    rsimpl::split_frame_y16_y16_from_y12i_cuda(dest, count, reinterpret_cast<const y12i_pixel *>(source));
+    rscuda::split_frame_y16_y16_from_y12i_cuda(dest, count, reinterpret_cast<const y12i_pixel *>(source));
 #else
         split_frame(dest, count, reinterpret_cast<const y12i_pixel*>(source),
         [](const y12i_pixel & p) -> uint16_t { return p.l() << 6 | p.l() >> 4; },  // We want to convert 10-bit data to 16-bit data
@@ -906,7 +906,7 @@ namespace librealsense
         auto in = reinterpret_cast<const uint16_t*>(source);
         auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);
 #ifdef RS2_USE_CUDA
-        rsimpl::unpack_z16_y8_from_sr300_inzi_cuda(out_ir, in, count);
+        rscuda::unpack_z16_y8_from_sr300_inzi_cuda(out_ir, in, count);
 #else
         for (int i = 0; i < count; ++i) *out_ir++ = *in++ >> 2;
 #endif
@@ -919,7 +919,7 @@ namespace librealsense
         auto in = reinterpret_cast<const uint16_t*>(source);
         auto out_ir = reinterpret_cast<uint16_t*>(dest[1]);
 #ifdef RS2_USE_CUDA
-        rsimpl::unpack_z16_y16_from_sr300_inzi_cuda(out_ir, in, count);
+        rscuda::unpack_z16_y16_from_sr300_inzi_cuda(out_ir, in, count);
 #else
         for (int i = 0; i < count; ++i) *out_ir++ = *in++ << 6;
 #endif
