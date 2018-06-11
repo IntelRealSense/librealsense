@@ -9,7 +9,7 @@
 #include "environment.h"
 #include "sync.h"
 
-using namespace device_serializer;
+using namespace librealsense;
 
 playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<device_serializer::reader> serializer) :
     m_context(ctx),

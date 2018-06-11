@@ -8,7 +8,6 @@
 #include "archive.h"
 #include "metadata.h"
 #include <cmath>
-using namespace librealsense;
 
 namespace librealsense
 {
@@ -63,7 +62,7 @@ namespace librealsense
         md_attribute_parser(Attribute S::* attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod) :
             _md_attribute(attribute_name), _md_flag(flag), _offset(offset), _modifyer(mod) {};
 
-        rs2_metadata_type get(const frame & frm) const override
+        rs2_metadata_type get(const librealsense::frame & frm) const override
         {
             auto s = reinterpret_cast<const S*>(((const uint8_t*)frm.additional_data.metadata_blob.data()) + _offset);
 
@@ -76,7 +75,7 @@ namespace librealsense
         }
 
         // Verifies that the parameter is both supported and available
-        bool supports(const frame & frm) const override
+        bool supports(const librealsense::frame & frm) const override
         {
             auto s = reinterpret_cast<const S*>(((const uint8_t*)frm.additional_data.metadata_blob.data()) + _offset);
 
@@ -136,7 +135,7 @@ namespace librealsense
         md_uvc_header_parser(Attribute St::* attribute_name, attrib_modifyer mod) :
             _md_attribute(attribute_name), _modifyer(mod){};
 
-        rs2_metadata_type get(const frame & frm) const override
+        rs2_metadata_type get(const librealsense::frame & frm) const override
         {
             if (!supports(frm))
                 throw invalid_value_exception("UVC header is not available");
@@ -146,7 +145,7 @@ namespace librealsense
             return attrib;
         }
 
-        bool supports(const frame & frm) const override
+        bool supports(const librealsense::frame & frm) const override
         { return (frm.additional_data.metadata_size >= platform::uvc_header_size); }
 
     private:
@@ -173,12 +172,12 @@ namespace librealsense
         md_additional_parser(Attribute St::* attribute_name) :
             _md_attribute(attribute_name) {};
 
-        rs2_metadata_type get(const frame & frm) const override
+        rs2_metadata_type get(const librealsense::frame & frm) const override
         {
             return static_cast<rs2_metadata_type>(frm.additional_data.*_md_attribute);
         }
 
-        bool supports(const frame & frm) const override
+        bool supports(const librealsense::frame & frm) const override
         { return true; }
 
     private:
@@ -211,12 +210,12 @@ namespace librealsense
 
         // The sensor's timestamp is defined as the middle of exposure time. Sensor_ts= Frame_ts - (Actual_Exposure/2)
         // For RS4xx the metadata payload holds only the (Actual_Exposure/2) offset, and the actual value needs to be calculated
-        rs2_metadata_type get(const frame & frm) const override
+        rs2_metadata_type get(const librealsense::frame & frm) const override
         {
             return _frame_ts_parser->get(frm) - _sensor_ts_parser->get(frm);
         };
 
-        bool supports(const frame & frm) const override
+        bool supports(const librealsense::frame & frm) const override
         {
             return (_sensor_ts_parser->supports(frm) && _frame_ts_parser->supports(frm));
         };
@@ -226,9 +225,9 @@ namespace librealsense
     class actual_fps_calculator
     {
     public:
-        double get_fps(const frame & frm)
+        double get_fps(const librealsense::frame & frm)
         {
-            // A computation involving unsigned operands can never overflow (ISO/IEC 9899:1999 (E) §6.2.5/9)
+            // A computation involving unsigned operands can never overflow (ISO/IEC 9899:1999 (E) \A76.2.5/9)
             auto num_of_frames = frm.additional_data.frame_number - frm.additional_data.last_frame_number;
 
             if (num_of_frames == 0)
@@ -249,7 +248,7 @@ namespace librealsense
             :_exposure_modifyer(exposure_mod), _discrete(discrete), _fps_values{ 6, 15, 30, 60, 90 }
         {}
 
-        rs2_metadata_type get(const frame & frm) const override
+        rs2_metadata_type get(const librealsense::frame & frm) const override
         {
             if (frm.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
             {
@@ -297,7 +296,7 @@ namespace librealsense
 
         }
 
-        bool supports(const frame & frm) const override
+        bool supports(const librealsense::frame & frm) const override
         {
             return true;
         }
@@ -325,7 +324,7 @@ namespace librealsense
         md_sr300_attribute_parser(Attribute S::* attribute_name, unsigned long long offset, attrib_modifyer mod) :
             _md_attribute(attribute_name), _offset(offset), _modifyer(mod){};
 
-        rs2_metadata_type get(const frame & frm) const override
+        rs2_metadata_type get(const librealsense::frame & frm) const override
         {
             if (!supports(frm))
                 throw invalid_value_exception("Metadata is not available");
@@ -339,7 +338,7 @@ namespace librealsense
             return param;
         }
 
-        bool supports(const frame & frm) const override
+        bool supports(const librealsense::frame & frm) const override
         {
             return (frm.additional_data.metadata_size >= (sizeof(S) + platform::uvc_header_size));
         }

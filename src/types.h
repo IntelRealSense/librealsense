@@ -11,8 +11,6 @@
 
 #include "../include/librealsense2/hpp/rs_types.hpp"
 
-//#include "/usr/local/cuda-9.0/include/vector_types.h"
-
 #include <stdint.h>
 #include <cassert>                          // For assert
 #include <cstring>                          // For memcmp
@@ -416,12 +414,6 @@ namespace librealsense
     struct float2 { float x, y; float & operator [] (int i) { return (&x)[i]; } };
     struct float3 { float x, y, z; float & operator [] (int i) { return (&x)[i]; } };
     struct float4 { float x, y, z, w; float & operator [] (int i) { return (&x)[i]; } };
-
-/*
-    float& operator [] (float2& x, int i) { return (&x)[i]; }
-    float& float3::operator [] (int i) { return (&x)[i]; }
-    float& float4::operator [] (int i) { return (&x)[i]; }
-*/
     struct float3x3 { float3 x, y, z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
     struct pose { float3x3 orientation; float3 position; };
 #pragma pack(pop)

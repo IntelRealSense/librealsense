@@ -5,6 +5,8 @@
 #include "api.h"
 #include "stream.h"
 
+using namespace librealsense;
+
 librealsense::record_sensor::record_sensor(const device_interface& device,
                                             sensor_interface& sensor) :
     m_sensor(sensor),
