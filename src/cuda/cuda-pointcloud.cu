@@ -57,11 +57,6 @@ void kernel_deproject_depth_cuda(float * points, const rs2_intrinsics* intrin, c
 
 void rscuda::deproject_depth_cuda(float * points, const rs2_intrinsics & intrin, const uint16_t * depth, float depth_scale)
 {
-    cudaEvent_t start, stop;
-	cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-	cudaEventRecord(start);
-	
     int count = intrin.height * intrin.width;
     int numBlocks = count / RS2_CUDA_THREADS_PER_BLOCK;
     
@@ -90,12 +85,6 @@ void rscuda::deproject_depth_cuda(float * points, const rs2_intrinsics & intrin,
     cudaFree(dev_points);
     cudaFree(dev_depth);
     cudaFree(dev_intrin);
-
-    cudaEventRecord(stop);
-	cudaEventSynchronize(stop);
-	float milliseconds = 0;
-    cudaEventElapsedTime(&milliseconds, start, stop);
-    std::cout << milliseconds << std::endl;
 }
 
 #endif
