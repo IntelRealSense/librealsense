@@ -1,3 +1,5 @@
+//This file is partly based on Mehran Maghoumi's work: https://github.com/Maghoumi/culibrealsense
+
 #ifdef RS2_USE_CUDA
 
 #include "cuda-conversion.cuh"

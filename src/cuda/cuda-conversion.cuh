@@ -1,3 +1,5 @@
+//This file is partly based on Mehran Maghoumi's work: https://github.com/Maghoumi/culibrealsense
+
 #pragma once
 #ifndef CUDA_CONVERSION_CUH
 #define CUDA_CONVERSION_CUH
