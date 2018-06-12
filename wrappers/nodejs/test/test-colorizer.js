@@ -42,9 +42,8 @@ describe('Colorizer test', function() {
       colorizer= new rs2.Colorizer();
       colorizer.destroy();
     });
-    setTimeout(() => {
-      assert.equal(colorizer, undefined);
-    }, 100);
+    assert.equal(colorizer.cxxColorizer, undefined);
+    assert.equal(colorizer.depthRGB, undefined);
   });
 
   it('Testing method colorize', () => {
