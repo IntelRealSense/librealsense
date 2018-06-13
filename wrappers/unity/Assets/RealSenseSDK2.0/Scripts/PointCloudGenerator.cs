@@ -65,13 +65,13 @@ public class PointCloudGenerator : MonoBehaviour
 
             indices = Enumerable.Range(0, profile.Width * profile.Height).ToArray();
 
+            mesh.MarkDynamic();
             mesh.vertices = vertices;
             mesh.uv =
                 Enumerable.Range(0, profile.Height).Select(y =>
                 Enumerable.Range(0, profile.Width).Select(x =>
                     new Vector2((float)x / profile.Width, (float)y / profile.Height)
                 )).SelectMany(v => v).ToArray();
-
             GetComponent<MeshFilter>().sharedMesh = mesh;
         }
     }
