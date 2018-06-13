@@ -346,6 +346,25 @@ namespace librealsense
             CASE(TEMPERATURE)
             CASE(BACKEND_TIMESTAMP)
             CASE(ACTUAL_FPS)
+            CASE(FRAME_LAZER_POWER)
+            CASE(FRAME_LAZER_POWER_MODE)
+            CASE(EXPOSURE_PRIORITY)
+            CASE(EXPOSURE_ROI_LEFT)
+            CASE(EXPOSURE_ROI_RIGHT)
+            CASE(EXPOSURE_ROI_TOP)
+            CASE(EXPOSURE_ROI_BOTTOM)
+            CASE(BRIGHTNESS)
+            CASE(CONTRAST)
+            CASE(SATURATION)
+            CASE(SHARPNESS)
+            CASE(AWB_TEMP)
+            CASE(BACKLIGHT_COMP)
+            CASE(GAMMA)
+            CASE(HUE)
+            CASE(MANUAL_WB)
+            CASE(POWER_LINE_FREQUENCY)
+            CASE(LOW_LIGHT_COMP)
+
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
