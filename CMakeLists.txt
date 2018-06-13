@@ -523,7 +523,7 @@ if(WIN32)
     # build with multiple cores
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
-    add_definitions(-D__SSSE3__ -D__AVX2__ -D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-D__SSSE3__ -D_CRT_SECURE_NO_WARNINGS)
 
     set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 elseif(APPLE)
