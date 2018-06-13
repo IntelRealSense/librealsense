@@ -25,7 +25,7 @@ public class PointCloudGenerator : MonoBehaviour
     int frameSize;
     private IntPtr frameData;
 
-    AutoResetEvent e = new AutoResetEvent(false);
+    readonly AutoResetEvent e = new AutoResetEvent(false);
 
     void Start()
     {
@@ -72,6 +72,10 @@ public class PointCloudGenerator : MonoBehaviour
                 Enumerable.Range(0, profile.Width).Select(x =>
                     new Vector2((float)x / profile.Width, (float)y / profile.Height)
                 )).SelectMany(v => v).ToArray();
+            
+            mesh.SetIndices(indices, MeshTopology.Points, 0, false);
+            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 10f);
+
             GetComponent<MeshFilter>().sharedMesh = mesh;
         }
     }
@@ -124,8 +128,6 @@ public class PointCloudGenerator : MonoBehaviour
             }
 
             mesh.vertices = vertices;
-            mesh.SetIndices(indices, MeshTopology.Points, 0, false);
-            mesh.RecalculateBounds();
         }
     }
 
