@@ -103,6 +103,8 @@
 			fixed4 frag (g2f i) : SV_Target
 			{
 				float2 uv = tex2D(_UVMap, i.uv);
+				if(any(uv == 0))
+					discard;
 				return tex2D(_MainTex, uv) * _Color;
 			}
 			ENDCG
