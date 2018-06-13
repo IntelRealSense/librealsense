@@ -497,7 +497,7 @@ describe('Native error tests', function() {
     assert.throws(() => {
       ctx.loadDevice(file);
     }, (err) => {
-      assert.equal(err instanceof TypeError, true);
+      assert.equal(err instanceof Error, true);
       let errInfo = rs2.getError();
       assert.equal(errInfo.recoverable, false);
       assert.equal(typeof errInfo.description, 'string');
@@ -579,7 +579,7 @@ describe('new record/playback test', function() {
     pipe.stop();
     rs2.cleanup();
     fs.unlinkSync(file);
-  }).timeout(5000);
+  }).timeout(10000);
 });
 
 describe('frameset misc test', function() {

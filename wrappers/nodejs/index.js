@@ -9,6 +9,16 @@ const EventEmitter = require('events');
 const PNG = require('pngjs').PNG;
 const fs = require('fs');
 
+/**
+ * UnrecoverableError is the type of error that jeopardized the modue that restart
+ * is needed.
+ */
+class UnrecoverableError extends Error {
+  constructor(message) {
+    super('Unrecoverable! '+ message);
+  }
+}
+
 // TODO(tingshao): resolve the potential disabled eslint errors
 /* eslint-disable prefer-rest-params, valid-jsdoc, no-unused-vars, camelcase */
 /**
@@ -1088,10 +1098,11 @@ const internal = {
 
   // The callback method called from native side
   errorCallback: function(error) {
-    if (error.recoverable === false) {
-      throw new TypeError('Unrecoverable error, native function ' + error.nativeFunction + ': ' +
-          error.description);
+    let msg = 'error native function ' + error.nativeFunction + ': ' + error.description;
+    if (error.recoverable) {
+      throw new Error(msg);
     }
+    throw new UnrecoverableError(msg);
   },
 
   addContext: function(c) {
@@ -5974,6 +5985,7 @@ function getError() {
 module.exports = {
   cleanup: cleanup,
   getError: getError,
+  UnrecoverableError: UnrecoverableError,
 
   Context: Context,
   Pipeline: Pipeline,
