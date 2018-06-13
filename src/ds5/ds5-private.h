@@ -77,6 +77,7 @@ namespace librealsense
         // DS5 fisheye XU identifiers
         const uint8_t FISHEYE_EXPOSURE = 1;
 
+                                                // subdevice[h] unit[fw], node[h] guid[fw]
         const platform::extension_unit depth_xu = { 0, 3, 2,
         { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
 

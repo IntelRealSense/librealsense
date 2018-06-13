@@ -315,12 +315,38 @@ namespace librealsense
             return res;
         }
 
+        // Retrieve device video capabilities to discriminate video capturing and metadata nodes
+        static uint32_t get_dev_capabilities(std::string dev_name)
+        {
+            // RAII to handle exceptions
+            std::unique_ptr<int, std::function<void(int*)> > fd(
+                        new int (open(dev_name.c_str(), O_RDWR | O_NONBLOCK, 0)),
+                        [](int* d){ if (d && (*d)) ::close(*d);});
+
+            if(*fd < 0)
+                throw linux_backend_exception(to_string() << __FUNCTION__ << ": Cannot open '" << dev_name);
+
+            v4l2_capability cap = {};
+            if(xioctl(*fd, VIDIOC_QUERYCAP, &cap) < 0)
+            {
+                if(errno == EINVAL)
+                    throw linux_backend_exception(to_string() << __FUNCTION__ << " " << dev_name << " is no V4L2 device");
+                else
+                    throw linux_backend_exception(to_string() <<__FUNCTION__ << " xioctl(VIDIOC_QUERYCAP) failed");
+            }
+
+            // retrieve the capabilities descriptor
+            if(!(cap.capabilities & V4L2_CAP_STREAMING))
+                    throw linux_backend_exception(to_string() << __FUNCTION__ << dev_name + " does not support streaming I/O");
+
+            return cap.device_caps;
+        }
+
         v4l_usb_device::v4l_usb_device(const usb_device_info& info)
         {
             int status = libusb_init(&_usb_context);
             if(status < 0)
                 throw linux_backend_exception(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
-
 
             std::vector<usb_device_info> results;
             v4l_usb_device::foreach_usb_device(_usb_context,
@@ -451,7 +477,6 @@ namespace librealsense
                 try
                 {
                     int vid, pid, mi;
-                    usb_spec usb_specification{usb_undefined};
                     std::string busnum, devnum, devpath;
 
                     auto dev_name = "/dev/" + name;
@@ -512,7 +537,7 @@ namespace librealsense
                     // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/3-6:1.0/video4linux/video0
                     // to
                     // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/version
-                    usb_specification = get_usb_connection_type(real_path + "/../../../");
+                    usb_spec usb_specification = get_usb_connection_type(real_path + "/../../../");
 
                     uvc_device_info info{};
                     info.pid = pid;
@@ -522,6 +547,8 @@ namespace librealsense
                     info.device_path = std::string(buff);
                     info.unique_id = busnum + "-" + devpath + "-" + devnum;
                     info.conn_spec = usb_specification;
+                    info.uvc_capabilities = get_dev_capabilities(dev_name);
+
                     action(info, dev_name);
                 }
                 catch(const std::exception & e)
@@ -546,7 +573,7 @@ namespace librealsense
                 if (i == info)
                 {
                     _name = name;
-                    _info = i;
+                    _info = info; // copies metadata node info
                     _device_path = i.device_path;
                     _device_usb_spec = i.conn_spec;
                 }
@@ -756,7 +783,6 @@ namespace librealsense
             }
         }
 
-
         void v4l_uvc_device::poll()
         {
             fd_set fds{};
@@ -900,7 +926,6 @@ namespace librealsense
                 _fd = open(_name.c_str(), O_RDWR | O_NONBLOCK, 0);
                 if(_fd < 0)
                     throw linux_backend_exception(to_string() << "Cannot open '" << _name);
-
 
                 if (pipe(_stop_pipe_fd) < 0)
                     throw linux_backend_exception("v4l_uvc_device: Cannot create pipe!");
@@ -1254,24 +1279,63 @@ namespace librealsense
             }
         }
 
-        bool v4l_uvc_device::has_metadata()
+        bool v4l_uvc_device::has_metadata() const
         {
             return !_use_memory_map;
         }
 
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const
         {
-            return std::make_shared<platform::retry_controls_work_around>(
-                    std::make_shared<v4l_uvc_device>(info));
+            auto v4l_uvc_dev = (!info.has_metadata_node) ? std::make_shared<v4l_uvc_device>(info) :
+                                                           std::make_shared<v4l_uvc_meta_device>(info);
+
+            return std::make_shared<platform::retry_controls_work_around>(v4l_uvc_dev);
         }
+
         std::vector<uvc_device_info> v4l_backend::query_uvc_devices() const
         {
-            std::vector<uvc_device_info> results;
+            std::vector<uvc_device_info> uvc_nodes;
             v4l_uvc_device::foreach_uvc_device(
-            [&results](const uvc_device_info& i, const std::string&)
+            [&uvc_nodes](const uvc_device_info& i, const std::string&)
             {
-                results.push_back(i);
+                uvc_nodes.push_back(i);
             });
+
+            // UVC nodes shall be traversed in ascending order for metadata nodes assignment
+            std::sort(begin(uvc_nodes),end(uvc_nodes),
+                      [](const uvc_device_info& lhs, const uvc_device_info& rhs){ return lhs.id < rhs.id; });
+
+            // Discriminate video and metadata nodes
+            // under the assumption that for each metadata node n there is a origin streaming node with index (n-1)
+            std::vector<uvc_device_info> results;
+            for (auto&& cur_node : uvc_nodes)
+            {
+                if (!(cur_node.uvc_capabilities & V4L2_CAP_META_CAPTURE))
+                    results.emplace_back(cur_node);
+                else
+                {
+                    if (results.empty())
+                        throw linux_backend_exception(to_string()
+                                                      << "uvc meta-node with no video streaming node encountered: "
+                                                      << std::string(cur_node));
+
+                    // Update the preceding uvc item with metadata node info
+                    auto uvc_node = results.back();
+
+                    if (uvc_node.uvc_capabilities & V4L2_CAP_META_CAPTURE)
+                        throw linux_backend_exception(to_string()
+                                                      << "Consequtive uvc meta-nodes encountered: "
+                                                      << std::string(uvc_node) << " and " << std::string(cur_node) );
+                    if (uvc_node.has_metadata_node)
+                        throw linux_backend_exception(to_string()
+                                                      << "Metadata node for uvc device: " << std::string(uvc_node)
+                                                      << " has already been assigned ");
+
+                    uvc_node.has_metadata_node = true;
+                    uvc_node.metadata_node_id = cur_node.id;
+                    results.at(results.size()-1) = uvc_node;
+                }
+            }
             return results;
         }
 
