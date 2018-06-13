@@ -2059,13 +2059,13 @@ void metadata_verification(const std::vector<internal_frame_additional_data>& da
         // Metadata below must have a boolean value
         md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_AUTO_EXPOSURE];
         if (md.first) REQUIRE((md.second == 0 || md.second == 1));
-        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_FRAME_LAZER_POWER_MODE];
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE];
         if (md.first) REQUIRE((md.second == 0 || md.second == 1));
-        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_AWB_TEMP];
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_AUTO_WHITE_BALANCE_TEMPERATURE];
         if (md.first) REQUIRE((md.second == 0 || md.second == 1));
-        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_BACKLIGHT_COMP];
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_BACKLIGHT_COMPENSATION];
         if (md.first) REQUIRE((md.second == 0 || md.second == 1));
-        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_LOW_LIGHT_COMP];
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION];
         if (md.first) REQUIRE((md.second == 0 || md.second == 1));
     }
 }
@@ -3853,6 +3853,8 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
                     auto actual_fps = (double)frames_additional_data.size() / (double)seconds;
                     double metadata_seconds = frames_additional_data[frames_additional_data.size() - 1].timestamp - frames_additional_data[0].timestamp;
                     metadata_seconds *= msec_to_sec;
+                    CAPTURE(frames_additional_data[frames_additional_data.size() - 1].timestamp);
+                    CAPTURE(frames_additional_data[0].timestamp);
 
                     if (metadata_seconds <= 0)
                     {
