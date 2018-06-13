@@ -1777,7 +1777,7 @@ namespace rs2
     void viewer_model::show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message)
     {
         int combo_boxes = 0;
-        const auto combo_box_width = 200;
+        const float combo_box_width = 200;
 
         // Initialize and prepare depth and texture sources
         int selected_depth_source = -1;
@@ -4936,6 +4936,7 @@ namespace rs2
         }
     }
 
+    // Load viewer configuration for stereo module (depth/infrared streams) only 
     void device_model::load_viewer_configurations(const std::string& json_str)
     {
         json j = json::parse(json_str);
@@ -4947,7 +4948,7 @@ namespace rs2
             int fps = 0;
         };
 
-        std::map<std::pair<rs2_stream, int>, video_stream> requrested_streams;
+        std::map<std::pair<rs2_stream, int>, video_stream> requested_streams;
         auto it = j.find("stream-depth-format");
         if (it != j.end())
         {
@@ -4960,13 +4961,29 @@ namespace rs2
                 auto fstr = rs2_format_to_string(f);
                 if (formatstr == fstr)
                 {
-                    requrested_streams[std::make_pair(RS2_STREAM_DEPTH, 0)].format = f;
+                    requested_streams[std::make_pair(RS2_STREAM_DEPTH, 0)].format = f;
                     found = true;
                     break;
                 }
             }
             if (!found)
+            {
                 throw std::runtime_error(to_string() << "Unsupported stream-depth-format: " << formatstr);
+            }
+
+            // Disable depth stream on all sub devices
+            for (auto&& sub : subdevices)
+            {
+                int i = 0;
+                for (auto&& profile : sub->profiles)
+                {
+                    if (profile.stream_type() == RS2_STREAM_DEPTH)
+                    {
+                        sub->stream_enabled[profile.unique_id()] = false;
+                        break;
+                    }
+                }
+            }
         }
 
         it = j.find("stream-ir-format");
@@ -4976,23 +4993,38 @@ namespace rs2
             std::string formatstr = it.value();
             if (formatstr == "R8L8")
             {
-                requrested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_Y8;
-                requrested_streams[std::make_pair(RS2_STREAM_INFRARED, 2)].format = RS2_FORMAT_Y8;
+                requested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_Y8;
+                requested_streams[std::make_pair(RS2_STREAM_INFRARED, 2)].format = RS2_FORMAT_Y8;
             }
             else if (formatstr == "Y8")
             {
-                requrested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_Y8;
+                requested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_Y8;
             }
             else if (formatstr == "UYVY")
             {
-                requrested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_UYVY;
+                requested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_UYVY;
             }
             else
             {
                 throw std::runtime_error(to_string() << "Unsupported stream-ir-format: " << formatstr);
             }
+
+            // Disable infrared stream on all sub devices
+            for (auto&& sub : subdevices)
+            {
+                for (auto&& profile : sub->profiles)
+                {
+                    if (profile.stream_type() == RS2_STREAM_INFRARED)
+                    {
+                        sub->stream_enabled[profile.unique_id()] = false;
+                        break;
+                    }
+                }
+            }
         }
-        if (!requrested_streams.empty())
+
+        // Setting the same Width,Height,FPS to every requested stereo module streams (depth,infrared) according to loaded JSON
+        if (!requested_streams.empty())
         {
             try
             {
@@ -5002,7 +5034,7 @@ namespace rs2
                 int width = std::stoi(wstr);
                 int height = std::stoi(hstr);
                 int fps = std::stoi(fstr);
-                for (auto& kvp : requrested_streams)
+                for (auto& kvp : requested_streams)
                 {
                     kvp.second.width = width;
                     kvp.second.height = height;
@@ -5013,13 +5045,10 @@ namespace rs2
             {
                 throw std::runtime_error(to_string() << "Error parsing streams from JSON: " << e.what());
             }
-            //Disable every stream
-            for (auto&& sub : subdevices)
-                for (auto& s : sub->stream_enabled)
-                    s.second = false;
         }
 
-        for (auto&& kvp : requrested_streams)
+        // Enable requested stereo module streams (depth,infrared)
+        for (auto&& kvp : requested_streams)
         {
             std::string stream_name = to_string() << rs2_stream_to_string(kvp.first.first) << (kvp.first.second > 0 ? (" " + std::to_string(kvp.first.second)) : "");
             for (auto&& sub : subdevices)
@@ -5347,7 +5376,7 @@ namespace rs2
 
         if (ImGui::IsItemHovered())
         {
-            std::string tooltip = to_string() << "Load pre-configured settings" << (is_streaming && !load_json_if_streaming ? " (Disabled while streaming)" : "");
+            std::string tooltip = to_string() << "Load pre-configured stereo module settings" << (is_streaming && !load_json_if_streaming ? " (Disabled while streaming)" : "");
             ImGui::SetTooltip("%s", tooltip.c_str());
         }
 
@@ -5376,7 +5405,7 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Save current settings to file");
+            ImGui::SetTooltip("Save current stereo module settings to file");
         }
         ImGui::PopStyleColor(2);
         ImGui::SameLine();
