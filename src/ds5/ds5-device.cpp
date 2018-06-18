@@ -144,6 +144,12 @@ namespace librealsense
                 if (candidate(vid_profile, { 640, 480, 15, RS2_FORMAT_Z16 }, RS2_STREAM_DEPTH, 0))
                     depth_candidates.push_back(vid_profile);
 
+                if (candidate(vid_profile, { 1280, 720, 30, RS2_FORMAT_Y8 }, RS2_STREAM_INFRARED, 1))
+                    infrared_candidates.push_back(vid_profile);
+
+                if (candidate(vid_profile, { 640, 480, 15, RS2_FORMAT_Y8 }, RS2_STREAM_INFRARED, 1))
+                    infrared_candidates.push_back(vid_profile);
+
                 // Global Shutter sensor does not support synthetic color
                 if (candidate(vid_profile, { 848, 480, 30, RS2_FORMAT_Y8 }, RS2_STREAM_INFRARED, 1))
                     infrared_candidates.push_back(vid_profile);
