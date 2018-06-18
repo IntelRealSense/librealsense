@@ -10,18 +10,20 @@ In order to get `realsense2.dll` you can either build the SDK [from source using
 
 Next, download the following prerequisites :
 
-* Visual Studio 2017 only - [.NET Core 2.x](https://www.microsoft.com/net/download/visual-studio-sdks)
+* Visual Studio 2015/2017
+* .NET framework >= 3.5 (.NET 3.5 is required for Unity the unity wrapper)
 
-After installing all prerequisites, generate 'realsense2.sln' with BUILD_CSHARP_BINDINGS flag using cmake.
+
+After installing all prerequisites, generate 'realsense2.sln' with 'BUILD_CSHARP_BINDINGS' and 'BUILD_SHARED_LIBS' flags using cmake.
 
 Form the root dir:
 - mkdir build
 - cd build
-- cmake .. -DBUILD_CSHARP_BINDINGS=ON
+- cmake .. -DBUILD_CSHARP_BINDINGS=ON -DBUILD_SHARED_LIBS=ON
 
-The file 'realsense2.sln' should be created in the build folder, open the file with Visual Studio, C# examples and library will be available in the solution under 'Wrappers/csharp'.
+The file 'realsense2.sln' should be created in 'build' folder, open the file with Visual Studio, C# examples and library will be available in the solution under 'Wrappers/csharp'.
 
-Both the native and the .NET wrapper are built by default as part of the examples dependencies.
+Both the native library and the .NET wrapper are built by default as part of the examples dependencies.
 
 ## Hello World
 
