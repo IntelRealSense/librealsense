@@ -3,7 +3,7 @@
 #include <type_traits>
 
 // extra checks to help specialization priority resoultion
-template <typename T> using extra_checks = std::bool_constant<std::is_base_of<rs2::frame, T>::value>; // also sensors? - almost certainly
+template <typename T> using extra_checks = std::bool_constant<std::is_base_of<rs2::frame, T>::value>; // also sensors? - probably not
 
 // C API
 

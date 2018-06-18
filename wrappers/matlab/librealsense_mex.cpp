@@ -457,22 +457,102 @@ void make_factory(){
     // rs2::device_list                                                 [Pure Matlab]
 
     // rs2_record_playback.hpp
-    // rs2::playback                                                    [TODO]
-    // rs2::recorder                                                    [TODO]
+    {
+        ClassFactory playback_factory("rs2::playback");
+        // rs2::playback::constructor(rs2::device)                      [?]
+        // rs2::playback::pause()                                       [TODO]
+        // rs2::playback::resume()                                      [TODO]
+        // rs2::playback::file_name()                                   [TODO]
+        // rs2::playback::get_position()                                [TODO]
+        // rs2::playback::get_duration()                                [TODO]
+        // rs2::playback::seek()                                        [TODO]
+        // rs2::playback::is_real_time()                                [TODO]
+        // rs2::playback::set_real_time()                               [TODO]
+        // rs2::playback::set_playback_speed()                          [TODO]
+        // rs2::playback::set_status_changed_callback()                 [?/Callbacks]
+        // rs2::playback::current_status()                              [TODO]
+        // rs2::playback::stop()                                        [TODO]
+        factory->record(playback_factory);
+    }
+    {
+        ClassFactory recorder_factory("rs2::recorder");
+        // rs2::recorder::constructor(rs2::device)                      [TODO]
+        // rs2::recorder::constructor(string, rs2::device)              [TODO]
+        // rs2::recorder::pause()                                       [TODO]
+        // rs2::recorder::resume()                                      [TODO]
+        // rs2::recorder::filename()                                    [TODO]
+        factory->record(recorder_factory);
+    }
 
     // rs2_processing.hpp
-    // rs2::processing_block                                            [TODO]
-    // rs2::frame_queue                                                 [TODO]
-    // rs2::pointcloud                                                  [TODO]
-    // rs2::syncer                                                      [TODO]
-    // rs2::align                                                       [TODO]
-    // rs2::colorizer                                                   [TODO]
-    // rs2::process_interface                                           [TODO]
-    // rs2::decimation_filter                                           [TODO]
-    // rs2::temporal_filter                                             [TODO]
-    // rs2::spatial_filter                                              [TODO]
-    // rs2::disparity_transform                                         [TODO]
-    // rs2::hole_filling_filter                                         [TODO]
+    // rs2::processing_block                                            [?]
+    {
+        ClassFactory frame_queue_factory("rs2::frame_queue");
+        // rs2::frame_queue::constructor(uint)                          [TODO]
+        // rs2::frame_queue::constructor()                              [TODO]
+        // rs2::frame_queue::enqueue(frame)                             [TODO]
+        // rs2::frame_queue::wait_for_frame(uint=DEF)                   [TODO]
+        // rs2::frame_queue::poll_for_frame(T*)                         [TODO] [T = {frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset}]
+        // rs2::frame_queue::capacity()                                 [TODO]
+        factory->record(frame_queue_factory);
+    }
+    {
+        ClassFactory pointcloud_factory("rs2::pointcloud");
+        // rs2::pointcloud::constructor()                               [TODO]
+        // rs2::pointcloud::calculate(frame)                            [TODO]
+        // rs2::pointcloud::map_to(frame)                               [TODO]
+        factory->record(pointcloud_factory);
+    }
+    {
+        ClassFactory syncer_factory("rs2::syncer");
+        // rs2::syncer::constructor(int=DEF)                            [TODO]
+        // rs2::syncer::wait_for_frames(uint=DEF)                       [TODO]
+        // rs2::syncer::poll_for_frames(frameset*)                      [TODO]
+        factory->record(syncer_factory);
+    }
+    {
+        ClassFactory align_factory("rs2::align");
+        // rs2::align:constructor(rs2_stream)                           [TODO]
+        // rs2::align:process(frameset)                                 [TODO]
+        factory->record(align_factory);
+    }
+    {
+        ClassFactory colorizer_factory("rs2::colorizer");
+        // rs2::colorizer::constructor()                                [TODO]
+        // rs2::colorizer::colorize(frame)                              [TODO]
+        factory->record(colorizer_factory);
+    }
+    {
+        ClassFactory process_interface_factory("rs2::process_interface");
+        // rs2::process_interface::process()                            [TODO]
+        // rs2::process_interface::destructor()                         [?]
+        factory->record(process_interface_factory);
+    }
+    {
+        ClassFactory decimation_filter_factory("rs2::decimation_filter");
+        // rs2::decimation_filter::constructor()                        [TODO]
+        factory->record(decimation_filter_factory);
+    }
+    {
+        ClassFactory temporal_filter_factory("rs2::temporal_filter");
+        // rs2::temporal_filter::constructor()                          [TODO]
+        factory->record(temporal_filter_factory);
+    }
+    {
+        ClassFactory spatial_filter_factory("rs2::spatial_filter");
+        // rs2::spatial_filter::constructor()                           [TODO]
+        factory->record(spatial_filter_factory);
+    }
+    {
+        ClassFactory disparity_transform_factory("rs2::disparity_transform");
+        // rs2::disparity_transform::constructor()                      [TODO]
+        factory->record(disparity_transform_factory);
+    }
+    {
+        ClassFactory hole_filling_filter_factory("rs2::hole_filling_filter");
+        // rs2::hole_filling_filter::constructor()                      [TODO]
+        factory->record(hole_filling_filter_factory);
+    }
 
     // rs_context.hpp
     // rs2::event_information                                           [?]
@@ -543,8 +623,31 @@ void make_factory(){
     }
 
     // rs_pipeline.hpp
-    // rs2::pipeline_profile                                            [TODO]
-    // rs2::config                                                      [TODO]
+    {
+        ClassFactory pipeline_profile_factory("rs2::pipeline_profile");
+        // rs2::pipeline_profile::constructor()                         [?]
+        // rs2::pipeline_profile::get_streams()                         [TODO]
+        // rs2::pipeline_profile::get_stream(rs2_stream, int=DEF)       [TODO]
+        // rs2::pipeline_profile::get_device()                          [TODO]
+        // rs2::pipeline_profile::bool()                                [?]
+        factory->record(pipeline_profile_factory);
+    }
+    {
+        ClassFactory config_factory("rs2::config");
+        // rs2::config::constructor()                                   [TODO]
+        // rs2::config::enable_stream(rs2_stream, int, int, int, rs2_format=DEF, int=DEF)   [TODO]
+        // rs2::config::enable_stream(rs2_stream, int=DEF)              [TODO]
+        // rs2::config::enable_stream(rs2_stream, int, int, rs2_format=DEF, int=DEF)        [TODO]
+        // rs2::config::enable_stream(rs2_stream, rs2_format, int=DEF)  [TODO]
+        // rs2::config::enable_stream(rs2_stream, int, rs2_format, int=DEF)                 [TODO]
+        // rs2::config::enable_all_streams()                            [TODO]
+        // rs2::config::enable_device(string)                           [TODO]
+        // rs2::config::enable_device_from_file(string)                 [TODO]
+        // rs2::config::enable_record_to_file(string)                   [TODO]
+        // rs2::config::disable_stream(rs2_stream, int=DEF)             [TODO]
+        // rs2::config::disable_all_streams()                           [TODO]
+        factory->record(config_factory);
+    }
     {
         ClassFactory pipeline_factory("rs2::pipeline");
         pipeline_factory.record("new", 1, 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
