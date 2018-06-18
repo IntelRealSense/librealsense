@@ -12,6 +12,8 @@ Factory *factory;
 void make_factory(){
     factory = new Factory();
 
+    // TODO: missing destructors
+
     // rs_frame.hpp
     {
         ClassFactory stream_profile_factory("rs2::stream_profile");
@@ -56,7 +58,12 @@ void make_factory(){
             auto format = MatlabParamParser::parse<rs2_format>(inv[3]);
             outv[0] = MatlabParamParser::wrap(thiz.clone(type, index, format));
         });
-        // rs2::stream_profile::operator==                              [TODO]
+        stream_profile_factory.record("operator==", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto rhs = MatlabParamParser::parse<rs2::stream_profile>(inv[0]);
+            auto lhs = MatlabParamParser::parse<rs2::stream_profile>(inv[1]);
+            MatlabParamParser::wrap(rhs == lhs);
+        });
         // rs2::stream_profile::is                                      [TODO] [T = {stream_profile, video_stream_profile, motion_stream_profile}]
         // rs2::stream_profile::as                                      [TODO] [T = {stream_profile, video_stream_profile, motion_stream_profile}]
         stream_profile_factory.record("stream_name", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
@@ -70,7 +77,12 @@ void make_factory(){
             outv[0] = MatlabParamParser::wrap(thiz.is_default());
         });
         // rs2::stream_profile::operator bool                           [?]
-        // rs2::stream_profile::get_extrinsics_to                       [TODO]
+        stream_profile_factory.record("get_extrinsics_to", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::stream_profile>(inv[0]);
+            auto to = MatlabParamParser::parse<rs2::stream_profile>(inv[1]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_extrinsics_to(to));
+        });
         // rs2::stream_profile::register_extrinsics_to                  [?]
         stream_profile_factory.record("is_cloned", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
@@ -82,15 +94,31 @@ void make_factory(){
     {
         ClassFactory video_stream_profile_factory("rs2::video_stream_profile");
         // rs2::video_stream_profile::constructor(rs2::stream_profile)  [?]
-        // rs2::video_stream_profile::width                             [TODO]
-        // rs2::video_stream_profile::height                            [TODO]
-        // rs2::video_stream_profile::get_intrinsics                    [TODO]
+        video_stream_profile_factory.record("width", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::video_stream_profile>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.width());
+        });
+        video_stream_profile_factory.record("height", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::video_stream_profile>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.height());
+        });
+        video_stream_profile_factory.record("get_intrinsics", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::video_stream_profile>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_intrinsics());
+        });
         factory->record(video_stream_profile_factory);
     }
     {
         ClassFactory motion_stream_profile_factory("rs2::motion_stream_profile");
         // rs2::motion_stream_profile::constructor(rs2::stream_profile) [?]
-        // rs2::motion_stream_profile::get_motion_intrinsics            [TODO]
+        motion_stream_profile_factory.record("get_motion_intrinsics", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::motion_stream_profile>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_motion_intrinsics());
+        });
         factory->record(motion_stream_profile_factory);
     }
     {
@@ -141,6 +169,7 @@ void make_factory(){
                 case RS2_FORMAT_RGB8: case RS2_FORMAT_BRG2:
                 outv[0] = MatlabParamParser::wrap_array<uint8_t>(vf.get_data(), )
                 }*/
+                // TODO: turn into matrix instead of column
                 size_t dims[] = { static_cast<size_t>(vf.get_height() * vf.get_stride_in_bytes()) };
                 outv[0] = MatlabParamParser::wrap_array<uint8_t>(reinterpret_cast<const uint8_t*>(vf.get_data()), /*1,*/ dims);
             }
@@ -195,12 +224,34 @@ void make_factory(){
     }
     {
         ClassFactory points_factory("rs2::points");
-        // rs2::points::constructor()                                   [TODO]
+        // rs2::points::constructor()                                   [?]
         // rs2::points::constrcutor(rs2::frame)                         [?]
-        // rs2::points::get_vertices                                    [TODO]
-        // rs2::points::export_to_ply                                   [TODO]
-        // rs2::points::get_texture_coordinates                         [TODO]
-        // rs2::points::size                                            [TODO]
+        points_factory.record("get_vertices", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::points>(inv[0]);
+            // TODO: turn into matrix instead of column?
+            size_t dims[] = { thiz.size() };
+            outv[0] = MatlabParamParser::wrap_array(thiz.get_vertices(), /* 1, */ dims);
+        });
+        points_factory.record("export_to_ply", 0, 3, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::points>(inv[0]);
+            auto fname = MatlabParamParser::parse<std::string>(inv[1]);
+            auto texture = MatlabParamParser::parse<rs2::video_frame>(inv[2]);
+            thiz.export_to_ply(fname, texture);
+        });
+        points_factory.record("get_texture_coordinates", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::points>(inv[0]);
+            // TODO: turn into matrix instead of column?
+            size_t dims[] = { thiz.size() };
+            outv[0] = MatlabParamParser::wrap_array(thiz.get_texture_coordinates(), /* 1, */ dims);
+        });
+        points_factory.record("size", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::points>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.size());
+        });
         factory->record(points_factory);
     }
     {
@@ -222,19 +273,31 @@ void make_factory(){
     {
         ClassFactory disparity_frame_factory("rs2::disparity_frame");
         // rs2::disparity_frame::constructor(rs2::frame)                [?]
-        // rs2::disparity_frame::get_baseline                           [TODO]
+        disparity_frame_factory.record("get_baseline", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::disparity_frame>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_baseline());
+        });
         factory->record(disparity_frame_factory);
     }
     {
         ClassFactory motion_frame_factory("rs2::motion_frame");
         // rs2::motion_frame::constructor(rs2::frame)                   [?]
-        // rs2::motion_frame::get_motion_data                           [TODO]
+        motion_frame_factory.record("get_motion_data", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::motion_frame>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_motion_data());
+        });
         factory->record(motion_frame_factory);
     }
     {
         ClassFactory pose_frame_factory("rs2::pose_frame");
         // rs2::pose_frame::constructor(rs2::frame)                     [?]
-        // rs2::pose_frame::get_pose_data                               [TODO]
+        pose_frame_factory.record("get_pose_data", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::pose_frame>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_pose_data());
+        });
         factory->record(pose_frame_factory);
     }
     {
@@ -271,7 +334,12 @@ void make_factory(){
             // try/catch moved to outer framework
             outv[0] = MatlabParamParser::wrap(thiz.get_color_frame());
         });
-        // rs2::frameset::get_infrared_frame                            [TODO]
+        frameset_factory.record("get_infrared_frame", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::frameset>(inv[0]);
+            // try/catch moved to outer framework
+            outv[0] = MatlabParamParser::wrap(thiz.get_infrared_frame());
+        });
         frameset_factory.record("size", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::frameset>(inv[0]);
@@ -299,11 +367,38 @@ void make_factory(){
             auto option = MatlabParamParser::parse<rs2_option>(inv[1]);
             outv[0] = MatlabParamParser::wrap(thiz.get_option_description(option));
         });
-        // rs2::options::get_option_value_description                   [TODO]
-        // rs2::options::get_option                                     [TODO]
-        // rs2::options::get_option_range                               [TODO]
-        // rs2::options::set_option                                     [TODO]
-        // rs2::options::is_option_read_only                            [TODO]
+        options_factory.record("get_option_description", 1, 3, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::options>(inv[0]);
+            auto option = MatlabParamParser::parse<rs2_option>(inv[1]);
+            auto val = MatlabParamParser::parse<float>(inv[2]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_option_value_description(option, val));
+        });
+        options_factory.record("get_option", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::options>(inv[0]);
+            auto option = MatlabParamParser::parse<rs2_option>(inv[1]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_option(option));
+        });
+        options_factory.record("get_option_range", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::options>(inv[0]);
+            auto option = MatlabParamParser::parse<rs2_option>(inv[1]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_option_range(option));
+        });
+        options_factory.record("set_option", 0, 3, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::options>(inv[0]);
+            auto option = MatlabParamParser::parse<rs2_option>(inv[1]);
+            auto val = MatlabParamParser::parse<float>(inv[2]);
+            thiz.set_option(option, val);
+        });
+        options_factory.record("is_option_read_only", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::options>(inv[0]);
+            auto option = MatlabParamParser::parse<rs2_option>(inv[1]);
+            outv[0] = MatlabParamParser::wrap(thiz.is_option_read_only(option));
+        });
         // rs2::options::operator=                                      [?/HOW]
         // rs2::options::destructor                                     [?]
         factory->record(options_factory);
@@ -315,41 +410,95 @@ void make_factory(){
         {
             MatlabParamParser::destroy<rs2::sensor>(inv[0]);
         });
-        // rs2::sensor::open(stream_profile)                            [TODO]
-        // rs2::sensor::supports(rs2_camera_info)                       [TODO]
-        // rs2::sensor::get_info                                        [TODO]
-        // rs2::sensor::open(vector<stream_profile>)                    [TODO]
-        // rs2::sensor::close                                           [TODO]
+        sensor_factory.record("open#stream_profile", 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::sensor>(inv[0]);
+            auto profile = MatlabParamParser::parse<rs2::stream_profile>(inv[1]);
+            thiz.open(profile);
+        });
+        sensor_factory.record("supports#rs2_camera_info", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::sensor>(inv[0]);
+            auto info = MatlabParamParser::parse<rs2_camera_info>(inv[1]);
+            outv[0] = MatlabParamParser::wrap(thiz.supports(info));
+        });
+        sensor_factory.record("get_info", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::sensor>(inv[0]);
+            auto info = MatlabParamParser::parse<rs2_camera_info>(inv[1]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_info(info));
+        });
+        sensor_factory.record("open#vec_stream_profile", 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::sensor>(inv[0]);
+            auto profiles = MatlabParamParser::parse<std::vector<rs2::stream_profile>>(inv[1]);
+            thiz.open(profiles);
+        });
+        sensor_factory.record("close", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::sensor>(inv[0]);
+            thiz.close();
+        });
         // rs2::sensor::start(callback)                                 [?/Callbacks]
         // rs2::sensor::start(frame_queue)                              [TODO/Others?]
-        // rs2::sensor::stop                                            [TODO]
-        // rs2::sensor::get_stream_profiles                             [TODO]
+        sensor_factory.record("stop", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::sensor>(inv[0]);
+            thiz.stop();
+        });
+        sensor_factory.record("get_stream_profiles", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::sensor>(inv[0]);
+            MatlabParamParser::wrap(thiz.get_stream_profiles()); // TODO - convert to wrap_array
+        });
         // rs2::sensor::operator=                                       [?]
         // rs2::sensor::operator bool                                   [?]
         // rs2::sensor::is                                              [TODO] [T = {sensor, roi_sensor, depth_sensor, depth_stereo_sensor}]
         // rs2::sensor::as                                              [TODO] [T = {sensor, roi_sensor, depth_sensor, depth_stereo_sensor}]
-        // rs2::sensor::operator==                                      [TODO]
+        sensor_factory.record("operator==", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto rhs = MatlabParamParser::parse<rs2::sensor>(inv[0]);
+            auto lhs = MatlabParamParser::parse<rs2::sensor>(inv[1]);
+            MatlabParamParser::wrap(rhs == lhs);
+        });
         factory->record(sensor_factory);
     }
     {
         ClassFactory roi_sensor_factory("rs2::roi_sensor");
         // rs2::roi_sensor::constructor(rs2::sensor)                    [?]
-        // rs2::roi_sensor::set_region_of_interest                      [TODO]
-        // rs2::roi_sensor::get_region_of_interest                      [TODO]
+        roi_sensor_factory.record("set_region_of_interest", 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::roi_sensor>(inv[0]);
+            auto roi = MatlabParamParser::parse<rs2::region_of_interest>(inv[1]);
+            thiz.set_region_of_interest(roi);
+        });
+        roi_sensor_factory.record("get_region_of_interest", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::roi_sensor>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_region_of_interest());
+        });
         // rs2::roi_sensor::operator bool                               [?]
         factory->record(roi_sensor_factory);
     }
     {
         ClassFactory depth_sensor_factory("rs2::depth_sensor");
         // rs2::depth_sensor::constructor(rs2::sensor)                  [?]
-        // rs2::depth_sensor::get_depth_scale                           [TODO]
+        depth_sensor_factory.record("get_depth_scale", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::depth_sensor>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_depth_scale());
+        });
         // rs2::depth_sensor::operator bool                             [?]
         factory->record(depth_sensor_factory);
     }
     {
         ClassFactory depth_stereo_sensor_factory("rs2::depth_stereo_sensor");
         // rs2::depth_stereo_sensor::constructor(rs2::sensor)           [?]
-        // rs2::depth_stereo_sensor::get_stereo_baseline                [TODO]
+        depth_stereo_sensor_factory.record("get_stereo_baseline", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::depth_stereo_sensor>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_stereo_baseline());
+        });
         factory->record(depth_stereo_sensor_factory);
     }
 
@@ -365,12 +514,12 @@ void make_factory(){
             outv[0] = MatlabParamParser::wrap(list[idx]);
             MatlabParamParser::destroy<rs2::device_list>(inv[0]);
         });
-        // deconstructor in case device was never initialized
+        // destructor in case device was never initialized
         device_factory.record("delete#uninit", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             MatlabParamParser::destroy<rs2::device_list>(inv[0]);
         });
-        // deconstructor in case device was initialized
+        // destructor in case device was initialized
         device_factory.record("delete#init", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             MatlabParamParser::destroy<rs2::device>(inv[0]);
@@ -424,30 +573,24 @@ void make_factory(){
             // TODO: something more maintainable?
             auto thiz = MatlabParamParser::parse<rs2::device>(inv[0]);
             auto type = MatlabParamParser::parse<std::string>(inv[1]);
-            try {
-                if (type == "device")
-                    outv[0] = MatlabParamParser::wrap(thiz.is<rs2::device>());
-                else if (type == "debug_protocol") {
-                    mexWarnMsgTxt("rs2::device::is: Debug Protocol not supported in MATLAB");
-                    outv[0] = MatlabParamParser::wrap(thiz.is<rs2::debug_protocol>());
-                }
-                else if (type == "advanced_mode") {
-                    mexWarnMsgTxt("rs2::device::is: Advanced Mode not supported in MATLAB");
-                    outv[0] = MatlabParamParser::wrap(false);
-                }
-                else if (type == "recorder")
-                    outv[0] = MatlabParamParser::wrap(thiz.is<rs2::recorder>());
-                else if (type == "playback")
-                    outv[0] = MatlabParamParser::wrap(thiz.is<rs2::playback>());
-                else {
-                    // TODO: need warn/error message? which? if so, fill in
-                    mexWarnMsgTxt("rs2::device::is: ...");
-                    outv[0] = MatlabParamParser::wrap(false);
-                }
+            if (type == "device")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::device>());
+            else if (type == "debug_protocol") {
+                mexWarnMsgTxt("rs2::device::is: Debug Protocol not supported in MATLAB");
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::debug_protocol>());
             }
-            catch (rs2::error) {
-                // TODO: need error message? if so, fill in
-                mexErrMsgTxt("rs2::device::is: ...");
+            else if (type == "advanced_mode") {
+                mexWarnMsgTxt("rs2::device::is: Advanced Mode not supported in MATLAB");
+                outv[0] = MatlabParamParser::wrap(false);
+            }
+            else if (type == "recorder")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::recorder>());
+            else if (type == "playback")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::playback>());
+            else {
+                // TODO: need warn/error message? which? if so, fill in
+                mexWarnMsgTxt("rs2::device::is: ...");
+                outv[0] = MatlabParamParser::wrap(false);
             }
         });
         // rs2::device::as                                              [Pure Matlab]
@@ -460,27 +603,91 @@ void make_factory(){
     {
         ClassFactory playback_factory("rs2::playback");
         // rs2::playback::constructor(rs2::device)                      [?]
-        // rs2::playback::pause()                                       [TODO]
-        // rs2::playback::resume()                                      [TODO]
-        // rs2::playback::file_name()                                   [TODO]
-        // rs2::playback::get_position()                                [TODO]
-        // rs2::playback::get_duration()                                [TODO]
-        // rs2::playback::seek()                                        [TODO]
-        // rs2::playback::is_real_time()                                [TODO]
-        // rs2::playback::set_real_time()                               [TODO]
-        // rs2::playback::set_playback_speed()                          [TODO]
+        playback_factory.record("pause", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::playback>(inv[0]);
+            thiz.pause();
+        });
+        playback_factory.record("resume", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::playback>(inv[0]);
+            thiz.resume();
+        });
+        playback_factory.record("file_name", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::playback>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.file_name());
+        });
+        playback_factory.record("get_position", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::playback>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_position());
+        });
+        playback_factory.record("get_duration", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::playback>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_duration());
+        });
+        playback_factory.record("seek", 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::playback>(inv[0]);
+            auto time = MatlabParamParser::parse<std::chrono::nanoseconds>(inv[1]);
+            thiz.seek(time);
+        });
+        playback_factory.record("is_real_time", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::playback>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.is_real_time());
+        });
+        playback_factory.record("set_real_time", 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::playback>(inv[0]);
+            auto real_time = MatlabParamParser::parse<bool>(inv[1]);
+            thiz.set_real_time(real_time);
+        });
+        playback_factory.record("set_playback_speed", 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::playback>(inv[0]);
+            auto speed = MatlabParamParser::parse<float>(inv[1]);
+            thiz.set_playback_speed(speed);
+        });
         // rs2::playback::set_status_changed_callback()                 [?/Callbacks]
-        // rs2::playback::current_status()                              [TODO]
-        // rs2::playback::stop()                                        [TODO]
+        playback_factory.record("current_status", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::playback>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.current_status());
+        });
+        playback_factory.record("stop", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::playback>(inv[0]);
+            thiz.stop();
+        });
         factory->record(playback_factory);
     }
     {
         ClassFactory recorder_factory("rs2::recorder");
-        // rs2::recorder::constructor(rs2::device)                      [TODO]
-        // rs2::recorder::constructor(string, rs2::device)              [TODO]
-        // rs2::recorder::pause()                                       [TODO]
-        // rs2::recorder::resume()                                      [TODO]
-        // rs2::recorder::filename()                                    [TODO]
+        // rs2::recorder::constructor(rs2::device)                      [?]
+        recorder_factory.record("new#string_device", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto file = MatlabParamParser::parse<std::string>(inv[0]);
+            auto device = MatlabParamParser::parse<rs2::device>(inv[1]);
+            outv[0] = MatlabParamParser::wrap(rs2::recorder(file, device));
+        });
+        recorder_factory.record("pause", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::recorder>(inv[0]);
+            thiz.pause();
+        });
+        recorder_factory.record("resume", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::recorder>(inv[0]);
+            thiz.resume();
+        });
+        recorder_factory.record("filename", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::recorder>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.filename());
+        });
         factory->record(recorder_factory);
     }
 
@@ -488,37 +695,98 @@ void make_factory(){
     // rs2::processing_block                                            [?]
     {
         ClassFactory frame_queue_factory("rs2::frame_queue");
-        // rs2::frame_queue::constructor(uint)                          [TODO]
-        // rs2::frame_queue::constructor()                              [TODO]
-        // rs2::frame_queue::enqueue(frame)                             [TODO]
-        // rs2::frame_queue::wait_for_frame(uint=DEF)                   [TODO]
+        frame_queue_factory.record("new", 1, 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            if (inc == 0) {
+                outv[0] = MatlabParamParser::wrap(rs2::frame_queue());
+            }
+            else if (inc == 1) {
+                auto capacity = MatlabParamParser::parse<unsigned int>(inv[0]);
+                outv[0] = MatlabParamParser::wrap(rs2::frame_queue(capacity));
+            }
+        });
+        // rs2::frame_queue::enqueue(frame)                             [?]
+        frame_queue_factory.record("wait_for_frame", 1, 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::frame_queue>(inv[0]);
+            if (inc == 0) {
+                outv[0] = MatlabParamParser::wrap(thiz.wait_for_frame());
+            }
+            else if (inc == 1) {
+                auto timeout_ms = MatlabParamParser::parse<unsigned int>(inv[1]);
+                outv[0] = MatlabParamParser::wrap(thiz.wait_for_frame(timeout_ms));
+            }
+        });
         // rs2::frame_queue::poll_for_frame(T*)                         [TODO] [T = {frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset}]
-        // rs2::frame_queue::capacity()                                 [TODO]
+        frame_queue_factory.record("new", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::frame_queue>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.capacity());
+        });
         factory->record(frame_queue_factory);
     }
     {
         ClassFactory pointcloud_factory("rs2::pointcloud");
-        // rs2::pointcloud::constructor()                               [TODO]
-        // rs2::pointcloud::calculate(frame)                            [TODO]
-        // rs2::pointcloud::map_to(frame)                               [TODO]
+        pointcloud_factory.record("new", 1, 0, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            outv[0] = MatlabParamParser::wrap(rs2::pointcloud());
+        });
+        pointcloud_factory.record("calculate", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::pointcloud>(inv[0]);
+            auto depth = MatlabParamParser::parse<rs2::frame>(inv[1]);
+            outv[0] = MatlabParamParser::wrap(thiz.calculate(depth));
+        });
+        pointcloud_factory.record("map_to", 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::pointcloud>(inv[0]);
+            auto mapped = MatlabParamParser::parse<rs2::frame>(inv[1]);
+            thiz.map_to(mapped);
+        });
         factory->record(pointcloud_factory);
     }
     {
         ClassFactory syncer_factory("rs2::syncer");
-        // rs2::syncer::constructor(int=DEF)                            [TODO]
-        // rs2::syncer::wait_for_frames(uint=DEF)                       [TODO]
-        // rs2::syncer::poll_for_frames(frameset*)                      [TODO]
+        syncer_factory.record("new", 1, 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            if (inc == 0) {
+                outv[0] = MatlabParamParser::wrap(rs2::syncer());
+            }
+            else if (inc == 1) {
+                auto queue_size = MatlabParamParser::parse<int>(inv[0]);
+                outv[0] = MatlabParamParser::wrap(rs2::syncer(queue_size));
+            }
+        });
+        syncer_factory.record("wait_for_frames", 1, 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::syncer>(inv[0]);
+            if (inc == 0) {
+                outv[0] = MatlabParamParser::wrap(thiz.wait_for_frames());
+            }
+            else if (inc == 1) {
+                auto timeout_ms = MatlabParamParser::parse<unsigned int>(inv[1]);
+                outv[0] = MatlabParamParser::wrap(thiz.wait_for_frames(timeout_ms));
+            }
+        });
+        // rs2::syncer::poll_for_frames(frameset*)                      [?]
         factory->record(syncer_factory);
     }
     {
         ClassFactory align_factory("rs2::align");
-        // rs2::align:constructor(rs2_stream)                           [TODO]
+        align_factory.record("new", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto align_to = MatlabParamParser::parse<rs2_stream>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(rs2::align(align_to));
+        });
         // rs2::align:process(frameset)                                 [TODO]
         factory->record(align_factory);
     }
     {
         ClassFactory colorizer_factory("rs2::colorizer");
-        // rs2::colorizer::constructor()                                [TODO]
+        colorizer_factory.record("new", 1, 0, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            outv[0] = MatlabParamParser::wrap(rs2::colorizer());
+        });
         // rs2::colorizer::colorize(frame)                              [TODO]
         factory->record(colorizer_factory);
     }
@@ -530,27 +798,48 @@ void make_factory(){
     }
     {
         ClassFactory decimation_filter_factory("rs2::decimation_filter");
-        // rs2::decimation_filter::constructor()                        [TODO]
+        decimation_filter_factory.record("new", 1, 0, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            outv[0] = MatlabParamParser::wrap(rs2::decimation_filter());
+        });
         factory->record(decimation_filter_factory);
     }
     {
         ClassFactory temporal_filter_factory("rs2::temporal_filter");
-        // rs2::temporal_filter::constructor()                          [TODO]
+        temporal_filter_factory.record("new", 1, 0, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            outv[0] = MatlabParamParser::wrap(rs2::temporal_filter());
+        });
         factory->record(temporal_filter_factory);
     }
     {
         ClassFactory spatial_filter_factory("rs2::spatial_filter");
-        // rs2::spatial_filter::constructor()                           [TODO]
+        spatial_filter_factory.record("new", 1, 0, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            outv[0] = MatlabParamParser::wrap(rs2::spatial_filter());
+        });
         factory->record(spatial_filter_factory);
     }
     {
         ClassFactory disparity_transform_factory("rs2::disparity_transform");
-        // rs2::disparity_transform::constructor()                      [TODO]
+        disparity_transform_factory.record("new", 1, 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            if (inc == 0) {
+                outv[0] = MatlabParamParser::wrap(rs2::disparity_transform());
+            }
+            else if (inc == 1) {
+                auto transform_to_disparity = MatlabParamParser::parse<bool>(inv[0]);
+                outv[0] = MatlabParamParser::wrap(rs2::disparity_transform(transform_to_disparity));
+            }
+        });
         factory->record(disparity_transform_factory);
     }
     {
         ClassFactory hole_filling_filter_factory("rs2::hole_filling_filter");
-        // rs2::hole_filling_filter::constructor()                      [TODO]
+        hole_filling_filter_factory.record("new", 1, 0, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            outv[0] = MatlabParamParser::wrap(rs2::hole_filling_filter());
+        });
         factory->record(hole_filling_filter_factory);
     }
 
@@ -626,21 +915,48 @@ void make_factory(){
     {
         ClassFactory pipeline_profile_factory("rs2::pipeline_profile");
         // rs2::pipeline_profile::constructor()                         [?]
-        // rs2::pipeline_profile::get_streams()                         [TODO]
-        // rs2::pipeline_profile::get_stream(rs2_stream, int=DEF)       [TODO]
-        // rs2::pipeline_profile::get_device()                          [TODO]
+        pipeline_profile_factory.record("get_streams", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::pipeline_profile>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_streams()); // TODO: switch to make_array
+        });
+        pipeline_profile_factory.record("get_stream", 1, 2, 3, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::pipeline_profile>(inv[0]);
+            auto stream_type = MatlabParamParser::parse<rs2_stream>(inv[1]);
+            if (inc == 2)
+                outv[0] = MatlabParamParser::wrap(thiz.get_stream(stream_type));
+            else {
+                auto stream_index = MatlabParamParser::parse<int>(inv[2]);
+                outv[0] = MatlabParamParser::wrap(thiz.get_stream(stream_type, stream_index));
+            }
+        });
+        pipeline_profile_factory.record("get_device", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::pipeline_profile>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_device()); // TODO: switch to make_array
+        });
         // rs2::pipeline_profile::bool()                                [?]
         factory->record(pipeline_profile_factory);
     }
     {
         ClassFactory config_factory("rs2::config");
         // rs2::config::constructor()                                   [TODO]
+        config_factory.record("new", 1, 0, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            outv[0] = MatlabParamParser::wrap(rs2::config());
+        });
         // rs2::config::enable_stream(rs2_stream, int, int, int, rs2_format=DEF, int=DEF)   [TODO]
         // rs2::config::enable_stream(rs2_stream, int=DEF)              [TODO]
         // rs2::config::enable_stream(rs2_stream, int, int, rs2_format=DEF, int=DEF)        [TODO]
         // rs2::config::enable_stream(rs2_stream, rs2_format, int=DEF)  [TODO]
         // rs2::config::enable_stream(rs2_stream, int, rs2_format, int=DEF)                 [TODO]
         // rs2::config::enable_all_streams()                            [TODO]
+        config_factory.record("new", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::config>(inv[0]);
+            thiz.enable_all_streams();
+        });
         // rs2::config::enable_device(string)                           [TODO]
         // rs2::config::enable_device_from_file(string)                 [TODO]
         // rs2::config::enable_record_to_file(string)                   [TODO]
