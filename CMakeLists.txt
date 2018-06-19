@@ -814,9 +814,12 @@ option(BUILD_UNIT_TESTS "Build realsense unit tests. Note that when enabled, add
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
+option(BUILD_CSHARP_BINDINGS "Build C# bindings" OFF)
 option(BUILD_CV_EXAMPLES "Build OpenCV examples" OFF)
 option(BUILD_PCL_EXAMPLES "Build PCL examples" OFF)
 option(BUILD_NODEJS_BINDINGS "Build Node.js bindings" OFF)
+SET(DOTNET_VERSION_LIBRARY "3.5" CACHE STRING ".Net Version, defaulting to '3.5', the Unity wrapper currently supports only .NET 3.5")
+SET(DOTNET_VERSION_EXAMPLES "4.0" CACHE STRING ".Net Version, defaulting to '4.0'")
 
 if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) AND WIN32)
   add_subdirectory(third-party/glfw)
@@ -849,6 +852,13 @@ endif()
 
 if (BUILD_PCL_EXAMPLES)
   add_subdirectory(wrappers/pcl)
+endif()
+
+if(BUILD_CSHARP_BINDINGS)
+	if(NOT BUILD_SHARED_LIBS)
+		message( FATAL_ERROR "BUILD_SHARED_LIBS flag must be enabled when generating CSharp bindings" )
+	endif()
+    add_subdirectory(wrappers/csharp)
 endif()
 
 # Check for unreferenced files
