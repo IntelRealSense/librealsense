@@ -32,28 +32,16 @@ public class PointCloudGenerator : MonoBehaviour
         pc = new PointCloud();
 
         RealSenseDevice.Instance.onNewSampleSet += OnFrames;
-        var streams = RealSenseDevice.Instance.ActiveProfile.Streams;
 
-        using (var profile = streams.FirstOrDefault(s => s.Stream == stream) as VideoStreamProfile)
+        using (var profile = RealSenseDevice.Instance.ActiveProfile.GetStream(Stream.Depth) as VideoStreamProfile)
         {
-            if (profile != null)
+            Assert.IsTrue(SystemInfo.SupportsTextureFormat(TextureFormat.RGFloat));
+            uvmap = new Texture2D(profile.Width, profile.Height, TextureFormat.RGFloat, false)
             {
-                Assert.IsTrue(SystemInfo.SupportsTextureFormat(TextureFormat.RGFloat));
-                uvmap = new Texture2D(profile.Width, profile.Height, TextureFormat.RGFloat, false)
-                {
-                    wrapMode = TextureWrapMode.Clamp,
-                    filterMode = FilterMode.Point,
-                };
-                GetComponent<MeshRenderer>().sharedMaterial.SetTexture("_UVMap", uvmap);
-            }
-            else
-            {
-                Debug.LogWarningFormat("Stream {0} not found", stream);
-            }
-        }
-
-        using (var profile = streams.First(s => s.Stream == Stream.Depth) as VideoStreamProfile)
-        {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Point,
+            };
+            GetComponent<MeshRenderer>().sharedMaterial.SetTexture("_UVMap", uvmap);
 
             mesh = new Mesh()
             {
@@ -72,7 +60,7 @@ public class PointCloudGenerator : MonoBehaviour
                 Enumerable.Range(0, profile.Width).Select(x =>
                     new Vector2((float)x / profile.Width, (float)y / profile.Height)
                 )).SelectMany(v => v).ToArray();
-            
+
             mesh.SetIndices(indices, MeshTopology.Points, 0, false);
             mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 10f);
 
@@ -97,7 +85,8 @@ public class PointCloudGenerator : MonoBehaviour
 
     private void OnFrames(FrameSet frames)
     {
-        using (var points = pc.Calculate(frames.DepthFrame))
+        DepthFrame depthFrame = frames.DepthFrame;
+        using (var points = pc.Calculate(depthFrame))
         {
             memcpy(handle.AddrOfPinnedObject(), points.VertexData, points.Count * 3 * sizeof(float));
 
@@ -107,7 +96,7 @@ public class PointCloudGenerator : MonoBehaviour
             {
                 pc.MapTexture(f);
 
-                frameSize = f.Width * f.Height * 2 * sizeof(float);
+                frameSize = depthFrame.Width * depthFrame.Height * 2 * sizeof(float);
                 if (frameData == IntPtr.Zero)
                     frameData = Marshal.AllocHGlobal(frameSize);
                 memcpy(frameData, points.TextureData, frameSize);

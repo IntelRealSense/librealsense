@@ -52,40 +52,41 @@
 
 				// TODO: interpolate uvs on quad
 				float2 uv = i[0].uv;
-				float p = _PointSize * 0.001;
-
+				float2 p = _PointSize * 0.001;
+				p.y *= _ScreenParams.x / _ScreenParams.y;
+				
 				o.vertex = UnityObjectToClipPos(v);
 				#ifdef USE_DISTANCE
-				o.vertex += float4(-p, p, 0, 0);
+				o.vertex += float4(-p.x, p.y, 0, 0);
 				#else
-				o.vertex += float4(-p, p, 0, 0) * o.vertex.w;
+				o.vertex += float4(-p.x, p.y, 0, 0) * o.vertex.w;
 				#endif
 				o.uv = uv;
 				triStream.Append(o);
 
 				o.vertex = UnityObjectToClipPos(v);
 				#ifdef USE_DISTANCE
-				o.vertex += float4(-p, -p, 0, 0);
+				o.vertex += float4(-p.x, -p.y, 0, 0);
 				#else
-				o.vertex += float4(-p, -p, 0, 0) * o.vertex.w;
+				o.vertex += float4(-p.x, -p.y, 0, 0) * o.vertex.w;
 				#endif
 				o.uv = uv;
 				triStream.Append(o);
 
 				o.vertex = UnityObjectToClipPos(v);
 				#ifdef USE_DISTANCE
-				o.vertex += float4(p, p, 0, 0);
+				o.vertex += float4(p.x, p.y, 0, 0);
 				#else
-				o.vertex += float4(p, p, 0, 0) * o.vertex.w;
+				o.vertex += float4(p.x, p.y, 0, 0) * o.vertex.w;
 				#endif
 				o.uv = uv;
 				triStream.Append(o);
 
 				o.vertex = UnityObjectToClipPos(v);
 				#ifdef USE_DISTANCE
-				o.vertex += float4(p, -p, 0, 0);
+				o.vertex += float4(p.x, -p.y, 0, 0);
 				#else
-				o.vertex += float4(p, -p, 0, 0) * o.vertex.w;
+				o.vertex += float4(p.x, -p.y, 0, 0) * o.vertex.w;
 				#endif
 				o.uv = uv;
 				triStream.Append(o);
