@@ -18,6 +18,7 @@
 | Platform                                 | PC/Raspberry Pi/ NVIDIA Jetson / etc..  |
 | SDK Version                            |  { legacy / 2.<?>.<?> }                          | 
 | Language                            |  {C/C#/labview/nodejs/opencv/pcl/python/unity }                          | 
+| Segment			|  {Robot/Smartphone/VR/AR/others }                          | 
 
 ### Issue Description
 <Describe your issue / question / feature request / etc..>
