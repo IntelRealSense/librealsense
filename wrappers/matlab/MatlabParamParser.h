@@ -6,6 +6,7 @@
 #include <type_traits>
 
 template <typename T> using is_basic_type = std::bool_constant<std::is_arithmetic<T>::value || std::is_pointer<T>::value || std::is_enum<T>::value>;
+// TODO: consider turning MatlabParamParser into a namespace. Might help make lots of things cleaner. can keep things hidden via nested namespace MatlabParamParser::detail
 
 class MatlabParamParser
 {
@@ -60,8 +61,38 @@ private:
         static const mxClassID value = value_t::value;
         using type = typename std::conditional<std::is_same<value_t, signed_t>::value, int64_t, uint64_t>::type;
     };
+    // by default non-basic types are wrapped as pointers
+    template <typename T> struct mx_wrapper<T, typename std::enable_if<!is_basic_type<T>::value>::type> : mx_wrapper<int*> {};
 
-    template <typename T, typename = void> struct type_traits;
+    template <typename T, typename = void> struct type_traits {
+        // KEEP THESE COMMENTED. They are only here to show the signature should you choose
+        // to declare these functions
+        // static rs2_internal_t* to_internal(T&& val);
+        // static T from_internal(rs2_internal_t* ptr);
+    };
+
+    struct traits_trampoline {
+
+        // used for SFINAE of which version of to_internal and from_internal to use
+        struct general_ {};
+        struct special_ : general_ {};
+        template<typename> struct int_ { typedef int type; };
+
+        template <typename T> using internal_t = typename type_traits<T>::rs2_internal_t;
+
+        // above sub-structs and these two functions is what allows you to specify the functions to_internal or from_internal
+        // in type_traits<T> to define custom conversions from the internal type to T and vice verse instead of a direct construction
+        template <typename T, typename int_<decltype(type_traits<T>::to_internal)>::type = 0>
+        static typename internal_t<T>* to_internal(T&& val, special_) { return type_traits<T>::to_internal(val); }
+        template <typename T, typename int_<decltype(type_traits<T>::from_internal)>::type = 0>
+        static T from_internal(typename internal_t<T>* ptr, special_) { return type_traits<T>::from_internal(ptr); }
+        
+        // these two handle the default direct construction case
+        // wrapper creates new object on the heap, so don't allow the wrapper to unload before the object is destroyed.
+        // librealsense types are sent to matlab using a pointer to the internal type.
+        template <typename T> static typename internal_t<T>* to_internal(T&& val, general_) { mexLock(); return new internal_t<T>(val); }
+        template <typename T> static T from_internal(typename internal_t<T>* ptr, general_) { return T(*ptr); }
+    };
 public:
     MatlabParamParser() {};
     ~MatlabParamParser() {};
@@ -76,6 +107,7 @@ public:
 
 #include "rs2_type_traits.h"
 
+// for basic types (aka arithmetic, pointer, and enum types)
 template <typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::enable_if<is_basic_type<T>::value && !extra_checks<T>::value>::type>
 {
     static T parse(const mxArray* cell)
@@ -102,31 +134,32 @@ template <typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::
     static void destroy(const mxArray* cell)
     {
         static_assert(!is_basic_type<T>::value, "Trying to destroy basic type. This shouldn't happen.");
+        static_assert(is_basic_type<T>::value, "Non-basic type ended up in basic type's destroy function. How?");
     }
 };
 
+// default for non-basic types (eg classes)
 template<typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::enable_if<!is_basic_type<T>::value && !extra_checks<T>::value>::type>
 {
+    // librealsense types are sent to matlab using a pointer to the internal type.
+    // to get it back from matlab we first parse that pointer and then reconstruct the C++ wrapper
     static T parse(const mxArray* cell)
     {
         using internal_t = typename type_traits<T>::rs2_internal_t;
-
-        // librealsense types are sent to matlab using a pointer to the internal type.
-        // to get it back from matlab we first parse that pointer and then reconstruct the C++ wrapper
-        return T(*mx_wrapper_fns<internal_t*>::parse(cell));
+        using special_t = traits_trampoline::special_;
+        return traits_trampoline::from_internal<T>(mx_wrapper_fns<internal_t*>::parse(cell), special_t());
     }
+
     static mxArray* wrap(T&& var)
     {
         using internal_t = typename type_traits<T>::rs2_internal_t;
-
-        mexLock(); // wrapper creates new object on the heap, so don't allow the wrapper to unload before the object is destroyed.
-        // librealsense types are sent to matlab using a pointer to the internal type.
-        return mx_wrapper_fns<internal_t*>::wrap(new internal_t(var));
+        using special_t = traits_trampoline::special_;
+        return mx_wrapper_fns<internal_t*>::wrap(traits_trampoline::to_internal<T>(std::move(var), special_t()));
     }
+    
     static void destroy(const mxArray* cell)
     {
         using internal_t = typename type_traits<T>::rs2_internal_t;
-
         // get pointer to the internal type we put on the heap
         auto ptr = mx_wrapper_fns<internal_t*>::parse(cell);
         delete ptr;
@@ -135,6 +168,7 @@ template<typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::e
     }
 };
 
+// overload for wrapping C-strings. TODO: do we need special parsing too?
 template<> static mxArray* MatlabParamParser::mx_wrapper_fns<const char *>::wrap(const char*&& str)
 {
     return mxCreateString(str);
@@ -152,13 +186,15 @@ template<> static mxArray* MatlabParamParser::mx_wrapper_fns<std::string>::wrap(
     return mx_wrapper_fns<const char*>::wrap(str.c_str());
 }
 
-template <typename T> struct ty : std::false_type {};
-template <> struct ty<uint8_t> : std::integral_constant<mxClassID, mxUINT8_CLASS> {};
+// TODO: find a way to fold this in with type_traits? should mx_wrapper and type_traits in general be folded together?
+// wrap many Ts with the same class you wrap 1 T. defining this as an explicit struct allows for exceptions to be registered
+// commented out for now because mx_wrapper is a private substruct of MatlabParamParser, and ty is not a substruct of MatlabParamParser
+//template <typename T, typename = void> struct ty : std::integral_constant<mxClassID, MatlabParamParser::mx_wrapper<T>::value>{};
 
 template <typename T> static mxArray* MatlabParamParser::wrap_array(const T* var, /*size_t ndims=1,*/ size_t *dims, bool contiguous)
 {
-    static_assert(!std::is_same<ty<T>, std::false_type>::value, "Not a supported array type");
-    auto cells = mxCreateNumericArray(/*ndims*/1, dims, ty<T>::value, mxREAL);
+//    static_assert(!std::is_same<ty<T>, std::false_type>::value, "Not a supported array type");
+    auto cells = mxCreateNumericArray(/*ndims*/1, dims, /*ty<T>::value*/ MatlabParamParser::mx_wrapper<T>::value, mxREAL);
     auto ptr = static_cast<T*>(mxGetData(cells));
     // TODO: generalize to more dimensions. maybe nested helper functions?
     for (int x = 0; x < dims[0]; ++x)

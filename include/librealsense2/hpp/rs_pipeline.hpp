@@ -102,12 +102,11 @@ namespace rs2
             return _pipeline_profile != nullptr;
         }
 
-    private:
+        explicit operator std::shared_ptr<rs2_pipeline_profile>() { return _pipeline_profile; }
         pipeline_profile(std::shared_ptr<rs2_pipeline_profile> profile) :
-            _pipeline_profile(profile)
-        {
-
-        }
+            _pipeline_profile(profile){}
+    private:
+        
         std::shared_ptr<rs2_pipeline_profile> _pipeline_profile;
         friend class config;
         friend class pipeline;
@@ -316,12 +315,14 @@ namespace rs2
         {
             return _config;
         }
-    private:
-        config(std::shared_ptr<rs2_config> config) : _config(config)
+        explicit operator std::shared_ptr<rs2_config>() const
         {
+            return _config;
         }
-        std::shared_ptr<rs2_config> _config;
 
+        config(std::shared_ptr<rs2_config> config) : _config(config) {}
+    private:
+        std::shared_ptr<rs2_config> _config;
     };
 
     /**

@@ -1070,14 +1070,15 @@ void make_factory(){
             auto min_severity = MatlabParamParser::parse<rs2_log_severity>(inv[0]);
             if (inc == 1)
                 rs2::log_to_file(min_severity);
-            else if (inc == 2)
+            else if (inc == 2) {
                 auto file_path = MatlabParamParser::parse<const char *>(inv[1]);
                 rs2::log_to_file(min_severity, file_path);
+            }
         });
         free_funcs_factory.record("log", 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[]) {
             auto severity = MatlabParamParser::parse<rs2_log_severity>(inv[0]);
             auto message = MatlabParamParser::parse<const char *>(inv[1]);
-            rs2::log(min_severity, message);
+            rs2::log(severity, message);
         });
     }
 

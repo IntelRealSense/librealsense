@@ -212,6 +212,8 @@ namespace rs2
             _options = other._options;
             return *this;
         }
+        // if operator= is ok, this should be ok too
+        options(const options& other) : _options(other._options) {}
 
         virtual ~options() = default;
    protected:
@@ -224,7 +226,7 @@ namespace rs2
            return *this;
        }
 
-       options(const options& other) : _options(other._options) {}
+       
 
     private:
         rs2_options* _options;
@@ -471,7 +473,6 @@ namespace rs2
         }
 
         operator bool() const { return _sensor.get() != nullptr; }
-        explicit roi_sensor(std::shared_ptr<rs2_sensor> dev) : roi_sensor(sensor(dev)) {}
     };
 
     class depth_sensor : public sensor
