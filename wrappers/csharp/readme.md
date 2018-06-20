@@ -16,10 +16,10 @@ Next, download the following prerequisites :
 
 After installing all prerequisites, generate 'realsense2.sln' with 'BUILD_CSHARP_BINDINGS' and 'BUILD_SHARED_LIBS' flags using cmake.
 
-Form the root dir:
-- mkdir build
-- cd build
-- cmake .. -DBUILD_CSHARP_BINDINGS=ON -DBUILD_SHARED_LIBS=ON
+- Generate the VS solution using cmake (run from librealsense root dir):
+  - mkdir build
+  - cd build
+  - cmake .. -DBUILD_CSHARP_BINDINGS=ON -DBUILD_SHARED_LIBS=ON
 
 The file 'realsense2.sln' should be created in 'build' folder, open the file with Visual Studio, C# examples and library will be available in the solution under 'Wrappers/csharp'.
 
