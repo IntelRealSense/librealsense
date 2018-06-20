@@ -27,11 +27,12 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _Blue: 4.52
+    - _Blue: 0.2
     - _Color: 0
+    - _DepthScale: 0.001
     - _GrayScale: 0
-    - _Green: 4.66
-    - _MaxRange: 6.67
+    - _Green: 0.2
+    - _MaxRange: 2
     - _MinRange: 0
-    - _Red: 4.52
+    - _Red: 0.2
     m_Colors: []

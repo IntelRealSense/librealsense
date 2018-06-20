@@ -7,6 +7,7 @@
 
 int main(int argc, char * argv[]) try
 {
+    using namespace cv;
     using namespace rs2;
 
     // Define colorizer and align processing-blocks
@@ -17,16 +18,15 @@ int main(int argc, char * argv[]) try
     pipeline pipe;
     pipe.start();
 
-    using namespace cv;
     const auto window_name = "Display Image";
     namedWindow(window_name, WINDOW_AUTOSIZE);
 
     // We are using StructuringElement for erode / dilate operations
     auto gen_element = [](int erosion_size)
     {
-        return getStructuringElement(cv::MORPH_RECT,
-            cv::Size(erosion_size + 1, erosion_size + 1),
-            cv::Point(erosion_size, erosion_size));
+        return getStructuringElement(MORPH_RECT,
+            Size(erosion_size + 1, erosion_size + 1),
+            Point(erosion_size, erosion_size));
     };
 
     const int erosion_size = 3;
@@ -35,7 +35,7 @@ int main(int argc, char * argv[]) try
 
     // The following operation is taking grayscale image,
     // performs threashold on it, closes small holes and erodes the white area
-    auto create_mask_from_depth = [&](cv::Mat& depth, int thresh, ThresholdTypes type)
+    auto create_mask_from_depth = [&](Mat& depth, int thresh, ThresholdTypes type)
     {
         threshold(depth, depth, thresh, 255, type);
         dilate(depth, depth, erode_less);
@@ -82,12 +82,12 @@ int main(int argc, char * argv[]) try
 
         // Run Grab-Cut algorithm:
         Mat bgModel, fgModel; 
-        cv::grabCut(color_mat, mask, Rect(), bgModel, fgModel, 1, cv::GC_INIT_WITH_MASK);
+        grabCut(color_mat, mask, Rect(), bgModel, fgModel, 1, GC_INIT_WITH_MASK);
 
         // Extract foreground pixels based on refined mask from the algorithm
-        cv::Mat3b foreground = cv::Mat3b::zeros(color_mat.rows, color_mat.cols);
-        color_mat.copyTo(foreground, (mask == cv::GC_FGD) | (mask == cv::GC_PR_FGD));
-        cv::imshow(window_name, foreground);
+        Mat3b foreground = Mat3b::zeros(color_mat.rows, color_mat.cols);
+        color_mat.copyTo(foreground, (mask == GC_FGD) | (mask == GC_PR_FGD));
+        imshow(window_name, foreground);
     }
 
     return EXIT_SUCCESS;

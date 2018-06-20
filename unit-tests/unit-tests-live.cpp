@@ -2032,21 +2032,41 @@ void metadata_verification(const std::vector<internal_frame_additional_data>& da
                 CAPTURE(value);
                 CAPTURE(last_val[j]);
 
-                REQUIRE_NOTHROW((value > last_val[0]));
-                if (RS2_FRAME_METADATA_FRAME_COUNTER == j) // In addition, there shall be no frame number gaps
+                REQUIRE((value > last_val[j]));
+                if (RS2_FRAME_METADATA_FRAME_COUNTER == j && last_val[j] >= 0) // In addition, there shall be no frame number gaps
                 {
-                    REQUIRE_NOTHROW((1 == (value - last_val[j])));
+                    REQUIRE((1 == (value - last_val[j])));
                 }
 
                 last_val[j] = data[i].frame_md.md_attributes[j].second;
             }
         }
 
-        //        // Exposure time and gain values are greater than zero
-        //        if (data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE].first)
-        //            REQUIRE(data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE].second > 0);
-        //        if (data[i].frame_md.md_attributes[RS2_FRAME_METADATA_GAIN_LEVEL].first)
-        //            REQUIRE(data[i].frame_md.md_attributes[RS2_FRAME_METADATA_GAIN_LEVEL].second > 0);
+        // Metadata below must have a non negative value
+        auto md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE];
+        if (md.first) REQUIRE(md.second >= 0);
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_GAIN_LEVEL];
+        if (md.first) REQUIRE(md.second >= 0);
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_TIME_OF_ARRIVAL];
+        if (md.first) REQUIRE(md.second >= 0);
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_BACKEND_TIMESTAMP];
+        if (md.first) REQUIRE(md.second >= 0);
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_FPS];
+        if (md.first) REQUIRE(md.second >= 0);
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_POWER_LINE_FREQUENCY];
+        if (md.first) REQUIRE(md.second >= 0);
+
+        // Metadata below must have a boolean value
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_AUTO_EXPOSURE];
+        if (md.first) REQUIRE((md.second == 0 || md.second == 1));
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE];
+        if (md.first) REQUIRE((md.second == 0 || md.second == 1));
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_AUTO_WHITE_BALANCE_TEMPERATURE];
+        if (md.first) REQUIRE((md.second == 0 || md.second == 1));
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_BACKLIGHT_COMPENSATION];
+        if (md.first) REQUIRE((md.second == 0 || md.second == 1));
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION];
+        if (md.first) REQUIRE((md.second == 0 || md.second == 1));
     }
 }
 
@@ -2128,6 +2148,35 @@ TEST_CASE("Error handling sanity", "[live][!mayfail]") {
     }
 }
 
+std::vector<uint32_t> split(const std::string &s, char delim) {
+    std::stringstream ss(s);
+    std::string item;
+    std::vector<uint32_t> tokens;
+    while (std::getline(ss, item, delim)) {
+        tokens.push_back(std::stoi(item, nullptr));
+    }
+    return tokens;
+}
+
+bool is_fw_version_newer(rs2::sensor& subdevice, const uint32_t other_fw[4])
+{
+    std::string fw_version_str;
+    REQUIRE_NOTHROW(fw_version_str = subdevice.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION));
+    auto fw = split(fw_version_str, '.');
+    if (fw[0] > other_fw[0])
+            return true;
+    if (fw[0] == other_fw[0] && fw[1] > other_fw[1])
+        return true;
+    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] > other_fw[2])
+        return true;
+    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] == other_fw[2] && fw[3] > other_fw[3])
+        return true;
+    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] == other_fw[2] && fw[3] == other_fw[3])
+        return true;
+    return false;
+}
+
+
 TEST_CASE("Auto disabling control behavior", "[live]") {
     //Require at least one device to be plugged in
     rs2::context ctx;
@@ -2164,12 +2213,17 @@ TEST_CASE("Auto disabling control behavior", "[live]") {
                 {
                     for (auto elem : { 0.f, 2.f })
                     {
+                        CAPTURE(elem);
                         REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_EMITTER_ENABLED, elem));
                         REQUIRE_NOTHROW(range = subdevice.get_option_range(RS2_OPTION_LASER_POWER));
                         REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_LASER_POWER, range.max));
                         CAPTURE(range.max);
                         REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_EMITTER_ENABLED));
                         REQUIRE(val == 1);
+                        //0 - on, 1- off, 2 - deprecated for fw later than 5.9.11.0
+                        //check if the fw version supports elem = 2
+                        const uint32_t MIN_FW_VER[4] = { 5, 9, 11, 0 };
+                        if (is_fw_version_newer(subdevice, MIN_FW_VER)) break;
                     }
                 }
             }
@@ -3729,7 +3783,6 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
 
                 REQUIRE_NOTHROW(subdevice.start([&](rs2::frame f)
                 {
-
                     if ((frames >= frames_before_start_measure) && (frames_additional_data.size() < frames_for_fps_measure))
                     {
                         if (first)
@@ -3800,6 +3853,8 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
                     auto actual_fps = (double)frames_additional_data.size() / (double)seconds;
                     double metadata_seconds = frames_additional_data[frames_additional_data.size() - 1].timestamp - frames_additional_data[0].timestamp;
                     metadata_seconds *= msec_to_sec;
+                    CAPTURE(frames_additional_data[frames_additional_data.size() - 1].timestamp);
+                    CAPTURE(frames_additional_data[0].timestamp);
 
                     if (metadata_seconds <= 0)
                     {

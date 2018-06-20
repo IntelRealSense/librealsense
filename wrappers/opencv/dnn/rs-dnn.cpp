@@ -20,9 +20,9 @@ const char* classNames[]  = {"background",
 
 int main(int argc, char** argv) try
 {
-    using namespace rs2;
     using namespace cv;
     using namespace cv::dnn;
+    using namespace rs2;
 
     Net net = readNetFromCaffe("MobileNetSSD_deploy.prototxt", 
                                "MobileNetSSD_deploy.caffemodel");
@@ -102,7 +102,7 @@ int main(int argc, char** argv) try
                             (int)(xRightTop - xLeftBottom),
                             (int)(yRightTop - yLeftBottom));
 
-                object = object  & cv::Rect(0, 0, depth_mat.cols, depth_mat.rows);
+                object = object  & Rect(0, 0, depth_mat.cols, depth_mat.rows);
 
                 // Calculate mean depth inside the detection region
                 // This is a very naive way to estimate objects depth

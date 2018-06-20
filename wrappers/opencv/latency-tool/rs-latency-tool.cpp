@@ -7,6 +7,7 @@
 // See ReadMe.md for more information
 int main(int argc, char * argv[]) try
 {
+    using namespace cv;
     using namespace rs2;
 
     // Start RealSense camera
@@ -41,10 +42,9 @@ int main(int argc, char * argv[]) try
     //syncer pipe;
     //sensor.start(pipe);
 
-    using namespace cv;
     const auto window_name = "Display Image";
     namedWindow(window_name, CV_WINDOW_NORMAL);
-    cvSetWindowProperty(window_name, CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+    setWindowProperty(window_name, WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
 
     const int display_w = 1280;
     const int digits = 16;
