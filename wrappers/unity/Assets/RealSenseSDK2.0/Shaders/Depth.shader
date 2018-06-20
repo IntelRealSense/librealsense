@@ -5,9 +5,9 @@
 	    _MinRange("Min Range(m)", Range(0, 10)) = 0
 		_MaxRange("Max Range(m)", Range(0, 10.0)) = 5.0
 		[Toggle] _GrayScale("Gray scale", Float) = 0
-		_Red("Red", Range(0, 1)) = 0.5
-		_Green("Green", Range(0, 1)) = 0.5
-		_Blue("Blue", Range(0, 1)) = 0.5
+		_Red("Red", Range(0, 1)) = 0.2
+		_Green("Green", Range(0, 1)) = 0.2
+		_Blue("Blue", Range(0, 1)) = 0.2
 	}
 	SubShader {
 		Tags { "QUEUE"="Transparent" "IGNOREPROJECTOR"="true" "RenderType"="Transparent" "PreviewType"="Plane" }
