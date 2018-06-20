@@ -25,26 +25,28 @@ classdef pipeline < handle
         function start(this, config)
             % TODO: add output parameter after binding pipeline_profile
             switch nargin
-                case 1
-                    realsense.librealsense_mex('rs2::pipeline', 'start#void', this.objectHandle);
-                case 2
-                    if (isa(config, 'config')) 
-                        % TODO: implement this overload
-%                        realsense.librealsense_mex('rs2::pipeline', 'start#config', this.objectHandle, config.objectHandle);
-                    else
-                        % TODO: Error out meaningfully?
-                        return
-                    end
+            case 1
+                realsense.librealsense_mex('rs2::pipeline', 'start', this.objectHandle);
+            case 2
+                if (isa(config, 'config'))
+%                   realsense.librealsense_mex('rs2::pipeline', 'start', this.objectHandle, config.objectHandle);
+                else
+                    % TODO: Error out meaningfully?
+                    return
+                end
             end
         end
         function stop(this)
             realsense.librealsense_mex('rs2::pipeline', 'stop', this.objectHandle);
         end
         function frameset = wait_for_frames(this, timeout_ms)
-            if (nargin == 1)
-                timeout_ms = 5000;
+            switch nargin
+            case 1
+               frameset = realsense.frameset(realsense.librealsense_mex('rs2::pipeline', 'wait_for_frames', this.objectHandle));
+            case 2
+                % TODO: is there a good way to do type safety in matlab?
+                frameset = realsense.frameset(realsense.librealsense_mex('rs2::pipeline', 'wait_for_frames', this.objectHandle, uint64(timeout_ms)));
             end
-            frameset = realsense.frameset(realsense.librealsense_mex('rs2::pipeline', 'wait_for_frames', this.objectHandle, uint64(timeout_ms)));
         end
         % TODO: poll_for_frames, get_active_profile
     end
