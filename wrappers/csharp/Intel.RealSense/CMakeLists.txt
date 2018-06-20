@@ -23,6 +23,14 @@ csharp_set_designer_cs_properties(
 	Properties/AssemblyInfo.cs
 )
 
+if(BUILD_UNITY_BINDINGS)
+	add_custom_command(TARGET ${PROJECT_NAME}
+					   POST_BUILD
+					   # COMMAND DEL ARGS "/s /f /q ..\\unity\\Plugins"
+					   COMMAND XCOPY /y /s .\\*.dll ..\\unity\\Assets\\RealSenseSDK2.0\\Plugins\\
+					   COMMENT "Copy DLLs to Unity plugins folder")
+endif()
+				   
 set_property(SOURCE App.xaml PROPERTY VS_XAML_TYPE "ApplicationDefinition")
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION "v${DOTNET_VERSION_LIBRARY}")
