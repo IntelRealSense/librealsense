@@ -1,6 +1,6 @@
 # macOS Installation  
 
-**Note:** macOS support for the full range of functionality offered by the SDK is not yet complete. If you need support for R200 or the SR300, [legacy librealsense](https://github.com/IntelRealSense/librealsense/tree/legacy) offers a subset of SDK functionality. 
+**Note:** macOS support for the full range of functionality offered by the SDK is not yet complete. If you need support for R200 or the ZR300, [legacy librealsense](https://github.com/IntelRealSense/librealsense/tree/legacy) offers a subset of SDK functionality. 
 
 ## Building from Source
 
