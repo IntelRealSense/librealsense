@@ -71,9 +71,9 @@ namespace rs2
         }
 
 		/**
-		* Operator implementation, copy the parameters from another stream_profile
-		* \param[in] rhs - stream profile to copy from.
-		* \return bool - success or fail.
+		* Comparison operator, compare if two stream profiles are the same
+		* \param[in] rhs - stream profile to compare with.
+		* \return bool - true or false.
 		*/
         bool operator==(const stream_profile& rhs)
         {
@@ -95,7 +95,7 @@ namespace rs2
         }
 
 		/**
-		* Template function, changing the instance as another class type
+		* Template function, casting the instance as another class type
 		* \return class instance - pointer or null.
 		*/
         template<class T>
@@ -118,20 +118,20 @@ namespace rs2
         }
 
 		/**
-		* Checking if stream profile is set as default
+		* Checking if stream profile is marked/assigned as default, the meaning is that the profile will be selected when the user will request stream configuration using wildcards (RS2_DEPTH, -1,-1,...
 		* \return bool - true or false.
 		*/
         bool is_default() const { return _default; }
 
 		/**
-		* Operator implement, checking if profile instance is nullptr
+		* Parenthesis operator check that the profile is valid
 		* \return bool - true or false.
 		*/
         operator bool() const { return _profile != nullptr; }
 
 		/**
 		* Get back the internal stream profile instance
-		* \return rs2_stream_profile* - internal instance to communicate with real implementation.
+		* \return rs2_stream_profile* - internal implementation of the profile class
 		*/
         const rs2_stream_profile* get() const { return _profile; }
 
@@ -144,8 +144,8 @@ namespace rs2
             return _profile;
         }
 		/**
-		* Get the extrinsic base on another stream profile
-		* \param[in] stream_profile to - the stream profile to be based to return the extrinsic
+		* Get the extrinsic transformation between two profiles (representing physical sensors)
+		* \param[in] stream_profile to - the stream profile (another sensor) to be based to return the extrinsic
 		* \return rs2_stream_profile* - internal instance to communicate with real implementation.
 		*/
         rs2_extrinsics get_extrinsics_to(const stream_profile& to) const
@@ -157,7 +157,8 @@ namespace rs2
             return res;
         }
 		/**
-		* Register the extrinsic to the environment base on another stream profile
+		* Assign extrinsic transformation parameters to a specific profile (sensor). The extrinsic information is generally available as part of the camera calibration, and librealsense is responsible to retrieve and assign these parameters where appropriate.
+        * The specific function is intended for synthetic/mock-up (software) devices for which the parameters are produced and injected by the user.
 		* \param[in] stream_profile to - which stream profile to be registered with the extrinsic.
 		* \param[in] rs2_extrinsics extrinsics - the extrinsics to be registered.
 		*/
@@ -221,19 +222,11 @@ namespace rs2
             }
         }
 
-		/**
-		* Get stream profile width attribute
-		* \return int - stream width.
-		*/
         int width() const
         {
             return _width;
         }
 
-		/**
-		* Get stream profile height attribute
-		* \return int - stream height.
-		*/
         int height() const
         {
             return _height;
@@ -386,7 +379,7 @@ namespace rs2
         void keep() { rs2_keep_frame(frame_ref); }
 
 		/**
-		* Operator implementation, checking if internal frame handle exist.
+		* Parenthesis operator check internal frame handle is valid.
 		* \return bool - true or false.
 		*/
         operator bool() const { return frame_ref != nullptr; }
@@ -485,7 +478,7 @@ namespace rs2
             return extension;
         }
 		/**
-		* Template function, change current instance as the type of another class
+		* Template function, cast current instance as the type of another class
 		* \return  class instance.
 		*/
         template<class T>
@@ -503,7 +496,7 @@ namespace rs2
 
     protected:
         /**
-        * create additional reference to a frame without duplicating frame data
+        * add additional reference to a frame without duplicating frame data
         * \param[out] result     new frame reference, release by destructor
         * \return                true if cloning was successful
         */
@@ -688,10 +681,6 @@ namespace rs2
             return (const texture_coordinate*)res;
         }
 
-		/**
-		* Retrieve the size of point cloud
-		* \return size_t - size of the point cloud
-		*/
         size_t size() const
         {
             return _size;
@@ -954,7 +943,7 @@ namespace rs2
             }
         }
 		/**
-		* Retrieve back the frame from frameset using arrary notation
+		* Bracket operator retrieves back the frame from frameset using arrary notation
 		* \param[in] index - index of array to retrieve data back.
 		* \return frame - retrieved frame.
 		*/
