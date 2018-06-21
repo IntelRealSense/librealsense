@@ -76,7 +76,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 
       In order to accomplish this add the driver's name *hid_sensor_custom* to `/etc/modules` file, eg:
       ```sh
-      echo 'hid_sensor_custom' | sudo tee -a /etc/modules`
+      echo 'hid_sensor_custom' | sudo tee -a /etc/modules
       ```
 
 ## Building librealsense2 SDK
@@ -93,7 +93,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 
   * Navigate to *librealsense* root directory and run `mkdir build && cd build`<br />
   * Run CMake:
-    * `cmake ../` - The default build is set to produce the core shared object and unit-tests binaries in Debug mode. Use `-D CMAKE_BUILD_TYPE=release` to build with optimizations.<br />
+    * `cmake ../` - The default build is set to produce the core shared object and unit-tests binaries in Debug mode. Use `-DCMAKE_BUILD_TYPE=Release` to build with optimizations.<br />
     * `cmake ../ -DBUILD_EXAMPLES=true` - Builds *librealsense* along with the demos and tutorials<br />
     * `cmake ../ -DBUILD_EXAMPLES=true -DBUILD_GRAPHICAL_EXAMPLES=false` - For systems without OpenGL or X11 build only textual examples<br /><br />
 
