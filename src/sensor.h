@@ -50,6 +50,7 @@ namespace librealsense
         std::shared_ptr<notifications_processor> get_notifications_processor();
         virtual frame_callback_ptr get_frames_callback() const override;
         virtual void set_frames_callback(frame_callback_ptr callback) override;
+        virtual rs2_extension get_sensor_type() override;
 
         bool is_streaming() const override
         {

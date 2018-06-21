@@ -1,4 +1,5 @@
 #include "metadata-parser.h"
+#include "api.h"
 #include "archive.h"
 #include <fstream>
 
@@ -6,6 +7,34 @@
 
 namespace librealsense
 {
+
+    frame::frame(frame&& r)
+        : ref_count(r.ref_count.exchange(0)), _kept(r._kept.exchange(false)),
+        owner(r.owner), on_release()
+    {
+        *this = std::move(r);
+        if (owner == nullptr) return;
+        auto sensor = owner->get_sensor();
+        if (sensor) _sensor_type = sensor->get_sensor_type();
+    }
+
+    frame& frame::operator=(frame&& r)
+    {
+        data = move(r.data);
+        owner = r.owner;
+        ref_count = r.ref_count.exchange(0);
+        _kept = r._kept.exchange(false);
+        on_release = std::move(r.on_release);
+        additional_data = std::move(r.additional_data);
+        r.owner.reset();
+        if (owner)
+        {
+            auto sensor = owner->get_sensor();
+            if(sensor) _sensor_type = owner->get_sensor()->get_sensor_type();
+        }
+        return *this;
+    }
+
     std::shared_ptr<sensor_interface> frame::get_sensor() const
     {
         auto res = sensor.lock();
@@ -16,7 +45,11 @@ namespace librealsense
         }
         return res;
     }
-    void frame::set_sensor(std::shared_ptr<sensor_interface> s) { sensor = s;}
+    void frame::set_sensor(std::shared_ptr<sensor_interface> s) 
+    { 
+        sensor = s;
+        if (s) _sensor_type = s->get_sensor_type();
+    }
 
     float3* points::get_vertices()
     {
@@ -122,12 +155,11 @@ namespace librealsense
         int pending_frames = 0;
         std::recursive_mutex mutex;
         std::shared_ptr<platform::time_service> _time_service;
-        std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
+        std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> _metadata_parsers;
 
         std::weak_ptr<sensor_interface> _sensor;
         std::shared_ptr<sensor_interface> get_sensor() const override { return _sensor.lock(); }
         void set_sensor(std::shared_ptr<sensor_interface> s) override { _sensor = s; }
-
         T alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
         {
             T backbuffer;
@@ -258,14 +290,26 @@ namespace librealsense
             }
         }
 
-        std::shared_ptr<metadata_parser_map> get_md_parsers() const { return _metadata_parsers; };
+        std::shared_ptr<metadata_parser_map> get_md_parsers(rs2_extension sensor_type) const override
+        {
+            if(_metadata_parsers.find(sensor_type) != _metadata_parsers.end())
+                return _metadata_parsers.at(sensor_type);
+            return nullptr;
+        };
+
+        void set_md_parsers(const rs2_extension sensor_type, const std::shared_ptr<metadata_parser_map> metadata_parsers) override
+        {
+            _metadata_parsers[sensor_type] = metadata_parsers;
+        }
+
+
 
         friend class frame;
 
     public:
         explicit frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size,
                              std::shared_ptr<platform::time_service> ts,
-                             std::shared_ptr<metadata_parser_map> parsers)
+                             std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> parsers)
             : max_frame_queue_size(in_max_frame_queue_size),
               mutex(), recycle_frames(true), _time_service(ts),
               _metadata_parsers(parsers)
@@ -332,7 +376,7 @@ namespace librealsense
     std::shared_ptr<archive_interface> make_archive(rs2_extension type,
                                                     std::atomic<uint32_t>* in_max_frame_queue_size,
                                                     std::shared_ptr<platform::time_service> ts,
-                                                    std::shared_ptr<metadata_parser_map> parsers)
+                                                    std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> parsers)
     {
         switch(type)
         {
@@ -384,12 +428,14 @@ frame_interface* frame::publish(std::shared_ptr<archive_interface> new_owner)
 {
     owner = new_owner;
     _kept = false;
+    auto sensor = owner->get_sensor();
+    if(sensor) _sensor_type = sensor->get_sensor_type();
     return owner->publish_frame(this);
 }
 
 rs2_metadata_type frame::get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
 {
-    auto md_parsers = owner->get_md_parsers();
+    auto md_parsers = owner->get_md_parsers(_sensor_type);
 
     if (!md_parsers)
         throw invalid_value_exception(to_string() << "metadata not available for "
@@ -407,7 +453,7 @@ rs2_metadata_type frame::get_frame_metadata(const rs2_frame_metadata_value& fram
 
 bool frame::supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
 {
-    auto md_parsers = owner->get_md_parsers();
+    auto md_parsers = owner->get_md_parsers(_sensor_type);
 
     // verify preconditions
     if (!md_parsers)
@@ -450,6 +496,11 @@ unsigned long long frame::get_frame_number() const
 rs2_time_t frame::get_frame_system_time() const
 {
     return additional_data.system_time;
+}
+
+std::array<uint8_t, MAX_META_DATA_SIZE> frame::get_metadata_blob() const
+{
+    return additional_data.metadata_blob;
 }
 
 void frame::update_frame_callback_start_ts(rs2_time_t ts)
