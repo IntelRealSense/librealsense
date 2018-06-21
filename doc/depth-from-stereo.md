@@ -91,7 +91,7 @@ depth[disparity > 0] = (fx * baseline) / (units * disparity[disparity > 0])
 
 The average running time of [stereobm](https://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html?highlight=calib#stereobm) on an Intel(R) Core(TM) i5-6600K CPU is around 110 ms offering effective 9 FPS (frames per second). 
 
-> Get the full source code [here](https://github.com/dorodnic/librealsense/wiki/sources.zip)
+> Get the full source code [here](https://github.com/dorodnic/librealsense/wiki/source.zip)
 
 ### Passive vs Active Stereo
 The quality of the results you will get with this algorithm depends primarily on the density of visually distinguishable points (features) for the algorithm to match. Any source of texture, natural or artificial will improve the accuracy significantly.
