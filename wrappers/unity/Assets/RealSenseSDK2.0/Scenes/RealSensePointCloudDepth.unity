@@ -147,18 +147,6 @@ MonoBehaviour:
       StreamIndex: -1
       Width: 640
       Height: 480
-    - Stream: 3
-      Format: 9
-      Framerate: 30
-      StreamIndex: -1
-      Width: 640
-      Height: 480
-    - Stream: 2
-      Format: 5
-      Framerate: 30
-      StreamIndex: -1
-      Width: 640
-      Height: 480
     RequestedSerialNumber: 
 --- !u!4 &122333714
 Transform:
@@ -303,7 +291,7 @@ ParticleSystem:
   moveWithTransform: 0
   moveWithCustomTransform: {fileID: 0}
   scalingMode: 1
-  randomSeed: -61272711
+  randomSeed: -600537696
   InitialModule:
     serializedVersion: 3
     enabled: 1

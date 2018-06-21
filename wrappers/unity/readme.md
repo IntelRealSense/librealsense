@@ -38,8 +38,10 @@ In order to get these files, either:
 
 The Unity wrapper provides several example scenes to help you get started with RealSense in Unity. Open one of the following scenes under `unity/Assets/RealSenseSDK2.0/Scenes` (Sorted from basic to advanced):
 
-1. RealSense Textures - Basic 2D scene demonstrating how to bind textures to a RealSense device stream. The Scene provides 3 live streams and 5 different textures: Depth, Infrared, Color, Colorized Depth and Color with background segmentation.
-
+1. RealSense Textures Depth and Infrared - Basic 2D scene demonstrating how to bind textures to a RealSense device stream. The Scene provides 2 live streams and 2 different textures: Depth and Infrared.
+2. RealSense Textures Depth and Color (Only cameras with RGB sensor are supported) - Basic 2D scene demonstrating how to bind textures to a RealSense device stream. The Scene provides 2 live streams and 3 different textures: Depth, Color and Color with background segmentation.
+3. RealSense PointCloud Depth - 3D scene demonstrating how to bind a [PointCloud](#PointCloud) prefab to RealSense device depth stream.
+4. RealSense PointCloud Depth and Color - 3D scene demonstrating how to bind a [PointCloud](#PointCloud) prefab to RealSense device depth and color streams.
 
 ## Prefabs
 
