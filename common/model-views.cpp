@@ -76,6 +76,21 @@ Some auxillary functionalities might be affected. Please report this message if 
 #endif
 }
 
+std::vector<std::string> split_string(std::string& input, char delim)
+{
+    std::vector<std::string> result;
+    auto e = input.end();
+    auto i = input.begin();
+    while (i != e) {
+        i = find_if_not(i, e, [delim](char c) { return c == delim; });
+        if (i == e) break;
+        auto j = find(i, e, delim);
+        result.emplace_back(i, j);
+        i = j;
+    }
+    return result;
+}
+
 namespace rs2
 {
     void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
@@ -2258,18 +2273,28 @@ namespace rs2
             std::string sensor_name = dev->s->get_info(RS2_CAMERA_INFO_NAME);
             std::string stream_name = rs2_stream_to_string(profile.stream_type());
 
-            tooltip = to_string() << dev_name << " S/N:" << dev_serial << " | " << sensor_name << ", " << stream_name << " stream";
+            tooltip = to_string() << dev_name << " s.n:" << dev_serial << " | " << sensor_name << ", " << stream_name << " stream";
             const auto approx_char_width = 12;
             if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size()) * approx_char_width)
                 label = tooltip;
-            else if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + sensor_name.size() + stream_name.size()) * approx_char_width)
-                label = to_string() << dev_name << " | " << sensor_name << " " << stream_name << " stream";
-            else if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + stream_name.size()) * approx_char_width)
-                label = to_string() << dev_name << " " << stream_name << " stream";
-            else if (stream_rect.w - 32 * num_of_buttons >= stream_name.size() * approx_char_width * 2)
-                label = to_string() << stream_name << " stream";
             else
-                label = "";
+            {
+                // Use only the SKU type for compact representation and use only the last three digits for S.N
+                auto short_name = split_string(dev_name, ' ').back();
+                auto short_sn = dev_serial;
+                short_sn.erase(0, dev_serial.size() - 5).replace(0, 2, "..");
+
+                auto label_length = stream_rect.w - 32 * num_of_buttons;
+
+                if (label_length >= (short_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size()) * approx_char_width)
+                    label = to_string() << short_name << " s.n:" << dev_serial << " | " << sensor_name << " " << stream_name << " stream";
+                else if (label_length >= (short_name.size() + short_sn.size() + stream_name.size()) * approx_char_width)
+                    label = to_string() << short_name << " s.n:" << short_sn << " " << stream_name << " stream";
+                else if (label_length >= short_name.size() * approx_char_width)
+                    label = to_string() << short_name << " " << stream_name;
+                else
+                    label = "";
+            }
         }
         else
         {
