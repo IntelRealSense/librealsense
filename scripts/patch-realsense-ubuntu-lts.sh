@@ -29,7 +29,7 @@ retpoline_retrofit=0
 
 LINUX_BRANCH=$(uname -r)
 
-kernel_branch=$(choose_kernel_branch $LINUX_BRANCH)
+
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
 ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
 if [ -z "${ubuntu_codename}" ];
@@ -38,7 +38,7 @@ then
 	ubuntu_codename="xenial"
 	retpoline_retrofit=1
 fi
-
+kernel_branch=$(choose_kernel_branch ${LINUX_BRANCH} ${ubuntu_codename})
 kernel_name="ubuntu-${ubuntu_codename}-$kernel_branch"
 
 #Distribution-specific packages
