@@ -335,8 +335,9 @@ class RSOptionRange : public DictBase {
 
 class RSNotification : public DictBase {
  public:
-  RSNotification(const char* des, rs2_time_t time, rs2_log_severity severity,
-      rs2_notification_category category, std::string serialized_data) {
+  RSNotification(const std::string& des, rs2_time_t time,
+      rs2_log_severity severity, rs2_notification_category category,
+      const std::string& serialized_data) {
     SetMember("descr", des);
     SetMemberT("timestamp", time);
     SetMemberT("severity", (int32_t)severity);
@@ -1408,7 +1409,7 @@ class NotificationCallbackInfo : public MainThreadCallbackInfo {
   virtual void Run();
 
  private:
-  const char* desc_;
+  std::string desc_;
   rs2_time_t time_;
   rs2_log_severity severity_;
   rs2_notification_category category_;
