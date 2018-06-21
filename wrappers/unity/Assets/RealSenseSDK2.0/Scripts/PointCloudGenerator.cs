@@ -92,6 +92,7 @@ public class PointCloudGenerator : MonoBehaviour
 
             // var f = frames[stream] as VideoFrame;
             var f = frames.FirstOrDefault<VideoFrame>(stream);
+            using(var f = frames.FirstOrDefault<VideoFrame>(stream))
             if (f != null)
             {
                 pc.MapTexture(f);
