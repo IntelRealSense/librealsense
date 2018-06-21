@@ -143,6 +143,27 @@ bool validate_ppf_results(rs2::frame origin_depth, rs2::frame result_depth, cons
     return profile_diffs("./Filterstransform.txt", diff2ref, 0.f, 0, frame_idx);
 }
 
+void compare_frame_md(rs2::frame origin_depth, rs2::frame result_depth)
+{
+    for (auto i = 0; i < rs2_frame_metadata_value::RS2_FRAME_METADATA_COUNT; i++)
+    {
+        bool origin_supported = origin_depth.supports_frame_metadata((rs2_frame_metadata_value)i);
+        bool result_supported = result_depth.supports_frame_metadata((rs2_frame_metadata_value)i);
+        REQUIRE(origin_supported == result_supported);
+        if (origin_supported && result_supported)
+        {
+            //FRAME_TIMESTAMP and SENSOR_TIMESTAMP metadatas are not included in post proccesing frames,
+            //TIME_OF_ARRIVAL continues to increase  after post proccesing
+            if (i == RS2_FRAME_METADATA_FRAME_TIMESTAMP ||
+                i == RS2_FRAME_METADATA_SENSOR_TIMESTAMP ||
+                i == RS2_FRAME_METADATA_TIME_OF_ARRIVAL) continue;
+            rs2_metadata_type origin_val = origin_depth.get_frame_metadata((rs2_frame_metadata_value)i);
+            rs2_metadata_type result_val = result_depth.get_frame_metadata((rs2_frame_metadata_value)i);
+            REQUIRE(origin_val == result_val);
+        }
+    }
+}
+
 // The test is intended to check the results of filters applied on a sequence of frames, specifically the temporal filter
 // that preserves an internal state. The test utilizes rosbag recordings
 TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post-processing-filters]")
@@ -237,6 +258,7 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
 
                 // Compare the resulted frame versus input
                 validate_ppf_results(depth, filtered_depth, test_cfg, i);
+                compare_frame_md(depth, filtered_depth);
             }
         }
     }

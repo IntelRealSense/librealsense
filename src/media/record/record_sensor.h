@@ -42,6 +42,7 @@ namespace librealsense
         stream_profiles get_active_streams() const override;
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
         void unregister_before_start_callback(int token) override;
+        virtual rs2_extension get_sensor_type() override;
         signal<record_sensor, const notification&> on_notification;
         signal<record_sensor, frame_holder> on_frame;
         signal<record_sensor, rs2_extension, std::shared_ptr<extension_snapshot>> on_extension_change;
