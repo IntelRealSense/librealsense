@@ -451,7 +451,7 @@ namespace librealsense
 
     bool frame::supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
     {
-        auto md_parsers = owner->get_md_parsers();
+        auto md_parsers = owner->get_md_parsers(_sensor_type);
 
         // verify preconditions
         if (!md_parsers)
