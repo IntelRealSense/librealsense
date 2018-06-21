@@ -9,6 +9,8 @@
 #include "ds5/ds5-options.h"
 #include "media/ros/ros_reader.h"
 
+using namespace librealsense;
+
 std::string profile_to_string(std::shared_ptr<stream_profile_interface> s)
 {
     std::ostringstream os;

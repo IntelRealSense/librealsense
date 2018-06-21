@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 2.8.9)
+#  minimum required cmake version: 3.8.0
+cmake_minimum_required(VERSION 3.8.0)
+
 project(realsense-file)
 
 include(config.cmake)

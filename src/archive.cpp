@@ -361,125 +361,126 @@ namespace librealsense
             throw std::runtime_error("Requested frame type is not supported!");
         }
     }
-}
 
-void frame::release()
-{
-    if (ref_count.fetch_sub(1) == 1)
+    void frame::release()
     {
-        on_release();
-        owner->unpublish_frame(this);
-    }
-}
-
-void frame::keep()
-{
-    if (!_kept.exchange(true))
-    {
-        owner->keep_frame(this);
-    }
-}
-
-frame_interface* frame::publish(std::shared_ptr<archive_interface> new_owner)
-{
-    owner = new_owner;
-    _kept = false;
-    return owner->publish_frame(this);
-}
-
-rs2_metadata_type frame::get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
-{
-    auto md_parsers = owner->get_md_parsers();
-
-    if (!md_parsers)
-        throw invalid_value_exception(to_string() << "metadata not available for "
-                                      << get_string(get_stream()->get_stream_type())<<" stream");
-
-    auto it = md_parsers.get()->find(frame_metadata);
-    if (it == md_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
-        throw invalid_value_exception(to_string() << get_string(frame_metadata)
-                                      << " attribute is not applicable for "
-                                      << get_string(get_stream()->get_stream_type()) << " stream ");
-
-    // Proceed to parse and extract the required data attribute
-    return it->second->get(*this);
-}
-
-bool frame::supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
-{
-    auto md_parsers = owner->get_md_parsers();
-
-    // verify preconditions
-    if (!md_parsers)
-        return false;                         // No parsers are available or no metadata was attached
-
-    auto it = md_parsers.get()->find(frame_metadata);
-    if (it == md_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
-        return false;
-
-    return it->second->supports(*this);
-}
-
-const byte* frame::get_frame_data() const
-{
-    const byte* frame_data = data.data();
-
-    if (on_release.get_data())
-    {
-        frame_data = static_cast<const byte*>(on_release.get_data());
+        if (ref_count.fetch_sub(1) == 1)
+        {
+            on_release();
+            owner->unpublish_frame(this);
+        }
     }
 
-    return frame_data;
-}
-
-rs2_timestamp_domain frame::get_frame_timestamp_domain() const
-{
-    return additional_data.timestamp_domain;
-}
-
-rs2_time_t frame::get_frame_timestamp() const
-{
-    return additional_data.timestamp;
-}
-
-unsigned long long frame::get_frame_number() const
-{
-    return additional_data.frame_number;
-}
-
-rs2_time_t frame::get_frame_system_time() const
-{
-    return additional_data.system_time;
-}
-
-void frame::update_frame_callback_start_ts(rs2_time_t ts)
-{
-    additional_data.frame_callback_started = ts;
-}
-
-rs2_time_t frame::get_frame_callback_start_time_point() const
-{
-    return additional_data.frame_callback_started;
-}
-
-void frame::log_callback_start(rs2_time_t timestamp)
-{
-    update_frame_callback_start_ts(timestamp);
-    LOG_DEBUG("CallbackStarted," << std::dec << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
-}
-
-void frame::log_callback_end(rs2_time_t timestamp) const
-{
-    auto callback_warning_duration = 1000.f / (get_stream()->get_framerate() + 1);
-    auto callback_duration = timestamp - get_frame_callback_start_time_point();
-
-    LOG_DEBUG("CallbackFinished," << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
-
-    if (callback_duration > callback_warning_duration)
+    void frame::keep()
     {
-        LOG_INFO("Frame Callback " << librealsense::get_string(get_stream()->get_stream_type())
-                 << "#" << std::dec << get_frame_number()
-                 << "overdue. (Duration: " << callback_duration
-                 << "ms, FPS: " << get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
+        if (!_kept.exchange(true))
+        {
+            owner->keep_frame(this);
+        }
     }
+
+    frame_interface* frame::publish(std::shared_ptr<archive_interface> new_owner)
+    {
+        owner = new_owner;
+        _kept = false;
+        return owner->publish_frame(this);
+    }
+
+    rs2_metadata_type frame::get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
+    {
+        auto md_parsers = owner->get_md_parsers();
+
+        if (!md_parsers)
+            throw invalid_value_exception(to_string() << "metadata not available for "
+                                          << get_string(get_stream()->get_stream_type())<<" stream");
+
+        auto it = md_parsers.get()->find(frame_metadata);
+        if (it == md_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
+            throw invalid_value_exception(to_string() << get_string(frame_metadata)
+                                          << " attribute is not applicable for "
+                                          << get_string(get_stream()->get_stream_type()) << " stream ");
+
+        // Proceed to parse and extract the required data attribute
+        return it->second->get(*this);
+    }
+
+    bool frame::supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
+    {
+        auto md_parsers = owner->get_md_parsers();
+
+        // verify preconditions
+        if (!md_parsers)
+            return false;                         // No parsers are available or no metadata was attached
+
+        auto it = md_parsers.get()->find(frame_metadata);
+        if (it == md_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
+            return false;
+
+        return it->second->supports(*this);
+    }
+
+    const byte* frame::get_frame_data() const
+    {
+        const byte* frame_data = data.data();
+
+        if (on_release.get_data())
+        {
+            frame_data = static_cast<const byte*>(on_release.get_data());
+        }
+
+        return frame_data;
+    }
+
+    rs2_timestamp_domain frame::get_frame_timestamp_domain() const
+    {
+        return additional_data.timestamp_domain;
+    }
+
+    rs2_time_t frame::get_frame_timestamp() const
+    {
+        return additional_data.timestamp;
+    }
+
+    unsigned long long frame::get_frame_number() const
+    {
+        return additional_data.frame_number;
+    }
+
+    rs2_time_t frame::get_frame_system_time() const
+    {
+        return additional_data.system_time;
+    }
+
+    void frame::update_frame_callback_start_ts(rs2_time_t ts)
+    {
+        additional_data.frame_callback_started = ts;
+    }
+
+    rs2_time_t frame::get_frame_callback_start_time_point() const
+    {
+        return additional_data.frame_callback_started;
+    }
+
+    void frame::log_callback_start(rs2_time_t timestamp)
+    {
+        update_frame_callback_start_ts(timestamp);
+        LOG_DEBUG("CallbackStarted," << std::dec << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
+    }
+
+    void frame::log_callback_end(rs2_time_t timestamp) const
+    {
+        auto callback_warning_duration = 1000.f / (get_stream()->get_framerate() + 1);
+        auto callback_duration = timestamp - get_frame_callback_start_time_point();
+
+        LOG_DEBUG("CallbackFinished," << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
+
+        if (callback_duration > callback_warning_duration)
+        {
+            LOG_INFO("Frame Callback " << librealsense::get_string(get_stream()->get_stream_type())
+                     << "#" << std::dec << get_frame_number()
+                     << "overdue. (Duration: " << callback_duration
+                     << "ms, FPS: " << get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
+        }
+    }
+
 }

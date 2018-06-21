@@ -1,5 +1,5 @@
-# ubuntu 16.04 LTS cmake version 3.5.1
-cmake_minimum_required(VERSION 2.8.3)
+#  minimum required cmake version: 3.8.0
+cmake_minimum_required(VERSION 3.8.0)
 
 project(RealsenseToolsRosbagInspector)
 
