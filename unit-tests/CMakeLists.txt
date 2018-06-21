@@ -63,12 +63,61 @@ list(APPEND PP_Tests_List  1525186403504 # D415_DS(2)
 
 # For each post-processing test pattern the following files shall be present
 list(APPEND PP_Test_extensions_List .Input.raw .Input.csv .Output.raw .Output.csv)
-list(APPEND PP_Test_Sequence_Index_List .0 .1 .2 .3 .4 .5 .6 .7 .8 .9)
+
+set_property(GLOBAL PROPERTY sequence_extensions_list)
+function(produce_sequence_extensions source target)
+    # Check if metadata file exist, and download if needed
+    if(NOT EXISTS "${target}")
+          file(DOWNLOAD "${source}" "${target}" LOG log STATUS status TIMEOUT 300) # SHOW_PROGRESS
+          list(GET status 0 op_return_value)
+          if (NOT op_return_value MATCHES "0")
+              list(GET status 1 description)
+              message(STATUS "Operation failed: opcode= ${status}")
+              message(STATUS "Log: opcode= ${log}")
+          endif()
+      endif()
+
+    FILE(READ "${target}" contents)
+    # Convert file contents into a CMake list
+    set(sequence_length 1)
+    STRING(REGEX REPLACE ";" "\\\\;" contents "${contents}")
+    STRING(REGEX REPLACE "\n" ";" contents "${contents}")
+    foreach(i ${contents})
+        if ("${i}" MATCHES "^Frames sequence length")
+            string(REPLACE "," ";" line ${i})
+            # use of unsubstituted variables is requred
+            set(my_seq ${line})
+            list(GET my_seq 1 result)
+            if (result MATCHES "^[0-9]+$")
+                set(sequence_length ${result})
+            endif()
+        endif()
+    endforeach()
+    set(index 0)
+    #Reset the list of appendexes
+    set(PP_Test_Sequence_Index_List)
+    while (${index} LESS ${sequence_length} )
+        list(APPEND PP_Test_Sequence_Index_List .${index})
+        MATH(EXPR index "${index} + 1")
+    endwhile()
+    get_property(local_list GLOBAL PROPERTY sequence_extensions_list)
+    set(local_list ${PP_Test_Sequence_Index_List})
+    set_property(GLOBAL PROPERTY sequence_extensions_list "${local_list}")
+
+endfunction()
 
 set(PP_TESTS_URL http://realsense-hw-public.s3.amazonaws.com/rs-tests/post_processing_tests_2018_ww18/)
 message(STATUS "Preparing to download Post-processing tests dataset...\nRemote server: ${PP_TESTS_URL}\nTarget Location: ${Deployment_Location}\n")
 foreach(i ${PP_Tests_List})
   set(Test_Pattern ${i})
+  #Download and parse the output metafile to retrieve the number of snapshots in sequence
+  set(sequence_meta_file "${Test_Pattern}.0.Output.csv")
+  set(source ${PP_TESTS_URL}${sequence_meta_file})
+  set(destination ${Deployment_Location}${sequence_meta_file})
+  produce_sequence_extensions(${source} ${destination})
+  # Copy the assigned variables to local variable
+  get_property(PP_Test_Sequence_Index_List GLOBAL PROPERTY sequence_extensions_list)
+
   #Iterate over test pattern extension to download the test files.
   foreach(ext ${PP_Test_extensions_List})
     #Each test comprise of a sequence of frame indexed according to the following
@@ -80,7 +129,7 @@ foreach(i ${PP_Tests_List})
       #message(STATUS "Checking for a required test record ${Test_File_Name}")
       if(NOT EXISTS "${destination}")
           message(STATUS "Downloading ${source}")
-          file(DOWNLOAD "${source}" "${destination}" TIMEOUT 300) # SHOW_PROGRESS LOG log STATUS status
+          file(DOWNLOAD "${source}" "${destination}" LOG log STATUS status TIMEOUT 300) # SHOW_PROGRESS LOG log STATUS status
           list(GET status 0 op_return_value)
           if (NOT op_return_value MATCHES "0")
               list(GET status 1 description)

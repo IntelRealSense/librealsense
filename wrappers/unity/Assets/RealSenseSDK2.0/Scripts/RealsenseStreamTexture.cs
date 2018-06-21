@@ -1,9 +1,5 @@
 ﻿using Intel.RealSense;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using UnityEngine;
 
@@ -63,7 +59,7 @@ public class RealsenseStreamTexture : MonoBehaviour
             if (RealSenseDevice.Instance.processMode == RealSenseDevice.ProcessMode.UnityThread)
                 RealSenseDevice.Instance.onNewSample += OnNewSampleUnityThread;
             else
-                RealSenseDevice.Instance.onNewSample += onNewSampleThreading;
+                RealSenseDevice.Instance.onNewSample += OnNewSampleThreading;
         }
     }
 
@@ -75,7 +71,7 @@ public class RealsenseStreamTexture : MonoBehaviour
         }
         else
         {
-            onNewSampleThreading(f);
+            OnNewSampleThreading(f);
         }
     }
 
@@ -94,7 +90,7 @@ public class RealsenseStreamTexture : MonoBehaviour
         texture.LoadRawTextureData(data);
         texture.Apply();
     }
-        private void onNewSampleThreading(Frame frame)
+    private void OnNewSampleThreading(Frame frame)
     {
         UpdateData(frame);
         f.Set();

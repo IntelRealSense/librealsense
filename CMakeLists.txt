@@ -612,7 +612,7 @@ if(UNIX)
     elseif(${MACHINE} MATCHES "aarch64-linux-gnu")
         set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mstrict-align -ftree-vectorize")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mstrict-align -ftree-vectorize")
-    else(${MACHINE} MATCHES "arm-linux-gnueabihf")
+    else()
         set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mssse3")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
         set(LRS_TRY_USE_AVX true)
@@ -770,14 +770,14 @@ if (USE_SYSTEM_LIBUSB)
     target_include_directories(realsense2 PRIVATE ${LIBUSB1_INCLUDE_DIRS})
 endif()
 
-target_include_directories(realsense2 PUBLIC 
+target_include_directories(realsense2 PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
   PRIVATE ${USB_INCLUDE_DIRS})
 
 set_target_properties(realsense2
   PROPERTIES
-  PUBLIC_HEADER 
+  PUBLIC_HEADER
   "include/librealsense2/rs.hpp;include/librealsense2/rs.h;include/librealsense2/h/rs_context.h;include/librealsense2/h/rs_device.h;include/librealsense2/h/rs_frame.h;include/librealsense2/h/rs_types.h;include/librealsense2/h/rs_sensor.h;include/librealsense2/h/rs_option.h;include/librealsense2/h/rs_processing.h;include/librealsense2/h/rs_record_playback.h;include/librealsense2/h/rs_pipeline.h;include/librealsense2/h/rs_internal.h;include/librealsense2/rsutil.h;include/librealsense2/rs_advanced_mode.h;include/librealsense2/h/rs_advanced_mode_command.h;include/librealsense2/hpp/rs_types.hpp;include/librealsense2/hpp/rs_context.hpp;include/librealsense2/hpp/rs_device.hpp;include/librealsense2/hpp/rs_frame.hpp;include/librealsense2/hpp/rs_processing.hpp;include/librealsense2/hpp/rs_pipeline.hpp;include/librealsense2/hpp/rs_record_playback.hpp;include/librealsense2/hpp/rs_sensor.hpp;include/librealsense2/hpp/rs_internal.hpp;include/librealsense2/rs_advanced_mode.hpp"
   )
 
@@ -814,9 +814,12 @@ option(BUILD_UNIT_TESTS "Build realsense unit tests. Note that when enabled, add
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
+option(BUILD_CSHARP_BINDINGS "Build C# bindings" OFF)
 option(BUILD_CV_EXAMPLES "Build OpenCV examples" OFF)
 option(BUILD_PCL_EXAMPLES "Build PCL examples" OFF)
 option(BUILD_NODEJS_BINDINGS "Build Node.js bindings" OFF)
+SET(DOTNET_VERSION_LIBRARY "3.5" CACHE STRING ".Net Version, defaulting to '3.5', the Unity wrapper currently supports only .NET 3.5")
+SET(DOTNET_VERSION_EXAMPLES "4.0" CACHE STRING ".Net Version, defaulting to '4.0'")
 
 if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) AND WIN32)
   add_subdirectory(third-party/glfw)
@@ -849,6 +852,13 @@ endif()
 
 if (BUILD_PCL_EXAMPLES)
   add_subdirectory(wrappers/pcl)
+endif()
+
+if(BUILD_CSHARP_BINDINGS)
+	if(NOT BUILD_SHARED_LIBS)
+		message( FATAL_ERROR "BUILD_SHARED_LIBS flag must be enabled when generating CSharp bindings" )
+	endif()
+    add_subdirectory(wrappers/csharp)
 endif()
 
 # Check for unreferenced files

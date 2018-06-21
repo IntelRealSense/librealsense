@@ -93,40 +93,45 @@ namespace rs2
 
     namespace textual_icons
     {
-        static const textual_icon video_camera             { u8"\uf03d" };
+        // A note to a maintainer - preserve order when adding values to avoid duplicates
         static const textual_icon file_movie               { u8"\uf008" };
-        static const textual_icon circle                   { u8"\uf111" };
-        static const textual_icon square                   { u8"\uf0c8" };
-        static const textual_icon square_o                 { u8"\uf096" };
-        static const textual_icon check_square_o           { u8"\uf046" };
-        static const textual_icon refresh                  { u8"\uf021" };
-        static const textual_icon info_circle              { u8"\uf05a" };
-        static const textual_icon bars                     { u8"\uf0c9" };
         static const textual_icon times                    { u8"\uf00d" };
+        static const textual_icon download                 { u8"\uf019" };
+        static const textual_icon refresh                  { u8"\uf021" };
         static const textual_icon lock                     { u8"\uf023" };
         static const textual_icon camera                   { u8"\uf030" };
+        static const textual_icon video_camera             { u8"\uf03d" };
+        static const textual_icon edit                     { u8"\uf044" };
+        static const textual_icon check_square_o           { u8"\uf046" };
         static const textual_icon step_backward            { u8"\uf048" };
         static const textual_icon play                     { u8"\uf04b" };
         static const textual_icon pause                    { u8"\uf04c" };
         static const textual_icon stop                     { u8"\uf04d" };
         static const textual_icon step_forward             { u8"\uf051" };
+        static const textual_icon plus_circle              { u8"\uf055" };
+        static const textual_icon question_mark            { u8"\uf059" };
+        static const textual_icon info_circle              { u8"\uf05a" };
+        static const textual_icon fix_up                   { u8"\uf062" };
         static const textual_icon minus                    { u8"\uf068" };
         static const textual_icon exclamation_triangle     { u8"\uf071" };
+        static const textual_icon bar_chart                { u8"\uf080" };
+        static const textual_icon upload                   { u8"\uf093" };
+        static const textual_icon square_o                 { u8"\uf096" };
         static const textual_icon unlock                   { u8"\uf09c" };
         static const textual_icon floppy                   { u8"\uf0c7" };
+        static const textual_icon square                   { u8"\uf0c8" };
+        static const textual_icon bars                     { u8"\uf0c9" };
         static const textual_icon caret_down               { u8"\uf0d7" };
         static const textual_icon repeat                   { u8"\uf0e2" };
+        static const textual_icon circle                   { u8"\uf111" };
+        static const textual_icon cubes                    { u8"\uf1b3" };
         static const textual_icon toggle_off               { u8"\uf204" };
         static const textual_icon toggle_on                { u8"\uf205" };
+        static const textual_icon connectdevelop           { u8"\uf20e" };
+        static const textual_icon usb_type                 { u8"\uf287" };
+        static const textual_icon braille                  { u8"\uf2a1" };
         static const textual_icon window_maximize          { u8"\uf2d0" };
         static const textual_icon window_restore           { u8"\uf2d2" };
-        static const textual_icon plus_circle              { u8"\uf055" };
-        static const textual_icon download                 { u8"\uf019" };
-        static const textual_icon upload                   { u8"\uf093" };
-        static const textual_icon bar_chart                { u8"\uf080" };
-        static const textual_icon usb_type                 { u8"\uf287" };
-        static const textual_icon edit                     { u8"\uf044" };
-        static const textual_icon question_mark            { u8"\uf059" };
     }
 
     class subdevice_model;
@@ -195,7 +200,7 @@ namespace rs2
         rs2_option opt;
         option_range range;
         std::shared_ptr<options> endpoint;
-        bool* invalidate_flag;
+        bool* invalidate_flag = nullptr;
         bool supported = false;
         bool read_only = false;
         float value = 0.0f;
@@ -357,7 +362,6 @@ namespace rs2
         bool auto_exposure_enabled = false;
         float depth_units = 1.f;
         float stereo_baseline = -1.f;
-
 
         bool roi_checked = false;
 
@@ -551,7 +555,7 @@ namespace rs2
         double get_age_in_ms() const;
         void draw(int w, int y, notification_model& selected);
         void set_color_scheme(float t) const;
-        void clear_color_scheme() const;
+        void unset_color_scheme() const;
         const int get_max_lifetime_ms() const;
 
         int height = 40;
@@ -620,15 +624,15 @@ namespace rs2
                 process(std::move(f),source);
             }),
             viewer(viewer),
-            keep_calculating(true),
             depth_stream_active(false),
             resulting_queue_max_size(20),
             resulting_queue(static_cast<unsigned int>(resulting_queue_max_size)),
-            t([this]() {render_loop(); }),
+            render_thread(),
+            render_thread_active(false),
             pc(new pointcloud())
         {
             std::string s;
-            pc_gen = std::make_shared<processing_block_model>(nullptr, "Pointclould Engine", pc, [=](rs2::frame f) { return pc->calculate(f); }, s);
+            pc_gen = std::make_shared<processing_block_model>(nullptr, "Pointcloud Engine", pc, [=](rs2::frame f) { return pc->calculate(f); }, s);
             processing_block.start(resulting_queue);
         }
 
@@ -636,12 +640,21 @@ namespace rs2
 
         void update_texture(frame f) { pc->map_to(f); }
 
+        /* Start the rendering thread in case its disabled */
+        void start()
+        {
+            if (render_thread_active.exchange(true) == false)
+            {
+                render_thread = std::thread(&post_processing_filters::render_loop, this);
+            }
+        }
+
+        /* Stop the rendering thread in case its enabled */
         void stop()
         {
-            if (keep_calculating)
+            if (render_thread_active.exchange(false) == true)
             {
-                keep_calculating = false;
-                t.join();
+                render_thread.join();
             }
         }
 
@@ -675,8 +688,6 @@ namespace rs2
 
     private:
         viewer_model& viewer;
-
-        void render_loop();
         void process(rs2::frame f, const rs2::frame_source& source);
         std::vector<rs2::frame> handle_frame(rs2::frame f);
 
@@ -685,10 +696,12 @@ namespace rs2
         rs2::processing_block processing_block;
         std::shared_ptr<pointcloud> pc;
         rs2::frameset model;
-        std::atomic<bool> keep_calculating;
         std::shared_ptr<processing_block_model> pc_gen;
 
-        std::thread t;
+        /* Post processing filter rendering */
+        std::atomic<bool> render_thread_active; // True when render post processing filter rendering thread is active, False otherwise
+        std::thread render_thread;              // Post processing filter rendering Thread running render_loop()
+        void render_loop();                     // Post processing filter rendering function
 
         int last_frame_number = 0;
         double last_timestamp = 0;
@@ -814,6 +827,7 @@ namespace rs2
 
         ~viewer_model()
         {
+            // Stopping post processing filter rendering thread
             ppf.stop();
             streams.clear();
         }
@@ -883,7 +897,6 @@ namespace rs2
 
         float dim_level = 1.f;
 
-
         rs2::asynchronous_syncer s;
     private:
         struct rgb {
@@ -915,6 +928,9 @@ namespace rs2
         float3 pos = { 0.0f, 0.0f, -0.5f };
         float3 target = { 0.0f, 0.0f, 0.0f };
         float3 up;
+        bool fixed_up = true;
+        bool render_quads = true;
+
         float view[16];
         bool texture_wrapping_on = true;
         GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
@@ -968,96 +984,6 @@ namespace rs2
         temp_folder
     };
 
-    inline std::string get_timestamped_file_name()
-    {
-        std::time_t now = std::time(NULL);
-        std::tm * ptm = std::localtime(&now);
-        char buffer[16];
-        // Format: 20170529_205500
-        std::strftime(buffer, 16, "%Y%m%d_%H%M%S", ptm);
-        return buffer;
-    }
-    inline std::string get_folder_path(special_folder f)
-    {
-        std::string res;
-#ifdef _WIN32
-        if (f == temp_folder)
-        {
-            TCHAR buf[MAX_PATH];
-            if (GetTempPath(MAX_PATH, buf) != 0)
-            {
-                char str[1024];
-                wcstombs(str, buf, 1023);
-                res = str;
-            }
-        }
-        else
-        {
-            GUID folder;
-            switch (f)
-            {
-            case user_desktop: folder = FOLDERID_Desktop;
-                break;
-            case user_documents: folder = FOLDERID_Documents;
-                break;
-            case user_pictures: folder = FOLDERID_Pictures;
-                break;
-            case user_videos: folder = FOLDERID_Videos;
-                break;
-            default:
-                throw std::invalid_argument(
-                    std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
-            }
-            PWSTR folder_path = NULL;
-            HRESULT hr = SHGetKnownFolderPath(folder, KF_FLAG_DEFAULT_PATH, NULL, &folder_path);
-            if (SUCCEEDED(hr))
-            {
-                char str[1024];
-                wcstombs(str, folder_path, 1023);
-                CoTaskMemFree(folder_path);
-                res = str;
-                res += "\\";
-            }
-            else
-            {
-                throw std::runtime_error("Failed to get requested special folder");
-            }
-        }
-#endif //_WIN32
-#if defined __linux__ || defined __APPLE__
-        if (f == special_folder::temp_folder)
-        {
-            const char* tmp_dir = getenv("TMPDIR");
-            res = tmp_dir ? tmp_dir : "/tmp/";
-        }
-        else
-        {
-            const char* home_dir = getenv("HOME");
-            if (!home_dir)
-            {
-                struct passwd* pw = getpwuid(getuid());
-                home_dir = (pw && pw->pw_dir) ? pw->pw_dir : "";
-            }
-            if (home_dir)
-            {
-                res = home_dir;
-                switch (f)
-                {
-                case user_desktop: res += "/Desktop/";
-                    break;
-                case user_documents: res += "/Documents/";
-                    break;
-                case user_pictures: res += "/Pictures/";
-                    break;
-                case user_videos: res += "/Videos/";
-                    break;
-                default:
-                    throw std::invalid_argument(
-                        std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
-                }
-            }
-        }
-#endif // defined __linux__ || defined __APPLE__
-        return res;
-    }
+    std::string get_timestamped_file_name();
+    std::string get_folder_path(special_folder f);
 }

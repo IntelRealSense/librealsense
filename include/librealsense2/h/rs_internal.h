@@ -1,7 +1,7 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-/** \file rs2_internal.h
+/** \file rs_internal.h
 * \brief
 * Exposes RealSense internal functionality for C compilers
 */
