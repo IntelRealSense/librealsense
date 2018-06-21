@@ -20,7 +20,7 @@
 #include "stream.h"
 #include "environment.h"
 #include "ds5-color.h"
-
+#include "ds5-rolling-shutter.h"
 
 namespace librealsense
 {
@@ -98,6 +98,13 @@ namespace librealsense
             uvc_sensor::open(requests);
         }
 
+        /*
+        Infrared profiles are initialized with the following logic:
+        - If device has color sensor (D415 / D435), infrared profile is chosen with Y8 format
+        - If device does not have color sensor:
+           * if it is a rolling shutter device (D400 / D410 / D415 / D405), infrared profile is chosen with RGB8 format
+           * for other devices (D420 / D430), infrared profile is chosen with Y8 format
+        */
         stream_profiles init_stream_profiles() override
         {
             auto lock = environment::get_instance().get_extrinsics_graph().lock();
@@ -105,6 +112,7 @@ namespace librealsense
             auto results = uvc_sensor::init_stream_profiles();
 
             auto color_dev = dynamic_cast<const ds5_color*>(&get_device());
+            auto rolling_shutter_dev = dynamic_cast<const ds5_rolling_shutter*>(&get_device());
 
             std::vector< video_stream_profile_interface*> depth_candidates;
             std::vector< video_stream_profile_interface*> infrared_candidates;
@@ -168,11 +176,23 @@ namespace librealsense
                 }
                 else
                 {
-                    if (candidate(vid_profile, { 1280, 720, 30, RS2_FORMAT_RGB8 }, RS2_STREAM_INFRARED, 0))
-                        infrared_candidates.push_back(vid_profile);
+                    if (rolling_shutter_dev)
+                    { 
+                        if (candidate(vid_profile, { 1280, 720, 30, RS2_FORMAT_RGB8 }, RS2_STREAM_INFRARED, 0))
+                            infrared_candidates.push_back(vid_profile);
 
-                    if (candidate(vid_profile, { 640, 480, 15, RS2_FORMAT_RGB8 }, RS2_STREAM_INFRARED, 0))
-                        infrared_candidates.push_back(vid_profile);
+                        if (candidate(vid_profile, { 640, 480, 15, RS2_FORMAT_RGB8 }, RS2_STREAM_INFRARED, 0))
+                            infrared_candidates.push_back(vid_profile);
+                    }
+                    else
+                    {
+                        if (candidate(vid_profile, { 1280, 720, 30, RS2_FORMAT_Y8 }, RS2_STREAM_INFRARED, 1))
+                            infrared_candidates.push_back(vid_profile);
+
+                        if (candidate(vid_profile, { 640, 480, 15, RS2_FORMAT_Y8 }, RS2_STREAM_INFRARED, 1))
+                            infrared_candidates.push_back(vid_profile);
+                    }
+                    
                 }
 
                 // Register intrinsics

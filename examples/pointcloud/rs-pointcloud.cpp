@@ -40,6 +40,10 @@ int main(int argc, char * argv[]) try
 
         auto color = frames.get_color_frame();
 
+        // For cameras that don't have RGB sensor, we'll map the pointcloud to infrared instead of color
+        if (!color)
+            color = frames.get_infrared_frame();
+
         // Tell pointcloud object to map to this color frame
         pc.map_to(color);
 
