@@ -19,6 +19,8 @@ namespace librealsense
         const platform::extension_unit depth_xu = { 0, 3, 2,
         { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
 
+        const uint8_t IVCAM2_DEPTH_LASER_POWER = 2;
+
         enum fw_cmd : uint8_t
         {
             HWReset = 0x20,

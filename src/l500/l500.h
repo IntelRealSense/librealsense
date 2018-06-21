@@ -198,6 +198,12 @@ namespace librealsense
             depth_ep->register_pixel_format(pf_confidence_l500);
             depth_ep->register_pixel_format(pf_y8_l500);
 
+            depth_ep->register_option(RS2_OPTION_LASER_POWER,
+                std::make_shared<uvc_xu_option<int>>(
+                    *depth_ep,
+                    ivcam2::depth_xu,
+                    ivcam2::IVCAM2_DEPTH_LASER_POWER, "Power of the l500 projector, with 0 meaning projector off"));
+          
             return depth_ep;
         }
 
