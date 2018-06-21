@@ -11,6 +11,8 @@
 #include "device.h"
 #include "stream.h"
 #include "sensor.h"
+#include "api.h"
+#include "software-device.h"
 
 namespace librealsense
 {
@@ -85,6 +87,15 @@ namespace librealsense
     void sensor_base::set_frames_callback(frame_callback_ptr callback)
     {
         return _source.set_callback(callback);
+    }
+    rs2_extension sensor_base::get_sensor_type()
+    {
+        if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_sensor)) return RS2_EXTENSION_DEPTH_SENSOR;
+        else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_stereo_sensor)) return RS2_EXTENSION_DEPTH_STEREO_SENSOR;
+        else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::video_sensor_interface)) return RS2_EXTENSION_VIDEO;
+        else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::software_sensor)) return RS2_EXTENSION_SOFTWARE_SENSOR;
+        else return RS2_EXTENSION_UNKNOWN;
+        //TODO: Add support for fisheye sensor type
     }
     std::shared_ptr<notifications_processor> sensor_base::get_notifications_processor()
     {
@@ -379,7 +390,11 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("open(...) failed. UVC device is already opened!");
 
         auto on = std::unique_ptr<power>(new power(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this())));
-        _source.init(_metadata_parsers);
+
+        std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> metadata_parsers_map;
+        metadata_parsers_map[get_sensor_type()] = _metadata_parsers;
+        _source.init(metadata_parsers_map);
+
         _source.set_sensor(this->shared_from_this());
         auto mapping = resolve_requests(requests);
 
@@ -858,7 +873,11 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. Hid device was not opened!");
 
         _source.set_callback(callback);
-        _source.init(_metadata_parsers);
+
+        std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> metadata_parsers_map;
+        metadata_parsers_map[get_sensor_type()] = _metadata_parsers;
+        _source.init(metadata_parsers_map);
+
         _source.set_sensor(this->shared_from_this());
         raise_on_before_streaming_changes(true); //Required to be just before actual start allow recording to work
         _hid_device->start_capture([this](const platform::sensor_data& sensor_data)

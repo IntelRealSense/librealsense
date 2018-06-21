@@ -150,7 +150,11 @@ namespace librealsense
             m_version = read_file_version(m_file);
             m_samples_view = nullptr;
             m_frame_source = std::make_shared<frame_source>(m_version == 1 ? 128 : 32);
-            m_frame_source->init(m_metadata_parser_map);
+            std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> metadata_parsers;
+            metadata_parsers[RS2_EXTENSION_DEPTH_SENSOR] = m_metadata_parser_map;
+            metadata_parsers[RS2_EXTENSION_DEPTH_STEREO_SENSOR] = m_metadata_parser_map;
+            metadata_parsers[RS2_EXTENSION_VIDEO] = m_metadata_parser_map;
+            m_frame_source->init(metadata_parsers);
             m_initial_device_description = read_device_description(get_static_file_info_timestamp(), true);
         }
 
