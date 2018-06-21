@@ -5,7 +5,6 @@
 
 #include "types.h"
 #include "core/streaming.h"
-
 #include <atomic>
 #include <array>
 #include <math.h>
@@ -66,27 +65,12 @@ namespace librealsense
         std::vector<byte> data;
         frame_additional_data additional_data;
 
-        explicit frame() : ref_count(0), _kept(false), owner(nullptr), on_release() {}
+        explicit frame() : ref_count(0), _kept(false), owner(nullptr), on_release(), _sensor_type(RS2_EXTENSION_UNKNOWN) {}
         frame(const frame& r) = delete;
-        frame(frame&& r)
-            : ref_count(r.ref_count.exchange(0)), _kept(r._kept.exchange(false)),
-              owner(r.owner), on_release()
-        {
-            *this = std::move(r);
-        }
+        frame(frame&& r);
 
         frame& operator=(const frame& r) = delete;
-        frame& operator=(frame&& r)
-        {
-            data = move(r.data);
-            owner = r.owner;
-            ref_count = r.ref_count.exchange(0);
-            _kept = r._kept.exchange(false);
-            on_release = std::move(r.on_release);
-            additional_data = std::move(r.additional_data);
-            r.owner.reset();
-            return *this;
-        }
+        frame& operator=(frame&& r);
 
         virtual ~frame() { on_release.reset(); }
         rs2_metadata_type get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const override;
@@ -96,7 +80,7 @@ namespace librealsense
         rs2_timestamp_domain get_frame_timestamp_domain() const override;
         void set_timestamp(double new_ts) override { additional_data.timestamp = new_ts; }
         unsigned long long get_frame_number() const override;
-
+        std::array<uint8_t, MAX_META_DATA_SIZE> get_metadata_blob() const override;
         void set_timestamp_domain(rs2_timestamp_domain timestamp_domain) override
         {
             additional_data.timestamp_domain = timestamp_domain;
@@ -139,6 +123,7 @@ namespace librealsense
         bool _fixed = false;
         std::atomic_bool _kept;
         std::shared_ptr<stream_profile_interface> stream;
+        rs2_extension _sensor_type;
     };
 
     class points : public frame
@@ -219,6 +204,10 @@ namespace librealsense
         std::shared_ptr<sensor_interface> get_sensor() const override
         {
             return first()->get_sensor();
+        }
+        std::array<uint8_t, MAX_META_DATA_SIZE> get_metadata_blob() const override
+        {
+            return first()->get_metadata_blob();
         }
     };
 
@@ -466,14 +455,15 @@ namespace librealsense
 
         virtual frame_interface* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory) = 0;
 
-        virtual std::shared_ptr<metadata_parser_map> get_md_parsers() const = 0;
+        virtual std::shared_ptr<metadata_parser_map> get_md_parsers(rs2_extension sensor_type) const = 0;
+
+        virtual void set_md_parsers(const rs2_extension sensor_type, const std::shared_ptr<metadata_parser_map> metadata_parsers) = 0;
 
         virtual void flush() = 0;
 
         virtual frame_interface* publish_frame(frame_interface* frame) = 0;
         virtual void unpublish_frame(frame_interface* frame) = 0;
         virtual void keep_frame(frame_interface* frame) = 0;
-
         virtual ~archive_interface() = default;
 
     };
@@ -481,5 +471,5 @@ namespace librealsense
     std::shared_ptr<archive_interface> make_archive(rs2_extension type,
                                                     std::atomic<uint32_t>* in_max_frame_queue_size,
                                                     std::shared_ptr<platform::time_service> ts,
-                                                    std::shared_ptr<metadata_parser_map> parsers);
+                                                    std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> parsers);
 }

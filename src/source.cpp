@@ -47,7 +47,7 @@ namespace librealsense
               _ts(environment::get_instance().get_time_service())
     {}
 
-    void frame_source::init(std::shared_ptr<metadata_parser_map> metadata_parsers)
+    void frame_source::init(std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> metadata_parsers)
     {
         std::lock_guard<std::mutex> lock(_callback_mutex);
 
