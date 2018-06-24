@@ -377,7 +377,7 @@ namespace librealsense
                 std::map<index_type, std::shared_ptr<stream_profile_interface>> stream_to_profile;
 
                 std::map<int, sensor_interface*> sensors_map;
-                for(auto i = 0; i< dev->get_sensors_count(); i++)
+                for(auto i = 0; i < dev->get_sensors_count(); i++)
                 {
                     if (mapping.find(i) != mapping.end())
                     {
@@ -497,7 +497,7 @@ namespace librealsense
                     {
                         if (satisfied_streams.count(kvp.first)) continue; // skip satisfied streams
 
-                        auto result = [&]() -> request_type
+                        auto results = [&]() -> std::vector<request_type>
                         {
                             switch (kvp.second)
                             {
@@ -513,23 +513,30 @@ namespace librealsense
                             default: throw std::runtime_error("Unknown preset selected");
                             }
 
+                            std::vector<request_type> requests = { };
                             for (auto itr: profiles)
                             {
                                 auto stream = index_type{ itr->get_stream_type() ,itr->get_stream_index() };
                                 if (match_stream(stream, kvp.first))
                                 {
-                                    return to_request(itr.get());
+                                    requests.push_back(to_request(itr.get()));
                                 }
                             }
 
-                            return { RS2_STREAM_ANY, -1, 0, 0, RS2_FORMAT_ANY, 0 };
+                            if (requests.empty())
+                                requests.push_back({ RS2_STREAM_ANY, -1, 0, 0, RS2_FORMAT_ANY, 0 });
+
+                            return requests;
                         }();
 
                         // RS2_STREAM_COUNT signals subdevice can't handle this stream
-                        if (result.stream != RS2_STREAM_ANY)
+                        for (auto result : results)
                         {
-                            targets.push_back(result);
-                            satisfied_streams.insert({ result.stream, result.stream_index });
+                            if (result.stream != RS2_STREAM_ANY)
+                            {
+                                targets.push_back(result);
+                                satisfied_streams.insert({ result.stream, result.stream_index });
+                            }
                         }
                     }
 
@@ -553,7 +560,6 @@ namespace librealsense
                 }
 
                 return out;
-
             }
 
             std::map<index_type, request_type> _requests;
