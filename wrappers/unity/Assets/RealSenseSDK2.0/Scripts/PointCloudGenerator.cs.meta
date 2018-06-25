@@ -1,12 +1,28 @@
 fileFormatVersion: 2
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< HEAD
 guid: 701924db2ae3d894aafb2d751551e249
 timeCreated: 1527154292
+=======
+guid: c07626acd57d2884fb9e1edc97da3490
+timeCreated: 1528210713
+>>>>>>> master
+=======
+guid: c07626acd57d2884fb9e1edc97da3490
+timeCreated: 1528210713
+>>>>>>> Stashed changes
+=======
+guid: c07626acd57d2884fb9e1edc97da3490
+timeCreated: 1528210713
+>>>>>>> Stashed changes
 licenseType: Pro
 MonoImporter:
+  externalObjects: {}
   serializedVersion: 2
   defaultReferences: []
   executionOrder: 0
-  icon: {instanceID: 0}
+  icon: {fileID: 2800000, guid: 880657c8d67520c40844f18e663b310e, type: 3}
   userData: 
   assetBundleName: 
   assetBundleVariant: 

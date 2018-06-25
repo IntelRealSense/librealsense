@@ -53,6 +53,10 @@ public class RealSenseDeviceInspectorEditor : Editor
 	readonly Dictionary<string, List<Sensor.CameraOption>> sensorOptions = 
 		new Dictionary<string, List<Sensor.CameraOption>> ();
 
+	protected override bool ShouldHideOpenButton() {
+		return true;
+	}
+
 	public override void OnInspectorGUI ()
 	{
 		var deviceInspector = target as RealSenseDeviceInspector;
