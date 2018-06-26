@@ -1,13 +1,5 @@
-#  minimum required cmake version: 3.8.0
-cmake_minimum_required(VERSION 3.8.0)
-
-option(BUILD_WITH_CUDA "Enable CUDA" OFF)
-
-if(BUILD_WITH_CUDA)
-    project(librealsense2 LANGUAGES CXX C CUDA)
-else()
-    project(librealsense2 LANGUAGES CXX C)
-endif()
+#  minimum required cmake version: 3.1.0
+cmake_minimum_required(VERSION 3.1.0)
 
 macro(info msg)
     message(STATUS "Info: ${msg}")
@@ -16,6 +8,17 @@ endmacro()
 macro(infoValue variableName)
     info("${variableName}=\${${variableName}}")
 endmacro()
+
+option(BUILD_WITH_CUDA "Enable CUDA" OFF)
+
+if(BUILD_WITH_CUDA)
+	info("Building with CUDA requires CMake v3.8+")
+	cmake_minimum_required(VERSION 3.8.0)
+    project(librealsense2 LANGUAGES CXX C CUDA)
+else()
+    project(librealsense2 LANGUAGES CXX C)
+endif()
+
 
 ##################################################################
 # Parse librealsense version and assign it to CMake variables    #
@@ -34,7 +37,6 @@ function(assign_version_property VER_COMPONENT)
     set(REALSENSE_VERSION_${VER_COMPONENT} ${tmp} PARENT_SCOPE)
 endfunction()
 
-
 set(REALSENSE_VERSION_MAJOR -1)
 set(REALSENSE_VERSION_MINOR -1)
 set(REALSENSE_VERSION_PATCH -1)
@@ -48,7 +50,6 @@ infoValue(REALSENSE_VERSION_STRING)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
-
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
