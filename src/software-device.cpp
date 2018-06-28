@@ -115,7 +115,9 @@ namespace librealsense
         else if (!_is_opened)
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. Software device was not opened!");
         _source.get_published_size_option()->set(0);
-        _source.init(_metadata_parsers);
+        std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> metadata_parsers_map;
+        metadata_parsers_map[this->get_sensor_type()] = _metadata_parsers;
+        _source.init(metadata_parsers_map);
         _source.set_sensor(this->shared_from_this());
         _source.set_callback(callback);
         _is_streaming = true;
@@ -161,7 +163,7 @@ namespace librealsense
 
     void software_sensor::add_read_only_option(rs2_option option, float val)
     {
-        register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("bypass sensor read only option",
+        register_option(option, std::make_shared<const_value_option>("bypass sensor read only option",
             lazy<float>([=]() { return val; })));
     }
 

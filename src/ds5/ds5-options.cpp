@@ -28,7 +28,7 @@ namespace librealsense
 
     emitter_option::emitter_option(uvc_sensor& ep)
         : uvc_xu_option(ep, ds::depth_xu, ds::DS5_DEPTH_EMITTER_ENABLED,
-                        "Power of the DS5 projector, 0 meaning projector off, 1 meaning projector on, 2 meaning projector in auto mode")
+                        "Power Control for D400 Projector, 0-off, 1-on, (2-deprecated)")
     {}
 
     float asic_and_projector_temperature_options::query() const
@@ -99,9 +99,9 @@ namespace librealsense
         switch (_option)
         {
         case RS2_OPTION_ASIC_TEMPERATURE:
-            return "Current Asic Temperature";
+            return "Current Asic Temperature (degree celsius)";
         case RS2_OPTION_PROJECTOR_TEMPERATURE:
-            return "Current Projector Temperature";
+            return "Current Projector Temperature (degree celsius)";
         default:
             throw invalid_value_exception(to_string() << rs2_option_to_string(_option) << " is not temperature option!");
         }
@@ -152,7 +152,7 @@ namespace librealsense
 
     const char* motion_module_temperature_option::get_description() const
     {
-        return "Current Motion-Module Temperature";
+        return "Current Motion-Module Temperature (degree celsius)";
     }
 
     motion_module_temperature_option::motion_module_temperature_option(hid_sensor& ep)
@@ -397,6 +397,41 @@ namespace librealsense
     }
 
     option_range depth_scale_option::get_range() const
+    {
+        return *_range;
+    }
+
+    external_sync_mode::external_sync_mode(hw_monitor& hwm)
+        : _hwm(hwm)
+    {
+        _range = [this]()
+        {
+            return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
+                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_MAX - 1,
+                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT, 1 };
+        };
+    }
+
+    void external_sync_mode::set(float value)
+    {
+        command cmd(ds::SET_CAM_SYNC);
+        cmd.param1 = static_cast<int>(value);
+
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float external_sync_mode::query() const
+    {
+        command cmd(ds::GET_CAM_SYNC);
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("external_sync_mode::query result is empty!");
+
+        return (res.front());
+    }
+
+    option_range external_sync_mode::get_range() const
     {
         return *_range;
     }

@@ -204,7 +204,7 @@ namespace rs2
         * This method is required if the application needs to set device or sensor settings prior to pipeline streaming,
         * to enforce the pipeline to use the configured device.
         *
-        * \param[in] Serial device serial number, as returned by RS2_CAMERA_INFO_SERIAL_NUMBER
+        * \param[in] serial device serial number, as returned by RS2_CAMERA_INFO_SERIAL_NUMBER
         */
         void enable_device(const std::string& serial)
         {
@@ -221,10 +221,10 @@ namespace rs2
         *
         * \param[in] file_name  The playback file of the device
         */
-        void enable_device_from_file(const std::string& file_name)
+        void enable_device_from_file(const std::string& file_name, bool repeat_playback = true)
         {
             rs2_error* e = nullptr;
-            rs2_config_enable_device_from_file(_config.get(), file_name.c_str(), &e);
+            rs2_config_enable_device_from_file_repeat_option(_config.get(), file_name.c_str(), repeat_playback, &e);
             error::handle(e);
         }
 

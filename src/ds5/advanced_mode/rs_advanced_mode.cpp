@@ -28,11 +28,14 @@ namespace librealsense
         CASE(HIGH_DENSITY)
         CASE(MEDIUM_DENSITY)
         CASE(DEFAULT)
+        CASE(REMOVE_IR_PATTERN)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
     }
 }
+
+using namespace librealsense;
 
 const char* rs2_rs400_visual_preset_to_string(rs2_rs400_visual_preset preset){ return get_string(preset); }
 

@@ -1,7 +1,7 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-/** \file rs2_frame.h
+/** \file rs_frame.h
 * \brief
 * Exposes RealSense frame functionality for C compilers
 */
@@ -27,18 +27,36 @@ const char* rs2_timestamp_domain_to_string(rs2_timestamp_domain info);
 /** \brief Per-Frame-Metadata are set of read-only properties that might be exposed for each individual frame */
 typedef enum rs2_frame_metadata_value
 {
-    RS2_FRAME_METADATA_FRAME_COUNTER        , /**< A sequential index managed per-stream. Integer value*/
-    RS2_FRAME_METADATA_FRAME_TIMESTAMP      , /**< Timestamp set by device clock when data readout and transmit commence. usec*/
-    RS2_FRAME_METADATA_SENSOR_TIMESTAMP     , /**< Timestamp of the middle of sensor's exposure calculated by device. usec*/
-    RS2_FRAME_METADATA_ACTUAL_EXPOSURE      , /**< Sensor's exposure width. When Auto Exposure (AE) is on the value is controlled by firmware. usec*/
-    RS2_FRAME_METADATA_GAIN_LEVEL           , /**< A relative value increasing which will increase the Sensor's gain factor. \
-                                              When AE is set On, the value is controlled by firmware. Integer value*/
-    RS2_FRAME_METADATA_AUTO_EXPOSURE        , /**< Auto Exposure Mode indicator. Zero corresponds to AE switched off. */
-    RS2_FRAME_METADATA_WHITE_BALANCE        , /**< White Balance setting as a color temperature. Kelvin degrees*/
-    RS2_FRAME_METADATA_TIME_OF_ARRIVAL      , /**< Time of arrival in system clock */
-    RS2_FRAME_METADATA_TEMPERATURE          , /**< Temperature of the device, measured at the time of the frame capture. Celsius degrees */
-    RS2_FRAME_METADATA_BACKEND_TIMESTAMP    , /**< Timestamp get from uvc driver. usec*/
-    RS2_FRAME_METADATA_ACTUAL_FPS           , /**< Actual fps */
+    RS2_FRAME_METADATA_FRAME_COUNTER                        , /**< A sequential index managed per-stream. Integer value*/
+    RS2_FRAME_METADATA_FRAME_TIMESTAMP                      , /**< Timestamp set by device clock when data readout and transmit commence. usec*/
+    RS2_FRAME_METADATA_SENSOR_TIMESTAMP                     , /**< Timestamp of the middle of sensor's exposure calculated by device. usec*/
+    RS2_FRAME_METADATA_ACTUAL_EXPOSURE                      , /**< Sensor's exposure width. When Auto Exposure (AE) is on the value is controlled by firmware. usec*/
+    RS2_FRAME_METADATA_GAIN_LEVEL                           , /**< A relative value increasing which will increase the Sensor's gain factor. \
+                                                              When AE is set On, the value is controlled by firmware. Integer value*/
+    RS2_FRAME_METADATA_AUTO_EXPOSURE                        , /**< Auto Exposure Mode indicator. Zero corresponds to AE switched off. */
+    RS2_FRAME_METADATA_WHITE_BALANCE                        , /**< White Balance setting as a color temperature. Kelvin degrees*/
+    RS2_FRAME_METADATA_TIME_OF_ARRIVAL                      , /**< Time of arrival in system clock */
+    RS2_FRAME_METADATA_TEMPERATURE                          , /**< Temperature of the device, measured at the time of the frame capture. Celsius degrees */
+    RS2_FRAME_METADATA_BACKEND_TIMESTAMP                    , /**< Timestamp get from uvc driver. usec*/
+    RS2_FRAME_METADATA_ACTUAL_FPS                           , /**< Actual fps */
+    RS2_FRAME_METADATA_FRAME_LASER_POWER                    , /**< Laser power value 0-360. */
+    RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE               , /**< Laser power mode. Zero corresponds to Laser power switched off and one for switched on. */    
+    RS2_FRAME_METADATA_EXPOSURE_PRIORITY                    , /**< Exposure priority. */
+    RS2_FRAME_METADATA_EXPOSURE_ROI_LEFT                    , /**< Left region of interest for the auto exposure Algorithm. */          
+    RS2_FRAME_METADATA_EXPOSURE_ROI_RIGHT                   , /**< Right region of interest for the auto exposure Algorithm. */
+    RS2_FRAME_METADATA_EXPOSURE_ROI_TOP                     , /**< Top region of interest for the auto exposure Algorithm. */
+    RS2_FRAME_METADATA_EXPOSURE_ROI_BOTTOM                  , /**< Bottom region of interest for the auto exposure Algorithm. */
+    RS2_FRAME_METADATA_BRIGHTNESS                           , /**< Color image brightness. */
+    RS2_FRAME_METADATA_CONTRAST                             , /**< Color image contrast. */
+    RS2_FRAME_METADATA_SATURATION                           , /**< Color image saturation. */
+    RS2_FRAME_METADATA_SHARPNESS                            , /**< Color image sharpness. */
+    RS2_FRAME_METADATA_AUTO_WHITE_BALANCE_TEMPERATURE       , /**< Auto white balance temperature Mode indicator. Zero corresponds to automatic mode switched off. */
+    RS2_FRAME_METADATA_BACKLIGHT_COMPENSATION               , /**< Color backlight compensation. Zero corresponds to switched off. */
+    RS2_FRAME_METADATA_HUE                                  , /**< Color image hue. */
+    RS2_FRAME_METADATA_GAMMA                                , /**< Color image gamma. */
+    RS2_FRAME_METADATA_MANUAL_WHITE_BALANCE                 , /**< Color image white balance. */
+    RS2_FRAME_METADATA_POWER_LINE_FREQUENCY                 , /**< Power Line Frequency for anti-flickering Off/50Hz/60Hz/Auto. */
+    RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION               , /**< Color lowlight compensation. Zero corresponds to switched off. */
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);
@@ -86,14 +104,16 @@ typedef struct rs2_pose
 * retrieve metadata from frame handle
 * \param[in] frame      handle returned from a callback
 * \param[in] frame_metadata  the rs2_frame_metadata whose latest frame we are interested in
+* \param[out] error         if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the metadata value
 */
 rs2_metadata_type rs2_get_frame_metadata(const rs2_frame* frame, rs2_frame_metadata_value frame_metadata, rs2_error** error);
 
 /**
 * determine device metadata
-* \param[in] frame      handle returned from a callback
-* \param[in] metadata    the metadata to check for support
+* \param[in] frame             handle returned from a callback
+* \param[in] frame_metadata    the metadata to check for support
+* \param[out] error         if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return                true if device has this metadata
 */
 int rs2_supports_frame_metadata(const rs2_frame* frame, rs2_frame_metadata_value frame_metadata, rs2_error** error);
@@ -102,7 +122,7 @@ int rs2_supports_frame_metadata(const rs2_frame* frame, rs2_frame_metadata_value
 * retrieve timestamp domain from frame handle. timestamps can only be comparable if they are in common domain
 * (for example, depth timestamp might come from system time while color timestamp might come from the device)
 * this method is used to check if two timestamp values are comparable (generated from the same clock)
-* \param[in] frame      handle returned from a callback
+* \param[in] frameset   handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               the timestamp domain of the frame (camera / microcontroller / system time)
 */
@@ -176,7 +196,6 @@ void rs2_frame_add_ref(rs2_frame* frame, rs2_error ** error);
 /**
 * relases the frame handle
 * \param[in] frame handle returned from a callback
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_release_frame(rs2_frame* frame);
 
@@ -185,7 +204,6 @@ void rs2_release_frame(rs2_frame* frame);
 * this will remove the frame from the regular count of the frame pool
 * once this function is called, the SDK can no longer guarantee 0-allocations during frame cycling
 * \param[in] frame handle returned from a callback
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_keep_frame(rs2_frame* frame);
 
@@ -234,9 +252,9 @@ const rs2_stream_profile* rs2_get_frame_stream_profile(const rs2_frame* frame, r
 
 /**
 * Test if the given frame can be extended to the requested extension
-* \param[in]  frame      Realsense frame
-* \param[in]  extension  The extension to which the frame should be tested if it is extendable
-* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \param[in]  frame             Realsense frame
+* \param[in]  extension_type    The extension to which the frame should be tested if it is extendable
+* \param[out] error             If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return non-zero value iff the frame can be extended to the given extension
 */
 int rs2_is_frame_extendable_to(const rs2_frame* frame, rs2_extension extension_type, rs2_error ** error);
@@ -249,7 +267,8 @@ int rs2_is_frame_extendable_to(const rs2_frame* frame, rs2_extension extension_t
 * \param[in] new_bpp     New value for bits per pixel for the allocated frame
 * \param[in] new_width   New value for width for the allocated frame
 * \param[in] new_height  New value for height for the allocated frame
-* \param[in] new stride  New value for stride in bytes for the allocated frame
+* \param[in] new_stride  New value for stride in bytes for the allocated frame
+* \param[in] frame_type  New value for frame type for the allocated frame
 * \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return                reference to a newly allocated frame, must be released with release_frame
 *                        memory for the frame is likely to be re-used from previous frame, but in lack of available frames in the pool will be allocated from the free store
@@ -291,6 +310,7 @@ int rs2_embedded_frames_count(rs2_frame* composite, rs2_error** error);
 * This method will dispatch frame callback on a frame
 * \param[in] source      Frame pool provided by the processing block
 * \param[in] frame       Frame to dispatch, frame ownership is passed to this function, so you don't have to call release_frame after it
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error** error);
 

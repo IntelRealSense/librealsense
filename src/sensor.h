@@ -50,6 +50,7 @@ namespace librealsense
         std::shared_ptr<notifications_processor> get_notifications_processor();
         virtual frame_callback_ptr get_frames_callback() const override;
         virtual void set_frames_callback(frame_callback_ptr callback) override;
+        virtual rs2_extension get_sensor_type() override;
 
         bool is_streaming() const override
         {
@@ -88,6 +89,7 @@ namespace librealsense
                            std::shared_ptr<stream_profile_interface> target) const;
 
         std::vector<request_mapping> resolve_requests(stream_profiles requests);
+        std::shared_ptr<stream_profile_interface> map_requests(std::shared_ptr<stream_profile_interface> request);
 
         std::vector<platform::stream_profile> _internal_config;
 
@@ -171,17 +173,13 @@ namespace librealsense
         uint32_t fps_to_sampling_frequency(rs2_stream stream, uint32_t fps) const;
     };
 
-    class uvc_sensor : public sensor_base,
-                       public roi_sensor_interface
+    class uvc_sensor : public sensor_base
     {
     public:
         explicit uvc_sensor(std::string name, std::shared_ptr<platform::uvc_device> uvc_device,
                             std::unique_ptr<frame_timestamp_reader> timestamp_reader, device* dev);
 
         ~uvc_sensor();
-
-        region_of_interest_method& get_roi_method() const override;
-        void set_roi_method(std::shared_ptr<region_of_interest_method> roi_method) override;
 
         void open(const stream_profiles& requests) override;
 
@@ -255,6 +253,5 @@ namespace librealsense
         std::vector<platform::extension_unit> _xus;
         std::unique_ptr<power> _power;
         std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
-        std::shared_ptr<region_of_interest_method> _roi_method = nullptr;
     };
 }

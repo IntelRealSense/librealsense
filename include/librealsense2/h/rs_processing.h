@@ -1,7 +1,7 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-/** \file rs2_processing.h
+/** \file rs_processing.h
 * \brief
 * Exposes RealSense processing-block functionality for C compilers
 */
@@ -44,12 +44,21 @@ rs2_processing_block* rs2_create_pointcloud(rs2_error** error);
 /**
 * This method creates new custom processing block. This lets the users pass frames between module boundaries for processing
 * This is an infrastructure function aimed at middleware developers, and also used by provided blocks such as sync, colorizer, etc..
-* \param ctx        RealSense context to query global parameters such as time
 * \param proc       Processing function to be applied to every frame entering the block
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return           new processing block, to be released by rs2_delete_processing_block
 */
 rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* proc, rs2_error** error);
+
+/**
+* This method creates new custom processing block from function pointer. This lets the users pass frames between module boundaries for processing
+* This is an infrastructure function aimed at middleware developers, and also used by provided blocks such as sync, colorizer, etc..
+* \param proc       Processing function pointer to be applied to every frame entering the block
+* \param context    User context (can be anything or null) to be passed later as ctx param of the callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return           new processing block, to be released by rs2_delete_processing_block
+*/
+rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callback_ptr proc, void * context, rs2_error** error);
 
 /**
 * This method is used to direct the output from the processing block to some callback or sink object
@@ -60,9 +69,18 @@ rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* 
 void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_frame, rs2_error** error);
 
 /**
+* This method is used to direct the output from the processing block to some callback or sink object
+* \param[in] block          Processing block
+* \param[in] on_frame       Callback function to be invoked every time the processing block calls frame_ready
+* \param[in] user           User context for the callback (can be anything or null)
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_start_processing_fptr(rs2_processing_block* block, rs2_frame_callback_ptr on_frame, void* user, rs2_error** error);
+
+/**
 * This method is used to direct the output from the processing block to a dedicated queue object
 * \param[in] block          Processing block
-* \param[in] on_frame       Queue to place the processed frames to
+* \param[in] queue          Queue to place the processed frames to
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_start_processing_queue(rs2_processing_block* block, rs2_frame_queue* queue, rs2_error** error);
@@ -92,7 +110,7 @@ rs2_frame_queue* rs2_create_frame_queue(int capacity, rs2_error** error);
 
 /**
 * deletes frame queue and releases all frames inside it
-* \param[in] frame queue to delete
+* \param[in] queue queue to delete
 */
 void rs2_delete_frame_queue(rs2_frame_queue* queue);
 
@@ -151,6 +169,12 @@ rs2_processing_block* rs2_create_spatial_filter_block(rs2_error** error);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_processing_block* rs2_create_disparity_transform_block(unsigned char transform_to_disparity, rs2_error** error);
+
+/**
+* Creates Depth post-processing hole filling block. The filter replaces empty pixels with data from adjacent pixels based on the method selected
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_hole_filling_filter_block(rs2_error** error);
 
 #ifdef __cplusplus
 }

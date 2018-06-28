@@ -6,11 +6,24 @@
 #include "option.h"
 #include "environment.h"
 #include "context.h"
+#include "software-device.h"
 #include "proc/synthetic-stream.h"
+#include "proc/hole-filling-filter.h"
 #include "proc/spatial-filter.h"
 
 namespace librealsense
 {
+    enum spatial_holes_filling_types : uint8_t
+    {
+        sp_hf_disabled,
+        sp_hf_2_pixel_radius,
+        sp_hf_4_pixel_radius,
+        sp_hf_8_pixel_radius,
+        sp_hf_16_pixel_radius,
+        sp_hf_unlimited_radius,
+        sp_hf_max_value
+    };
+
     // The weight of the current pixel for smoothing is bounded within [25..100]%
     const float alpha_min_val       = 0.25f;
     const float alpha_max_val       = 1.f;
@@ -30,10 +43,10 @@ namespace librealsense
     const uint8_t filter_iter_step = 1;
 
     // The holes filling mode
-    const uint8_t holes_fill_min = 0;  // Disabled
-    const uint8_t holes_fill_max = 5;  // Unlimited
-    const uint8_t holes_fill_step = 1; // In-between the boundaries the holes filling ("smearing") range is 2^val pixels
-    const uint8_t holes_fill_def = 0;  // disabled on start due to its artefactory nature
+    const uint8_t holes_fill_min = sp_hf_disabled;
+    const uint8_t holes_fill_max = sp_hf_max_value-1;
+    const uint8_t holes_fill_step = 1;
+    const uint8_t holes_fill_def = sp_hf_disabled;
 
     spatial_filter::spatial_filter() :
         _spatial_alpha_param(alpha_default_val),
@@ -53,14 +66,14 @@ namespace librealsense
             alpha_max_val,
             alpha_step,
             alpha_default_val,
-            &_spatial_alpha_param, "Current pixel weight");
+            &_spatial_alpha_param, "Alpha factor of Exp.moving average, 1 = no filter, 0 = infinite filter");
 
         auto spatial_filter_delta = std::make_shared<ptr_option<uint8_t>>(
             delta_min_val,
             delta_max_val,
             delta_step,
             delta_default_val,
-            &_spatial_delta_param, "Convolution radius");
+            &_spatial_delta_param, "Edge-preserving Threshold");
         spatial_filter_delta->on_set([this, spatial_filter_delta](float val)
         {
             std::lock_guard<std::mutex> lock(_mutex);
@@ -69,9 +82,8 @@ namespace librealsense
                 throw invalid_value_exception(to_string()
                     << "Unsupported spatial delta: " << val << " is out of range.");
 
-            // The decimation factor represents the 2's exponent
             _spatial_delta_param = static_cast<uint8_t>(val);
-            _spatial_radius = _stereoscopic_depth ? (_focal_lenght_mm*_stereo_baseline_mm) / float(_spatial_delta_param) : _spatial_delta_param;
+            _spatial_edge_threshold = float(_spatial_delta_param);
         });
 
         auto spatial_filter_iterations = std::make_shared<ptr_option<uint8_t>>(
@@ -81,7 +93,6 @@ namespace librealsense
             filter_iter_def,
             &_spatial_iterations, "Filtering iterations");
 
-
         auto holes_filling_mode = std::make_shared<ptr_option<uint8_t>>(
             holes_fill_min,
             holes_fill_max,
@@ -89,12 +100,12 @@ namespace librealsense
             holes_fill_def,
             &_holes_filling_mode, "Holes filling mode");
 
-        holes_filling_mode->set_description(0, "Disabled");
-        holes_filling_mode->set_description(1, "2-pixel radius");
-        holes_filling_mode->set_description(2, "4-pixel radius");
-        holes_filling_mode->set_description(3, "8-pixel radius");
-        holes_filling_mode->set_description(4, "16-pixel radius");
-        holes_filling_mode->set_description(5, "Unlimited");
+        holes_filling_mode->set_description(sp_hf_disabled,            "Disabled");
+        holes_filling_mode->set_description(sp_hf_2_pixel_radius,      "2-pixel radius");
+        holes_filling_mode->set_description(sp_hf_4_pixel_radius,      "4-pixel radius");
+        holes_filling_mode->set_description(sp_hf_8_pixel_radius,      "8-pixel radius");
+        holes_filling_mode->set_description(sp_hf_16_pixel_radius,     "16-pixel radius");
+        holes_filling_mode->set_description(sp_hf_unlimited_radius,    "Unlimited");
 
         holes_filling_mode->on_set([this, holes_filling_mode](float val)
         {
@@ -102,19 +113,26 @@ namespace librealsense
 
             if (!holes_filling_mode->is_valid(val))
                 throw invalid_value_exception(to_string()
-                    << "Unsupported mode for holes filling selected: value " << val << " is out of range.");
+                    << "Unsupported mode for spatial holes filling selected: value " << val << " is out of range.");
 
             _holes_filling_mode = static_cast<uint8_t>(val);
             switch (_holes_filling_mode)
             {
-            case holes_fill_min:
+            case sp_hf_disabled:
                 _holes_filling_radius = 0;      // disabled
                 break;
-            case holes_fill_max:
-                _holes_filling_radius = 0xff;   // The maximul smearing is not particulary useful
+            case sp_hf_unlimited_radius:
+                _holes_filling_radius = 0xff;   // Unrealistic smearing; not particulary useful
+                break;
+            case sp_hf_2_pixel_radius:
+            case sp_hf_4_pixel_radius:
+            case sp_hf_8_pixel_radius:
+            case sp_hf_16_pixel_radius:
+                _holes_filling_radius = 0x1 << _holes_filling_mode; // 2's exponential radius
                 break;
             default:
-                _holes_filling_radius = 0x1 << _holes_filling_mode; // exponential radius
+                throw invalid_value_exception(to_string()
+                    << "Unsupported spatial hole filling requested: value " << _holes_filling_mode << " is out of range.");
                 break;
             }
         });
@@ -141,9 +159,9 @@ namespace librealsense
 
                 // Spatial domain transform edge-preserving filter
                 if (_extension_type == RS2_EXTENSION_DISPARITY_FRAME)
-                    dxf_smooth<float>(const_cast<void*>(tgt.get_data()), _spatial_alpha_param, _spatial_radius, _spatial_iterations);
+                    dxf_smooth<float>(const_cast<void*>(tgt.get_data()), _spatial_alpha_param, _spatial_edge_threshold, _spatial_iterations);
                 else
-                    dxf_smooth<uint16_t>(const_cast<void*>(tgt.get_data()), _spatial_alpha_param, _spatial_radius, _spatial_iterations);
+                    dxf_smooth<uint16_t>(const_cast<void*>(tgt.get_data()), _spatial_alpha_param, _spatial_edge_threshold, _spatial_iterations);
             }
 
             out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
@@ -186,19 +204,30 @@ namespace librealsense
             {
                 librealsense::depth_stereo_sensor* ptr;
                 if (_stereoscopic_depth = a->extend_to(TypeToExtension<librealsense::depth_stereo_sensor>::value, (void**)&ptr))
+                {
                     dss = ptr;
+                    _stereo_baseline_mm = dss->get_stereo_baseline_mm();
+                }
+            }
+            else if (auto depth_emul = As<librealsense::software_sensor>(snr))
+            {
+                // Software device can obtain these options via Options interface
+                if (depth_emul->supports_option(RS2_OPTION_STEREO_BASELINE))
+                {
+                    _stereo_baseline_mm = depth_emul->get_option(RS2_OPTION_STEREO_BASELINE).query()*1000.f;
+                    _stereoscopic_depth = true;
+                }
             }
             else // Live sensor
             {
                 _stereoscopic_depth = Is<librealsense::depth_stereo_sensor>(snr);
                 dss = As<librealsense::depth_stereo_sensor>(snr);
+                if (_stereoscopic_depth)
+                    _stereo_baseline_mm = dss->get_stereo_baseline_mm();
             }
 
-            if (_stereoscopic_depth)
-                _stereo_baseline_mm = dss->get_stereo_baseline_mm();
-
-            _spatial_radius = (_extension_type == RS2_EXTENSION_DISPARITY_FRAME )?
-                                    (_focal_lenght_mm * _stereo_baseline_mm) / float(_spatial_delta_param) : _spatial_delta_param;
+            _spatial_edge_threshold = _spatial_delta_param;// (_extension_type == RS2_EXTENSION_DISPARITY_FRAME) ?
+                                   // (_focal_lenght_mm * _stereo_baseline_mm) / float(_spatial_delta_param) : _spatial_delta_param;
         }
     }
 
@@ -209,5 +238,264 @@ namespace librealsense
 
         memmove(const_cast<void*>(tgt.get_data()), f.get_data(), _current_frm_size_pixels * _bpp);
         return tgt;
+    }
+
+    void spatial_filter::recursive_filter_horizontal_fp(void * image_data, float alpha, float deltaZ)
+    {
+        float *image = reinterpret_cast<float*>(image_data);
+
+        int v, u;
+
+        for (v = 0; v < _height;) {
+            // left to right
+            float *im = image + v * _width;
+            float state = *im;
+            float previousInnovation = state;
+
+            im++;
+            float innovation = *im;
+            u = int(_width) - 1;
+            if (!(*(int*)&previousInnovation > 0))
+                goto CurrentlyInvalidLR;
+            // else fall through
+
+        CurrentlyValidLR:
+            for (;;) {
+                if (*(int*)&innovation > 0) {
+                    float delta = previousInnovation - innovation;
+                    bool smallDifference = delta < deltaZ && delta > -deltaZ;
+
+                    if (smallDifference) {
+                        float filtered = innovation * alpha + state * (1.0f - alpha);
+                        *im = state = filtered;
+                    }
+                    else {
+                        state = innovation;
+                    }
+                    u--;
+                    if (u <= 0)
+                        goto DoneLR;
+                    previousInnovation = innovation;
+                    im += 1;
+                    innovation = *im;
+                }
+                else {  // switch to CurrentlyInvalid state
+                    u--;
+                    if (u <= 0)
+                        goto DoneLR;
+                    previousInnovation = innovation;
+                    im += 1;
+                    innovation = *im;
+                    goto CurrentlyInvalidLR;
+                }
+            }
+
+        CurrentlyInvalidLR:
+            for (;;) {
+                u--;
+                if (u <= 0)
+                    goto DoneLR;
+                if (*(int*)&innovation > 0) { // switch to CurrentlyValid state
+                    previousInnovation = state = innovation;
+                    im += 1;
+                    innovation = *im;
+                    goto CurrentlyValidLR;
+                }
+                else {
+                    im += 1;
+                    innovation = *im;
+                }
+            }
+        DoneLR:
+
+            // right to left
+            im = image + (v + 1) * _width - 2;  // end of row - two pixels
+            previousInnovation = state = im[1];
+            u = int(_width) - 1;
+            innovation = *im;
+            if (!(*(int*)&previousInnovation > 0))
+                goto CurrentlyInvalidRL;
+            // else fall through
+        CurrentlyValidRL:
+            for (;;) {
+                if (*(int*)&innovation > 0) {
+                    float delta = previousInnovation - innovation;
+                    bool smallDifference = delta < deltaZ && delta > -deltaZ;
+
+                    if (smallDifference) {
+                        float filtered = innovation * alpha + state * (1.0f - alpha);
+                        *im = state = filtered;
+                    }
+                    else {
+                        state = innovation;
+                    }
+                    u--;
+                    if (u <= 0)
+                        goto DoneRL;
+                    previousInnovation = innovation;
+                    im -= 1;
+                    innovation = *im;
+                }
+                else {  // switch to CurrentlyInvalid state
+                    u--;
+                    if (u <= 0)
+                        goto DoneRL;
+                    previousInnovation = innovation;
+                    im -= 1;
+                    innovation = *im;
+                    goto CurrentlyInvalidRL;
+                }
+            }
+
+        CurrentlyInvalidRL:
+            for (;;) {
+                u--;
+                if (u <= 0)
+                    goto DoneRL;
+                if (*(int*)&innovation > 0) { // switch to CurrentlyValid state
+                    previousInnovation = state = innovation;
+                    im -= 1;
+                    innovation = *im;
+                    goto CurrentlyValidRL;
+                }
+                else {
+                    im -= 1;
+                    innovation = *im;
+                }
+            }
+        DoneRL:
+            v++;
+        }
+    }
+
+    void spatial_filter::recursive_filter_vertical_fp(void * image_data, float alpha, float deltaZ)
+    {
+        float *image = reinterpret_cast<float*>(image_data);
+
+        int v, u;
+
+        // we'll do one column at a time, top to bottom, bottom to top, left to right,
+
+        for (u = 0; u < _width;) {
+
+            float *im = image + u;
+            float state = im[0];
+            float previousInnovation = state;
+
+            v = int(_height) - 1;
+            im += _width;
+            float innovation = *im;
+
+            if (!(*(int*)&previousInnovation > 0))
+                goto CurrentlyInvalidTB;
+            // else fall through
+
+        CurrentlyValidTB:
+            for (;;) {
+                if (*(int*)&innovation > 0) {
+                    float delta = previousInnovation - innovation;
+                    bool smallDifference = delta < deltaZ && delta > -deltaZ;
+
+                    if (smallDifference) {
+                        float filtered = innovation * alpha + state * (1.0f - alpha);
+                        *im = state = filtered;
+                    }
+                    else {
+                        state = innovation;
+                    }
+                    v--;
+                    if (v <= 0)
+                        goto DoneTB;
+                    previousInnovation = innovation;
+                    im += _width;
+                    innovation = *im;
+                }
+                else {  // switch to CurrentlyInvalid state
+                    v--;
+                    if (v <= 0)
+                        goto DoneTB;
+                    previousInnovation = innovation;
+                    im += _width;
+                    innovation = *im;
+                    goto CurrentlyInvalidTB;
+                }
+            }
+
+        CurrentlyInvalidTB:
+            for (;;) {
+                v--;
+                if (v <= 0)
+                    goto DoneTB;
+                if (*(int*)&innovation > 0) { // switch to CurrentlyValid state
+                    previousInnovation = state = innovation;
+                    im += _width;
+                    innovation = *im;
+                    goto CurrentlyValidTB;
+                }
+                else {
+                    im += _width;
+                    innovation = *im;
+                }
+            }
+        DoneTB:
+
+            im = image + u + (_height - 2) * _width;
+            state = im[_width];
+            previousInnovation = state;
+            innovation = *im;
+            v = int(_height) - 1;
+            if (!(*(int*)&previousInnovation > 0))
+                goto CurrentlyInvalidBT;
+            // else fall through
+        CurrentlyValidBT:
+            for (;;) {
+                if (*(int*)&innovation > 0) {
+                    float delta = previousInnovation - innovation;
+                    bool smallDifference = delta < deltaZ && delta > -deltaZ;
+
+                    if (smallDifference) {
+                        float filtered = innovation * alpha + state * (1.0f - alpha);
+                        *im = state = filtered;
+                    }
+                    else {
+                        state = innovation;
+                    }
+                    v--;
+                    if (v <= 0)
+                        goto DoneBT;
+                    previousInnovation = innovation;
+                    im -= _width;
+                    innovation = *im;
+                }
+                else {  // switch to CurrentlyInvalid state
+                    v--;
+                    if (v <= 0)
+                        goto DoneBT;
+                    previousInnovation = innovation;
+                    im -= _width;
+                    innovation = *im;
+                    goto CurrentlyInvalidBT;
+                }
+            }
+
+        CurrentlyInvalidBT:
+            for (;;) {
+                v--;
+                if (v <= 0)
+                    goto DoneBT;
+                if (*(int*)&innovation > 0) { // switch to CurrentlyValid state
+                    previousInnovation = state = innovation;
+                    im -= _width;
+                    innovation = *im;
+                    goto CurrentlyValidBT;
+                }
+                else {
+                    im -= _width;
+                    innovation = *im;
+                }
+            }
+        DoneBT:
+            u++;
+        }
     }
 }

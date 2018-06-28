@@ -32,7 +32,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
 
-            std::vector<rs2_frame*> refs(frames.size(), nullptr);
+            std::vector<rs2_frame*> refs(frames.size(), (rs2_frame*)nullptr);
             for (size_t i = 0; i < frames.size(); i++)
                 std::swap(refs[i], frames[i].frame_ref);
 
@@ -131,7 +131,6 @@ namespace rs2
         std::shared_ptr<rs2_processing_block> _block;
     };
 
-
     class frame_queue
     {
     public:
@@ -225,7 +224,10 @@ namespace rs2
         points calculate(frame depth)
         {
             _block->invoke(std::move(depth));
-            return _queue.wait_for_frame();
+            rs2::frame f;
+            if (!_queue.poll_for_frame(&f))
+                throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
+            return points(f);
         }
 
         void map_to(frame mapped)
@@ -290,7 +292,7 @@ namespace rs2
 
         /**
         * Check if a coherent set of frames is available
-        * \param[out] result      New coherent frame-set
+        * \param[out] fs      New coherent frame-set
         * \return true if new frame-set was stored to result
         */
         bool poll_for_frames(frameset* fs) const
@@ -350,7 +352,8 @@ namespace rs2
         {
             (*_block)(frame);
             rs2::frame f;
-            _queue.poll_for_frame(&f);
+            if (!_queue.poll_for_frame(&f))
+                throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
             return frameset(f);
         }
 
@@ -388,7 +391,10 @@ namespace rs2
             if(depth)
             {
                 _block->invoke(std::move(depth));
-                return _queue.wait_for_frame();
+                rs2::frame f;
+                if (!_queue.poll_for_frame(&f))
+                    throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
+                return video_frame(f);
             }
             return depth;
         }
@@ -433,7 +439,8 @@ namespace rs2
         {
             (*_block)(frame);
             rs2::frame f;
-            _queue.poll_for_frame(&f);
+            if (!_queue.poll_for_frame(&f))
+                throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
             return f;
         }
 
@@ -470,7 +477,8 @@ namespace rs2
         {
             (*_block)(frame);
             rs2::frame f;
-            _queue.poll_for_frame(&f);
+            if (!_queue.poll_for_frame(&f))
+                throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
             return f;
         }
 
@@ -507,7 +515,8 @@ namespace rs2
         {
             (*_block)(frame);
             rs2::frame f;
-            _queue.poll_for_frame(&f);
+            if (!_queue.poll_for_frame(&f))
+                throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
             return f;
         }
 
@@ -544,7 +553,46 @@ namespace rs2
         {
             (*_block)(frame);
             rs2::frame f;
-            _queue.poll_for_frame(&f);
+            if (!_queue.poll_for_frame(&f))
+                throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
+            return f;
+        }
+
+        void operator()(frame f) const override
+        {
+            (*_block)(std::move(f));
+        }
+    private:
+        friend class context;
+
+        std::shared_ptr<processing_block> _block;
+        frame_queue _queue;
+    };
+
+    class hole_filling_filter : public process_interface
+    {
+    public:
+        hole_filling_filter() :_queue(1)
+        {
+            rs2_error* e = nullptr;
+            auto pb = std::shared_ptr<rs2_processing_block>(
+                rs2_create_hole_filling_filter_block(&e),
+                rs2_delete_processing_block);
+            _block = std::make_shared<processing_block>(pb);
+            error::handle(e);
+
+            // Redirect options API to the processing block
+            options::operator=(pb);
+
+            _block->start(_queue);
+        }
+
+        rs2::frame process(rs2::frame frame) override
+        {
+            (*_block)(frame);
+            rs2::frame f;
+            if (!_queue.poll_for_frame(&f))
+                throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
             return f;
         }
 

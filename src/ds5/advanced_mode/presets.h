@@ -145,4 +145,6 @@ namespace librealsense
     void mid_res_high_density(preset& p);
     void mid_res_mid_density(preset& p);
     void hand_gesture(preset& p);
+    void d415_remove_ir(preset& p);
+    void d460_remove_ir(preset& p);
 }

@@ -12,6 +12,8 @@
 #include <unordered_set>
 #include <map>
 #include <thread>
+#include <atomic>
+#include <mutex>
 
 using pixel = std::pair<int, int>;
 
@@ -19,7 +21,7 @@ using pixel = std::pair<int, int>;
 std::array<pixel, 12> neighbors(rs2::depth_frame frame, pixel p);
 
 // Distance 3D is used to calculate real 3D distance between two pixels
-float dist_3d(const rs2_intrinsics& intr, const rs2::depth_frame& frame, pixel u, pixel v);
+float dist_3d(const rs2::depth_frame& frame, pixel u, pixel v);
 // Distance 2D returns the distance in pixels between two pixels
 float dist_2d(const pixel& a, const pixel& b);
 
@@ -93,8 +95,7 @@ void register_glfw_callbacks(window& app, state& app_state);
 // air and through solid
 void render_simple_distance(const rs2::depth_frame& depth,
                             const state& s,
-                            const window& app,
-                            const rs2_intrinsics& intr);
+                            const window& app);
 
 // Shortest-path distance approximates the geodesic.
 // Given two points on a surface it will follow with that surface
@@ -156,7 +157,6 @@ int main(int argc, char * argv[]) try
             sensor.set_option(RS2_OPTION_VISUAL_PRESET, i);
 
     auto stream = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
-    auto intrinsics = stream.get_intrinsics(); // Calibration data
 
     // Create a simple OpenGL window for rendering:
     window app(stream.width(), stream.height(), "RealSense Measure Example");
@@ -284,7 +284,7 @@ int main(int argc, char * argv[]) try
                         if (dist.find(v) == dist.end()) dist[v] = INFINITY;
 
                         // Calculate distance in 3D between the two neighboring pixels
-                        auto d = dist_3d(intrinsics, depth, u, v);
+                        auto d = dist_3d(depth, u, v);
                         // Calculate total distance from source
                         auto total_dist = dist[u] + d;
 
@@ -354,7 +354,7 @@ int main(int argc, char * argv[]) try
                 // Render the shortest-path as calculated
                 render_shortest_path(depth, path, app, total_dist);
                 // Render the simple pythagorean distance
-                render_simple_distance(depth, app_state, app, intrinsics);
+                render_simple_distance(depth, app_state, app);
 
                 // Render the ruler
                 app_state.ruler_start.render(app);
@@ -411,7 +411,7 @@ std::array<pixel, 12> neighbors(rs2::depth_frame frame, pixel p)
     return res;
 }
 
-float dist_3d(const rs2_intrinsics& intr, const rs2::depth_frame& frame, pixel u, pixel v)
+float dist_3d(const rs2::depth_frame& frame, pixel u, pixel v)
 {
     float upixel[2]; // From pixel
     float upoint[3]; // From point (in 3D)
@@ -434,6 +434,7 @@ float dist_3d(const rs2_intrinsics& intr, const rs2::depth_frame& frame, pixel u
     auto vdist = frame.get_distance(vpixel[0], vpixel[1]);
 
     // Deproject from pixel to point in 3D
+    rs2_intrinsics intr = frame.get_profile().as<rs2::video_stream_profile>().get_intrinsics(); // Calibration data
     rs2_deproject_pixel_to_point(upoint, &intr, upixel, udist);
     rs2_deproject_pixel_to_point(vpoint, &intr, vpixel, vdist);
 
@@ -450,8 +451,7 @@ float dist_2d(const pixel& a, const pixel& b)
 
 void render_simple_distance(const rs2::depth_frame& depth,
                             const state& s,
-                            const window& app,
-                            const rs2_intrinsics& intr)
+                            const window& app)
 {
     pixel center;
     glColor3f(1.f, 0.0f, 1.0f);
@@ -469,7 +469,7 @@ void render_simple_distance(const rs2::depth_frame& depth,
 
     auto from_pixel = s.ruler_start.get_pixel(depth);
     auto to_pixel =   s.ruler_end.get_pixel(depth);
-    float air_dist = dist_3d(intr, depth, from_pixel, to_pixel);
+    float air_dist = dist_3d(depth, from_pixel, to_pixel);
 
     center.first  = (from_pixel.first + to_pixel.first) / 2;
     center.second = (from_pixel.second + to_pixel.second) / 2;

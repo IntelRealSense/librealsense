@@ -1,7 +1,7 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-/** \file rs2_option.h
+/** \file rs_option.h
 * \brief
 * Exposes sensor options functionality for C compilers
 */
@@ -63,6 +63,7 @@ typedef enum rs2_option
     RS2_OPTION_HOLES_FILL                                 , /**< Enhance depth data post-processing with holes filling where appropriate*/
     RS2_OPTION_STEREO_BASELINE                            , /**< The distance in mm between the first and the second imagers in stereo-based depth cameras*/
     RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP                , /**< Allows dynamically ajust the converge step value of the target exposure in Auto-Exposure algorithm*/
+    RS2_OPTION_INTER_CAM_SYNC_MODE                        , /**< Impose Inter-camera HW synchronization mode. Applicable for D400/Rolling Shutter SKUs */
     RS2_OPTION_COUNT                                        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
 const char* rs2_option_to_string(rs2_option option);
@@ -94,6 +95,7 @@ typedef enum rs2_rs400_visual_preset
     RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY,
     RS2_RS400_VISUAL_PRESET_HIGH_DENSITY,
     RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY,
+    RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN,
     RS2_RS400_VISUAL_PRESET_COUNT
 } rs2_rs400_visual_preset;
 const char* rs2_rs400_visual_preset_to_string(rs2_rs400_visual_preset preset);

@@ -1,5 +1,5 @@
-#  minimum required cmake version: 3.1.0
-cmake_minimum_required(VERSION 3.1.0)
+#  minimum required cmake version: 3.8.0
+cmake_minimum_required(VERSION 3.8.0)
 
 project(RealsenseToolsDepthQuality)
 
@@ -16,6 +16,8 @@ elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
+if(BUILD_GRAPHICAL_EXAMPLES)
+
 if(APPLE)
     add_definitions(-DNOC_FILE_DIALOG_OSX)
 elseif(UNIX)
@@ -31,7 +33,6 @@ elseif(WIN32)
     add_definitions(-DNOC_FILE_DIALOG_WIN32)
 endif()
 
-if(BUILD_GRAPHICAL_EXAMPLES)
     set(RS_QUALITY_TOOL_CPP
             ./rs-depth-quality.cpp
             ./depth-quality-model.h

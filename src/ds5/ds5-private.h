@@ -98,6 +98,8 @@ namespace librealsense
             GETAEROI        = 0x45,     // get auto-exposure region of interest
             MMER            = 0x4F,     // MM EEPROM read ( from DS5 cache )
             GET_EXTRINSICS  = 0x53,     // get extrinsics
+            SET_CAM_SYNC    = 0x69,     // set Inter-cam HW sync mode [0-default, 1-master, 2-slave]
+            GET_CAM_SYNC    = 0x6A,     // fet Inter-cam HW sync mode
         };
 
         const int etDepthTableControl = 9; // Identifier of the depth table control
@@ -107,6 +109,14 @@ namespace librealsense
             GET_VAL = 0,
             GET_MIN = 1,
             GET_MAX = 2,
+        };
+
+        enum inter_cam_sync_mode
+        {
+            INTERCAM_SYNC_DEFAULT,
+            INTERCAM_SYNC_MASTER,
+            INTERCAM_SYNC_SLAVE,
+            INTERCAM_SYNC_MAX
         };
 
         const std::string DEPTH_STEREO = "Stereo Module";
@@ -234,7 +244,7 @@ namespace librealsense
             uint8_t             ta[10];
             uint32_t            board_num;                  // SKU id
             uint32_t            board_rev;                  // 0
-            uint8_t             reserved[34];               // Align to 64 byte ??? 
+            uint8_t             reserved[34];               // Align to 64 byte ???
         };
 
         constexpr size_t tm1_module_info_size = sizeof(tm1_module_info);

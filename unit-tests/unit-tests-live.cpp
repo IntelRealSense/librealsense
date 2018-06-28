@@ -1543,6 +1543,124 @@ TEST_CASE("Check option API", "[live][options]")
     }
 }
 
+// List of controls coupled together, such as modifying one of them would impose changes(affect) other options if modified
+// The list is managed per-sensor/SKU
+struct option_bundle
+{
+    rs2_stream sensor_type;
+    rs2_option master_option;
+    rs2_option slave_option;
+    float slave_val_before;
+    float slave_val_after;
+};
+
+enum dev_group { e_unresolved_grp, e_d400, e_sr300 };
+
+const std::map<dev_type,dev_group> dev_map = {
+    /* RS400/PSR*/      { { "0AD1", true }, e_d400},
+    /* RS410/ASR*/      { { "0AD2", true }, e_d400 },
+                        { { "0AD2", false }, e_d400},
+    /* RS415/ASRC*/     { { "0AD3", true }, e_d400},
+                        { { "0AD3", false }, e_d400},
+    /* RS430/AWG*/      { { "0AD4", true }, e_d400},
+    /* RS430_MM / AWGT*/{ { "0AD5", true }, e_d400},
+    /* D4/USB2*/        { { "0AD6", false }, e_d400 },
+    /* RS420/PWG*/      { { "0AF6", true }, e_d400},
+    /* RS420_MM/PWGT*/  { { "0AFE", true }, e_d400},
+    /* RS410_MM/ASRT*/  { { "0AFF", true }, e_d400},
+    /* RS400_MM/PSR*/   { { "0B00", true }, e_d400},
+    /* RS405/DS5U*/     { { "0B01", true }, e_d400},
+    /* RS430_MMC/AWGTC*/{ { "0B03", true }, e_d400},
+    /* RS435_RGB/AWGC*/ { { "0B07", true }, e_d400},
+                        { { "0B07", false }, e_d400},
+    /* DS5U */          { { "0B0C", true }, e_d400},
+    /*SR300*/           { { "0AA5", true }, e_sr300 },
+};
+
+// Testing bundled depth controls
+const std::map<dev_group, std::vector<option_bundle> > auto_disabling_controls =
+{
+    { e_d400,  { { RS2_STREAM_DEPTH, RS2_OPTION_EXPOSURE, RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.f, 0.f },
+                { RS2_STREAM_DEPTH, RS2_OPTION_GAIN, RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.f, 1.f } } },  // The value remain intact == the controls shall not affect each other
+    //{ e_sr300, { { RS2_STREAM_DEPTH, TBD, TBD, 1.f, 0.f } } }, Provision for
+};
+
+// Verify that the bundled controls (Exposure<->Aut-Exposure) are in sync
+TEST_CASE("Auto-Disabling Controls", "[live][options]")
+{
+    // Require at least one device to be plugged in
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        std::vector<rs2::device> list;
+        REQUIRE_NOTHROW(list = ctx.query_devices());
+        REQUIRE(list.size() > 0);
+
+        // for each sensor
+        for (auto&& dev : list)
+        {
+            disable_sensitive_options_for(dev);
+            dev_type PID = get_PID(dev);
+            CAPTURE(PID.first);
+            CAPTURE(PID.second);
+            auto dev_grp{ e_unresolved_grp };
+            REQUIRE_NOTHROW(dev_grp = dev_map.at(PID));
+
+            for (auto&& snr : dev.query_sensors())
+            {
+                // The test will apply to depth sensor only. In future may be extended for additional type of sensors
+                if (snr.is<depth_sensor>())
+                {
+                    auto entry = auto_disabling_controls.find(dev_grp);
+                    if (auto_disabling_controls.end() == entry)
+                    {
+                        WARN("Skipping test - the Device-Under-Test profile is not defined for PID " << PID.first << (PID.second ? " USB3" : " USB2"));
+                    }
+                    else
+                    {
+                        auto test_patterns = auto_disabling_controls.at(dev_grp);
+                        REQUIRE(test_patterns.size() > 0);
+
+                        for (auto i = 0; i < test_patterns.size(); ++i)
+                        {
+                            if (test_patterns[i].sensor_type != RS2_STREAM_DEPTH)
+                                continue;
+
+                            auto orig_opt = test_patterns[i].master_option;
+                            auto tgt_opt = test_patterns[i].slave_option;
+                            bool opt_orig_supported{};
+                            bool opt_tgt_supported{};
+                            REQUIRE_NOTHROW(opt_orig_supported = snr.supports(orig_opt));
+                            REQUIRE_NOTHROW(opt_tgt_supported = snr.supports(tgt_opt));
+
+                            if (opt_orig_supported && opt_tgt_supported)
+                            {
+                                rs2::option_range master_range,slave_range;
+                                REQUIRE_NOTHROW(master_range = snr.get_option_range(orig_opt));
+                                REQUIRE_NOTHROW(slave_range = snr.get_option_range(tgt_opt));
+
+                                // Switch the receiving options into the responding state
+                                auto slave_cur_val = snr.get_option(tgt_opt);
+                                if (slave_cur_val != test_patterns[i].slave_val_before)
+                                {
+                                    REQUIRE_NOTHROW(snr.set_option(tgt_opt, test_patterns[i].slave_val_before));
+                                    //std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                                    REQUIRE(snr.get_option(tgt_opt) == test_patterns[i].slave_val_before);
+                                }
+
+                                // Modify the originating control and verify that the target control has been modified as well
+                                REQUIRE_NOTHROW(snr.set_option(orig_opt, master_range.def));
+                                REQUIRE(snr.get_option(tgt_opt) == test_patterns[i].slave_val_after);
+                            }
+                        }
+                    }
+                }
+            }
+        } // for (auto&& dev : list)
+    }
+}
+
+
 /// The test may fail due to changes in profiles list that do not indicate regression.
 /// TODO - refactoring required to make the test agnostic to changes imposed by librealsense core
 TEST_CASE("Multiple devices", "[live][multicam][!mayfail]")
@@ -1914,21 +2032,41 @@ void metadata_verification(const std::vector<internal_frame_additional_data>& da
                 CAPTURE(value);
                 CAPTURE(last_val[j]);
 
-                REQUIRE_NOTHROW((value > last_val[0]));
-                if (RS2_FRAME_METADATA_FRAME_COUNTER == j) // In addition, there shall be no frame number gaps
+                REQUIRE((value > last_val[j]));
+                if (RS2_FRAME_METADATA_FRAME_COUNTER == j && last_val[j] >= 0) // In addition, there shall be no frame number gaps
                 {
-                    REQUIRE_NOTHROW((1 == (value - last_val[j])));
+                    REQUIRE((1 == (value - last_val[j])));
                 }
 
                 last_val[j] = data[i].frame_md.md_attributes[j].second;
             }
         }
 
-        //        // Exposure time and gain values are greater than zero
-        //        if (data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE].first)
-        //            REQUIRE(data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE].second > 0);
-        //        if (data[i].frame_md.md_attributes[RS2_FRAME_METADATA_GAIN_LEVEL].first)
-        //            REQUIRE(data[i].frame_md.md_attributes[RS2_FRAME_METADATA_GAIN_LEVEL].second > 0);
+        // Metadata below must have a non negative value
+        auto md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE];
+        if (md.first) REQUIRE(md.second >= 0);
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_GAIN_LEVEL];
+        if (md.first) REQUIRE(md.second >= 0);
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_TIME_OF_ARRIVAL];
+        if (md.first) REQUIRE(md.second >= 0);
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_BACKEND_TIMESTAMP];
+        if (md.first) REQUIRE(md.second >= 0);
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_FPS];
+        if (md.first) REQUIRE(md.second >= 0);
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_POWER_LINE_FREQUENCY];
+        if (md.first) REQUIRE(md.second >= 0);
+
+        // Metadata below must have a boolean value
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_AUTO_EXPOSURE];
+        if (md.first) REQUIRE((md.second == 0 || md.second == 1));
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE];
+        if (md.first) REQUIRE((md.second == 0 || md.second == 1));
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_AUTO_WHITE_BALANCE_TEMPERATURE];
+        if (md.first) REQUIRE((md.second == 0 || md.second == 1));
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_BACKLIGHT_COMPENSATION];
+        if (md.first) REQUIRE((md.second == 0 || md.second == 1));
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION];
+        if (md.first) REQUIRE((md.second == 0 || md.second == 1));
     }
 }
 
@@ -2010,6 +2148,35 @@ TEST_CASE("Error handling sanity", "[live][!mayfail]") {
     }
 }
 
+std::vector<uint32_t> split(const std::string &s, char delim) {
+    std::stringstream ss(s);
+    std::string item;
+    std::vector<uint32_t> tokens;
+    while (std::getline(ss, item, delim)) {
+        tokens.push_back(std::stoi(item, nullptr));
+    }
+    return tokens;
+}
+
+bool is_fw_version_newer(rs2::sensor& subdevice, const uint32_t other_fw[4])
+{
+    std::string fw_version_str;
+    REQUIRE_NOTHROW(fw_version_str = subdevice.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION));
+    auto fw = split(fw_version_str, '.');
+    if (fw[0] > other_fw[0])
+            return true;
+    if (fw[0] == other_fw[0] && fw[1] > other_fw[1])
+        return true;
+    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] > other_fw[2])
+        return true;
+    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] == other_fw[2] && fw[3] > other_fw[3])
+        return true;
+    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] == other_fw[2] && fw[3] == other_fw[3])
+        return true;
+    return false;
+}
+
+
 TEST_CASE("Auto disabling control behavior", "[live]") {
     //Require at least one device to be plugged in
     rs2::context ctx;
@@ -2046,12 +2213,17 @@ TEST_CASE("Auto disabling control behavior", "[live]") {
                 {
                     for (auto elem : { 0.f, 2.f })
                     {
+                        CAPTURE(elem);
                         REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_EMITTER_ENABLED, elem));
                         REQUIRE_NOTHROW(range = subdevice.get_option_range(RS2_OPTION_LASER_POWER));
                         REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_LASER_POWER, range.max));
                         CAPTURE(range.max);
                         REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_EMITTER_ENABLED));
                         REQUIRE(val == 1);
+                        //0 - on, 1- off, 2 - deprecated for fw later than 5.9.11.0
+                        //check if the fw version supports elem = 2
+                        const uint32_t MIN_FW_VER[4] = { 5, 9, 11, 0 };
+                        if (is_fw_version_newer(subdevice, MIN_FW_VER)) break;
                     }
                 }
             }
@@ -2698,7 +2870,7 @@ void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::
             CAPTURE(frame.size());
             continue;
         }
-           
+
         std::vector<profile> stream_arrived;
 
         for (auto f : frame)
@@ -3009,7 +3181,7 @@ TEST_CASE("Pipeline enable stream", "[live]") {
                 REQUIRE_NOTHROW(frame = pipe.wait_for_frames(5000));
                 std::vector<stream_profile> frames_set;
                 std::vector<double> ts;
-                
+
                 for (auto f : frame)
                 {
                     if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
@@ -3611,7 +3783,6 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
 
                 REQUIRE_NOTHROW(subdevice.start([&](rs2::frame f)
                 {
-
                     if ((frames >= frames_before_start_measure) && (frames_additional_data.size() < frames_for_fps_measure))
                     {
                         if (first)
@@ -3682,6 +3853,8 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
                     auto actual_fps = (double)frames_additional_data.size() / (double)seconds;
                     double metadata_seconds = frames_additional_data[frames_additional_data.size() - 1].timestamp - frames_additional_data[0].timestamp;
                     metadata_seconds *= msec_to_sec;
+                    CAPTURE(frames_additional_data[frames_additional_data.size() - 1].timestamp);
+                    CAPTURE(frames_additional_data[0].timestamp);
 
                     if (metadata_seconds <= 0)
                     {
@@ -4203,13 +4376,13 @@ TEST_CASE("Syncer sanity with software-device device", "[live][software-device]"
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-       
+
         const int W = 640;
         const int H = 480;
         const int BPP = 2;
         std::shared_ptr<software_device> dev = std::move(std::make_shared<software_device>());
         auto s = dev->add_sensor("software_sensor");
-       
+
         rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
 
         s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
@@ -4225,18 +4398,18 @@ TEST_CASE("Syncer sanity with software-device device", "[live][software-device]"
         syncer sync;
         s.open(profiles);
         s.start(sync);
-       
+
         std::vector<uint8_t> pixels(W * H * BPP, 0);
         std::weak_ptr<rs2::software_device> weak_dev(dev);
-      
+
         std::thread t([&s, weak_dev, pixels, depth, ir]() mutable {
-            
+
             auto shared_dev = weak_dev.lock();
             if (shared_dev == nullptr)
                 return;
             s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
             s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir });
-              
+
             s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth });
             s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir });
 
@@ -4304,13 +4477,13 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with software-device de
 
         std::shared_ptr<software_device> dev = std::make_shared<software_device>();
         auto s = dev->add_sensor("software_sensor");
-        
+
         rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
         s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
         s.add_video_stream({ RS2_STREAM_INFRARED, 1, 1, W, H,60,  BPP, RS2_FORMAT_Y8, intrinsics });
         dev->create_matcher(RS2_MATCHER_DI);
         frame_queue q;
-        
+
         auto profiles = s.get_stream_profiles();
         auto depth = profiles[0];
         auto ir = profiles[1];
@@ -4364,7 +4537,7 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with software-device de
             for (auto f : fs)
             {
                 curr.push_back({ f.get_profile().stream_type(), f.get_frame_number() });
-            } 
+            }
             results.push_back(curr);
         }
 

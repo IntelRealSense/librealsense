@@ -1,7 +1,7 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-/** \file rs2_sensor.h
+/** \file rs_sensor.h
 * \brief
 * Exposes RealSense sensor functionality for C compilers
 */
@@ -23,6 +23,7 @@ typedef enum rs2_camera_info {
     RS2_CAMERA_INFO_NAME                           , /**< Friendly name */
     RS2_CAMERA_INFO_SERIAL_NUMBER                  , /**< Device serial number */
     RS2_CAMERA_INFO_FIRMWARE_VERSION               , /**< Primary firmware version */
+    RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION   , /**< Recommended firmware version */
     RS2_CAMERA_INFO_PHYSICAL_PORT                  , /**< Unique identifier of the port the device is connected to (platform specific) */
     RS2_CAMERA_INFO_DEBUG_OP_CODE                  , /**< If device supports firmware logging, this is the command to send to get logs from firmware */
     RS2_CAMERA_INFO_ADVANCED_MODE                  , /**< True iff the device is in advanced mode */
@@ -44,7 +45,7 @@ typedef enum rs2_stream
     RS2_STREAM_GYRO                             , /**< Native stream of gyroscope motion data produced by RealSense device */
     RS2_STREAM_ACCEL                            , /**< Native stream of accelerometer motion data produced by RealSense device */
     RS2_STREAM_GPIO                             , /**< Signals from external device connected through GPIO */
-    RS2_STREAM_POSE                             , /**< 6 Degrees of Freedom pose data, calculated by RealSense device */ 
+    RS2_STREAM_POSE                             , /**< 6 Degrees of Freedom pose data, calculated by RealSense device */
     RS2_STREAM_CONFIDENCE,
     RS2_STREAM_COUNT
 } rs2_stream;
@@ -57,7 +58,7 @@ typedef enum rs2_format
     RS2_FORMAT_Z16             , /**< 16-bit linear depth values. The depth is meters is equal to depth scale * pixel value. */
     RS2_FORMAT_DISPARITY16     , /**< 16-bit linear disparity values. The depth in meters is equal to depth scale / pixel value. */
     RS2_FORMAT_XYZ32F          , /**< 32-bit floating point 3D coordinates. */
-    RS2_FORMAT_YUYV            , /**< Standard YUV pixel format as described in https://en.wikipedia.org/wiki/YUV */
+    RS2_FORMAT_YUYV            , /**< 32-bit y0, u, y1, v data for every two pixels. Similar to YUV422 but packed in a different order - https://en.wikipedia.org/wiki/YUV */
     RS2_FORMAT_RGB8            , /**< 8-bit red, green and blue channels */
     RS2_FORMAT_BGR8            , /**< 8-bit blue, green, and red channels -- suitable for OpenCV */
     RS2_FORMAT_RGBA8           , /**< 8-bit red, green and blue channels + constant alpha channel equal to FF */
@@ -184,7 +185,7 @@ void rs2_get_region_of_interest(const rs2_sensor* sensor, int* min_x, int* min_y
 
 /**
 * open subdevice for exclusive access, by committing to a configuration
-* \param[in] sensor relevant RealSense device
+* \param[in] device relevant RealSense device
 * \param[in] profile    stream profile that defines single stream configuration
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
@@ -193,7 +194,7 @@ void rs2_open(rs2_sensor* device, const rs2_stream_profile* profile, rs2_error**
 /**
 * open subdevice for exclusive access, by committing to composite configuration, specifying one or more stream profiles
 * this method should be used for interdependent  streams, such as depth and infrared, that have to be configured together
-* \param[in] sensor relevant RealSense device
+* \param[in] device relevant RealSense device
 * \param[in] profiles  list of stream profiles discovered by get_stream_profiles
 * \param[in] count      number of simultaneous  stream profiles to configure
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -227,7 +228,6 @@ void rs2_start_cpp(const rs2_sensor* sensor, rs2_frame_callback* callback, rs2_e
 /**
 * start streaming from specified configured sensor of specific stream to frame queue
 * \param[in] sensor  RealSense Sensor
-* \param[in] stream  specific stream type to start
 * \param[in] queue   frame-queue to store new frames into
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
@@ -242,10 +242,9 @@ void rs2_stop(const rs2_sensor* sensor, rs2_error** error);
 
 /**
 * set callback to get notifications from specified sensor
-* \param[in] sensor  RealSense device
-* \param[in] device  RealSense device
-* \param[in] callback function pointer to register as per-notifications callback
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \param[in] sensor          RealSense device
+* \param[in] on_notification function pointer to register as per-notifications callback
+* \param[out] error          if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_set_notifications_callback(const rs2_sensor* sensor, rs2_notification_callback_ptr on_notification, void* user, rs2_error** error);
 
@@ -260,6 +259,7 @@ void rs2_set_notifications_callback_cpp(const rs2_sensor* sensor, rs2_notificati
 /**
 * retrieve description from notification handle
 * \param[in] notification      handle returned from a callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the notification description
 */
 const char* rs2_get_notification_description(rs2_notification* notification, rs2_error** error);
@@ -267,6 +267,7 @@ const char* rs2_get_notification_description(rs2_notification* notification, rs2
 /**
 * retrieve timestamp from notification handle
 * \param[in] notification      handle returned from a callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the notification timestamp
 */
 rs2_time_t rs2_get_notification_timestamp(rs2_notification* notification, rs2_error** error);
@@ -274,6 +275,7 @@ rs2_time_t rs2_get_notification_timestamp(rs2_notification* notification, rs2_er
 /**
 * retrieve severity from notification handle
 * \param[in] notification      handle returned from a callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the notification severity
 */
 rs2_log_severity rs2_get_notification_severity(rs2_notification* notification, rs2_error** error);
@@ -281,6 +283,7 @@ rs2_log_severity rs2_get_notification_severity(rs2_notification* notification, r
 /**
 * retrieve category from notification handle
 * \param[in] notification      handle returned from a callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the notification category
 */
 rs2_notification_category rs2_get_notification_category(rs2_notification* notification, rs2_error** error);
@@ -288,6 +291,7 @@ rs2_notification_category rs2_get_notification_category(rs2_notification* notifi
 /**
 * retrieve serialized data from notification handle
 * \param[in] notification      handle returned from a callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the serialized data (in JSON format)
 */
 const char* rs2_get_notification_serialized_data(rs2_notification* notification, rs2_error** error);

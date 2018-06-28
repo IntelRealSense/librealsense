@@ -483,7 +483,11 @@ namespace librealsense
                     }
                     if(!valid_path)
                     {
+#ifndef RS2_USE_CUDA
+                       /* On the Jetson TX, the camera module is CSI & I2C and does not report as this code expects
+                       Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
                         LOG_WARNING("Failed to read busnum/devnum. Device Path: " << path);
+#endif
                         continue;
                     }
 
@@ -761,9 +765,26 @@ namespace librealsense
 
             int max_fd = std::max(std::max(_stop_pipe_fd[0], _stop_pipe_fd[1]), _fd);
 
-            struct timeval tv = {5,0};
+            struct timespec mono_time;
+            int r = clock_gettime(CLOCK_MONOTONIC, &mono_time);
+            if (r) throw linux_backend_exception("could not query time!");
 
-            auto val = select(max_fd+1, &fds, NULL, NULL, &tv);
+            struct timeval expiration_time = { mono_time.tv_sec + 5, mono_time.tv_nsec / 1000 };
+            int val = 0;
+            do {
+                struct timeval remaining;
+                r = clock_gettime(CLOCK_MONOTONIC, &mono_time);
+                if (r) throw linux_backend_exception("could not query time!");
+
+                struct timeval current_time = { mono_time.tv_sec, mono_time.tv_nsec / 1000 };
+                timersub(&expiration_time, &current_time, &remaining);
+                if (timercmp(&current_time, &expiration_time, <)) {
+                    val = select(max_fd + 1, &fds, NULL, NULL, &remaining);
+                }
+                else {
+                    val = 0;
+                }
+            } while (val < 0 && errno == EINTR);
 
             if(val < 0)
             {

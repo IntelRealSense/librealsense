@@ -196,7 +196,7 @@ namespace librealsense
             {
                 {
                     std::lock_guard<std::mutex> lock(_mutex);
-                    if (!_stream)
+                    if (!_stream || (f.get_profile().get() != _stream->get()))
                     {
                         _stream = std::make_shared<rs2::stream_profile>(f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_RGB8));
                         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_stream->get()->profile, *f.get_profile().get()->profile);

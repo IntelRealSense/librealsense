@@ -115,13 +115,13 @@ namespace librealsense
     {
         align_other_to_depth(other_aligned_to_z, [z_pixels, z_scale](int z_pixel_index) { return z_scale * z_pixels[z_pixel_index]; }, z_intrin, z_to_other, other_intrin, other_pixels, other_format);
     }
-    
+
     int align::get_unique_id(const std::shared_ptr<stream_profile_interface>& original_profile,
         const std::shared_ptr<stream_profile_interface>& to_profile,
         const std::shared_ptr<stream_profile_interface>& aligned_profile)
     {
         //align_stream_unique_ids holds a cache of mapping between the 2 streams that created the new aligned stream
-        // to it stream id. 
+        // to it stream id.
         //When an aligned frame is created from other streams (but with the same instance of this class)
         // the from_to pair will be different so a new id will be added to the cache.
         //This allows the user to pass different streams to this class and for every pair of from_to
@@ -140,7 +140,7 @@ namespace librealsense
         }
     }
     std::shared_ptr<stream_profile_interface> align::create_aligned_profile(
-        const std::shared_ptr<stream_profile_interface>& original_profile, 
+        const std::shared_ptr<stream_profile_interface>& original_profile,
         const std::shared_ptr<stream_profile_interface>& to_profile)
     {
         auto aligned_profile = original_profile->clone();
@@ -325,7 +325,7 @@ namespace librealsense
                 auto aligned_profile = create_aligned_profile(depth_profile, other_profile);
                 aligned_frame = source->allocate_video_frame(
                     aligned_profile,
-                    depth_frame, 
+                    depth_frame,
                     aligned_bytes_per_pixel,
                     other_intrinsics.width,
                     other_intrinsics.height,

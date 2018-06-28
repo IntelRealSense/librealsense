@@ -142,6 +142,7 @@ namespace Intel.RealSense
             private readonly float max;
             private readonly float step;
             private readonly float @default;
+            private readonly string description;
 
             public CameraOption(IntPtr sensor, Option option)
             {
@@ -152,6 +153,9 @@ namespace Intel.RealSense
                 {
                     object error;
                     NativeMethods.rs2_get_option_range(m_sensor, option, out min, out max, out step, out @default, out error);
+
+                    var str = NativeMethods.rs2_get_option_description(m_sensor, option, out error);
+                    description = Marshal.PtrToStringAnsi(str);
                 }
             }
 
@@ -179,6 +183,14 @@ namespace Intel.RealSense
                 }
             }
 
+            public string Description
+            {
+                get
+                {
+                    return description;
+                }
+            }
+
             public float Value
             {
                 get
@@ -197,10 +209,15 @@ namespace Intel.RealSense
             {
                 get
                 {
-                    object error;
-                    var str = NativeMethods.rs2_get_option_value_description(m_sensor, option, Value, out error);
-                    return Marshal.PtrToStringAnsi(str);
+                    return GetValueDescription(Value);
                 }
+            }
+
+            public string GetValueDescription(float value)
+            {
+                object error;
+                var str = NativeMethods.rs2_get_option_value_description(m_sensor, option, value, out error);
+                return Marshal.PtrToStringAnsi(str);
             }
 
             public float Min
@@ -323,6 +340,8 @@ namespace Intel.RealSense
         {
             object error;
             NativeMethods.rs2_start_queue(m_instance, queue.m_instance.Handle, out error);
+            m_queue = queue;
+            m_callback = null;
         }
 
         //public delegate void FrameCallback<Frame, T>(Frame frame, T user_data);
@@ -333,14 +352,11 @@ namespace Intel.RealSense
             object error;
             frame_callback cb2 = (IntPtr f, IntPtr u) =>
             {
-                //!TODO: check whether or not frame should be diposed here... I've got 2 concerns here:
-                // 1. Best practice says that since the user's callback isn't the owner, frame should be diposed here...
-                // 2. Users might need the frame for longer, but then they could clone it
-
-                //cb(new Frame(f));
                 using (var frame = new Frame(f))
                     cb(frame);
             };
+            m_callback = cb2;
+            m_queue = null;
             NativeMethods.rs2_start(m_instance, cb2, IntPtr.Zero, out error);
         }
 
@@ -348,6 +364,8 @@ namespace Intel.RealSense
         {
             object error;
             NativeMethods.rs2_stop(m_instance, out error);
+            m_callback = null;
+            m_queue = null;
         }
 
         /// <summary>
@@ -391,27 +409,8 @@ namespace Intel.RealSense
             }
         }
 
-
-        //public Intrinsics GetIntrinsics(StreamProfile profile)
-        //{
-        //    object error;
-        //    Intrinsics intrinsics;
-        //    NativeMethods.rs_get_stream_intrinsics(m_instance, profile.stream, profile.width, profile.height, profile.fps, profile.format, out intrinsics, out error);
-        //    return intrinsics;
-        //}
-
-
-        //public Extrinsics GetExtrinsicsTo(Device to_device)
-        ////public Extrinsics GetExtrinsicsTo(RS_STREAM from_stream, Device to_device, RS_STREAM to_stream)
-        ////public Extrinsics GetExtrinsicsTo(RS_STREAM from_stream, RS_STREAM to_stream)
-        //{
-        //    object error;
-        //    Extrinsics extrinsics;
-        //    NativeMethods.rs_get_extrinsics(m_instance, to_device.m_instance, out extrinsics, out error);
-        //    //NativeMethods.rs_get_extrinsics(m_instance, from_stream, to_device.m_instance, to_stream, out extrinsics, out error);
-        //    //NativeMethods.rs_get_extrinsics(m_instance, from_stream, to_stream, out extrinsics, out error);
-        //    return extrinsics;
-        //}
+        private frame_callback m_callback;
+        private FrameQueue m_queue;
     }
 
 }

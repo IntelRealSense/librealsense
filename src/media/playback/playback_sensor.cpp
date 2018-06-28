@@ -3,11 +3,15 @@
 
 #include "playback_sensor.h"
 #include "core/motion.h"
+#include "api.h"
+#include "software-device.h"
 #include <map>
 #include "types.h"
 #include "context.h"
 #include "ds5/ds5-options.h"
 #include "media/ros/ros_reader.h"
+
+using namespace librealsense;
 
 std::string profile_to_string(std::shared_ptr<stream_profile_interface> s)
 {
@@ -291,4 +295,13 @@ void playback_sensor::unregister_before_start_callback(int token)
 void playback_sensor::raise_notification(const notification& n)
 {
     _notifications_processor.raise_notification(n);
+}
+
+rs2_extension playback_sensor::get_sensor_type()
+{
+    if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_sensor)) return RS2_EXTENSION_DEPTH_SENSOR;
+    else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_stereo_sensor)) return RS2_EXTENSION_DEPTH_STEREO_SENSOR;
+    else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::video_sensor_interface)) return RS2_EXTENSION_VIDEO;
+    else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::software_sensor)) return RS2_EXTENSION_SOFTWARE_SENSOR;
+    else return RS2_EXTENSION_UNKNOWN;
 }

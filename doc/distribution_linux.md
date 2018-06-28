@@ -1,10 +1,13 @@
 # Linux Distribution
 
 **Intel® RealSense™ SDK 2.0** provides installation packages in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Ubuntu 16 LTS\*.    
-\* The Realsense [DKMS](https://en.wikipedia.org/wiki/Dynamic_Kernel_Module_Support) kernel drivers package (`librealsense2-dkms`) supports Ubuntu LTS kernels 4.4, 4.10 and 4.13.  
+\* The Realsense [DKMS](https://en.wikipedia.org/wiki/Dynamic_Kernel_Module_Support) kernel drivers package (`librealsense2-dkms`) supports Ubuntu LTS kernels 4.4, 4.10 and 4.13.
 
 
-> To build the project from source, please follow steps described [here](./installation.md)
+**Note** Kernel 4.16 introduces some non-compatible modification to uvcvideo and media subsystem. We work to support it in future releases, but at this time the support is scoped up to kernel 4.15 and the affected users are requested to downgrade the kernel version.
+
+
+> To build the project from source, or in case of Ubuntu 18 (Bionic Beaver) with kernel 4.15 please follow steps described [here](./installation.md) to manually install the kernel patches
 
 
 

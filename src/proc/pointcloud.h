@@ -31,5 +31,10 @@ namespace librealsense
         void process_depth_frame(const rs2::depth_frame& depth);
 
         bool stream_changed(stream_profile_interface* old, stream_profile_interface* curr);
+
+        std::vector<float> _pre_compute_map_x;
+        std::vector<float> _pre_compute_map_y;
+
+        void pre_compute_x_y_map();
     };
 }

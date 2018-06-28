@@ -284,7 +284,7 @@ describe('Config test', function() {
     assert.equal(fs.existsSync(fileName), true);
     assert.doesNotThrow(() => {
       let frameSet = pipeline.waitForFrames();
-      assert(frameSet instanceof rs2.VideoFrame)
+      assert(frameSet instanceof rs2.VideoFrame);
     });
   });
 
@@ -293,7 +293,7 @@ describe('Config test', function() {
       config.enableRecordToFile(fileName);
       pipeline.start(config);
       let frameSet = pipeline.waitForFrames();
-      assert(frameSet instanceof rs2.VideoFrame)
+      assert(frameSet instanceof rs2.VideoFrame);
     });
     assert.equal(fs.existsSync(fileName), true);
     assert.throws(() => {
@@ -309,7 +309,7 @@ describe('Config test', function() {
     });
     assert.doesNotThrow(() => {
       let frameSet = pipeline.waitForFrames();
-      assert(frameSet instanceof rs2.VideoFrame)
+      assert(frameSet instanceof rs2.VideoFrame);
     });
     assert.equal(fs.existsSync(fileName), true);
   });

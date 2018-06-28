@@ -24,7 +24,7 @@ if ( PKG_CONFIG_FOUND )
 endif ( PKG_CONFIG_FOUND )
 
 if ( PKGCONFIG_LIBUSB_FOUND )
-  set ( LibUSB_INCLUDE_DIRS ${PKGCONFIG_LIBUSB_INCLUDEDIR} )
+  set ( LibUSB_INCLUDE_DIRS ${PKGCONFIG_LIBUSB_INCLUDE_DIRS} )
   foreach ( i ${PKGCONFIG_LIBUSB_LIBRARIES} )
     string ( REGEX MATCH "[^-]*" ibase "${i}" )
     find_library ( ${ibase}_LIBRARY

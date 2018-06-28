@@ -68,10 +68,20 @@ namespace Intel.RealSense
                     {
                         var frames = pipeline.WaitForFrames();
 
-                        var colorized_depth = colorizer.Colorize(frames.DepthFrame);
-                        UploadImage(imgDepth, colorized_depth);
+                        var depth_frame = frames.DepthFrame;
+                        var color_frame = frames.ColorFrame;
+                        var colorized_depth = colorizer.Colorize(depth_frame);
 
-                        UploadImage(imgColor, frames.ColorFrame);
+                        UploadImage(imgDepth, colorized_depth);
+                        UploadImage(imgColor, color_frame);
+
+                        // It is important to pre-emptively dispose of native resources
+                        // to avoid creating bottleneck at finalization stage after GC
+                        // (Also see FrameReleaser helper object in next tutorial)
+                        frames.Dispose();
+                        depth_frame.Dispose();
+                        colorized_depth.Dispose();
+                        color_frame.Dispose();
                     }
                 }, token);
             }

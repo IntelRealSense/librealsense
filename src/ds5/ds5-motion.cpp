@@ -98,7 +98,7 @@ namespace librealsense
         const ds5_motion* _owner;
     };
 
-    class ds5_fisheye_sensor : public uvc_sensor, public video_sensor_interface
+    class ds5_fisheye_sensor : public uvc_sensor, public video_sensor_interface, public roi_sensor_base
     {
     public:
         explicit ds5_fisheye_sensor(ds5_motion* owner, std::shared_ptr<platform::uvc_device> uvc_device,
@@ -364,7 +364,7 @@ namespace librealsense
         _fisheye_device_idx = add_sensor(fisheye_ep);
 
         // Not applicable for TM1
-        //_depth_to_fisheye = std::make_shared<lazy<rs2_extrinsics>>([this]() 
+        //_depth_to_fisheye = std::make_shared<lazy<rs2_extrinsics>>([this]()
         //{
         //    auto extr = get_fisheye_extrinsics_data(*_fisheye_extrinsics_raw);
         //    return from_pose(inverse(extr));

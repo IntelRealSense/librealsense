@@ -1,5 +1,5 @@
-#  minimum required cmake version: 3.1.0
-cmake_minimum_required(VERSION 3.1.0)
+#  minimum required cmake version: 3.8.0
+cmake_minimum_required(VERSION 3.8.0)
 
 project(RealsenseExamples)
 
@@ -76,3 +76,4 @@ add_subdirectory(C/depth)
 add_subdirectory(C/color)
 add_subdirectory(C/distance)
 add_subdirectory(post-processing)
+add_subdirectory(record-playback)

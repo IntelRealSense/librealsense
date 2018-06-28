@@ -10,6 +10,25 @@ namespace Intel.RealSense
     {
         internal HandleRef m_instance;
 
+        public Frame AsFrame()
+        {
+            object error;
+            NativeMethods.rs2_frame_add_ref(m_instance.Handle, out error);
+            return CreateFrame(m_instance.Handle);
+        }
+
+        public static FrameSet FromFrame(Frame composite, FramesReleaser releaser = null)
+        {
+            object error;
+            if (NativeMethods.rs2_is_frame_extendable_to(composite.m_instance.Handle, 
+                Extension.CompositeFrame, out error) > 0)
+            {
+                NativeMethods.rs2_frame_add_ref(composite.m_instance.Handle, out error);
+                return FramesReleaser.ScopedReturn(releaser, new FrameSet(composite.m_instance.Handle));
+            }
+            throw new Exception("The frame is a not composite frame");
+        }
+
         internal static Frame CreateFrame(IntPtr ptr)
         {
             object error;
@@ -27,7 +46,13 @@ namespace Intel.RealSense
         {
             get
             {
-                return this.FirstOrDefault(x => x.Profile.Stream == Stream.Depth) as DepthFrame;
+                foreach(var frame in this)
+                {
+                    if (frame.Profile.Stream == Stream.Depth)
+                        return frame as DepthFrame;
+                    frame.Dispose();
+                }
+                return null;
             }
         }
 
@@ -35,7 +60,13 @@ namespace Intel.RealSense
         {
             get
             {
-                return this.FirstOrDefault(x => x.Profile.Stream == Stream.Color) as VideoFrame;
+                foreach (var frame in this)
+                {
+                    if (frame.Profile.Stream == Stream.Color)
+                        return frame as VideoFrame;
+                    frame.Dispose();
+                }
+                return null;
             }
         }
 
@@ -76,7 +107,7 @@ namespace Intel.RealSense
             }
         }
 
-        public FrameSet(IntPtr ptr)
+        internal FrameSet(IntPtr ptr)
         {
             m_instance = new HandleRef(this, ptr);
         }

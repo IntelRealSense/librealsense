@@ -20,17 +20,18 @@ Using this wrapper, Unity developers can get a live stream of Color, Depth and I
 
 ## Getting Started
 
-### Step 1 - Import Plugins
+### Step 1 - Build Dependencies And Open The Unity Project
 
 The Unity wrapper depends on the C# wrapper provided by the RealSense SDK 2.0.
-At the end of this step, the following files are expected to be available under their respective folders:
+At the end of this step, the Unity project will be available in the CMake output folder:
 
-* `unity/Assets/Plugin.Managed/Intel.RealSense.dll` - The .NET wrapper assembly (for .NET 3.5)
-* `unity/Assets/RealSenseSDK2.0/Plugins/realsense2.dll` - The SDK's library (that was used to build the .NET wrapper)
-
-In order to get these files, either:
-1. download and install [RealSense SDK 2.0](https://github.com/IntelRealSense/librealsense/releases), then copy the files from the installation location to their respective folders in the project. Or,
-2. Follow [.NET wrapper instructions for building the wrapper](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/csharp#getting-started) and copy the file to their respective folders in the project.
+- Generate the VS solution using cmake (run from librealsense root dir):
+  - mkdir build
+  - cd build
+  - cmake .. -DBUILD_CSHARP_BINDINGS=ON -DBUILD_UNITY_BINDINGS=ON -DBUILD_SHARED_LIBS=ON -DDOTNET_VERSION_LIBRARY=3.5
+- The file 'realsense2.sln' should be created in 'build' folder, open the file with Visual Studio, C# examples and library will be available in the solution under 'Wrappers/csharp'.
+- Build Intel.RealSense project, this step will build both the native library and the .NET wrapper and will copy both DLLs to the Unity project Plugins folder.
+- Open the Unity project that located in 'build/unity'
 
   > NOTE: Unity requires that manage assemblies (such as the C# wrapper) are targeted to .NET Framework 3.5 and lower. The .NET wrapper provides assemblies for multiple targets, one of which is .NET 3.5 (net35).
 
@@ -38,8 +39,10 @@ In order to get these files, either:
 
 The Unity wrapper provides several example scenes to help you get started with RealSense in Unity. Open one of the following scenes under `unity/Assets/RealSenseSDK2.0/Scenes` (Sorted from basic to advanced):
 
-1. RealSense Textures - Basic 2D scene demonstrating how to bind textures to a RealSense device stream. The Scene provides 3 live streams and 5 different textures: Depth, Infrared, Color, Colorized Depth and Color with background segmentation.
-
+1. RealSense Textures Depth and Infrared - Basic 2D scene demonstrating how to bind textures to a RealSense device stream. The Scene provides 2 live streams and 2 different textures: Depth and Infrared.
+2. RealSense Textures Depth and Color (Only cameras with RGB sensor are supported) - Basic 2D scene demonstrating how to bind textures to a RealSense device stream. The Scene provides 2 live streams and 3 different textures: Depth, Color and Color with background segmentation.
+3. RealSense PointCloud Depth - 3D scene demonstrating how to bind a [PointCloud](#PointCloud) prefab to RealSense device depth stream.
+4. RealSense PointCloud Depth and Color - 3D scene demonstrating how to bind a [PointCloud](#PointCloud) prefab to RealSense device depth and color streams.
 
 ## Prefabs
 

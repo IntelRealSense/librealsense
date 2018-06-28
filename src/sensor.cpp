@@ -11,6 +11,8 @@
 #include "device.h"
 #include "stream.h"
 #include "sensor.h"
+#include "api.h"
+#include "software-device.h"
 
 namespace librealsense
 {
@@ -85,6 +87,15 @@ namespace librealsense
     void sensor_base::set_frames_callback(frame_callback_ptr callback)
     {
         return _source.set_callback(callback);
+    }
+    rs2_extension sensor_base::get_sensor_type()
+    {
+        if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_sensor)) return RS2_EXTENSION_DEPTH_SENSOR;
+        else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_stereo_sensor)) return RS2_EXTENSION_DEPTH_STEREO_SENSOR;
+        else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::video_sensor_interface)) return RS2_EXTENSION_VIDEO;
+        else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::software_sensor)) return RS2_EXTENSION_SOFTWARE_SENSOR;
+        else return RS2_EXTENSION_UNKNOWN;
+        //TODO: Add support for fisheye sensor type
     }
     std::shared_ptr<notifications_processor> sensor_base::get_notifications_processor()
     {
@@ -209,7 +220,7 @@ namespace librealsense
                     auto it = results.find(mapping);
                     if (it != results.end())
                     {
-                        it->original_requests.push_back(r);
+                        it->original_requests.push_back(map_requests(r));
                     }
 
                     return true;
@@ -221,6 +232,21 @@ namespace librealsense
         if (requests.empty()) return{ begin(results), end(results) };
 
         throw invalid_value_exception("Subdevice unable to satisfy stream requests!");
+    }
+
+    std::shared_ptr<stream_profile_interface> sensor_base::map_requests(std::shared_ptr<stream_profile_interface> request)
+    {
+        stream_profiles results;
+        auto profiles = get_stream_profiles();
+
+        auto it = std::find_if(profiles.begin(), profiles.end(), [&](std::shared_ptr<stream_profile_interface> p) {
+            return to_profile(p.get()) == to_profile(request.get());
+        });
+
+        if (it == profiles.end())
+            throw invalid_value_exception("Subdevice could not map requests!");
+
+        return *it;
     }
 
     uvc_sensor::~uvc_sensor()
@@ -237,18 +263,6 @@ namespace librealsense
         {
             LOG_ERROR("An error has occurred while stop_streaming()!");
         }
-    }
-
-    region_of_interest_method& uvc_sensor::get_roi_method() const
-    {
-        if (!_roi_method.get())
-            throw librealsense::not_implemented_exception("Region-of-interest is not implemented for this device!");
-        return *_roi_method;
-    }
-
-    void uvc_sensor::set_roi_method(std::shared_ptr<region_of_interest_method> roi_method)
-    {
-        _roi_method = roi_method;
     }
 
     stream_profiles uvc_sensor::init_stream_profiles()
@@ -323,8 +337,10 @@ namespace librealsense
             auto a = to_profile(ap.get());
             auto b = to_profile(bp.get());
 
-            auto at = std::make_tuple(a.stream, a.width, a.height, a.fps, a.format);
-            auto bt = std::make_tuple(b.stream, b.width, b.height, b.fps, b.format);
+            // stream == RS2_STREAM_COLOR && format == RS2_FORMAT_RGB8 element works around the fact that Y16 gets priority over RGB8 when both
+            // are available for pipeline stream resolution
+            auto at = std::make_tuple(a.stream, a.width, a.height, a.fps, a.stream == RS2_STREAM_COLOR && a.format == RS2_FORMAT_RGB8, a.format);
+            auto bt = std::make_tuple(b.stream, b.width, b.height, b.fps, b.stream == RS2_STREAM_COLOR && b.format == RS2_FORMAT_RGB8, b.format);
 
             return at > bt;
         });
@@ -374,7 +390,11 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("open(...) failed. UVC device is already opened!");
 
         auto on = std::unique_ptr<power>(new power(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this())));
-        _source.init(_metadata_parsers);
+
+        std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> metadata_parsers_map;
+        metadata_parsers_map[get_sensor_type()] = _metadata_parsers;
+        _source.init(metadata_parsers_map);
+
         _source.set_sensor(this->shared_from_this());
         auto mapping = resolve_requests(requests);
 
@@ -532,6 +552,7 @@ namespace librealsense
                 catch (...) {}
             }
             reset_streaming();
+            _power.reset();
             _is_opened = false;
             throw;
         }
@@ -852,7 +873,11 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. Hid device was not opened!");
 
         _source.set_callback(callback);
-        _source.init(_metadata_parsers);
+
+        std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> metadata_parsers_map;
+        metadata_parsers_map[get_sensor_type()] = _metadata_parsers;
+        _source.init(metadata_parsers_map);
+
         _source.set_sensor(this->shared_from_this());
         raise_on_before_streaming_changes(true); //Required to be just before actual start allow recording to work
         _hid_device->start_capture([this](const platform::sensor_data& sensor_data)

@@ -9,7 +9,7 @@
 #include "environment.h"
 #include "sync.h"
 
-using namespace device_serializer;
+using namespace librealsense;
 
 playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<device_serializer::reader> serializer) :
     m_context(ctx),
@@ -487,6 +487,7 @@ void playback_device::try_looping()
             playback_status_changed(RS2_PLAYBACK_STATUS_PLAYING);
         }
     }
+
     auto read_action = [this]() -> bool
     {
         LOG_DEBUG("Read action invoked");

@@ -152,7 +152,10 @@ int main()
             // Check if the given frame can be extended to depth frame interface
             // Accept only depth frames and skip other frames
             if (0 == rs2_is_frame_extendable_to(frame, RS2_EXTENSION_DEPTH_FRAME, &e))
+            {
+                rs2_release_frame(frame);
                 continue;
+            }
 
             /* Retrieve depth data, configured as 16-bit depth values */
             const uint16_t* depth_frame_data = (const uint16_t*)(rs2_get_frame_data(frame, &e));

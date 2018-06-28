@@ -1,7 +1,7 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-/** \file rs2_processing.h
+/** \file rs_pipeline.h
 * \brief
 * Exposes RealSense processing-block functionality for C compilers
 */
@@ -51,6 +51,7 @@ extern "C" {
     * are retained.
     * \param[in] pipe the pipeline
     * \param[in] timeout_ms   Max time in milliseconds to wait until an exception will be thrown
+    * \param[out] error         if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return Set of coherent frames
     */
     rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, unsigned int timeout_ms, rs2_error ** error);
@@ -76,7 +77,7 @@ extern "C" {
     /**
     * Delete a pipeline instance.
     * Upon destruction, the pipeline will implicitly stop itself
-    * \param[in] pipeline to delete
+    * \param[in] pipe to delete
     */
     void rs2_delete_pipeline(rs2_pipeline* pipe);
 
@@ -136,8 +137,8 @@ extern "C" {
     * The pipeline streaming device is selected during pipeline \c start(). Devices of profiles, which are not returned by
     * pipeline \c start() or \c get_active_profile(), are not guaranteed to be used by the pipeline.
     *
-    * \param[in] pipe    A pointer to an instance of a pipeline profile
-    * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \param[in] profile    A pointer to an instance of a pipeline profile
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return rs2_device* The pipeline selected device
     */
     rs2_device* rs2_pipeline_profile_get_device(rs2_pipeline_profile* profile, rs2_error ** error);
@@ -145,8 +146,8 @@ extern "C" {
     /**
     * Return the selected streams profiles, which are enabled in this profile.
     *
-    * \param[in] pipe    A pointer to an instance of a pipeline profile
-    * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \param[in] profile    A pointer to an instance of a pipeline profile
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return   list of stream profiles
     */
     rs2_stream_profile_list* rs2_pipeline_profile_get_streams(rs2_pipeline_profile* profile, rs2_error** error);
@@ -154,7 +155,7 @@ extern "C" {
     /**
     * Deletes an instance of a pipeline profile
     *
-    * \param[in] pipe    A pointer to an instance of a pipeline profile
+    * \param[in] profile    A pointer to an instance of a pipeline profile
     */
     void rs2_delete_pipeline_profile(rs2_pipeline_profile* profile);
 
@@ -174,7 +175,7 @@ extern "C" {
     /**
     * Deletes an instance of a config
     *
-    * \param[in] pipe    A pointer to an instance of a config
+    * \param[in] config    A pointer to an instance of a config
     */
     void rs2_delete_config(rs2_config* config);
 
@@ -226,7 +227,7 @@ extern "C" {
     * the pipeline to use the configured device.
     *
     * \param[in] config    A pointer to an instance of a config
-    * \param[in] Serial device serial number, as returned by RS2_CAMERA_INFO_SERIAL_NUMBER
+    * \param[in] serial device serial number, as returned by RS2_CAMERA_INFO_SERIAL_NUMBER
     * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     */
     void rs2_config_enable_device(rs2_config* config, const char* serial, rs2_error ** error);
@@ -236,19 +237,34 @@ extern "C" {
     * The device available streams are as recorded to the file, and \c resolve() considers only this device and configuration
     * as available.
     * This request cannot be used if enable_record_to_file() is called for the current config, and vise versa
+    * By default, playback is repeated once the file ends. To control this, see 'rs2_config_enable_device_from_file_repeat_option'.
     *
     * \param[in] config    A pointer to an instance of a config
-    * \param[in] file_name  The playback file of the device
-    * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \param[in] file      The playback file of the device
+    * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     */
     void rs2_config_enable_device_from_file(rs2_config* config, const char* file, rs2_error ** error);
+
+    /**
+    * Select a recorded device from a file, to be used by the pipeline through playback.
+    * The device available streams are as recorded to the file, and \c resolve() considers only this device and configuration
+    * as available.
+    * This request cannot be used if enable_record_to_file() is called for the current config, and vise versa
+    *
+    * \param[in] config           A pointer to an instance of a config
+    * \param[in] file             The playback file of the device
+    * \param[in] repeat_playback  if true, when file ends the playback starts again, in an infinite loop;
+                                  if false, when file ends playback does not start again, and should by stopped manually by the user.
+    * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    */
+    void rs2_config_enable_device_from_file_repeat_option(rs2_config* config, const char* file, int repeat_playback, rs2_error ** error);
 
     /**
     * Requires that the resolved device would be recorded to file
     * This request cannot be used if enable_device_from_file() is called for the current config, and vise versa
     *
     * \param[in] config    A pointer to an instance of a config
-    * \param[in] file_name  The desired file for the output record
+    * \param[in] file      The desired file for the output record
     * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     */
     void rs2_config_enable_record_to_file(rs2_config* config, const char* file, rs2_error ** error);
@@ -301,7 +317,7 @@ extern "C" {
     * and configure the device and sensors options or extensions before streaming starts.
     *
     * \param[in] config    A pointer to an instance of a config
-    * \param[in] p  The pipeline for which the selected filters are applied
+    * \param[in] pipe  The pipeline for which the selected filters are applied
     * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return       A matching device and streams profile, which satisfies the filters and pipeline requests.
     */
@@ -312,7 +328,7 @@ extern "C" {
     * The resolution conditions are as described in \c resolve().
     *
     * \param[in] config    A pointer to an instance of a config
-    * \param[in] p  The pipeline for which the selected filters are applied
+    * \param[in] pipe  The pipeline for which the selected filters are applied
     * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return       True if a valid profile selection exists, false if no selection can be found under the config filters and the available devices.
     */

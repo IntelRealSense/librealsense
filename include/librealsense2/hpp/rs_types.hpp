@@ -18,11 +18,9 @@
 #include <memory>
 #include <functional>
 #include <exception>
-#include <ostream>
-#include <atomic>
-#include <condition_variable>
 #include <iterator>
 #include <sstream>
+#include <chrono>
 
 struct rs2_frame_callback
 {
