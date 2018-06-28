@@ -563,9 +563,12 @@ namespace rs2
                             if (ImGui::SliderFloat(id.c_str(), &value,
                                 range.min, range.max, "%.4f"))
                             {
-                                auto loffset = fmod(value, range.step);
+                                auto loffset = std::abs(fmod(value, range.step));
                                 auto roffset = range.step - loffset;
-                                value = (loffset < roffset) ? value - loffset : value + roffset;
+                                if (value >= 0)
+                                    value = (loffset < roffset) ? value - loffset : value + roffset;
+                                else
+                                    value = (loffset < roffset) ? value + loffset : value - roffset; 
                                 value = (value < range.min) ? range.min : value;
                                 value = (value > range.max) ? range.max : value;
                                 model.add_log(to_string() << "Setting " << opt << " to " << value);
