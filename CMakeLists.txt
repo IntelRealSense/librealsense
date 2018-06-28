@@ -858,6 +858,8 @@ option(BUILD_NODEJS_BINDINGS "Build Node.js bindings" OFF)
 SET(DOTNET_VERSION_LIBRARY "3.5" CACHE STRING ".Net Version, defaulting to '3.5', the Unity wrapper currently supports only .NET 3.5")
 SET(DOTNET_VERSION_EXAMPLES "4.0" CACHE STRING ".Net Version, defaulting to '4.0'")
 
+add_subdirectory(wrappers)
+
 if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) AND WIN32)
   add_subdirectory(third-party/glfw)
 endif()
@@ -873,41 +875,6 @@ endif()
 
 if (ENFORCE_METADATA)
   add_definitions(-DENFORCE_METADATA)
-endif()
-
-if (BUILD_PYTHON_BINDINGS)
-  add_subdirectory(wrappers/python)
-endif()
-
-if (BUILD_NODEJS_BINDINGS)
-  add_subdirectory(wrappers/nodejs)
-endif()
-
-if (BUILD_CV_EXAMPLES)
-  add_subdirectory(wrappers/opencv)
-endif()
-
-if (BUILD_PCL_EXAMPLES)
-  add_subdirectory(wrappers/pcl)
-endif()
-
-if(BUILD_UNITY_BINDINGS)
-	if(NOT BUILD_CSHARP_BINDINGS)
-		message( WARNING "Enabling BUILD_CSHARP_BINDINGS and set DOTNET_VERSION_LIBRARY to 3.5 since BUILD_UNITY_BINDINGS is enabled" )
-	endif()
-	SET(BUILD_CSHARP_BINDINGS ON)
-	SET(DOTNET_VERSION_LIBRARY 3.5)
-	file(COPY wrappers/unity DESTINATION ${CMAKE_BINARY_DIR})
-endif()
-
-if(BUILD_CSHARP_BINDINGS)
-	if(NOT WIN32)
-		message( WARNING "BUILD_CSHARP_BINDINGS is supported only for Windows OS" )
-	endif()
-	if(NOT BUILD_SHARED_LIBS)
-		message( FATAL_ERROR "BUILD_SHARED_LIBS flag must be enabled when generating CSharp bindings" )
-	endif()
-    add_subdirectory(wrappers/csharp)
 endif()
 
 if (BUILD_WITH_CUDA)
