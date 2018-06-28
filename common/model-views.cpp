@@ -76,6 +76,21 @@ Some auxillary functionalities might be affected. Please report this message if 
 #endif
 }
 
+std::vector<std::string> split_string(std::string& input, char delim)
+{
+    std::vector<std::string> result;
+    auto e = input.end();
+    auto i = input.begin();
+    while (i != e) {
+        i = find_if_not(i, e, [delim](char c) { return c == delim; });
+        if (i == e) break;
+        auto j = find(i, e, delim);
+        result.emplace_back(i, j);
+        i = j;
+    }
+    return result;
+}
+
 namespace rs2
 {
     void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
@@ -1777,7 +1792,7 @@ namespace rs2
     void viewer_model::show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message)
     {
         int combo_boxes = 0;
-        const auto combo_box_width = 200;
+        const float combo_box_width = 200;
 
         // Initialize and prepare depth and texture sources
         int selected_depth_source = -1;
@@ -2258,18 +2273,28 @@ namespace rs2
             std::string sensor_name = dev->s->get_info(RS2_CAMERA_INFO_NAME);
             std::string stream_name = rs2_stream_to_string(profile.stream_type());
 
-            tooltip = to_string() << dev_name << " S/N:" << dev_serial << " | " << sensor_name << ", " << stream_name << " stream";
+            tooltip = to_string() << dev_name << " s.n:" << dev_serial << " | " << sensor_name << ", " << stream_name << " stream";
             const auto approx_char_width = 12;
             if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size()) * approx_char_width)
                 label = tooltip;
-            else if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + sensor_name.size() + stream_name.size()) * approx_char_width)
-                label = to_string() << dev_name << " | " << sensor_name << " " << stream_name << " stream";
-            else if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + stream_name.size()) * approx_char_width)
-                label = to_string() << dev_name << " " << stream_name << " stream";
-            else if (stream_rect.w - 32 * num_of_buttons >= stream_name.size() * approx_char_width * 2)
-                label = to_string() << stream_name << " stream";
             else
-                label = "";
+            {
+                // Use only the SKU type for compact representation and use only the last three digits for S.N
+                auto short_name = split_string(dev_name, ' ').back();
+                auto short_sn = dev_serial;
+                short_sn.erase(0, dev_serial.size() - 5).replace(0, 2, "..");
+
+                auto label_length = stream_rect.w - 32 * num_of_buttons;
+
+                if (label_length >= (short_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size()) * approx_char_width)
+                    label = to_string() << short_name << " s.n:" << dev_serial << " | " << sensor_name << " " << stream_name << " stream";
+                else if (label_length >= (short_name.size() + short_sn.size() + stream_name.size()) * approx_char_width)
+                    label = to_string() << short_name << " s.n:" << short_sn << " " << stream_name << " stream";
+                else if (label_length >= short_name.size() * approx_char_width)
+                    label = to_string() << short_name << " " << stream_name;
+                else
+                    label = "";
+            }
         }
         else
         {
@@ -4936,6 +4961,7 @@ namespace rs2
         }
     }
 
+    // Load viewer configuration for stereo module (depth/infrared streams) only 
     void device_model::load_viewer_configurations(const std::string& json_str)
     {
         json j = json::parse(json_str);
@@ -4947,7 +4973,7 @@ namespace rs2
             int fps = 0;
         };
 
-        std::map<std::pair<rs2_stream, int>, video_stream> requrested_streams;
+        std::map<std::pair<rs2_stream, int>, video_stream> requested_streams;
         auto it = j.find("stream-depth-format");
         if (it != j.end())
         {
@@ -4960,13 +4986,29 @@ namespace rs2
                 auto fstr = rs2_format_to_string(f);
                 if (formatstr == fstr)
                 {
-                    requrested_streams[std::make_pair(RS2_STREAM_DEPTH, 0)].format = f;
+                    requested_streams[std::make_pair(RS2_STREAM_DEPTH, 0)].format = f;
                     found = true;
                     break;
                 }
             }
             if (!found)
+            {
                 throw std::runtime_error(to_string() << "Unsupported stream-depth-format: " << formatstr);
+            }
+
+            // Disable depth stream on all sub devices
+            for (auto&& sub : subdevices)
+            {
+                int i = 0;
+                for (auto&& profile : sub->profiles)
+                {
+                    if (profile.stream_type() == RS2_STREAM_DEPTH)
+                    {
+                        sub->stream_enabled[profile.unique_id()] = false;
+                        break;
+                    }
+                }
+            }
         }
 
         it = j.find("stream-ir-format");
@@ -4976,23 +5018,38 @@ namespace rs2
             std::string formatstr = it.value();
             if (formatstr == "R8L8")
             {
-                requrested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_Y8;
-                requrested_streams[std::make_pair(RS2_STREAM_INFRARED, 2)].format = RS2_FORMAT_Y8;
+                requested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_Y8;
+                requested_streams[std::make_pair(RS2_STREAM_INFRARED, 2)].format = RS2_FORMAT_Y8;
             }
             else if (formatstr == "Y8")
             {
-                requrested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_Y8;
+                requested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_Y8;
             }
             else if (formatstr == "UYVY")
             {
-                requrested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_UYVY;
+                requested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_UYVY;
             }
             else
             {
                 throw std::runtime_error(to_string() << "Unsupported stream-ir-format: " << formatstr);
             }
+
+            // Disable infrared stream on all sub devices
+            for (auto&& sub : subdevices)
+            {
+                for (auto&& profile : sub->profiles)
+                {
+                    if (profile.stream_type() == RS2_STREAM_INFRARED)
+                    {
+                        sub->stream_enabled[profile.unique_id()] = false;
+                        break;
+                    }
+                }
+            }
         }
-        if (!requrested_streams.empty())
+
+        // Setting the same Width,Height,FPS to every requested stereo module streams (depth,infrared) according to loaded JSON
+        if (!requested_streams.empty())
         {
             try
             {
@@ -5002,7 +5059,7 @@ namespace rs2
                 int width = std::stoi(wstr);
                 int height = std::stoi(hstr);
                 int fps = std::stoi(fstr);
-                for (auto& kvp : requrested_streams)
+                for (auto& kvp : requested_streams)
                 {
                     kvp.second.width = width;
                     kvp.second.height = height;
@@ -5013,13 +5070,10 @@ namespace rs2
             {
                 throw std::runtime_error(to_string() << "Error parsing streams from JSON: " << e.what());
             }
-            //Disable every stream
-            for (auto&& sub : subdevices)
-                for (auto& s : sub->stream_enabled)
-                    s.second = false;
         }
 
-        for (auto&& kvp : requrested_streams)
+        // Enable requested stereo module streams (depth,infrared)
+        for (auto&& kvp : requested_streams)
         {
             std::string stream_name = to_string() << rs2_stream_to_string(kvp.first.first) << (kvp.first.second > 0 ? (" " + std::to_string(kvp.first.second)) : "");
             for (auto&& sub : subdevices)
@@ -5347,7 +5401,7 @@ namespace rs2
 
         if (ImGui::IsItemHovered())
         {
-            std::string tooltip = to_string() << "Load pre-configured settings" << (is_streaming && !load_json_if_streaming ? " (Disabled while streaming)" : "");
+            std::string tooltip = to_string() << "Load pre-configured stereo module settings" << (is_streaming && !load_json_if_streaming ? " (Disabled while streaming)" : "");
             ImGui::SetTooltip("%s", tooltip.c_str());
         }
 
@@ -5376,7 +5430,7 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Save current settings to file");
+            ImGui::SetTooltip("Save current stereo module settings to file");
         }
         ImGui::PopStyleColor(2);
         ImGui::SameLine();

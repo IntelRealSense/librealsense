@@ -20,7 +20,7 @@
 #include "stream.h"
 #include "environment.h"
 #include "ds5-color.h"
-
+#include "ds5-rolling-shutter.h"
 
 namespace librealsense
 {
@@ -98,6 +98,13 @@ namespace librealsense
             uvc_sensor::open(requests);
         }
 
+        /*
+        Infrared profiles are initialized with the following logic:
+        - If device has color sensor (D415 / D435), infrared profile is chosen with Y8 format
+        - If device does not have color sensor:
+           * if it is a rolling shutter device (D400 / D410 / D415 / D405), infrared profile is chosen with RGB8 format
+           * for other devices (D420 / D430), infrared profile is chosen with Y8 format
+        */
         stream_profiles init_stream_profiles() override
         {
             auto lock = environment::get_instance().get_extrinsics_graph().lock();
@@ -105,6 +112,7 @@ namespace librealsense
             auto results = uvc_sensor::init_stream_profiles();
 
             auto color_dev = dynamic_cast<const ds5_color*>(&get_device());
+            auto rolling_shutter_dev = dynamic_cast<const ds5_rolling_shutter*>(&get_device());
 
             std::vector< video_stream_profile_interface*> depth_candidates;
             std::vector< video_stream_profile_interface*> infrared_candidates;
@@ -168,11 +176,23 @@ namespace librealsense
                 }
                 else
                 {
-                    if (candidate(vid_profile, { 1280, 720, 30, RS2_FORMAT_RGB8 }, RS2_STREAM_INFRARED, 0))
-                        infrared_candidates.push_back(vid_profile);
+                    if (rolling_shutter_dev)
+                    { 
+                        if (candidate(vid_profile, { 1280, 720, 30, RS2_FORMAT_RGB8 }, RS2_STREAM_INFRARED, 0))
+                            infrared_candidates.push_back(vid_profile);
 
-                    if (candidate(vid_profile, { 640, 480, 15, RS2_FORMAT_RGB8 }, RS2_STREAM_INFRARED, 0))
-                        infrared_candidates.push_back(vid_profile);
+                        if (candidate(vid_profile, { 640, 480, 15, RS2_FORMAT_RGB8 }, RS2_STREAM_INFRARED, 0))
+                            infrared_candidates.push_back(vid_profile);
+                    }
+                    else
+                    {
+                        if (candidate(vid_profile, { 1280, 720, 30, RS2_FORMAT_Y8 }, RS2_STREAM_INFRARED, 1))
+                            infrared_candidates.push_back(vid_profile);
+
+                        if (candidate(vid_profile, { 640, 480, 15, RS2_FORMAT_Y8 }, RS2_STREAM_INFRARED, 1))
+                            infrared_candidates.push_back(vid_profile);
+                    }
+                    
                 }
 
                 // Register intrinsics
@@ -545,6 +565,14 @@ namespace librealsense
         depth_ep.register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_attribute_parser(&md_depth_control::manual_exposure, md_depth_control_attributes::exposure_attribute, md_prop_offset));
         depth_ep.register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_attribute_parser(&md_depth_control::auto_exposure_mode, md_depth_control_attributes::ae_mode_attribute, md_prop_offset));
 
+        depth_ep.register_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER, make_attribute_parser(&md_depth_control::laser_power, md_depth_control_attributes::laser_pwr_attribute, md_prop_offset));
+        depth_ep.register_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE, make_attribute_parser(&md_depth_control::laserPowerMode, md_depth_control_attributes::laser_pwr_attribute, md_prop_offset));
+        depth_ep.register_metadata(RS2_FRAME_METADATA_EXPOSURE_PRIORITY, make_attribute_parser(&md_depth_control::exposure_priority, md_depth_control_attributes::exposure_priority_attribute, md_prop_offset));
+        depth_ep.register_metadata(RS2_FRAME_METADATA_EXPOSURE_ROI_LEFT, make_attribute_parser(&md_depth_control::exposure_roi_left, md_depth_control_attributes::roi_attribute, md_prop_offset));
+        depth_ep.register_metadata(RS2_FRAME_METADATA_EXPOSURE_ROI_RIGHT, make_attribute_parser(&md_depth_control::exposure_roi_right, md_depth_control_attributes::roi_attribute, md_prop_offset));
+        depth_ep.register_metadata(RS2_FRAME_METADATA_EXPOSURE_ROI_TOP, make_attribute_parser(&md_depth_control::exposure_roi_top, md_depth_control_attributes::roi_attribute, md_prop_offset));
+        depth_ep.register_metadata(RS2_FRAME_METADATA_EXPOSURE_ROI_BOTTOM, make_attribute_parser(&md_depth_control::exposure_roi_bottom, md_depth_control_attributes::roi_attribute, md_prop_offset));
+
         // md_configuration - will be used for internal validation only
         md_prop_offset = offsetof(metadata_raw, mode) + offsetof(md_depth_mode, depth_y_mode) + offsetof(md_depth_y_normal_mode, intel_configuration);
 
@@ -554,7 +582,7 @@ namespace librealsense
         depth_ep.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_WIDTH, make_attribute_parser(&md_configuration::width, md_configuration_attributes::width_attribute, md_prop_offset));
         depth_ep.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HEIGHT, make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
         depth_ep.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_ACTUAL_FPS,  std::make_shared<ds5_md_attribute_actual_fps> ());
-
+        
         register_info(RS2_CAMERA_INFO_NAME, device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, _fw_version);

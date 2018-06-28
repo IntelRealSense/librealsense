@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using Intel.RealSense;
+using System.Linq;
 
 public class PointCloudGenerator : MonoBehaviour
 {
@@ -19,9 +20,38 @@ public class PointCloudGenerator : MonoBehaviour
     void Start()
     {
         aligner = new Align(Intel.RealSense.Stream.Color);
-        RealSenseDevice.Instance.onNewSampleSet += OnFrames;
-
+        if(RealSenseDevice.Instance.ActiveProfile.Streams.FirstOrDefault(x => x.Stream == Stream.Depth) == null)
+        {
+            Debug.Log("Can't create point cloud, depthstream must be enabled");
+            return;
+        }
+        if (RealSenseDevice.Instance.ActiveProfile.Streams.FirstOrDefault(x => x.Stream == Stream.Color) != null)
+        {
+            RealSenseDevice.Instance.onNewSampleSet += OnFrames;
+        }
+        else
+        {
+            RealSenseDevice.Instance.onNewSample += OnFrame;
+        }
     }
+
+    private void OnFrame(Frame frame)
+    {
+        if (frame.Profile.Stream != Stream.Depth)
+            return;
+        var depthFrame = frame as DepthFrame;
+        if (!UpdateParticleParams(depthFrame.Width, depthFrame.Height))
+        {
+            Debug.Log("Unable to craete point cloud");
+            return;
+        }
+
+        using (var points = pc.Calculate(depthFrame))
+        {
+            setParticals(points, null);
+        }
+    }
+
     //object l = new object();
     private void OnFrames(FrameSet frames)
     {
@@ -55,12 +85,15 @@ public class PointCloudGenerator : MonoBehaviour
         if (points == null)
             throw new Exception("Frame in queue is not a points frame");
 
-        if (lastColorImage == null)
+        if (colorFrame != null)
         {
-            int colorFrameSize = colorFrame.Height * colorFrame.Stride;
-            lastColorImage = new byte[colorFrameSize];
+            if (lastColorImage == null)
+            {
+                int colorFrameSize = colorFrame.Height * colorFrame.Stride;
+                lastColorImage = new byte[colorFrameSize];
+            }
+            colorFrame.CopyTo(lastColorImage);
         }
-        colorFrame.CopyTo(lastColorImage);
 
         vertices = vertices ?? new Points.Vertex[points.Count];
         points.CopyTo(vertices);
@@ -74,7 +107,13 @@ public class PointCloudGenerator : MonoBehaviour
             {
                 particles[index].position = new Vector3(v.x * mirror, v.y, v.z);
                 particles[index].startSize = v.z * pointsSize * 0.02f;
-                particles[index].startColor = new Color32(lastColorImage[index * 3], lastColorImage[index * 3 + 1], lastColorImage[index * 3 + 2], 255);
+                if (lastColorImage != null)
+                    particles[index].startColor = new Color32(lastColorImage[index * 3], lastColorImage[index * 3 + 1], lastColorImage[index * 3 + 2], 255);
+                else
+                {
+                    byte z = (byte)(v.z / 2f * 255);
+                    particles[index].startColor = new Color32(z, z, z, 255);
+                }
             }
             else //Required since we reuse the array
             {

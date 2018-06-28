@@ -1,19 +1,30 @@
-From e80ed73e9489d7833dbdd3e24d11c0e01d9c4ffd Mon Sep 17 00:00:00 2001
-From: Evgeni Raikhel <evgeni.raikhel@intel.com>
+From ee8d2d09ab3492665a8ca5fb7fb6727a279392b2 Mon Sep 17 00:00:00 2001
+From: Evgeni <evgeni.raikhel@intel.com>
 From: icarpis <itay.carpis@intel.com>
-Date: Sun, 18 Mar 2018 11:04:42 +0200
-Subject: [PATCH] realsense formats patch for kernel 4.13
+Date: Sun, 13 May 2018 10:37:44 -0400
+Subject: [PATCH] Streaming formats for Ubuntu 18.04 (Bionic Beaver), Kernel 4.15
 
 Signed-off-by: Evgeni Raikhel <evgeni.raikhel@intel.com>
 ---
- drivers/media/usb/uvc/uvc_driver.c   | 37 ++++++++++++++++++++++++++++++++++++
- drivers/media/usb/uvc/uvcvideo.h     | 22 +++++++++++++++++++++
+ drivers/media/usb/uvc/Makefile       |  1 +
+ drivers/media/usb/uvc/uvc_driver.c   | 37 ++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvcvideo.h     | 22 +++++++++++++++++
  drivers/media/v4l2-core/v4l2-ioctl.c |  3 +++
  include/uapi/linux/videodev2.h       |  3 +++
- 4 files changed, 65 insertions(+)
+ 5 files changed, 66 insertions(+)
 
+diff --git a/drivers/media/usb/uvc/Makefile b/drivers/media/usb/uvc/Makefile
+index a4fe5b5d5..cb5ee0955 100644
+--- a/drivers/media/usb/uvc/Makefile
++++ b/drivers/media/usb/uvc/Makefile
+@@ -1,4 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0
++CONFIG_MODULE_SIG=n
+ uvcvideo-objs  := uvc_driver.o uvc_queue.o uvc_v4l2.o uvc_video.o uvc_ctrl.o \
+ 		  uvc_status.o uvc_isight.o uvc_debugfs.o
+ ifeq ($(CONFIG_MEDIA_CONTROLLER),y)
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 70842c5..0f43de2 100644
+index 28b91b7d7..f50a2b148 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
 @@ -203,6 +203,43 @@ static struct uvc_format_desc uvc_fmts[] = {
@@ -61,10 +72,10 @@ index 70842c5..0f43de2 100644
 
  /* ------------------------------------------------------------------------
 diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
-index 15e415e..d7b62a2 100644
+index 05398784d..8c99aabef 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -152,6 +152,28 @@
+@@ -153,6 +153,28 @@
  #define UVC_GUID_FORMAT_INVI \
  	{ 'I',  'N',  'V',  'I', 0xdb, 0x57, 0x49, 0x5e, \
  	 0x8e, 0x3f, 0xf4, 0x79, 0x53, 0x2b, 0x94, 0x6f}
@@ -94,10 +105,10 @@ index 15e415e..d7b62a2 100644
  /* ------------------------------------------------------------------------
   * Driver specific constants.
 diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2-ioctl.c
-index cab63bb..85935a9 100644
+index 89e0878ce..c422d70a2 100644
 --- a/drivers/media/v4l2-core/v4l2-ioctl.c
 +++ b/drivers/media/v4l2-core/v4l2-ioctl.c
-@@ -1239,6 +1239,9 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+@@ -1246,6 +1246,9 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
  	case V4L2_TCH_FMT_TU08:		descr = "8-bit unsigned touch data"; break;
  	case V4L2_META_FMT_VSP1_HGO:	descr = "R-Car VSP1 1-D Histogram"; break;
  	case V4L2_META_FMT_VSP1_HGT:	descr = "R-Car VSP1 2-D Histogram"; break;
@@ -108,19 +119,18 @@ index cab63bb..85935a9 100644
  	default:
  		/* Compressed formats */
 diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
-index 45cf735..0bcd206 100644
+index 1c095b5a9..3e20f2b8a 100644
 --- a/include/uapi/linux/videodev2.h
 +++ b/include/uapi/linux/videodev2.h
-@@ -662,6 +662,9 @@ struct v4l2_pix_format {
+@@ -668,6 +668,9 @@ struct v4l2_pix_format {
  #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
  #define V4L2_PIX_FMT_MT21C    v4l2_fourcc('M', 'T', '2', '1') /* Mediatek compressed block mode  */
  #define V4L2_PIX_FMT_INZI     v4l2_fourcc('I', 'N', 'Z', 'I') /* Intel Planar Greyscale 10-bit and Depth 16-bit */
-+#define V4L2_PIX_FMT_RW16	v4l2_fourcc('R', 'W', '1', '6') /* Raw data 16-bit */
-+#define V4L2_PIX_FMT_W10	v4l2_fourcc('W', '1', '0', ' ') /* Packed raw data 10-bit */
-+#define V4L2_PIX_FMT_CONFIDENCE_MAP  v4l2_fourcc('C', ' ', ' ', ' ') /* Two pixels in one byte */
++#define V4L2_PIX_FMT_RW16     v4l2_fourcc('R', 'W', '1', '6') /* Raw data 16-bit */
++#define V4L2_PIX_FMT_W10      v4l2_fourcc('W', '1', '0', ' ') /* Packed raw data 10-bit */
++#define V4L2_PIX_FMT_CONFIDENCE_MAP	v4l2_fourcc('C', ' ', ' ', ' ') /* Two pixels in one byte */
 
  /* SDR formats - used only for Software Defined Radio devices */
  #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */
 --
-2.7.4
-
+2.17.0

@@ -3,7 +3,10 @@
 
 #include "record_sensor.h"
 #include "api.h"
+#include "software-device.h"
 #include "stream.h"
+
+using namespace librealsense;
 
 librealsense::record_sensor::record_sensor(const device_interface& device,
                                             sensor_interface& sensor) :
@@ -357,4 +360,13 @@ void record_sensor::wrap_streams()
            m_recorded_streams_ids.insert(id);
         }
     }
+}
+
+rs2_extension record_sensor::get_sensor_type()
+{
+    if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_sensor)) return RS2_EXTENSION_DEPTH_SENSOR;
+    else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_stereo_sensor)) return RS2_EXTENSION_DEPTH_STEREO_SENSOR;
+    else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::video_sensor_interface)) return RS2_EXTENSION_VIDEO;
+    else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::software_sensor)) return RS2_EXTENSION_SOFTWARE_SENSOR;
+    else return RS2_EXTENSION_UNKNOWN;
 }

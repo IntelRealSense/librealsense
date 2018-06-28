@@ -1088,7 +1088,21 @@ namespace librealsense
                 hid_device_info hid_dev_info{};
                 if(!get_hid_device_info(elem.c_str(), hid_dev_info))
                 {
+#ifdef RS2_USE_CUDA
+                    /* On the Jetson TX, ina3221x is the power monitor (I2C bus)
+                    This code is checking the IIA device directory, but tries to compare as USB HID device
+                    The ina3221x is not a HID device. Check here to avoid spamming the console.
+                    Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
+                    std::string device_path_str(elem.c_str());
+                    device_path_str+="/";
+                    std::string dev_name;
+                    std::ifstream(device_path_str + "name") >> dev_name;
+                    if (dev_name != std::string("ina3221x")) {
+                        LOG_WARNING("Failed to read busnum/devnum. Device Path: " << elem);
+                    }
+#else
                     LOG_WARNING("Failed to read busnum/devnum. Device Path: " << elem);
+#endif
                     continue;
                 }
                 action(hid_dev_info);

@@ -1,4 +1,5 @@
 #include "metadata-parser.h"
+#include "api.h"
 #include "archive.h"
 #include <fstream>
 
@@ -6,6 +7,34 @@
 
 namespace librealsense
 {
+
+    frame::frame(frame&& r)
+        : ref_count(r.ref_count.exchange(0)), _kept(r._kept.exchange(false)),
+        owner(r.owner), on_release()
+    {
+        *this = std::move(r);
+        if (owner == nullptr) return;
+        auto sensor = owner->get_sensor();
+        if (sensor) _sensor_type = sensor->get_sensor_type();
+    }
+
+    frame& frame::operator=(frame&& r)
+    {
+        data = move(r.data);
+        owner = r.owner;
+        ref_count = r.ref_count.exchange(0);
+        _kept = r._kept.exchange(false);
+        on_release = std::move(r.on_release);
+        additional_data = std::move(r.additional_data);
+        r.owner.reset();
+        if (owner)
+        {
+            auto sensor = owner->get_sensor();
+            if(sensor) _sensor_type = owner->get_sensor()->get_sensor_type();
+        }
+        return *this;
+    }
+
     std::shared_ptr<sensor_interface> frame::get_sensor() const
     {
         auto res = sensor.lock();
@@ -16,7 +45,11 @@ namespace librealsense
         }
         return res;
     }
-    void frame::set_sensor(std::shared_ptr<sensor_interface> s) { sensor = s;}
+    void frame::set_sensor(std::shared_ptr<sensor_interface> s) 
+    { 
+        sensor = s;
+        if (s) _sensor_type = s->get_sensor_type();
+    }
 
     float3* points::get_vertices()
     {
@@ -122,7 +155,7 @@ namespace librealsense
         int pending_frames = 0;
         std::recursive_mutex mutex;
         std::shared_ptr<platform::time_service> _time_service;
-        std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
+        std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> _metadata_parsers;
 
         std::weak_ptr<sensor_interface> _sensor;
         std::shared_ptr<sensor_interface> get_sensor() const override { return _sensor.lock(); }
@@ -241,7 +274,7 @@ namespace librealsense
         {
             if (frame && frame->get_stream())
             {
-                auto callback_ended = _time_service?_time_service->get_time():0;
+                auto callback_ended = _time_service ? _time_service->get_time() : 0;
                 auto callback_warning_duration = 1000 / (frame->get_stream()->get_framerate() + 1);
                 auto callback_duration = callback_ended - frame->get_frame_callback_start_time_point();
 
@@ -251,24 +284,34 @@ namespace librealsense
                 if (callback_duration > callback_warning_duration)
                 {
                     LOG_DEBUG("Frame Callback [" << librealsense::get_string(frame->get_stream()->get_stream_type())
-                             << "#" << std::dec << frame->additional_data.frame_number
-                             << "] overdue. (Duration: " << callback_duration
-                             << "ms, FPS: " << frame->get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
+                        << "#" << std::dec << frame->additional_data.frame_number
+                        << "] overdue. (Duration: " << callback_duration
+                        << "ms, FPS: " << frame->get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
                 }
             }
         }
 
-        std::shared_ptr<metadata_parser_map> get_md_parsers() const { return _metadata_parsers; };
+        std::shared_ptr<metadata_parser_map> get_md_parsers(rs2_extension sensor_type) const override
+        {
+            if(_metadata_parsers.find(sensor_type) != _metadata_parsers.end())
+                return _metadata_parsers.at(sensor_type);
+            return nullptr;
+        };
+
+        void set_md_parsers(const rs2_extension sensor_type, const std::shared_ptr<metadata_parser_map> metadata_parsers) override
+        {
+            _metadata_parsers[sensor_type] = metadata_parsers;
+        }
 
         friend class frame;
 
     public:
         explicit frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size,
-                             std::shared_ptr<platform::time_service> ts,
-                             std::shared_ptr<metadata_parser_map> parsers)
+            std::shared_ptr<platform::time_service> ts,
+			std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> parsers)
             : max_frame_queue_size(in_max_frame_queue_size),
-              mutex(), recycle_frames(true), _time_service(ts),
-              _metadata_parsers(parsers)
+            mutex(), recycle_frames(true), _time_service(ts),
+            _metadata_parsers(parsers)
         {
             published_frames_count = 0;
         }
@@ -330,16 +373,16 @@ namespace librealsense
     };
 
     std::shared_ptr<archive_interface> make_archive(rs2_extension type,
-                                                    std::atomic<uint32_t>* in_max_frame_queue_size,
-                                                    std::shared_ptr<platform::time_service> ts,
-                                                    std::shared_ptr<metadata_parser_map> parsers)
+        std::atomic<uint32_t>* in_max_frame_queue_size,
+        std::shared_ptr<platform::time_service> ts,
+		std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> parsers)
     {
-        switch(type)
+        switch (type)
         {
-        case RS2_EXTENSION_VIDEO_FRAME :
+        case RS2_EXTENSION_VIDEO_FRAME:
             return std::make_shared<frame_archive<video_frame>>(in_max_frame_queue_size, ts, parsers);
 
-        case RS2_EXTENSION_COMPOSITE_FRAME :
+        case RS2_EXTENSION_COMPOSITE_FRAME:
             return std::make_shared<frame_archive<composite_frame>>(in_max_frame_queue_size, ts, parsers);
 
         case RS2_EXTENSION_MOTION_FRAME:
@@ -361,125 +404,133 @@ namespace librealsense
             throw std::runtime_error("Requested frame type is not supported!");
         }
     }
-}
 
-void frame::release()
-{
-    if (ref_count.fetch_sub(1) == 1)
+    void frame::release()
     {
-        on_release();
-        owner->unpublish_frame(this);
-    }
-}
-
-void frame::keep()
-{
-    if (!_kept.exchange(true))
-    {
-        owner->keep_frame(this);
-    }
-}
-
-frame_interface* frame::publish(std::shared_ptr<archive_interface> new_owner)
-{
-    owner = new_owner;
-    _kept = false;
-    return owner->publish_frame(this);
-}
-
-rs2_metadata_type frame::get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
-{
-    auto md_parsers = owner->get_md_parsers();
-
-    if (!md_parsers)
-        throw invalid_value_exception(to_string() << "metadata not available for "
-                                      << get_string(get_stream()->get_stream_type())<<" stream");
-
-    auto it = md_parsers.get()->find(frame_metadata);
-    if (it == md_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
-        throw invalid_value_exception(to_string() << get_string(frame_metadata)
-                                      << " attribute is not applicable for "
-                                      << get_string(get_stream()->get_stream_type()) << " stream ");
-
-    // Proceed to parse and extract the required data attribute
-    return it->second->get(*this);
-}
-
-bool frame::supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
-{
-    auto md_parsers = owner->get_md_parsers();
-
-    // verify preconditions
-    if (!md_parsers)
-        return false;                         // No parsers are available or no metadata was attached
-
-    auto it = md_parsers.get()->find(frame_metadata);
-    if (it == md_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
-        return false;
-
-    return it->second->supports(*this);
-}
-
-const byte* frame::get_frame_data() const
-{
-    const byte* frame_data = data.data();
-
-    if (on_release.get_data())
-    {
-        frame_data = static_cast<const byte*>(on_release.get_data());
+        if (ref_count.fetch_sub(1) == 1)
+        {
+            on_release();
+            owner->unpublish_frame(this);
+        }
     }
 
-    return frame_data;
-}
-
-rs2_timestamp_domain frame::get_frame_timestamp_domain() const
-{
-    return additional_data.timestamp_domain;
-}
-
-rs2_time_t frame::get_frame_timestamp() const
-{
-    return additional_data.timestamp;
-}
-
-unsigned long long frame::get_frame_number() const
-{
-    return additional_data.frame_number;
-}
-
-rs2_time_t frame::get_frame_system_time() const
-{
-    return additional_data.system_time;
-}
-
-void frame::update_frame_callback_start_ts(rs2_time_t ts)
-{
-    additional_data.frame_callback_started = ts;
-}
-
-rs2_time_t frame::get_frame_callback_start_time_point() const
-{
-    return additional_data.frame_callback_started;
-}
-
-void frame::log_callback_start(rs2_time_t timestamp)
-{
-    update_frame_callback_start_ts(timestamp);
-    LOG_DEBUG("CallbackStarted," << std::dec << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
-}
-
-void frame::log_callback_end(rs2_time_t timestamp) const
-{
-    auto callback_warning_duration = 1000.f / (get_stream()->get_framerate() + 1);
-    auto callback_duration = timestamp - get_frame_callback_start_time_point();
-
-    LOG_DEBUG("CallbackFinished," << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
-
-    if (callback_duration > callback_warning_duration)
+    void frame::keep()
     {
-        LOG_INFO("Frame Callback " << librealsense::get_string(get_stream()->get_stream_type())
-                 << "#" << std::dec << get_frame_number()
-                 << "overdue. (Duration: " << callback_duration
-                 << "ms, FPS: " << get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
+        if (!_kept.exchange(true))
+        {
+            owner->keep_frame(this);
+        }
     }
+
+    frame_interface* frame::publish(std::shared_ptr<archive_interface> new_owner)
+    {
+        owner = new_owner;
+        _kept = false;
+        auto sensor = owner->get_sensor();
+        if (sensor) _sensor_type = sensor->get_sensor_type();
+        return owner->publish_frame(this);
+    }
+
+    rs2_metadata_type frame::get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
+    {
+        auto md_parsers = owner->get_md_parsers(_sensor_type);
+
+        if (!md_parsers)
+            throw invalid_value_exception(to_string() << "metadata not available for "
+                << get_string(get_stream()->get_stream_type()) << " stream");
+
+        auto it = md_parsers.get()->find(frame_metadata);
+        if (it == md_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
+            throw invalid_value_exception(to_string() << get_string(frame_metadata)
+                << " attribute is not applicable for "
+                << get_string(get_stream()->get_stream_type()) << " stream ");
+
+        // Proceed to parse and extract the required data attribute
+        return it->second->get(*this);
+    }
+
+    bool frame::supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
+    {
+        auto md_parsers = owner->get_md_parsers(_sensor_type);
+
+        // verify preconditions
+        if (!md_parsers)
+            return false;                         // No parsers are available or no metadata was attached
+
+        auto it = md_parsers.get()->find(frame_metadata);
+        if (it == md_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
+            return false;
+
+        return it->second->supports(*this);
+    }
+
+    const byte* frame::get_frame_data() const
+    {
+        const byte* frame_data = data.data();
+
+        if (on_release.get_data())
+        {
+            frame_data = static_cast<const byte*>(on_release.get_data());
+        }
+
+        return frame_data;
+    }
+
+    rs2_timestamp_domain frame::get_frame_timestamp_domain() const
+    {
+        return additional_data.timestamp_domain;
+    }
+
+    rs2_time_t frame::get_frame_timestamp() const
+    {
+        return additional_data.timestamp;
+    }
+
+    unsigned long long frame::get_frame_number() const
+    {
+        return additional_data.frame_number;
+    }
+
+    std::array<uint8_t, MAX_META_DATA_SIZE> frame::get_metadata_blob() const
+    {
+        return additional_data.metadata_blob;
+    }
+
+    rs2_time_t frame::get_frame_system_time() const
+    {
+        return additional_data.system_time;
+    }
+
+    void frame::update_frame_callback_start_ts(rs2_time_t ts)
+    {
+        additional_data.frame_callback_started = ts;
+    }
+
+    rs2_time_t frame::get_frame_callback_start_time_point() const
+    {
+        return additional_data.frame_callback_started;
+    }
+
+    void frame::log_callback_start(rs2_time_t timestamp)
+    {
+        update_frame_callback_start_ts(timestamp);
+        LOG_DEBUG("CallbackStarted," << std::dec << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
+    }
+
+    void frame::log_callback_end(rs2_time_t timestamp) const
+    {
+        auto callback_warning_duration = 1000.f / (get_stream()->get_framerate() + 1);
+        auto callback_duration = timestamp - get_frame_callback_start_time_point();
+
+        LOG_DEBUG("CallbackFinished," << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
+
+        if (callback_duration > callback_warning_duration)
+        {
+            LOG_INFO("Frame Callback " << librealsense::get_string(get_stream()->get_stream_type())
+                << "#" << std::dec << get_frame_number()
+                << "overdue. (Duration: " << callback_duration
+                << "ms, FPS: " << get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
+        }
+    }
+
 }

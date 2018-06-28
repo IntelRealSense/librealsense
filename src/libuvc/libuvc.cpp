@@ -113,16 +113,16 @@ namespace librealsense
             {
                 // Obtain libusb_device_handle for each device
                 libusb_device ** list = nullptr;
-                int status = libusb_get_device_list(usb_context, &list);
+                auto devices = libusb_get_device_list(usb_context, &list);
 
-                if(status < 0)
-                    throw linux_backend_exception(to_string() << "libusb_get_device_list(...) returned " << libusb_error_name(status));
+                if(devices < 0)
+                    throw linux_backend_exception(to_string() << "libusb_get_device_list(...) returned " << libusb_error_name(devices));
 
-                for(int i=0; i < status; ++i)
+                for(int i=0; i < devices; ++i)
                 {
                     libusb_device * usb_device = list[i];
                     libusb_config_descriptor *config;
-                    status = libusb_get_active_config_descriptor(usb_device, &config);
+                    auto status = libusb_get_active_config_descriptor(usb_device, &config);
                     if(status == 0)
                     {
                         auto parent_device = libusb_get_parent(usb_device);

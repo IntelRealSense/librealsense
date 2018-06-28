@@ -5075,16 +5075,106 @@ const frame_metadata = {
    * <br>Equivalent to its uppercase counterpart
    */
   frame_metadata_temperature: 'temperature',
-   /**
+  /**
    * Timestamp get from uvc driver. usec
    * <br>Equivalent to its uppercase counterpart
    */
   frame_metadata_backend_timestamp: 'backend-timestamp',
-    /**
-  * Actual fps
-  * <br>Equivalent to its uppercase counterpart
-  */
+  /**
+   * Actual fps
+   * <br>Equivalent to its uppercase counterpart
+   */
   frame_metadata_actual_fps: 'actual-fps',
+  /**
+   * Laser power value 0-360.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_frame_laser_power: 'frame-laser-power',
+  /**
+   * Laser power mode. Zero corresponds to Laser power switched off and one for switched on.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_frame_laser_power_mode: 'frame-laser-power-mode',
+  /**
+   * Exposure priority.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_exposure_priority: 'exposure-priority',
+  /**
+   * Left region of interest for the auto exposure Algorithm.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_exposure_roi_left: 'exposure-roi-left',
+  /**
+   * Right region of interest for the auto exposure Algorithm.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_exposure_roi_right: 'exposure-roi-right',
+  /**
+   * Top region of interest for the auto exposure Algorithm.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_exposure_roi_top: 'exposure-roi-top',
+  /**
+   * Bottom region of interest for the auto exposure Algorithm.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_exposure_roi_bottom: 'exposure-roi-bottom',
+  /**
+   * Color image brightness.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_brightness: 'brightness',
+  /**
+   * Color image contrast.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_contrast: 'contrast',
+  /**
+   * Color image saturation.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_saturation: 'saturation',
+  /**
+   * Color image sharpness.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_sharpness: 'sharpness',
+  /**
+   * Auto white balance temperature Mode indicator. Zero corresponds to automatic mode switched off.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_auto_white_balance_temperature: 'auto-white-balance-temperature',
+  /**
+   * Color backlight compensation. Zero corresponds to switched off.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_backlight_compensation: 'backlight-compensation',
+  /**
+   * Color image hue.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_hue: 'hue',
+  /**
+   * Color image gamma.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_gamma: 'gamma',
+  /**
+   * Color image white balance.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_manual_white_balance: 'manual-white-balance',
+  /**
+   * Power Line Frequency for anti-flickering Off/50Hz/60Hz/Auto.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_power_line_frequency: 'power-line-frequency',
+  /**
+   * Color lowlight compensation. Zero corresponds to switched off.
+   * <br>Equivalent to its uppercase counterpart
+   */
+  frame_metadata_low_light_compensation: 'low-light-compensation',
   /**
    * A sequential index managed per-stream. Integer value <br>Equivalent to its lowercase
    * counterpart.
@@ -5152,6 +5242,115 @@ const frame_metadata = {
   */
   FRAME_METADATA_ACTUAL_FPS: RS2.RS2_FRAME_METADATA_ACTUAL_FPS,
   /**
+   * Laser power value 0-360.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_FRAME_LASER_POWER: RS2.RS2_FRAME_METADATA_FRAME_LASER_POWER,
+  /**
+   * Laser power mode. Zero corresponds to Laser power switched off and one for switched on.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_FRAME_LASER_POWER_MODE: RS2.RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE,
+  /**
+   * Exposure priority.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_EXPOSURE_PRIORITY: RS2.RS2_FRAME_METADATA_EXPOSURE_PRIORITY,
+  /**
+   * Left region of interest for the auto exposure Algorithm.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_EXPOSURE_ROI_LEFT: RS2.RS2_FRAME_METADATA_EXPOSURE_ROI_LEFT,
+  /**
+   * Right region of interest for the auto exposure Algorithm.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_EXPOSURE_ROI_RIGHT: RS2.RS2_FRAME_METADATA_EXPOSURE_ROI_RIGHT,
+  /**
+   * Top region of interest for the auto exposure Algorithm.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_EXPOSURE_ROI_TOP: RS2.RS2_FRAME_METADATA_EXPOSURE_ROI_TOP,
+  /**
+   * Bottom region of interest for the auto exposure Algorithm.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_EXPOSURE_ROI_BOTTOM: RS2.RS2_FRAME_METADATA_EXPOSURE_ROI_BOTTOM,
+  /**
+   * Color image brightness.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_BRIGHTNESS: RS2.RS2_FRAME_METADATA_BRIGHTNESS,
+  /**
+   * Color image contrast.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_CONTRAST: RS2.RS2_FRAME_METADATA_CONTRAST,
+  /**
+   * Color image saturation.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_SATURATION: RS2.RS2_FRAME_METADATA_SATURATION,
+  /**
+   * Color image sharpness.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_SHARPNESS: RS2.RS2_FRAME_METADATA_SHARPNESS,
+  /**
+   * Auto white balance temperature Mode indicator. Zero corresponds to automatic mode switched off.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_AUTO_WHITE_BALANCE_TEMPERATURE:
+      RS2.RS2_FRAME_METADATA_AUTO_WHITE_BALANCE_TEMPERATURE,
+  /**
+   * Color backlight compensation. Zero corresponds to switched off.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_BACKLIGHT_COMPENSATION: RS2.RS2_FRAME_METADATA_BACKLIGHT_COMPENSATION,
+  /**
+   * Color image hue.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_HUE: RS2.RS2_FRAME_METADATA_HUE,
+  /**
+   * Color image gamma.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_GAMMA: RS2.RS2_FRAME_METADATA_GAMMA,
+  /**
+   * Color image white balance.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_MANUAL_WHITE_BALANCE: RS2.RS2_FRAME_METADATA_MANUAL_WHITE_BALANCE,
+  /**
+   * Power Line Frequency for anti-flickering Off/50Hz/60Hz/Auto.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_POWER_LINE_FREQUENCY: RS2.RS2_FRAME_METADATA_POWER_LINE_FREQUENCY,
+  /**
+   * Color lowlight compensation. Zero corresponds to switched off.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  FRAME_METADATA_LOW_LIGHT_COMPENSATION: RS2.RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION,
+  /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
    */
@@ -5189,6 +5388,42 @@ const frame_metadata = {
         return this.frame_metadata_backend_timestamp;
       case this.FRAME_METADATA_ACTUAL_FPS:
         return this.frame_metadata_actual_fps;
+      case this.FRAME_METADATA_FRAME_LASER_POWER:
+        return this.frame_metadata_frame_laser_power;
+      case this.FRAME_METADATA_FRAME_LASER_POWER_MODE:
+        return this.frame_metadata_frame_laser_power_mode;
+      case this.FRAME_METADATA_EXPOSURE_PRIORITY:
+        return this.frame_metadata_exposure_priority;
+      case this.FRAME_METADATA_EXPOSURE_ROI_LEFT:
+        return this.frame_metadata_exposure_roi_left;
+      case this.FRAME_METADATA_EXPOSURE_ROI_RIGHT:
+        return this.frame_metadata_exposure_roi_right;
+      case this.FRAME_METADATA_EXPOSURE_ROI_TOP:
+        return this.frame_metadata_exposure_roi_top;
+      case this.FRAME_METADATA_EXPOSURE_ROI_BOTTOM:
+        return this.frame_metadata_exposure_roi_bottom;
+      case this.FRAME_METADATA_BRIGHTNESS:
+        return this.frame_metadata_brightness;
+      case this.FRAME_METADATA_CONTRAST:
+        return this.frame_metadata_contrast;
+      case this.FRAME_METADATA_SATURATION:
+        return this.frame_metadata_saturation;
+      case this.FRAME_METADATA_SHARPNESS:
+        return this.frame_metadata_sharpness;
+      case this.FRAME_METADATA_AUTO_WHITE_BALANCE_TEMPERATURE:
+        return this.frame_metadata_auto_white_balance_temperature;
+      case this.FRAME_METADATA_BACKLIGHT_COMPENSATION:
+        return this.frame_metadata_backlight_compensation;
+      case this.FRAME_METADATA_HUE:
+        return this.frame_metadata_hue;
+      case this.FRAME_METADATA_GAMMA:
+        return this.frame_metadata_gamma;
+      case this.FRAME_METADATA_MANUAL_WHITE_BALANCE:
+        return this.frame_metadata_manual_white_balance;
+      case this.FRAME_METADATA_POWER_LINE_FREQUENCY:
+        return this.frame_metadata_power_line_frequency;
+      case this.FRAME_METADATA_LOW_LIGHT_COMPENSATION:
+        return this.frame_metadata_low_light_compensation;
     }
   },
 };

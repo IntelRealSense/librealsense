@@ -9,7 +9,12 @@
 #include "proc/occlusion-filter.h"
 #include "proc/pointcloud.h"
 #include "option.h"
-#ifdef __SSSE3__
+
+#include <iostream>
+
+#ifdef RS2_USE_CUDA
+#include "../cuda/cuda-pointcloud.cuh"
+#elif __SSSE3__
 #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
 #endif
 
@@ -29,10 +34,13 @@ namespace librealsense
         }
     }
 
-    const float3 * depth_to_points(uint8_t* image, const rs2_intrinsics &depth_intrinsics, const uint16_t * depth_image, float depth_scale)
+    const float3 * depth_to_points( uint8_t* image, const rs2_intrinsics &depth_intrinsics, const uint16_t * depth_image, float depth_scale)
     {
+#ifdef RS2_USE_CUDA
+        rscuda::deproject_depth_cuda(reinterpret_cast<float *>(image), depth_intrinsics, depth_image, depth_scale);
+#else
         deproject_depth(reinterpret_cast<float *>(image), depth_intrinsics, depth_image, [depth_scale](uint16_t z) { return depth_scale * z; });
-
+#endif
         return reinterpret_cast<float3 *>(image);
     }
 

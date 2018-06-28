@@ -1,5 +1,5 @@
-#  minimum required cmake version: 3.1.0
-cmake_minimum_required(VERSION 3.1.0)
+#  minimum required cmake version: 3.8.0
+cmake_minimum_required(VERSION 3.8.0)
 
 project(RealsenseWrappers)
 
@@ -26,4 +26,8 @@ endif()
 
 if(BUILD_NODEJS_BINDINGS)
     add_subdirectory(nodejs)
+endif()
+
+if(BUILD_CSHARP_BINDINGS)
+    add_subdirectory(csharp)
 endif()
