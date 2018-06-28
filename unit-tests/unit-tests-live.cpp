@@ -531,6 +531,7 @@ TEST_CASE("Sync start stop", "[live]") {
         REQUIRE(image.get_height() == other_video.height());
     }
 }
+
 TEST_CASE("Device metadata enumerates correctly", "[live]")
 {
     rs2::context ctx;
@@ -2956,6 +2957,7 @@ static const std::map< dev_type, device_profiles> pipeline_default_configuration
 /* RS400/PSR*/          { { "0AD1", true}  ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true}},
 /* RS410/ASR*/          { { "0AD2", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
 /* D410/USB2*/          { { "0AD2", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
+/* D430/USB2*/          { { "0AD6", false } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 } }, 30, true } },
 /* RS415/ASRC*/         { { "0AD3", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true }},
 /* D415/USB2*/          { { "0AD3", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
 /* RS430/AWG*/          { { "0AD4", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 } }, 30, true }},
@@ -4613,4 +4615,78 @@ TEST_CASE("C API Compilation", "[live]") {
     rs2_error* e;
     REQUIRE_NOTHROW(rs2_set_devices_changed_callback(NULL, dev_changed, NULL, &e));
     REQUIRE(e != nullptr);
+}
+
+void compare_frame_md(rs2::frame origin_depth, rs2::frame result_depth)
+{
+    for (auto i = 0; i < rs2_frame_metadata_value::RS2_FRAME_METADATA_COUNT; i++)
+    {
+        bool origin_supported = origin_depth.supports_frame_metadata((rs2_frame_metadata_value)i);
+        bool result_supported = result_depth.supports_frame_metadata((rs2_frame_metadata_value)i);
+        REQUIRE(origin_supported == result_supported);
+        if (origin_supported && result_supported)
+        {
+            rs2_metadata_type origin_val = origin_depth.get_frame_metadata((rs2_frame_metadata_value)i);
+            rs2_metadata_type result_val = result_depth.get_frame_metadata((rs2_frame_metadata_value)i);
+            CAPTURE(i);
+            CAPTURE(origin_val);
+            CAPTURE(result_val);
+            REQUIRE(origin_val == result_val);
+        }
+    }
+}
+TEST_CASE("Post-Processing Filters metadata validation", "[live][post-processing-filters]")
+{
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
+        disable_sensitive_options_for(dev);
+        dev_type PID = get_PID(dev);
+        CAPTURE(PID.first);
+        CAPTURE(PID.second);
+
+        std::vector<std::shared_ptr<rs2::process_interface>> filters =
+        { std::make_shared<rs2::decimation_filter>(),
+          std::make_shared<rs2::disparity_transform>(true),
+          std::make_shared<rs2::spatial_filter>(),
+          std::make_shared<rs2::temporal_filter>(),
+          std::make_shared<rs2::disparity_transform>(false),
+          std::make_shared<rs2::hole_filling_filter>() };
+
+        auto configurations = pipeline_default_configurations;
+        if (configurations.end() == configurations.find(PID))
+        {
+            WARN("Skipping test - the Device-Under-Test profile is not defined for PID " << PID.first << (PID.second ? " USB3" : " USB2"));
+        }
+        else
+        {
+            REQUIRE(pipeline_default_configurations.at(PID).streams.size() > 0);
+            for (auto req : configurations[PID].streams)
+                REQUIRE_NOTHROW(cfg.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
+            REQUIRE_NOTHROW(pipe.start(cfg));
+            for (auto i = 0; i < 30; i++)
+            {
+                for (auto filter : filters)
+                {
+                    rs2::frameset fset = pipe.wait_for_frames();
+                    REQUIRE(fset);
+                    rs2::frame depth = fset.first_or_default(RS2_STREAM_DEPTH);
+                    REQUIRE(depth);
+                    // ... here the actual filters are being applied
+                    auto filtered_depth = filter->process(depth);
+                    compare_frame_md(depth, filtered_depth);
+                }
+            }
+            REQUIRE_NOTHROW(pipe.stop());
+        }
+    }
 }

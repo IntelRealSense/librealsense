@@ -491,11 +491,6 @@ namespace librealsense
         return additional_data.frame_number;
     }
 
-    std::array<uint8_t, MAX_META_DATA_SIZE> frame::get_metadata_blob() const
-    {
-        return additional_data.metadata_blob;
-    }
-
     rs2_time_t frame::get_frame_system_time() const
     {
         return additional_data.system_time;
