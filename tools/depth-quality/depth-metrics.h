@@ -50,6 +50,7 @@ namespace rs2
             const int ground_thruth_mm,
             const bool plane_fit,
             const float plane_fit_to_ground_truth_mm,
+            const float distance_mm,
             bool record,
             std::vector<single_metric_data>& samples)>;
 
@@ -203,7 +204,7 @@ namespace rs2
             result.angle = static_cast<float>(std::acos(std::abs(p.c)) / M_PI * 180.);
 
             callback(roi_pixels, p, roi, baseline_mm, intrin->fx, ground_truth_mm, plane_fit_present,
-                plane_fit_to_gt_offset_mm, record, samples);
+                plane_fit_to_gt_offset_mm, result.distance, record, samples);
 
             // Calculate normal
             auto n = float3{ p.a, p.b, p.c };
