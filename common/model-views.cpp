@@ -5448,6 +5448,14 @@ namespace rs2
     }
 
 
+    bool rs2::device_model::is_streaming()
+    {
+        return std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm)
+        {
+            return sm->streaming;
+        });
+    }
+
     void device_model::draw_controls(float panel_width, float panel_height,
         ux_window& window,
         std::string& error_message,
@@ -5776,7 +5784,6 @@ namespace rs2
                             }))
                             {
                                 // Stopping post processing filter rendering thread
-                                viewer.ppf.stop();
                                 stop_recording = true;
                             }
                         }
