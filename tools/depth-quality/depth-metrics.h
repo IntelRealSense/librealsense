@@ -58,6 +58,7 @@ namespace rs2
             return{ normal.x, normal.y, normal.z, -(normal.x*point.x + normal.y*point.y + normal.z*point.z) };
         }
 
+        //Based on: http://www.ilikebigbits.com/blog/2015/3/2/plane-from-points
         inline plane plane_from_points(const std::vector<rs2::float3> points)
         {
             if (points.size() < 3) throw std::runtime_error("Not enough points to calculate plane");
