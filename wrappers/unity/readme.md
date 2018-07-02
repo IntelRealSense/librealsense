@@ -31,7 +31,8 @@ At the end of this step, the Unity project will be available in the CMake output
   - cmake .. -DBUILD_CSHARP_BINDINGS=ON -DBUILD_UNITY_BINDINGS=ON -DBUILD_SHARED_LIBS=ON -DDOTNET_VERSION_LIBRARY=3.5
 - The file 'realsense2.sln' should be created in 'build' folder, open the file with Visual Studio, C# examples and library will be available in the solution under 'Wrappers/csharp'.
 - Build Intel.RealSense project, this step will build both the native library and the .NET wrapper and will copy both DLLs to the Unity project Plugins folder.
-- Open the Unity project that located in 'build/unity'
+- In case Unity is installed and activated, a Unity package should be created at build/\<configuration\>/realsense.unitypackage. This file can be imported by the Unity editor.
+  If Unity is not installed or activated a Unity project folder will still be avilable at 'build/wrappers/unity'.
 
   > NOTE: Unity requires that manage assemblies (such as the C# wrapper) are targeted to .NET Framework 3.5 and lower. The .NET wrapper provides assemblies for multiple targets, one of which is .NET 3.5 (net35).
 
