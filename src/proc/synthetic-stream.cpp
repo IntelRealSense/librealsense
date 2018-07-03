@@ -90,13 +90,6 @@ namespace librealsense
             vf = static_cast<video_frame*>(original);
         }
 
-        frame_additional_data data{};
-        data.frame_number = original->get_frame_number();
-        data.timestamp = original->get_frame_timestamp();
-        data.timestamp_domain = original->get_frame_timestamp_domain();
-        data.metadata_size = 0;
-        data.system_time = _actual_source.get_time();
-        data.metadata_blob = original->get_metadata_blob();
         auto width = new_width;
         auto height = new_height;
         auto bpp = new_bpp * 8;
@@ -126,6 +119,7 @@ namespace librealsense
             height = vf->get_height();
         }
 
+        frame_additional_data data = original->get_frame_additional_data();
         auto res = _actual_source.alloc_frame(frame_type, stride * height, data, true);
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = static_cast<video_frame*>(res);

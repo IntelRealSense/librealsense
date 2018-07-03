@@ -17,6 +17,7 @@ namespace librealsense
     class sensor_interface;
     class archive_interface;
     class device_interface;
+    struct frame_additional_data;
 
     class sensor_part
     {
@@ -71,10 +72,9 @@ namespace librealsense
         virtual rs2_timestamp_domain get_frame_timestamp_domain() const = 0;
         virtual void set_timestamp(double new_ts) = 0;
         virtual unsigned long long get_frame_number() const = 0;
-
+        virtual frame_additional_data get_frame_additional_data() const = 0;
         virtual void set_timestamp_domain(rs2_timestamp_domain timestamp_domain) = 0;
         virtual rs2_time_t get_frame_system_time() const = 0;
-        virtual std::array<uint8_t, MAX_META_DATA_SIZE> get_metadata_blob() const = 0;
         virtual std::shared_ptr<stream_profile_interface> get_stream() const = 0;
         virtual void set_stream(std::shared_ptr<stream_profile_interface> sp) = 0;
 

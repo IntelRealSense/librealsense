@@ -16,46 +16,46 @@ namespace librealsense
     class frame;
 }
 
-struct frame_additional_data
-{
-    rs2_time_t timestamp = 0;
-    unsigned long long frame_number = 0;
-    rs2_timestamp_domain timestamp_domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
-    rs2_time_t      system_time = 0;
-    rs2_time_t      frame_callback_started = 0;
-    uint32_t        metadata_size = 0;
-    bool            fisheye_ae_mode = false;
-    std::array<uint8_t,MAX_META_DATA_SIZE> metadata_blob;
-    rs2_time_t      backend_timestamp = 0;
-    rs2_time_t last_timestamp = 0;
-    unsigned long long last_frame_number = 0;
-
-    frame_additional_data() {};
-
-    frame_additional_data(double in_timestamp,
-        unsigned long long in_frame_number,
-        double in_system_time,
-        uint8_t md_size,
-        const uint8_t* md_buf,
-        double backend_time,
-        rs2_time_t last_timestamp,
-        unsigned long long last_frame_number)
-        : timestamp(in_timestamp),
-          frame_number(in_frame_number),
-          system_time(in_system_time),
-          metadata_size(md_size),
-          backend_timestamp(backend_time),
-          last_timestamp(last_timestamp),
-          last_frame_number(last_frame_number)
-    {
-        // Copy up to 255 bytes to preserve metadata as raw data
-        if (metadata_size)
-            std::copy(md_buf,md_buf+ std::min(md_size,MAX_META_DATA_SIZE),metadata_blob.begin());
-    }
-};
-
 namespace librealsense
 {
+    struct frame_additional_data
+    {
+        rs2_time_t timestamp = 0;
+        unsigned long long frame_number = 0;
+        rs2_timestamp_domain timestamp_domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
+        rs2_time_t      system_time = 0;
+        rs2_time_t      frame_callback_started = 0;
+        uint32_t        metadata_size = 0;
+        bool            fisheye_ae_mode = false;
+        std::array<uint8_t, MAX_META_DATA_SIZE> metadata_blob;
+        rs2_time_t      backend_timestamp = 0;
+        rs2_time_t last_timestamp = 0;
+        unsigned long long last_frame_number = 0;
+
+        frame_additional_data() {};
+
+        frame_additional_data(double in_timestamp,
+            unsigned long long in_frame_number,
+            double in_system_time,
+            uint8_t md_size,
+            const uint8_t* md_buf,
+            double backend_time,
+            rs2_time_t last_timestamp,
+            unsigned long long last_frame_number)
+            : timestamp(in_timestamp),
+            frame_number(in_frame_number),
+            system_time(in_system_time),
+            metadata_size(md_size),
+            backend_timestamp(backend_time),
+            last_timestamp(last_timestamp),
+            last_frame_number(last_frame_number)
+        {
+            // Copy up to 255 bytes to preserve metadata as raw data
+            if (metadata_size)
+                std::copy(md_buf, md_buf + std::min(md_size, MAX_META_DATA_SIZE), metadata_blob.begin());
+        }
+    };
+
     typedef std::map<rs2_frame_metadata_value, std::shared_ptr<md_attribute_parser_base>> metadata_parser_map;
 
     // Define a movable but explicitly noncopyable buffer type to hold our frame data
@@ -80,12 +80,11 @@ namespace librealsense
         rs2_timestamp_domain get_frame_timestamp_domain() const override;
         void set_timestamp(double new_ts) override { additional_data.timestamp = new_ts; }
         unsigned long long get_frame_number() const override;
-        std::array<uint8_t, MAX_META_DATA_SIZE> get_metadata_blob() const override;
         void set_timestamp_domain(rs2_timestamp_domain timestamp_domain) override
         {
             additional_data.timestamp_domain = timestamp_domain;
         }
-
+        frame_additional_data get_frame_additional_data() const override { return additional_data; }
         rs2_time_t get_frame_system_time() const override;
 
         std::shared_ptr<stream_profile_interface> get_stream() const override { return stream; }
@@ -205,9 +204,9 @@ namespace librealsense
         {
             return first()->get_sensor();
         }
-        std::array<uint8_t, MAX_META_DATA_SIZE> get_metadata_blob() const override
-        {
-            return first()->get_metadata_blob();
+        frame_additional_data get_frame_additional_data() const override 
+        { 
+            return first()->get_frame_additional_data();
         }
     };
 
