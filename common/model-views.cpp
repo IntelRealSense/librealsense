@@ -5783,7 +5783,6 @@ namespace rs2
                                 return sm->streaming;
                             }))
                             {
-                                // Stopping post processing filter rendering thread
                                 stop_recording = true;
                             }
                         }
