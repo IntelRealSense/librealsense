@@ -5448,7 +5448,7 @@ namespace rs2
     }
 
 
-    bool rs2::device_model::is_streaming()
+    bool rs2::device_model::is_streaming() const
     {
         return std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm)
         {

@@ -480,7 +480,7 @@ namespace rs2
         void handle_harware_events(const std::string& serialized_data);
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
-        bool is_streaming();
+        bool is_streaming() const;
         bool metadata_supported = false;
         bool get_curr_advanced_controls = true;
         device dev;
@@ -658,7 +658,7 @@ namespace rs2
             }
         }
 
-        bool is_rendering()
+        bool is_rendering() const
         {
             return render_thread_active.load();
         }
