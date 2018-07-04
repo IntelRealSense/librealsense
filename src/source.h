@@ -17,7 +17,7 @@ namespace librealsense
     public:
         frame_source(uint32_t max_publish_list_size = 16);
 
-        void init(std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> metadata_parsers);
+        void init(std::shared_ptr<metadata_parser_map> metadata_parsers);
 
         callback_invocation_holder begin_callback();
 

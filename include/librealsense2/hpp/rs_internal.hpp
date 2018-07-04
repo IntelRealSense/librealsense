@@ -100,6 +100,18 @@ namespace rs2
         }
 
         /**
+        * Set frame metadata for the upcoming frames
+        * \param[in] value metadata key to set
+        * \param[in] type metadata value
+        */
+        void set_metadata(rs2_frame_metadata_value value, rs2_metadata_type type)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_sensor_set_metadata(_sensor.get(), value, type, &e);
+            error::handle(e);
+        }
+
+        /**
         * Register option that will be supported by the sensor
         *
         * \param[in] option  the option
