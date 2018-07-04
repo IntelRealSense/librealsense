@@ -54,6 +54,11 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 
   3. Run Intel Realsense permissions script located from librealsense root directory:<br />
     `./scripts/setup_udev_rules.sh`
+    ` cd ~ `  <br />
+    `git clone https://github.com/IntelRealSense/librealsense.git`  <br />
+    `cd librealsense`  <br />
+    `sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/`  <br />
+    `sudo udevadm control --reload-rules && udevadm trigger`
     <br />
 
   4. Build and apply patched kernel modules for: <br />
