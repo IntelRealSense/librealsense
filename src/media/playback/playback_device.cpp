@@ -34,6 +34,14 @@ playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<d
     register_device_info(m_device_description);
     //Create playback sensor that simulate the recorded sensors
     m_sensors = create_playback_sensors(m_device_description);
+    for (auto sensor_pair : m_sensors)
+    {
+        auto profiles = sensor_pair.second->get_stream_profiles();
+        for(auto profile : profiles)
+        {
+            profile->make_default();
+        }
+    }
     register_extrinsics(m_device_description);
 }
 

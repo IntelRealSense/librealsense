@@ -165,97 +165,77 @@ namespace librealsense
         _resolved_profile.reset();
     }
 
+    std::shared_ptr<pipeline_profile> pipeline_config::resolve(std::shared_ptr<device_interface> dev)
+    {
+        _resolved_profile.reset();
+
+        std::vector<stream_profile> resolved_profiles;
+        util::config config;
+
+        //if the user requested all streams
+        if (_enable_all_streams)
+        {
+            config.enable_all(util::best_quality);
+            return std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
+        }
+
+        //If the user did not request anything, give it the default, on playback all recorded streams are marked as default.
+        if (_stream_requests.empty())
+        {
+            auto default_profiles = get_default_configuration(dev);
+            for (auto prof : default_profiles)
+            {
+                auto p = dynamic_cast<video_stream_profile*>(prof.get());
+                if (!p)
+                {
+                    LOG_ERROR("prof is not video_stream_profile");
+                    throw std::logic_error("Failed to resolve request. internal error");
+                }
+                config.enable_stream(p->get_stream_type(), p->get_stream_index(), p->get_width(), p->get_height(), p->get_format(), p->get_framerate());
+            }
+
+            return std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
+        }
+
+        //Enabled requested streams
+        for (auto&& req : _stream_requests)
+        {
+            auto r = req.second;
+            config.enable_stream(r.stream, r.stream_index, r.width, r.height, r.format, r.fps);
+        }
+        return std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
+    }
+
     std::shared_ptr<pipeline_profile> pipeline_config::resolve(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         _resolved_profile.reset();
+
+        //Resolve the the device that was specified by the user, this call will wait in case the device is not availabe.
         auto requested_device = resolve_device_requests(pipe, timeout);
-
-        std::vector<stream_profile> resolved_profiles;
-
-        //if the user requested all streams, or if the requested device is from file and the user did not request any stream
-        if (_enable_all_streams || (!_device_request.filename.empty() && _stream_requests.empty()))
+        if (requested_device != nullptr)
         {
-            if (!requested_device)
-            {
-                requested_device = pipe->wait_for_device(timeout);
-            }
-
-            util::config config;
-            config.enable_all(util::best_quality);
-            _resolved_profile = std::make_shared<pipeline_profile>(requested_device, config, _device_request.record_output);
+            _resolved_profile = resolve(requested_device);
             return _resolved_profile;
         }
-        else
+
+        //Look for satisfy device in case the user did not specify one.
+        std::shared_ptr<device_interface> dev = pipe->wait_for_device(timeout);
+        std::string firstLocatedDevice = "";
+        while(dev != nullptr && firstLocatedDevice.compare(dev->get_info(rs2_camera_info::RS2_CAMERA_INFO_SERIAL_NUMBER)) != 0)
         {
-            util::config config;
-
-            //If the user did not request anything, give it the default
-            if (_stream_requests.empty())
+            if(firstLocatedDevice.empty())
+                firstLocatedDevice = dev->get_info(rs2_camera_info::RS2_CAMERA_INFO_SERIAL_NUMBER);
+            try
             {
-                if (!requested_device)
-                {
-                    requested_device = pipe->wait_for_device(timeout);
-                }
-
-                auto default_profiles = get_default_configuration(requested_device);
-                for (auto prof : default_profiles)
-                {
-                    auto p = dynamic_cast<video_stream_profile*>(prof.get());
-                    if (!p)
-                    {
-                        LOG_ERROR("prof is not video_stream_profile");
-                        throw std::logic_error("Failed to resolve request. internal error");
-                    }
-                    config.enable_stream(p->get_stream_type(), p->get_stream_index(), p->get_width(), p->get_height(), p->get_format(), p->get_framerate());
-                }
-
-                _resolved_profile = std::make_shared<pipeline_profile>(requested_device, config, _device_request.record_output);
+                _resolved_profile = resolve(dev);
                 return _resolved_profile;
             }
-            else
-            {
-                //User enabled some stream, enable only them
-                for(auto&& req : _stream_requests)
-                {
-                    auto r = req.second;
-                    config.enable_stream(r.stream, r.stream_index, r.width, r.height, r.format, r.fps);
-                }
+            catch (...) {}
+            dev = pipe->wait_for_device(timeout);
+    }
 
-                if (!requested_device)
-                {
-                    //If the users did not request any device, select one for them
-                    auto devs = pipe->get_context()->query_devices();
-                    if (devs.empty())
-                    {
-                        auto dev = pipe->wait_for_device(timeout);
-                        _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
-                        return _resolved_profile;
-                    }
-                    else
-                    {
-                        for (auto dev_info : devs)
-                        {
-                            try
-                            {
-                                auto dev = dev_info->create_device(true);
-                                _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
-                                return _resolved_profile;
-                            }
-                            catch (...) {}
-                        }
-                    }
-
-                    throw std::runtime_error("Failed to resolve request. No device found that satisfies all requirements");
-                }
-                else
-                {
-                    //User specified a device, use it with the requested configuration
-                    _resolved_profile = std::make_shared<pipeline_profile>(requested_device, config, _device_request.record_output);
-                    return _resolved_profile;
-                }
-            }
-        }
+        throw std::runtime_error("Failed to resolve request. No device found that satisfies all requirements");
 
         assert(0); //Unreachable code
     }

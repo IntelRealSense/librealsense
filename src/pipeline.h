@@ -123,6 +123,7 @@ namespace librealsense
         bool _enable_all_streams = false;
         std::shared_ptr<pipeline_profile> _resolved_profile;
         bool _playback_loop;
+        std::shared_ptr<pipeline_profile> resolve(std::shared_ptr<device_interface> dev);
     };
 
 }

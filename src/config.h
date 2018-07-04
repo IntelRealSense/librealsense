@@ -479,8 +479,7 @@ namespace librealsense
                         if (satisfied_streams.count(kvp.first)) continue; // skip satisfied requests
 
                         // if any profile on the subdevice can supply this request, consider it satisfiable
-                        auto it = std::find_if(begin(profiles), end(profiles),
-                            [&kvp](const std::shared_ptr<stream_profile_interface>& profile)
+                        auto it = std::find_if(begin(profiles), end(profiles), [&kvp](const std::shared_ptr<stream_profile_interface>& profile)
                         {
                             return match(profile.get(), kvp.second);
                         });
@@ -495,9 +494,10 @@ namespace librealsense
                     std::vector<rs2_format> prefered_formats = { RS2_FORMAT_Z16, RS2_FORMAT_Y8, RS2_FORMAT_RGB8 };
                     for (auto && kvp : _presets)
                     {
-                        if (satisfied_streams.count(kvp.first)) continue; // skip satisfied streams
+                        if (satisfied_streams.count(kvp.first)) 
+                            continue; // skip satisfied streams
 
-                        auto result = [&]() -> request_type
+                        auto results = [&]() -> std::vector<request_type>
                         {
                             switch (kvp.second)
                             {
@@ -513,23 +513,30 @@ namespace librealsense
                             default: throw std::runtime_error("Unknown preset selected");
                             }
 
-                            for (auto itr: profiles)
+                            std::vector<request_type> requests = {};
+                            for (auto itr : profiles)
                             {
                                 auto stream = index_type{ itr->get_stream_type() ,itr->get_stream_index() };
                                 if (match_stream(stream, kvp.first))
                                 {
-                                    return to_request(itr.get());
+                                    requests.push_back(to_request(itr.get()));
                                 }
                             }
 
-                            return { RS2_STREAM_ANY, -1, 0, 0, RS2_FORMAT_ANY, 0 };
+                            if (requests.empty())
+                                requests.push_back({ RS2_STREAM_ANY, -1, 0, 0, RS2_FORMAT_ANY, 0 });
+
+                            return requests;
                         }();
 
                         // RS2_STREAM_COUNT signals subdevice can't handle this stream
-                        if (result.stream != RS2_STREAM_ANY)
+                        for (auto result : results)
                         {
-                            targets.push_back(result);
-                            satisfied_streams.insert({ result.stream, result.stream_index });
+                            if (result.stream != RS2_STREAM_ANY)
+                            {
+                                targets.push_back(result);
+                                satisfied_streams.insert({ result.stream, result.stream_index });
+                            }
                         }
                     }
 
@@ -548,12 +555,9 @@ namespace librealsense
                                 }
                             }
                         }
-
                     }
                 }
-
                 return out;
-
             }
 
             std::map<index_type, request_type> _requests;
