@@ -87,7 +87,7 @@ namespace librealsense
     {
         //empty
     }
-    void pipeline_config::enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int fps)
+    void pipeline_config::enable_stream(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t fps)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         _resolved_profile.reset();
@@ -167,15 +167,17 @@ namespace librealsense
 
     std::shared_ptr<pipeline_profile> pipeline_config::resolve(std::shared_ptr<device_interface> dev)
     {
-        _resolved_profile.reset();
-
-        std::vector<stream_profile> resolved_profiles;
         util::config config;
 
         //if the user requested all streams
         if (_enable_all_streams)
         {
-            config.enable_all(util::best_quality);
+            for (size_t i = 0; i < dev->get_sensors_count(); ++i)
+            {
+                auto&& sub = dev->get_sensor(i);
+                auto profiles = sub.get_stream_profiles();
+                config.enable_streams(profiles);
+            }
             return std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
         }
 
@@ -183,17 +185,7 @@ namespace librealsense
         if (_stream_requests.empty())
         {
             auto default_profiles = get_default_configuration(dev);
-            for (auto prof : default_profiles)
-            {
-                auto p = dynamic_cast<video_stream_profile*>(prof.get());
-                if (!p)
-                {
-                    LOG_ERROR("prof is not video_stream_profile");
-                    throw std::logic_error("Failed to resolve request. internal error");
-                }
-                config.enable_stream(p->get_stream_type(), p->get_stream_index(), p->get_width(), p->get_height(), p->get_format(), p->get_framerate());
-            }
-
+            config.enable_streams(default_profiles);
             return std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
         }
 
@@ -338,22 +330,6 @@ namespace librealsense
                 {
                     default_profiles.push_back(p);
                 }
-            }
-        }
-
-        // Workaround - default profiles that holds color stream shouldn't supposed to provide infrared either
-        auto color_it = std::find_if(default_profiles.begin(), default_profiles.end(), [](std::shared_ptr<stream_profile_interface> p)
-                        {
-                            return p.get()->get_stream_type() == RS2_STREAM_COLOR;
-                        });
-
-        bool default_profiles_contains_color_stream = color_it != default_profiles.end();
-        if (default_profiles_contains_color_stream)
-        {
-            auto it = std::find_if(default_profiles.begin(), default_profiles.end(), [](std::shared_ptr<stream_profile_interface> p) {return p.get()->get_stream_type() == RS2_STREAM_INFRARED; });
-            if (it != default_profiles.end())
-            {
-                default_profiles.erase(it);
             }
         }
 

@@ -13,6 +13,7 @@
 #include <iostream>
 #include "sensor.h"
 #include "types.h"
+#include "stream.h"
 
 namespace librealsense
 {
@@ -33,9 +34,9 @@ namespace librealsense
             {
                 rs2_stream stream;
                 int stream_index;
-                int width, height;
+                uint32_t width, height;
                 rs2_format format;
-                int fps;
+                uint32_t fps;
             };
 
             struct index_type
@@ -186,11 +187,6 @@ namespace librealsense
                 return _requests;
             }
 
-            std::map<index_type, config_preset> get_presets()
-            {
-                return _presets;
-            }
-
             class multistream
             {
             public:
@@ -251,10 +247,28 @@ namespace librealsense
 
             config() : require_all(true) {}
 
-
-            void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int fps)
+            void enable_streams(stream_profiles profiles)
             {
-                _presets.erase({ stream, index });
+                std::map<std::tuple<int, int>, std::vector<std::shared_ptr<stream_profile_interface>>> profiles_map;
+                for (auto profile : profiles)
+                {
+                    profiles_map[std::make_tuple(profile->get_unique_id(), profile->get_stream_index())].push_back(profile);
+                }
+                for (auto profs : profiles_map)
+                {
+                    std::sort(begin(profs.second), end(profs.second), sort_best_quality);
+                    auto p = dynamic_cast<video_stream_profile*>(profs.second.front().get());
+                    if (!p)
+                    {
+                        LOG_ERROR("prof is not video_stream_profile");
+                        throw std::logic_error("Failed to resolve request. internal error");
+                    }
+                    enable_stream(p->get_stream_type(), p->get_stream_index(), p->get_width(), p->get_height(), p->get_format(), p->get_framerate());
+                }
+            }
+
+            void enable_stream(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t fps)
+            {
                 _requests[{stream, index}] = request_type{ stream, index, width, height, format, fps };
                 require_all = true;
             }
@@ -280,32 +294,9 @@ namespace librealsense
                 }
 
             }
-            void enable_stream(rs2_stream stream, config_preset preset)
-            {
-                _requests.erase({ stream, -1 });
-                _presets[{ stream, -1 }] = preset;
-                require_all = true;
-            }
-
-            void enable_stream(rs2_stream stream, int index, config_preset preset)
-            {
-                _requests.erase({stream, index});
-                _presets[{stream, index}] = preset;
-                require_all = true;
-            }
-
-            void enable_all(config_preset p)
-            {
-                for (int i = RS2_STREAM_DEPTH; i < RS2_STREAM_COUNT; i++)
-                {
-                    enable_stream(static_cast<rs2_stream>(i), -1, p);
-                }
-                require_all = false;
-            }
 
             void disable_all()
             {
-                _presets.clear();
                 _requests.clear();
             }
 
@@ -350,16 +341,6 @@ namespace librealsense
                     for (auto && kvp : mapping)
                         all_streams.insert({ kvp.second->get_stream_type(), kvp.second->get_stream_index() });
 
-
-                    for (auto && kvp : _presets)
-                    {
-                        auto it = std::find_if(std::begin(all_streams), std::end(all_streams), [&](const index_type& i)
-                        {
-                            return match_stream(kvp.first, i);
-                        });
-                        if (it == std::end(all_streams))
-                            throw std::runtime_error("Config couldn't configure all streams");
-                    }
                     for (auto && kvp : _requests)
                     {
                         auto it = std::find_if(std::begin(all_streams), std::end(all_streams), [&](const index_type& i)
@@ -408,14 +389,29 @@ namespace librealsense
                 return sort_highest_framerate(lhs, rhs);
             }
 
+            static float match_nominal_config(video_stream_profile_interface* p)
+            {
+                auto width = std::abs((float)p->get_width() - 640);
+                auto height = std::abs((float)p->get_height() - 480);
+                auto fps = std::abs((float)p->get_framerate() - 30);
+                float format = 0xffffffff;
+                switch (p->get_stream_type())
+                {
+                    case rs2_stream::RS2_STREAM_COLOR: format = std::abs((float)p->get_format() - float(RS2_FORMAT_RGB8)); break;
+                    case rs2_stream::RS2_STREAM_DEPTH: format = std::abs((float)p->get_format() - float(RS2_FORMAT_Z16)); break;
+                    case rs2_stream::RS2_STREAM_INFRARED: format = std::abs((float)p->get_format() - float(RS2_FORMAT_Y8)); break;
+                }
+                return width + height + fps + format;
+            }
+
             static bool sort_best_quality( std::shared_ptr<stream_profile_interface> lhs, std::shared_ptr<stream_profile_interface> rhs) {
                 if (auto a = dynamic_cast<video_stream_profile_interface*>(lhs.get()))
                 {
                     if (auto b = dynamic_cast<video_stream_profile_interface*>(rhs.get()))
                     {
-                        return std::make_tuple((a->get_height() == 640 && a->get_height() == 480), (lhs->get_framerate() == 30), (lhs->get_format() == RS2_FORMAT_Z16), (lhs->get_format() == RS2_FORMAT_Y8), (lhs->get_format() == RS2_FORMAT_RGB8), int(lhs->get_format()))
-                             < std::make_tuple((b->get_width() == 640 && b->get_height() == 480), (rhs->get_framerate() == 30), (rhs->get_format() == RS2_FORMAT_Z16), (rhs->get_format() == RS2_FORMAT_Y8), (rhs->get_format() == RS2_FORMAT_RGB8), int(rhs->get_format()));
-
+                        auto lt = match_nominal_config(a);
+                        auto rt = match_nominal_config(b);
+                        return lt < rt;
                     }
                 }
                 return sort_highest_framerate(lhs, rhs);
@@ -490,56 +486,6 @@ namespace librealsense
                         }
                     }
 
-                    // deal with preset streams
-                    std::vector<rs2_format> prefered_formats = { RS2_FORMAT_Z16, RS2_FORMAT_Y8, RS2_FORMAT_RGB8 };
-                    for (auto && kvp : _presets)
-                    {
-                        if (satisfied_streams.count(kvp.first)) 
-                            continue; // skip satisfied streams
-
-                        auto results = [&]() -> std::vector<request_type>
-                        {
-                            switch (kvp.second)
-                            {
-                            case config_preset::best_quality:
-                                std::sort(begin(profiles), end(profiles), sort_best_quality);
-                                break;
-                            case config_preset::largest_image:
-                                std::sort(begin(profiles), end(profiles), sort_largest_image);
-                                break;
-                            case config_preset::highest_framerate:
-                                std::sort(begin(profiles), end(profiles), sort_highest_framerate);
-                                break;
-                            default: throw std::runtime_error("Unknown preset selected");
-                            }
-
-                            std::vector<request_type> requests = {};
-                            for (auto itr : profiles)
-                            {
-                                auto stream = index_type{ itr->get_stream_type() ,itr->get_stream_index() };
-                                if (match_stream(stream, kvp.first))
-                                {
-                                    requests.push_back(to_request(itr.get()));
-                                }
-                            }
-
-                            if (requests.empty())
-                                requests.push_back({ RS2_STREAM_ANY, -1, 0, 0, RS2_FORMAT_ANY, 0 });
-
-                            return requests;
-                        }();
-
-                        // RS2_STREAM_COUNT signals subdevice can't handle this stream
-                        for (auto result : results)
-                        {
-                            if (result.stream != RS2_STREAM_ANY)
-                            {
-                                targets.push_back(result);
-                                satisfied_streams.insert({ result.stream, result.stream_index });
-                            }
-                        }
-                    }
-
                     if (targets.size() > 0) // if subdevice is handling any streams
                     {
                         auto_complete(targets, sub);
@@ -561,7 +507,6 @@ namespace librealsense
             }
 
             std::map<index_type, request_type> _requests;
-            std::map<index_type, config_preset> _presets;
             bool require_all;
         };
 

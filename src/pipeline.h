@@ -80,7 +80,7 @@ namespace librealsense
     {
     public:
         pipeline_config();
-        void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int framerate);
+        void enable_stream(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t framerate);
         void enable_all_stream();
         void enable_device(const std::string& serial);
         void enable_device_from_file(const std::string& file, bool repeat_playback);
@@ -116,6 +116,7 @@ namespace librealsense
         std::shared_ptr<device_interface> get_or_add_playback_device(std::shared_ptr<pipeline> pipe, const std::string& file);
         std::shared_ptr<device_interface> resolve_device_requests(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout);
         stream_profiles get_default_configuration(std::shared_ptr<device_interface> dev);
+        std::shared_ptr<pipeline_profile> resolve(std::shared_ptr<device_interface> dev);
 
         device_request _device_request;
         std::map<std::pair<rs2_stream, int>, util::config::request_type> _stream_requests;
@@ -123,7 +124,6 @@ namespace librealsense
         bool _enable_all_streams = false;
         std::shared_ptr<pipeline_profile> _resolved_profile;
         bool _playback_loop;
-        std::shared_ptr<pipeline_profile> resolve(std::shared_ptr<device_interface> dev);
     };
 
 }
