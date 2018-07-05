@@ -212,20 +212,17 @@ namespace librealsense
         }
 
         //Look for satisfy device in case the user did not specify one.
-        std::shared_ptr<device_interface> dev = pipe->wait_for_device(timeout);
-        std::string firstLocatedDevice = "";
-        while(dev != nullptr && firstLocatedDevice.compare(dev->get_info(rs2_camera_info::RS2_CAMERA_INFO_SERIAL_NUMBER)) != 0)
+        auto devs = pipe->get_context()->query_devices();
+        for (auto dev_info : devs)
         {
-            if(firstLocatedDevice.empty())
-                firstLocatedDevice = dev->get_info(rs2_camera_info::RS2_CAMERA_INFO_SERIAL_NUMBER);
             try
             {
+                auto dev = dev_info->create_device(true);
                 _resolved_profile = resolve(dev);
                 return _resolved_profile;
             }
             catch (...) {}
-            dev = pipe->wait_for_device(timeout);
-    }
+        }
 
         throw std::runtime_error("Failed to resolve request. No device found that satisfies all requirements");
 
@@ -330,6 +327,22 @@ namespace librealsense
                 {
                     default_profiles.push_back(p);
                 }
+            }
+        }
+
+        // Workaround - default profiles that holds color stream shouldn't supposed to provide infrared either
+        auto color_it = std::find_if(default_profiles.begin(), default_profiles.end(), [](std::shared_ptr<stream_profile_interface> p)
+        {
+            return p.get()->get_stream_type() == RS2_STREAM_COLOR;
+        });
+
+        bool default_profiles_contains_color_stream = color_it != default_profiles.end();
+        if (default_profiles_contains_color_stream)
+        {
+            auto it = std::find_if(default_profiles.begin(), default_profiles.end(), [](std::shared_ptr<stream_profile_interface> p) {return p.get()->get_stream_type() == RS2_STREAM_INFRARED; });
+            if (it != default_profiles.end())
+            {
+                default_profiles.erase(it);
             }
         }
 

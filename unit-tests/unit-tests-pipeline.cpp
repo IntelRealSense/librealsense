@@ -90,7 +90,7 @@ TEST_CASE("default playback config", "[pipeline]")
     if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
         return;
 
-    std::string file_name = "C:\\tmp\\enable_all_streams.bag";
+    std::string file_name = "enable_default_streams.bag";
     std::vector<stream_profile> rec_streams;
     std::vector<stream_profile> pb_streams;
 
@@ -98,7 +98,6 @@ TEST_CASE("default playback config", "[pipeline]")
         pipeline pipe;
         rs2::config cfg;
 
-        cfg.enable_all_streams();
         cfg.enable_record_to_file(file_name);
         auto profile = pipe.start(cfg);
         int frames = 10;
