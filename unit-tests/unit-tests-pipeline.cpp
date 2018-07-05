@@ -40,6 +40,22 @@ TEST_CASE("enable all streams", "[pipeline]")
     pipe.stop();
 }
 
+TEST_CASE("enable wildcards", "[pipeline]")
+{
+    rs2::context ctx;
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+        return;
+
+    pipeline pipe;
+    rs2::config cfg;
+
+    cfg.enable_stream(rs2_stream::RS2_STREAM_COLOR);
+    cfg.enable_stream(rs2_stream::RS2_STREAM_DEPTH);
+
+    auto streams = pipe.start(cfg).get_streams();
+    pipe.stop();
+}
+
 TEST_CASE("disable stream", "[pipeline]")
 {
     rs2::context ctx;
