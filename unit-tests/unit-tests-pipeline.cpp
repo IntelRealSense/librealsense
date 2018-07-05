@@ -12,11 +12,15 @@
 
 using namespace rs2;
 
-
+# define SECTION_FROM_TEST_NAME space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str()
 
 
 TEST_CASE("enable default streams", "[pipeline]")
 {
+    rs2::context ctx;
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+        return;
+
     pipeline pipe;
     REQUIRE_NOTHROW(pipe.start());
     pipe.stop();
@@ -24,6 +28,10 @@ TEST_CASE("enable default streams", "[pipeline]")
 
 TEST_CASE("enable all streams", "[pipeline]")
 {
+    rs2::context ctx;
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+        return;
+
     pipeline pipe;
     rs2::config cfg;
 
@@ -34,6 +42,10 @@ TEST_CASE("enable all streams", "[pipeline]")
 
 TEST_CASE("disable stream", "[pipeline]")
 {
+    rs2::context ctx;
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+        return;
+
     pipeline pipe;
     rs2::config cfg;
 
@@ -45,6 +57,10 @@ TEST_CASE("disable stream", "[pipeline]")
 
 TEST_CASE("enable bad configuration", "[pipeline]")
 {
+    rs2::context ctx;
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+        return;
+
     pipeline pipe;
     rs2::config cfg;
 
@@ -54,6 +70,10 @@ TEST_CASE("enable bad configuration", "[pipeline]")
 
 TEST_CASE("default playback config", "[pipeline]")
 {
+    rs2::context ctx;
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+        return;
+
     std::string file_name = "C:\\tmp\\enable_all_streams.bag";
     std::vector<stream_profile> rec_streams;
     std::vector<stream_profile> pb_streams;
