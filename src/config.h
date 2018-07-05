@@ -385,7 +385,7 @@ namespace librealsense
             static bool sort_largest_image(std::shared_ptr<stream_profile_interface> lhs, std::shared_ptr<stream_profile_interface> rhs) {
                 if (auto a = dynamic_cast<video_stream_profile_interface*>(lhs.get()))
                     if (auto b = dynamic_cast<video_stream_profile_interface*>(rhs.get()))
-                        return a->get_width()*a->get_height() < b->get_width()*b->get_height();
+                        return a->get_width()*a->get_height() > b->get_width()*b->get_height();
                 return sort_highest_framerate(lhs, rhs);
             }
 
