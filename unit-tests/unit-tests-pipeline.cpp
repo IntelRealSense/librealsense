@@ -17,7 +17,7 @@ TEST_CASE("enable default streams", "[pipeline]")
     // Require at least one device to be plugged in
     rs2::context ctx;
     pipeline pipe(ctx);
-    pipe.start();
+    REQUIRE_NOTHROW(pipe.start());
     pipe.stop();
 }
 
@@ -29,6 +29,30 @@ TEST_CASE("enable all streams", "[pipeline]")
 	rs2::config cfg;
 
 	cfg.enable_all_streams();
-	pipe.start(cfg);
+    REQUIRE_NOTHROW(pipe.start(cfg));
     pipe.stop();
+}
+
+TEST_CASE("disable stream", "[pipeline]")
+{
+    // Require at least one device to be plugged in
+    rs2::context ctx;
+    pipeline pipe(ctx);
+    rs2::config cfg;
+
+    cfg.enable_stream(rs2_stream::RS2_STREAM_COLOR, 1000);
+    cfg.disable_stream(rs2_stream::RS2_STREAM_COLOR, 1000);
+    REQUIRE_NOTHROW(pipe.start(cfg));
+    pipe.stop();
+}
+
+TEST_CASE("enable bad configuration", "[pipeline]")
+{
+    // Require at least one device to be plugged in
+    rs2::context ctx;
+    pipeline pipe(ctx);
+    rs2::config cfg;
+
+    cfg.enable_stream(rs2_stream::RS2_STREAM_COLOR, 1000);
+    REQUIRE_THROWS(pipe.start(cfg));
 }
