@@ -22,10 +22,34 @@ public class RealSenseDevice : MonoBehaviour
         UnityThread,
     }
 
-    /// <summary>
-    /// Returns the current Instance
-    /// </summary>
     public static RealSenseDevice Instance { get; private set; }
+
+    // private static RealSenseDevice m_instance;
+
+    // /// <summary>
+    // /// Returns the current Instance
+    // /// </summary>
+    // public static RealSenseDevice Instance
+    // {
+    //     get
+    //     {
+    //         if (m_instance == null)
+    //         {
+    //             var c = FindObjectOfType<RealSenseDevice>();
+    //             if (c == null)
+    //             {
+    //                 var go = new GameObject("RealSenseDevice");
+    //                 m_instance = go.AddComponent<RealSenseDevice>();
+    //                 Debug.Log(go);
+    //             }
+    //             else
+    //             {
+    //                 m_instance = c;
+    //             }
+    //         }
+    //         return m_instance;
+    //     }
+    // }
 
     /// <summary>
     /// Threading mode of operation, Multithreasds or Unitythread
@@ -33,7 +57,7 @@ public class RealSenseDevice : MonoBehaviour
     [Tooltip("Threading mode of operation, Multithreads or Unitythread")]
     public ProcessMode processMode;
 
-    bool started;
+    public bool Streaming { get; private set; }
 
     /// <summary>
     /// Notifies upon streaming start
@@ -65,27 +89,29 @@ public class RealSenseDevice : MonoBehaviour
     private readonly AutoResetEvent stopEvent = new AutoResetEvent(false);
 
     private Pipeline m_pipeline;
-    private Config m_config;
     public event Action<Frame> onNewSample;
     public event Action<FrameSet> onNewSampleSet;
 
     void Awake()
     {
-        if (Instance != null)
+        if (Instance != null && Instance != this)
             throw new Exception(string.Format("{0} singleton already instanced", this.GetType()));
         Instance = this;
 
-        m_pipeline = new Pipeline();
-        m_config = DeviceConfiguration.ToPipelineConfig();
-        ActiveProfile = m_config.Resolve(m_pipeline);
+        // m_pipeline = new Pipeline();
+        // m_config = DeviceConfiguration.ToPipelineConfig();
+        // ActiveProfile = m_config.Resolve(m_pipeline);
     }
 
     void OnEnable()
     {
-        m_pipeline = m_pipeline ?? new Pipeline();
-        m_config = DeviceConfiguration.ToPipelineConfig();
+        m_pipeline = new Pipeline();
+        using (var cfg = DeviceConfiguration.ToPipelineConfig())
+        {
+            // ActiveProfile = m_config.Resolve(m_pipeline);
+            ActiveProfile = m_pipeline.Start(cfg);
+        }
 
-        ActiveProfile = m_config.Resolve(m_pipeline);
         DeviceConfiguration.Profiles = new VideoStreamRequest[ActiveProfile.Streams.Count];
         for (int i = 0; i < DeviceConfiguration.Profiles.Length; i++)
         {
@@ -104,7 +130,6 @@ public class RealSenseDevice : MonoBehaviour
             DeviceConfiguration.Profiles[i] = p;
         }
 
-        ActiveProfile = m_pipeline.Start(m_config);
 
         if (processMode == ProcessMode.Multithread)
         {
@@ -120,30 +145,51 @@ public class RealSenseDevice : MonoBehaviour
     IEnumerator WaitAndStart()
     {
         yield return new WaitForEndOfFrame();
-        started = true;
+        Streaming = true;
         if (OnStart != null)
             OnStart(ActiveProfile);
     }
 
     void OnDisable()
     {
+
+        if (Streaming && OnStop != null)
+            OnStop();
+
+
         if (worker != null)
         {
             stopEvent.Set();
             worker.Join();
         }
 
-        if (m_pipeline != null)
-            m_pipeline.Stop();
+        onNewSample = null;
+        onNewSampleSet = null;
 
-        if (started && OnStop != null)
-            OnStop();
+        if (m_pipeline != null)
+        {
+            if (Streaming)
+                m_pipeline.Stop();
+            m_pipeline.Release();
+            m_pipeline = null;
+        }
+
+        Streaming = false;
+
+        ActiveProfile.Dispose();
+        ActiveProfile = null;
     }
 
     void OnDestroy()
     {
+        OnStart = null;
+        OnStop = null;
+
         if (m_pipeline != null)
             m_pipeline.Release();
+        m_pipeline = null;
+
+        Instance = null;
     }
 
     /// <summary>
@@ -173,14 +219,11 @@ public class RealSenseDevice : MonoBehaviour
     /// </summary>
     private void ProcessFrames(FrameSet frames)
     {
-        using (frames)
-        {
-            HandleFrameSet(frames);
+        HandleFrameSet(frames);
 
-            foreach (var frame in frames)
-                using (frame)
-                    HandleFrame(frame);
-        }
+        foreach (var frame in frames)
+            using (frame)
+                HandleFrame(frame);
     }
 
     /// <summary>
@@ -201,7 +244,7 @@ public class RealSenseDevice : MonoBehaviour
     {
         if (processMode != ProcessMode.UnityThread)
             return;
-            
+
         FrameSet frames;
         if (m_pipeline.PollForFrames(out frames))
         {

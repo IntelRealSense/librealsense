@@ -12,13 +12,7 @@ public class AlignImages : RealsenseStreamTexture
     [Space]
     public RealsenseStreamTexture alignTo;
 
-    void Start()
-    {
-        RealSenseDevice.Instance.OnStart += OnStrartStreaming;
-        RealSenseDevice.Instance.OnStop += OnStopStreaming;
-    }
-
-    private void OnStopStreaming()
+    protected override void OnStopStreaming()
     {
         if (aligner != null)
         {
@@ -29,7 +23,7 @@ public class AlignImages : RealsenseStreamTexture
         RealSenseDevice.Instance.onNewSampleSet -= OnFrameSet;
     }
 
-    private void OnStrartStreaming(PipelineProfile activeProfile)
+    protected override void OnStartStreaming(PipelineProfile activeProfile)
     {
         aligner = new Align(alignTo.sourceStreamType);
 
@@ -58,7 +52,7 @@ public class AlignImages : RealsenseStreamTexture
             using (var f = aligned[sourceStreamType])
                 OnFrame(f);
 
-            alignTo.OnFrame(aligned[alignTo.sourceStreamType]);
+            // alignTo.OnFrame(aligned[alignTo.sourceStreamType]);
         }
     }
 }

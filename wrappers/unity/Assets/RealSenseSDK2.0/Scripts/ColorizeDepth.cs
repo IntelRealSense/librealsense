@@ -7,7 +7,6 @@ using System;
 [DefaultStream(Stream.Depth, TextureFormat.RGB24)]
 public class ColorizeDepth : RealsenseStreamTexture
 {
-    private Colorizer m_colorizer;
 
     [Serializable]
     public enum ColorScheme //TOOD: remove and make more robust using option.ValueDescription
@@ -26,12 +25,22 @@ public class ColorizeDepth : RealsenseStreamTexture
     public ColorScheme colorMap;
     private ColorScheme prevColorMap;
 
-    protected override void Awake()
+    Colorizer m_colorizer;
+
+    protected override void OnStartStreaming(PipelineProfile activeProfile)
     {
-        base.Awake();
         m_colorizer = new Colorizer();
         prevColorMap = colorMap;
         m_colorizer.Options[Option.ColorScheme].Value = (float)colorMap;
+
+        base.OnStartStreaming(activeProfile);
+    }
+
+    protected override void OnStopStreaming()
+    {
+        base.OnStopStreaming();
+        
+        m_colorizer.Dispose();
     }
 
     override protected Frame ProcessFrame(Frame frame)

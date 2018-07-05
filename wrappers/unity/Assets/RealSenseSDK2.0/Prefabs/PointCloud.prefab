@@ -21,7 +21,7 @@ GameObject:
   - component: {fileID: 4810509327237356}
   - component: {fileID: 33048205770214360}
   - component: {fileID: 23076220388684884}
-  - component: {fileID: 114923201268487520}
+  - component: {fileID: 114128454867765796}
   m_Layer: 0
   m_Name: PointCloud
   m_TagString: Untagged
@@ -83,7 +83,7 @@ MeshFilter:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1749190083057562}
   m_Mesh: {fileID: 0}
---- !u!114 &114923201268487520
+--- !u!114 &114128454867765796
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
@@ -91,7 +91,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1749190083057562}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c07626acd57d2884fb9e1edc97da3490, type: 3}
+  m_Script: {fileID: 11500000, guid: 701924db2ae3d894aafb2d751551e249, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  stream: 2
+  stream: 1

@@ -1,6 +1,6 @@
 ﻿using Intel.RealSense;
 using System;
-using System.Linq;
+using System.Collections;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.Events;
@@ -47,7 +47,7 @@ public class RealsenseStreamTexture : MonoBehaviour
         RealSenseDevice.Instance.OnStop += OnStopStreaming;
     }
 
-    private void OnStopStreaming()
+    protected virtual void OnStopStreaming()
     {
         RealSenseDevice.Instance.onNewSample -= OnNewSampleUnityThread;
         RealSenseDevice.Instance.onNewSample -= OnNewSampleThreading;
@@ -56,11 +56,15 @@ public class RealsenseStreamTexture : MonoBehaviour
         data = null;
     }
 
-    private void OnStartStreaming(PipelineProfile activeProfile)
+    protected virtual void OnStartStreaming(PipelineProfile activeProfile)
     {
-        using (var profile = activeProfile.Streams.FirstOrDefault(p => p.Stream == sourceStreamType))
+        using (var profile = activeProfile.GetStream(sourceStreamType))
         {
             var videoProfile = profile as VideoStreamProfile;
+            if (videoProfile == null)
+            {
+                Debug.LogWarningFormat("{0} not in active profile", sourceStreamType);
+            }
 
             if (texture != null)
             {
@@ -105,24 +109,11 @@ public class RealsenseStreamTexture : MonoBehaviour
         var vidFrame = ProcessFrame(frame) as VideoFrame;
         data = data ?? new byte[vidFrame.Stride * vidFrame.Height];
         vidFrame.CopyTo(data);
-        
-        if (vidFrame != frame)
+        if ((vidFrame as Frame) != frame)
             vidFrame.Dispose();
     }
 
-    private void UploadTexture()
-    {
-        // if (texture == null || data == null || data.Length == 0)
-        // return;
-        texture.LoadRawTextureData(data);
-        texture.Apply();
-    }
-
     private void OnNewSampleThreading(Frame frame)
-=======
-
-    private void onNewSampleThreading(Frame frame)
->>>>>>> master
     {
         if (frame.Profile.Stream != sourceStreamType)
             return;
@@ -135,18 +126,26 @@ public class RealsenseStreamTexture : MonoBehaviour
         UnityEngine.Assertions.Assert.AreEqual(threadId, Thread.CurrentThread.ManagedThreadId);
         if (frame.Profile.Stream != sourceStreamType)
             return;
+
+        // OnNewSampleThreading(frame);
+
         var vidFrame = ProcessFrame(frame) as VideoFrame;
         texture.LoadRawTextureData(vidFrame.Data, vidFrame.Stride * vidFrame.Height);
-        if (vidFrame != frame)
+
+        if ((vidFrame as Frame) != frame)
             vidFrame.Dispose();
-        texture.Apply();
+
+        // texture.Apply();
+        f.Set();
     }
 
     void Update()
     {
         if (f.WaitOne(0))
         {
-            UploadTexture();
+            if (data != null)
+                texture.LoadRawTextureData(data);
+            texture.Apply();
         }
     }
 }

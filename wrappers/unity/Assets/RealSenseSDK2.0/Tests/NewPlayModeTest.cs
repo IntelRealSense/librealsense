@@ -39,6 +39,7 @@ public class NewPlayModeTest
         GameObject.Destroy(go);
         yield return null;
         Assert.That(go == null);
+        Assert.IsNull(RealSenseDevice.Instance);
     }
 
     [UnityTest]
@@ -59,6 +60,7 @@ public class NewPlayModeTest
         GameObject.Destroy(go);
         yield return null;
         Assert.That(go == null);
+        Assert.IsNull(RealSenseDevice.Instance);
     }
 
     [UnityTest]
@@ -109,5 +111,70 @@ public class NewPlayModeTest
         Assert.True(Array.TrueForAll(ex.rotation, x => x != 0));
 
         GameObject.Destroy(go);
+    }
+
+    [UnityTest]
+    [Category("Live"), Category("Record")]
+    public IEnumerator TestRecord()
+    {
+        var go = new GameObject("RealSenseDevice", typeof(RealSenseDevice));
+        var rs = RealSenseDevice.Instance;
+
+        go.SetActive(false);
+
+        rs.processMode = RealSenseDevice.ProcessMode.UnityThread;
+        rs.DeviceConfiguration.mode = RealSenseConfiguration.Mode.Record;
+        var path = "D:/test.bag";
+        rs.DeviceConfiguration.RecordPath = path;
+
+        go.SetActive(true);
+
+        yield return new WaitForSeconds(2f);
+        GameObject.Destroy(go);
+        yield return null;
+
+        Assert.That(go == null);
+
+        rs = null;
+
+        // GC.Collect();
+        // GC.WaitForPendingFinalizers();
+
+        var fi = new System.IO.FileInfo(path);
+        fi.Open(System.IO.FileMode.Open, System.IO.FileAccess.Read);
+        Assert.True(fi.Exists);
+        Assert.Greater(fi.Length, 0);
+    }
+
+
+    [UnityTest]
+    [Category("Playback")]
+    public IEnumerator TestPlayback()
+    {
+        var go = new GameObject("RealSenseDevice");
+        go.SetActive(false);
+
+        var rs = go.AddComponent<RealSenseDevice>();
+
+        Debug.Log(JsonUtility.ToJson(rs.DeviceConfiguration, true));
+
+        var path = "D:/test.bag";
+        var fi = new System.IO.FileInfo(path);
+        Assert.True(fi.Exists);
+        rs.DeviceConfiguration.PlaybackFile = path;
+        rs.DeviceConfiguration.mode = RealSenseConfiguration.Mode.Playback;
+        rs.DeviceConfiguration.Profiles = null;
+
+        Debug.Log(JsonUtility.ToJson(rs.DeviceConfiguration, true));
+
+        yield return null;
+
+        go.SetActive(true);
+
+        Debug.Log(rs.ActiveProfile.Streams.Count);
+
+        yield return new WaitForSeconds(2f);
+        GameObject.Destroy(go);
+        yield return null;
     }
 }

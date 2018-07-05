@@ -34,6 +34,8 @@
 			fixed4 _Color;
 
 			sampler2D _MainTex;
+			float4 _MainTex_TexelSize;
+
 			sampler2D _UVMap;
 
 			v2f vert (appdata v)
@@ -49,8 +51,10 @@
 			fixed4 frag (v2f i) : SV_Target
 			{
 				float2 uv = tex2D(_UVMap, i.uv);
-				if(any(uv == 0))
+				if(any(uv <= 0 || uv >= 1))
 					discard;
+				// offset to pixel center
+				uv += 0.5 * _MainTex_TexelSize.xy;
 				return tex2D(_MainTex, uv) * _Color;
 			}
 			ENDCG

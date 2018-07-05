@@ -42,6 +42,8 @@ public class RealSenseDeviceEditor : Editor
     {
         serializedObject.Update();
 
+        // EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Script"), true);
+
         var device = target as RealSenseDevice;
         // bool isStreaming = device.ActiveProfile != null;
         bool isStreaming = device.isActiveAndEnabled && device.ActiveProfile != null;
@@ -148,7 +150,10 @@ public class RealSenseDeviceEditor : Editor
 
                         GUILayout.EndHorizontal();
 
-                        if(!isPlaying) {
+                        if (!isPlaying)
+                        {
+                            // var t = TimeSpan.FromMilliseconds(playback.Position * 1e-6);
+                            // playback.Position = (ulong)EditorGUILayout.Slider(t.ToString(), playback.Position, 0, playback.Duration);
                             playback.Position = (ulong)EditorGUILayout.Slider(playback.Position, 0, playback.Duration);
                         }
 

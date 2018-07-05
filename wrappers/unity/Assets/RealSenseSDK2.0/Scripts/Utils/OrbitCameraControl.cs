@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class PointCloudControl : MonoBehaviour
+public class OrbitCameraControl : MonoBehaviour
 {
     public float _zoomSpeedFactor = 2;
     public float _rotateSpeedFactor = 0.1f;
@@ -25,18 +25,20 @@ public class PointCloudControl : MonoBehaviour
 
     void Update()
     {
+        if (!Application.isFocused)
+            return;
+
         var currMousePosition = Input.mousePosition;
         var diff = currMousePosition - prevMousePosition;
         prevMousePosition = currMousePosition;
 
-        if (!Input.anyKey)
-            Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
 
         // Zoom / FOV
         if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
         {
             float scroll = Input.GetAxis("Mouse ScrollWheel");
-            cam.fieldOfView += scroll * 20f;
+            cam.fieldOfView = Mathf.Clamp(cam.fieldOfView + scroll * 20f, 1f, 179f);
         }
         else
         {
@@ -46,22 +48,28 @@ public class PointCloudControl : MonoBehaviour
             _rotateAround -= z;
         }
 
-        // Orbit
-        if (Input.GetMouseButtonDown(0))
-        {
-            prevMousePosition = Input.mousePosition;
-        }
-        else
-        if (Input.GetMouseButton(0))
-        {
-            diff *= _rotateSpeedFactor;
-            transform.Translate(_rotateAround);
-            transform.Rotate(Vector3.right, -diff.y);
-            transform.Rotate(Vector3.up, diff.x, Space.World);
-            transform.Translate(-_rotateAround);
+        bool ctrlAlt = Input.GetKey(KeyCode.LeftAlt) && Input.GetKey(KeyCode.LeftControl);
 
-            Cursor.SetCursor(OrbitCursor, cursorOffset, CursorMode.Auto);
+        // Orbit
+        if (!ctrlAlt)
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                prevMousePosition = Input.mousePosition;
+            }
+            else
+            if (Input.GetMouseButton(0))
+            {
+                diff *= _rotateSpeedFactor;
+                transform.Translate(_rotateAround);
+                transform.Rotate(Vector3.right, -diff.y);
+                transform.Rotate(Vector3.up, diff.x, Space.World);
+                transform.Translate(-_rotateAround);
+
+                Cursor.SetCursor(OrbitCursor, cursorOffset, CursorMode.Auto);
+            }
         }
+
 
         // Look / Zoom
         if (Input.GetMouseButtonDown(1))
@@ -92,13 +100,15 @@ public class PointCloudControl : MonoBehaviour
             }
         }
 
+
+
         // Pan
-        if (Input.GetMouseButtonDown(2))
+        if (Input.GetMouseButtonDown(2) || (ctrlAlt && Input.GetMouseButtonDown(0)))
         {
             prevMousePosition = Input.mousePosition;
         }
         else
-        if (Input.GetMouseButton(2))
+        if (Input.GetMouseButton(2) || (ctrlAlt && Input.GetMouseButton(0)))
         {
             diff *= Time.deltaTime * _moveSpeedFactor;
             transform.Translate(-diff.x, -diff.y, 0);
@@ -109,5 +119,13 @@ public class PointCloudControl : MonoBehaviour
         // Move
         var m = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
         transform.Translate(m * _moveSpeedFactor);
+    }
+
+
+    public void Reset()
+    {
+        transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+        _rotateAround = Vector3.forward;
+
     }
 }

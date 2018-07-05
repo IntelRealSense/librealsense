@@ -1,7 +1,7 @@
 ﻿Shader "Custom/PointCloudGeom" {
 	Properties {
-		_MainTex ("Texture", 2D) = "white" {}
-		_UVMap ("UV", 2D) = "white" {}
+		[NoScaleOffset]_MainTex ("Texture", 2D) = "white" {}
+		[NoScaleOffset]_UVMap ("UV", 2D) = "white" {}
 		_PointSize("Point Size", Float) = 4.0
 		_Color ("PointCloud Color", Color) = (1, 1, 1, 1)
 		[Toggle(USE_DISTANCE)]_UseDistance ("Scale by distance?", float) = 0
@@ -9,6 +9,7 @@
 
 	SubShader
 	{
+		Cull Off
 		Pass 
 		{
 			CGPROGRAM
@@ -34,7 +35,10 @@
 			fixed4 _Color;
 
 			sampler2D _MainTex;
+			float4 _MainTex_TexelSize;
+
 			sampler2D _UVMap;
+			float4 _UVMap_TexelSize;
 
 
 			struct g2f
@@ -103,9 +107,14 @@
 
 			fixed4 frag (g2f i) : SV_Target
 			{
+				// return tex2D(_UVMap, i.uv + 0.5 * _MainTex_TexelSize.xy);
+				// return tex2D(_UVMap, i.uv);
+				// return tex2D(_UVMap, i.uv + 0.5 * _UVMap_TexelSize.xy);
 				float2 uv = tex2D(_UVMap, i.uv);
-				if(any(uv == 0))
+				if(any(uv <= 0 || uv >= 1))
 					discard;
+				// offset to pixel center
+				uv += 0.5 * _MainTex_TexelSize.xy;
 				return tex2D(_MainTex, uv) * _Color;
 			}
 			ENDCG

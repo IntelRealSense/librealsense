@@ -4,4 +4,25 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/RealSenseSDK2.0/Scenes/StartHere.unity
+    guid: b58b736dcdf5e6d4dbe73d67853a2ace
+  - enabled: 1
+    path: Assets/RealSenseSDK2.0/Scenes/RealSenseTexturesDepthAndColor.unity
+    guid: c4b853c1285d9324e999dc60a8a399d5
+  - enabled: 1
+    path: Assets/RealSenseSDK2.0/Scenes/RealSenseTexturesDepthAndInfrared.unity
+    guid: 8cd4fe0a765335f4080be5574f790d9f
+  - enabled: 1
+    path: Assets/RealSenseSDK2.0/Scenes/RealSensePointCloudDepth.unity
+    guid: 9029980bf604b504c8b5473f02bd774f
+  - enabled: 1
+    path: Assets/RealSenseSDK2.0/Scenes/RealSensePointCloudDepthAndColor.unity
+    guid: 7adc5cd8d63de844f8f9c013c8b68cbb
+  - enabled: 1
+    path: Assets/RealSenseSDK2.0/Scenes/AlignmentSample.unity
+    guid: f8e2ea523a78cf145a7e650c32e39fc3
+  - enabled: 1
+    path: Assets/RealSenseSDK2.0/Scenes/BackgroundSegmentation.unity
+    guid: dcb7835ca163a40408d6227793143806
