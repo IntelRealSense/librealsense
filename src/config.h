@@ -389,29 +389,24 @@ namespace librealsense
                 return sort_highest_framerate(lhs, rhs);
             }
 
-            static float match_nominal_config(video_stream_profile_interface* p)
+            static bool is_best_format(rs2_stream stream, rs2_format format)
             {
-                auto width = std::abs((float)p->get_width() - 640);
-                auto height = std::abs((float)p->get_height() - 480);
-                auto fps = std::abs((float)p->get_framerate() - 30);
-                float format = 0xffffffff;
-                switch (p->get_stream_type())
+                switch (stream)
                 {
-                    case rs2_stream::RS2_STREAM_COLOR: format = std::abs((float)p->get_format() - float(RS2_FORMAT_RGB8)); break;
-                    case rs2_stream::RS2_STREAM_DEPTH: format = std::abs((float)p->get_format() - float(RS2_FORMAT_Z16)); break;
-                    case rs2_stream::RS2_STREAM_INFRARED: format = std::abs((float)p->get_format() - float(RS2_FORMAT_Y8)); break;
+                case rs2_stream::RS2_STREAM_COLOR: return format == RS2_FORMAT_RGB8;
+                case rs2_stream::RS2_STREAM_DEPTH: return format == RS2_FORMAT_Z16;
+                case rs2_stream::RS2_STREAM_INFRARED: return format == RS2_FORMAT_Y8;
                 }
-                return width + height + fps + format;
+                return false;
             }
 
-            static bool sort_best_quality( std::shared_ptr<stream_profile_interface> lhs, std::shared_ptr<stream_profile_interface> rhs) {
+            static bool sort_best_quality(std::shared_ptr<stream_profile_interface> lhs, std::shared_ptr<stream_profile_interface> rhs) {
                 if (auto a = dynamic_cast<video_stream_profile_interface*>(lhs.get()))
                 {
                     if (auto b = dynamic_cast<video_stream_profile_interface*>(rhs.get()))
                     {
-                        auto lt = match_nominal_config(a);
-                        auto rt = match_nominal_config(b);
-                        return lt < rt;
+                        return std::make_tuple(a->get_width() == 640 && a->get_height() == 480, a->get_framerate() == 30, is_best_format(a->get_stream_type(), a->get_format()))
+                            > std::make_tuple(b->get_width() == 640 && b->get_height() == 480, b->get_framerate() == 30, is_best_format(b->get_stream_type(), b->get_format()));
                     }
                 }
                 return sort_highest_framerate(lhs, rhs);

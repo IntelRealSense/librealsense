@@ -221,7 +221,18 @@ namespace librealsense
                 _resolved_profile = resolve(dev);
                 return _resolved_profile;
             }
-            catch (...) {}
+            catch (const std::exception& e)
+            {
+                LOG_DEBUG("Iterate available devices - config can not be resolved. " << e.what());
+            }
+        }
+
+        //If no device found wait for one
+        auto dev = pipe->wait_for_device(timeout);
+        if (dev != nullptr)
+        {
+            _resolved_profile = resolve(dev);
+            return _resolved_profile;
         }
 
         throw std::runtime_error("Failed to resolve request. No device found that satisfies all requirements");
@@ -247,6 +258,7 @@ namespace librealsense
         }
         return true;
     }
+
     std::shared_ptr<device_interface> pipeline_config::get_or_add_playback_device(std::shared_ptr<pipeline> pipe, const std::string& file)
     {
         //Check if the file is already loaded to context, and if so return that device
