@@ -342,22 +342,6 @@ namespace librealsense
             }
         }
 
-        // Workaround - default profiles that holds color stream shouldn't supposed to provide infrared either
-        auto color_it = std::find_if(default_profiles.begin(), default_profiles.end(), [](std::shared_ptr<stream_profile_interface> p)
-        {
-            return p.get()->get_stream_type() == RS2_STREAM_COLOR;
-        });
-
-        bool default_profiles_contains_color_stream = color_it != default_profiles.end();
-        if (default_profiles_contains_color_stream)
-        {
-            auto it = std::find_if(default_profiles.begin(), default_profiles.end(), [](std::shared_ptr<stream_profile_interface> p) {return p.get()->get_stream_type() == RS2_STREAM_INFRARED; });
-            if (it != default_profiles.end())
-            {
-                default_profiles.erase(it);
-            }
-        }
-
         return default_profiles;
     }
 
