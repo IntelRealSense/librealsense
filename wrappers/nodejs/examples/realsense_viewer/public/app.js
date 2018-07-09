@@ -8,14 +8,14 @@
 'use strict';
 
 class RealsenseProxy {
-  constructor(cmdPort, callback, dataCallback) {
+  constructor(cmdPort, callback, dataCallbacks) {
     this.url = 'ws://' + window.location.hostname + ':' +cmdPort;
     this.cmdSocket = null;
     this.cmdSocketReady = false;
     this.dataSockets = new Map();
     this.dataSocketReady = new Map();
     this.responseCallback = callback;
-    this.dataCallback = dataCallback;
+    this.dataCallbacks = dataCallbacks;
   }
   connect() {
     this.cmdSocket = new WebSocket(this.url);
@@ -51,7 +51,7 @@ class RealsenseProxy {
         };
         cmd.data.streams.push(stream);
       } else {
-        console.Error('color stream not selected!');
+        console.error('color stream not selected!');
       }
     } else if (sensor === CommonNames.stereoSensorName) {
       let res = selection.selectedResolutions[CommonNames.stereoSensorName];
@@ -116,12 +116,18 @@ class RealsenseProxy {
       // received data meta string
     } else {
       // received raw data
-      this.dataCallback(stream, dataMsg);
+      this.dataCallbacks[stream](dataMsg);
     }
   }
 }
+const dataCallbacks = {
+  'color': colorDataCallback,
+  'depth': depthDataCallback,
+  'infrared1': infrared1DataCallback,
+  'infrared2': infrared2DataCallback,
+};
 
-const proxy = new RealsenseProxy(serverInfo.cmdPort, cmdResponseCallback, dataCallback);
+const proxy = new RealsenseProxy(serverInfo.cmdPort, cmdResponseCallback, dataCallbacks);
 const vue = new Vue({
   el: '#web-demo',
   data: {
@@ -131,18 +137,47 @@ const vue = new Vue({
     options: '',
     selection: {
       selectedPreset: '',
-      selectedResolutions: new Map(),
-      selectedFpses: new Map(),
-      selectedStreams: new Map(),
-      selectedFormats: new Map(),
+      selectedResolutions: {},
+      selectedFpses: {},
+      selectedStreams: {},
+      selectedFormats: {},
     },
     defaultCfg: {},
+    canvasData: {
+      started: new Map(),
+      width: {
+        'color': 0,
+        'depth': 0,
+        'infrared1': 0,
+        'infrared2': 0,
+      },
+      height: {
+        'color': 0,
+        'depth': 0,
+        'infrared1': 0,
+        'infrared2': 0,
+      },
+      display: {
+        'color': false,
+        'depth': false,
+        'infrared1': false,
+        'infrared2': false,
+      },
+    },
   },
   mounted: function() {
     proxy.connect();
   },
   methods: {
     onstartStereo: function(event) {
+      vue.canvasData.started.set(CommonNames.stereoStreamName, true);
+      let size = resolutionStringToNumberPair(
+          vue.selection.selectedResolutions[CommonNames.stereoSensorName]);
+      vue.canvasData.width[CommonNames.stereoStreamName] = size.width;
+      vue.canvasData.height[CommonNames.stereoStreamName] = size.height;
+      vue.canvasData.display[CommonNames.stereoStreamName] = true;
+
+      updateCanvasConfig();
       proxy.startStreaming(CommonNames.stereoSensorName, vue.selection);
       console.log('selected Resolutions:', vue.selection.selectedResolutions);
       console.log('selected Fpses:', vue.selection.selectedFpses);
@@ -151,6 +186,13 @@ const vue = new Vue({
       console.log('selected Preset:', vue.selection.selectedPreset);
     },
     onstartColor: function(event) {
+      vue.canvasData.started.set(CommonNames.colorStreamName, true);
+      let size = resolutionStringToNumberPair(
+          vue.selection.selectedResolutions[CommonNames.colorSensorName]);
+      vue.canvasData.width[CommonNames.colorStreamName] = size.width;
+      vue.canvasData.height[CommonNames.colorStreamName] = size.height;
+      vue.canvasData.display[CommonNames.colorStreamName] = true;
+      updateCanvasConfig();
       proxy.startStreaming(CommonNames.colorSensorName, vue.selection);
       console.log('selected Resolutions:', vue.selection.selectedResolutions);
       console.log('selected Fpses:', vue.selection.selectedFpses);
@@ -194,15 +236,59 @@ function cmdResponseCallback(response) {
   }
 }
 
-function dataCallback(stream, data) {
+function colorDataCallback(data) {
   let blob = new Blob([data], {type: 'image/jpg'});
   let url = URL.createObjectURL(blob);
   let img = new Image();
   img.src = url;
-  let canvas = document.getElementById('streaming-canvas-id');
+  let canvas = document.getElementById('color-canvas');
   let ctx = canvas.getContext('2d');
   img.onload = function() {
     ctx.drawImage(this, 0, 0);
     URL.revokeObjectURL(url);
   };
+}
+
+function depthDataCallback(data) {
+  let blob = new Blob([data], {type: 'image/jpg'});
+  let url = URL.createObjectURL(blob);
+  let img = new Image();
+  img.src = url;
+  let canvas = document.getElementById('depth-canvas');
+  let ctx = canvas.getContext('2d');
+  img.onload = function() {
+    ctx.drawImage(this, 0, 0);
+    URL.revokeObjectURL(url);
+  };
+}
+
+function infrared1DataCallback(data) {
+  // todo(tingshao): Add infrared support
+}
+function infrared2DataCallback(data) {
+  // todo(tingshao): Add infrared support
+}
+function resolutionStringToNumberPair(resolution) {
+  let pair = resolution.split('*').map((x) => Number(x));
+  return {width: pair[0], height: pair[1]};
+}
+
+function updateCanvasConfig() {
+  let startedCount = 0;
+  vue.canvasData.started.forEach((val, key) => {
+    if (val) {
+      startedCount++;
+    }
+  });
+  if (startedCount >= 2) {
+    vue.canvasData.started.forEach((val, key) => {
+      if (val) {
+        let oldWidth = vue.canvasData.width[key];
+        let oldHeight = vue.canvasData.height[key];
+
+        vue.canvasData.width[key] = oldWidth/2;
+        vue.canvasData.height[key] = oldHeight/2;
+      }
+    });
+  }
 }

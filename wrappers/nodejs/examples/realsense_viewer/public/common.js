@@ -146,10 +146,10 @@ const serverInfo = {
 const CommonNames = {
   colorSensorName: 'RGB Camera',
   stereoSensorName: 'Stereo Module',
+  infraredStreamName: 'infrared',
   colorStreamName: 'color',
   infraredStream1Name: 'infrared1',
   infraredStream2Name: 'infrared2',
-  infraredStreamName: 'infrared',
   stereoStreamName: 'depth',
 };
 

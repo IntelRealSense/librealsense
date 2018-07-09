@@ -47,7 +47,10 @@
     <div v-else>
       <textarea>No sensor info!</textarea>>
     </div>
-    <canvas id="streaming-canvas-id" width=1280 height=720></canvas>
+    <canvas id="color-canvas" v-bind:width="canvasData.width['color']" v-bind:height="canvasData.height['color']" v-show="canvasData.display['color']"></canvas>
+    <canvas id="depth-canvas" v-bind:width="canvasData.width['depth']" v-bind:height="canvasData.height['depth']" v-show="canvasData.display['depth']"></canvas>
+    <canvas id="infrared1-canvas" v-bind:width="canvasData.width['infrared1']" v-bind:height="canvasData.height['infrared1']" v-show="canvasData.display['infrared1']"></canvas>
+    <canvas id="infrared2-canvas" v-bind:width="canvasData.width['infrared2']" v-bind:height="canvasData.height['infrared2']" v-show="canvasData.display['infrared2']"></canvas>
   </div>
   <script type="text/javascript" src="app.js"></script>
 </body>
