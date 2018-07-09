@@ -285,6 +285,15 @@ namespace librealsense
         {
             return rs2_intrinsics {};
         }
+
+        std::vector<rs2_marker> get_markers() const override
+        {
+            std::vector<rs2_marker> markers;
+            markers.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+            markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+            markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            return markers;
+        };
     };
 
     std::shared_ptr<device_interface> platform_camera_info::create(std::shared_ptr<context> ctx,

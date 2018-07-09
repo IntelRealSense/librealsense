@@ -37,6 +37,22 @@ namespace librealsense
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+        
+        std::vector<rs2_marker> get_markers() const override
+        {
+            std::vector<rs2_marker> markers;
+            if (get_usb_spec() >= platform::usb3_type)
+            {
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, 1, 640, 480, RS2_FORMAT_RGB8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+            }
+            else
+            {
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, 1, 640, 480, RS2_FORMAT_RGB8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+            }
+            return markers;
+        };
     };
 
     // DS5U_S
@@ -52,6 +68,22 @@ namespace librealsense
             ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
+        std::vector<rs2_marker> get_markers() const override
+        {
+            std::vector<rs2_marker> markers;
+            if (get_usb_spec() >= platform::usb3_type)
+            {
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 720, 720, RS2_FORMAT_Z16, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, 1, 1152, 1152, RS2_FORMAT_RAW10, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+            }
+            else
+            {
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 720, 720, RS2_FORMAT_Z16, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, 1, 1152, 1152, RS2_FORMAT_RAW10, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+            }
+            return markers;
+        };
     };
 
     // ASR
@@ -69,6 +101,22 @@ namespace librealsense
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
+        std::vector<rs2_marker> get_markers() const override
+        {
+            std::vector<rs2_marker> markers;
+            if (get_usb_spec() >= platform::usb3_type)
+            {
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, 1, 640, 480, RS2_FORMAT_RGB8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+            }
+            else
+            {
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, 1, 640, 480, RS2_FORMAT_RGB8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+            }
+            return markers;
+        };
     };
 
     // ASRC
@@ -89,6 +137,24 @@ namespace librealsense
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
+        std::vector<rs2_marker> get_markers() const override
+        {
+            std::vector<rs2_marker> markers;
+            if (get_usb_spec() >= platform::usb3_type)
+            {
+                markers.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            else
+            {
+                markers.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            return markers;
+        };
     };
 
     // PWGT
@@ -104,6 +170,22 @@ namespace librealsense
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
+        std::vector<rs2_marker> get_markers() const override
+        {
+            std::vector<rs2_marker> markers;
+            if (get_usb_spec() >= platform::usb3_type)
+            {
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            else
+            {
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            return markers;
+        };
     };
 
     // PWG
@@ -118,6 +200,22 @@ namespace librealsense
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
+        std::vector<rs2_marker> get_markers() const override
+        {
+            std::vector<rs2_marker> markers;
+            if (get_usb_spec() >= platform::usb3_type)
+            {
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            else
+            {
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            return markers;
+        };
     };
 
     // AWG
@@ -133,6 +231,22 @@ namespace librealsense
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
+        std::vector<rs2_marker> get_markers() const override
+        {
+            std::vector<rs2_marker> markers;
+            if (get_usb_spec() >= platform::usb3_type)
+            {
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            else
+            {
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            return markers;
+        };
     };
 
     // AWGT
@@ -151,6 +265,22 @@ namespace librealsense
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
+        std::vector<rs2_marker> get_markers() const override
+        {
+            std::vector<rs2_marker> markers;
+            if (get_usb_spec() >= platform::usb3_type)
+            {
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            else
+            {
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            return markers;
+        };
     };
 
     // AWGC
@@ -170,6 +300,23 @@ namespace librealsense
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
+        std::vector<rs2_marker> get_markers() const override
+        {
+            std::vector<rs2_marker> markers;
+            if (get_usb_spec() >= platform::usb3_type)
+            {
+                markers.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            else
+            {
+                markers.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            return markers;
+        };
     };
 
     // AWGCT
@@ -190,6 +337,24 @@ namespace librealsense
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const;
+
+        std::vector<rs2_marker> get_markers() const override
+        {
+            std::vector<rs2_marker> markers;
+            if (get_usb_spec() >= platform::usb3_type)
+            {
+                markers.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            else
+            {
+                markers.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            return markers;
+        };
     };
 
     std::shared_ptr<device_interface> ds5_info::create(std::shared_ptr<context> ctx,

@@ -79,7 +79,7 @@ namespace librealsense
                     assign_stream(_owner->_gpio_streams[p->get_stream_index()-1], p);
                 if (p->get_framerate() == 1000 &&
                     p->get_format() == RS2_FORMAT_MOTION_XYZ32F)
-                    set_marker(p.get());
+                    get_device().set_marker(p.get());
 
                 //set motion intrinsics
                 if (p->get_stream_type() == RS2_STREAM_ACCEL || p->get_stream_type() == RS2_STREAM_GYRO)

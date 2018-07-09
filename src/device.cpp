@@ -261,4 +261,34 @@ void librealsense::device::register_stream_to_extrinsic_group(const stream_inter
     }
 }
 
+void librealsense::device::set_marker(stream_profile_interface* profile) const
+{
+    auto markers = get_markers();
+    for (auto marker : markers)
+    {
+        auto vp = dynamic_cast<video_stream_profile_interface*>(profile);
+        if (vp)
+        {
+            if (vp->get_stream_type() == marker.stream &&
+                vp->get_format() == marker.format &&
+                vp->get_width() == marker.width &&
+                vp->get_height() == marker.height &&
+                vp->get_framerate() == marker.fps &&
+                marker.stream_index == -1 || vp->get_stream_index() == marker.stream_index)
+                profile->set_marker(marker.marker);
+        }
+    }
+}
+
+platform::usb_spec librealsense::device::get_usb_spec() const
+{
+    auto str = get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+    for (auto u : platform::usb_spec_names)
+    {
+        if (u.second.compare(str) == 0)
+            return u.first;
+    }
+    return platform::usb_undefined;
+}
+
 

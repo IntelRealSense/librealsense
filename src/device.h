@@ -72,6 +72,9 @@ namespace librealsense
             return _is_valid;
         }
 
+        void set_marker(stream_profile_interface* profile) const override;
+        platform::usb_spec get_usb_spec() const;
+
     protected:
         int add_sensor(std::shared_ptr<sensor_interface> sensor_base);
         int assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t idx);

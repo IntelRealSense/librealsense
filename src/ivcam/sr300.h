@@ -158,6 +158,24 @@ namespace librealsense
     class sr300_camera final : public virtual device, public debug_interface
     {
     public:
+        std::vector<rs2_marker> get_markers() const override
+        {
+            std::vector<rs2_marker> markers;
+            if (get_usb_spec() >= platform::usb3_type)
+            {
+                markers.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            else
+            {
+                markers.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
+            }
+            return markers;
+        };
+
         class preset_option : public option_base
         {
         public:
@@ -228,7 +246,7 @@ namespace librealsense
                     // Register intrinsics
                     auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                    set_marker(video);
+                    get_device().set_marker(video);
 
                     auto profile = to_profile(p.get());
                     std::weak_ptr<sr300_color_sensor> wp =
@@ -284,7 +302,7 @@ namespace librealsense
                     // Register intrinsics
                     auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                    set_marker(video);
+                    get_device().set_marker(video);
 
                     auto profile = to_profile(p.get());
                     std::weak_ptr<sr300_depth_sensor> wp =

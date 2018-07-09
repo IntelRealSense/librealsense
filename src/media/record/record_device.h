@@ -43,6 +43,9 @@ namespace librealsense
         std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
         bool is_valid() const override;
 
+        std::vector<rs2_marker> get_markers() const override { return m_device->get_markers(); };
+        void set_marker(stream_profile_interface* profile) const override { m_device->set_marker(profile); }
+
     private:
         template <typename T> void write_device_extension_changes(const T& ext);
         template <rs2_extension E, typename P> bool extend_to_aux(std::shared_ptr<P> p, void** ext);

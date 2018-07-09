@@ -35,6 +35,16 @@ namespace librealsense
         RS2_PROFILE_MARKER_DEFAULT = 2,
     } rs2_profile_marker;
 
+    struct rs2_marker
+    {
+        rs2_stream stream;
+        int stream_index;
+        uint32_t width, height;
+        rs2_format format;
+        uint32_t fps;
+        int marker;
+    };
+
     class stream_interface : public std::enable_shared_from_this<stream_interface>
     {
     public:
@@ -159,6 +169,9 @@ namespace librealsense
 
         virtual ~device_interface() = default;
 
+        virtual std::vector<rs2_marker> get_markers() const = 0;
+
+        virtual void set_marker(stream_profile_interface* profile) const = 0;
     };
 
     class depth_stereo_sensor;

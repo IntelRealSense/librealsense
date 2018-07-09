@@ -78,9 +78,6 @@ namespace librealsense
         bool supports_info(rs2_camera_info info) const override;
 
     protected:
-        //default default streams, should be override for special skus
-        virtual void set_marker(stream_profile_interface* profile) = 0;
-
         void raise_on_before_streaming_changes(bool streaming);
         void set_active_streams(const stream_profiles& requests);
         bool try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const;
@@ -147,7 +144,6 @@ namespace librealsense
 
     protected:
         stream_profiles init_stream_profiles() override;
-        void set_marker(stream_profile_interface* profile) override;
 
     private:
         const std::map<rs2_stream, uint32_t> stream_and_fourcc = {{RS2_STREAM_GYRO,  'GYRO'},
@@ -209,7 +205,6 @@ namespace librealsense
         std::string get_device_path() const { return _device->get_device_location(); }
 
     protected:
-        void set_marker(stream_profile_interface* profile) override;
         stream_profiles init_stream_profiles() override;
 
         rs2_extension stream_to_frame_types(rs2_stream stream) const;

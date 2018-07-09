@@ -171,7 +171,7 @@ namespace librealsense
                     return rs2_intrinsics{};
             });
 
-            set_marker(video);
+            get_device().set_marker(video);
         }
 
         return results;

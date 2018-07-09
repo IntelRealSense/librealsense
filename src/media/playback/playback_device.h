@@ -48,6 +48,12 @@ namespace librealsense
         static bool try_extend_snapshot(std::shared_ptr<extension_snapshot>& e, rs2_extension extension_type, void** ext);
         bool is_valid() const override;
 
+        std::vector<rs2_marker> get_markers() const override { return std::vector<rs2_marker>(); };//no hard-coded default streams for playback
+        void set_marker(stream_profile_interface* profile) const override 
+        {
+            profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT | rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET);
+        }
+
     private:
         void update_time_base(device_serializer::nanoseconds base_timestamp);
         device_serializer::nanoseconds calc_sleep_time(device_serializer::nanoseconds  timestamp) const;

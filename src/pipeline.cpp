@@ -175,7 +175,7 @@ namespace librealsense
             for (size_t i = 0; i < dev->get_sensors_count(); ++i)
             {
                 auto&& sub = dev->get_sensor(i);
-                auto profiles = sub.get_stream_profiles();
+                auto profiles = sub.get_stream_profiles(RS2_PROFILE_MARKER_SUPERSET);
                 config.enable_streams(profiles);
             }
             return std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
