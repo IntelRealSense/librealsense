@@ -1866,6 +1866,14 @@ void rs2_software_sensor_on_video_frame(rs2_sensor* sensor, rs2_software_video_f
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, frame.pixels)
 
+void rs2_software_sensor_set_metadata(rs2_sensor* sensor, rs2_frame_metadata_value key, rs2_metadata_type value, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
+    return bs->set_metadata(key, value);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, key, value)
+
 rs2_stream_profile* rs2_software_sensor_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stream, rs2_error** error) BEGIN_API_CALL
 {
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);

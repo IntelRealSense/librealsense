@@ -47,10 +47,12 @@ namespace librealsense
         void on_video_frame(rs2_software_video_frame frame);
         void add_read_only_option(rs2_option option, float val);
         void update_read_only_option(rs2_option option, float val);
-
+        void set_metadata(rs2_frame_metadata_value key, rs2_metadata_type value);
     private:
         friend class software_device;
         stream_profiles _profiles;
+        std::map<rs2_frame_metadata_value, rs2_metadata_type> _metadata_map;
+
     };
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_SENSOR, software_sensor);
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_DEVICE, software_device);
