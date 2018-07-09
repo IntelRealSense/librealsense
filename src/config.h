@@ -412,9 +412,8 @@ namespace librealsense
                 return sort_highest_framerate(lhs, rhs);
             }
 
-            static void auto_complete(std::vector<request_type> &requests, sensor_interface &target)
+            static void auto_complete(std::vector<request_type> &requests, stream_profiles candidates)
             {
-                auto candidates = target.get_stream_profiles();
                 for (auto & request : requests)
                 {
                     if (!has_wildcards(request)) continue;
@@ -427,7 +426,7 @@ namespace librealsense
                         }
                     }
                     if (has_wildcards(request))
-                        throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice ") + target.get_info(RS2_CAMERA_INFO_NAME));
+                        throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice"));
                 }
             }
 
@@ -451,25 +450,19 @@ namespace librealsense
                 return r;
             }
 
-            std::multimap<int, std::shared_ptr<stream_profile_interface>> map_streams(device_interface* dev) const
+            stream_profiles map_sub_device(stream_profiles profiles, std::set<index_type> satisfied_streams) const
             {
-                std::multimap<int, std::shared_ptr<stream_profile_interface>> out;
-                std::set<index_type> satisfied_streams;
-
-                // Algorithm assumes get_adjacent_devices always
-                // returns the devices in the same order
-                for (size_t i = 0; i < dev->get_sensors_count(); ++i)
+                stream_profiles rv;
+                try
                 {
-                    auto&& sub = dev->get_sensor(i);
                     std::vector<request_type> targets;
-                    auto profiles = sub.get_stream_profiles();
 
                     // deal with explicit requests
                     for (auto && kvp : _requests)
                     {
                         if (satisfied_streams.count(kvp.first)) continue; // skip satisfied requests
 
-                        // if any profile on the subdevice can supply this request, consider it satisfiable
+                         // if any profile on the subdevice can supply this request, consider it satisfiable
                         auto it = std::find_if(begin(profiles), end(profiles), [&kvp](const std::shared_ptr<stream_profile_interface>& profile)
                         {
                             return match(profile.get(), kvp.second);
@@ -483,7 +476,7 @@ namespace librealsense
 
                     if (targets.size() > 0) // if subdevice is handling any streams
                     {
-                        auto_complete(targets, sub);
+                        auto_complete(targets, profiles);
 
                         for (auto && t : targets)
                         {
@@ -491,11 +484,38 @@ namespace librealsense
                             {
                                 if (match(p.get(), t))
                                 {
-                                    out.emplace((int)i, p);
+                                    rv.push_back(p);
                                     break;
                                 }
                             }
                         }
+                    }
+                }
+                catch (std::exception e)
+                {
+                    LOG_ERROR(e.what());
+                }
+                return rv;
+            }
+
+            std::multimap<int, std::shared_ptr<stream_profile_interface>> map_streams(device_interface* dev) const
+            {
+                std::multimap<int, std::shared_ptr<stream_profile_interface>> out;
+                std::set<index_type> satisfied_streams;
+
+                // Algorithm assumes get_adjacent_devices always
+                // returns the devices in the same order
+                for (size_t i = 0; i < dev->get_sensors_count(); ++i)
+                {
+                    auto&& sub = dev->get_sensor(i);
+                    auto profiles = map_sub_device(sub.get_stream_profiles(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET), satisfied_streams);
+                    if(profiles.size() == 0)
+                        profiles = map_sub_device(sub.get_stream_profiles(rs2_profile_marker::RS2_PROFILE_MARKER_ANY), satisfied_streams);
+                    if(profiles.size() == 0)
+                        throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice ") + sub.get_info(RS2_CAMERA_INFO_NAME));
+                    for (auto p : profiles)
+                    {
+                        out.emplace((int)i, p);
                     }
                 }
                 return out;

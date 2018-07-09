@@ -97,7 +97,6 @@ TEST_CASE("default playback config", "[pipeline]")
     {
         pipeline pipe;
         rs2::config cfg;
-
         cfg.enable_record_to_file(file_name);
         auto profile = pipe.start(cfg);
         int frames = 10;
@@ -118,4 +117,42 @@ TEST_CASE("default playback config", "[pipeline]")
     }
 
     REQUIRE(rec_streams == pb_streams);
+}
+
+TEST_CASE("stream enable hierarchy", "[pipeline]")
+{
+    rs2::context ctx;
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+        return;
+
+    pipeline pipe;
+    rs2::config cfg;
+    std::vector<stream_profile> default_streams = pipe.start(cfg).get_streams();
+    pipe.stop();
+
+    cfg.enable_all_streams();
+    std::vector<stream_profile> all_streams = pipe.start(cfg).get_streams();
+    pipe.stop();
+
+    cfg.disable_all_streams();
+    cfg.enable_stream(rs2_stream::RS2_STREAM_COLOR);
+    std::vector<stream_profile> wildcards_streams = pipe.start(cfg).get_streams();
+    pipe.stop();
+
+    for (auto d : default_streams)
+    {
+        auto it = std::find_if(begin(all_streams), end(all_streams), [d](const rs2::stream_profile profile)
+        {
+            return d == profile;
+        });
+        REQUIRE(it != std::end(all_streams));
+    }
+    for (auto w : wildcards_streams)
+    {
+        auto it = std::find_if(begin(all_streams), end(all_streams), [w](const rs2::stream_profile profile)
+        {
+            return w == profile;
+        });
+        REQUIRE(it != std::end(all_streams));
+    }
 }

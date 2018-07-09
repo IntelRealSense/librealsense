@@ -289,13 +289,15 @@ namespace librealsense
         case rs2_stream::RS2_STREAM_COLOR: 
             if (vp->get_format() == rs2_format::RS2_FORMAT_RGB8 && vp->get_width() == 640 && vp->get_height() == 480 && vp->get_framerate() == 30)
                 profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
+            break;
         case rs2_stream::RS2_STREAM_DEPTH: 
             if(vp->get_format() == rs2_format::RS2_FORMAT_Z16 && vp->get_width() == 640 && vp->get_height() == 480 && vp->get_framerate() == 30)
                 vp->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
+            break;
         case rs2_stream::RS2_STREAM_INFRARED:
             if(vp->get_format() == rs2_format::RS2_FORMAT_Y8 && vp->get_width() == 640 && vp->get_height() == 480 && vp->get_framerate() == 30)
                 vp->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET);
-        default: break;
+            break;
         }
     };
 
