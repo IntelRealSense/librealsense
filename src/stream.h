@@ -63,6 +63,9 @@ namespace librealsense
         bool is_default() const override;
         void make_default() override;
 
+        int get_marker() const override;
+        void set_marker(int marker) override;
+
         int get_unique_id() const override { return _uid; }
         void set_unique_id(int uid) override
         {
@@ -84,6 +87,7 @@ namespace librealsense
         rs2_format _format = RS2_FORMAT_ANY;
         uint32_t _framerate = 0;
         bool _is_default = false;
+        int _marker = rs2_stream_marker::RS2_STREAM_MARKER_ANY;
         rs2_stream_profile _c_wrapper;
         rs2_stream_profile* _c_ptr = nullptr;
     };

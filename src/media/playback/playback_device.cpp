@@ -41,7 +41,7 @@ playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<d
         auto profiles = sensor_pair.second->get_stream_profiles();
         for(auto profile : profiles)
         {
-            profile->make_default();
+            profile->set_marker(rs2_stream_marker::S2_STREAM_MARKER_DEFAULT | rs2_stream_marker::S2_STREAM_MARKER_SUPERSET);
         }
     }
     register_extrinsics(m_device_description);

@@ -89,6 +89,16 @@ namespace librealsense
         _is_default = true;
     }
 
+    int stream_profile_base::get_marker() const
+    {
+        return _marker;
+    }
+
+    void stream_profile_base::set_marker(int marker)
+    {
+        _marker = marker;
+    }
+
     std::shared_ptr<stream_profile_interface> stream_profile_base::clone() const
     {
         auto res = std::make_shared<stream_profile_base>(get_backend_profile());

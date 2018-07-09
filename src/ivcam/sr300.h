@@ -228,9 +228,7 @@ namespace librealsense
                     // Register intrinsics
                     auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-
-                    if (video->get_width() == 1920 && video->get_height() == 1080 && video->get_format() == RS2_FORMAT_RGB8 && video->get_framerate() == 30)
-                        video->make_default();
+                    set_marker(video);
 
                     auto profile = to_profile(p.get());
                     std::weak_ptr<sr300_color_sensor> wp =
@@ -286,9 +284,7 @@ namespace librealsense
                     // Register intrinsics
                     auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-
-                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Z16 && video->get_framerate() == 30)
-                        video->make_default();
+                    set_marker(video);
 
                     auto profile = to_profile(p.get());
                     std::weak_ptr<sr300_depth_sensor> wp =

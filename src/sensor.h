@@ -37,10 +37,7 @@ namespace librealsense
 
         virtual stream_profiles init_stream_profiles() = 0;
 
-        stream_profiles get_stream_profiles() const override
-        {
-            return *_profiles;
-        }
+        stream_profiles get_stream_profiles(int marker = rs2_stream_marker::RS2_STREAM_MARKER_ANY) const override;
 
         virtual stream_profiles get_active_streams() const override;
         notifications_callback_ptr get_notifications_callback() const override;
@@ -208,6 +205,9 @@ namespace librealsense
         std::string get_device_path() const { return _device->get_device_location(); }
 
     protected:
+        //default default streams, should be override for special skus
+        void set_marker(video_stream_profile_interface* profile);
+
         stream_profiles init_stream_profiles() override;
 
         rs2_extension stream_to_frame_types(rs2_stream stream) const;

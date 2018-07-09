@@ -98,6 +98,26 @@ namespace librealsense
             uvc_sensor::open(requests);
         }
 
+        void set_marker(video_stream_profile_interface* profile)
+        {
+            auto color_dev = dynamic_cast<const ds5_color*>(&get_device());
+            auto rolling_shutter_dev = dynamic_cast<const ds5_rolling_shutter*>(&get_device());
+            switch (profile->get_stream_type())
+            {
+            case rs2_stream::RS2_STREAM_DEPTH:
+                if (profile->get_format() == rs2_format::RS2_FORMAT_Z16 && profile->get_width() == 640 && profile->get_height() == 480 && profile->get_framerate() == 30)
+                    profile->set_marker(rs2_stream_marker::S2_STREAM_MARKER_SUPERSET | rs2_stream_marker::S2_STREAM_MARKER_DEFAULT);
+            case rs2_stream::RS2_STREAM_INFRARED:
+                // For infrared sensor, the default is Y8 in case Realtec RGB sensor present, RGB8 otherwise
+                if (rolling_shutter_dev && !color_dev)
+                    if(profile->get_format() != rs2_format::RS2_FORMAT_RGB8 && profile->get_width() == 640 && profile->get_height() == 480 && profile->get_framerate() == 30)
+                        profile->set_marker(rs2_stream_marker::S2_STREAM_MARKER_SUPERSET | rs2_stream_marker::S2_STREAM_MARKER_DEFAULT);
+                else
+                    if(profile->get_format() == rs2_format::RS2_FORMAT_Y8 && profile->get_width() == 640 && profile->get_height() == 480 && profile->get_framerate() == 30)
+                        profile->set_marker(rs2_stream_marker::S2_STREAM_MARKER_SUPERSET);
+            }
+        };
+
         /*
         Infrared profiles are initialized with the following logic:
         - If device has color sensor (D415 / D435), infrared profile is chosen with Y8 format
@@ -142,58 +162,7 @@ namespace librealsense
                 }
                 auto vid_profile = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                // Mark potential candidates for depth/ir default profiles
-                if (candidate(vid_profile, { 1280, 720, 30, RS2_FORMAT_Z16 } , RS2_STREAM_DEPTH, 0))
-                    depth_candidates.push_back(vid_profile);
-
-                if (candidate(vid_profile, { 848, 480, 30, RS2_FORMAT_ANY }, RS2_STREAM_DEPTH, 0))
-                    depth_candidates.push_back(vid_profile);
-
-                if (candidate(vid_profile, { 640, 480, 15, RS2_FORMAT_Z16 }, RS2_STREAM_DEPTH, 0))
-                    depth_candidates.push_back(vid_profile);
-
-                // Global Shutter sensor does not support synthetic color
-                if (candidate(vid_profile, { 848, 480, 30, RS2_FORMAT_Y8 }, RS2_STREAM_INFRARED, 1))
-                    infrared_candidates.push_back(vid_profile);
-
-                // Low-level resolution for USB2 generic PID - Z16/RGB8
-                if (candidate(vid_profile, { 480, 270, 30, RS2_FORMAT_ANY }, RS2_STREAM_DEPTH, 0))
-                    depth_candidates.push_back(vid_profile);
-
-                // Low-level resolution for USB2 generic PID - Y8
-                if (candidate(vid_profile, { 480, 270, 30, RS2_FORMAT_ANY }, RS2_STREAM_INFRARED, 1))
-                    infrared_candidates.push_back(vid_profile);
-
-                // For infrared sensor, the default is Y8 in case Realtec RGB sensor present, RGB8 otherwise
-                if (color_dev)
-                {
-                    if (candidate(vid_profile, { 1280, 720, 30, RS2_FORMAT_Y8 }, RS2_STREAM_INFRARED, 1))
-                        infrared_candidates.push_back(vid_profile);
-
-                    // Register Low-res resolution for USB2 mode
-                    if (candidate(vid_profile, { 640, 480, 15, RS2_FORMAT_Y8 }, RS2_STREAM_INFRARED, 1))
-                        infrared_candidates.push_back(vid_profile);
-                }
-                else
-                {
-                    if (rolling_shutter_dev)
-                    { 
-                        if (candidate(vid_profile, { 1280, 720, 30, RS2_FORMAT_RGB8 }, RS2_STREAM_INFRARED, 0))
-                            infrared_candidates.push_back(vid_profile);
-
-                        if (candidate(vid_profile, { 640, 480, 15, RS2_FORMAT_RGB8 }, RS2_STREAM_INFRARED, 0))
-                            infrared_candidates.push_back(vid_profile);
-                    }
-                    else
-                    {
-                        if (candidate(vid_profile, { 1280, 720, 30, RS2_FORMAT_Y8 }, RS2_STREAM_INFRARED, 1))
-                            infrared_candidates.push_back(vid_profile);
-
-                        if (candidate(vid_profile, { 640, 480, 15, RS2_FORMAT_Y8 }, RS2_STREAM_INFRARED, 1))
-                            infrared_candidates.push_back(vid_profile);
-                    }
-                    
-                }
+                set_marker(vid_profile);
 
                 // Register intrinsics
                 if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
@@ -219,27 +188,6 @@ namespace librealsense
             {
                 return ((l->get_width() < r->get_width()) || (l->get_height() < r->get_height()));
             };
-
-            // Select default profiles
-            if (depth_candidates.size())
-            {
-                std::sort(depth_candidates.begin(), depth_candidates.end(), cmp);
-                depth_candidates.back()->make_default();
-            }
-            else
-            {
-                LOG_WARNING("Depth sensor - no default profile assigned / " << dev_name);
-            }
-
-            if (infrared_candidates.size())
-            {
-                std::sort(infrared_candidates.begin(), infrared_candidates.end(), cmp);
-                infrared_candidates.back()->make_default();
-            }
-            else
-            {
-                LOG_WARNING("Infrared sensor - no default profile assigned / " << dev_name);
-            }
 
             return results;
         }
@@ -282,6 +230,20 @@ namespace librealsense
             : ds5_depth_sensor(owner, uvc_device, move(timestamp_reader)), _owner(owner)
         {}
 
+        void set_marker(video_stream_profile_interface* profile)
+        {
+            switch (profile->get_stream_type())
+            {
+            case rs2_stream::RS2_STREAM_DEPTH:
+                if (profile->get_format() == rs2_format::RS2_FORMAT_Z16 && profile->get_width() == 720 && profile->get_height() == 720 && profile->get_framerate() == 30)
+                    profile->set_marker(rs2_stream_marker::S2_STREAM_MARKER_SUPERSET | rs2_stream_marker::S2_STREAM_MARKER_DEFAULT);
+            case rs2_stream::RS2_STREAM_INFRARED:
+                if (profile->get_format() == rs2_format::RS2_FORMAT_RAW10 && profile->get_width() == 1152 && profile->get_height() == 1152 && profile->get_framerate() == 30)
+                    profile->set_marker(rs2_stream_marker::S2_STREAM_MARKER_SUPERSET | rs2_stream_marker::S2_STREAM_MARKER_DEFAULT);
+            default: break;
+            }
+        };
+
         stream_profiles init_stream_profiles() override
         {
             auto lock = environment::get_instance().get_extrinsics_graph().lock();
@@ -305,14 +267,7 @@ namespace librealsense
                 }
                 auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                if ((video->get_width() == 720) && (video->get_height() == 720)
-                    && (video->get_format() == RS2_FORMAT_Z16) && (video->get_framerate() == 30))
-                    video->make_default();
-
-                if (video->get_width() == 1152 && video->get_height() == 1152
-                    && p->get_stream_type() == RS2_STREAM_INFRARED
-                    && video->get_format() == RS2_FORMAT_RAW10 && video->get_framerate() == 30)
-                    video->make_default();
+                set_marker(video);
 
                 // Register intrinsics
                 if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these

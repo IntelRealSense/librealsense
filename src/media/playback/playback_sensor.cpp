@@ -42,9 +42,20 @@ playback_sensor::~playback_sensor()
 {
 }
 
-stream_profiles playback_sensor::get_stream_profiles() const
+stream_profiles playback_sensor::get_stream_profiles(int marker) const
 {
     return m_available_profiles;
+    if (marker == rs2_stream_marker::RS2_STREAM_MARKER_ANY)
+        return m_available_profiles;
+
+    stream_profiles profiles;
+    for (auto p : m_available_profiles)
+    {
+        if (p->get_marker() & marker)
+            profiles.push_back(p);
+    }
+
+    return profiles;
 }
 
 void playback_sensor::open(const stream_profiles& requests)
