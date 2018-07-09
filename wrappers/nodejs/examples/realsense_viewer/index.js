@@ -19,10 +19,18 @@ class Realsense {
   constructor(rsWrapper, connectMgr) {
     this.wrapper = rsWrapper;
     this.connectMgr = connectMgr;
-    this.sendCount = 0;
+    this.sendCount = {};
+    for (let name of [
+        CommonNames.colorStreamName,
+        CommonNames.stereoStreamName,
+        CommonNames.infraredStream1Name,
+        CommonNames.infraredStream2Name]) {
+      this.sendCount[name] = 0;
+    }
   }
   init() {
     this.ctx = new this.wrapper.Context();
+    this.colorizer = new this.wrapper.Colorizer();
     this.sensors = this.ctx.querySensors();
   }
   stop() {}
@@ -238,8 +246,31 @@ class Realsense {
           };
           resolve(result);
         });
-      } else {
-        // todo(shaoting): add depth and infrared support
+      } else if (frame.streamType === this.wrapper.stream.STREAM_DEPTH) {
+        const depthMap = this.colorizer.colorize(frame);
+        sharp(Buffer.from(depthMap.data.buffer), {
+          raw: {
+            width: frame.width,
+            height: frame.height,
+            channels: 3,
+          },
+        }).jpeg({
+          quality: jpegQuality,
+        }).toBuffer().then((data) => {
+          let result = {
+            meta: {
+              stream: this.wrapper.stream.streamToString(frame.streamType),
+              index: frame.profile.streamIndex,
+              format: this.wrapper.format.formatToString(frame.format),
+              width: frame.width,
+              height: frame.height,
+            },
+            data: data,
+          };
+          resolve(result);
+        });
+      } else if (frame.streamType === this.wrapper.stream.STREAM_INFRARED) {
+        // todo(tingshao): Add infrared support
       }
     });
   }
@@ -259,7 +290,7 @@ class Realsense {
 
         this._processFrameBeforeSend(sensor, frame).then((data) => {
           connectMgr.sendProcessedFrameData(streamName, data);
-          this.sendCount++;
+          this.sendCount[streamName]++;
         });
       });
     }
