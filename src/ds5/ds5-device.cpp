@@ -77,6 +77,35 @@ namespace librealsense
 
     class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
     {
+    protected:
+        void set_marker(stream_profile_interface* profile) override
+        {
+            auto color_dev = dynamic_cast<const ds5_color*>(&get_device());
+            auto rolling_shutter_dev = dynamic_cast<const ds5_rolling_shutter*>(&get_device());
+
+            auto vp = dynamic_cast<video_stream_profile_interface*>(profile);
+            switch (vp->get_stream_type())
+            {
+            case rs2_stream::RS2_STREAM_DEPTH:
+                if (vp->get_format() == rs2_format::RS2_FORMAT_Z16 && vp->get_width() == 640 && vp->get_height() == 480 && vp->get_framerate() == 30)
+                    vp->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
+                break;
+            case rs2_stream::RS2_STREAM_INFRARED:
+                // For infrared sensor, the default is Y8 in case Realtec RGB sensor present, RGB8 otherwise
+                if (rolling_shutter_dev && !color_dev)
+                {
+                    if (vp->get_format() != rs2_format::RS2_FORMAT_RGB8 && vp->get_width() == 640 && vp->get_height() == 480 && vp->get_framerate() == 30)
+                        vp->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
+                }
+                else
+                {
+                    if (vp->get_format() == rs2_format::RS2_FORMAT_Y8 && vp->get_width() == 640 && vp->get_height() == 480 && vp->get_framerate() == 30)
+                        vp->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET);
+                }
+                break;
+            }
+        };
+
     public:
         explicit ds5_depth_sensor(ds5_device* owner,
             std::shared_ptr<platform::uvc_device> uvc_device,
@@ -97,32 +126,6 @@ namespace librealsense
             _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
             uvc_sensor::open(requests);
         }
-
-        void set_marker(video_stream_profile_interface* profile)
-        {
-            auto color_dev = dynamic_cast<const ds5_color*>(&get_device());
-            auto rolling_shutter_dev = dynamic_cast<const ds5_rolling_shutter*>(&get_device());
-            switch (profile->get_stream_type())
-            {
-            case rs2_stream::RS2_STREAM_DEPTH:
-                if (profile->get_format() == rs2_format::RS2_FORMAT_Z16 && profile->get_width() == 640 && profile->get_height() == 480 && profile->get_framerate() == 30)
-                    profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
-                break;
-            case rs2_stream::RS2_STREAM_INFRARED:
-                // For infrared sensor, the default is Y8 in case Realtec RGB sensor present, RGB8 otherwise
-                if (rolling_shutter_dev && !color_dev)
-                {
-                    if (profile->get_format() != rs2_format::RS2_FORMAT_RGB8 && profile->get_width() == 640 && profile->get_height() == 480 && profile->get_framerate() == 30)
-                        profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
-                }
-                else
-                {
-                    if (profile->get_format() == rs2_format::RS2_FORMAT_Y8 && profile->get_width() == 640 && profile->get_height() == 480 && profile->get_framerate() == 30)
-                        profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET);
-                }
-                break;
-            }
-        };
 
         /*
         Infrared profiles are initialized with the following logic:
@@ -236,17 +239,19 @@ namespace librealsense
             : ds5_depth_sensor(owner, uvc_device, move(timestamp_reader)), _owner(owner)
         {}
 
-        void set_marker(video_stream_profile_interface* profile)
+        void set_marker(stream_profile_interface* profile) override
         {
-            switch (profile->get_stream_type())
+            auto vp = dynamic_cast<video_stream_profile_interface*>(profile);
+
+            switch (vp->get_stream_type())
             {
             case rs2_stream::RS2_STREAM_DEPTH:
-                if (profile->get_format() == rs2_format::RS2_FORMAT_Z16 && profile->get_width() == 720 && profile->get_height() == 720 && profile->get_framerate() == 30)
-                    profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
+                if (vp->get_format() == rs2_format::RS2_FORMAT_Z16 && vp->get_width() == 720 && vp->get_height() == 720 && vp->get_framerate() == 30)
+                    vp->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
                 break;
             case rs2_stream::RS2_STREAM_INFRARED:
-                if (profile->get_format() == rs2_format::RS2_FORMAT_RAW10 && profile->get_width() == 1152 && profile->get_height() == 1152 && profile->get_framerate() == 30)
-                    profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
+                if (vp->get_format() == rs2_format::RS2_FORMAT_RAW10 && vp->get_width() == 1152 && vp->get_height() == 1152 && vp->get_framerate() == 30)
+                    vp->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
                 break;
             }
         };
