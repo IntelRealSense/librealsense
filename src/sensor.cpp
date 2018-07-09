@@ -267,7 +267,7 @@ namespace librealsense
 
     stream_profiles sensor_base::get_stream_profiles(int marker) const
     {
-        if (marker == rs2_stream_marker::RS2_STREAM_MARKER_ANY)
+        if (marker == rs2_profile_marker::RS2_PROFILE_MARKER_ANY)
             return *_profiles;
 
         stream_profiles profiles;
@@ -286,13 +286,13 @@ namespace librealsense
         {
         case rs2_stream::RS2_STREAM_COLOR: 
             if (profile->get_format() == rs2_format::RS2_FORMAT_RGB8 && profile->get_width() == 640 && profile->get_height() == 480 && profile->get_framerate() == 30)
-                profile->set_marker(rs2_stream_marker::S2_STREAM_MARKER_SUPERSET | rs2_stream_marker::S2_STREAM_MARKER_DEFAULT);
+                profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
         case rs2_stream::RS2_STREAM_DEPTH: 
             if(profile->get_format() == rs2_format::RS2_FORMAT_Z16 && profile->get_width() == 640 && profile->get_height() == 480 && profile->get_framerate() == 30)
-                profile->set_marker(rs2_stream_marker::S2_STREAM_MARKER_SUPERSET | rs2_stream_marker::S2_STREAM_MARKER_DEFAULT);
+                profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
         case rs2_stream::RS2_STREAM_INFRARED:
             if(profile->get_format() == rs2_format::RS2_FORMAT_Y8 && profile->get_width() == 640 && profile->get_height() == 480 && profile->get_framerate() == 30)
-                profile->set_marker(rs2_stream_marker::S2_STREAM_MARKER_SUPERSET);
+                profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET);
         default: break;
         }
     };

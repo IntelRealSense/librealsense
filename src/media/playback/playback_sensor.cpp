@@ -45,7 +45,7 @@ playback_sensor::~playback_sensor()
 stream_profiles playback_sensor::get_stream_profiles(int marker) const
 {
     return m_available_profiles;
-    if (marker == rs2_stream_marker::RS2_STREAM_MARKER_ANY)
+    if (marker == rs2_profile_marker::RS2_PROFILE_MARKER_ANY)
         return m_available_profiles;
 
     stream_profiles profiles;

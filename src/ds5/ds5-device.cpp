@@ -106,15 +106,15 @@ namespace librealsense
             {
             case rs2_stream::RS2_STREAM_DEPTH:
                 if (profile->get_format() == rs2_format::RS2_FORMAT_Z16 && profile->get_width() == 640 && profile->get_height() == 480 && profile->get_framerate() == 30)
-                    profile->set_marker(rs2_stream_marker::S2_STREAM_MARKER_SUPERSET | rs2_stream_marker::S2_STREAM_MARKER_DEFAULT);
+                    profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
             case rs2_stream::RS2_STREAM_INFRARED:
                 // For infrared sensor, the default is Y8 in case Realtec RGB sensor present, RGB8 otherwise
                 if (rolling_shutter_dev && !color_dev)
                     if(profile->get_format() != rs2_format::RS2_FORMAT_RGB8 && profile->get_width() == 640 && profile->get_height() == 480 && profile->get_framerate() == 30)
-                        profile->set_marker(rs2_stream_marker::S2_STREAM_MARKER_SUPERSET | rs2_stream_marker::S2_STREAM_MARKER_DEFAULT);
+                        profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
                 else
                     if(profile->get_format() == rs2_format::RS2_FORMAT_Y8 && profile->get_width() == 640 && profile->get_height() == 480 && profile->get_framerate() == 30)
-                        profile->set_marker(rs2_stream_marker::S2_STREAM_MARKER_SUPERSET);
+                        profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET);
             }
         };
 
@@ -236,10 +236,10 @@ namespace librealsense
             {
             case rs2_stream::RS2_STREAM_DEPTH:
                 if (profile->get_format() == rs2_format::RS2_FORMAT_Z16 && profile->get_width() == 720 && profile->get_height() == 720 && profile->get_framerate() == 30)
-                    profile->set_marker(rs2_stream_marker::S2_STREAM_MARKER_SUPERSET | rs2_stream_marker::S2_STREAM_MARKER_DEFAULT);
+                    profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
             case rs2_stream::RS2_STREAM_INFRARED:
                 if (profile->get_format() == rs2_format::RS2_FORMAT_RAW10 && profile->get_width() == 1152 && profile->get_height() == 1152 && profile->get_framerate() == 30)
-                    profile->set_marker(rs2_stream_marker::S2_STREAM_MARKER_SUPERSET | rs2_stream_marker::S2_STREAM_MARKER_DEFAULT);
+                    profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
             default: break;
             }
         };

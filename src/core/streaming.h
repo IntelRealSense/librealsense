@@ -28,12 +28,12 @@ namespace librealsense
 
     class context;
 
-    typedef enum rs2_stream_marker
+    typedef enum rs2_profile_marker
     {
-        RS2_STREAM_MARKER_ANY = 0,
-        S2_STREAM_MARKER_SUPERSET = 1,
-        S2_STREAM_MARKER_DEFAULT = 2,
-    } rs2_stream_marker;
+        RS2_PROFILE_MARKER_ANY = 0,
+        RS2_PROFILE_MARKER_SUPERSET = 1,
+        RS2_PROFILE_MARKER_DEFAULT = 2,
+    } rs2_profile_marker;
 
     class stream_interface : public std::enable_shared_from_this<stream_interface>
     {
@@ -116,7 +116,7 @@ namespace librealsense
     class sensor_interface : public virtual info_interface, public virtual options_interface
     {
     public:
-        virtual stream_profiles get_stream_profiles(int marker = rs2_stream_marker::RS2_STREAM_MARKER_ANY) const = 0;
+        virtual stream_profiles get_stream_profiles(int marker = rs2_profile_marker::RS2_PROFILE_MARKER_ANY) const = 0;
         virtual stream_profiles get_active_streams() const = 0;
         virtual void open(const stream_profiles& requests) = 0;
         virtual void close() = 0;

@@ -331,7 +331,7 @@ namespace librealsense
         for (unsigned int i = 0; i < dev->get_sensors_count(); i++)
         {
             auto&& sensor = dev->get_sensor(i);
-            auto profiles = sensor.get_stream_profiles(rs2_stream_marker::S2_STREAM_MARKER_DEFAULT);
+            auto profiles = sensor.get_stream_profiles(rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
             default_profiles.insert(std::end(default_profiles), std::begin(profiles), std::end(profiles));
         }
 
