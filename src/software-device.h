@@ -48,6 +48,9 @@ namespace librealsense
         void add_read_only_option(rs2_option option, float val);
         void update_read_only_option(rs2_option option, float val);
 
+    protected:
+        void set_marker(stream_profile_interface* profile) override;
+
     private:
         friend class software_device;
         stream_profiles _profiles;

@@ -280,19 +280,21 @@ namespace librealsense
         return profiles;
     }
 
-    void uvc_sensor::set_marker(video_stream_profile_interface* profile)
+    void uvc_sensor::set_marker(stream_profile_interface* profile)
     {
+        auto vp = dynamic_cast<video_stream_profile_interface*>(profile);
+
         switch (profile->get_stream_type())
         {
         case rs2_stream::RS2_STREAM_COLOR: 
-            if (profile->get_format() == rs2_format::RS2_FORMAT_RGB8 && profile->get_width() == 640 && profile->get_height() == 480 && profile->get_framerate() == 30)
+            if (vp->get_format() == rs2_format::RS2_FORMAT_RGB8 && vp->get_width() == 640 && vp->get_height() == 480 && vp->get_framerate() == 30)
                 profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
         case rs2_stream::RS2_STREAM_DEPTH: 
-            if(profile->get_format() == rs2_format::RS2_FORMAT_Z16 && profile->get_width() == 640 && profile->get_height() == 480 && profile->get_framerate() == 30)
-                profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
+            if(vp->get_format() == rs2_format::RS2_FORMAT_Z16 && vp->get_width() == 640 && vp->get_height() == 480 && vp->get_framerate() == 30)
+                vp->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
         case rs2_stream::RS2_STREAM_INFRARED:
-            if(profile->get_format() == rs2_format::RS2_FORMAT_Y8 && profile->get_width() == 640 && profile->get_height() == 480 && profile->get_framerate() == 30)
-                profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET);
+            if(vp->get_format() == rs2_format::RS2_FORMAT_Y8 && vp->get_width() == 640 && vp->get_height() == 480 && vp->get_framerate() == 30)
+                vp->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET);
         default: break;
         }
     };
@@ -1014,6 +1016,10 @@ namespace librealsense
         return _hid_device->get_custom_report_data(custom_sensor_name, report_name, report_field);
     }
 
+    void hid_sensor::set_marker(stream_profile_interface* profile)
+    {
+        profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
+    };
 
     stream_profiles hid_sensor::init_stream_profiles()
     {

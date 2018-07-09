@@ -60,9 +60,6 @@ namespace librealsense
         uint32_t get_framerate() const override;
         void set_framerate(uint32_t val) override;
 
-        bool is_default() const override;
-        void make_default() override;
-
         int get_marker() const override;
         void set_marker(int marker) override;
 

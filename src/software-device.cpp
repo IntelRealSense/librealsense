@@ -83,6 +83,11 @@ namespace librealsense
         return profile;
     }
 
+    void software_sensor::set_marker(stream_profile_interface* profile)
+    {
+
+    }
+
     stream_profiles software_sensor::init_stream_profiles()
     {
         return _profiles;

@@ -79,16 +79,6 @@ namespace librealsense
         _framerate = val;
     }
 
-    bool stream_profile_base::is_default() const
-    {
-        return _is_default;
-    }
-
-    void stream_profile_base::make_default()
-    {
-        _is_default = true;
-    }
-
     int stream_profile_base::get_marker() const
     {
         return _marker;

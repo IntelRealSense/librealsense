@@ -79,7 +79,7 @@ namespace librealsense
                     assign_stream(_owner->_gpio_streams[p->get_stream_index()-1], p);
                 if (p->get_framerate() == 1000 &&
                     p->get_format() == RS2_FORMAT_MOTION_XYZ32F)
-                    p->make_default();
+                    set_marker(p.get());
 
                 //set motion intrinsics
                 if (p->get_stream_type() == RS2_STREAM_ACCEL || p->get_stream_type() == RS2_STREAM_GYRO)
@@ -128,7 +128,7 @@ namespace librealsense
                 auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
                 if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_RAW8 && video->get_framerate() == 30)
-                    video->make_default();
+                    video->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT | rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET);
 
                 auto profile = to_profile(p.get());
                 std::weak_ptr<ds5_fisheye_sensor> wp =
