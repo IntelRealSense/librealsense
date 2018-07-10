@@ -2953,19 +2953,19 @@ void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::
 }
 
 static const std::map< dev_type, device_profiles> pipeline_default_configurations = {
-/* RS400/PSR*/          { { "0AD1", true}  ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true}},
-/* RS410/ASR*/          { { "0AD2", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
-/* D410/USB2*/          { { "0AD2", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
+/* RS400/PSR*/          { { "0AD1", true}  ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 1 } }, 30, true}},
+/* RS410/ASR*/          { { "0AD2", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 1 } }, 30, true }},
+/* D410/USB2*/          { { "0AD2", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 15, true } },
 /* RS415/ASRC*/         { { "0AD3", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true }},
 /* D415/USB2*/          { { "0AD3", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
-/* RS430/AWG*/          { { "0AD4", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 1280, 720, 0 } }, 30, true }},
-/* RS430_MM/AWGT*/      { { "0AD5", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 1280, 720, 0 } }, 30, true }},
-/* RS420/PWG*/          { { "0AF6", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 1280, 720, 0 } }, 30, true }},
-/* RS420_MM/PWGT*/      { { "0AFE", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 1280, 720, 0 } }, 30, true }},
-/* RS410_MM/ASRT*/      { { "0AFF", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
-/* RS400_MM/PSR*/       { { "0B00", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
+/* RS430/AWG*/          { { "0AD4", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 1280, 720, 1 } }, 30, true }},
+/* RS430_MM/AWGT*/      { { "0AD5", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 1280, 720, 1 } }, 30, true }},
+/* RS420/PWG*/          { { "0AF6", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 1280, 720, 1 } }, 30, true }},
+/* RS420_MM/PWGT*/      { { "0AFE", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 1280, 720, 1 } }, 30, true }},
+/* RS410_MM/ASRT*/      { { "0AFF", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 1 } }, 30, true } },
+/* RS400_MM/PSR*/       { { "0B00", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 1 } }, 30, true } },
 /* RS430_MM_RGB/AWGTC*/ { { "0B01", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
-/* RS405/DS5U*/         { { "0B03", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
+/* RS405/D460/DS5U*/    { { "0B03", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 1 } }, 30, true }},
 /* RS435_RGB/AWGC*/     { { "0B07", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true }},
 /* D435/USB2*/          { { "0B07", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
 /* SR300*/              { { "0AA5", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
@@ -3106,19 +3106,19 @@ TEST_CASE("Pipeline poll_for_frames", "[live][pipeline]")
 }
 
 static const std::map<dev_type, device_profiles> pipeline_custom_configurations = {
-    /* RS400/PSR*/      { {"0AD1", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
-    /* RS410/ASR*/      { {"0AD2", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
-    /* D410/USB2*/      { {"0AD2", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 480, 270, 0 } }, 30, true } },
+    /* RS400/PSR*/      { {"0AD1", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
+    /* RS410/ASR*/      { {"0AD2", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
+    /* D410/USB2*/      { {"0AD2", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 480, 270, 1 } }, 30, true } },
     /* RS415/ASRC*/     { {"0AD3", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
     /* D415/USB2*/      { {"0AD3", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 424, 240, 0 } }, 30, true } },
     /* RS430/AWG*/      { {"0AD4", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 480, 1 } }, 30, true } },
-    /* RS430_MM/AWGT*/  { {"0AD5", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
-    /* RS420/PWG*/      { {"0AF6", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
-    /* RS420_MM/PWGT*/  { {"0AFE", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
-    /* RS410_MM/ASRT*/  { {"0AFF", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
-    /* RS400_MM/PSR*/   { {"0B00", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
+    /* RS430_MM/AWGT*/  { {"0AD5", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 480, 1 } }, 30, true } },
+    /* RS420/PWG*/      { {"0AF6", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 480, 1 } }, 30, true } },
+    /* RS420_MM/PWGT*/  { {"0AFE", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 480, 1 } }, 30, true } },
+    /* RS410_MM/ASRT*/  { {"0AFF", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
+    /* RS400_MM/PSR*/   { {"0B00", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
     /* RS430_MC/AWGTC*/ { {"0B01", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
-    /* RS405/DS5U*/     { {"0B03", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
+    /* RS405/D460/DS5U*/{ {"0B03", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
     /* RS435_RGB/AWGC*/ { {"0B07", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
     /* D435/USB2*/      { {"0B07", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 424, 240, 0 } }, 30, true } },
 
@@ -4437,7 +4437,6 @@ TEST_CASE("stream enable hierarchy", "[pipeline]")
 
     cfg.disable_all_streams();
     cfg.enable_stream(rs2_stream::RS2_STREAM_DEPTH);
-    cfg.enable_stream(rs2_stream::RS2_STREAM_INFRARED);
     std::vector<stream_profile> wildcards_streams = pipe.start(cfg).get_streams();
     pipe.stop();
 

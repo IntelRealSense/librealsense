@@ -509,22 +509,20 @@ namespace librealsense
                 {
                     auto&& sub = dev->get_sensor(i);
 
-                    //search requests in default streams first
                     auto defaults = sub.get_stream_profiles(profile_tag::PROFILE_TAG_SUPERSET);
-                    auto profiles = map_sub_device(defaults, satisfied_streams);
+                    auto default_profiles = map_sub_device(defaults, satisfied_streams);
+                    auto any_profiles = map_sub_device(sub.get_stream_profiles(profile_tag::PROFILE_TAG_ANY), satisfied_streams);
 
-                    //search requests in all streams if default streams wasn't satisfy
-                    if (profiles.size() == 0)
-                    {
-                        auto any = sub.get_stream_profiles(profile_tag::PROFILE_TAG_ANY);
-                        profiles = map_sub_device(any, satisfied_streams);
-                    }
+                    //use any streams if default streams wasn't satisfy
+                    auto profiles = default_profiles.size() == any_profiles.size() ? default_profiles : any_profiles;
 
                     for (auto p : profiles)
                         out.emplace((int)i, p);
                 }
+
                 if(_requests.size() != out.size())
                     throw std::runtime_error(std::string("Couldn't resolve requests"));
+
                 return out;
             }
 
