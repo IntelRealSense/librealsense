@@ -83,7 +83,7 @@ namespace librealsense
         rs2_stream _type = RS2_STREAM_ANY;
         rs2_format _format = RS2_FORMAT_ANY;
         uint32_t _framerate = 0;
-        int _marker = profile_tag::PROFILE_TAG_ANY;
+        int _tag = profile_tag::PROFILE_TAG_ANY;
         rs2_stream_profile _c_wrapper;
         rs2_stream_profile* _c_ptr = nullptr;
     };

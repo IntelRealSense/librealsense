@@ -4378,7 +4378,7 @@ TEST_CASE("enable bad configuration", "[pipeline]")
     if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
         return;
 
-    pipeline pipe;
+    pipeline pipe(ctx);
     rs2::config cfg;
 
     cfg.enable_stream(rs2_stream::RS2_STREAM_COLOR, 1000);
@@ -4396,7 +4396,7 @@ TEST_CASE("default playback config", "[pipeline]")
     std::vector<stream_profile> pb_streams;
 
     {
-        pipeline pipe;
+        pipeline pipe(ctx);
         rs2::config cfg;
         cfg.enable_record_to_file(file_name);
         auto profile = pipe.start(cfg);
@@ -4408,7 +4408,7 @@ TEST_CASE("default playback config", "[pipeline]")
     }
 
     {
-        pipeline pipe;
+        pipeline pipe(ctx);
         rs2::config cfg;
         cfg.enable_device_from_file(file_name);
         auto profile = pipe.start(cfg);
@@ -4426,7 +4426,7 @@ TEST_CASE("stream enable hierarchy", "[pipeline]")
     if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
         return;
 
-    pipeline pipe;
+    pipeline pipe(ctx);
     rs2::config cfg;
     std::vector<stream_profile> default_streams = pipe.start(cfg).get_streams();
     pipe.stop();

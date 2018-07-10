@@ -81,12 +81,12 @@ namespace librealsense
 
     int stream_profile_base::get_tag() const
     {
-        return _marker;
+        return _tag;
     }
 
     void stream_profile_base::tag_profile(int tag)
     {
-        _marker = tag;
+        _tag = tag;
     }
 
     std::shared_ptr<stream_profile_interface> stream_profile_base::clone() const

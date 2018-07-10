@@ -509,8 +509,7 @@ namespace librealsense
                 {
                     auto&& sub = dev->get_sensor(i);
 
-                    auto defaults = sub.get_stream_profiles(profile_tag::PROFILE_TAG_SUPERSET);
-                    auto default_profiles = map_sub_device(defaults, satisfied_streams);
+                    auto default_profiles = map_sub_device(sub.get_stream_profiles(profile_tag::PROFILE_TAG_SUPERSET), satisfied_streams);
                     auto any_profiles = map_sub_device(sub.get_stream_profiles(profile_tag::PROFILE_TAG_ANY), satisfied_streams);
 
                     //use any streams if default streams wasn't satisfy

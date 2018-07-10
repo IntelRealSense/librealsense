@@ -127,8 +127,7 @@ namespace librealsense
 
                 auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_RAW8 && video->get_framerate() == 30)
-                    video->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
+                get_device().tag_profile(video);
 
                 auto profile = to_profile(p.get());
                 std::weak_ptr<ds5_fisheye_sensor> wp =
