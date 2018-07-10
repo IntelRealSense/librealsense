@@ -4436,7 +4436,8 @@ TEST_CASE("stream enable hierarchy", "[pipeline]")
     pipe.stop();
 
     cfg.disable_all_streams();
-    cfg.enable_stream(rs2_stream::RS2_STREAM_COLOR);
+    cfg.enable_stream(rs2_stream::RS2_STREAM_DEPTH);
+    cfg.enable_stream(rs2_stream::RS2_STREAM_INFRARED);
     std::vector<stream_profile> wildcards_streams = pipe.start(cfg).get_streams();
     pipe.stop();
 

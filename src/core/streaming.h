@@ -69,7 +69,7 @@ namespace librealsense
         virtual uint32_t get_framerate() const = 0;
         virtual void set_framerate(uint32_t val) = 0;
 
-        virtual int get_marker() const = 0;
+        virtual int get_tag() const = 0;
         virtual void tag_profile(int tag) = 0;
 
         virtual std::shared_ptr<stream_profile_interface> clone() const = 0;

@@ -79,7 +79,7 @@ namespace librealsense
         _framerate = val;
     }
 
-    int stream_profile_base::get_marker() const
+    int stream_profile_base::get_tag() const
     {
         return _marker;
     }

@@ -263,8 +263,8 @@ void librealsense::device::register_stream_to_extrinsic_group(const stream_inter
 
 void librealsense::device::tag_profile(stream_profile_interface* profile) const
 {
-    auto markers = get_profiles_tags();
-    for (auto tag : markers)
+    auto tags = get_profiles_tags();
+    for (auto tag : tags)
     {
         auto vp = dynamic_cast<video_stream_profile_interface*>(profile);
         if (vp)
@@ -274,7 +274,7 @@ void librealsense::device::tag_profile(stream_profile_interface* profile) const
                 vp->get_width() == tag.width &&
                 vp->get_height() == tag.height &&
                 vp->get_framerate() == tag.fps &&
-                tag.stream_index == -1 || vp->get_stream_index() == tag.stream_index)
+                (tag.stream_index == -1 || vp->get_stream_index() == tag.stream_index))
                 profile->tag_profile(tag.tag);
         }
     }

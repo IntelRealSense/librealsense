@@ -273,7 +273,8 @@ namespace librealsense
         stream_profiles profiles;
         for (auto p : *_profiles)
         {
-            if (p->get_marker() & tag)
+            auto curr_tag = p->get_tag();
+            if (curr_tag & tag)
                 profiles.push_back(p);
         }
 

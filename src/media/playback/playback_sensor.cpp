@@ -51,7 +51,7 @@ stream_profiles playback_sensor::get_stream_profiles(int tag) const
     stream_profiles profiles;
     for (auto p : m_available_profiles)
     {
-        if (p->get_marker() & tag)
+        if (p->get_tag() & tag)
             profiles.push_back(p);
     }
 

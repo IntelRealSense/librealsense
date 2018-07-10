@@ -416,7 +416,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, from, width, height)
 int rs2_is_stream_profile_default(const rs2_stream_profile* profile, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(profile);
-    return profile->profile->get_marker() & profile_tag::PROFILE_TAG_DEFAULT ? 1 : 0;
+    return profile->profile->get_tag() & profile_tag::PROFILE_TAG_DEFAULT ? 1 : 0;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, profile)
 

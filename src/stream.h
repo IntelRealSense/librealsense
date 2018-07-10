@@ -60,7 +60,7 @@ namespace librealsense
         uint32_t get_framerate() const override;
         void set_framerate(uint32_t val) override;
 
-        int get_marker() const override;
+        int get_tag() const override;
         void tag_profile(int tag) override;
 
         int get_unique_id() const override { return _uid; }
