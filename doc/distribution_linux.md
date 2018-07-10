@@ -17,7 +17,7 @@
 It is recommended to backup `/etc/apt/sources.list.d/realsense-public.list` file in case of an upgrade.
 
 - Register the server's public key :  
-`sudo apt-key adv --keyserver keys.gnupg.net --recv-key 6F3EFCDE`  
+`sudo apt-key adv --keyserver keys.gnupg.net --recv-key C8B3A55A6F3EFCDE`  
 - Refresh the list of repositories and packages available :  
 `sudo apt-get update`  
 
