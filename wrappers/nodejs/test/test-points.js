@@ -189,7 +189,7 @@ describe('Points test', function() {
       pipeline.start();
       frameSet = pipeline.waitForFrames();
     });
-    assert.throws(() => {
+    assert.doesNotThrow(() => {
       points = pointcloud.calculate(frameSet.depthFrame);
       points.exportToPly(files, frameSet.depthFrame);
       assert.equal(fs.existsSync(files), true);
