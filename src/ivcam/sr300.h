@@ -161,18 +161,9 @@ namespace librealsense
         std::vector<rs2_marker> get_markers() const override
         {
             std::vector<rs2_marker> markers;
-            if (get_usb_spec() >= platform::usb3_type)
-            {
-                markers.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
-                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
-                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
-            }
-            else
-            {
-                markers.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
-                markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
-                markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 15, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
-            }
+            markers.push_back({ RS2_STREAM_COLOR, -1, 1920, 1080, RS2_FORMAT_RGB8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+            markers.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET | rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT });
+            markers.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET });
             return markers;
         };
 

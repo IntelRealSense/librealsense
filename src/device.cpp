@@ -279,16 +279,3 @@ void librealsense::device::set_marker(stream_profile_interface* profile) const
         }
     }
 }
-
-platform::usb_spec librealsense::device::get_usb_spec() const
-{
-    auto str = get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
-    for (auto u : platform::usb_spec_names)
-    {
-        if (u.second.compare(str) == 0)
-            return u.first;
-    }
-    return platform::usb_undefined;
-}
-
-
