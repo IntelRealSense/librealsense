@@ -511,13 +511,11 @@ namespace librealsense
                     auto profiles = map_sub_device(sub.get_stream_profiles(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET), satisfied_streams);
                     if(profiles.size() == 0)
                         profiles = map_sub_device(sub.get_stream_profiles(rs2_profile_marker::RS2_PROFILE_MARKER_ANY), satisfied_streams);
-                    if(profiles.size() == 0)
-                        throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice ") + sub.get_info(RS2_CAMERA_INFO_NAME));
                     for (auto p : profiles)
-                    {
                         out.emplace((int)i, p);
-                    }
                 }
+                if(_requests.size() != out.size())
+                    throw std::runtime_error(std::string("Couldn't resolve requests"));
                 return out;
             }
 

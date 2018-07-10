@@ -562,6 +562,17 @@ namespace librealsense
         //TODO: Implement
     }
 
+    platform::usb_spec ds5_device::get_usb_spec() const
+    {
+        auto str = get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+        for (auto u : platform::usb_spec_names)
+        {
+            if (u.second.compare(str) == 0)
+                return u.first;
+        }
+        return platform::usb_undefined;
+    }
+
     std::shared_ptr<uvc_sensor> ds5u_device::create_ds5u_depth_device(std::shared_ptr<context> ctx,
         const std::vector<platform::uvc_device_info>& all_device_infos)
     {
