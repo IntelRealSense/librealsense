@@ -25,9 +25,9 @@ namespace librealsense
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
-        std::vector<rs2_marker> get_markers() const override
+        std::vector<tagged_profile> get_profiles_tags() const override
         {
-            std::vector<rs2_marker> markers;
+            std::vector<tagged_profile> markers;
             return markers;
         };
 

@@ -48,10 +48,10 @@ namespace librealsense
         static bool try_extend_snapshot(std::shared_ptr<extension_snapshot>& e, rs2_extension extension_type, void** ext);
         bool is_valid() const override;
 
-        std::vector<rs2_marker> get_markers() const override { return std::vector<rs2_marker>(); };//no hard-coded default streams for playback
-        void set_marker(stream_profile_interface* profile) const override 
+        std::vector<tagged_profile> get_profiles_tags() const override { return std::vector<tagged_profile>(); };//no hard-coded default streams for playback
+        void tag_profile(stream_profile_interface* profile) const override 
         {
-            profile->set_marker(rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT | rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET);
+            profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
         }
 
     private:

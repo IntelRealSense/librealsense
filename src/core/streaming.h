@@ -28,21 +28,21 @@ namespace librealsense
 
     class context;
 
-    typedef enum rs2_profile_marker
+    typedef enum profile_tag
     {
-        RS2_PROFILE_MARKER_ANY = 0,
-        RS2_PROFILE_MARKER_SUPERSET = 1,
-        RS2_PROFILE_MARKER_DEFAULT = 2,
-    } rs2_profile_marker;
+        PROFILE_TAG_ANY = 0,
+        PROFILE_TAG_SUPERSET = 1,
+        PROFILE_TAG_DEFAULT = 2,
+    } profile_tag;
 
-    struct rs2_marker
+    struct tagged_profile
     {
         rs2_stream stream;
         int stream_index;
         uint32_t width, height;
         rs2_format format;
         uint32_t fps;
-        int marker;
+        int tag;
     };
 
     class stream_interface : public std::enable_shared_from_this<stream_interface>
@@ -70,7 +70,7 @@ namespace librealsense
         virtual void set_framerate(uint32_t val) = 0;
 
         virtual int get_marker() const = 0;
-        virtual void set_marker(int marker) = 0;
+        virtual void tag_profile(int tag) = 0;
 
         virtual std::shared_ptr<stream_profile_interface> clone() const = 0;
         virtual rs2_stream_profile* get_c_wrapper() const = 0;
@@ -123,7 +123,7 @@ namespace librealsense
     class sensor_interface : public virtual info_interface, public virtual options_interface
     {
     public:
-        virtual stream_profiles get_stream_profiles(int marker = rs2_profile_marker::RS2_PROFILE_MARKER_ANY) const = 0;
+        virtual stream_profiles get_stream_profiles(int tag = profile_tag::PROFILE_TAG_ANY) const = 0;
         virtual stream_profiles get_active_streams() const = 0;
         virtual void open(const stream_profiles& requests) = 0;
         virtual void close() = 0;
@@ -169,9 +169,9 @@ namespace librealsense
 
         virtual ~device_interface() = default;
 
-        virtual std::vector<rs2_marker> get_markers() const = 0;
+        virtual std::vector<tagged_profile> get_profiles_tags() const = 0;
 
-        virtual void set_marker(stream_profile_interface* profile) const = 0;
+        virtual void tag_profile(stream_profile_interface* profile) const = 0;
     };
 
     class depth_stereo_sensor;

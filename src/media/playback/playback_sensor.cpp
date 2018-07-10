@@ -42,16 +42,16 @@ playback_sensor::~playback_sensor()
 {
 }
 
-stream_profiles playback_sensor::get_stream_profiles(int marker) const
+stream_profiles playback_sensor::get_stream_profiles(int tag) const
 {
     return m_available_profiles;
-    if (marker == rs2_profile_marker::RS2_PROFILE_MARKER_ANY)
+    if (tag == profile_tag::PROFILE_TAG_ANY)
         return m_available_profiles;
 
     stream_profiles profiles;
     for (auto p : m_available_profiles)
     {
-        if (p->get_marker() & marker)
+        if (p->get_marker() & tag)
             profiles.push_back(p);
     }
 

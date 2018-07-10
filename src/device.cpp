@@ -261,21 +261,21 @@ void librealsense::device::register_stream_to_extrinsic_group(const stream_inter
     }
 }
 
-void librealsense::device::set_marker(stream_profile_interface* profile) const
+void librealsense::device::tag_profile(stream_profile_interface* profile) const
 {
-    auto markers = get_markers();
-    for (auto marker : markers)
+    auto markers = get_profiles_tags();
+    for (auto tag : markers)
     {
         auto vp = dynamic_cast<video_stream_profile_interface*>(profile);
         if (vp)
         {
-            if (vp->get_stream_type() == marker.stream &&
-                vp->get_format() == marker.format &&
-                vp->get_width() == marker.width &&
-                vp->get_height() == marker.height &&
-                vp->get_framerate() == marker.fps &&
-                marker.stream_index == -1 || vp->get_stream_index() == marker.stream_index)
-                profile->set_marker(marker.marker);
+            if (vp->get_stream_type() == tag.stream &&
+                vp->get_format() == tag.format &&
+                vp->get_width() == tag.width &&
+                vp->get_height() == tag.height &&
+                vp->get_framerate() == tag.fps &&
+                tag.stream_index == -1 || vp->get_stream_index() == tag.stream_index)
+                profile->tag_profile(tag.tag);
         }
     }
 }

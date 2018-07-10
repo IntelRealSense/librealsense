@@ -508,9 +508,9 @@ namespace librealsense
                 for (size_t i = 0; i < dev->get_sensors_count(); ++i)
                 {
                     auto&& sub = dev->get_sensor(i);
-                    auto profiles = map_sub_device(sub.get_stream_profiles(rs2_profile_marker::RS2_PROFILE_MARKER_SUPERSET), satisfied_streams);
+                    auto profiles = map_sub_device(sub.get_stream_profiles(profile_tag::PROFILE_TAG_SUPERSET), satisfied_streams);
                     if(profiles.size() == 0)
-                        profiles = map_sub_device(sub.get_stream_profiles(rs2_profile_marker::RS2_PROFILE_MARKER_ANY), satisfied_streams);
+                        profiles = map_sub_device(sub.get_stream_profiles(profile_tag::PROFILE_TAG_ANY), satisfied_streams);
                     for (auto p : profiles)
                         out.emplace((int)i, p);
                 }

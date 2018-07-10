@@ -175,7 +175,7 @@ namespace librealsense
             for (size_t i = 0; i < dev->get_sensors_count(); ++i)
             {
                 auto&& sub = dev->get_sensor(i);
-                auto profiles = sub.get_stream_profiles(RS2_PROFILE_MARKER_SUPERSET);
+                auto profiles = sub.get_stream_profiles(PROFILE_TAG_SUPERSET);
                 config.enable_streams(profiles);
             }
             return std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
@@ -331,7 +331,7 @@ namespace librealsense
         for (unsigned int i = 0; i < dev->get_sensors_count(); i++)
         {
             auto&& sensor = dev->get_sensor(i);
-            auto profiles = sensor.get_stream_profiles(rs2_profile_marker::RS2_PROFILE_MARKER_DEFAULT);
+            auto profiles = sensor.get_stream_profiles(profile_tag::PROFILE_TAG_DEFAULT);
             default_profiles.insert(std::end(default_profiles), std::begin(profiles), std::end(profiles));
         }
 

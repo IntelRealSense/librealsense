@@ -61,7 +61,7 @@ namespace librealsense
         void set_framerate(uint32_t val) override;
 
         int get_marker() const override;
-        void set_marker(int marker) override;
+        void tag_profile(int tag) override;
 
         int get_unique_id() const override { return _uid; }
         void set_unique_id(int uid) override
@@ -83,7 +83,7 @@ namespace librealsense
         rs2_stream _type = RS2_STREAM_ANY;
         rs2_format _format = RS2_FORMAT_ANY;
         uint32_t _framerate = 0;
-        int _marker = rs2_profile_marker::RS2_PROFILE_MARKER_ANY;
+        int _marker = profile_tag::PROFILE_TAG_ANY;
         rs2_stream_profile _c_wrapper;
         rs2_stream_profile* _c_ptr = nullptr;
     };

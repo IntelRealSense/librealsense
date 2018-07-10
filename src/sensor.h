@@ -37,7 +37,7 @@ namespace librealsense
 
         virtual stream_profiles init_stream_profiles() = 0;
 
-        stream_profiles get_stream_profiles(int marker = rs2_profile_marker::RS2_PROFILE_MARKER_ANY) const override;
+        stream_profiles get_stream_profiles(int tag = profile_tag::PROFILE_TAG_ANY) const override;
 
         virtual stream_profiles get_active_streams() const override;
         notifications_callback_ptr get_notifications_callback() const override;

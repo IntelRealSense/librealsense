@@ -72,7 +72,7 @@ namespace librealsense
             return _is_valid;
         }
 
-        void set_marker(stream_profile_interface* profile) const override;
+        void tag_profile(stream_profile_interface* profile) const override;
 
     protected:
         int add_sensor(std::shared_ptr<sensor_interface> sensor_base);

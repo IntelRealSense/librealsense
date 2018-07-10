@@ -54,9 +54,9 @@ void librealsense::record_sensor::init()
     }
     LOG_DEBUG("Hooked to real sense");
 }
-stream_profiles record_sensor::get_stream_profiles(int marker) const
+stream_profiles record_sensor::get_stream_profiles(int tag) const
 {
-    return m_sensor.get_stream_profiles(marker);
+    return m_sensor.get_stream_profiles(tag);
 }
 
 void librealsense::record_sensor::open(const stream_profiles& requests)

@@ -265,15 +265,15 @@ namespace librealsense
         }
     }
 
-    stream_profiles sensor_base::get_stream_profiles(int marker) const
+    stream_profiles sensor_base::get_stream_profiles(int tag) const
     {
-        if (marker == rs2_profile_marker::RS2_PROFILE_MARKER_ANY)
+        if (tag == profile_tag::PROFILE_TAG_ANY)
             return *_profiles;
 
         stream_profiles profiles;
         for (auto p : *_profiles)
         {
-            if (p->get_marker() & marker)
+            if (p->get_marker() & tag)
                 profiles.push_back(p);
         }
 
