@@ -4385,41 +4385,6 @@ TEST_CASE("enable bad configuration", "[pipeline]")
     REQUIRE_THROWS(pipe.start(cfg));
 }
 
-TEST_CASE("default playback config", "[pipeline]")
-{
-    rs2::context ctx;
-    if (!make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
-        return;
-
-    std::string file_name = "enable_default_streams.bag";
-    std::vector<stream_profile> rec_streams;
-    std::vector<stream_profile> pb_streams;
-
-    {
-        pipeline pipe(ctx);
-        rs2::config cfg;
-        cfg.enable_record_to_file(file_name);
-        auto profile = pipe.start(cfg);
-        int frames = 10;
-        while (frames--)
-            pipe.wait_for_frames();
-        pipe.stop();
-        rec_streams = profile.get_streams();
-    }
-
-    {
-        pipeline pipe(ctx);
-        rs2::config cfg;
-        cfg.enable_device_from_file(file_name);
-        auto profile = pipe.start(cfg);
-        pipe.wait_for_frames();
-        pipe.stop();
-        pb_streams = profile.get_streams();
-    }
-
-    REQUIRE(rec_streams == pb_streams);
-}
-
 TEST_CASE("stream enable hierarchy", "[pipeline]")
 {
     rs2::context ctx;

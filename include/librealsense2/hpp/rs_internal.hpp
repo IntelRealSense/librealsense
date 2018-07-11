@@ -46,7 +46,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             _context = std::shared_ptr<rs2_context>(
-                rs2_create_mock_context(RS2_API_VERSION, filename.c_str(), section.c_str(), min_api_version.c_str(), &e),
+                rs2_create_mock_context_versioned(RS2_API_VERSION, filename.c_str(), section.c_str(), min_api_version.c_str(), &e),
                 rs2_delete_context);
             error::handle(e);
         }
