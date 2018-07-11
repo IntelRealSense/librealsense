@@ -76,7 +76,7 @@ rs2_context* rs2_create_recording_context(int api_version, const char* filename,
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            context object, should be released by rs2_delete_context
  */
-rs2_context* rs2_create_mock_context(int api_version, const char* filename, const char* section, rs2_error** error);
+rs2_context* rs2_create_mock_context(int api_version, const char* filename, const char* section, const char* min_api_version, rs2_error** error);
 
 /**
  * Create software device to enable use librealsense logic without getting data from backend

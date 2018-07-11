@@ -991,13 +991,13 @@ rs2_context* rs2_create_recording_context(int api_version, const char* filename,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section, mode)
 
-rs2_context* rs2_create_mock_context(int api_version, const char* filename, const char* section, rs2_error** error) BEGIN_API_CALL
+rs2_context* rs2_create_mock_context(int api_version, const char* filename, const char* section, const char* min_api_version, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(filename);
     VALIDATE_NOT_NULL(section);
     verify_version_compatibility(api_version);
 
-    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::playback, filename, section) };
+    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::playback, filename, section, RS2_RECORDING_MODE_COUNT, std::string(min_api_version)) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section)
 

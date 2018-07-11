@@ -2975,7 +2975,7 @@ TEST_CASE("Pipeline wait_for_frames", "[live][pipeline]") {
 
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         rs2::device dev;
         rs2::pipeline pipe(ctx);
@@ -3041,7 +3041,7 @@ TEST_CASE("Pipeline poll_for_frames", "[live][pipeline]")
 {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -3135,71 +3135,71 @@ TEST_CASE("Pipeline enable stream", "[live][pipeline]") {
     auto dev_requests = pipeline_custom_configurations;
 
     rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
+        return;
+
+    auto list = ctx.query_devices();
+    REQUIRE(list.size());
+
+    rs2::device dev;
+    rs2::pipeline pipe(ctx);
+    rs2::config cfg;
+    rs2::pipeline_profile profile;
+    REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+    REQUIRE(profile);
+    REQUIRE_NOTHROW(dev = profile.get_device());
+    REQUIRE(dev);
+    disable_sensitive_options_for(dev);
+    dev_type PID = get_PID(dev);
+    CAPTURE(PID.first);
+    CAPTURE(PID.second);
+
+    if (dev_requests.end() == dev_requests.find(PID))
     {
-        auto list = ctx.query_devices();
-        REQUIRE(list.size());
+        WARN("Skipping test - the Device-Under-Test profile is not defined for PID " << PID.first << (PID.second ? " USB3" : " USB2"));
+    }
+    else
+    {
+        REQUIRE(dev_requests[PID].streams.size() > 0);
 
-        rs2::device dev;
-        rs2::pipeline pipe(ctx);
-        rs2::config cfg;
-        rs2::pipeline_profile profile;
-        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        for (auto req : pipeline_custom_configurations.at(PID).streams)
+            REQUIRE_NOTHROW(cfg.enable_stream(req.stream, req.index, req.width, req.height, req.format, dev_requests[PID].fps));
+
+        REQUIRE_NOTHROW(profile = pipe.start(cfg));
         REQUIRE(profile);
-        REQUIRE_NOTHROW(dev = profile.get_device());
-        REQUIRE(dev);
-        disable_sensitive_options_for(dev);
-        dev_type PID = get_PID(dev);
-        CAPTURE(PID.first);
-        CAPTURE(PID.second);
+        REQUIRE(std::string(profile.get_device().get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        std::vector<std::vector<stream_profile>> frames;
+        std::vector<std::vector<double>> timestamps;
 
-        if (dev_requests.end() == dev_requests.find(PID))
+        for (auto i = 0; i < 30; i++)
+            REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
+
+        auto actual_fps = dev_requests[PID].fps;
+
+        while (frames.size() < 100)
         {
-            WARN("Skipping test - the Device-Under-Test profile is not defined for PID " << PID.first << (PID.second ? " USB3" : " USB2"));
-        }
-        else
-        {
-            REQUIRE(dev_requests[PID].streams.size() > 0);
+            frameset frame;
+            REQUIRE_NOTHROW(frame = pipe.wait_for_frames(5000));
+            std::vector<stream_profile> frames_set;
+            std::vector<double> ts;
 
-            for (auto req : pipeline_custom_configurations.at(PID).streams)
-                REQUIRE_NOTHROW(cfg.enable_stream(req.stream, req.index, req.width, req.height, req.format, dev_requests[PID].fps));
-
-            REQUIRE_NOTHROW(profile = pipe.start(cfg));
-            REQUIRE(profile);
-            REQUIRE(std::string(profile.get_device().get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-            std::vector<std::vector<stream_profile>> frames;
-            std::vector<std::vector<double>> timestamps;
-
-            for (auto i = 0; i < 30; i++)
-                REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
-
-            auto actual_fps = dev_requests[PID].fps;
-
-            while (frames.size() < 100)
+            for (auto f : frame)
             {
-                frameset frame;
-                REQUIRE_NOTHROW(frame = pipe.wait_for_frames(5000));
-                std::vector<stream_profile> frames_set;
-                std::vector<double> ts;
-
-                for (auto f : frame)
+                if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
                 {
-                    if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
-                    {
-                        auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS));
-                        if (val < actual_fps)
-                            actual_fps = val;
-                    }
-                    frames_set.push_back(f.get_profile());
-                    ts.push_back(f.get_timestamp());
+                    auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS));
+                    if (val < actual_fps)
+                        actual_fps = val;
                 }
-                frames.push_back(frames_set);
-                timestamps.push_back(ts);
+                frames_set.push_back(f.get_profile());
+                ts.push_back(f.get_timestamp());
             }
-
-            REQUIRE_NOTHROW(pipe.stop());
-            validate(frames, timestamps, dev_requests[PID], actual_fps);
+            frames.push_back(frames_set);
+            timestamps.push_back(ts);
         }
+
+        REQUIRE_NOTHROW(pipe.stop());
+        validate(frames, timestamps, dev_requests[PID], actual_fps);
     }
 }
 
@@ -3233,7 +3233,7 @@ TEST_CASE("Pipeline enable stream auto complete", "[live][pipeline]")
 
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -3309,7 +3309,7 @@ TEST_CASE("Pipeline disable_all", "[live][pipeline]") {
 
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -3386,7 +3386,7 @@ TEST_CASE("Pipeline disable stream", "[live][pipeline]") {
 
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -3464,7 +3464,7 @@ TEST_CASE("Pipeline with specific device", "[live][pipeline]")
 
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -3527,7 +3527,7 @@ TEST_CASE("Pipeline start stop", "[live][pipeline]") {
 
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -3667,7 +3667,7 @@ TEST_CASE("Pipeline get selection", "[live][pipeline]") {
     rs2::context ctx;
     auto configurations = pipeline_configurations_for_extrinsic;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -3936,7 +3936,7 @@ TEST_CASE("All suggested profiles can be opened", "[live][!mayfail]") {
 TEST_CASE("Pipeline config enable resolve start flow", "[live][pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -4004,7 +4004,7 @@ TEST_CASE("Pipeline config enable resolve start flow", "[live][pipeline]") {
 TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam][pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
 
         auto list = ctx.query_devices();
@@ -4126,7 +4126,7 @@ TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam
 TEST_CASE("Empty Pipeline Profile", "[live][pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         REQUIRE_NOTHROW(rs2::pipeline_profile p);
         rs2::pipeline_profile prof;
@@ -4204,7 +4204,7 @@ void require_pipeline_profile_same(const rs2::pipeline_profile& profile1, const 
 TEST_CASE("Pipeline empty Config", "[live][pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         REQUIRE_NOTHROW(rs2::config c);
         //Empty config
@@ -4224,7 +4224,7 @@ TEST_CASE("Pipeline empty Config", "[live][pipeline]") {
 TEST_CASE("Pipeline 2 Configs", "[live][pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         rs2::pipeline p(ctx);
         REQUIRE_NOTHROW(rs2::config c1);
@@ -4252,7 +4252,7 @@ TEST_CASE("Pipeline 2 Configs", "[live][pipeline]") {
 TEST_CASE("Pipeline start after resolve uses the same profile", "[live][pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         rs2::pipeline pipe(ctx);
         rs2::config cfg;
@@ -4270,7 +4270,7 @@ TEST_CASE("Pipeline start after resolve uses the same profile", "[live][pipeline
 
 TEST_CASE("Pipeline start ignores previous config if it was changed", "[live][pipeline]") {
     rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         rs2::pipeline pipe(ctx);
         rs2::config cfg;
@@ -4287,7 +4287,7 @@ TEST_CASE("Pipeline start ignores previous config if it was changed", "[live][pi
 TEST_CASE("Pipeline Config disable all is a nop with empty config", "[live][pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         rs2::pipeline p(ctx);
         rs2::config c1;
@@ -4306,7 +4306,7 @@ TEST_CASE("Pipeline Config disable all is a nop with empty config", "[live][pipe
 TEST_CASE("Pipeline Config disable each stream is nop on empty config", "[live][pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         rs2::pipeline p(ctx);
         rs2::config c1;
@@ -4329,7 +4329,7 @@ TEST_CASE("Pipeline Config disable each stream is nop on empty config", "[live][
 TEST_CASE("Pipeline record and playback", "[live][pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         const std::string filename = get_folder_path(special_folder::temp_folder) + "test_file.bag";
         //Scoping the below code to make sure no one holds the device
@@ -4375,7 +4375,7 @@ TEST_CASE("Pipeline record and playback", "[live][pipeline]") {
 TEST_CASE("enable bad configuration", "[pipeline]")
 {
     rs2::context ctx;
-    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
         return;
 
     pipeline pipe(ctx);
@@ -4388,7 +4388,7 @@ TEST_CASE("enable bad configuration", "[pipeline]")
 TEST_CASE("default playback config", "[pipeline]")
 {
     rs2::context ctx;
-    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
         return;
 
     std::string file_name = "enable_default_streams.bag";
@@ -4423,7 +4423,7 @@ TEST_CASE("default playback config", "[pipeline]")
 TEST_CASE("stream enable hierarchy", "[pipeline]")
 {
     rs2::context ctx;
-    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
         return;
 
     pipeline pipe(ctx);

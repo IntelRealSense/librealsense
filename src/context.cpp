@@ -93,7 +93,8 @@ namespace librealsense
     context::context(backend_type type,
                      const char* filename,
                      const char* section,
-                     rs2_recording_mode mode)
+                     rs2_recording_mode mode,
+                     std::string min_api_version)
         : _devices_changed_callback(nullptr, [](rs2_devices_changed_callback*){})
     {
         LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
@@ -107,7 +108,7 @@ namespace librealsense
             _backend = std::make_shared<platform::record_backend>(platform::create_backend(), filename, section, mode);
             break;
         case backend_type::playback:
-            _backend = std::make_shared<platform::playback_backend>(filename, section);
+            _backend = std::make_shared<platform::playback_backend>(filename, section, min_api_version);
 
             break;
         default: throw invalid_value_exception(to_string() << "Undefined backend type " << static_cast<int>(type));
