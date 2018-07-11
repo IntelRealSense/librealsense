@@ -275,12 +275,12 @@ namespace librealsense
                                        }
                                    });
                 if (_name == "") {
-                  throw linux_backend_exception("device is no longer connected!");
+                    throw linux_backend_exception("device is no longer connected!");
                 }
 
-              _state_change_time = 0;
-              _is_power_thread_alive = true;
-              _thread_handle = std::thread(std::bind(&libuvc_uvc_device::power_thread,this));
+                _state_change_time = 0;
+                _is_power_thread_alive = true;
+                _thread_handle = std::thread(std::bind(&libuvc_uvc_device::power_thread,this));
 
             }
 
@@ -413,7 +413,7 @@ namespace librealsense
               _real_state = D3;
             }
             void set_power_state(power_state state) override {
-                _power_mutex.lock();
+                std::lock_guard<std::mutex> lock(_power_mutex);
 
                 /* if power became on and it was originally off. open the uvc device. */
                 if (state == D0 && _state == D3) {
@@ -433,7 +433,6 @@ namespace librealsense
                 }
 
               _state = state;
-              _power_mutex.unlock();
 
             }
             power_state get_power_state() const override { return _state; }
@@ -674,7 +673,7 @@ namespace librealsense
               do {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
 
-                _power_mutex.lock();
+                std::lock_guard<std::mutex> lock(_power_mutex);
 
                 if (_state_change_time != 0) {
                     clock_t now_time = std::clock();
@@ -691,8 +690,6 @@ namespace librealsense
                         }
                     }
                 }
-
-                _power_mutex.unlock();
             } while(_is_power_thread_alive);
           }
 
