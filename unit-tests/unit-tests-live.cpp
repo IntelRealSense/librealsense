@@ -559,11 +559,11 @@ TEST_CASE("Device metadata enumerates correctly", "[live]")
 ////////////////////////////////////////////
 ////// Test basic streaming functionality //
 ////////////////////////////////////////////
-TEST_CASE("Start-Stop stream sequence", "[live]")
+TEST_CASE("Start-Stop stream sequence", "[live][using_pipeline]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         std::vector<sensor> list;
         REQUIRE_NOTHROW(list = ctx.query_all_sensors());
@@ -2688,11 +2688,11 @@ struct stream_format
     int index;
 };
 
-TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
+TEST_CASE("Auto-complete feature works", "[offline][util::config][using_pipeline]") {
     // dummy device can provide the following profiles:
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         struct Test {
             std::vector<stream_format> given;      // We give these profiles to the config class
@@ -4372,7 +4372,7 @@ TEST_CASE("Pipeline record and playback", "[live][pipeline]") {
 }
 
 
-TEST_CASE("enable bad configuration", "[pipeline]")
+TEST_CASE("Pipeline enable bad configuration", "[pipeline]")
 {
     rs2::context ctx;
     if (!make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4385,7 +4385,7 @@ TEST_CASE("enable bad configuration", "[pipeline]")
     REQUIRE_THROWS(pipe.start(cfg));
 }
 
-TEST_CASE("stream enable hierarchy", "[pipeline]")
+TEST_CASE("Pipeline stream enable hierarchy", "[pipeline]")
 {
     rs2::context ctx;
     if (!make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
