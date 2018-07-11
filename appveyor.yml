@@ -99,7 +99,7 @@ test_script:
 
         $url_cur = $url_records_path + $element
 
-        & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from $element -d yes -i ~[!mayfail]
+        & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from $element -d yes -i
 
         if ($LASTEXITCODE -ne 0)
         {
