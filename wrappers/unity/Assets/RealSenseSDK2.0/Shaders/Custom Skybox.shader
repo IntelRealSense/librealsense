@@ -32,14 +32,13 @@
         v2f o;
         o.position = UnityObjectToClipPos (v.position);
         o.scrPos = o.position;
-        o.scrPos = o.position / o.position.w;
         o.texcoord = v.texcoord;
         return o;
     }
     
     half4 frag (v2f i) : COLOR
     {
-        float4 col = lerp(_TopColor, _BottomColor, saturate(i.scrPos.y * 0.5 + 0.5));
+        float4 col = lerp(_TopColor, _BottomColor, saturate(i.scrPos.y / i.scrPos.w * 0.5 + 0.5));
         return col;
 
         #define PI 3.141592653589793

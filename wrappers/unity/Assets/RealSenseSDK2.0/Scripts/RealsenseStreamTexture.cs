@@ -5,7 +5,7 @@ using System.Threading;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class RealsenseStreamTexture : MonoBehaviour
+public class RealSenseStreamTexture : MonoBehaviour
 {
     [System.Serializable]
     public class TextureEvent : UnityEvent<Texture> { }
@@ -64,6 +64,7 @@ public class RealsenseStreamTexture : MonoBehaviour
             if (videoProfile == null)
             {
                 Debug.LogWarningFormat("{0} not in active profile", sourceStreamType);
+                return;
             }
 
             if (texture != null)

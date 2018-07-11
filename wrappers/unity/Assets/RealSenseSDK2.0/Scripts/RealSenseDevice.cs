@@ -152,10 +152,8 @@ public class RealSenseDevice : MonoBehaviour
 
     void OnDisable()
     {
-
-        if (Streaming && OnStop != null)
-            OnStop();
-
+        onNewSample = null;
+        onNewSampleSet = null;
 
         if (worker != null)
         {
@@ -163,8 +161,8 @@ public class RealSenseDevice : MonoBehaviour
             worker.Join();
         }
 
-        onNewSample = null;
-        onNewSampleSet = null;
+        if (Streaming && OnStop != null)
+            OnStop();
 
         if (m_pipeline != null)
         {
@@ -176,8 +174,11 @@ public class RealSenseDevice : MonoBehaviour
 
         Streaming = false;
 
-        ActiveProfile.Dispose();
-        ActiveProfile = null;
+        if (ActiveProfile != null)
+        {
+            ActiveProfile.Dispose();
+            ActiveProfile = null;
+        }
     }
 
     void OnDestroy()
@@ -242,6 +243,9 @@ public class RealSenseDevice : MonoBehaviour
 
     void Update()
     {
+        if (!Streaming)
+            return;
+
         if (processMode != ProcessMode.UnityThread)
             return;
 

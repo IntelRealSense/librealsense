@@ -29,7 +29,6 @@ Shader "Custom/BGSeg" {
 			#pragma glsl
 			#pragma multi_compile _HASCOLOR_OFF _HASCOLOR_ON
 
-
 			#include "UnityCG.cginc"
 
 			sampler2D _MainTex;
@@ -51,7 +50,7 @@ Shader "Custom/BGSeg" {
 					float3 Y = pow(tex2D(_ColorTex, pix.uv).aaa, _Gamma);
 				#endif
 
-				float mask = smoothstep(_MinRange - _Feather, _MinRange, distMeters) * 
+				float mask = smoothstep(_MinRange - _Feather * 0.5, _MinRange + _Feather * 0.5, distMeters) * 
 							 smoothstep(distMeters - _Feather, distMeters + _Feather, _MaxRange);
 				
 				return float4(Y, mask);

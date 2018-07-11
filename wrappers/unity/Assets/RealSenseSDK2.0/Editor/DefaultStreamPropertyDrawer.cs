@@ -5,7 +5,7 @@ using Intel.RealSense;
 using UnityEditor;
 using UnityEngine;
 
-[CustomEditor(typeof(RealsenseStreamTexture), true)]
+[CustomEditor(typeof(RealSenseStreamTexture), true)]
 public class DefaultStreamPropertyDrawer : Editor
 {
     bool hasDefault = false;
