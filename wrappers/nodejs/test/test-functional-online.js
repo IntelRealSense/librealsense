@@ -425,6 +425,8 @@ describe('enum value test', function() {
       'OPTION_FILTER_SMOOTH_DELTA',
       'OPTION_HOLES_FILL',
       'OPTION_STEREO_BASELINE',
+      'OPTION_AUTO_EXPOSURE_CONVERGE_STEP',
+      'OPTION_INTER_CAM_SYNC_MODE',
     ];
     const strAttrs = [
       'option_backlight_compensation',
@@ -468,6 +470,8 @@ describe('enum value test', function() {
       'option_filter_smooth_delta',
       'option_holes_fill',
       'option_stereo_baseline',
+      'option_auto_exposure_converge_step',
+      'option_inter_cam_sync_mode',
     ];
     numberAttrs.forEach((attr) => {
       assert.equal(typeof obj[attr], 'number');

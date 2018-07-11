@@ -5,8 +5,7 @@
 # All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-#  minimum required cmake version: 3.8.0
-cmake_minimum_required(VERSION 3.8.0)
+cmake_minimum_required(VERSION 2.8.12)
 
 if (POLICY CMP0048)
   # cmake warns if loaded from a min-3.0-required parent dir, so silence the warning:
