@@ -108,7 +108,7 @@ describe('Frame test', function() {
             frame.frameMetadata(rs2.frame_metadata[i])
           ), '[object Uint8Array]');
         } else {
-          assert.throws(() => {
+          assert.throws(() => { // jshint ignore:line
             frame.frameMetadata(rs2.frame_metadata[i]);
           });
         }
