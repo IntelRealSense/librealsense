@@ -564,6 +564,8 @@ namespace librealsense
 
     platform::usb_spec ds5_device::get_usb_spec() const
     {
+        if(!supports_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+            return platform::usb_undefined;
         auto str = get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
         for (auto u : platform::usb_spec_names)
         {
