@@ -2971,7 +2971,7 @@ static const std::map< dev_type, device_profiles> pipeline_default_configuration
 /* SR300*/              { { "0AA5", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
 };
 
-TEST_CASE("Pipeline wait_for_frames", "[live][pipeline]") {
+TEST_CASE("Pipeline wait_for_frames", "[live][pipeline][using_pipeline]") {
 
     rs2::context ctx;
 
@@ -3037,7 +3037,7 @@ TEST_CASE("Pipeline wait_for_frames", "[live][pipeline]") {
     }
 }
 
-TEST_CASE("Pipeline poll_for_frames", "[live][pipeline]")
+TEST_CASE("Pipeline poll_for_frames", "[live][pipeline][using_pipeline]")
 {
     rs2::context ctx;
 
@@ -3130,7 +3130,7 @@ static const std::map<dev_type, device_profiles> pipeline_custom_configurations 
                                      { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
 };
 
-TEST_CASE("Pipeline enable stream", "[live][pipeline]") {
+TEST_CASE("Pipeline enable stream", "[live][pipeline][using_pipeline]") {
 
     auto dev_requests = pipeline_custom_configurations;
 
@@ -3227,7 +3227,7 @@ static const std::map<dev_type, device_profiles> pipeline_autocomplete_configura
                                      { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
 };
 
-TEST_CASE("Pipeline enable stream auto complete", "[live][pipeline]")
+TEST_CASE("Pipeline enable stream auto complete", "[live][pipeline][using_pipeline]")
 {
     auto configurations = pipeline_autocomplete_configurations;
 
@@ -3302,7 +3302,7 @@ TEST_CASE("Pipeline enable stream auto complete", "[live][pipeline]")
     }
 }
 
-TEST_CASE("Pipeline disable_all", "[live][pipeline]") {
+TEST_CASE("Pipeline disable_all", "[live][pipeline][using_pipeline]") {
 
     auto not_default_configurations = pipeline_custom_configurations;
     auto default_configurations = pipeline_default_configurations;
@@ -3380,7 +3380,7 @@ TEST_CASE("Pipeline disable_all", "[live][pipeline]") {
     }
 }
 
-TEST_CASE("Pipeline disable stream", "[live][pipeline]") {
+TEST_CASE("Pipeline disable stream", "[live][pipeline][using_pipeline]") {
 
     auto configurations = pipeline_custom_configurations;
 
@@ -3459,7 +3459,7 @@ TEST_CASE("Pipeline disable stream", "[live][pipeline]") {
     }
 }
 // The test relies on default profiles that may alter
-TEST_CASE("Pipeline with specific device", "[live][pipeline]")
+TEST_CASE("Pipeline with specific device", "[live][pipeline][using_pipeline]")
 {
 
     rs2::context ctx;
@@ -3521,7 +3521,7 @@ bool operator==(std::vector<profile> streams1, std::vector<profile> streams2)
     return equals;
 }
 
-TEST_CASE("Pipeline start stop", "[live][pipeline]") {
+TEST_CASE("Pipeline start stop", "[live][pipeline][using_pipeline]") {
 
     auto configurations = pipeline_custom_configurations;
 
@@ -3663,7 +3663,7 @@ static const std::map<dev_type, device_profiles> pipeline_configurations_for_ext
                                      { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
                         };
 
-TEST_CASE("Pipeline get selection", "[live][pipeline]") {
+TEST_CASE("Pipeline get selection", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
     auto configurations = pipeline_configurations_for_extrinsic;
 
@@ -3933,7 +3933,7 @@ TEST_CASE("All suggested profiles can be opened", "[live][!mayfail]") {
     }
 }
 
-TEST_CASE("Pipeline config enable resolve start flow", "[live][pipeline]") {
+TEST_CASE("Pipeline config enable resolve start flow", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4001,7 +4001,7 @@ TEST_CASE("Pipeline config enable resolve start flow", "[live][pipeline]") {
     }
 }
 
-TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam][pipeline]") {
+TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4123,7 +4123,7 @@ TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam
     }
 }
 
-TEST_CASE("Empty Pipeline Profile", "[live][pipeline]") {
+TEST_CASE("Empty Pipeline Profile", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4201,7 +4201,7 @@ void require_pipeline_profile_same(const rs2::pipeline_profile& profile1, const 
         throw std::runtime_error(std::string("Profiles contain different streams"));
     }
 }
-TEST_CASE("Pipeline empty Config", "[live][pipeline]") {
+TEST_CASE("Pipeline empty Config", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4221,7 +4221,7 @@ TEST_CASE("Pipeline empty Config", "[live][pipeline]") {
     }
 }
 
-TEST_CASE("Pipeline 2 Configs", "[live][pipeline]") {
+TEST_CASE("Pipeline 2 Configs", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4249,7 +4249,7 @@ TEST_CASE("Pipeline 2 Configs", "[live][pipeline]") {
     }
 }
 
-TEST_CASE("Pipeline start after resolve uses the same profile", "[live][pipeline]") {
+TEST_CASE("Pipeline start after resolve uses the same profile", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4268,7 +4268,7 @@ TEST_CASE("Pipeline start after resolve uses the same profile", "[live][pipeline
     }
 }
 
-TEST_CASE("Pipeline start ignores previous config if it was changed", "[live][pipeline]") {
+TEST_CASE("Pipeline start ignores previous config if it was changed", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
@@ -4284,7 +4284,7 @@ TEST_CASE("Pipeline start ignores previous config if it was changed", "[live][pi
         REQUIRE_THROWS(require_pipeline_profile_same(profile_from_cfg, profile_from_start));
     }
 }
-TEST_CASE("Pipeline Config disable all is a nop with empty config", "[live][pipeline]") {
+TEST_CASE("Pipeline Config disable all is a nop with empty config", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4303,7 +4303,7 @@ TEST_CASE("Pipeline Config disable all is a nop with empty config", "[live][pipe
         REQUIRE_NOTHROW(require_pipeline_profile_same(profile1, profile2));
     }
 }
-TEST_CASE("Pipeline Config disable each stream is nop on empty config", "[live][pipeline]") {
+TEST_CASE("Pipeline Config disable each stream is nop on empty config", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4326,7 +4326,7 @@ TEST_CASE("Pipeline Config disable each stream is nop on empty config", "[live][
     }
 }
 
-TEST_CASE("Pipeline record and playback", "[live][pipeline]") {
+TEST_CASE("Pipeline record and playback", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4372,7 +4372,7 @@ TEST_CASE("Pipeline record and playback", "[live][pipeline]") {
 }
 
 
-TEST_CASE("Pipeline enable bad configuration", "[pipeline]")
+TEST_CASE("Pipeline enable bad configuration", "[pipeline][using_pipeline]")
 {
     rs2::context ctx;
     if (!make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
