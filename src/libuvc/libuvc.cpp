@@ -669,7 +669,7 @@ namespace librealsense
               do {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
 
-                  std::lock_guard<std::mutex> lock(_power_mutex);
+                std::lock_guard<std::mutex> lock(_power_mutex);
 
                 if (_state_change_time != 0) {
                     clock_t now_time = std::clock();
@@ -686,7 +686,6 @@ namespace librealsense
                         }
                     }
                 }
-
             } while(_is_power_thread_alive);
           }
 
