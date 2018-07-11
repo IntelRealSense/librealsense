@@ -37,32 +37,34 @@ describe('Config test', function() {
     }
   });
 
-  function createRrdFile() {
-    const ctx = new rs2.Context();
-    let dev = ctx.queryDevices().devices[0];
-    // record to file record.bag
-    let recorder = new rs2.RecorderDevice(fileName, dev);
-    let sensors = recorder.querySensors();
-    let sensor = sensors[0];
-    let profiles = sensor.getStreamProfiles();
-    for (let i =0; i < profiles.length; i++) {
-      if (profiles[i].streamType === rs2.stream.STREAM_DEPTH &&
-          profiles[i].fps === 30 &&
-          profiles[i].width === 640 &&
-          profiles[i].height === 480 &&
-          profiles[i].format === rs2.format.FORMAT_Z16) {
-        sensor.open(profiles[i]);
-      }
-    }
-    // record 10 frames
-    let cnt = 0;
-    sensor.start((frame) => {
-      cnt++;
-      if (cnt === 10) {
-        // stop recording
-        recorder.reset();
-        rs2.cleanup();
-      }
+  function startRecording(file, cnt) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        let ctx = new rs2.Context();
+        let dev = ctx.queryDevices().devices[0];
+        let recorder = new rs2.RecorderDevice(file, dev);
+        let sensors = recorder.querySensors();
+        let sensor = sensors[0];
+        let profiles = sensor.getStreamProfiles();
+        assert.equal(recorder.fileName, file);
+        for (let i = 0; i < profiles.length; i++) {
+          if (profiles[i].streamType === rs2.stream.STREAM_DEPTH &&
+              profiles[i].fps === 30 &&
+              profiles[i].width === 640 &&
+              profiles[i].height === 480 &&
+              profiles[i].format === rs2.format.FORMAT_Z16) {
+            sensor.open(profiles[i]);
+          }
+        }
+        let counter = 0;
+        sensor.start((frame) => {
+          counter++;
+          if (counter === cnt) {
+            recorder.reset();
+            resolve();
+          }
+        });
+      }, 2000);
     });
   }
 
@@ -229,11 +231,15 @@ describe('Config test', function() {
   });
 
   it('Testing method enableDeviceFromFile - with file', () => {
-    createRrdFile();
-    assert.doesNotThrow(() => {
-      config.enableDeviceFromFile(fileName);
+    return new Promise((resolve, reject) => {
+      startRecording(fileName, 10).then(() => {
+        assert.doesNotThrow(() => {
+          config.enableDeviceFromFile(fileName);
+        });
+        resolve();
+      });
     });
-  });
+  }).timeout(5000);
 
   it('Testing method enableDeviceFromFile - with invalid argument', () => {
     assert.throws(() => {
@@ -284,16 +290,16 @@ describe('Config test', function() {
     assert.equal(fs.existsSync(fileName), true);
     assert.doesNotThrow(() => {
       let frameSet = pipeline.waitForFrames();
-      assert(frameSet instanceof rs2.VideoFrame);
+      assert(frameSet instanceof rs2.FrameSet);
     });
-  });
+  }).timeout(10000);
 
   it('Testing method enableRecordToFile - then enableDeviceFromFile', () => {
     assert.doesNotThrow(() => {
       config.enableRecordToFile(fileName);
       pipeline.start(config);
       let frameSet = pipeline.waitForFrames();
-      assert(frameSet instanceof rs2.VideoFrame);
+      assert(frameSet instanceof rs2.FrameSet);
     });
     assert.equal(fs.existsSync(fileName), true);
     assert.throws(() => {
@@ -309,7 +315,7 @@ describe('Config test', function() {
     });
     assert.doesNotThrow(() => {
       let frameSet = pipeline.waitForFrames();
-      assert(frameSet instanceof rs2.VideoFrame);
+      assert(frameSet instanceof rs2.FrameSet);
     });
     assert.equal(fs.existsSync(fileName), true);
   });

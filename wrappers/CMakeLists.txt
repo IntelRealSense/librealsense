@@ -1,5 +1,5 @@
-#  minimum required cmake version: 3.8.0
-cmake_minimum_required(VERSION 3.8.0)
+#  minimum required cmake version: 3.1.0
+cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsenseWrappers)
 
@@ -20,14 +20,47 @@ endif()
 
 set(DEPENDENCIES realsense2)
 
-if(BUILD_PYTHON_BINDINGS)
-    add_subdirectory(python)
+if (BUILD_PYTHON_BINDINGS)
+  add_subdirectory(python)
 endif()
 
-if(BUILD_NODEJS_BINDINGS)
-    add_subdirectory(nodejs)
+if (BUILD_NODEJS_BINDINGS)
+  add_subdirectory(nodejs)
+endif()
+
+if (BUILD_CV_EXAMPLES)
+  add_subdirectory(opencv)
+endif()
+
+if (BUILD_PCL_EXAMPLES)
+  add_subdirectory(pcl)
+endif()
+
+if(BUILD_UNITY_BINDINGS)
+	if(NOT WIN32)
+		message( FATAL_ERROR "BUILD_UNITY_BINDINGS is supported only for Windows OS" )
+	endif()
+	if(NOT BUILD_CSHARP_BINDINGS)
+		message( WARNING "Enabling BUILD_CSHARP_BINDINGS and set DOTNET_VERSION_LIBRARY to 3.5 since BUILD_UNITY_BINDINGS is enabled" )
+	endif()
+	SET(BUILD_CSHARP_BINDINGS ON)
+	SET(DOTNET_VERSION_LIBRARY 3.5)
+	string(REPLACE "/" "\\\\" CMAKE_BINARY_WIN_DIR ${CMAKE_BINARY_DIR})
+	string(REPLACE "/" "\\\\" CMAKE_SOURCE_WIN_DIR ${CMAKE_SOURCE_DIR})
+	file(MAKE_DIRECTORY ${CMAKE_BINARY_WIN_DIR}/wrappers)
+	if(NOT EXISTS ${CMAKE_BINARY_WIN_DIR}/wrappers/unity)
+		execute_process(COMMAND cmd "/C mklink /D ${CMAKE_BINARY_WIN_DIR}\\wrappers\\unity ${CMAKE_SOURCE_WIN_DIR}\\wrappers\\unity")
+	endif()
 endif()
 
 if(BUILD_CSHARP_BINDINGS)
+	if(NOT WIN32)
+		message( WARNING "BUILD_CSHARP_BINDINGS is supported only for Windows OS" )
+	endif()
+	if(NOT BUILD_SHARED_LIBS)
+		message( FATAL_ERROR "BUILD_SHARED_LIBS flag must be enabled when generating CSharp bindings" )
+	endif()
     add_subdirectory(csharp)
 endif()
+
+

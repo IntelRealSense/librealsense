@@ -290,9 +290,13 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::event_information> event_information(m, "event_information");
     event_information.def("was_removed", &rs2::event_information::was_removed, "Check if "
-        "specific device was disconnected.", "dev"_a)
-        .def("get_new_devices", &rs2::event_information::get_new_devices, "Returns a "
-            "list of all newly connected devices");
+			  "specific device was disconnected.", "dev"_a)
+      .def("was_added", &rs2::event_information::was_added, "Check if "
+	   "specific device was added.", "dev"_a)
+      .def("get_new_devices", &rs2::event_information::get_new_devices, "Returns a "
+	   "list of all newly connected devices")
+      .def("get_removed_devices", &rs2::event_information::get_removed_devices, "Returns a "
+	   "list of all newly removed devices");
 
     py::class_<rs2::tm2, rs2::device> tm2(m, "tm2");
     tm2.def(py::init<rs2::device>(), "device"_a)
@@ -983,6 +987,5 @@ PYBIND11_MODULE(NAME, m) {
         std::array<float, 2> to_fow{};
         rs2_fov(&intrin, to_fow.data());
         return to_fow;
-
     }, "Calculate horizontal and vertical field of view, based on video intrinsics");
 }

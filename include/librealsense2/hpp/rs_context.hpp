@@ -34,12 +34,38 @@ namespace rs2
         }
 
         /**
+        * check if specific device was added
+        * \return            true if device added, false otherwise
+        */
+        bool was_added(const rs2::device& dev) const
+        {
+            rs2_error* e = nullptr;
+
+            if (!dev)
+                return false;
+
+            auto res = rs2_device_list_contains(_added.get_list(), dev.get().get(), &e);
+            error::handle(e);
+
+            return res > 0;
+        }
+      
+        /**
         * returns a list of all newly connected devices
         * \return            the list of all new connected devices
         */
         device_list get_new_devices()  const
         {
             return _added;
+        }
+
+        /**
+        * returns a list of all newly removed devices
+        * \return            the list of all newly removed devices
+        */
+        device_list get_removed_devices()  const
+        {
+            return _removed;
         }
 
     private:

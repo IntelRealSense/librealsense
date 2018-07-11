@@ -2,8 +2,7 @@
 # Use of this source code is governed by an Apache 2.0 license
 # that can be found in the LICENSE file.
 
-#  minimum required cmake version: 3.8.0
-cmake_minimum_required(VERSION 3.8.0)
+cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsenseNodeJSWrappers)
 

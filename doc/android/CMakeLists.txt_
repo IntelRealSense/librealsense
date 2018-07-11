@@ -3,8 +3,7 @@
 
 # Sets the minimum version of CMake required to build the native library.
 
-#  minimum required cmake version: 3.8.0
-cmake_minimum_required(VERSION 3.8.0)
+cmake_minimum_required(VERSION 3.4.1)
 
 set(ANDROID on CACHE BOOL "ANDROID")
 set(APP_PLATFORM "android-16" CACHE STRING "ANDROID")

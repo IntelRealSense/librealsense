@@ -4,8 +4,9 @@
 
 'use strict';
 
-/* global describe, it, before, after */
+/* global describe, it, beforeEach, afterEach */
 const assert = require('assert');
+const fs = require('fs');
 let rs2;
 try {
   rs2 = require('node-librealsense');
@@ -14,21 +15,29 @@ try {
 }
 
 let ctx;
+let pipeline;
+let pointcloud;
+let frameSet;
+let points;
+let files = 'points.ply';
 describe('Points test', function() {
-  before(function() {
+  beforeEach(function() {
     ctx = new rs2.Context();
     const devices = ctx.queryDevices().devices;
     assert(devices.length > 0); // Device must be connected
   });
 
-  after(function() {
+  afterEach(function() {
+    pipeline.destroy();
+    pipeline.stop();
     rs2.cleanup();
+    frameSet.destroy();
+    if (fs.existsSync(files)) {
+      fs.unlinkSync(files);
+    }
   });
 
   it('Testing member textureCoordinates', () => {
-    let pipeline;
-    let frameSet;
-    let pointcloud;
     assert.doesNotThrow(() => {
       pipeline = new rs2.Pipeline();
       pointcloud = new rs2.PointCloud();
@@ -57,14 +66,9 @@ describe('Points test', function() {
         assert(false, 'could not get colorFrame or depthFrame, try to reset camera');
       }
     }
-    frameSet.destroy();
-    pipeline.destroy();
   });
 
   it('Testing member vertices', () => {
-    let pipeline;
-    let frameSet;
-    let pointcloud;
     assert.doesNotThrow(() => {
       pipeline = new rs2.Pipeline();
       pointcloud = new rs2.PointCloud();
@@ -93,14 +97,9 @@ describe('Points test', function() {
         assert(false, 'could not get colorFrame or depthFrame, try to reset camera');
       }
     }
-    frameSet.destroy();
-    pipeline.destroy();
   });
 
   it('Testing member size', () => {
-    let pipeline;
-    let frameSet;
-    let pointcloud;
     assert.doesNotThrow(() => {
       pipeline = new rs2.Pipeline();
       pointcloud = new rs2.PointCloud();
@@ -129,7 +128,100 @@ describe('Points test', function() {
         assert(false, 'could not get colorFrame or depthFrame, try to reset camera');
       }
     }
-    frameSet.destroy();
-    pipeline.destroy();
+  });
+
+  it('Testing method exportToPly without argument', () => {
+    assert.doesNotThrow(() => {
+      pipeline = new rs2.Pipeline();
+      pointcloud = new rs2.PointCloud();
+      pipeline.start();
+      frameSet = pipeline.waitForFrames();
+      points = pointcloud.calculate(frameSet.depthFrame);
+    });
+    assert.throws(() => {
+      points.exportToPly();
+    });
+  });
+
+  it('Testing method exportToPly with three arguments', () => {
+    assert.doesNotThrow(() => {
+      pipeline = new rs2.Pipeline();
+      pointcloud = new rs2.PointCloud();
+      pipeline.start();
+      frameSet = pipeline.waitForFrames();
+      points = pointcloud.calculate(frameSet.depthFrame);
+    });
+    assert.throws(() => {
+      points.exportToPly(files, files, files);
+    });
+  });
+
+  it('Testing method exportToPly first argument with number', () => {
+    assert.doesNotThrow(() => {
+      pipeline = new rs2.Pipeline();
+      pointcloud = new rs2.PointCloud();
+      pipeline.start();
+      frameSet = pipeline.waitForFrames();
+      points = pointcloud.calculate(frameSet.depthFrame);
+    });
+    assert.throws(() => {
+      points.exportToPly(1, 1);
+    });
+  });
+
+  it('Testing method exportToPly second argument with number', () => {
+    assert.doesNotThrow(() => {
+      pipeline = new rs2.Pipeline();
+      pointcloud = new rs2.PointCloud();
+      pipeline.start();
+      frameSet = pipeline.waitForFrames();
+      points = pointcloud.calculate(frameSet.depthFrame);
+    });
+    assert.throws(() => {
+      points.exportToPly(files, 1);
+    });
+  });
+
+  it('Testing method exportToPly with depthFrame', () => {
+    assert.doesNotThrow(() => {
+      pipeline = new rs2.Pipeline();
+      pointcloud = new rs2.PointCloud();
+      pipeline.start();
+      frameSet = pipeline.waitForFrames();
+    });
+    assert.doesNotThrow(() => {
+      points = pointcloud.calculate(frameSet.depthFrame);
+      points.exportToPly(files, frameSet.depthFrame);
+      assert.equal(fs.existsSync(files), true);
+    });
+  });
+
+  it('Testing method exportToPly with colorFrame', () => {
+    assert.doesNotThrow(() => {
+      pipeline = new rs2.Pipeline();
+      pointcloud = new rs2.PointCloud();
+      pipeline.start();
+      frameSet = pipeline.waitForFrames();
+    });
+    assert.doesNotThrow(() => {
+      points = pointcloud.calculate(frameSet.depthFrame);
+      points.exportToPly(files, frameSet.colorFrame);
+      assert.equal(fs.existsSync(files), true);
+    });
+  });
+
+  it('Testing method exportToPly with videoFrame', () => {
+    assert.doesNotThrow(() => {
+      pipeline = new rs2.Pipeline();
+      pointcloud = new rs2.PointCloud();
+      pipeline.start();
+      frameSet = pipeline.waitForFrames();
+      points = pointcloud.calculate(frameSet.depthFrame);
+    });
+    assert.doesNotThrow(() => {
+      let videoFrame = frameSet.at(1);
+      points.exportToPly(files, videoFrame);
+      assert.equal(fs.existsSync(files), true);
+    });
   });
 });
