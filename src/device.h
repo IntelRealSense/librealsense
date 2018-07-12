@@ -92,5 +92,6 @@ namespace librealsense
         bool _is_valid, _device_changed_notifications;
         mutable std::mutex _device_changed_mtx;
         uint64_t _callback_id;
+        lazy<std::vector<tagged_profile>> _profiles_tags;
     };
 }

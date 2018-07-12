@@ -270,15 +270,15 @@ namespace librealsense
         if (tag == profile_tag::PROFILE_TAG_ANY)
             return *_profiles;
 
-        stream_profiles profiles;
+        stream_profiles results;
         for (auto p : *_profiles)
         {
             auto curr_tag = p->get_tag();
             if (curr_tag & tag)
-                profiles.push_back(p);
+                results.push_back(p);
         }
 
-        return profiles;
+        return results;
     }
 
     stream_profiles uvc_sensor::init_stream_profiles()

@@ -4407,18 +4407,12 @@ TEST_CASE("Pipeline stream enable hierarchy", "[pipeline]")
 
     for (auto d : default_streams)
     {
-        auto it = std::find_if(begin(all_streams), end(all_streams), [d](const rs2::stream_profile profile)
-        {
-            return d == profile;
-        });
+        auto it = std::find(begin(all_streams), end(all_streams), d);
         REQUIRE(it != std::end(all_streams));
     }
     for (auto w : wildcards_streams)
     {
-        auto it = std::find_if(begin(all_streams), end(all_streams), [w](const rs2::stream_profile profile)
-        {
-            return w == profile;
-        });
+        auto it = std::find(begin(all_streams), end(all_streams), w);
         REQUIRE(it != std::end(all_streams));
     }
 }
