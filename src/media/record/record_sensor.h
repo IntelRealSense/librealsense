@@ -22,7 +22,7 @@ namespace librealsense
                       sensor_interface& sensor);
         virtual ~record_sensor();
         void init();
-        stream_profiles get_stream_profiles() const override;
+        stream_profiles get_stream_profiles(int tag = profile_tag::PROFILE_TAG_ANY) const override;
         void open(const stream_profiles& requests) override;
         void close() override;
         option& get_option(rs2_option id) override;

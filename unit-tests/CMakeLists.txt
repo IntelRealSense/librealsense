@@ -19,7 +19,13 @@ endif()
 
 set(DEPENDENCIES realsense2)
 
-set (unit_tests_sources unit-tests-live.cpp unit-tests-post-processing.cpp unit-tests-post-processing.h unit-tests-main.cpp unit-tests-common.h)
+set (unit_tests_sources
+    unit-tests-live.cpp
+    unit-tests-post-processing.cpp
+    unit-tests-post-processing.h
+    unit-tests-main.cpp
+    unit-tests-common.h
+)
 
 add_executable(live-test ${unit_tests_sources})
 target_link_libraries(live-test ${DEPENDENCIES})

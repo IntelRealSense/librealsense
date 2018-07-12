@@ -5,6 +5,7 @@ EXPORTS
     rs2_delete_context
     rs2_create_recording_context
     rs2_create_mock_context
+    rs2_create_mock_context_versioned
     rs2_get_time
     rs2_context_add_device
     rs2_context_remove_device
