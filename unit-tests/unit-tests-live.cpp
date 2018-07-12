@@ -4268,7 +4268,7 @@ TEST_CASE("Pipeline start after resolve uses the same profile", "[live][pipeline
     }
 }
 
-TEST_CASE("Pipeline start ignores previous config if it was changed", "[live][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline start ignores previous config if it was changed", "[live][pipeline][using_pipeline][!mayfail]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
@@ -4284,6 +4284,7 @@ TEST_CASE("Pipeline start ignores previous config if it was changed", "[live][pi
         REQUIRE_THROWS(require_pipeline_profile_same(profile_from_cfg, profile_from_start));
     }
 }
+
 TEST_CASE("Pipeline Config disable all is a nop with empty config", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
