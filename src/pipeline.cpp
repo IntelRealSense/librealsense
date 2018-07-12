@@ -619,6 +619,37 @@ namespace librealsense
         return false;
     }
 
+    bool pipeline::try_wait_for_frames(frame_holder* frame, unsigned int timeout_ms)
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        if (!_active_profile)
+        {
+            throw librealsense::wrong_api_call_sequence_exception("wait_for_frames cannot be called before start()");
+        }
+
+        if (_pipeline_process->dequeue(frame, timeout_ms))
+        {
+            return true;
+        }
+
+        //hub returns true even if device already reconnected
+        if (!_hub.is_connected(*_active_profile->get_device()))
+        {
+            try
+            {
+                auto prev_conf = _prev_conf;
+                unsafe_stop();
+                unsafe_start(prev_conf);
+                return _pipeline_process->dequeue(frame, timeout_ms);
+            }
+            catch (const std::exception& e)
+            {
+                return false;
+            }
+        }
+        return false;
+    }
+
     std::shared_ptr<device_interface> pipeline::wait_for_device(const std::chrono::milliseconds& timeout, const std::string& serial)
     {
         // Pipeline's device selection shall be deterministic

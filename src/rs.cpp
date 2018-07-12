@@ -919,6 +919,23 @@ int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, queue, output_frame)
 
+int rs2_try_wait_for_frame(rs2_frame_queue* queue, unsigned int timeout_ms, rs2_frame** output_frame, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(queue);
+    VALIDATE_NOT_NULL(output_frame);
+    librealsense::frame_holder fh;
+    if (!queue->queue.dequeue(&fh, timeout_ms))
+    {
+        return false;
+    }
+
+    frame_interface* result = nullptr;
+    std::swap(result, fh.frame);
+    *output_frame = (rs2_frame*)result;
+    return true;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, queue, output_frame)
+
 void rs2_enqueue_frame(rs2_frame* frame, void* queue) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame);
@@ -1359,9 +1376,27 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)
 int rs2_pipeline_poll_for_frames(rs2_pipeline * pipe, rs2_frame** output_frame, rs2_error ** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(pipe);
+    VALIDATE_NOT_NULL(output_frame);
 
     librealsense::frame_holder fh;
     if (pipe->pipe->poll_for_frames(&fh))
+    {
+        frame_interface* result = nullptr;
+        std::swap(result, fh.frame);
+        *output_frame = (rs2_frame*)result;
+        return true;
+    }
+    return false;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, pipe, output_frame)
+
+int rs2_pipeline_try_wait_for_frames(rs2_pipeline* pipe, rs2_frame** output_frame, unsigned int timeout_ms, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(pipe);
+    VALIDATE_NOT_NULL(output_frame);
+
+    librealsense::frame_holder fh;
+    if (pipe->pipe->try_wait_for_frames(&fh, timeout_ms))
     {
         frame_interface* result = nullptr;
         std::swap(result, fh.frame);

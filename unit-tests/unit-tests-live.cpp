@@ -4372,7 +4372,7 @@ TEST_CASE("Pipeline record and playback", "[live]") {
 }
 
 
-TEST_CASE("Syncer sanity with software-device device", "[live][software-device]") {
+TEST_CASE("Syncer sanity with  -device device", "[live][software-device]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -4465,6 +4465,89 @@ TEST_CASE("Syncer sanity with software-device device", "[live][software-device]"
         }
     }
 }
+
+TEST_CASE("Syncer try wait for frames", "[live][software-device]") {
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        std::shared_ptr<software_device> dev = std::move(std::make_shared<software_device>());
+        auto s = dev->add_sensor("software_sensor");
+
+        const int W = 640, H = 480, BPP = 2;
+        rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
+        s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
+        s.add_video_stream({ RS2_STREAM_INFRARED, 1, 1, W, H,60, BPP, RS2_FORMAT_Y8, intrinsics });
+        dev->create_matcher(RS2_MATCHER_DI);
+
+        auto profiles = s.get_stream_profiles();
+        syncer sync;
+        s.open(profiles);
+        s.start(sync);
+
+        std::vector<uint8_t> pixels(W * H * BPP, 0);
+        std::weak_ptr<rs2::software_device> weak_dev(dev);
+
+        auto depth = profiles[0];
+        auto ir = profiles[1];
+        std::thread t([&s, weak_dev, pixels, depth, ir]() mutable {
+
+            auto shared_dev = weak_dev.lock();
+            if (shared_dev == nullptr)
+                return;
+            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
+            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir });
+
+            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth });
+            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir });
+
+            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, ir });
+        });
+        t.detach();
+
+        std::vector<std::vector<std::pair<rs2_stream, int>>> expected =
+        {
+        { { RS2_STREAM_DEPTH , 7 } },
+        { { RS2_STREAM_INFRARED , 5 } },
+        { { RS2_STREAM_INFRARED , 6 } },
+        { { RS2_STREAM_DEPTH , 8 },{ RS2_STREAM_INFRARED , 8 } }
+        };
+
+        std::vector<std::vector<std::pair<rs2_stream, int>>> results;
+        for (auto i = 0; i < expected.size(); i++)
+        {
+            frameset fs;
+            REQUIRE(sync.try_wait_for_frames(&fs,5000));
+            std::vector < std::pair<rs2_stream, int>> curr;
+
+            for (auto f : fs)
+            {
+                curr.push_back({ f.get_profile().stream_type(), f.get_frame_number() });
+            }
+            results.push_back(curr);
+        }
+
+        CAPTURE(results.size());
+        CAPTURE(expected.size());
+        REQUIRE(results.size() == expected.size());
+
+        for (auto i = 0; i < expected.size(); i++)
+        {
+            auto exp = expected[i];
+            auto curr = results[i];
+            CAPTURE(exp.size());
+            CAPTURE(curr.size());
+            REQUIRE(exp.size() == curr.size());
+
+            for (auto j = 0; j < exp.size(); j++)
+            {
+                CAPTURE(exp[j].first);
+                CAPTURE(exp[j].second);
+                REQUIRE(std::find(curr.begin(), curr.end(), exp[j]) != curr.end());
+            }
+        }
+    }
+}
+
 
 TEST_CASE("Syncer clean_inactive_streams by frame number with software-device device", "[live][software-device]") {
     rs2::context ctx;
