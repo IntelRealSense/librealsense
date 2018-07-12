@@ -131,53 +131,56 @@ int uvc_already_open(uvc_context_t *ctx, struct libusb_device *usb_dev) {
  */
 uvc_error_t uvc_find_device(
     uvc_context_t *ctx, uvc_device_t **dev,
-    int vid, int pid, const char *sn) {
-  uvc_error_t ret = UVC_SUCCESS;
+    int vid, int pid, const char *sn, std::function<bool(uvc_device_t*)> predicate)
+{
+    uvc_error_t ret = UVC_SUCCESS;
 
-  uvc_device_t **list;
-  uvc_device_t *test_dev;
-  int dev_idx;
-  int found_dev;
+    uvc_device_t **list;
+    uvc_device_t *test_dev;
+    int dev_idx;
+    int found_dev;
 
-  UVC_ENTER();
+    UVC_ENTER();
 
-  ret = uvc_get_device_list(ctx, &list);
+    ret = uvc_get_device_list(ctx, &list);
 
-  if (ret != UVC_SUCCESS) {
-    UVC_EXIT(ret);
-    return ret;
-  }
+    if (ret != UVC_SUCCESS) {
+        UVC_EXIT(ret);
+        return ret;
+    }
 
-  dev_idx = 0;
-  found_dev = 0;
+    dev_idx = 0;
+    found_dev = 0;
 
-  while (!found_dev && (test_dev = list[dev_idx++]) != NULL) {
-    uvc_device_descriptor_t *desc;
+    while (!found_dev && (test_dev = list[dev_idx++]) != NULL) {
+        uvc_device_descriptor_t *desc;
+      
+        if (uvc_get_device_descriptor(test_dev, &desc) != UVC_SUCCESS)
+            continue;
+        
+        if ((!vid || desc->idVendor == vid)
+            && (!pid || desc->idProduct == pid)
+            && (!sn || (desc->serialNumber && !strcmp(desc->serialNumber, sn))))
+        {
+            if (predicate(test_dev))
+                found_dev = 1;
+        }
 
-    if (uvc_get_device_descriptor(test_dev, &desc) != UVC_SUCCESS)
-      continue;
+        uvc_free_device_descriptor(desc);
+    }
 
-    if ((!vid || desc->idVendor == vid)
-        && (!pid || desc->idProduct == pid)
-        && (!sn || (desc->serialNumber && !strcmp(desc->serialNumber, sn))))
-      found_dev = 1;
+    if (found_dev) uvc_ref_device(test_dev);
 
-    uvc_free_device_descriptor(desc);
-  }
+    uvc_free_device_list(list, 1);
 
-  if (found_dev)
-    uvc_ref_device(test_dev);
-
-  uvc_free_device_list(list, 1);
-
-  if (found_dev) {
-    *dev = test_dev;
-    UVC_EXIT(UVC_SUCCESS);
-    return UVC_SUCCESS;
-  } else {
-    UVC_EXIT(UVC_ERROR_NO_DEVICE);
-    return UVC_ERROR_NO_DEVICE;
-  }
+    if (found_dev) {
+        *dev = test_dev;
+        UVC_EXIT(UVC_SUCCESS);
+        return UVC_SUCCESS;
+    } else {
+        UVC_EXIT(UVC_ERROR_NO_DEVICE);
+        return UVC_ERROR_NO_DEVICE;
+    }
 }
 
 /** @brief Finds all cameras identified by vendor, product and/or serial number
