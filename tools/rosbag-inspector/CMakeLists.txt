@@ -5,6 +5,7 @@ project(RealsenseToolsRosbagInspector)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+set(BUILD_GRAPHICAL_EXAMPLES 1)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
