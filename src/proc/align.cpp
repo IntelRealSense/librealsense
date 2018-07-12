@@ -11,216 +11,25 @@
 #include "align.h"
 #include "stream.h"
 
+#ifdef __SSSE3__
+#include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
+#endif
+
 namespace librealsense
 {
     template<int N> struct bytes {
         byte b[N];
     };
 
-    image_transform::image_transform(const rs2_intrinsics& from, float depth_scale)
-        :_depth(from),
-        _depth_scale(depth_scale),
-        _pixel_top_left_int(from.width*from.height),
-        _pixel_bottom_right_int(from.width*from.height)
-    {
-    }
-
-    void image_transform::pre_compute_x_y_map(float offset)
-    {
-        pre_compute_x_y_map(_pre_compute_map_x, _pre_compute_map_y, offset);
-    }
-
-    void image_transform::pre_compute_x_y_map_corners()
-    {
-        pre_compute_x_y_map(_pre_compute_map_x_top_left, _pre_compute_map_y_top_left, -0.5f);
-        pre_compute_x_y_map(_pre_compute_map_x_bottom_right, _pre_compute_map_y_bottom_right, 0.5f);
-    }
-
-    void image_transform::pre_compute_x_y_map(std::vector<float>& pre_compute_map_x,
-        std::vector<float>& pre_compute_map_y,
-        float offset)
-    {
-        pre_compute_map_x.resize(_depth.width*_depth.height);
-        pre_compute_map_y.resize(_depth.width*_depth.height);
-
-        for (int h = 0; h < _depth.height; ++h)
-        {
-            for (int w = 0; w < _depth.width; ++w)
-            {
-                const float pixel[] = { (float)w + offset, (float)h + offset };
-
-                float x = (pixel[0] - _depth.ppx) / _depth.fx;
-                float y = (pixel[1] - _depth.ppy) / _depth.fy;
-
-                if (_depth.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY)
-                {
-                    float r2 = x*x + y*y;
-                    float f = 1 + _depth.coeffs[0] * r2 + _depth.coeffs[1] * r2*r2 + _depth.coeffs[4] * r2*r2*r2;
-                    float ux = x*f + 2 * _depth.coeffs[2] * x*y + _depth.coeffs[3] * (r2 + 2 * x*x);
-                    float uy = y*f + 2 * _depth.coeffs[3] * x*y + _depth.coeffs[2] * (r2 + 2 * y*y);
-                    x = ux;
-                    y = uy;
-                }
-
-                pre_compute_map_x[h*_depth.width + w] = x;
-                pre_compute_map_y[h*_depth.width + w] = y;
-            }
-        }
-    }
-
-
-    void image_transform::align_depth_to_other(const uint16_t* z_pixels, uint16_t* dest, int bpp, const rs2_intrinsics& to,
-        const rs2_extrinsics& from_to_other)
-    {
-        switch (to.model)
-        {
-        case RS2_DISTORTION_MODIFIED_BROWN_CONRADY:
-            align_depth_to_other_sse<RS2_DISTORTION_MODIFIED_BROWN_CONRADY>(z_pixels, dest, to, from_to_other);
-            break;
-        default:
-            align_depth_to_other_sse(z_pixels, dest, to, from_to_other);
-            break;
-        }
-    }
-
-    inline void image_transform::move_depth_to_other(const uint16_t* z_pixels, uint16_t* dest, const rs2_intrinsics& to,
-        const std::vector<int2>& pixel_top_left_int,
-        const std::vector<int2>& pixel_bottom_right_int)
-    {
-        for (int y = 0; y < _depth.height; ++y)
-        {
-            for (int x = 0; x < _depth.width; ++x)
-            {
-                auto depth_pixel_index = y*_depth.width + x;
-                // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
-                if (z_pixels[depth_pixel_index])
-                {
-                    for (int other_y = pixel_top_left_int[depth_pixel_index].y; other_y <= pixel_bottom_right_int[depth_pixel_index].y; ++other_y)
-                    {
-                        for (int other_x = pixel_top_left_int[depth_pixel_index].x; other_x <= pixel_bottom_right_int[depth_pixel_index].x; ++other_x)
-                        {
-                            if (other_x < 0 || other_y < 0 || other_x >= to.width || other_y >= to.height)
-                                continue;
-                            auto other_ind = other_y * to.width + other_x;
-
-                            dest[other_ind] = dest[other_ind] ? std::min(dest[other_ind], z_pixels[depth_pixel_index]) : z_pixels[depth_pixel_index];
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    void image_transform::align_other_to_depth(const uint16_t* z_pixels, const byte* source, byte* dest, int bpp, const rs2_intrinsics& to,
-        const rs2_extrinsics& from_to_other)
-    {
-        switch (to.model)
-        {
-        case RS2_DISTORTION_MODIFIED_BROWN_CONRADY:
-            align_other_to_depth_sse<RS2_DISTORTION_MODIFIED_BROWN_CONRADY>(z_pixels, source, dest, bpp, to, from_to_other);
-            break;
-        default:
-            align_other_to_depth_sse(z_pixels, source, dest, bpp, to, from_to_other);
-            break;
-        }
-    }
-
-
+#ifdef __SSSE3__
     template<rs2_distortion dist>
-    inline void image_transform::align_depth_to_other_sse(const uint16_t * z_pixels, uint16_t * dest, const rs2_intrinsics& to,
-        const rs2_extrinsics& from_to_other)
-    {
-        get_texture_map_sse<dist>(z_pixels, _depth.height*_depth.width, _pre_compute_map_x_top_left.data(),
-            _pre_compute_map_y_top_left.data(), (byte*)_pixel_top_left_int.data(), to, from_to_other);
-
-        if (_depth.height < to.height && _depth.width < to.width)
-        {
-            get_texture_map_sse<dist>(z_pixels, _depth.height*_depth.width, _pre_compute_map_x_bottom_right.data(),
-                _pre_compute_map_y_bottom_right.data(), (byte*)_pixel_bottom_right_int.data(), to, from_to_other);
-
-            move_depth_to_other(z_pixels, dest, to, _pixel_top_left_int, _pixel_bottom_right_int);
-        }
-        else
-        {
-            move_depth_to_other(z_pixels, dest, to, _pixel_top_left_int, _pixel_top_left_int);
-        }
-    }
-
-    template<rs2_distortion dist>
-    inline void image_transform::align_other_to_depth_sse(const uint16_t * z_pixels, const byte * source, byte * dest, int bpp, const rs2_intrinsics& to,
-        const rs2_extrinsics& from_to_other)
-    {
-        get_texture_map_sse<dist>(z_pixels, _depth.height*_depth.width, _pre_compute_map_x_top_left.data(),
-            _pre_compute_map_y_top_left.data(), (byte*)_pixel_top_left_int.data(), to, from_to_other);
-
-        std::vector<int2>& bottom_right = _pixel_top_left_int;
-        if (to.height < _depth.height && to.width < _depth.width)
-        {
-            get_texture_map_sse<dist>(z_pixels, _depth.height*_depth.width, _pre_compute_map_x_bottom_right.data(),
-                _pre_compute_map_y_bottom_right.data(), (byte*)_pixel_bottom_right_int.data(), to, from_to_other);
-
-            bottom_right = _pixel_bottom_right_int;
-        }
-
-        switch (bpp)
-        {
-        case 1:
-            move_other_to_depth(z_pixels, reinterpret_cast<const bytes<1>*>(source), reinterpret_cast<bytes<1>*>(dest), to,
-               _pixel_top_left_int, bottom_right);
-            break;
-        case 2:
-            move_other_to_depth(z_pixels, reinterpret_cast<const bytes<2>*>(source), reinterpret_cast<bytes<2>*>(dest), to,
-                _pixel_top_left_int, bottom_right);
-            break;
-        case 3:
-            move_other_to_depth(z_pixels, reinterpret_cast<const bytes<3>*>(source), reinterpret_cast<bytes<3>*>(dest), to,
-                _pixel_top_left_int, bottom_right);
-            break;
-        default:
-            break;
-        }
-    }
-
-    template<class T >
-    void image_transform::move_other_to_depth(const uint16_t* z_pixels,
-        const T* source,
-        T* dest, const rs2_intrinsics& to,
-        const std::vector<int2>& pixel_top_left_int,
-        const std::vector<int2>& pixel_bottom_right_int)
-    {
-        // Iterate over the pixels of the depth image
-        for (int y = 0; y < _depth.height; ++y)
-        {
-            for (int x = 0; x < _depth.width; ++x)
-            {
-                auto depth_pixel_index = y*_depth.width + x;
-                // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
-                if (z_pixels[depth_pixel_index])
-                {
-                    for (int other_y = pixel_top_left_int[depth_pixel_index].y; other_y <= pixel_bottom_right_int[depth_pixel_index].y; ++other_y)
-                    {
-                        for (int other_x = pixel_top_left_int[depth_pixel_index].x; other_x <= pixel_bottom_right_int[depth_pixel_index].x; ++other_x)
-                        {
-                            if (other_x < 0 || other_y < 0 || other_x >= to.width || other_y >= to.height)
-                                continue;
-                            auto other_ind = other_y * to.width + other_x;
-
-                            dest[depth_pixel_index] = source[other_ind];
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    template<rs2_distortion dist>
-    inline void image_transform::distorte_x_y(const __m128 & x, const __m128 & y, __m128 * distorted_x, __m128 * distorted_y, const rs2_intrinsics& to)
+    inline void distorte_x_y(const __m128 & x, const __m128 & y, __m128 * distorted_x, __m128 * distorted_y, const rs2_intrinsics& to)
     {
         *distorted_x = x;
         *distorted_y = y;
     }
     template<>
-    inline void image_transform::distorte_x_y<RS2_DISTORTION_MODIFIED_BROWN_CONRADY>(const __m128& x, const __m128& y, __m128* distorted_x, __m128* distorted_y, const rs2_intrinsics& to)
+    inline void distorte_x_y<RS2_DISTORTION_MODIFIED_BROWN_CONRADY>(const __m128& x, const __m128& y, __m128* distorted_x, __m128* distorted_y, const rs2_intrinsics& to)
     {
         __m128 c[5];
         auto one = _mm_set_ps1(1);
@@ -247,9 +56,12 @@ namespace librealsense
         *distorted_y = d_y0;
     }
 
+
     template<rs2_distortion dist>
-    inline void image_transform::get_texture_map_sse(const uint16_t * depth, const unsigned int size, 
-        const float * pre_compute_x, const float * pre_compute_y, 
+    inline void get_texture_map_sse(const uint16_t * depth,
+        float depth_scale,
+        const unsigned int size,
+        const float * pre_compute_x, const float * pre_compute_y,
         byte * pixels_ptr_int,
         const rs2_intrinsics& to,
         const rs2_extrinsics& from_to_other)
@@ -261,7 +73,7 @@ namespace librealsense
             (char)0xff, (char)0xff, (char)11, (char)10, (char)0xff, (char)0xff, (char)9, (char)8);
 
         auto zerro = _mm_set_ps1(0);
-        auto scale = _mm_set_ps1(_depth_scale);
+        auto scale = _mm_set_ps1(depth_scale);
 
         auto mapx = pre_compute_x;
         auto mapy = pre_compute_y;
@@ -379,6 +191,200 @@ namespace librealsense
             res += 2;
         }
     }
+
+
+    image_transform::image_transform(const rs2_intrinsics& from, float depth_scale)
+        :_depth(from),
+        _depth_scale(depth_scale),
+        _pixel_top_left_int(from.width*from.height),
+        _pixel_bottom_right_int(from.width*from.height)
+    {
+    }
+
+    void image_transform::pre_compute_x_y_map_corners()
+    {
+        pre_compute_x_y_map(_pre_compute_map_x_top_left, _pre_compute_map_y_top_left, -0.5f);
+        pre_compute_x_y_map(_pre_compute_map_x_bottom_right, _pre_compute_map_y_bottom_right, 0.5f);
+    }
+
+    void image_transform::pre_compute_x_y_map(std::vector<float>& pre_compute_map_x,
+        std::vector<float>& pre_compute_map_y,
+        float offset)
+    {
+        pre_compute_map_x.resize(_depth.width*_depth.height);
+        pre_compute_map_y.resize(_depth.width*_depth.height);
+
+        for (int h = 0; h < _depth.height; ++h)
+        {
+            for (int w = 0; w < _depth.width; ++w)
+            {
+                const float pixel[] = { (float)w + offset, (float)h + offset };
+
+                float x = (pixel[0] - _depth.ppx) / _depth.fx;
+                float y = (pixel[1] - _depth.ppy) / _depth.fy;
+
+                if (_depth.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY)
+                {
+                    float r2 = x*x + y*y;
+                    float f = 1 + _depth.coeffs[0] * r2 + _depth.coeffs[1] * r2*r2 + _depth.coeffs[4] * r2*r2*r2;
+                    float ux = x*f + 2 * _depth.coeffs[2] * x*y + _depth.coeffs[3] * (r2 + 2 * x*x);
+                    float uy = y*f + 2 * _depth.coeffs[3] * x*y + _depth.coeffs[2] * (r2 + 2 * y*y);
+                    x = ux;
+                    y = uy;
+                }
+
+                pre_compute_map_x[h*_depth.width + w] = x;
+                pre_compute_map_y[h*_depth.width + w] = y;
+            }
+        }
+    }
+
+    void image_transform::align_depth_to_other(const uint16_t* z_pixels, uint16_t* dest, int bpp, const rs2_intrinsics& to,
+        const rs2_extrinsics& from_to_other)
+    {
+        switch (to.model)
+        {
+        case RS2_DISTORTION_MODIFIED_BROWN_CONRADY:
+            align_depth_to_other_sse<RS2_DISTORTION_MODIFIED_BROWN_CONRADY>(z_pixels, dest, to, from_to_other);
+            break;
+        default:
+            align_depth_to_other_sse(z_pixels, dest, to, from_to_other);
+            break;
+        }
+    }
+
+    inline void image_transform::move_depth_to_other(const uint16_t* z_pixels, uint16_t* dest, const rs2_intrinsics& to,
+        const std::vector<int2>& pixel_top_left_int,
+        const std::vector<int2>& pixel_bottom_right_int)
+    {
+        for (int y = 0; y < _depth.height; ++y)
+        {
+            for (int x = 0; x < _depth.width; ++x)
+            {
+                auto depth_pixel_index = y*_depth.width + x;
+                // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
+                if (z_pixels[depth_pixel_index])
+                {
+                    for (int other_y = pixel_top_left_int[depth_pixel_index].y; other_y <= pixel_bottom_right_int[depth_pixel_index].y; ++other_y)
+                    {
+                        for (int other_x = pixel_top_left_int[depth_pixel_index].x; other_x <= pixel_bottom_right_int[depth_pixel_index].x; ++other_x)
+                        {
+                            if (other_x < 0 || other_y < 0 || other_x >= to.width || other_y >= to.height)
+                                continue;
+                            auto other_ind = other_y * to.width + other_x;
+
+                            dest[other_ind] = dest[other_ind] ? std::min(dest[other_ind], z_pixels[depth_pixel_index]) : z_pixels[depth_pixel_index];
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void image_transform::align_other_to_depth(const uint16_t* z_pixels, const byte* source, byte* dest, int bpp, const rs2_intrinsics& to,
+        const rs2_extrinsics& from_to_other)
+    {
+        switch (to.model)
+        {
+        case RS2_DISTORTION_MODIFIED_BROWN_CONRADY:
+            align_other_to_depth_sse<RS2_DISTORTION_MODIFIED_BROWN_CONRADY>(z_pixels, source, dest, bpp, to, from_to_other);
+            break;
+        default:
+            align_other_to_depth_sse(z_pixels, source, dest, bpp, to, from_to_other);
+            break;
+        }
+    }
+
+
+    template<rs2_distortion dist>
+    inline void image_transform::align_depth_to_other_sse(const uint16_t * z_pixels, uint16_t * dest, const rs2_intrinsics& to,
+        const rs2_extrinsics& from_to_other)
+    {
+        get_texture_map_sse<dist>(z_pixels, _depth_scale, _depth.height*_depth.width, _pre_compute_map_x_top_left.data(),
+            _pre_compute_map_y_top_left.data(), (byte*)_pixel_top_left_int.data(), to, from_to_other);
+
+        if (_depth.height < to.height && _depth.width < to.width)
+        {
+            get_texture_map_sse<dist>(z_pixels, _depth_scale, _depth.height*_depth.width, _pre_compute_map_x_bottom_right.data(),
+                _pre_compute_map_y_bottom_right.data(), (byte*)_pixel_bottom_right_int.data(), to, from_to_other);
+
+            move_depth_to_other(z_pixels, dest, to, _pixel_top_left_int, _pixel_bottom_right_int);
+        }
+        else
+        {
+            move_depth_to_other(z_pixels, dest, to, _pixel_top_left_int, _pixel_top_left_int);
+        }
+
+    }
+
+    template<rs2_distortion dist>
+    inline void image_transform::align_other_to_depth_sse(const uint16_t * z_pixels, const byte * source, byte * dest, int bpp, const rs2_intrinsics& to,
+        const rs2_extrinsics& from_to_other)
+    {
+        get_texture_map_sse<dist>(z_pixels, _depth_scale, _depth.height*_depth.width, _pre_compute_map_x_top_left.data(),
+            _pre_compute_map_y_top_left.data(), (byte*)_pixel_top_left_int.data(), to, from_to_other);
+
+        std::vector<int2>& bottom_right = _pixel_top_left_int;
+        if (to.height < _depth.height && to.width < _depth.width)
+        {
+            get_texture_map_sse<dist>(z_pixels, _depth_scale, _depth.height*_depth.width, _pre_compute_map_x_bottom_right.data(),
+                _pre_compute_map_y_bottom_right.data(), (byte*)_pixel_bottom_right_int.data(), to, from_to_other);
+
+            bottom_right = _pixel_bottom_right_int;
+        }
+
+        switch (bpp)
+        {
+        case 1:
+            move_other_to_depth(z_pixels, reinterpret_cast<const bytes<1>*>(source), reinterpret_cast<bytes<1>*>(dest), to,
+               _pixel_top_left_int, bottom_right);
+            break;
+        case 2:
+            move_other_to_depth(z_pixels, reinterpret_cast<const bytes<2>*>(source), reinterpret_cast<bytes<2>*>(dest), to,
+                _pixel_top_left_int, bottom_right);
+            break;
+        case 3:
+            move_other_to_depth(z_pixels, reinterpret_cast<const bytes<3>*>(source), reinterpret_cast<bytes<3>*>(dest), to,
+                _pixel_top_left_int, bottom_right);
+            break;
+        default:
+            break;
+        }
+    }
+
+    template<class T >
+    void image_transform::move_other_to_depth(const uint16_t* z_pixels,
+        const T* source,
+        T* dest, const rs2_intrinsics& to,
+        const std::vector<int2>& pixel_top_left_int,
+        const std::vector<int2>& pixel_bottom_right_int)
+    {
+        // Iterate over the pixels of the depth image
+        for (int y = 0; y < _depth.height; ++y)
+        {
+            for (int x = 0; x < _depth.width; ++x)
+            {
+                auto depth_pixel_index = y*_depth.width + x;
+                // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
+                if (z_pixels[depth_pixel_index])
+                {
+                    for (int other_y = pixel_top_left_int[depth_pixel_index].y; other_y <= pixel_bottom_right_int[depth_pixel_index].y; ++other_y)
+                    {
+                        for (int other_x = pixel_top_left_int[depth_pixel_index].x; other_x <= pixel_bottom_right_int[depth_pixel_index].x; ++other_x)
+                        {
+                            if (other_x < 0 || other_y < 0 || other_x >= to.width || other_y >= to.height)
+                                continue;
+                            auto other_ind = other_y * to.width + other_x;
+
+                            dest[depth_pixel_index] = source[other_ind];
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+#endif
 
     template<class GET_DEPTH, class TRANSFER_PIXEL>
     void align_images(const rs2_intrinsics& depth_intrin, const rs2_extrinsics& depth_to_other,
