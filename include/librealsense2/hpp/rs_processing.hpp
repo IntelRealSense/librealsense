@@ -241,6 +241,18 @@ namespace rs2
             if (res) *output = f;
             return res > 0;
         }
+
+        template<typename T>
+        typename std::enable_if<std::is_base_of<rs2::frame, T>::value, bool>::type try_wait_for_frame(T* output, unsigned int timeout_ms = 5000) const
+        {
+            rs2_error* e = nullptr;
+            rs2_frame* frame_ref = nullptr;
+            auto res = rs2_try_wait_for_frame(_queue.get(), timeout_ms, &frame_ref, &e);
+            error::handle(e);
+            frame f{ frame_ref };
+            if (res) *output = f;
+            return res > 0;
+        }
         /**
         * Does the same thing as enqueue function.
         */
@@ -385,6 +397,23 @@ namespace rs2
         {
             frame result;
             if (_results.poll_for_frame(&result))
+            {
+                *fs = frameset(result);
+                return true;
+            }
+            return false;
+        }
+
+        /**
+        * Wait until coherent set of frames becomes available
+        * \param[in] timeout_ms     Max time in milliseconds to wait until an available frame
+        * \param[out] fs            New coherent frame-set
+        * \return true if new frame-set was stored to result
+        */
+        bool try_wait_for_frames(frameset* fs, unsigned int timeout_ms = 5000) const
+        {
+            frame result;
+            if (_results.try_wait_for_frame(&result, timeout_ms))
             {
                 *fs = frameset(result);
                 return true;

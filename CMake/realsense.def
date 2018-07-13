@@ -93,6 +93,7 @@ EXPORTS
     rs2_delete_frame_queue
     rs2_wait_for_frame
     rs2_poll_for_frame
+    rs2_try_wait_for_frame
     rs2_enqueue_frame
     rs2_flush_queue
 
@@ -224,6 +225,7 @@ EXPORTS
     rs2_pipeline_stop
     rs2_pipeline_wait_for_frames
     rs2_pipeline_poll_for_frames
+    rs2_pipeline_try_wait_for_frames
     rs2_delete_pipeline
     rs2_pipeline_start
     rs2_pipeline_start_with_config
