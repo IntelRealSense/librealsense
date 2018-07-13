@@ -52,7 +52,7 @@ namespace librealsense
         std::shared_ptr<pipeline_profile> get_active_profile() const;
         frame_holder wait_for_frames(unsigned int timeout_ms = 5000);
         bool poll_for_frames(frame_holder* frame);
-
+        bool try_wait_for_frames(frame_holder* frame, unsigned int timeout_ms);
         //Non top level API
         std::shared_ptr<device_interface> wait_for_device(const std::chrono::milliseconds& timeout = std::chrono::hours::max(),
                                                             const std::string& serial = "");
