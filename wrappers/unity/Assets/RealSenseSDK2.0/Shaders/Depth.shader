@@ -37,7 +37,6 @@ Shader "Custom/Depth" {
 			CGPROGRAM
 			#pragma vertex vert_img
 			#pragma fragment frag
-			#pragma multi_compile _COLORMAP_VIRIDIS _COLORMAP_PLASMA
 
 			#include "UnityCG.cginc"
 

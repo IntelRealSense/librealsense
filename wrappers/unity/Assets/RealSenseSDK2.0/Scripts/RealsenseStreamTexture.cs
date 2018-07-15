@@ -23,8 +23,8 @@ public class RealSenseStreamTexture : MonoBehaviour
     byte[] data;
 
     readonly AutoResetEvent f = new AutoResetEvent(false);
-    // int threadId;
     protected int threadId;
+
 
     virtual protected void Awake()
     {
@@ -128,14 +128,13 @@ public class RealSenseStreamTexture : MonoBehaviour
         if (frame.Profile.Stream != sourceStreamType)
             return;
 
-        // OnNewSampleThreading(frame);
-
         var vidFrame = ProcessFrame(frame) as VideoFrame;
         texture.LoadRawTextureData(vidFrame.Data, vidFrame.Stride * vidFrame.Height);
 
         if ((vidFrame as Frame) != frame)
             vidFrame.Dispose();
 
+        // Applied later (in Update) to sync all gpu uploads
         // texture.Apply();
         f.Set();
     }
@@ -144,8 +143,17 @@ public class RealSenseStreamTexture : MonoBehaviour
     {
         if (f.WaitOne(0))
         {
-            if (data != null)
-                texture.LoadRawTextureData(data);
+            try
+            {
+                if (data != null)
+                    texture.LoadRawTextureData(data);
+            }
+            catch
+            {
+                OnStopStreaming();
+                Debug.LogError("Error loading texture data, check texture and stream formats");
+                throw;
+            }
             texture.Apply();
         }
     }

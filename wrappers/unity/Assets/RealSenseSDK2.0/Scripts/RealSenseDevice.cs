@@ -24,33 +24,6 @@ public class RealSenseDevice : MonoBehaviour
 
     public static RealSenseDevice Instance { get; private set; }
 
-    // private static RealSenseDevice m_instance;
-
-    // /// <summary>
-    // /// Returns the current Instance
-    // /// </summary>
-    // public static RealSenseDevice Instance
-    // {
-    //     get
-    //     {
-    //         if (m_instance == null)
-    //         {
-    //             var c = FindObjectOfType<RealSenseDevice>();
-    //             if (c == null)
-    //             {
-    //                 var go = new GameObject("RealSenseDevice");
-    //                 m_instance = go.AddComponent<RealSenseDevice>();
-    //                 Debug.Log(go);
-    //             }
-    //             else
-    //             {
-    //                 m_instance = c;
-    //             }
-    //         }
-    //         return m_instance;
-    //     }
-    // }
-
     /// <summary>
     /// Threading mode of operation, Multithreasds or Unitythread
     /// </summary>
@@ -64,6 +37,9 @@ public class RealSenseDevice : MonoBehaviour
     /// </summary>
     public event Action<PipelineProfile> OnStart;
 
+    /// <summary>
+    /// Notifies when streaming has stopped
+    /// </summary>
     public event Action OnStop;
 
     /// <summary>
@@ -90,6 +66,10 @@ public class RealSenseDevice : MonoBehaviour
 
     private Pipeline m_pipeline;
     public event Action<Frame> onNewSample;
+
+    /// <summary>
+    /// Fired when a new time-synchronized frame set is available
+    /// </summary>
     public event Action<FrameSet> onNewSampleSet;
 
     void Awake()

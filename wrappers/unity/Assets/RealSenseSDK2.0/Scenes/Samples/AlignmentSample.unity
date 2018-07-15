@@ -544,7 +544,6 @@ GameObject:
   - component: {fileID: 344281773}
   - component: {fileID: 344281775}
   - component: {fileID: 344281774}
-  - component: {fileID: 344281776}
   m_Layer: 5
   m_Name: ColorTitle
   m_TagString: Untagged
@@ -582,7 +581,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.07058824, g: 0.4862745, b: 0.75686276, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -611,20 +610,6 @@ CanvasRenderer:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 344281772}
---- !u!114 &344281776
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 344281772}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 1573420865, guid: f70555f144d8491a825f0804e09c671c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_EffectColor: {r: 1, g: 1, b: 1, a: 0.34117648}
-  m_EffectDistance: {x: 0, y: -1}
-  m_UseGraphicAlpha: 1
 --- !u!1 &413936637
 GameObject:
   m_ObjectHideFlags: 0
@@ -1388,7 +1373,6 @@ GameObject:
   - component: {fileID: 1320901104}
   - component: {fileID: 1320901106}
   - component: {fileID: 1320901105}
-  - component: {fileID: 1320901107}
   m_Layer: 5
   m_Name: DepthTitle
   m_TagString: Untagged
@@ -1426,7 +1410,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.07058824, g: 0.4862745, b: 0.75686276, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -1453,20 +1437,6 @@ CanvasRenderer:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1320901103}
---- !u!114 &1320901107
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1320901103}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 1573420865, guid: f70555f144d8491a825f0804e09c671c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_EffectColor: {r: 1, g: 1, b: 1, a: 0.34117648}
-  m_EffectDistance: {x: 0, y: -1}
-  m_UseGraphicAlpha: 1
 --- !u!1 &1399807542
 GameObject:
   m_ObjectHideFlags: 0
@@ -1534,6 +1504,16 @@ Prefab:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 114549321630371676, guid: b532953e2d5d81740a59edf3039bff17,
+        type: 2}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114012355933680858, guid: b532953e2d5d81740a59edf3039bff17,
+        type: 2}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114545116671302144, guid: b532953e2d5d81740a59edf3039bff17,
         type: 2}
       propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.size
       value: 1
@@ -1754,6 +1734,36 @@ Prefab:
         type: 2}
       propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
       value: set_texture
+      objectReference: {fileID: 0}
+    - target: {fileID: 114012355933680858, guid: b532953e2d5d81740a59edf3039bff17,
+        type: 2}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 114012355933680858, guid: b532953e2d5d81740a59edf3039bff17,
+        type: 2}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 114012355933680858, guid: b532953e2d5d81740a59edf3039bff17,
+        type: 2}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
+    - target: {fileID: 114545116671302144, guid: b532953e2d5d81740a59edf3039bff17,
+        type: 2}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 114545116671302144, guid: b532953e2d5d81740a59edf3039bff17,
+        type: 2}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 114545116671302144, guid: b532953e2d5d81740a59edf3039bff17,
+        type: 2}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: b532953e2d5d81740a59edf3039bff17, type: 2}

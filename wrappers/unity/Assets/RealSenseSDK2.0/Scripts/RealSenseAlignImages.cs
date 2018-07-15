@@ -54,8 +54,6 @@ public class RealSenseAlignImages : RealSenseStreamTexture
         {
             using (var f = aligned[sourceStreamType])
                 OnFrame(f);
-
-            // alignTo.OnFrame(aligned[alignTo.sourceStreamType]);
         }
     }
 }

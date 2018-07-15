@@ -168,7 +168,7 @@ GameObject:
   - component: {fileID: 224940779620816996}
   - component: {fileID: 114653117510288892}
   - component: {fileID: 114935396537026552}
-  - component: {fileID: 114477156514432408}
+  - component: {fileID: 114936323957480468}
   m_Layer: 5
   m_Name: MinSlider
   m_TagString: Untagged
@@ -230,35 +230,6 @@ MonoBehaviour:
   m_FillAmount: 1
   m_FillClockwise: 1
   m_FillOrigin: 0
---- !u!114 &114477156514432408
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1803115165261326}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 00041e24a8ebd6a498e0ce1832ce37c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  material: {fileID: 2100000, guid: 31d0040942473eb42b95960bbe1ba544, type: 2}
-  propertyName: _MinRange
-  Binding:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 114653117510288892}
-        m_MethodName: set_value
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-    m_TypeName: GetMaterialFloat+FloatEvent, RealSense, Version=0.0.0.0, Culture=neutral,
-      PublicKeyToken=null
 --- !u!114 &114653117510288892
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -301,7 +272,7 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 20
   m_WholeNumbers: 0
-  m_Value: 0.3
+  m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
@@ -372,7 +343,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: GetMaterialFloat+FloatEvent, RealSense, Version=0.0.0.0, Culture=neutral,
+    m_TypeName: GetMaterialFloat+FloatEvent, Utils, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
 --- !u!114 &114803314124960982
 MonoBehaviour:
@@ -400,7 +371,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: StringFloatBinding+StringFloatEvent, RealSense, Version=0.0.0.0, Culture=neutral,
+    m_TypeName: StringFloatBinding+StringFloatEvent, Utils, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
 --- !u!114 &114872835099998368
 MonoBehaviour:
@@ -455,7 +426,36 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: StringFloatBinding+StringFloatEvent, RealSense, Version=0.0.0.0, Culture=neutral,
+    m_TypeName: StringFloatBinding+StringFloatEvent, Utils, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+--- !u!114 &114936323957480468
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1803115165261326}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00041e24a8ebd6a498e0ce1832ce37c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  material: {fileID: 2100000, guid: 31d0040942473eb42b95960bbe1ba544, type: 2}
+  propertyName: _MinRange
+  Binding:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 114653117510288892}
+        m_MethodName: set_value
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_TypeName: GetMaterialFloat+FloatEvent, Utils, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
 --- !u!114 &114962626815417522
 MonoBehaviour:

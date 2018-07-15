@@ -6,10 +6,10 @@ Material:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
-  m_Name: BGSegMat
-  m_Shader: {fileID: 4800000, guid: 11094a0e9f03e7f47857f1685a2ad81f, type: 3}
-  m_ShaderKeywords: _EMISSION _HASCOLOR_ON
-  m_LightmapFlags: 1
+  m_Name: ARBackgroundMat
+  m_Shader: {fileID: 4800000, guid: 66fdfcada2704184485a90166c079a87, type: 3}
+  m_ShaderKeywords: _COLORMAP_VIRIDIS
+  m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
@@ -18,7 +18,11 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
-    - _ColorTex:
+    - _Colormaps:
+        m_Texture: {fileID: 2800000, guid: e79aa3df081152e4c9d99bcef47e9474, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DepthTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -27,10 +31,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _DepthScale: 0.001
-    - _Feather: 0.17238982
-    - _Gamma: 1.2
-    - _HasColor: 1
-    - _MaxRange: 3.0355744
-    - _MinRange: 0.8111881
+    - _Colormap: 4
+    - _MaxRange: 5.4285717
+    - _MinRange: 0
     m_Colors: []

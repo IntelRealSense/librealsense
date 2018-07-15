@@ -592,7 +592,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: GetMaterialFloat+FloatEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+    m_TypeName: GetMaterialFloat+FloatEvent, Utils, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
 --- !u!114 &433587497
 MonoBehaviour:
@@ -621,8 +621,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: StringFloatBinding+StringFloatEvent, Assembly-CSharp, Version=0.0.0.0,
-      Culture=neutral, PublicKeyToken=null
+    m_TypeName: StringFloatBinding+StringFloatEvent, Utils, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
 --- !u!114 &433587498
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -720,8 +720,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: FloatToStringFormat+StringEvent, Assembly-CSharp, Version=0.0.0.0,
-      Culture=neutral, PublicKeyToken=null
+    m_TypeName: FloatToStringFormat+StringEvent, Utils, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
 --- !u!1 &541457187
 GameObject:
   m_ObjectHideFlags: 0
@@ -1210,6 +1210,11 @@ Prefab:
       propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.size
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 114545116671302144, guid: b532953e2d5d81740a59edf3039bff17,
+        type: 2}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4054501670763184, guid: b532953e2d5d81740a59edf3039bff17, type: 2}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -1333,6 +1338,26 @@ Prefab:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 114545116671302144, guid: b532953e2d5d81740a59edf3039bff17,
+        type: 2}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 114545116671302144, guid: b532953e2d5d81740a59edf3039bff17,
+        type: 2}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 114545116671302144, guid: b532953e2d5d81740a59edf3039bff17,
+        type: 2}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: set_texture
+      objectReference: {fileID: 0}
+    - target: {fileID: 114545116671302144, guid: b532953e2d5d81740a59edf3039bff17,
+        type: 2}
+      propertyPath: textureBinding.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: b532953e2d5d81740a59edf3039bff17, type: 2}
   m_IsPrefabParent: 0
@@ -1373,8 +1398,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: NamedTextureBinding+NamedTextureEvent, Assembly-CSharp, Version=0.0.0.0,
-      Culture=neutral, PublicKeyToken=null
+    m_TypeName: NamedTextureBinding+NamedTextureEvent, Utils, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
 --- !u!1 &870050339
 GameObject:
   m_ObjectHideFlags: 0
@@ -1577,7 +1602,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: GetMaterialFloat+FloatEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+    m_TypeName: GetMaterialFloat+FloatEvent, Utils, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
 --- !u!114 &1027275152
 MonoBehaviour:
@@ -1606,8 +1631,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: StringFloatBinding+StringFloatEvent, Assembly-CSharp, Version=0.0.0.0,
-      Culture=neutral, PublicKeyToken=null
+    m_TypeName: StringFloatBinding+StringFloatEvent, Utils, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
 --- !u!114 &1027275153
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1705,8 +1730,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: FloatToStringFormat+StringEvent, Assembly-CSharp, Version=0.0.0.0,
-      Culture=neutral, PublicKeyToken=null
+    m_TypeName: FloatToStringFormat+StringEvent, Utils, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
 --- !u!1 &1152207064
 GameObject:
   m_ObjectHideFlags: 0
@@ -2030,8 +2055,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: FloatToStringFormat+StringEvent, Assembly-CSharp, Version=0.0.0.0,
-      Culture=neutral, PublicKeyToken=null
+    m_TypeName: FloatToStringFormat+StringEvent, Utils, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
 --- !u!114 &1381091245
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2059,7 +2084,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: GetMaterialFloat+FloatEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+    m_TypeName: GetMaterialFloat+FloatEvent, Utils, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
 --- !u!114 &1381091246
 MonoBehaviour:
@@ -2087,8 +2112,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: StringFloatBinding+StringFloatEvent, Assembly-CSharp, Version=0.0.0.0,
-      Culture=neutral, PublicKeyToken=null
+    m_TypeName: StringFloatBinding+StringFloatEvent, Utils, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
 --- !u!114 &1381091247
 MonoBehaviour:
   m_ObjectHideFlags: 0

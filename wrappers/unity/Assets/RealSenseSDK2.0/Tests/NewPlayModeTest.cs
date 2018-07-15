@@ -44,6 +44,38 @@ public class NewPlayModeTest
 
     [UnityTest]
     [Category("Live")]
+    public IEnumerator TestLiveDepthTexture()
+    {
+        var go = new GameObject("RealSenseDevice", typeof(RealSenseDevice));
+
+        var depth_go = new GameObject("Depth");
+        var depth = depth_go.AddComponent<RealSenseStreamTexture>();
+
+        depth.sourceStreamType = Stream.Depth;
+        depth.textureFormat = TextureFormat.R16;
+
+        depth.textureBinding = new RealSenseStreamTexture.TextureEvent();
+        Assert.IsNotNull(depth.textureBinding);
+
+        Texture depth_tex = null;
+        depth.textureBinding.AddListener(t => depth_tex = t);
+
+        yield return new WaitUntil(() => RealSenseDevice.Instance.Streaming);
+        Assert.IsNotNull(depth_tex);
+
+        using (var depth_profile = RealSenseDevice.Instance.ActiveProfile.GetStream(Stream.Depth) as VideoStreamProfile)
+        {
+            Assert.AreEqual(depth_tex.width, depth_profile.Width);
+            Assert.AreEqual(depth_tex.height, depth_profile.Height);
+        }
+
+        GameObject.Destroy(depth_go);
+        GameObject.Destroy(go);
+    }
+
+
+    [UnityTest]
+    [Category("Live")]
     public IEnumerator TestDisabledNoStart()
     {
         var go = new GameObject("RealSenseDevice", typeof(RealSenseDevice));

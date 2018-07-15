@@ -101,7 +101,7 @@ GameObject:
   - component: {fileID: 4054501670763184}
   - component: {fileID: 114453518566922800}
   m_Layer: 0
-  m_Name: RealSenseDevice
+  m_Name: RealsenseDevice
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -236,18 +236,7 @@ MonoBehaviour:
   filterMode: 0
   textureBinding:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 0}
-        m_MethodName: set_texture
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
     m_TypeName: RealSenseStreamTexture+TextureEvent, RealSense, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
   alignTo: 1
@@ -304,18 +293,7 @@ MonoBehaviour:
   filterMode: 0
   textureBinding:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 0}
-        m_MethodName: set_texture
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
     m_TypeName: RealSenseStreamTexture+TextureEvent, RealSense, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
   alignTo: 2

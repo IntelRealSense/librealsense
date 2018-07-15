@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 1827436306
+CRC: 3721263227
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 16b6a3772e9c2219e96b12f544aac4d1
+    Hash: eb5ac5d7fc095f31e359285bd05f0cab
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 74a116cd71fcbce1e1d4600879c173db
+    Hash: 43e94fdad20c75bc683bf1b3c56f8c7b
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -91,5 +91,6 @@ Assets:
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/rs256.png
 - Assets/RealSenseSDK2.0/Misc/Prefabs/PlayPause.prefab
 - Assets/RealSenseSDK2.0/Misc/Textures/forkme_left_darkblue_121621.png
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/152a-import-solid.png
 - Assets/RealSenseSDK2.0/Misc/Textures/colormaps.png
 Dependencies: []
