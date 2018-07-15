@@ -32,7 +32,8 @@ describe('Pointcloud test', function() {
       pointcloud.destroy();
     });
     setTimeout(() => {
-      assert.equal(pointcloud, undefined);
+      assert.equal(pointcloud.pointsFrame, undefined);
+      assert.equal(pointcloud.cxxPointCloud, undefined);
     }, 100);
   });
 

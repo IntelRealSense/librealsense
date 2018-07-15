@@ -112,7 +112,8 @@ namespace librealsense
         explicit context(backend_type type,
             const char* filename = nullptr,
             const char* section = nullptr,
-            rs2_recording_mode mode = RS2_RECORDING_MODE_COUNT);
+            rs2_recording_mode mode = RS2_RECORDING_MODE_COUNT,
+            std::string min_api_version = "0.0.0");
 
         void stop(){_device_watcher->stop();}
         ~context();

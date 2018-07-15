@@ -1,13 +1,5 @@
-#  minimum required cmake version: 3.8.0
-cmake_minimum_required(VERSION 3.8.0)
-
-option(BUILD_WITH_CUDA "Enable CUDA" OFF)
-
-if(BUILD_WITH_CUDA)
-    project(librealsense2 LANGUAGES CXX C CUDA)
-else()
-    project(librealsense2 LANGUAGES CXX C)
-endif()
+#  minimum required cmake version: 3.1.0
+cmake_minimum_required(VERSION 3.1.0)
 
 macro(info msg)
     message(STATUS "Info: ${msg}")
@@ -16,6 +8,17 @@ endmacro()
 macro(infoValue variableName)
     info("${variableName}=\${${variableName}}")
 endmacro()
+
+option(BUILD_WITH_CUDA "Enable CUDA" OFF)
+
+if(BUILD_WITH_CUDA)
+	info("Building with CUDA requires CMake v3.8+")
+	cmake_minimum_required(VERSION 3.8.0)
+    project(librealsense2 LANGUAGES CXX C CUDA)
+else()
+    project(librealsense2 LANGUAGES CXX C)
+endif()
+
 
 ##################################################################
 # Parse librealsense version and assign it to CMake variables    #
@@ -34,7 +37,6 @@ function(assign_version_property VER_COMPONENT)
     set(REALSENSE_VERSION_${VER_COMPONENT} ${tmp} PARENT_SCOPE)
 endfunction()
 
-
 set(REALSENSE_VERSION_MAJOR -1)
 set(REALSENSE_VERSION_MINOR -1)
 set(REALSENSE_VERSION_PATCH -1)
@@ -48,7 +50,6 @@ infoValue(REALSENSE_VERSION_STRING)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
-
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -858,6 +859,8 @@ option(BUILD_NODEJS_BINDINGS "Build Node.js bindings" OFF)
 SET(DOTNET_VERSION_LIBRARY "3.5" CACHE STRING ".Net Version, defaulting to '3.5', the Unity wrapper currently supports only .NET 3.5")
 SET(DOTNET_VERSION_EXAMPLES "4.0" CACHE STRING ".Net Version, defaulting to '4.0'")
 
+add_subdirectory(wrappers)
+
 if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) AND WIN32)
   add_subdirectory(third-party/glfw)
 endif()
@@ -873,41 +876,6 @@ endif()
 
 if (ENFORCE_METADATA)
   add_definitions(-DENFORCE_METADATA)
-endif()
-
-if (BUILD_PYTHON_BINDINGS)
-  add_subdirectory(wrappers/python)
-endif()
-
-if (BUILD_NODEJS_BINDINGS)
-  add_subdirectory(wrappers/nodejs)
-endif()
-
-if (BUILD_CV_EXAMPLES)
-  add_subdirectory(wrappers/opencv)
-endif()
-
-if (BUILD_PCL_EXAMPLES)
-  add_subdirectory(wrappers/pcl)
-endif()
-
-if(BUILD_UNITY_BINDINGS)
-	if(NOT BUILD_CSHARP_BINDINGS)
-		message( WARNING "Enabling BUILD_CSHARP_BINDINGS and set DOTNET_VERSION_LIBRARY to 3.5 since BUILD_UNITY_BINDINGS is enabled" )
-	endif()
-	SET(BUILD_CSHARP_BINDINGS ON)
-	SET(DOTNET_VERSION_LIBRARY 3.5)
-	file(COPY wrappers/unity DESTINATION ${CMAKE_BINARY_DIR})
-endif()
-
-if(BUILD_CSHARP_BINDINGS)
-	if(NOT WIN32)
-		message( WARNING "BUILD_CSHARP_BINDINGS is supported only for Windows OS" )
-	endif()
-	if(NOT BUILD_SHARED_LIBS)
-		message( FATAL_ERROR "BUILD_SHARED_LIBS flag must be enabled when generating CSharp bindings" )
-	endif()
-    add_subdirectory(wrappers/csharp)
 endif()
 
 if (BUILD_WITH_CUDA)

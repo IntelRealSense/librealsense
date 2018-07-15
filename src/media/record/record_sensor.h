@@ -22,7 +22,7 @@ namespace librealsense
                       sensor_interface& sensor);
         virtual ~record_sensor();
         void init();
-        stream_profiles get_stream_profiles() const override;
+        stream_profiles get_stream_profiles(int tag = profile_tag::PROFILE_TAG_ANY) const override;
         void open(const stream_profiles& requests) override;
         void close() override;
         option& get_option(rs2_option id) override;
@@ -42,7 +42,6 @@ namespace librealsense
         stream_profiles get_active_streams() const override;
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
         void unregister_before_start_callback(int token) override;
-        virtual rs2_extension get_sensor_type() override;
         signal<record_sensor, const notification&> on_notification;
         signal<record_sensor, frame_holder> on_frame;
         signal<record_sensor, rs2_extension, std::shared_ptr<extension_snapshot>> on_extension_change;

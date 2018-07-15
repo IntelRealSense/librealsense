@@ -37,10 +37,7 @@ namespace librealsense
 
         virtual stream_profiles init_stream_profiles() = 0;
 
-        stream_profiles get_stream_profiles() const override
-        {
-            return *_profiles;
-        }
+        stream_profiles get_stream_profiles(int tag = profile_tag::PROFILE_TAG_ANY) const override;
 
         virtual stream_profiles get_active_streams() const override;
         notifications_callback_ptr get_notifications_callback() const override;
@@ -50,7 +47,6 @@ namespace librealsense
         std::shared_ptr<notifications_processor> get_notifications_processor();
         virtual frame_callback_ptr get_frames_callback() const override;
         virtual void set_frames_callback(frame_callback_ptr callback) override;
-        virtual rs2_extension get_sensor_type() override;
 
         bool is_streaming() const override
         {
