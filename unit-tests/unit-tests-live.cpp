@@ -4327,7 +4327,7 @@ TEST_CASE("Pipeline Config disable each stream is nop on empty config", "[live][
     }
 }
 
-TEST_CASE("Pipeline record and playback", "[live][pipeline][using_pipeline][!mayfail]") {
+TEST_CASE("Pipeline record and playback", "[live][pipeline][using_pipeline][!mayfail][.]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
