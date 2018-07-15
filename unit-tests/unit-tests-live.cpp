@@ -4326,51 +4326,51 @@ TEST_CASE("Pipeline Config disable each stream is nop on empty config", "[live][
         REQUIRE_NOTHROW(require_pipeline_profile_same(profile1, profile2));
     }
 }
-
-TEST_CASE("Pipeline record and playback", "[live][pipeline][using_pipeline][!mayfail]") {
-    rs2::context ctx;
-
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
-    {
-        const std::string filename = get_folder_path(special_folder::temp_folder) + "test_file.bag";
-        //Scoping the below code to make sure no one holds the device
-        {
-            rs2::pipeline p(ctx);
-            rs2::config cfg;
-            REQUIRE_NOTHROW(cfg.enable_record_to_file(filename));
-            rs2::pipeline_profile profile;
-            REQUIRE_NOTHROW(profile = cfg.resolve(p));
-            REQUIRE(profile);
-            auto dev = profile.get_device();
-            REQUIRE(dev);
-            disable_sensitive_options_for(dev);
-            REQUIRE_NOTHROW(p.start(cfg));
-            std::this_thread::sleep_for(std::chrono::seconds(5));
-            rs2::frameset frames;
-            REQUIRE_NOTHROW(frames = p.wait_for_frames(200));
-            REQUIRE(frames);
-            REQUIRE(frames.size() > 0);
-            REQUIRE_NOTHROW(p.stop());
-        }
-        //Scoping the above code to make sure no one holds the device
-        REQUIRE(file_exists(filename));
-
-        {
-            rs2::pipeline p(ctx);
-            rs2::config cfg;
-            rs2::pipeline_profile profile;
-            REQUIRE_NOTHROW(cfg.enable_device_from_file(filename));
-            REQUIRE_NOTHROW(profile = cfg.resolve(p));
-            REQUIRE(profile);
-            REQUIRE_NOTHROW(p.start(cfg));
-            std::this_thread::sleep_for(std::chrono::seconds(5));
-            rs2::frameset frames;
-            REQUIRE_NOTHROW(frames = p.wait_for_frames(200));
-            REQUIRE(frames);
-            REQUIRE_NOTHROW(p.stop());
-        }
-    }
-}
+//
+//TEST_CASE("Pipeline record and playback", "[live][pipeline][using_pipeline][!mayfail]") {
+//    rs2::context ctx;
+//
+//    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
+//    {
+//        const std::string filename = get_folder_path(special_folder::temp_folder) + "test_file.bag";
+//        //Scoping the below code to make sure no one holds the device
+//        {
+//            rs2::pipeline p(ctx);
+//            rs2::config cfg;
+//            REQUIRE_NOTHROW(cfg.enable_record_to_file(filename));
+//            rs2::pipeline_profile profile;
+//            REQUIRE_NOTHROW(profile = cfg.resolve(p));
+//            REQUIRE(profile);
+//            auto dev = profile.get_device();
+//            REQUIRE(dev);
+//            disable_sensitive_options_for(dev);
+//            REQUIRE_NOTHROW(p.start(cfg));
+//            std::this_thread::sleep_for(std::chrono::seconds(5));
+//            rs2::frameset frames;
+//            REQUIRE_NOTHROW(frames = p.wait_for_frames(200));
+//            REQUIRE(frames);
+//            REQUIRE(frames.size() > 0);
+//            REQUIRE_NOTHROW(p.stop());
+//        }
+//        //Scoping the above code to make sure no one holds the device
+//        REQUIRE(file_exists(filename));
+//
+//        {
+//            rs2::pipeline p(ctx);
+//            rs2::config cfg;
+//            rs2::pipeline_profile profile;
+//            REQUIRE_NOTHROW(cfg.enable_device_from_file(filename));
+//            REQUIRE_NOTHROW(profile = cfg.resolve(p));
+//            REQUIRE(profile);
+//            REQUIRE_NOTHROW(p.start(cfg));
+//            std::this_thread::sleep_for(std::chrono::seconds(5));
+//            rs2::frameset frames;
+//            REQUIRE_NOTHROW(frames = p.wait_for_frames(200));
+//            REQUIRE(frames);
+//            REQUIRE_NOTHROW(p.stop());
+//        }
+//    }
+//}
 
 
 TEST_CASE("Pipeline enable bad configuration", "[pipeline][using_pipeline]")
