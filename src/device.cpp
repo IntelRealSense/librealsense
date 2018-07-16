@@ -127,6 +127,8 @@ device::device(std::shared_ptr<context> ctx,
     : _context(ctx), _group(group), _is_valid(true),
       _device_changed_notifications(device_changed_notifications)
 {
+    _profiles_tags = lazy<std::vector<tagged_profile>>([this]() { return get_profiles_tags(); });
+
     if (_device_changed_notifications)
     {
         auto cb = new devices_changed_callback_internal([this](rs2_device_list* removed, rs2_device_list* added)
@@ -144,7 +146,6 @@ device::device(std::shared_ptr<context> ctx,
         });
 
         _callback_id = _context->register_internal_device_callback({ cb, [](rs2_devices_changed_callback* p) { p->release(); } });
-        _profiles_tags = lazy<std::vector<tagged_profile>>([this]() { return get_profiles_tags(); });
     }
 }
 
