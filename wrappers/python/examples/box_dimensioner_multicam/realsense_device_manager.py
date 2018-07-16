@@ -44,44 +44,6 @@ def enumerate_connected_devices(context):
 		if d.get_info(rs.camera_info.name).lower() !='platform camera':
 			connect_device.append(d.get_info(rs.camera_info.serial_number))
 	return connect_device
-	# laptop has its own camera which doesn't have depth stream, this code is to adviod enable platform camera from laptop
-	# return [d.get_info(rs.camera_info.serial_number) for d in context.devices]
-	
-
-def get_inlier_and_outlier(accumulated_depth_matrix, median_matrix, max_distance:float, min_num_inlier: int):
-	"""
-	Returns the depth values which are considered inliers (distance to median is smaller than max_distance)
-	and the pixel values which are considered outlieres (less than min_num_inlier depth values are actual inliers)
-	
-	Parameters:
-	-----------
-	accumulated_depth_matrix: array
-									numpy tensor of stacked depth images. shape is (height, width, num_stacked_images)
-	median_matrix: array
-					numpy matrix which is the reference for determining inliers and outliers. shape is (height, width)
-					
-	Return:
-	-----------
-	np_depth_inlier: array
-						Numpy tensor with boolean values and the same shape as accumulated_depth_matrix
-	np_outlier: array
-				Numpy matrix with boolean values and same shape as median_matrix
-	"""
-	np_upper_bound = median_matrix + max_distance
-	np_lower_bound = median_matrix - max_distance
-	
-	np_upper_bound_broadcast = np.broadcast_to(np_upper_bound[:,:,np.newaxis], accumulated_depth_matrix.shape)
-	np_lower_bound_broadcast = np.broadcast_to(np_lower_bound[:,:,np.newaxis], accumulated_depth_matrix.shape)
-	
-	np_below_upper_bound = accumulated_depth_matrix < np_upper_bound_broadcast
-	np_above_lower_bound = accumulated_depth_matrix > np_lower_bound_broadcast
-	np_depth_inlier = np.logical_and(np_below_upper_bound, np_above_lower_bound)
-	
-	np_num_depth_inlier = np.count_nonzero(np_depth_inlier, axis = -1)
-	np_outlier = np_num_depth_inlier < min_num_inlier
-	
-	
-	return np_depth_inlier, np_outlier
 	
 
 def post_process_depth_frame(depth_frame, decimation_magnitude=1.0, spatial_magnitude=2.0, spatial_smooth_alpha=0.5, spatial_smooth_delta=20, temporal_smooth_alpha=0.4, temporal_smooth_delta=20 ):

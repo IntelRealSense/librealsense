@@ -1,13 +1,14 @@
 #############################################################################################################################
 ##       License: Apache 2.0. See LICENSE file in root directory.		                                                 ####
 #############################################################################################################################
-##                  Box Dimensioner with multiple cameras                                                                ####
+##                  Simple Box Dimensioner with multiple cameras: Main demo file                                         ####
 #############################################################################################################################
 ## Workflow description: 																								 ####
 ## 1. Place the calibration chessboard object into the field of view of all the realsense cameras.                       ####
 ##    Update the chessboard parameters in the script in case a different size is chosen.                                 ####
 ## 2. Start the program.                                                                                                 ####
 ## 3. Allow calibration to occur and place the desired object ON the calibration object when the program asks for it.    ####
+##	  Make sure that the object to be measured is not bigger than the calibration object in length and width.            ####
 ## 4. The length, width and height of the bounding box of the object is then displayed in millimeters.                   ####
 #############################################################################################################################
 

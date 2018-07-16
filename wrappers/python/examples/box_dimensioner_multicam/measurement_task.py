@@ -23,6 +23,7 @@ def calculate_cumulative_pointcloud(frames_devices, calibration_info_devices, ro
 		values: [frame]
 			frame: rs.frame()
 				The frameset obtained over the active pipeline from the realsense device
+				
 	calibration_info_devices : dict
 		keys: str
 			Serial number of the device
@@ -31,8 +32,10 @@ def calculate_cumulative_pointcloud(frames_devices, calibration_info_devices, ro
 					The transformation object containing the transformation information between the device and the world coordinate systems
 			intrinsics_devices: rs.intrinscs
 					The intrinsics of the depth_frame of the realsense device
+					
 	roi_2d : array
 		The region of interest given in the following order [minX, maxX, minY, maxY]
+		
 	depth_threshold : double
 		The threshold for the depth value (meters) in world-coordinates beyond which the point cloud information will not be used.
 		Following the right-hand coordinate system, if the object is placed on the chessboard plane, the height of the object will increase along the negative Z-axis
@@ -46,11 +49,7 @@ def calculate_cumulative_pointcloud(frames_devices, calibration_info_devices, ro
 	point_cloud_cumulative = np.array([-1, -1, -1]).transpose()
 	for (device, frame) in frames_devices.items() :
 		# Filter the depth_frame using the Temporal filter and get the corresponding pointcloud for each frame
-		filtered_depth_frame = post_process_depth_frame(frame[rs.stream.depth], 
-																																																		temporal_smooth_alpha=0.1, 
-																																																		temporal_smooth_delta=80)
-		
-		
+		filtered_depth_frame = post_process_depth_frame(frame[rs.stream.depth], temporal_smooth_alpha=0.1, temporal_smooth_delta=80)	
 		point_cloud = convert_depth_frame_to_pointcloud( np.asarray( filtered_depth_frame.get_data()), calibration_info_devices[device][1][rs.stream.depth])
 		point_cloud = np.asanyarray(point_cloud)
 
@@ -76,6 +75,7 @@ def calculate_boundingbox_points(point_cloud, calibration_info_devices, depth_th
 	-----------
 	point_cloud : ndarray
 		The (3 x N) array containing the pointcloud information
+		
 	calibration_info_devices : dict
 		keys: str
 			Serial number of the device
@@ -86,6 +86,7 @@ def calculate_boundingbox_points(point_cloud, calibration_info_devices, depth_th
 					The intrinsics of the depth_frame of the realsense device
 			extrinsics_devices: rs.extrinsics
 					The extrinsics between the depth imager 1 and the color imager of the realsense device
+					
 	depth_threshold : double
 		The threshold for the depth value (meters) in world-coordinates beyond which the point cloud information will not be used
 		Following the right-hand coordinate system, if the object is placed on the chessboard plane, the height of the object will increase along the negative Z-axis
@@ -99,10 +100,13 @@ def calculate_boundingbox_points(point_cloud, calibration_info_devices, depth_th
 			values: [points]
 				points: list
 					The (8x2) list of the upper corner points stacked above the lower corner points 
+					
 	length : double
 		The length of the bounding box calculated in the world coordinates of the pointcloud
+		
 	width : double
 		The width of the bounding box calculated in the world coordinates of the pointcloud
+		
 	height : double
 		The height of the bounding box calculated in the world coordinates of the pointcloud
 	"""
@@ -153,6 +157,7 @@ def visualise_measurements(frames_devices, bounding_box_points_devices, length, 
 		values: [frame]
 			frame: rs.frame()
 				The frameset obtained over the active pipeline from the realsense device
+				
 	bounding_box_points_color_image : dict
 		The bounding box corner points in the image coordinate system for the color imager
 		keys: str
@@ -160,10 +165,13 @@ def visualise_measurements(frames_devices, bounding_box_points_devices, length, 
 			values: [points]
 				points: list
 					The (8x2) list of the upper corner points stacked above the lower corner points 
+					
 	length : double
 		The length of the bounding box calculated in the world coordinates of the pointcloud
+		
 	width : double
 		The width of the bounding box calculated in the world coordinates of the pointcloud
+		
 	height : double
 		The height of the bounding box calculated in the world coordinates of the pointcloud
 	"""
@@ -187,12 +195,7 @@ def visualise_measurements(frames_devices, bounding_box_points_devices, length, 
 			cv2.line(color_image, bounding_box_points_device_upper[1], bounding_box_points_device_lower[1], (0,255,0), 1)
 			cv2.line(color_image, bounding_box_points_device_upper[2], bounding_box_points_device_lower[2], (0,255,0), 1)
 			cv2.line(color_image, bounding_box_points_device_upper[3], bounding_box_points_device_lower[3], (0,255,0), 1)
-			cv2.putText(color_image, 
-															box_info,
-															(50,50), 
-															cv2.FONT_HERSHEY_PLAIN,
-															2,
-															(0,255,0) )
+			cv2.putText(color_image, box_info, (50,50), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0) )
 			
 		# Visualise the results
 		cv2.imshow('Color image from RealSense Device Nr: ' + device, color_image)

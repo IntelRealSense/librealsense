@@ -1,3 +1,9 @@
+##################################################################################################
+##       License: Apache 2.0. See LICENSE file in root directory.		                      ####
+##################################################################################################
+##                  Box Dimensioner with multiple cameras: Helper files 					  ####
+##################################################################################################
+
 import pyrealsense2 as rs
 import calculate_rmsd_kabsch as rmsd
 import numpy as np
