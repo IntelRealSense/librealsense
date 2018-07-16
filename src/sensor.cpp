@@ -254,6 +254,22 @@ namespace librealsense
         }
     }
 
+    stream_profiles sensor_base::get_stream_profiles(int tag) const
+    {
+        if (tag == profile_tag::PROFILE_TAG_ANY)
+            return *_profiles;
+
+        stream_profiles results;
+        for (auto p : *_profiles)
+        {
+            auto curr_tag = p->get_tag();
+            if (curr_tag & tag)
+                results.push_back(p);
+        }
+
+        return results;
+    }
+
     stream_profiles uvc_sensor::init_stream_profiles()
     {
         std::unordered_set<std::shared_ptr<video_stream_profile>> results;
@@ -964,7 +980,6 @@ namespace librealsense
     {
         return _hid_device->get_custom_report_data(custom_sensor_name, report_name, report_field);
     }
-
 
     stream_profiles hid_sensor::init_stream_profiles()
     {

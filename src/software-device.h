@@ -24,6 +24,13 @@ namespace librealsense
         void set_matcher_type(rs2_matchers matcher);
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
+        std::vector<tagged_profile> get_profiles_tags() const override
+        {
+            std::vector<tagged_profile> markers;
+            return markers;
+        };
+
     private:
         std::vector<std::shared_ptr<software_sensor>> _software_sensors;
         rs2_matchers _matcher = RS2_MATCHER_DEFAULT;

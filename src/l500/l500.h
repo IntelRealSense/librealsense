@@ -101,6 +101,15 @@ namespace librealsense
     class l500_device final : public virtual device, public debug_interface
     {
     public:
+        std::vector<tagged_profile> get_profiles_tags() const override
+        {
+            std::vector<tagged_profile> tags;
+            tags.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            tags.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            tags.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, profile_tag::PROFILE_TAG_SUPERSET });
+            return tags;
+        };
+
         class l500_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_sensor
         {
         public:
@@ -138,14 +147,8 @@ namespace librealsense
 
                     // Register intrinsics
                     auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
-                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Z16 && video->get_framerate() == 30)
-                        video->make_default();
 
-                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_Y8 && video->get_framerate() == 30)
-                        video->make_default();
-
-                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_RAW8 && video->get_framerate() == 30)
-                        video->make_default();
+                    get_device().tag_profile(video);
 
                     auto profile = to_profile(p.get());
                     std::weak_ptr<l500_depth_sensor> wp =

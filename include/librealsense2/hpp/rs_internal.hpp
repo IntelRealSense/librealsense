@@ -41,11 +41,12 @@ namespace rs2
         * \param[in] filename string of the name of the file
         */
         mock_context(const std::string& filename,
-                     const std::string& section = "")
+                     const std::string& section = "",
+                     const std::string& min_api_version = "0.0.0")
         {
             rs2_error* e = nullptr;
             _context = std::shared_ptr<rs2_context>(
-                rs2_create_mock_context(RS2_API_VERSION, filename.c_str(), section.c_str(), &e),
+                rs2_create_mock_context_versioned(RS2_API_VERSION, filename.c_str(), section.c_str(), min_api_version.c_str(), &e),
                 rs2_delete_context);
             error::handle(e);
         }
