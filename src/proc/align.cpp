@@ -684,8 +684,6 @@ namespace librealsense
                 byte* other_aligned_to_depth = const_cast<byte*>(aligned_frame.frame->get_frame_data());
                 memset(other_aligned_to_depth, 0, depth_intrinsics.height * depth_intrinsics.width * aligned_bytes_per_pixel);
 #ifdef __SSSE3__
-                auto uid = other_frame->get_stream()->get_unique_id();
-
                 if (_stream_transform == nullptr)
                 {
                     _stream_transform = std::make_shared<image_transform>(depth_intrinsics,
@@ -693,7 +691,6 @@ namespace librealsense
 
                     _stream_transform->pre_compute_x_y_map_corners();
                 }
-                
 
                 _stream_transform->align_other_to_depth(reinterpret_cast<const uint16_t*>(depth_frame->get_frame_data()),
                     reinterpret_cast<const byte*>(other_frame->get_frame_data()),
@@ -735,8 +732,6 @@ namespace librealsense
                 auto data = (int16_t*)depth_frame->get_frame_data();
 
 #ifdef __SSSE3__
-                auto uid = other_frame->get_stream()->get_unique_id();
-               
                 if (_stream_transform == nullptr)
                 {
                     _stream_transform = std::make_shared<image_transform>(depth_intrinsics,
