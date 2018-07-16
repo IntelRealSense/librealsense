@@ -33,6 +33,59 @@ namespace librealsense
         virtual ~md_attribute_parser_base() = default;
     };
 
+    /**\brief metadata parser class - support metadata in format: rs2_frame_metadata_value, rs2_metadata_type */
+    class md_constant_parser : public md_attribute_parser_base
+    {
+    public:
+        md_constant_parser(rs2_frame_metadata_value type) : _type(type) {}
+        rs2_metadata_type get(const frame& frm) const override
+        {
+            rs2_metadata_type v;
+            if (try_get(frm, v) == false)
+            {
+                throw invalid_value_exception("Frame does not support this type of metadata");
+            }
+            return v;
+        }
+        bool supports(const frame& frm) const override
+        {
+            rs2_metadata_type v;
+            return try_get(frm, v);
+        }
+
+        static std::shared_ptr<metadata_parser_map> create_metadata_parser_map()
+        {
+            auto md_parser_map = std::make_shared<metadata_parser_map>();
+            for (int i = 0; i < static_cast<int>(rs2_frame_metadata_value::RS2_FRAME_METADATA_COUNT); ++i)
+            {
+                auto frame_md_type = static_cast<rs2_frame_metadata_value>(i);
+                md_parser_map->insert(std::make_pair(frame_md_type, std::make_shared<md_constant_parser>(frame_md_type)));
+            }
+            return md_parser_map;
+        }
+    private:
+        bool try_get(const frame& frm, rs2_metadata_type& result) const
+        {
+            auto pair_size = (sizeof(rs2_frame_metadata_value) + sizeof(rs2_metadata_type));
+            const uint8_t* pos = frm.additional_data.metadata_blob.data();
+            while (pos <= frm.additional_data.metadata_blob.data() + frm.additional_data.metadata_blob.size())
+            {
+                const rs2_frame_metadata_value* type = reinterpret_cast<const rs2_frame_metadata_value*>(pos);
+                pos += sizeof(rs2_frame_metadata_value);
+                if (_type == *type)
+                {
+                    const rs2_metadata_type* value = reinterpret_cast<const rs2_metadata_type*>(pos);
+                    result = *value;
+                    return true;
+                }
+                pos += sizeof(rs2_metadata_type);
+            }
+            return false;
+        }
+        rs2_frame_metadata_value _type;
+    };
+
+
     /**\brief Post-processing adjustment of the metadata attribute
      *  e.g change auto_exposure enum to boolean, change units from nano->ms,etc'*/
     typedef std::function<rs2_metadata_type(const rs2_metadata_type& param)> attrib_modifyer;

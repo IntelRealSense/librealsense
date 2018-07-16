@@ -3,7 +3,6 @@
 
 #include "record_sensor.h"
 #include "api.h"
-#include "software-device.h"
 #include "stream.h"
 
 using namespace librealsense;
@@ -54,9 +53,9 @@ void librealsense::record_sensor::init()
     }
     LOG_DEBUG("Hooked to real sense");
 }
-stream_profiles record_sensor::get_stream_profiles() const
+stream_profiles record_sensor::get_stream_profiles(int tag) const
 {
-    return m_sensor.get_stream_profiles();
+    return m_sensor.get_stream_profiles(tag);
 }
 
 void librealsense::record_sensor::open(const stream_profiles& requests)
@@ -360,13 +359,4 @@ void record_sensor::wrap_streams()
            m_recorded_streams_ids.insert(id);
         }
     }
-}
-
-rs2_extension record_sensor::get_sensor_type()
-{
-    if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_sensor)) return RS2_EXTENSION_DEPTH_SENSOR;
-    else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_stereo_sensor)) return RS2_EXTENSION_DEPTH_STEREO_SENSOR;
-    else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::video_sensor_interface)) return RS2_EXTENSION_VIDEO;
-    else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::software_sensor)) return RS2_EXTENSION_SOFTWARE_SENSOR;
-    else return RS2_EXTENSION_UNKNOWN;
 }

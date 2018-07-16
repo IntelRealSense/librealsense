@@ -2,7 +2,6 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "core/video.h"
-#include "api.h"
 #include "proc/synthetic-stream.h"
 
 namespace librealsense
@@ -22,7 +21,7 @@ namespace librealsense
         : _source_wrapper(_source)
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
-        _source.init(std::map<rs2_extension, std::shared_ptr<metadata_parser_map>>());
+        _source.init(std::shared_ptr<metadata_parser_map>());
     }
 
     void processing_block::invoke(frame_holder f)
@@ -70,6 +69,7 @@ namespace librealsense
         return nullptr;
     }
 
+
     frame_interface* synthetic_source::allocate_video_frame(std::shared_ptr<stream_profile_interface> stream,
                                                             frame_interface* original,
                                                             int new_bpp,
@@ -90,13 +90,6 @@ namespace librealsense
             vf = static_cast<video_frame*>(original);
         }
 
-        frame_additional_data data{};
-        data.frame_number = original->get_frame_number();
-        data.timestamp = original->get_frame_timestamp();
-        data.timestamp_domain = original->get_frame_timestamp_domain();
-        data.metadata_size = 0;
-        data.system_time = _actual_source.get_time();
-        data.metadata_blob = original->get_metadata_blob();
         auto width = new_width;
         auto height = new_height;
         auto bpp = new_bpp * 8;
@@ -125,19 +118,15 @@ namespace librealsense
         {
             height = vf->get_height();
         }
-
+        
+        auto of = dynamic_cast<frame*>(original);
+        frame_additional_data data = of->additional_data;
         auto res = _actual_source.alloc_frame(frame_type, stride * height, data, true);
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = static_cast<video_frame*>(res);
+        vf->metadata_parsers = of->metadata_parsers;
         vf->assign(width, height, stride, bpp);
-        auto original_sensor = original->get_sensor();
-        vf->set_sensor(original_sensor);
-        std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> metadata_parsers_map;
-        if (original_sensor)
-        {
-            auto sensor_type = original_sensor->get_sensor_type();
-            res->get_owner()->set_md_parsers(sensor_type, original->get_owner()->get_md_parsers(sensor_type));
-        }
+        vf->set_sensor(original->get_sensor());
         res->set_stream(stream);
         if (frame_type == RS2_EXTENSION_DEPTH_FRAME)
         {

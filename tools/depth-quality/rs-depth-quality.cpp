@@ -37,7 +37,7 @@ int main(int argc, const char * argv[]) try
                 "is in front of Ground Truth (undershot)\n");
 
     metric plane_fit_rms_error = model.make_metric(
-                "Plane Fit RMS Error", 0.f, 5.f, true, "(mm)",
+                "Plane Fit RMS Error", 0.f, 5.f, true, "%",
                 "Plane Fit RMS Error .\n"
                 "This metric provides RMS of Z-Error (Spatial Noise)\n"
                 "and is calculated as follows:\n"
@@ -74,6 +74,7 @@ int main(int argc, const char * argv[]) try
         const int ground_truth_mm,
         const bool plane_fit,
         const float plane_fit_to_ground_truth_mm,
+        const float distance_mm,
         bool record,
         std::vector<single_metric_data>& samples)
     {
@@ -149,7 +150,8 @@ int main(int argc, const char * argv[]) try
         // Calculate Plane Fit RMS  (Spatial Noise) mm
         double plane_fit_err_sqr_sum = std::inner_product(distances.begin(), distances.end(), distances.begin(), 0.);
         auto rms_error_val = static_cast<float>(std::sqrt(plane_fit_err_sqr_sum / distances.size()));
-        plane_fit_rms_error->add_value(rms_error_val);
+        auto rms_error_val_per = TO_PERCENT * (rms_error_val / distance_mm);
+        plane_fit_rms_error->add_value(rms_error_val_per);
         if (record) samples.push_back({ plane_fit_rms_error->get_name(),  rms_error_val });
 
     });

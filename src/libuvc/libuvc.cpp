@@ -189,9 +189,9 @@ namespace librealsense
 
         /* callback context send for each frame for its specific profile */
         struct callback_context {
-          frame_callback _callback;
-          stream_profile _profile;
-          libuvc_uvc_device *_this;
+            frame_callback _callback;
+            stream_profile _profile;
+            libuvc_uvc_device *_this;
         };
 
         /* implements uvc_device for libUVC support */
@@ -275,13 +275,12 @@ namespace librealsense
                                        }
                                    });
                 if (_name == "") {
-                  throw linux_backend_exception("device is no longer connected!");
+                    throw linux_backend_exception("device is no longer connected!");
                 }
 
-              _state_change_time = 0;
-              _is_power_thread_alive = true;
-              _thread_handle = std::thread(std::bind(&libuvc_uvc_device::power_thread,this));
-
+                _state_change_time = 0;
+                _is_power_thread_alive = true;
+                _thread_handle = std::thread(std::bind(&libuvc_uvc_device::power_thread,this));
             }
 
             ~libuvc_uvc_device()
@@ -309,8 +308,7 @@ namespace librealsense
                 if (res < 0) {
                     uvc_close(_device_handle);
                     uvc_unref_device(_device);
-                    throw linux_backend_exception(
-                            "Could not get stream format.");
+                    throw linux_backend_exception("Could not get stream format.");
                 }
 
                 // add to the vector of profiles.
@@ -322,26 +320,22 @@ namespace librealsense
             /* request to start streaming*/
             void stream_on(std::function<void(const notification& n)> error_handler) override
             {
-              uvc_error_t res;
-              // loop over each prfile and start streaming.
-              for (auto i=0;i< _profiles.size(); ++i) {
-                callback_context *context = new callback_context();
-                context->_callback = _callbacks[i];
-                context->_this = this;
-                context->_profile = _profiles[i];
+                uvc_error_t res;
+                // loop over each prfile and start streaming.
+                for (auto i=0; i < _profiles.size(); ++i) {
+                    callback_context *context = new callback_context();
+                    context->_callback = _callbacks[i];
+                    context->_this = this;
+                    context->_profile = _profiles[i];
 
-                res = uvc_start_streaming(_device_handle,
-                                          &_stream_ctrls[i],
-                                          internal_uvc_callback,
-                                          context,
-                                          0);
+                    res = uvc_start_streaming(_device_handle,
+                                              &_stream_ctrls[i],
+                                              internal_uvc_callback,
+                                              context,
+                                              0);
 
-                if (res < 0) {
-                  throw linux_backend_exception(
-                          "fail to start streaming.");
-
+                    if (res < 0) throw linux_backend_exception("fail to start streaming.");
                 }
-              }
             }
 
             void start_callbacks() override
@@ -362,58 +356,60 @@ namespace librealsense
                     _is_capturing = false;
                     _is_started = false;
                 }
-
             }
 
             void power_D0() {
-              uvc_error_t res;
-              uvc_format_t *formats;
+                uvc_error_t res;
+                uvc_format_t *formats;
 
-              res = uvc_find_device(_ctx, &_device, _info.vid, _info.pid, NULL);
+                res = uvc_find_device(_ctx, &_device, _info.vid, _info.pid, NULL,
+                                      [&](uvc_device_t* device){
+                    auto dev = (uvc_device_internal *) device;
+                    auto usb_params = get_usb_descriptors(dev->usb_dev);
+                    return _info.unique_id == std::get<0>(usb_params);
+                });
 
-              if (res < 0) {
-                  throw linux_backend_exception(
-                    "Could not find the device.");
-              }
-              res = uvc_open2(_device, &_device_handle, _interface);
+                if (res < 0)
+                    throw linux_backend_exception("Could not find the device.");
+                res = uvc_open2(_device, &_device_handle, _interface);
 
-              if (res < 0) {
-                  uvc_unref_device(_device);
-                  _device = NULL;
-                  throw linux_backend_exception(
-                    "Could not open device.");
-              }
+                if (res < 0) {
+                    uvc_unref_device(_device);
+                    _device = NULL;
+                    throw linux_backend_exception("Could not open device.");
+                }
 
-              for(auto ct = uvc_get_input_terminals(_device_handle);
-                  ct; ct = ct->next) {
-                  _input_terminal = ct->bTerminalID;
-              }
+                for(auto ct = uvc_get_input_terminals(_device_handle);
+                    ct; ct = ct->next) {
+                    _input_terminal = ct->bTerminalID;
+                }
 
-              for(auto pu = uvc_get_processing_units(_device_handle);
-                  pu; pu = pu->next) {
-                  _processing_unit = pu->bUnitID;
-              }
+                for(auto pu = uvc_get_processing_units(_device_handle);
+                    pu; pu = pu->next) {
+                    _processing_unit = pu->bUnitID;
+                }
 
-              for(auto eu = uvc_get_extension_units(_device_handle);
-                  eu; eu = eu->next) {
-                  _extension_unit = eu->bUnitID;
-              }
+                for(auto eu = uvc_get_extension_units(_device_handle);
+                    eu; eu = eu->next) {
+                    _extension_unit = eu->bUnitID;
+                }
 
-              _real_state = D0;
+                _real_state = D0;
             }
 
             void power_D3() {
 
               uvc_unref_device(_device);
-              //uvc_stop_streaming(_device_handle);
-              _profiles.clear();
-              uvc_close(_device_handle);
-              _device = NULL;
-              _device_handle = NULL;
-              _real_state = D3;
+                //uvc_stop_streaming(_device_handle);
+                _profiles.clear();
+                uvc_close(_device_handle);
+                _device = NULL;
+                _device_handle = NULL;
+                _real_state = D3;
             }
+            
             void set_power_state(power_state state) override {
-                _power_mutex.lock();
+                std::lock_guard<std::mutex> lock(_power_mutex);
 
                 /* if power became on and it was originally off. open the uvc device. */
                 if (state == D0 && _state == D3) {
@@ -422,7 +418,7 @@ namespace librealsense
                     _state_change_time = 0;
 
                     if ( _real_state == D3) {
-                      power_D0();
+                        power_D0();
                     }
                 }
                 else {
@@ -433,7 +429,6 @@ namespace librealsense
                 }
 
               _state = state;
-              _power_mutex.unlock();
 
             }
             power_state get_power_state() const override { return _state; }
@@ -674,7 +669,7 @@ namespace librealsense
               do {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
 
-                _power_mutex.lock();
+                std::lock_guard<std::mutex> lock(_power_mutex);
 
                 if (_state_change_time != 0) {
                     clock_t now_time = std::clock();
@@ -685,14 +680,12 @@ namespace librealsense
                         _state_change_time = 0;
 
                         if (_real_state == D0) {
-                          power_D3();
-                          _real_state = D3;
+                            power_D3();
+                            _real_state = D3;
 
                         }
                     }
                 }
-
-                _power_mutex.unlock();
             } while(_is_power_thread_alive);
           }
 

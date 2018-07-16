@@ -104,34 +104,20 @@ namespace Intel.RealSense
 
         public StreamProfile(IntPtr ptr)
         {
-            //if (ptr == IntPtr.Zero)
-            //    throw new ArgumentNullException("ptr");
             m_instance = new HandleRef(this, ptr);
 
             object e;
-            Stream stream;
-            Format fmt;
-            int fps;
-            int idx;
-            int uid;
-
-            NativeMethods.rs2_get_stream_profile_data(m_instance.Handle, out stream, out fmt, out idx, out uid, out fps, out e);
-
-            Stream = stream;
-            Format = fmt;
-            Framerate = fps;
-            Index = idx;
-            UniqueID = uid;
+            NativeMethods.rs2_get_stream_profile_data(m_instance.Handle, out Stream, out Format, out Index, out UniqueID, out Framerate, out e);
         }
 
-        public Stream Stream { get; private set; }
-        public Format Format { get; private set; }
+        public readonly Stream Stream;
+        public readonly Format Format;
 
-        public int Framerate { get; private set; }
+        public readonly int Framerate;
 
-        public int Index { get; private set; }
+        public readonly int Index;
 
-        public int UniqueID { get; private set; }
+        public readonly int UniqueID;
 
         public Extrinsics GetExtrinsicsTo(StreamProfile other)
         {
@@ -189,14 +175,8 @@ namespace Intel.RealSense
     {
         public VideoStreamProfile(IntPtr ptr) : base(ptr)
         {
-            int width;
-            int height;
-
             object error;
-            NativeMethods.rs2_get_video_stream_resolution(ptr, out width, out height, out error);
-
-            Width = width;
-            Height = height;
+            NativeMethods.rs2_get_video_stream_resolution(ptr, out Width, out Height, out error);
         }
 
         public Intrinsics GetIntrinsics()
@@ -207,9 +187,9 @@ namespace Intel.RealSense
             return intrinsics;
         }
 
-        public int Width { get; private set; }
+        public readonly int Width;
 
-        public int Height { get; private set; }
+        public readonly int Height;
 
     }
 }

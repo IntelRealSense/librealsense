@@ -79,7 +79,7 @@ inline bool file_exists(const std::string& filename)
     return f.good();
 }
 
-inline bool make_context(const char* id, rs2::context* ctx)
+inline bool make_context(const char* id, rs2::context* ctx, std::string min_api_version = "0.0.0")
 {
     rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG);
 
@@ -130,14 +130,13 @@ inline bool make_context(const char* id, rs2::context* ctx)
         }
         else if (playback)
         {
-            *ctx = rs2::mock_context(base_filename, section);
+            *ctx = rs2::mock_context(base_filename, section, min_api_version);
         }
         command_line_params::instance()._found_any_section = true;
         return true;
     }
     catch (...)
     {
-
         return false;
     }
 

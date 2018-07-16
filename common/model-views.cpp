@@ -560,19 +560,17 @@ namespace rs2
                         }
                         else
                         {
-                            auto step = fmod(range.step, 1);
-                            int pow_val = 10;
-                            while ((step *= 10.f) < 0.f)
-                            {
-                                pow_val *= 10;
-                            }
-
                             if (ImGui::SliderFloat(id.c_str(), &value,
                                 range.min, range.max, "%.4f"))
                             {
+                                auto loffset = std::abs(fmod(value, range.step));
+                                auto roffset = range.step - loffset;
+                                if (value >= 0)
+                                    value = (loffset < roffset) ? value - loffset : value + roffset;
+                                else
+                                    value = (loffset < roffset) ? value + loffset : value - roffset; 
                                 value = (value < range.min) ? range.min : value;
                                 value = (value > range.max) ? range.max : value;
-                                value = (int)(value * pow_val) / (float)(pow_val);
                                 model.add_log(to_string() << "Setting " << opt << " to " << value);
                                 endpoint->set_option(opt, value);
                                 *invalidate_flag = true;
@@ -3171,7 +3169,7 @@ namespace rs2
                 if(viewer.synchronization_enable)
                 {
                     auto index = 0;
-                    while (syncer_queue.poll_for_frame(&frm) && ++index <= syncer_queue.capacity())
+                    while (syncer_queue.try_wait_for_frame(&frm, 30) && ++index <= syncer_queue.capacity())
                     {
                         processing_block.invoke(frm);
                     }
@@ -3186,7 +3184,7 @@ namespace rs2
                     for (auto&& q : frames_queue_local)
                     {
                         frame frm;
-                        if (q.second.poll_for_frame(&frm))
+                        if (q.second.try_wait_for_frame(&frm, 30))
                         {
                             processing_block.invoke(frm);
                         }
@@ -5448,6 +5446,14 @@ namespace rs2
     }
 
 
+    bool rs2::device_model::is_streaming() const
+    {
+        return std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm)
+        {
+            return sm->streaming;
+        });
+    }
+
     void device_model::draw_controls(float panel_width, float panel_height,
         ux_window& window,
         std::string& error_message,
@@ -5775,8 +5781,6 @@ namespace rs2
                                 return sm->streaming;
                             }))
                             {
-                                // Stopping post processing filter rendering thread
-                                viewer.ppf.stop();
                                 stop_recording = true;
                             }
                         }

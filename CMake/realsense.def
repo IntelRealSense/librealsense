@@ -5,6 +5,7 @@ EXPORTS
     rs2_delete_context
     rs2_create_recording_context
     rs2_create_mock_context
+    rs2_create_mock_context_versioned
     rs2_get_time
     rs2_context_add_device
     rs2_context_remove_device
@@ -92,6 +93,7 @@ EXPORTS
     rs2_delete_frame_queue
     rs2_wait_for_frame
     rs2_poll_for_frame
+    rs2_try_wait_for_frame
     rs2_enqueue_frame
     rs2_flush_queue
 
@@ -223,6 +225,7 @@ EXPORTS
     rs2_pipeline_stop
     rs2_pipeline_wait_for_frames
     rs2_pipeline_poll_for_frames
+    rs2_pipeline_try_wait_for_frames
     rs2_delete_pipeline
     rs2_pipeline_start
     rs2_pipeline_start_with_config
@@ -257,6 +260,7 @@ EXPORTS
     rs2_software_sensor_add_video_stream
     rs2_software_sensor_add_read_only_option
     rs2_software_sensor_update_read_only_option
+    rs2_software_sensor_set_metadata
 
     rs2_loopback_enable
     rs2_loopback_disable

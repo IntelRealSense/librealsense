@@ -11,8 +11,6 @@
 #include "device.h"
 #include "stream.h"
 #include "sensor.h"
-#include "api.h"
-#include "software-device.h"
 
 namespace librealsense
 {
@@ -87,15 +85,6 @@ namespace librealsense
     void sensor_base::set_frames_callback(frame_callback_ptr callback)
     {
         return _source.set_callback(callback);
-    }
-    rs2_extension sensor_base::get_sensor_type()
-    {
-        if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_sensor)) return RS2_EXTENSION_DEPTH_SENSOR;
-        else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_stereo_sensor)) return RS2_EXTENSION_DEPTH_STEREO_SENSOR;
-        else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::video_sensor_interface)) return RS2_EXTENSION_VIDEO;
-        else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::software_sensor)) return RS2_EXTENSION_SOFTWARE_SENSOR;
-        else return RS2_EXTENSION_UNKNOWN;
-        //TODO: Add support for fisheye sensor type
     }
     std::shared_ptr<notifications_processor> sensor_base::get_notifications_processor()
     {
@@ -265,6 +254,22 @@ namespace librealsense
         }
     }
 
+    stream_profiles sensor_base::get_stream_profiles(int tag) const
+    {
+        if (tag == profile_tag::PROFILE_TAG_ANY)
+            return *_profiles;
+
+        stream_profiles results;
+        for (auto p : *_profiles)
+        {
+            auto curr_tag = p->get_tag();
+            if (curr_tag & tag)
+                results.push_back(p);
+        }
+
+        return results;
+    }
+
     stream_profiles uvc_sensor::init_stream_profiles()
     {
         std::unordered_set<std::shared_ptr<video_stream_profile>> results;
@@ -391,10 +396,7 @@ namespace librealsense
 
         auto on = std::unique_ptr<power>(new power(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this())));
 
-        std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> metadata_parsers_map;
-        metadata_parsers_map[get_sensor_type()] = _metadata_parsers;
-        _source.init(metadata_parsers_map);
-
+        _source.init(_metadata_parsers);
         _source.set_sensor(this->shared_from_this());
         auto mapping = resolve_requests(requests);
 
@@ -874,10 +876,7 @@ namespace librealsense
 
         _source.set_callback(callback);
 
-        std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> metadata_parsers_map;
-        metadata_parsers_map[get_sensor_type()] = _metadata_parsers;
-        _source.init(metadata_parsers_map);
-
+        _source.init(_metadata_parsers);
         _source.set_sensor(this->shared_from_this());
         raise_on_before_streaming_changes(true); //Required to be just before actual start allow recording to work
         _hid_device->start_capture([this](const platform::sensor_data& sensor_data)
@@ -981,7 +980,6 @@ namespace librealsense
     {
         return _hid_device->get_custom_report_data(custom_sensor_name, report_name, report_field);
     }
-
 
     stream_profiles hid_sensor::init_stream_profiles()
     {

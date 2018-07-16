@@ -3814,8 +3814,9 @@ const format = {
    */
   format_xyz32f: 'xyz32f',
   /**
-   * String literal of <code>'yuyv'</code>. <br>Standard YUV pixel format as described in
-   * https://en.wikipedia.org/wiki/YUV. <br>Equivalent to its uppercase counterpart.
+   * String literal of <code>'yuyv'</code>. <br>32-bit y0, u, y1, v data for every two pixels.
+   * Similar to YUV422 but packed in a different order - https://en.wikipedia.org/wiki/YUV
+   * <br>Equivalent to its uppercase counterpart.
    */
   format_yuyv: 'yuyv',
   /**
@@ -3919,7 +3920,8 @@ const format = {
    */
   FORMAT_XYZ32F: RS2.RS2_FORMAT_XYZ32F,
   /**
-   * Standard YUV pixel format as described in https://en.wikipedia.org/wiki/YUV.
+   * 32-bit y0, u, y1, v data for every two pixels. Similar to YUV422 but packed in a different
+   * order - https://en.wikipedia.org/wiki/YUV.
    * <br>Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
@@ -4520,6 +4522,12 @@ const option = {
    */
   option_auto_exposure_converge_step: 'auto-exposure-converge-step',
   /**
+   * String literal of <code>'inter-cam-sync-mode'. <br>Impose Inter-camera HW synchronization mode.
+   * Applicable for D400/Rolling Shutter SKUs
+   * <br>Equivalent to its uppercase counterpart.
+   */
+  option_inter_cam_sync_mode: 'inter-cam-sync-mode',
+  /**
    * Enable / disable color backlight compensatio.<br>Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
@@ -4759,6 +4767,13 @@ const option = {
    */
   OPTION_AUTO_EXPOSURE_CONVERGE_STEP: RS2.RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP,
   /**
+   * Impose Inter-camera HW synchronization mode.
+   * Applicable for D400/Rolling Shutter SKUs
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  OPTION_INTER_CAM_SYNC_MODE: RS2.RS2_OPTION_INTER_CAM_SYNC_MODE,
+  /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
    */
@@ -4858,6 +4873,8 @@ const option = {
         return this.option_stereo_baseline;
       case this.OPTION_AUTO_EXPOSURE_CONVERGE_STEP:
         return this.option_auto_exposure_converge_step;
+      case this.OPTION_INTER_CAM_SYNC_MODE:
+        return this.option_inter_cam_sync_mode;
       default:
         throw new TypeError(
             'option.optionToString(option) expects a valid value as the 1st argument');
