@@ -9,7 +9,7 @@ This document describes how to build the [Intel&reg; RealSense&trade; SDK 2.0](h
 ## Ingredients
 Before jumping to the instructions section please ensure you have all the required accessories. 
 1. Linux host machine with [Ubuntu 16.04](https://www.ubuntu.com/download/desktop).
-2. [Rooted Android target device](https://en.wikipedia.org/wiki/Rooting_(Android)).
+2. [Rooted Android target device](https://en.wikipedia.org/wiki/Rooting_(Android)) that supports OTG feature.
 3. [USB3 OTG](https://en.wikipedia.org/wiki/USB_On-The-Go) cable.
 
 ## Instructions of how to build SDK Headless Samples & Android Application
