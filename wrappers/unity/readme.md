@@ -1,6 +1,6 @@
 # Unity Wrapper for RealSense SDK 2.0
 
-<p align="center"><img src="https://user-images.githubusercontent.com/22654243/35569320-93610f10-05d4-11e8-9237-23432532ad87.png" height="400" /></p>
+<p align="center"><img src="http://realsense-hw-public.s3.amazonaws.com/rs-tests/unity_screenshot.PNG" height="400" /></p>
 
 > Screen capture of the `RealSenseTextures` scene
 
