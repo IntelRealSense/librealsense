@@ -364,7 +364,25 @@ namespace librealsense
             });
         }
 
-        shared_ptr<recording> recording::load(const char* filename, const char* section, std::shared_ptr<playback_device_watcher> watcher)
+        static bool is_heighr_or_equel_to_min_version(std::string api_version, std::string min_api_version)
+        {
+            const int ver_size = 3;
+            int section_version[ver_size] = { -1, -1, -1 };
+            int min_version[ver_size] = { -1 ,-1 , -1 };
+            std::sscanf(api_version.c_str(), "%d.%d.%d", &section_version[0], &section_version[1], &section_version[2]);
+            std::sscanf(min_api_version.c_str(), "%d.%d.%d", &min_version[0], &min_version[1], &min_version[2]);
+            for (int i = 0; i < ver_size; i++)
+            {
+                if(min_version[i] < 0)
+                    throw runtime_error(to_string() << "Minimum provided version is in wrong format, expexted format: 0.0.0, actual string: " << min_api_version);
+                if (section_version[i] == min_version[i]) continue;
+                if (section_version[i] > min_version[i]) continue;
+                if (section_version[i] < min_version[i]) return false;
+            }
+            return true;
+        }
+
+        shared_ptr<recording> recording::load(const char* filename, const char* section, std::shared_ptr<playback_device_watcher> watcher, std::string min_api_version)
         {
             if (!file_exists(filename))
             {
@@ -403,6 +421,9 @@ namespace librealsense
                 select_api_version.bind(1, section_id);
                 select_api_version.bind(2, API_VERSION_KEY);
                 auto api_version = select_api_version()[0].get_string();
+                if(is_heighr_or_equel_to_min_version(api_version, min_api_version) == false)
+                    throw runtime_error(to_string() << "File version is lower than the minimum required version that was defind by the test, file version: " <<
+                        api_version << " min version: " << min_api_version);
                 LOG_WARNING("Loaded recording from API version " << api_version);
             }
 
@@ -1137,11 +1158,10 @@ namespace librealsense
             return _device_watcher;
         }
 
-        playback_backend::playback_backend(const char* filename, const char* section)
+        playback_backend::playback_backend(const char* filename, const char* section, std::string min_api_version)
             : _device_watcher(new playback_device_watcher(0)),
-            _rec(platform::recording::load(filename, section, _device_watcher))
+            _rec(platform::recording::load(filename, section, _device_watcher, min_api_version))
         {
-
             LOG_DEBUG("Starting section " << section);
         }
 

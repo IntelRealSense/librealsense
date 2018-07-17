@@ -1,0 +1,96 @@
+ManifestFileVersion: 0
+CRC: 3721263227
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: eb5ac5d7fc095f31e359285bd05f0cab
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 43e94fdad20c75bc683bf1b3c56f8c7b
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 1392445389, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+- Class: 114
+  Script: {fileID: 1980459831, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+- Class: 114
+  Script: {fileID: 853051423, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+- Class: 114
+  Script: {fileID: 1301386320, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+- Class: 114
+  Script: {fileID: -765806418, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+- Class: 114
+  Script: {fileID: -1200242548, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+- Class: 114
+  Script: {fileID: -2061169968, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+- Class: 114
+  Script: {fileID: 1367256648, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+- Class: 114
+  Script: {fileID: -113659843, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+- Class: 114
+  Script: {fileID: 708705254, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+- Class: 114
+  Script: {fileID: 2109663825, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: edcacd9285a1fb242a7a1797a63904c6, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 00041e24a8ebd6a498e0ce1832ce37c2, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 2e2ca705e068d8147ab873ad0b3bd0ce, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: aa4183e682c996540be86aee2429b651, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 5e9de158269bbf84dbbfe3f295429133, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 2a81fc1e64edf3540a7f9ba78a879104, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 46ef920fe825d5c4996039f57cad2ffa, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+- Class: 128
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+- Class: 222
+  Script: {instanceID: 0}
+- Class: 223
+  Script: {instanceID: 0}
+- Class: 224
+  Script: {instanceID: 0}
+- Class: 225
+  Script: {instanceID: 0}
+Assets:
+- Assets/RealSenseSDK2.0/Misc/Prefabs/ErrorPanel.prefab
+- Assets/RealSenseSDK2.0/Misc/Textures/realsense_4c_075_white.png
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/color.png
+- Assets/RealSenseSDK2.0/Misc/Prefabs/ColormapDropdown.prefab
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/087-on-off.png
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/pan.png
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/254-pause.png
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/look.png
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/GitHub-Mark-Light-32px.png
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/081-arrow-back-left.png
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/magnify.png
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/rs16.png
+- Assets/RealSenseSDK2.0/Misc/Textures/shadow.png
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/253-play.png
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/005b-help-outlined.png
+- Assets/RealSenseSDK2.0/Misc/Prefabs/MinMaxSlider.prefab
+- Assets/RealSenseSDK2.0/Misc/Prefabs/SampleUI.prefab
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/grayscale.png
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/rs256.png
+- Assets/RealSenseSDK2.0/Misc/Prefabs/PlayPause.prefab
+- Assets/RealSenseSDK2.0/Misc/Textures/forkme_left_darkblue_121621.png
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/152a-import-solid.png
+- Assets/RealSenseSDK2.0/Misc/Textures/colormaps.png
+Dependencies: []

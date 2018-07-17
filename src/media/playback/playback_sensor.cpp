@@ -3,8 +3,6 @@
 
 #include "playback_sensor.h"
 #include "core/motion.h"
-#include "api.h"
-#include "software-device.h"
 #include <map>
 #include "types.h"
 #include "context.h"
@@ -42,9 +40,20 @@ playback_sensor::~playback_sensor()
 {
 }
 
-stream_profiles playback_sensor::get_stream_profiles() const
+stream_profiles playback_sensor::get_stream_profiles(int tag) const
 {
     return m_available_profiles;
+    if (tag == profile_tag::PROFILE_TAG_ANY)
+        return m_available_profiles;
+
+    stream_profiles profiles;
+    for (auto p : m_available_profiles)
+    {
+        if (p->get_tag() & tag)
+            profiles.push_back(p);
+    }
+
+    return profiles;
 }
 
 void playback_sensor::open(const stream_profiles& requests)
@@ -295,13 +304,4 @@ void playback_sensor::unregister_before_start_callback(int token)
 void playback_sensor::raise_notification(const notification& n)
 {
     _notifications_processor.raise_notification(n);
-}
-
-rs2_extension playback_sensor::get_sensor_type()
-{
-    if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_sensor)) return RS2_EXTENSION_DEPTH_SENSOR;
-    else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_stereo_sensor)) return RS2_EXTENSION_DEPTH_STEREO_SENSOR;
-    else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::video_sensor_interface)) return RS2_EXTENSION_VIDEO;
-    else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::software_sensor)) return RS2_EXTENSION_SOFTWARE_SENSOR;
-    else return RS2_EXTENSION_UNKNOWN;
 }

@@ -67,7 +67,6 @@ namespace Intel.RealSense
         {
             object error;
             m_instance = new HandleRef(this, NativeMethods.rs2_create_colorizer(out error));
-            queue = new FrameQueue();
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
@@ -79,7 +78,7 @@ namespace Intel.RealSense
             return FramesReleaser.ScopedReturn(releaser, queue.WaitForFrame() as VideoFrame);
         }
 
-        FrameQueue queue;
+        readonly FrameQueue queue = new FrameQueue(1);
     }
 
     public class Align : ProcessingBlock
@@ -88,7 +87,6 @@ namespace Intel.RealSense
         {
             object error;
             m_instance = new HandleRef(this, NativeMethods.rs2_create_align(align_to, out error));
-            queue = new FrameQueue();
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
@@ -100,7 +98,7 @@ namespace Intel.RealSense
             return FramesReleaser.ScopedReturn(releaser, queue.WaitForFrames() as FrameSet);
         }
 
-        FrameQueue queue;
+        readonly FrameQueue queue = new FrameQueue(1);
     }
 
     public class DisparityTransform : ProcessingBlock
@@ -110,7 +108,6 @@ namespace Intel.RealSense
             object error;
             byte transform_direction = transform_to_disparity ? (byte)1 : (byte)0;
             m_instance = new HandleRef(this, NativeMethods.rs2_create_disparity_transform_block(transform_direction, out error));
-            queue = new FrameQueue();
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
@@ -122,7 +119,7 @@ namespace Intel.RealSense
             return FramesReleaser.ScopedReturn(releaser, queue.WaitForFrame() as VideoFrame);
         }
 
-        FrameQueue queue;
+        readonly FrameQueue queue = new FrameQueue(1);
     }
 
     public class DecimationFilter : ProcessingBlock
@@ -131,7 +128,6 @@ namespace Intel.RealSense
         {
             object error;
             m_instance = new HandleRef(this, NativeMethods.rs2_create_decimation_filter_block(out error));
-            queue = new FrameQueue();
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
@@ -143,7 +139,7 @@ namespace Intel.RealSense
             return FramesReleaser.ScopedReturn(releaser, queue.WaitForFrame() as VideoFrame);
         }
 
-        FrameQueue queue;
+        readonly FrameQueue queue = new FrameQueue(1);
     }
 
     public class SpatialFilter : ProcessingBlock
@@ -152,7 +148,6 @@ namespace Intel.RealSense
         {
             object error;
             m_instance = new HandleRef(this, NativeMethods.rs2_create_spatial_filter_block(out error));
-            queue = new FrameQueue();
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
@@ -164,7 +159,7 @@ namespace Intel.RealSense
             return FramesReleaser.ScopedReturn(releaser, queue.WaitForFrame() as VideoFrame);
         }
 
-        FrameQueue queue;
+        readonly FrameQueue queue = new FrameQueue(1);
     }
 
     public class TemporalFilter : ProcessingBlock
@@ -173,7 +168,6 @@ namespace Intel.RealSense
         {
             object error;
             m_instance = new HandleRef(this, NativeMethods.rs2_create_temporal_filter_block(out error));
-            queue = new FrameQueue();
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
@@ -185,7 +179,7 @@ namespace Intel.RealSense
             return FramesReleaser.ScopedReturn(releaser, queue.WaitForFrame() as VideoFrame);
         }
 
-        FrameQueue queue;
+        readonly FrameQueue queue = new FrameQueue(1);
     }
 
     public class HoleFillingFilter : ProcessingBlock
@@ -194,7 +188,6 @@ namespace Intel.RealSense
         {
             object error;
             m_instance = new HandleRef(this, NativeMethods.rs2_create_hole_filling_filter_block(out error));
-            queue = new FrameQueue();
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
@@ -206,18 +199,17 @@ namespace Intel.RealSense
             return queue.WaitForFrame() as VideoFrame;
         }
 
-        FrameQueue queue;
+        readonly FrameQueue queue = new FrameQueue(1);
     }
 
     public class PointCloud : ProcessingBlock
     {
-        FrameQueue queue;
+        readonly FrameQueue queue = new FrameQueue(1);
 
         public PointCloud()
         {
             object error;
             m_instance = new HandleRef(this, NativeMethods.rs2_create_pointcloud(out error));
-            queue = new FrameQueue();
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 

@@ -421,7 +421,19 @@ int main(int argv, const char** argc) try
                     update_read_only_options,
                     draw_later);
             }
-
+            if (viewer_model.ppf.is_rendering())
+            {
+                if (!std::any_of(device_models.begin(), device_models.end(),
+                    [](device_model& dm)
+                {
+                    return dm.is_streaming();
+                }))
+                {
+                    // Stopping post processing filter rendering thread
+                    viewer_model.ppf.stop();
+                }
+            }
+           
             if (device_to_remove)
             {
                 if (auto p = device_to_remove->dev.as<playback>())

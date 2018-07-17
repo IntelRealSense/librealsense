@@ -34,3 +34,7 @@ sysinfo.txt
 *.apk
 *.unitypackage
 
+# Plugins
+Assets/RealSenseSDK2.0/Plugins/
+Assets/RealSenseSDK2.0/Plugins.meta
+

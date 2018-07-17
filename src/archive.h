@@ -16,47 +16,71 @@ namespace librealsense
     class frame;
 }
 
-struct frame_additional_data
-{
-    rs2_time_t timestamp = 0;
-    unsigned long long frame_number = 0;
-    rs2_timestamp_domain timestamp_domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
-    rs2_time_t      system_time = 0;
-    rs2_time_t      frame_callback_started = 0;
-    uint32_t        metadata_size = 0;
-    bool            fisheye_ae_mode = false;
-    std::array<uint8_t,MAX_META_DATA_SIZE> metadata_blob;
-    rs2_time_t      backend_timestamp = 0;
-    rs2_time_t last_timestamp = 0;
-    unsigned long long last_frame_number = 0;
-
-    frame_additional_data() {};
-
-    frame_additional_data(double in_timestamp,
-        unsigned long long in_frame_number,
-        double in_system_time,
-        uint8_t md_size,
-        const uint8_t* md_buf,
-        double backend_time,
-        rs2_time_t last_timestamp,
-        unsigned long long last_frame_number)
-        : timestamp(in_timestamp),
-          frame_number(in_frame_number),
-          system_time(in_system_time),
-          metadata_size(md_size),
-          backend_timestamp(backend_time),
-          last_timestamp(last_timestamp),
-          last_frame_number(last_frame_number)
-    {
-        // Copy up to 255 bytes to preserve metadata as raw data
-        if (metadata_size)
-            std::copy(md_buf,md_buf+ std::min(md_size,MAX_META_DATA_SIZE),metadata_blob.begin());
-    }
-};
 
 namespace librealsense
 {
     typedef std::map<rs2_frame_metadata_value, std::shared_ptr<md_attribute_parser_base>> metadata_parser_map;
+
+    struct frame_additional_data
+    {
+        rs2_time_t timestamp = 0;
+        unsigned long long frame_number = 0;
+        rs2_timestamp_domain timestamp_domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
+        rs2_time_t      system_time = 0;
+        rs2_time_t      frame_callback_started = 0;
+        uint32_t        metadata_size = 0;
+        bool            fisheye_ae_mode = false;
+        std::array<uint8_t, MAX_META_DATA_SIZE> metadata_blob;
+        rs2_time_t      backend_timestamp = 0;
+        rs2_time_t last_timestamp = 0;
+        unsigned long long last_frame_number = 0;
+
+        frame_additional_data() {};
+
+        frame_additional_data(double in_timestamp,
+            unsigned long long in_frame_number,
+            double in_system_time,
+            uint8_t md_size,
+            const uint8_t* md_buf,
+            double backend_time,
+            rs2_time_t last_timestamp,
+            unsigned long long last_frame_number)
+            : timestamp(in_timestamp),
+            frame_number(in_frame_number),
+            system_time(in_system_time),
+            metadata_size(md_size),
+            backend_timestamp(backend_time),
+            last_timestamp(last_timestamp),
+            last_frame_number(last_frame_number)
+        {
+            // Copy up to 255 bytes to preserve metadata as raw data
+            if (metadata_size)
+                std::copy(md_buf, md_buf + std::min(md_size, MAX_META_DATA_SIZE), metadata_blob.begin());
+        }
+    };
+
+    class archive_interface : public sensor_part
+    {
+    public:
+        virtual callback_invocation_holder begin_callback() = 0;
+
+        virtual frame_interface* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory) = 0;
+
+        virtual std::shared_ptr<metadata_parser_map> get_md_parsers() const = 0;
+
+        virtual void flush() = 0;
+
+        virtual frame_interface* publish_frame(frame_interface* frame) = 0;
+        virtual void unpublish_frame(frame_interface* frame) = 0;
+        virtual void keep_frame(frame_interface* frame) = 0;
+        virtual ~archive_interface() = default;
+
+    };
+
+    std::shared_ptr<archive_interface> make_archive(rs2_extension type,
+        std::atomic<uint32_t>* in_max_frame_queue_size,
+        std::shared_ptr<platform::time_service> ts,
+        std::shared_ptr<metadata_parser_map> parsers);
 
     // Define a movable but explicitly noncopyable buffer type to hold our frame data
     class frame : public frame_interface
@@ -64,13 +88,32 @@ namespace librealsense
     public:
         std::vector<byte> data;
         frame_additional_data additional_data;
-
-        explicit frame() : ref_count(0), _kept(false), owner(nullptr), on_release(), _sensor_type(RS2_EXTENSION_UNKNOWN) {}
+        std::shared_ptr<metadata_parser_map> metadata_parsers = nullptr;
+        explicit frame() : ref_count(0), _kept(false), owner(nullptr), on_release() {}
         frame(const frame& r) = delete;
-        frame(frame&& r);
+        frame(frame&& r)
+            : ref_count(r.ref_count.exchange(0)), _kept(r._kept.exchange(false)),
+            owner(r.owner), on_release()
+        {
+            *this = std::move(r);
+            if (owner) metadata_parsers = owner->get_md_parsers();
+            if (r.metadata_parsers) metadata_parsers = std::move(r.metadata_parsers);
+        }
 
         frame& operator=(const frame& r) = delete;
-        frame& operator=(frame&& r);
+        frame& operator=(frame&& r)
+        {
+            data = move(r.data);
+            owner = r.owner;
+            ref_count = r.ref_count.exchange(0);
+            _kept = r._kept.exchange(false);
+            on_release = std::move(r.on_release);
+            additional_data = std::move(r.additional_data);
+            r.owner.reset();
+            if (owner) metadata_parsers = owner->get_md_parsers();
+            if (r.metadata_parsers) metadata_parsers = std::move(r.metadata_parsers);
+            return *this;
+        }
 
         virtual ~frame() { on_release.reset(); }
         rs2_metadata_type get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const override;
@@ -80,7 +123,6 @@ namespace librealsense
         rs2_timestamp_domain get_frame_timestamp_domain() const override;
         void set_timestamp(double new_ts) override { additional_data.timestamp = new_ts; }
         unsigned long long get_frame_number() const override;
-        std::array<uint8_t, MAX_META_DATA_SIZE> get_metadata_blob() const override;
         void set_timestamp_domain(rs2_timestamp_domain timestamp_domain) override
         {
             additional_data.timestamp_domain = timestamp_domain;
@@ -123,7 +165,6 @@ namespace librealsense
         bool _fixed = false;
         std::atomic_bool _kept;
         std::shared_ptr<stream_profile_interface> stream;
-        rs2_extension _sensor_type;
     };
 
     class points : public frame
@@ -204,10 +245,6 @@ namespace librealsense
         std::shared_ptr<sensor_interface> get_sensor() const override
         {
             return first()->get_sensor();
-        }
-        std::array<uint8_t, MAX_META_DATA_SIZE> get_metadata_blob() const override
-        {
-            return first()->get_metadata_blob();
         }
     };
 
@@ -447,29 +484,4 @@ namespace librealsense
 
     MAP_EXTENSION(RS2_EXTENSION_POSE_FRAME, librealsense::pose_frame);
 
-
-    class archive_interface : public sensor_part
-    {
-    public:
-        virtual callback_invocation_holder begin_callback() = 0;
-
-        virtual frame_interface* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory) = 0;
-
-        virtual std::shared_ptr<metadata_parser_map> get_md_parsers(rs2_extension sensor_type) const = 0;
-
-        virtual void set_md_parsers(const rs2_extension sensor_type, const std::shared_ptr<metadata_parser_map> metadata_parsers) = 0;
-
-        virtual void flush() = 0;
-
-        virtual frame_interface* publish_frame(frame_interface* frame) = 0;
-        virtual void unpublish_frame(frame_interface* frame) = 0;
-        virtual void keep_frame(frame_interface* frame) = 0;
-        virtual ~archive_interface() = default;
-
-    };
-
-    std::shared_ptr<archive_interface> make_archive(rs2_extension type,
-                                                    std::atomic<uint32_t>* in_max_frame_queue_size,
-                                                    std::shared_ptr<platform::time_service> ts,
-                                                    std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> parsers);
 }
