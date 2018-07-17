@@ -26,9 +26,9 @@ The Unity wrapper depends on the C# wrapper provided by the RealSense SDK 2.0.
 At the end of this step, the Unity project will be available in the CMake output folder:
 
 - Generate the VS solution using cmake (run from librealsense root dir):
-  - mkdir build
-  - cd build
-  - cmake .. -DBUILD_CSHARP_BINDINGS=ON -DBUILD_UNITY_BINDINGS=ON -DBUILD_SHARED_LIBS=ON -DDOTNET_VERSION_LIBRARY=3.5
+  - `mkdir build`
+  - `cd build`
+  - `cmake .. -DBUILD_CSHARP_BINDINGS=ON -DBUILD_UNITY_BINDINGS=ON -DBUILD_SHARED_LIBS=ON -DDOTNET_VERSION_LIBRARY=3.5`
 - The file 'realsense2.sln' should be created in 'build' folder, open the file with Visual Studio, C# examples and library will be available in the solution under 'Wrappers/csharp'.
 - Build Intel.RealSense project, this step will build both the native library and the .NET wrapper and will copy both DLLs to the Unity project Plugins folder.
 - In case Unity is installed and activated, a Unity package should be created at build/\<configuration\>/realsense.unitypackage. This file can be imported by the Unity editor.
