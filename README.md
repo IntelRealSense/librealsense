@@ -14,7 +14,7 @@ This branch offers various [Jupyter notebooks](http://jupyter.org/) showcasing I
 
 | **Notebook** | **Description** |
 |----------|-------------|
-| | |
+| [Depth under water](https://github.com/IntelRealSense/librealsense/blob/jupyter/notebooks/depth_under_water.ipynb) [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/IntelRealSense/librealsense/jupyter?filepath=notebooks/depth_under_water.ipynb) | Minimal notebook showcasing depth under water recording |
 
 ## Issue Answers
 
