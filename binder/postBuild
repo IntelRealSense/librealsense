@@ -1,0 +1,18 @@
+# make sure jupyter has enough data for complex meshes
+mkdir $HOME/.jupyter
+echo "c.NotebookApp.iopub_data_rate_limit=1e22" >> $HOME/.jupyter/jupyter_notebook_config.py
+
+# enable appmode for nice demos
+jupyter nbextension enable --py --sys-prefix widgetsnbextension
+jupyter nbextension     enable --py --sys-prefix appmode
+jupyter serverextension enable --py --sys-prefix appmode
+
+# fetch sample data
+wget -N http://realsense-hw-public.s3.amazonaws.com/rs-tests/TestData/object_detection.bag
+wget -N https://raw.githubusercontent.com/chuanqi305/MobileNet-SSD/master/MobileNetSSD_deploy.prototxt
+wget -N http://realsense-hw-public.s3.amazonaws.com/rs-tests/TestData/MobileNetSSD_deploy.caffemodel
+
+# install the SDK
+pip install opencv-python
+git clone https://github.com/daavoo/pyntcloud.git
+pip install --index-url https://test.pypi.org/simple/ pyrealsense2
