@@ -4,11 +4,13 @@ import sys
 import os
 
 librs_version = ''
-if len(sys.argv) < 2:
-    print("Error! Usage: find_librs_version.py <absolute_path_to_librealsense>")
+if len(sys.argv) < 3:
+    print("Error! Usage: find_librs_version.py <absolute_path_to_librealsense> <output_dir>")
     exit(1)
 
 librealsense_dir = sys.argv[1]
+output_dir = sys.argv[2]
+
 rs_h_path = os.path.join(librealsense_dir, 'include/librealsense2/rs.h')
 print("Extracting version from: ", rs_h_path)
 with io.open(rs_h_path, 'r') as f:
@@ -29,7 +31,7 @@ with io.open(rs_h_path, 'r') as f:
     librs_version += patch.group(1)
 
     print("Librealsense Version: ", librs_version)
-    outfile = os.path.join(librealsense_dir, 'wrappers/python/pyrealsense2/_version.py')
+    outfile = os.path.join(output_dir, '_version.py')
     print("Writing version to: ", outfile)
     with open(outfile, 'w') as f:
         f.write('__version__ = "{}"'.format(librs_version))
