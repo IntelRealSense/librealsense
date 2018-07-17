@@ -1,0 +1,18 @@
+name: pyrealsense2
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - numpy
+  - scipy
+  - matplotlib
+  - pandas
+  - notebook>=5.2.2
+  - ipywidgets>=6.0.1
+  - ipython>=6.2.1
+  - h5py
+  - numba
+  - pythreejs
+  - pip:
+    - laspy
+    - appmode
