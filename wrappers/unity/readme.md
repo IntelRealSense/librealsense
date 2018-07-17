@@ -2,7 +2,7 @@
 
 <p align="center"><img src="http://realsense-hw-public.s3.amazonaws.com/rs-tests/unity_screenshot.PNG" height="400" /></p>
 
-> Screen capture of the `RealSenseTextures` scene
+> [Download **realsense.unitypackage**](http://realsense-hw-public.s3.amazonaws.com/rs-tests/realsense.unitypackage) and go to `Assets > Scenes > Start Here` to see the home screen above
 
 ## Overview
 
