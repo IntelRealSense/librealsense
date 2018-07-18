@@ -15,6 +15,7 @@ add_library(${PROJECT_NAME}
 	Sensor.cs
 	StreamProfile.cs
 	Types.cs
+	SoftwareDevice.cs
 	.nuget/Intel.RealSense.targets
 )
 
