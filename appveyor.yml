@@ -13,18 +13,23 @@ clone_folder: c:\projects\librealsense
 init:
 - ps:  >-
       $startTime = (Get-Date)
+
       echo "Script started on $startTime"
 - cmd: 
 install:
 - ps: Install-Product node $env:nodejs_version
 - cmd: >-
     cd c:\projects\librealsense\.. && git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git 
+
     set OLDPATH=%PATH% && set PATH=%PATH%;c:\projects\depot_tools
+
     cd c:\projects\librealsense\wrappers\nodejs\tools && npm install
+
     cd c:\projects\librealsense\wrappers\nodejs && node .\tools\linter.js && set PATH=%OLDPATH% && set OLDPATH=
 before_build:
 - cmd: >-
     cd c:\projects\librealsense && mkdir build && cd build
+
     cmake .. -DBUILD_EXAMPLES=true -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS:BOOL=true -DBUILD_UNIT_TESTS:BOOL=true
 build:
   project: ./build/librealsense2.sln
@@ -59,42 +64,64 @@ build:
 test_script:
 - ps: >-
     $url_records_path = "http://realsense-hw-public.s3.amazonaws.com/rs-tests/lrs_2.8.3/"
+
     $url_records_list = $url_records_path + "records.txt"
+
     $out_records_list = "records.txt"
+
     Invoke-WebRequest -Uri $url_records_list -OutFile $out_records_list
+
     $records = Get-Content $out_records_list
+
     mkdir single_cam
+
     mkdir multi_cam
+
     foreach ($element in $records)
     {
+
         $url_cur = $url_records_path + $element
+
         Invoke-WebRequest -Uri $url_cur -OutFile $element
     }
+
     $test_failed = @()
+
     & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe -d yes -i [software-device]
+
     if ($LASTEXITCODE -ne 0)
     {
         $test_failed +=  $element
     }
+
     foreach ($element in $records) 
     {
+
         $url_cur = $url_records_path + $element
+
         & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from $element -d yes -i
+
         if ($LASTEXITCODE -ne 0)
         {
             $test_failed +=  $element
         }
     }
+
     if ($test_failed.length -ne 0)
     {
         $err_msg = "The following tests failed: "
+
         foreach ($elem in $test_failed)
         {
+
             $err_msg = $err_msg + $elem + ", "
+
         }
+
         throw  $err_msg
     }
     # TODO(halton): Add unit test for Node.js binding
+
 #---------------------------------#
 #        global handlers          #
 #---------------------------------#
@@ -103,13 +130,17 @@ test_script:
 on_success:
 - ps: >-
       echo Script completed successfuly
+
 # on build failure
 on_failure:
 - ps: >-
       echo "Script Failed"
+
 # after build failure or success
 on_finish:
 - ps: >-
       $endTime  = (Get-Date)
+
       echo "Ended on $endTime"
+
       ($endTime-$startTime).ToString('''Execution time: ''mm'' min ''ss'' sec''')
