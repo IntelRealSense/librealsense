@@ -6,79 +6,26 @@ branches:
   only:
   - development
 skip_tags: true
-image: Visual Studio 2015
-clone_folder: c:\projects\librealsense
-
 environment:
   nodejs_version: "6"
-  matrix:
-  - PYTHON: C:/Python27       #Python 2.7.14 x86 (C:\Python27 - default in PATH)
-    platform: Win32
-    configuration : Debug
-    generator: "Visual Studio 14 2015"
-    #APPVEYOR_BUILD_WORKER_IMAGE : Visual Studio 2015
-
-  - PYTHON: C:/Python27-x64   #Python 2.7.14 x64 (C:\Python27-x64)
-    platform: x64
-    configuration : Debug
-    generator: "Visual Studio 14 2015 Win64"
-  
-  - PYTHON: C:/Python36       #Python 3.6.4 x86 (C:\Python36)
-    platform: Win32
-    configuration : Debug
-    generator: "Visual Studio 14 2015"
-  
-  - PYTHON: C:/Python36-x64   #Python 3.6.4 x64 (C:\Python36-x64)
-    platform: x64
-    configuration : Debug
-    generator: "Visual Studio 14 2015 Win64"
-
+image: Visual Studio 2015
+clone_folder: c:\projects\librealsense
 init:
 - ps:  >-
       $startTime = (Get-Date)
-
       echo "Script started on $startTime"
-
-- cmd:
-
-
+- cmd: 
 install:
 - ps: Install-Product node $env:nodejs_version
 - cmd: >-
-
-    echo "APPVEYOR_BUILD_FOLDER = %APPVEYOR_BUILD_FOLDER%"
-
-    echo "Matrix running: "
-
-    echo " - APPVEYOR_BUILD_WORKER_IMAGE = %APPVEYOR_BUILD_WORKER_IMAGE%"
-
-    echo " - PLATFORM = %PLATFORM%"
-
-    echo " - CONFIGURATION = %CONFIGURATION%"
-
-    echo " - PYTHON = %PYTHON%"
-
     cd c:\projects\librealsense\.. && git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git 
-
     set OLDPATH=%PATH% && set PATH=%PATH%;c:\projects\depot_tools
-
     cd c:\projects\librealsense\wrappers\nodejs\tools && npm install
-
     cd c:\projects\librealsense\wrappers\nodejs && node .\tools\linter.js && set PATH=%OLDPATH% && set OLDPATH=
-
-    cd c:\projects\librealsense\wrappers\python
-
-    "%PYTHON%/python.exe" find_librs_version.py "c:\projects\librealsense"
-
-    "%PYTHON%/python.exe" -m pip install --upgrade pip
-
-    "%PYTHON%/python.exe" -m pip install -r requirements.txt
-
 before_build:
 - cmd: >-
     cd c:\projects\librealsense && mkdir build && cd build
-
-    cmake .. -G "%generator%" -DBUILD_EXAMPLES=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=%PYTHON%/python.exe -DBUILD_UNIT_TESTS:BOOL=true -DBUILD_NODEJS_BINDINGS:BOOL=true
+    cmake .. -DBUILD_EXAMPLES=true -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS:BOOL=true -DBUILD_UNIT_TESTS:BOOL=true
 build:
   project: ./build/librealsense2.sln
   parallel: true                           # Is not in use on "Free" plans -  https://github.com/appveyor/ci/issues/216. Leaved for future consideration
@@ -111,100 +58,58 @@ build:
 #
 test_script:
 - ps: >-
-
     $url_records_path = "http://realsense-hw-public.s3.amazonaws.com/rs-tests/lrs_2.8.3/"
-
     $url_records_list = $url_records_path + "records.txt"
-
     $out_records_list = "records.txt"
-
     Invoke-WebRequest -Uri $url_records_list -OutFile $out_records_list
-
     $records = Get-Content $out_records_list
-
     mkdir single_cam
-
     mkdir multi_cam
-
     foreach ($element in $records)
     {
-
         $url_cur = $url_records_path + $element
-
         Invoke-WebRequest -Uri $url_cur -OutFile $element
     }
-
     $test_failed = @()
-
     & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe -d yes -i [software-device]
-
     if ($LASTEXITCODE -ne 0)
     {
         $test_failed +=  $element
     }
-
-    foreach ($element in $records)
+    foreach ($element in $records) 
     {
-
         $url_cur = $url_records_path + $element
-
         & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from $element -d yes -i
-
         if ($LASTEXITCODE -ne 0)
         {
             $test_failed +=  $element
         }
     }
-
     if ($test_failed.length -ne 0)
     {
         $err_msg = "The following tests failed: "
-
         foreach ($elem in $test_failed)
         {
-
             $err_msg = $err_msg + $elem + ", "
-
         }
-
         throw  $err_msg
     }
     # TODO(halton): Add unit test for Node.js binding
-
 #---------------------------------#
 #        global handlers          #
 #---------------------------------#
-after_test:
-- cmd: >-
-    xcopy %APPVEYOR_BUILD_FOLDER%\build\%CONFIGURATION%\*.pyd %APPVEYOR_BUILD_FOLDER%\wrappers\python\pyrealsense2 /I
-
-    xcopy %APPVEYOR_BUILD_FOLDER%\build\%CONFIGURATION%\realsense2.dll %APPVEYOR_BUILD_FOLDER%\wrappers\python\pyrealsense2 /I
-
-    xcopy %APPVEYOR_BUILD_FOLDER%\LICENSE %APPVEYOR_BUILD_FOLDER%\wrappers\python /I
-
-    cd c:\projects\librealsense\wrappers\python
-
-    "%PYTHON%/python.exe" setup.py bdist_wheel
-
-artifacts:
-- path: wrappers\python\dist\*
-  name: wheels
 
 # on successful build
 on_success:
 - ps: >-
       echo Script completed successfuly
-
 # on build failure
 on_failure:
 - ps: >-
       echo "Script Failed"
-
 # after build failure or success
 on_finish:
 - ps: >-
       $endTime  = (Get-Date)
-
       echo "Ended on $endTime"
-
       ($endTime-$startTime).ToString('''Execution time: ''mm'' min ''ss'' sec''')

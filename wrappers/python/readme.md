@@ -11,7 +11,7 @@
 >
 >[`pyrealsense`](https://github.com/toinsson/pyrealsense) AKA [`pyrealsense/2.0`](https://pypi.python.org/pypi/pyrealsense/2.0) is a community supported Python wrapper for **librealsense v1.12.1**, This wrapper does not support newer versions and **does not work with the RealSense SDK 2.0**.
 
-We provide a PyPI distribution which is created from this folder by running `python setup.py sdist`.
+We provide a PyPI distribution which is created from this folder by running `python setup.py bdist_wheel`.
 
 Package is available at https://pypi.python.org/pypi/pyrealsense2
 
