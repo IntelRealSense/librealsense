@@ -127,6 +127,8 @@ device::device(std::shared_ptr<context> ctx,
     : _context(ctx), _group(group), _is_valid(true),
       _device_changed_notifications(device_changed_notifications)
 {
+    _profiles_tags = lazy<std::vector<tagged_profile>>([this]() { return get_profiles_tags(); });
+
     if (_device_changed_notifications)
     {
         auto cb = new devices_changed_callback_internal([this](rs2_device_list* removed, rs2_device_list* added)
@@ -261,4 +263,20 @@ void librealsense::device::register_stream_to_extrinsic_group(const stream_inter
     }
 }
 
-
+void librealsense::device::tag_profile(stream_profile_interface* profile) const
+{
+    for (auto tag : *_profiles_tags)
+    {
+        auto vp = dynamic_cast<video_stream_profile_interface*>(profile);
+        if (vp)
+        {
+            if ((tag.stream == RS2_STREAM_ANY || vp->get_stream_type() == tag.stream) &&
+                (tag.format == RS2_FORMAT_ANY || vp->get_format() == tag.format) &&
+                (tag.width == -1 || vp->get_width() == tag.width) &&
+                (tag.height == -1 || vp->get_height() == tag.height) &&
+                (tag.fps == -1 || vp->get_framerate() == tag.fps) &&
+                (tag.stream_index == -1 || vp->get_stream_index() == tag.stream_index))
+                profile->tag_profile(tag.tag);
+        }
+    }
+}

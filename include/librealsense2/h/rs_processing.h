@@ -117,6 +117,7 @@ void rs2_delete_frame_queue(rs2_frame_queue* queue);
 /**
 * wait until new frame becomes available in the queue and dequeue it
 * \param[in] queue the frame queue data structure
+* \param[in] timeout_ms   max time in milliseconds to wait until an exception will be thrown
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return frame handle to be released using rs2_release_frame
 */
@@ -130,6 +131,16 @@ rs2_frame* rs2_wait_for_frame(rs2_frame_queue* queue, unsigned int timeout_ms, r
 * \return true if new frame was stored to output_frame
 */
 int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_error** error);
+
+/**
+* wait until new frame becomes available in the queue and dequeue it
+* \param[in] queue          the frame queue data structure
+* \param[in] timeout_ms     max time in milliseconds to wait until a frame becomes available
+* \param[out] output_frame  frame handle to be released using rs2_release_frame
+* \param[out] error         if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return true if new frame was stored to output_frame
+*/
+int rs2_try_wait_for_frame(rs2_frame_queue* queue, unsigned int timeout_ms, rs2_frame** output_frame, rs2_error** error);
 
 /**
 * enqueue new frame into a queue

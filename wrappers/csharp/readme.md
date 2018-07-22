@@ -1,6 +1,6 @@
 # .NET Wrapper for Intel RealSense SDK
 
-This folder offers P/Invoke based bindings for most SDK APIs, together with a couple of examples. At the moment we only offer Visual Studio solution file to build on Windows, but it should be possible to use the same bindings on Linux with Mono. 
+This folder offers P/Invoke based bindings for most SDK APIs, together with a couple of examples.
 
 ## Getting Started
 
@@ -10,22 +10,20 @@ In order to get `realsense2.dll` you can either build the SDK [from source using
 
 Next, download the following prerequisites :
 
-* Visual Studio 2017 only - [.NET Core 2.x](https://www.microsoft.com/net/download/visual-studio-sdks)
+* Visual Studio 2015/2017
+* .NET framework >= 3.5 (.NET 3.5 is required for Unity the unity wrapper)
 
-After installing all prerequisites, navigate to `/wrappers/csharp` and open either `Intel.RealSense.SDK.sln` for Visual Studio 2017+ or `Intel.RealSense.2015.sln` for Visual Studio 2015.
 
-Press `Ctrl + Shift + B` to build the solution. 
+After installing all prerequisites, generate 'realsense2.sln' with 'BUILD_CSHARP_BINDINGS' and 'BUILD_SHARED_LIBS' flags using cmake.
 
-If you choose to build the SDK from source and do so to a custom directory you may need to specify the path to `realsense2.dll` in the Intel.RealSense[.2015].csproj. This can be done by manually editing the csproj to add a BuildPath[x86/x64] property above the default.
-e.g.
-```
-  <PropertyGroup>
-    ...
-    <BuildPathx86>your\path\to\x86\realsense2.dll</BuildPathx86> <!--[Optional] If you plan to build for x86-->
-    <BuildPathx64>your\path\to\x64\realsense2.dll</BuildPathx64> <!--[Optional] If you plan to build for x64-->
-    <BuildPath Condition="'$(BuildPath)'==''">..\..\..\build\$(Configuration)\realsense2.dll</BuildPath> <!--Existing default location-->
-  </PropertyGroup>
-```
+- Generate the VS solution using cmake (run from librealsense root dir):
+  - mkdir build
+  - cd build
+  - cmake .. -DBUILD_CSHARP_BINDINGS=ON -DBUILD_SHARED_LIBS=ON
+
+The file 'realsense2.sln' should be created in 'build' folder, open the file with Visual Studio, C# examples and library will be available in the solution under 'Wrappers/csharp'.
+
+Both the native library and the .NET wrapper are built by default as part of the examples dependencies.
 
 ## Hello World
 

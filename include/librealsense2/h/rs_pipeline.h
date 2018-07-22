@@ -73,6 +73,22 @@ extern "C" {
     */
     int rs2_pipeline_poll_for_frames(rs2_pipeline* pipe, rs2_frame** output_frame, rs2_error ** error);
 
+    /**
+    * Wait until a new set of frames becomes available.
+    * The frames set includes time-synchronized frames of each enabled stream in the pipeline.
+    * The method blocks the calling thread, and fetches the latest unread frames set.
+    * Device frames, which were produced while the function wasn't called, are dropped. To avoid frame drops, this method should be called
+    * as fast as the device frame rate.
+    * The application can maintain the frames handles to defer processing. However, if the application maintains too long history, the device
+    * may lack memory resources to produce new frames, and the following call to this method shall fail to retrieve new frames, until resources
+    * are retained.
+    * \param[in] pipe           the pipeline
+    * \param[in] timeout_ms     max time in milliseconds to wait until a frame becomes available
+    * \param[out] output_frame  frame handle to be released using rs2_release_frame
+    * \param[out] error         if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return true if new frame was stored to output_frame
+    */
+    int rs2_pipeline_try_wait_for_frames(rs2_pipeline* pipe, rs2_frame** output_frame, unsigned int timeout_ms, rs2_error ** error);
 
     /**
     * Delete a pipeline instance.

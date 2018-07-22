@@ -72,6 +72,8 @@ namespace librealsense
             return _is_valid;
         }
 
+        void tag_profile(stream_profile_interface* profile) const override;
+
     protected:
         int add_sensor(std::shared_ptr<sensor_interface> sensor_base);
         int assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t idx);
@@ -90,5 +92,6 @@ namespace librealsense
         bool _is_valid, _device_changed_notifications;
         mutable std::mutex _device_changed_mtx;
         uint64_t _callback_id;
+        lazy<std::vector<tagged_profile>> _profiles_tags;
     };
 }

@@ -5,6 +5,8 @@
 #include "api.h"
 #include "stream.h"
 
+using namespace librealsense;
+
 librealsense::record_sensor::record_sensor(const device_interface& device,
                                             sensor_interface& sensor) :
     m_sensor(sensor),
@@ -51,9 +53,9 @@ void librealsense::record_sensor::init()
     }
     LOG_DEBUG("Hooked to real sense");
 }
-stream_profiles record_sensor::get_stream_profiles() const
+stream_profiles record_sensor::get_stream_profiles(int tag) const
 {
-    return m_sensor.get_stream_profiles();
+    return m_sensor.get_stream_profiles(tag);
 }
 
 void librealsense::record_sensor::open(const stream_profiles& requests)

@@ -1,6 +1,8 @@
 #ifndef LIBUVC_H
 #define LIBUVC_H
 
+#include <functional>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -531,7 +533,8 @@ uint8_t uvc_get_device_address(uvc_device_t *dev);
 uvc_error_t uvc_find_device(
         uvc_context_t *ctx,
         uvc_device_t **dev,
-        int vid, int pid, const char *sn);
+        int vid, int pid, const char *sn,
+        std::function<bool(uvc_device_t *)> predicate);
 
 uvc_error_t uvc_find_devices(
         uvc_context_t *ctx,

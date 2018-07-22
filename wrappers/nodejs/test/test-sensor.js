@@ -23,9 +23,6 @@ describe('Sensor test', function() {
   });
 
   afterEach(function() {
-    sensors.forEach((sensor) => {
-      sensor.stop();
-    });
     rs2.cleanup();
   });
 
@@ -249,16 +246,18 @@ describe('Sensor test', function() {
       for (let i in profiles) {
         assert.doesNotThrow(() => { // jshint ignore:line
           sensor.open(profiles[i]);
+          sensor.close();
         });
       }
     });
-  });
+  }).timeout(5000);
 
   it('Testing method open, profileArray', () => {
     sensors.forEach((sensor) => {
       const profiles = sensor.getStreamProfiles();
         assert.doesNotThrow(() => { // jshint ignore:line
           sensor.open(profiles);
+          sensor.close();
         });
     });
   });
@@ -269,6 +268,7 @@ describe('Sensor test', function() {
       for (let i in profiles) {
         assert.throws(() => { // jshint ignore:line
           sensor.open(profiles[i], profiles);
+          sensor.close();
         });
       }
     });
@@ -278,6 +278,7 @@ describe('Sensor test', function() {
     sensors.forEach((sensor) => {
       assert.throws(() => {
         sensor.open();
+        sensor.close();
       });
     });
   });
@@ -286,18 +287,7 @@ describe('Sensor test', function() {
     sensors.forEach((sensor) => {
       assert.throws(() => {
         sensor.open('dummy');
-      });
-    });
-  });
-
-  it('Testing method close check reopen', () => {
-    sensors.forEach((sensor) => {
-      const profiles = sensor.getStreamProfiles();
-      assert.doesNotThrow(() => {
         sensor.close();
-      });
-      assert.doesNotThrow(() => {
-        sensor.open(profiles);
       });
     });
   });
@@ -312,41 +302,78 @@ describe('Sensor test', function() {
       });
       assert.throws(() => {
         sensor.open(profiles);
+        sensor.close();
       });
     });
   });
 
   it('Testing method start, with callback', () => {
-    let promises = [];
-    sensors.forEach((sensor) => {
-      let promise = new Promise((resolve) => {
+    function testSingleProfile(sensor, profile) {
+      assert.doesNotThrow(() => { // jshint ignore:line
+        sensor.open(profile);
+      });
+      return new Promise((resolve, reject) => {
+        sensor.start((frame) => { // jshint ignore:line
+          assert.equal(typeof frame, 'object');
+          assert.equal(typeof frame.isValid, 'boolean');
+          let expectDataType;
+          switch (frame.format) {
+            case rs2.format.FORMAT_Z16:
+            case rs2.format.FORMAT_DISPARITY16:
+            case rs2.format.FORMAT_Y16:
+            case rs2.format.FORMAT_RAW16:
+                expectDataType = '[object Uint16Array]';
+                break;
+            case rs2.format.FORMAT_YUYV:
+            case rs2.format.FORMAT_UYVY:
+            case rs2.format.FORMAT_RGB8:
+            case rs2.format.FORMAT_BGR8:
+            case rs2.format.FORMAT_RGBA8:
+            case rs2.format.FORMAT_BGRA8:
+            case rs2.format.FORMAT_Y8:
+            case rs2.format.FORMAT_RAW8:
+            case rs2.format.FORMAT_MOTION_RAW:
+            case rs2.format.FORMAT_GPIO_RAW:
+            case rs2.format.FORMAT_RAW10:
+            case rs2.format.FORMAT_ANY:
+                expectDataType = '[object Uint8Array]';
+                break;
+            case rs2.format.FORMAT_XYZ32F:
+            case rs2.format.FORMAT_MOTION_XYZ32F:
+            case rs2.format.FORMAT_6DOF:
+            case rs2.format.FORMAT_DISPARITY32:
+                expectDataType = '[object Uint32Array]';
+                break;
+          }
+          assert.equal(Object.prototype.toString.call(frame.data), expectDataType);
+          assert.equal(typeof frame.width, 'number');
+          assert.equal(typeof frame.height, 'number');
+          assert.equal(typeof frame.frameNumber, 'number');
+          assert.equal(typeof frame.timestamp, 'number');
+          assert.equal(typeof frame.streamType, 'number');
+          assert.equal(typeof frame.dataByteLength, 'number');
+          assert.equal(typeof frame.strideInBytes, 'number');
+          assert.equal(typeof frame.bitsPerPixel, 'number');
+          assert.equal(typeof frame.timestampDomain, 'number');
+          sensor.stop();
+          sensor.close();
+          resolve();
+        });
+      });
+    }
+    /* jshint ignore:start */
+    async function runTest() {
+      for (let ii in sensors) {
+        let sensor = sensors[ii];
         const profiles = sensor.getStreamProfiles();
         for (let i in profiles) {
-          assert.doesNotThrow(() => { // jshint ignore:line
-            sensor.open(profiles[i]);
-          });
-          sensor.start((frame) => { // jshint ignore:line
-            assert.equal(typeof frame, 'object');
-            assert.equal(typeof frame.isValid, 'boolean');
-            assert.equal(Object.prototype.toString.call(frame.data), '[object Uint16Array]');
-            assert.equal(typeof frame.width, 'number');
-            assert.equal(typeof frame.height, 'number');
-            assert.equal(typeof frame.frameNumber, 'number');
-            assert.equal(typeof frame.timestamp, 'number');
-            assert.equal(typeof frame.streamType, 'number');
-            assert.equal(typeof frame.dataByteLength, 'number');
-            assert.equal(typeof frame.strideInBytes, 'number');
-            assert.equal(typeof frame.bitsPerPixel, 'number');
-            assert.equal(typeof frame.timestampDomain, 'number');
-            sensor.stop();
-            resolve();
-          });
+          await testSingleProfile(sensor, profiles[i]);
         }
-      });
-      promises.push(promise);
-    });
-    return Promise.all(promises);
-  });
+      }
+    }
+    return runTest();
+    /* jshint ignore:end */
+  }).timeout(150000);
 
   it('Testing method start, w/ syncer', () => {
     let syncer = new rs2.Syncer();
@@ -357,13 +384,15 @@ describe('Sensor test', function() {
           sensor.open(profiles[i]);
         });
         sensor.start(syncer);
+        sensor.stop();
+        sensor.close();
       }
     });
-  });
+  }).timeout(3000);
 
   it('Testing method close', () => {
     sensors.forEach((sensor) => {
-      assert.doesNotThrow(() => {
+      assert.throws(() => {
         sensor.close();
       });
     });

@@ -243,6 +243,24 @@ describe('enum value test', function() {
       'FRAME_METADATA_WHITE_BALANCE',
       'FRAME_METADATA_TIME_OF_ARRIVAL',
       'FRAME_METADATA_TEMPERATURE',
+      'FRAME_METADATA_FRAME_LASER_POWER',
+      'FRAME_METADATA_FRAME_LASER_POWER_MODE',
+      'FRAME_METADATA_EXPOSURE_PRIORITY',
+      'FRAME_METADATA_EXPOSURE_ROI_LEFT',
+      'FRAME_METADATA_EXPOSURE_ROI_RIGHT',
+      'FRAME_METADATA_EXPOSURE_ROI_TOP',
+      'FRAME_METADATA_EXPOSURE_ROI_BOTTOM',
+      'FRAME_METADATA_BRIGHTNESS',
+      'FRAME_METADATA_CONTRAST',
+      'FRAME_METADATA_SATURATION',
+      'FRAME_METADATA_SHARPNESS',
+      'FRAME_METADATA_AUTO_WHITE_BALANCE_TEMPERATURE',
+      'FRAME_METADATA_BACKLIGHT_COMPENSATION',
+      'FRAME_METADATA_HUE',
+      'FRAME_METADATA_GAMMA',
+      'FRAME_METADATA_MANUAL_WHITE_BALANCE',
+      'FRAME_METADATA_POWER_LINE_FREQUENCY',
+      'FRAME_METADATA_LOW_LIGHT_COMPENSATION',
     ];
     const strAttrs = [
       'frame_metadata_frame_counter',
@@ -254,6 +272,24 @@ describe('enum value test', function() {
       'frame_metadata_white_balance',
       'frame_metadata_time_of_arrival',
       'frame_metadata_temperature',
+      'frame_metadata_frame_laser_power',
+      'frame_metadata_frame_laser_power_mode',
+      'frame_metadata_exposure_priority',
+      'frame_metadata_exposure_roi_left',
+      'frame_metadata_exposure_roi_right',
+      'frame_metadata_exposure_roi_top',
+      'frame_metadata_exposure_roi_bottom',
+      'frame_metadata_brightness',
+      'frame_metadata_contrast',
+      'frame_metadata_saturation',
+      'frame_metadata_sharpness',
+      'frame_metadata_auto_white_balance_temperature',
+      'frame_metadata_backlight_compensation',
+      'frame_metadata_hue',
+      'frame_metadata_gamma',
+      'frame_metadata_manual_white_balance',
+      'frame_metadata_power_line_frequency',
+      'frame_metadata_low_light_compensation',
     ];
     numberAttrs.forEach((attr) => {
       assert.equal(typeof obj[attr], 'number');
@@ -389,6 +425,8 @@ describe('enum value test', function() {
       'OPTION_FILTER_SMOOTH_DELTA',
       'OPTION_HOLES_FILL',
       'OPTION_STEREO_BASELINE',
+      'OPTION_AUTO_EXPOSURE_CONVERGE_STEP',
+      'OPTION_INTER_CAM_SYNC_MODE',
     ];
     const strAttrs = [
       'option_backlight_compensation',
@@ -432,6 +470,8 @@ describe('enum value test', function() {
       'option_filter_smooth_delta',
       'option_holes_fill',
       'option_stereo_baseline',
+      'option_auto_exposure_converge_step',
+      'option_inter_cam_sync_mode',
     ];
     numberAttrs.forEach((attr) => {
       assert.equal(typeof obj[attr], 'number');
@@ -497,7 +537,7 @@ describe('Native error tests', function() {
     assert.throws(() => {
       ctx.loadDevice(file);
     }, (err) => {
-      assert.equal(err instanceof TypeError, true);
+      assert.equal(err instanceof Error, true);
       let errInfo = rs2.getError();
       assert.equal(errInfo.recoverable, false);
       assert.equal(typeof errInfo.description, 'string');
@@ -579,7 +619,7 @@ describe('new record/playback test', function() {
     pipe.stop();
     rs2.cleanup();
     fs.unlinkSync(file);
-  }).timeout(5000);
+  }).timeout(10000);
 });
 
 describe('frameset misc test', function() {

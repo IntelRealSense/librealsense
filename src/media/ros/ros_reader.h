@@ -22,7 +22,7 @@ namespace librealsense
             m_file_path(file),
             m_context(ctx),
             m_version(0),
-            m_metadata_parser_map(create_metadata_parser_map())
+            m_metadata_parser_map(md_constant_parser::create_metadata_parser_map())
         {
             try
             {
@@ -295,17 +295,6 @@ namespace librealsense
                 return std::make_shared<serialized_invalid_frame>(timestamp, stream_id);
             }
             return std::make_shared<serialized_frame>(timestamp, stream_id, std::move(frame));
-        }
-
-        static std::shared_ptr<metadata_parser_map> create_metadata_parser_map()
-        {
-            auto md_parser_map = std::make_shared<metadata_parser_map>();
-            for (int i = 0; i < static_cast<int>(rs2_frame_metadata_value::RS2_FRAME_METADATA_COUNT); ++i)
-            {
-                auto frame_md_type = static_cast<rs2_frame_metadata_value>(i);
-                md_parser_map->insert(std::make_pair(frame_md_type, std::make_shared<md_constant_parser>(frame_md_type)));
-            }
-            return md_parser_map;
         }
 
         static nanoseconds get_file_duration(const rosbag::Bag& file, uint32_t version)

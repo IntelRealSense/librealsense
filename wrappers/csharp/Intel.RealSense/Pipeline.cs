@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using System.Linq;
 
 namespace Intel.RealSense
 {
@@ -138,7 +137,12 @@ namespace Intel.RealSense
 
         public StreamProfile GetStream(Stream s, int index = -1)
         {
-            return Streams.First(x => x.Stream == s && (index != -1 ? x.Index == index : true));
+            foreach(var x in Streams)
+            {
+                if (x.Stream == s && (index != -1 ? x.Index == index : true))
+                    return x;
+            }
+            return null;
         }
 
         #region IDisposable Support

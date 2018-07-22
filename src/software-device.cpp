@@ -38,7 +38,7 @@ namespace librealsense
     software_sensor::software_sensor(std::string name, software_device* owner)
         : sensor_base(name, owner)
     {
-
+        _metadata_parsers = md_constant_parser::create_metadata_parser_map();
     }
 
     std::shared_ptr<matcher> software_device::create_matcher(const frame_holder& frame) const
@@ -133,12 +133,33 @@ namespace librealsense
         _source.reset();
     }
 
+    
+    void software_sensor::set_metadata(rs2_frame_metadata_value key, rs2_metadata_type value)
+    {
+        _metadata_map[key] = value;
+    }
+
     void software_sensor::on_video_frame(rs2_software_video_frame software_frame)
     {
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
         data.timestamp_domain = software_frame.domain;
         data.frame_number = software_frame.frame_number;
+
+        data.metadata_size = 0;
+        for (auto i : _metadata_map)
+        {
+            auto size_of_enum = sizeof(rs2_frame_metadata_value);
+            auto size_of_data = sizeof(rs2_metadata_type);
+            if (data.metadata_size + size_of_enum + size_of_data > 255)
+            {
+                continue; //stop adding metadata to frame
+            }
+            memcpy(data.metadata_blob.data() + data.metadata_size, &i.first, size_of_enum);
+            data.metadata_size += static_cast<uint32_t>(size_of_enum);
+            memcpy(data.metadata_blob.data() + data.metadata_size, &i.second, size_of_data);
+            data.metadata_size += static_cast<uint32_t>(size_of_data);
+        }
 
         rs2_extension extension = software_frame.profile->profile->get_stream_type() == RS2_STREAM_DEPTH ?
             RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME;

@@ -1,8 +1,6 @@
 #  minimum required cmake version: 3.1.0
 cmake_minimum_required(VERSION 3.1.0)
 
-project(librealsense2)
-
 macro(info msg)
     message(STATUS "Info: ${msg}")
 endmacro()
@@ -10,6 +8,17 @@ endmacro()
 macro(infoValue variableName)
     info("${variableName}=\${${variableName}}")
 endmacro()
+
+option(BUILD_WITH_CUDA "Enable CUDA" OFF)
+
+if(BUILD_WITH_CUDA)
+	info("Building with CUDA requires CMake v3.8+")
+	cmake_minimum_required(VERSION 3.8.0)
+    project(librealsense2 LANGUAGES CXX C CUDA)
+else()
+    project(librealsense2 LANGUAGES CXX C)
+endif()
+
 
 ##################################################################
 # Parse librealsense version and assign it to CMake variables    #
@@ -45,8 +54,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+if(COMPILER_SUPPORTS_CXX11)   
+    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CUDA_STANDARD 11)
 elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
@@ -105,6 +115,21 @@ option(BUILD_EASYLOGGINGPP "Build EasyLogging++ as a part of the build" ON)
 if (BUILD_EASYLOGGINGPP)
     add_definitions(-DBUILD_EASYLOGGINGPP)
 endif()
+
+if (BUILD_WITH_CUDA)
+    find_package(CUDA REQUIRED)
+    if(CUDA_FOUND)
+        include_directories(${CUDA_INCLUDE_DIRS})
+        SET(ALL_CUDA_LIBS ${CUDA_LIBRARIES} ${CUDA_cusparse_LIBRARY} ${CUDA_cublas_LIBRARY})
+        SET(LIBS ${LIBS} ${ALL_CUDA_LIBS})
+        message(STATUS "CUDA_LIBRARIES: ${CUDA_INCLUDE_DIRS} ${ALL_CUDA_LIBS}")
+        set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+        set(CUDA_SEPARABLE_COMPILATION ON)
+        set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}; -O3 -gencode arch=compute_53,code=sm_53
+        -gencode arch=compute_62,code=sm_62;")
+    endif()
+endif()
+
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
@@ -178,6 +203,18 @@ set(REALSENSE_CPP
     src/media/playback/playback_device.cpp
     src/media/playback/playback_sensor.cpp
     )
+    
+if (BUILD_WITH_CUDA)
+    set(REALSENSE_CU
+        src/cuda/cuda-conversion.cu
+        src/cuda/cuda-pointcloud.cu
+        )
+
+    set(REALSENSE_CUH
+        src/cuda/cuda-conversion.cuh
+        src/cuda/cuda-pointcloud.cuh
+        )
+endif()
 
 set(REALSENSE_HPP
     include/librealsense2/rs.hpp
@@ -710,20 +747,20 @@ option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
     if(WIN32)
         add_library(realsense2 SHARED
-            ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF}
+            ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF} ${REALSENSE_CU} ${REALSENSE_CUH}
             src/res/resource.h
-            src/res/librealsense.rc)
-
+            src/res/librealsense.rc) 
         source_group("Resources" FILES
         src/res/resource.h
         src/res/librealsense.rc
         )
     else()
-        add_library(realsense2 SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
+        add_library(realsense2 SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_CU} ${REALSENSE_CUH} ${REALSENSE_DEF})
     endif()
 else()
-    add_library(realsense2 STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
+        add_library(realsense2 STATIC ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_CU} ${REALSENSE_CUH})
 endif()
+
 
 if(BUILD_WITH_TM2)
     target_compile_definitions(realsense2 PRIVATE WITH_TRACKING=1 BUILD_STATIC=1)
@@ -814,9 +851,15 @@ option(BUILD_UNIT_TESTS "Build realsense unit tests. Note that when enabled, add
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
+option(BUILD_CSHARP_BINDINGS "Build C# bindings" OFF)
+option(BUILD_UNITY_BINDINGS "Copy the unity project to the build folder with the required dependencies" OFF)
 option(BUILD_CV_EXAMPLES "Build OpenCV examples" OFF)
 option(BUILD_PCL_EXAMPLES "Build PCL examples" OFF)
 option(BUILD_NODEJS_BINDINGS "Build Node.js bindings" OFF)
+SET(DOTNET_VERSION_LIBRARY "3.5" CACHE STRING ".Net Version, defaulting to '3.5', the Unity wrapper currently supports only .NET 3.5")
+SET(DOTNET_VERSION_EXAMPLES "4.0" CACHE STRING ".Net Version, defaulting to '4.0'")
+
+add_subdirectory(wrappers)
 
 if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) AND WIN32)
   add_subdirectory(third-party/glfw)
@@ -835,35 +878,32 @@ if (ENFORCE_METADATA)
   add_definitions(-DENFORCE_METADATA)
 endif()
 
-if (BUILD_PYTHON_BINDINGS)
-  add_subdirectory(wrappers/python)
+if (BUILD_WITH_CUDA)
+    add_definitions(-DRS2_USE_CUDA)
 endif()
 
-if (BUILD_NODEJS_BINDINGS)
-  add_subdirectory(wrappers/nodejs)
-endif()
-
-if (BUILD_CV_EXAMPLES)
-  add_subdirectory(wrappers/opencv)
-endif()
-
-if (BUILD_PCL_EXAMPLES)
-  add_subdirectory(wrappers/pcl)
-endif()
 
 # Check for unreferenced files
 FILE(GLOB_RECURSE AllSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-  "src/*.c" "src/*.cpp" "src/*.cc" "src/*.c++"
-  "src/*.h" "src/*.hpp" "src/*.hh" "src/*.h++")
+  "src/*.c" "src/*.cpp" "src/*.cc" "src/*.c++" "src/*.cu"
+  "src/*.h" "src/*.hpp" "src/*.hh" "src/*.h++" "src/*.cuh")
 #message ( "${AllSources}" )
 #message ( "${REALSENSE_CPP}" )
 #message ( "${REALSENSE_HPP}" )
-foreach(afile ${REALSENSE_CPP})
-  list(REMOVE_ITEM AllSources ${afile})
-endforeach(afile)
-foreach(afile ${REALSENSE_HPP})
-  list(REMOVE_ITEM AllSources ${afile})
-endforeach(afile)
+if (BUILD_WITH_CUDA)
+    foreach(afile ${REALSENSE_CPP})
+      list(REMOVE_ITEM AllSources ${afile})
+    endforeach(afile)
+    foreach(afile ${REALSENSE_HPP})
+      list(REMOVE_ITEM AllSources ${afile})
+    endforeach(afile)
+    foreach(afile ${REALSENSE_CU})
+      list(REMOVE_ITEM AllSources ${afile})
+    endforeach(afile)
+    foreach(afile ${REALSENSE_CUH})
+      list(REMOVE_ITEM AllSources ${afile})
+    endforeach(afile)
+endif()
 list(LENGTH AllSources ignore_count)
 #if(${ignore_count} GREATER 0)
 #  if(${ignore_count} GREATER 1)

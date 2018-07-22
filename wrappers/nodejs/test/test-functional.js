@@ -412,12 +412,19 @@ describe('Sensor tests', function() {
       if (p instanceof rs2.VideoStreamProfile) {
         assert.equal(typeof p.width, 'number');
         assert.equal(typeof p.height, 'number');
-        const intrin = p.getIntrinsics();
-        // some stream profiles have no intrinsics, and undefined is returned
-        // so bypass these cases
-        if (!intrin) {
+        let intrin;
+        try {
+          intrin = p.getIntrinsics();
+        } catch (e) {
+          // some stream profiles have no intrinsics, and will trigger exception
+          // so only bypass these cases if it's still recoverable, otherwise,
+          // rethrow it.
+          if (e instanceof rs2.UnrecoverableError) {
+            throw e;
+          }
           return;
         }
+
         assert.equal('width' in intrin, true);
         assert.equal('height' in intrin, true);
         assert.equal('ppx' in intrin, true);
@@ -568,9 +575,7 @@ describe(('syncer test'), function() {
   });
 
   after(() => {
-    sensors.forEach((s) => {
-      s.stop();
-    });
+    sensors[0].stop();
     rs2.cleanup();
   });
   it('sensor.start(syncer)', () => {

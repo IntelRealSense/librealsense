@@ -400,4 +400,39 @@ namespace librealsense
     {
         return *_range;
     }
+
+    external_sync_mode::external_sync_mode(hw_monitor& hwm)
+        : _hwm(hwm)
+    {
+        _range = [this]()
+        {
+            return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
+                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_MAX - 1,
+                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT, 1 };
+        };
+    }
+
+    void external_sync_mode::set(float value)
+    {
+        command cmd(ds::SET_CAM_SYNC);
+        cmd.param1 = static_cast<int>(value);
+
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float external_sync_mode::query() const
+    {
+        command cmd(ds::GET_CAM_SYNC);
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("external_sync_mode::query result is empty!");
+
+        return (res.front());
+    }
+
+    option_range external_sync_mode::get_range() const
+    {
+        return *_range;
+    }
 }

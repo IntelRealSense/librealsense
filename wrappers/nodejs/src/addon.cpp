@@ -169,8 +169,6 @@ class ErrorUtil {
   void MarkError(bool recoverable, std::string description,
       std::string native_function) {
     error_info_.Update(true, recoverable, description, native_function);
-    if (recoverable) return;
-
     v8::Local<v8::Value> args[1] = { GetJSErrorObject() };
     auto container = Nan::New<v8::Object>(js_error_container_);
     Nan::MakeCallback(container, js_error_callback_name_.c_str(),
@@ -337,8 +335,9 @@ class RSOptionRange : public DictBase {
 
 class RSNotification : public DictBase {
  public:
-  RSNotification(const char* des, rs2_time_t time, rs2_log_severity severity,
-      rs2_notification_category category, std::string serialized_data) {
+  RSNotification(const std::string& des, rs2_time_t time,
+      rs2_log_severity severity, rs2_notification_category category,
+      const std::string& serialized_data) {
     SetMember("descr", des);
     SetMemberT("timestamp", time);
     SetMemberT("severity", (int32_t)severity);
@@ -1410,7 +1409,7 @@ class NotificationCallbackInfo : public MainThreadCallbackInfo {
   virtual void Run();
 
  private:
-  const char* desc_;
+  std::string desc_;
   rs2_time_t time_;
   rs2_log_severity severity_;
   rs2_notification_category category_;
@@ -4577,6 +4576,24 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_FRAME_METADATA_TEMPERATURE);
   _FORCE_SET_ENUM(RS2_FRAME_METADATA_BACKEND_TIMESTAMP);
   _FORCE_SET_ENUM(RS2_FRAME_METADATA_ACTUAL_FPS);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_FRAME_LASER_POWER);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_EXPOSURE_PRIORITY);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_EXPOSURE_ROI_LEFT);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_EXPOSURE_ROI_RIGHT);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_EXPOSURE_ROI_TOP);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_EXPOSURE_ROI_BOTTOM);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_BRIGHTNESS);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_CONTRAST);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_SATURATION);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_SHARPNESS);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_AUTO_WHITE_BALANCE_TEMPERATURE);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_BACKLIGHT_COMPENSATION);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_HUE);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_GAMMA);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_MANUAL_WHITE_BALANCE);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_POWER_LINE_FREQUENCY);
+  _FORCE_SET_ENUM(RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION);
   _FORCE_SET_ENUM(RS2_FRAME_METADATA_COUNT);
 
   // rs2_distortion
@@ -4630,6 +4647,7 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_OPTION_HOLES_FILL);
   _FORCE_SET_ENUM(RS2_OPTION_STEREO_BASELINE);
   _FORCE_SET_ENUM(RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP);
+  _FORCE_SET_ENUM(RS2_OPTION_INTER_CAM_SYNC_MODE);
   _FORCE_SET_ENUM(RS2_OPTION_COUNT);
 
   // rs2_camera_info

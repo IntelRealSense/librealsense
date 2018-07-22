@@ -27,18 +27,36 @@ const char* rs2_timestamp_domain_to_string(rs2_timestamp_domain info);
 /** \brief Per-Frame-Metadata are set of read-only properties that might be exposed for each individual frame */
 typedef enum rs2_frame_metadata_value
 {
-    RS2_FRAME_METADATA_FRAME_COUNTER        , /**< A sequential index managed per-stream. Integer value*/
-    RS2_FRAME_METADATA_FRAME_TIMESTAMP      , /**< Timestamp set by device clock when data readout and transmit commence. usec*/
-    RS2_FRAME_METADATA_SENSOR_TIMESTAMP     , /**< Timestamp of the middle of sensor's exposure calculated by device. usec*/
-    RS2_FRAME_METADATA_ACTUAL_EXPOSURE      , /**< Sensor's exposure width. When Auto Exposure (AE) is on the value is controlled by firmware. usec*/
-    RS2_FRAME_METADATA_GAIN_LEVEL           , /**< A relative value increasing which will increase the Sensor's gain factor. \
-                                              When AE is set On, the value is controlled by firmware. Integer value*/
-    RS2_FRAME_METADATA_AUTO_EXPOSURE        , /**< Auto Exposure Mode indicator. Zero corresponds to AE switched off. */
-    RS2_FRAME_METADATA_WHITE_BALANCE        , /**< White Balance setting as a color temperature. Kelvin degrees*/
-    RS2_FRAME_METADATA_TIME_OF_ARRIVAL      , /**< Time of arrival in system clock */
-    RS2_FRAME_METADATA_TEMPERATURE          , /**< Temperature of the device, measured at the time of the frame capture. Celsius degrees */
-    RS2_FRAME_METADATA_BACKEND_TIMESTAMP    , /**< Timestamp get from uvc driver. usec*/
-    RS2_FRAME_METADATA_ACTUAL_FPS           , /**< Actual fps */
+    RS2_FRAME_METADATA_FRAME_COUNTER                        , /**< A sequential index managed per-stream. Integer value*/
+    RS2_FRAME_METADATA_FRAME_TIMESTAMP                      , /**< Timestamp set by device clock when data readout and transmit commence. usec*/
+    RS2_FRAME_METADATA_SENSOR_TIMESTAMP                     , /**< Timestamp of the middle of sensor's exposure calculated by device. usec*/
+    RS2_FRAME_METADATA_ACTUAL_EXPOSURE                      , /**< Sensor's exposure width. When Auto Exposure (AE) is on the value is controlled by firmware. usec*/
+    RS2_FRAME_METADATA_GAIN_LEVEL                           , /**< A relative value increasing which will increase the Sensor's gain factor. \
+                                                              When AE is set On, the value is controlled by firmware. Integer value*/
+    RS2_FRAME_METADATA_AUTO_EXPOSURE                        , /**< Auto Exposure Mode indicator. Zero corresponds to AE switched off. */
+    RS2_FRAME_METADATA_WHITE_BALANCE                        , /**< White Balance setting as a color temperature. Kelvin degrees*/
+    RS2_FRAME_METADATA_TIME_OF_ARRIVAL                      , /**< Time of arrival in system clock */
+    RS2_FRAME_METADATA_TEMPERATURE                          , /**< Temperature of the device, measured at the time of the frame capture. Celsius degrees */
+    RS2_FRAME_METADATA_BACKEND_TIMESTAMP                    , /**< Timestamp get from uvc driver. usec*/
+    RS2_FRAME_METADATA_ACTUAL_FPS                           , /**< Actual fps */
+    RS2_FRAME_METADATA_FRAME_LASER_POWER                    , /**< Laser power value 0-360. */
+    RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE               , /**< Laser power mode. Zero corresponds to Laser power switched off and one for switched on. */    
+    RS2_FRAME_METADATA_EXPOSURE_PRIORITY                    , /**< Exposure priority. */
+    RS2_FRAME_METADATA_EXPOSURE_ROI_LEFT                    , /**< Left region of interest for the auto exposure Algorithm. */          
+    RS2_FRAME_METADATA_EXPOSURE_ROI_RIGHT                   , /**< Right region of interest for the auto exposure Algorithm. */
+    RS2_FRAME_METADATA_EXPOSURE_ROI_TOP                     , /**< Top region of interest for the auto exposure Algorithm. */
+    RS2_FRAME_METADATA_EXPOSURE_ROI_BOTTOM                  , /**< Bottom region of interest for the auto exposure Algorithm. */
+    RS2_FRAME_METADATA_BRIGHTNESS                           , /**< Color image brightness. */
+    RS2_FRAME_METADATA_CONTRAST                             , /**< Color image contrast. */
+    RS2_FRAME_METADATA_SATURATION                           , /**< Color image saturation. */
+    RS2_FRAME_METADATA_SHARPNESS                            , /**< Color image sharpness. */
+    RS2_FRAME_METADATA_AUTO_WHITE_BALANCE_TEMPERATURE       , /**< Auto white balance temperature Mode indicator. Zero corresponds to automatic mode switched off. */
+    RS2_FRAME_METADATA_BACKLIGHT_COMPENSATION               , /**< Color backlight compensation. Zero corresponds to switched off. */
+    RS2_FRAME_METADATA_HUE                                  , /**< Color image hue. */
+    RS2_FRAME_METADATA_GAMMA                                , /**< Color image gamma. */
+    RS2_FRAME_METADATA_MANUAL_WHITE_BALANCE                 , /**< Color image white balance. */
+    RS2_FRAME_METADATA_POWER_LINE_FREQUENCY                 , /**< Power Line Frequency for anti-flickering Off/50Hz/60Hz/Auto. */
+    RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION               , /**< Color lowlight compensation. Zero corresponds to switched off. */
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);

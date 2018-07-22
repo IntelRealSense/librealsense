@@ -1,0 +1,22 @@
+ManifestFileVersion: 0
+CRC: 2523806651
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 07f90f253ed94d3fcf7e970f6bc976ec
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 31d6cfe0d16ae931b73c59d7e0c089c0
+HashAppended: 0
+ClassTypes: []
+Assets:
+- Assets/RealSenseSDK2.0/Scenes/Samples/TexturesDepthAndColor.unity
+- Assets/RealSenseSDK2.0/Scenes/Samples/AlignmentSample.unity
+- Assets/RealSenseSDK2.0/Misc/SampleSceneUI.unity
+- Assets/RealSenseSDK2.0/Scenes/Samples/PointCloudDepthAndColor.unity
+- Assets/RealSenseSDK2.0/Scenes/Samples/TexturesDepthAndInfrared.unity
+- Assets/RealSenseSDK2.0/Scenes/Samples/PointCloudDepth.unity
+- Assets/RealSenseSDK2.0/Scenes/Samples/BackgroundSegmentation.unity
+- Assets/RealSenseSDK2.0/Scenes/Samples/ARBackground.unity
+Dependencies:
+- D:/librealsense/wrappers/unity/Assets/StreamingAssets/sample_assets

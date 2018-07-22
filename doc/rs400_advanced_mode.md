@@ -5,7 +5,7 @@ RS400 is the newest in the series of stereo-based RealSense devices. It is provi
 As a result, depth-from-stereo algorithm in the hardware has to be able to adjust to vastly different stereo input images.
 To achieve this goal, RS400 ASIC provides an extended set of controls aimed at advanced users, allowing to fine-tune the depth generation process. (and some other like **color-correction**)
 Advanced mode hardware APIs are designed to be **safe**, in the sense that the user can't brick the device. You always have the option to exit advanced mode, and fall back to default mode of operation.
-However, while tinkering with the advanced controls, depth quality and stream frame-rate are not guarantied. You are making changes on your own risk.
+However, while tinkering with the advanced controls, depth quality and stream frame-rate are not guaranteed. You are making changes on your own risk.
 
 ## Long-term vs. Short-term
 * In the short-term, librealsense provides a set of advanced APIs you can use to access advanced mode. Since, this includes as much as 100 new parameters we also provide a way to serialize and load these parameters, using JSON file structure. We encourage the community to explore the range of possibilities and share interesting presets for different use-cases. The limitation of this approach is that the existing protocol is cumbersome and not efficient. We can't provide clear estimate on how much time it will take until any set of controls will take effect, and the controls are not standard in any way in the OS.

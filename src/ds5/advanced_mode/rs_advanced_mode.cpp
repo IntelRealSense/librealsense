@@ -35,6 +35,8 @@ namespace librealsense
     }
 }
 
+using namespace librealsense;
+
 const char* rs2_rs400_visual_preset_to_string(rs2_rs400_visual_preset preset){ return get_string(preset); }
 
 void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error) BEGIN_API_CALL

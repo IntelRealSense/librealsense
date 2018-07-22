@@ -192,46 +192,6 @@ namespace librealsense
     constexpr const char* FRAME_TIMESTAMP_MD_STR = "frame_timestamp";
     constexpr const char* TRACKER_CONFIDENCE_MD_STR = "Tracker Confidence";
 
-    class md_constant_parser : public md_attribute_parser_base
-    {
-    public:
-        md_constant_parser(rs2_frame_metadata_value type) : _type(type) {}
-        rs2_metadata_type get(const frame& frm) const override
-        {
-            rs2_metadata_type v;
-            if (try_get(frm, v) == false)
-            {
-                throw invalid_value_exception("Frame does not support this type of metadata");
-            }
-            return v;
-        }
-        bool supports(const frame& frm) const override
-        {
-            rs2_metadata_type v;
-            return try_get(frm, v);
-        }
-    private:
-        bool try_get(const frame& frm, rs2_metadata_type& result) const
-        {
-            auto pair_size = (sizeof(rs2_frame_metadata_value) + sizeof(rs2_metadata_type));
-            const uint8_t* pos = frm.additional_data.metadata_blob.data();
-            while (pos <= frm.additional_data.metadata_blob.data() + frm.additional_data.metadata_blob.size())
-            {
-                const rs2_frame_metadata_value* type = reinterpret_cast<const rs2_frame_metadata_value*>(pos);
-                pos += sizeof(rs2_frame_metadata_value);
-                if (_type == *type)
-                {
-                    const rs2_metadata_type* value = reinterpret_cast<const rs2_metadata_type*>(pos);
-                    result = *value;
-                    return true;
-                }
-                pos += sizeof(rs2_metadata_type);
-            }
-            return false;
-        }
-        rs2_frame_metadata_value _type;
-    };
-
     class ros_topic
     {
     public:

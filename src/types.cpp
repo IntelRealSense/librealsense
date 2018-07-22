@@ -260,6 +260,7 @@ namespace librealsense
             CASE(STEREO_BASELINE)
             CASE(HOLES_FILL)
             CASE(AUTO_EXPOSURE_CONVERGE_STEP)
+            CASE(INTER_CAM_SYNC_MODE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -346,6 +347,25 @@ namespace librealsense
             CASE(TEMPERATURE)
             CASE(BACKEND_TIMESTAMP)
             CASE(ACTUAL_FPS)
+            CASE(FRAME_LASER_POWER)
+            CASE(FRAME_LASER_POWER_MODE)
+            CASE(EXPOSURE_PRIORITY)
+            CASE(EXPOSURE_ROI_LEFT)
+            CASE(EXPOSURE_ROI_RIGHT)
+            CASE(EXPOSURE_ROI_TOP)
+            CASE(EXPOSURE_ROI_BOTTOM)
+            CASE(BRIGHTNESS)
+            CASE(CONTRAST)
+            CASE(SATURATION)
+            CASE(SHARPNESS)
+            CASE(AUTO_WHITE_BALANCE_TEMPERATURE)
+            CASE(BACKLIGHT_COMPENSATION)
+            CASE(GAMMA)
+            CASE(HUE)
+            CASE(MANUAL_WHITE_BALANCE)
+            CASE(POWER_LINE_FREQUENCY)
+            CASE(LOW_LIGHT_COMPENSATION)
+
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

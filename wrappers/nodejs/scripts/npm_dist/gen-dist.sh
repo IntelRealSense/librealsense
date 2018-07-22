@@ -11,10 +11,11 @@ RAWMODULEDIR="node-librealsense/"
 MODULEDIR="$WORKDIR/$RAWMODULEDIR"
 RSDIR="$MODULEDIR/librealsense"
 
-mkdir -p $RSDIR
+mkdir -p $RSDIR/wrappers
 rsync -a ../.. $RSDIR --exclude wrappers --exclude doc --exclude unit-tests --exclude build --exclude .git
 rsync -a . $MODULEDIR --exclude build --exclude dist --exclude node_modules
 
+cp -f ../CMakeLists.txt $RSDIR/wrappers/
 cp -f scripts/npm_dist/binding.gyp $MODULEDIR
 cp -f scripts/npm_dist/package.json $MODULEDIR
 cp -f scripts/npm_dist/README.md $MODULEDIR

@@ -471,6 +471,20 @@ namespace rs2
             return res > 0;
         }
 
+        bool try_wait_for_frames(frameset* f, unsigned int timeout_ms = 5000) const
+        {
+            if (!f)
+            {
+                throw std::invalid_argument("null frameset");
+            }
+            rs2_error* e = nullptr;
+            rs2_frame* frame_ref = nullptr;
+            auto res = rs2_pipeline_try_wait_for_frames(_pipeline.get(), &frame_ref, timeout_ms, &e);
+            error::handle(e);
+            if (res) *f = frameset(frame(frame_ref));
+            return res > 0;
+        }
+
         /**
         * Return the active device and streams profiles, used by the pipeline.
         * The pipeline streams profiles are selected during \c start(). The method returns a valid result only when the pipeline is active -
