@@ -37,6 +37,8 @@
 // API implementation //
 ////////////////////////
 
+using namespace librealsense;
+
 struct rs2_stream_profile_list
 {
     std::vector<std::shared_ptr<stream_profile_interface>> list;
@@ -414,7 +416,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, from, width, height)
 int rs2_is_stream_profile_default(const rs2_stream_profile* profile, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(profile);
-    return profile->profile->is_default() ? 1 : 0;
+    return profile->profile->get_tag() & profile_tag::PROFILE_TAG_DEFAULT ? 1 : 0;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, profile)
 
@@ -917,6 +919,23 @@ int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, queue, output_frame)
 
+int rs2_try_wait_for_frame(rs2_frame_queue* queue, unsigned int timeout_ms, rs2_frame** output_frame, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(queue);
+    VALIDATE_NOT_NULL(output_frame);
+    librealsense::frame_holder fh;
+    if (!queue->queue.dequeue(&fh, timeout_ms))
+    {
+        return false;
+    }
+
+    frame_interface* result = nullptr;
+    std::swap(result, fh.frame);
+    *output_frame = (rs2_frame*)result;
+    return true;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, queue, output_frame)
+
 void rs2_enqueue_frame(rs2_frame* frame, void* queue) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame);
@@ -989,13 +1008,23 @@ rs2_context* rs2_create_recording_context(int api_version, const char* filename,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section, mode)
 
+rs2_context* rs2_create_mock_context_versioned(int api_version, const char* filename, const char* section, const char* min_api_version, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(filename);
+    VALIDATE_NOT_NULL(section);
+    verify_version_compatibility(api_version);
+
+    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::playback, filename, section, RS2_RECORDING_MODE_COUNT, std::string(min_api_version)) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section)
+
 rs2_context* rs2_create_mock_context(int api_version, const char* filename, const char* section, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(filename);
     VALIDATE_NOT_NULL(section);
     verify_version_compatibility(api_version);
 
-    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::playback, filename, section) };
+    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::playback, filename, section, RS2_RECORDING_MODE_COUNT) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section)
 
@@ -1357,9 +1386,27 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)
 int rs2_pipeline_poll_for_frames(rs2_pipeline * pipe, rs2_frame** output_frame, rs2_error ** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(pipe);
+    VALIDATE_NOT_NULL(output_frame);
 
     librealsense::frame_holder fh;
     if (pipe->pipe->poll_for_frames(&fh))
+    {
+        frame_interface* result = nullptr;
+        std::swap(result, fh.frame);
+        *output_frame = (rs2_frame*)result;
+        return true;
+    }
+    return false;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, pipe, output_frame)
+
+int rs2_pipeline_try_wait_for_frames(rs2_pipeline* pipe, rs2_frame** output_frame, unsigned int timeout_ms, rs2_error ** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(pipe);
+    VALIDATE_NOT_NULL(output_frame);
+
+    librealsense::frame_holder fh;
+    if (pipe->pipe->try_wait_for_frames(&fh, timeout_ms))
     {
         frame_interface* result = nullptr;
         std::swap(result, fh.frame);
@@ -1863,6 +1910,14 @@ void rs2_software_sensor_on_video_frame(rs2_sensor* sensor, rs2_software_video_f
     return bs->on_video_frame(frame);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, frame.pixels)
+
+void rs2_software_sensor_set_metadata(rs2_sensor* sensor, rs2_frame_metadata_value key, rs2_metadata_type value, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
+    return bs->set_metadata(key, value);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, key, value)
 
 rs2_stream_profile* rs2_software_sensor_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stream, rs2_error** error) BEGIN_API_CALL
 {

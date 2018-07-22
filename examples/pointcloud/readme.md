@@ -20,7 +20,7 @@ Next, we prepared a [very short helper library](../example.hpp) encapsulating ba
 #include "example.hpp"          // Include short list of convenience functions for rendering
 ```
 
-We also include the STL `<algorthm>` header for `std::min` and `std::max`.
+We also include the STL `<algorithm>` header for `std::min` and `std::max`.
 
 Next, we define a `state` struct and two helper functions. `state` and `register_glfw_callbacks` handle the pointcloud's rotation in the application, and `draw_pointcloud` makes all the OpenGL calls necessary to display the pointcloud.
 ```cpp

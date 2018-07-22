@@ -260,6 +260,7 @@ namespace librealsense
             CASE(STEREO_BASELINE)
             CASE(HOLES_FILL)
             CASE(AUTO_EXPOSURE_CONVERGE_STEP)
+            CASE(INTER_CAM_SYNC_MODE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

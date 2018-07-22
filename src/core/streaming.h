@@ -28,6 +28,23 @@ namespace librealsense
 
     class context;
 
+    typedef enum profile_tag
+    {
+        PROFILE_TAG_ANY = 0,
+        PROFILE_TAG_SUPERSET = 1, // to be included in enable_all
+        PROFILE_TAG_DEFAULT = 2,  // to be included in default pipeline start
+    } profile_tag;
+
+    struct tagged_profile
+    {
+        rs2_stream stream;
+        int stream_index;
+        uint32_t width, height;
+        rs2_format format;
+        uint32_t fps;
+        int tag;
+    };
+
     class stream_interface : public std::enable_shared_from_this<stream_interface>
     {
     public:
@@ -52,8 +69,8 @@ namespace librealsense
         virtual uint32_t get_framerate() const = 0;
         virtual void set_framerate(uint32_t val) = 0;
 
-        virtual bool is_default() const = 0;
-        virtual void make_default() = 0;
+        virtual int get_tag() const = 0;
+        virtual void tag_profile(int tag) = 0;
 
         virtual std::shared_ptr<stream_profile_interface> clone() const = 0;
         virtual rs2_stream_profile* get_c_wrapper() const = 0;
@@ -74,7 +91,6 @@ namespace librealsense
 
         virtual void set_timestamp_domain(rs2_timestamp_domain timestamp_domain) = 0;
         virtual rs2_time_t get_frame_system_time() const = 0;
-
         virtual std::shared_ptr<stream_profile_interface> get_stream() const = 0;
         virtual void set_stream(std::shared_ptr<stream_profile_interface> sp) = 0;
 
@@ -106,7 +122,7 @@ namespace librealsense
     class sensor_interface : public virtual info_interface, public virtual options_interface
     {
     public:
-        virtual stream_profiles get_stream_profiles() const = 0;
+        virtual stream_profiles get_stream_profiles(int tag = profile_tag::PROFILE_TAG_ANY) const = 0;
         virtual stream_profiles get_active_streams() const = 0;
         virtual void open(const stream_profiles& requests) = 0;
         virtual void close() = 0;
@@ -120,11 +136,11 @@ namespace librealsense
         virtual frame_callback_ptr get_frames_callback() const = 0;
         virtual void set_frames_callback(frame_callback_ptr cb) = 0;
         virtual bool is_streaming() const = 0;
-
         virtual const device_interface& get_device() = 0;
 
         virtual ~sensor_interface() = default;
     };
+
 
     class matcher;
 
@@ -151,6 +167,9 @@ namespace librealsense
 
         virtual ~device_interface() = default;
 
+        virtual std::vector<tagged_profile> get_profiles_tags() const = 0;
+
+        virtual void tag_profile(stream_profile_interface* profile) const = 0;
     };
 
     class depth_stereo_sensor;

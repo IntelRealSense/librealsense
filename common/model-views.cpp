@@ -76,6 +76,21 @@ Some auxillary functionalities might be affected. Please report this message if 
 #endif
 }
 
+std::vector<std::string> split_string(std::string& input, char delim)
+{
+    std::vector<std::string> result;
+    auto e = input.end();
+    auto i = input.begin();
+    while (i != e) {
+        i = find_if_not(i, e, [delim](char c) { return c == delim; });
+        if (i == e) break;
+        auto j = find(i, e, delim);
+        result.emplace_back(i, j);
+        i = j;
+    }
+    return result;
+}
+
 namespace rs2
 {
     void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
@@ -545,19 +560,17 @@ namespace rs2
                         }
                         else
                         {
-                            auto step = fmod(range.step, 1);
-                            int pow_val = 10;
-                            while ((step *= 10.f) < 0.f)
-                            {
-                                pow_val *= 10;
-                            }
-
                             if (ImGui::SliderFloat(id.c_str(), &value,
                                 range.min, range.max, "%.4f"))
                             {
+                                auto loffset = std::abs(fmod(value, range.step));
+                                auto roffset = range.step - loffset;
+                                if (value >= 0)
+                                    value = (loffset < roffset) ? value - loffset : value + roffset;
+                                else
+                                    value = (loffset < roffset) ? value + loffset : value - roffset; 
                                 value = (value < range.min) ? range.min : value;
                                 value = (value > range.max) ? range.max : value;
-                                value = (int)(value * pow_val) / (float)(pow_val);
                                 model.add_log(to_string() << "Setting " << opt << " to " << value);
                                 endpoint->set_option(opt, value);
                                 *invalidate_flag = true;
@@ -2258,18 +2271,28 @@ namespace rs2
             std::string sensor_name = dev->s->get_info(RS2_CAMERA_INFO_NAME);
             std::string stream_name = rs2_stream_to_string(profile.stream_type());
 
-            tooltip = to_string() << dev_name << " S/N:" << dev_serial << " | " << sensor_name << ", " << stream_name << " stream";
+            tooltip = to_string() << dev_name << " s.n:" << dev_serial << " | " << sensor_name << ", " << stream_name << " stream";
             const auto approx_char_width = 12;
             if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size()) * approx_char_width)
                 label = tooltip;
-            else if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + sensor_name.size() + stream_name.size()) * approx_char_width)
-                label = to_string() << dev_name << " | " << sensor_name << " " << stream_name << " stream";
-            else if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + stream_name.size()) * approx_char_width)
-                label = to_string() << dev_name << " " << stream_name << " stream";
-            else if (stream_rect.w - 32 * num_of_buttons >= stream_name.size() * approx_char_width * 2)
-                label = to_string() << stream_name << " stream";
             else
-                label = "";
+            {
+                // Use only the SKU type for compact representation and use only the last three digits for S.N
+                auto short_name = split_string(dev_name, ' ').back();
+                auto short_sn = dev_serial;
+                short_sn.erase(0, dev_serial.size() - 5).replace(0, 2, "..");
+
+                auto label_length = stream_rect.w - 32 * num_of_buttons;
+
+                if (label_length >= (short_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size()) * approx_char_width)
+                    label = to_string() << short_name << " s.n:" << dev_serial << " | " << sensor_name << " " << stream_name << " stream";
+                else if (label_length >= (short_name.size() + short_sn.size() + stream_name.size()) * approx_char_width)
+                    label = to_string() << short_name << " s.n:" << short_sn << " " << stream_name << " stream";
+                else if (label_length >= short_name.size() * approx_char_width)
+                    label = to_string() << short_name << " " << stream_name;
+                else
+                    label = "";
+            }
         }
         else
         {
@@ -3146,7 +3169,7 @@ namespace rs2
                 if(viewer.synchronization_enable)
                 {
                     auto index = 0;
-                    while (syncer_queue.poll_for_frame(&frm) && ++index <= syncer_queue.capacity())
+                    while (syncer_queue.try_wait_for_frame(&frm, 30) && ++index <= syncer_queue.capacity())
                     {
                         processing_block.invoke(frm);
                     }
@@ -3161,7 +3184,7 @@ namespace rs2
                     for (auto&& q : frames_queue_local)
                     {
                         frame frm;
-                        if (q.second.poll_for_frame(&frm))
+                        if (q.second.try_wait_for_frame(&frm, 30))
                         {
                             processing_block.invoke(frm);
                         }
@@ -5423,6 +5446,14 @@ namespace rs2
     }
 
 
+    bool rs2::device_model::is_streaming() const
+    {
+        return std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm)
+        {
+            return sm->streaming;
+        });
+    }
+
     void device_model::draw_controls(float panel_width, float panel_height,
         ux_window& window,
         std::string& error_message,
@@ -5750,8 +5781,6 @@ namespace rs2
                                 return sm->streaming;
                             }))
                             {
-                                // Stopping post processing filter rendering thread
-                                viewer.ppf.stop();
                                 stop_recording = true;
                             }
                         }

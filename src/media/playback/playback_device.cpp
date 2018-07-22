@@ -9,7 +9,7 @@
 #include "environment.h"
 #include "sync.h"
 
-using namespace device_serializer;
+using namespace librealsense;
 
 playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<device_serializer::reader> serializer) :
     m_context(ctx),
@@ -34,6 +34,16 @@ playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<d
     register_device_info(m_device_description);
     //Create playback sensor that simulate the recorded sensors
     m_sensors = create_playback_sensors(m_device_description);
+
+    //all of the recorded streams are marked as default
+    for (auto sensor_pair : m_sensors)
+    {
+        auto profiles = sensor_pair.second->get_stream_profiles();
+        for(auto profile : profiles)
+        {
+            tag_profile(profile.get());
+        }
+    }
     register_extrinsics(m_device_description);
 }
 

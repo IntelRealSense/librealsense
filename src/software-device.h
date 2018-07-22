@@ -24,6 +24,13 @@ namespace librealsense
         void set_matcher_type(rs2_matchers matcher);
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
+        std::vector<tagged_profile> get_profiles_tags() const override
+        {
+            std::vector<tagged_profile> markers;
+            return markers;
+        };
+
     private:
         std::vector<std::shared_ptr<software_sensor>> _software_sensors;
         rs2_matchers _matcher = RS2_MATCHER_DEFAULT;
@@ -47,10 +54,12 @@ namespace librealsense
         void on_video_frame(rs2_software_video_frame frame);
         void add_read_only_option(rs2_option option, float val);
         void update_read_only_option(rs2_option option, float val);
-
+        void set_metadata(rs2_frame_metadata_value key, rs2_metadata_type value);
     private:
         friend class software_device;
         stream_profiles _profiles;
+        std::map<rs2_frame_metadata_value, rs2_metadata_type> _metadata_map;
+
     };
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_SENSOR, software_sensor);
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_DEVICE, software_device);

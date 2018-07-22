@@ -559,11 +559,11 @@ TEST_CASE("Device metadata enumerates correctly", "[live]")
 ////////////////////////////////////////////
 ////// Test basic streaming functionality //
 ////////////////////////////////////////////
-TEST_CASE("Start-Stop stream sequence", "[live]")
+TEST_CASE("Start-Stop stream sequence", "[live][using_pipeline]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         std::vector<sensor> list;
         REQUIRE_NOTHROW(list = ctx.query_all_sensors());
@@ -2688,11 +2688,11 @@ struct stream_format
     int index;
 };
 
-TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
+TEST_CASE("Auto-complete feature works", "[offline][util::config][using_pipeline]") {
     // dummy device can provide the following profiles:
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         struct Test {
             std::vector<stream_format> given;      // We give these profiles to the config class
@@ -2953,29 +2953,29 @@ void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::
 }
 
 static const std::map< dev_type, device_profiles> pipeline_default_configurations = {
-/* RS400/PSR*/          { { "0AD1", true}  ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true}},
-/* RS410/ASR*/          { { "0AD2", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
-/* D410/USB2*/          { { "0AD2", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
+/* RS400/PSR*/          { { "0AD1", true}  ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 1 } }, 30, true}},
+/* RS410/ASR*/          { { "0AD2", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 1 } }, 30, true }},
+/* D410/USB2*/          { { "0AD2", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 15, true } },
 /* RS415/ASRC*/         { { "0AD3", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true }},
 /* D415/USB2*/          { { "0AD3", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
-/* RS430/AWG*/          { { "0AD4", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 } }, 30, true }},
-/* RS430_MM/AWGT*/      { { "0AD5", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
-/* RS420/PWG*/          { { "0AF6", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
-/* RS420_MM/PWGT*/      { { "0AFE", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
-/* RS410_MM/ASRT*/      { { "0AFF", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
-/* RS400_MM/PSR*/       { { "0B00", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
+/* RS430/AWG*/          { { "0AD4", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 1280, 720, 1 } }, 30, true }},
+/* RS430_MM/AWGT*/      { { "0AD5", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 1280, 720, 1 } }, 30, true }},
+/* RS420/PWG*/          { { "0AF6", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 1280, 720, 1 } }, 30, true }},
+/* RS420_MM/PWGT*/      { { "0AFE", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 1280, 720, 1 } }, 30, true }},
+/* RS410_MM/ASRT*/      { { "0AFF", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 1 } }, 30, true } },
+/* RS400_MM/PSR*/       { { "0B00", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 1 } }, 30, true } },
 /* RS430_MM_RGB/AWGTC*/ { { "0B01", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
-/* RS405/DS5U*/         { { "0B03", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
+/* RS405/D460/DS5U*/    { { "0B03", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 1 } }, 30, true }},
 /* RS435_RGB/AWGC*/     { { "0B07", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true }},
 /* D435/USB2*/          { { "0B07", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
 /* SR300*/              { { "0AA5", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
 };
 
-TEST_CASE("Pipeline wait_for_frames", "[live]") {
+TEST_CASE("Pipeline wait_for_frames", "[live][pipeline][using_pipeline]") {
 
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         rs2::device dev;
         rs2::pipeline pipe(ctx);
@@ -3037,11 +3037,11 @@ TEST_CASE("Pipeline wait_for_frames", "[live]") {
     }
 }
 
-TEST_CASE("Pipeline poll_for_frames", "[live]")
+TEST_CASE("Pipeline poll_for_frames", "[live][pipeline][using_pipeline]")
 {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -3106,19 +3106,19 @@ TEST_CASE("Pipeline poll_for_frames", "[live]")
 }
 
 static const std::map<dev_type, device_profiles> pipeline_custom_configurations = {
-    /* RS400/PSR*/      { {"0AD1", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
-    /* RS410/ASR*/      { {"0AD2", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
-    /* D410/USB2*/      { {"0AD2", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 480, 270, 0 } }, 30, true } },
+    /* RS400/PSR*/      { {"0AD1", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
+    /* RS410/ASR*/      { {"0AD2", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
+    /* D410/USB2*/      { {"0AD2", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 480, 270, 1 } }, 30, true } },
     /* RS415/ASRC*/     { {"0AD3", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
     /* D415/USB2*/      { {"0AD3", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 424, 240, 0 } }, 30, true } },
     /* RS430/AWG*/      { {"0AD4", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 480, 1 } }, 30, true } },
-    /* RS430_MM/AWGT*/  { {"0AD5", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
-    /* RS420/PWG*/      { {"0AF6", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
-    /* RS420_MM/PWGT*/  { {"0AFE", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
-    /* RS410_MM/ASRT*/  { {"0AFF", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
-    /* RS400_MM/PSR*/   { {"0B00", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
+    /* RS430_MM/AWGT*/  { {"0AD5", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 480, 1 } }, 30, true } },
+    /* RS420/PWG*/      { {"0AF6", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 480, 1 } }, 30, true } },
+    /* RS420_MM/PWGT*/  { {"0AFE", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 480, 1 } }, 30, true } },
+    /* RS410_MM/ASRT*/  { {"0AFF", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
+    /* RS400_MM/PSR*/   { {"0B00", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 30, true } },
     /* RS430_MC/AWGTC*/ { {"0B01", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
-    /* RS405/DS5U*/     { {"0B03", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
+    /* RS405/D460/DS5U*/{ {"0B03", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
     /* RS435_RGB/AWGC*/ { {"0B07", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
     /* D435/USB2*/      { {"0B07", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 424, 240, 0 } }, 30, true } },
 
@@ -3130,76 +3130,76 @@ static const std::map<dev_type, device_profiles> pipeline_custom_configurations 
                                      { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
 };
 
-TEST_CASE("Pipeline enable stream", "[live]") {
+TEST_CASE("Pipeline enable stream", "[live][pipeline][using_pipeline]") {
 
     auto dev_requests = pipeline_custom_configurations;
 
     rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
+        return;
+
+    auto list = ctx.query_devices();
+    REQUIRE(list.size());
+
+    rs2::device dev;
+    rs2::pipeline pipe(ctx);
+    rs2::config cfg;
+    rs2::pipeline_profile profile;
+    REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+    REQUIRE(profile);
+    REQUIRE_NOTHROW(dev = profile.get_device());
+    REQUIRE(dev);
+    disable_sensitive_options_for(dev);
+    dev_type PID = get_PID(dev);
+    CAPTURE(PID.first);
+    CAPTURE(PID.second);
+
+    if (dev_requests.end() == dev_requests.find(PID))
     {
-        auto list = ctx.query_devices();
-        REQUIRE(list.size());
+        WARN("Skipping test - the Device-Under-Test profile is not defined for PID " << PID.first << (PID.second ? " USB3" : " USB2"));
+    }
+    else
+    {
+        REQUIRE(dev_requests[PID].streams.size() > 0);
 
-        rs2::device dev;
-        rs2::pipeline pipe(ctx);
-        rs2::config cfg;
-        rs2::pipeline_profile profile;
-        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        for (auto req : pipeline_custom_configurations.at(PID).streams)
+            REQUIRE_NOTHROW(cfg.enable_stream(req.stream, req.index, req.width, req.height, req.format, dev_requests[PID].fps));
+
+        REQUIRE_NOTHROW(profile = pipe.start(cfg));
         REQUIRE(profile);
-        REQUIRE_NOTHROW(dev = profile.get_device());
-        REQUIRE(dev);
-        disable_sensitive_options_for(dev);
-        dev_type PID = get_PID(dev);
-        CAPTURE(PID.first);
-        CAPTURE(PID.second);
+        REQUIRE(std::string(profile.get_device().get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        std::vector<std::vector<stream_profile>> frames;
+        std::vector<std::vector<double>> timestamps;
 
-        if (dev_requests.end() == dev_requests.find(PID))
+        for (auto i = 0; i < 30; i++)
+            REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
+
+        auto actual_fps = dev_requests[PID].fps;
+
+        while (frames.size() < 100)
         {
-            WARN("Skipping test - the Device-Under-Test profile is not defined for PID " << PID.first << (PID.second ? " USB3" : " USB2"));
-        }
-        else
-        {
-            REQUIRE(dev_requests[PID].streams.size() > 0);
+            frameset frame;
+            REQUIRE_NOTHROW(frame = pipe.wait_for_frames(5000));
+            std::vector<stream_profile> frames_set;
+            std::vector<double> ts;
 
-            for (auto req : pipeline_custom_configurations.at(PID).streams)
-                REQUIRE_NOTHROW(cfg.enable_stream(req.stream, req.index, req.width, req.height, req.format, dev_requests[PID].fps));
-
-            REQUIRE_NOTHROW(profile = pipe.start(cfg));
-            REQUIRE(profile);
-            REQUIRE(std::string(profile.get_device().get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-            std::vector<std::vector<stream_profile>> frames;
-            std::vector<std::vector<double>> timestamps;
-
-            for (auto i = 0; i < 30; i++)
-                REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
-
-            auto actual_fps = dev_requests[PID].fps;
-
-            while (frames.size() < 100)
+            for (auto f : frame)
             {
-                frameset frame;
-                REQUIRE_NOTHROW(frame = pipe.wait_for_frames(5000));
-                std::vector<stream_profile> frames_set;
-                std::vector<double> ts;
-
-                for (auto f : frame)
+                if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
                 {
-                    if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
-                    {
-                        auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS));
-                        if (val < actual_fps)
-                            actual_fps = val;
-                    }
-                    frames_set.push_back(f.get_profile());
-                    ts.push_back(f.get_timestamp());
+                    auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS));
+                    if (val < actual_fps)
+                        actual_fps = val;
                 }
-                frames.push_back(frames_set);
-                timestamps.push_back(ts);
+                frames_set.push_back(f.get_profile());
+                ts.push_back(f.get_timestamp());
             }
-
-            REQUIRE_NOTHROW(pipe.stop());
-            validate(frames, timestamps, dev_requests[PID], actual_fps);
+            frames.push_back(frames_set);
+            timestamps.push_back(ts);
         }
+
+        REQUIRE_NOTHROW(pipe.stop());
+        validate(frames, timestamps, dev_requests[PID], actual_fps);
     }
 }
 
@@ -3227,13 +3227,13 @@ static const std::map<dev_type, device_profiles> pipeline_autocomplete_configura
                                      { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
 };
 
-TEST_CASE("Pipeline enable stream auto complete", "[live]")
+TEST_CASE("Pipeline enable stream auto complete", "[live][pipeline][using_pipeline]")
 {
     auto configurations = pipeline_autocomplete_configurations;
 
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -3302,14 +3302,14 @@ TEST_CASE("Pipeline enable stream auto complete", "[live]")
     }
 }
 
-TEST_CASE("Pipeline disable_all", "[live]") {
+TEST_CASE("Pipeline disable_all", "[live][pipeline][using_pipeline]") {
 
     auto not_default_configurations = pipeline_custom_configurations;
     auto default_configurations = pipeline_default_configurations;
 
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -3380,13 +3380,13 @@ TEST_CASE("Pipeline disable_all", "[live]") {
     }
 }
 
-TEST_CASE("Pipeline disable stream", "[live]") {
+TEST_CASE("Pipeline disable stream", "[live][pipeline][using_pipeline]") {
 
     auto configurations = pipeline_custom_configurations;
 
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -3459,12 +3459,12 @@ TEST_CASE("Pipeline disable stream", "[live]") {
     }
 }
 // The test relies on default profiles that may alter
-TEST_CASE("Pipeline with specific device", "[live]")
+TEST_CASE("Pipeline with specific device", "[live][pipeline][using_pipeline]")
 {
 
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -3521,13 +3521,13 @@ bool operator==(std::vector<profile> streams1, std::vector<profile> streams2)
     return equals;
 }
 
-TEST_CASE("Pipeline start stop", "[live]") {
+TEST_CASE("Pipeline start stop", "[live][pipeline][using_pipeline]") {
 
     auto configurations = pipeline_custom_configurations;
 
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -3663,11 +3663,11 @@ static const std::map<dev_type, device_profiles> pipeline_configurations_for_ext
                                      { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
                         };
 
-TEST_CASE("Pipeline get selection", "[live]") {
+TEST_CASE("Pipeline get selection", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
     auto configurations = pipeline_configurations_for_extrinsic;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -3933,10 +3933,10 @@ TEST_CASE("All suggested profiles can be opened", "[live][!mayfail]") {
     }
 }
 
-TEST_CASE("Pipeline config enable resolve start flow", "[live]") {
+TEST_CASE("Pipeline config enable resolve start flow", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -4001,10 +4001,10 @@ TEST_CASE("Pipeline config enable resolve start flow", "[live]") {
     }
 }
 
-TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam]") {
+TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam][pipeline][using_pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
 
         auto list = ctx.query_devices();
@@ -4123,10 +4123,10 @@ TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam
     }
 }
 
-TEST_CASE("Empty Pipeline Profile", "[live]") {
+TEST_CASE("Empty Pipeline Profile", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         REQUIRE_NOTHROW(rs2::pipeline_profile p);
         rs2::pipeline_profile prof;
@@ -4201,10 +4201,10 @@ void require_pipeline_profile_same(const rs2::pipeline_profile& profile1, const 
         throw std::runtime_error(std::string("Profiles contain different streams"));
     }
 }
-TEST_CASE("Pipeline empty Config", "[live]") {
+TEST_CASE("Pipeline empty Config", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         REQUIRE_NOTHROW(rs2::config c);
         //Empty config
@@ -4221,10 +4221,10 @@ TEST_CASE("Pipeline empty Config", "[live]") {
     }
 }
 
-TEST_CASE("Pipeline 2 Configs", "[live]") {
+TEST_CASE("Pipeline 2 Configs", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         rs2::pipeline p(ctx);
         REQUIRE_NOTHROW(rs2::config c1);
@@ -4249,10 +4249,10 @@ TEST_CASE("Pipeline 2 Configs", "[live]") {
     }
 }
 
-TEST_CASE("Pipeline start after resolve uses the same profile", "[live]") {
+TEST_CASE("Pipeline start after resolve uses the same profile", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         rs2::pipeline pipe(ctx);
         rs2::config cfg;
@@ -4268,9 +4268,9 @@ TEST_CASE("Pipeline start after resolve uses the same profile", "[live]") {
     }
 }
 
-TEST_CASE("Pipeline start ignores previous config if it was changed", "[live]") {
+TEST_CASE("Pipeline start ignores previous config if it was changed", "[live][pipeline][using_pipeline][!mayfail]") {
     rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         rs2::pipeline pipe(ctx);
         rs2::config cfg;
@@ -4284,10 +4284,11 @@ TEST_CASE("Pipeline start ignores previous config if it was changed", "[live]") 
         REQUIRE_THROWS(require_pipeline_profile_same(profile_from_cfg, profile_from_start));
     }
 }
-TEST_CASE("Pipeline Config disable all is a nop with empty config", "[live]") {
+
+TEST_CASE("Pipeline Config disable all is a nop with empty config", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         rs2::pipeline p(ctx);
         rs2::config c1;
@@ -4303,10 +4304,10 @@ TEST_CASE("Pipeline Config disable all is a nop with empty config", "[live]") {
         REQUIRE_NOTHROW(require_pipeline_profile_same(profile1, profile2));
     }
 }
-TEST_CASE("Pipeline Config disable each stream is nop on empty config", "[live]") {
+TEST_CASE("Pipeline Config disable each stream is nop on empty config", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         rs2::pipeline p(ctx);
         rs2::config c1;
@@ -4325,52 +4326,97 @@ TEST_CASE("Pipeline Config disable each stream is nop on empty config", "[live]"
         REQUIRE_NOTHROW(require_pipeline_profile_same(profile1, profile2));
     }
 }
+//
+//TEST_CASE("Pipeline record and playback", "[live][pipeline][using_pipeline][!mayfail]") {
+//    rs2::context ctx;
+//
+//    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
+//    {
+//        const std::string filename = get_folder_path(special_folder::temp_folder) + "test_file.bag";
+//        //Scoping the below code to make sure no one holds the device
+//        {
+//            rs2::pipeline p(ctx);
+//            rs2::config cfg;
+//            REQUIRE_NOTHROW(cfg.enable_record_to_file(filename));
+//            rs2::pipeline_profile profile;
+//            REQUIRE_NOTHROW(profile = cfg.resolve(p));
+//            REQUIRE(profile);
+//            auto dev = profile.get_device();
+//            REQUIRE(dev);
+//            disable_sensitive_options_for(dev);
+//            REQUIRE_NOTHROW(p.start(cfg));
+//            std::this_thread::sleep_for(std::chrono::seconds(5));
+//            rs2::frameset frames;
+//            REQUIRE_NOTHROW(frames = p.wait_for_frames(200));
+//            REQUIRE(frames);
+//            REQUIRE(frames.size() > 0);
+//            REQUIRE_NOTHROW(p.stop());
+//        }
+//        //Scoping the above code to make sure no one holds the device
+//        REQUIRE(file_exists(filename));
+//
+//        {
+//            rs2::pipeline p(ctx);
+//            rs2::config cfg;
+//            rs2::pipeline_profile profile;
+//            REQUIRE_NOTHROW(cfg.enable_device_from_file(filename));
+//            REQUIRE_NOTHROW(profile = cfg.resolve(p));
+//            REQUIRE(profile);
+//            REQUIRE_NOTHROW(p.start(cfg));
+//            std::this_thread::sleep_for(std::chrono::seconds(5));
+//            rs2::frameset frames;
+//            REQUIRE_NOTHROW(frames = p.wait_for_frames(200));
+//            REQUIRE(frames);
+//            REQUIRE_NOTHROW(p.stop());
+//        }
+//    }
+//}
 
-TEST_CASE("Pipeline record and playback", "[live]") {
+
+TEST_CASE("Pipeline enable bad configuration", "[pipeline][using_pipeline]")
+{
     rs2::context ctx;
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
+        return;
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
-    {
-        const std::string filename = get_folder_path(special_folder::temp_folder) + "test_file.bag";
-        //Scoping the below code to make sure no one holds the device
-        {
-            rs2::pipeline p(ctx);
-            rs2::config cfg;
-            REQUIRE_NOTHROW(cfg.enable_record_to_file(filename));
-            rs2::pipeline_profile profile;
-            REQUIRE_NOTHROW(profile = cfg.resolve(p));
-            REQUIRE(profile);
-            auto dev = profile.get_device();
-            REQUIRE(dev);
-            disable_sensitive_options_for(dev);
-            REQUIRE_NOTHROW(p.start(cfg));
-            std::this_thread::sleep_for(std::chrono::seconds(5));
-            rs2::frameset frames;
-            REQUIRE_NOTHROW(frames = p.wait_for_frames(200));
-            REQUIRE(frames);
-            REQUIRE(frames.size() > 0);
-            REQUIRE_NOTHROW(p.stop());
-        }
-        //Scoping the above code to make sure no one holds the device
-        REQUIRE(file_exists(filename));
+    pipeline pipe(ctx);
+    rs2::config cfg;
 
-        {
-            rs2::pipeline p(ctx);
-            rs2::config cfg;
-            rs2::pipeline_profile profile;
-            REQUIRE_NOTHROW(cfg.enable_device_from_file(filename));
-            REQUIRE_NOTHROW(profile = cfg.resolve(p));
-            REQUIRE(profile);
-            REQUIRE_NOTHROW(p.start(cfg));
-            std::this_thread::sleep_for(std::chrono::seconds(5));
-            rs2::frameset frames;
-            REQUIRE_NOTHROW(frames = p.wait_for_frames(200));
-            REQUIRE(frames);
-            REQUIRE_NOTHROW(p.stop());
-        }
-    }
+    cfg.enable_stream(rs2_stream::RS2_STREAM_COLOR, 1000);
+    REQUIRE_THROWS(pipe.start(cfg));
 }
 
+TEST_CASE("Pipeline stream enable hierarchy", "[pipeline]")
+{
+    rs2::context ctx;
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
+        return;
+
+    pipeline pipe(ctx);
+    rs2::config cfg;
+    std::vector<stream_profile> default_streams = pipe.start(cfg).get_streams();
+    pipe.stop();
+
+    cfg.enable_all_streams();
+    std::vector<stream_profile> all_streams = pipe.start(cfg).get_streams();
+    pipe.stop();
+
+    cfg.disable_all_streams();
+    cfg.enable_stream(rs2_stream::RS2_STREAM_DEPTH);
+    std::vector<stream_profile> wildcards_streams = pipe.start(cfg).get_streams();
+    pipe.stop();
+
+    for (auto d : default_streams)
+    {
+        auto it = std::find(begin(all_streams), end(all_streams), d);
+        REQUIRE(it != std::end(all_streams));
+    }
+    for (auto w : wildcards_streams)
+    {
+        auto it = std::find(begin(all_streams), end(all_streams), w);
+        REQUIRE(it != std::end(all_streams));
+    }
+}
 
 TEST_CASE("Syncer sanity with software-device device", "[live][software-device]") {
     rs2::context ctx;
@@ -4613,4 +4659,88 @@ TEST_CASE("C API Compilation", "[live]") {
     rs2_error* e;
     REQUIRE_NOTHROW(rs2_set_devices_changed_callback(NULL, dev_changed, NULL, &e));
     REQUIRE(e != nullptr);
+}
+
+
+
+TEST_CASE("Syncer try wait for frames", "[live][software-device]") {
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        std::shared_ptr<software_device> dev = std::move(std::make_shared<software_device>());
+        auto s = dev->add_sensor("software_sensor");
+
+        const int W = 640, H = 480, BPP = 2;
+        rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
+        s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
+        s.add_video_stream({ RS2_STREAM_INFRARED, 1, 1, W, H,60, BPP, RS2_FORMAT_Y8, intrinsics });
+        dev->create_matcher(RS2_MATCHER_DI);
+
+        auto profiles = s.get_stream_profiles();
+        syncer sync;
+        s.open(profiles);
+        s.start(sync);
+
+        std::vector<uint8_t> pixels(W * H * BPP, 0);
+        std::weak_ptr<rs2::software_device> weak_dev(dev);
+
+        auto depth = profiles[0];
+        auto ir = profiles[1];
+        std::thread t([&s, weak_dev, pixels, depth, ir]() mutable {
+
+            auto shared_dev = weak_dev.lock();
+            if (shared_dev == nullptr)
+                return;
+            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
+            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir });
+
+            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth });
+            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir });
+
+            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, ir });
+        });
+        t.detach();
+
+        std::vector<std::vector<std::pair<rs2_stream, int>>> expected =
+        {
+            { { RS2_STREAM_DEPTH , 7 } },
+        { { RS2_STREAM_INFRARED , 5 } },
+        { { RS2_STREAM_INFRARED , 6 } },
+        { { RS2_STREAM_DEPTH , 8 },{ RS2_STREAM_INFRARED , 8 } }
+        };
+
+        std::vector<std::vector<std::pair<rs2_stream, int>>> results;
+        for (auto i = 0; i < expected.size(); i++)
+        {
+            frameset fs;
+            REQUIRE(sync.try_wait_for_frames(&fs, 5000));
+            std::vector < std::pair<rs2_stream, int>> curr;
+
+            for (auto f : fs)
+            {
+                curr.push_back({ f.get_profile().stream_type(), f.get_frame_number() });
+            }
+            results.push_back(curr);
+        }
+
+        CAPTURE(results.size());
+        CAPTURE(expected.size());
+        REQUIRE(results.size() == expected.size());
+
+        for (auto i = 0; i < expected.size(); i++)
+        {
+            auto exp = expected[i];
+            auto curr = results[i];
+            CAPTURE(exp.size());
+            CAPTURE(curr.size());
+            REQUIRE(exp.size() == curr.size());
+
+            for (auto j = 0; j < exp.size(); j++)
+            {
+                CAPTURE(exp[j].first);
+                CAPTURE(exp[j].second);
+                REQUIRE(std::find(curr.begin(), curr.end(), exp[j]) != curr.end());
+            }
+        }
+    }
 }

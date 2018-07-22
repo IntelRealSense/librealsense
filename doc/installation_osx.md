@@ -1,6 +1,6 @@
 # macOS Installation  
 
-**Note:** macOS support for the full range of functionality offered by the SDK is not yet complete. If you need support for R200 or the SR300, [legacy librealsense](https://github.com/IntelRealSense/librealsense/tree/legacy) offers a subset of SDK functionality. 
+**Note:** macOS support for the full range of functionality offered by the SDK is not yet complete. If you need support for R200 or the ZR300, [legacy librealsense](https://github.com/IntelRealSense/librealsense/tree/legacy) offers a subset of SDK functionality.
 
 ## Building from Source
 
@@ -10,6 +10,10 @@
   * `brew install libusb pkg-config`
   * `brew install homebrew/core/glfw3`
   * `brew install cmake`
+
+**Note** *librealsense* requires CMake version 3.8+ that can be obtained via the [official CMake site](https://cmake.org/download/).  
+
+
 4. Generate XCode project:
   * `mkdir build && cd build`
   * `sudo xcode-select --reset`

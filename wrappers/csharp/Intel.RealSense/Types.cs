@@ -203,6 +203,7 @@ namespace Intel.RealSense
         HolesFill = 39,
         StereoBaseline = 40,
         AutoExposureConvergeStep = 41,
+        InterCamSyncMode = 42,
     }
 
     public enum Sr300VisualPreset

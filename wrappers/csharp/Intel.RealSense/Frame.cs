@@ -224,7 +224,7 @@ namespace Intel.RealSense
             }
         }
 
-        private IntPtr VertexData
+        public IntPtr VertexData
         {
             get
             {
@@ -252,7 +252,7 @@ namespace Intel.RealSense
             }
         }
 
-        private IntPtr TextureData
+        public IntPtr TextureData
         {
             get
             {

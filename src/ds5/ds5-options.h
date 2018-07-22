@@ -205,4 +205,28 @@ namespace librealsense
         lazy<option_range> _range;
         hw_monitor& _hwm;
     };
+
+    class external_sync_mode : public option
+    {
+    public:
+        external_sync_mode(hw_monitor& hwm);
+        virtual ~external_sync_mode() = default;
+        virtual void set(float value) override;
+        virtual float query() const override;
+        virtual option_range get_range() const override;
+        virtual bool is_enabled() const override { return true; }
+
+        const char* get_description() const override
+        {
+            return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave";
+        }
+        void enable_recording(std::function<void(const option &)> record_action)
+        {
+            _record_action = record_action;
+        }
+    private:
+        std::function<void(const option &)> _record_action = [](const option&) {};
+        lazy<option_range> _range;
+        hw_monitor& _hwm;
+    };
 }

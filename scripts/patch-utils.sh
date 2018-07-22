@@ -22,33 +22,65 @@ function require_package {
 
 #Based on the current kernel version select the branch name to fetch the kernel source code
 # The reference name are pulled here : http://kernel.ubuntu.com/git/ubuntu/ubuntu-xenial.git/
+# As of Jun 21, the status is 
+#	Branch		Commit message								Author							Age
+#	hwe			UBUNTU: Ubuntu-hwe-4.15.0-24.26~16.04.1		Andy Whitcroft					6 days
+#	hwe-edge	UBUNTU: Ubuntu-hwe-4.15.0-23.25~16.04.1		Kleber Sacilotto de Souza		4 weeks
+#	hwe-zesty	UBUNTU: Ubuntu-hwe-4.10.0-43.47~16.04.1		Thadeu Lima de Souza Cascardo	6 months
+#	master		UBUNTU: Ubuntu-4.4.0-128.154				Stefan Bader					4 weeks
+#	master-next	UBUNTU: SAUCE: Redpine: fix soft-ap invisible issue	Sanjay Kumar Konduri	2 days
+
+#Ubuntu bionic repo : http://kernel.ubuntu.com/git/ubuntu/ubuntu-bionic.git/
+#	master		UBUNTU: Ubuntu-4.15.0-23.25					Stefan Bader					4 weeks
+#	master-next	ixgbe/ixgbevf: Free IRQ when PCI error recovery removes the device	Mauro S M Rodrigues	2 days
+
 function choose_kernel_branch {
 
 	# Split the kernel version string
 	IFS='.' read -a kernel_version <<< "$1"
 
-	case "${kernel_version[1]}" in
-	"4")									# Kernel 4.4. is managed on master branch
-		echo master
-		;;
-	"8")								 	# kernel 4.8 is available via explicit tags. Currently on 4.8.0-58
-		echo Ubuntu-hwe-4.8.0-58.63_16.04.1
-		;;
-	"10")								 	# kernel 4.10 is managed on branch hwe-zesty as of 1.1.2018
-		echo hwe-zesty
-		;;
-	"13")								 	# kernel 4.13 is managed on branch hwe
-		echo hwe
-		;;
-	"15")								 	# kernel 4.15 for Ubuntu 18/Bionic Beaver
-		echo master
-		;;
-	*)
-		#error message shall be redirected to stderr to be printed properly
-		echo -e "\e[31mUnsupported kernel version $1 . The patches are maintained for Ubuntu LTS with kernel versions 4.4, 4.8, 4.10 and 4.13 only\e[0m" >&2
-		exit 1
-		;;
-	esac
+	if [ "$2" = "xenial" ];
+	then
+		case "${kernel_version[1]}" in
+		"4")									# Kernel 4.4. is managed on master branch
+			echo master
+			;;
+		"8")								 	# kernel 4.8 is deprecated and available via explicit tags. Currently on 4.8.0-58
+			echo Ubuntu-hwe-4.8.0-58.63_16.04.1
+			;;
+		"10")								 	# kernel 4.10 is managed on branch hwe-zesty as of 1.1.2018
+			echo hwe-zesty
+			;;
+		"13")								 	# kernel 4.13 is on hwe branch and replaced with 4.15. Provide source from a tagged version instead (back-compat)
+			echo Ubuntu-hwe-4.13.0-45.50_16.04.1
+			;;
+		"15")								 	# kernel 4.15 for Ubuntu xenial is either hwe or hwe-edge
+			echo hwe
+			;;
+		*)
+			#error message shall be redirected to stderr to be printed properly
+			echo -e "\e[31mUnsupported kernel version $1 . The patches are maintained for Ubuntu LTS with kernel versions 4.4, 4.8, 4.10 and 4.13 only\e[0m" >&2
+			exit 1
+			;;
+		esac
+	else
+		if [ "$2" != "bionic" ];
+		then
+			echo -e "\e[31mUnsupported distribution $2 kernel version $1 . The patches are maintained for Ubuntu LTS bionic/xenial with kernel versions 4.4, 4.8, 4.10 and 4.15 only\e[0m" >&2
+			exit 1
+		fi
+
+		case "${kernel_version[1]}" in
+		"15")								 	# kernel 4.15 for Ubuntu 18/Bionic Beaver
+			echo master
+			;;
+		*)
+			#error message shall be redirected to stderr to be printed properly
+			echo -e "\e[31mUnsupported kernel version $1 . The patches are maintained for Ubuntu Bionic LTS with kernel 4.15 only\e[0m" >&2
+			exit 1
+			;;
+		esac
+	fi
 }
 
 function try_unload_module {

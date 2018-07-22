@@ -14,6 +14,8 @@ In addition, you can include [<librealsense2/rs.h>](./librealsense2/rs.h) and [<
 
 # Files and Classes
 
+> For full up-to-date class documentation see [Doxygen class-list](http://intelrealsense.github.io/librealsense/doxygen/annotated.html)
+
 ## [rs_types.hpp](librealsense2/hpp/rs_types.hpp):
 
 This file contains common functionality like the exception types. See [Error Handling](..doc/error_handling.md)

@@ -79,14 +79,14 @@ namespace librealsense
         _framerate = val;
     }
 
-    bool stream_profile_base::is_default() const
+    int stream_profile_base::get_tag() const
     {
-        return _is_default;
+        return _tag;
     }
 
-    void stream_profile_base::make_default()
+    void stream_profile_base::tag_profile(int tag)
     {
-        _is_default = true;
+        _tag = tag;
     }
 
     std::shared_ptr<stream_profile_interface> stream_profile_base::clone() const

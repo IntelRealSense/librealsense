@@ -6,9 +6,9 @@ Material:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
-  m_Name: depthMat
+  m_Name: DepthMat
   m_Shader: {fileID: 4800000, guid: f8395e4599857704d889f76eb8a306b5, type: 3}
-  m_ShaderKeywords: _EMISSION
+  m_ShaderKeywords: _COLORMAP_VIRIDIS
   m_LightmapFlags: 1
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -18,8 +18,8 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
-    - _Gradient:
-        m_Texture: {fileID: 0}
+    - _Colormaps:
+        m_Texture: {fileID: 2800000, guid: e79aa3df081152e4c9d99bcef47e9474, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
@@ -27,11 +27,8 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _Blue: 4.52
-    - _Color: 0
-    - _GrayScale: 0
-    - _Green: 4.66
-    - _MaxRange: 6.67
+    - _Colormap: 4
+    - _DepthScale: 0.001
+    - _MaxRange: 5.4285717
     - _MinRange: 0
-    - _Red: 4.52
     m_Colors: []

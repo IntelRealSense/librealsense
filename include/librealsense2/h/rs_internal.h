@@ -79,6 +79,18 @@ rs2_context* rs2_create_recording_context(int api_version, const char* filename,
 rs2_context* rs2_create_mock_context(int api_version, const char* filename, const char* section, rs2_error** error);
 
 /**
+* Create librealsense context that given a file will respond to calls exactly as the recording did
+* if the user calls a method that was either not called during recording or violates causality of the recording error will be thrown
+* \param[in] api_version realsense API version as provided by RS2_API_VERSION macro
+* \param[in] filename string representing the name of the file to play back from
+* \param[in] section  string representing the name of the section within existing recording
+* \param[in] min_api_version reject any file that was recorded before this version
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            context object, should be released by rs2_delete_context
+*/
+rs2_context* rs2_create_mock_context_versioned(int api_version, const char* filename, const char* section, const char* min_api_version, rs2_error** error);
+
+/**
  * Create software device to enable use librealsense logic without getting data from backend
  * but inject the data from outside
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -102,6 +114,15 @@ rs2_sensor* rs2_software_device_add_sensor(rs2_device* dev, const char* sensor_n
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_software_sensor_on_video_frame(rs2_sensor* sensor, rs2_software_video_frame frame, rs2_error** error);
+
+/**
+* Set frame metadata for the upcoming frames
+* \param[in] sensor the software sensor
+* \param[in] value metadata key to set
+* \param[in] type metadata value
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_software_sensor_set_metadata(rs2_sensor* sensor, rs2_frame_metadata_value value, rs2_metadata_type type, rs2_error** error);
 
 /**
  * Set the wanted matcher type that will be used by the syncer

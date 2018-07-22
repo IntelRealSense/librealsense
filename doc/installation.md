@@ -31,14 +31,18 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
     `sudo apt-get install git libssl-dev libusb-1.0-0-dev pkg-config libgtk-3-dev`  <br /><br />
     Distribution-specific packages:  <br />
      * Ubuntu 14 or when running of Ubuntu 16.04 live-disk:<br />
-      `sudo apt-get install cmake3`<br />
+      `sudo apt-get install`<br />
       `./scripts/install_glfw3.sh`  <br />
 
      * Ubuntu 16:<br />
-      `sudo apt-get install cmake3 libglfw3-dev`<br />
+      `sudo apt-get install libglfw3-dev`<br />
 
      * Ubuntu 18:<br />
-      `sudo apt-get install cmake libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev`  <br /><br />
+      `sudo apt-get install libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev`  <br /><br />
+
+    Cmake: *librealsense* requires version 3.8+ which is currently not made available via apt manager for Ubuntu LTS.   
+    Go to the [official CMake site](https://cmake.org/download/) to download and install the application  
+
 
      **Note** on graphic sub-system utilization:<br />
      *glfw3*, *mesa* and *gtk* packages are required if you plan to build the SDK's OpenGl-enabled examples. The *librealsense* core library and a range of demos/tools are designed for headless environment deployment.
@@ -64,6 +68,11 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
       * You also need to install the matching linux-headers as well (i.e.: linux-lts-headers for the linux-lts kernel).<br />
         * Navigate to the scripts folder  `cd ./scripts/`<br />
         * Then run the following script to patch the uvc module: `./patch-arch.sh`<br /><br />
+    * **Odroid XU4 with Ubuntu 16.04 4.14 image**
+      Based on the custom kernel provided by Hardkernel
+
+      `./scripts/patch-realsense-ubuntu-odroid.sh`<br />
+      Some additional details on the Odroid installation can also be found in [installation_odroid.md](installation_odroid.md)
 
     * Check the patched modules installation by examining the generated log as well as inspecting the latest entries in kernel log:<br />
       `sudo dmesg | tail -n 50`<br />
@@ -76,7 +85,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 
       In order to accomplish this add the driver's name *hid_sensor_custom* to `/etc/modules` file, eg:
       ```sh
-      echo 'hid_sensor_custom' | sudo tee -a /etc/modules`
+      echo 'hid_sensor_custom' | sudo tee -a /etc/modules
       ```
 
 ## Building librealsense2 SDK
@@ -93,7 +102,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 
   * Navigate to *librealsense* root directory and run `mkdir build && cd build`<br />
   * Run CMake:
-    * `cmake ../` - The default build is set to produce the core shared object and unit-tests binaries in Debug mode. Use `-D CMAKE_BUILD_TYPE=release` to build with optimizations.<br />
+    * `cmake ../` - The default build is set to produce the core shared object and unit-tests binaries in Debug mode. Use `-DCMAKE_BUILD_TYPE=Release` to build with optimizations.<br />
     * `cmake ../ -DBUILD_EXAMPLES=true` - Builds *librealsense* along with the demos and tutorials<br />
     * `cmake ../ -DBUILD_EXAMPLES=true -DBUILD_GRAPHICAL_EXAMPLES=false` - For systems without OpenGL or X11 build only textual examples<br /><br />
 

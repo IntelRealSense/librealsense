@@ -87,7 +87,7 @@ namespace librealsense
     {
         //empty
     }
-    void pipeline_config::enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int fps)
+    void pipeline_config::enable_stream(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t fps)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         _resolved_profile.reset();
@@ -165,97 +165,77 @@ namespace librealsense
         _resolved_profile.reset();
     }
 
+    std::shared_ptr<pipeline_profile> pipeline_config::resolve(std::shared_ptr<device_interface> dev)
+    {
+        util::config config;
+
+        //if the user requested all streams
+        if (_enable_all_streams)
+        {
+            for (size_t i = 0; i < dev->get_sensors_count(); ++i)
+            {
+                auto&& sub = dev->get_sensor(i);
+                auto profiles = sub.get_stream_profiles(PROFILE_TAG_SUPERSET);
+                config.enable_streams(profiles);
+            }
+            return std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
+        }
+
+        //If the user did not request anything, give it the default, on playback all recorded streams are marked as default.
+        if (_stream_requests.empty())
+        {
+            auto default_profiles = get_default_configuration(dev);
+            config.enable_streams(default_profiles);
+            return std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
+        }
+
+        //Enabled requested streams
+        for (auto&& req : _stream_requests)
+        {
+            auto r = req.second;
+            config.enable_stream(r.stream, r.stream_index, r.width, r.height, r.format, r.fps);
+        }
+        return std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
+    }
+
     std::shared_ptr<pipeline_profile> pipeline_config::resolve(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         _resolved_profile.reset();
+
+        //Resolve the the device that was specified by the user, this call will wait in case the device is not availabe.
         auto requested_device = resolve_device_requests(pipe, timeout);
-
-        std::vector<stream_profile> resolved_profiles;
-
-        //if the user requested all streams, or if the requested device is from file and the user did not request any stream
-        if (_enable_all_streams || (!_device_request.filename.empty() && _stream_requests.empty()))
+        if (requested_device != nullptr)
         {
-            if (!requested_device)
-            {
-                requested_device = pipe->wait_for_device(timeout);
-            }
-
-            util::config config;
-            config.enable_all(util::best_quality);
-            _resolved_profile = std::make_shared<pipeline_profile>(requested_device, config, _device_request.record_output);
+            _resolved_profile = resolve(requested_device);
             return _resolved_profile;
         }
-        else
+
+        //Look for satisfy device in case the user did not specify one.
+        auto devs = pipe->get_context()->query_devices();
+        for (auto dev_info : devs)
         {
-            util::config config;
-
-            //If the user did not request anything, give it the default
-            if (_stream_requests.empty())
+            try
             {
-                if (!requested_device)
-                {
-                    requested_device = pipe->wait_for_device(timeout);
-                }
-
-                auto default_profiles = get_default_configuration(requested_device);
-                for (auto prof : default_profiles)
-                {
-                    auto p = dynamic_cast<video_stream_profile*>(prof.get());
-                    if (!p)
-                    {
-                        LOG_ERROR("prof is not video_stream_profile");
-                        throw std::logic_error("Failed to resolve request. internal error");
-                    }
-                    config.enable_stream(p->get_stream_type(), p->get_stream_index(), p->get_width(), p->get_height(), p->get_format(), p->get_framerate());
-                }
-
-                _resolved_profile = std::make_shared<pipeline_profile>(requested_device, config, _device_request.record_output);
+                auto dev = dev_info->create_device(true);
+                _resolved_profile = resolve(dev);
                 return _resolved_profile;
             }
-            else
+            catch (const std::exception& e)
             {
-                //User enabled some stream, enable only them
-                for(auto&& req : _stream_requests)
-                {
-                    auto r = req.second;
-                    config.enable_stream(r.stream, r.stream_index, r.width, r.height, r.format, r.fps);
-                }
-
-                if (!requested_device)
-                {
-                    //If the users did not request any device, select one for them
-                    auto devs = pipe->get_context()->query_devices();
-                    if (devs.empty())
-                    {
-                        auto dev = pipe->wait_for_device(timeout);
-                        _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
-                        return _resolved_profile;
-                    }
-                    else
-                    {
-                        for (auto dev_info : devs)
-                        {
-                            try
-                            {
-                                auto dev = dev_info->create_device(true);
-                                _resolved_profile = std::make_shared<pipeline_profile>(dev, config, _device_request.record_output);
-                                return _resolved_profile;
-                            }
-                            catch (...) {}
-                        }
-                    }
-
-                    throw std::runtime_error("Failed to resolve request. No device found that satisfies all requirements");
-                }
-                else
-                {
-                    //User specified a device, use it with the requested configuration
-                    _resolved_profile = std::make_shared<pipeline_profile>(requested_device, config, _device_request.record_output);
-                    return _resolved_profile;
-                }
+                LOG_DEBUG("Iterate available devices - config can not be resolved. " << e.what());
             }
         }
+
+        //If no device found wait for one
+        auto dev = pipe->wait_for_device(timeout);
+        if (dev != nullptr)
+        {
+            _resolved_profile = resolve(dev);
+            return _resolved_profile;
+        }
+
+        throw std::runtime_error("Failed to resolve request. No device found that satisfies all requirements");
 
         assert(0); //Unreachable code
     }
@@ -278,6 +258,7 @@ namespace librealsense
         }
         return true;
     }
+
     std::shared_ptr<device_interface> pipeline_config::get_or_add_playback_device(std::shared_ptr<pipeline> pipe, const std::string& file)
     {
         //Check if the file is already loaded to context, and if so return that device
@@ -350,31 +331,8 @@ namespace librealsense
         for (unsigned int i = 0; i < dev->get_sensors_count(); i++)
         {
             auto&& sensor = dev->get_sensor(i);
-            auto profiles = sensor.get_stream_profiles();
-
-            for (auto p : profiles)
-            {
-                if (p->is_default())
-                {
-                    default_profiles.push_back(p);
-                }
-            }
-        }
-
-        // Workaround - default profiles that holds color stream shouldn't supposed to provide infrared either
-        auto color_it = std::find_if(default_profiles.begin(), default_profiles.end(), [](std::shared_ptr<stream_profile_interface> p)
-                        {
-                            return p.get()->get_stream_type() == RS2_STREAM_COLOR;
-                        });
-
-        bool default_profiles_contains_color_stream = color_it != default_profiles.end();
-        if (default_profiles_contains_color_stream)
-        {
-            auto it = std::find_if(default_profiles.begin(), default_profiles.end(), [](std::shared_ptr<stream_profile_interface> p) {return p.get()->get_stream_type() == RS2_STREAM_INFRARED; });
-            if (it != default_profiles.end())
-            {
-                default_profiles.erase(it);
-            }
+            auto profiles = sensor.get_stream_profiles(profile_tag::PROFILE_TAG_DEFAULT);
+            default_profiles.insert(std::end(default_profiles), std::begin(profiles), std::end(profiles));
         }
 
         return default_profiles;
@@ -615,6 +573,37 @@ namespace librealsense
         if (_pipeline_process->try_dequeue(frame))
         {
             return true;
+        }
+        return false;
+    }
+
+    bool pipeline::try_wait_for_frames(frame_holder* frame, unsigned int timeout_ms)
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        if (!_active_profile)
+        {
+            throw librealsense::wrong_api_call_sequence_exception("try_wait_for_frames cannot be called before start()");
+        }
+
+        if (_pipeline_process->dequeue(frame, timeout_ms))
+        {
+            return true;
+        }
+
+        //hub returns true even if device already reconnected
+        if (!_hub.is_connected(*_active_profile->get_device()))
+        {
+            try
+            {
+                auto prev_conf = _prev_conf;
+                unsafe_stop();
+                unsafe_start(prev_conf);
+                return _pipeline_process->dequeue(frame, timeout_ms);
+            }
+            catch (const std::exception& e)
+            {
+                return false;
+            }
         }
         return false;
     }
