@@ -1,13 +1,10 @@
-﻿using System.Collections;
+﻿using Intel.RealSense;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using Intel.RealSense;
-using System;
 
-[DefaultStream(Stream.Depth, TextureFormat.RGB24)]
-public class RealSenseColorizeDepth : RealSenseStreamTexture
+public class ColorizerFilter : VideoProcessingBlock
 {
-
     [Serializable]
     public enum ColorScheme //TOOD: remove and make more robust using option.ValueDescription
     {
@@ -24,32 +21,31 @@ public class RealSenseColorizeDepth : RealSenseStreamTexture
 
     public ColorScheme colorMap;
     private ColorScheme prevColorMap;
+    private List<Stream> _requirments = new List<Stream>() { Stream.Depth };
+    private Intel.RealSense.Colorizer _pb = new Intel.RealSense.Colorizer();
 
-    Colorizer m_colorizer;
-
-    protected override void OnStartStreaming(PipelineProfile activeProfile)
+    public void Awake()
     {
-        m_colorizer = new Colorizer();
         prevColorMap = colorMap;
-        m_colorizer.Options[Option.ColorScheme].Value = (float)colorMap;
-
-        base.OnStartStreaming(activeProfile);
+        _pb.Options[Option.ColorScheme].Value = (float)colorMap;
     }
-
-    protected override void OnStopStreaming()
+    public override Frame Process(Frame frame)
     {
-        base.OnStopStreaming();
-        
-        m_colorizer.Dispose();
+        return _enabled ? _pb.Colorize(frame as VideoFrame) : frame;
     }
 
-    override protected Frame ProcessFrame(Frame frame)
+    public override List<Stream> Requirments()
+    {
+        return _requirments;
+    }
+
+    public void Update()
     {
         if (prevColorMap != colorMap)
         {
             try
             {
-                m_colorizer.Options[Option.ColorScheme].Value = (float)colorMap;
+                _pb.Options[Option.ColorScheme].Value = (float)colorMap;
                 prevColorMap = colorMap;
             }
             catch (Exception e)
@@ -58,6 +54,5 @@ public class RealSenseColorizeDepth : RealSenseStreamTexture
                 colorMap = prevColorMap;
             }
         }
-        return m_colorizer.Colorize(frame as VideoFrame);
     }
 }

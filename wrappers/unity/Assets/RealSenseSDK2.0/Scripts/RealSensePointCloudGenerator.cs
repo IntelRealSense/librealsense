@@ -1,17 +1,17 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Intel.RealSense;
 using UnityEngine.Rendering;
 using UnityEngine.Assertions;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class RealSensePointCloudGenerator : MonoBehaviour
 {
     public Stream stream = Stream.Color;
+
     Mesh mesh;
     Texture2D uvmap;
 
@@ -95,7 +95,7 @@ public class RealSensePointCloudGenerator : MonoBehaviour
             GetComponent<MeshFilter>().sharedMesh = mesh;
         }
 
-        RealSenseDevice.Instance.onNewSampleSet += OnFrames;
+        RealSenseDevice.Instance.OnNewSampleSet += OnFrames;
     }
 
     void OnDestroy()

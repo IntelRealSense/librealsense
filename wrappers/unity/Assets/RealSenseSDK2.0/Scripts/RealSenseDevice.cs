@@ -43,6 +43,16 @@ public class RealSenseDevice : MonoBehaviour
     public event Action OnStop;
 
     /// <summary>
+    /// Fired when a new frame is available
+    /// </summary>
+    public event Action<Frame> OnNewSample;
+
+    /// <summary>
+    /// Fired when a new time-synchronized frame set is available
+    /// </summary>
+    public event Action<FrameSet> OnNewSampleSet;
+
+    /// <summary>
     /// Provides access to the current pipeline profiles in use by the Manager
     /// </summary>
     public PipelineProfile ActiveProfile { get; private set; } //TODO: Make private and have other classes register OnStart and use that profile.
@@ -61,16 +71,19 @@ public class RealSenseDevice : MonoBehaviour
         }
     };
 
+    //private List<VideoStreamRequest> _pipelineOutputProfiles { get; set; }
+
     private Thread worker;
     private readonly AutoResetEvent stopEvent = new AutoResetEvent(false);
 
     private Pipeline m_pipeline;
-    public event Action<Frame> onNewSample;
 
-    /// <summary>
-    /// Fired when a new time-synchronized frame set is available
-    /// </summary>
-    public event Action<FrameSet> onNewSampleSet;
+    private List<IVideoProcessingBlock> m_processingBlocks = new List<IVideoProcessingBlock>();
+
+    public void AddProcessingBlock(IVideoProcessingBlock processingBlock)
+    {
+        m_processingBlocks.Add(processingBlock);
+    }
 
     void Awake()
     {
@@ -86,15 +99,16 @@ public class RealSenseDevice : MonoBehaviour
     void OnEnable()
     {
         m_pipeline = new Pipeline();
+
         using (var cfg = DeviceConfiguration.ToPipelineConfig())
         {
-            // ActiveProfile = m_config.Resolve(m_pipeline);
             ActiveProfile = m_pipeline.Start(cfg);
         }
 
         DeviceConfiguration.Profiles = new VideoStreamRequest[ActiveProfile.Streams.Count];
         for (int i = 0; i < DeviceConfiguration.Profiles.Length; i++)
         {
+            DeviceConfiguration.Profiles[i] = new VideoStreamRequest();
             var p = DeviceConfiguration.Profiles[i];
             var s = ActiveProfile.Streams[i];
             p.Stream = s.Stream;
@@ -119,6 +133,9 @@ public class RealSenseDevice : MonoBehaviour
             worker.Start();
         }
 
+        // Register to results of processing via a callback:
+        _block.Start(_cb);
+
         StartCoroutine(WaitAndStart());
     }
 
@@ -132,8 +149,8 @@ public class RealSenseDevice : MonoBehaviour
 
     void OnDisable()
     {
-        onNewSample = null;
-        onNewSampleSet = null;
+        OnNewSample = null;
+        OnNewSampleSet = null;
 
         if (worker != null)
         {
@@ -173,13 +190,27 @@ public class RealSenseDevice : MonoBehaviour
         Instance = null;
     }
 
+    private VideoStreamRequest FrameToVideoStreamRequest(Frame f)
+    {
+        var vf = f as VideoFrame;
+        return new VideoStreamRequest
+        {
+            Stream = vf.Profile.Stream,
+            StreamIndex = vf.Profile.Index,
+            Width = vf.Width,
+            Height = vf.Height,
+            Format = vf.Profile.Format,
+            Framerate = vf.Profile.Framerate
+        };
+    }
+
     /// <summary>
     /// Handles the current frame
     /// </summary>
     /// <param name="frame">The frame instance</param>
     private void HandleFrame(Frame frame)
     {
-        var s = onNewSample;
+        var s = OnNewSample;
         if (s != null)
         {
             s(frame);
@@ -188,23 +219,11 @@ public class RealSenseDevice : MonoBehaviour
 
     private void HandleFrameSet(FrameSet frames)
     {
-        var s = onNewSampleSet;
+        var s = OnNewSampleSet;
         if (s != null)
         {
             s(frames);
         }
-    }
-
-    /// <summary>
-    /// Process frame on each new frame, ends by calling the event
-    /// </summary>
-    private void ProcessFrames(FrameSet frames)
-    {
-        HandleFrameSet(frames);
-
-        foreach (var frame in frames)
-            using (frame)
-                HandleFrame(frame);
     }
 
     /// <summary>
@@ -216,7 +235,7 @@ public class RealSenseDevice : MonoBehaviour
         {
             using (var frames = m_pipeline.WaitForFrames())
             {
-                ProcessFrames(frames);
+                _block.ProcessFrames(frames);
             }
         }
     }
@@ -233,7 +252,78 @@ public class RealSenseDevice : MonoBehaviour
         if (m_pipeline.PollForFrames(out frames))
         {
             using (frames)
-                ProcessFrames(frames);
+                _block.ProcessFrames(frames);
         }
     }
+
+    private CustomProcessingBlock _block = new CustomProcessingBlock((f1, src) =>
+    {
+        using (var releaser = new FramesReleaser())
+        {
+            var frames = FrameSet.FromFrame(f1, releaser);
+
+            List<Frame> processedFrames = new List<Frame>();
+            foreach (var frame in frames)
+            {
+                var f = frame;
+                foreach (var vpb in Instance.m_processingBlocks)
+                {
+                    if (vpb.Type() != ProcessingBlockType.Single)
+                        continue;
+                    var pb = vpb as VideoProcessingBlock;
+                    if (pb.CanProcess(f) && pb.Enabled())
+                    {
+                        var newFrame = pb.Process(f);
+                        if (pb.Fork())
+                        {
+                            Instance.HandleFrame(newFrame);
+                            newFrame.Dispose();
+                            continue;
+                        }
+                        if (newFrame == f)
+                            continue;
+                        f.Dispose();
+                        f = newFrame;
+                    }
+                }
+                processedFrames.Add(f);
+                if (frame != f)
+                    frame.Dispose();
+            }
+
+            // Combine the frames into a single result
+            var res = src.AllocateCompositeFrame(processedFrames.ToArray());
+            // Send it to the next processing stage
+            src.FramesReady(res);
+        }
+    });
+
+    CustomProcessingBlock.FrameCallback _cb = f =>
+    {
+        using (var releaser = new FramesReleaser())
+        {
+            // Align, colorize and upload frames for rendering
+            var frames = FrameSet.FromFrame(f, releaser);
+
+            foreach (var vpb in Instance.m_processingBlocks)
+            {
+                if (vpb.Type() != ProcessingBlockType.Multi)
+                    continue;
+                var pb = vpb as MultiFrameVideoProcessingBlock;
+                if (pb.CanProcess(frames) && pb.Enabled())
+                {
+                    frames = pb.Process(frames, releaser);
+                }
+            }
+
+            Instance.HandleFrameSet(frames);
+            foreach (var fr in frames)
+            {
+                using (fr)
+                {
+                    Instance.HandleFrame(fr);
+                }
+            }
+        }
+    };
 }
