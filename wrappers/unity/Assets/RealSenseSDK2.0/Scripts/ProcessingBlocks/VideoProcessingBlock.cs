@@ -61,41 +61,8 @@ public abstract class MultiFrameVideoProcessingBlock : MonoBehaviour, IVideoProc
 
         foreach (var f in frameset)
         {
-            streams.Add(f.Profile.Stream);
-        }
-
-        foreach (var s in Requirments())
-        {
-            if (!streams.Contains(s))
-                return false;
-        }
-        return true;
-    }
-}
-
-public abstract class Multi2SingleVideoProcessingBlock : MonoBehaviour, IVideoProcessingBlock
-{
-    public bool _enabled = true;
-
-    public abstract Frame Process(FrameSet frameset, FramesReleaser releaser);
-    public abstract List<Stream> Requirments();
-
-    public void Enable(bool state) { _enabled = state; }
-
-    public bool IsEnabled() { return _enabled; }
-
-    public void Start()
-    {
-        RealSenseDevice.Instance.AddProcessingBlock(this);
-    }
-
-    public bool CanProcess(FrameSet frameset)
-    {
-        List<Stream> streams = new List<Stream>();
-
-        foreach (var f in frameset)
-        {
-            streams.Add(f.Profile.Stream);
+            using (f)
+                streams.Add(f.Profile.Stream);
         }
 
         foreach (var s in Requirments())

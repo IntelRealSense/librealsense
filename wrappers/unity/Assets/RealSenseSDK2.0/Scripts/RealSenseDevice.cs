@@ -288,9 +288,13 @@ public class RealSenseDevice : MonoBehaviour
             }
 
             // Combine the frames into a single result
-            var res = src.AllocateCompositeFrame(processedFrames.ToArray());
+            var res = src.AllocateCompositeFrame(releaser, processedFrames.ToArray());
             // Send it to the next processing stage
             src.FramesReady(res);
+            foreach (var f in processedFrames)
+            {
+                f.Dispose();
+            }
         }
     });
 
@@ -298,7 +302,6 @@ public class RealSenseDevice : MonoBehaviour
     {
         using (var releaser = new FramesReleaser())
         {
-            // Align, colorize and upload frames for rendering
             var frames = FrameSet.FromFrame(f, releaser);
 
             foreach (var vpb in Instance.m_processingBlocks)

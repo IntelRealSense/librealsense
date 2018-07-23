@@ -28,12 +28,14 @@ public class Aligment : MultiFrameVideoProcessingBlock
     {
         lock (_lock)
         {
-            if (_profilesIds.Count == 0 != !_profilesIds.ContainsValue(frameset.ColorFrame.Profile.UniqueID) || !_profilesIds.ContainsValue(frameset.DepthFrame.Profile.UniqueID))
-            {
-                ResetAligner();
-                _profilesIds[Stream.Color] = frameset.ColorFrame.Profile.UniqueID;
-                _profilesIds[Stream.Depth] = frameset.DepthFrame.Profile.UniqueID;
-            }
+            using (var depth = frameset.DepthFrame)
+            using (var color = frameset.ColorFrame)
+                if (_profilesIds.Count == 0 != !_profilesIds.ContainsValue(color.Profile.UniqueID) || !_profilesIds.ContainsValue(depth.Profile.UniqueID))
+                {
+                    ResetAligner();
+                    _profilesIds[Stream.Color] = depth.Profile.UniqueID;
+                    _profilesIds[Stream.Depth] = color.Profile.UniqueID;
+                }
             return _enabled ? _pb.Process(frameset, releaser) : frameset;
         }
     }

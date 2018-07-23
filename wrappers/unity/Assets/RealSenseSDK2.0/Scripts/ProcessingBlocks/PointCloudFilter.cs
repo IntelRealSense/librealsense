@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Intel.RealSense;
 using UnityEngine;
 
-public class PointCloudFilter : Multi2SingleVideoProcessingBlock
+public class PointCloudFilter : MultiFrameVideoProcessingBlock
 {
     private List<Stream> _requirments = new List<Stream>() { Stream.Depth, Stream.Color };
     private PointCloud _pb;
@@ -19,7 +19,7 @@ public class PointCloudFilter : Multi2SingleVideoProcessingBlock
         _currTextureStream = _textureStream;
     }
 
-    public override Frame Process(FrameSet frameset, FramesReleaser releaser)
+    public override FrameSet Process(FrameSet frameset, FramesReleaser releaser)
     {
         lock (_lock)
         {
@@ -30,7 +30,7 @@ public class PointCloudFilter : Multi2SingleVideoProcessingBlock
                 {
                     Points points = _pb.Calculate(depthFrame, releaser);
                     _pb.MapTexture(f);
-                    return points;
+                    return FrameSet.FromFrame(points);
                 }
             }
             return null;
