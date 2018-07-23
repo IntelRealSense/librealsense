@@ -42,7 +42,6 @@ playback_sensor::~playback_sensor()
 
 stream_profiles playback_sensor::get_stream_profiles(int tag) const
 {
-    return m_available_profiles;
     if (tag == profile_tag::PROFILE_TAG_ANY)
         return m_available_profiles;
 

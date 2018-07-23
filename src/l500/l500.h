@@ -69,6 +69,51 @@ namespace librealsense
         }
     };
 
+    class l500_timestamp_reader_from_metadata : public frame_timestamp_reader
+    {
+        std::unique_ptr<l500_timestamp_reader> _backup_timestamp_reader;
+        bool one_time_note;
+        mutable std::recursive_mutex _mtx;
+        arithmetic_wraparound<uint32_t, uint64_t > ts_wrap;
+
+    protected:
+
+        bool has_metadata_ts(const platform::frame_object& fo) const
+        {
+            // Metadata support for a specific stream is immutable
+            const bool has_md_ts = [&] { std::lock_guard<std::recursive_mutex> lock(_mtx);
+            return ((fo.metadata != nullptr) && (fo.metadata_size >= platform::uvc_header_size) && ((byte*)fo.metadata)[0] >= platform::uvc_header_size);
+            }();
+
+            return has_md_ts;
+        }
+
+        bool has_metadata_fc(const platform::frame_object& fo) const
+        {
+            // Metadata support for a specific stream is immutable
+            const bool has_md_frame_counter = [&] { std::lock_guard<std::recursive_mutex> lock(_mtx);
+            return ((fo.metadata != nullptr) && (fo.metadata_size > platform::uvc_header_size) && ((byte*)fo.metadata)[0] > platform::uvc_header_size);
+            }();
+
+            return has_md_frame_counter;
+        }
+
+    public:
+        l500_timestamp_reader_from_metadata(std::shared_ptr<platform::time_service> ts) :_backup_timestamp_reader(nullptr), one_time_note(false)
+        {
+            _backup_timestamp_reader = std::unique_ptr<l500_timestamp_reader>(new l500_timestamp_reader(ts));
+            reset();
+        }
+
+        rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override;
+
+        unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
+
+        void reset() override;
+
+        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override;
+    };
+
     class l500_info : public device_info
     {
     public:
@@ -194,7 +239,8 @@ namespace librealsense
                 depth_devices.push_back(backend.create_uvc_device(info));
 
             auto depth_ep = std::make_shared<l500_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
-                                                                std::unique_ptr<frame_timestamp_reader>(new l500_timestamp_reader(backend.create_time_service())));
+                std::unique_ptr<frame_timestamp_reader>(new l500_timestamp_reader_from_metadata(backend.create_time_service())));
+                                                               // std::unique_ptr<frame_timestamp_reader>(new l500_timestamp_reader(backend.create_time_service())));
 
             depth_ep->register_xu(depth_xu);
             depth_ep->register_pixel_format(pf_z16_l500);
