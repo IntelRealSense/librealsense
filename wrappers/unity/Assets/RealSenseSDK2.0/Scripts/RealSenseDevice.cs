@@ -252,6 +252,38 @@ public class RealSenseDevice : MonoBehaviour
         }
     }
 
+    private Frame ApplyFilters(Frame frame)
+    {
+        foreach (var vpb in Instance.m_processingBlocks)
+        {
+            if (!(vpb is VideoProcessingBlock))
+                continue;
+            var pb = vpb as VideoProcessingBlock;
+            if (pb.CanProcess(frame) && pb.IsEnabled())
+            {
+                // run the processing block.
+                var processedFrame = pb.Process(frame);
+
+                // incase fork is requested, notify on new frame and use the original frame for the new frameset.
+                if (pb.Fork())
+                {
+                    Instance.HandleFrame(processedFrame);
+                    processedFrame.Dispose();
+                    continue;
+                }
+
+                // avoid disposing the frame incase the filter returns the original frame.
+                if (processedFrame == frame)
+                    continue;
+
+                // replace the current frame with the processed one to be used as the input to the next iteration (next filter)
+                frame.Dispose();
+                frame = processedFrame;
+            }
+        }
+        return frame;
+    }
+
     private CustomProcessingBlock _block = new CustomProcessingBlock((f1, src) =>
     {
         using (var releaser = new FramesReleaser())
@@ -261,33 +293,15 @@ public class RealSenseDevice : MonoBehaviour
             List<Frame> processedFrames = new List<Frame>();
             foreach (var frame in frames)
             {
-                var f = frame;
-                foreach (var vpb in Instance.m_processingBlocks)
-                {
-                    if (!(vpb is VideoProcessingBlock))
-                        continue;
-                    var pb = vpb as VideoProcessingBlock;
-                    if (pb.CanProcess(f) && pb.IsEnabled())
-                    {
-                        var newFrame = pb.Process(f);
-                        if (pb.Fork())
-                        {
-                            Instance.HandleFrame(newFrame);
-                            newFrame.Dispose();
-                            continue;
-                        }
-                        if (newFrame == f)
-                            continue;
-                        f.Dispose();
-                        f = newFrame;
-                    }
-                }
-                processedFrames.Add(f);
-                if (frame != f)
+                var currFrame = Instance.ApplyFilters(frame);
+
+                // cache the pocessed frame
+                processedFrames.Add(currFrame);
+                if (frame != currFrame)
                     frame.Dispose();
             }
 
-            // Combine the frames into a single result
+            // Combine the frames into a single frameset
             var res = src.AllocateCompositeFrame(releaser, processedFrames.ToArray());
             // Send it to the next processing stage
             src.FramesReady(res);
