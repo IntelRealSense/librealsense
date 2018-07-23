@@ -707,7 +707,7 @@ CanvasGroup:
   m_Enabled: 1
   m_Alpha: 0.5
   m_Interactable: 1
-  m_BlocksRaycasts: 0
+  m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
 --- !u!1 &456670346
 GameObject:
@@ -787,7 +787,7 @@ MonoBehaviour:
   m_FillRect: {fileID: 2057984276}
   m_HandleRect: {fileID: 1194772352}
   m_Direction: 0
-  m_MinValue: 0
+  m_MinValue: 0.0001
   m_MaxValue: 1
   m_WholeNumbers: 0
   m_Value: 0.5
