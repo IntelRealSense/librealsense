@@ -31,4 +31,9 @@ public class HoleFillingFilter : VideoProcessingBlock
     {
         _pb.Options[Option.HolesFill].Value = _holesFill;
     }
+
+    public void SetHoleFill(float val)
+    {
+        _holesFill = (int)val;
+    }
 }

@@ -90,10 +90,6 @@ public class RealSenseDevice : MonoBehaviour
         if (Instance != null && Instance != this)
             throw new Exception(string.Format("{0} singleton already instanced", this.GetType()));
         Instance = this;
-
-        // m_pipeline = new Pipeline();
-        // m_config = DeviceConfiguration.ToPipelineConfig();
-        // ActiveProfile = m_config.Resolve(m_pipeline);
     }
 
     void OnEnable()
@@ -268,10 +264,10 @@ public class RealSenseDevice : MonoBehaviour
                 var f = frame;
                 foreach (var vpb in Instance.m_processingBlocks)
                 {
-                    if (vpb.Type() != ProcessingBlockType.Single)
+                    if (!(vpb is VideoProcessingBlock))
                         continue;
                     var pb = vpb as VideoProcessingBlock;
-                    if (pb.CanProcess(f) && pb.Enabled())
+                    if (pb.CanProcess(f) && pb.IsEnabled())
                     {
                         var newFrame = pb.Process(f);
                         if (pb.Fork())
@@ -307,10 +303,10 @@ public class RealSenseDevice : MonoBehaviour
 
             foreach (var vpb in Instance.m_processingBlocks)
             {
-                if (vpb.Type() != ProcessingBlockType.Multi)
+                if (!(vpb is MultiFrameVideoProcessingBlock))
                     continue;
                 var pb = vpb as MultiFrameVideoProcessingBlock;
-                if (pb.CanProcess(frames) && pb.Enabled())
+                if (pb.CanProcess(frames) && pb.IsEnabled())
                 {
                     frames = pb.Process(frames, releaser);
                 }

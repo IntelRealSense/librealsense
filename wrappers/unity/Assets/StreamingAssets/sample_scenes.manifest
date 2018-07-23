@@ -1,22 +1,21 @@
 ManifestFileVersion: 0
-CRC: 349348281
+CRC: 3111713025
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 4e124f851e375a98f5d8738cc0c9aeae
+    Hash: 3dadb91996446f721ffebe32d72def87
   TypeTreeHash:
     serializedVersion: 2
     Hash: 31d6cfe0d16ae931b73c59d7e0c089c0
 HashAppended: 0
 ClassTypes: []
 Assets:
-- Assets/RealSenseSDK2.0/Scenes/Samples/DepthProcessingBlocks.unity
 - Assets/RealSenseSDK2.0/Scenes/Samples/TexturesDepthAndColor.unity
 - Assets/RealSenseSDK2.0/Scenes/Samples/AlignmentSample.unity
 - Assets/RealSenseSDK2.0/Misc/SampleSceneUI.unity
 - Assets/RealSenseSDK2.0/Scenes/Samples/PointCloudDepthAndColor.unity
 - Assets/RealSenseSDK2.0/Scenes/Samples/TexturesDepthAndInfrared.unity
-- Assets/RealSenseSDK2.0/Scenes/Samples/PointCloudDepth.unity
+- Assets/RealSenseSDK2.0/Scenes/Samples/PointCloudProcessingBlocks.unity
 - Assets/RealSenseSDK2.0/Scenes/Samples/BackgroundSegmentation.unity
 - Assets/RealSenseSDK2.0/Scenes/Samples/ARBackground.unity
 Dependencies:

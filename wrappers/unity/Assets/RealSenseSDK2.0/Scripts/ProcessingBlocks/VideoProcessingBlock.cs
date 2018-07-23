@@ -10,9 +10,9 @@ public enum ProcessingBlockType
 }
 
 public interface IVideoProcessingBlock {
-    bool Enabled();
+    bool IsEnabled();
+    void Enable(bool state);
     List<Stream> Requirments();
-    ProcessingBlockType Type();
 }
 
 public abstract class VideoProcessingBlock : MonoBehaviour, IVideoProcessingBlock
@@ -25,9 +25,9 @@ public abstract class VideoProcessingBlock : MonoBehaviour, IVideoProcessingBloc
 
     public bool Fork() { return _fork; }
 
-    public ProcessingBlockType Type() { return ProcessingBlockType.Single; }
-
-    public bool Enabled() { return _enabled; }
+    public void Enable(bool state) { _enabled = state; }
+    
+    public bool IsEnabled() { return _enabled; }
 
     public void Start()
     {
@@ -46,9 +46,9 @@ public abstract class MultiFrameVideoProcessingBlock : MonoBehaviour, IVideoProc
     public abstract FrameSet Process(FrameSet frameset, FramesReleaser releaser);
     public abstract List<Stream> Requirments();
 
-    public ProcessingBlockType Type() { return ProcessingBlockType.Multi; }
+    public void Enable(bool state) { _enabled = state; }
 
-    public bool Enabled() { return _enabled; }
+    public bool IsEnabled() { return _enabled; }
 
     public void Start()
     {
@@ -80,9 +80,9 @@ public abstract class Multi2SingleVideoProcessingBlock : MonoBehaviour, IVideoPr
     public abstract Frame Process(FrameSet frameset, FramesReleaser releaser);
     public abstract List<Stream> Requirments();
 
-    public ProcessingBlockType Type() { return ProcessingBlockType.Multi; }
+    public void Enable(bool state) { _enabled = state; }
 
-    public bool Enabled() { return _enabled; }
+    public bool IsEnabled() { return _enabled; }
 
     public void Start()
     {

@@ -49,4 +49,24 @@ public class SpatialFilter : VideoProcessingBlock
         _pb.Options[Option.FilterSmoothDelta].Value = _filterSmoothDelta;
         _pb.Options[Option.HolesFill].Value = _holesFill;
     }
+
+    public void SetMagnitude(float val)
+    {
+        _filterMagnitude = (int)val;
+    }
+
+    public void SetSmoothAlpha(float val)
+    {
+        _filterSmoothAlpha = val;
+    }
+
+    public void SetSmoothDelta(float val)
+    {
+        _filterSmoothDelta = (int)val;
+    }
+
+    public void SetHolesFill(float val)
+    {
+        _holesFill = (int)val;
+    }
 }

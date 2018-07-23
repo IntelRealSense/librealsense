@@ -50,4 +50,19 @@ public class TemporalFilter : VideoProcessingBlock
         _pb.Options[Option.FilterSmoothDelta].Value = _filterSmoothDelta;
         _pb.Options[Option.HolesFill].Value = _temporalPersistence;
     }
+
+    public void SetSmoothAlpha(float val)
+    {
+        _filterSmoothAlpha = val;
+    }
+
+    public void SetSmoothDelta(float val)
+    {
+        _filterSmoothDelta = (int)val;
+    }
+
+    public void SetTemporalPersistence(float val)
+    {
+        _temporalPersistence = (int)val;
+    }
 }

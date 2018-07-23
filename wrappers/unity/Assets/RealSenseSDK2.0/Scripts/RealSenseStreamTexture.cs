@@ -147,11 +147,18 @@ public class RealSenseStreamTexture : MonoBehaviour
         return true;
     }
 
+    private bool HasConflict(VideoFrame vf)
+    {
+        if (_videoStreamFilter.Stream != vf.Profile.Stream ||
+            _videoStreamFilter.Format != vf.Profile.Format ||
+            (_videoStreamFilter.StreamIndex != vf.Profile.Index && _videoStreamFilter.StreamIndex != 0))
+            return true;
+        return false;
+    }
+
     private void OnNewSampleThreading(Frame frame)
     {
-        var vidFrame = frame as VideoFrame;
-        if (_videoStreamFilter.Stream != frame.Profile.Stream ||
-            _videoStreamFilter.Format != vidFrame.Profile.Format)
+        if (HasConflict(frame as VideoFrame))
             return;
         if (HasTextureConflict(frame))
             return;
@@ -163,9 +170,7 @@ public class RealSenseStreamTexture : MonoBehaviour
     {
         var vidFrame = frame as VideoFrame;
 
-        if (_videoStreamFilter.Stream != frame.Profile.Stream ||
-           _videoStreamFilter.Format != vidFrame.Profile.Format ||
-           _videoStreamFilter.StreamIndex != vidFrame.Profile.Index)
+        if (HasConflict(vidFrame))
             return;
         if (HasTextureConflict(frame))
             return;
