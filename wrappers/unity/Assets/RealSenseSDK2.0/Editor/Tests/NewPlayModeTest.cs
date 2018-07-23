@@ -52,7 +52,7 @@ public class NewPlayModeTest
         var depth = depth_go.AddComponent<RealSenseStreamTexture>();
 
         depth._videoStreamFilter.Stream = Stream.Depth;
-        depth._videoStreamFilter. = Format.Z16;
+        depth._videoStreamFilter.Format = Format.Z16;
 
         depth.textureBinding = new RealSenseStreamTexture.TextureEvent();
         Assert.IsNotNull(depth.textureBinding);
