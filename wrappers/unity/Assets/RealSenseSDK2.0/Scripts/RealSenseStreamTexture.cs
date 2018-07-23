@@ -22,9 +22,9 @@ public class RealSenseStreamTexture : MonoBehaviour
             case Format.Y16: return TextureFormat.R16;
             case Format.Raw16: return TextureFormat.R16;
             case Format.Raw8: return TextureFormat.Alpha8;
-            case Format.Raw10: 
+            case Format.Yuyv: return TextureFormat.YUY2;
+            case Format.Raw10:
             case Format.Xyz32f:
-            case Format.Yuyv:
             case Format.Uyvy:
             case Format.MotionRaw:
             case Format.MotionXyz32f:
@@ -151,8 +151,7 @@ public class RealSenseStreamTexture : MonoBehaviour
     {
         var vidFrame = frame as VideoFrame;
         if (_videoStreamFilter.Stream != frame.Profile.Stream ||
-            _videoStreamFilter.Format != vidFrame.Profile.Format ||
-            _videoStreamFilter.StreamIndex != vidFrame.Profile.Index)
+            _videoStreamFilter.Format != vidFrame.Profile.Format)
             return;
         if (HasTextureConflict(frame))
             return;

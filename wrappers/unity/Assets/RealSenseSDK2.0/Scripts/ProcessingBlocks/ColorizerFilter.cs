@@ -20,13 +20,11 @@ public class ColorizerFilter : VideoProcessingBlock
     }
 
     public ColorScheme colorMap;
-    private ColorScheme prevColorMap;
     private List<Stream> _requirments = new List<Stream>() { Stream.Depth };
     private Intel.RealSense.Colorizer _pb = new Intel.RealSense.Colorizer();
 
     public void Awake()
     {
-        prevColorMap = colorMap;
         _pb.Options[Option.ColorScheme].Value = (float)colorMap;
     }
     public override Frame Process(Frame frame)
@@ -41,18 +39,6 @@ public class ColorizerFilter : VideoProcessingBlock
 
     public void Update()
     {
-        if (prevColorMap != colorMap)
-        {
-            try
-            {
-                _pb.Options[Option.ColorScheme].Value = (float)colorMap;
-                prevColorMap = colorMap;
-            }
-            catch (Exception e)
-            {
-                Debug.LogError("Failed to change color scheme for colorizer. " + e.Message);
-                colorMap = prevColorMap;
-            }
-        }
+        _pb.Options[Option.ColorScheme].Value = (float)colorMap;
     }
 }
