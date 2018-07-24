@@ -193,8 +193,6 @@ namespace librealsense
                     // Register intrinsics
                     auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                    get_device().tag_profile(video);
-
                     auto profile = to_profile(p.get());
                     std::weak_ptr<l500_depth_sensor> wp =
                         std::dynamic_pointer_cast<l500_depth_sensor>(this->shared_from_this());
