@@ -142,8 +142,6 @@ namespace librealsense
                 }
                 auto vid_profile = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                get_device().tag_profile(vid_profile);
-
                 // Register intrinsics
                 if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
                 {
@@ -232,8 +230,6 @@ namespace librealsense
                     assign_stream(_owner->_right_ir_stream, p);
                 }
                 auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
-
-                get_device().tag_profile(video);
 
                 // Register intrinsics
                 if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
