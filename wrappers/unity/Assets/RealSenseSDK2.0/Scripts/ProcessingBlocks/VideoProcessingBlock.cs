@@ -13,20 +13,21 @@ public interface IVideoProcessingBlock {
     bool IsEnabled();
     void Enable(bool state);
     List<Stream> Requirments();
+    int GetOrder();
 }
 
 public abstract class VideoProcessingBlock : MonoBehaviour, IVideoProcessingBlock
 {
     public bool _enabled = true;
+    public int _order = 0;
     public bool _fork = false;
 
     public abstract Frame Process(Frame frame);
     public abstract List<Stream> Requirments();
 
+    public int GetOrder() { return _order; }
     public bool Fork() { return _fork; }
-
-    public void Enable(bool state) { _enabled = state; }
-    
+    public void Enable(bool state) { _enabled = state; }    
     public bool IsEnabled() { return _enabled; }
 
     public void Start()
@@ -42,12 +43,13 @@ public abstract class VideoProcessingBlock : MonoBehaviour, IVideoProcessingBloc
 public abstract class MultiFrameVideoProcessingBlock : MonoBehaviour, IVideoProcessingBlock
 {
     public bool _enabled = true;
+    public int _order = 0;
 
     public abstract FrameSet Process(FrameSet frameset, FramesReleaser releaser);
     public abstract List<Stream> Requirments();
 
+    public int GetOrder() { return _order; }
     public void Enable(bool state) { _enabled = state; }
-
     public bool IsEnabled() { return _enabled; }
 
     public void Start()

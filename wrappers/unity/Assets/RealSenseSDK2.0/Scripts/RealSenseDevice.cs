@@ -6,6 +6,7 @@ using System.Threading;
 using UnityEngine;
 using Intel.RealSense;
 using System.Collections;
+using System.Linq;
 
 /// <summary>
 /// Manages streaming using a RealSense Device
@@ -254,7 +255,8 @@ public class RealSenseDevice : MonoBehaviour
 
     private Frame ApplyFilters(Frame frame)
     {
-        foreach (var vpb in Instance.m_processingBlocks)
+        var pbs = Instance.m_processingBlocks.OrderBy(i => i.GetOrder()).ToList();
+        foreach (var vpb in pbs)
         {
             if (!(vpb is VideoProcessingBlock))
                 continue;
@@ -318,7 +320,8 @@ public class RealSenseDevice : MonoBehaviour
         {
             var frames = FrameSet.FromFrame(f, releaser);
 
-            foreach (var vpb in Instance.m_processingBlocks)
+            var pbs = Instance.m_processingBlocks.OrderBy(i => i.GetOrder()).ToList();
+            foreach (var vpb in pbs)
             {
                 if (!(vpb is MultiFrameVideoProcessingBlock))
                     continue;

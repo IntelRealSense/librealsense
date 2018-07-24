@@ -4111,6 +4111,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _enabled: 1
+  _order: 1
   _fork: 1
   colorMap: 0
 --- !u!114 &1612107315
@@ -4125,6 +4126,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _enabled: 1
+  _order: 0
   _fork: 0
   _holesFill: 0
 --- !u!114 &1612107317
@@ -4139,6 +4141,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _enabled: 1
+  _order: 0
   _fork: 0
   _filterSmoothAlpha: 0.4
   _filterSmoothDelta: 20
@@ -4155,6 +4158,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _enabled: 1
+  _order: 0
   _fork: 0
   _filterMagnitude: 2
   _filterSmoothAlpha: 0.5
