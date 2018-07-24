@@ -603,11 +603,12 @@ else()
 endif()
 
 option(FORCE_LIBUVC "Explicitly turn-on libuvc backend" OFF)
+option(FORCE_WINUSB_UVC "Explicitly turn-on winusb_uvc (for win7) backend" OFF)
 
 if(WIN32)
     ## Check for Windows Version ##
     if( ${CMAKE_SYSTEM_VERSION} EQUAL 6.1 ) # Windows 7
-        set(BACKEND RS2_USE_WMF_BACKEND)
+        set(FORCE_WINUSB_UVC ON)
     else() # Some other windows version
         set(BACKEND RS2_USE_WMF_BACKEND)
     endif()
@@ -626,6 +627,44 @@ elseif(APPLE)
 else()
     set(BACKEND RS2_USE_V4L2_BACKEND)
 endif()
+
+
+if(FORCE_WINUSB_UVC)
+    set(BACKEND RS2_USE_WINUSB_UVC_BACKEND)
+#
+#    list(APPEND REALSENSE_CPP
+#		src/win7/winusb_uvc/ctrl.cpp
+#		#src/win7/winusb_uvc/parser.cpp
+#		#src/win7/winusb_uvc/stream.cpp
+#		#src/win7/winusb_uvc/winusb_impl.cpp
+#		src/win7/winusb_uvc/winusb_uvc.cpp
+#    )
+#
+#    list(APPEND REALSENSE_HPP
+#		#src/win7/winusb_uvc/parser.h
+#		#src/win7/winusb_uvc/utlist.h
+#		#src/win7/winusb_uvc/winusb_internal.h
+#		src/win7/winusb_uvc/winusb_uvc.h
+#    )
+#
+#	source_group("Source Files\\WinUsbUvc" FILES
+#		src/win7/winusb_uvc/ctrl.cpp
+#		#src/win7/winusb_uvc/parser.cpp
+#		#src/win7/winusb_uvc/stream.cpp
+#		#src/win7/winusb_uvc/winusb_impl.cpp
+#		src/win7/winusb_uvc/winusb_uvc.cpp
+#    )
+#
+#    source_group("Header Files\\WinUsbUvc" FILES
+#		#src/win7/winusb_uvc/parser.h
+#		#src/win7/winusb_uvc/utlist.h
+#		#src/win7/winusb_uvc/winusb_internal.h
+#		#src/win7/winusb_uvc/winusb_uvc.h
+#    )
+#
+#    message( WARNING "Using winusb_uvc!" )
+endif()
+
 
 if(FORCE_LIBUVC)
     set(BACKEND RS2_USE_LIBUVC_BACKEND)
@@ -966,7 +1005,7 @@ list(LENGTH AllSources ignore_count)
 #if(${ignore_count} GREATER 0)
 #  if(${ignore_count} GREATER 1)
 #    message ( WARNING "${ignore_count} source files ignored: ${AllSources}" )
-#  else(${ignore_count} GREATER 1)		
+#  else(${ignore_count} GREATER 1)
 #    message ( WARNING "Source file ignored: ${AllSources}" )
 #  endif(${ignore_count} GREATER 1)
 #endif(${ignore_count} GREATER 0)

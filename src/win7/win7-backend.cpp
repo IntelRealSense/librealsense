@@ -1,6 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-#ifdef RS2_USE_WMF_BACKEND
+#ifdef RS2_USE_WINUSB_UVC_BACKEND
 
 #if (_MSC_FULL_VER < 180031101)
     #error At least Visual Studio 2013 Update 4 is required to compile this backend
@@ -21,13 +21,13 @@ namespace librealsense
 {
     namespace platform
     {
-        wmf_backend::wmf_backend()
+        win7_backend::win7_backend()
         {
             CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
             MFStartup(MF_VERSION, MFSTARTUP_NOSOCKET);
         }
 
-        wmf_backend::~wmf_backend()
+        win7_backend::~win7_backend()
         {
             try {
                 MFShutdown();
@@ -39,18 +39,18 @@ namespace librealsense
             }
         }
 
-        std::shared_ptr<uvc_device> wmf_backend::create_uvc_device(uvc_device_info info) const
+        std::shared_ptr<uvc_device> win7_backend::create_uvc_device(uvc_device_info info) const
         {
             return std::make_shared<retry_controls_work_around>(
-                            std::make_shared<wmf_uvc_device>(info, shared_from_this()));
+                            std::make_shared<win7_uvc_device>(info, shared_from_this()));
         }
 
         std::shared_ptr<backend> create_backend()
         {
-            return std::make_shared<wmf_backend>();
+            return std::make_shared<win7_backend>();
         }
 
-        std::vector<uvc_device_info> wmf_backend::query_uvc_devices() const
+        std::vector<uvc_device_info> win7_backend::query_uvc_devices() const
         {
             std::vector<uvc_device_info> devices;
 
@@ -59,17 +59,17 @@ namespace librealsense
                 devices.push_back(info);
             };
 
-            wmf_uvc_device::foreach_uvc_device(action);
+            win7_uvc_device::foreach_uvc_device(action);
 
             return devices;
         }
 
-        std::shared_ptr<usb_device> wmf_backend::create_usb_device(usb_device_info info) const
+        std::shared_ptr<usb_device> win7_backend::create_usb_device(usb_device_info info) const
         {
             return std::make_shared<winusb_bulk_transfer>(info);
         }
 
-        std::vector<usb_device_info> wmf_backend::query_usb_devices() const
+        std::vector<usb_device_info> win7_backend::query_usb_devices() const
         {
             const std::vector<std::string> usb_interfaces = {
                 "{175695CD-30D9-4F87-8BE3-5A8270F49A31}",
@@ -94,39 +94,17 @@ namespace librealsense
             return result;
         }
 
-        std::shared_ptr<hid_device> wmf_backend::create_hid_device(hid_device_info info) const
+        std::shared_ptr<hid_device> win7_backend::create_hid_device(hid_device_info info) const
         {
-            std::shared_ptr<hid_device> result = nullptr;
-
-            auto action = [&result, &info](const hid_device_info& i, CComPtr<ISensor> ptr)
-            {
-                if (info.device_path == i.device_path)
-                {
-                    result = std::make_shared<wmf_hid_device>(ptr);
-                }
-            };
-
-            wmf_hid_device::foreach_hid_device(action);
-
-            if (result.get()) return result;
-            throw std::runtime_error("Device no longer found!");
+            throw std::runtime_error("create_hid_device Not supported");
         }
 
-        std::vector<hid_device_info> wmf_backend::query_hid_devices() const
+        std::vector<hid_device_info> win7_backend::query_hid_devices() const
         {
-            std::vector<hid_device_info> devices;
-
-            auto action = [&devices](const hid_device_info& info, CComPtr<ISensor>)
-            {
-                devices.push_back(info);
-            };
-
-            wmf_hid_device::foreach_hid_device(action);
-
-            return devices;
+            throw std::runtime_error("query_hid_devices Not supported");
         }
 
-        std::shared_ptr<time_service> wmf_backend::create_time_service() const
+        std::shared_ptr<time_service> win7_backend::create_time_service() const
         {
             return std::make_shared<os_time_service>();
         }
@@ -331,7 +309,7 @@ namespace librealsense
             }
         };
 
-        std::shared_ptr<device_watcher> wmf_backend::create_device_watcher() const
+        std::shared_ptr<device_watcher> win7_backend::create_device_watcher() const
         {
             return std::make_shared<win_event_device_watcher>(this);
         }

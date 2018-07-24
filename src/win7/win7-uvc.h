@@ -35,7 +35,7 @@ namespace librealsense
 {
     namespace platform
     {
-        class wmf_backend;
+        class win7_backend;
 
         struct profile_and_callback
         {
@@ -46,12 +46,12 @@ namespace librealsense
         typedef std::function<void(const uvc_device_info&, IMFActivate*)>
                 enumeration_callback;
 
-        class wmf_uvc_device : public std::enable_shared_from_this<wmf_uvc_device>,
+        class win7_uvc_device : public std::enable_shared_from_this<win7_uvc_device>,
                                public uvc_device
         {
         public:
-            wmf_uvc_device(const uvc_device_info& info, std::shared_ptr<const wmf_backend> backend);
-            ~wmf_uvc_device();
+            win7_uvc_device(const uvc_device_info& info, std::shared_ptr<const win7_backend> backend);
+            ~win7_uvc_device();
 
             void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override;
             void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override;
@@ -127,7 +127,7 @@ namespace librealsense
             std::vector<profile_and_callback>       _streams;
             std::mutex                              _streams_mutex;
 
-            std::shared_ptr<const wmf_backend>      _backend;
+            std::shared_ptr<const win7_backend>      _backend;
 
             named_mutex                             _systemwide_lock;
             std::string                             _location;
@@ -141,7 +141,7 @@ namespace librealsense
         class source_reader_callback : public IMFSourceReaderCallback
         {
         public:
-            explicit source_reader_callback(std::weak_ptr<wmf_uvc_device> owner) : _owner(owner)
+            explicit source_reader_callback(std::weak_ptr<win7_uvc_device> owner) : _owner(owner)
             {
             };
             virtual ~source_reader_callback() {};
@@ -156,7 +156,7 @@ namespace librealsense
             STDMETHODIMP OnEvent(DWORD /*sidx*/, IMFMediaEvent* /*event*/) override;
             STDMETHODIMP OnFlush(DWORD) override;
         private:
-            std::weak_ptr<wmf_uvc_device> _owner;
+            std::weak_ptr<win7_uvc_device> _owner;
             long _refCount = 0;
         };
 

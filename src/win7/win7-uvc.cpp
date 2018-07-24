@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#ifdef RS2_USE_WMF_BACKEND
+#ifdef RS2_USE_WINUSB_UVC_BACKEND
 
 #if (_MSC_FULL_VER < 180031101)
 #error At least Visual Studio 2013 Update 4 is required to compile this backend
@@ -239,7 +239,7 @@ namespace librealsense
             return S_OK;
         }
 
-        bool wmf_uvc_device::is_connected(const uvc_device_info& info)
+        bool win7_uvc_device::is_connected(const uvc_device_info& info)
         {
             auto result = false;
             foreach_uvc_device([&result, &info](const uvc_device_info& i, IMFActivate*)
@@ -249,14 +249,14 @@ namespace librealsense
             return result;
         }
 
-        IKsControl* wmf_uvc_device::get_ks_control(const extension_unit & xu) const
+        IKsControl* win7_uvc_device::get_ks_control(const extension_unit & xu) const
         {
             auto it = _ks_controls.find(xu.node);
             if (it != std::end(_ks_controls)) return it->second;
             throw std::runtime_error("Extension control must be initialized before use!");
         }
 
-        void wmf_uvc_device::init_xu(const extension_unit& xu)
+        void win7_uvc_device::init_xu(const extension_unit& xu)
         {
             if (!_source)
                 throw std::runtime_error("Could not initialize extensions controls!");
@@ -279,7 +279,7 @@ namespace librealsense
             _ks_controls[xu.node] = ks_control;
         }
 
-        bool wmf_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
+        bool win7_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
         {
             auto ks_control = get_ks_control(xu);
 
@@ -301,7 +301,7 @@ namespace librealsense
             return true;
         }
 
-        bool wmf_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
+        bool win7_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
         {
             auto ks_control = get_ks_control(xu);
 
@@ -391,7 +391,7 @@ namespace librealsense
             }
         }
 
-        control_range wmf_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const
+        control_range win7_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const
         {
             auto ks_control = get_ks_control(xu);
 
@@ -495,7 +495,7 @@ namespace librealsense
             return v;
         }
 
-        bool wmf_uvc_device::get_pu(rs2_option opt, int32_t& value) const
+        bool win7_uvc_device::get_pu(rs2_option opt, int32_t& value) const
         {
             long val = 0, flags = 0;
             if ((opt == RS2_OPTION_EXPOSURE) || (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE))
@@ -542,7 +542,7 @@ namespace librealsense
             throw std::runtime_error(to_string() << "Unsupported control - " << opt);
         }
 
-        bool wmf_uvc_device::set_pu(rs2_option opt, int value)
+        bool win7_uvc_device::set_pu(rs2_option opt, int value)
         {
             if (opt == RS2_OPTION_EXPOSURE)
             {
@@ -667,7 +667,7 @@ namespace librealsense
             throw std::runtime_error(to_string() << "Unsupported control - " << opt);
         }
 
-        control_range wmf_uvc_device::get_pu_range(rs2_option opt) const
+        control_range win7_uvc_device::get_pu_range(rs2_option opt) const
         {
             if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE ||
                 opt == RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
@@ -706,7 +706,7 @@ namespace librealsense
             throw std::runtime_error("unsupported control");
         }
 
-        void wmf_uvc_device::foreach_uvc_device(enumeration_callback action)
+        void win7_uvc_device::foreach_uvc_device(enumeration_callback action)
         {
             for (auto attributes_params_set : attributes_params)
             {
@@ -754,7 +754,7 @@ namespace librealsense
             }
         }
 
-        void wmf_uvc_device::set_power_state(power_state state)
+        void win7_uvc_device::set_power_state(power_state state)
         {
             static auto rs2 = false;
 
@@ -883,7 +883,7 @@ namespace librealsense
             }
         }
 
-        std::vector<stream_profile> wmf_uvc_device::get_profiles() const
+        std::vector<stream_profile> win7_uvc_device::get_profiles() const
         {
             check_connection();
 
@@ -946,8 +946,8 @@ namespace librealsense
             return results;
         }
 
-        wmf_uvc_device::wmf_uvc_device(const uvc_device_info& info,
-            std::shared_ptr<const wmf_backend> backend)
+        win7_uvc_device::win7_uvc_device(const uvc_device_info& info,
+            std::shared_ptr<const win7_backend> backend)
             : _streamIndex(MAX_PINS), _info(info), _is_flushed(), _has_started(), _backend(std::move(backend)),
             _systemwide_lock(info.unique_id.c_str(), WAIT_FOR_MUTEX_TIME_OUT),
             _location(""), _device_usb_spec(usb3_type)
@@ -971,14 +971,14 @@ namespace librealsense
             }
         }
 
-        wmf_uvc_device::~wmf_uvc_device()
+        win7_uvc_device::~win7_uvc_device()
         {
             try {
                 if (_streaming)
                 {
                     flush(MF_SOURCE_READER_ALL_STREAMS);
                 }
-                wmf_uvc_device::set_power_state(D3);
+                win7_uvc_device::set_power_state(D3);
 
                 if (_source)
                 {
@@ -1005,7 +1005,7 @@ namespace librealsense
             }
         }
 
-        void wmf_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int /*buffers*/)
+        void win7_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int /*buffers*/)
         {
             if (_streaming)
                 throw std::runtime_error("Device is already streaming!");
@@ -1014,7 +1014,7 @@ namespace librealsense
             _frame_callbacks.push_back(callback);
         }
 
-        void wmf_uvc_device::play_profile(stream_profile profile, frame_callback callback)
+        void win7_uvc_device::play_profile(stream_profile profile, frame_callback callback)
         {
             CComPtr<IMFMediaType> pMediaType = nullptr;
             for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
@@ -1119,7 +1119,7 @@ namespace librealsense
 
         }
 
-        void wmf_uvc_device::stream_on(std::function<void(const notification& n)> error_handler)
+        void win7_uvc_device::stream_on(std::function<void(const notification& n)> error_handler)
         {
             if (_profiles.empty())
                 throw std::runtime_error("Stream not configured");
@@ -1151,17 +1151,17 @@ namespace librealsense
             }
         }
 
-        void wmf_uvc_device::start_callbacks()
+        void win7_uvc_device::start_callbacks()
         {
             _is_started = true;
         }
 
-        void wmf_uvc_device::stop_callbacks()
+        void win7_uvc_device::stop_callbacks()
         {
             _is_started = false;
         }
 
-        void wmf_uvc_device::stop_stream_cleanup(const stream_profile& profile, std::vector<profile_and_callback>::iterator& elem)
+        void win7_uvc_device::stop_stream_cleanup(const stream_profile& profile, std::vector<profile_and_callback>::iterator& elem)
         {
             if (elem != _streams.end())
             {
@@ -1185,7 +1185,7 @@ namespace librealsense
             _has_started.reset();
         }
 
-        void wmf_uvc_device::close(stream_profile profile)
+        void win7_uvc_device::close(stream_profile profile)
         {
             _is_started = false;
 
@@ -1214,7 +1214,7 @@ namespace librealsense
         }
 
         // ReSharper disable once CppMemberFunctionMayBeConst
-        void wmf_uvc_device::flush(int sIndex)
+        void win7_uvc_device::flush(int sIndex)
         {
             if (is_connected(_info))
             {
@@ -1234,7 +1234,7 @@ namespace librealsense
             }
         }
 
-        void wmf_uvc_device::check_connection() const
+        void win7_uvc_device::check_connection() const
         {
             if (!is_connected(_info))
                 throw std::runtime_error("Camera is no longer connected!");
