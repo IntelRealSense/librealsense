@@ -208,9 +208,9 @@ PYBIND11_MODULE(NAME, m) {
     /* rs2_context.hpp */
     py::class_<rs2::context> context(m, "context");
     context.def(py::init<>())
-        .def("query_devices", &rs2::context::query_devices, "Create a static"
+        .def("query_devices", (rs2::device_list(rs2::context::*)() const) &rs2::context::query_devices, "Create a static"
             " snapshot of all connected devices a the time of the call.")
-        .def_property_readonly("devices", &rs2::context::query_devices,
+        .def_property_readonly("devices", (rs2::device_list (rs2::context::*)() const) &rs2::context::query_devices,
             "Create a static snapshot of all connected devices a the time of the call.")
         .def("query_all_sensors", &rs2::context::query_all_sensors, "Generate a flat list of "
             "all available sensors from all RealSense devices.")

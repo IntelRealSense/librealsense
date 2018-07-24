@@ -129,6 +129,21 @@ namespace rs2
         }
 
         /**
+        * create a static snapshot of all connected devices at the time of the call
+        * \return            the list of devices connected devices at the time of the call
+        */
+        device_list query_devices(int mask) const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_device_list> list(
+                rs2_query_devices_ex(_context.get(), mask, &e),
+                rs2_delete_device_list);
+            error::handle(e);
+
+            return device_list(list);
+        }
+
+        /**
          * @brief Generate a flat list of all available sensors from all RealSense devices
          * @return List of sensors
          */
