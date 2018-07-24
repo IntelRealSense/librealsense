@@ -446,6 +446,13 @@ namespace librealsense
                 std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                     RS2_OPTION_ASIC_TEMPERATURE));
         }
+
+        if (_fw_version >= firmware_version("5.9.15.1"))
+        {
+            get_depth_sensor().register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                std::make_shared<external_sync_mode>(*_hw_monitor));
+        }
+
         roi_sensor_interface* roi_sensor;
         if (roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_ep))
             roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
