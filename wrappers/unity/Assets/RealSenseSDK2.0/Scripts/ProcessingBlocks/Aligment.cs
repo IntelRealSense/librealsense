@@ -20,6 +20,8 @@ public class Aligment : MultiFrameVideoProcessingBlock
 
     private void ResetAligner()
     {
+        if(_pb != null)
+            _pb.Dispose();
         _pb = new Align(_alignTo);
         _currAlignTo = _alignTo;
     }
@@ -33,8 +35,8 @@ public class Aligment : MultiFrameVideoProcessingBlock
                 if (_profilesIds.Count == 0 != !_profilesIds.ContainsValue(color.Profile.UniqueID) || !_profilesIds.ContainsValue(depth.Profile.UniqueID))
                 {
                     ResetAligner();
-                    _profilesIds[Stream.Color] = depth.Profile.UniqueID;
-                    _profilesIds[Stream.Depth] = color.Profile.UniqueID;
+                    _profilesIds[Stream.Depth] = depth.Profile.UniqueID;
+                    _profilesIds[Stream.Color] = color.Profile.UniqueID;
                 }
             return _enabled ? _pb.Process(frameset, releaser) : frameset;
         }

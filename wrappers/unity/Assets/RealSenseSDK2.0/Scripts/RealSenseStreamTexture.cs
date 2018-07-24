@@ -53,8 +53,6 @@ public class RealSenseStreamTexture : MonoBehaviour
     [System.NonSerialized]
     private byte[] data;
 
-    private object _lock = new object();
-
     readonly AutoResetEvent f = new AutoResetEvent(false);
     protected int threadId;
 
@@ -113,23 +111,20 @@ public class RealSenseStreamTexture : MonoBehaviour
             vidFrame.Dispose();
     }
 
-    private void SetTexture(VideoStreamRequest vsr)
+    private void ResetTexture(VideoStreamRequest vsr)
     {
         if (texture != null)
         {
             Destroy(texture);
         }
 
-        lock (_lock)
+        texture = new Texture2D(vsr.Width, vsr.Height, Convert(vsr.Format), false, true)
         {
-            texture = new Texture2D(vsr.Width, vsr.Height, Convert(vsr.Format), false, true)
-            {
-                wrapMode = TextureWrapMode.Clamp,
-                filterMode = filterMode
-            };
+            wrapMode = TextureWrapMode.Clamp,
+            filterMode = filterMode
+        };
 
-            _currVideoStreamFilter = vsr.Clone();
-        }
+        _currVideoStreamFilter = vsr.Clone();
 
         texture.Apply();
         textureBinding.Invoke(texture);
@@ -137,17 +132,16 @@ public class RealSenseStreamTexture : MonoBehaviour
 
     private bool HasTextureConflict(Frame frame)
     {
-        lock(_lock)
-        {
-            var vidFrame = frame as VideoFrame;
-            if (_videoStreamFilter.Width == vidFrame.Width && _videoStreamFilter.Height == vidFrame.Height && _videoStreamFilter.Format == vidFrame.Profile.Format)
-                return false;
-            _videoStreamFilter.CopyProfile(vidFrame);
-            return true;
-        }
+        var vidFrame = frame as VideoFrame;
+        if (_videoStreamFilter.Width == vidFrame.Width && _videoStreamFilter.Height == vidFrame.Height && _videoStreamFilter.Format == vidFrame.Profile.Format)
+            return false;
+        _videoStreamFilter.CopyProfile(vidFrame);
+        data = null;
+
+        return true;
     }
 
-    private bool HasConflict(VideoFrame vf)
+    private bool HasRequestConflict(VideoFrame vf)
     {
         if (_videoStreamFilter.Stream != vf.Profile.Stream ||
             _videoStreamFilter.Format != vf.Profile.Format ||
@@ -158,7 +152,7 @@ public class RealSenseStreamTexture : MonoBehaviour
 
     private void OnNewSampleThreading(Frame frame)
     {
-        if (HasConflict(frame as VideoFrame))
+        if (HasRequestConflict(frame as VideoFrame))
             return;
         if (HasTextureConflict(frame))
             return;
@@ -170,7 +164,7 @@ public class RealSenseStreamTexture : MonoBehaviour
     {
         var vidFrame = frame as VideoFrame;
 
-        if (HasConflict(vidFrame))
+        if (HasRequestConflict(vidFrame))
             return;
         if (HasTextureConflict(frame))
             return;
@@ -190,7 +184,7 @@ public class RealSenseStreamTexture : MonoBehaviour
     void Update()
     {
         if(!_currVideoStreamFilter.Equals(_videoStreamFilter))
-            SetTexture(_videoStreamFilter);
+            ResetTexture(_videoStreamFilter);
 
         if (f.WaitOne(0))
         {
