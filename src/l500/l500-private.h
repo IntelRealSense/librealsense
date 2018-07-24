@@ -25,7 +25,8 @@ namespace librealsense
         {
             HWReset = 0x20,
             GVD = 0x10,
-            GLD = 0x0f
+            GLD = 0x0f,
+            DPT_INTRINSICS_GET = 0x5A
         };
 
         enum gvd_fields

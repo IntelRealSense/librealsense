@@ -363,6 +363,7 @@ namespace rs2
 
             void on_frame(callback_type callback) { _metrics_model.callback = callback; }
 
+            float get_depth_scale() const { return _metrics_model._depth_scale_units; }
             rs2::device get_active_device(void) const;
 
         private:
