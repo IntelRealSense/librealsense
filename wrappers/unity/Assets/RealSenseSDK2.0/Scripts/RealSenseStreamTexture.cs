@@ -106,25 +106,22 @@ public class RealSenseStreamTexture : MonoBehaviour
 
     private void UpdateData(Frame frame)
     {
-        lock (_lock)
-        {
-            var vidFrame = frame as VideoFrame;
-            data = data ?? new byte[vidFrame.Stride * vidFrame.Height];
-            vidFrame.CopyTo(data);
-            if ((vidFrame as Frame) != frame)
-                vidFrame.Dispose();
-        }
+        var vidFrame = frame as VideoFrame;
+        data = data ?? new byte[vidFrame.Stride * vidFrame.Height];
+        vidFrame.CopyTo(data);
+        if ((vidFrame as Frame) != frame)
+            vidFrame.Dispose();
     }
 
     private void SetTexture(VideoStreamRequest vsr)
     {
+        if (texture != null)
+        {
+            Destroy(texture);
+        }
+
         lock (_lock)
         {
-            if (texture != null)
-            {
-                Destroy(texture);
-            }
-
             texture = new Texture2D(vsr.Width, vsr.Height, Convert(vsr.Format), false, true)
             {
                 wrapMode = TextureWrapMode.Clamp,
@@ -132,19 +129,22 @@ public class RealSenseStreamTexture : MonoBehaviour
             };
 
             _currVideoStreamFilter = vsr.Clone();
-
-            texture.Apply();
-            textureBinding.Invoke(texture);
         }
+
+        texture.Apply();
+        textureBinding.Invoke(texture);
     }
 
     private bool HasTextureConflict(Frame frame)
     {
-        var vidFrame = frame as VideoFrame;
-        if (_videoStreamFilter.Width == vidFrame.Width && _videoStreamFilter.Height == vidFrame.Height && _videoStreamFilter.Format == vidFrame.Profile.Format)
-            return false;
-        _videoStreamFilter.CopyProfile(vidFrame);
-        return true;
+        lock(_lock)
+        {
+            var vidFrame = frame as VideoFrame;
+            if (_videoStreamFilter.Width == vidFrame.Width && _videoStreamFilter.Height == vidFrame.Height && _videoStreamFilter.Format == vidFrame.Profile.Format)
+                return false;
+            _videoStreamFilter.CopyProfile(vidFrame);
+            return true;
+        }
     }
 
     private bool HasConflict(VideoFrame vf)
