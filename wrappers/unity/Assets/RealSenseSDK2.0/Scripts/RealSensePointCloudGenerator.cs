@@ -57,12 +57,12 @@ public class RealSensePointCloudGenerator : MonoBehaviour
             GetComponent<MeshRenderer>().sharedMaterial.SetTexture("_UVMap", uvmap);
 
             if (mesh != null)
-                Destroy(mesh);
-
-            mesh = new Mesh()
-            {
-                indexFormat = IndexFormat.UInt32,
-            };
+                mesh.Clear();
+            else
+                mesh = new Mesh()
+                {
+                    indexFormat = IndexFormat.UInt32,
+                };
 
             vertices = new Vector3[profile.Width * profile.Height];
             handle = GCHandle.Alloc(vertices, GCHandleType.Pinned);
@@ -101,13 +101,14 @@ public class RealSensePointCloudGenerator : MonoBehaviour
     void OnDestroy()
     {
         OnStopStreaming();
+
+        if(mesh != null)
+            Destroy(null);
     }
 
 
     private void OnStopStreaming()
     {
-        // RealSenseDevice.Instance.onNewSampleSet -= OnFrames;
-
         e.Reset();
 
         if (handle.IsAllocated)

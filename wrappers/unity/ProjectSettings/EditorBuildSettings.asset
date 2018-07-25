@@ -8,7 +8,4 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/RealSenseSDK2.0/Scenes/StartHere.unity
     guid: b58b736dcdf5e6d4dbe73d67853a2ace
-  - enabled: 0
-    path: Assets/RealSenseSDK2.0/Scenes/Samples/DepthProcessingBlocks.unity
-    guid: 5b995e31081756343b74e50bba10c45f
   m_configObjects: {}

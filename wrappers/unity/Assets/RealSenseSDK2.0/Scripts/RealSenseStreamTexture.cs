@@ -57,6 +57,7 @@ public class RealSenseStreamTexture : MonoBehaviour
 
     readonly AutoResetEvent f = new AutoResetEvent(false);
     protected int threadId;
+    protected bool bound;
 
     virtual protected void Awake()
     {
@@ -69,6 +70,14 @@ public class RealSenseStreamTexture : MonoBehaviour
     {
         RealSenseDevice.Instance.OnStart += OnStartStreaming;
         RealSenseDevice.Instance.OnStop += OnStopStreaming;
+    }
+
+    void OnDestroy()
+    {
+        if (texture != null) {
+            Destroy(texture);
+            texture = null;
+        }
     }
 
     protected virtual void OnStopStreaming()
@@ -202,6 +211,12 @@ public class RealSenseStreamTexture : MonoBehaviour
                 throw;
             }
             texture.Apply();
+
+            if (!bound)
+            {
+                textureBinding.Invoke(texture);
+                bound = true;
+            }
         }
     }
 }

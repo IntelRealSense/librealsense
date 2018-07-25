@@ -1,11 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using Intel.RealSense;
+﻿using Intel.RealSense;
 using UnityEditor;
 using UnityEngine;
-using System.Linq;
-using System.Threading;
-using System;
 
 [CustomEditor(typeof(RealSenseDevice))]
 public class RealSenseDeviceEditor : Editor
@@ -106,62 +101,64 @@ public class RealSenseDeviceEditor : Editor
 
                     if (isStreaming)
                     {
-                        var playback = PlaybackDevice.FromDevice(device.ActiveProfile.Device);
-                        bool isPlaying = playback.Status == PlaybackStatus.Playing;
-
-                        //TODO: cache icons (in OnEnable)
-                        var playBtnStyle = EditorGUIUtility.IconContent("PlayButton", "|Play");
-                        // var playBtnStyle = EditorGUIUtility.IconContent("Animation.Play");
-
-                        var pauseBtnStyle = EditorGUIUtility.IconContent("PauseButton", "|Pause");
-
-                        // var stepBtnStyle = EditorGUIUtility.IconContent("StepButton", "|Step");
-
-                        // var rewindBtnStyle = EditorGUIUtility.IconContent("Animation.PrevKey");
-                        var rewindBtnStyle = EditorGUIUtility.IconContent("animation.firstkey.png");
-
-                        GUILayout.BeginHorizontal();
-
-                        if (GUILayout.Button(rewindBtnStyle, "CommandLeft"))
-                            playback.Position = 0;
-
-                        if (GUILayout.Button(isPlaying ? pauseBtnStyle : playBtnStyle, "CommandRight"))
+                        using (var playback = PlaybackDevice.FromDevice(device.ActiveProfile.Device))
                         {
-                            if (isPlaying)
-                                playback.Pause();
-                            else
-                                playback.Resume();
+                            bool isPlaying = playback.Status == PlaybackStatus.Playing;
+
+                            //TODO: cache icons (in OnEnable)
+                            var playBtnStyle = EditorGUIUtility.IconContent("PlayButton", "|Play");
+                            // var playBtnStyle = EditorGUIUtility.IconContent("Animation.Play");
+
+                            var pauseBtnStyle = EditorGUIUtility.IconContent("PauseButton", "|Pause");
+
+                            // var stepBtnStyle = EditorGUIUtility.IconContent("StepButton", "|Step");
+
+                            // var rewindBtnStyle = EditorGUIUtility.IconContent("Animation.PrevKey");
+                            var rewindBtnStyle = EditorGUIUtility.IconContent("animation.firstkey.png");
+
+                            GUILayout.BeginHorizontal();
+
+                            if (GUILayout.Button(rewindBtnStyle, "CommandLeft"))
+                                playback.Position = 0;
+
+                            if (GUILayout.Button(isPlaying ? pauseBtnStyle : playBtnStyle, "CommandRight"))
+                            {
+                                if (isPlaying)
+                                    playback.Pause();
+                                else
+                                    playback.Resume();
+                            }
+
+                            // bool play = GUILayout.Toggle(isPlaying, playBtnStyle, "CommandMid");
+                            // if (play && !isPlaying)
+                            //     playback.Resume();
+
+                            // bool pause = GUILayout.Toggle(!isPlaying, pauseBtnStyle, "CommandRight");
+                            // if (pause && isPlaying)
+                            //     playback.Pause();
+
+                            // if (GUILayout.Button(stepBtnStyle, "CommandRight"))
+                            // {
+                            // }
+
+                            //TODO: no getter...
+                            // playback.Speed = EditorGUILayout.FloatField(playback.Speed);
+
+                            GUILayout.EndHorizontal();
+
+                            if (!isPlaying)
+                            {
+                                // var t = TimeSpan.FromMilliseconds(playback.Position * 1e-6);
+                                // playback.Position = (ulong)EditorGUILayout.Slider(t.ToString(), playback.Position, 0, playback.Duration);
+                                playback.Position = (ulong)EditorGUILayout.Slider(playback.Position, 0, playback.Duration);
+                            }
+
+
+                            EditorGUI.BeginDisabledGroup(true);
+                            EditorGUILayout.Space();
+                            EditorGUILayout.PropertyField(config.FindPropertyRelative("Profiles"), true);
+                            EditorGUI.EndDisabledGroup();
                         }
-
-                        // bool play = GUILayout.Toggle(isPlaying, playBtnStyle, "CommandMid");
-                        // if (play && !isPlaying)
-                        //     playback.Resume();
-
-                        // bool pause = GUILayout.Toggle(!isPlaying, pauseBtnStyle, "CommandRight");
-                        // if (pause && isPlaying)
-                        //     playback.Pause();
-
-                        // if (GUILayout.Button(stepBtnStyle, "CommandRight"))
-                        // {
-                        // }
-
-                        //TODO: no getter...
-                        // playback.Speed = EditorGUILayout.FloatField(playback.Speed);
-
-                        GUILayout.EndHorizontal();
-
-                        if (!isPlaying)
-                        {
-                            // var t = TimeSpan.FromMilliseconds(playback.Position * 1e-6);
-                            // playback.Position = (ulong)EditorGUILayout.Slider(t.ToString(), playback.Position, 0, playback.Duration);
-                            playback.Position = (ulong)EditorGUILayout.Slider(playback.Position, 0, playback.Duration);
-                        }
-
-
-                        EditorGUI.BeginDisabledGroup(true);
-                        EditorGUILayout.Space();
-                        EditorGUILayout.PropertyField(config.FindPropertyRelative("Profiles"), true);
-                        EditorGUI.EndDisabledGroup();
                     }
                 }
                 break;
@@ -180,6 +177,10 @@ public class RealSenseDeviceEditor : Editor
                         }
                     }
                     EditorGUILayout.EndHorizontal();
+
+                    EditorGUILayout.Space();
+                    EditorGUILayout.PropertyField(config.FindPropertyRelative("Profiles"), true);
+                    EditorGUI.EndDisabledGroup();
                 }
                 break;
 

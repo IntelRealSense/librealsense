@@ -40,7 +40,8 @@ public struct RealSenseConfiguration
                 break;
 
             case Mode.Record:
-
+                foreach (var p in Profiles)
+                    cfg.EnableStream(p.Stream, p.StreamIndex, p.Width, p.Height, p.Format, p.Framerate);
                 if (!String.IsNullOrEmpty(RecordPath))
                     cfg.EnableRecordToFile(RecordPath);
                 break;

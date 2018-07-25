@@ -104,23 +104,27 @@ public class RealSenseDevice : MonoBehaviour
             ActiveProfile = m_pipeline.Start(cfg);
         }
 
-        DeviceConfiguration.Profiles = new VideoStreamRequest[ActiveProfile.Streams.Count];
-        for (int i = 0; i < DeviceConfiguration.Profiles.Length; i++)
+        using (var activeStreams = ActiveProfile.Streams)
         {
-            DeviceConfiguration.Profiles[i] = new VideoStreamRequest();
-            var p = DeviceConfiguration.Profiles[i];
-            var s = ActiveProfile.Streams[i];
-            p.Stream = s.Stream;
-            p.Format = s.Format;
-            p.Framerate = s.Framerate;
-            p.StreamIndex = s.Index;
-            var vs = s as VideoStreamProfile;
-            if (vs != null)
+            DeviceConfiguration.Profiles = new VideoStreamRequest[activeStreams.Count];
+            for (int i = 0; i < DeviceConfiguration.Profiles.Length; i++)
             {
-                p.Width = vs.Width;
-                p.Height = vs.Height;
+                var s = activeStreams[i];
+                var p = new VideoStreamRequest()
+                {
+                    Stream = s.Stream,
+                    Format = s.Format,
+                    Framerate = s.Framerate,
+                    StreamIndex = s.Index,
+                };
+                var vs = s as VideoStreamProfile;
+                if (vs != null)
+                {
+                    p.Width = vs.Width;
+                    p.Height = vs.Height;
+                }
+                DeviceConfiguration.Profiles[i] = p;
             }
-            DeviceConfiguration.Profiles[i] = p;
         }
 
 
