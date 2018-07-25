@@ -10,51 +10,65 @@ public enum ProcessingBlockType
 }
 
 public interface IVideoProcessingBlock {
-    bool IsEnabled();
-    void Enable(bool state);
+    bool Enabled { get; }
+    int Order { get; }
+
     List<Stream> Requirments();
-    int GetOrder();
 }
 
 public abstract class VideoProcessingBlock : MonoBehaviour, IVideoProcessingBlock
 {
-    public bool _enabled = true;
+    protected bool _enabled = true;
     public int _order = 0;
     public bool _fork = false;
+
+    public bool Enabled { get { return _enabled; } }
+    public int Order { get { return _order; } }
 
     public abstract Frame Process(Frame frame);
     public abstract List<Stream> Requirments();
 
-    public int GetOrder() { return _order; }
     public bool Fork() { return _fork; }
-    public void Enable(bool state) { _enabled = state; }    
-    public bool IsEnabled() { return _enabled; }
 
-    public void Start()
-    {
-        RealSenseDevice.Instance.AddProcessingBlock(this);
-    }
     public bool CanProcess(Frame frame)
     {
         return Requirments().Contains(frame.Profile.Stream);
+    }
+
+    public void OnEnable()
+    {
+        _enabled = true;
+        RealSenseDevice.Instance.AddProcessingBlock(this);
+    }
+
+    public void OnDisable()
+    {
+        _enabled = false;
+        RealSenseDevice.Instance.RemoveProcessingBlock(this);
     }
 }
 
 public abstract class MultiFrameVideoProcessingBlock : MonoBehaviour, IVideoProcessingBlock
 {
-    public bool _enabled = true;
+    protected bool _enabled = true;
     public int _order = 0;
+
+    public bool Enabled { get { return _enabled; } }
+    public int Order { get { return _order; } }
 
     public abstract FrameSet Process(FrameSet frameset, FramesReleaser releaser);
     public abstract List<Stream> Requirments();
 
-    public int GetOrder() { return _order; }
-    public void Enable(bool state) { _enabled = state; }
-    public bool IsEnabled() { return _enabled; }
-
-    public void Start()
+    public void OnEnable()
     {
+        _enabled = true;
         RealSenseDevice.Instance.AddProcessingBlock(this);
+    }
+
+    public void OnDisable()
+    {
+        _enabled = false;
+        RealSenseDevice.Instance.RemoveProcessingBlock(this);
     }
 
     public bool CanProcess(FrameSet frameset)

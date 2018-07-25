@@ -85,6 +85,10 @@ public class RealSenseDevice : MonoBehaviour
     {
         m_processingBlocks.Add(processingBlock);
     }
+    public void RemoveProcessingBlock(IVideoProcessingBlock processingBlock)
+    {
+        m_processingBlocks.Remove(processingBlock);
+    }
 
     void Awake()
     {
@@ -252,13 +256,13 @@ public class RealSenseDevice : MonoBehaviour
 
     private Frame ApplyFilters(Frame frame)
     {
-        var pbs = Instance.m_processingBlocks.OrderBy(i => i.GetOrder()).ToList();
+        var pbs = Instance.m_processingBlocks.OrderBy(i => i.Order).Where(i => i.Enabled).ToList();
         foreach (var vpb in pbs)
         {
             if (!(vpb is VideoProcessingBlock))
                 continue;
             var pb = vpb as VideoProcessingBlock;
-            if (pb.CanProcess(frame) && pb.IsEnabled())
+            if (pb.CanProcess(frame))
             {
                 // run the processing block.
                 var processedFrame = pb.Process(frame);
@@ -309,13 +313,13 @@ public class RealSenseDevice : MonoBehaviour
     private FrameSet HandleMultiFramesProcessingBlocks(FrameSet frameSet, FramesReleaser framesReleaser)
     {
         // multy frames filters
-        var pbs = Instance.m_processingBlocks.OrderBy(i => i.GetOrder()).ToList();
+        var pbs = Instance.m_processingBlocks.OrderBy(i => i.Order).Where(i => i.Enabled).ToList();
         foreach (var vpb in pbs)
         {
             if (!(vpb is MultiFrameVideoProcessingBlock))
                 continue;
             var pb = vpb as MultiFrameVideoProcessingBlock;
-            if (pb.CanProcess(frameSet) && pb.IsEnabled())
+            if (pb.CanProcess(frameSet))
                 frameSet = pb.Process(frameSet, framesReleaser);
         }
 

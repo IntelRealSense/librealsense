@@ -1017,7 +1017,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1612107317}
-        m_MethodName: Enable
+        m_MethodName: set_enabled
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2300,7 +2300,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1612107318}
-        m_MethodName: Enable
+        m_MethodName: set_enabled
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3955,6 +3955,11 @@ Prefab:
     m_Modifications:
     - target: {fileID: 114866818567473902, guid: d2790e271f1a64347bb2ede5601b1e23,
         type: 2}
+      propertyPath: m_processingBlocks.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114866818567473902, guid: d2790e271f1a64347bb2ede5601b1e23,
+        type: 2}
       propertyPath: DeviceConfiguration.Profiles.Array.size
       value: 1
       objectReference: {fileID: 0}
@@ -4086,6 +4091,11 @@ Prefab:
       propertyPath: _videoStreamFilter.Format
       value: 5
       objectReference: {fileID: 0}
+    - target: {fileID: 114866818567473902, guid: d2790e271f1a64347bb2ede5601b1e23,
+        type: 2}
+      propertyPath: m_processingBlocks.Array.data[0]
+      value: 
+      objectReference: {fileID: 1612107315}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: d2790e271f1a64347bb2ede5601b1e23, type: 2}
   m_IsPrefabParent: 0
@@ -4110,7 +4120,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c7c85f25773f544c8740f97326ede05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _enabled: 1
   _order: 1
   _fork: 1
   colorMap: 0
@@ -4125,7 +4134,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5682605caa58bff4fb904f0231347097, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _enabled: 1
   _order: 0
   _fork: 0
   _holesFill: 0
@@ -4140,7 +4148,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 230cf074ab7534243bf62887095e6fcd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _enabled: 1
   _order: 0
   _fork: 0
   _filterSmoothAlpha: 0.4
@@ -4157,7 +4164,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f09640427e9920f43ba2dc134aed8bde, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _enabled: 1
   _order: 0
   _fork: 0
   _filterMagnitude: 2
@@ -5343,7 +5349,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1612107315}
-        m_MethodName: Enable
+        m_MethodName: set_enabled
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
