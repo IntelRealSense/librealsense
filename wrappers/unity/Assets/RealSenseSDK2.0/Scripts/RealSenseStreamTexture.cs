@@ -1,18 +1,51 @@
 ﻿using Intel.RealSense;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.Events;
 
 public class RealSenseStreamTexture : MonoBehaviour
 {
+    private static TextureFormat Convert(Format lrsFormat)
+    {
+        switch (lrsFormat)
+        {
+            case Format.Z16: return TextureFormat.R16;
+            case Format.Disparity16: return TextureFormat.R16;
+            case Format.Rgb8: return TextureFormat.RGB24;
+            case Format.Rgba8: return TextureFormat.RGBA32;
+            case Format.Bgra8: return TextureFormat.BGRA32;
+            case Format.Y8: return TextureFormat.Alpha8;
+            case Format.Y16: return TextureFormat.R16;
+            case Format.Raw16: return TextureFormat.R16;
+            case Format.Raw8: return TextureFormat.Alpha8;
+            case Format.Yuyv:
+            case Format.Bgr8:
+            case Format.Raw10:
+            case Format.Xyz32f:
+            case Format.Uyvy:
+            case Format.MotionRaw:
+            case Format.MotionXyz32f:
+            case Format.GpioRaw: 
+            case Format.Any: 
+            default:
+                throw new Exception(string.Format("{0} librealsense format: " + lrsFormat + ", is not supported by Unity"));
+        }
+    }
+
     [System.Serializable]
     public class TextureEvent : UnityEvent<Texture> { }
 
-    public Stream sourceStreamType;
-    public TextureFormat textureFormat;
+    public Stream _stream;
+    public Format _format;
+    public int _streamIndex;
+
     public FilterMode filterMode = FilterMode.Point;
+
+    private VideoStreamRequest _videoStreamFilter;
+    private VideoStreamRequest _currVideoStreamFilter;
 
     protected Texture2D texture;
 
@@ -20,25 +53,16 @@ public class RealSenseStreamTexture : MonoBehaviour
     public TextureEvent textureBinding;
 
     [System.NonSerialized]
-    byte[] data;
+    private byte[] data;
 
     readonly AutoResetEvent f = new AutoResetEvent(false);
     protected int threadId;
 
-
     virtual protected void Awake()
     {
         threadId = Thread.CurrentThread.ManagedThreadId;
-    }
-
-    /// <summary>
-    /// Called per frame before publishing it
-    /// </summary>
-    /// <param name="f">The frame to process</param>
-    /// <returns>The processed frame</returns>
-    virtual protected Frame ProcessFrame(Frame f)
-    {
-        return f;
+        _videoStreamFilter = new VideoStreamRequest() { Stream = _stream, Format = _format, StreamIndex = _streamIndex };
+        _currVideoStreamFilter = _videoStreamFilter.Clone();
     }
 
     void Start()
@@ -49,8 +73,8 @@ public class RealSenseStreamTexture : MonoBehaviour
 
     protected virtual void OnStopStreaming()
     {
-        RealSenseDevice.Instance.onNewSample -= OnNewSampleUnityThread;
-        RealSenseDevice.Instance.onNewSample -= OnNewSampleThreading;
+        RealSenseDevice.Instance.OnNewSample -= OnNewSampleUnityThread;
+        RealSenseDevice.Instance.OnNewSample -= OnNewSampleThreading;
 
         f.Reset();
         data = null;
@@ -58,36 +82,14 @@ public class RealSenseStreamTexture : MonoBehaviour
 
     protected virtual void OnStartStreaming(PipelineProfile activeProfile)
     {
-        using (var profile = activeProfile.GetStream(sourceStreamType))
-        {
-            var videoProfile = profile as VideoStreamProfile;
-            if (videoProfile == null)
-            {
-                Debug.LogWarningFormat("{0} not in active profile", sourceStreamType);
-                return;
-            }
-
-            if (texture != null)
-            {
-                Destroy(texture);
-            }
-
-            texture = new Texture2D(videoProfile.Width, videoProfile.Height, textureFormat, false, true)
-            {
-                wrapMode = TextureWrapMode.Clamp,
-                filterMode = filterMode
-            };
-            texture.Apply();
-            textureBinding.Invoke(texture);
-        }
 
         if (RealSenseDevice.Instance.processMode == RealSenseDevice.ProcessMode.UnityThread)
         {
             UnityEngine.Assertions.Assert.AreEqual(threadId, Thread.CurrentThread.ManagedThreadId);
-            RealSenseDevice.Instance.onNewSample += OnNewSampleUnityThread;
+            RealSenseDevice.Instance.OnNewSample += OnNewSampleUnityThread;
         }
         else
-            RealSenseDevice.Instance.onNewSample += OnNewSampleThreading;
+            RealSenseDevice.Instance.OnNewSample += OnNewSampleThreading;
     }
 
     public void OnFrame(Frame f)
@@ -105,18 +107,56 @@ public class RealSenseStreamTexture : MonoBehaviour
 
     private void UpdateData(Frame frame)
     {
-        // if (frame.Data == IntPtr.Zero)
-        //     return;
-        var vidFrame = ProcessFrame(frame) as VideoFrame;
+        var vidFrame = frame as VideoFrame;
         data = data ?? new byte[vidFrame.Stride * vidFrame.Height];
         vidFrame.CopyTo(data);
         if ((vidFrame as Frame) != frame)
             vidFrame.Dispose();
     }
 
+    private void ResetTexture(VideoStreamRequest vsr)
+    {
+        if (texture != null)
+        {
+            Destroy(texture);
+        }
+
+        texture = new Texture2D(vsr.Width, vsr.Height, Convert(vsr.Format), false, true)
+        {
+            wrapMode = TextureWrapMode.Clamp,
+            filterMode = filterMode
+        };
+
+        _currVideoStreamFilter = vsr.Clone();
+
+        texture.Apply();
+        textureBinding.Invoke(texture);
+    }
+
+    private bool HasTextureConflict(Frame frame)
+    {
+        var vidFrame = frame as VideoFrame;
+        if (_videoStreamFilter.Width == vidFrame.Width && _videoStreamFilter.Height == vidFrame.Height && _videoStreamFilter.Format == vidFrame.Profile.Format)
+            return false;
+        _videoStreamFilter.CopyProfile(vidFrame);
+        data = null;
+        return true;
+    }
+
+    private bool HasRequestConflict(VideoFrame vf)
+    {
+        if (_videoStreamFilter.Stream != vf.Profile.Stream ||
+            _videoStreamFilter.Format != vf.Profile.Format ||
+            (_videoStreamFilter.StreamIndex != vf.Profile.Index && _videoStreamFilter.StreamIndex != 0))
+            return true;
+        return false;
+    }
+
     private void OnNewSampleThreading(Frame frame)
     {
-        if (frame.Profile.Stream != sourceStreamType)
+        if (HasRequestConflict(frame as VideoFrame))
+            return;
+        if (HasTextureConflict(frame))
             return;
         UpdateData(frame);
         f.Set();
@@ -124,11 +164,15 @@ public class RealSenseStreamTexture : MonoBehaviour
 
     private void OnNewSampleUnityThread(Frame frame)
     {
-        UnityEngine.Assertions.Assert.AreEqual(threadId, Thread.CurrentThread.ManagedThreadId);
-        if (frame.Profile.Stream != sourceStreamType)
+        var vidFrame = frame as VideoFrame;
+
+        if (HasRequestConflict(vidFrame))
+            return;
+        if (HasTextureConflict(frame))
             return;
 
-        var vidFrame = ProcessFrame(frame) as VideoFrame;
+        UnityEngine.Assertions.Assert.AreEqual(threadId, Thread.CurrentThread.ManagedThreadId);
+
         texture.LoadRawTextureData(vidFrame.Data, vidFrame.Stride * vidFrame.Height);
 
         if ((vidFrame as Frame) != frame)
@@ -141,6 +185,9 @@ public class RealSenseStreamTexture : MonoBehaviour
 
     void Update()
     {
+        if (!_currVideoStreamFilter.Equals(_videoStreamFilter))
+            ResetTexture(_videoStreamFilter);
+
         if (f.WaitOne(0))
         {
             try
