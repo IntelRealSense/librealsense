@@ -6,6 +6,20 @@ using System.Collections;
 
 public class RealSenseDeviceInspector : MonoBehaviour
 {
+    [SerializeField]
+    private RealSenseDevice _realSenseDevice;
+    protected RealSenseDevice realSenseDevice
+    {
+        get
+        {
+            if (_realSenseDevice == null)
+            {
+                _realSenseDevice = FindObjectOfType<RealSenseDevice>();
+            }
+            UnityEngine.Assertions.Assert.IsNotNull(_realSenseDevice);
+            return _realSenseDevice;
+        }
+    }
 
     public bool streaming;
     public Device device;
@@ -20,9 +34,9 @@ public class RealSenseDeviceInspector : MonoBehaviour
 
     private IEnumerator WaitForDevice()
     {
-        yield return new WaitUntil(() => RealSenseDevice.Instance != null);
-        RealSenseDevice.Instance.OnStart += onStartStreaming;
-        RealSenseDevice.Instance.OnStop += onStopStreaming;
+        yield return new WaitUntil(() => realSenseDevice != null);
+        realSenseDevice.OnStart += onStartStreaming;
+        realSenseDevice.OnStop += onStopStreaming;
     }
 
     private void onStopStreaming()

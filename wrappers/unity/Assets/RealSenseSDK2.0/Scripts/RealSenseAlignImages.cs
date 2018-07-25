@@ -45,7 +45,7 @@ public class RealSenseAlignImages : RealSenseStreamTexture
         texture.Apply();
         textureBinding.Invoke(texture);
 
-        RealSenseDevice.Instance.onNewSampleSet += OnFrameSet;
+        realSenseDevice.onNewSampleSet += OnFrameSet;
     }
 
     private void OnFrameSet(FrameSet frames)

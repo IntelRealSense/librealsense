@@ -7,6 +7,21 @@ using UnityEngine.Events;
 
 public class RealSenseStreamTexture : MonoBehaviour
 {
+    [SerializeField]
+    private RealSenseDevice _realSenseDevice;
+    protected RealSenseDevice realSenseDevice
+    {
+        get
+        {
+            if(_realSenseDevice == null)
+            {
+                _realSenseDevice = FindObjectOfType<RealSenseDevice>();
+            }
+            UnityEngine.Assertions.Assert.IsNotNull(_realSenseDevice);
+            return _realSenseDevice;
+        }
+    }
+
     [System.Serializable]
     public class TextureEvent : UnityEvent<Texture> { }
 
@@ -43,14 +58,14 @@ public class RealSenseStreamTexture : MonoBehaviour
 
     void Start()
     {
-        RealSenseDevice.Instance.OnStart += OnStartStreaming;
-        RealSenseDevice.Instance.OnStop += OnStopStreaming;
+        realSenseDevice.OnStart += OnStartStreaming;
+        realSenseDevice.OnStop += OnStopStreaming;
     }
 
     protected virtual void OnStopStreaming()
     {
-        RealSenseDevice.Instance.onNewSample -= OnNewSampleUnityThread;
-        RealSenseDevice.Instance.onNewSample -= OnNewSampleThreading;
+        realSenseDevice.onNewSample -= OnNewSampleUnityThread;
+        realSenseDevice.onNewSample -= OnNewSampleThreading;
 
         f.Reset();
         data = null;
@@ -80,19 +95,18 @@ public class RealSenseStreamTexture : MonoBehaviour
             texture.Apply();
             textureBinding.Invoke(texture);
         }
-
-        if (RealSenseDevice.Instance.processMode == RealSenseDevice.ProcessMode.UnityThread)
+        if (realSenseDevice.processMode == RealSenseDevice.ProcessMode.UnityThread)
         {
             UnityEngine.Assertions.Assert.AreEqual(threadId, Thread.CurrentThread.ManagedThreadId);
-            RealSenseDevice.Instance.onNewSample += OnNewSampleUnityThread;
+            realSenseDevice.onNewSample += OnNewSampleUnityThread;
         }
         else
-            RealSenseDevice.Instance.onNewSample += OnNewSampleThreading;
+            realSenseDevice.onNewSample += OnNewSampleThreading;
     }
 
     public void OnFrame(Frame f)
     {
-        if (RealSenseDevice.Instance.processMode == RealSenseDevice.ProcessMode.UnityThread)
+        if (realSenseDevice.processMode == RealSenseDevice.ProcessMode.UnityThread)
         {
             UnityEngine.Assertions.Assert.AreEqual(threadId, Thread.CurrentThread.ManagedThreadId);
             OnNewSampleUnityThread(f);

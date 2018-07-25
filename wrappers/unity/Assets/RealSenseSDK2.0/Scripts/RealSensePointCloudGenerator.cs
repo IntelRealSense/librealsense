@@ -11,6 +11,21 @@ using System.Threading;
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class RealSensePointCloudGenerator : MonoBehaviour
 {
+    [SerializeField]
+    private RealSenseDevice _realSenseDevice;
+    protected RealSenseDevice realSenseDevice
+    {
+        get
+        {
+            if (_realSenseDevice == null)
+            {
+                _realSenseDevice = FindObjectOfType<RealSenseDevice>();
+            }
+            UnityEngine.Assertions.Assert.IsNotNull(_realSenseDevice);
+            return _realSenseDevice;
+        }
+    }
+
     public Stream stream = Stream.Color;
     Mesh mesh;
     Texture2D uvmap;
@@ -28,8 +43,8 @@ public class RealSensePointCloudGenerator : MonoBehaviour
 
     void Start()
     {
-        RealSenseDevice.Instance.OnStart += OnStartStreaming;
-        RealSenseDevice.Instance.OnStop += OnStopStreaming;
+        realSenseDevice.OnStart += OnStartStreaming;
+        realSenseDevice.OnStop += OnStopStreaming;
     }
 
     private void OnStartStreaming(PipelineProfile activeProfile)
@@ -95,7 +110,7 @@ public class RealSensePointCloudGenerator : MonoBehaviour
             GetComponent<MeshFilter>().sharedMesh = mesh;
         }
 
-        RealSenseDevice.Instance.onNewSampleSet += OnFrames;
+        realSenseDevice.onNewSampleSet += OnFrames;
     }
 
     void OnDestroy()

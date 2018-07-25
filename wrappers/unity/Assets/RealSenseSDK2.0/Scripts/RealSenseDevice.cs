@@ -21,9 +21,7 @@ public class RealSenseDevice : MonoBehaviour
         Multithread,
         UnityThread,
     }
-
-    public static RealSenseDevice Instance { get; private set; }
-
+    
     /// <summary>
     /// Threading mode of operation, Multithreasds or Unitythread
     /// </summary>
@@ -74,10 +72,6 @@ public class RealSenseDevice : MonoBehaviour
 
     void Awake()
     {
-        if (Instance != null && Instance != this)
-            throw new Exception(string.Format("{0} singleton already instanced", this.GetType()));
-        Instance = this;
-
         // m_pipeline = new Pipeline();
         // m_config = DeviceConfiguration.ToPipelineConfig();
         // ActiveProfile = m_config.Resolve(m_pipeline);
@@ -169,8 +163,6 @@ public class RealSenseDevice : MonoBehaviour
         if (m_pipeline != null)
             m_pipeline.Release();
         m_pipeline = null;
-
-        Instance = null;
     }
 
     /// <summary>

@@ -15,9 +15,8 @@ public class NewPlayModeTest
     {
         var go = new GameObject("RealSenseDevice", typeof(RealSenseDevice));
         Assert.NotNull(go);
-        Assert.NotNull(go.GetComponent<RealSenseDevice>());
 
-        var rs = RealSenseDevice.Instance;
+        var rs = go.GetComponent<RealSenseDevice>();
         Assert.NotNull(rs);
 
         bool started = false;
@@ -39,7 +38,6 @@ public class NewPlayModeTest
         GameObject.Destroy(go);
         yield return null;
         Assert.That(go == null);
-        Assert.IsNull(RealSenseDevice.Instance);
     }
 
     [UnityTest]
@@ -47,6 +45,7 @@ public class NewPlayModeTest
     public IEnumerator TestLiveDepthTexture()
     {
         var go = new GameObject("RealSenseDevice", typeof(RealSenseDevice));
+        var rs = go.GetComponent<RealSenseDevice>();
 
         var depth_go = new GameObject("Depth");
         var depth = depth_go.AddComponent<RealSenseStreamTexture>();
@@ -60,10 +59,10 @@ public class NewPlayModeTest
         Texture depth_tex = null;
         depth.textureBinding.AddListener(t => depth_tex = t);
 
-        yield return new WaitUntil(() => RealSenseDevice.Instance.Streaming);
+        yield return new WaitUntil(() => rs.Streaming);
         Assert.IsNotNull(depth_tex);
 
-        using (var depth_profile = RealSenseDevice.Instance.ActiveProfile.GetStream(Stream.Depth) as VideoStreamProfile)
+        using (var depth_profile = rs.ActiveProfile.GetStream(Stream.Depth) as VideoStreamProfile)
         {
             Assert.AreEqual(depth_tex.width, depth_profile.Width);
             Assert.AreEqual(depth_tex.height, depth_profile.Height);
@@ -79,7 +78,7 @@ public class NewPlayModeTest
     public IEnumerator TestDisabledNoStart()
     {
         var go = new GameObject("RealSenseDevice", typeof(RealSenseDevice));
-        var rs = RealSenseDevice.Instance;
+        var rs = go.GetComponent<RealSenseDevice>();
 
         rs.OnStop += Assert.Fail;
         rs.OnStart += delegate
@@ -92,7 +91,6 @@ public class NewPlayModeTest
         GameObject.Destroy(go);
         yield return null;
         Assert.That(go == null);
-        Assert.IsNull(RealSenseDevice.Instance);
     }
 
     [UnityTest]
@@ -100,7 +98,7 @@ public class NewPlayModeTest
     public IEnumerator TestDisableStop()
     {
         var go = new GameObject("RealSenseDevice", typeof(RealSenseDevice));
-        var rs = RealSenseDevice.Instance;
+        var rs = go.GetComponent<RealSenseDevice>();
 
         bool started = false;
         rs.OnStart += delegate
@@ -130,7 +128,7 @@ public class NewPlayModeTest
     public void TestExtrinsics()
     {
         var go = new GameObject("RealSenseDevice", typeof(RealSenseDevice));
-        var rs = RealSenseDevice.Instance;
+        var rs = go.GetComponent<RealSenseDevice>();
 
         var depth = rs.ActiveProfile.GetStream(Stream.Depth);
         Assert.IsNotNull(depth);
@@ -150,7 +148,7 @@ public class NewPlayModeTest
     public IEnumerator TestRecord()
     {
         var go = new GameObject("RealSenseDevice", typeof(RealSenseDevice));
-        var rs = RealSenseDevice.Instance;
+        var rs = go.GetComponent<RealSenseDevice>();
 
         go.SetActive(false);
 
