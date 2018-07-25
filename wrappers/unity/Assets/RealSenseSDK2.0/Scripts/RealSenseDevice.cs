@@ -111,12 +111,14 @@ public class RealSenseDevice : MonoBehaviour
             DeviceConfiguration.Profiles = new VideoStreamRequest[activeStreams.Count];
             for (int i = 0; i < DeviceConfiguration.Profiles.Length; i++)
             {
-                var p = DeviceConfiguration.Profiles[i];
                 var s = activeStreams[i];
-                p.Stream = s.Stream;
-                p.Format = s.Format;
-                p.Framerate = s.Framerate;
-                p.StreamIndex = s.Index;
+                var p = new VideoStreamRequest()
+                {
+                    Stream = s.Stream,
+                    Format = s.Format,
+                    Framerate = s.Framerate,
+                    StreamIndex = s.Index,
+                };
                 var vs = s as VideoStreamProfile;
                 if (vs != null)
                 {
