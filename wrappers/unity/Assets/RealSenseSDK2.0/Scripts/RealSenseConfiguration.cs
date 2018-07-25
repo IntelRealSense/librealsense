@@ -2,17 +2,6 @@
 using Intel.RealSense;
 
 [Serializable]
-public struct VideoStreamRequest
-{
-    public Stream Stream;
-    public Format Format;
-    public int Framerate;
-    public int StreamIndex;
-    public int Width;
-    public int Height;
-}
-
-[Serializable]
 public struct RealSenseConfiguration
 {
     public enum Mode

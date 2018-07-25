@@ -22,7 +22,11 @@ namespace librealsense
           _metadata_parsers(std::make_shared<metadata_parser_map>()),
           _on_open(nullptr),
           _owner(dev),
-          _profiles([this]() { return this->init_stream_profiles(); })
+          _profiles([this]() {
+                auto profiles = this->init_stream_profiles();
+                _owner->tag_profiles(profiles);
+                return profiles;
+          })
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
 

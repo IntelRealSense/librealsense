@@ -49,9 +49,10 @@ namespace librealsense
         bool is_valid() const override;
 
         std::vector<tagged_profile> get_profiles_tags() const override { return std::vector<tagged_profile>(); };//no hard-coded default streams for playback
-        void tag_profile(stream_profile_interface* profile) const override 
+        void tag_profiles(stream_profiles profiles) const override 
         {
-            profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
+            for(auto profile : profiles)
+                profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
         }
 
     private:
