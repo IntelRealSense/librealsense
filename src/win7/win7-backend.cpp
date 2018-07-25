@@ -41,8 +41,7 @@ namespace librealsense
 
         std::shared_ptr<uvc_device> win7_backend::create_uvc_device(uvc_device_info info) const
         {
-            return std::make_shared<retry_controls_work_around>(
-                            std::make_shared<win7_uvc_device>(info, shared_from_this()));
+            return std::make_shared<retry_controls_work_around>(std::make_shared<win7_uvc_device>(info, shared_from_this()));
         }
 
         std::shared_ptr<backend> create_backend()
@@ -54,7 +53,7 @@ namespace librealsense
         {
             std::vector<uvc_device_info> devices;
 
-            auto action = [&devices](const uvc_device_info& info, IMFActivate*)
+            auto action = [&devices](const uvc_device_info& info)
             {
                 devices.push_back(info);
             };
@@ -101,7 +100,9 @@ namespace librealsense
 
         std::vector<hid_device_info> win7_backend::query_hid_devices() const
         {
-            throw std::runtime_error("query_hid_devices Not supported");
+            std::vector<hid_device_info> devices;
+            // Not supported 
+            return devices;
         }
 
         std::shared_ptr<time_service> win7_backend::create_time_service() const

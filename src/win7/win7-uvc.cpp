@@ -25,6 +25,7 @@ The library will be compiled without the metadata support!\n")
 #endif
 
 #include "win7-uvc.h"
+#include "win7-usb.h"
 #include "../types.h"
 
 #include "Shlwapi.h"
@@ -242,7 +243,8 @@ namespace librealsense
         bool win7_uvc_device::is_connected(const uvc_device_info& info)
         {
             auto result = false;
-            foreach_uvc_device([&result, &info](const uvc_device_info& i, IMFActivate*)
+
+            foreach_uvc_device([&result, &info](const uvc_device_info& i)
             {
                 if (i == info) result = true;
             });
@@ -754,6 +756,30 @@ namespace librealsense
             }
         }
 
+        void win7_uvc_device::foreach_uvc_device(uvc_enumeration_callback action)
+        {
+            for (auto&& interface_id : win7_uvc_interfaces)
+            {
+                for (auto&& id : usb_enumerate::query_by_interface(interface_id, "", ""))
+                {
+                    std::string path(id.begin(), id.end());
+                    uint16_t vid, pid, mi; std::string unique_id;
+                    if (!parse_usb_path(vid, pid, mi, unique_id, path)) continue;
+
+                    uvc_device_info info{ path, vid, pid, mi, unique_id, path };
+
+                    try
+                    {
+                        action(info);
+                    }
+                    catch (...)
+                    {
+                        // TODO
+                    }
+                }
+            }
+        }
+
         void win7_uvc_device::set_power_state(power_state state)
         {
             static auto rs2 = false;
@@ -766,8 +792,7 @@ namespace librealsense
             {
                 if (_power_state != D0 && state == D0)
                 {
-                    foreach_uvc_device([this](const uvc_device_info& i,
-                        IMFActivate* device)
+                    foreach_uvc_device([this](const uvc_device_info& i,IMFActivate* device)
                     {
                         if (i == _info && device)
                         {
@@ -827,8 +852,7 @@ namespace librealsense
             {
                 if (_power_state != D0 && state == D0)
                 {
-                    foreach_uvc_device([this](const uvc_device_info& i,
-                        IMFActivate* device)
+                    foreach_uvc_device([this](const uvc_device_info& i,IMFActivate* device)
                     {
                         if (i == _info && device)
                         {

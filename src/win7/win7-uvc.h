@@ -31,6 +31,12 @@ static const std::vector<std::vector<std::pair<GUID, GUID>>> attributes_params =
     },
 };
 
+static const std::vector<std::string> win7_uvc_interfaces =
+{
+    "{E659C3EC-BF3C-48A5-8192-3073E822D7CD}", // Intel(R) RealSense(TM) 415 Depth - MI 0: [Interface 0 video control] [Interface 1 video stream] [Interface 2 video stream]
+    "{50537BC3-2919-452D-88A9-B13BBF7D2459}"  // Intel(R) RealSense(TM) 415 RGB - MI 3: [Interface 3 video control] [Interface 4 video stream]
+};
+
 namespace librealsense
 {
     namespace platform
@@ -43,8 +49,8 @@ namespace librealsense
             frame_callback callback = nullptr;
         };
 
-        typedef std::function<void(const uvc_device_info&, IMFActivate*)>
-                enumeration_callback;
+        typedef std::function<void(const uvc_device_info&, IMFActivate*)> enumeration_callback;
+        typedef std::function<void(const uvc_device_info&)> uvc_enumeration_callback;
 
         class win7_uvc_device : public std::enable_shared_from_this<win7_uvc_device>,
                                public uvc_device
@@ -63,7 +69,8 @@ namespace librealsense
             std::vector<stream_profile> get_profiles() const override;
 
             static bool is_connected(const uvc_device_info& info);
-            static void foreach_uvc_device(enumeration_callback action);
+            static void foreach_uvc_device(enumeration_callback action); // not removing until fixing set_power_state
+            static void foreach_uvc_device(uvc_enumeration_callback action);
 
             void init_xu(const extension_unit& xu) override;
             bool set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) override;
@@ -117,7 +124,7 @@ namespace librealsense
 
             CComPtr<IAMCameraControl>               _camera_control = nullptr;
             CComPtr<IAMVideoProcAmp>                _video_proc = nullptr;
-            std::unordered_map<int, CComPtr<IKsControl>>      _ks_controls;
+            std::unordered_map<int, CComPtr<IKsControl>> _ks_controls;
 
             manual_reset_event                      _is_flushed;
             manual_reset_event                      _has_started;
