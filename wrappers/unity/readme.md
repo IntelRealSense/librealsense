@@ -93,7 +93,7 @@ Each texture stream is associated with the `RealSenseStreamTexture` script which
 
 ![realsensestreamtexture](https://user-images.githubusercontent.com/18511514/43199495-d9f80160-901a-11e8-815c-f1de8c273e84.PNG)
 
-* VideoStreamFilter - Filter out frames that doesn't match the requested profile. Stream and Format must be provided, other fields can be set to 0 to accept any value.
+* VideoStreamFilter - Filter out frames that doesn't match the requested profile. Stream and Format must be provided, the index field can be set to 0 to accept any value.
 * Texture Binding - Allows the user to bind textures to the script. Multiple textures can be bound to a single script.
 * Fetch Frames From Device - Toggle whether the script should fetch the frames from the device, or should wait for the user to pass frame to is using its `OnFrame` method.
 

@@ -72,8 +72,6 @@ public class RealSenseDevice : MonoBehaviour
         }
     };
 
-    //private List<VideoStreamRequest> _pipelineOutputProfiles { get; set; }
-
     private Thread worker;
     private readonly AutoResetEvent stopEvent = new AutoResetEvent(false);
 
@@ -186,20 +184,6 @@ public class RealSenseDevice : MonoBehaviour
         m_pipeline = null;
 
         Instance = null;
-    }
-
-    private VideoStreamRequest FrameToVideoStreamRequest(Frame f)
-    {
-        var vf = f as VideoFrame;
-        return new VideoStreamRequest
-        {
-            Stream = vf.Profile.Stream,
-            StreamIndex = vf.Profile.Index,
-            Width = vf.Width,
-            Height = vf.Height,
-            Format = vf.Profile.Format,
-            Framerate = vf.Profile.Framerate
-        };
     }
 
     /// <summary>
