@@ -1740,12 +1740,12 @@ Prefab:
     - target: {fileID: 114866818567473902, guid: d2790e271f1a64347bb2ede5601b1e23,
         type: 2}
       propertyPath: DeviceConfiguration.Profiles.Array.data[0].Width
-      value: 1280
+      value: 640
       objectReference: {fileID: 0}
     - target: {fileID: 114866818567473902, guid: d2790e271f1a64347bb2ede5601b1e23,
         type: 2}
       propertyPath: DeviceConfiguration.Profiles.Array.data[0].Height
-      value: 720
+      value: 480
       objectReference: {fileID: 0}
     - target: {fileID: 114070131009790432, guid: d2790e271f1a64347bb2ede5601b1e23,
         type: 2}
@@ -1826,7 +1826,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37a198125d5f44f4e96cdf60c0684d57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _enabled: 1
+  _order: 0
   _alignTo: 1
 --- !u!1 &2057984275
 GameObject:
