@@ -38,13 +38,14 @@ public class RealSenseStreamTexture : MonoBehaviour
     [System.Serializable]
     public class TextureEvent : UnityEvent<Texture> { }
 
-    /// <summary>
-    /// This field set the request which the frames are filtered by, leave ANY/0 to accept any argument. 
-    /// </summary>
-    public VideoStreamRequest _videoStreamFilter;
-    private VideoStreamRequest _currVideoStreamFilter;
+    public Stream _stream;
+    public Format _format;
+    public int _streamIndex;
 
     public FilterMode filterMode = FilterMode.Point;
+
+    private VideoStreamRequest _videoStreamFilter;
+    private VideoStreamRequest _currVideoStreamFilter;
 
     protected Texture2D texture;
 
@@ -61,6 +62,7 @@ public class RealSenseStreamTexture : MonoBehaviour
     virtual protected void Awake()
     {
         threadId = Thread.CurrentThread.ManagedThreadId;
+        _videoStreamFilter = new VideoStreamRequest() { Stream = _stream, Format = _format, StreamIndex = _streamIndex };
         _currVideoStreamFilter = _videoStreamFilter.Clone();
     }
 
@@ -147,7 +149,6 @@ public class RealSenseStreamTexture : MonoBehaviour
             return false;
         _videoStreamFilter.CopyProfile(vidFrame);
         data = null;
-
         return true;
     }
 
@@ -193,7 +194,7 @@ public class RealSenseStreamTexture : MonoBehaviour
 
     void Update()
     {
-        if(!_currVideoStreamFilter.Equals(_videoStreamFilter))
+        if (!_currVideoStreamFilter.Equals(_videoStreamFilter))
             ResetTexture(_videoStreamFilter);
 
         if (f.WaitOne(0))
