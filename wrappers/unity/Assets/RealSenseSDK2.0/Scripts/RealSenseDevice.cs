@@ -79,7 +79,7 @@ public class RealSenseDevice : MonoBehaviour
 
     private Pipeline m_pipeline;
 
-    private List<IVideoProcessingBlock> m_processingBlocks = new List<IVideoProcessingBlock>();
+    private HashSet<IVideoProcessingBlock> m_processingBlocks = new HashSet<IVideoProcessingBlock>();
 
     public void AddProcessingBlock(IVideoProcessingBlock processingBlock)
     {

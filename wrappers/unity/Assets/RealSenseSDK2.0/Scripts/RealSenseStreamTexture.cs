@@ -15,14 +15,14 @@ public class RealSenseStreamTexture : MonoBehaviour
             case Format.Z16: return TextureFormat.R16;
             case Format.Disparity16: return TextureFormat.R16;
             case Format.Rgb8: return TextureFormat.RGB24;
-            case Format.Bgr8: return TextureFormat.RGB24;
             case Format.Rgba8: return TextureFormat.RGBA32;
             case Format.Bgra8: return TextureFormat.BGRA32;
             case Format.Y8: return TextureFormat.Alpha8;
             case Format.Y16: return TextureFormat.R16;
             case Format.Raw16: return TextureFormat.R16;
             case Format.Raw8: return TextureFormat.Alpha8;
-            case Format.Yuyv: return TextureFormat.YUY2;
+            case Format.Yuyv:
+            case Format.Bgr8:
             case Format.Raw10:
             case Format.Xyz32f:
             case Format.Uyvy:
@@ -34,6 +34,7 @@ public class RealSenseStreamTexture : MonoBehaviour
                 throw new Exception(string.Format("{0} librealsense format: " + lrsFormat + ", is not supported by Unity"));
         }
     }
+
     [System.Serializable]
     public class TextureEvent : UnityEvent<Texture> { }
 

@@ -24,7 +24,6 @@ public abstract class VideoProcessingBlock : MonoBehaviour, IVideoProcessingBloc
 
     public bool Enabled { get { return _enabled; } }
     public int Order { get { return _order; } }
-    private bool StateChangeCalled { get; set; }
 
     public abstract Frame Process(Frame frame);
     public abstract List<Stream> Requirments();
@@ -38,8 +37,7 @@ public abstract class VideoProcessingBlock : MonoBehaviour, IVideoProcessingBloc
 
     public void Start()
     {
-        if (!StateChangeCalled)
-            ChangeState(true);
+        ChangeState(true);
     }
 
     public void OnEnable()
@@ -58,7 +56,6 @@ public abstract class VideoProcessingBlock : MonoBehaviour, IVideoProcessingBloc
         if (device == null)
             return;
         _enabled = state;
-        StateChangeCalled = true;
         if(state)
             device.AddProcessingBlock(this);
         else
@@ -73,7 +70,6 @@ public abstract class MultiFrameVideoProcessingBlock : MonoBehaviour, IVideoProc
 
     public bool Enabled { get { return _enabled; } }
     public int Order { get { return _order; } }
-    private bool StateChangeCalled { get; set; }
 
     public abstract FrameSet Process(FrameSet frameset, FramesReleaser releaser);
     public abstract List<Stream> Requirments();
@@ -98,8 +94,7 @@ public abstract class MultiFrameVideoProcessingBlock : MonoBehaviour, IVideoProc
 
     public void Start()
     {
-        if (!StateChangeCalled)
-            ChangeState(true);
+        ChangeState(true);
     }
 
     public void OnEnable()
@@ -118,7 +113,6 @@ public abstract class MultiFrameVideoProcessingBlock : MonoBehaviour, IVideoProc
         if (device == null)
             return;
         _enabled = state;
-        StateChangeCalled = true;
         if (state)
             device.AddProcessingBlock(this);
         else
