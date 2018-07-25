@@ -11,3 +11,4 @@ These Examples demonstrate how to use the python wrapper of the SDK.
 4. [RS400 Advanced Mode](./python-rs400-advanced-mode-example.py) - Example of the advanced mode interface for controlling different options of the D400 cameras
 5. [Realsense Backend](./pybackend_example_1_general.py) - Example of controlling devices using the backend interface
 6. [Read bag file](./read_bag_example.py) - Example on how to read bag file and use colorizer to show recorded depth stream in jet colormap.
+7. [Box Dimensioner Multicam](./box_dimensioner_multicam/box_dimensioner_multicam_demo.py) - Simple demonstration for calculating the length, width and height of an object using multiple cameras.
