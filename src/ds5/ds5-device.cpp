@@ -142,8 +142,6 @@ namespace librealsense
                 }
                 auto vid_profile = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                get_device().tag_profile(vid_profile);
-
                 // Register intrinsics
                 if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
                 {
@@ -232,8 +230,6 @@ namespace librealsense
                     assign_stream(_owner->_right_ir_stream, p);
                 }
                 auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
-
-                get_device().tag_profile(video);
 
                 // Register intrinsics
                 if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
@@ -360,7 +356,7 @@ namespace librealsense
 
         std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(group.uvc_devices.front().pid)) ? rs400_sku_names.at(group.uvc_devices.front().pid) : "RS4xx";
         _fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
-        recommended_fw_version = firmware_version("5.9.9.2");
+        recommended_fw_version = firmware_version("5.9.14.0");
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
         auto& depth_ep = get_depth_sensor();
@@ -446,6 +442,13 @@ namespace librealsense
                 std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                     RS2_OPTION_ASIC_TEMPERATURE));
         }
+
+        if (_fw_version >= firmware_version("5.9.15.1"))
+        {
+            get_depth_sensor().register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                std::make_shared<external_sync_mode>(*_hw_monitor));
+        }
+
         roi_sensor_interface* roi_sensor;
         if (roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_ep))
             roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));

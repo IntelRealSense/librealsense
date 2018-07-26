@@ -7,15 +7,16 @@
 
 ## Installation
 
-### PyPI Distribution
-
-At the moment we do not provide a package for the Python wrapper using common distribution packages.
-
 > **Note:**
 >
 >[`pyrealsense`](https://github.com/toinsson/pyrealsense) AKA [`pyrealsense/2.0`](https://pypi.python.org/pypi/pyrealsense/2.0) is a community supported Python wrapper for **librealsense v1.12.1**, This wrapper does not support newer versions and **does not work with the RealSense SDK 2.0**.
 
-#### Windows Installation
+We provide a PyPI distribution which is created from this folder by running `python setup.py bdist_wheel`.
+
+Package is available at https://pypi.python.org/pypi/pyrealsense2
+
+To install the package, run:
+> `pip install pyrealsense2`
 
 Windows users can install the RealSense SDK 2.0 from the release tab to get pre-compiled binaries of the wrapper, for both x86 and x64 architectures. (Note that these binaries are built with Python 2.7, and cannot be import using Python 3).
 

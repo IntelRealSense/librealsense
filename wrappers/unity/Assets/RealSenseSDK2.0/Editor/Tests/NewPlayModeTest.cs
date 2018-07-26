@@ -31,7 +31,7 @@ public class NewPlayModeTest
         yield return new WaitUntil(() => started);
         Assert.IsTrue(started);
 
-        rs.onNewSample += sample =>
+        rs.OnNewSample += sample =>
         {
             Debug.Log(sample);
         };
@@ -51,8 +51,8 @@ public class NewPlayModeTest
         var depth_go = new GameObject("Depth");
         var depth = depth_go.AddComponent<RealSenseStreamTexture>();
 
-        depth.sourceStreamType = Stream.Depth;
-        depth.textureFormat = TextureFormat.R16;
+        depth._stream = Stream.Depth;
+        depth._format = Format.Z16;
 
         depth.textureBinding = new RealSenseStreamTexture.TextureEvent();
         Assert.IsNotNull(depth.textureBinding);

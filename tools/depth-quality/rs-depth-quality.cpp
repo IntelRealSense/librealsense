@@ -78,7 +78,7 @@ int main(int argc, const char * argv[]) try
         bool record,
         std::vector<single_metric_data>& samples)
     {
-        static const float TO_METERS = 0.001f;
+        float TO_METERS = model.get_depth_scale();
         static const float TO_MM = 1000.f;
         static const float TO_PERCENT = 100.f;
 
