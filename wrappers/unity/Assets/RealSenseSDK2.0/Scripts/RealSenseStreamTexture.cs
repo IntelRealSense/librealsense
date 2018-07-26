@@ -9,16 +9,20 @@ public class RealSenseStreamTexture : MonoBehaviour
 {
     [SerializeField]
     private RealSenseDevice _realSenseDevice;
-    protected RealSenseDevice realSenseDevice
+    public RealSenseDevice realSenseDevice
     {
         get
         {
-            if(_realSenseDevice == null)
+            if (_realSenseDevice == null)
             {
                 _realSenseDevice = FindObjectOfType<RealSenseDevice>();
             }
             UnityEngine.Assertions.Assert.IsNotNull(_realSenseDevice);
             return _realSenseDevice;
+        }
+        set
+        {
+            _realSenseDevice = value;
         }
     }
 

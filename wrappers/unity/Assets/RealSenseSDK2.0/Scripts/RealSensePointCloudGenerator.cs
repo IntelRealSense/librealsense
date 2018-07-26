@@ -13,7 +13,7 @@ public class RealSensePointCloudGenerator : MonoBehaviour
 {
     [SerializeField]
     private RealSenseDevice _realSenseDevice;
-    protected RealSenseDevice realSenseDevice
+    public RealSenseDevice realSenseDevice
     {
         get
         {
@@ -23,6 +23,10 @@ public class RealSensePointCloudGenerator : MonoBehaviour
             }
             UnityEngine.Assertions.Assert.IsNotNull(_realSenseDevice);
             return _realSenseDevice;
+        }
+        set
+        {
+            _realSenseDevice = value;
         }
     }
 

@@ -10,7 +10,7 @@ public class RealSenseARBackgroundRenderer : MonoBehaviour
 {
     [SerializeField]
     private RealSenseDevice _realSenseDevice;
-    protected RealSenseDevice realSenseDevice
+    public RealSenseDevice realSenseDevice
     {
         get
         {
@@ -20,6 +20,10 @@ public class RealSenseARBackgroundRenderer : MonoBehaviour
             }
             UnityEngine.Assertions.Assert.IsNotNull(_realSenseDevice);
             return _realSenseDevice;
+        }
+        set
+        {
+            _realSenseDevice = value;
         }
     }
 
