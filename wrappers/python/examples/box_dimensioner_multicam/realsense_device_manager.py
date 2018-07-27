@@ -212,7 +212,7 @@ class DeviceManager:
 		for (serial, device) in self._enabled_devices.items():
 			streams = device.pipeline_profile.get_streams()
 			frameset = rs.composite_frame(rs.frame())
-            device.pipeline.poll_for_frames(frameset)
+            		device.pipeline.poll_for_frames(frameset)
 			if frameset.size() == len(streams):
 				frames[serial] = {}
 				for stream in streams:
