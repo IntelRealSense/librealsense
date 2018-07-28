@@ -42,21 +42,21 @@
 					asset = data[0].assets[j];
 					if (asset.name.toLowerCase().includes("quality"))
 					{
-						$('#dqt').css('href', asset.browser_download_url);
+						$('#dqt').attr('href', asset.browser_download_url);
 						$('#dqt').html($('#dqt').html() + " <small><code>" + data[0].tag_name + "</code></small>");
 					}
 					else if (asset.name.toLowerCase().includes("viewer"))
 					{
-						$('#viewer').css('href', asset.browser_download_url);
+						$('#viewer').attr('href', asset.browser_download_url);
 						$('#viewer').html($('#viewer').html() + " <small><code>" + data[0].tag_name + "</code></small>");
 					}
 					else 
 					{
-						$('#installer').css('href', asset.browser_download_url);
+						$('#installer').attr('href', asset.browser_download_url);
 						$('#installer').html($('#installer').html() + " <small><code>" + data[0].tag_name + "</code></small>");
 					}
 				}
-				$('#sources').css('href', data[0].zipball_url);
+				$('#sources').attr('href', data[0].zipball_url);
 				$('#sources').html($('#sources').html() + " <small><code>" + data[0].tag_name + "</code></small>");
 			},
 		})
