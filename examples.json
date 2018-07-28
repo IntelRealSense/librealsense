@@ -1,84 +1,102 @@
 {
     "items": [
         {
-            "title": "New <b>Jupyter Notebooks</b>",
-            "link": "https://github.com/IntelRealSense/librealsense/tree/jupyter",
-            "link_title": "Go to Jupyter branch",
-            "static_thumbnail": "img/jupyter-0.gif",
-            "active_thumbnail": "img/jupyter.gif",
-            "body": "Explore Intel&#0169; RealSense&#0153; technology in a container running Python in the cloud.<br>Try it now with <a href=\"https://mybinder.org/v2/gh/IntelRealSense/librealsense/jupyter?filepath=notebooks/distance_to_object.ipynb\" rel=\"nofollow\"><img src=\"https://camo.githubusercontent.com/24c94be25a8a8b5703a34466825bbfdd6147d9d0/68747470733a2f2f6d7962696e6465722e6f72672f62616467652e737667\" alt=\"Binder\" data-canonical-src=\"https://mybinder.org/badge.svg\" style=\"max-width:100%;\"></a>"
+            "title": "<b>Capture</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/examples/capture",
+            "link_title": "Learn more...",
+            "static_thumbnail": "img/capture-0.gif",
+            "active_thumbnail": "img/capture.gif",
+            "body": "Show how to syncronize and render multiple streams: left & right imagers, depth and RGB streams"
         },
      
         {
-            "title": "New <b>Unity Content</b>",
-            "link": "https://github.com/IntelRealSense/librealsense/tree/master/wrappers/unity",
-            "link_title": "Go to wrappers/unity",
-            "static_thumbnail": "img/unity-0.gif",
-            "active_thumbnail": "img/unity-1.gif",
-            "body": "<a href=\"https://github.com/IntelRealSense/librealsense/releases/tag/2.14.0\" class=\"nounderline\">librealsense 2.14.0</a> brings complete overhaul of our Unity wrapper with many exiting new features requested by the community.<br><a href=\"http://realsense-hw-public.s3.amazonaws.com/rs-tests/realsense.unitypackage\" class=\"nounderline\"><i class=\"fas fa-cloud-download-alt fa-lg\"></i> Get UnityPackage</a>"
-        },
-		
-		{
-            "title": "<b>Alignment Optimisations</b>",
-            "link": "https://github.com/IntelRealSense/librealsense/pull/2040",
+            "title": "<b>Save to Disk</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/examples/save-to-disk",
             "link_title": "Learn more...",
-            "static_thumbnail": "img/align-0.gif",
-            "active_thumbnail": "img/align.gif",
-            "body": "<a href=\"https://github.com/IntelRealSense/librealsense/releases/tag/2.14.0\" class=\"nounderline\">librealsense 2.14.0</a> brings significant improvements in lattency and CPU utilisation of the <b>Align</b> processing block on x86/x64 machines."
+            "static_thumbnail": "img/headless.png",
+            "active_thumbnail": "img/headless.png",
+            "body": "Demonstrate how to render and save video streams on headless systems without graphical user interface (GUI)"
         },
 		
 		{
-            "title": "librealsense @ <b>CVPR 2018</b>",
-            "link": "img/cvpr_brochure.pdf",
+            "title": "<b>Multi-cam</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/tree/master/examples/multicam",
             "link_title": "Learn more...",
-            "static_thumbnail": "img/cvpr.jpg",
-            "active_thumbnail": "img/cvpr.gif",
-            "body": "CVPR is an amazing event and for us great opportunity to meet the community, get feedback and answer questions.<br><a href=\"img/cvpr_brochure.pdf\" target=\"_blank\" class=\"nounderline\"><i class=\"fas fa-file-pdf\"></i> Get the Brochure</a>"
+            "static_thumbnail": "img/multicam.gif",
+            "active_thumbnail": "https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/multi-cam-expected.gif",
+            "body": "The multicam sample demonstrates the ability to use the SDK for streaming and rendering multiple devices"
         },
 		
 		{
-            "title": "<b>CUDA</b> Support",
-            "link": "https://github.com/IntelRealSense/librealsense/pull/1866",
+            "title": "<b>Point-cloud</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/examples/pointcloud",
             "link_title": "Learn more...",
-            "static_thumbnail": "img/jetson-0.gif",
-            "active_thumbnail": "img/jetson.gif",
-            "body": "<a href=\"https://github.com/IntelRealSense/librealsense/releases/tag/2.13.0\" class=\"nounderline\">librealsense 2.13.0</a> offers significant performance boost for NVIDIA Jetson TX users by allowing to offload color conversions and alignment to the GPU."
+            "static_thumbnail": "img/pointcloud-0.gif",
+            "active_thumbnail": "img/pointcloud.gif",
+            "body": "Showcase Projection API while generating and rendering 3D pointcloud"
         },
 		
 		{
-            "title": "Depth <b>Post-Processing</b>",
-            "link": "https://github.com/IntelRealSense/librealsense/blob/master/doc/post-processing-filters.md",
+            "title": "<b>Align</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/examples/align",
+            "link_title": "Learn more...",
+            "static_thumbnail": "img/align-ex-0.gif",
+            "active_thumbnail": "img/align-ex.gif",
+            "body": "Show a simple method for dynamic background removal from video"
+        },
+		
+		{
+            "title": "<b>Post-Processing</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/examples/post-processing",
             "link_title": "Learn more...",
             "static_thumbnail": "img/post.gif",
             "active_thumbnail": "https://user-images.githubusercontent.com/22654243/35924136-dd9cd1b6-0c2a-11e8-925a-84a52c0a5b96.gif",
-            "body": "Learn more about <a href=\"https://github.com/IntelRealSense/librealsense/blob/master/doc/post-processing-filters.md\" title=\"Learn more...\">depth post-processing</a>:<li> Read <a href=\"https://www.intel.com/content/dam/support/us/en/documents/emerging-technologies/intel-realsense-technology/Intel-RealSense-Depth-PostProcess.pdf\">the White-Paper</a></li><li> Try <a href=\"https://github.com/IntelRealSense/librealsense/tree/master/examples/post-processing\">the Example</a></li><li> Run <a href=\"https://mybinder.org/v2/gh/IntelRealSense/librealsense/jupyter?filepath=notebooks%2Fdepth_filters.ipynb\">in the Cloud</a></li>"
+            "body": "Demonstrating usage of post processing filters for depth images"
         },
 		
 		{
-            "title": "Understanding <b>Depth from Stereo</b>",
-            "link": "https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md",
+            "title": "<b>Playback & Record</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/examples/record-playback",
             "link_title": "Learn more...",
-            "static_thumbnail": "img/depth_from_stereo.gif",
-            "active_thumbnail": "https://raw.githubusercontent.com/wiki/dorodnic/librealsense/naive-depth.gif",
-            "body": "Introduction to the basics of stereoscopic vision, including block-matching, <a href=\"https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#calibration-and-rectification\">calibration and rectification</a>, depth from stereo <a href=\"https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#software-stereo\">using opencv</a>, <a href=\"https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#passive-vs-active-stereo\">passive vs. active stereo</a> and relation to <a href=\"https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#remark-on-structured-light\">structured light</a>."
+            "static_thumbnail": "img/playback-0.gif",
+            "active_thumbnail": "img/playback.gif",
+            "body": "Demonstrating usage of the recorder and playback devices."
         },
 		
 		{
-            "title": "Overview of <b>Software Architecture</b>",
-            "link": "https://www.youtube.com/watch?v=uz2dGbjA3j4",
+            "title": "<b>Software Device</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/examples/software-device",
             "link_title": "Learn more...",
-            "static_thumbnail": "img/arch-0.gif",
-            "active_thumbnail": "img/arch.gif",
-            "body": "Learn about software architecture and design behind librealsense project.<br><a href=\"https://realsense.intel.com/wp-content/uploads/sites/63/realsense_software_architecture_webinar.pdf\" target=\"_blank\" class=\"nounderline\"><i class=\"fas fa-file-pdf\"></i> Get the Slides</a>"
+            "static_thumbnail": "img/sd-0.gif",
+            "active_thumbnail": "img/sd.gif",
+            "body": "Shows how to create a custom rs2::device."
         },
 		
 		{
-            "title": "RealSense&#0153; @ <b>EVS 2018</b>",
-            "link": "https://www.embedded-vision.com/summit/vision-product-year-awards",
+            "title": "<b>Sensor Control</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/examples/sensor-control",
             "link_title": "Learn more...",
-            "static_thumbnail": "img/evs.jpg",
-            "active_thumbnail": "img/evs.jpg",
-            "body": "Intel&#0169; RealSense&#0153; D400<br/>Winner of the <b>Vision Product of the Year</b> Award as the <b>Best Camera</b>"
+            "static_thumbnail": "img/sensor-0.gif",
+            "active_thumbnail": "img/sensor.gif",
+            "body": "A tutorial for using the rs2::sensor API"
+		},
+
+		{
+            "title": "<b>Measure</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/examples/measure",
+            "link_title": "Learn more...",
+            "static_thumbnail": "https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/measure-expected.png",
+            "active_thumbnail": "https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/measure-expected.png",
+            "body": "Lets the user measure the dimentions of 3D objects in a stream"
+		},
+		
+		{
+            "title": "<b>Measure</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/examples/measure",
+            "link_title": "Learn more...",
+            "static_thumbnail": "https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/measure-expected.png",
+            "active_thumbnail": "https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/measure-expected.png",
+            "body": "Lets the user measure the dimentions of 3D objects in a stream"
 		}
-    ]
+	]
 }
