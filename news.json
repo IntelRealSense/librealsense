@@ -14,8 +14,71 @@
             "link": "https://github.com/IntelRealSense/librealsense/tree/master/wrappers/unity",
             "link_title": "Go to wrappers/unity",
             "static_thumbnail": "img/unity-0.gif",
-            "active_thumbnail": "img/unity.gif",
+            "active_thumbnail": "img/unity-1.gif",
             "body": "<a href=\"https://github.com/IntelRealSense/librealsense/releases/tag/2.14.0\" class=\"nounderline\">librealsense 2.14.0</a> brings complete overhaul of our Unity wrapper with many exiting new features requested by the community.<br><a href=\"http://realsense-hw-public.s3.amazonaws.com/rs-tests/realsense.unitypackage\" class=\"nounderline\"><i class=\"fas fa-cloud-download-alt fa-lg\"></i> Get UnityPackage</a>"
-        }
+        },
+		
+		{
+            "title": "<b>Alignment Optimisations</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/pull/2040",
+            "link_title": "Learn more...",
+            "static_thumbnail": "img/align-0.gif",
+            "active_thumbnail": "img/align.gif",
+            "body": "<a href=\"https://github.com/IntelRealSense/librealsense/releases/tag/2.14.0\" class=\"nounderline\">librealsense 2.14.0</a> brings significant improvements in lattency and CPU utilisation of the <b>Align</b> processing block on x86/x64 machines."
+        },
+		
+		{
+            "title": "librealsense @ <b>CVPR 2018</b>",
+            "link": "img/cvpr_brochure.pdf",
+            "link_title": "Learn more...",
+            "static_thumbnail": "img/cvpr.jpg",
+            "active_thumbnail": "img/cvpr.gif",
+            "body": "CVPR is an amazing event and for us great opportunity to meet the community, get feedback and answer questions.<br><a href=\"img/cvpr_brochure.pdf\" target=\"_blank\" class=\"nounderline\"><i class=\"fas fa-file-pdf\"></i> Get the Brochure</a>"
+        },
+		
+		{
+            "title": "<b>CUDA</b> Support",
+            "link": "https://github.com/IntelRealSense/librealsense/pull/1866",
+            "link_title": "Learn more...",
+            "static_thumbnail": "img/jetson-0.gif",
+            "active_thumbnail": "img/jetson.gif",
+            "body": "<a href=\"https://github.com/IntelRealSense/librealsense/releases/tag/2.13.0\" class=\"nounderline\">librealsense 2.13.0</a> offers significant performance boost for NVIDIA Jetson TX users by allowing to offload color conversions and alignment to the GPU."
+        },
+		
+		{
+            "title": "Depth <b>Post-Processing</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/doc/post-processing-filters.md",
+            "link_title": "Learn more...",
+            "static_thumbnail": "img/post.gif",
+            "active_thumbnail": "https://user-images.githubusercontent.com/22654243/35924136-dd9cd1b6-0c2a-11e8-925a-84a52c0a5b96.gif",
+            "body": "Learn more about <a href=\"https://github.com/IntelRealSense/librealsense/blob/master/doc/post-processing-filters.md\" title=\"Learn more...\">depth post-processing</a>:<li> Read <a href=\"https://www.intel.com/content/dam/support/us/en/documents/emerging-technologies/intel-realsense-technology/Intel-RealSense-Depth-PostProcess.pdf\">the White-Paper</a></li><li> Try <a href=\"https://github.com/IntelRealSense/librealsense/tree/master/examples/post-processing\">the Example</a></li><li> Run <a href=\"https://mybinder.org/v2/gh/IntelRealSense/librealsense/jupyter?filepath=notebooks%2Fdepth_filters.ipynb\">in the Cloud</a></li>"
+        },
+		
+		{
+            "title": "Understanding <b>Depth from Stereo</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md",
+            "link_title": "Learn more...",
+            "static_thumbnail": "img/depth_from_stereo.gif",
+            "active_thumbnail": "https://raw.githubusercontent.com/wiki/dorodnic/librealsense/naive-depth.gif",
+            "body": "Introduction to the basics of stereoscopic vision, including block-matching, <a href=\"https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#calibration-and-rectification\">calibration and rectification</a>, depth from stereo <a href=\"https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#software-stereo\">using opencv</a>, <a href=\"https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#passive-vs-active-stereo\">passive vs. active stereo</a> and relation to <a href=\"https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#remark-on-structured-light\">structured light</a>."
+        },
+		
+		{
+            "title": "Overview of <b>Software Architecture</b>",
+            "link": "https://www.youtube.com/watch?v=uz2dGbjA3j4",
+            "link_title": "Learn more...",
+            "static_thumbnail": "img/arch-0.gif",
+            "active_thumbnail": "img/arch.gif",
+            "body": "Learn about software architecture and design behind librealsense project.<br><a href=\"https://realsense.intel.com/wp-content/uploads/sites/63/realsense_software_architecture_webinar.pdf\" target=\"_blank\" class=\"nounderline\"><i class=\"fas fa-file-pdf\"></i> Get the Slides</a>"
+        },
+		
+		{
+            "title": "RealSense&#0153; @ <b>EVS 2018</b>",
+            "link": "https://www.embedded-vision.com/summit/vision-product-year-awards",
+            "link_title": "Learn more...",
+            "static_thumbnail": "img/evs.jpg",
+            "active_thumbnail": "img/evs.jpg",
+            "body": "Intel&#0169; RealSense&#0153; D400<br/>Winner of the <b>Vision Product of the Year</b> Award as the <b>Best Camera</b>"
+		}
     ]
 }

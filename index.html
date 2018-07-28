@@ -43,21 +43,21 @@
 					if (asset.name.toLowerCase().includes("quality"))
 					{
 						$('#dqt').css('href', asset.browser_download_url);
-						$('#dqt').html($('#dqt').html() + " <small><code>v" + data[0].tag_name + "</code></small>");
+						$('#dqt').html($('#dqt').html() + " <small><code>" + data[0].tag_name + "</code></small>");
 					}
 					else if (asset.name.toLowerCase().includes("viewer"))
 					{
 						$('#viewer').css('href', asset.browser_download_url);
-						$('#viewer').html($('#viewer').html() + " <small><code>v" + data[0].tag_name + "</code></small>");
+						$('#viewer').html($('#viewer').html() + " <small><code>" + data[0].tag_name + "</code></small>");
 					}
 					else 
 					{
 						$('#installer').css('href', asset.browser_download_url);
-						$('#installer').html($('#installer').html() + " <small><code>v" + data[0].tag_name + "</code></small>");
+						$('#installer').html($('#installer').html() + " <small><code>" + data[0].tag_name + "</code></small>");
 					}
 				}
 				$('#sources').css('href', data[0].zipball_url);
-				$('#sources').html($('#sources').html() + " <small><code>v" + data[0].tag_name + "</code></small>");
+				$('#sources').html($('#sources').html() + " <small><code>" + data[0].tag_name + "</code></small>");
 			},
 		})
 	}
@@ -151,7 +151,6 @@
 					<li><a href="https://github.com/IntelRealSense/librealsense/blob/master/CONTRIBUTING.md" title="Learn about contributing to the project"><i class="fas fa-code-branch"></i> Get Involved!</a></li>
 				</ul>
 			</nav>
-			<!-- a href="https://realsense.intel.com" ><img src="splash.png" width="100%" /></a -->
 		</div>
     </section>
 
@@ -159,7 +158,7 @@
 	</div>
 
 	<div role="main" class="container">
-		<div class="row">
+				<div class="row">
 			<div class="col-md-4">
 				<table class='t-table table borderless' border=1 bordercolor=#3E4D59>
 					<tr>
@@ -169,22 +168,19 @@
 					</tr>
 					<tr style='height: 180px'>
 						<td class="nopadding">
-							<a href="https://github.com/IntelRealSense/librealsense/tree/jupyter" title="Go to Jupyter branch">
-							<img src="img/jupyter-0.gif" onmouseenter="this.src='img/jupyter.gif';" onmouseout="this.src='img/jupyter-0.gif';" width=100% />
-							</a>
+						<a href="https://github.com/IntelRealSense/librealsense/tree/jupyter" title="Go to Jupyter branch">
+						<img src="img/jupyter-0.gif" onmouseenter="this.src='img/jupyter.gif';" onmouseout="this.src='img/jupyter-0.gif';" width=100% />
+						</a>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<div class='scroll-container' style='padding: 5px;'>
-							Explore Intel&#0169; RealSense&#0153; technology in a container running Python in the cloud.<br>
-							Try it now with <a href="https://mybinder.org/v2/gh/IntelRealSense/librealsense/jupyter?filepath=notebooks/distance_to_object.ipynb" rel="nofollow"><img src="https://camo.githubusercontent.com/24c94be25a8a8b5703a34466825bbfdd6147d9d0/68747470733a2f2f6d7962696e6465722e6f72672f62616467652e737667" alt="Binder" data-canonical-src="https://mybinder.org/badge.svg" style="max-width:100%;"></a>
-							</div>
+						<div class='scroll-container' style='padding: 5px;'>
+Explore Intel&#0169; RealSense&#0153; technology in a container running Python in the cloud.<br>Try it now with <a href="https://mybinder.org/v2/gh/IntelRealSense/librealsense/jupyter?filepath=notebooks/distance_to_object.ipynb" rel="nofollow"><img src="https://camo.githubusercontent.com/24c94be25a8a8b5703a34466825bbfdd6147d9d0/68747470733a2f2f6d7962696e6465722e6f72672f62616467652e737667" alt="Binder" data-canonical-src="https://mybinder.org/badge.svg" style="max-width:100%;"></a></div>
 						</td>
 					</tr>
 				</table>
 			</div>
-			
 			<div class="col-md-4">
 				<table class='t-table table borderless' border=1 bordercolor=#3E4D59>
 					<tr>
@@ -194,23 +190,19 @@
 					</tr>
 					<tr style='height: 180px'>
 						<td class="nopadding">
-							<a href="https://github.com/IntelRealSense/librealsense/tree/master/wrappers/unity" title="Go to wrappers/unity">
-							<img src="img/unity-0.gif" onmouseenter="this.src='img/unity-1.gif';" onmouseout="this.src='img/unity-0.gif';" width=100% />
-							</a>
+						<a href="https://github.com/IntelRealSense/librealsense/tree/master/wrappers/unity" title="Go to wrappers/unity">
+						<img src="img/unity-0.gif" onmouseenter="this.src='img/unity-1.gif';" onmouseout="this.src='img/unity-0.gif';" width=100% />
+						</a>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<div class='scroll-container' style='padding: 5px;'>
-							<a href="https://github.com/IntelRealSense/librealsense/releases/tag/2.14.0" class="nounderline">librealsense 2.14.0</a> brings complete overhaul of our Unity wrapper with many exiting new features requested by the community.<br>
-							<a href="http://realsense-hw-public.s3.amazonaws.com/rs-tests/realsense.unitypackage" class="nounderline">
-							<i class="fas fa-cloud-download-alt fa-lg"></i> Get UnityPackage</a>
-							</div>
+						<div class='scroll-container' style='padding: 5px;'>
+<a href="https://github.com/IntelRealSense/librealsense/releases/tag/2.14.0" class="nounderline">librealsense 2.14.0</a> brings complete overhaul of our Unity wrapper with many exiting new features requested by the community.<br><a href="http://realsense-hw-public.s3.amazonaws.com/rs-tests/realsense.unitypackage" class="nounderline"><i class="fas fa-cloud-download-alt fa-lg"></i> Get UnityPackage</a></div>
 						</td>
 					</tr>
 				</table>
 			</div>
-			
 			<div class="col-md-4">
 				<table class='t-table table borderless' border=1 bordercolor=#3E4D59>
 					<tr>
@@ -220,22 +212,20 @@
 					</tr>
 					<tr style='height: 180px'>
 						<td class="nopadding">
-							<a href="https://github.com/IntelRealSense/librealsense/pull/2040" title="Learn more...">
-							<img src="img/align-0.gif" onmouseenter="this.src='img/align.gif';" onmouseout="this.src='img/align-0.gif';" width=100% />
-							</a>
+						<a href="https://github.com/IntelRealSense/librealsense/pull/2040" title="Learn more...">
+						<img src="img/align-0.gif" onmouseenter="this.src='img/align.gif';" onmouseout="this.src='img/align-0.gif';" width=100% />
+						</a>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<div class='scroll-container' style='padding: 5px;'>
-							<a href="https://github.com/IntelRealSense/librealsense/releases/tag/2.14.0" class="nounderline">librealsense 2.14.0</a> brings significant improvements in lattency and CPU utilisation of the <b>Align</b> processing block on x86/x64 machines.
-							</div>
+						<div class='scroll-container' style='padding: 5px;'>
+<a href="https://github.com/IntelRealSense/librealsense/releases/tag/2.14.0" class="nounderline">librealsense 2.14.0</a> brings significant improvements in lattency and CPU utilisation of the <b>Align</b> processing block on x86/x64 machines.</div>
 						</td>
 					</tr>
 				</table>
 			</div>
 		</div>
-		
 		<div class="row">
 			<div class="col-md-4">
 				<table class='t-table table borderless' border=1 bordercolor=#3E4D59>
@@ -246,22 +236,19 @@
 					</tr>
 					<tr style='height: 180px'>
 						<td class="nopadding">
-							<a href="img/cvpr_brochure.pdf" title="Learn more...">
-							<img src="img/cvpr.jpg" onmouseenter="this.src='img/cvpr.gif';" onmouseout="this.src='img/cvpr.jpg';" width=100% />
-							</a>
+						<a href="img/cvpr_brochure.pdf" title="Learn more...">
+						<img src="img/cvpr.jpg" onmouseenter="this.src='img/cvpr.gif';" onmouseout="this.src='img/cvpr.jpg';" width=100% />
+						</a>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<div class='scroll-container' style='padding: 5px;'>
-							CVPR is an amazing event and for us great opportunity to meet the community, get feedback and answer questions.<br>
-							<a href="img/cvpr_brochure.pdf" target="_blank" class="nounderline"><i class="fas fa-file-pdf"></i> Get the Brochure</a>
-							</div>
+						<div class='scroll-container' style='padding: 5px;'>
+CVPR is an amazing event and for us great opportunity to meet the community, get feedback and answer questions.<br><a href="img/cvpr_brochure.pdf" target="_blank" class="nounderline"><i class="fas fa-file-pdf"></i> Get the Brochure</a></div>
 						</td>
 					</tr>
 				</table>
 			</div>
-			
 			<div class="col-md-4">
 				<table class='t-table table borderless' border=1 bordercolor=#3E4D59>
 					<tr>
@@ -271,21 +258,19 @@
 					</tr>
 					<tr style='height: 180px'>
 						<td class="nopadding">
-							<a href="https://github.com/IntelRealSense/librealsense/pull/1866" title="Learn more...">
-							<img src="img/jetson-0.gif" onmouseenter="this.src='img/jetson.gif';" onmouseout="this.src='img/jetson-0.gif';" width=100% />
-							</a>
+						<a href="https://github.com/IntelRealSense/librealsense/pull/1866" title="Learn more...">
+						<img src="img/jetson-0.gif" onmouseenter="this.src='img/jetson.gif';" onmouseout="this.src='img/jetson-0.gif';" width=100% />
+						</a>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<div class='scroll-container' style='padding: 5px;'>
-							<a href="https://github.com/IntelRealSense/librealsense/releases/tag/2.13.0" class="nounderline">librealsense 2.13.0</a> offers significant performance boost for NVIDIA Jetson TX users by allowing to offload color conversions and alignment to the GPU.
-							</div>
+						<div class='scroll-container' style='padding: 5px;'>
+<a href="https://github.com/IntelRealSense/librealsense/releases/tag/2.13.0" class="nounderline">librealsense 2.13.0</a> offers significant performance boost for NVIDIA Jetson TX users by allowing to offload color conversions and alignment to the GPU.</div>
 						</td>
 					</tr>
 				</table>
 			</div>
-			
 			<div class="col-md-4">
 				<table class='t-table table borderless' border=1 bordercolor=#3E4D59>
 					<tr>
@@ -295,28 +280,20 @@
 					</tr>
 					<tr style='height: 180px'>
 						<td class="nopadding">
-							<a href="https://github.com/IntelRealSense/librealsense/blob/master/doc/post-processing-filters.md" title="Learn more...">
-							<img src="img/post.gif" onmouseenter="this.src='https://user-images.githubusercontent.com/22654243/35924136-dd9cd1b6-0c2a-11e8-925a-84a52c0a5b96.gif';" onmouseout="this.src='img/post.gif';" width=100% />
-							</a>
+						<a href="https://github.com/IntelRealSense/librealsense/blob/master/doc/post-processing-filters.md" title="Learn more...">
+						<img src="img/post.gif" onmouseenter="this.src='https://user-images.githubusercontent.com/22654243/35924136-dd9cd1b6-0c2a-11e8-925a-84a52c0a5b96.gif';" onmouseout="this.src='img/post.gif';" width=100% />
+						</a>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<div class='scroll-container' style='padding: 5px;'>
-							Learn more about <a href="https://github.com/IntelRealSense/librealsense/blob/master/doc/post-processing-filters.md" title="Learn more...">
-							depth post-processing</a>:
-							
-							<li> Read <a href="https://www.intel.com/content/dam/support/us/en/documents/emerging-technologies/intel-realsense-technology/Intel-RealSense-Depth-PostProcess.pdf">the White-Paper</a></li>
-							<li> Try <a href="https://github.com/IntelRealSense/librealsense/tree/master/examples/post-processing">the Example</a></li>
-							<li> Run <a href="https://mybinder.org/v2/gh/IntelRealSense/librealsense/jupyter?filepath=notebooks%2Fdepth_filters.ipynb">in the Cloud</a></li>
-							
-							</div>
+						<div class='scroll-container' style='padding: 5px;'>
+Learn more about <a href="https://github.com/IntelRealSense/librealsense/blob/master/doc/post-processing-filters.md" title="Learn more...">depth post-processing</a>:<li> Read <a href="https://www.intel.com/content/dam/support/us/en/documents/emerging-technologies/intel-realsense-technology/Intel-RealSense-Depth-PostProcess.pdf">the White-Paper</a></li><li> Try <a href="https://github.com/IntelRealSense/librealsense/tree/master/examples/post-processing">the Example</a></li><li> Run <a href="https://mybinder.org/v2/gh/IntelRealSense/librealsense/jupyter?filepath=notebooks%2Fdepth_filters.ipynb">in the Cloud</a></li></div>
 						</td>
 					</tr>
 				</table>
 			</div>
 		</div>
-		
 		<div class="row">
 			<div class="col-md-4">
 				<table class='t-table table borderless' border=1 bordercolor=#3E4D59>
@@ -327,21 +304,19 @@
 					</tr>
 					<tr style='height: 180px'>
 						<td class="nopadding">
-							<a href="https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md" title="Learn more...">
-							<img src="img/depth_from_stereo.gif" onmouseenter="this.src='https://raw.githubusercontent.com/wiki/dorodnic/librealsense/naive-depth.gif';" onmouseout="this.src='img/depth_from_stereo.gif';" width=100% />
-							</a>
+						<a href="https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md" title="Learn more...">
+						<img src="img/depth_from_stereo.gif" onmouseenter="this.src='https://raw.githubusercontent.com/wiki/dorodnic/librealsense/naive-depth.gif';" onmouseout="this.src='img/depth_from_stereo.gif';" width=100% />
+						</a>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<div class='scroll-container' style='padding: 5px;'>
-							Introduction to the basics of stereoscopic vision, including block-matching, <a href="https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#calibration-and-rectification">calibration and rectification</a>, depth from stereo <a href="https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#software-stereo">using opencv</a>, <a href="https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#passive-vs-active-stereo">passive vs. active stereo</a> and relation to <a href="https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#remark-on-structured-light">structured light</a>.
-							</div>
+						<div class='scroll-container' style='padding: 5px;'>
+Introduction to the basics of stereoscopic vision, including block-matching, <a href="https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#calibration-and-rectification">calibration and rectification</a>, depth from stereo <a href="https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#software-stereo">using opencv</a>, <a href="https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#passive-vs-active-stereo">passive vs. active stereo</a> and relation to <a href="https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md#remark-on-structured-light">structured light</a>.</div>
 						</td>
 					</tr>
 				</table>
 			</div>
-			
 			<div class="col-md-4">
 				<table class='t-table table borderless' border=1 bordercolor=#3E4D59>
 					<tr>
@@ -351,22 +326,19 @@
 					</tr>
 					<tr style='height: 180px'>
 						<td class="nopadding">
-							<a href="https://www.youtube.com/watch?v=uz2dGbjA3j4" title="Learn more...">
-							<img src="img/arch-0.gif" onmouseenter="this.src='img/arch.gif';" onmouseout="this.src='img/arch-0.gif';" width=100% />
-							</a>
+						<a href="https://www.youtube.com/watch?v=uz2dGbjA3j4" title="Learn more...">
+						<img src="img/arch-0.gif" onmouseenter="this.src='img/arch.gif';" onmouseout="this.src='img/arch-0.gif';" width=100% />
+						</a>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<div class='scroll-container' style='padding: 5px;'>
-							Learn about software architecture and design behind librealsense project.<br>
-							<a href="https://realsense.intel.com/wp-content/uploads/sites/63/realsense_software_architecture_webinar.pdf" target="_blank" class="nounderline"><i class="fas fa-file-pdf"></i> Get the Slides</a>
-							</div>
+						<div class='scroll-container' style='padding: 5px;'>
+Learn about software architecture and design behind librealsense project.<br><a href="https://realsense.intel.com/wp-content/uploads/sites/63/realsense_software_architecture_webinar.pdf" target="_blank" class="nounderline"><i class="fas fa-file-pdf"></i> Get the Slides</a></div>
 						</td>
 					</tr>
 				</table>
 			</div>
-			
 			<div class="col-md-4">
 				<table class='t-table table borderless' border=1 bordercolor=#3E4D59>
 					<tr>
@@ -376,22 +348,24 @@
 					</tr>
 					<tr style='height: 180px'>
 						<td class="nopadding">
-							<a href="https://www.embedded-vision.com/summit/vision-product-year-awards" title="Learn more...">
-							<img src="img/evs.jpg" width=100% />
-							</a>
+						<a href="https://www.embedded-vision.com/summit/vision-product-year-awards" title="Learn more...">
+						<img src="img/evs.jpg" onmouseenter="this.src='img/evs.jpg';" onmouseout="this.src='img/evs.jpg';" width=100% />
+						</a>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<div class='scroll-container' style='padding: 5px;'>
-							Intel&#0169; RealSense&#0153; D400<br/>
-							Winner of the <b>Vision Product of the Year</b> Award as <b>Best Camera</b>
-							</div>
+						<div class='scroll-container' style='padding: 5px;'>
+Intel&#0169; RealSense&#0153; D400<br/>Winner of the <b>Vision Product of the Year</b> Award as the <b>Best Camera</b></div>
 						</td>
 					</tr>
 				</table>
 			</div>
-		</div>
+
+	</div>
+	
+	<div class="text-center">
+		
 	</div>
 	
 	<footer class="footer">
