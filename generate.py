@@ -28,15 +28,17 @@ if (len(sys.argv) == 3):
         if (index % 3 == 0):
             if (index > 0):
                 body = body + "\t\t</div>\n";
-            if (index < max_this_page - 1):
-                body = body + "\t\t<div class=\"row\">\n";
 
         if (index == max_this_page):
             index = 0;
             pages.append(body);
             body = "";
             total = total - items_per_page;
-            max_this_page = min([ total, items_per_page]);            
+            max_this_page = min([ total, items_per_page]);
+
+        if (index % 3 == 0):
+            if (index < max_this_page):
+                body = body + "\t\t<div class=\"row\">\n";
                 
         body = body + "\t\t\t<div class=\"col-md-4\">\n";
         body = body + "\t\t\t\t<table class='t-table table borderless' border=1 bordercolor=#3E4D59>\n";

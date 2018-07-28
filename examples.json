@@ -91,12 +91,30 @@
 		},
 		
 		{
-            "title": "<b>Measure</b>",
-            "link": "https://github.com/IntelRealSense/librealsense/blob/master/examples/measure",
+            "title": "<b>Graph-Cuts</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/wrappers/opencv/grabcuts",
             "link_title": "Learn more...",
-            "static_thumbnail": "https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/measure-expected.png",
-            "active_thumbnail": "https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/measure-expected.png",
-            "body": "Lets the user measure the dimentions of 3D objects in a stream"
+            "static_thumbnail": "img/graph-cuts-0.gif",
+            "active_thumbnail": "img/graph-cuts.gif",
+            "body": "Simple background removal using the GrabCut algorithm"
+		},
+		
+		{
+            "title": "<b>Latency Tool</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/wrappers/opencv/latency-tool",
+            "link_title": "Learn more...",
+            "static_thumbnail": "img/latency-0.gif",
+            "active_thumbnail": "img/latency.gif",
+            "body": "Basic latency estimation using computer vision"
+		},
+		
+		{
+            "title": "<b>Deep Neural Network</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/wrappers/opencv/dnn",
+            "link_title": "Learn more...",
+            "static_thumbnail": "img/dnn-0.gif",
+            "active_thumbnail": "img/dnn.gif",
+            "body": "Intel RealSense camera used for real-time object-detection"
 		}
 	]
 }
