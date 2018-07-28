@@ -1,0 +1,21 @@
+{
+    "items": [
+        {
+            "title": "New <b>Jupyter Notebooks</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/tree/jupyter",
+            "link_title": "Go to Jupyter branch",
+            "static_thumbnail": "img/jupyter-0.gif",
+            "active_thumbnail": "img/jupyter.gif",
+            "body": "Explore Intel&#0169; RealSense&#0153; technology in a container running Python in the cloud.<br>Try it now with <a href=\"https://mybinder.org/v2/gh/IntelRealSense/librealsense/jupyter?filepath=notebooks/distance_to_object.ipynb\" rel=\"nofollow\"><img src=\"https://camo.githubusercontent.com/24c94be25a8a8b5703a34466825bbfdd6147d9d0/68747470733a2f2f6d7962696e6465722e6f72672f62616467652e737667\" alt=\"Binder\" data-canonical-src=\"https://mybinder.org/badge.svg\" style=\"max-width:100%;\"></a>"
+        },
+     
+        {
+            "title": "New <b>Unity Content</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/tree/master/wrappers/unity",
+            "link_title": "Go to wrappers/unity",
+            "static_thumbnail": "img/unity-0.gif",
+            "active_thumbnail": "img/unity.gif",
+            "body": "<a href=\"https://github.com/IntelRealSense/librealsense/releases/tag/2.14.0\" class=\"nounderline\">librealsense 2.14.0</a> brings complete overhaul of our Unity wrapper with many exiting new features requested by the community.<br><a href=\"http://realsense-hw-public.s3.amazonaws.com/rs-tests/realsense.unitypackage\" class=\"nounderline\"><i class=\"fas fa-cloud-download-alt fa-lg\"></i> Get UnityPackage</a>"
+        }
+    ]
+}
