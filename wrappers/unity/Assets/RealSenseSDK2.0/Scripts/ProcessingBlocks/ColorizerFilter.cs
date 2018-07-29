@@ -23,13 +23,11 @@ public class ColorizerFilter : VideoProcessingBlock
     private List<Stream> _requirments = new List<Stream>() { Stream.Depth };
     private Intel.RealSense.Colorizer _pb = new Intel.RealSense.Colorizer();
 
+    public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Single; } }
+
     public void Awake()
     {
         _pb.Options[Option.ColorScheme].Value = (float)colorMap;
-    }
-    public override Frame Process(Frame frame)
-    {
-        return _enabled ? _pb.Colorize(frame as VideoFrame) : frame;
     }
 
     public override List<Stream> Requirments()
@@ -40,5 +38,10 @@ public class ColorizerFilter : VideoProcessingBlock
     public void Update()
     {
         _pb.Options[Option.ColorScheme].Value = (float)colorMap;
+    }
+
+    public override Frame Process(Frame frame, FrameSource frameSource, FramesReleaser releaser)
+    {
+        return _enabled ? _pb.Colorize(frame as VideoFrame) : frame;
     }
 }

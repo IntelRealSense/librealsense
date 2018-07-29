@@ -11,6 +11,16 @@ public class VideoStreamRequest
     public int Width;
     public int Height;
 
+    public VideoStreamRequest()
+    {
+
+    }
+
+    public VideoStreamRequest(VideoFrame f)
+    {
+        this.CopyProfile(f);
+    }
+
     public VideoStreamRequest Clone()
     {
         return new VideoStreamRequest()
@@ -24,7 +34,7 @@ public class VideoStreamRequest
         };
     }
 
-    public void CopyProfile(Frame f)
+    public void CopyProfile(VideoFrame f)
     {
         var vf = f as VideoFrame;
 
@@ -56,7 +66,7 @@ public class VideoStreamRequest
         return true;
     }
 
-    public bool HasConflict(Frame f)
+    public bool HasConflict(VideoFrame f)
     {
         var vf = f as VideoFrame;
         if (Stream != Stream.Any && Stream != vf.Profile.Stream)

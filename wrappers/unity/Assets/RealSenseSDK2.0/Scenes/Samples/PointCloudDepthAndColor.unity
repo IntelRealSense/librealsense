@@ -396,9 +396,33 @@ Prefab:
       propertyPath: stream
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 114128454867765796, guid: a2bade7ff40ff92409855b062870dccd,
+        type: 2}
+      propertyPath: _rsTexture
+      value: 
+      objectReference: {fileID: 1732253690}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: a2bade7ff40ff92409855b062870dccd, type: 2}
   m_IsPrefabParent: 0
+--- !u!1 &1477200679 stripped
+GameObject:
+  m_PrefabParentObject: {fileID: 1421940970626846, guid: d2790e271f1a64347bb2ede5601b1e23,
+    type: 2}
+  m_PrefabInternal: {fileID: 1694239407}
+--- !u!114 &1477200680
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1477200679}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ab94c438ce58954b8f8731e229cf3ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _order: 1
+  _fork: 1
+  _textureStream: 2
 --- !u!1 &1628558566
 GameObject:
   m_ObjectHideFlags: 0
@@ -607,6 +631,12 @@ Prefab:
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: d2790e271f1a64347bb2ede5601b1e23, type: 2}
   m_IsPrefabParent: 0
+--- !u!114 &1732253690 stripped
+MonoBehaviour:
+  m_PrefabParentObject: {fileID: 114015623498811666, guid: d2790e271f1a64347bb2ede5601b1e23,
+    type: 2}
+  m_PrefabInternal: {fileID: 1694239407}
+  m_Script: {fileID: 11500000, guid: f59de22db6bfdfe46937570a9af2882b, type: 3}
 --- !u!4 &1865264944 stripped
 Transform:
   m_PrefabParentObject: {fileID: 4984196648651818, guid: d2790e271f1a64347bb2ede5601b1e23,

@@ -2,9 +2,9 @@
 using System;
 using System.Collections.Generic;
 
-public class Aligment : MultiFrameVideoProcessingBlock
+public class AligmentFilter : VideoProcessingBlock
 {
-    public Stream _alignTo;
+    public Stream _alignTo = Stream.Depth;
 
     private Stream _currAlignTo;
     private Align _pb;
@@ -13,6 +13,9 @@ public class Aligment : MultiFrameVideoProcessingBlock
     private object _lock = new object();
 
     private Dictionary<Stream, int> _profilesIds = new Dictionary<Stream, int>();
+
+    public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Multi; } }
+
     public void Awake()
     {
         ResetAligner();
@@ -26,19 +29,22 @@ public class Aligment : MultiFrameVideoProcessingBlock
         _currAlignTo = _alignTo;
     }
 
-    public override FrameSet Process(FrameSet frameset, FramesReleaser releaser)
+    public override Frame Process(Frame frame, FrameSource frameSource, FramesReleaser releaser)
     {
         lock (_lock)
         {
-            using (var depth = frameset.DepthFrame)
-            using (var color = frameset.ColorFrame)
-                if (_profilesIds.Count == 0 != !_profilesIds.ContainsValue(color.Profile.UniqueID) || !_profilesIds.ContainsValue(depth.Profile.UniqueID))
-                {
-                    ResetAligner();
-                    _profilesIds[Stream.Depth] = depth.Profile.UniqueID;
-                    _profilesIds[Stream.Color] = color.Profile.UniqueID;
-                }
-            return _enabled ? _pb.Process(frameset, releaser) : frameset;
+            using (var frameset = FrameSet.FromFrame(frame))
+            {
+                using (var depth = frameset.DepthFrame)
+                using (var color = frameset.ColorFrame)
+                    if (_profilesIds.Count == 0 != !_profilesIds.ContainsValue(color.Profile.UniqueID) || !_profilesIds.ContainsValue(depth.Profile.UniqueID))
+                    {
+                        ResetAligner();
+                        _profilesIds[Stream.Depth] = depth.Profile.UniqueID;
+                        _profilesIds[Stream.Color] = color.Profile.UniqueID;
+                    }
+                return (_enabled ? _pb.Process(frameset, releaser) : frameset).AsFrame();
+            }
         }
     }
 

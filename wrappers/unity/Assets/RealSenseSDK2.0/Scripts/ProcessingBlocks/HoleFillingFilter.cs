@@ -17,7 +17,9 @@ public class HoleFillingFilter : VideoProcessingBlock
     private List<Stream> _requirments = new List<Stream>() { Stream.Depth };
     private Intel.RealSense.HoleFillingFilter _pb = new Intel.RealSense.HoleFillingFilter();
 
-    public override Frame Process(Frame frame)
+    public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Single; } }
+
+    public override Frame Process(Frame frame, FrameSource frameSource, FramesReleaser releaser)
     {
         return _enabled ? _pb.ApplyFilter(frame as VideoFrame) : frame;
     }

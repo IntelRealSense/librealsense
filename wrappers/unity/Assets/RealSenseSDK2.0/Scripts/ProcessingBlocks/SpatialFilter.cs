@@ -32,7 +32,9 @@ public class SpatialFilter : VideoProcessingBlock
     private List<Stream> _requirments = new List<Stream>() { Stream.Depth };
     private Intel.RealSense.SpatialFilter _pb = new Intel.RealSense.SpatialFilter();
 
-    public override Frame Process(Frame frame)
+    public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Single; } }
+
+    public override Frame Process(Frame frame, FrameSource frameSource, FramesReleaser releaser)
     {
         return _enabled ? _pb.ApplyFilter(frame as VideoFrame) : frame;
     }

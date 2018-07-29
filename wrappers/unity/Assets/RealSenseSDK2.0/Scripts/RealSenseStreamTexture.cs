@@ -152,8 +152,11 @@ public class RealSenseStreamTexture : MonoBehaviour
         return true;
     }
 
-    private bool HasRequestConflict(VideoFrame vf)
+    private bool HasRequestConflict(Frame frame)
     {
+        if (!(frame is VideoFrame))
+            return true;
+        VideoFrame vf = frame as VideoFrame;
         if (_videoStreamFilter.Stream != vf.Profile.Stream ||
             _videoStreamFilter.Format != vf.Profile.Format ||
             (_videoStreamFilter.StreamIndex != vf.Profile.Index && _videoStreamFilter.StreamIndex != 0))
@@ -163,7 +166,7 @@ public class RealSenseStreamTexture : MonoBehaviour
 
     private void OnNewSampleThreading(Frame frame)
     {
-        if (HasRequestConflict(frame as VideoFrame))
+        if (HasRequestConflict(frame))
             return;
         if (HasTextureConflict(frame))
             return;
@@ -192,7 +195,7 @@ public class RealSenseStreamTexture : MonoBehaviour
         f.Set();
     }
 
-    void Update()
+    protected void Update()
     {
         if (!_currVideoStreamFilter.Equals(_videoStreamFilter))
             ResetTexture(_videoStreamFilter);

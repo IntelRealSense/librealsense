@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 1157686285
+CRC: 4230387235
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 64fac4d5053459b48f0f84de243d51e2
+    Hash: 68009beb2e30704438acb2ed24ce8b21
   TypeTreeHash:
     serializedVersion: 2
     Hash: 31d6cfe0d16ae931b73c59d7e0c089c0
@@ -19,4 +19,4 @@ Assets:
 - Assets/RealSenseSDK2.0/Scenes/Samples/BackgroundSegmentation.unity
 - Assets/RealSenseSDK2.0/Scenes/Samples/ARBackground.unity
 Dependencies:
-- C:/git/librealsense/wrappers/unity/Assets/StreamingAssets/sample_assets
+- C:/git/librealsense/build-x64/wrappers/unity/Assets/StreamingAssets/sample_assets

@@ -77,13 +77,13 @@ public class RealSenseDevice : MonoBehaviour
 
     private Pipeline m_pipeline;
 
-    private HashSet<IVideoProcessingBlock> m_processingBlocks = new HashSet<IVideoProcessingBlock>();
+    private HashSet<VideoProcessingBlock> m_processingBlocks = new HashSet<VideoProcessingBlock>();
 
-    public void AddProcessingBlock(IVideoProcessingBlock processingBlock)
+    public void AddProcessingBlock(VideoProcessingBlock processingBlock)
     {
         m_processingBlocks.Add(processingBlock);
     }
-    public void RemoveProcessingBlock(IVideoProcessingBlock processingBlock)
+    public void RemoveProcessingBlock(VideoProcessingBlock processingBlock)
     {
         m_processingBlocks.Remove(processingBlock);
     }
@@ -242,46 +242,38 @@ public class RealSenseDevice : MonoBehaviour
         }
     }
 
-    private Frame ApplyFilters(Frame frame)
+    private Frame ApplyFilter(Frame frame, FrameSource frameSource, FramesReleaser framesReleaser, VideoProcessingBlock vpb)
     {
-        var pbs = Instance.m_processingBlocks.OrderBy(i => i.Order).Where(i => i.Enabled).ToList();
-        foreach (var vpb in pbs)
+        if (!vpb.CanProcess(frame))
+            return frame;
+
+        // run the processing block.
+        var processedFrame = vpb.Process(frame, frameSource, framesReleaser);
+
+        // incase fork is requested, notify on new frame and use the original frame for the new frameset.
+        if (vpb.Fork())
         {
-            if (!(vpb is VideoProcessingBlock))
-                continue;
-            var pb = vpb as VideoProcessingBlock;
-            if (pb.CanProcess(frame))
-            {
-                // run the processing block.
-                var processedFrame = pb.Process(frame);
-
-                // incase fork is requested, notify on new frame and use the original frame for the new frameset.
-                if (pb.Fork())
-                {
-                    Instance.HandleFrame(processedFrame);
-                    processedFrame.Dispose();
-                    continue;
-                }
-
-                // avoid disposing the frame incase the filter returns the original frame.
-                if (processedFrame == frame)
-                    continue;
-
-                // replace the current frame with the processed one to be used as the input to the next iteration (next filter)
-                frame.Dispose();
-                frame = processedFrame;
-            }
+            Instance.HandleFrame(processedFrame);
+            processedFrame.Dispose();
+            return frame;
         }
-        return frame;
+
+        // avoid disposing the frame incase the filter returns the original frame.
+        if (processedFrame == frame)
+            return frame;
+
+        // replace the current frame with the processed one to be used as the input to the next iteration (next filter)
+        frame.Dispose();
+        return processedFrame;
     }
 
-    private FrameSet HandleSingleFrameProcessingBlocks(FrameSet frameSet, FrameSource frameSource, FramesReleaser framesReleaser)
+    private FrameSet HandleSingleFrameProcessingBlocks(FrameSet frameSet, FrameSource frameSource, FramesReleaser framesReleaser, VideoProcessingBlock videoProcessingBlock)
     {
         // single frame filters
         List<Frame> processedFrames = new List<Frame>();
         foreach (var frame in frameSet)
         {
-            var currFrame = Instance.ApplyFilters(frame);
+            var currFrame = Instance.ApplyFilter(frame, frameSource, framesReleaser, videoProcessingBlock);
 
             // cache the pocessed frame
             processedFrames.Add(currFrame);
@@ -298,19 +290,23 @@ public class RealSenseDevice : MonoBehaviour
         return newFrameSet;
     }
 
-    private FrameSet HandleMultiFramesProcessingBlocks(FrameSet frameSet, FramesReleaser framesReleaser)
+    private FrameSet HandleMultiFramesProcessingBlocks(FrameSet frameSet, FrameSource frameSource, FramesReleaser framesReleaser, VideoProcessingBlock videoProcessingBlock)
     {
-        // multy frames filters
-        var pbs = Instance.m_processingBlocks.OrderBy(i => i.Order).Where(i => i.Enabled).ToList();
-        foreach (var vpb in pbs)
+        using (var frame = frameSet.AsFrame())
         {
-            if (!(vpb is MultiFrameVideoProcessingBlock))
-                continue;
-            var pb = vpb as MultiFrameVideoProcessingBlock;
-            if (pb.CanProcess(frameSet))
-                frameSet = pb.Process(frameSet, framesReleaser);
+            if (videoProcessingBlock.CanProcess(frame))
+            {
+                using (var f = videoProcessingBlock.Process(frame, frameSource, framesReleaser))
+                {
+                    if (videoProcessingBlock.Fork())
+                    {
+                        Instance.HandleFrameSet(FrameSet.FromFrame(f, framesReleaser));
+                    }
+                    else
+                        return FrameSet.FromFrame(f, framesReleaser);
+                }
+            }
         }
-
         return frameSet;
     }
 
@@ -320,9 +316,21 @@ public class RealSenseDevice : MonoBehaviour
         {
             var frames = FrameSet.FromFrame(f1, releaser);
 
-            frames = Instance.HandleSingleFrameProcessingBlocks(frames, src, releaser);
-
-            frames = Instance.HandleMultiFramesProcessingBlocks(frames, releaser);
+            var pbs = Instance.m_processingBlocks.OrderBy(i => i.Order).Where(i => i.Enabled).ToList();
+            foreach (var vpb in pbs)
+            {
+                FrameSet processedFrames = frames;
+                switch (vpb.ProcessingType)
+                {
+                    case ProcessingBlockType.Single:
+                        processedFrames = Instance.HandleSingleFrameProcessingBlocks(frames, src, releaser, vpb);
+                        break;
+                    case ProcessingBlockType.Multi:
+                        processedFrames = Instance.HandleMultiFramesProcessingBlocks(frames, src, releaser, vpb);
+                        break;
+                }
+                frames = processedFrames;
+            }
 
             Instance.HandleFrameSet(frames);
             foreach (var fr in frames)

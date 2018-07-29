@@ -301,7 +301,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1925439091}
+      - m_Target: {fileID: 1925439089}
         m_MethodName: ToggleAlignTo
         m_Mode: 1
         m_Arguments:
@@ -1845,7 +1845,7 @@ GameObject:
   m_PrefabParentObject: {fileID: 1421940970626846, guid: d2790e271f1a64347bb2ede5601b1e23,
     type: 2}
   m_PrefabInternal: {fileID: 1878000804}
---- !u!114 &1925439091
+--- !u!114 &1925439089
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
@@ -1853,10 +1853,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1925439088}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 37a198125d5f44f4e96cdf60c0684d57, type: 3}
+  m_Script: {fileID: 11500000, guid: 3f321dd38a2028949a3ecd8e2905bb5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _order: 0
+  _fork: 0
   _alignTo: 1
 --- !u!1 &2057984275
 GameObject:
