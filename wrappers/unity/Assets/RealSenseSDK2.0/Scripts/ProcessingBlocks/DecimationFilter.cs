@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class DecimationFilter : VideoProcessingBlock
+public class DecimationFilter : RealSenseProcessingBlock
 {
     /// <summary>
     /// Number of filter iterations

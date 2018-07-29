@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-public class PointCloudFilter : VideoProcessingBlock
+public class PointCloudFilter : RealSenseProcessingBlock
 {
     public Stream _textureStream = Stream.Color;
 

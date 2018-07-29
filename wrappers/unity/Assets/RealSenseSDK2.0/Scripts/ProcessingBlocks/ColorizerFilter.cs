@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ColorizerFilter : VideoProcessingBlock
+public class ColorizerFilter : RealSenseProcessingBlock
 {
     [Serializable]
     public enum ColorScheme //TOOD: remove and make more robust using option.ValueDescription

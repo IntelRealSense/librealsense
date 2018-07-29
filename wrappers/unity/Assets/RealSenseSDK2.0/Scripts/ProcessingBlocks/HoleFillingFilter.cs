@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class HoleFillingFilter : VideoProcessingBlock
+public class HoleFillingFilter : RealSenseProcessingBlock
 {
     /// <summary>
     /// Control the data that will be used to fill the invalid pixels

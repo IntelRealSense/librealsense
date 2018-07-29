@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TemporalFilter : VideoProcessingBlock
+public class TemporalFilter : RealSenseProcessingBlock
 {
     /// <summary>
     /// The Alpha factor in an exponential moving average with Alpha=1 - no filter . Alpha = 0 - infinite filter

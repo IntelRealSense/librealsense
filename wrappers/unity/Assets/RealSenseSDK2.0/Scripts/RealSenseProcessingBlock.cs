@@ -1,16 +1,20 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Intel.RealSense;
 
+[Serializable]
 public enum ProcessingBlockType
 {
     Single,
     Multi
 }
 
-public abstract class VideoProcessingBlock : MonoBehaviour
+[Serializable]
+public abstract class RealSenseProcessingBlock : MonoBehaviour
 {
+    private RealSenseProcessingPipe _processingPipe;
+
     protected bool _enabled = false;
     public int _order = 0;
     public bool _fork = false;
@@ -42,14 +46,18 @@ public abstract class VideoProcessingBlock : MonoBehaviour
 
     private void ChangeState(bool state)
     {
-        var device = RealSenseDevice.Instance;
-        if (device == null)
-            return;
         _enabled = state;
-        if(state)
-            device.AddProcessingBlock(this);
+        if(_processingPipe == null)
+            _processingPipe = GetComponent<RealSenseProcessingPipe>();
+        if (_processingPipe == null)
+        {
+            Debug.LogWarning(this.name + " is not binded to a processing pipe");
+            return;
+        }
+        if (state)
+            _processingPipe.AddProcessingBlock(this);
         else
-            device.RemoveProcessingBlock(this);
+            _processingPipe.RemoveProcessingBlock(this);
     }
 
     public bool CanProcess(Frame frame)

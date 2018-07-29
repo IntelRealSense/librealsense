@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SpatialFilter : VideoProcessingBlock
+public class SpatialFilter : RealSenseProcessingBlock
 {
     /// <summary>
     /// Number of filter iterations

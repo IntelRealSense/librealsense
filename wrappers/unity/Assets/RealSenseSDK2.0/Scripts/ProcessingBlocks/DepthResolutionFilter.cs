@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
-public class DepthResolutionFilter : VideoProcessingBlock
+public class DepthResolutionFilter : RealSenseProcessingBlock
 {
     [Range(0, 15)]
     public int _depthResolution = 0;
