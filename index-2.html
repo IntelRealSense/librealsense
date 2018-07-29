@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Intel&#0169; RealSense&#0153; SDK - Developers Portal">
+	<meta name="author" content="Intel&#0169; RealSense&#0153; Technologies">
+	<title>RealSense&#0153; Developers</title>
+	<link rel="shortcut icon" href="https://github.com/IntelRealSense/librealsense/raw/master/tools/realsense-viewer/res/icon.ico">
+
+	<meta property="og:title" content="RealSense&#0153; Developers">
+	<meta property="og:description" content="Intel&#0169; RealSense&#0153; SDK - Developers Portal">
+	<meta property="og:image" content="">
+	<meta property="og:url" content="">
+	<meta property="og:type" content="website">
+	<meta property="fb:app_id" content="">
+
+	<link href="https://fonts.googleapis.com/css?family=Karla" rel="stylesheet">
+	
+	<link rel="stylesheet" href="theme.min.css">
+	
+	<script>
+	function parseDownloads()
+	{
+		$.ajax({
+			type: "GET",
+			url: 'https://api.github.com/repos/IntelRealSense/librealsense/releases',
+			dataType: 'json',
+			success: function(data){
+				total = 0;
+				for (i = 0; i < data.length; i++)
+					for (j = 0; j < data[i].assets.length; j++)
+						total = total + data[i].assets[j].download_count;
+				console.log(Math.round(total/1000) + "K");
+				
+				$('#downloadCounter').css('display', 'inline-block');
+				$('#downloadCounter').html(Math.round(total/1000) + "K");
+				
+				for (j = 0; j < data[0].assets.length; j++)
+				{
+					asset = data[0].assets[j];
+					if (asset.name.toLowerCase().includes("quality"))
+					{
+						$('#dqt').attr('href', asset.browser_download_url);
+						$('#dqt').html($('#dqt').html() + " <small><code>" + data[0].tag_name + "</code></small>");
+					}
+					else if (asset.name.toLowerCase().includes("viewer"))
+					{
+						$('#viewer').attr('href', asset.browser_download_url);
+						$('#viewer').html($('#viewer').html() + " <small><code>" + data[0].tag_name + "</code></small>");
+					}
+					else 
+					{
+						$('#installer').attr('href', asset.browser_download_url);
+						$('#installer').html($('#installer').html() + " <small><code>" + data[0].tag_name + "</code></small>");
+					}
+				}
+				$('#sources').attr('href', data[0].zipball_url);
+				$('#sources').html($('#sources').html() + " <small><code>" + data[0].tag_name + "</code></small>");
+			},
+		})
+	}
+	</script>
+	
+	<style>
+	.navbar-nav.navbar-center {
+		position: absolute;
+		left: 50%;
+		transform: translatex(-50%);
+	}
+	
+	.nounderline {
+		text-decoration: none !important
+	}
+	
+	footer {
+		background-color: #1b2125;
+		width: 100%;
+		height: @footer-height;
+		padding: @footer-padding 0;
+	}
+	
+	.t-table {
+		height: 365px;
+		bordercolor: #3E4D59;
+		padding: 0px;
+		border-collapse: collapse;
+		background-color: rgb(36, 44, 51); 
+	}
+	.t-table td:empty {
+		border-left: 0;
+		border-right: 0;
+	}
+	.scroll-container{
+		max-height: 110px;
+		overflow-y: hidden;
+	}
+	table.borderless td,table.borderless th{
+		border: none !important;
+	}
+	
+	.nopadding {
+		border: none !important;
+		padding:0 !important; 
+		margin:0 !important;
+		border-collapse: collapse !important;
+	}
+	</style>
+	
+</head>
+<body onload="parseDownloads()">
+	<nav class="navbar navbar-default navbar-static-top">
+		<div class="container">
+
+			<div class="container-fluid">
+				<div class="navbar-header">
+					<a href="http://realsense.intel.com" class="navbar-brand" target="_blank"><img src="https://realsense.intel.com/wp-content/themes/realsense-hub/images/RealSense_logo.svg" height=26></a>
+				</div>
+				<ul class="nav navbar-nav navbar-right nav-pills">
+					<li><a href="https://www.intel.com/content/www/us/en/support/products/87466/emerging-technologies/intel-realsense-technology.html" title="Get Support">Support</a></li>
+					<li class="dropdown">
+						<a id="drop4" role="button" data-toggle="dropdown" href="#"> <span class="badge badge-pill" id="downloadCounter" style="display: none;">123</span> Downloads <b class="caret"></b></a>
+						<ul id="menu1" class="dropdown-menu" role="menu" aria-labelledby="drop4">
+							<li role="presentation"><a role="menuitem" tabindex="-1" href="https://api.github.com/repos/IntelRealSense/librealsense/zipball/2.14.0" id="sources">Source Code</a></li>
+							<li role="presentation"><a role="menuitem" tabindex="-1" href="https://github.com/IntelRealSense/librealsense/releases/download/2.14.0/Intel.RealSense.SDK.exe" id="installer">Intel&#0169; RealSense&#0153; SDK</a></li>
+							<li role="presentation"><a role="menuitem" tabindex="-1" href="https://github.com/IntelRealSense/librealsense/releases/download/2.14.0/Intel.RealSense.Viewer.exe" id="viewer">Intel&#0169; RealSense&#0153; Viewer</a></li>
+							<li role="presentation"><a role="menuitem" tabindex="-1" href="https://github.com/IntelRealSense/librealsense/releases/download/2.14.0/Depth.Quality.Tool.exe" id="dqt">Depth Quality Tool</a></li>
+						</ul>
+					</li>
+					<li><a href="https://click.intel.com/realsense.html" title="See the hardware">Store</a></li>
+					<li><a href="https://realsense.intel.com/webinars/" title="Webinars"><i class="fab fa-youtube fa-lg"></i></a></li>
+					<li><a href="https://github.com/IntelRealSense/librealsense" title="Visit us on GitHub"><i class="fab fa-github fa-lg"></i></a></li>
+				</ul>
+			</div>
+			
+		</div>
+	</nav>
+	
+	<section class="jumbotron text-center">
+        <div class="container" style="background-image: url('img/header.png');">
+			<h2>librealsense
+			<br/>
+			<b>Developers Portal</b></h2>
+
+			<nav class="navbar navbar-inverse">
+				<ul class="nav navbar-nav navbar-center">
+					<li class="active"><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+					<li><a href="examples.html" title="Discover Code-Samples"><i class="fas fa-code"></i> Examples</a></li>
+					<li><a href="http://intelrealsense.github.io/librealsense/doxygen/annotated.html" title="Doxygen Documentation"><i class="fas fa-book"></i> Docs</a></li>
+					<li><a href="https://github.com/IntelRealSense/librealsense/blob/master/CONTRIBUTING.md" title="Learn about contributing to the project"><i class="fas fa-code-branch"></i> Get Involved!</a></li>
+				</ul>
+			</nav>
+		</div>
+    </section>
+
+	<div role="main" id="results">
+	</div>
+
+	<div role="main" class="container">
+				<div class="row">
+			<div class="col-md-4">
+				<table class='t-table table borderless' border=1 bordercolor=#3E4D59>
+					<tr>
+						<td style='height: 40px; background-color: #1b2125'>
+							RealSense&#0153; @ <b>EVS 2018</b>
+						</td>
+					</tr>
+					<tr style='height: 180px'>
+						<td class="nopadding">
+						<a href="https://www.embedded-vision.com/summit/vision-product-year-awards" title="Learn more...">
+						<img src="img/evs.jpg" onmouseenter="this.src='img/evs.jpg';" onmouseout="this.src='img/evs.jpg';" width=100% />
+						</a>
+						</td>
+					</tr>
+					<tr>
+						<td>
+						<div class='scroll-container' style='padding: 5px;'>
+Intel&#0169; RealSense&#0153; D400<br/>Winner of the <b>Vision Product of the Year</b> Award as the <b>Best Camera</b></div>
+						</td>
+					</tr>
+				</table>
+			</div>
+
+	</div>
+	
+	<div class="text-center">
+		<ul class="pagination">
+<li class="page-item">
+<a class="page-link" href="index.html" aria-label="Previous">
+<span aria-hidden="true">&laquo;</span>
+<span class="sr-only">Previous</span>
+</a></li>
+<li class="page-item">
+<a class="page-link" href="index.html">1</a>
+</li><li class="page-item active">
+<a class="page-link" href="index-2.html">2</a>
+</li><li class="page-item disabled">
+<a class="page-link" href="#" aria-label="Previous">
+<span aria-hidden="true">&raquo;</span>
+<span class="sr-only">Next</span>
+</a></li>
+
+	</div>
+	
+	<footer class="footer">
+		<div class="container">
+			<center><p>© 2018 Copyright: <b><a href="https://www.intel.com" target="_blank">Intel&#0169; Corporation</a></b>. All Rights Reserved.</p></center>
+		</div>
+	</footer>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+	<script src="https://use.fontawesome.com/releases/v5.0.8/js/all.js" integrity="sha384-SlE991lGASHoBfWbelyBPLsUlwY1GwNDJo3jSJO04KZ33K2bwfV9YBauFfnzvynJ" crossorigin="anonymous"></script>
+</body>
+</html>

@@ -1,6 +1,15 @@
 {
     "items": [
         {
+            "title": "New <b>Python Example</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/tree/master/wrappers/python/examples/box_dimensioner_multicam",
+            "link_title": "Go to box measurement example",
+            "static_thumbnail": "img/box-0.gif",
+            "active_thumbnail": "img/box.gif",
+            "body": "Kindly contributed by <a href='https://www.framos.com/en/' target='_blank' title='hwww.framos.com'>FRAMOS GmbH</a> this advanced python examples shows how to use multiple RealSense cameras to estimate 3D bounding box of an object"
+        },
+    
+        {
             "title": "New <b>Jupyter Notebooks</b>",
             "link": "https://github.com/IntelRealSense/librealsense/tree/jupyter",
             "link_title": "Go to Jupyter branch",
