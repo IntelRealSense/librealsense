@@ -6,7 +6,7 @@
             "link_title": "Go to box measurement example",
             "static_thumbnail": "img/box-0.gif",
             "active_thumbnail": "img/box.gif",
-            "body": "Kindly contributed by <a href='https://www.framos.com/en/' target='_blank' title='hwww.framos.com' class=\"nounderline\">FRAMOS GmbH</a>, this advanced python examples shows how to use multiple RealSense cameras to estimate 3D bounding box of an object"
+            "body": "Kindly contributed by <a href='https://www.framos.com/en/' target='_blank' title='hwww.framos.com' class=\"nounderline\">FRAMOS GmbH</a>, this advanced python example shows how to use multiple RealSense cameras to estimate 3D bounding box of an object"
         },
     
         {
