@@ -6,7 +6,7 @@
             "link_title": "Learn more...",
             "static_thumbnail": "img/capture-0.gif",
             "active_thumbnail": "img/capture.gif",
-            "body": "Show how to syncronize and render multiple streams: left & right imagers, depth and RGB streams"
+            "body": "Shows how to configure, syncronize and render depth and RGB streams from a single RealSense device"
         },
      
         {
@@ -15,7 +15,7 @@
             "link_title": "Learn more...",
             "static_thumbnail": "img/headless.png",
             "active_thumbnail": "img/headless.png",
-            "body": "Demonstrate how to render and save video streams on headless systems without graphical user interface (GUI)"
+            "body": "Demonstrate how to acquire and save video frames on a headless system without graphical user interface (GUI). Individual frames + metadata are save as PNG files."
         },
 		
 		{
@@ -24,7 +24,7 @@
             "link_title": "Learn more...",
             "static_thumbnail": "img/multicam.gif",
             "active_thumbnail": "https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/multi-cam-expected.gif",
-            "body": "The multicam sample demonstrates the ability to use the SDK for streaming and rendering multiple devices"
+            "body": "The multicam sample demonstrates the ability to use the SDK for streaming and rendering from multiple RealSense devices"
         },
 		
 		{
@@ -33,7 +33,7 @@
             "link_title": "Learn more...",
             "static_thumbnail": "img/pointcloud-0.gif",
             "active_thumbnail": "img/pointcloud.gif",
-            "body": "Showcase Projection API while generating and rendering 3D pointcloud"
+            "body": "Showcase Projection API while generating and rendering 3D pointcloud. "
         },
 		
 		{
@@ -42,7 +42,7 @@
             "link_title": "Learn more...",
             "static_thumbnail": "img/align-ex-0.gif",
             "active_thumbnail": "img/align-ex.gif",
-            "body": "Show a simple method for dynamic background removal from video"
+            "body": "By default, different streams are not necessarily spatially aligned. This example shows how to align depth and color and filter the resulting RGBD image based on depth"
         },
 		
 		{
@@ -51,7 +51,7 @@
             "link_title": "Learn more...",
             "static_thumbnail": "img/post.gif",
             "active_thumbnail": "https://user-images.githubusercontent.com/22654243/35924136-dd9cd1b6-0c2a-11e8-925a-84a52c0a5b96.gif",
-            "body": "Demonstrating usage of post processing filters for depth images"
+            "body": "Demonstrating usage of post processing filters for depth images. The SDK offers several filters designed to improve the quality of depth from stereo at reasonable performance"
         },
 		
 		{
@@ -60,7 +60,7 @@
             "link_title": "Learn more...",
             "static_thumbnail": "img/playback-0.gif",
             "active_thumbnail": "img/playback.gif",
-            "body": "Demonstrating usage of the recorder and playback devices."
+            "body": "This examples shows the user how to record RealSense data to file (.bag) for later use and how to play such file back into the application"
         },
 		
 		{
@@ -69,7 +69,7 @@
             "link_title": "Learn more...",
             "static_thumbnail": "img/sd-0.gif",
             "active_thumbnail": "img/sd.gif",
-            "body": "Shows how to create a custom rs2::device."
+            "body": "Shows how to create a custom rs2::device. This can be useful for development of converters from / to RealSense and integration with 3rd party devices."
         },
 		
 		{
@@ -78,7 +78,7 @@
             "link_title": "Learn more...",
             "static_thumbnail": "img/sensor-0.gif",
             "active_thumbnail": "img/sensor.gif",
-            "body": "A tutorial for using the rs2::sensor API"
+            "body": "A tutorial for using the rs2::sensor API. Sensor API is designed to offer low-level access to the hardware, mapping more closely to underlying OS APIs"
 		},
 
 		{
@@ -87,7 +87,7 @@
             "link_title": "Learn more...",
             "static_thumbnail": "https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/measure-expected.png",
             "active_thumbnail": "https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/measure-expected.png",
-            "body": "Lets the user measure the dimentions of 3D objects in a stream"
+            "body": "This examples shows a very basic implementation of measurement using RGBD camera. "
 		},
 		
 		{
@@ -96,7 +96,7 @@
             "link_title": "Learn more...",
             "static_thumbnail": "img/graph-cuts-0.gif",
             "active_thumbnail": "img/graph-cuts.gif",
-            "body": "Simple background removal using the GrabCut algorithm"
+            "body": "Like rs-align, this example tries to dynamically remove background from an image. This time however background removal is done by <a href='https://docs.opencv.org/trunk/d8/d83/tutorial_py_grabcut.html' target='_blank'>OpenCV Grabcut</a> algorithm with depth data helping to distinguish foreground from background"
 		},
 		
 		{
@@ -105,7 +105,7 @@
             "link_title": "Learn more...",
             "static_thumbnail": "img/latency-0.gif",
             "active_thumbnail": "img/latency.gif",
-            "body": "Basic latency estimation using computer vision"
+            "body": "This tool / example shows how you can calculate a rough estimate on visual lattency using SDK and OpenCV tools. It measures total time since clock value is rendered until it is captured by the SDK"
 		},
 		
 		{
@@ -114,7 +114,7 @@
             "link_title": "Learn more...",
             "static_thumbnail": "img/dnn-0.gif",
             "active_thumbnail": "img/dnn.gif",
-            "body": "Intel RealSense camera used for real-time object-detection"
+            "body": "Intel RealSense camera used for real-time object-detection using OpenCV to run a MobileNet SSD Caffe model"
 		}
 	]
 }
