@@ -6,7 +6,7 @@
             "link_title": "Go to box measurement example",
             "static_thumbnail": "img/box-0.gif",
             "active_thumbnail": "img/box.gif",
-            "body": "Kindly contributed by <a href='https://www.framos.com/en/' target='_blank' title='hwww.framos.com'>FRAMOS GmbH</a> this advanced python examples shows how to use multiple RealSense cameras to estimate 3D bounding box of an object"
+            "body": "Kindly contributed by <a href='https://www.framos.com/en/' target='_blank' title='hwww.framos.com' class=\"nounderline\">FRAMOS GmbH</a>, this advanced python examples shows how to use multiple RealSense cameras to estimate 3D bounding box of an object"
         },
     
         {
@@ -83,11 +83,29 @@
 		
 		{
             "title": "RealSense&#0153; @ <b>EVS 2018</b>",
-            "link": "https://www.embedded-vision.com/summit/vision-product-year-awards",
+            "link": "https://www.youtube.com/watch?v=Ouk20WIg3ME",
             "link_title": "Learn more...",
             "static_thumbnail": "img/evs.jpg",
             "active_thumbnail": "img/evs.jpg",
-            "body": "Intel&#0169; RealSense&#0153; D400<br/>Winner of the <b>Vision Product of the Year</b> Award as the <b>Best Camera</b>"
-		}
+            "body": "Intel&#0169; RealSense&#0153; D400<br/><a href='https://www.embedded-vision.com/summit/vision-product-year-awards' target='_blank' class='nounderline'>Winner of the <b>Vision Product of the Year</b> Award as the <b>Best Camera</b></a>"
+		},
+  
+        {
+            "title": "<b>Point-Cloud Optimisations</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/pull/1633",
+            "link_title": "Learn more...",
+            "static_thumbnail": "img/align-0.gif",
+            "active_thumbnail": "img/align.gif",
+            "body": "<a href=\"https://github.com/IntelRealSense/librealsense/releases/tag/2.11.0\" class=\"nounderline\">librealsense 2.11.0</a> brings significant improvements in lattency and CPU utilisation of the <b>PointCloud</b> processing block on x86/x64 machines."
+        },
+  
+        {
+            "title": "RealSense&#0153; on <b>Raspberry Pi</b>",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/doc/RaspberryPi3.md",
+            "link_title": "Learn more...",
+            "static_thumbnail": "https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/RaspberryPi3Model-B.png",
+            "active_thumbnail": "https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/RaspberryPi3Model-B.png",
+            "body": "Learn more about running RealSense D400 camera on a Raspberry Pi, showcasing our latest firmware capability - <b>USB2 support</b>"
+        }
     ]
 }
