@@ -2,17 +2,6 @@
 using Intel.RealSense;
 
 [Serializable]
-public struct VideoStreamRequest
-{
-    public Stream Stream;
-    public Format Format;
-    public int Framerate;
-    public int StreamIndex;
-    public int Width;
-    public int Height;
-}
-
-[Serializable]
 public struct RealSenseConfiguration
 {
     public enum Mode
@@ -51,7 +40,8 @@ public struct RealSenseConfiguration
                 break;
 
             case Mode.Record:
-
+                foreach (var p in Profiles)
+                    cfg.EnableStream(p.Stream, p.StreamIndex, p.Width, p.Height, p.Format, p.Framerate);
                 if (!String.IsNullOrEmpty(RecordPath))
                     cfg.EnableRecordToFile(RecordPath);
                 break;

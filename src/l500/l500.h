@@ -165,8 +165,20 @@ namespace librealsense
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
             {
-                // TODO
-                return rs2_intrinsics{};
+                auto res = *_owner->_calib_table_raw;
+                auto intr = (float*)res.data();
+
+                if (res.size() < sizeof(float) * 4)
+                    throw invalid_value_exception("size of calibration invalid");
+
+                rs2_intrinsics intrinsics;
+                intrinsics.width = profile.width;
+                intrinsics.height = profile.height;
+                intrinsics.fx = intr[0];
+                intrinsics.fy = intr[1];
+                intrinsics.ppx = intr[2];
+                intrinsics.ppy = intr[3];
+                return intrinsics;
             }
 
             stream_profiles init_stream_profiles() override
@@ -193,8 +205,6 @@ namespace librealsense
                     // Register intrinsics
                     auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                    get_device().tag_profile(video);
-
                     auto profile = to_profile(p.get());
                     std::weak_ptr<l500_depth_sensor> wp =
                         std::dynamic_pointer_cast<l500_depth_sensor>(this->shared_from_this());
@@ -212,7 +222,7 @@ namespace librealsense
                 return results;
             }
 
-            float get_depth_scale() const override { return 0.001f; } // TODO
+            float get_depth_scale() const override {  return get_option(RS2_OPTION_DEPTH_UNITS).query(); }
 
             void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const  override
             {
@@ -226,6 +236,7 @@ namespace librealsense
             }
         private:
             const l500_device* _owner;
+            float _depth_units;
         };
 
         std::shared_ptr<uvc_sensor> create_depth_device(std::shared_ptr<context> ctx,
@@ -253,6 +264,9 @@ namespace librealsense
                     ivcam2::depth_xu,
                     ivcam2::IVCAM2_DEPTH_LASER_POWER, "Power of the l500 projector, with 0 meaning projector off"));
           
+            depth_ep->register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
+                lazy<float>([]() { 
+                return 0.000125f; })));
             return depth_ep;
         }
 
@@ -268,6 +282,7 @@ namespace librealsense
 
         uvc_sensor& get_depth_sensor() { return dynamic_cast<uvc_sensor&>(get_sensor(_depth_device_idx)); }
 
+        std::vector<uint8_t> get_raw_calibration_table() const;
 
         l500_device(std::shared_ptr<context> ctx,
                     const platform::backend_device_group& group,
@@ -284,6 +299,8 @@ namespace librealsense
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _ir_stream;
         std::shared_ptr<stream_interface> _confidence_stream;
+
+        lazy<std::vector<uint8_t>> _calib_table_raw;
 
         void force_hardware_reset() const;
     };

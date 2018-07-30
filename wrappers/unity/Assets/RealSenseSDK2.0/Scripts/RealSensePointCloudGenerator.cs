@@ -1,17 +1,17 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Intel.RealSense;
 using UnityEngine.Rendering;
 using UnityEngine.Assertions;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class RealSensePointCloudGenerator : MonoBehaviour
 {
     public Stream stream = Stream.Color;
+
     Mesh mesh;
     Texture2D uvmap;
 
@@ -57,12 +57,12 @@ public class RealSensePointCloudGenerator : MonoBehaviour
             GetComponent<MeshRenderer>().sharedMaterial.SetTexture("_UVMap", uvmap);
 
             if (mesh != null)
-                Destroy(mesh);
-
-            mesh = new Mesh()
-            {
-                indexFormat = IndexFormat.UInt32,
-            };
+                mesh.Clear();
+            else
+                mesh = new Mesh()
+                {
+                    indexFormat = IndexFormat.UInt32,
+                };
 
             vertices = new Vector3[profile.Width * profile.Height];
             handle = GCHandle.Alloc(vertices, GCHandleType.Pinned);
@@ -95,19 +95,20 @@ public class RealSensePointCloudGenerator : MonoBehaviour
             GetComponent<MeshFilter>().sharedMesh = mesh;
         }
 
-        RealSenseDevice.Instance.onNewSampleSet += OnFrames;
+        RealSenseDevice.Instance.OnNewSampleSet += OnFrames;
     }
 
     void OnDestroy()
     {
         OnStopStreaming();
+
+        if(mesh != null)
+            Destroy(null);
     }
 
 
     private void OnStopStreaming()
     {
-        // RealSenseDevice.Instance.onNewSampleSet -= OnFrames;
-
         e.Reset();
 
         if (handle.IsAllocated)

@@ -3,15 +3,15 @@ using UnityEngine;
 using Intel.RealSense;
 using System;
 using System.Collections;
+using System.Linq;
 
 public class RealSenseDeviceInspector : MonoBehaviour
 {
-
     public bool streaming;
     public Device device;
     public StreamProfileList streams;
     public readonly Dictionary<string, Sensor> sensors = new Dictionary<string, Sensor>();
-    public List<Sensor.CameraOption> sensorsOptions = new List<Sensor.CameraOption>();
+    public readonly Dictionary<string, List<Sensor.CameraOption>> sensorOptions = new Dictionary<string, List<Sensor.CameraOption>>();
 
     void Awake()
     {
@@ -23,29 +23,49 @@ public class RealSenseDeviceInspector : MonoBehaviour
         yield return new WaitUntil(() => RealSenseDevice.Instance != null);
         RealSenseDevice.Instance.OnStart += onStartStreaming;
         RealSenseDevice.Instance.OnStop += onStopStreaming;
+
+        if(RealSenseDevice.Instance.Streaming)
+            onStartStreaming(RealSenseDevice.Instance.ActiveProfile);
     }
 
     private void onStopStreaming()
     {
         streaming = false;
-        device = null;
+
+        if (device != null)
+        {
+            device.Dispose();
+            device = null;
+        }
+
         if (streams != null)
         {
             streams.Dispose();
             streams = null;
         }
+
+        foreach (var s in sensors)
+        {
+            var sensor = s.Value;
+            if (sensor != null)
+                sensor.Dispose();
+        }
         sensors.Clear();
+        sensorOptions.Clear();
     }
 
     private void onStartStreaming(PipelineProfile profile)
     {
         device = profile.Device;
         streams = profile.Streams;
-        sensors.Clear();
-        foreach (var s in profile.Device.Sensors)
+        using (var sensorList = device.Sensors)
         {
-            sensors.Add(s.Info[CameraInfo.Name], s);
-            sensorsOptions.AddRange(s.Options);
+            foreach (var s in sensorList)
+            {
+                var sensorName = s.Info[CameraInfo.Name];
+                sensors.Add(sensorName, s);
+                sensorOptions.Add(sensorName, s.Options.ToList());
+            }
         }
         streaming = true;
     }

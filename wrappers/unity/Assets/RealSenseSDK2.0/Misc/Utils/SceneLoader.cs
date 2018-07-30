@@ -18,9 +18,18 @@ public class SceneLoader : MonoBehaviour
         }
     }
 
+    IEnumerator LoadSceneAsync(string name)
+    {
+        SceneManager.MoveGameObjectToScene(Camera.main.gameObject, SceneManager.GetSceneAt(0));
+        yield return SceneManager.UnloadSceneAsync(SceneManager.GetSceneAt(1));
+        yield return SceneManager.LoadSceneAsync(name);
+        yield return null;
+    }
+
     public void MainScene()
     {
-        SceneManager.LoadScene("StartHere");
+        StartCoroutine(LoadSceneAsync("StartHere"));
+        // SceneManager.LoadScene("StartHere");
     }
 
     public void LoadScene(string name)
