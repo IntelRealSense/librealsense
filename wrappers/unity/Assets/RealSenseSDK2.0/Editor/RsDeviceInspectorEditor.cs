@@ -38,8 +38,8 @@ public static class CameraOptionExtensions
 }
 
 
-[CustomEditor(typeof(RealSenseDeviceInspector))]
-public class RealSenseDeviceInspectorEditor : Editor
+[CustomEditor(typeof(RsDeviceInspector))]
+public class RsDeviceInspectorEditor : Editor
 {
     public static void DrawHorizontal(string field, string value)
     {
@@ -58,7 +58,7 @@ public class RealSenseDeviceInspectorEditor : Editor
 
     public override void OnInspectorGUI()
     {
-        var deviceInspector = target as RealSenseDeviceInspector;
+        var deviceInspector = target as RsDeviceInspector;
         if (!deviceInspector.streaming)
         {
             EditorGUILayout.HelpBox("Start streaming to see device settings", MessageType.Info);

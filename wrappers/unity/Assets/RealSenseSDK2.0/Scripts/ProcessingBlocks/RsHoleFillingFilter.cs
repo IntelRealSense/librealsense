@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class HoleFillingFilter : RealSenseProcessingBlock
+public class RsHoleFillingFilter : RsProcessingBlock
 {
     /// <summary>
     /// Control the data that will be used to fill the invalid pixels
@@ -15,7 +15,7 @@ public class HoleFillingFilter : RealSenseProcessingBlock
     public int _holesFill = 0;
 
     private List<Stream> _requirments = new List<Stream>() { Stream.Depth };
-    private Intel.RealSense.HoleFillingFilter _pb = new Intel.RealSense.HoleFillingFilter();
+    private HoleFillingFilter _pb = new HoleFillingFilter();
 
     public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Single; } }
 

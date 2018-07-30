@@ -6,7 +6,7 @@ using System.Threading;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class RealSenseStreamTexture : MonoBehaviour
+public class RsStreamTextureRenderer : MonoBehaviour
 {
     private static TextureFormat Convert(Format lrsFormat)
     {
@@ -44,8 +44,8 @@ public class RealSenseStreamTexture : MonoBehaviour
 
     public FilterMode filterMode = FilterMode.Point;
 
-    private VideoStreamRequest _videoStreamFilter;
-    private VideoStreamRequest _currVideoStreamFilter;
+    private RsVideoStreamRequest _videoStreamFilter;
+    private RsVideoStreamRequest _currVideoStreamFilter;
 
     protected Texture2D texture;
 
@@ -62,14 +62,14 @@ public class RealSenseStreamTexture : MonoBehaviour
     virtual protected void Awake()
     {
         threadId = Thread.CurrentThread.ManagedThreadId;
-        _videoStreamFilter = new VideoStreamRequest() { Stream = _stream, Format = _format, StreamIndex = _streamIndex };
+        _videoStreamFilter = new RsVideoStreamRequest() { Stream = _stream, Format = _format, StreamIndex = _streamIndex };
         _currVideoStreamFilter = _videoStreamFilter.Clone();
     }
 
     void Start()
     {
-        RealSenseDevice.Instance.OnStart += OnStartStreaming;
-        RealSenseDevice.Instance.OnStop += OnStopStreaming;
+        RsDevice.Instance.OnStart += OnStartStreaming;
+        RsDevice.Instance.OnStop += OnStopStreaming;
     }
 
     void OnDestroy()
@@ -82,8 +82,8 @@ public class RealSenseStreamTexture : MonoBehaviour
 
     protected virtual void OnStopStreaming()
     {
-        RealSenseDevice.Instance.OnNewSample -= OnNewSampleUnityThread;
-        RealSenseDevice.Instance.OnNewSample -= OnNewSampleThreading;
+        RsDevice.Instance.OnNewSample -= OnNewSampleUnityThread;
+        RsDevice.Instance.OnNewSample -= OnNewSampleThreading;
 
         f.Reset();
         data = null;
@@ -92,18 +92,18 @@ public class RealSenseStreamTexture : MonoBehaviour
     protected virtual void OnStartStreaming(PipelineProfile activeProfile)
     {
 
-        if (RealSenseDevice.Instance.processMode == RealSenseDevice.ProcessMode.UnityThread)
+        if (RsDevice.Instance.processMode == RsDevice.ProcessMode.UnityThread)
         {
             UnityEngine.Assertions.Assert.AreEqual(threadId, Thread.CurrentThread.ManagedThreadId);
-            RealSenseDevice.Instance.OnNewSample += OnNewSampleUnityThread;
+            RsDevice.Instance.OnNewSample += OnNewSampleUnityThread;
         }
         else
-            RealSenseDevice.Instance.OnNewSample += OnNewSampleThreading;
+            RsDevice.Instance.OnNewSample += OnNewSampleThreading;
     }
 
     public void OnFrame(Frame f)
     {
-        if (RealSenseDevice.Instance.processMode == RealSenseDevice.ProcessMode.UnityThread)
+        if (RsDevice.Instance.processMode == RsDevice.ProcessMode.UnityThread)
         {
             UnityEngine.Assertions.Assert.AreEqual(threadId, Thread.CurrentThread.ManagedThreadId);
             OnNewSampleUnityThread(f);
@@ -123,7 +123,7 @@ public class RealSenseStreamTexture : MonoBehaviour
             vidFrame.Dispose();
     }
 
-    private void ResetTexture(VideoStreamRequest vsr)
+    private void ResetTexture(RsVideoStreamRequest vsr)
     {
         if (texture != null)
         {

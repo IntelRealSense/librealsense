@@ -12,7 +12,7 @@ using System.Linq;
 /// Manages streaming using a RealSense Device
 /// </summary>
 [HelpURL("https://github.com/IntelRealSense/librealsense/tree/master/wrappers/unity")]
-public class RealSenseDevice : MonoBehaviour
+public class RsDevice : MonoBehaviour
 {
     /// <summary>
     /// The Paralllism mode of the module
@@ -23,7 +23,7 @@ public class RealSenseDevice : MonoBehaviour
         UnityThread,
     }
 
-    public static RealSenseDevice Instance { get; private set; }
+    public static RsDevice Instance { get; private set; }
 
     /// <summary>
     /// Threading mode of operation, Multithreasds or Unitythread
@@ -61,14 +61,14 @@ public class RealSenseDevice : MonoBehaviour
     /// <summary>
     /// User configuration
     /// </summary>
-    public RealSenseConfiguration DeviceConfiguration = new RealSenseConfiguration
+    public RsConfiguration DeviceConfiguration = new RsConfiguration
     {
-        mode = RealSenseConfiguration.Mode.Live,
+        mode = RsConfiguration.Mode.Live,
         RequestedSerialNumber = string.Empty,
-        Profiles = new VideoStreamRequest[] {
-            new VideoStreamRequest {Stream = Stream.Depth, StreamIndex = -1, Width = 640, Height = 480, Format = Format.Z16 , Framerate = 30 },
-            new VideoStreamRequest {Stream = Stream.Infrared, StreamIndex = -1, Width = 640, Height = 480, Format = Format.Y8 , Framerate = 30 },
-            new VideoStreamRequest {Stream = Stream.Color, StreamIndex = -1, Width = 640, Height = 480, Format = Format.Rgb8 , Framerate = 30 }
+        Profiles = new RsVideoStreamRequest[] {
+            new RsVideoStreamRequest {Stream = Stream.Depth, StreamIndex = -1, Width = 640, Height = 480, Format = Format.Z16 , Framerate = 30 },
+            new RsVideoStreamRequest {Stream = Stream.Infrared, StreamIndex = -1, Width = 640, Height = 480, Format = Format.Y8 , Framerate = 30 },
+            new RsVideoStreamRequest {Stream = Stream.Color, StreamIndex = -1, Width = 640, Height = 480, Format = Format.Rgb8 , Framerate = 30 }
         }
     };
 
@@ -77,7 +77,7 @@ public class RealSenseDevice : MonoBehaviour
 
     private Pipeline m_pipeline;
 
-    public RealSenseProcessingPipe _processingPipe;
+    public RsProcessingPipe _processingPipe;
 
     void Awake()
     {
@@ -97,11 +97,11 @@ public class RealSenseDevice : MonoBehaviour
 
         using (var activeStreams = ActiveProfile.Streams)
         {
-            DeviceConfiguration.Profiles = new VideoStreamRequest[activeStreams.Count];
+            DeviceConfiguration.Profiles = new RsVideoStreamRequest[activeStreams.Count];
             for (int i = 0; i < DeviceConfiguration.Profiles.Length; i++)
             {
                 var s = activeStreams[i];
-                var p = new VideoStreamRequest()
+                var p = new RsVideoStreamRequest()
                 {
                     Stream = s.Stream,
                     Format = s.Format,

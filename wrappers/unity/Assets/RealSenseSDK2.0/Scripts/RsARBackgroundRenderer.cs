@@ -6,7 +6,7 @@ using UnityEngine.Events;
 using UnityEngine.Rendering;
 using UnityEngine.XR;
 
-public class RealSenseARBackgroundRenderer : MonoBehaviour
+public class RsARBackgroundRenderer : MonoBehaviour
 {
     public Material material;
     private Camera cam;
@@ -18,9 +18,9 @@ public class RealSenseARBackgroundRenderer : MonoBehaviour
 
     IEnumerator Start()
     {
-        yield return new WaitUntil(() => RealSenseDevice.Instance.Streaming);
+        yield return new WaitUntil(() => RsDevice.Instance.Streaming);
 
-        using (var profile = RealSenseDevice.Instance.ActiveProfile.GetStream(Stream.Color) as VideoStreamProfile)
+        using (var profile = RsDevice.Instance.ActiveProfile.GetStream(Stream.Color) as VideoStreamProfile)
         {
             intrinsics = profile.GetIntrinsics();
         }

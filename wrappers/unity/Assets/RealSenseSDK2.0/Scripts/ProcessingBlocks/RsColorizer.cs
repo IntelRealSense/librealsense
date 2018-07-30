@@ -1,9 +1,8 @@
 ﻿using Intel.RealSense;
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
-public class ColorizerFilter : RealSenseProcessingBlock
+public class RsColorizer : RsProcessingBlock
 {
     [Serializable]
     public enum ColorScheme //TOOD: remove and make more robust using option.ValueDescription
@@ -21,7 +20,7 @@ public class ColorizerFilter : RealSenseProcessingBlock
 
     public ColorScheme colorMap;
     private List<Stream> _requirments = new List<Stream>() { Stream.Depth };
-    private Intel.RealSense.Colorizer _pb = new Intel.RealSense.Colorizer();
+    private Colorizer _pb = new Colorizer();
 
     public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Single; } }
 

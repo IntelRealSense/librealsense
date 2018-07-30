@@ -2,7 +2,7 @@
 using System;
 
 [Serializable]
-public class VideoStreamRequest
+public class RsVideoStreamRequest
 {
     public Stream Stream;
     public Format Format;
@@ -11,19 +11,19 @@ public class VideoStreamRequest
     public int Width;
     public int Height;
 
-    public VideoStreamRequest()
+    public RsVideoStreamRequest()
     {
 
     }
 
-    public VideoStreamRequest(VideoFrame f)
+    public RsVideoStreamRequest(VideoFrame f)
     {
         this.CopyProfile(f);
     }
 
-    public VideoStreamRequest Clone()
+    public RsVideoStreamRequest Clone()
     {
-        return new VideoStreamRequest()
+        return new RsVideoStreamRequest()
         {
             Stream = this.Stream,
             Format = this.Format,
@@ -48,9 +48,9 @@ public class VideoStreamRequest
 
     public override bool Equals(object other)
     {
-        if (!(other is VideoStreamRequest))
+        if (!(other is RsVideoStreamRequest))
             return false;
-        VideoStreamRequest vsr = other as VideoStreamRequest;
+        RsVideoStreamRequest vsr = other as RsVideoStreamRequest;
         if (Stream != vsr.Stream)
             return false;
         if (Format != vsr.Format)
@@ -84,7 +84,7 @@ public class VideoStreamRequest
         return false;
     }
 
-    public bool HasConflict(VideoStreamRequest other)
+    public bool HasConflict(RsVideoStreamRequest other)
     {
         if (Stream != Stream.Any && Stream != other.Stream)
             return true;

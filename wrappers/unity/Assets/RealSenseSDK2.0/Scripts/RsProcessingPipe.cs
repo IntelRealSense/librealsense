@@ -5,15 +5,15 @@ using System.Linq;
 using UnityEngine;
 
 [Serializable]
-public class RealSenseProcessingPipe : MonoBehaviour {
+public class RsProcessingPipe : MonoBehaviour {
 
-    public HashSet<RealSenseProcessingBlock> _processingBlocks = new HashSet<RealSenseProcessingBlock>();
+    public HashSet<RsProcessingBlock> _processingBlocks = new HashSet<RsProcessingBlock>();
 
-    public void AddProcessingBlock(RealSenseProcessingBlock processingBlock)
+    public void AddProcessingBlock(RsProcessingBlock processingBlock)
     {
         _processingBlocks.Add(processingBlock);
     }
-    public void RemoveProcessingBlock(RealSenseProcessingBlock processingBlock)
+    public void RemoveProcessingBlock(RsProcessingBlock processingBlock)
     {
         _processingBlocks.Remove(processingBlock);
     }
@@ -44,7 +44,7 @@ public class RealSenseProcessingPipe : MonoBehaviour {
         }
     }
 
-    private Frame ApplyFilter(Frame frame, FrameSource frameSource, FramesReleaser framesReleaser, RealSenseProcessingBlock vpb, Action<Frame> handleFrame)
+    private Frame ApplyFilter(Frame frame, FrameSource frameSource, FramesReleaser framesReleaser, RsProcessingBlock vpb, Action<Frame> handleFrame)
     {
         if (!vpb.CanProcess(frame))
             return frame;
@@ -69,7 +69,7 @@ public class RealSenseProcessingPipe : MonoBehaviour {
         return processedFrame;
     }
 
-    private FrameSet HandleSingleFrameProcessingBlocks(FrameSet frameSet, FrameSource frameSource, FramesReleaser framesReleaser, RealSenseProcessingBlock videoProcessingBlock, Action<Frame> handleFrame)
+    private FrameSet HandleSingleFrameProcessingBlocks(FrameSet frameSet, FrameSource frameSource, FramesReleaser framesReleaser, RsProcessingBlock videoProcessingBlock, Action<Frame> handleFrame)
     {
         // single frame filters
         List<Frame> processedFrames = new List<Frame>();
@@ -92,7 +92,7 @@ public class RealSenseProcessingPipe : MonoBehaviour {
         return newFrameSet;
     }
 
-    private FrameSet HandleMultiFramesProcessingBlocks(FrameSet frameSet, FrameSource frameSource, FramesReleaser framesReleaser, RealSenseProcessingBlock videoProcessingBlock, Action<FrameSet> handleFrameSet)
+    private FrameSet HandleMultiFramesProcessingBlocks(FrameSet frameSet, FrameSource frameSource, FramesReleaser framesReleaser, RsProcessingBlock videoProcessingBlock, Action<FrameSet> handleFrameSet)
     {
         using (var frame = frameSet.AsFrame())
         {

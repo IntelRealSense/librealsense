@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class DecimationFilter : RealSenseProcessingBlock
+public class RsDecimationFilter : RsProcessingBlock
 {
     /// <summary>
     /// Number of filter iterations
@@ -13,7 +13,7 @@ public class DecimationFilter : RealSenseProcessingBlock
     public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Single; } }
 
     private List<Stream> _requirments = new List<Stream>() { Stream.Depth };
-    private Intel.RealSense.DecimationFilter _pb = new Intel.RealSense.DecimationFilter();
+    private DecimationFilter _pb = new DecimationFilter();
 
     public override Frame Process(Frame frame, FrameSource frameSource, FramesReleaser releaser)
     {

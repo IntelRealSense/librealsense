@@ -5,7 +5,7 @@ using System;
 using System.Collections;
 using System.Linq;
 
-public class RealSenseDeviceInspector : MonoBehaviour
+public class RsDeviceInspector : MonoBehaviour
 {
     public bool streaming;
     public Device device;
@@ -20,12 +20,12 @@ public class RealSenseDeviceInspector : MonoBehaviour
 
     private IEnumerator WaitForDevice()
     {
-        yield return new WaitUntil(() => RealSenseDevice.Instance != null);
-        RealSenseDevice.Instance.OnStart += onStartStreaming;
-        RealSenseDevice.Instance.OnStop += onStopStreaming;
+        yield return new WaitUntil(() => RsDevice.Instance != null);
+        RsDevice.Instance.OnStart += onStartStreaming;
+        RsDevice.Instance.OnStop += onStopStreaming;
 
-        if(RealSenseDevice.Instance.Streaming)
-            onStartStreaming(RealSenseDevice.Instance.ActiveProfile);
+        if(RsDevice.Instance.Streaming)
+            onStartStreaming(RsDevice.Instance.ActiveProfile);
     }
 
     private void onStopStreaming()

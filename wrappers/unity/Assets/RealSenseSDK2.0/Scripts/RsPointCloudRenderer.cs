@@ -8,13 +8,13 @@ using System.Threading;
 using System.Collections.Generic;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
-public class RealSensePointCloudGenerator : MonoBehaviour
+public class RsPointCloudRenderer : MonoBehaviour
 {
     private Mesh mesh;
     private Texture2D uvmap;
 
-    private VideoStreamRequest _videoStreamFilter;
-    private VideoStreamRequest _currVideoStreamFilter;
+    private RsVideoStreamRequest _videoStreamFilter;
+    private RsVideoStreamRequest _currVideoStreamFilter;
 
     private Vector3[] vertices;
     private GCHandle handle;
@@ -26,13 +26,13 @@ public class RealSensePointCloudGenerator : MonoBehaviour
 
     void Start()
     {
-        _videoStreamFilter = new VideoStreamRequest();
+        _videoStreamFilter = new RsVideoStreamRequest();
         _currVideoStreamFilter = _videoStreamFilter.Clone();
-        RealSenseDevice.Instance.OnNewSampleSet += OnFrames;
-        RealSenseDevice.Instance.OnStop += Dispose;
+        RsDevice.Instance.OnNewSampleSet += OnFrames;
+        RsDevice.Instance.OnStop += Dispose;
     }
 
-    private void ResetMesh(VideoStreamRequest vsr)
+    private void ResetMesh(RsVideoStreamRequest vsr)
     {
         int width = vsr.Width;
         int height = vsr.Height;

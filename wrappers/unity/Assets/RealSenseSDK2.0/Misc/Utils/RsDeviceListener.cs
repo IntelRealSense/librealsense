@@ -6,9 +6,9 @@ using System.Linq;
 using System.Threading;
 using UnityEngine;
 
-public class RealSenseDeviceListener : MonoBehaviour
+public class RsDeviceListener : MonoBehaviour
 {
-    public static RealSenseDeviceListener Instance { get; private set; }
+    public static RsDeviceListener Instance { get; private set; }
     private Context ctx;
     private Pipeline pipeline;
     readonly List<Device> m_added = new List<Device>();
@@ -39,9 +39,9 @@ public class RealSenseDeviceListener : MonoBehaviour
     {
         if (e.WaitOne(0))
         {
-            var avail = FindObjectsOfType<RealSenseStreamAvailability>();
+            var avail = FindObjectsOfType<RsStreamAvailability>();
             AutoResetEvent done = new AutoResetEvent(false);
-            Dictionary<RealSenseStreamAvailability, bool> resolvables = new Dictionary<RealSenseStreamAvailability, bool>();
+            Dictionary<RsStreamAvailability, bool> resolvables = new Dictionary<RsStreamAvailability, bool>();
             int tasks = avail.Count();
             foreach (var a in avail)
             {

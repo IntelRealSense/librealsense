@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-public class AligmentFilter : RealSenseProcessingBlock
+public class RsAlign : RsProcessingBlock
 {
     public Stream _alignTo = Stream.Depth;
 

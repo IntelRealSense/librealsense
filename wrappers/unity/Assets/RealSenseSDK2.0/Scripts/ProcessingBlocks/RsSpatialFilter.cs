@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SpatialFilter : RealSenseProcessingBlock
+public class RsSpatialFilter : RsProcessingBlock
 {
     /// <summary>
     /// Number of filter iterations
@@ -30,7 +30,7 @@ public class SpatialFilter : RealSenseProcessingBlock
     public int _holesFill = 0;
 
     private List<Stream> _requirments = new List<Stream>() { Stream.Depth };
-    private Intel.RealSense.SpatialFilter _pb = new Intel.RealSense.SpatialFilter();
+    private SpatialFilter _pb = new SpatialFilter();
 
     public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Single; } }
 

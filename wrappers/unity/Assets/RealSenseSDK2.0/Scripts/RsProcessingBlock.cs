@@ -11,9 +11,9 @@ public enum ProcessingBlockType
 }
 
 [Serializable]
-public abstract class RealSenseProcessingBlock : MonoBehaviour
+public abstract class RsProcessingBlock : MonoBehaviour
 {
-    private RealSenseProcessingPipe _processingPipe;
+    private RsProcessingPipe _processingPipe;
 
     protected bool _enabled = false;
     public int _order = 0;
@@ -48,7 +48,7 @@ public abstract class RealSenseProcessingBlock : MonoBehaviour
     {
         _enabled = state;
         if(_processingPipe == null)
-            _processingPipe = GetComponent<RealSenseProcessingPipe>();
+            _processingPipe = GetComponent<RsProcessingPipe>();
         if (_processingPipe == null)
         {
             Debug.LogWarning(this.name + " is not binded to a processing pipe");

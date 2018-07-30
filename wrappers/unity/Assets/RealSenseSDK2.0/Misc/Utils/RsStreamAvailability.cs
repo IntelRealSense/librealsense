@@ -4,9 +4,9 @@ using System.Collections;
 using System;
 using UnityEngine.Events;
 
-public class RealSenseStreamAvailability : MonoBehaviour
+public class RsStreamAvailability : MonoBehaviour
 {
-    public RealSenseConfiguration DeviceConfiguration;
+    public RsConfiguration DeviceConfiguration;
 
     [Space]
     public UnityEvent OnDeviceAvailable;

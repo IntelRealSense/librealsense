@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-public class PointCloudFilter : RealSenseProcessingBlock
+public class RsPointCloud : RsProcessingBlock
 {
     public Stream _textureStream = Stream.Color;
 
@@ -11,8 +11,8 @@ public class PointCloudFilter : RealSenseProcessingBlock
 
     private object _lock = new object();
 
-    private Dictionary<Stream, VideoStreamRequest> _videoStreamFilter = new Dictionary<Stream, VideoStreamRequest>();
-    private Dictionary<Stream, VideoStreamRequest> _currVideoStreamFilter = new Dictionary<Stream, VideoStreamRequest>();
+    private Dictionary<Stream, RsVideoStreamRequest> _videoStreamFilter = new Dictionary<Stream, RsVideoStreamRequest>();
+    private Dictionary<Stream, RsVideoStreamRequest> _currVideoStreamFilter = new Dictionary<Stream, RsVideoStreamRequest>();
 
     public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Multi; } }
 
@@ -21,7 +21,7 @@ public class PointCloudFilter : RealSenseProcessingBlock
         ResetProcessingBlock();
         foreach(Stream stream in Enum.GetValues(typeof(Stream)))
         {
-            _videoStreamFilter[stream] = new VideoStreamRequest();
+            _videoStreamFilter[stream] = new RsVideoStreamRequest();
         }
     }
 
@@ -49,8 +49,8 @@ public class PointCloudFilter : RealSenseProcessingBlock
                             !_currVideoStreamFilter[texture.Profile.Stream].Equals(_videoStreamFilter[texture.Profile.Stream]))
                         {
                             ResetProcessingBlock();
-                            _currVideoStreamFilter[depth.Profile.Stream] = new VideoStreamRequest(depth);
-                            _currVideoStreamFilter[texture.Profile.Stream] = new VideoStreamRequest(texture);
+                            _currVideoStreamFilter[depth.Profile.Stream] = new RsVideoStreamRequest(depth);
+                            _currVideoStreamFilter[texture.Profile.Stream] = new RsVideoStreamRequest(texture);
                         }
                         var points = _pb.Calculate(depth, releaser);
                         _pb.MapTexture(texture);

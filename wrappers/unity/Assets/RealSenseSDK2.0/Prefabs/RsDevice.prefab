@@ -37,7 +37,7 @@ GameObject:
   - component: {fileID: 4984196648651818}
   - component: {fileID: 114866818567473902}
   m_Layer: 0
-  m_Name: RealsenseDevice
+  m_Name: RsDevice
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -141,13 +141,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f59de22db6bfdfe46937570a9af2882b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _videoStreamFilter:
-    Stream: 0
-    Format: 0
-    Framerate: 0
-    StreamIndex: 0
-    Width: 0
-    Height: 0
+  _stream: 0
+  _format: 0
+  _streamIndex: 0
   filterMode: 1
   textureBinding:
     m_PersistentCalls:
@@ -163,8 +159,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: RealSenseStreamTexture+TextureEvent, RealSense, Version=0.0.0.0, Culture=neutral,
-      PublicKeyToken=null
+    m_TypeName: RsStreamTextureRenderer+TextureEvent, RealSense, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
 --- !u!114 &114070131009790432
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -176,13 +172,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f59de22db6bfdfe46937570a9af2882b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _videoStreamFilter:
-    Stream: 0
-    Format: 0
-    Framerate: 0
-    StreamIndex: 0
-    Width: 0
-    Height: 0
+  _stream: 0
+  _format: 0
+  _streamIndex: 0
   filterMode: 0
   textureBinding:
     m_PersistentCalls:
@@ -198,8 +190,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: RealSenseStreamTexture+TextureEvent, RealSense, Version=0.0.0.0, Culture=neutral,
-      PublicKeyToken=null
+    m_TypeName: RsStreamTextureRenderer+TextureEvent, RealSense, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
 --- !u!114 &114552477897960758
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -211,13 +203,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f59de22db6bfdfe46937570a9af2882b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _videoStreamFilter:
-    Stream: 0
-    Format: 0
-    Framerate: 0
-    StreamIndex: 0
-    Width: 0
-    Height: 0
+  _stream: 0
+  _format: 0
+  _streamIndex: 0
   filterMode: 1
   textureBinding:
     m_PersistentCalls:
@@ -233,8 +221,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_TypeName: RealSenseStreamTexture+TextureEvent, RealSense, Version=0.0.0.0, Culture=neutral,
-      PublicKeyToken=null
+    m_TypeName: RsStreamTextureRenderer+TextureEvent, RealSense, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
 --- !u!114 &114866818567473902
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -271,3 +259,4 @@ MonoBehaviour:
     RequestedSerialNumber: 
     PlaybackFile: 
     RecordPath: 
+  _processingPipe: {fileID: 0}

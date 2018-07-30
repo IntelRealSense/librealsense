@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TemporalFilter : RealSenseProcessingBlock
+public class RsTemporalFilter : RsProcessingBlock
 {
     /// <summary>
     /// The Alpha factor in an exponential moving average with Alpha=1 - no filter . Alpha = 0 - infinite filter
@@ -32,7 +32,7 @@ public class TemporalFilter : RealSenseProcessingBlock
     public int _temporalPersistence = 3;
 
     private List<Stream> _requirments = new List<Stream>() { Stream.Depth };
-    private Intel.RealSense.TemporalFilter _pb = new Intel.RealSense.TemporalFilter();
+    private TemporalFilter _pb = new TemporalFilter();
 
     public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Single; } }
 
