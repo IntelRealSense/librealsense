@@ -299,8 +299,8 @@ namespace librealsense
                                                 info.id = std::string(fName, fName + wcslen(fName));
 
                                                 uint16_t vid, pid, mi;
-                                                std::string uid;
-                                                if (parse_usb_path(vid, pid, mi, uid, info.device_path))
+                                                std::string uid, device_guid;
+                                                if (parse_usb_path(vid, pid, mi, uid, device_guid, info.device_path))
                                                 {
                                                     info.unique_id = "*";
                                                     info.pid = to_string() << std::hex << pid;

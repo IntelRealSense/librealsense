@@ -359,12 +359,12 @@ namespace librealsense
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
 
         std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(group.uvc_devices.front().pid)) ? rs400_sku_names.at(group.uvc_devices.front().pid) : "RS4xx";
-        _fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
+        _fw_version = firmware_version("5.9.9.2"); //firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
         recommended_fw_version = firmware_version("5.9.9.2");
-        auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
+        std::string serial = "0";// _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
         auto& depth_ep = get_depth_sensor();
-        auto advanced_mode = is_camera_in_advanced_mode();
+        auto advanced_mode = false;// is_camera_in_advanced_mode();
 
         using namespace platform;
         auto _usb_mode = usb3_type;
@@ -391,7 +391,7 @@ namespace librealsense
         std::string is_camera_locked{ "" };
         if (_fw_version >= firmware_version("5.6.3.0"))
         {
-            auto is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
+            auto is_locked = true;// _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
             is_camera_locked = (is_locked) ? "YES" : "NO";
 
 #ifdef HWM_OVER_XU
@@ -450,8 +450,8 @@ namespace librealsense
         if (roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_ep))
             roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
 
-        depth_ep.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
-            lazy<float>([this]() { return get_stereo_baseline_mm(); })));
+        //depth_ep.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
+        //    lazy<float>([this]() { return get_stereo_baseline_mm(); })));
 
         if (advanced_mode && _fw_version >= firmware_version("5.6.3.0"))
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<depth_scale_option>(*_hw_monitor));

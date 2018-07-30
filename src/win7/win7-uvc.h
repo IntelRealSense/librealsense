@@ -31,7 +31,7 @@ static const std::vector<std::vector<std::pair<GUID, GUID>>> attributes_params =
     },
 };
 
-static const std::vector<std::string> win7_uvc_interfaces =
+static const std::vector<std::string> device_guids =
 {
     "{E659C3EC-BF3C-48A5-8192-3073E822D7CD}", // Intel(R) RealSense(TM) 415 Depth - MI 0: [Interface 0 video control] [Interface 1 video stream] [Interface 2 video stream]
     "{50537BC3-2919-452D-88A9-B13BBF7D2459}"  // Intel(R) RealSense(TM) 415 RGB - MI 3: [Interface 3 video control] [Interface 4 video stream]
@@ -59,8 +59,13 @@ namespace librealsense
             win7_uvc_device(const uvc_device_info& info, std::shared_ptr<const win7_backend> backend);
             ~win7_uvc_device();
 
+            //std::vector<uvc_device_info> query_uvc_devices() const;
+
             void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override;
+
+            // open thread and take frames
             void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override;
+
             void start_callbacks() override;
             void stop_callbacks() override;
             void close(stream_profile profile) override;
@@ -96,8 +101,8 @@ namespace librealsense
 
             IAMCameraControl* get_camera_control() const
             {
-                if (!_camera_control.p)
-                    throw std::runtime_error("The device does not support camera settings such as zoom, pan, aperture adjustment, or shutter speed.");
+               // if (!_camera_control.p)
+               //     throw std::runtime_error("The device does not support camera settings such as zoom, pan, aperture adjustment, or shutter speed.");
                 return _camera_control.p;
             }
 
@@ -113,7 +118,7 @@ namespace librealsense
             int get_stream_index_by_profile(const stream_profile& profile) const;
 
             const uvc_device_info                   _info;
-            power_state                             _power_state = D3;
+            power_state                             _power_state = D0; // power state change is unsupported
 
             CComPtr<source_reader_callback>         _callback = nullptr;
             CComPtr<IMFSourceReader>                _reader = nullptr;

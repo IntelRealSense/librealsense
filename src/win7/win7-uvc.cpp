@@ -27,6 +27,7 @@ The library will be compiled without the metadata support!\n")
 #include "win7-uvc.h"
 #include "win7-usb.h"
 #include "../types.h"
+#include "winusb_uvc/winusb_uvc.h"
 
 #include "Shlwapi.h"
 #include <Windows.h>
@@ -260,72 +261,81 @@ namespace librealsense
 
         void win7_uvc_device::init_xu(const extension_unit& xu)
         {
-            if (!_source)
-                throw std::runtime_error("Could not initialize extensions controls!");
+            // not supported
+            return;
 
-            // Attempt to retrieve IKsControl
-            CComPtr<IKsTopologyInfo> ks_topology_info = nullptr;
-            CHECK_HR(_source->QueryInterface(__uuidof(IKsTopologyInfo),
-                reinterpret_cast<void **>(&ks_topology_info)));
-
-            DWORD nNodes=0;
-            check("get_NumNodes", ks_topology_info->get_NumNodes(&nNodes));
-
-            CComPtr<IUnknown> unknown = nullptr;
-            CHECK_HR(ks_topology_info->CreateNodeInstance(xu.node, IID_IUnknown,
-                reinterpret_cast<LPVOID *>(&unknown)));
-
-            CComPtr<IKsControl> ks_control = nullptr;
-            CHECK_HR(unknown->QueryInterface(__uuidof(IKsControl),
-                reinterpret_cast<void **>(&ks_control)));
-            _ks_controls[xu.node] = ks_control;
+       //     if (!_source)
+       //         throw std::runtime_error("Could not initialize extensions controls!");
+       //
+       //     // Attempt to retrieve IKsControl
+       //     CComPtr<IKsTopologyInfo> ks_topology_info = nullptr;
+       //     CHECK_HR(_source->QueryInterface(__uuidof(IKsTopologyInfo),
+       //         reinterpret_cast<void **>(&ks_topology_info)));
+       //
+       //     DWORD nNodes=0;
+       //     check("get_NumNodes", ks_topology_info->get_NumNodes(&nNodes));
+       //
+       //     CComPtr<IUnknown> unknown = nullptr;
+       //     CHECK_HR(ks_topology_info->CreateNodeInstance(xu.node, IID_IUnknown,
+       //         reinterpret_cast<LPVOID *>(&unknown)));
+       //
+       //     CComPtr<IKsControl> ks_control = nullptr;
+       //     CHECK_HR(unknown->QueryInterface(__uuidof(IKsControl),
+       //         reinterpret_cast<void **>(&ks_control)));
+       //     _ks_controls[xu.node] = ks_control;
         }
 
         bool win7_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
         {
-            auto ks_control = get_ks_control(xu);
-
-            KSP_NODE node;
-            memset(&node, 0, sizeof(KSP_NODE));
-            node.Property.Set = reinterpret_cast<const GUID &>(xu.id);
-            node.Property.Id = ctrl;
-            node.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
-            node.NodeId = xu.node;
-
-            ULONG bytes_received = 0;
-            auto hr = ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node),
-                sizeof(KSP_NODE), (void*)data, len, &bytes_received);
-
-            if (hr == DEVICE_NOT_READY_ERROR)
-                return false;
-
-            CHECK_HR(hr);
+            // not supported
             return true;
+
+            //auto ks_control = get_ks_control(xu);
+            //
+            //KSP_NODE node;
+            //memset(&node, 0, sizeof(KSP_NODE));
+            //node.Property.Set = reinterpret_cast<const GUID &>(xu.id);
+            //node.Property.Id = ctrl;
+            //node.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
+            //node.NodeId = xu.node;
+            //
+            //ULONG bytes_received = 0;
+            //auto hr = ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node),
+            //    sizeof(KSP_NODE), (void*)data, len, &bytes_received);
+            //
+            //if (hr == DEVICE_NOT_READY_ERROR)
+            //    return false;
+            //
+            //CHECK_HR(hr);
+            //return true;
         }
 
         bool win7_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
         {
-            auto ks_control = get_ks_control(xu);
-
-            KSP_NODE node;
-            memset(&node, 0, sizeof(KSP_NODE));
-            node.Property.Set = reinterpret_cast<const GUID &>(xu.id);
-            node.Property.Id = ctrl;
-            node.Property.Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_TOPOLOGY;
-            node.NodeId = xu.node;
-
-            ULONG bytes_received = 0;
-            auto hr = ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node),
-                sizeof(node), data, len, &bytes_received);
-
-            if (hr == DEVICE_NOT_READY_ERROR)
-                return false;
-
-            if (bytes_received != len)
-                throw std::runtime_error(to_string() << "Get XU n:" << (int)ctrl << " received " << bytes_received << "/" << len << " bytes");
-
-            CHECK_HR(hr);
+            // not supported
             return true;
+
+           // auto ks_control = get_ks_control(xu);
+           //
+           // KSP_NODE node;
+           // memset(&node, 0, sizeof(KSP_NODE));
+           // node.Property.Set = reinterpret_cast<const GUID &>(xu.id);
+           // node.Property.Id = ctrl;
+           // node.Property.Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_TOPOLOGY;
+           // node.NodeId = xu.node;
+           //
+           // ULONG bytes_received = 0;
+           // auto hr = ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node),
+           //     sizeof(node), data, len, &bytes_received);
+           //
+           // if (hr == DEVICE_NOT_READY_ERROR)
+           //     return false;
+           //
+           // if (bytes_received != len)
+           //     throw std::runtime_error(to_string() << "Get XU n:" << (int)ctrl << " received " << bytes_received << "/" << len << " bytes");
+           //
+           // CHECK_HR(hr);
+           // return true;
         }
 
         void ReadFromBuffer(control_range& cfg, BYTE* buffer, int length)
@@ -395,71 +405,76 @@ namespace librealsense
 
         control_range win7_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const
         {
-            auto ks_control = get_ks_control(xu);
-
-            /* get step, min and max values*/
-            KSP_NODE node;
-            memset(&node, 0, sizeof(KSP_NODE));
-            node.Property.Set = reinterpret_cast<const GUID &>(xu.id);
-            node.Property.Id = ctrl;
-            node.Property.Flags = KSPROPERTY_TYPE_BASICSUPPORT | KSPROPERTY_TYPE_TOPOLOGY;
-            node.NodeId = xu.node;
-
-            KSPROPERTY_DESCRIPTION description;
-            unsigned long bytes_received = 0;
-            CHECK_HR(ks_control->KsProperty(
-                reinterpret_cast<PKSPROPERTY>(&node),
-                sizeof(node),
-                &description,
-                sizeof(KSPROPERTY_DESCRIPTION),
-                &bytes_received));
-
-            auto size = description.DescriptionSize;
-            std::vector<BYTE> buffer(static_cast<long>(size));
-
-            CHECK_HR(ks_control->KsProperty(
-                reinterpret_cast<PKSPROPERTY>(&node),
-                sizeof(node),
-                buffer.data(),
-                size,
-                &bytes_received));
-
-            if (bytes_received != size) { throw  std::runtime_error("wrong data"); }
-
-            control_range result{};
-            ReadFromBuffer(result, buffer.data(), len);
-
-            /* get def value*/
-            memset(&node, 0, sizeof(KSP_NODE));
-            node.Property.Set = reinterpret_cast<const GUID &>(xu.id);
-            node.Property.Id = ctrl;
-            node.Property.Flags = KSPROPERTY_TYPE_DEFAULTVALUES | KSPROPERTY_TYPE_TOPOLOGY;
-            node.NodeId = xu.node;
-
-            bytes_received = 0;
-            CHECK_HR(ks_control->KsProperty(
-                reinterpret_cast<PKSPROPERTY>(&node),
-                sizeof(node),
-                &description,
-                sizeof(KSPROPERTY_DESCRIPTION),
-                &bytes_received));
-
-            size = description.DescriptionSize;
-            buffer.clear();
-            buffer.resize(size);
-
-            CHECK_HR(ks_control->KsProperty(
-                reinterpret_cast<PKSPROPERTY>(&node),
-                sizeof(node),
-                buffer.data(),
-                size,
-                &bytes_received));
-
-            if (bytes_received != size) { throw  std::runtime_error("wrong data"); }
-
-            ReadFromBuffer(result, buffer.data(), len);
-
+            // not supported
+            static const int32_t min = 0, max = 1, step = 1, def = 1;
+            control_range result(min, max, step, def);
             return result;
+
+          // auto ks_control = get_ks_control(xu);
+          //
+          // /* get step, min and max values*/
+          // KSP_NODE node;
+          // memset(&node, 0, sizeof(KSP_NODE));
+          // node.Property.Set = reinterpret_cast<const GUID &>(xu.id);
+          // node.Property.Id = ctrl;
+          // node.Property.Flags = KSPROPERTY_TYPE_BASICSUPPORT | KSPROPERTY_TYPE_TOPOLOGY;
+          // node.NodeId = xu.node;
+          //
+          // KSPROPERTY_DESCRIPTION description;
+          // unsigned long bytes_received = 0;
+          // CHECK_HR(ks_control->KsProperty(
+          //     reinterpret_cast<PKSPROPERTY>(&node),
+          //     sizeof(node),
+          //     &description,
+          //     sizeof(KSPROPERTY_DESCRIPTION),
+          //     &bytes_received));
+          //
+          // auto size = description.DescriptionSize;
+          // std::vector<BYTE> buffer(static_cast<long>(size));
+          //
+          // CHECK_HR(ks_control->KsProperty(
+          //     reinterpret_cast<PKSPROPERTY>(&node),
+          //     sizeof(node),
+          //     buffer.data(),
+          //     size,
+          //     &bytes_received));
+          //
+          // if (bytes_received != size) { throw  std::runtime_error("wrong data"); }
+          //
+          // control_range result{};
+          // ReadFromBuffer(result, buffer.data(), len);
+          //
+          // /* get def value*/
+          // memset(&node, 0, sizeof(KSP_NODE));
+          // node.Property.Set = reinterpret_cast<const GUID &>(xu.id);
+          // node.Property.Id = ctrl;
+          // node.Property.Flags = KSPROPERTY_TYPE_DEFAULTVALUES | KSPROPERTY_TYPE_TOPOLOGY;
+          // node.NodeId = xu.node;
+          //
+          // bytes_received = 0;
+          // CHECK_HR(ks_control->KsProperty(
+          //     reinterpret_cast<PKSPROPERTY>(&node),
+          //     sizeof(node),
+          //     &description,
+          //     sizeof(KSPROPERTY_DESCRIPTION),
+          //     &bytes_received));
+          //
+          // size = description.DescriptionSize;
+          // buffer.clear();
+          // buffer.resize(size);
+          //
+          // CHECK_HR(ks_control->KsProperty(
+          //     reinterpret_cast<PKSPROPERTY>(&node),
+          //     sizeof(node),
+          //     buffer.data(),
+          //     size,
+          //     &bytes_received));
+          //
+          // if (bytes_received != size) { throw  std::runtime_error("wrong data"); }
+          //
+          // ReadFromBuffer(result, buffer.data(), len);
+          //
+          // return result;
         }
 
         struct pu_control { rs2_option option; long property; bool enable_auto; };
@@ -499,213 +514,221 @@ namespace librealsense
 
         bool win7_uvc_device::get_pu(rs2_option opt, int32_t& value) const
         {
-            long val = 0, flags = 0;
-            if ((opt == RS2_OPTION_EXPOSURE) || (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE))
-            {
-                auto hr = get_camera_control()->Get(CameraControl_Exposure, &val, &flags);
-                if (hr == DEVICE_NOT_READY_ERROR)
-                    return false;
-
-                value = (opt == RS2_OPTION_EXPOSURE) ? to_100micros(val) : (flags == CameraControl_Flags_Auto);
-                CHECK_HR(hr);
-                return true;
-            }
-
-            for (auto & pu : pu_controls)
-            {
-                if (opt == pu.option)
-                {
-                    auto hr = get_video_proc()->Get(pu.property, &val, &flags);
-                    if (hr == DEVICE_NOT_READY_ERROR)
-                        return false;
-
-                    value = (pu.enable_auto) ? (flags == VideoProcAmp_Flags_Auto) : val;
-
-                    CHECK_HR(hr);
-                    return true;
-                }
-            }
-
-            for (auto & ct : ct_controls)
-            {
-                if (opt == ct.option)
-                {
-                    auto hr = get_camera_control()->Get(ct.property, &val, &flags);
-                    if (hr == DEVICE_NOT_READY_ERROR)
-                        return false;
-
-                    value = val;
-
-                    CHECK_HR(hr);
-                    return true;
-                }
-            }
-
-            throw std::runtime_error(to_string() << "Unsupported control - " << opt);
+            return true;
+            
+           // long val = 0, flags = 0;
+           // if ((opt == RS2_OPTION_EXPOSURE) || (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+           // {
+           //     auto hr = get_camera_control()->Get(CameraControl_Exposure, &val, &flags);
+           //     if (hr == DEVICE_NOT_READY_ERROR)
+           //         return false;
+           //
+           //     value = (opt == RS2_OPTION_EXPOSURE) ? to_100micros(val) : (flags == CameraControl_Flags_Auto);
+           //     CHECK_HR(hr);
+           //     return true;
+           // }
+           //
+           // for (auto & pu : pu_controls)
+           // {
+           //     if (opt == pu.option)
+           //     {
+           //         auto hr = get_video_proc()->Get(pu.property, &val, &flags);
+           //         if (hr == DEVICE_NOT_READY_ERROR)
+           //             return false;
+           //
+           //         value = (pu.enable_auto) ? (flags == VideoProcAmp_Flags_Auto) : val;
+           //
+           //         CHECK_HR(hr);
+           //         return true;
+           //     }
+           // }
+           //
+           // for (auto & ct : ct_controls)
+           // {
+           //     if (opt == ct.option)
+           //     {
+           //         auto hr = get_camera_control()->Get(ct.property, &val, &flags);
+           //         if (hr == DEVICE_NOT_READY_ERROR)
+           //             return false;
+           //
+           //         value = val;
+           //
+           //         CHECK_HR(hr);
+           //         return true;
+           //     }
+           // }
+           //
+           // throw std::runtime_error(to_string() << "Unsupported control - " << opt);
         }
 
         bool win7_uvc_device::set_pu(rs2_option opt, int value)
         {
-            if (opt == RS2_OPTION_EXPOSURE)
-            {
-                auto hr = get_camera_control()->Set(CameraControl_Exposure, from_100micros(value), CameraControl_Flags_Manual);
-                if (hr == DEVICE_NOT_READY_ERROR)
-                    return false;
+            return true;
 
-                CHECK_HR(hr);
-                return true;
-            }
-            if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
-            {
-                if (value)
-                {
-                    auto hr = get_camera_control()->Set(CameraControl_Exposure, 0, CameraControl_Flags_Auto);
-                    if (hr == DEVICE_NOT_READY_ERROR)
-                        return false;
-
-                    CHECK_HR(hr);
-                }
-                else
-                {
-                    long min, max, step, def, caps;
-                    auto hr = get_camera_control()->GetRange(CameraControl_Exposure, &min, &max, &step, &def, &caps);
-                    if (hr == DEVICE_NOT_READY_ERROR)
-                        return false;
-
-                    CHECK_HR(hr);
-
-                    hr = get_camera_control()->Set(CameraControl_Exposure, def, CameraControl_Flags_Manual);
-                    if (hr == DEVICE_NOT_READY_ERROR)
-                        return false;
-
-                    CHECK_HR(hr);
-                }
-                return true;
-            }
-
-
-            for (auto & pu : pu_controls)
-            {
-                if (opt == pu.option)
-                {
-                    if (pu.enable_auto)
-                    {
-                        if (value)
-                        {
-                            auto hr = get_video_proc()->Set(pu.property, 0, VideoProcAmp_Flags_Auto);
-                            if (hr == DEVICE_NOT_READY_ERROR)
-                                return false;
-
-                            CHECK_HR(hr);
-                        }
-                        else
-                        {
-                            long min, max, step, def, caps;
-                            auto hr = get_video_proc()->GetRange(pu.property, &min, &max, &step, &def, &caps);
-                            if (hr == DEVICE_NOT_READY_ERROR)
-                                return false;
-
-                            CHECK_HR(hr);
-
-                            hr = get_video_proc()->Set(pu.property, def, VideoProcAmp_Flags_Manual);
-                            if (hr == DEVICE_NOT_READY_ERROR)
-                                return false;
-
-                            CHECK_HR(hr);
-                        }
-                    }
-                    else
-                    {
-                        auto hr = get_video_proc()->Set(pu.property, value, VideoProcAmp_Flags_Manual);
-                        if (hr == DEVICE_NOT_READY_ERROR)
-                            return false;
-
-                        CHECK_HR(hr);
-                    }
-                    return true;
-                }
-            }
-            for (auto & ct : ct_controls)
-            {
-                if (opt == ct.option)
-                {
-                    if (ct.enable_auto)
-                    {
-                        if (value)
-                        {
-                            auto hr = get_camera_control()->Set(ct.property, 0, CameraControl_Flags_Auto);
-                            if (hr == DEVICE_NOT_READY_ERROR)
-                                return false;
-
-                            CHECK_HR(hr);
-                        }
-                        else
-                        {
-                            long min, max, step, def, caps;
-                            auto hr = get_camera_control()->GetRange(ct.property, &min, &max, &step, &def, &caps);
-                            if (hr == DEVICE_NOT_READY_ERROR)
-                                return false;
-
-                            CHECK_HR(hr);
-
-                            hr = get_camera_control()->Set(ct.property, def, CameraControl_Flags_Manual);
-                            if (hr == DEVICE_NOT_READY_ERROR)
-                                return false;
-
-                            CHECK_HR(hr);
-                        }
-                    }
-                    else
-                    {
-                        auto hr = get_camera_control()->Set(ct.property, value, CameraControl_Flags_Manual);
-                        if (hr == DEVICE_NOT_READY_ERROR)
-                            return false;
-
-                        CHECK_HR(hr);
-                    }
-                    return true;
-                }
-            }
-            throw std::runtime_error(to_string() << "Unsupported control - " << opt);
+            //if (opt == RS2_OPTION_EXPOSURE)
+            //{
+            //    auto hr = get_camera_control()->Set(CameraControl_Exposure, from_100micros(value), CameraControl_Flags_Manual);
+            //    if (hr == DEVICE_NOT_READY_ERROR)
+            //        return false;
+            //
+            //    CHECK_HR(hr);
+            //    return true;
+            //}
+            //if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+            //{
+            //    if (value)
+            //    {
+            //        auto hr = get_camera_control()->Set(CameraControl_Exposure, 0, CameraControl_Flags_Auto);
+            //        if (hr == DEVICE_NOT_READY_ERROR)
+            //            return false;
+            //
+            //        CHECK_HR(hr);
+            //    }
+            //    else
+            //    {
+            //        long min, max, step, def, caps;
+            //        auto hr = get_camera_control()->GetRange(CameraControl_Exposure, &min, &max, &step, &def, &caps);
+            //        if (hr == DEVICE_NOT_READY_ERROR)
+            //            return false;
+            //
+            //        CHECK_HR(hr);
+            //
+            //        hr = get_camera_control()->Set(CameraControl_Exposure, def, CameraControl_Flags_Manual);
+            //        if (hr == DEVICE_NOT_READY_ERROR)
+            //            return false;
+            //
+            //        CHECK_HR(hr);
+            //    }
+            //    return true;
+            //}
+            //
+            //
+            //for (auto & pu : pu_controls)
+            //{
+            //    if (opt == pu.option)
+            //    {
+            //        if (pu.enable_auto)
+            //        {
+            //            if (value)
+            //            {
+            //                auto hr = get_video_proc()->Set(pu.property, 0, VideoProcAmp_Flags_Auto);
+            //                if (hr == DEVICE_NOT_READY_ERROR)
+            //                    return false;
+            //
+            //                CHECK_HR(hr);
+            //            }
+            //            else
+            //            {
+            //                long min, max, step, def, caps;
+            //                auto hr = get_video_proc()->GetRange(pu.property, &min, &max, &step, &def, &caps);
+            //                if (hr == DEVICE_NOT_READY_ERROR)
+            //                    return false;
+            //
+            //                CHECK_HR(hr);
+            //
+            //                hr = get_video_proc()->Set(pu.property, def, VideoProcAmp_Flags_Manual);
+            //                if (hr == DEVICE_NOT_READY_ERROR)
+            //                    return false;
+            //
+            //                CHECK_HR(hr);
+            //            }
+            //        }
+            //        else
+            //        {
+            //            auto hr = get_video_proc()->Set(pu.property, value, VideoProcAmp_Flags_Manual);
+            //            if (hr == DEVICE_NOT_READY_ERROR)
+            //                return false;
+            //
+            //            CHECK_HR(hr);
+            //        }
+            //        return true;
+            //    }
+            //}
+            //for (auto & ct : ct_controls)
+            //{
+            //    if (opt == ct.option)
+            //    {
+            //        if (ct.enable_auto)
+            //        {
+            //            if (value)
+            //            {
+            //                auto hr = get_camera_control()->Set(ct.property, 0, CameraControl_Flags_Auto);
+            //                if (hr == DEVICE_NOT_READY_ERROR)
+            //                    return false;
+            //
+            //                CHECK_HR(hr);
+            //            }
+            //            else
+            //            {
+            //                long min, max, step, def, caps;
+            //                auto hr = get_camera_control()->GetRange(ct.property, &min, &max, &step, &def, &caps);
+            //                if (hr == DEVICE_NOT_READY_ERROR)
+            //                    return false;
+            //
+            //                CHECK_HR(hr);
+            //
+            //                hr = get_camera_control()->Set(ct.property, def, CameraControl_Flags_Manual);
+            //                if (hr == DEVICE_NOT_READY_ERROR)
+            //                    return false;
+            //
+            //                CHECK_HR(hr);
+            //            }
+            //        }
+            //        else
+            //        {
+            //            auto hr = get_camera_control()->Set(ct.property, value, CameraControl_Flags_Manual);
+            //            if (hr == DEVICE_NOT_READY_ERROR)
+            //                return false;
+            //
+            //            CHECK_HR(hr);
+            //        }
+            //        return true;
+            //    }
+            //}
+            //throw std::runtime_error(to_string() << "Unsupported control - " << opt);
         }
 
         control_range win7_uvc_device::get_pu_range(rs2_option opt) const
         {
-            if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE ||
-                opt == RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
-            {
-                static const int32_t min = 0, max = 1, step = 1, def = 1;
-                control_range result(min, max, step, def);
-                return result;
-            }
+            static const int32_t min = 0, max = 1, step = 1, def = 1;
+            control_range result(min, max, step, def);
+            return result;
 
-            long minVal = 0, maxVal = 0, steppingDelta = 0, defVal = 0, capsFlag = 0;
-            if (opt == RS2_OPTION_EXPOSURE)
-            {
-                CHECK_HR(get_camera_control()->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
-                long min = to_100micros(minVal), max = to_100micros(maxVal), def = to_100micros(defVal);
-                control_range result(min, max, min, def);
-                return result;
-            }
-            for (auto & pu : pu_controls)
-            {
-                if (opt == pu.option)
-                {
-                    CHECK_HR(get_video_proc()->GetRange(pu.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
-                    control_range result(minVal, maxVal, steppingDelta, defVal);
-                    return result;
-                }
-            }
-            for (auto & ct : ct_controls)
-            {
-                if (opt == ct.option)
-                {
-                    CHECK_HR(get_camera_control()->GetRange(ct.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
-                    control_range result(minVal, maxVal, steppingDelta, defVal);
-                    return result;
-                }
-            }
-            throw std::runtime_error("unsupported control");
+            //if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE ||
+            //    opt == RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
+            //{
+            //    static const int32_t min = 0, max = 1, step = 1, def = 1;
+            //    control_range result(min, max, step, def);
+            //    return result;
+            //}
+            //
+            //long minVal = 0, maxVal = 0, steppingDelta = 0, defVal = 0, capsFlag = 0;
+            //if (opt == RS2_OPTION_EXPOSURE)
+            //{
+            //    CHECK_HR(get_camera_control()->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+            //    long min = to_100micros(minVal), max = to_100micros(maxVal), def = to_100micros(defVal);
+            //    control_range result(min, max, min, def);
+            //    return result;
+            //}
+            //for (auto & pu : pu_controls)
+            //{
+            //    if (opt == pu.option)
+            //    {
+            //        CHECK_HR(get_video_proc()->GetRange(pu.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+            //        control_range result(minVal, maxVal, steppingDelta, defVal);
+            //        return result;
+            //    }
+            //}
+            //for (auto & ct : ct_controls)
+            //{
+            //    if (opt == ct.option)
+            //    {
+            //        CHECK_HR(get_camera_control()->GetRange(ct.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+            //        control_range result(minVal, maxVal, steppingDelta, defVal);
+            //        return result;
+            //    }
+            //}
+            //throw std::runtime_error("unsupported control");
         }
 
         void win7_uvc_device::foreach_uvc_device(enumeration_callback action)
@@ -733,8 +756,8 @@ namespace librealsense
                     auto name = win_to_utf(wchar_name);
                     CoTaskMemFree(wchar_name);
 
-                    uint16_t vid, pid, mi; std::string unique_id;
-                    if (!parse_usb_path(vid, pid, mi, unique_id, name)) continue;
+                    uint16_t vid, pid, mi; std::string unique_id, device_guid;
+                    if (!parse_usb_path(vid, pid, mi, unique_id, device_guid, name)) continue;
 
                     uvc_device_info info;
                     info.vid = vid;
@@ -758,13 +781,13 @@ namespace librealsense
 
         void win7_uvc_device::foreach_uvc_device(uvc_enumeration_callback action)
         {
-            for (auto&& interface_id : win7_uvc_interfaces)
+            for (auto&& guid : device_guids)
             {
-                for (auto&& id : usb_enumerate::query_by_interface(interface_id, "", ""))
+                for (auto&& id : usb_enumerate::query_by_interface(guid, "", ""))
                 {
                     std::string path(id.begin(), id.end());
-                    uint16_t vid, pid, mi; std::string unique_id;
-                    if (!parse_usb_path(vid, pid, mi, unique_id, path)) continue;
+                    uint16_t vid, pid, mi; std::string unique_id, device_guid;
+                    if (!parse_usb_path(vid, pid, mi, unique_id, device_guid, path)) continue;
 
                     uvc_device_info info{ path, vid, pid, mi, unique_id, path };
 
@@ -782,191 +805,187 @@ namespace librealsense
 
         void win7_uvc_device::set_power_state(power_state state)
         {
-            static auto rs2 = false;
 
-            // This is temporary work-around for Windows 10 Red-Stone2 build
-            // There seem to be issues re-creating Media Foundation objects frequently
-            // That's why until this is properly investigated on RS2 machines librealsense will keep MF objects alive
-            // As a negative side-effect the camera will remain in D0 power state longer
-            if (rs2)
+            // Not supported - always ON
+            _streams.resize(_streamIndex);
+            for (auto& elem : _streams)
             {
-                if (_power_state != D0 && state == D0)
-                {
-                    foreach_uvc_device([this](const uvc_device_info& i,IMFActivate* device)
-                    {
-                        if (i == _info && device)
-                        {
-                            wchar_t did[256];
-                            HRESULT hr = S_OK;
-                            int count = 0;
-                            CHECK_HR(device->GetString(did_guid, did, sizeof(did) / sizeof(wchar_t), nullptr));
-
-                            if (_reader == nullptr)
-                            {
-                                CHECK_HR(MFCreateAttributes(&_device_attrs, 2));
-                                CHECK_HR(_device_attrs->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, type_guid));
-                                CHECK_HR(_device_attrs->SetString(did_guid, did));
-                                hr = device->ActivateObject(IID_PPV_ARGS(&_source));
-                                if (_source == nullptr)
-                                {
-                                    do
-                                    {
-                                        Sleep(10);
-                                        count++;
-                                        hr = device->ActivateObject(IID_PPV_ARGS(&_source));
-                                    } while (_source == nullptr && count < 30);
-                                }
-
-                                CHECK_HR(hr);
-
-                                _callback = new source_reader_callback(shared_from_this()); /// async I/O
-
-                                CHECK_HR(MFCreateAttributes(&_reader_attrs, 3));
-                                CHECK_HR(_reader_attrs->SetUINT32(MF_SOURCE_READER_DISCONNECT_MEDIASOURCE_ON_SHUTDOWN, FALSE));
-                                CHECK_HR(_reader_attrs->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, static_cast<IUnknown*>(_callback)));
-                                CHECK_HR(_reader_attrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
-                                CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
-                            }
-                            LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl),
-                                reinterpret_cast<void **>(&_camera_control.p)));
-                            LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp),
-                                reinterpret_cast<void **>(&_video_proc.p)));
-
-                            _streams.resize(_streamIndex);
-                            for (auto& elem : _streams)
-                                elem.callback = nullptr;
-
-                            CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
-                        }
-                    });
-
-                    _power_state = D0;
-                }
-
-                if (_power_state != D3 && state == D3)
-                {
-                    _power_state = D3;
-                }
+                elem.callback = nullptr;
             }
-            else
-            {
-                if (_power_state != D0 && state == D0)
-                {
-                    foreach_uvc_device([this](const uvc_device_info& i,IMFActivate* device)
-                    {
-                        if (i == _info && device)
-                        {
-                            wchar_t did[256];
-                            CHECK_HR(device->GetString(did_guid, did, sizeof(did) / sizeof(wchar_t), nullptr));
+            _power_state = D0;
+            return;
 
-                            CHECK_HR(MFCreateAttributes(&_device_attrs, 2));
-                            CHECK_HR(_device_attrs->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, type_guid));
-                            CHECK_HR(_device_attrs->SetString(did_guid, did));
-                            CHECK_HR(MFCreateDeviceSourceActivate(_device_attrs, &_activate));
-
-                            _callback = new source_reader_callback(shared_from_this()); /// async I/O
-
-                            CHECK_HR(MFCreateAttributes(&_reader_attrs, 2));
-                            CHECK_HR(_reader_attrs->SetUINT32(MF_SOURCE_READER_DISCONNECT_MEDIASOURCE_ON_SHUTDOWN, FALSE));
-                            CHECK_HR(_reader_attrs->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK,
-                                static_cast<IUnknown*>(_callback)));
-
-                            CHECK_HR(_reader_attrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
-                            CHECK_HR(_activate->ActivateObject(IID_IMFMediaSource, reinterpret_cast<void **>(&_source)));
-                            CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
-
-                            LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl),
-                                reinterpret_cast<void **>(&_camera_control.p)));
-                            LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp),
-                                reinterpret_cast<void **>(&_video_proc.p)));
-
-                            _streams.resize(_streamIndex);
-                            for (auto& elem : _streams)
-                                elem.callback = nullptr;
-
-                            CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
-                        }
-                    });
-
-                    _power_state = D0;
-                }
-
-                if (_power_state != D3 && state == D3)
-                {
-                    _ks_controls.clear();
-                    _camera_control = nullptr;
-                    _video_proc = nullptr;
-                    _reader = nullptr;
-                    _source = nullptr;
-                    _reader_attrs = nullptr;
-                    _activate = nullptr;
-                    _device_attrs = nullptr;
-
-                    _power_state = D3;
-                }
-            }
+ //           static auto rs2 = false;
+ //
+ //           // This is temporary work-around for Windows 10 Red-Stone2 build
+ //           // There seem to be issues re-creating Media Foundation objects frequently
+ //           // That's why until this is properly investigated on RS2 machines librealsense will keep MF objects alive
+ //           // As a negative side-effect the camera will remain in D0 power state longer
+ //           if (rs2)
+ //           {
+ //               if (_power_state != D0 && state == D0)
+ //               {
+ //                   foreach_uvc_device([this](const uvc_device_info& i,IMFActivate* device)
+ //                   {
+ //                       if (i == _info && device)
+ //                       {
+ //                           wchar_t did[256];
+ //                           HRESULT hr = S_OK;
+ //                           int count = 0;
+ //                           CHECK_HR(device->GetString(did_guid, did, sizeof(did) / sizeof(wchar_t), nullptr));
+ //
+ //                           if (_reader == nullptr)
+ //                           {
+ //                               CHECK_HR(MFCreateAttributes(&_device_attrs, 2));
+ //                               CHECK_HR(_device_attrs->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, type_guid));
+ //                               CHECK_HR(_device_attrs->SetString(did_guid, did));
+ //                               hr = device->ActivateObject(IID_PPV_ARGS(&_source));
+ //                               if (_source == nullptr)
+ //                               {
+ //                                   do
+ //                                   {
+ //                                       Sleep(10);
+ //                                       count++;
+ //                                       hr = device->ActivateObject(IID_PPV_ARGS(&_source));
+ //                                   } while (_source == nullptr && count < 30);
+ //                               }
+ //
+ //                               CHECK_HR(hr);
+ //
+ //                               _callback = new source_reader_callback(shared_from_this()); /// async I/O
+ //
+ //                               CHECK_HR(MFCreateAttributes(&_reader_attrs, 3));
+ //                               CHECK_HR(_reader_attrs->SetUINT32(MF_SOURCE_READER_DISCONNECT_MEDIASOURCE_ON_SHUTDOWN, FALSE));
+ //                               CHECK_HR(_reader_attrs->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, static_cast<IUnknown*>(_callback)));
+ //                               CHECK_HR(_reader_attrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
+ //                               CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
+ //                           }
+ //                           LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl),
+ //                               reinterpret_cast<void **>(&_camera_control.p)));
+ //                           LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp),
+ //                               reinterpret_cast<void **>(&_video_proc.p)));
+ //
+ //                           _streams.resize(_streamIndex);
+ //                           for (auto& elem : _streams)
+ //                               elem.callback = nullptr;
+ //
+ //                           CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
+ //                       }
+ //                   });
+ //
+ //                   _power_state = D0;
+ //               }
+ //
+ //               if (_power_state != D3 && state == D3)
+ //               {
+ //                   _power_state = D3;
+ //               }
+ //           }
+ //           else
+ //           {
+ //               if (_power_state != D0 && state == D0)
+ //               {
+ //                   foreach_uvc_device([this](const uvc_device_info& i,IMFActivate* device)
+ //                   {
+ //                       if (i == _info && device)
+ //                       {
+ //                           wchar_t did[256];
+ //                           CHECK_HR(device->GetString(did_guid, did, sizeof(did) / sizeof(wchar_t), nullptr));
+ //
+ //                           CHECK_HR(MFCreateAttributes(&_device_attrs, 2));
+ //                           CHECK_HR(_device_attrs->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, type_guid));
+ //                           CHECK_HR(_device_attrs->SetString(did_guid, did));
+ //                           CHECK_HR(MFCreateDeviceSourceActivate(_device_attrs, &_activate));
+ //
+ //                           _callback = new source_reader_callback(shared_from_this()); /// async I/O
+ //
+ //                           CHECK_HR(MFCreateAttributes(&_reader_attrs, 2));
+ //                           CHECK_HR(_reader_attrs->SetUINT32(MF_SOURCE_READER_DISCONNECT_MEDIASOURCE_ON_SHUTDOWN, FALSE));
+ //                           CHECK_HR(_reader_attrs->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK,
+ //                               static_cast<IUnknown*>(_callback)));
+ //
+ //                           CHECK_HR(_reader_attrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
+ //                           CHECK_HR(_activate->ActivateObject(IID_IMFMediaSource, reinterpret_cast<void **>(&_source)));
+ //                           CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
+ //
+ //                           LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl),
+ //                               reinterpret_cast<void **>(&_camera_control.p)));
+ //                           LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp),
+ //                               reinterpret_cast<void **>(&_video_proc.p)));
+ //
+ //                           _streams.resize(_streamIndex);
+ //                           for (auto& elem : _streams)
+ //                               elem.callback = nullptr;
+ //
+ //                           CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
+ //                       }
+ //                   });
+ //
+ //                   _power_state = D0;
+ //               }
+ //
+ //               if (_power_state != D3 && state == D3)
+ //               {
+ //                   _ks_controls.clear();
+ //                   _camera_control = nullptr;
+ //                   _video_proc = nullptr;
+ //                   _reader = nullptr;
+ //                   _source = nullptr;
+ //                   _reader_attrs = nullptr;
+ //                   _activate = nullptr;
+ //                   _device_attrs = nullptr;
+ //
+ //                   _power_state = D3;
+ //               }
+ //           }
         }
 
         std::vector<stream_profile> win7_uvc_device::get_profiles() const
         {
+            std::vector<stream_profile> results;
+            int i = 0;
+
             check_connection();
 
             if (get_power_state() != D0)
-                throw std::runtime_error("Device must be powered to query supported profiles!");
-
-            CComPtr<IMFMediaType> pMediaType = nullptr;
-            std::vector<stream_profile> results;
-            for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
             {
-                for (auto k = 0;; k++)
-                {
-                    auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType.p);
-                    if (FAILED(hr) || pMediaType == nullptr)
-                    {
-                        if (hr != MF_E_NO_MORE_TYPES) // An object ran out of media types to suggest therefore the requested chain of streaming objects cannot be completed
-                            check("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)", hr, false);
-
-                        break;
-                    }
-
-                    GUID subtype;
-                    CHECK_HR(pMediaType->GetGUID(MF_MT_SUBTYPE, &subtype));
-
-                    unsigned width = 0;
-                    unsigned height = 0;
-
-                    CHECK_HR(MFGetAttributeSize(pMediaType, MF_MT_FRAME_SIZE, &width, &height));
-
-                    typedef struct frameRate {
-                        unsigned int denominator;
-                        unsigned int numerator;
-                    } frameRate;
-
-                    frameRate frameRateMin;
-                    frameRate frameRateMax;
-
-                    CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MIN, &frameRateMin.numerator, &frameRateMin.denominator));
-                    CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MAX, &frameRateMax.numerator, &frameRateMax.denominator));
-
-                    if (static_cast<float>(frameRateMax.numerator) / frameRateMax.denominator <
-                        static_cast<float>(frameRateMin.numerator) / frameRateMin.denominator)
-                    {
-                        std::swap(frameRateMax, frameRateMin);
-                    }
-                    int currFps = frameRateMax.numerator / frameRateMax.denominator;
-
-                    uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
-                    if (fourcc_map.count(device_fourcc))
-                        device_fourcc = fourcc_map.at(device_fourcc);
-
-                    stream_profile sp;
-                    sp.width = width;
-                    sp.height = height;
-                    sp.fps = currFps;
-                    sp.format = device_fourcc;
-                    results.push_back(sp);
-                }
+                throw std::runtime_error("Device must be powered to query supported profiles!");
             }
+
+            winusb_uvc_device **devices;
+
+            // Return list of all connected IVCAM devices from uvc_interface name
+            uint16_t vid, pid, mi; std::string unique_id, device_guid;
+            if (!parse_usb_path(vid, pid, mi, unique_id, device_guid, this->_info.device_path))
+            {
+                throw std::runtime_error("Failed to parse USB path!");
+            }
+
+            // Return list of all connected IVCAM devices with device_guid
+            winusb_find_devices(device_guid, vid, pid, &devices);
+            winusb_uvc_device *device = devices[0];
+            
+            // initializing and filling all fields of winsub_device devices[0]
+            winusb_open(device);
+
+            // Return linked list of uvc_format_t of all available formats inside devices[0]
+            uvc_format_t *formats = NULL;
+            winusb_get_available_formats_all(device, &formats);
+
+            uvc_format_t *curFormat = formats;
+            while (curFormat != NULL)
+            {
+                stream_profile sp;
+                sp.width = curFormat->width;
+                sp.height = curFormat->height;
+                sp.fps = curFormat->fps;
+                sp.format = curFormat->fourcc;
+                results.push_back(sp);
+                curFormat = curFormat->next;
+            }
+
+            winusb_close(device);
+
             return results;
         }
 
@@ -1029,6 +1048,7 @@ namespace librealsense
             }
         }
 
+        // profile config- set control
         void win7_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int /*buffers*/)
         {
             if (_streaming)
