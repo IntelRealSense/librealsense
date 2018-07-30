@@ -217,7 +217,8 @@ PYBIND11_MODULE(NAME, m) {
                .def_readwrite("fo", &platform::sensor_data::fo);
 
     py::class_<platform::hid_profile> hid_profile(m, "hid_profile");
-    hid_profile.def_readwrite("sensor_name", &platform::hid_profile::sensor_name)
+    hid_profile.def(py::init<>())
+               .def_readwrite("sensor_name", &platform::hid_profile::sensor_name)
                .def_readwrite("frequency", &platform::hid_profile::frequency);
 
     py::enum_<platform::custom_sensor_report_field> custom_sensor_report_field(m, "custom_sensor_report_field");
@@ -240,7 +241,8 @@ PYBIND11_MODULE(NAME, m) {
                    .def_readwrite("ts_low", &platform::hid_sensor_data::ts_low)
                    .def_readwrite("ts_high", &platform::hid_sensor_data::ts_high);
 
-    py::class_<platform::hid_device> hid_device(m, "hid_device");
+    py::class_<platform::hid_device, std::shared_ptr<platform::hid_device>> hid_device(m, "hid_device");
+
     hid_device.def("open", &platform::hid_device::open, "hid_profiles"_a)
               .def("close", &platform::hid_device::close)
               .def("stop_capture", &platform::hid_device::stop_capture)
@@ -248,6 +250,17 @@ PYBIND11_MODULE(NAME, m) {
               .def("get_sensors", &platform::hid_device::get_sensors)
               .def("get_custom_report_data", &platform::hid_device::get_custom_report_data,
                    "custom_sensor_name"_a, "report_name"_a, "report_field"_a);
+
+    py::class_<platform::multi_pins_hid_device, std::shared_ptr<platform::multi_pins_hid_device>, platform::hid_device> multi_pins_hid_device(m, "multi_pins_hid_device");
+
+    multi_pins_hid_device.def(py::init<std::vector<std::shared_ptr<platform::hid_device>>&>())
+                         .def("open", &platform::multi_pins_hid_device::open, "hid_profiles"_a)
+                         .def("close", &platform::multi_pins_hid_device::close)
+                         .def("stop_capture", &platform::multi_pins_hid_device::stop_capture)
+                         .def("start_capture", &platform::multi_pins_hid_device::start_capture, "callback"_a)
+                         .def("get_sensors", &platform::multi_pins_hid_device::get_sensors)
+                         .def("get_custom_report_data", &platform::multi_pins_hid_device::get_custom_report_data,
+                              "custom_sensor_name"_a, "report_name"_a, "report_field"_a);
 
     py::class_<platform::uvc_device, std::shared_ptr<platform::uvc_device>> uvc_device(m, "uvc_device");
 
@@ -324,9 +337,6 @@ PYBIND11_MODULE(NAME, m) {
         .def("create_hid_device", &platform::backend::create_hid_device, "info"_a)
         .def("query_hid_devices", &platform::backend::query_hid_devices)
         .def("create_time_service", &platform::backend::create_time_service);
-
-    py::class_<platform::multi_pins_hid_device> multi_pins_hid_device(m, "multi_pins_hid_device");
-    multi_pins_hid_device.def(py::init<std::vector<std::shared_ptr<platform::hid_device>>&>());
 
     py::class_<platform::multi_pins_uvc_device, std::shared_ptr<platform::multi_pins_uvc_device>, platform::uvc_device> multi_pins_uvc_device(m, "multi_pins_uvc_device");
     multi_pins_uvc_device.def(py::init<std::vector<std::shared_ptr<platform::uvc_device>>&>())
