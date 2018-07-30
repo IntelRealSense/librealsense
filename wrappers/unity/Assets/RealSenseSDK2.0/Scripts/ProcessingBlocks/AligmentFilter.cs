@@ -65,9 +65,4 @@ public class AligmentFilter : RealSenseProcessingBlock
             ResetAligner();
         }
     }
-
-    public void ToggleAlignTo()
-    {
-        _alignTo = _alignTo == Stream.Color ? Stream.Depth : Stream.Color;
-    }
 }
