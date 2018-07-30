@@ -6,6 +6,9 @@ public class AligmentFilter : RealSenseProcessingBlock
 {
     public Stream _alignTo = Stream.Depth;
 
+    public bool AlignDepthToColor { set { _alignTo = Stream.Color; } }
+    public bool AlignColorToDepth { set { _alignTo = Stream.Depth; } }
+
     private Stream _currAlignTo;
     private Align _pb;
     private List<Stream> _requirments = new List<Stream>() { Stream.Depth, Stream.Color };
