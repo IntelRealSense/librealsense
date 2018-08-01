@@ -8,7 +8,7 @@
 // capture depth and color video streams and render them to the screen
 int main(int argc, char * argv[]) try
 {
-    rs2::log_to_console(RS2_LOG_SEVERITY_ERROR);
+    rs2::log_to_console(RS2_LOG_SEVERITY_INFO);
     // Create a simple OpenGL window for rendering:
     window app(1280, 720, "RealSense Capture Example");
     // Declare two textures on the GPU, one for color and one for depth
@@ -19,23 +19,23 @@ int main(int argc, char * argv[]) try
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
+
+    rs2::config cfg;
+
+    cfg.enable_stream(RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, 30);
     // Start streaming with default recommended configuration
-    pipe.start();
+    pipe.start(cfg);
 
     while(app) // Application still alive?
     {
-        rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
+        rs2::frameset data = pipe.wait_for_frames(0xfffffff); // Wait for next set of frames from the camera
 
         rs2::frame depth = color_map.process(data.get_depth_frame()); // Find and colorize the depth data
-        rs2::frame color = data.get_color_frame();            // Find the color data
-
-        // For cameras that don't have RGB sensor, we'll render infrared frames instead of color
-        if (!color)
-            color = data.get_infrared_frame();
+        //rs2::frame color = data.get_color_frame();            // Find the color data
 
         // Render depth on to the first half of the screen and color on to the second
         depth_image.render(depth, { 0,               0, app.width() / 2, app.height() });
-        color_image.render(color, { app.width() / 2, 0, app.width() / 2, app.height() });
+        //color_image.render(color, { app.width() / 2, 0, app.width() / 2, app.height() });
     }
 
     return EXIT_SUCCESS;
