@@ -3160,6 +3160,10 @@ class DecimationFilter extends Filter {
   constructor() {
     super('decimation');
   }
+  // override base implementation
+  _internalGetInputType() {
+    return VideoFrame;
+  }
 }
 
 /**

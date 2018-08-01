@@ -31,6 +31,7 @@ class Realsense {
   init() {
     this.ctx = new this.wrapper.Context();
     this.colorizer = new this.wrapper.Colorizer();
+    this.decimate = new this.wrapper.DecimationFilter();
     this.sensors = this.ctx.querySensors();
   }
   stop() {}
@@ -270,7 +271,18 @@ class Realsense {
           resolve(result);
         });
       } else if (frame.streamType === this.wrapper.stream.STREAM_INFRARED) {
-        // todo(tingshao): Add infrared support
+        const infraredFrame = this.decimate.process(frame);
+        let result = {
+          meta: {
+            stream: this.wrapper.stream.streamToString(frame.streamType),
+            index: frame.profile.streamIndex,
+            format: this.wrapper.format.formatToString(frame.format),
+            width: infraredFrame.width,
+            height: infraredFrame.height,
+          },
+          data: infraredFrame.data,
+        };
+        resolve(result);
       }
     });
   }
