@@ -190,6 +190,7 @@ namespace librealsense
 
             virtual bool has_metadata() const;
 
+            virtual void streamon() const;
             virtual void streamoff() const;
             virtual void request_io_buffers(size_t num) const;
 
@@ -197,7 +198,12 @@ namespace librealsense
             virtual void map_device_descriptor();
             virtual void unmap_device_descriptor();
             virtual void set_format(stream_profile profile);
-            virtual void start_data_capture();
+            virtual void prepare_capture_buffers();
+            virtual void stop_data_capture();
+            //virtual void capture_frame(fd_set &cur_fds);       // retrieve frame from kernel and dispatch user-callback
+            virtual void acquire_metadata(void *&md_start,uint8_t& md_size,
+                                          std::vector<std::pair< std::shared_ptr<platform::buffer>,int>> &datasets);
+
 
             power_state _state = D3;
             std::string _name = "";
@@ -214,10 +220,16 @@ namespace librealsense
             std::unique_ptr<std::thread> _thread;
             std::unique_ptr<named_mutex> _named_mtx;
             bool _use_memory_map;
+            int _max_fd = 0;                    // specifies the maximal pipe number the polling process will monitor
+            std::vector<int>  _fds;             // list the file descriptors to be monitored during frames polling
+            std::vector<int>  _stream_pipe_fds;    // file descriptors explicit
+            std::vector<int>  _ctl_pipe_fds;    // file descriptors explicit
+
 
         private:
             int _fd = 0;          // prevent unintentional abuse in derived class
             int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
+
         };
 
         // Abstraction layer for uvc/metadata split nodes introduced with kernel 4.16
@@ -229,7 +241,7 @@ namespace librealsense
                     std::function<void(const uvc_device_info&,
                                        const std::string&)> action);
 
-            v4l_uvc_meta_device(const uvc_device_info& info, bool use_memory_map = false);
+            v4l_uvc_meta_device(const uvc_device_info& info, bool use_memory_map = true);
 
             ~v4l_uvc_meta_device();
 
@@ -271,13 +283,16 @@ namespace librealsense
 
             //bool has_metadata() const override { throw std::runtime_error("Not implemented"); };
 
+            void streamon() const;
             void streamoff() const;
             void request_io_buffers(size_t num) const;
             void allocate_io_buffers(size_t num);
             void map_device_descriptor();
             void unmap_device_descriptor();
             void set_format(stream_profile profile);
-            void start_data_capture();
+            void prepare_capture_buffers();
+            virtual void acquire_metadata(void *&md_start,uint8_t& md_size,
+                                          std::vector<std::pair< std::shared_ptr<platform::buffer>,int>> &datasets);
 
             int _md_fd = -1;
             int _md_stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
