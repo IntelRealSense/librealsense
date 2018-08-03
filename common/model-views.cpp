@@ -5569,17 +5569,16 @@ namespace rs2
         ////////////////////////////////////////
         // draw advanced mode panel
         ////////////////////////////////////////
-        // Temporarely disabling advanced mode
-        //if (dev.is<advanced_mode>())
-        //{
-        //    pos = ImGui::GetCursorPos();
-        //    const float vertical_space_before_advanced_mode_control = 10.0f;
-        //    const float horizontal_space_before_device_control = 3.0f;
-        //    auto advanced_mode_pos = ImVec2{ pos.x + horizontal_space_before_device_control, pos.y + vertical_space_before_advanced_mode_control };
-        //    ImGui::SetCursorPos(advanced_mode_pos);
-        //    const float advanced_mode_panel_height = draw_preset_panel(panel_width, window, error_message, viewer, update_read_only_options, load_json_if_streaming, json_loading);
-        //    ImGui::SetCursorPos({ advanced_mode_pos.x, advanced_mode_pos.y + advanced_mode_panel_height });
-        //}
+        if (dev.is<advanced_mode>())
+        {
+            pos = ImGui::GetCursorPos();
+            const float vertical_space_before_advanced_mode_control = 10.0f;
+            const float horizontal_space_before_device_control = 3.0f;
+            auto advanced_mode_pos = ImVec2{ pos.x + horizontal_space_before_device_control, pos.y + vertical_space_before_advanced_mode_control };
+            ImGui::SetCursorPos(advanced_mode_pos);
+            const float advanced_mode_panel_height = draw_preset_panel(panel_width, window, error_message, viewer, update_read_only_options, load_json_if_streaming, json_loading);
+            ImGui::SetCursorPos({ advanced_mode_pos.x, advanced_mode_pos.y + advanced_mode_panel_height });
+        }
 
         ////////////////////////////////////////
         // draw playback control panel

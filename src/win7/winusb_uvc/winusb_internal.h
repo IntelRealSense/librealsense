@@ -2,6 +2,7 @@
 #define __WINUSB_INTERNAL_H_
 
 #include "winusb.h"
+#include "backend.h"
 #include <thread>
 
 #define LIBUVC_XFER_BUF_SIZE	( 16 * 1024 * 1024 )
@@ -435,6 +436,8 @@ typedef struct uvc_stream_ctrl {
     uint64_t bmLayoutPerStream;
 } uvc_stream_ctrl_t;
 
+typedef void(winusb_uvc_frame_callback_t)(struct librealsense::platform::frame_object *frame, void *user_ptr);
+
 struct uvc_stream_handle {
     struct winusb_uvc_device *devh;
     struct uvc_stream_handle *prev, *next;
@@ -458,6 +461,7 @@ struct uvc_stream_handle {
     uint32_t last_polled_seq;
 
     std::thread cb_thread;
+    winusb_uvc_frame_callback_t *user_cb;
     void *user_ptr;
     enum uvc_frame_format frame_format;
 };

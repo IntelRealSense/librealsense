@@ -8,8 +8,132 @@
 #include "parser.h"
 #include "winusb_uvc.h"
 
+int uvc_get_ctrl_len(winusb_uvc_device *devh, uint8_t unit, uint8_t ctrl) {
+    unsigned char buf[2];
 
-uvc_error_t winusb_find_devices(const std::string &uvc_interface, int vid, int pid, winusb_uvc_device ***devs)
+    if (!devh)
+        return UVC_ERROR_NO_DEVICE;
+
+    int ret = winusb_SendControl(
+        devh->winusbHandle,
+        UVC_REQ_TYPE_INTERFACE_GET,
+        UVC_GET_LEN,
+        ctrl << 8,
+        unit << 8 | devh->deviceData.ctrl_if.bInterfaceNumber,
+        buf,
+        2);
+
+    if (ret < 0)
+        return ret;
+    else
+        return (unsigned short)SW_TO_SHORT(buf);
+}
+
+int uvc_get_ctrl(winusb_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *data, int len, enum uvc_req_code req_code) {
+    if (!devh)
+        return UVC_ERROR_NO_DEVICE;
+
+    return winusb_SendControl(
+        devh->winusbHandle,
+        UVC_REQ_TYPE_INTERFACE_GET, req_code,
+        ctrl << 8,
+        unit << 8 | devh->deviceData.ctrl_if.bInterfaceNumber,		// XXX saki
+        static_cast<unsigned char*>(data),
+        len);
+}
+
+int uvc_set_ctrl(winusb_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *data, int len) {
+    if (!devh)
+        return UVC_ERROR_NO_DEVICE;
+
+    return winusb_SendControl(
+        devh->winusbHandle,
+        UVC_REQ_TYPE_INTERFACE_SET, UVC_SET_CUR,
+        ctrl << 8,
+        unit << 8 | devh->deviceData.ctrl_if.bInterfaceNumber,		// XXX saki
+        static_cast<unsigned char*>(data),
+        len);
+}
+
+uvc_error_t uvc_get_power_mode(winusb_uvc_device *devh, enum uvc_device_power_mode *mode, enum uvc_req_code req_code) {
+    uint8_t mode_char;
+    int ret;
+    if (!devh)
+        return UVC_ERROR_NO_DEVICE;
+
+    ret = winusb_SendControl(
+        devh->winusbHandle,
+        UVC_REQ_TYPE_INTERFACE_GET, req_code,
+        UVC_VC_VIDEO_POWER_MODE_CONTROL << 8,
+        devh->deviceData.ctrl_if.bInterfaceNumber,
+        (unsigned char *)&mode_char,
+        sizeof(mode_char));
+
+    if (ret == 1) {
+        *mode = static_cast<uvc_device_power_mode>(mode_char);
+        return UVC_SUCCESS;
+    }
+    else {
+        return static_cast<uvc_error_t>(ret);
+    }
+}
+
+uvc_error_t uvc_set_power_mode(winusb_uvc_device *devh, enum uvc_device_power_mode mode) {
+    uint8_t mode_char = mode;
+    int ret;
+
+    if (!devh)
+        return UVC_ERROR_NO_DEVICE;
+
+    ret = winusb_SendControl(
+        devh->winusbHandle,
+        UVC_REQ_TYPE_INTERFACE_SET, UVC_SET_CUR,
+        UVC_VC_VIDEO_POWER_MODE_CONTROL << 8,
+        devh->deviceData.ctrl_if.bInterfaceNumber,
+        (unsigned char *)&mode_char,
+        sizeof(mode_char));
+
+    if (ret == 1)
+        return UVC_SUCCESS;
+    else
+        return static_cast<uvc_error_t>(ret);
+}
+
+// Sending control packet using vendor-defined control transfer directed to WinUSB interface
+// WinUSB Setup packet info is according to Universal Serial Bus Specification:
+// RequestType: Bits[4..0] - Receipient: device (0) interface (1) endpoint (2) other (3), 
+//              Bits[6..5] - Type: Standard (0) Class (1) Vendor Specific (2) Reserved (3)
+//              Bit [7]    - Direction: Host-to-device (0), Device-to-host (1)
+// Request: Vendor defined request number
+// Value: Vendor defined Value number (0x0000-0xFFFF)
+// Index: If RequestType is directed to the device, index field is available for any vendor use.
+//        If RequestType is directed to an interface, the WinUSB driver passes the interface number in the low byte of index so only the high byte is available for vendor use.
+//        If RequestType is directed to an endpoint, index lower byte must be the endpoint address.
+// Length: Number of bytes to transfer (0x0000-0xFFFF)
+int winusb_SendControl(WINUSB_INTERFACE_HANDLE ihandle, int requestType, int request, int value, int index, unsigned char *buffer, int buflen)
+{
+    WINUSB_SETUP_PACKET setupPacket;
+    ULONG lengthOutput;
+
+    setupPacket.RequestType = requestType;
+    setupPacket.Request = request;
+    setupPacket.Value = value;
+    setupPacket.Index = index;
+    setupPacket.Length = buflen;
+
+    if (!WinUsb_ControlTransfer(ihandle, setupPacket, buffer, buflen, &lengthOutput, NULL))
+    {
+        return -1;
+    }
+    else
+    {
+        return lengthOutput;
+    }
+
+    return 0;
+}
+
+uvc_error_t winusb_find_devices(const std::string &uvc_interface, int vid, int pid, winusb_uvc_device ***devs, int& devs_count)
 {
     GUID guid;
     std::wstring guidWStr(uvc_interface.begin(), uvc_interface.end());
@@ -130,6 +254,7 @@ uvc_error_t winusb_find_devices(const std::string &uvc_interface, int vid, int p
         SetupDiDestroyDeviceInfoList(hDevInfo);
 
         *devs = list_internal;
+        devs_count = num_uvc_devices;
     }
     else
     {
@@ -363,11 +488,16 @@ fail:
 
     if (interfaces != NULL)
     {
-        FreeInterfaces(interfaces);
+        FreeWinusbInterfaces(interfaces);
     }
 
     if (device)
     {
+        if (device->deviceData.stream_ifs)
+        {
+            FreeStreamInterfaces(device->deviceData.stream_ifs);
+        }
+
         if (device->deviceHandle)
         {
             CloseHandle(device->deviceHandle);
@@ -393,9 +523,15 @@ uvc_error_t winusb_close(winusb_uvc_device *device)
     {
         if (device->deviceData.interfaces != NULL)
         {
-            FreeInterfaces(device->deviceData.interfaces);
-            memset(&device->deviceData, 0, sizeof(uvc_device_info_t));
+            FreeWinusbInterfaces(device->deviceData.interfaces);
         }
+
+        if (device->deviceData.stream_ifs)
+        {
+            FreeStreamInterfaces(device->deviceData.stream_ifs);
+        }
+
+        memset(&device->deviceData, 0, sizeof(uvc_device_info_t));
 
         if (device->winusbHandle != NULL)
         {
@@ -426,42 +562,6 @@ uvc_error_t winusb_close(winusb_uvc_device *device)
     return ret;
 }
 
-// Sending control packet using vendor-defined control transfer directed to WinUSB interface
-// WinUSB Setup packet info is according to Universal Serial Bus Specification:
-// RequestType: Bits[4..0] - Receipient: device (0) interface (1) endpoint (2) other (3), 
-//              Bits[6..5] - Type: Standard (0) Class (1) Vendor Specific (2) Reserved (3)
-//              Bit [7]    - Direction: Host-to-device (0), Device-to-host (1)
-// Request: Vendor defined request number
-// Value: Vendor defined Value number (0x0000-0xFFFF)
-// Index: If RequestType is directed to the device, index field is available for any vendor use.
-//        If RequestType is directed to an interface, the WinUSB driver passes the interface number in the low byte of index so only the high byte is available for vendor use.
-//        If RequestType is directed to an endpoint, index lower byte must be the endpoint address.
-// Length: Number of bytes to transfer (0x0000-0xFFFF)
-int winusb_SendControl(WINUSB_INTERFACE_HANDLE ihandle, int requestType, int request, int value, int index, char *buffer, int buflen)
-{
-    WINUSB_SETUP_PACKET setupPacket;
-    ULONG lengthOutput;
-
-    setupPacket.RequestType = requestType;
-    setupPacket.Request = request;
-    setupPacket.Value = value;
-    setupPacket.Index = index;
-    setupPacket.Length = buflen;
-
-    if (!WinUsb_ControlTransfer(ihandle, setupPacket, (unsigned char*)buffer, buflen, &lengthOutput, NULL))
-    {
-        return -1;
-    }
-    else
-    {
-        return lengthOutput;
-    }
-
-    return 0;
-}
-
-
-
 int winusb_init() {
     return 0;
 }
@@ -469,7 +569,6 @@ int winusb_init() {
 void winusb_deinit() {
 
 }
-
 
 bool read_all_uvc_descriptors(winusb_uvc_device *device, PUCHAR buffer, ULONG bufferLength, PULONG lengthReturned) 
 {

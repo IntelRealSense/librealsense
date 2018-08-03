@@ -200,7 +200,7 @@ set(REALSENSE_CPP
     )
     
 ## Check for Windows Version ##
-if( ${CMAKE_SYSTEM_VERSION} EQUAL 6.1 ) # Windows 7
+if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
     list(APPEND REALSENSE_CPP
         src/win7/win7-helpers.cpp
         src/win7/win7-uvc.cpp
@@ -404,6 +404,11 @@ if(WIN32)
             src/linux/backend-v4l2.cpp
             src/linux/backend-hid.cpp
             src/backend.cpp
+            src/win7/win7-helpers.cpp
+            src/win7/win7-uvc.cpp
+            src/win7/win7-usb.cpp
+            src/win7/win7-hid.cpp
+            src/win7/win7-backend.cpp
             )
 
         source_group("Header Files\\Backend" FILES

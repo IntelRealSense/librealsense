@@ -12,6 +12,7 @@
 #include "win7-hid.h"
 #include "../types.h"
 #include <mfapi.h>
+#include <ks.h>
 #include <chrono>
 #include <Windows.h>
 #include <dbt.h>
@@ -23,15 +24,12 @@ namespace librealsense
     {
         win7_backend::win7_backend()
         {
-            CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-            MFStartup(MF_VERSION, MFSTARTUP_NOSOCKET);
         }
 
         win7_backend::~win7_backend()
         {
             try {
-                MFShutdown();
-                CoUninitialize();
+
             }
             catch(...)
             {

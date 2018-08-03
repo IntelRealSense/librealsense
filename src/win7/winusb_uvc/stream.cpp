@@ -1,6 +1,7 @@
 #include "windows.h"
 #include "winusb_uvc.h"
 #include "utlist.h"
+#include "backend.h"
 
 struct format_table_entry {
     enum uvc_frame_format format;
@@ -113,8 +114,11 @@ uvc_error_t uvc_query_stream_ctrl(winusb_uvc_device *devh, uvc_stream_ctrl_t *ct
         uint8_t interfaceNumber = ctrl->bInterfaceNumber;
         if (interfaceNumber < MAX_USB_INTERFACES)
         {
-            // Get Associated Interface returns the associated interface - A value of 0 indicates the first associated interface (Video Stream 1), a value of 1 indicates the second associated interface (video stream 2)
-            // WinUsbInterfaceNumber - A value of 0 indicates the first interface (Video Control Interface) therefore we must decrease 1 to receive the associated interface
+            // WinUsb_GetAssociatedInterface returns the associated interface (Video stream interface which is associated to Video control interface)
+            // A value of 0 indicates the first associated interface (Video Stream 1), a value of 1 indicates the second associated interface (video stream 2)
+            // WinUsbInterfaceNumber is the actual interface number taken from the USB config descriptor
+            // A value of 0 indicates the first interface (Video Control Interface), A value of 1 indicates the first associated interface (Video Stream 1)
+            // For this reason, when calling to WinUsb_GetAssociatedInterface, we must decrease 1 to receive the associated interface
             uint8_t winusbInterfaceNumber = devh->deviceData.interfaces->interfaces[interfaceNumber].winusbInterfaceNumber;
             WinUsb_GetAssociatedInterface(devh->winusbHandle, winusbInterfaceNumber-1, &iface);
         }
@@ -132,7 +136,7 @@ uvc_error_t uvc_query_stream_ctrl(winusb_uvc_device *devh, uvc_stream_ctrl_t *ct
         req,
         probe ? (UVC_VS_PROBE_CONTROL << 8) : (UVC_VS_COMMIT_CONTROL << 8),
         0, // When requestType is directed to an interface, WinUsb driver automatically passes the interface number in the low byte of index
-        (char *)buf, len );
+        buf, len );
 
     if (err <= 0) 
     {
@@ -386,9 +390,11 @@ uvc_error_t uvc_probe_stream_ctrl(winusb_uvc_device *devh, uvc_stream_ctrl_t *ct
     uint8_t interfaceNumber = ctrl->bInterfaceNumber;
     if (interfaceNumber < MAX_USB_INTERFACES)
     {
-        // Get Associated Interface returns the associated interface (that is connected to the default interface)
+        // WinUsb_GetAssociatedInterface returns the associated interface (Video stream interface which is associated to Video control interface)
         // A value of 0 indicates the first associated interface (Video Stream 1), a value of 1 indicates the second associated interface (video stream 2)
-        // WinUsbInterfaceNumber - A value of 0 indicates the first interface (Video Control Interface) therefore we must decrease 1 to receive the associated interface
+        // WinUsbInterfaceNumber is the actual interface number taken from the USB config descriptor
+        // A value of 0 indicates the first interface (Video Control Interface), A value of 1 indicates the first associated interface (Video Stream 1)
+        // For this reason, when calling to WinUsb_GetAssociatedInterface, we must decrease 1 to receive the associated interface
         uint8_t winusbInterfaceNumber = devh->deviceData.interfaces->interfaces[interfaceNumber].winusbInterfaceNumber;
         WinUsb_GetAssociatedInterface(devh->winusbHandle, winusbInterfaceNumber - 1, &devh->associateHandle);
     }
@@ -428,7 +434,7 @@ static uvc_streaming_interface_t *_uvc_get_stream_if(winusb_uvc_device *devh, in
     return NULL;
 }
 
-/** Get a negotiated streaming control block for some common parameters.
+/** Get a negotiated streaming control block for some common parameters for specific interface
 * @ingroup streaming
 *
 * @param[in] devh Device handle
@@ -515,6 +521,100 @@ uvc_error_t winusb_get_stream_ctrl_format_size(
                     ctrl->dwFrameInterval = interval_100ns;
 
                     goto found;
+                }
+            }
+        }
+    }
+
+    return UVC_ERROR_INVALID_MODE;
+
+found:
+    return uvc_probe_stream_ctrl(devh, ctrl);
+}
+
+/** Get a negotiated streaming control block for some common parameters for all interface
+* @ingroup streaming
+*
+* @param[in] devh Device handle
+* @param[in,out] ctrl Control block
+* @param[in] format_class Type of streaming format
+* @param[in] width Desired frame width
+* @param[in] height Desired frame height
+* @param[in] fps Frame rate, frames per second
+*/
+uvc_error_t winusb_get_stream_ctrl_format_size_all(
+    winusb_uvc_device *devh,
+    uvc_stream_ctrl_t *ctrl,
+    uint32_t fourcc,
+    int width, int height,
+    int fps
+) {
+    uvc_streaming_interface_t *stream_if;
+    uvc_format_desc_t *format;
+    uvc_error_t ret = UVC_SUCCESS;
+
+    DL_FOREACH(devh->deviceData.stream_ifs, stream_if) {
+
+        DL_FOREACH(stream_if->format_descs, format) {
+            uvc_frame_desc_t *frame;
+
+            if (SWAP_UINT32(fourcc) != *(const uint32_t *)format->guidFormat)
+                continue;
+
+            DL_FOREACH(format->frame_descs, frame) {
+                if (frame->wWidth != width || frame->wHeight != height)
+                    continue;
+
+                uint32_t *interval;
+
+                if (frame->intervals) {
+                    for (interval = frame->intervals; *interval; ++interval) {
+                        // allow a fps rate of zero to mean "accept first rate available"
+                        if (10000000 / *interval == (unsigned int)fps || fps == 0) {
+
+                            /* get the max values -- we need the interface number to be able
+                            to do this */
+                            ctrl->bInterfaceNumber = stream_if->bInterfaceNumber;
+                            ret = uvc_query_stream_ctrl(devh, ctrl, 1, UVC_GET_MAX);
+                            if (ret != UVC_SUCCESS)
+                            {
+                                return ret;
+                            }
+
+                            ctrl->bmHint = (1 << 0); /* don't negotiate interval */
+                            ctrl->bFormatIndex = format->bFormatIndex;
+                            ctrl->bFrameIndex = frame->bFrameIndex;
+                            ctrl->dwFrameInterval = *interval;
+
+                            goto found;
+                        }
+                    }
+                }
+                else {
+                    uint32_t interval_100ns = 10000000 / fps;
+                    uint32_t interval_offset = interval_100ns - frame->dwMinFrameInterval;
+
+                    if (interval_100ns >= frame->dwMinFrameInterval
+                        && interval_100ns <= frame->dwMaxFrameInterval
+                        && !(interval_offset
+                            && (interval_offset % frame->dwFrameIntervalStep))) {
+
+                        /* get the max values -- we need the interface number to be able
+                        to do this */
+                        ctrl->bInterfaceNumber = stream_if->bInterfaceNumber;
+                        ret = uvc_query_stream_ctrl(devh, ctrl, 1, UVC_GET_MAX);
+                        if (ret != UVC_SUCCESS)
+                        {
+                            return ret;
+                        }
+
+                        ctrl->bmHint = (1 << 0);
+                        ctrl->bFormatIndex = format->bFormatIndex;
+                        ctrl->bFrameIndex = frame->bFrameIndex;
+                        ctrl->dwFrameInterval = interval_100ns;
+
+                        goto found;
+                    }
                 }
             }
         }
@@ -703,6 +803,9 @@ void _uvc_process_payload(uvc_stream_handle_t *strmh, uint8_t *payload, size_t p
             printf("Complete Frame %d (%d bytes): header info = %08X\n", strmh->seq, payload_len, payload[1]);
         }
     }
+
+    librealsense::platform::frame_object fo{data_len, header_len, payload + header_len , payload };
+    strmh->user_cb(&fo, strmh->user_ptr);
 }
 
 void stream_thread(uvc_stream_context *strctx)
@@ -725,7 +828,6 @@ void stream_thread(uvc_stream_context *strctx)
 
         //printf("success : %d\n", lengthTransfered);
         _uvc_process_payload(strctx->stream, buffer, lengthTransfered);
-
     } while (strctx->stream->running);
 
     free(buffer);
@@ -734,7 +836,7 @@ void stream_thread(uvc_stream_context *strctx)
 
 uvc_error_t uvc_stream_start(
     uvc_stream_handle_t *strmh,
-    uvc_frame_callback_t *cb,
+    winusb_uvc_frame_callback_t *cb,
     void *user_ptr,
     uint8_t flags
     ) {
@@ -784,6 +886,8 @@ uvc_error_t uvc_stream_start(
     streamctx->maxPayloadTransferSize = strmh->cur_ctrl.dwMaxPayloadTransferSize;
     strmh->user_ptr = user_ptr;
     strmh->cb_thread = std::thread(stream_thread, streamctx);
+    strmh->user_cb = cb;
+
 
     return UVC_SUCCESS;
 fail:
@@ -812,10 +916,12 @@ void uvc_stream_close(uvc_stream_handle_t *strmh)
     free(strmh->holdbuf);
 
     DL_DELETE(strmh->devh->streams, strmh);
+
+    free(strmh->user_ptr);
     free(strmh);
 }
 
-uvc_error_t winusb_start_streaming(winusb_uvc_device *devh, uvc_stream_ctrl_t *ctrl, uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags)
+uvc_error_t winusb_start_streaming(winusb_uvc_device *devh, uvc_stream_ctrl_t *ctrl, winusb_uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags)
 {
     uvc_error_t ret;
     uvc_stream_handle_t *strmh;
@@ -836,7 +942,7 @@ uvc_error_t winusb_start_streaming(winusb_uvc_device *devh, uvc_stream_ctrl_t *c
     return UVC_SUCCESS;
 }
 
-void winsub_stop_streaming(winusb_uvc_device *devh) 
+void winusb_stop_streaming(winusb_uvc_device *devh)
 {
     uvc_stream_handle_t *strmh, *strmh_tmp;
 

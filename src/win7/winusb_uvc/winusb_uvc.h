@@ -2,6 +2,7 @@
 #define WINUSB_UVC_H_
 
 #include "winusb_internal.h"
+#include "backend.h"
 
 typedef struct uvc_frame {
     /** Image data for this frame */
@@ -41,11 +42,11 @@ typedef struct uvc_frame {
     uint8_t library_owns_data;
 } uvc_frame_t;
 
-typedef void(uvc_frame_callback_t)(struct uvc_frame *frame, void *user_ptr);
+typedef void(winusb_uvc_frame_callback_t)(struct librealsense::platform::frame_object *frame, void *user_ptr);
 
 // Return list of all connected IVCAM devices
 uvc_error_t winusb_find_devices(winusb_uvc_device ***devs, int vid, int pid);
-uvc_error_t winusb_find_devices(const std::string &uvc_interface, int vid, int pid, winusb_uvc_device ***devs);
+uvc_error_t winusb_find_devices(const std::string &uvc_interface, int vid, int pid, winusb_uvc_device ***devs, int& devs_count);
 
 // Open a WinUSB device
 uvc_error_t winusb_open(winusb_uvc_device *device);
@@ -54,7 +55,7 @@ uvc_error_t winusb_open(winusb_uvc_device *device);
 uvc_error_t winusb_close(winusb_uvc_device *device);
 
 // Sending control packet using vendor-defined control transfer directed to WinUSB interface
-int winusb_SendControl(WINUSB_INTERFACE_HANDLE ihandle, int requestType, int request, int value, int index, char *buffer, int buflen);
+int winusb_SendControl(WINUSB_INTERFACE_HANDLE ihandle, int requestType, int request, int value, int index, unsigned char *buffer, int buflen);
 
 // Return linked list of uvc_format_t of all available formats inside winusb device
 uvc_error_t winusb_get_available_formats(winusb_uvc_device *devh, int interface_idx, uvc_format_t **formats);
@@ -62,13 +63,22 @@ uvc_error_t winusb_get_available_formats(winusb_uvc_device *devh, int interface_
 // Return linked list of uvc_format_t of all available formats inside winusb device
 uvc_error_t winusb_get_available_formats_all(winusb_uvc_device *devh, uvc_format_t **formats);
 
-// Get a negotiated streaming control block for some common parameters
+// Get a negotiated streaming control block for some common parameters for specific interface
 uvc_error_t winusb_get_stream_ctrl_format_size(winusb_uvc_device *devh, uvc_stream_ctrl_t *ctrl, uint32_t fourcc, int width, int height, int fps, int interface_idx);
 
+// Get a negotiated streaming control block for some common parameters for all interfaces
+uvc_error_t winusb_get_stream_ctrl_format_size_all(winusb_uvc_device *devh, uvc_stream_ctrl_t *ctrl, uint32_t fourcc, int width, int height, int fps);
+
 // Start video streaming
-uvc_error_t winusb_start_streaming(winusb_uvc_device *devh, uvc_stream_ctrl_t *ctrl, uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags);
+uvc_error_t winusb_start_streaming(winusb_uvc_device *devh, uvc_stream_ctrl_t *ctrl, winusb_uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags);
 
 // Stop video streaming
-void winsub_stop_streaming(winusb_uvc_device *devh);
+void winusb_stop_streaming(winusb_uvc_device *devh);
+
+int uvc_get_ctrl_len(winusb_uvc_device *devh, uint8_t unit, uint8_t ctrl);
+int uvc_get_ctrl(winusb_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *data, int len, enum uvc_req_code req_code);
+int uvc_set_ctrl(winusb_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *data, int len);
+uvc_error_t uvc_get_power_mode(winusb_uvc_device *devh, enum uvc_device_power_mode *mode, enum uvc_req_code req_code);
+uvc_error_t uvc_set_power_mode(winusb_uvc_device *devh, enum uvc_device_power_mode mode);
 
 #endif

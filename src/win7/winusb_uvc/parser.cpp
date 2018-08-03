@@ -74,15 +74,42 @@ void ParseConfigDescriptors(USB_CONFIGURATION_DESCRIPTOR *cfgDesc, WINUSB_INTERF
     *interfaces = descInterfaces;
 }
 
-void FreeInterfaces(WINUSB_INTERFACES *interfaces) {
+void FreeWinusbInterfaces(WINUSB_INTERFACES *winusbInterfaces) {
     for (int i = 0; i < 10; i++) {
-        if (interfaces->interfaces[i].extra != NULL) {
-            delete interfaces->interfaces[i].extra;
-            interfaces->interfaces[i].extra = NULL;
+        if (winusbInterfaces->interfaces[i].extra != NULL) {
+            delete winusbInterfaces->interfaces[i].extra;
+            winusbInterfaces->interfaces[i].extra = NULL;
         }
     }
 
-    delete interfaces;
+    delete winusbInterfaces;
+}
+
+void FreeStreamInterfaces(uvc_streaming_interface_t * streamInterfaces) 
+{
+    uvc_streaming_interface_t *stream_if = NULL;
+    uvc_streaming_interface_t *stream_if_tmp = NULL;
+
+    DL_FOREACH_SAFE(streamInterfaces, stream_if, stream_if_tmp)
+    {
+        uvc_format_desc_t *format = NULL;
+        uvc_format_desc_t *format_tmp = NULL;
+
+        DL_FOREACH_SAFE(stream_if->format_descs, format, format_tmp)
+        {
+            uvc_frame_desc_t *frame = NULL;
+            uvc_frame_desc_t *frame_tmp = NULL;
+
+            DL_FOREACH_SAFE(format->frame_descs, frame, frame_tmp)
+            {
+                delete frame;
+            }
+
+            delete format;
+        }
+
+        delete stream_if;
+    }
 }
 
 uvc_error_t uvc_scan_control(winusb_uvc_device *dev, uvc_device_info_t *info) {

@@ -359,9 +359,9 @@ namespace librealsense
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
 
         std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(group.uvc_devices.front().pid)) ? rs400_sku_names.at(group.uvc_devices.front().pid) : "RS4xx";
-        _fw_version = firmware_version("5.9.9.2"); //firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
+        _fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
         recommended_fw_version = firmware_version("5.9.9.2");
-        std::string serial = "0";// _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
+        std::string serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
         auto& depth_ep = get_depth_sensor();
         auto advanced_mode = false;// is_camera_in_advanced_mode();

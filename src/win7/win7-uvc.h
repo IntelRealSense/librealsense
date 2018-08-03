@@ -4,38 +4,21 @@
 
 #include "../backend.h"
 #include "win7-helpers.h"
+#include "winusb_uvc/winusb_internal.h"
 
-#include <mfidl.h>
-#include <mfreadwrite.h>
-#include <atlcomcli.h>
 #include <strmif.h>
-#include <Ks.h>
-#include <ksproxy.h>
 #include <unordered_map>
 #include <mutex>
 #include <atomic>
 
-#ifndef KSCATEGORY_SENSOR_CAMERA
-DEFINE_GUIDSTRUCT("24E552D7-6523-47F7-A647-D3465BF1F5CA", KSCATEGORY_SENSOR_CAMERA);
-#define KSCATEGORY_SENSOR_CAMERA DEFINE_GUIDNAMED(KSCATEGORY_SENSOR_CAMERA)
-#endif // !KSCATEGORY_SENSOR_CAMERA
-
-
-static const std::vector<std::vector<std::pair<GUID, GUID>>> attributes_params = {
-    {
-        { MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID },
-        { MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_CATEGORY, KSCATEGORY_SENSOR_CAMERA }
-    },
-    {
-        { MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID }
-    },
-};
-
 static const std::vector<std::string> device_guids =
 {
+    "{08090549-CE78-41DC-A0FB-1BD66694BB0C}",
     "{E659C3EC-BF3C-48A5-8192-3073E822D7CD}", // Intel(R) RealSense(TM) 415 Depth - MI 0: [Interface 0 video control] [Interface 1 video stream] [Interface 2 video stream]
     "{50537BC3-2919-452D-88A9-B13BBF7D2459}"  // Intel(R) RealSense(TM) 415 RGB - MI 3: [Interface 3 video control] [Interface 4 video stream]
 };
+
+struct winusb_uvc_device;
 
 namespace librealsense
 {
@@ -49,7 +32,6 @@ namespace librealsense
             frame_callback callback = nullptr;
         };
 
-        typedef std::function<void(const uvc_device_info&, IMFActivate*)> enumeration_callback;
         typedef std::function<void(const uvc_device_info&)> uvc_enumeration_callback;
 
         class win7_uvc_device : public std::enable_shared_from_this<win7_uvc_device>,
@@ -74,7 +56,6 @@ namespace librealsense
             std::vector<stream_profile> get_profiles() const override;
 
             static bool is_connected(const uvc_device_info& info);
-            static void foreach_uvc_device(enumeration_callback action); // not removing until fixing set_power_state
             static void foreach_uvc_device(uvc_enumeration_callback action);
 
             void init_xu(const extension_unit& xu) override;
@@ -92,20 +73,6 @@ namespace librealsense
             std::string get_device_location() const override { return _location; }
             usb_spec get_usb_specification() const override { return _device_usb_spec; }
 
-            IAMVideoProcAmp* get_video_proc() const
-            {
-                if (!_video_proc.p)
-                    throw std::runtime_error("The device does not support adjusting the qualities of an incoming video signal, such as brightness, contrast, hue, saturation, gamma, and sharpness.");
-                return _video_proc.p;
-            }
-
-            IAMCameraControl* get_camera_control() const
-            {
-               // if (!_camera_control.p)
-               //     throw std::runtime_error("The device does not support camera settings such as zoom, pan, aperture adjustment, or shutter speed.");
-                return _camera_control.p;
-            }
-
         private:
             friend class source_reader_callback;
 
@@ -113,27 +80,13 @@ namespace librealsense
             void stop_stream_cleanup(const stream_profile& profile, std::vector<profile_and_callback>::iterator& elem);
             void flush(int sIndex);
             void check_connection() const;
-            IKsControl* get_ks_control(const extension_unit& xu) const;
-            std::vector<std::pair<stream_profile, int>> get_stream_profiles_and_indexes() const;
-            int get_stream_index_by_profile(const stream_profile& profile) const;
+
+            int rs2_option_to_ctrl_selector(rs2_option option, int &unit) const;
+            int32_t get_data_usb(uvc_req_code action, int control, int unit) const;
+            void set_data_usb(uvc_req_code action, int control, int unit, int value) const;
 
             const uvc_device_info                   _info;
-            power_state                             _power_state = D0; // power state change is unsupported
-
-            CComPtr<source_reader_callback>         _callback = nullptr;
-            CComPtr<IMFSourceReader>                _reader = nullptr;
-            CComPtr<IMFMediaSource>                 _source = nullptr;
-            CComPtr<IMFActivate>                    _activate = nullptr;
-            CComPtr<IMFAttributes>                  _device_attrs = nullptr;
-            CComPtr<IMFAttributes>                  _reader_attrs = nullptr;
-
-            CComPtr<IAMCameraControl>               _camera_control = nullptr;
-            CComPtr<IAMVideoProcAmp>                _video_proc = nullptr;
-            std::unordered_map<int, CComPtr<IKsControl>> _ks_controls;
-
-            manual_reset_event                      _is_flushed;
-            manual_reset_event                      _has_started;
-            HRESULT                                 _readsample_result = S_OK;
+            power_state                             _power_state = D3; // power state change is unsupported
 
             uint16_t                                _streamIndex;
             std::vector<profile_and_callback>       _streams;
@@ -141,36 +94,20 @@ namespace librealsense
 
             std::shared_ptr<const win7_backend>      _backend;
 
-            named_mutex                             _systemwide_lock;
             std::string                             _location;
             usb_spec                                _device_usb_spec;
             std::vector<stream_profile>             _profiles;
             std::vector<frame_callback>             _frame_callbacks;
             bool                                    _streaming = false;
             std::atomic<bool>                       _is_started = false;
-        };
 
-        class source_reader_callback : public IMFSourceReaderCallback
-        {
-        public:
-            explicit source_reader_callback(std::weak_ptr<win7_uvc_device> owner) : _owner(owner)
-            {
-            };
-            virtual ~source_reader_callback() {};
-            STDMETHODIMP QueryInterface(REFIID iid, void** ppv) override;
-            STDMETHODIMP_(ULONG) AddRef() override;
-            STDMETHODIMP_(ULONG) Release() override;
-            STDMETHODIMP OnReadSample(HRESULT /*hrStatus*/,
-                DWORD dwStreamIndex,
-                DWORD /*dwStreamFlags*/,
-                LONGLONG /*llTimestamp*/,
-                IMFSample *sample) override;
-            STDMETHODIMP OnEvent(DWORD /*sidx*/, IMFMediaEvent* /*event*/) override;
-            STDMETHODIMP OnFlush(DWORD) override;
-        private:
-            std::weak_ptr<win7_uvc_device> _owner;
-            long _refCount = 0;
-        };
+            std::shared_ptr<winusb_uvc_device>      _device = nullptr;
 
+            int _input_terminal = 0;
+            int _processing_unit = 0;
+            int _extension_unit = 0;
+            named_mutex                             _systemwide_lock;
+            std::mutex                              _power_mutex;
+        };
     }
 }
