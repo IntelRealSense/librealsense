@@ -7,7 +7,9 @@
 #include <stdlib.h>
 #include <sstream>
 #include <ios>
+#include <android/ndk-version.h>
 
+#if __NDK_MAJOR__ <= 16
 namespace std
 {
     template <typename T>
@@ -60,3 +62,5 @@ namespace std
         return str;
     }
 }
+#endif // ANDROID_NDK_MAJOR
+
