@@ -8,6 +8,77 @@
 #include "parser.h"
 #include "winusb_uvc.h"
 
+bool wait_for_async_operation(WINUSB_INTERFACE_HANDLE interfaceHandle, 
+    int ep, OVERLAPPED &hOvl, ULONG &lengthTransferred, USHORT timeout)
+{
+    if (GetOverlappedResult(interfaceHandle, &hOvl, &lengthTransferred, FALSE))
+        return true;
+
+    auto lastResult = GetLastError();
+    if (lastResult == ERROR_IO_PENDING || lastResult == ERROR_IO_INCOMPLETE)
+    {
+        WaitForSingleObject(hOvl.hEvent, timeout);
+        auto res = GetOverlappedResult(interfaceHandle, &hOvl, &lengthTransferred, FALSE);
+        if (res != 1)
+        {
+            return false;
+        }
+    }
+    else
+    {
+        lengthTransferred = 0;
+        WinUsb_ResetPipe(interfaceHandle, ep);
+        return false;
+    }
+
+    return true;
+}
+
+void poll_interrupts(WINUSB_INTERFACE_HANDLE handle, int ep, uint16_t timeout)
+{
+    static const unsigned short interrupt_buf_size = 0x400;
+    uint8_t buffer[interrupt_buf_size];                         /* 64 byte transfer buffer  - dedicated channel*/
+    ULONG num_bytes = 0;                                        /* Actual bytes transferred. */
+    OVERLAPPED hOvl;
+    safe_handle sh(CreateEvent(nullptr, false, false, nullptr));
+    hOvl.hEvent = sh.GetHandle();
+    int res = WinUsb_ReadPipe(handle, ep, buffer, interrupt_buf_size, &num_bytes, &hOvl);
+    if (0 == res)
+    {
+        auto lastError = GetLastError();
+        if (lastError == ERROR_IO_PENDING)
+        {
+            auto sts = wait_for_async_operation(handle, ep, hOvl, num_bytes, timeout);
+            lastError = GetLastError();
+            if (lastError == ERROR_OPERATION_ABORTED)
+            {
+                perror("receiving interrupt_ep bytes failed");
+                fprintf(stderr, "Error receiving message.\n");
+            }
+            if (!sts)
+                return;
+        }
+        else
+        {
+            WinUsb_ResetPipe(handle, ep);
+            perror("receiving interrupt_ep bytes failed");
+            fprintf(stderr, "Error receiving message.\n");
+            return;
+        }
+
+        if (num_bytes == 0)
+            return;
+
+        // TODO: Complete XU set instead of using retries
+    }
+    else
+    {
+        // todo exception
+        perror("receiving interrupt_ep bytes failed");
+        fprintf(stderr, "Error receiving message.\n");
+    }
+}
+
 int uvc_get_ctrl_len(winusb_uvc_device *devh, uint8_t unit, uint8_t ctrl) {
     unsigned char buf[2];
 
@@ -593,20 +664,3 @@ bool read_all_uvc_descriptors(winusb_uvc_device *device, PUCHAR buffer, ULONG bu
 
     return 0;
 }
-
-const uint16_t INTEL_VID = 0x8086;
-const uint16_t RS400_PID = 0x0ad1; // PSR
-const uint16_t RS410_PID = 0x0ad2; // ASR
-const uint16_t RS415_PID = 0x0ad3; // ASRC
-const uint16_t RS430_PID = 0x0ad4; // AWG
-const uint16_t RS430_MM_PID = 0x0ad5; // AWGT
-const uint16_t RS_USB2_PID = 0x0ad6; // USB2
-const uint16_t RS420_PID = 0x0af6; // PWG
-const uint16_t RS420_MM_PID = 0x0afe; // PWGT
-const uint16_t RS410_MM_PID = 0x0aff; // ASR
-const uint16_t RS400_MM_PID = 0x0b00; // PSR
-const uint16_t RS430_MM_RGB_PID = 0x0b01; // AWGCT
-const uint16_t RS460_PID = 0x0b03; // DS5U
-const uint16_t RS435_RGB_PID = 0x0b07; // AWGC
-const uint16_t RS405_PID = 0x0b0c; // DS5U
-

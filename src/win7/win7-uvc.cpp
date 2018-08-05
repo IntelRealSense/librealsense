@@ -262,6 +262,14 @@ namespace librealsense
             }
         }
 
+        void win7_uvc_device::poll_interrupts()
+        {
+            while (_keep_pulling_interrupts)
+            {
+                ::poll_interrupts(_device->winusbHandle, _device->deviceData.ctrl_if.bEndpointAddress, 100);
+            }
+        }
+
         void win7_uvc_device::set_power_state(power_state state)
         {
             std::lock_guard<std::mutex> lock(_power_mutex);
@@ -309,6 +317,18 @@ namespace librealsense
                             _extension_unit = eu->bUnitID;
                         }
 
+                        _keep_pulling_interrupts = true;
+                        _interrupt_polling_thread = std::shared_ptr<std::thread>(new std::thread([this]() {
+                            poll_interrupts();
+                        }), [this](std::thread* ptr) { 
+                            if (ptr)
+                            {
+                                _keep_pulling_interrupts = false;
+                                ptr->join();
+                                delete ptr;
+                            }
+                        });
+
                         _power_state = D0;
 
                         return;
@@ -321,6 +341,7 @@ namespace librealsense
             }
             if (state == D3 && _power_state == D0)
             {
+                _interrupt_polling_thread.reset();
                 _device.reset();
                 _power_state = D3;
             }
@@ -361,7 +382,8 @@ namespace librealsense
             std::shared_ptr<const win7_backend> backend)
             : _streamIndex(MAX_PINS), _info(info), _backend(std::move(backend)),
             _systemwide_lock(info.unique_id.c_str(), WAIT_FOR_MUTEX_TIME_OUT),
-            _location(""), _device_usb_spec(usb3_type)
+            _location(""), _device_usb_spec(usb3_type), _keep_pulling_interrupts(false),
+            _interrupt_polling_thread(nullptr)
         {
             if (!is_connected(info))
             {

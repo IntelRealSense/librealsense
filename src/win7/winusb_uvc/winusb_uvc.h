@@ -81,4 +81,34 @@ int uvc_set_ctrl(winusb_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *data
 uvc_error_t uvc_get_power_mode(winusb_uvc_device *devh, enum uvc_device_power_mode *mode, enum uvc_req_code req_code);
 uvc_error_t uvc_set_power_mode(winusb_uvc_device *devh, enum uvc_device_power_mode mode);
 
+void poll_interrupts(WINUSB_INTERFACE_HANDLE handle, int ep, uint16_t timeout);
+
+class safe_handle
+{
+public:
+    safe_handle(HANDLE handle) :_handle(handle)
+    {
+
+    }
+
+    ~safe_handle()
+    {
+        if (_handle != nullptr)
+        {
+            CloseHandle(_handle);
+            _handle = nullptr;
+        }
+    }
+
+    HANDLE GetHandle() const { return _handle; }
+private:
+    safe_handle() = delete;
+
+    // Disallow copy:
+    safe_handle(const safe_handle&) = delete;
+    safe_handle& operator=(const safe_handle&) = delete;
+
+    HANDLE _handle;
+};
+
 #endif

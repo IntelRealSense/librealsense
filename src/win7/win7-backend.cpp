@@ -18,6 +18,11 @@
 #include <dbt.h>
 #include <cctype> // std::tolower
 
+#ifndef KSCATEGORY_SENSOR_CAMERA
+DEFINE_GUIDSTRUCT("24E552D7-6523-47F7-A647-D3465BF1F5CA", KSCATEGORY_SENSOR_CAMERA);
+#define KSCATEGORY_SENSOR_CAMERA DEFINE_GUIDNAMED(KSCATEGORY_SENSOR_CAMERA)
+#endif // !KSCATEGORY_SENSOR_CAMERA
+
 namespace librealsense
 {
     namespace platform

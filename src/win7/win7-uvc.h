@@ -108,6 +108,11 @@ namespace librealsense
             int _extension_unit = 0;
             named_mutex                             _systemwide_lock;
             std::mutex                              _power_mutex;
+
+            void poll_interrupts();
+
+            std::atomic_bool                        _keep_pulling_interrupts;
+            std::shared_ptr<std::thread>            _interrupt_polling_thread;
         };
     }
 }
