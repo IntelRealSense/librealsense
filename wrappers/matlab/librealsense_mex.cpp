@@ -169,11 +169,8 @@ void make_factory(){
                 case RS2_FORMAT_RGB8: case RS2_FORMAT_BRG2:
                 outv[0] = MatlabParamParser::wrap_array<uint8_t>(vf.get_data(), )
                 }*/
-                // TODO: turn into matrix instead of column
-                size_t dims[] = { static_cast<size_t>(vf.get_height() * vf.get_stride_in_bytes()) };
-                outv[0] = MatlabParamParser::wrap_array<uint8_t>(reinterpret_cast<const uint8_t*>(vf.get_data()), /*1,*/ dims);
-            }
-            else {
+                outv[0] = MatlabParamParser::wrap_array<uint8_t>(reinterpret_cast<const uint8_t*>(vf.get_data()), vf.get_height() * vf.get_stride_in_bytes());
+            } else {
                 uint8_t byte = *reinterpret_cast<const uint8_t*>(thiz.get_data());
                 outv[0] = MatlabParamParser::wrap(std::move(byte));
                 mexWarnMsgTxt("Can't detect frame dims, sending only first byte");
@@ -230,8 +227,7 @@ void make_factory(){
         {
             auto thiz = MatlabParamParser::parse<rs2::points>(inv[0]);
             // TODO: turn into matrix instead of column?
-            size_t dims[] = { thiz.size() };
-            outv[0] = MatlabParamParser::wrap_array(thiz.get_vertices(), /* 1, */ dims);
+            outv[0] = MatlabParamParser::wrap_array(thiz.get_vertices(), thiz.size());
         });
         points_factory.record("export_to_ply", 0, 3, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
@@ -244,8 +240,7 @@ void make_factory(){
         {
             auto thiz = MatlabParamParser::parse<rs2::points>(inv[0]);
             // TODO: turn into matrix instead of column?
-            size_t dims[] = { thiz.size() };
-            outv[0] = MatlabParamParser::wrap_array(thiz.get_texture_coordinates(), /* 1, */ dims);
+            outv[0] = MatlabParamParser::wrap_array(thiz.get_texture_coordinates(), thiz.size());
         });
         points_factory.record("size", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {

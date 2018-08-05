@@ -21,15 +21,18 @@ template<> struct MatlabParamParser::type_traits<rs2::options> {
         carrier(void *ptr_, types t) : ptr(ptr_), type(t) {}
         ~carrier(); // implemented at the bottom with an explanation as to why
     };
+    using rs2_internal_t = carrier;
+    static rs2::options from_internal(rs2_internal_t * ptr);
 };
-template<typename T> struct MatlabParamParser::type_traits<T, typename std::enable_if<std::is_base_of<rs2::sensor, T>::value>::type> {
-    using rs2_internal_t = std::shared_ptr<rs2_sensor>;
-    using carrier_t = type_traits<rs2::options>::carrier;
-    static const carrier_t::types carrier_enum = carrier_t::types::rs2_sensor;
-    // wrapper creates new object on the heap, so don't allow the wrapper to unload before the object is destroyed.
-    // librealsense types are sent to matlab using a pointer to the internal type.
-    static carrier_t* make_carrier(T&& var) { mexLock(); return new carrier_t(new rs2_internal_t(var), carrier_t::types::rs2_sensor); }
-    static T from_carrier(carrier_t *carrier) { return T(rs2::sensor(*reinterpret_cast<rs2_internal_t*>(carrier->ptr))); }
+template<typename T> struct MatlabParamParser::type_traits<T, typename std::enable_if<std::is_base_of<rs2::sensor, T>::value>::type>
+    : public MatlabParamParser::type_traits<rs2::options> {
+    using carrier_t = std::shared_ptr<rs2_sensor>;
+    static const rs2_internal_t::types carrier_enum = rs2_internal_t::types::rs2_sensor;
+    static T from_internal(rs2_internal_t * ptr) {
+        if (carrier->type == carrier_enum)
+            return T(rs2::sensor(*reinterpret_cast<carrier_t*>(carrier->ptr)));
+    }
+    static rs2_internal_t* to_internal(T&& var) { mexLock(); return new carrier_t(new rs2_internal_t(var), carrier_t::types::rs2_sensor); }
 };
 
 // rs_device.hpp
@@ -41,8 +44,21 @@ template<> struct MatlabParamParser::type_traits<rs2::playback> : MatlabParamPar
     using special_t = traits_trampoline::special_;
     static rs2::playback from_internal(rs2_internal_t * ptr) { return traits_trampoline::from_internal<rs2::device>(ptr, special_t()); }
 };
+template<> struct MatlabParamParser::type_traits<rs2::recorder> : MatlabParamParser::type_traits<rs2::device> {
+    using special_t = traits_trampoline::special_;
+    static rs2::recorder from_internal(rs2_internal_t * ptr) { return traits_trampoline::from_internal<rs2::device>(ptr, special_t()); }
+};
 
 // rs_processing.hpp
+template <typename T> struct over_wrapper {
+    using rs2_internal_t = std::shared_ptr<T>;
+    static T from_internal(rs2_internal_t * ptr) { return T(**ptr); }
+    static rs2_internal_t* to_internal(T&& val) { mexLock(); return new rs2_internal_t(new T(val)); }
+};
+template<> struct MatlabParamParser::type_traits<rs2::align> : over_wrapper<rs2::align> {};
+template<> struct MatlabParamParser::type_traits<rs2::syncer> : over_wrapper<rs2::syncer> {};
+template<> struct MatlabParamParser::type_traits<rs2::frame_queue> : over_wrapper<rs2::frame_queue> {};
+
 
 // rs_context.hpp
 // rs2::event_information                       [?]
@@ -58,5 +74,13 @@ template<> struct MatlabParamParser::type_traits<rs2::pipeline_profile> { using 
 MatlabParamParser::type_traits<rs2::options>::carrier::~carrier() {
     switch (type) {
     case types::rs2_sensor: delete reinterpret_cast<type_traits<rs2::sensor>::rs2_internal_t*>(ptr);
+    }
+}
+
+rs2::options MatlabParamParser::type_traits<rs2::options>::from_internal(rs2_internal_t * ptr) {
+    using special_t = traits_trampoline::special_;
+    switch (ptr->type) {
+    case carrier::types::rs2_sensor: return traits_trampoline::from_internal<rs2::sensor>(ptr, special_t()).as<rs2::options>();
+    default: mexErrMsgTxt("Error parsing argument of type rs2::options: unrecognized carrier type");
     }
 }

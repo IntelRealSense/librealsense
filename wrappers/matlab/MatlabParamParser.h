@@ -3,11 +3,15 @@
 #include "matrix.h"
 #include <string>
 #include <memory>
+#include <vector>
+#include <array>
 #include <type_traits>
 
 template <typename T> using is_basic_type = std::bool_constant<std::is_arithmetic<T>::value || std::is_pointer<T>::value || std::is_enum<T>::value>;
-// TODO: consider turning MatlabParamParser into a namespace. Might help make lots of things cleaner. can keep things hidden via nested namespace MatlabParamParser::detail
+template <typename T> struct is_array_type : std::false_type {};
+template <typename T> struct is_array_type<std::vector<T>> : std::true_type {};// { using inner_t = T; };
 
+// TODO: consider turning MatlabParamParser into a namespace. Might help make lots of things cleaner. can keep things hidden via nested namespace MatlabParamParser::detail
 class MatlabParamParser
 {
 private:
@@ -62,7 +66,7 @@ private:
         using type = typename std::conditional<std::is_same<value_t, signed_t>::value, int64_t, uint64_t>::type;
     };
     // by default non-basic types are wrapped as pointers
-    template <typename T> struct mx_wrapper<T, typename std::enable_if<!is_basic_type<T>::value>::type> : mx_wrapper<int*> {};
+    template <typename T> struct mx_wrapper<T, typename std::enable_if<!is_basic_type<T>::value>::type> : mx_wrapper<void*> {};
 
     template <typename T, typename = void> struct type_traits {
         // KEEP THESE COMMENTED. They are only here to show the signature should you choose
@@ -83,7 +87,7 @@ private:
         // above sub-structs and these two functions is what allows you to specify the functions to_internal or from_internal
         // in type_traits<T> to define custom conversions from the internal type to T and vice verse instead of a direct construction
         template <typename T, typename int_<decltype(type_traits<T>::to_internal)>::type = 0>
-        static typename internal_t<T>* to_internal(T&& val, special_) { return type_traits<T>::to_internal(val); }
+        static typename internal_t<T>* to_internal(T&& val, special_) { return type_traits<T>::to_internal(std::move(val)); }
         template <typename T, typename int_<decltype(type_traits<T>::from_internal)>::type = 0>
         static T from_internal(typename internal_t<T>* ptr, special_) { return type_traits<T>::from_internal(ptr); }
         
@@ -102,13 +106,17 @@ public:
     template <typename T> static mxArray* wrap(T&& var) { return mx_wrapper_fns<T>::wrap(std::move(var)); };
     template <typename T> static void destroy(const mxArray* cell) { return mx_wrapper_fns<T>::destroy(cell); }
 
-    template <typename T> static mxArray* wrap_array(const T* var, /*size_t ndims,*/ size_t *dims, bool contiguous = true);
+    template <typename T> static typename std::enable_if<!is_basic_type<T>::value, std::vector<T>>::type parse_array(const mxArray* cell);
+    template <typename T> static typename std::enable_if<is_basic_type<T>::value, std::vector<T>>::type parse_array(const mxArray* cell);
+
+    template <typename T> static typename std::enable_if<!is_basic_type<T>::value, mxArray*>::type wrap_array(const T* var, size_t length);
+    template <typename T> static typename std::enable_if<is_basic_type<T>::value, mxArray*>::type wrap_array(const T* var, size_t length);
 };
 
 #include "rs2_type_traits.h"
 
 // for basic types (aka arithmetic, pointer, and enum types)
-template <typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::enable_if<is_basic_type<T>::value && !extra_checks<T>::value>::type>
+template <typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::enable_if<is_basic_type<T>::value && !extra_checks<T>::value && !is_array_type<T>::value>::type>
 {
     static T parse(const mxArray* cell)
     {
@@ -139,7 +147,7 @@ template <typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::
 };
 
 // default for non-basic types (eg classes)
-template<typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::enable_if<!is_basic_type<T>::value && !extra_checks<T>::value>::type>
+template<typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::enable_if<!is_basic_type<T>::value && !extra_checks<T>::value && !is_array_type<T>::value>::type>
 {
     // librealsense types are sent to matlab using a pointer to the internal type.
     // to get it back from matlab we first parse that pointer and then reconstruct the C++ wrapper
@@ -168,6 +176,19 @@ template<typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::e
     }
 };
 
+// simple helper overload to refer std::array and std::vector to wrap_array
+template<typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::enable_if<is_array_type<T>::value>::type>
+{
+    static T parse(const mxArray* cell)
+    {
+        return MatlabParamParser::parse_array(cell);
+    }
+    static mxArray* wrap(T&& var)
+    {
+        return MatlabParamParser::wrap_array(var.data(), var.size());
+    }
+};
+
 // overload for wrapping C-strings. TODO: do we need special parsing too?
 template<> static mxArray* MatlabParamParser::mx_wrapper_fns<const char *>::wrap(const char*&& str)
 {
@@ -186,21 +207,61 @@ template<> static mxArray* MatlabParamParser::mx_wrapper_fns<std::string>::wrap(
     return mx_wrapper_fns<const char*>::wrap(str.c_str());
 }
 
-// TODO: find a way to fold this in with type_traits? should mx_wrapper and type_traits in general be folded together?
-// wrap many Ts with the same class you wrap 1 T. defining this as an explicit struct allows for exceptions to be registered
-// commented out for now because mx_wrapper is a private substruct of MatlabParamParser, and ty is not a substruct of MatlabParamParser
-//template <typename T, typename = void> struct ty : std::integral_constant<mxClassID, MatlabParamParser::mx_wrapper<T>::value>{};
-
-template <typename T> static mxArray* MatlabParamParser::wrap_array(const T* var, /*size_t ndims=1,*/ size_t *dims, bool contiguous)
+template<> struct MatlabParamParser::mx_wrapper_fns<std::chrono::nanoseconds>
 {
-//    static_assert(!std::is_same<ty<T>, std::false_type>::value, "Not a supported array type");
-    auto cells = mxCreateNumericArray(/*ndims*/1, dims, /*ty<T>::value*/ MatlabParamParser::mx_wrapper<T>::value, mxREAL);
-    auto ptr = static_cast<T*>(mxGetData(cells));
-    // TODO: generalize to more dimensions. maybe nested helper functions?
-    for (int x = 0; x < dims[0]; ++x)
-        // or something...
-        ptr[x] = (contiguous) ? var[x/*+y*dims[0]*/] : var[x]/*[y]*/;
+    static mxArray* wrap(std::chrono::nanoseconds&& dur)
+    {
+        auto cell = mxCreateNumericMatrix(1, 1, mxDOUBLE_CLASS, mxREAL);
+        auto ptr = static_cast<double*>(mxGetData(cell));
+        *ptr = dur.count() / 1.e6; // convert to milliseconds, smallest time unit that's easy to work with in matlab
+    }
+};
+
+template <typename T> static typename std::enable_if<!is_basic_type<T>::value, std::vector<T>>::type MatlabParamParser::parse_array(const mxArray* cell)
+{
+    using wrapper_t = mx_wrapper<T>;
+    using internal_t = typename type_traits<T>::rs2_internal_t;
+
+    std::vector<T> ret;
+    auto length = mxGetNumberOfElements(cell);
+    ret.reserve(length);
+    auto ptr = static_cast<typename wrapper_t::type*>(mxGetData(cells)); // array of uint64_t's
+    for (int i = 0; i < length; ++i) {
+        ret.push_back(traits_trampoline::from_internal<T>(reinterpret_cast<internal_t*>(ptr[i]), traits_trampoline::special_()));
+    }
+    return ret;
+}
+template <typename T> static typename std::enable_if<is_basic_type<T>::value, std::vector<T>>::type MatlabParamParser::parse_array(const mxArray* cell)
+{
+    using wrapper_t = mx_wrapper<T>;
+
+    std::vector<T> ret;
+    auto length = mxGetNumberOfElements(cell);
+    ret.reserve(length);
+    auto ptr = static_cast<typename wrapper_t::type*>(mxGetData(cells)); // array of uint64_t's
+    for (int i = 0; i < length; ++i) {
+        ret.push_back(ptr[i]);
+    }
+    return ret;
+}
+
+template <typename T> static typename std::enable_if<!is_basic_type<T>::value, mxArray*>::type MatlabParamParser::wrap_array(const T* var, size_t length)
+{
+    auto cells = mxCreateNumericMatrix(1, length, MatlabParamParser::mx_wrapper<T>::value, mxREAL);
+    auto ptr = static_cast<typename mx_wrapper<T>::type*>(mxGetData(cells));
+    for (int x = 0; x < length; ++x)
+        ptr[x] = reinterpret_cast<typename mx_wrapper<T>::type>(traits_trampoline::to_internal<T>(std::move(var[x]), traits_trampoline::special_()));
+    
     return cells;
 }
 
+template <typename T> static typename std::enable_if<is_basic_type<T>::value, mxArray*>::type MatlabParamParser::wrap_array(const T* var, size_t length)
+{
+    auto cells = mxCreateNumericMatrix(1, length, MatlabParamParser::mx_wrapper<T>::value, mxREAL);
+    auto ptr = static_cast<typename mx_wrapper<T>::type*>(mxGetData(cells));
+    for (int x = 0; x < length; ++x)
+        ptr[x] = mx_wrapper<T>::type(var[x]);
+
+    return cells;
+}
 #include "types.h"
