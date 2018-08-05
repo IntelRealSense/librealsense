@@ -82,7 +82,7 @@ namespace librealsense
             void check_connection() const;
 
             int rs2_option_to_ctrl_selector(rs2_option option, int &unit) const;
-            int32_t get_data_usb(uvc_req_code action, int control, int unit) const;
+            int32_t get_data_usb(uvc_req_code action, int control, int unit, unsigned int length = sizeof(uint32_t)) const;
             void set_data_usb(uvc_req_code action, int control, int unit, int value) const;
 
             const uvc_device_info                   _info;

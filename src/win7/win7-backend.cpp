@@ -315,7 +315,7 @@ namespace librealsense
 
         std::shared_ptr<device_watcher> win7_backend::create_device_watcher() const
         {
-            return std::make_shared<win_event_device_watcher>(this);
+            return std::make_shared<polling_device_watcher>(this);
         }
     }
 }

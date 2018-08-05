@@ -721,7 +721,7 @@ void _uvc_swap_buffers(uvc_stream_handle_t *strmh) {
 }
 
 void _uvc_process_payload(uvc_stream_handle_t *strmh, uint8_t *payload, size_t payload_len) {
-    size_t header_len;
+    uint8_t header_len;
     uint8_t header_info;
     size_t data_len;
 

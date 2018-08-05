@@ -509,10 +509,19 @@ struct winusb_uvc_device
     int pid, vid;
 };
 
-/** Converts an unaligned four-byte little-endian integer into an int32 */
-#define DW_TO_INT(p) ((p)[0] | ((p)[1] << 8) | ((p)[2] << 16) | ((p)[3] << 24))
+/** Converts an unaligned one-byte integer into an int8 */
+#define B_TO_BYTE(p) ((int8_t)(p)[0])
+
 /** Converts an unaligned two-byte little-endian integer into an int16 */
-#define SW_TO_SHORT(p) ((p)[0] | ((p)[1] << 8))
+#define SW_TO_SHORT(p) ((uint8_t)(p)[0] | \
+                       ((int8_t)(p)[1] << 8))
+
+/** Converts an unaligned four-byte little-endian integer into an int32 */
+#define DW_TO_INT(p) ((uint8_t)(p)[0] | \
+                     ((uint8_t)(p)[1] << 8) | \
+                     ((uint8_t)(p)[2] << 16) | \
+                     ((int8_t)(p)[3] << 24))
+
 /** Converts an unaligned eight-byte little-endian integer into an int64 */
 #define QW_TO_QUAD(p) (((uint64_t)(p)[0]) | \
                       (((uint64_t)(p)[1]) << 8) | \
@@ -521,7 +530,8 @@ struct winusb_uvc_device
                       (((uint64_t)(p)[4]) << 32) | \
                       (((uint64_t)(p)[5]) << 40) | \
                       (((uint64_t)(p)[6]) << 48) | \
-                      (((uint64_t)(p)[7]) << 56))
+                      (((int64_t)(p)[7]) << 56))
+
 
 /** Converts an int16 into an unaligned two-byte little-endian integer */
 #define SHORT_TO_SW(s, p) \

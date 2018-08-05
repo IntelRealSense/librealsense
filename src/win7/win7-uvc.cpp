@@ -162,8 +162,11 @@ namespace librealsense
             }
         }
 
-       int32_t win7_uvc_device::get_data_usb(uvc_req_code action, int control, int unit) const {
-            unsigned char buffer[4];
+        // Retreive USB data, sign bit is calculated according to length
+        int32_t win7_uvc_device::get_data_usb(uvc_req_code action, int control, int unit, unsigned int length) const 
+        {
+            unsigned char buffer[4] = {0};
+            int32_t ret = 0;
 
             int status = winusb_SendControl(_device->winusbHandle,
                 UVC_REQ_TYPE_INTERFACE_GET,
@@ -173,12 +176,32 @@ namespace librealsense
                 buffer,
                 sizeof(int32_t));
 
-            if (status < 0) throw winapi_error("winusb_SendControl failed!");
+            if (status < 0)
+            {
+                throw winapi_error("winusb_SendControl failed!");
+            }
 
             if (status != sizeof(int32_t))
+            {
                 throw std::runtime_error("insufficient data read from USB");
+            }
 
-            return DW_TO_INT(buffer);
+            switch (length)
+            {
+                case sizeof(uint8_t): 
+                    ret = B_TO_BYTE(buffer);
+                    break;
+                case sizeof(uint16_t) :
+                    ret = SW_TO_SHORT(buffer);
+                    break;
+                case sizeof(uint32_t) :
+                    ret = DW_TO_INT(buffer);
+                    break;
+                default:
+                    throw std::runtime_error("unsupported length");
+            }
+
+            return ret;
         }
 
         void win7_uvc_device::set_data_usb(uvc_req_code action, int control, int unit, int value) const {
@@ -204,8 +227,8 @@ namespace librealsense
         {
             int unit;
             int control = rs2_option_to_ctrl_selector(opt, unit);
-
-            value = get_data_usb(UVC_GET_CUR, control, unit);
+            unsigned int length = get_data_usb(UVC_GET_LEN, control, unit);
+            value = get_data_usb(UVC_GET_CUR, control, unit, length);
             return true;
         }
 
@@ -213,7 +236,6 @@ namespace librealsense
         {
             int unit;
             int control = rs2_option_to_ctrl_selector(opt, unit);
-
             set_data_usb(UVC_SET_CUR, control, unit, value);
             return true;
         }
