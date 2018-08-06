@@ -28,7 +28,7 @@ int main(int argc, char * argv[]) try
 
     while(app) // Application still alive?
     {
-        rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
+        rs2::frameset data = pipe.wait_for_frames(0xfffffff); // Wait for next set of frames from the camera
 
         rs2::frame depth = color_map(data.get_depth_frame()); // Find and colorize the depth data
         //rs2::frame color = data.get_color_frame();            // Find the color data

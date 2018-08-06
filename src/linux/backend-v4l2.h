@@ -201,7 +201,7 @@ namespace librealsense
             virtual void prepare_capture_buffers();
             virtual void stop_data_capture();
             //virtual void capture_frame(fd_set &cur_fds);       // retrieve frame from kernel and dispatch user-callback
-            virtual void acquire_metadata(void *&md_start,uint8_t& md_size,
+            virtual void acquire_metadata(void *&md_start,uint8_t& md_size, fd_set &fds,
                                           std::vector<std::pair< std::shared_ptr<platform::buffer>,int>> &datasets);
 
 
@@ -241,7 +241,7 @@ namespace librealsense
                     std::function<void(const uvc_device_info&,
                                        const std::string&)> action);
 
-            v4l_uvc_meta_device(const uvc_device_info& info, bool use_memory_map = true);
+            v4l_uvc_meta_device(const uvc_device_info& info, bool use_memory_map = false);
 
             ~v4l_uvc_meta_device();
 
@@ -291,7 +291,7 @@ namespace librealsense
             void unmap_device_descriptor();
             void set_format(stream_profile profile);
             void prepare_capture_buffers();
-            virtual void acquire_metadata(void *&md_start,uint8_t& md_size,
+            virtual void acquire_metadata(void *&md_start,uint8_t& md_size, fd_set &fds,
                                           std::vector<std::pair< std::shared_ptr<platform::buffer>,int>> &datasets);
 
             int _md_fd = -1;
