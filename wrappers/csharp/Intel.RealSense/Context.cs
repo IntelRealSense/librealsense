@@ -53,10 +53,11 @@ namespace Intel.RealSense
         /// create a static snapshot of all connected devices at the time of the call
         /// </summary>
         /// <returns></returns>
-        public DeviceList QueryDevices()
+        public DeviceList QueryDevices(bool include_platform_camera = false)
         {
             object error;
-            var ptr = NativeMethods.rs2_query_devices(m_instance.Handle, out error);
+            var ptr = NativeMethods.rs2_query_devices_ex(m_instance.Handle,
+                include_platform_camera ? 0xff : 0xfe, out error);
             return new DeviceList(ptr);
         }
 
