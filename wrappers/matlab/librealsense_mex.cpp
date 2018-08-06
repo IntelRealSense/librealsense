@@ -169,7 +169,7 @@ void make_factory(){
                 case RS2_FORMAT_RGB8: case RS2_FORMAT_BRG2:
                 outv[0] = MatlabParamParser::wrap_array<uint8_t>(vf.get_data(), )
                 }*/
-                outv[0] = MatlabParamParser::wrap_array<uint8_t>(reinterpret_cast<const uint8_t*>(vf.get_data()), vf.get_height() * vf.get_stride_in_bytes());
+                outv[0] = MatlabParamParser::wrap_array(reinterpret_cast<const uint8_t*>(vf.get_data()), vf.get_height() * vf.get_stride_in_bytes());
             } else {
                 uint8_t byte = *reinterpret_cast<const uint8_t*>(thiz.get_data());
                 outv[0] = MatlabParamParser::wrap(std::move(byte));
@@ -505,7 +505,7 @@ void make_factory(){
         {
             auto list = MatlabParamParser::parse<rs2::device_list>(inv[0]);
             auto idx = MatlabParamParser::parse<uint64_t>(inv[1]);
-            outv[0] = MatlabParamParser::wrap(list[idx]);
+            outv[0] = MatlabParamParser::wrap(list[static_cast<uint32_t>(idx)]);
             MatlabParamParser::destroy<rs2::device_list>(inv[0]);
         });
         // destructor in case device was never initialized

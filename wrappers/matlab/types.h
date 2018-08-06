@@ -1,10 +1,91 @@
 #pragma once
 #include "librealsense2/rs.hpp"
 #include <memory>
+#include <array>
 
 // C API
+template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_extrinsics>::wrap(rs2_extrinsics&& val)
+{
+    const char* fnames[] = { "rotation", "translation" };
+    mxArray* cell = mxCreateStructMatrix(1, 1, 2, fnames);
+    mxSetField(cell, 0, "rotation", MatlabParamParser::wrap_array(val.rotation, 9));
+    mxSetField(cell, 0, "translation", MatlabParamParser::wrap_array(val.translation, 3));
+    return cell;
+}
+template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_intrinsics>::wrap(rs2_intrinsics&& val)
+{
+    const char* fnames[] = { "width", "height", "ppx", "ppy", "fx", "fy", "model", "coeffs" };
+    mxArray* cell = mxCreateStructMatrix(1, 1, 8, fnames);
+    mxSetField(cell, 0, "width", MatlabParamParser::wrap(std::move(val.width)));
+    mxSetField(cell, 0, "height", MatlabParamParser::wrap(std::move(val.height)));
+    mxSetField(cell, 0, "ppx", MatlabParamParser::wrap(std::move(val.ppx)));
+    mxSetField(cell, 0, "ppy", MatlabParamParser::wrap(std::move(val.ppy)));
+    mxSetField(cell, 0, "fx", MatlabParamParser::wrap(std::move(val.fx)));
+    mxSetField(cell, 0, "fy", MatlabParamParser::wrap(std::move(val.fy)));
+    mxSetField(cell, 0, "model", MatlabParamParser::wrap(std::move(val.model)));
+    mxSetField(cell, 0, "coeffs", MatlabParamParser::wrap_array(val.coeffs, 5));
+    return cell;
+}
+template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_motion_device_intrinsic>::wrap(rs2_motion_device_intrinsic&& val)
+{
+    const char* fnames[] = { "data", "noise_variances", "bias_variances"};
+    mxArray* cell = mxCreateStructMatrix(1, 1, 3, fnames);
+    mxSetField(cell, 0, "noise_variances", MatlabParamParser::wrap_array(val.noise_variances, 3));
+    mxSetField(cell, 0, "bias_variances", MatlabParamParser::wrap_array(val.bias_variances, 3));
+
+    // have to do data field manually for now because of multidimensional array. hope to extend make_array to cover this case
+    mxArray* data_cell = mxCreateNumericMatrix(3, 4, mxDOUBLE_CLASS, mxREAL);
+    auto data_ptr = static_cast<double*>(mxGetData(data_cell));
+    for (int y = 0; y < 3; ++y) for (int x = 0; x < 4; ++x) data_ptr[y + 3*x] = val.data[y][x];
+    mxSetField(cell, 0, "data", data_cell);
+    return cell;
+}
+template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_vector>::wrap(rs2_vector&& val)
+{
+    mexErrMsgTxt("wrap(rs2_vector) Not Implemented yet!");
+    throw std::runtime_error("wrap(rs2_vector) Not Implemented!");
+    return nullptr;
+}
+template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_pose>::wrap(rs2_pose&& val)
+{
+    mexErrMsgTxt("wrap(rs2_pose) Not Implemented yet!");
+    throw std::runtime_error("wrap(rs2_pose) Not Implemented!");
+    return nullptr;
+}
 
 // rs_types.hpp
+template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2::option_range>::wrap(rs2::option_range&& val)
+{
+    const char* fnames[] = { "min", "max", "step", "def" };
+    mxArray* cell = mxCreateStructMatrix(1, 1, 4, fnames);
+    mxSetField(cell, 0, "min", MatlabParamParser::wrap(std::move(val.min)));
+    mxSetField(cell, 0, "max", MatlabParamParser::wrap(std::move(val.max)));
+    mxSetField(cell, 0, "step", MatlabParamParser::wrap(std::move(val.step)));
+    mxSetField(cell, 0, "def", MatlabParamParser::wrap(std::move(val.def)));
+    return cell;
+}
+template<> struct MatlabParamParser::mx_wrapper_fns<rs2::region_of_interest>
+{
+    static rs2::region_of_interest parse(const mxArray* cell)
+    {
+        rs2::region_of_interest ret;
+        ret.min_x = MatlabParamParser::parse<int>(mxGetField(cell, 0, "min_x"));
+        ret.min_y = MatlabParamParser::parse<int>(mxGetField(cell, 0, "min_y"));
+        ret.max_x = MatlabParamParser::parse<int>(mxGetField(cell, 0, "max_x"));
+        ret.max_y = MatlabParamParser::parse<int>(mxGetField(cell, 0, "max_y"));
+        return ret;
+    }
+    static mxArray* wrap(rs2::region_of_interest&& val)
+    {
+        const char* fnames[] = { "min_x", "min_y", "max_x", "max_y" };
+        mxArray* cell = mxCreateStructMatrix(1, 1, 4, fnames);
+        mxSetField(cell, 0, "min_x", MatlabParamParser::wrap(std::move(val.min_x)));
+        mxSetField(cell, 0, "min_y", MatlabParamParser::wrap(std::move(val.min_y)));
+        mxSetField(cell, 0, "max_x", MatlabParamParser::wrap(std::move(val.max_x)));
+        mxSetField(cell, 0, "max_y", MatlabParamParser::wrap(std::move(val.max_y)));
+        return cell;
+    }
+};
 
 // rs_context.hpp
 
@@ -15,6 +96,7 @@ template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2::device_list>::
 {
     // Device list is sent as a native array of (ptr, id) pairs to preserve lazy instantiation of devices
     size_t len = var.size();
+
     mxArray* vec = mxCreateNumericMatrix(len, 2, mxUINT64_CLASS, mxREAL);
     uint64_t* outp = static_cast<uint64_t*>(mxGetData(vec));
 
@@ -29,42 +111,40 @@ template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2::device_list>::
 }
 
 // rs_sensor.hpp
-template<> static mxArray* MatlabParamParser::mx_wrapper_fns<std::vector<rs2::sensor>>::wrap(std::vector<rs2::sensor>&& var)
-{
-    // TODO: merge with wrap_array function
-    // we wrap this as a native array of sensors
-    mxArray* vec = mxCreateNumericMatrix(var.size(), 1, mxUINT64_CLASS, mxREAL);
-    uint64_t* outp = static_cast<uint64_t*>(mxGetData(vec));
-    for (size_t i = var.size() - 1; i >= 0; --i) {
-        outp[i] = reinterpret_cast<uint64_t>(traits_trampoline::to_internal<rs2::sensor>(std::move(var[i]), traits_trampoline::special_()));
-    }
-    return vec;
-}
 
 // rs_frame.hpp
 // TODO: Is there really not a cleaner way to deal with cloned stream_profiles?
-template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2::stream_profile>::wrap(rs2::stream_profile&& var)
+template<typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::enable_if<std::is_base_of<rs2::stream_profile, T>::value>::type>
 {
-    mxArray *cells = mxCreateNumericMatrix(1, 2, mxUINT64_CLASS, mxREAL);
-    auto *outp = static_cast<uint64_t*>(mxGetData(cells));
-    // if its cloned, give the wrapper ownership of the stream_profile
-    if (var.is_cloned())
+    static T parse(const mxArray* cell)
     {
-        mexLock();
-        outp[0] = reinterpret_cast<uint64_t>(new std::shared_ptr<rs2_stream_profile>(var));
+        using internal_t = typename type_traits<T>::rs2_internal_t;
+        return traits_trampoline::from_internal<T>(mx_wrapper_fns<internal_t*>::parse(cell));
     }
-    else outp[0] = reinterpret_cast<uint64_t>(nullptr);
+    static mxArray* wrap(T&& val)
+    {
+        mxArray *cells = mxCreateNumericMatrix(1, 2, mxUINT64_CLASS, mxREAL);
+        auto *outp = static_cast<uint64_t*>(mxGetData(cells));
+        // if its cloned, give the wrapper ownership of the stream_profile
+        if (val.is_cloned())
+        {
+            mexLock();
+            outp[0] = reinterpret_cast<uint64_t>(new std::shared_ptr<rs2_stream_profile>(val));
+        }
+        else outp[0] = reinterpret_cast<uint64_t>(nullptr);
 
-    outp[1] = reinterpret_cast<uint64_t>(type_traits<rs2::stream_profile>::rs2_internal_t(var));
-    return cells;
-}
-template<> static void MatlabParamParser::mx_wrapper_fns<rs2::stream_profile>::destroy(const mxArray* cell)
-{
-    auto ptr = mx_wrapper_fns<std::shared_ptr<rs2_stream_profile>*>::parse(cell);
-    if (!ptr) return; // only destroy if wrapper owns the profile
-    delete ptr;
-    mexUnlock();
-}
+        outp[1] = reinterpret_cast<uint64_t>(type_traits<rs2::stream_profile>::rs2_internal_t(val));
+        return cells;
+    }
+    static void destroy(const mxArray* cell)
+    {
+        auto ptr = mx_wrapper_fns<std::shared_ptr<rs2_stream_profile>*>::parse(cell);
+        if (!ptr) return; // only destroy if wrapper owns the profile
+        delete ptr;
+        mexUnlock();
+    }
+};
+
 // rs2::frame does its own internal refcounting, so this interfaces with it properly
 template<typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::enable_if<std::is_base_of<rs2::frame, T>::value>::type>
 {
@@ -116,5 +196,12 @@ template <> static mxArray* MatlabParamParser::wrap_array<rs2::texture_coordinat
 }
 
 // rs_processing.hpp
+template<> static rs2::process_interface* MatlabParamParser::mx_wrapper_fns<rs2::process_interface*>::parse(const mxArray* cell)
+{
+    using traits_t = type_traits<rs2::process_interface>;
+    auto ptr = static_cast<traits_t::rs2_internal_t*>(mxGetData(cell));
+    if (ptr->type == traits_t::carrier_enum::value) return reinterpret_cast<traits_t::carrier_t*>(ptr->ptr)->get();
+    mexErrMsgTxt("Error parsing argument, object is not a process_interface");
+}
 
 // rs_pipeline.hpp
