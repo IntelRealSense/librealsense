@@ -2,8 +2,8 @@
 using UnityEditor;
 using UnityEngine;
 
-[CustomEditor(typeof(RealSenseDevice))]
-public class RealSenseDeviceEditor : Editor
+[CustomEditor(typeof(RsDevice))]
+public class RsDeviceEditor : Editor
 {
     private SerializedProperty config;
     private SerializedProperty mode;
@@ -39,7 +39,7 @@ public class RealSenseDeviceEditor : Editor
 
         // EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Script"), true);
 
-        var device = target as RealSenseDevice;
+        var device = target as RsDevice;
         // bool isStreaming = device.ActiveProfile != null;
         bool isStreaming = device.isActiveAndEnabled && device.ActiveProfile != null;
 
@@ -57,9 +57,9 @@ public class RealSenseDeviceEditor : Editor
 
         // EditorGUILayout.PropertyField(serializedObject.FindProperty("DeviceConfiguration"), true);
 
-        switch ((RealSenseConfiguration.Mode)mode.enumValueIndex)
+        switch ((RsConfiguration.Mode)mode.enumValueIndex)
         {
-            case RealSenseConfiguration.Mode.Live:
+            case RsConfiguration.Mode.Live:
                 // EditorGUILayout.BeginHorizontal();
                 // var sn = config.FindPropertyRelative("RequestedSerialNumber");
                 // selectedSerial = EditorGUILayout.Popup(selectedSerial, names);
@@ -77,10 +77,13 @@ public class RealSenseDeviceEditor : Editor
 
                 EditorGUILayout.Space();
                 EditorGUILayout.PropertyField(config.FindPropertyRelative("Profiles"), true);
+                EditorGUILayout.Space();
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("_processingPipe"), false);
+                EditorGUILayout.Space();
                 EditorGUI.EndDisabledGroup();
                 break;
 
-            case RealSenseConfiguration.Mode.Playback:
+            case RsConfiguration.Mode.Playback:
                 {
                     EditorGUI.BeginDisabledGroup(isStreaming);
                     EditorGUILayout.BeginHorizontal();
@@ -95,9 +98,10 @@ public class RealSenseDeviceEditor : Editor
                         }
                     }
                     EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.Space();
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty("_processingPipe"), false);
+                    EditorGUILayout.Space();
                     EditorGUI.EndDisabledGroup();
-
-
 
                     if (isStreaming)
                     {
@@ -163,7 +167,7 @@ public class RealSenseDeviceEditor : Editor
                 }
                 break;
 
-            case RealSenseConfiguration.Mode.Record:
+            case RsConfiguration.Mode.Record:
                 {
                     EditorGUILayout.BeginHorizontal();
                     var prop = config.FindPropertyRelative("RecordPath");
@@ -180,6 +184,9 @@ public class RealSenseDeviceEditor : Editor
 
                     EditorGUILayout.Space();
                     EditorGUILayout.PropertyField(config.FindPropertyRelative("Profiles"), true);
+                    EditorGUILayout.Space();
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty("_processingPipe"), false);
+                    EditorGUILayout.Space();
                     EditorGUI.EndDisabledGroup();
                 }
                 break;

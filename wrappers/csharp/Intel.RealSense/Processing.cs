@@ -239,6 +239,13 @@ namespace Intel.RealSense
             m_instance = instance;
         }
 
+        public VideoFrame AllocateVideoFrame(StreamProfile profile, Frame original, int bpp, int width, int height, int stride, Extension extension = Extension.VideoFrame )
+        {
+            object error;
+            var fref = NativeMethods.rs2_allocate_synthetic_video_frame(m_instance.Handle, profile.m_instance.Handle, original.m_instance.Handle, bpp, width, height, stride, extension, out error);
+            return new VideoFrame(fref);
+        }
+
         public FrameSet AllocateCompositeFrame(FramesReleaser releaser, params Frame[] frames)
         {
             object error;

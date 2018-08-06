@@ -2,7 +2,7 @@
 using Intel.RealSense;
 
 [Serializable]
-public struct RealSenseConfiguration
+public struct RsConfiguration
 {
     public enum Mode
     {
@@ -10,7 +10,7 @@ public struct RealSenseConfiguration
     }
 
     public Mode mode;
-    public VideoStreamRequest[] Profiles;
+    public RsVideoStreamRequest[] Profiles;
     public string RequestedSerialNumber;
     public string PlaybackFile;
     public string RecordPath;

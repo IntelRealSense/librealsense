@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SpatialFilter : VideoProcessingBlock
+public class RsSpatialFilter : RsProcessingBlock
 {
     /// <summary>
     /// Number of filter iterations
@@ -30,9 +30,11 @@ public class SpatialFilter : VideoProcessingBlock
     public int _holesFill = 0;
 
     private List<Stream> _requirments = new List<Stream>() { Stream.Depth };
-    private Intel.RealSense.SpatialFilter _pb = new Intel.RealSense.SpatialFilter();
+    private SpatialFilter _pb = new SpatialFilter();
 
-    public override Frame Process(Frame frame)
+    public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Single; } }
+
+    public override Frame Process(Frame frame, FrameSource frameSource, FramesReleaser releaser)
     {
         return _enabled ? _pb.ApplyFilter(frame as VideoFrame) : frame;
     }
