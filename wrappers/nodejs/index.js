@@ -732,7 +732,8 @@ class Sensor extends Options {
    *  Syntax 1. open(streamProfile)
    *  Syntax 2. open(profileArray)
    * </code></pre>
-   *  Syntax 2 is for opening multiple profiles in one function call
+   *  Syntax 2 is for opening multiple profiles in one function call and should be used for
+   * interdependent streams, such as depth and infrared, that have to be configured together.
    *
    * @param {StreamProfile} streamProfile configuration commited by the device
    * @param {StreamProfile[]} profileArray configurations array commited by the device
