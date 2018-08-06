@@ -106,13 +106,33 @@ namespace librealsense
     {
         named_mutex::named_mutex(const std::string& device_path, unsigned timeout)
             : _device_path(device_path),
-              _timeout(timeout) // TODO: try to lock with timeout
+              _timeout(timeout), // TODO: try to lock with timeout
+              _fildes(-1)
         {
-            create_named_mutex(_device_path);
+        }
+
+        void named_mutex::lock()
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            acquire();
+        }
+
+        void named_mutex::unlock()
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            release();
         }
 
         bool named_mutex::try_lock()
         {
+            std::lock_guard<std::mutex> lock(_mutex);
+            if (-1 == _fildes)
+            {
+                _fildes = open(_device_path.c_str(), O_RDWR, 0); //TODO: check
+                if(_fildes < 0)
+                    return false;
+            }
+
             auto ret = lockf(_fildes, F_TLOCK, 0);
             if (ret != 0)
                 return false;
@@ -120,52 +140,34 @@ namespace librealsense
             return true;
         }
 
-        named_mutex::~named_mutex()
-        {
-            try{
-                destroy_named_mutex();
-            }
-            catch(...)
-            {
-
-            }
-        }
-
         void named_mutex::acquire()
         {
+            if (-1 == _fildes)
+            {
+                _fildes = open(_device_path.c_str(), O_RDWR, 0); //TODO: check
+                if(0 > _fildes)
+                    throw linux_backend_exception(to_string() << "Cannot open '" << _device_path);
+            }
+
             auto ret = lockf(_fildes, F_LOCK, 0);
-            if (ret != 0)
+            if (0 != ret)
                 throw linux_backend_exception(to_string() << "Acquire failed");
         }
 
         void named_mutex::release()
         {
-            auto ret = lockf(_fildes, F_ULOCK, 0);
-            if (ret != 0)
-                throw linux_backend_exception(to_string() << "lockf(...) failed");
-        }
-
-        void named_mutex::create_named_mutex(const std::string& cam_id)
-        {
-            const auto max_retries = 10;
-
-            for(auto i=0; i< max_retries; i++)
-            {
-                _fildes = open(cam_id.c_str(), O_RDWR);
-                if (0 <= _fildes)
-                    break;
-
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            }
             if (-1 == _fildes)
-                throw linux_backend_exception(to_string() << "open(...) failed");
-        }
+                return;
 
-        void named_mutex::destroy_named_mutex()
-        {
-            auto ret = close(_fildes);
+            auto ret = lockf(_fildes, F_ULOCK, 0);
+            if (0 != ret)
+                throw linux_backend_exception(to_string() << "lockf(...) failed");
+
+            ret = close(_fildes);
             if (0 != ret)
                 throw linux_backend_exception(to_string() << "close(...) failed");
+
+            _fildes = -1;
         }
 
         static int xioctl(int fh, int request, void *arg)
