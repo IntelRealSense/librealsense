@@ -5667,7 +5667,7 @@ namespace rs2
 
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Click here to update firmware\n(internet connection required)");
+                    ImGui::SetTooltip("Click here to update firmware!");
                 }
 
                 ImGui::PopStyleColor(5);
