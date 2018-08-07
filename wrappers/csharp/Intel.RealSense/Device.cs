@@ -377,20 +377,4 @@ namespace Intel.RealSense
             }
         }
     }
-
-
-    public class SoftwareDevice : Device
-    {
-        public SoftwareDevice() : base(IntPtr.Zero)
-        {
-            object error;
-            m_instance = NativeMethods.rs2_create_software_device(out error);
-        }
-
-        public SoftwareSensor AddSensor(string name)
-        {
-            object error;
-            return new SoftwareSensor(NativeMethods.rs2_software_device_add_sensor(m_instance, name, out error));
-        }
-    }
 }

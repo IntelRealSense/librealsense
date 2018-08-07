@@ -453,29 +453,4 @@ namespace Intel.RealSense
         }
         #endregion
     }
-
-    public class SoftwareSensor : Sensor
-    {
-        public SoftwareSensor(IntPtr ptr) : base(ptr) {}
-
-        public StreamProfile AddVideoStream(SoftwareVideoStream video_stream)
-        {
-            object error;
-            var p = NativeMethods.rs2_software_sensor_add_video_stream(m_instance, video_stream, out error);
-            return new StreamProfile(p);
-        }
-
-        public void AddReadOnlyOption(Option option, float value)
-        {
-            object error;
-            NativeMethods.rs2_software_sensor_add_read_only_option(m_instance, option, value, out error);
-        }
-
-        public void OnVideoFrame(SoftwareVideoFrame frame)
-        {
-            object error;
-            NativeMethods.rs2_software_sensor_on_video_frame(m_instance, frame, out error);
-        }
-    }
-
 }
