@@ -1,7 +1,7 @@
-classdef timestamp_domain < uint64
+classdef timestamp_domain < int64
     enumeration
-        Hardware_Clock  (0)
-        System_Time     (1)
-        Count           (2)
+        hardware_clock  (0)
+        system_time     (1)
+        count           (2)
     end
 end

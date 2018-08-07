@@ -162,21 +162,33 @@
     <ClInclude Include="types.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="camera_info.m" />
     <None Include="context.m" />
     <None Include="depth_frame.m" />
+    <None Include="depth_sensor.m" />
+    <None Include="depth_stereo_sensor.m" />
     <None Include="device.m" />
     <None Include="device_hub.m" />
+    <None Include="disparity_frame.m" />
     <None Include="example1.m" />
+    <None Include="format.m" />
     <None Include="frame.m" />
     <None Include="frameset.m" />
     <None Include="frame_metadata_value.m" />
+    <None Include="motion_frame.m" />
+    <None Include="motion_stream_profile.m" />
+    <None Include="option.m" />
+    <None Include="options.m" />
     <None Include="pipeline.m" />
+    <None Include="points.m" />
+    <None Include="pose_frame.m" />
     <None Include="roi_sensor.m" />
     <None Include="sensor.m" />
     <None Include="stream.m" />
     <None Include="stream_profile.m" />
     <None Include="timestamp_domain.m" />
     <None Include="video_frame.m" />
+    <None Include="video_stream_profile.m" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\build\realsense2.vcxproj">

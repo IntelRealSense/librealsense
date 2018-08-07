@@ -1,4 +1,4 @@
-% Wraps librealsense2 video_frame class
+% Wraps librealsense2 frameset class
 classdef frameset < realsense.frame
     methods
         % Constructor
@@ -10,25 +10,32 @@ classdef frameset < realsense.frame
 
         % Functions
         function frame = first_or_default(this, s)
-            if (~isa(s, 'stream'))
-                error('s must be a stream');
-            end
-            frame = realsense.frame(realsense.librealsense_mex('rs2::frameset', 'first_or_default', this.objectHandle, uint64_t(s)));
+            narginchk(2, 2);
+            validateattributes(s, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.stream.count}, '', 's', 2);
+            ret = realsense.librealsense_mex('rs2::frameset', 'first_or_default', this.objectHandle, int64_t(s));
+            frame = realsense.frame(ret);
         end
         function frame = first(this, s)
-            if (~isa(s, 'stream'))
-                error('s must be a stream');
-            end
-            frame = realsense.frame(realsense.librealsense_mex('rs2::frameset', 'first', this.objectHandle, uint64_t(s)));
+            narginchk(2, 2);
+            validateattributes(s, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.stream.count}, '', 's', 2);
+            ret = realsense.librealsense_mex('rs2::frameset', 'first', this.objectHandle, int64_t(s));
+            frame = realsense.frame(ret);
         end
         function depth_frame = get_depth_frame(this)
-            depth_frame = realsense.depth_frame(realsense.librealsense_mex('rs2::frameset', 'get_depth_frame', this.objectHandle));
+            ret = realsense.librealsense_mex('rs2::frameset', 'get_depth_frame', this.objectHandle);
+            depth_frame = realsense.depth_frame(ret);
         end
-        function video_frame = get_color_frame(this)
-            video_frame = realsense.video_frame(realsense.librealsense_mex('rs2::frameset', 'get_color_frame', this.objectHandle));
+        function color_frame = get_color_frame(this)
+            ret = realsense.librealsense_mex('rs2::frameset', 'get_color_frame', this.objectHandle);
+            color_frame = realsense.video_frame(ret);
         end
+        function infrared_frame = get_infrared_frame(this)
+            ret = realsense.librealsense_mex('rs2::frameset', 'get_infrared_frame', this.objectHandle);
+            infrared_frame = realsense.video_frame(ret);
+        enda
         function size = get_size(this)
             size = realsense.librealsense_mex('rs2::frameset', 'get_size', this.objectHandle);
         end
+        % TODO: iterator protocol?
     end
 end

@@ -1,13 +1,15 @@
-classdef stream < uint64
+classdef stream < int64
     enumeration
-        Any      (0)
-        Depth    (1)
-        Color    (2)
-        Infrared (3)
-        Fisheye  (4)
-        Gyro     (5)
-        Accel    (6)
-        Gpio     (7)
-        Count    (8)
+        any         ( 0)
+        depth       ( 1)
+        color       ( 2)
+        infrared    ( 3)
+        fisheye     ( 4)
+        gyro        ( 5)
+        accel       ( 6)
+        gpio        ( 7)
+        pose        ( 8)
+        confidence  ( 9)
+        count       (10)
     end
 end

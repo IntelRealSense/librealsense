@@ -15,11 +15,14 @@ classdef device < handle
     methods
         % Constructor
         function this = device(handle, index)
+            narginchk(1, 2);
+            validateattributes(handle, {'uint64'}, {'scalar'});
             this.objectHandle = handle;
             if (nargin == 1)  % constructed from device
                 this.id = -1;
             else % lazily "constructed" from device_list
-                this.id = index;
+                validateattributes(index, {'numeric'}, {'scalar', 'real', 'integer'});
+                this.id = int64(index);
             end
         end
         % Destructor
@@ -40,37 +43,48 @@ classdef device < handle
             [sensor_array{1:nargout}] = arrayfun(@realsense.sensor, arr, 'UniformOutput', false);
         end
         function sensor = first(this, type)
+            narginchk(2, 2);
+            % C++ function validates contents of type
+            validateattributes(type, {'char', 'string'}, {'scalartext'}, '', 'type', 2);
             this.do_init();
             out = realsense.librealsense_mex('rs2::device', 'first', this.objectHandle, type);
-            switch (type)
-                case 'sensor'
-                    sensor = realsense.sensor(out);
-                case 'roi_sensor'
-                    sensor = realsense.roi_sensor(out);
-                case 'depth_sensor'
-                    sensor = realsense.depth_sensor(out);
-            end
+            sensor = realsense.sensor(out).as(type);
         end
-%        function value = supports(this, info)
-%            this.do_init();
-%            value = realsense.librealsense_mex('rs2::device', 'supports', this.objectHandle, info);
-%        end
-%        function info = get_info(this, info) % TODO: name output var
-%            this.do_init();
-%            info = realsense.librealsense_mex('rs2::device', 'get_info', this.objectHandle, info);
-%        end
+        function value = supports(this, info)
+            narginchk(2, 2);
+            validateattributes(info, {'realsense.camera_info', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.camera_info.count}, '', 'info', 2);
+            this.do_init();
+            value = realsense.librealsense_mex('rs2::device', 'supports', this.objectHandle, int64(info));
+        end
+        function value = get_info(this, info)
+            narginchk(2, 2);
+            validateattributes(info, {'realsense.camera_info', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.camera_info.count}, '', 'info', 2);
+            this.do_init();
+            info = realsense.librealsense_mex('rs2::device', 'get_info', this.objectHandle, int64(info));
+        end
         function hardware_reset(this)
             this.do_init();
             realsense.librealsense_mex('rs2::device', 'hardware_reset', this.objectHandle);
         end
         function value = is(this, type)
+            narginchk(2, 2);
+            % C++ function validates contents of type
+            validateattributes(type, {'char', 'string'}, {'scalartext'}, '', 'type', 2);
             this.do_init();
             out = realsense.librealsense_mex('rs2::device', 'is', this.objectHandle, type);
         end
 %        function dev = as(this, type)
-%            this.do_init();
-%            out = realsense.librealsense_mex('rs2::device', 'as', this.objectHandle, type);
-%            switch (type)
-%                case ''
+%            % validation and initialization done in is
+%            if ~this.is(type)
+%                error('cannot downcast dev to requested type');
+%            end
+%            switch type
+%                case 'debug_protocol'
+%                case 'advanced_mode'
+%                case 'recorder'
+%                    realsense.recorder(this)
+%                case 'playback'
+%            end
+%        end
     end
 end

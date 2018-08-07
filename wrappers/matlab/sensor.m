@@ -1,21 +1,47 @@
 % Wraps librealsense2 sensor class
-classdef sensor < handle
-    properties (SetAccess = protected, Hidden = true)
-        objectHandle;
-    end
+classdef sensor < realsense.options
     methods
         % Constructor
         function this = sensor(handle)
-            this.objectHandle = handle;
+           this = this@realsense.options(handle);
         end
-        % Destructor
-        function delete(this)
-            if (this.objectHandle ~= 0)
-                realsense.librealsense_mex('rs2::sensor', 'delete', this.objectHandle);
-            end
-        end
+        
+        % Destructor (uses base class destructor)
 
         % Functions
-        
+        function open(this, profiles)
+            narginchk(2, 2)
+            validateattributes(profiles, {'realsense.stream_profile'}, {'nonempty', 'vector'}, '', 'profiles', 2);
+            if isscalar(profiles)
+                realsense.librealsense_mex('rs2::sensor', 'open#stream_profile', this.objectHandle, profiles.objectHandle);
+            else
+                realsense.librealsense_mex('rs2::sensor', 'open#vec_stream_profile', this.objectHandle, profiles);
+            end
+        end
+        function value = supports_camera_info(this, info)
+            narginchk(2, 2)
+            validateattributes(info, {'realsense.camera_info', 'numeric'},{'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.camera_info.count}, '', 'info', 2);
+            value = realsense.librealsense_mex('rs2::sensor', 'supports#rs2_camera_info', this.objectHandle, int64(info));
+        end
+        function value = get_info(this, info)
+            narginchk(2, 2)
+            validateattributes(info, {'realsense.camera_info', 'numeric'},{'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.camera_info.count}, '', 'info', 2);
+            value = realsense.librealsense_mex('rs2::sensor', 'get_info', this.objectHandle, int64(info));
+        end
+        function close(this)
+            realsense.librealsense_mex('rs2::sensor', 'close', this.objectHandle);
+        end
+        % TODO: start [frame_queue, etc?]
+        function stop(this)
+            realsense.librealsense_mex('rs2::sensor', 'stop', this.objectHandle);
+        end
+        function profiles = get_stream_profiles(this)
+            profiles = realsense.librealsense_mex('rs2::sensor', 'get_stream_profiles', this.objectHandle);
+        end
+        % TODO: is [sensor, roi_sensor, depth_sensor, depth_stereo_sensor]
+        % TODO: as [sensor, roi_sensor, depth_sensor, depth_stereo_sensor]
+
+        % Operators
+        % TODO: operator==
     end
 end

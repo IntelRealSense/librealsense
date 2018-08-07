@@ -94,5 +94,41 @@
     <None Include="example1.m">
       <Filter>Matlab Files\Examples</Filter>
     </None>
+    <None Include="format.m">
+      <Filter>Matlab Files\Enums</Filter>
+    </None>
+    <None Include="motion_stream_profile.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="video_stream_profile.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="points.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="disparity_frame.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="pose_frame.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="motion_frame.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="options.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="option.m">
+      <Filter>Matlab Files\Enums</Filter>
+    </None>
+    <None Include="camera_info.m">
+      <Filter>Matlab Files\Enums</Filter>
+    </None>
+    <None Include="depth_stereo_sensor.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="depth_sensor.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
   </ItemGroup>
 </Project>

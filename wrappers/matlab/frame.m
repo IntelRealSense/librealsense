@@ -6,9 +6,7 @@ classdef frame < handle
     methods
         % Constructor
         function this = frame(handle)
-            if nargin == 0
-                handle = 0;
-            end
+            validateattributes(handle, {'uint64'}, {'scalar'});
             this.objectHandle = handle;
         end
         % Destructor
@@ -19,32 +17,36 @@ classdef frame < handle
         end
         
         % Functions
+        % TODO: keep
         function timestamp = get_timestamp(this)
             timestamp = realsense.librealsense_mex('rs2::frame', 'get_timestamp', this.objectHandle);
         end
         function domain = get_frame_timestamp_domain(this)
-            domain = realsense.frame_timestamp_domain(realsense.librealsense_mex('rs2::frame', 'get_frame_timestamp_domain', this.objectHandle));
+            ret = realsense.librealsense_mex('rs2::frame', 'get_frame_timestamp_domain', this.objectHandle);
+            domain = realsense.timestamp_domain(ret);
         end
         function metadata = get_frame_metadata(this, frame_metadata)
-            if (~isa(frame_metadata, 'frame_metadata'))
-                error('frame_metadata must be a frame_metadata');
-            end
-            metadata = realsense.librealsense_mex('rs2::frame', 'get_frame_metadata', this.objectHandle, uint64(frame_metadata));
+            narginchk(2, 2);
+            validateattributes(frame_metadata, {'realsense.frame_metadata_value', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.frame_metadata_value.count}, '', 'frame_metadata', 2);
+            metadata = realsense.librealsense_mex('rs2::frame', 'get_frame_metadata', this.objectHandle, int64(frame_metadata));
         end
         function value = supports_frame_metadata(this, frame_metadata)
-            if (~isa(frame_metadata, 'frame_metadata'))
-                error('frame_metadata must be a frame_metadata');
-            end
-            value = realsense.librealsense_mex('rs2::frame', 'supports_frame_metadata', this.objectHandle, uint64(frame_metadata));
+            narginchk(2, 2);
+            validateattributes(frame_metadata, {'realsense.frame_metadata_value', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.frame_metadata_value.count}, '', 'frame_metadata', 2);
+            value = realsense.librealsense_mex('rs2::frame', 'supports_frame_metadata', this.objectHandle, int64(frame_metadata));
         end
         function frame_number = get_frame_number(this)
-            timestamp = realsense.librealsense_mex('rs2::frame', 'get_frame_number', this.objectHandle);
+            frame_number = realsense.librealsense_mex('rs2::frame', 'get_frame_number', this.objectHandle);
         end
         function data = get_data(this)
             data = realsense.librealsense_mex('rs2::frame', 'get_data', this.objectHandle);
         end
         function profile = get_profile(this)
-            profile = realsense.stream_profile(realsense.librealsense_mex('rs2::frame', 'get_profile', this.objectHandle));
+            ret = realsense.librealsense_mex('rs2::frame', 'get_profile', this.objectHandle);
+            % TODO: stream_profile takes two args
+            profile = realsense.stream_profile(ret);
         end
+        % TODO: is [frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset]
+        % TODO: as [frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset]
     end
 end
