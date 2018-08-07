@@ -635,7 +635,7 @@ namespace rs2
 
             }
 
-            if (!read_only && opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE && dev->auto_exposure_enabled && dev->streaming)
+            if (!read_only && opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE && dev->auto_exposure_enabled  && dev->s->is<roi_sensor>() && dev->streaming)
             {
                 ImGui::SameLine(0, 10);
                 std::string button_label = label;
