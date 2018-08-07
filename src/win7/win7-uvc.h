@@ -18,6 +18,11 @@ static const std::vector<std::string> device_guids =
     "{50537BC3-2919-452D-88A9-B13BBF7D2459}"  // Intel(R) RealSense(TM) 415 RGB - MI 3: [Interface 3 video control] [Interface 4 video stream]
 };
 
+#define UVC_AE_MODE_D0_MANUAL   ( 1 << 0 )
+#define UVC_AE_MODE_D1_AUTO     ( 1 << 1 )
+#define UVC_AE_MODE_D2_SP       ( 1 << 2 )
+#define UVC_AE_MODE_D3_AP       ( 1 << 3 )
+
 struct winusb_uvc_device;
 
 namespace librealsense
@@ -76,6 +81,7 @@ namespace librealsense
         private:
             friend class source_reader_callback;
 
+            int32_t rs2_value_translate(uvc_req_code action, rs2_option option, int32_t value) const;
             void play_profile(stream_profile profile, frame_callback callback);
             void stop_stream_cleanup(const stream_profile& profile, std::vector<profile_and_callback>::iterator& elem);
             void flush(int sIndex);

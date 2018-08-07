@@ -746,7 +746,7 @@ void _uvc_process_payload(uvc_stream_handle_t *strmh, uint8_t *payload, size_t p
     header_len = payload[0];
     if (header_len > payload_len) 
     {
-        printf("bogus packet: actual_len=%zd, header_len=%zd\n", payload_len, header_len);
+        printf("bogus packet: actual_len=%zd, header_len=%d\n", payload_len, header_len);
         return;
     }
     else 
@@ -774,7 +774,7 @@ void _uvc_process_payload(uvc_stream_handle_t *strmh, uint8_t *payload, size_t p
             /* The frame ID bit was flipped, but we have image data sitting
             around from prior transfers. This means the camera didn't send
             an EOF for the last transfer of the previous frame. */
-            printf("complete buffer : length %d\n", strmh->got_bytes);
+            printf("complete buffer : length %zd\n", strmh->got_bytes);
             _uvc_swap_buffers(strmh);
 
         }
@@ -800,7 +800,7 @@ void _uvc_process_payload(uvc_stream_handle_t *strmh, uint8_t *payload, size_t p
         if (header_info & (1 << 1)) {
             /* The EOF bit is set, so publish the complete frame */
             _uvc_swap_buffers(strmh);
-            printf("Complete Frame %d (%d bytes): header info = %08X\n", strmh->seq, payload_len, payload[1]);
+            //printf("Complete Frame %d (%d bytes): header info = %08X\n", strmh->seq, payload_len, payload[1]);
         }
     }
 
@@ -829,6 +829,9 @@ void stream_thread(uvc_stream_context *strctx)
         //printf("success : %d\n", lengthTransfered);
         _uvc_process_payload(strctx->stream, buffer, lengthTransfered);
     } while (strctx->stream->running);
+
+    // reseting pipe after use
+    auto ret = WinUsb_ResetPipe(strctx->stream->devh->associateHandle, strctx->endpoint);
 
     free(buffer);
     free(strctx);

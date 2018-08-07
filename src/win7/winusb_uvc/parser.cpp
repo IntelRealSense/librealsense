@@ -37,7 +37,7 @@ void ParseConfigDescriptors(USB_CONFIGURATION_DESCRIPTOR *cfgDesc, WINUSB_INTERF
     // iterate over all descriptors
     do {
         int descLen = descriptors[curLocation];
-        printf("parse : length : %d type : %x first byte: %x\n", descLen, descriptors[curLocation + 1], descriptors[curLocation + 2]);
+        //printf("parse : length : %d type : %x first byte: %x\n", descLen, descriptors[curLocation + 1], descriptors[curLocation + 2]);
         if (descriptors[curLocation+1] == USB_INTERFACE_DESCRIPTOR_TYPE || (curLocation + descLen) >= length)
         { 
             if (interfaceDescStart != -1) 
@@ -68,7 +68,7 @@ void ParseConfigDescriptors(USB_CONFIGURATION_DESCRIPTOR *cfgDesc, WINUSB_INTERF
         }
 
         curLocation += descLen;
-        printf("length = %d\n", curLocation);
+        //printf("length = %d\n", curLocation);
     } while (curLocation < length);
 
     *interfaces = descInterfaces;
@@ -145,7 +145,7 @@ uvc_error_t uvc_scan_control(winusb_uvc_device *dev, uvc_device_info_t *info) {
 
     while (buffer_left >= 3) { // parseX needs to see buf[0,2] = length,type
         block_size = buffer[0];
-        printf("%d %x %d\n", buffer[0], buffer[1],buffer_left);
+        //printf("%d %x %d\n", buffer[0], buffer[1],buffer_left);
         parse_ret = uvc_parse_vc(dev, info, buffer, block_size);
 
         if (parse_ret != UVC_SUCCESS) {
@@ -373,7 +373,7 @@ uvc_error_t uvc_scan_streaming(winusb_uvc_device *dev,
         }
 
         buffer_left -= block_size;
-        printf("%d %x %x %d\n", buffer[0], buffer[1], buffer[2], buffer_left);
+        //printf("%d %x %x %d\n", buffer[0], buffer[1], buffer[2], buffer_left);
         buffer += block_size;
     }
 

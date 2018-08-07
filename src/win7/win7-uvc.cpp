@@ -186,6 +186,7 @@ namespace librealsense
                 throw std::runtime_error("insufficient data read from USB");
             }
 
+            // Converting byte array buffer (with length 8/16/32) to int32
             switch (length)
             {
                 case sizeof(uint8_t): 
@@ -223,31 +224,124 @@ namespace librealsense
                 throw std::runtime_error("insufficient data writen to USB");
         }
 
-        bool win7_uvc_device::get_pu(rs2_option opt, int32_t& value) const
+        // Translate between UVC 1.5 Spec and RS
+        int32_t win7_uvc_device::rs2_value_translate(uvc_req_code action, rs2_option option, int32_t value) const
+        {
+            // Value may be translated according to action/option value
+            int32_t translated_value = value;
+
+            switch (action)
+            {
+                case UVC_GET_CUR: // Translating from UVC 1.5 Spec up to RS
+                    if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                    {
+                        switch (value)
+                        {
+                            case UVC_AE_MODE_D3_AP:
+                                translated_value = 1;
+                                break;
+                            case UVC_AE_MODE_D0_MANUAL:
+                                translated_value = 0;
+                                break;
+                            default:
+                                throw std::runtime_error("Unsupported GET value for RS2_OPTION_ENABLE_AUTO_EXPOSURE");
+                        }
+                    }
+                    break;
+
+                case UVC_SET_CUR: // Translating from RS down to UVC 1.5 Spec
+                    if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                    {
+                        switch (value)
+                        {
+                            case 1:
+                                // Enabling auto exposure
+                                translated_value = UVC_AE_MODE_D3_AP;
+                                break;
+                            case 0:
+                                // Disabling auto exposure
+                                translated_value = UVC_AE_MODE_D0_MANUAL;
+                                break;
+                            default:
+                                throw std::runtime_error("Unsupported SET value for RS2_OPTION_ENABLE_AUTO_EXPOSURE");
+                        }
+                    }
+                    break;
+
+                case UVC_GET_MIN:
+                    if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                    {
+                        translated_value = 0; // Hardcoded MIN value
+                    }
+                    break;
+
+                case UVC_GET_MAX:
+                    if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                    {
+                        translated_value = 1; // Hardcoded MAX value
+                    }
+                    break;
+
+                case UVC_GET_RES:
+                    if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                    {
+                        translated_value = 1; // Hardcoded RES (step) value
+                    }
+                    break;
+
+                case UVC_GET_DEF:
+                    if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                    {
+                        translated_value = 1; // Hardcoded DEF value
+                    }
+                    break;
+
+                default:
+                    throw std::runtime_error("Unsupported action translation");
+            }
+            return translated_value;
+        }
+
+        bool win7_uvc_device::get_pu(rs2_option option, int32_t& value) const
         {
             int unit;
-            int control = rs2_option_to_ctrl_selector(opt, unit);
+            int control = rs2_option_to_ctrl_selector(option, unit);
             unsigned int length = get_data_usb(UVC_GET_LEN, control, unit);
+
             value = get_data_usb(UVC_GET_CUR, control, unit, length);
+            value = rs2_value_translate(UVC_GET_CUR, option, value);
+
             return true;
         }
 
-         bool win7_uvc_device::set_pu(rs2_option opt, int32_t value)
+         bool win7_uvc_device::set_pu(rs2_option option, int32_t value)
         {
             int unit;
-            int control = rs2_option_to_ctrl_selector(opt, unit);
+            int control = rs2_option_to_ctrl_selector(option, unit);
+
+            value = rs2_value_translate(UVC_SET_CUR, option, value);
             set_data_usb(UVC_SET_CUR, control, unit, value);
+
             return true;
         }
 
         control_range win7_uvc_device::get_pu_range(rs2_option option) const
         {
-            int unit;
+            int unit = 0;
+            int min, max, step, def;
             int control = rs2_option_to_ctrl_selector(option, unit);
-            int min = get_data_usb(UVC_GET_MIN, control, unit);
-            int max = get_data_usb(UVC_GET_MAX, control, unit);
-            int step = get_data_usb(UVC_GET_RES, control, unit);
-            int def = get_data_usb(UVC_GET_DEF, control, unit);
+
+            min = get_data_usb(UVC_GET_MIN, control, unit);
+            min = rs2_value_translate(UVC_GET_MIN, option, min);
+
+            max = get_data_usb(UVC_GET_MAX, control, unit);
+            max = rs2_value_translate(UVC_GET_MAX, option, max);
+
+            step = get_data_usb(UVC_GET_RES, control, unit);
+            step = rs2_value_translate(UVC_GET_RES, option, step);
+
+            def = get_data_usb(UVC_GET_DEF, control, unit);
+            def = rs2_value_translate(UVC_GET_DEF, option, def);
 
             control_range result(min, max, step, def);
 
@@ -475,7 +569,7 @@ namespace librealsense
             while (curFormat != NULL)
             {
                 char *fourcc = (char *)&curFormat->fourcc;
-                printf("Format %d: Interface %d - FourCC = %c%c%c%c, width = %04d, height = %04d, fps = %03d\n", i, curFormat->interfaceNumber, fourcc[3], fourcc[2], fourcc[1], fourcc[0], curFormat->width, curFormat->height, curFormat->fps);
+                //printf("Format %d: Interface %d - FourCC = %c%c%c%c, width = %04d, height = %04d, fps = %03d\n", i, curFormat->interfaceNumber, fourcc[3], fourcc[2], fourcc[1], fourcc[0], curFormat->width, curFormat->height, curFormat->fps);
                 curFormat = curFormat->next;
                 i++;
             }
