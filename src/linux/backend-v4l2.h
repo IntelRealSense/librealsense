@@ -54,25 +54,20 @@ namespace librealsense
 
             named_mutex(const named_mutex&) = delete;
 
-            void lock() { acquire(); }
-            void unlock() { release(); }
+            void lock();
+
+            void unlock();
 
             bool try_lock();
 
-            ~named_mutex();
-
         private:
             void acquire();
-
             void release();
-
-            void create_named_mutex(const std::string& cam_id);
-
-            void destroy_named_mutex();
 
             std::string _device_path;
             uint32_t _timeout;
             int _fildes;
+            std::mutex _mutex;
         };
 
         static int xioctl(int fh, int request, void *arg);
