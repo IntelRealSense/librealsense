@@ -45,10 +45,38 @@
 
 // Metadata streaming nodes are available with kernels 4.16+
 #ifndef V4L2_CAP_META_CAPTURE
-//#define V4L2_CAP_META_CAPTURE   0x00800000     // The device supports the Metadata Interface capture interface.
 constexpr bool metadata_node = true;
 #else
 constexpr bool metadata_node = false;
+
+// Providing missing parts from videodev2.h
+#define V4L2_META_FMT_UVC    v4l2_fourcc('U', 'V', 'C', 'H') /* UVC Payload Header */
+#define V4L2_CAP_META_CAPTURE		0x00800000  /* Is a metadata capture device */
+
+// uvcvideo.h
+/**
+ * struct uvc_meta_buf - metadata buffer building block
+ * @ns		- system timestamp of the payload in nanoseconds
+ * @sof		- USB Frame Number
+ * @length	- length of the payload header
+ * @flags	- payload header flags
+ * @buf		- optional device-specific header data
+ *
+ * UVC metadata nodes fill buffers with possibly multiple instances of this
+ * struct. The first two fields are added by the driver, they can be used for
+ * clock synchronisation. The rest is an exact copy of a UVC payload header.
+ * Only complete objects with complete buffers are included. Therefore it's
+ * always sizeof(meta->ts) + sizeof(meta->sof) + meta->length bytes large.
+ */
+#pragma pack(push, 1)
+struct uvc_meta_buf {
+    __u64 ns;               // system timestamp of the payload in nanoseconds
+    __u16 sof;
+    __u8 length;
+    __u8 flags;
+    __u8* buf;
+};
+#pragma pack(pop)
 #endif
 
 namespace librealsense
