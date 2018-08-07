@@ -92,9 +92,9 @@ namespace Intel.RealSense
         #endregion
     }
 
-    public class Sensor
+    public class Sensor : IDisposable
     {
-        public IntPtr m_instance;
+        protected readonly IntPtr m_instance;
 
         internal Sensor(IntPtr sensor)
         {
@@ -105,7 +105,7 @@ namespace Intel.RealSense
 
         public class CameraInfos
         {
-            IntPtr m_sensor;
+            readonly IntPtr m_sensor;
             public CameraInfos(IntPtr sensor) { m_sensor = sensor; }
 
             public string this[CameraInfo info]
@@ -135,8 +135,8 @@ namespace Intel.RealSense
 
         public class CameraOption
         {
-            IntPtr m_sensor;
-            Option option;
+            readonly IntPtr m_sensor;
+            readonly Option option;
 
             private readonly float min;
             private readonly float max;
@@ -264,7 +264,7 @@ namespace Intel.RealSense
 
         public class SensorOptions : IEnumerable<CameraOption>
         {
-            IntPtr m_sensor;
+            readonly IntPtr m_sensor;
             public SensorOptions(IntPtr sensor)
             {
                 m_sensor = sensor;
@@ -281,16 +281,19 @@ namespace Intel.RealSense
             {
                 object error;
                 var desc = NativeMethods.rs2_get_option_value_description(m_sensor, option, value, out error);
-                if(desc != null)
+                if(desc != IntPtr.Zero)
                 {
                     return Marshal.PtrToStringAnsi(desc);
                 }
                 return null;
             }
+
+            static readonly Option[] OptionValues = Enum.GetValues(typeof(Option)) as Option[];
+
             public IEnumerator<CameraOption> GetEnumerator()
             {
-                var values = Enum.GetValues(typeof(Option)) as Option[];
-                foreach (var v in values)
+
+                foreach (var v in OptionValues)
                 {
                     if (this[v].Supported)
                         yield return this[v];
@@ -405,12 +408,49 @@ namespace Intel.RealSense
         {
             get
             {
-                return StreamProfiles.Where(p => p is VideoStreamProfile).Select(p => p as VideoStreamProfile);
+                return StreamProfiles.OfType<VideoStreamProfile>();
             }
         }
 
         private frame_callback m_callback;
         private FrameQueue m_queue;
-    }
 
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                    m_callback = null;
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+                NativeMethods.rs2_delete_sensor(m_instance);
+
+                disposedValue = true;
+            }
+        }
+
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        ~Sensor()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(false);
+        }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            GC.SuppressFinalize(this);
+        }
+        #endregion
+    }
 }

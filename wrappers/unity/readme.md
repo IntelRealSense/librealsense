@@ -40,10 +40,13 @@ At the end of this step, the Unity project will be available in the CMake output
 
 The Unity wrapper provides several example scenes to help you get started with RealSense in Unity. Open one of the following scenes under `unity/Assets/RealSenseSDK2.0/Scenes` (Sorted from basic to advanced):
 
-1. RealSense Textures Depth and Infrared - Basic 2D scene demonstrating how to bind textures to a RealSense device stream. The Scene provides 2 live streams and 2 different textures: Depth and Infrared.
-2. RealSense Textures Depth and Color (Only cameras with RGB sensor are supported) - Basic 2D scene demonstrating how to bind textures to a RealSense device stream. The Scene provides 2 live streams and 3 different textures: Depth, Color and Color with background segmentation.
-3. RealSense PointCloud Depth - 3D scene demonstrating how to bind a [PointCloud](#PointCloud) prefab to RealSense device depth stream.
-4. RealSense PointCloud Depth and Color - 3D scene demonstrating how to bind a [PointCloud](#PointCloud) prefab to RealSense device depth and color streams.
+1. Start Here - A menu that concentrate all the sample scenes into one place.
+2. Textures Depth and Infrared - Basic 2D scene demonstrating how to bind textures to a RealSense device stream. The Scene provides 2 live streams and 2 different textures: Depth and Infrared.
+3. Textures Depth and Color (Only cameras with RGB sensor are supported) - Basic 2D scene demonstrating how to bind textures to a RealSense device stream. The Scene provides 2 live streams and 3 different textures: Depth, Color and Color with background segmentation.
+4. PointCloud Processing Blocks - 3D scene demonstrating both processing block usage and capabilities and binding a [PointCloud](#PointCloud) prefab to RealSense device depth stream.
+5. PointCloud Depth and Color - 3D scene demonstrating how to bind a [PointCloud](#PointCloud) prefab to RealSense device depth and color streams.
+6. Alignment - 2D scene demonstrating the usage of the alignment processing block.
+7. AR Background - 2D scene demonstrating augmented reality capabilities.
 
 ## Prefabs
 
@@ -67,6 +70,7 @@ The device is configured the same way that a `Pipeline` is, i.e. with a `Config`
 Upon starting the device, the device will begin raising frames via its `OnNewSample` and `OnNewSampleSet` public events. These frames are raised either from a separate thread or from the Unity thread, depending on the user's choice of Process Mode.
 
 In addition to stream configuration, the panel also allows users to select a specific device by providing its serial number.
+Setting the profile count to 0 will fall to the default configuration of the device.
 
 ![image](https://user-images.githubusercontent.com/22654243/36370385-5dbddb2a-1567-11e8-9c52-aa7ee988f19f.png)
 
@@ -83,37 +87,38 @@ Once the device is streaming, Unity Inspector will show the device's sensors and
 Under the `RealSenseDeivce` object in Unity's Hierarchy view, you can find a number of textures that bind to the device's frame callback and allow user to bind a texture to be updated upon frame arrival.
 
 
-![image](https://user-images.githubusercontent.com/22654243/36472152-90796e10-16f9-11e8-9b24-5d0abe159fbe.png)
-
+![realsensedevice](https://user-images.githubusercontent.com/18511514/43199439-9e95952e-901a-11e8-9d43-b90cedb5d5d1.PNG)
 
 Each texture stream is associated with the `RealSenseStreamTexture` script which allows user to bind their textures so that they will be updated with each new frame. The following screenshot displays the configurations available for users when using a texture stream:
 
-![image](https://user-images.githubusercontent.com/22654243/35589395-5d7dd314-060c-11e8-8909-073b662df0c0.png)
+![realsensestreamtexture](https://user-images.githubusercontent.com/18511514/43199495-d9f80160-901a-11e8-815c-f1de8c273e84.PNG)
 
-* Source Stream Type - Indicates to the script from which stream of the device it should take frames.
-* Texture Format - Indicates which texture should be created from the input frame.
+* VideoStreamFilter - Filter out frames that doesn't match the requested profile. Stream and Format must be provided, the index field can be set to 0 to accept any value.
 * Texture Binding - Allows the user to bind textures to the script. Multiple textures can be bound to a single script.
 * Fetch Frames From Device - Toggle whether the script should fetch the frames from the device, or should wait for the user to pass frame to is using its `OnFrame` method.
 
-The `Alignment` object is a special case of texture stream which uses the `AlignImages` script. This script takes `FrameSet`s from the device, performs image alignment between the frames of the frame set, and passes them to each of the scripts stream texture: `from` and `to` which will provide textures that are aligned to one another.
+##### Processing Blocks
 
-![image](https://user-images.githubusercontent.com/22654243/35590061-5f9a9108-060e-11e8-9018-8c9f1db991ad.png)
+Processing blocks are scripts that can be attached to the RealSense device in order to create a processing pipe.
+There are two types of processing blocks:
+1. VideoProcessingBlock - processing a single frame (i.e. `HoleFillingFilter.cs`)
+2. MultiFrameVideoProcessingBlock - processing a frame set (i.e. `Aligment.cs`)
 
-An example usage of this script is to perform background segmentation between depth and color images by turning each colored pixel that is not within the given range into a grayscale pixel. The scene presents this example in the bottom right image labeled "Background Segmentation".
-Segmentation is performed using the `BGSeg` shader.
+The processing pipe first process all all the single frame blocks orders by the `Order` property, once all the single frame blocks are processed, the pipe creates a new frame set and push it to the multi frames blocks.
+Each processing block has its own properties that can be modified on run time.
 
-##### PointCloud
+An example for the usage of the processing blocks can be found in "PointCloudProcessingBlocks" scene (single frame) and "AlignmentSample" scense (multi frame)
+![processingblocks](https://user-images.githubusercontent.com/18511514/43201391-0898b93c-9021-11e8-84e8-5801394136de.PNG)
 
-Also under the `RealSenseDeivce` object in Unity's Hierarchy view, you can find PointCloud object that provides a 3D point cloud of the depth data in the form of Unity Particles (Using the Particle System).
+##### Point Cloud
 
-The PointCloud object uses the `PointCloudGenerator.cs` script which allows some user control over the output:
+Under the `RealSenseDeivce` object in each of the point cloud sample scenes, you can find PointCloud object that provides a 3D point cloud of the depth data.
 
-![image](https://user-images.githubusercontent.com/22654243/36472070-43c9e13a-16f9-11e8-9607-3aadf97c7bb4.png)
+The PointCloud object uses the `PointCloudGenerator.cs` script.
+A texture for the point cloud can be provided using `RealSenseStreamTexture.cs` by binding it to PointCloudMat.
 
-
-* Gradient - is a color gradient used to color the particles
-* Points Size - Controls the size of the Particles
-* Skip Particles - A factor >= 1 meaning how many points to skip when creating the particles.
+![pointcloudtexture](https://user-images.githubusercontent.com/18511514/43202279-c26ff440-9023-11e8-8bee-349d0faced57.PNG)
+![pointcloudprefab](https://user-images.githubusercontent.com/18511514/43202278-c0e53c5c-9023-11e8-8fb9-a8a23f52a105.PNG)
 
 ### Images
 

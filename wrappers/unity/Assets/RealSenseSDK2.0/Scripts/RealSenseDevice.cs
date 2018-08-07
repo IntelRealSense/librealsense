@@ -6,6 +6,7 @@ using System.Threading;
 using UnityEngine;
 using Intel.RealSense;
 using System.Collections;
+using System.Linq;
 
 /// <summary>
 /// Manages streaming using a RealSense Device
@@ -43,6 +44,16 @@ public class RealSenseDevice : MonoBehaviour
     public event Action OnStop;
 
     /// <summary>
+    /// Fired when a new frame is available
+    /// </summary>
+    public event Action<Frame> OnNewSample;
+
+    /// <summary>
+    /// Fired when a new time-synchronized frame set is available
+    /// </summary>
+    public event Action<FrameSet> OnNewSampleSet;
+
+    /// <summary>
     /// Provides access to the current pipeline profiles in use by the Manager
     /// </summary>
     public PipelineProfile ActiveProfile { get; private set; } //TODO: Make private and have other classes register OnStart and use that profile.
@@ -65,49 +76,55 @@ public class RealSenseDevice : MonoBehaviour
     private readonly AutoResetEvent stopEvent = new AutoResetEvent(false);
 
     private Pipeline m_pipeline;
-    public event Action<Frame> onNewSample;
 
-    /// <summary>
-    /// Fired when a new time-synchronized frame set is available
-    /// </summary>
-    public event Action<FrameSet> onNewSampleSet;
+    private HashSet<IVideoProcessingBlock> m_processingBlocks = new HashSet<IVideoProcessingBlock>();
+
+    public void AddProcessingBlock(IVideoProcessingBlock processingBlock)
+    {
+        m_processingBlocks.Add(processingBlock);
+    }
+    public void RemoveProcessingBlock(IVideoProcessingBlock processingBlock)
+    {
+        m_processingBlocks.Remove(processingBlock);
+    }
 
     void Awake()
     {
         if (Instance != null && Instance != this)
             throw new Exception(string.Format("{0} singleton already instanced", this.GetType()));
         Instance = this;
-
-        // m_pipeline = new Pipeline();
-        // m_config = DeviceConfiguration.ToPipelineConfig();
-        // ActiveProfile = m_config.Resolve(m_pipeline);
     }
 
     void OnEnable()
     {
         m_pipeline = new Pipeline();
+
         using (var cfg = DeviceConfiguration.ToPipelineConfig())
         {
-            // ActiveProfile = m_config.Resolve(m_pipeline);
             ActiveProfile = m_pipeline.Start(cfg);
         }
 
-        DeviceConfiguration.Profiles = new VideoStreamRequest[ActiveProfile.Streams.Count];
-        for (int i = 0; i < DeviceConfiguration.Profiles.Length; i++)
+        using (var activeStreams = ActiveProfile.Streams)
         {
-            var p = DeviceConfiguration.Profiles[i];
-            var s = ActiveProfile.Streams[i];
-            p.Stream = s.Stream;
-            p.Format = s.Format;
-            p.Framerate = s.Framerate;
-            p.StreamIndex = s.Index;
-            var vs = s as VideoStreamProfile;
-            if (vs != null)
+            DeviceConfiguration.Profiles = new VideoStreamRequest[activeStreams.Count];
+            for (int i = 0; i < DeviceConfiguration.Profiles.Length; i++)
             {
-                p.Width = vs.Width;
-                p.Height = vs.Height;
+                var s = activeStreams[i];
+                var p = new VideoStreamRequest()
+                {
+                    Stream = s.Stream,
+                    Format = s.Format,
+                    Framerate = s.Framerate,
+                    StreamIndex = s.Index,
+                };
+                var vs = s as VideoStreamProfile;
+                if (vs != null)
+                {
+                    p.Width = vs.Width;
+                    p.Height = vs.Height;
+                }
+                DeviceConfiguration.Profiles[i] = p;
             }
-            DeviceConfiguration.Profiles[i] = p;
         }
 
 
@@ -132,8 +149,8 @@ public class RealSenseDevice : MonoBehaviour
 
     void OnDisable()
     {
-        onNewSample = null;
-        onNewSampleSet = null;
+        OnNewSample = null;
+        OnNewSampleSet = null;
 
         if (worker != null)
         {
@@ -179,7 +196,7 @@ public class RealSenseDevice : MonoBehaviour
     /// <param name="frame">The frame instance</param>
     private void HandleFrame(Frame frame)
     {
-        var s = onNewSample;
+        var s = OnNewSample;
         if (s != null)
         {
             s(frame);
@@ -188,23 +205,11 @@ public class RealSenseDevice : MonoBehaviour
 
     private void HandleFrameSet(FrameSet frames)
     {
-        var s = onNewSampleSet;
+        var s = OnNewSampleSet;
         if (s != null)
         {
             s(frames);
         }
-    }
-
-    /// <summary>
-    /// Process frame on each new frame, ends by calling the event
-    /// </summary>
-    private void ProcessFrames(FrameSet frames)
-    {
-        HandleFrameSet(frames);
-
-        foreach (var frame in frames)
-            using (frame)
-                HandleFrame(frame);
     }
 
     /// <summary>
@@ -216,7 +221,7 @@ public class RealSenseDevice : MonoBehaviour
         {
             using (var frames = m_pipeline.WaitForFrames())
             {
-                ProcessFrames(frames);
+                _block.ProcessFrames(frames);
             }
         }
     }
@@ -233,7 +238,98 @@ public class RealSenseDevice : MonoBehaviour
         if (m_pipeline.PollForFrames(out frames))
         {
             using (frames)
-                ProcessFrames(frames);
+                _block.ProcessFrames(frames);
         }
     }
+
+    private Frame ApplyFilters(Frame frame)
+    {
+        var pbs = Instance.m_processingBlocks.OrderBy(i => i.Order).Where(i => i.Enabled).ToList();
+        foreach (var vpb in pbs)
+        {
+            if (!(vpb is VideoProcessingBlock))
+                continue;
+            var pb = vpb as VideoProcessingBlock;
+            if (pb.CanProcess(frame))
+            {
+                // run the processing block.
+                var processedFrame = pb.Process(frame);
+
+                // incase fork is requested, notify on new frame and use the original frame for the new frameset.
+                if (pb.Fork())
+                {
+                    Instance.HandleFrame(processedFrame);
+                    processedFrame.Dispose();
+                    continue;
+                }
+
+                // avoid disposing the frame incase the filter returns the original frame.
+                if (processedFrame == frame)
+                    continue;
+
+                // replace the current frame with the processed one to be used as the input to the next iteration (next filter)
+                frame.Dispose();
+                frame = processedFrame;
+            }
+        }
+        return frame;
+    }
+
+    private FrameSet HandleSingleFrameProcessingBlocks(FrameSet frameSet, FrameSource frameSource, FramesReleaser framesReleaser)
+    {
+        // single frame filters
+        List<Frame> processedFrames = new List<Frame>();
+        foreach (var frame in frameSet)
+        {
+            var currFrame = Instance.ApplyFilters(frame);
+
+            // cache the pocessed frame
+            processedFrames.Add(currFrame);
+            if (frame != currFrame)
+                frame.Dispose();
+        }
+
+        // Combine the frames into a single frameset
+        var newFrameSet = frameSource.AllocateCompositeFrame(framesReleaser, processedFrames.ToArray());
+
+        foreach (var f in processedFrames)
+            f.Dispose();
+
+        return newFrameSet;
+    }
+
+    private FrameSet HandleMultiFramesProcessingBlocks(FrameSet frameSet, FramesReleaser framesReleaser)
+    {
+        // multy frames filters
+        var pbs = Instance.m_processingBlocks.OrderBy(i => i.Order).Where(i => i.Enabled).ToList();
+        foreach (var vpb in pbs)
+        {
+            if (!(vpb is MultiFrameVideoProcessingBlock))
+                continue;
+            var pb = vpb as MultiFrameVideoProcessingBlock;
+            if (pb.CanProcess(frameSet))
+                frameSet = pb.Process(frameSet, framesReleaser);
+        }
+
+        return frameSet;
+    }
+
+    private CustomProcessingBlock _block = new CustomProcessingBlock((f1, src) =>
+    {
+        using (var releaser = new FramesReleaser())
+        {
+            var frames = FrameSet.FromFrame(f1, releaser);
+
+            frames = Instance.HandleSingleFrameProcessingBlocks(frames, src, releaser);
+
+            frames = Instance.HandleMultiFramesProcessingBlocks(frames, releaser);
+
+            Instance.HandleFrameSet(frames);
+            foreach (var fr in frames)
+            {
+                using (fr)
+                    Instance.HandleFrame(fr);
+            }
+        }
+    });
 }

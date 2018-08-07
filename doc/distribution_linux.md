@@ -1,31 +1,36 @@
 # Linux Distribution
 
-**Intel® RealSense™ SDK 2.0** provides installation packages in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Ubuntu 16 LTS\*.    
-\* The Realsense [DKMS](https://en.wikipedia.org/wiki/Dynamic_Kernel_Module_Support) kernel drivers package (`librealsense2-dkms`) supports Ubuntu LTS kernels 4.4, 4.10 and 4.13.
+**Intel® RealSense™ SDK 2.0** provides installation packages in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Ubuntu 16/18 LTS.    
+\* The Realsense [DKMS](https://en.wikipedia.org/wiki/Dynamic_Kernel_Module_Support) kernel drivers package (`librealsense2-dkms`) supports Ubuntu LTS kernels 4.4, 4.10, 4.13 and 4.15\*.
+
+**Note** Kernel 4.16 introduced a major change to uvcvideo and media subsystem. While we work to add support v4.16 in future releases,  **librealsense** is verified to run correctly with kernels v4.4-v4.15; the affected users are requested to downgrade the kernel version.
 
 
-**Note** Kernel 4.16 introduces some non-compatible modification to uvcvideo and media subsystem. We work to support it in future releases, but at this time the support is scoped up to kernel 4.15 and the affected users are requested to downgrade the kernel version.
-
-
-> To build the project from source, or in case of Ubuntu 18 (Bionic Beaver) with kernel 4.15 please follow steps described [here](./installation.md) to manually install the kernel patches
-
+>To build the project from sources and prepare/patch the OS manually please follow steps described [here](./installation.md).
 
 
 ## Installing the packages:
-- Add Intel server  to the list of repositories :  
-`echo 'deb http://realsense-hw-public.s3.amazonaws.com/Debian/apt-repo xenial main' | sudo tee /etc/apt/sources.list.d/realsense-public.list`  
-It is recommended to backup `/etc/apt/sources.list.d/realsense-public.list` file in case of an upgrade.
-
 - Register the server's public key :  
-`sudo apt-key adv --keyserver keys.gnupg.net --recv-key C8B3A55A6F3EFCDE`  
-- Refresh the list of repositories and packages available :  
-`sudo apt-get update`  
+`sudo apt-key adv --keyserver keys.gnupg.net --recv-key C8B3A55A6F3EFCDE || sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key C8B3A55A6F3EFCDE`  
+In case the public key still cannot be retrieved, check and specify proxy settings: `export http_proxy="http://<proxy>:<port>"`  
+, and rerun the command. See additional methods in the following [link](https://unix.stackexchange.com/questions/361213/unable-to-add-gpg-key-with-apt-key-behind-a-proxy).  
+
+- Add the server to the list of repositories :  
+  Ubuntu 16 LTS:  
+`sudo add-apt-repository "deb http://realsense-hw-public.s3.amazonaws.com/Debian/apt-repo xenial main" -u`  
+  Ubuntu 18 LTS:  
+`sudo add-apt-repository "deb http://realsense-hw-public.s3.amazonaws.com/Debian/apt-repo bionic main" -u`
+
+ When upgrading, remove the old records:  
+  - `sudo rm -f /etc/apt/sources.list.d/realsense-public.list`.  
+  - `sudo apt-get update`.  
 
 - In order to run demos install:  
   `sudo apt-get install librealsense2-dkms`  
   `sudo apt-get install librealsense2-utils`  
-  The above two lines will deploy librealsense2 udev rules, kernel drivers, runtime library and executable demos and tools.
-  Reconnect the Intel RealSense depth camera and run: `realsense-viewer`  
+  The above two lines will deploy librealsense2 udev rules, build and activate kernel modules, runtime library and executable demos and tools.  
+
+ Reconnect the Intel RealSense depth camera and run: `realsense-viewer` to verify the installation.
 
 - Developers shall install additional packages:  
   `sudo apt-get install librealsense2-dev`  

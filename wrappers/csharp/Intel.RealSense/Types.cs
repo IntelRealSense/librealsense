@@ -12,6 +12,9 @@ namespace Intel.RealSense
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void frame_deleter(IntPtr frame);
+    
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void rs2_devices_changed_callback(IntPtr removed, IntPtr added, IntPtr user_data);
 
     public enum NotificationCategory
     {
@@ -325,4 +328,40 @@ namespace Intel.RealSense
                  //commonlly used by RS400, RS405, RS410, RS420, RS430
         Default, //the default matcher compare all the streams based on closest timestamp
     }
+
+
+    [System.Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SoftwareVideoStream
+    {
+        public Stream type;
+        public int index;
+        public int uid;
+        public int width;
+        public int height;
+        public int fps;
+        public int bpp;
+        public Format format;
+        public Intrinsics intrinsics;
+    }
+
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void Deleter();
+
+    [System.Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    public class SoftwareVideoFrame
+    {
+        public IntPtr pixels;
+        public Deleter deleter = delegate { };
+        public int stride;
+        public int bpp;
+        public double timestamp;
+        public TimestampDomain domain;
+        public int frame_number;
+        public IntPtr profile;
+    }
+
+
 }
