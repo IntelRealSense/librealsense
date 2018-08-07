@@ -361,7 +361,7 @@ void make_factory(){
             auto option = MatlabParamParser::parse<rs2_option>(inv[1]);
             outv[0] = MatlabParamParser::wrap(thiz.get_option_description(option));
         });
-        options_factory.record("get_option_description", 1, 3, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        options_factory.record("get_option_value_description", 1, 3, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::options>(inv[0]);
             auto option = MatlabParamParser::parse<rs2_option>(inv[1]);
@@ -394,7 +394,10 @@ void make_factory(){
             outv[0] = MatlabParamParser::wrap(thiz.is_option_read_only(option));
         });
         // rs2::options::operator=                                      [?/HOW]
-        // rs2::options::destructor                                     [?]
+        options_factory.record("delete", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            MatlabParamParser::destroy<rs2::options>(inv[0]);
+        });
         factory->record(options_factory);
     }
     {
@@ -587,7 +590,7 @@ void make_factory(){
                 outv[0] = MatlabParamParser::wrap(false);
             }
         });
-        // rs2::device::as                                              [Pure Matlab]
+        // rs2::device::as                                              [Can't actually be done as pure matlab because matlab is dumb and handle objects don't work the way I want]
         factory->record(device_factory);
     }
     // rs2::debug_protocol                                              [?]
@@ -1112,5 +1115,7 @@ void mexFunction(int nOutParams, mxArray *outParams[], int nInParams, const mxAr
         f_data.f(nOutParams, outParams, nInParams - 2, inParams + 2); // "eat" the two function specifiers
     } catch (std::exception &e) {
         mexErrMsgTxt(e.what());
+    } catch (...) {
+        mexErrMsgTxt("An unknown error occured");
     }
 }

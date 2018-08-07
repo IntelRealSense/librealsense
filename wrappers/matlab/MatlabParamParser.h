@@ -33,25 +33,29 @@ private:
         using unsigned_t = std::integral_constant<mxClassID, mxUINT64_CLASS>;
         using value_t = typename std::conditional<bool(std::is_signed<typename std::underlying_type<T>::type>::value), signed_t, unsigned_t>::type;
     public:
-        static const mxClassID value = value_t::value;
+//        static const mxClassID value = /*value_t::value*/ signed_t::value;
+        using value = signed_t;
         using type = typename std::conditional<std::is_same<value_t, signed_t>::value, int64_t, uint64_t>::type;
     };
     // pointers are cast to uint64_t because matlab doesn't have a concept of pointers
     template <typename T> struct mx_wrapper<T, typename std::enable_if<std::is_pointer<T>::value>::type>
     {
-        static const mxClassID value = mxUINT64_CLASS;
+ //       static const mxClassID value = mxUINT64_CLASS;
+        using value = std::integral_constant<mxClassID, mxUINT64_CLASS>;
         using type = uint64_t;
     };
     // bools are exposed as matlab's native logical type
     template <> struct mx_wrapper<bool, void>
     {
-        static const mxClassID value = mxLOGICAL_CLASS;
+//        static const mxClassID value = mxLOGICAL_CLASS;
+        using value = std::integral_constant<mxClassID, mxLOGICAL_CLASS>;
         using type = mxLogical;
     };
     // floating points are exposed as matlab's native double type
     template <typename T> struct mx_wrapper<T, typename std::enable_if<std::is_floating_point<T>::value>::type>
     {
-        static const mxClassID value = mxDOUBLE_CLASS;
+//        static const mxClassID value = mxDOUBLE_CLASS;
+        using value = std::integral_constant<mxClassID, mxDOUBLE_CLASS>;
         using type = double;
     };
     // integral types are exposed like enums
@@ -62,7 +66,8 @@ private:
         using unsigned_t = std::integral_constant<mxClassID, mxUINT64_CLASS>;
         using value_t = typename std::conditional<std::is_signed<T>::value, signed_t, unsigned_t>::type;
     public:
-        static const mxClassID value = value_t::value;
+//        static const mxClassID value = value_t::value;
+        using value = value_t;
         using type = typename std::conditional<std::is_same<value_t, signed_t>::value, int64_t, uint64_t>::type;
     };
     // by default non-basic types are wrapped as pointers
@@ -143,7 +148,7 @@ template <typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::
         using wrapper = mx_wrapper<T>;
 
         // request 1x1 matlab matrix of correct type
-        mxArray* cell = mxCreateNumericMatrix(1, 1, wrapper::value, mxREAL);
+        mxArray* cell = mxCreateNumericMatrix(1, 1, wrapper::value::value, mxREAL);
         // access matrix's data as pointer to correct C++ type
         auto *outp = static_cast<typename wrapper::type*>(mxGetData(cell));
         // cast object to correct C++ type and then store it in the matrix
@@ -262,7 +267,7 @@ template <typename T> static typename std::enable_if<is_basic_type<T>::value, st
 
 template <typename T> static typename std::enable_if<!is_basic_type<T>::value, mxArray*>::type MatlabParamParser::wrap_array(const T* var, size_t length)
 {
-    auto cells = mxCreateNumericMatrix(1, length, MatlabParamParser::mx_wrapper<T>::value, mxREAL);
+    auto cells = mxCreateNumericMatrix(1, length, MatlabParamParser::mx_wrapper<T>::value::value, mxREAL);
     auto ptr = static_cast<typename mx_wrapper<T>::type*>(mxGetData(cells));
     for (int x = 0; x < length; ++x)
         ptr[x] = reinterpret_cast<typename mx_wrapper<T>::type>(traits_trampoline::to_internal<T>(T(var[x])));
@@ -272,7 +277,7 @@ template <typename T> static typename std::enable_if<!is_basic_type<T>::value, m
 
 template <typename T> static typename std::enable_if<is_basic_type<T>::value, mxArray*>::type MatlabParamParser::wrap_array(const T* var, size_t length)
 {
-    auto cells = mxCreateNumericMatrix(1, length, MatlabParamParser::mx_wrapper<T>::value, mxREAL);
+    auto cells = mxCreateNumericMatrix(1, length, MatlabParamParser::mx_wrapper<T>::value::value, mxREAL);
     auto ptr = static_cast<typename mx_wrapper<T>::type*>(mxGetData(cells));
     for (int x = 0; x < length; ++x)
         ptr[x] = mx_wrapper<T>::type(var[x]);
