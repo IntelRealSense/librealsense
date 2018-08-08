@@ -1872,6 +1872,14 @@ class Frame {
     this.cxxFrame = cxxFrame || new RS2.RSFrame();
     this.updateProfile();
     internal.addObject(this);
+    // called from native to reset this.arrayBuffer and this.typedArray when the
+    // underlying frame was replaced. The arrayBuffer and typedArray must be reset
+    // to avoid deprecated data to be used.
+    const jsWrapper = this;
+    this.cxxFrame._internalResetBuffer = function() {
+      jsWrapper.typedArray = undefined;
+      jsWrapper.arrayBuffer = undefined;
+    };
   }
 
   updateProfile() {
@@ -3164,6 +3172,11 @@ class DecimationFilter extends Filter {
   // override base implementation
   _internalGetInputType() {
     return VideoFrame;
+  }
+  _internalPrepareOutputFrame() {
+    if (!this.frame) {
+      this.frame = new VideoFrame();
+    }
   }
 }
 

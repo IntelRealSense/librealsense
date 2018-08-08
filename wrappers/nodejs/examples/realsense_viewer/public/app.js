@@ -282,13 +282,20 @@ function infrared1DataCallback(data) {
   fileReader.onload = function(event) {
     const arrayBuffer = event.target.result;
     drawInfraredToCanvas(0, arrayBuffer, {
-         width: glData.textureWidth[0], height: glData.textureHeight[0],
+        width: glData.textureWidth[0], height: glData.textureHeight[0],
     });
   };
   fileReader.readAsArrayBuffer(data);
 }
 function infrared2DataCallback(data) {
-  // todo(tingshao): add infrared2 support
+  let fileReader = new FileReader();
+  fileReader.onload = function(event) {
+    const arrayBuffer = event.target.result;
+    drawInfraredToCanvas(1, arrayBuffer, {
+        width: glData.textureWidth[1], height: glData.textureHeight[1],
+    });
+  };
+  fileReader.readAsArrayBuffer(data);
 }
 
 function drawInfraredToCanvas(index, arrayBuffer, textureSize) {
@@ -303,8 +310,8 @@ function drawInfraredToCanvas(index, arrayBuffer, textureSize) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   drawScene(index, {
-    width: vue.canvasData.width.infrared1,
-    height: vue.canvasData.height.infrared1,
+    width: index === 0 ? vue.canvasData.width.infrared1 : vue.canvasData.width.infrared2,
+    height: index === 0 ? vue.canvasData.height.infrared1 : vue.canvasData.height.infrared2,
   });
 }
 
