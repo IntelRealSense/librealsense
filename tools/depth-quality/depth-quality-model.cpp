@@ -62,8 +62,8 @@ namespace rs2
             // Use Infrared luminocity as a secondary video in case synthetic chroma is not supported
             {
                 rs2::config cfg_alt;
-                cfg_alt.enable_stream(RS2_STREAM_DEPTH, 0, 0, 0, RS2_FORMAT_Z16, requested_fps);
-                cfg_alt.enable_stream(RS2_STREAM_INFRARED, 0, 0, 0, RS2_FORMAT_Y8, requested_fps);
+                cfg_alt.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, requested_fps);
+                cfg_alt.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_Y8, requested_fps);
                 cfgs.emplace_back(cfg_alt);
             }
 
