@@ -512,7 +512,7 @@ uvc_error_t uvc_parse_vs_frame_frame(uvc_streaming_interface_t *stream_if,
         frame->dwFrameIntervalStep = DW_TO_INT(&block[34]);
     }
     else {
-        frame->intervals = (uint32_t *)malloc(block[21] *sizeof(uint32_t));
+        frame->intervals = (uint32_t *)malloc((block[21] + 1) *sizeof(uint32_t));
         p = &block[26];
 
         for (i = 0; i < block[21]; ++i) {
