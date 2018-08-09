@@ -21,7 +21,9 @@ namespace librealsense
             float depth_scale);
 
         inline void align_depth_to_other(const uint16_t* z_pixels,
-            uint16_t* dest, int bpp, const rs2_intrinsics& to,
+            uint16_t* dest, int bpp, 
+            const rs2_intrinsics& depth,
+            const rs2_intrinsics& to,
             const rs2_extrinsics& from_to_other);
 
         inline void align_other_to_depth(const uint16_t* z_pixels,
@@ -50,7 +52,8 @@ namespace librealsense
 
         template<rs2_distortion dist = RS2_DISTORTION_NONE>
         inline void align_depth_to_other_sse(const uint16_t* z_pixels,
-            uint16_t* dest, const rs2_intrinsics& to,
+            uint16_t* dest, const rs2_intrinsics& depth,
+            const rs2_intrinsics& to,
             const rs2_extrinsics& from_to_other);
 
         template<rs2_distortion dist = RS2_DISTORTION_NONE>
