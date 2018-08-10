@@ -8,8 +8,9 @@
 
 #ifdef RS2_USE_CUDA
 #include "cuda/cuda-conversion.cuh"
-#elif __SSSE3__
-#include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
+#endif
+#ifdef __SSSE3__
+#include <tmmintrin.h> // For SSSE3 intrinsics
 #endif
 
 #if defined (ANDROID) || (defined (__linux__) && !defined (__x86_64__))
