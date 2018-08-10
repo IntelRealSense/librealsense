@@ -6045,7 +6045,7 @@ namespace rs2
         }
     }
 
-    void device_model::handle_harware_events(const std::string& serialized_data)
+    void device_model::handle_hardware_events(const std::string& serialized_data)
     {
         //TODO: Move under hour glass
         std::string event_type = get_event_type(serialized_data);
