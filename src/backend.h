@@ -160,15 +160,6 @@ namespace librealsense
             uint32_t        timestamp;
             uint8_t         source_clock[6];
         };
-
-//        struct uvc_metadata_buf
-//        {
-//            uint64_t    pts;
-//            uint16_t    sof;
-//            uint8_t     length;
-//            uint8_t     flags;
-//            uint8_t*    buf;
-//        };
 #pragma pack(pop)
 
         constexpr uint8_t uvc_header_size = sizeof(uvc_header);
