@@ -370,6 +370,17 @@ uvc_error_t winusb_get_available_formats_all(winusb_uvc_device *devh, uvc_format
     return UVC_SUCCESS;
 }
 
+uvc_error_t winusb_free_formats(uvc_format_t *formats) {
+    uvc_format_t *cur_format = formats;
+    while (cur_format != NULL) {
+        uvc_format_t *format = cur_format;
+        cur_format = cur_format->next;
+        free(format);
+    }
+
+    return UVC_SUCCESS;
+}
+
 static uvc_stream_handle_t *_uvc_get_stream_by_interface(winusb_uvc_device *devh, int interface_idx) {
     uvc_stream_handle_t *strmh;
 
@@ -794,17 +805,18 @@ void _uvc_process_payload(uvc_stream_handle_t *strmh, uint8_t *payload, size_t p
     }
 
     if (data_len > 0) {
-        memcpy(strmh->outbuf + strmh->got_bytes, payload + header_len, data_len);
+        // save all frame+header
+        memcpy(strmh->outbuf + strmh->got_bytes, payload, data_len + header_len);
         strmh->got_bytes += data_len;
 
         if (header_info & (1 << 1)) {
             /* The EOF bit is set, so publish the complete frame */
             _uvc_swap_buffers(strmh);
-            //printf("Complete Frame %d (%d bytes): header info = %08X\n", strmh->seq, payload_len, payload[1]);
+            //printf("EndPoint 0x%X: Received Frame %d (%zd bytes): header info = %08X\n", strmh->stream_if->bEndpointAddress, strmh->seq, payload_len, payload[1]);
         }
     }
 
-    librealsense::platform::frame_object fo{data_len, header_len, payload + header_len , payload };
+    librealsense::platform::frame_object fo{data_len, header_len, strmh->holdbuf+ header_len , strmh->holdbuf };
     strmh->user_cb(&fo, strmh->user_ptr);
 }
 
@@ -883,6 +895,8 @@ uvc_error_t uvc_stream_start(
     
     uvc_stream_context *streamctx = new uvc_stream_context;
 
+    //printf("Starting stream on EP = 0x%X, interface 0x%X\n", format_desc->parent->bEndpointAddress, iface);
+
     streamctx->stream = strmh;
     streamctx->endpoint = format_desc->parent->bEndpointAddress;
     streamctx->iface = iface;
@@ -898,7 +912,8 @@ fail:
     return ret;
 }
 
-uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh) {
+uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh) 
+{
     if (!strmh->running)
         return UVC_ERROR_INVALID_PARAM;
 

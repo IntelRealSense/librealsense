@@ -63,6 +63,9 @@ uvc_error_t winusb_get_available_formats(winusb_uvc_device *devh, int interface_
 // Return linked list of uvc_format_t of all available formats inside winusb device
 uvc_error_t winusb_get_available_formats_all(winusb_uvc_device *devh, uvc_format_t **formats);
 
+// Free Formats allocated in winusb_get_available_formats/winusb_get_available_formats_all
+uvc_error_t winusb_free_formats(uvc_format_t *formats);
+
 // Get a negotiated streaming control block for some common parameters for specific interface
 uvc_error_t winusb_get_stream_ctrl_format_size(winusb_uvc_device *devh, uvc_stream_ctrl_t *ctrl, uint32_t fourcc, int width, int height, int fps, int interface_idx);
 

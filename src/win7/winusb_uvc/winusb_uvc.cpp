@@ -281,7 +281,6 @@ uvc_error_t winusb_find_devices(const std::string &uvc_interface, int vid, int p
 
                                 num_uvc_devices++;
                                 list_internal = (winusb_uvc_device **)realloc(list_internal, (num_uvc_devices + 1) * sizeof(*list_internal));
-
                                 list_internal[num_uvc_devices - 1] = winUsbDevice;
                                 list_internal[num_uvc_devices] = NULL;
                             }
@@ -557,17 +556,9 @@ fail:
         delete descriptors;
     }
 
-    if (interfaces != NULL)
-    {
-        FreeWinusbInterfaces(interfaces);
-    }
-
     if (device)
     {
-        if (device->deviceData.stream_ifs)
-        {
-            FreeStreamInterfaces(device->deviceData.stream_ifs);
-        }
+        winusb_free_device_info(&device->deviceData);
 
         if (device->deviceHandle)
         {
@@ -592,16 +583,7 @@ uvc_error_t winusb_close(winusb_uvc_device *device)
 
     if (device != NULL)
     {
-        if (device->deviceData.interfaces != NULL)
-        {
-            FreeWinusbInterfaces(device->deviceData.interfaces);
-        }
-
-        if (device->deviceData.stream_ifs)
-        {
-            FreeStreamInterfaces(device->deviceData.stream_ifs);
-        }
-
+        winusb_free_device_info(&device->deviceData);
         memset(&device->deviceData, 0, sizeof(uvc_device_info_t));
 
         if (device->winusbHandle != NULL)
@@ -623,6 +605,9 @@ uvc_error_t winusb_close(winusb_uvc_device *device)
         }
 
         device->streams = NULL;
+
+        free(device->devPath);
+        free(device);
     }
     else
     {

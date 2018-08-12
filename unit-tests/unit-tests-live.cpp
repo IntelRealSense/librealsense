@@ -591,6 +591,73 @@ TEST_CASE("Start-Stop stream sequence", "[live][using_pipeline]")
     }
 }
 
+
+////////////////////////////////////////////
+////// Test basic streaming functionality //
+////////////////////////////////////////////
+TEST_CASE("Frame drops", "[live][using_pipeline]")
+{
+    // Require at least one device to be plugged in
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
+    {
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
+        REQUIRE(list.size() > 0);
+
+        pipeline pipe(ctx);
+        device dev;
+        // Configure all supported streams to run at 30 frames per second
+
+        //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+
+        for (auto i = 0; i < 5; i++)
+        {
+            rs2::config cfg;
+            rs2::pipeline_profile profile;
+            REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+            REQUIRE(profile);
+            REQUIRE_NOTHROW(dev = profile.get_device());
+            REQUIRE(dev);
+            disable_sensitive_options_for(dev);
+
+            // Test sequence
+            REQUIRE_NOTHROW(pipe.start(cfg));
+
+            unsigned long long current_depth_frame_number = 0;
+            unsigned long long prev_depth_frame_number = 0;
+            unsigned long long current_color_frame_number = 0;
+            unsigned long long prev_color_frame_number = 0;
+
+            // Capture 30 frames to give autoexposure, etc. a chance to settle
+            for (auto i = 0; i < 30; ++i)
+            {
+                auto frame = pipe.wait_for_frames();
+                prev_depth_frame_number = frame.get_depth_frame().get_frame_number();
+                prev_color_frame_number = frame.get_color_frame().get_frame_number();
+            }
+
+            // Checking for frame drops on depth+color
+            for (auto i = 0; i < 1000; ++i)
+            {
+                auto frame = pipe.wait_for_frames();
+                current_depth_frame_number = frame.get_depth_frame().get_frame_number();
+                current_color_frame_number = frame.get_color_frame().get_frame_number();
+
+                printf("User got %zd frames: depth %d, color %d\n", frame.size(), current_depth_frame_number, current_color_frame_number);
+
+                REQUIRE(current_depth_frame_number == (prev_depth_frame_number+1));
+                REQUIRE(current_color_frame_number == (prev_color_frame_number + 1));
+
+                prev_depth_frame_number = current_depth_frame_number;
+                prev_color_frame_number = current_color_frame_number;
+            }
+
+            REQUIRE_NOTHROW(pipe.stop());
+        }
+    }
+}
+
 /////////////////////////////////////////
 //////// Calibration information tests //
 /////////////////////////////////////////

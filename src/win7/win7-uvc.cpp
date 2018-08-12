@@ -392,7 +392,7 @@ namespace librealsense
 
             if (state == D0 && _power_state == D3)
             {
-                winusb_uvc_device **devices;
+                winusb_uvc_device **device_list;
 
                 // Return list of all connected IVCAM devices from uvc_interface name
                 uint16_t vid, pid, mi; std::string unique_id, device_guid;
@@ -403,13 +403,13 @@ namespace librealsense
 
                 // Return list of all connected IVCAM devices with device_guid
                 int dev_count = 0;
-                winusb_find_devices(device_guid, vid, pid, &devices, dev_count);
+                winusb_find_devices(device_guid, vid, pid, &device_list, dev_count);
 
                 for (int i = 0; i < dev_count; i++)
                 {
-                    winusb_uvc_device *device = devices[i];
+                    winusb_uvc_device *device = device_list[i];
 
-                    // initializing and filling all fields of winsub_device devices[0]
+                    // initializing and filling all fields of winsub_device device_list[0]
                     winusb_open(device);
 
                     if (device->deviceData.ctrl_if.bInterfaceNumber == mi)
@@ -446,12 +446,15 @@ namespace librealsense
                         });
 
                         _power_state = D0;
+                        free(device_list);
 
                         return;
                     }
 
                     winusb_close(device);
                 }
+
+                free(device_list);
 
                 throw std::runtime_error("Device not found!");
             }
@@ -490,6 +493,8 @@ namespace librealsense
                 results.push_back(sp);
                 curFormat = curFormat->next;
             }
+
+            winusb_free_formats(formats);
 
             return results;
         }
@@ -594,6 +599,8 @@ namespace librealsense
 
             uvc_stream_ctrl_t ctrl;
             winusb_get_stream_ctrl_format_size(_device.get(), &ctrl, curFormat->fourcc, curFormat->width, curFormat->height, curFormat->fps, curFormat->interfaceNumber);
+
+            winusb_free_formats(formats);
 
             callback_context *context = new callback_context();
             context->_callback = callback;

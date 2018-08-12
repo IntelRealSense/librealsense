@@ -85,31 +85,51 @@ void FreeWinusbInterfaces(WINUSB_INTERFACES *winusbInterfaces) {
     delete winusbInterfaces;
 }
 
-void FreeStreamInterfaces(uvc_streaming_interface_t * streamInterfaces) 
-{
-    uvc_streaming_interface_t *stream_if = NULL;
-    uvc_streaming_interface_t *stream_if_tmp = NULL;
 
-    DL_FOREACH_SAFE(streamInterfaces, stream_if, stream_if_tmp)
-    {
-        uvc_format_desc_t *format = NULL;
-        uvc_format_desc_t *format_tmp = NULL;
+void winusb_free_device_info(uvc_device_info_t *info) {
+    uvc_input_terminal_t *input_term, *input_term_tmp;
+    uvc_processing_unit_t *proc_unit, *proc_unit_tmp;
+    uvc_extension_unit_t *ext_unit, *ext_unit_tmp;
 
-        DL_FOREACH_SAFE(stream_if->format_descs, format, format_tmp)
-        {
-            uvc_frame_desc_t *frame = NULL;
-            uvc_frame_desc_t *frame_tmp = NULL;
+    uvc_streaming_interface_t *stream_if, *stream_if_tmp;
+    uvc_format_desc_t *format, *format_tmp;
+    uvc_frame_desc_t *frame, *frame_tmp;
 
-            DL_FOREACH_SAFE(format->frame_descs, frame, frame_tmp)
-            {
-                delete frame;
+
+    DL_FOREACH_SAFE(info->ctrl_if.input_term_descs, input_term, input_term_tmp) {
+        DL_DELETE(info->ctrl_if.input_term_descs, input_term);
+        free(input_term);
+    }
+
+    DL_FOREACH_SAFE(info->ctrl_if.processing_unit_descs, proc_unit, proc_unit_tmp) {
+        DL_DELETE(info->ctrl_if.processing_unit_descs, proc_unit);
+        free(proc_unit);
+    }
+
+    DL_FOREACH_SAFE(info->ctrl_if.extension_unit_descs, ext_unit, ext_unit_tmp) {
+        DL_DELETE(info->ctrl_if.extension_unit_descs, ext_unit);
+        free(ext_unit);
+    }
+
+    DL_FOREACH_SAFE(info->stream_ifs, stream_if, stream_if_tmp) {
+        DL_FOREACH_SAFE(stream_if->format_descs, format, format_tmp) {
+            DL_FOREACH_SAFE(format->frame_descs, frame, frame_tmp) {
+                if (frame->intervals)
+                    free(frame->intervals);
+
+                DL_DELETE(format->frame_descs, frame);
+                free(frame);
             }
 
-            delete format;
+            DL_DELETE(stream_if->format_descs, format);
+            free(format);
         }
 
-        delete stream_if;
+        DL_DELETE(info->stream_ifs, stream_if);
+        free(stream_if);
     }
+
+    FreeWinusbInterfaces(info->interfaces);
 }
 
 uvc_error_t uvc_scan_control(winusb_uvc_device *dev, uvc_device_info_t *info) {
@@ -512,7 +532,7 @@ uvc_error_t uvc_parse_vs_frame_frame(uvc_streaming_interface_t *stream_if,
         frame->dwFrameIntervalStep = DW_TO_INT(&block[34]);
     }
     else {
-        frame->intervals = (uint32_t *)malloc(block[21] *sizeof(uint32_t));
+        frame->intervals = (uint32_t *)malloc((block[21] + 1) * sizeof(uint32_t));
         p = &block[26];
 
         for (i = 0; i < block[21]; ++i) {
