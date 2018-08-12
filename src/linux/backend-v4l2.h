@@ -44,40 +44,45 @@
 #pragma GCC diagnostic pop
 
 // Metadata streaming nodes are available with kernels 4.16+
-#ifndef V4L2_CAP_META_CAPTURE
+#ifdef V4L2_META_FMT_UVC
 constexpr bool metadata_node = true;
+#pragma message ( "\nibrealsense notification: V4L2_META_FMT_UVC was found, metadata node will be enabled")
 #else
+#pragma message ( "\nLibrealsense notification: V4L2_META_FMT_UVC was not defined, adding metadata constructs")
+
 constexpr bool metadata_node = false;
 
 // Providing missing parts from videodev2.h
+// V4L2_META_FMT_UVC >> V4L2_CAP_META_CAPTURE is also defined, but the opposite does not hold
 #define V4L2_META_FMT_UVC    v4l2_fourcc('U', 'V', 'C', 'H') /* UVC Payload Header */
-#define V4L2_CAP_META_CAPTURE		0x00800000  /* Is a metadata capture device */
 
+#ifndef V4L2_CAP_META_CAPTURE
+#define V4L2_CAP_META_CAPTURE    0x00800000  /* Specified in kernel header v4.16 */
+#endif // V4L2_CAP_META_CAPTURE
+
+#endif // V4L2_META_FMT_UVC
+
+#ifndef V4L2_META_FMT_D4XX
+#define V4L2_META_FMT_D4XX      v4l2_fourcc('D', '4', 'X', 'X') /* D400 Payload Header metadata */
+#endif
+
+// Use local definition of buf type to resolve for kernel versions
+constexpr auto LOCAL_V4L2_BUF_TYPE_META_CAPTURE = (v4l2_buf_type)(13);
 // uvcvideo.h
-/**
- * struct uvc_meta_buf - metadata buffer building block
- * @ns		- system timestamp of the payload in nanoseconds
- * @sof		- USB Frame Number
- * @length	- length of the payload header
- * @flags	- payload header flags
- * @buf		- optional device-specific header data
- *
- * UVC metadata nodes fill buffers with possibly multiple instances of this
- * struct. The first two fields are added by the driver, they can be used for
- * clock synchronisation. The rest is an exact copy of a UVC payload header.
- * Only complete objects with complete buffers are included. Therefore it's
- * always sizeof(meta->ts) + sizeof(meta->sof) + meta->length bytes large.
- */
 #pragma pack(push, 1)
-struct uvc_meta_buf {
+// The struct definition is identical to one defined in kernel 4.16 headers, and is provided to allow for cross-kernel compilation
+struct uvc_meta_buffer {
     __u64 ns;               // system timestamp of the payload in nanoseconds
-    __u16 sof;
-    __u8 length;
-    __u8 flags;
-    __u8* buf;
+    __u16 sof;              // USB Frame Number
+    __u8 length;            // length of the payload metadata header
+    __u8 flags;             // payload header flags
+    __u8* buf;              //device-specific metadata payload data
 };
 #pragma pack(pop)
-#endif
+
+// uvc_meta_buf definition shall be kernel or locally defined
+//typedef std::conditional<std::is_class<uvc_meta_buf>::value, uvc_meta_buf, uvc_meta_buf_local>::type uvc_meta_buffer;
+
 
 namespace librealsense
 {

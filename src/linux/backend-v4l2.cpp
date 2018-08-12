@@ -1032,7 +1032,7 @@ namespace librealsense
                                 if (_stream_pipe_fds.end() != std::find(_stream_pipe_fds.begin(), _stream_pipe_fds.end(), fd))
                                 {
                                     v4l2_buffer buf = {};
-                                    buf.type = (_fd == fd) ? V4L2_BUF_TYPE_VIDEO_CAPTURE : V4L2_BUF_TYPE_META_CAPTURE;
+                                    buf.type = (_fd == fd) ? V4L2_BUF_TYPE_VIDEO_CAPTURE : LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
                                     buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
                                     if(xioctl(fd, VIDIOC_DQBUF, &buf) < 0)
                                     {
@@ -1596,7 +1596,7 @@ namespace librealsense
         void v4l_uvc_meta_device::streamon() const
         {
             // Metadata stream shall be configured first to allow sync with video node
-            stream_ctl_on(_md_fd,V4L2_BUF_TYPE_META_CAPTURE);
+            stream_ctl_on(_md_fd,LOCAL_V4L2_BUF_TYPE_META_CAPTURE);
 
             // Invoke UVC streaming request
             v4l_uvc_device::streamon();
@@ -1607,7 +1607,7 @@ namespace librealsense
         {
             v4l_uvc_device::streamoff();
 
-            stream_off(_md_fd,V4L2_BUF_TYPE_META_CAPTURE);
+            stream_off(_md_fd,LOCAL_V4L2_BUF_TYPE_META_CAPTURE);
         }
 
         void v4l_uvc_meta_device::request_io_buffers(size_t num) const
@@ -1616,7 +1616,7 @@ namespace librealsense
 
             req_io_buff(_md_fd, num, _name,
                         _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR,
-                        V4L2_BUF_TYPE_META_CAPTURE);
+                        LOCAL_V4L2_BUF_TYPE_META_CAPTURE);
         }
 
         void v4l_uvc_meta_device::allocate_io_buffers(size_t buffers)
@@ -1627,7 +1627,7 @@ namespace librealsense
             {
                 for(size_t i = 0; i < buffers; ++i)
                 {
-                    _md_buffers.push_back(std::make_shared<buffer>(_md_fd, V4L2_BUF_TYPE_META_CAPTURE, _use_memory_map, i));
+                    _md_buffers.push_back(std::make_shared<buffer>(_md_fd, LOCAL_V4L2_BUF_TYPE_META_CAPTURE, _use_memory_map, i));
                 }
             }
             else
@@ -1695,24 +1695,38 @@ namespace librealsense
 
         void v4l_uvc_meta_device::set_format(stream_profile profile)
         {
-            // Select streaming format
+            // Select video node streaming format
             v4l_uvc_device::set_format(profile);
 
-            // Retrieve original setting for meta node
+            // Configure metadata node stream format
             v4l2_format fmt{ };
-            fmt.type = V4L2_BUF_TYPE_META_CAPTURE;
+            fmt.type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
 
             if (xioctl(_md_fd, VIDIOC_G_FMT, &fmt))
                 throw linux_backend_exception(_md_name + " ioctl(VIDIOC_G_FMT) for metadata node failed");
 
-            if (fmt.type != V4L2_BUF_TYPE_META_CAPTURE)
+            if (fmt.type != LOCAL_V4L2_BUF_TYPE_META_CAPTURE)
                 throw linux_backend_exception("ioctl(VIDIOC_G_FMT): " + _md_name + " node is not metadata capture");
 
-            // Configure metadata format - currently retrieve UVC default header of 12 bytes
-            fmt.fmt.meta.dataformat = V4L2_META_FMT_UVC; // TODO V4L2_META_FMT_D4XX  Evgeni
+            bool success = false;
+            for (auto& request : { V4L2_META_FMT_D4XX, V4L2_META_FMT_UVC})
+            {
+                // Configure metadata format - try d4xx, then fallback to currently retrieve UVC default header of 12 bytes
+                //uint32_t dataformat = request;
+                memcpy(fmt.fmt.raw_data,&request,sizeof(request));
+                //fmt.fmt.meta.dataformat = request;
 
-            if(xioctl(_md_fd, VIDIOC_S_FMT, &fmt) < 0)
+                if(xioctl(_md_fd, VIDIOC_S_FMT, &fmt) >= 0)
+                {
+                    LOG_INFO("Metadata node configured to :" << std::hex << request << std::dec);
+                    success  =true;
+                    break;
+                }
+            }
+
+            if (!success)
                 throw linux_backend_exception(_md_name + " ioctl(VIDIOC_S_FMT) for metadata node failed");
+
         }
 
         void v4l_uvc_meta_device::prepare_capture_buffers()
@@ -1741,7 +1755,7 @@ namespace librealsense
                 //FD_CLR(_md_fd,&fds);
                 FD_ZERO(&fds);
                 v4l2_buffer buf{};
-                buf.type = V4L2_BUF_TYPE_META_CAPTURE;
+                buf.type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
                 buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
                 if(xioctl(_md_fd, VIDIOC_DQBUF, &buf) < 0)
                 {
@@ -1775,7 +1789,7 @@ namespace librealsense
                     else*/
                     if (buf.bytesused > 0)
                     {
-                        static const size_t uvc_md_start_offset = sizeof(uvc_meta_buf::ns) + sizeof(uvc_meta_buf::sof);
+                        static const size_t uvc_md_start_offset = sizeof(uvc_meta_buffer::ns) + sizeof(uvc_meta_buffer::sof);
 
                         if(buf.bytesused > uvc_md_start_offset )
                         {
@@ -1790,14 +1804,14 @@ namespace librealsense
         //                    LOG_INFO("Metadata buffer received, size " << std::dec << (int)md_size
         //                             << " data: " << ss.str());
 
-                            uvc_meta_buf md_buf{};
+                            uvc_meta_buffer md_buf{};
                             uvc_header md_hdr{};
                             memcpy(&md_buf,md_start,buf.bytesused);
                             memcpy(&md_hdr,(uint8_t*)md_start+10,sizeof(uvc_header));
                             LOG_INFO("Metadata struct " << std::dec
                                      << " ns: " << md_buf.ns
                                      << " sof: " << md_buf.sof
-                                     //<< " length: " << (int)md_buf.length
+                                   //<< " length: " << (int)md_buf.length
                                      //<< " flags/info: " << (int)md_buf.flags
                                      << " uvc length: " << (int)md_hdr.length
                                      << " flags/info: " << (int)md_hdr.info

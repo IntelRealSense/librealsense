@@ -2561,11 +2561,15 @@ namespace rs2
             ImGui::End();
             ImGui::PopStyleColor(6);
             ImGui::PopStyleVar(2);
+
         }
     }
 
     void stream_model::show_stream_footer(ImFont* font, const rect &stream_rect, const  mouse_info& mouse)
     {
+        if (show_stream_details) // Evgeni Temporal
+            show_metadata(mouse);
+
         if (stream_rect.contains(mouse.cursor))
         {
             std::stringstream ss;
