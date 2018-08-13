@@ -229,7 +229,6 @@ namespace librealsense
             virtual void set_format(stream_profile profile);
             virtual void prepare_capture_buffers();
             virtual void stop_data_capture();
-            //virtual void capture_frame(fd_set &cur_fds);       // retrieve frame from kernel and dispatch user-callback
             virtual void acquire_metadata(void *&md_start,uint8_t& md_size, fd_set &fds,
                                           std::vector<std::pair< std::shared_ptr<platform::buffer>,int>> &datasets);
 
@@ -261,8 +260,7 @@ namespace librealsense
 
         };
 
-        // Abstraction layer for uvc/metadata split nodes introduced with kernel 4.16
-
+        // Composition layer for uvc/metadata split nodes introduced with kernel 4.16
         class v4l_uvc_meta_device : public v4l_uvc_device
         {
         public:
@@ -274,43 +272,7 @@ namespace librealsense
 
             ~v4l_uvc_meta_device();
 
-//            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override { throw std::runtime_error("Not implemented"); };
-
-//            void stream_on(std::function<void(const notification& n)> error_handler) override { throw std::runtime_error("Not implemented"); };
-
-//            void start_callbacks() override { throw std::runtime_error("Not implemented"); };
-
-//            void stop_callbacks() override { throw std::runtime_error("Not implemented"); };
-
-//            //void close(stream_profile) override;
-
-//            void signal_stop() override  { throw std::runtime_error("Not implemented"); };
-
-//            void poll() override  { throw std::runtime_error("Not implemented"); };
-
-//            void set_power_state(power_state state) override;
-//            power_state get_power_state() const override;
-
-            //void init_xu(const extension_unit& xu) override {}
-            //bool set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size) override;
-            //bool get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const override;
-            //control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override;
-
-            //bool get_pu(rs2_option opt, int32_t& value) const override;
-            //bool set_pu(rs2_option opt, int32_t value) override;
-            //control_range get_pu_range(rs2_option option) const override;
-            //std::vector<stream_profile> get_profiles() const override;
-
-            //void lock() const override;
-            //void unlock() const override;
-
-            //std::string get_device_location() const override { return _device_path; }
-
         protected:
-
-            //void capture_loop() override  { throw std::runtime_error("Not implemented"); };
-
-            //bool has_metadata() const override { throw std::runtime_error("Not implemented"); };
 
             void streamon() const;
             void streamoff() const;
@@ -329,13 +291,6 @@ namespace librealsense
 
             std::vector<std::shared_ptr<buffer>> _md_buffers;
             stream_profile _md_profile;
-            //frame_callback _callback;
-            //std::atomic<bool> _is_capturing;
-            //std::atomic<bool> _is_alive;
-            //std::atomic<bool> _is_started;
-            //std::unique_ptr<std::thread> _thread;
-            //std::unique_ptr<named_mutex> _named_mtx;
-            //bool _use_memory_map;
         };
 
         class v4l_backend : public backend
