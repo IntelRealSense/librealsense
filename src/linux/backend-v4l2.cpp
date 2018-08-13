@@ -201,7 +201,6 @@ namespace librealsense
             }
             else
             {
-                // Evgeni - to check whether this interfere with 4.16. Assuming not
                 _length += MAX_META_DATA_SIZE;
                 _start = static_cast<uint8_t*>(malloc( buf.length + MAX_META_DATA_SIZE));
                 if (!_start) throw linux_backend_exception("User_p allocation failed!");
@@ -263,7 +262,6 @@ namespace librealsense
                     memset((byte*)(get_frame_start()) + metadata_offset, 0, MAX_META_DATA_SIZE);
                 }
 
-                LOG_INFO("Enqueue buf << "  << _buf.index << " for fd " << fd);
                 if (xioctl(fd, VIDIOC_QBUF, &_buf) < 0)
                     LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! Last-error: " << strerror(errno));
 
@@ -629,8 +627,8 @@ namespace librealsense
             if(!_is_capturing && !_callback)
             {
                 v4l2_fmtdesc pixel_format = {};
-                // TODO - evgeni parse all incoming metadata formats
                 pixel_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
                 while (ioctl(_fd, VIDIOC_ENUM_FMT, &pixel_format) == 0)
                 {
                     v4l2_frmsizeenum frame_size = {};
@@ -703,26 +701,7 @@ namespace librealsense
 
                 // Init memory mapped IO
                 request_io_buffers(buffers);
-                /*Evgeni
-                v4l2_requestbuffers req = {};
-                req.count = buffers;
-                req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                req.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
-                if(xioctl(_fd, VIDIOC_REQBUFS, &req) < 0)
-                {
-                    if(errno == EINVAL)
-                        throw linux_backend_exception(_name + " does not support memory mapping");
-                    else
-                        throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
-                }
-                */
-
                 allocate_io_buffers(buffers);
-                /*Evgeni
-                for(size_t i = 0; i < buffers; ++i)
-                {
-                    _buffers.push_back(std::make_shared<buffer>(_fd, _use_memory_map, i));
-                }*/
 
                 _profile =  profile;
                 _callback = callback;
@@ -790,28 +769,11 @@ namespace librealsense
 
             if (_callback)
             {
+                // Release allocated buffers
                 allocate_io_buffers(0);
-                /*Evgeni
-                for(size_t i = 0; i < _buffers.size(); i++)
-                {
-                    _buffers[i]->detach_buffer();
-                }
-                _buffers.resize(0);*/
 
-                // Close memory mapped IO
+                // Release IO
                 request_io_buffers(0);
-                /* Evgeni
-                struct v4l2_requestbuffers req = {};
-                req.count = 0;
-                req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                req.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
-                if(xioctl(_fd, VIDIOC_REQBUFS, &req) < 0)
-                {
-                    if(errno == EINVAL)
-                        LOG_ERROR(_name + " does not support memory mapping");
-                    else
-                        throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
-                }*/
 
                 _callback = nullptr;
             }
@@ -844,11 +806,6 @@ namespace librealsense
              {
                  FD_SET(fd, &fds);
              }
-//            FD_SET(_fd, &fds);
-//            FD_SET(_stop_pipe_fd[0], &fds);
-//            FD_SET(_stop_pipe_fd[1], &fds);
-
-            //Evgeni refactored int max_fd = std::max(std::max(_stop_pipe_fd[0], _stop_pipe_fd[1]), _fd);
 
             struct timespec mono_time;
             int ret = clock_gettime(CLOCK_MONOTONIC, &mono_time);
@@ -874,24 +831,13 @@ namespace librealsense
             if(val < 0)
             {
                 stop_data_capture();
-//                _is_capturing = false;
-//                _is_started = false;
-//                signal_stop();
-
-//                _thread->join();
-//                _thread.reset();
-
-//                // Stop streamining
-//                v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-//                if(xioctl(_fd, VIDIOC_STREAMOFF, &type) < 0)
-//                    throw linux_backend_exception("xioctl(VIDIOC_STREAMOFF) failed");
             }
             else
             {
                 std::vector<std::pair< std::shared_ptr<platform::buffer>,int>> urb_sets;
-                if(val > 0) // TODO Refactor required. Evgeni val > 0 originally. shall be positive for backward compatibility
+                //TODO RAII buffers
+                if(val > 0)
                 {
-                    //if(FD_ISSET(_stop_pipe_fd[0], &fds) || FD_ISSET(_stop_pipe_fd[1], &fds))
                     if(_ctl_pipe_fds.end() != std::find_if(_ctl_pipe_fds.begin(),_ctl_pipe_fds.end(),
                                      [&fds](int& val){ return FD_ISSET(val,&fds); }))
                     {
@@ -907,20 +853,9 @@ namespace librealsense
                     }
                     else // Check and acquire data buffers from kernel
                     {
-                        std::stringstream ss;
-                        for (auto& fd : _stream_pipe_fds)
-                        {
-                            if(FD_ISSET(fd, &fds))
-                                ss << fd << ", ";
-                        }
-                        ss << " selected descriptors: " << val;
-                        LOG_INFO("fd signalled: " + ss.str());
-
                         if(FD_ISSET(_fd, &fds))
                         {
                             FD_CLR(_fd,&fds);
-                            //FD_ZERO(&fds);
-                            //FD_SET(_fd, &fds);
                             v4l2_buffer buf = {};
                             buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                             buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
@@ -957,14 +892,8 @@ namespace librealsense
                                     void* md_start = nullptr;
                                     uint8_t md_size = 0;
 
-                                    // TODO: Evgeni  Acquire metadata either from kernel appendix or metadata node
+                                    // Get metadata either from kernel appendix or metadata node
                                     acquire_metadata(md_start,md_size,fds,urb_sets);
-
-//                                        if (has_metadata())
-//                                        {
-//                                            md_start = buffer->get_frame_start() + buffer->get_length_frame_only();
-//                                            md_size = (*(uint8_t*)md_start);
-//                                        }
 
                                     LOG_INFO("Frame buf ready, md size: " << (int)md_size << " seq. id: " << buf.sequence);
                                     frame_object fo{ buffer->get_length_frame_only(), md_size,
@@ -973,12 +902,9 @@ namespace librealsense
                                      buffer->attach_buffer(buf);
                                      moved_qbuff = true;
 
-                                     //TODO enqueue next buffers
-                                     //auto fd = _fd;
+                                     //Invoke user callback and enqueue next frame
                                      _callback(_profile, fo,
                                                [urb_sets]() mutable {
-                                         //      [fd, buffer]() mutable {
-                                         // Evgeni buffer->request_next_frame(fd);
                                          for (auto&& kvp : urb_sets)
                                              kvp.first->request_next_frame(kvp.second);
                                      });
@@ -986,7 +912,7 @@ namespace librealsense
                                 else
                                 {
                                     LOG_WARNING("Empty frame has arrived.");
-                                    // TODO: Evgeni  Clear metadata descriptor when empty frame arrives
+                                    // TODO: Clear metadata descriptor when empty frame arrives
                                     void* md_start = nullptr;
                                     uint8_t md_size = 0;
                                     acquire_metadata(md_start,md_size,fds,urb_sets);
@@ -994,7 +920,7 @@ namespace librealsense
                             }
                             else
                             {
-                                LOG_ERROR("Video frame arrived in idle mode."); // TODO - Evgeni verification
+                                LOG_ERROR("Video frame arrived in idle mode."); // TODO - verification
                             }
 
                             if (!moved_qbuff)
@@ -1009,14 +935,13 @@ namespace librealsense
                             void* md_start = nullptr;
                             uint8_t md_size = 0;
 
-                            // TODO: Evgeni  Acquire metadata either from kernel appendix or metadata node
+                            // Clear matadata node
                             acquire_metadata(md_start,md_size,fds,urb_sets);
                         }
                     }
                 }
                 else
                 {
-                    // TODO Evgeni - md descriptor is not reset after DQBUF
                     if(val > 0)
                     {
                         std::stringstream ss;
@@ -1026,9 +951,6 @@ namespace librealsense
                             if(FD_ISSET(fd, &fds))
                             {
                                 ss << fd << ", ";
-                                //FD_CLR(_fd,&fds);
-                                //FD_ZERO(&fds);
-                                //FD_SET(_fd, &fds);
                                 if (_stream_pipe_fds.end() != std::find(_stream_pipe_fds.begin(), _stream_pipe_fds.end(), fd))
                                 {
                                     v4l2_buffer buf = {};
@@ -1070,79 +992,27 @@ namespace librealsense
         {
             if (has_metadata())
             {
-                // std::assert(0!=datasets.size()); Verify Evgeni !!
-                auto buffer = datasets[0].first;
-                md_start = buffer->get_frame_start() + buffer->get_length_frame_only();
-                md_size = (*(uint8_t*)md_start);
+                if (datasets.size())
+                {
+                    auto buffer = datasets[0].first;
+                    md_start = buffer->get_frame_start() + buffer->get_length_frame_only();
+                    md_size = (*(uint8_t*)md_start);
+                }
+                else
+                    LOG_ERROR("Metadata was requested with no valid file descriptors");
             }
         }
-
-//        void v4l_uvc_device::capture_frame(fd_set &cur_fds)       // retrieve frame from kernel and dispatch user-callback
-//        {
-
-//        }
 
         void v4l_uvc_device::set_power_state(power_state state)
         {
             if (state == D0 && _state == D3)
             {
                 map_device_descriptor();
-                /* Evgeni
-                _fd = open(_name.c_str(), O_RDWR | O_NONBLOCK, 0);
-                if(_fd < 0)
-                    throw linux_backend_exception(to_string() << "Cannot open '" << _name);
-
-                if (pipe(_stop_pipe_fd) < 0)
-                    throw linux_backend_exception("v4l_uvc_device: Cannot create pipe!");
-
-                v4l2_capability cap = {};
-                if(xioctl(_fd, VIDIOC_QUERYCAP, &cap) < 0)
-                {
-                    if(errno == EINVAL)
-                        throw linux_backend_exception(_name + " is no V4L2 device");
-                    else
-                        throw linux_backend_exception("xioctl(VIDIOC_QUERYCAP) failed");
-                }
-                if(!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
-                    throw linux_backend_exception(_name + " is no video capture device");
-
-                if(!(cap.capabilities & V4L2_CAP_STREAMING))
-                    throw linux_backend_exception(_name + " does not support streaming I/O");
-
-                // Select video input, video standard and tune here.
-                v4l2_cropcap cropcap = {};
-                cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                if(xioctl(_fd, VIDIOC_CROPCAP, &cropcap) == 0)
-                {
-                    v4l2_crop crop = {};
-                    crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                    crop.c = cropcap.defrect; // reset to default
-                    if(xioctl(_fd, VIDIOC_S_CROP, &crop) < 0)
-                    {
-                        switch (errno)
-                        {
-                        case EINVAL: break; // Cropping not supported
-                        default: break; // Errors ignored
-                        }
-                    }
-                } else {} // Errors ignored
-                */
             }
             if (state == D3 && _state == D0)
             {
                 close(_profile);
                 unmap_device_descriptor();
-                // evgeni
-//                if(::close(_fd) < 0)
-//                    throw linux_backend_exception("v4l_uvc_device: close(_fd) failed");
-
-//                if(::close(_stop_pipe_fd[0]) < 0)
-//                   throw linux_backend_exception("v4l_uvc_device: close(_stop_pipe_fd[0]) failed");
-//                if(::close(_stop_pipe_fd[1]) < 0)
-//                   throw linux_backend_exception("v4l_uvc_device: close(_stop_pipe_fd[1]) failed");
-
-//                _fd = 0;
-//                _stop_pipe_fd[0] = _stop_pipe_fd[1] = 0;
             }
             _state = state;
         }
@@ -1769,12 +1639,12 @@ namespace librealsense
                 auto buffer = _md_buffers[buf.index];
                 LOG_INFO("Metadata buf id :" << buf.index << " was polled, seq id: " << buf.sequence <<  " bytes used: " << buf.bytesused << " flags: "
                          << std::hex << buf.flags << std::dec);
-                //std::vector<std::pair< std::shared_ptr<platform::buffer>,int>> urb_sets;
+
                 datasets.emplace_back(std::make_pair(buffer,_md_fd));
 
                 if (_is_started)
                 {
-                    // TODO Evgeni
+                    // TODO Handle incomplete metadata buffer
                     /*if((buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE) &&
                             buf.bytesused > 0)
                     {
@@ -1797,13 +1667,6 @@ namespace librealsense
                             // The first 10 bytes of metadata buffer are generated by host driver
                             md_size = buf.bytesused - uvc_md_start_offset;
 
-        //                    std::stringstream ss;
-        //                    uint8_t *ptr = (uint8_t*)md_start;
-        //                    for (int i=0; i< buf.bytesused; i++)
-        //                        ss << std::hex << (int)ptr[i] << " ";
-        //                    LOG_INFO("Metadata buffer received, size " << std::dec << (int)md_size
-        //                             << " data: " << ss.str());
-
                             uvc_meta_buffer md_buf{};
                             uvc_header md_hdr{};
                             memcpy(&md_buf,md_start,buf.bytesused);
@@ -1819,10 +1682,8 @@ namespace librealsense
                                      << " stc: " << *(uint32_t*)(&md_hdr.source_clock[0])
                                      << " sof: " << *(uint16_t*)(&md_hdr.source_clock[4]));
                                      //<< " data: " << ss.str());
-        //                    frame_object fo{ buffer->get_length_frame_only(), md_si<< " uvc stc: " << (uint32_t)(&md_hdr.source_clock[0])ze,
-        //                        buffer->get_frame_start(), md_start, timestamp };
 
-                             buffer->attach_buffer(buf);
+                            buffer->attach_buffer(buf);
                              moved_qbuff = true;
                         }
                         else
@@ -1837,7 +1698,7 @@ namespace librealsense
                 }
                 else
                 {
-                    LOG_ERROR("Metadata frame arrived in idle mode."); // TODO - Evgeni verification
+                    LOG_WARNING("Metadata frame arrived in idle mode.");
                 }
 
                 if (!moved_qbuff)
@@ -1870,7 +1731,7 @@ namespace librealsense
                       [](const uvc_device_info& lhs, const uvc_device_info& rhs){ return lhs.id < rhs.id; });
 
             // Discriminate video and metadata nodes
-            // under the assumption that for each metadata node n there is a origin streaming node with index (n-1)
+            // under the assumption that for each metadata node with index N there is a origin streaming node with index (N-1)
             std::vector<uvc_device_info> results;
             for (auto&& cur_node : uvc_nodes)
             {

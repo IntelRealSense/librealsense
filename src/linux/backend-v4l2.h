@@ -46,7 +46,6 @@
 // Metadata streaming nodes are available with kernels 4.16+
 #ifdef V4L2_META_FMT_UVC
 constexpr bool metadata_node = true;
-#pragma message ( "\nibrealsense notification: V4L2_META_FMT_UVC was found, metadata node will be enabled")
 #else
 #pragma message ( "\nLibrealsense notification: V4L2_META_FMT_UVC was not defined, adding metadata constructs")
 
@@ -68,9 +67,9 @@ constexpr bool metadata_node = false;
 
 // Use local definition of buf type to resolve for kernel versions
 constexpr auto LOCAL_V4L2_BUF_TYPE_META_CAPTURE = (v4l2_buf_type)(13);
-// uvcvideo.h
+
 #pragma pack(push, 1)
-// The struct definition is identical to one defined in kernel 4.16 headers, and is provided to allow for cross-kernel compilation
+// The struct definition is identical to uvc_meta_buf defined uvcvideo.h/ kernel 4.16 headers, and is provided to allow for cross-kernel compilation
 struct uvc_meta_buffer {
     __u64 ns;               // system timestamp of the payload in nanoseconds
     __u16 sof;              // USB Frame Number
@@ -79,9 +78,6 @@ struct uvc_meta_buffer {
     __u8* buf;              //device-specific metadata payload data
 };
 #pragma pack(pop)
-
-// uvc_meta_buf definition shall be kernel or locally defined
-//typedef std::conditional<std::is_class<uvc_meta_buf>::value, uvc_meta_buf, uvc_meta_buf_local>::type uvc_meta_buffer;
 
 
 namespace librealsense
