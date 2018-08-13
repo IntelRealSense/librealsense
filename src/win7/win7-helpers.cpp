@@ -656,6 +656,8 @@ namespace librealsense
             }
             else if (GetLastError() == ERROR_ALREADY_EXISTS)
             {
+                CloseHandle(_winusb_mutex);
+                _winusb_mutex = NULL;
                 return Mutex_AlreadyExist;
             }
             return Mutex_Succeed;
