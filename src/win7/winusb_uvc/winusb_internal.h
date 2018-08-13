@@ -8,7 +8,7 @@
 #define LIBUVC_XFER_BUF_SIZE	( 16 * 1024 * 1024 )
 #define MAX_USB_INTERFACES 20
 
-struct WINUSB_INTERFACE {
+struct winusb_uvc_interface {
     USB_INTERFACE_DESCRIPTOR desc;
     PUCHAR extra;
     USB_ENDPOINT_DESCRIPTOR endpoints[10];
@@ -17,8 +17,8 @@ struct WINUSB_INTERFACE {
     uint8_t winusbInterfaceNumber;
 };
 
-struct WINUSB_INTERFACES {
-    WINUSB_INTERFACE interfaces[MAX_USB_INTERFACES];
+struct winusb_uvc_interfaces {
+    winusb_uvc_interface interfaces[MAX_USB_INTERFACES];
     int numInterfaces;
 };
 
@@ -147,9 +147,9 @@ enum uvc_vc_desc_subtype {
     UVC_VC_EXTENSION_UNIT = 0x06
 };
 
-typedef struct uvc_frame_desc {
-    struct uvc_format_desc *parent;
-    struct uvc_frame_desc *prev, *next;
+typedef struct winusb_uvc_frame_desc {
+    struct winusb_uvc_format_desc *parent;
+    struct winusb_uvc_frame_desc *prev, *next;
     /** Type of frame, such as JPEG frame or uncompressed frme */
     enum uvc_vs_desc_subtype bDescriptorSubtype;
     /** Index of the frame within the list of specs available for this format */
@@ -186,9 +186,9 @@ typedef struct uvc_frame_desc {
 * A "format" determines a stream's image type (e.g., raw YUYV or JPEG)
 * and includes many "frame" configurations.
 */
-typedef struct uvc_format_desc {
-    struct uvc_streaming_interface *parent;
-    struct uvc_format_desc *prev, *next;
+typedef struct winusb_uvc_format_desc {
+    struct winusb_uvc_streaming_interface *parent;
+    struct winusb_uvc_format_desc *prev, *next;
     /** Type of image stream, such as JPEG or uncompressed. */
     enum uvc_vs_desc_subtype bDescriptorSubtype;
     /** Identifier of this format within the VS interface's format list */
@@ -206,7 +206,7 @@ typedef struct uvc_format_desc {
         /** Flags for JPEG stream */
         uint8_t bmFlags;
     };
-    /** Default {uvc_frame_desc} to choose given this format */
+    /** Default {winusb_uvc_frame_desc} to choose given this format */
     uint8_t bDefaultFrameIndex;
     uint8_t bAspectRatioX;
     uint8_t bAspectRatioY;
@@ -214,7 +214,7 @@ typedef struct uvc_format_desc {
     uint8_t bCopyProtect;
     uint8_t bVariableSize;
     /** Available frame specifications for this format */
-    struct uvc_frame_desc *frame_descs;
+    struct winusb_uvc_frame_desc *frame_descs;
 } uvc_format_desc_t;
 
 /** UVC request code (A.8) */
@@ -314,22 +314,9 @@ enum uvc_et_type {
     UVC_COMPONENT_CONNECTOR = 0x0403
 };
 
-/** VideoStream interface */
-typedef struct uvc_streaming_interface {
-    struct uvc_device_info *parent;
-    struct uvc_streaming_interface *prev, *next;
-    /** Interface number */
-    uint8_t bInterfaceNumber;
-    /** Video formats that this interface provides */
-    struct uvc_format_desc *format_descs;
-    /** USB endpoint to use when communicating with this interface */
-    uint8_t bEndpointAddress;
-    uint8_t bTerminalLink;
-} uvc_streaming_interface_t;
-
 /** VideoControl interface */
-typedef struct uvc_control_interface {
-    struct uvc_device_info *parent;
+typedef struct winusb_uvc_control_interface {
+    struct winusb_uvc_device_info *parent;
     struct uvc_input_terminal *input_term_descs;
     // struct uvc_output_terminal *output_term_descs;
     struct uvc_selector_unit *selector_unit_descs;
@@ -340,7 +327,33 @@ typedef struct uvc_control_interface {
     uint8_t bEndpointAddress;
     /** Interface number */
     uint8_t bInterfaceNumber;
-} uvc_control_interface_t;
+} winusb_uvc_control_interface_t;
+
+/** VideoStream interface */
+typedef struct winusb_uvc_streaming_interface {
+    struct winusb_uvc_device_info *parent;
+    struct winusb_uvc_streaming_interface *prev, *next;
+    /** Interface number */
+    uint8_t bInterfaceNumber;
+    /** Video formats that this interface provides */
+    struct winusb_uvc_format_desc *format_descs;
+    /** USB endpoint to use when communicating with this interface */
+    uint8_t bEndpointAddress;
+    uint8_t bTerminalLink;
+} winusb_uvc_streaming_interface_t;
+
+typedef struct winusb_uvc_device_info {
+    /** Configuration descriptor for USB device */
+    USB_CONFIGURATION_DESCRIPTOR config;
+    /** USB interface descriptor */
+    winusb_uvc_interfaces *interfaces;
+    /** VideoControl interface provided by device */
+    winusb_uvc_control_interface_t ctrl_if;
+    /** VideoStreaming interfaces on the device */
+    winusb_uvc_streaming_interface_t *stream_ifs;
+    /** Store the interface for multiple UVCs on a single VID/PID device (Intel RealSense, VF200, e.g) */
+    int camera_number;
+} winusb_uvc_device_info_t;
 
 typedef struct uvc_input_terminal {
     struct uvc_input_terminal *prev, *next;
@@ -389,26 +402,16 @@ typedef struct uvc_extension_unit {
     uint64_t bmControls;
 } uvc_extension_unit_t;
 
-typedef struct uvc_device_info {
-    /** Configuration descriptor for USB device */
-    USB_CONFIGURATION_DESCRIPTOR config;
-    WINUSB_INTERFACES *interfaces;
-    /** VideoControl interface provided by device */
-    uvc_control_interface_t ctrl_if;
-    /** VideoStreaming interfaces on the device */
-    uvc_streaming_interface_t *stream_ifs;
-    /** Store the interface for multiple UVCs on a single VID/PID device (Intel RealSense, VF200, e.g) */
-    int camera_number;
-} uvc_device_info_t;
 
-typedef struct uvc_stream_handle uvc_stream_handle_t;
 
-typedef struct uvc_stream_context {
-    uvc_stream_handle_t *stream;
+typedef struct winusb_uvc_stream_handle winusb_uvc_stream_handle_t;
+
+typedef struct winusb_uvc_stream_context {
+    winusb_uvc_stream_handle_t *stream;
     int endpoint;
     int maxPayloadTransferSize;
-    WINUSB_INTERFACE *iface;
-}uvc_stream_context_t;
+    winusb_uvc_interface *iface;
+}winusb_uvc_stream_context_t;
 
 typedef struct uvc_stream_ctrl {
     uint16_t bmHint;
@@ -438,10 +441,10 @@ typedef struct uvc_stream_ctrl {
 
 typedef void(winusb_uvc_frame_callback_t)(struct librealsense::platform::frame_object *frame, void *user_ptr);
 
-struct uvc_stream_handle {
+struct winusb_uvc_stream_handle {
     struct winusb_uvc_device *devh;
-    struct uvc_stream_handle *prev, *next;
-    struct uvc_streaming_interface *stream_if;
+    struct winusb_uvc_stream_handle *prev, *next;
+    struct winusb_uvc_streaming_interface *stream_if;
 
     /** if true, stream is running (streaming video to host) */
     uint8_t running;
@@ -502,10 +505,10 @@ struct winusb_uvc_device
 {
     WINUSB_INTERFACE_HANDLE winusbHandle;
     WINUSB_INTERFACE_HANDLE associateHandle;
-    uvc_device_info_t deviceData;
+    winusb_uvc_device_info_t deviceData;
     HANDLE deviceHandle;
     PWCHAR devPath;
-    uvc_stream_handle_t *streams;
+    winusb_uvc_stream_handle_t *streams;
     int pid, vid;
 };
 

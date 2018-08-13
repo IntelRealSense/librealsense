@@ -1,7 +1,6 @@
 #include "windows.h"
 #include "winusb_uvc.h"
-#include "utlist.h"
-#include "backend.h"
+#include "libuvc/utlist.h"
 
 struct format_table_entry {
     enum uvc_frame_format format;
@@ -54,7 +53,7 @@ struct format_table_entry *_get_format_entry(enum uvc_frame_format format) {
 }
 
 
-static uvc_streaming_interface_t *_uvc_get_stream_if(winusb_uvc_device *devh, int interface_idx);
+static winusb_uvc_streaming_interface_t *_uvc_get_stream_if(winusb_uvc_device *devh, int interface_idx);
 
 uvc_frame_desc_t *uvc_find_frame_desc(winusb_uvc_device *devh,
     uint16_t format_id, uint16_t frame_id);
@@ -201,7 +200,7 @@ uvc_error_t uvc_query_stream_ctrl(winusb_uvc_device *devh, uvc_stream_ctrl_t *ct
 * @param[in] ctrl Control block, processed using {uvc_probe_stream_ctrl} or
 *             {uvc_get_stream_ctrl_format_size}
 */
-uvc_error_t uvc_stream_ctrl(uvc_stream_handle_t *strmh, uvc_stream_ctrl_t *ctrl) 
+uvc_error_t uvc_stream_ctrl(winusb_uvc_stream_handle_t *strmh, uvc_stream_ctrl_t *ctrl)
 {
     uvc_error_t ret = UVC_SUCCESS;
 
@@ -233,7 +232,7 @@ uvc_error_t uvc_stream_ctrl(uvc_stream_handle_t *strmh, uvc_stream_ctrl_t *ctrl)
 * @param format_id Index of format class descriptor
 * @param frame_id Index of frame descriptor
 */
-static uvc_frame_desc_t *_uvc_find_frame_desc_stream_if(uvc_streaming_interface_t *stream_if,
+static uvc_frame_desc_t *_uvc_find_frame_desc_stream_if(winusb_uvc_streaming_interface_t *stream_if,
     uint16_t format_id, uint16_t frame_id) {
 
     uvc_format_desc_t *format = NULL;
@@ -251,7 +250,7 @@ static uvc_frame_desc_t *_uvc_find_frame_desc_stream_if(uvc_streaming_interface_
     return NULL;
 }
 
-uvc_frame_desc_t *uvc_find_frame_desc_stream(uvc_stream_handle_t *strmh,
+uvc_frame_desc_t *uvc_find_frame_desc_stream(winusb_uvc_stream_handle_t *strmh,
     uint16_t format_id, uint16_t frame_id) {
     return _uvc_find_frame_desc_stream_if(strmh->stream_if, format_id, frame_id);
 }
@@ -265,7 +264,7 @@ uvc_frame_desc_t *uvc_find_frame_desc_stream(uvc_stream_handle_t *strmh,
 uvc_frame_desc_t *uvc_find_frame_desc(winusb_uvc_device *devh,
     uint16_t format_id, uint16_t frame_id) {
 
-    uvc_streaming_interface_t *stream_if;
+    winusb_uvc_streaming_interface_t *stream_if;
     uvc_frame_desc_t *frame;
 
     DL_FOREACH(devh->deviceData.stream_ifs, stream_if) {
@@ -291,7 +290,7 @@ uvc_error_t winusb_get_available_formats(
     int interface_idx,
     uvc_format_t **formats) {
 
-    uvc_streaming_interface_t *stream_if = NULL;
+    winusb_uvc_streaming_interface_t *stream_if = NULL;
     uvc_format_t *prev_format = NULL;
     uvc_format_desc_t *format;
 
@@ -333,7 +332,7 @@ uvc_error_t winusb_get_available_formats(
 // Return linked list of uvc_format_t of all available formats inside winusb device
 uvc_error_t winusb_get_available_formats_all(winusb_uvc_device *devh, uvc_format_t **formats) {
 
-    uvc_streaming_interface_t *stream_if = NULL;
+    winusb_uvc_streaming_interface_t *stream_if = NULL;
     uvc_format_t *prev_format = NULL;
     uvc_format_desc_t *format;
 
@@ -381,8 +380,8 @@ uvc_error_t winusb_free_formats(uvc_format_t *formats) {
     return UVC_SUCCESS;
 }
 
-static uvc_stream_handle_t *_uvc_get_stream_by_interface(winusb_uvc_device *devh, int interface_idx) {
-    uvc_stream_handle_t *strmh;
+static winusb_uvc_stream_handle_t *_uvc_get_stream_by_interface(winusb_uvc_device *devh, int interface_idx) {
+    winusb_uvc_stream_handle_t *strmh;
 
     DL_FOREACH(devh->streams, strmh) {
         if (strmh->stream_if->bInterfaceNumber == interface_idx)
@@ -434,8 +433,8 @@ uvc_error_t uvc_probe_stream_ctrl(winusb_uvc_device *devh, uvc_stream_ctrl_t *ct
 }
 
 /* Return only Video stream interfaces */
-static uvc_streaming_interface_t *_uvc_get_stream_if(winusb_uvc_device *devh, int interface_idx) {
-    uvc_streaming_interface_t *stream_if;
+static winusb_uvc_streaming_interface_t *_uvc_get_stream_if(winusb_uvc_device *devh, int interface_idx) {
+    winusb_uvc_streaming_interface_t *stream_if;
 
     DL_FOREACH(devh->deviceData.stream_ifs, stream_if) {
         if (stream_if->bInterfaceNumber == interface_idx)
@@ -463,7 +462,7 @@ uvc_error_t winusb_get_stream_ctrl_format_size(
     int fps,
     int interface_idx
     ) {
-    uvc_streaming_interface_t *stream_if;
+    winusb_uvc_streaming_interface_t *stream_if;
     uvc_format_desc_t *format;
     uvc_error_t ret = UVC_SUCCESS;
 
@@ -560,7 +559,7 @@ uvc_error_t winusb_get_stream_ctrl_format_size_all(
     int width, int height,
     int fps
 ) {
-    uvc_streaming_interface_t *stream_if;
+    winusb_uvc_streaming_interface_t *stream_if;
     uvc_format_desc_t *format;
     uvc_error_t ret = UVC_SUCCESS;
 
@@ -637,10 +636,10 @@ found:
     return uvc_probe_stream_ctrl(devh, ctrl);
 }
 
-uvc_error_t uvc_stream_open_ctrl(winusb_uvc_device *devh, uvc_stream_handle_t **strmhp, uvc_stream_ctrl_t *ctrl) {
+uvc_error_t uvc_stream_open_ctrl(winusb_uvc_device *devh, winusb_uvc_stream_handle_t **strmhp, uvc_stream_ctrl_t *ctrl) {
     /* Chosen frame and format descriptors */
-    uvc_stream_handle_t *strmh = NULL;
-    uvc_streaming_interface_t *stream_if;
+    winusb_uvc_stream_handle_t *strmh = NULL;
+    winusb_uvc_streaming_interface_t *stream_if;
     uvc_error_t ret;
 
     if (_uvc_get_stream_by_interface(devh, ctrl->bInterfaceNumber) != NULL) {
@@ -654,12 +653,12 @@ uvc_error_t uvc_stream_open_ctrl(winusb_uvc_device *devh, uvc_stream_handle_t **
         goto fail;
     }
 
-    strmh = (uvc_stream_handle_t *)calloc(1, sizeof(*strmh));
+    strmh = (winusb_uvc_stream_handle_t *)calloc(1, sizeof(*strmh));
     if (!strmh) {
         ret = UVC_ERROR_NO_MEM;
         goto fail;
     }
-    memset(strmh, 0, sizeof(uvc_stream_handle_t));
+    memset(strmh, 0, sizeof(winusb_uvc_stream_handle_t));
     strmh->devh = devh;
     strmh->stream_if = stream_if;
     //strmh->frame.library_owns_data = 1;
@@ -708,7 +707,7 @@ static enum uvc_frame_format uvc_frame_format_for_guid(uint8_t guid[16]) {
     return UVC_FRAME_FORMAT_UNKNOWN;
 }
 
-void _uvc_swap_buffers(uvc_stream_handle_t *strmh) {
+void _uvc_swap_buffers(winusb_uvc_stream_handle_t *strmh) {
     uint8_t *tmp_buf;
 
     //pthread_mutex_lock(&strmh->cb_mutex);
@@ -731,7 +730,7 @@ void _uvc_swap_buffers(uvc_stream_handle_t *strmh) {
     strmh->pts = 0;
 }
 
-void _uvc_process_payload(uvc_stream_handle_t *strmh, uint8_t *payload, size_t payload_len) {
+void _uvc_process_payload(winusb_uvc_stream_handle_t *strmh, uint8_t *payload, size_t payload_len) {
     uint8_t header_len;
     uint8_t header_info;
     size_t data_len;
@@ -820,7 +819,7 @@ void _uvc_process_payload(uvc_stream_handle_t *strmh, uint8_t *payload, size_t p
     strmh->user_cb(&fo, strmh->user_ptr);
 }
 
-void stream_thread(uvc_stream_context *strctx)
+void stream_thread(winusb_uvc_stream_context *strctx)
 {
     PUCHAR buffer = (PUCHAR)malloc(strctx->maxPayloadTransferSize);
     memset(buffer, 0, sizeof(strctx->maxPayloadTransferSize));
@@ -850,13 +849,13 @@ void stream_thread(uvc_stream_context *strctx)
 };
 
 uvc_error_t uvc_stream_start(
-    uvc_stream_handle_t *strmh,
+    winusb_uvc_stream_handle_t *strmh,
     winusb_uvc_frame_callback_t *cb,
     void *user_ptr,
     uint8_t flags
     ) {
     /* USB interface we'll be using */
-    WINUSB_INTERFACE *iface;
+    winusb_uvc_interface *iface;
     int interface_id;
     uvc_frame_desc_t *frame_desc;
     uvc_format_desc_t *format_desc;
@@ -893,7 +892,7 @@ uvc_error_t uvc_stream_start(
     interface_id = strmh->stream_if->bInterfaceNumber;
     iface = &strmh->devh->deviceData.interfaces->interfaces[interface_id];
     
-    uvc_stream_context *streamctx = new uvc_stream_context;
+    winusb_uvc_stream_context *streamctx = new winusb_uvc_stream_context;
 
     //printf("Starting stream on EP = 0x%X, interface 0x%X\n", format_desc->parent->bEndpointAddress, iface);
 
@@ -912,7 +911,7 @@ fail:
     return ret;
 }
 
-uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh) 
+uvc_error_t uvc_stream_stop(winusb_uvc_stream_handle_t *strmh)
 {
     if (!strmh->running)
         return UVC_ERROR_INVALID_PARAM;
@@ -923,7 +922,7 @@ uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh)
     return UVC_SUCCESS;
 }
 
-void uvc_stream_close(uvc_stream_handle_t *strmh) 
+void uvc_stream_close(winusb_uvc_stream_handle_t *strmh)
 {
     if (strmh->running)
     {
@@ -942,7 +941,7 @@ void uvc_stream_close(uvc_stream_handle_t *strmh)
 uvc_error_t winusb_start_streaming(winusb_uvc_device *devh, uvc_stream_ctrl_t *ctrl, winusb_uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags)
 {
     uvc_error_t ret;
-    uvc_stream_handle_t *strmh;
+    winusb_uvc_stream_handle_t *strmh;
 
     ret = uvc_stream_open_ctrl(devh, &strmh, ctrl);
     if (ret != UVC_SUCCESS)
@@ -962,7 +961,7 @@ uvc_error_t winusb_start_streaming(winusb_uvc_device *devh, uvc_stream_ctrl_t *c
 
 void winusb_stop_streaming(winusb_uvc_device *devh)
 {
-    uvc_stream_handle_t *strmh, *strmh_tmp;
+    winusb_uvc_stream_handle_t *strmh, *strmh_tmp;
 
     DL_FOREACH_SAFE(devh->streams, strmh, strmh_tmp) {
         uvc_stream_close(strmh);

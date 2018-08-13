@@ -2,7 +2,6 @@
 #define WINUSB_UVC_H_
 
 #include "winusb_internal.h"
-#include "backend.h"
 
 typedef struct uvc_frame {
     /** Image data for this frame */

@@ -27,7 +27,7 @@ The library will be compiled without the metadata support!\n")
 #include "win7-uvc.h"
 #include "win7-usb.h"
 #include "../types.h"
-#include "winusb_uvc/utlist.h"
+#include "libuvc/utlist.h"
 #include "winusb_uvc/winusb_uvc.h"
 
 #include "Shlwapi.h"

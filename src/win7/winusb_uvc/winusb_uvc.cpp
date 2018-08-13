@@ -1,8 +1,6 @@
 // winusb_uvc.cpp : Defines the entry point for the console application.
 //
 #include "windows.h"
-#include "tchar.h"
-#include "utlist.h"
 #include "SETUPAPI.H"
 #include "winusb_internal.h"
 #include "parser.h"
@@ -79,6 +77,16 @@ void poll_interrupts(WINUSB_INTERFACE_HANDLE handle, int ep, uint16_t timeout)
     }
 }
 
+/**
+* @brief Get the length of a control on a terminal or unit.
+*
+* @param devh UVC device handle
+* @param unit Unit or Terminal ID; obtain this from the uvc_extension_unit_t describing the extension unit
+* @param ctrl Vendor-specific control number to query
+* @return On success, the length of the control as reported by the device. Otherwise,
+*   a uvc_error_t error describing the error encountered.
+* @ingroup ctrl
+*/
 int uvc_get_ctrl_len(winusb_uvc_device *devh, uint8_t unit, uint8_t ctrl) {
     unsigned char buf[2];
 
@@ -100,6 +108,19 @@ int uvc_get_ctrl_len(winusb_uvc_device *devh, uint8_t unit, uint8_t ctrl) {
         return (unsigned short)SW_TO_SHORT(buf);
 }
 
+/**
+* @brief Perform a GET_* request from an extension unit.
+*
+* @param devh UVC device handle
+* @param unit Unit ID; obtain this from the uvc_extension_unit_t describing the extension unit
+* @param ctrl Control number to query
+* @param data Data buffer to be filled by the device
+* @param len Size of data buffer
+* @param req_code GET_* request to execute
+* @return On success, the number of bytes actually transferred. Otherwise,
+*   a uvc_error_t error describing the error encountered.
+* @ingroup ctrl
+*/
 int uvc_get_ctrl(winusb_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *data, int len, enum uvc_req_code req_code) {
     if (!devh)
         return UVC_ERROR_NO_DEVICE;
@@ -113,6 +134,18 @@ int uvc_get_ctrl(winusb_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *data
         len);
 }
 
+/**
+* @brief Perform a SET_CUR request to a terminal or unit.
+*
+* @param devh UVC device handle
+* @param unit Unit or Terminal ID
+* @param ctrl Control number to set
+* @param data Data buffer to be sent to the device
+* @param len Size of data buffer
+* @return On success, the number of bytes actually transferred. Otherwise,
+*   a uvc_error_t error describing the error encountered.
+* @ingroup ctrl
+*/
 int uvc_set_ctrl(winusb_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *data, int len) {
     if (!devh)
         return UVC_ERROR_NO_DEVICE;
@@ -477,7 +510,7 @@ uvc_error_t winusb_find_devices(winusb_uvc_device ***devs, int vid, int pid)
 uvc_error_t winusb_open(winusb_uvc_device *device)
 {
     USB_CONFIGURATION_DESCRIPTOR cfgDesc;
-    WINUSB_INTERFACES* interfaces = NULL;
+    winusb_uvc_interfaces* interfaces = NULL;
     UCHAR *descriptors = NULL;
     uvc_error_t ret = UVC_SUCCESS;
     ULONG returnLength = 0;
@@ -526,7 +559,7 @@ uvc_error_t winusb_open(winusb_uvc_device *device)
         ret = UVC_ERROR_INVALID_PARAM;
         goto fail;
     }
-    memset(&device->deviceData, 0, sizeof(uvc_device_info_t));
+    memset(&device->deviceData, 0, sizeof(winusb_uvc_device_info_t));
     device->deviceData.config = cfgDesc;
 
     // Iterate over all descriptors and parse all Interface and Endpoint descriptors
@@ -584,7 +617,7 @@ uvc_error_t winusb_close(winusb_uvc_device *device)
     if (device != NULL)
     {
         winusb_free_device_info(&device->deviceData);
-        memset(&device->deviceData, 0, sizeof(uvc_device_info_t));
+        memset(&device->deviceData, 0, sizeof(winusb_uvc_device_info_t));
 
         if (device->winusbHandle != NULL)
         {
