@@ -638,31 +638,21 @@ if(FORCE_WINUSB_UVC)
     set(BACKEND RS2_USE_WINUSB_UVC_BACKEND)
 #
     list(APPEND REALSENSE_CPP
-		src/win7/winusb_uvc/parser.cpp
-		src/win7/winusb_uvc/stream.cpp
-#		#src/win7/winusb_uvc/winusb_impl.cpp
 		src/win7/winusb_uvc/winusb_uvc.cpp
     )
 #
     list(APPEND REALSENSE_HPP
-		src/win7/winusb_uvc/parser.h
 		src/libuvc/utlist.h
-		#src/win7/winusb_uvc/winusb_internal.h
 		src/win7/winusb_uvc/winusb_uvc.h
     )
 #
 	source_group("Source Files\\WinUsbUvc" FILES
-		src/win7/winusb_uvc/parser.cpp
-		src/win7/winusb_uvc/stream.cpp
-#		#src/win7/winusb_uvc/winusb_impl.cpp
 		src/win7/winusb_uvc/winusb_uvc.cpp
     )
 #
     source_group("Header Files\\WinUsbUvc" FILES
-		src/win7/winusb_uvc/parser.h
 		src/libuvc/utlist.h
-		#src/win7/winusb_uvc/winusb_internal.h
-		#src/win7/winusb_uvc/winusb_uvc.h
+		src/win7/winusb_uvc/winusb_uvc.h
     )
 #
 #    message( WARNING "Using winusb_uvc!" )

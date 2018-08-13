@@ -4,7 +4,7 @@
 
 #include "../backend.h"
 #include "win7-helpers.h"
-#include "winusb_uvc/winusb_internal.h"
+#include "winusb_uvc/winusb_uvc.h"
 
 #include <strmif.h>
 #include <unordered_map>
