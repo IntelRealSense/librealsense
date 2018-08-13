@@ -5,90 +5,10 @@
 #include "winusb_uvc.h"
 #include "libuvc/utlist.h"
 
-uvc_error_t uvc_parse_vc(
-    winusb_uvc_device *dev,
-    winusb_uvc_device_info_t *info,
-    const unsigned char *block, size_t block_size);
+uvc_error_t winusb_uvc_scan_streaming(winusb_uvc_device *dev, winusb_uvc_device_info_t *info, int interface_idx);
+uvc_error_t winusb_uvc_parse_vs(winusb_uvc_device *dev, winusb_uvc_device_info_t *info, winusb_uvc_streaming_interface_t *stream_if, const unsigned char *block, size_t block_size);
 
-uvc_error_t uvc_scan_streaming(winusb_uvc_device *dev,
-    winusb_uvc_device_info_t *info,
-    int interface_idx);
-
-uvc_error_t uvc_parse_vs(
-    winusb_uvc_device *dev,
-    winusb_uvc_device_info_t *info,
-    winusb_uvc_streaming_interface_t *stream_if,
-    const unsigned char *block, size_t block_size);
-
-// Iterate over all descriptors and parse all Interface and Endpoint descriptors
-void ParseConfigDescriptors(USB_CONFIGURATION_DESCRIPTOR *cfgDesc, winusb_uvc_interfaces **interfaces)
-{
-    int length = cfgDesc->wTotalLength - sizeof(USB_CONFIGURATION_DESCRIPTOR);
-    int curLocation = 0;
-    int interfaceDescStart = -1;
-    winusb_uvc_interfaces *descInterfaces = new winusb_uvc_interfaces;
-
-    memset(descInterfaces, 0, sizeof(winusb_uvc_interfaces));
-    winusb_uvc_interface *curInterface = NULL;
-    USB_INTERFACE_DESCRIPTOR *curDescriptor = NULL;
-    descInterfaces->numInterfaces = 0;
-
-    PUCHAR descriptors = (PUCHAR)cfgDesc;
-    descriptors += cfgDesc->bLength;
-
-    // iterate over all descriptors
-    do {
-        int descLen = descriptors[curLocation];
-        //printf("parse : length : %d type : %x first byte: %x\n", descLen, descriptors[curLocation + 1], descriptors[curLocation + 2]);
-        if (descriptors[curLocation + 1] == USB_INTERFACE_DESCRIPTOR_TYPE || (curLocation + descLen) >= length)
-        {
-            if (interfaceDescStart != -1)
-            {
-                // Saving previous interface with all extra data afterwards (up to this interface)
-                memcpy(&curInterface->desc, &descriptors[interfaceDescStart], sizeof(curInterface->desc));
-                interfaceDescStart += sizeof(USB_INTERFACE_DESCRIPTOR);
-                curInterface->extraLength = curLocation - interfaceDescStart;
-                curInterface->extra = new UCHAR[curInterface->extraLength];
-                memcpy(curInterface->extra, &descriptors[interfaceDescStart], curInterface->extraLength);
-                curInterface->winusbInterfaceNumber = descInterfaces->numInterfaces;
-                descInterfaces->numInterfaces++;
-            }
-
-            if ((curLocation + descLen) < length)
-            {
-                // Setting to new found interface descriptor pointer
-                interfaceDescStart = curLocation;
-                curDescriptor = (USB_INTERFACE_DESCRIPTOR *)&descriptors[interfaceDescStart];
-                curInterface = &descInterfaces->interfaces[curDescriptor->bInterfaceNumber];
-                curInterface->numEndpoints = 0;
-            }
-        }
-        else if (descriptors[curLocation + 1] == USB_ENDPOINT_DESCRIPTOR_TYPE)
-        {
-            memcpy(&curInterface->endpoints[curInterface->numEndpoints], &descriptors[curLocation], descLen);
-            curInterface->numEndpoints++;
-        }
-
-        curLocation += descLen;
-        //printf("length = %d\n", curLocation);
-    } while (curLocation < length);
-
-    *interfaces = descInterfaces;
-}
-
-void FreeWinusbInterfaces(winusb_uvc_interfaces *winusbInterfaces) {
-    for (int i = 0; i < 10; i++) {
-        if (winusbInterfaces->interfaces[i].extra != NULL) {
-            delete winusbInterfaces->interfaces[i].extra;
-            winusbInterfaces->interfaces[i].extra = NULL;
-        }
-    }
-
-    delete winusbInterfaces;
-}
-
-
-void winusb_free_device_info(winusb_uvc_device_info_t *info) {
+void winusb_uvc_free_device_info(winusb_uvc_device_info_t *info) {
     uvc_input_terminal_t *input_term, *input_term_tmp;
     uvc_processing_unit_t *proc_unit, *proc_unit_tmp;
     uvc_extension_unit_t *ext_unit, *ext_unit_tmp;
@@ -96,7 +16,6 @@ void winusb_free_device_info(winusb_uvc_device_info_t *info) {
     winusb_uvc_streaming_interface_t *stream_if, *stream_if_tmp;
     uvc_format_desc_t *format, *format_tmp;
     uvc_frame_desc_t *frame, *frame_tmp;
-
 
     DL_FOREACH_SAFE(info->ctrl_if.input_term_descs, input_term, input_term_tmp) {
         DL_DELETE(info->ctrl_if.input_term_descs, input_term);
@@ -131,56 +50,19 @@ void winusb_free_device_info(winusb_uvc_device_info_t *info) {
         free(stream_if);
     }
 
-    FreeWinusbInterfaces(info->interfaces);
-}
-
-uvc_error_t uvc_scan_control(winusb_uvc_device *dev, winusb_uvc_device_info_t *info) {
-    USB_INTERFACE_DESCRIPTOR *if_desc;
-    uvc_error_t parse_ret, ret;
-    int interface_idx;
-    const unsigned char *buffer;
-    size_t buffer_left, block_size;
-
-    ret = UVC_SUCCESS;
-    if_desc = NULL;
-
-    for (interface_idx = 0; interface_idx < 10; ++interface_idx) {
-        if_desc = &info->interfaces->interfaces[interface_idx].desc;
-
-        if (if_desc->bInterfaceClass == 14 && if_desc->bInterfaceSubClass == 1) // Video, Control
-            break;
-
-        if_desc = NULL;
-    }
-
-    if (if_desc == NULL) {
-        return UVC_ERROR_INVALID_DEVICE;
-    }
-
-    info->ctrl_if.bInterfaceNumber = interface_idx;
-    if (if_desc->bNumEndpoints != 0) {
-        info->ctrl_if.bEndpointAddress = info->interfaces->interfaces[interface_idx].endpoints[0].bEndpointAddress;
-    }
-
-    buffer = info->interfaces->interfaces[interface_idx].extra;
-    buffer_left = info->interfaces->interfaces[interface_idx].extraLength;
-
-    while (buffer_left >= 3) { // parseX needs to see buf[0,2] = length,type
-        block_size = buffer[0];
-        //printf("%d %x %d\n", buffer[0], buffer[1],buffer_left);
-        parse_ret = uvc_parse_vc(dev, info, buffer, block_size);
-
-        if (parse_ret != UVC_SUCCESS) {
-            ret = parse_ret;
-            break;
+    for (int i = 0; i < MAX_USB_INTERFACES; i++)
+    {
+        if (info->interfaces->iface[i].extra != NULL) 
+        {
+            free(info->interfaces->iface[i].extra);
+            info->interfaces->iface[i].extra = NULL;
         }
-
-        buffer_left -= block_size;
-        buffer += block_size;
     }
 
-    return ret;
+    free(info->interfaces);
 }
+
+
 
 /** @internal
 * @brief Parse a VideoControl header.
@@ -209,7 +91,7 @@ uvc_error_t uvc_parse_vc_header(winusb_uvc_device *dev,
     }
 
     for (i = 12; i < block_size; ++i) {
-        scan_ret = uvc_scan_streaming(dev, info, block[i]);
+        scan_ret = winusb_uvc_scan_streaming(dev, info, block[i]);
         if (scan_ret != UVC_SUCCESS) {
             ret = scan_ret;
             break;
@@ -359,11 +241,59 @@ uvc_error_t uvc_parse_vc(
     return ret;
 }
 
+uvc_error_t winusb_uvc_scan_control(winusb_uvc_device *dev, winusb_uvc_device_info_t *info) {
+    USB_INTERFACE_DESCRIPTOR *if_desc;
+    uvc_error_t parse_ret, ret;
+    int interface_idx;
+    const unsigned char *buffer;
+    size_t buffer_left, block_size;
+
+    ret = UVC_SUCCESS;
+    if_desc = NULL;
+
+    for (interface_idx = 0; interface_idx < MAX_USB_INTERFACES; ++interface_idx) {
+        if_desc = &info->interfaces->iface[interface_idx].desc;
+
+        if (if_desc->bInterfaceClass == 14 && if_desc->bInterfaceSubClass == 1) // Video, Control
+            break;
+
+        if_desc = NULL;
+    }
+
+    if (if_desc == NULL) {
+        return UVC_ERROR_INVALID_DEVICE;
+    }
+
+    info->ctrl_if.bInterfaceNumber = interface_idx;
+    if (if_desc->bNumEndpoints != 0) {
+        info->ctrl_if.bEndpointAddress = info->interfaces->iface[interface_idx].endpoints[0].bEndpointAddress;
+    }
+
+    buffer = info->interfaces->iface[interface_idx].extra;
+    buffer_left = info->interfaces->iface[interface_idx].extraLength;
+
+    while (buffer_left >= 3) { // parseX needs to see buf[0,2] = length,type
+        block_size = buffer[0];
+        //printf("%d %x %d\n", buffer[0], buffer[1],buffer_left);
+        parse_ret = uvc_parse_vc(dev, info, buffer, block_size);
+
+        if (parse_ret != UVC_SUCCESS) {
+            ret = parse_ret;
+            break;
+        }
+
+        buffer_left -= block_size;
+        buffer += block_size;
+    }
+
+    return ret;
+}
+
 /** @internal
 * Process a VideoStreaming interface
 * @ingroup device
 */
-uvc_error_t uvc_scan_streaming(winusb_uvc_device *dev,
+uvc_error_t winusb_uvc_scan_streaming(winusb_uvc_device *dev,
     winusb_uvc_device_info_t *info,
     int interface_idx) {
     const struct winusb_uvc_interface *if_desc;
@@ -375,7 +305,7 @@ uvc_error_t uvc_scan_streaming(winusb_uvc_device *dev,
 
     ret = UVC_SUCCESS;
 
-    if_desc = &(info->interfaces->interfaces[interface_idx]);
+    if_desc = &(info->interfaces->iface[interface_idx]);
     buffer = if_desc->extra;
     buffer_left = if_desc->extraLength - sizeof(USB_INTERFACE_DESCRIPTOR);
 
@@ -387,7 +317,7 @@ uvc_error_t uvc_scan_streaming(winusb_uvc_device *dev,
 
     while (buffer_left >= 3) {
         block_size = buffer[0];
-        parse_ret = uvc_parse_vs(dev, info, stream_if, buffer, block_size);
+        parse_ret = winusb_uvc_parse_vs(dev, info, stream_if, buffer, block_size);
 
         if (parse_ret != UVC_SUCCESS) {
             ret = parse_ret;
@@ -406,7 +336,7 @@ uvc_error_t uvc_scan_streaming(winusb_uvc_device *dev,
 * @brief Parse a VideoStreaming header block.
 * @ingroup device
 */
-uvc_error_t uvc_parse_vs_input_header(winusb_uvc_streaming_interface_t *stream_if,
+uvc_error_t winusb_uvc_parse_vs_input_header(winusb_uvc_streaming_interface_t *stream_if,
     const unsigned char *block,
     size_t block_size) {
 
@@ -420,7 +350,7 @@ uvc_error_t uvc_parse_vs_input_header(winusb_uvc_streaming_interface_t *stream_i
 * @brief Parse a VideoStreaming uncompressed format block.
 * @ingroup device
 */
-uvc_error_t uvc_parse_vs_format_uncompressed(winusb_uvc_streaming_interface_t *stream_if,
+uvc_error_t winusb_uvc_parse_vs_format_uncompressed(winusb_uvc_streaming_interface_t *stream_if,
     const unsigned char *block,
     size_t block_size) {
 
@@ -448,7 +378,7 @@ uvc_error_t uvc_parse_vs_format_uncompressed(winusb_uvc_streaming_interface_t *s
 * @brief Parse a VideoStreaming frame format block.
 * @ingroup device
 */
-uvc_error_t uvc_parse_vs_frame_format(winusb_uvc_streaming_interface_t *stream_if,
+uvc_error_t winusb_uvc_parse_vs_frame_format(winusb_uvc_streaming_interface_t *stream_if,
     const unsigned char *block,
     size_t block_size) {
 
@@ -476,7 +406,7 @@ uvc_error_t uvc_parse_vs_frame_format(winusb_uvc_streaming_interface_t *stream_i
 * @brief Parse a VideoStreaming MJPEG format block.
 * @ingroup device
 */
-uvc_error_t uvc_parse_vs_format_mjpeg(winusb_uvc_streaming_interface_t *stream_if,
+uvc_error_t winusb_uvc_parse_vs_format_mjpeg(winusb_uvc_streaming_interface_t *stream_if,
     const unsigned char *block,
     size_t block_size) {
 
@@ -503,7 +433,7 @@ uvc_error_t uvc_parse_vs_format_mjpeg(winusb_uvc_streaming_interface_t *stream_i
 * @brief Parse a VideoStreaming uncompressed frame block.
 * @ingroup device
 */
-uvc_error_t uvc_parse_vs_frame_frame(winusb_uvc_streaming_interface_t *stream_if,
+uvc_error_t winusb_uvc_parse_vs_frame_frame(winusb_uvc_streaming_interface_t *stream_if,
     const unsigned char *block,
     size_t block_size) {
     uvc_format_desc_t *format;
@@ -553,7 +483,7 @@ uvc_error_t uvc_parse_vs_frame_frame(winusb_uvc_streaming_interface_t *stream_if
 * @brief Parse a VideoStreaming uncompressed frame block.
 * @ingroup device
 */
-uvc_error_t uvc_parse_vs_frame_uncompressed(winusb_uvc_streaming_interface_t *stream_if,
+uvc_error_t winusb_uvc_parse_vs_frame_uncompressed(winusb_uvc_streaming_interface_t *stream_if,
     const unsigned char *block,
     size_t block_size) {
     uvc_format_desc_t *format;
@@ -603,7 +533,7 @@ uvc_error_t uvc_parse_vs_frame_uncompressed(winusb_uvc_streaming_interface_t *st
 * Process a single VideoStreaming descriptor block
 * @ingroup device
 */
-uvc_error_t uvc_parse_vs(
+uvc_error_t winusb_uvc_parse_vs(
     winusb_uvc_device *dev,
     winusb_uvc_device_info_t *info,
     winusb_uvc_streaming_interface_t *stream_if,
@@ -616,23 +546,23 @@ uvc_error_t uvc_parse_vs(
 
     switch (descriptor_subtype) {
     case UVC_VS_INPUT_HEADER:
-        ret = uvc_parse_vs_input_header(stream_if, block, block_size);
+        ret = winusb_uvc_parse_vs_input_header(stream_if, block, block_size);
         break;
     case UVC_VS_FORMAT_UNCOMPRESSED:
-        ret = uvc_parse_vs_format_uncompressed(stream_if, block, block_size);
+        ret = winusb_uvc_parse_vs_format_uncompressed(stream_if, block, block_size);
         break;
     case UVC_VS_FORMAT_MJPEG:
-        ret = uvc_parse_vs_format_mjpeg(stream_if, block, block_size);
+        ret = winusb_uvc_parse_vs_format_mjpeg(stream_if, block, block_size);
         break;
     case UVC_VS_FRAME_UNCOMPRESSED:
     case UVC_VS_FRAME_MJPEG:
-        ret = uvc_parse_vs_frame_uncompressed(stream_if, block, block_size);
+        ret = winusb_uvc_parse_vs_frame_uncompressed(stream_if, block, block_size);
         break;
     case UVC_VS_FORMAT_FRAME_BASED:
-        ret = uvc_parse_vs_frame_format(stream_if, block, block_size);
+        ret = winusb_uvc_parse_vs_frame_format(stream_if, block, block_size);
         break;
     case UVC_VS_FRAME_FRAME_BASED:
-        ret = uvc_parse_vs_frame_frame(stream_if, block, block_size);
+        ret = winusb_uvc_parse_vs_frame_frame(stream_if, block, block_size);
         break;
     case UVC_VS_COLORFORMAT:
         break;
@@ -976,7 +906,7 @@ uvc_error_t winusb_uvc_stream_start(
 
     // Get the interface that provides the chosen format and frame configuration
     interface_id = strmh->stream_if->bInterfaceNumber;
-    iface = &strmh->devh->deviceData.interfaces->interfaces[interface_id];
+    iface = &strmh->devh->deviceData.interfaces->iface[interface_id];
 
     winusb_uvc_stream_context *streamctx = new winusb_uvc_stream_context;
 
@@ -1138,7 +1068,7 @@ uvc_error_t winusb_uvc_query_stream_ctrl(winusb_uvc_device *devh, uvc_stream_ctr
             // WinUsbInterfaceNumber is the actual interface number taken from the USB config descriptor
             // A value of 0 indicates the first interface (Video Control Interface), A value of 1 indicates the first associated interface (Video Stream 1)
             // For this reason, when calling to WinUsb_GetAssociatedInterface, we must decrease 1 to receive the associated interface
-            uint8_t winusbInterfaceNumber = devh->deviceData.interfaces->interfaces[interfaceNumber].winusbInterfaceNumber;
+            uint8_t winusbInterfaceNumber = devh->deviceData.interfaces->iface[interfaceNumber].winusbInterfaceNumber;
             WinUsb_GetAssociatedInterface(devh->winusbHandle, winusbInterfaceNumber - 1, &iface);
         }
         else
@@ -1326,7 +1256,7 @@ uvc_error_t winusb_uvc_probe_stream_ctrl(winusb_uvc_device *devh, uvc_stream_ctr
         // WinUsbInterfaceNumber is the actual interface number taken from the USB config descriptor
         // A value of 0 indicates the first interface (Video Control Interface), A value of 1 indicates the first associated interface (Video Stream 1)
         // For this reason, when calling to WinUsb_GetAssociatedInterface, we must decrease 1 to receive the associated interface
-        uint8_t winusbInterfaceNumber = devh->deviceData.interfaces->interfaces[interfaceNumber].winusbInterfaceNumber;
+        uint8_t winusbInterfaceNumber = devh->deviceData.interfaces->iface[interfaceNumber].winusbInterfaceNumber;
         WinUsb_GetAssociatedInterface(devh->winusbHandle, winusbInterfaceNumber - 1, &devh->associateHandle);
     }
     else
@@ -2047,6 +1977,62 @@ uvc_error_t winusb_find_devices(winusb_uvc_device ***devs, int vid, int pid)
     return ret;
 }
 
+// Iterate over all descriptors and parse all Interface and Endpoint descriptors
+void winusb_uvc_parse_config_descriptors(USB_CONFIGURATION_DESCRIPTOR *cfgDesc, winusb_uvc_interfaces **interfaces)
+{
+    int length = cfgDesc->wTotalLength - sizeof(USB_CONFIGURATION_DESCRIPTOR);
+    int curLocation = 0;
+    int interfaceDescStart = -1;
+    winusb_uvc_interfaces *descInterfaces = new winusb_uvc_interfaces;
+
+    memset(descInterfaces, 0, sizeof(winusb_uvc_interfaces));
+    winusb_uvc_interface *curInterface = NULL;
+    USB_INTERFACE_DESCRIPTOR *curDescriptor = NULL;
+    descInterfaces->numInterfaces = 0;
+
+    PUCHAR descriptors = (PUCHAR)cfgDesc;
+    descriptors += cfgDesc->bLength;
+
+    // iterate over all descriptors
+    do {
+        int descLen = descriptors[curLocation];
+        //printf("parse : length : %d type : %x first byte: %x\n", descLen, descriptors[curLocation + 1], descriptors[curLocation + 2]);
+        if (descriptors[curLocation + 1] == USB_INTERFACE_DESCRIPTOR_TYPE || (curLocation + descLen) >= length)
+        {
+            if (interfaceDescStart != -1)
+            {
+                // Saving previous interface with all extra data afterwards (up to this interface)
+                memcpy(&curInterface->desc, &descriptors[interfaceDescStart], sizeof(curInterface->desc));
+                interfaceDescStart += sizeof(USB_INTERFACE_DESCRIPTOR);
+                curInterface->extraLength = curLocation - interfaceDescStart;
+                curInterface->extra = new UCHAR[curInterface->extraLength];
+                memcpy(curInterface->extra, &descriptors[interfaceDescStart], curInterface->extraLength);
+                curInterface->winusbInterfaceNumber = descInterfaces->numInterfaces;
+                descInterfaces->numInterfaces++;
+            }
+
+            if ((curLocation + descLen) < length)
+            {
+                // Setting to new found interface descriptor pointer
+                interfaceDescStart = curLocation;
+                curDescriptor = (USB_INTERFACE_DESCRIPTOR *)&descriptors[interfaceDescStart];
+                curInterface = &descInterfaces->iface[curDescriptor->bInterfaceNumber];
+                curInterface->numEndpoints = 0;
+            }
+        }
+        else if (descriptors[curLocation + 1] == USB_ENDPOINT_DESCRIPTOR_TYPE)
+        {
+            memcpy(&curInterface->endpoints[curInterface->numEndpoints], &descriptors[curLocation], descLen);
+            curInterface->numEndpoints++;
+        }
+
+        curLocation += descLen;
+        //printf("length = %d\n", curLocation);
+    } while (curLocation < length);
+
+    *interfaces = descInterfaces;
+}
+
 uvc_error_t winusb_open(winusb_uvc_device *device)
 {
     USB_CONFIGURATION_DESCRIPTOR cfgDesc;
@@ -2103,7 +2089,7 @@ uvc_error_t winusb_open(winusb_uvc_device *device)
     device->deviceData.config = cfgDesc;
 
     // Iterate over all descriptors and parse all Interface and Endpoint descriptors
-    ParseConfigDescriptors((USB_CONFIGURATION_DESCRIPTOR *)descriptors, &interfaces);
+    winusb_uvc_parse_config_descriptors((USB_CONFIGURATION_DESCRIPTOR *)descriptors, &interfaces);
     device->deviceData.interfaces = interfaces;
 
     if (descriptors)
@@ -2113,7 +2099,7 @@ uvc_error_t winusb_open(winusb_uvc_device *device)
     }
 
     // Fill fields of uvc_device_info on device
-    ret = uvc_scan_control(device, &device->deviceData);
+    ret = winusb_uvc_scan_control(device, &device->deviceData);
     if (ret != UVC_SUCCESS)
     {
         printf("uvc_scan_control failed\n");
@@ -2131,7 +2117,7 @@ fail:
 
     if (device)
     {
-        winusb_free_device_info(&device->deviceData);
+        winusb_uvc_free_device_info(&device->deviceData);
 
         if (device->deviceHandle)
         {
@@ -2156,7 +2142,7 @@ uvc_error_t winusb_close(winusb_uvc_device *device)
 
     if (device != NULL)
     {
-        winusb_free_device_info(&device->deviceData);
+        winusb_uvc_free_device_info(&device->deviceData);
         memset(&device->deviceData, 0, sizeof(winusb_uvc_device_info_t));
 
         if (device->winusbHandle != NULL)

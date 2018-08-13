@@ -33,7 +33,7 @@ struct winusb_uvc_interface {
 };
 
 struct winusb_uvc_interfaces {
-    winusb_uvc_interface interfaces[MAX_USB_INTERFACES];
+    winusb_uvc_interface iface[MAX_USB_INTERFACES];
     int numInterfaces;
 };
 
