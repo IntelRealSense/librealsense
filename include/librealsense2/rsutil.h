@@ -6,6 +6,7 @@
 
 #include "h/rs_types.h"
 #include "h/rs_sensor.h"
+#include "h/rs_frame.h"
 #include "assert.h"
 
 #include <math.h>
@@ -78,6 +79,65 @@ static void rs2_fov(const struct rs2_intrinsics * intrin, float to_fov[2])
 {
     to_fov[0] = (atan2f(intrin->ppx + 0.5f, intrin->fx) + atan2f(intrin->width - (intrin->ppx + 0.5f), intrin->fx)) * 57.2957795f;
     to_fov[1] = (atan2f(intrin->ppy + 0.5f, intrin->fy) + atan2f(intrin->height - (intrin->ppy + 0.5f), intrin->fy)) * 57.2957795f;
+}
+
+/* Find projected pixel with unknown depth search along line. */
+static void rs2_project_pixel_to_depth_pixel(float to_pixel[2],
+    const rs2_frame* depth_frame, 
+    float depth_min, float depth_max, 
+    const struct rs2_intrinsics* depth_intrin,
+    const struct rs2_intrinsics* other_intrin,
+    const struct rs2_extrinsics* other_to_depth,
+    const struct rs2_extrinsics* depth_to_other, 
+    const float from_pixel[2])
+{
+    const int MINIMUM_DISTANCE_THRESHOLD = 1;
+
+    float start_pixel[2] = { 0 }, end_pixel[2] = { 0 }, point[3] = { 0 }, other_point[3] = { 0 };
+
+    //Find line start pixel
+    rs2_deproject_pixel_to_point(point, other_intrin, from_pixel, depth_min);
+    rs2_transform_point_to_point(other_point, other_to_depth, point);
+    rs2_project_point_to_pixel(start_pixel, depth_intrin, other_point);
+
+    //Find line end depth pixel
+    rs2_deproject_pixel_to_point(point, other_intrin, from_pixel, depth_max);
+    rs2_transform_point_to_point(other_point, other_to_depth, point);
+    rs2_project_point_to_pixel(end_pixel, depth_intrin, other_point);
+
+    float line_slope = (end_pixel[1] - start_pixel[1]) / (end_pixel[0] - start_pixel[0]);
+    float min_dist = -1;
+
+    //search along line for the depth pixel that it's projected pixel is the closest to the input pixel
+    for (float p[2] = { start_pixel[0], start_pixel[1] }; p[0] < end_pixel[0], p[1] < end_pixel[1]; )
+    {
+        auto depth = rs2_depth_frame_get_distance(depth_frame, p[0], p[1], nullptr);
+
+        float projected_pixel[2] = { 0 };
+        rs2_deproject_pixel_to_point(point, depth_intrin, p, depth);
+        rs2_transform_point_to_point(other_point, depth_to_other, point);
+        rs2_project_point_to_pixel(projected_pixel, other_intrin, other_point);
+
+        float new_dist = pow((projected_pixel[1] - from_pixel[1]), 2) + pow((projected_pixel[0] - from_pixel[0]), 2);
+        if (new_dist < min_dist || min_dist < 0)
+        {
+            min_dist = new_dist;
+            to_pixel[0] = p[0];
+            to_pixel[1] = p[1];
+            if (min_dist < MINIMUM_DISTANCE_THRESHOLD) break;
+        }
+
+        if (end_pixel[0] - p[0] > end_pixel[1] - p[1])
+        {
+            p[0] += 1;
+            p[1] = end_pixel[1] - line_slope * (end_pixel[0] - p[0]);
+        }
+        else
+        {
+            p[1] += 1;
+            p[0] = (line_slope * end_pixel[0] - end_pixel[1] + p[1]) / line_slope;
+        }
+    }
 }
 
 #endif
