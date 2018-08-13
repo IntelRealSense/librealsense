@@ -19,24 +19,28 @@ classdef context < handle
         % Functions
         function device_array = query_devices(this)
             arr = realsense.librealsense_mex('rs2::context', 'query_devices', this.objectHandle);
-            device_array = arrayfun(@realsense.device, arr(:,1), arr(:,2), 'UniformOutput', false);
+            % TODO: Might be cell array
+            device_array = arrayfun(@(x) realsense.device(x{:}{:}), arr, 'UniformOutput', false);
         end
         function sensor_array = query_all_sensors(this)
             arr = realsense.librealsense_mex('rs2::context', 'query_all_sensors', this.objectHandle);
             sensor_array = arrayfun(@realsense.sensor, arr, 'UniformOutput', false);
         end
         function device = get_sensor_parent(this, sensor)
-            if (isa(sensor, 'sensor')) 
-                device = realsense.device(realsense.librealsense_mex('rs2::context', 'get_sensor_parent', this.objectHandle, sensor.objectHandle));
-            else
-                error('sensor must be a sensor');
-            end
+            narginchk(2, 2);
+            validateattributes(sensor, {'realsense.sensor'}, {'scalar'}, '', 'sensor', 2);
+            out = realsense.librealsense_mex('rs2::context', 'get_sensor_parent', this.objectHandle, sensor.objectHandle);
+            device = realsense.device(out);
         end
         function playback = load_device(this, file)
-            % TODO: finalize once playback is wrapped
-            playback = realsense.playback(realsense.librealsense_mex('rs2::context', 'load_device', this.objectHandle, file));
+            narginchk(2, 2);
+            validateattributes(file, {'string', 'char'}, {'scalartext', 'nonempty'}, '', 'file', 2);
+            out = realsense.librealsense_mex('rs2::context', 'load_device', this.objectHandle, file);
+            playback = realsense.playback(out(1), out(2));
         end
         function unload_device(this, file)
+            narginchk(2, 2);
+            validateattributes(file, {'string', 'char'}, {'scalartext', 'nonempty'}, '', 'file', 2);
             realsense.librealsense_mex('rs2::context', 'unload_device', this.objectHandle, file);
         end
     end

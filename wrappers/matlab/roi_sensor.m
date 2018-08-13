@@ -3,7 +3,7 @@ classdef roi_sensor < sensor
     methods
         % Constructor
         function this = roi_sensor(handle)
-           this = this@realsense.sensor(handle);
+            this = this@realsense.sensor(handle);
         end
         
         % Destructor (uses base class destructor)

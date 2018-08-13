@@ -130,5 +130,53 @@
     <None Include="depth_sensor.m">
       <Filter>Matlab Files\Classes</Filter>
     </None>
+    <None Include="recorder.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="playback.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="playback_status.m">
+      <Filter>Matlab Files\Enums</Filter>
+    </None>
+    <None Include="frame_queue.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="pointcloud.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="align.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="syncer.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="process_interface.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="colorizer.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="disparity_transform.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="spatial_filter.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="temporal_filter.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="decimation_filter.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="hole_filling_filter.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="pipeline_profile.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="config.m">
+      <Filter>Matlab Files\Classes</Filter>
+    </None>
   </ItemGroup>
 </Project>

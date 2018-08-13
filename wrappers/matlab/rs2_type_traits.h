@@ -14,6 +14,7 @@ template <typename T> using extra_checks = std::bool_constant<std::is_base_of<rs
 // rs_frame.hpp
 template<typename T> struct MatlabParamParser::type_traits<T, typename std::enable_if<std::is_base_of<rs2::stream_profile, T>::value>::type> {
     using rs2_internal_t = const rs2_stream_profile*;
+    using use_cells = std::true_type;
     static T from_internal(rs2_internal_t * ptr) { return T(rs2::stream_profile(*ptr)); }
 };
 template<typename T> struct MatlabParamParser::type_traits<T, typename std::enable_if<std::is_base_of<rs2::frame, T>::value>::type> { using rs2_internal_t = rs2_frame * ; };
@@ -42,7 +43,10 @@ template<typename T> struct MatlabParamParser::type_traits<T, typename std::enab
 
 // rs_device.hpp
 template<> struct MatlabParamParser::type_traits<rs2::device> { using rs2_internal_t = std::shared_ptr<rs2_device>; };
-template<> struct MatlabParamParser::type_traits<rs2::device_list> { using rs2_internal_t = std::shared_ptr<rs2_device_list>; };
+template<> struct MatlabParamParser::type_traits<rs2::device_list> {
+    using rs2_internal_t = std::shared_ptr<rs2_device_list>;
+    using use_cells = std::true_type;
+};
 
 // rs_record_playback.hpp
 template<> struct MatlabParamParser::type_traits<rs2::playback> : MatlabParamParser::type_traits<rs2::device> {

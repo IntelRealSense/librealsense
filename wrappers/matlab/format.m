@@ -1,6 +1,6 @@
 classdef format < int64
     enumeration
-        any             ( 0)
+        any_format      ( 0)
         z16             ( 1)
         disparity16     ( 2)
         xyz32f          ( 3)

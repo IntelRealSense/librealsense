@@ -70,6 +70,40 @@ private:
         using value = value_t;
         using type = typename std::conditional<std::is_same<value_t, signed_t>::value, int64_t, uint64_t>::type;
     };
+    // uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, and int64_t
+    // are exposed as the relevant native Matlab type
+    template <> struct mx_wrapper<uint8_t> {
+        using value = std::integral_constant<mxClassID, mxUINT8_CLASS>;
+        using type = uint8_t;
+    };
+    template <> struct mx_wrapper<uint16_t> {
+        using value = std::integral_constant<mxClassID, mxUINT16_CLASS>;
+        using type = uint16_t;
+    };
+    template <> struct mx_wrapper<uint32_t> {
+        using value = std::integral_constant<mxClassID, mxUINT32_CLASS>;
+        using type = uint32_t;
+    };
+    template <> struct mx_wrapper<uint64_t> {
+        using value = std::integral_constant<mxClassID, mxUINT64_CLASS>;
+        using type = uint64_t;
+    };
+    template <> struct mx_wrapper<int8_t> {
+        using value = std::integral_constant<mxClassID, mxINT8_CLASS>;
+        using type = int8_t;
+    };
+    template <> struct mx_wrapper<int16_t> {
+        using value = std::integral_constant<mxClassID, mxINT16_CLASS>;
+        using type = int16_t;
+    };
+    template <> struct mx_wrapper<int32_t> {
+        using value = std::integral_constant<mxClassID, mxINT32_CLASS>;
+        using type = int32_t;
+    };
+    template <> struct mx_wrapper<int64_t> {
+        using value = std::integral_constant<mxClassID, mxINT64_CLASS>;
+        using type = int64_t;
+    };
     // by default non-basic types are wrapped as pointers
     template <typename T> struct mx_wrapper<T, typename std::enable_if<!is_basic_type<T>::value>::type> : mx_wrapper<void*> {};
 public:
@@ -83,7 +117,7 @@ private:
     struct traits_trampoline {
     private:
         template <typename T> struct detector {
-            struct fallback { int to_internal, from_internal; };
+            struct fallback { int to_internal, from_internal, use_cells; };
             struct derived : type_traits<T>, fallback {};
             template <typename U, U> struct checker;
             typedef char ao1[1];
@@ -92,9 +126,16 @@ private:
             template <typename U> static ao2& check_to(...);
             template <typename U> static ao1& check_from(checker<int fallback::*, &U::from_internal> *);
             template <typename U> static ao2& check_from(...);
+            template <typename U> static ao1& check_cells(checker<int fallback::*, &U::use_cells> *);
+            template <typename U> static ao2& check_cells(...);
+//            template <typename, typename = void> struct use_cells_t : false_type {};
+//            template <typename U> struct use_cells_t<U, typename std::enable_if<sizeof(check_cells<U>(0)) == 2>::type>
+//                : T::use_cells {};
             
             enum { has_to = sizeof(check_to<derived>(0)) == 2 };
             enum { has_from = sizeof(check_from<derived>(0)) == 2 };
+//            enum { use_cells = use_cells_t<derived>::value };
+            enum { use_cells = sizeof(check_cells<derived>(0)) == 2 };
         };
         template <typename T> using internal_t = typename type_traits<T>::rs2_internal_t;
     public:
@@ -111,7 +152,7 @@ private:
         // selected if it doesnt
         template <typename T> static typename std::enable_if<!detector<T>::has_from, T>::type
             from_internal(typename internal_t<T>* ptr) { return T(*ptr); }
-
+        template <typename T> using use_cells = std::integral_constant<bool, detector<T>::use_cells>;
     };
 public:
     MatlabParamParser() {};
@@ -125,7 +166,8 @@ public:
     template <typename T> static typename std::enable_if<!is_basic_type<T>::value, std::vector<T>>::type parse_array(const mxArray* cells);
     template <typename T> static typename std::enable_if<is_basic_type<T>::value, std::vector<T>>::type parse_array(const mxArray* cells);
 
-    template <typename T> static typename std::enable_if<!is_basic_type<T>::value, mxArray*>::type wrap_array(const T* var, size_t length);
+    template <typename T> static typename std::enable_if<!is_basic_type<T>::value && !traits_trampoline::use_cells<T>::value, mxArray*>::type wrap_array(const T* var, size_t length);
+    template <typename T> static typename std::enable_if<!is_basic_type<T>::value && traits_trampoline::use_cells<T>::value, mxArray*>::type wrap_array(const T* var, size_t length);
     template <typename T> static typename std::enable_if<is_basic_type<T>::value, mxArray*>::type wrap_array(const T* var, size_t length);
 };
 
@@ -264,14 +306,24 @@ template <typename T> static typename std::enable_if<is_basic_type<T>::value, st
     }
     return ret;
 }
-
-template <typename T> static typename std::enable_if<!is_basic_type<T>::value, mxArray*>::type MatlabParamParser::wrap_array(const T* var, size_t length)
+template <typename T> static typename std::enable_if<!is_basic_type<T>::value && !MatlabParamParser::traits_trampoline::use_cells<T>::value, mxArray*>::type
+MatlabParamParser::wrap_array(const T* var, size_t length)
 {
     auto cells = mxCreateNumericMatrix(1, length, MatlabParamParser::mx_wrapper<T>::value::value, mxREAL);
     auto ptr = static_cast<typename mx_wrapper<T>::type*>(mxGetData(cells));
     for (int x = 0; x < length; ++x)
         ptr[x] = reinterpret_cast<typename mx_wrapper<T>::type>(traits_trampoline::to_internal<T>(T(var[x])));
     
+    return cells;
+}
+
+template <typename T> static typename std::enable_if<!is_basic_type<T>::value && MatlabParamParser::traits_trampoline::use_cells<T>::value, mxArray*>::type
+MatlabParamParser::wrap_array(const T* var, size_t length)
+{
+    auto cells = mxCreateCellMatrix(1, length);
+    for (int x = 0; x < length; ++x)
+        mxSetCell(cells, x, wrap(T(var[x])));
+
     return cells;
 }
 

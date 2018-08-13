@@ -6,6 +6,7 @@ classdef options < handle
     methods
         % Constructor
         function this = options(handle)
+            narginchk(1, 1);
             validateattributes(handle, {'uint64'}, {'scalar'});
             this.objectHandle = handle;
         end

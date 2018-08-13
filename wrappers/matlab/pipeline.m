@@ -6,13 +6,12 @@ classdef pipeline < handle
     methods
         % Constructor
         function this = pipeline(ctx)
-            if  (nargin == 0)
-                ctx = realsense.context();
+            if nargin == 0
+                this.objectHandle = realsense.librealsense_mex('rs2::pipeline', 'new');
+            else
+                validateattributes(ctx, {'realsense.context'}, {'scalar'});
+                this.objectHandle = realsense.librealsense_mex('rs2::pipeline', 'new', ctx.objectHandle);
             end
-            if (~isa(ctx, 'realsense.context'))
-                error('ctx must be of type realsense.context')
-            end
-            this.objectHandle = realsense.librealsense_mex('rs2::pipeline', 'new', ctx.objectHandle);
         end
         % Destructor
         function delete(this)
@@ -22,32 +21,36 @@ classdef pipeline < handle
         end
 
         % Functions
-        function start(this, config)
-            % TODO: add output parameter after binding pipeline_profile
-            switch nargin
-            case 1
-                realsense.librealsense_mex('rs2::pipeline', 'start', this.objectHandle);
-            case 2
-                if (isa(config, 'config'))
-%                   realsense.librealsense_mex('rs2::pipeline', 'start', this.objectHandle, config.objectHandle);
-                else
-                    % TODO: Error out meaningfully?
-                    return
-                end
+        function pipeline_profile = start(this, config)
+            narginchk(1, 2);
+            if nargin == 1
+                out = realsense.librealsense_mex('rs2::pipeline', 'start', this.objectHandle);
+            else
+                validateattributes(config, {'realsense.config'}, {'scalar'}, '', 'config', 2);
+                out = realsense.librealsense_mex('rs2::pipeline', 'start', this.objectHandle, config.objectHandle);
             end
+            pipeline_profile = realsense.pipeline_profile(out);
         end
         function stop(this)
             realsense.librealsense_mex('rs2::pipeline', 'stop', this.objectHandle);
         end
-        function frameset = wait_for_frames(this, timeout_ms)
-            switch nargin
-            case 1
-               frameset = realsense.frameset(realsense.librealsense_mex('rs2::pipeline', 'wait_for_frames', this.objectHandle));
-            case 2
-                % TODO: is there a good way to do type safety in matlab?
-                frameset = realsense.frameset(realsense.librealsense_mex('rs2::pipeline', 'wait_for_frames', this.objectHandle, uint64(timeout_ms)));
+        function frames = wait_for_frames(this, timeout_ms)
+            narginchk(1, 2);
+            if nargin == 1
+                out = realsense.librealsense_mex('rs2::pipeline', 'wait_for_frames', this.objectHandle);
+            else
+                if isduration(timeout_ms)
+                    timeout_ms = milliseconds(timeout_ms);
+                end
+                validateattributes(timeout_ms, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'timeout_ms', 2);
+                out = realsense.librealsense_mex('rs2::pipeline', 'wait_for_frames', this.objectHandle, double(timeout_ms));
             end
+            frames = realsense.frameset(out);
         end
-        % TODO: poll_for_frames, get_active_profile
+        % TODO: poll_for_frames
+        function profile = get_active_profile(this)
+            out = realsense.librealsense_mex('rs2::pipeline', 'get_active_profile', this.objectHandle);
+            realsense.pipeline_profile(out);
+        end
     end
 end

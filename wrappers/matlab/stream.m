@@ -1,6 +1,6 @@
 classdef stream < int64
     enumeration
-        any         ( 0)
+        any_stream  ( 0)
         depth       ( 1)
         color       ( 2)
         infrared    ( 3)

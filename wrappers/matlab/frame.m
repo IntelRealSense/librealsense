@@ -43,8 +43,7 @@ classdef frame < handle
         end
         function profile = get_profile(this)
             ret = realsense.librealsense_mex('rs2::frame', 'get_profile', this.objectHandle);
-            % TODO: stream_profile takes two args
-            profile = realsense.stream_profile(ret);
+            profile = realsense.stream_profile(ret{:});
         end
         % TODO: is [frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset]
         % TODO: as [frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset]

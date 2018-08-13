@@ -3,7 +3,7 @@ classdef depth_stereo_sensor < depth_sensor
     methods
         % Constructor
         function this = depth_stereo_sensor(handle)
-           this = this@realsense.depth_sensor(handle);
+            this = this@realsense.depth_sensor(handle);
         end
         
         % Destructor (uses base class destructor)

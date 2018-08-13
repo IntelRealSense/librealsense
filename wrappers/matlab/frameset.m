@@ -32,7 +32,7 @@ classdef frameset < realsense.frame
         function infrared_frame = get_infrared_frame(this)
             ret = realsense.librealsense_mex('rs2::frameset', 'get_infrared_frame', this.objectHandle);
             infrared_frame = realsense.video_frame(ret);
-        enda
+        end
         function size = get_size(this)
             size = realsense.librealsense_mex('rs2::frameset', 'get_size', this.objectHandle);
         end

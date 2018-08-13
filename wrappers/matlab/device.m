@@ -4,7 +4,7 @@ classdef device < handle
         objectHandle;
         id;
     end
-    methods (Access = private)
+    methods (Access = protected)
         function do_init(this)
             if (this.id >= 0)
                 this.objectHandle = realsense.librealsense_mex('rs2::device', 'init', this.objectHandle, this.id);
@@ -56,7 +56,7 @@ classdef device < handle
             this.do_init();
             value = realsense.librealsense_mex('rs2::device', 'supports', this.objectHandle, int64(info));
         end
-        function value = get_info(this, info)
+        function info = get_info(this, info)
             narginchk(2, 2);
             validateattributes(info, {'realsense.camera_info', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.camera_info.count}, '', 'info', 2);
             this.do_init();
@@ -72,19 +72,26 @@ classdef device < handle
             validateattributes(type, {'char', 'string'}, {'scalartext'}, '', 'type', 2);
             this.do_init();
             out = realsense.librealsense_mex('rs2::device', 'is', this.objectHandle, type);
+            value = logical(out);
         end
-%        function dev = as(this, type)
-%            % validation and initialization done in is
-%            if ~this.is(type)
-%                error('cannot downcast dev to requested type');
-%            end
-%            switch type
-%                case 'debug_protocol'
-%                case 'advanced_mode'
-%                case 'recorder'
-%                    realsense.recorder(this)
-%                case 'playback'
-%            end
-%        end
+        function dev = as(this, type)
+            narginchk(2, 2);
+            % C++ function validates contents of type
+            validateattributes(type, {'char', 'string'}, {'scalartext'}, '', 'type', 2);
+            this.do_init();
+            out = realsense.librealsense_mex('rs2::device', 'as', this.objectHandle, type);
+            switch type
+                case 'device'
+                    dev = realsense.device(out{:});
+                case 'debug_protocol'
+                    error('debug_protocol is not supported in Matlab');
+                case 'advanced_mode'
+                    error('advanced_mode is not supported in Matlab');
+                case 'recorder'
+                    dev = realsense.recorder(out{:});
+                case 'playback'
+                    dev = realsense.playback(out{:});
+            end
+        end
     end
 end

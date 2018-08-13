@@ -121,14 +121,20 @@ template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2::device_list>::
     // Device list is sent as a native array of (ptr, id) pairs to preserve lazy instantiation of devices
     size_t len = var.size();
 
-    mxArray* vec = mxCreateNumericMatrix(len, 2, mxUINT64_CLASS, mxREAL);
-    uint64_t* outp = static_cast<uint64_t*>(mxGetData(vec));
-
-    for (int i = 0; i < len; ++i)
+    mxArray* vec = mxCreateCellMatrix(1, len);
+    for (unsigned int i = 0; i < len; ++i)
     {
+        using dl_wrap_t = mx_wrapper<rs2::device_list>;
+        using idx_wrap_t = mx_wrapper<decltype(i)>;
+        auto cells = mxCreateCellMatrix(1, 2);
+        auto dl_cell = mxCreateNumericMatrix(1, 1, dl_wrap_t::value::value, mxREAL);
         mexLock(); // lock once for each created pointer
-        outp[0 * len + i] = reinterpret_cast<uint64_t>(new type_traits<rs2::device_list>::rs2_internal_t(var));
-        outp[1 * len + i] = i;
+        *static_cast<dl_wrap_t::type*>(mxGetData(dl_cell)) = reinterpret_cast<dl_wrap_t::type>(new type_traits<rs2::device_list>::rs2_internal_t(var));
+        auto idx_cell = mxCreateNumericMatrix(1, 1, idx_wrap_t::value::value, mxREAL);
+        *static_cast<idx_wrap_t::type*>(mxGetData(idx_cell)) = static_cast<idx_wrap_t::type>(i);
+        mxSetCell(cells, 0, dl_cell);
+        mxSetCell(cells, 1, dl_cell);
+        mxSetCell(vec, i, cells);
     }
 
     return vec;
@@ -147,21 +153,29 @@ template<typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::e
     }
     static mxArray* wrap(T&& val)
     {
-        mxArray *cells = mxCreateNumericMatrix(1, 2, mxUINT64_CLASS, mxREAL);
-        auto *outp = static_cast<uint64_t*>(mxGetData(cells));
+        auto cells = mxCreateCellMatrix(1, 2);
+        auto handle_cell = mxCreateNumericMatrix(1, 1, mxUINT64_CLASS, mxREAL);
+        auto handle_ptr = static_cast<uint64_t*>(mxGetData(cells));
+        *handle_ptr = reinterpret_cast<uint64_t>(type_traits<T>::rs2_internal_t(val));
+
+        auto own_cell = mxCreateNumericMatrix(1, 1, mxUINT64_CLASS, mxREAL);
+        auto own_ptr = static_cast<uint64_t*>(mxGetData(cells));
         // if its cloned, give the wrapper ownership of the stream_profile
         if (val.is_cloned())
         {
             mexLock();
-            outp[0] = reinterpret_cast<uint64_t>(new std::shared_ptr<rs2_stream_profile>(val));
+            *own_ptr = reinterpret_cast<uint64_t>(new std::shared_ptr<rs2_stream_profile>(val));
         }
-        else outp[0] = reinterpret_cast<uint64_t>(nullptr);
+        else *own_ptr = reinterpret_cast<uint64_t>(nullptr);
 
-        outp[1] = reinterpret_cast<uint64_t>(type_traits<rs2::stream_profile>::rs2_internal_t(val));
+        mxSetCell(cells, 0, handle_cell);
+        mxSetCell(cells, 1, own_cell);
         return cells;
     }
     static void destroy(const mxArray* cell)
     {
+        // we parse a std::shard_ptr<rs2_stream_profile>* because that is how the ownership
+        // pointer is stored, which is the one we need to destroy (assuming it exists)
         auto ptr = mx_wrapper_fns<std::shared_ptr<rs2_stream_profile>*>::parse(cell);
         if (!ptr) return; // only destroy if wrapper owns the profile
         delete ptr;

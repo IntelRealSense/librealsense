@@ -164,22 +164,60 @@ void make_factory(){
         {
             // TODO - What's going on here? / support more formats
             auto thiz = MatlabParamParser::parse<rs2::frame>(inv[0]);
+            size_t n_bytes = 0;
             if (auto vf = thiz.as<rs2::video_frame>()) {
-                /*switch (vf.get_profile().format()) {
-                case RS2_FORMAT_RGB8: case RS2_FORMAT_BRG2:
-                outv[0] = MatlabParamParser::wrap_array<uint8_t>(vf.get_data(), )
-                }*/
-                outv[0] = MatlabParamParser::wrap_array(reinterpret_cast<const uint8_t*>(vf.get_data()), vf.get_height() * vf.get_stride_in_bytes());
-            } else {
-                uint8_t byte = *reinterpret_cast<const uint8_t*>(thiz.get_data());
-                outv[0] = MatlabParamParser::wrap(std::move(byte));
-                mexWarnMsgTxt("Can't detect frame dims, sending only first byte");
+                n_bytes = vf.get_height() * vf.get_stride_in_bytes();
+            }
+
+            switch (thiz.get_profile().format()) {
+            case RS2_FORMAT_RAW10:
+                // TODO: Do the bit hackery ourselves?
+                mexWarnMsgTxt("Raw10 data provided as unsigned byte array.");
+            case RS2_FORMAT_RGB8: case RS2_FORMAT_RGBA8:
+            case RS2_FORMAT_BGR8: case RS2_FORMAT_BGRA8:
+            case RS2_FORMAT_Y8: case RS2_FORMAT_RAW8:
+                if (n_bytes == 0) {
+                    n_bytes = 1;
+                    mexWarnMsgTxt("Can't detect frame dims, sending only first pixel");
+                }
+                outv[0] = MatlabParamParser::wrap_array(reinterpret_cast<const uint8_t*>(thiz.get_data()), n_bytes);
+                break;
+            case RS2_FORMAT_Z16: case RS2_FORMAT_DISPARITY16:
+            case RS2_FORMAT_Y16: case RS2_FORMAT_RAW16:
+                if (n_bytes == 0) {
+                    n_bytes = 2;
+                    mexWarnMsgTxt("Can't detect frame dims, sending only first pixel");
+                }
+                outv[0] = MatlabParamParser::wrap_array(reinterpret_cast<const uint16_t*>(thiz.get_data()), n_bytes / 2);
+                break;
+            case RS2_FORMAT_XYZ32F: case RS2_FORMAT_DISPARITY32:
+            case RS2_FORMAT_MOTION_XYZ32F:
+                if (n_bytes == 0) {
+                    n_bytes = 4;
+                    mexWarnMsgTxt("Can't detect frame dims, sending only first pixel");
+                }
+                outv[0] = MatlabParamParser::wrap_array(reinterpret_cast<const float*>(thiz.get_data()), n_bytes / 4);
+                break;
+            case RS2_FORMAT_UYVY: case RS2_FORMAT_YUYV:
+                if (n_bytes == 0) {
+                    n_bytes = 4;
+                    mexWarnMsgTxt("Can't detect frame dims, sending only first pixel");
+                }
+                outv[0] = MatlabParamParser::wrap_array(reinterpret_cast<const uint32_t*>(thiz.get_data()), n_bytes / 4);
+                break;
+            default:
+                mexWarnMsgTxt("This format isn't supported yet. Sending unsigned byte stream");
+                if (n_bytes == 0) {
+                    n_bytes = 1;
+                    mexWarnMsgTxt("Can't detect frame dims, sending only first pixel");
+                }
+                outv[0] = MatlabParamParser::wrap_array(reinterpret_cast<const uint8_t*>(thiz.get_data()), n_bytes);
             }
         });
         frame_factory.record("get_profile", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::frame>(inv[0]);
-            outv[0] = MatlabParamParser::wrap(thiz.get_frame_number());
+            outv[0] = MatlabParamParser::wrap(thiz.get_profile());
         });
         // rs2::frame::is                                               [TODO] [T = {frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset}]
         // rs2::frame::as                                               [TODO] [T = {frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset}]
@@ -586,11 +624,35 @@ void make_factory(){
                 outv[0] = MatlabParamParser::wrap(thiz.is<rs2::playback>());
             else {
                 // TODO: need warn/error message? which? if so, fill in
-                mexWarnMsgTxt("rs2::device::is: ...");
+                mexWarnMsgTxt("rs2::device::is: invalid type parameter");
                 outv[0] = MatlabParamParser::wrap(false);
             }
         });
-        // rs2::device::as                                              [Can't actually be done as pure matlab because matlab is dumb and handle objects don't work the way I want]
+        device_factory.record("as", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            // TODO: something more maintainable?
+            auto thiz = MatlabParamParser::parse<rs2::device>(inv[0]);
+            auto type = MatlabParamParser::parse<std::string>(inv[1]);
+            if (type == "device")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::device>());
+            else if (type == "debug_protocol") {
+                mexErrMsgTxt("rs2::device::as: Debug Protocol not supported in MATLAB");
+//                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::debug_protocol>());
+            }
+            else if (type == "advanced_mode") {
+                mexErrMsgTxt("rs2::device::as: Advanced Mode not supported in MATLAB");
+//                outv[0] = MatlabParamParser::wrap(false);
+            }
+            else if (type == "recorder")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::recorder>());
+            else if (type == "playback")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::playback>());
+            else {
+                // TODO: need warn/error message? which? if so, fill in
+                mexWarnMsgTxt("rs2::device::as: invalid type parameter");
+                outv[0] = MatlabParamParser::wrap(false);
+            }
+        });
         factory->record(device_factory);
     }
     // rs2::debug_protocol                                              [?]
@@ -715,7 +777,7 @@ void make_factory(){
             }
         });
         // rs2::frame_queue::poll_for_frame(T*)                         [TODO] [T = {frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset}]
-        frame_queue_factory.record("new", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        frame_queue_factory.record("capacity", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::frame_queue>(inv[0]);
             outv[0] = MatlabParamParser::wrap(thiz.capacity());
@@ -754,6 +816,10 @@ void make_factory(){
                 outv[0] = MatlabParamParser::wrap(rs2::syncer(queue_size));
             }
         });
+        syncer_factory.record("delete", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            MatlabParamParser::destroy<rs2::syncer>(inv[0]);
+        });
         syncer_factory.record("wait_for_frames", 1, 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::syncer>(inv[0]);
@@ -774,6 +840,10 @@ void make_factory(){
         {
             auto align_to = MatlabParamParser::parse<rs2_stream>(inv[0]);
             outv[0] = MatlabParamParser::wrap(rs2::align(align_to));
+        });
+        align_factory.record("delete", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            MatlabParamParser::destroy<rs2::align>(inv[0]);
         });
         align_factory.record("process", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
@@ -927,10 +997,14 @@ void make_factory(){
     {
         ClassFactory pipeline_profile_factory("rs2::pipeline_profile");
         // rs2::pipeline_profile::constructor()                         [?]
+        pipeline_profile_factory.record("delete", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            MatlabParamParser::destroy<rs2::pipeline_profile>(inv[0]);
+        });
         pipeline_profile_factory.record("get_streams", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::pipeline_profile>(inv[0]);
-            outv[0] = MatlabParamParser::wrap(thiz.get_streams()); // TODO: switch to make_array
+            outv[0] = MatlabParamParser::wrap(thiz.get_streams());
         });
         pipeline_profile_factory.record("get_stream", 1, 2, 3, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
@@ -957,11 +1031,81 @@ void make_factory(){
         {
             outv[0] = MatlabParamParser::wrap(rs2::config());
         });
-        // rs2::config::enable_stream(rs2_stream, int, int, int, rs2_format=DEF, int=DEF)   [TODO]
-        // rs2::config::enable_stream(rs2_stream, int=DEF)              [TODO]
-        // rs2::config::enable_stream(rs2_stream, int, int, rs2_format=DEF, int=DEF)        [TODO]
-        // rs2::config::enable_stream(rs2_stream, rs2_format, int=DEF)  [TODO]
-        // rs2::config::enable_stream(rs2_stream, int, rs2_format, int=DEF)                 [TODO]
+        config_factory.record("delete", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            MatlabParamParser::destroy<rs2::config>(inv[0]);
+        });
+        config_factory.record("enable_stream#full", 0, 5, 7, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::config>(inv[0]);
+            auto stream_type = MatlabParamParser::parse<rs2_stream>(inv[1]);
+            auto stream_index = MatlabParamParser::parse<int>(inv[2]);
+            auto width = MatlabParamParser::parse<int>(inv[3]);
+            auto height = MatlabParamParser::parse<int>(inv[4]);
+            if (inc == 5) {
+                thiz.enable_stream(stream_type, stream_index, width, height);
+            } else if (inc == 6) {
+                auto format = MatlabParamParser::parse<rs2_format>(inv[5]);
+                thiz.enable_stream(stream_type, stream_index, width, height, format);
+            } else if (inc == 7) {
+                auto format = MatlabParamParser::parse<rs2_format>(inv[5]);
+                auto framerate = MatlabParamParser::parse<int>(inv[6]);
+                thiz.enable_stream(stream_type, stream_index, width, height, format, framerate);
+            }
+        });
+        config_factory.record("enable_stream#stream", 0, 2, 3, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::config>(inv[0]);
+            auto stream_type = MatlabParamParser::parse<rs2_stream>(inv[1]);
+            if (inc == 2) {
+                thiz.enable_stream(stream_type);
+            } else if (inc == 3){
+                auto stream_index = MatlabParamParser::parse<int>(inv[2]);
+                thiz.enable_stream(stream_type, stream_index);
+            }
+        });
+        config_factory.record("enable_stream#size", 0, 4, 6, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::config>(inv[0]);
+            auto stream_type = MatlabParamParser::parse<rs2_stream>(inv[1]);
+            auto width = MatlabParamParser::parse<int>(inv[2]);
+            auto height = MatlabParamParser::parse<int>(inv[3]);
+            if (inc == 4) {
+                thiz.enable_stream(stream_type, width, height);
+            } else if (inc == 5) {
+                auto format = MatlabParamParser::parse<rs2_format>(inv[4]);
+                thiz.enable_stream(stream_type, width, height, format);
+            } else if (inc == 6) {
+                auto format = MatlabParamParser::parse<rs2_format>(inv[4]);
+                auto framerate = MatlabParamParser::parse<int>(inv[5]);
+                thiz.enable_stream(stream_type, width, height, format, framerate);
+            }
+        });
+        config_factory.record("enable_stream#format", 0, 3, 4, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::config>(inv[0]);
+            auto stream_type = MatlabParamParser::parse<rs2_stream>(inv[1]);
+            auto format = MatlabParamParser::parse<rs2_format>(inv[2]);
+            if (inc == 3) {
+                thiz.enable_stream(stream_type, format);
+            } else if (inc == 4) {
+                auto framerate = MatlabParamParser::parse<int>(inv[3]);
+                thiz.enable_stream(stream_type, format, framerate);
+            }
+        });
+        config_factory.record("enable_stream#extended", 0, 4, 5, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::config>(inv[0]);
+            auto stream_type = MatlabParamParser::parse<rs2_stream>(inv[1]);
+            auto stream_index = MatlabParamParser::parse<int>(inv[2]);
+            auto format = MatlabParamParser::parse<rs2_format>(inv[3]);
+            if (inc == 4) {
+                thiz.enable_stream(stream_type, stream_index, format);
+            } else if (inc == 5) {
+                auto framerate = MatlabParamParser::parse<int>(inv[4]);
+                thiz.enable_stream(stream_type, stream_index, format, framerate);
+            }
+        });
         config_factory.record("enable_all_streams", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::config>(inv[0]);
@@ -1111,6 +1255,7 @@ void mexFunction(int nOutParams, mxArray *outParams[], int nInParams, const mxAr
         std::string errmsg = cname + "::" + fname.substr(0, fname.find("#", 0)) + ": Wrong number of inputs";
         mexErrMsgTxt(errmsg.c_str());
     }
+    
     try {
         f_data.f(nOutParams, outParams, nInParams - 2, inParams + 2); // "eat" the two function specifiers
     } catch (std::exception &e) {

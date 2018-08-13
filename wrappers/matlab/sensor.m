@@ -3,7 +3,7 @@ classdef sensor < realsense.options
     methods
         % Constructor
         function this = sensor(handle)
-           this = this@realsense.options(handle);
+            this = this@realsense.options(handle);
         end
         
         % Destructor (uses base class destructor)
@@ -36,7 +36,9 @@ classdef sensor < realsense.options
             realsense.librealsense_mex('rs2::sensor', 'stop', this.objectHandle);
         end
         function profiles = get_stream_profiles(this)
-            profiles = realsense.librealsense_mex('rs2::sensor', 'get_stream_profiles', this.objectHandle);
+            arr = realsense.librealsense_mex('rs2::sensor', 'get_stream_profiles', this.objectHandle);
+            % TODO: Might be cell array
+            profiles = arrayfun(@(x) realsense.stream_profile(x{:}{:}), arr, 'UniformOutput', false);
         end
         % TODO: is [sensor, roi_sensor, depth_sensor, depth_stereo_sensor]
         % TODO: as [sensor, roi_sensor, depth_sensor, depth_stereo_sensor]

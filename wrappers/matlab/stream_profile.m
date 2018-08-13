@@ -6,12 +6,12 @@ classdef stream_profile < handle
     end
     methods
         % Constructor
-        function this = stream_profile(ownHandle, handle)
+        function this = stream_profile(handle, ownHandle)
             narginchk(2, 2);
-            validateattributes(ownHandle, {'uint64'}, {'scalar'});
             validateattributes(handle, {'uint64'}, {'scalar'});
-            this.objectOwnHandle = ownHandle;
+            validateattributes(ownHandle, {'uint64'}, {'scalar'});
             this.objectHandle = handle;
+            this.objectOwnHandle = ownHandle;
         end
         % Destructor
         function delete(this)
@@ -42,8 +42,7 @@ classdef stream_profile < handle
             validateattributes(index, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'index', 3);
             validateattributes(fmt, {'realsense.format', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.format.count}, '', 'fmt', 4);
             out = realsense.librealsense_mex('rs2::stream_profile', 'clone', this.objectHandle, int64(type), int64(index), int64(fmt));
-            % TODO: stream_profile gets two args
-            realsense.stream_profile(out);
+            realsense.stream_profile(out{:});
         end
         % TODO: is [stream_profile, video_stream_profile, motion_stream_profile]
         % TODO: as [stream_profile, video_stream_profile, motion_stream_profile]
