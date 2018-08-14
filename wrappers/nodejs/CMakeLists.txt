@@ -19,7 +19,6 @@ add_custom_target(
 )
 set_target_properties(BUILD_NODE_ADDON PROPERTIES FOLDER Wrappers/NodeJS)
 
-add_custom_target(RealsenseNodeJSWrappers DEPENDS RealsenseNodeJSExamples)
+add_custom_target(RealsenseNodeJSWrappers)
 set_target_properties(RealsenseNodeJSWrappers PROPERTIES FOLDER Wrappers/NodeJS)
 
-add_subdirectory(examples)
