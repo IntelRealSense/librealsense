@@ -82,16 +82,19 @@ void winusb_uvc_free_device_info(winusb_uvc_device_info_t *info) {
         free(stream_if);
     }
 
-    for (int i = 0; i < MAX_USB_INTERFACES; i++)
+    if (info->interfaces)
     {
-        if (info->interfaces->iface[i].extra != NULL) 
+        for (int i = 0; i < MAX_USB_INTERFACES; i++)
         {
-            free(info->interfaces->iface[i].extra);
-            info->interfaces->iface[i].extra = NULL;
+            if (info->interfaces->iface[i].extra != NULL)
+            {
+                free(info->interfaces->iface[i].extra);
+                info->interfaces->iface[i].extra = NULL;
+            }
         }
-    }
 
-    free(info->interfaces);
+        free(info->interfaces);
+    }
 }
 
 
