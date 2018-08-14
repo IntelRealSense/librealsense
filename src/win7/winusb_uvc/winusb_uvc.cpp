@@ -5,18 +5,13 @@
 #include "SETUPAPI.H"
 #include "winusb_uvc.h"
 #include "libuvc/utlist.h"
-#include "types.h"
-
 #include "concurrency.h"
 #include "types.h"
-
 #include <vector>
 #include <thread>
 #include <atomic>
-#include <iostream>
 
 // Data structures for Backend-Frontend queue:
-
 struct frame;
 // We keep no more then 2 frames in between frontend and backend
 typedef librealsense::small_heap<frame, 2> frames_archive;
@@ -865,10 +860,6 @@ void winusb_uvc_process_payload(winusb_uvc_stream_handle_t *strmh,
 
     if ((data_len > 0) && (strmh->cur_ctrl.dwMaxVideoFrameSize == (data_len)))
     {
-        // save all frame+header
-        //memcpy(strmh->outbuf + strmh->got_bytes, payload, data_len + header_len);
-        //strmh->got_bytes += data_len;
-
         if (header_info & (1 << 1)) {
             /* The EOF bit is set, so publish the complete frame */
             winusb_uvc_swap_buffers(strmh);
@@ -878,11 +869,9 @@ void winusb_uvc_process_payload(winusb_uvc_stream_handle_t *strmh,
             {
                 frame_ptr fp(frame_p, &cleanup_frame);
                 
-                memset(fp->pixels.data(), 0, fp->pixels.size());
-                
                 memcpy(fp->pixels.data(), payload, data_len + header_len);
 
-                LOG_INFO("Passing packet to user CB with size " << data_len + header_len);
+                LOG_DEBUG("Passing packet to user CB with size " << data_len + header_len);
                 librealsense::platform::frame_object fo{ data_len, header_len, 
                     fp->pixels.data() + header_len , fp->pixels.data() };
                 fp->fo = fo;
@@ -891,9 +880,8 @@ void winusb_uvc_process_payload(winusb_uvc_stream_handle_t *strmh,
             }
             else
             {
-                //std::cout << "Frame from WinUSB backend was dropped (Frontend busy)\n";
+                LOG_INFO("WinUSB backend is dropping a frame because librealsense wasn't fast enough");
             }
-            //printf("EndPoint 0x%X: Received Frame %d (%zd bytes): header info = %08X\n", strmh->stream_if->bEndpointAddress, strmh->seq, payload_len, payload[1]);
         }
     }
 }
@@ -928,13 +916,11 @@ void stream_thread(winusb_uvc_stream_context *strctx)
             if (queue.dequeue(&fp, 50))
             {
                 strctx->stream->user_cb(&fp->fo, strctx->stream->user_ptr);
-                fp.reset();
             }
         }
     });
 
     do {
-
         DWORD transferred;
         if (!WinUsb_ReadPipe(strctx->stream->devh->associateHandle,
             strctx->endpoint,
@@ -946,8 +932,7 @@ void stream_thread(winusb_uvc_stream_context *strctx)
             return;
         }
 
-        //printf("success : %d\n", transferred);
-        LOG_INFO("Packet received with size " << transferred);
+        LOG_DEBUG("Packet received with size " << transferred);
         winusb_uvc_process_payload(strctx->stream, buffer, transferred, &archive, &queue);
     } while (strctx->stream->running);
 
