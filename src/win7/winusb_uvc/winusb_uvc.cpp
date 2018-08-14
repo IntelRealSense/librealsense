@@ -4,6 +4,7 @@
 #include "SETUPAPI.H"
 #include "winusb_uvc.h"
 #include "libuvc/utlist.h"
+#include "types.h"
 
 uvc_error_t winusb_uvc_scan_streaming(winusb_uvc_device *dev, winusb_uvc_device_info_t *info, int interface_idx);
 uvc_error_t winusb_uvc_parse_vs(winusb_uvc_device *dev, winusb_uvc_device_info_t *info, winusb_uvc_streaming_interface_t *stream_if, const unsigned char *block, size_t block_size);
@@ -825,7 +826,8 @@ void winusb_uvc_process_payload(winusb_uvc_stream_handle_t *strmh, uint8_t *payl
         }
     }
 
-    if (data_len > 0) {
+    if ((data_len > 0) && (strmh->cur_ctrl.dwMaxVideoFrameSize == (data_len)))
+    {
         // save all frame+header
         memcpy(strmh->outbuf + strmh->got_bytes, payload, data_len + header_len);
         strmh->got_bytes += data_len;
@@ -833,12 +835,15 @@ void winusb_uvc_process_payload(winusb_uvc_stream_handle_t *strmh, uint8_t *payl
         if (header_info & (1 << 1)) {
             /* The EOF bit is set, so publish the complete frame */
             winusb_uvc_swap_buffers(strmh);
+
             //printf("EndPoint 0x%X: Received Frame %d (%zd bytes): header info = %08X\n", strmh->stream_if->bEndpointAddress, strmh->seq, payload_len, payload[1]);
+            LOG_INFO("Passing packet to user CB with size " << data_len + header_len);
+            librealsense::platform::frame_object fo{ data_len, header_len, strmh->holdbuf + header_len , strmh->holdbuf };
+            strmh->user_cb(&fo, strmh->user_ptr);
         }
     }
 
-    librealsense::platform::frame_object fo{ data_len, header_len, strmh->holdbuf + header_len , strmh->holdbuf };
-    strmh->user_cb(&fo, strmh->user_ptr);
+
 }
 
 void stream_thread(winusb_uvc_stream_context *strctx)
@@ -848,19 +853,20 @@ void stream_thread(winusb_uvc_stream_context *strctx)
 
     do {
 
-        DWORD lengthTransfered;
+        DWORD transferred;
         if (!WinUsb_ReadPipe(strctx->stream->devh->associateHandle,
             strctx->endpoint,
             buffer,
             strctx->maxPayloadTransferSize,
-            &lengthTransfered,
+            &transferred,
             NULL)) {
             printf("error : %d\n" + GetLastError());
             return;
         }
 
-        //printf("success : %d\n", lengthTransfered);
-        winusb_uvc_process_payload(strctx->stream, buffer, lengthTransfered);
+        //printf("success : %d\n", transferred);
+        LOG_INFO("Packet received with size " << transferred);
+        winusb_uvc_process_payload(strctx->stream, buffer, transferred);
     } while (strctx->stream->running);
 
     // reseting pipe after use
