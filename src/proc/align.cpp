@@ -239,16 +239,16 @@ namespace librealsense
         }
     }
 
-    void image_transform::align_depth_to_other(const uint16_t* z_pixels, uint16_t* dest, int bpp, const rs2_intrinsics& to,
+    void image_transform::align_depth_to_other(const uint16_t* z_pixels, uint16_t* dest, int bpp, const rs2_intrinsics& depth, const rs2_intrinsics& to,
         const rs2_extrinsics& from_to_other)
     {
         switch (to.model)
         {
         case RS2_DISTORTION_MODIFIED_BROWN_CONRADY:
-            align_depth_to_other_sse<RS2_DISTORTION_MODIFIED_BROWN_CONRADY>(z_pixels, dest, to, from_to_other);
+            align_depth_to_other_sse<RS2_DISTORTION_MODIFIED_BROWN_CONRADY>(z_pixels, dest, depth, to, from_to_other);
             break;
         default:
-            align_depth_to_other_sse(z_pixels, dest, to, from_to_other);
+            align_depth_to_other_sse(z_pixels, dest, depth, to, from_to_other);
             break;
         }
     }
@@ -295,15 +295,29 @@ namespace librealsense
         }
     }
 
+    bool is_special_resolution(const rs2_intrinsics& depth, const rs2_intrinsics& to)
+    {
+        if ((depth.width == 640 && depth.height == 240 && to.width == 320 && to.height == 180) ||
+            (depth.width == 640 && depth.height == 480 && to.width == 640 && to.height == 360))
+            return true;
+        return false;
+    }
 
     template<rs2_distortion dist>
-    inline void image_transform::align_depth_to_other_sse(const uint16_t * z_pixels, uint16_t * dest, const rs2_intrinsics& to,
+    inline void image_transform::align_depth_to_other_sse(const uint16_t * z_pixels, uint16_t * dest, const rs2_intrinsics& depth, const rs2_intrinsics& to,
         const rs2_extrinsics& from_to_other)
     {
         get_texture_map_sse<dist>(z_pixels, _depth_scale, _depth.height*_depth.width, _pre_compute_map_x_top_left.data(),
             _pre_compute_map_y_top_left.data(), (byte*)_pixel_top_left_int.data(), to, from_to_other);
 
-        if (_depth.height < to.height && _depth.width < to.width)
+        float fov[2];
+        rs2_fov(&depth, fov);
+        float2 pixels_per_angle_depth = { (float)depth.width / fov[0], (float)depth.height / fov[1] };
+
+        rs2_fov(&to, fov);
+        float2 pixels_per_angle_target = { (float)to.width / fov[0], (float)to.height / fov[1] };
+
+        if (pixels_per_angle_depth.x < pixels_per_angle_target.x || pixels_per_angle_depth.y < pixels_per_angle_target.y || is_special_resolution(depth, to))
         {
             get_texture_map_sse<dist>(z_pixels, _depth_scale, _depth.height*_depth.width, _pre_compute_map_x_bottom_right.data(),
                 _pre_compute_map_y_bottom_right.data(), (byte*)_pixel_bottom_right_int.data(), to, from_to_other);
@@ -739,11 +753,11 @@ namespace librealsense
 
                     _stream_transform->pre_compute_x_y_map_corners();
                 }
-
                 _stream_transform->align_depth_to_other(reinterpret_cast<const uint16_t*>(depth_frame->get_frame_data()),
-                    reinterpret_cast<uint16_t*>(z_aligned_to_other), depth_frame->get_bpp()/8,
-                    other_intrinsics,
+                    reinterpret_cast<uint16_t*>(z_aligned_to_other), depth_frame->get_bpp() / 8,
+                    depth_intrinsics, other_intrinsics,
                     depth_to_other_extrinsics);
+
 #else
                     align_z_to_other(z_aligned_to_other,
                         reinterpret_cast<const uint16_t*>(depth_frame->get_frame_data()),

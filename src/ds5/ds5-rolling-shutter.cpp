@@ -39,7 +39,8 @@ namespace librealsense
             get_depth_sensor().register_pixel_format(pf_rgb888);
         }
 
-        if ((_fw_version >= firmware_version("5.9.13.6")))
+        if ((_fw_version >= firmware_version("5.9.13.6") &&
+             _fw_version < firmware_version("5.9.15.1")))
         {
             get_depth_sensor().register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
                 std::make_shared<external_sync_mode>(*_hw_monitor));

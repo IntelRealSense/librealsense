@@ -117,14 +117,15 @@ namespace librealsense
 
         void stop(){_device_watcher->stop();}
         ~context();
-        std::vector<std::shared_ptr<device_info>> query_devices() const;
+        std::vector<std::shared_ptr<device_info>> query_devices(int mask) const;
         const platform::backend& get_backend() const { return *_backend; }
 
         uint64_t register_internal_device_callback(devices_changed_callback_ptr callback);
         void set_devices_changed_callback(devices_changed_callback_ptr callback);
         void unregister_internal_device_callback(uint64_t cb_id);
 
-        std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices, const std::map<std::string, std::weak_ptr<device_info>>& playback_devices) const;
+        std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices, 
+            const std::map<std::string, std::weak_ptr<device_info>>& playback_devices, int mask) const;
 
 
 

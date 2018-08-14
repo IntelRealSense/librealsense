@@ -263,20 +263,23 @@ void librealsense::device::register_stream_to_extrinsic_group(const stream_inter
     }
 }
 
-void librealsense::device::tag_profile(stream_profile_interface* profile) const
+void librealsense::device::tag_profiles(stream_profiles profiles) const
 {
-    for (auto tag : *_profiles_tags)
+    for (auto profile : profiles)
     {
-        auto vp = dynamic_cast<video_stream_profile_interface*>(profile);
-        if (vp)
+        for (auto tag : *_profiles_tags)
         {
-            if ((tag.stream == RS2_STREAM_ANY || vp->get_stream_type() == tag.stream) &&
-                (tag.format == RS2_FORMAT_ANY || vp->get_format() == tag.format) &&
-                (tag.width == -1 || vp->get_width() == tag.width) &&
-                (tag.height == -1 || vp->get_height() == tag.height) &&
-                (tag.fps == -1 || vp->get_framerate() == tag.fps) &&
-                (tag.stream_index == -1 || vp->get_stream_index() == tag.stream_index))
-                profile->tag_profile(tag.tag);
+            auto vp = dynamic_cast<video_stream_profile_interface*>(profile.get());
+            if (vp)
+            {
+                if ((tag.stream == RS2_STREAM_ANY || vp->get_stream_type() == tag.stream) &&
+                    (tag.format == RS2_FORMAT_ANY || vp->get_format() == tag.format) &&
+                    (tag.width == -1 || vp->get_width() == tag.width) &&
+                    (tag.height == -1 || vp->get_height() == tag.height) &&
+                    (tag.fps == -1 || vp->get_framerate() == tag.fps) &&
+                    (tag.stream_index == -1 || vp->get_stream_index() == tag.stream_index))
+                    profile->tag_profile(tag.tag);
+            }
         }
     }
 }

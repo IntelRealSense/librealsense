@@ -119,6 +119,11 @@ namespace Intel.RealSense
 
         public readonly int UniqueID;
 
+        public IntPtr Ptr
+        {
+            get { return m_instance.Handle; }
+        }
+
         public Extrinsics GetExtrinsicsTo(StreamProfile other)
         {
             object error;

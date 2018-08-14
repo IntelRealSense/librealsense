@@ -292,8 +292,7 @@ namespace rs2
         auto image = frame.as<video_frame>();
         if (image)
         {
-            std::ofstream csv;
-            csv.open(filename);
+            std::ofstream csv(filename);
 
             auto profile = image.get_profile();
             csv << "Frame Info: " << std::endl << "Type," << profile.stream_name() << std::endl;
@@ -306,15 +305,15 @@ namespace rs2
 
             if (auto vsp = profile.as<video_stream_profile>())
             {
-                csv << std::endl << "Intrinsic:," << std::fixed << std::setprecision(6) <<std::endl;
-                csv << "Fx," << vsp.get_intrinsics().fx << std::endl;
-                csv << "Fy," << vsp.get_intrinsics().fy << std::endl;
-                csv << "PPx,"<< vsp.get_intrinsics().ppx << std::endl;
-                csv << "PPy,"<< vsp.get_intrinsics().ppy << std::endl;
-                csv << "Distorsion," <<rs2_distortion_to_string(vsp.get_intrinsics().model) << std::endl;
+                auto intrinsics = vsp.get_intrinsics();
+                csv << std::endl << "Intrinsic:," << std::fixed << std::setprecision(6) << std::endl;
+                csv << "Fx," << intrinsics.fx << std::endl;
+                csv << "Fy," << intrinsics.fy << std::endl;
+                csv << "PPx," << intrinsics.ppx << std::endl;
+                csv << "PPy," << intrinsics.ppy << std::endl;
+                csv << "Distorsion," << rs2_distortion_to_string(intrinsics.model) << std::endl;
             }
 
-            csv.close();
             ret = true;
         }
 
@@ -636,7 +635,7 @@ namespace rs2
 
             }
 
-            if (!read_only && opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE && dev->auto_exposure_enabled && dev->streaming)
+            if (!read_only && opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE && dev->auto_exposure_enabled  && dev->s->is<roi_sensor>() && dev->streaming)
             {
                 ImGui::SameLine(0, 10);
                 std::string button_label = label;
@@ -2658,11 +2657,20 @@ namespace rs2
 
             // And the frame's attributes
             filename = filename_base + "_" + stream_desc + "_metadata.csv";
-            if (frame_metadata_to_csv(filename, original_frame))
-                ss << "The frame attributes are saved into " << filename;
-            else
-                viewer.not_model.add_notification({ to_string() << "Failed to save frame metadata file " << filename,
+
+            try
+            {
+                if (frame_metadata_to_csv(filename, original_frame))
+                    ss << "The frame attributes are saved into " << filename;
+                else
+                    viewer.not_model.add_notification({ to_string() << "Failed to save frame metadata file " << filename,
+                        0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+            }
+            catch (std::exception& e)
+            {
+                viewer.not_model.add_notification({ to_string() << e.what(),
                     0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+            }
         }
 
         if (ss.str().size())

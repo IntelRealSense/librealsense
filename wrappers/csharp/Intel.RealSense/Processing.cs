@@ -81,6 +81,46 @@ namespace Intel.RealSense
         readonly FrameQueue queue = new FrameQueue(1);
     }
 
+    public class Syncer : ProcessingBlock
+    {
+        public Syncer()
+        {
+            object error;
+            m_instance = new HandleRef(this, NativeMethods.rs2_create_sync_processing_block(out error));
+            NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
+        }
+
+        public void SubmitFrame(Frame f, FramesReleaser releaser = null)
+        {
+            object error;
+            NativeMethods.rs2_frame_add_ref(f.m_instance.Handle, out error);
+            NativeMethods.rs2_process_frame(m_instance.Handle, f.m_instance.Handle, out error);
+        }
+
+        public FrameSet WaitForFrames(uint timeout_ms = 5000, FramesReleaser releaser = null)
+        {
+            object error;
+            var ptr = NativeMethods.rs2_wait_for_frame(queue.m_instance.Handle, timeout_ms, out error);
+            return FramesReleaser.ScopedReturn(releaser, new FrameSet(ptr));
+        }
+
+        public bool PollForFrames(out FrameSet result, FramesReleaser releaser = null)
+        {
+            object error;
+            Frame f;
+            if (NativeMethods.rs2_poll_for_frame(queue.m_instance.Handle, out f, out error) > 0)
+            {
+                result = FramesReleaser.ScopedReturn(releaser, new FrameSet(f.m_instance.Handle));
+                f.Dispose();
+                return true;
+            }
+            result = null;
+            return false;
+        }
+
+        readonly FrameQueue queue = new FrameQueue(1);
+    }
+
     public class Align : ProcessingBlock
     {
         public Align(Stream align_to)
@@ -237,6 +277,13 @@ namespace Intel.RealSense
         internal FrameSource(HandleRef instance)
         {
             m_instance = instance;
+        }
+
+        public VideoFrame AllocateVideoFrame(StreamProfile profile, Frame original, int bpp, int width, int height, int stride, Extension extension = Extension.VideoFrame )
+        {
+            object error;
+            var fref = NativeMethods.rs2_allocate_synthetic_video_frame(m_instance.Handle, profile.m_instance.Handle, original.m_instance.Handle, bpp, width, height, stride, extension, out error);
+            return new VideoFrame(fref);
         }
 
         public FrameSet AllocateCompositeFrame(FramesReleaser releaser, params Frame[] frames)

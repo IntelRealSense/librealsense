@@ -31,6 +31,7 @@ class Realsense {
   init() {
     this.ctx = new this.wrapper.Context();
     this.colorizer = new this.wrapper.Colorizer();
+    this.decimate = new this.wrapper.DecimationFilter();
     this.sensors = this.ctx.querySensors();
   }
   stop() {}
@@ -223,12 +224,18 @@ class Realsense {
     return undefined;
   }
   _processFrameBeforeSend(sensor, frame) {
+    const streamType = frame.streamType;
+    const width = frame.width;
+    const height = frame.height;
+    const streamIndex = frame.profile.streamIndex;
+    const format = frame.format;
+
     return new Promise((resolve, reject) => {
-      if (frame.streamType === this.wrapper.stream.STREAM_COLOR) {
+      if (streamType === this.wrapper.stream.STREAM_COLOR) {
         sharp(Buffer.from(frame.data.buffer), {
           raw: {
-            width: frame.width,
-            height: frame.height,
+            width: width,
+            height: height,
             channels: 3,
           },
         }).jpeg({
@@ -236,22 +243,22 @@ class Realsense {
         }).toBuffer().then((data) => {
           let result = {
             meta: {
-              stream: this.wrapper.stream.streamToString(frame.streamType),
+              stream: this.wrapper.stream.streamToString(streamType),
               index: frame.profile.streamIndex,
-              format: this.wrapper.format.formatToString(frame.format),
-              width: frame.width,
-              height: frame.height,
+              format: this.wrapper.format.formatToString(format),
+              width: width,
+              height: height,
             },
             data: data,
           };
           resolve(result);
         });
-      } else if (frame.streamType === this.wrapper.stream.STREAM_DEPTH) {
+      } else if (streamType === this.wrapper.stream.STREAM_DEPTH) {
         const depthMap = this.colorizer.colorize(frame);
         sharp(Buffer.from(depthMap.data.buffer), {
           raw: {
-            width: frame.width,
-            height: frame.height,
+            width: width,
+            height: height,
             channels: 3,
           },
         }).jpeg({
@@ -259,18 +266,31 @@ class Realsense {
         }).toBuffer().then((data) => {
           let result = {
             meta: {
-              stream: this.wrapper.stream.streamToString(frame.streamType),
+              stream: this.wrapper.stream.streamToString(streamType),
               index: frame.profile.streamIndex,
-              format: this.wrapper.format.formatToString(frame.format),
-              width: frame.width,
-              height: frame.height,
+              format: this.wrapper.format.formatToString(format),
+              width: width,
+              height: height,
             },
             data: data,
           };
           resolve(result);
         });
-      } else if (frame.streamType === this.wrapper.stream.STREAM_INFRARED) {
-        // todo(tingshao): Add infrared support
+      } else if (streamType === this.wrapper.stream.STREAM_INFRARED) {
+        const infraredFrame = this.decimate.process(frame);
+        // const infraredFrame = frame;
+        let result = {
+          meta: {
+            stream: this.wrapper.stream.streamToString(streamType)+streamIndex,
+            index: frame.profile.streamIndex,
+            format: this.wrapper.format.formatToString(format),
+            width: infraredFrame.width,
+            height: infraredFrame.height,
+          },
+          data: infraredFrame.data,
+          frame: infraredFrame,
+        };
+        resolve(result);
       }
     });
   }
@@ -283,14 +303,9 @@ class Realsense {
       console.log(profiles);
       sensor.open(profiles);
       sensor.start((frame) => {
-        let streamName = this.wrapper.stream.streamToString(frame.streamType);
-        if (streamName === 'infrared') {
-          streamName += frame.profile.streamIndex;
-        }
-
-        this._processFrameBeforeSend(sensor, frame).then((data) => {
-          connectMgr.sendProcessedFrameData(streamName, data);
-          this.sendCount[streamName]++;
+        this._processFrameBeforeSend(sensor, frame).then((output) => {
+          connectMgr.sendProcessedFrameData(output);
+          this.sendCount[output.meta.stream]++;
         });
       });
     }
@@ -354,9 +369,9 @@ class ConnectionManager {
       this.sendCmdObject({tag: ResponseTag.error, description: 'No camera found!'});
     }
   }
-  sendProcessedFrameData(streamName, data) {
-    this.sendData(streamName, data.meta, true);
-    this.sendData(streamName, data.data);
+  sendProcessedFrameData(data) {
+    this.sendData(data.meta.stream, data.meta, true);
+    this.sendData(data.meta.stream, data.data);
   }
   sendCmdObject(obj) {
     this.cmdSocket.send(JSON.stringify(obj));
@@ -372,7 +387,6 @@ class ConnectionManager {
     }
   }
 }
-
 let connectMgr = new ConnectionManager(port, wsPort);
 let rsObj = new Realsense(rsWrapper, connectMgr);
 rsObj.init();

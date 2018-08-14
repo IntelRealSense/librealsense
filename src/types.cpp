@@ -17,7 +17,7 @@
 
 namespace librealsense
 {
-    inline std::string make_less_screamy(const char* str)
+    std::string make_less_screamy(const char* str)
     {
         std::string res(str);
 

@@ -236,12 +236,17 @@ int rs2_device_hub_is_device_connected(const rs2_device_hub* hub, const rs2_devi
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, hub, device)
 
-rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error) BEGIN_API_CALL
+rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error)
+{
+    return rs2_query_devices_ex(context, RS2_PRODUCT_LINE_ANY_INTEL, error);
+}
+
+rs2_device_list* rs2_query_devices_ex(const rs2_context* context, int product_mask, rs2_error** error)
 {
     VALIDATE_NOT_NULL(context);
 
     std::vector<rs2_device_info> results;
-    for (auto&& dev_info : context->ctx->query_devices())
+    for (auto&& dev_info : context->ctx->query_devices(product_mask))
     {
         try
         {
@@ -256,7 +261,6 @@ rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error
 
     return new rs2_device_list{ context->ctx, results };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context)
 
 rs2_sensor_list* rs2_query_sensors(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {

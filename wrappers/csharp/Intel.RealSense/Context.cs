@@ -25,6 +25,27 @@ namespace Intel.RealSense
             object error;
             api_version = NativeMethods.rs2_get_api_version(out error);
             m_instance = new HandleRef(this, NativeMethods.rs2_create_context(api_version, out error));
+
+            onDevicesChangedCallback = new rs2_devices_changed_callback(onDevicesChanged);
+            NativeMethods.rs2_set_devices_changed_callback(m_instance.Handle, onDevicesChangedCallback, IntPtr.Zero, out error);
+        }
+
+        // Keeps the delegate alive, if we were to assign onDevicesChanged directly, there'll be 
+        // no managed reference it, it will be collected and cause a native exception.
+        readonly rs2_devices_changed_callback onDevicesChangedCallback;
+
+        public delegate void OnDevicesChangedDelegate(DeviceList removed, DeviceList added);
+        public event OnDevicesChangedDelegate OnDevicesChanged;
+
+        private void onDevicesChanged(IntPtr removedList, IntPtr addedList, IntPtr userData)
+        {
+            var e = OnDevicesChanged;
+            if (e != null)
+            {
+                using (var removed = new DeviceList(removedList))
+                using (var added = new DeviceList(addedList))
+                    e(removed, added);
+            }
         }
 
 
@@ -32,10 +53,11 @@ namespace Intel.RealSense
         /// create a static snapshot of all connected devices at the time of the call
         /// </summary>
         /// <returns></returns>
-        public DeviceList QueryDevices()
+        public DeviceList QueryDevices(bool include_platform_camera = false)
         {
             object error;
-            var ptr = NativeMethods.rs2_query_devices(m_instance.Handle, out error);
+            var ptr = NativeMethods.rs2_query_devices_ex(m_instance.Handle,
+                include_platform_camera ? 0xff : 0xfe, out error);
             return new DeviceList(ptr);
         }
 
@@ -60,6 +82,7 @@ namespace Intel.RealSense
                 if (disposing)
                 {
                     // TODO: dispose managed state (managed objects).
+                    OnDevicesChanged = null;
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
