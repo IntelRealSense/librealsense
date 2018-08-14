@@ -52,6 +52,12 @@ namespace Intel.RealSense
             }
         }
 
+        public bool Contains(Device device)
+        {
+            object error;
+            return System.Convert.ToBoolean(NativeMethods.rs2_device_list_contains(m_instance, device.m_instance, out error));
+        }
+
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
@@ -91,7 +97,7 @@ namespace Intel.RealSense
         #endregion
     }
 
-    public class Device
+    public class Device : IDisposable
     {
         public IntPtr m_instance;
 
@@ -152,6 +158,43 @@ namespace Intel.RealSense
                 return QuerySensors();
             }
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+                NativeMethods.rs2_delete_device(m_instance);
+
+                disposedValue = true;
+            }
+        }
+
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        ~Device()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(false);
+        }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 
     public class AdvancedDevice : Device
@@ -300,4 +343,38 @@ namespace Intel.RealSense
         }
     }
 
+
+    public class RecordDevice : Device
+    {
+        IntPtr m_dev;
+
+        public RecordDevice(Device dev, string file) : base(IntPtr.Zero)
+        {
+            m_dev = dev.m_instance;
+            object error;
+            m_instance = NativeMethods.rs2_create_record_device(m_dev, file, out error);
+        }
+
+        public void Pause()
+        {
+            object error;
+            NativeMethods.rs2_record_device_pause(m_instance, out error);
+        }
+
+        public void Resume()
+        {
+            object error;
+            NativeMethods.rs2_record_device_resume(m_instance, out error);
+        }
+
+        public string Filename
+        {
+            get
+            {
+                object error;
+                var p = NativeMethods.rs2_record_device_filename(m_instance, out error);
+                return Marshal.PtrToStringAnsi(p);
+            }
+        }
+    }
 }

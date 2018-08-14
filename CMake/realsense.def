@@ -11,6 +11,7 @@ EXPORTS
     rs2_context_remove_device
 
     rs2_query_devices
+    rs2_query_devices_ex
     rs2_get_device_count
     rs2_delete_device_list
     rs2_create_device

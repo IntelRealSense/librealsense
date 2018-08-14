@@ -39,10 +39,7 @@ playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<d
     for (auto sensor_pair : m_sensors)
     {
         auto profiles = sensor_pair.second->get_stream_profiles();
-        for(auto profile : profiles)
-        {
-            tag_profile(profile.get());
-        }
+        tag_profiles(profiles);
     }
     register_extrinsics(m_device_description);
 }

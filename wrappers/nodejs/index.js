@@ -732,7 +732,8 @@ class Sensor extends Options {
    *  Syntax 1. open(streamProfile)
    *  Syntax 2. open(profileArray)
    * </code></pre>
-   *  Syntax 2 is for opening multiple profiles in one function call
+   *  Syntax 2 is for opening multiple profiles in one function call and should be used for
+   * interdependent streams, such as depth and infrared, that have to be configured together.
    *
    * @param {StreamProfile} streamProfile configuration commited by the device
    * @param {StreamProfile[]} profileArray configurations array commited by the device
@@ -1871,6 +1872,14 @@ class Frame {
     this.cxxFrame = cxxFrame || new RS2.RSFrame();
     this.updateProfile();
     internal.addObject(this);
+    // called from native to reset this.arrayBuffer and this.typedArray when the
+    // underlying frame was replaced. The arrayBuffer and typedArray must be reset
+    // to avoid deprecated data to be used.
+    const jsWrapper = this;
+    this.cxxFrame._internalResetBuffer = function() {
+      jsWrapper.typedArray = undefined;
+      jsWrapper.arrayBuffer = undefined;
+    };
   }
 
   updateProfile() {
@@ -3159,6 +3168,15 @@ class Filter extends Options {
 class DecimationFilter extends Filter {
   constructor() {
     super('decimation');
+  }
+  // override base implementation
+  _internalGetInputType() {
+    return VideoFrame;
+  }
+  _internalPrepareOutputFrame() {
+    if (!this.frame) {
+      this.frame = new VideoFrame();
+    }
   }
 }
 

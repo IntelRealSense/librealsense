@@ -71,6 +71,21 @@ void rs2_context_remove_device(rs2_context* ctx, const char* file, rs2_error** e
 */
 rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error);
 
+#define RS2_PRODUCT_LINE_ANY        0xff
+#define RS2_PRODUCT_LINE_ANY_INTEL  0xfe
+#define RS2_PRODUCT_LINE_NON_INTEL  0x01
+#define RS2_PRODUCT_LINE_D400       0x02
+#define RS2_PRODUCT_LINE_SR300      0x04
+
+/**
+* create a static snapshot of all connected devices at the time of the call
+* \param context     Object representing librealsense session
+* \param product_mask Controls what kind of devices will be returned
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the list of devices, should be released by rs2_delete_device_list
+*/
+rs2_device_list* rs2_query_devices_ex(const rs2_context* context, int product_mask, rs2_error** error);
+
 /**
 * \brief Creates RealSense device_hub .
 * \param[in] context The context for the device hub

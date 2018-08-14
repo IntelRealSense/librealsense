@@ -13,11 +13,11 @@ public class NewPlayModeTest
     [Category("Live")]
     public IEnumerator TestLiveCamera()
     {
-        var go = new GameObject("RealSenseDevice", typeof(RealSenseDevice));
+        var go = new GameObject("RealSenseDevice", typeof(RsDevice));
         Assert.NotNull(go);
-        Assert.NotNull(go.GetComponent<RealSenseDevice>());
+        Assert.NotNull(go.GetComponent<RsDevice>());
 
-        var rs = RealSenseDevice.Instance;
+        var rs = RsDevice.Instance;
         Assert.NotNull(rs);
 
         bool started = false;
@@ -31,7 +31,7 @@ public class NewPlayModeTest
         yield return new WaitUntil(() => started);
         Assert.IsTrue(started);
 
-        rs.onNewSample += sample =>
+        rs.OnNewSample += sample =>
         {
             Debug.Log(sample);
         };
@@ -39,31 +39,31 @@ public class NewPlayModeTest
         GameObject.Destroy(go);
         yield return null;
         Assert.That(go == null);
-        Assert.IsNull(RealSenseDevice.Instance);
+        Assert.IsNull(RsDevice.Instance);
     }
 
     [UnityTest]
     [Category("Live")]
     public IEnumerator TestLiveDepthTexture()
     {
-        var go = new GameObject("RealSenseDevice", typeof(RealSenseDevice));
+        var go = new GameObject("RealSenseDevice", typeof(RsDevice));
 
         var depth_go = new GameObject("Depth");
-        var depth = depth_go.AddComponent<RealSenseStreamTexture>();
+        var depth = depth_go.AddComponent<RsStreamTextureRenderer>();
 
-        depth.sourceStreamType = Stream.Depth;
-        depth.textureFormat = TextureFormat.R16;
+        depth._stream = Stream.Depth;
+        depth._format = Format.Z16;
 
-        depth.textureBinding = new RealSenseStreamTexture.TextureEvent();
+        depth.textureBinding = new RsStreamTextureRenderer.TextureEvent();
         Assert.IsNotNull(depth.textureBinding);
 
         Texture depth_tex = null;
         depth.textureBinding.AddListener(t => depth_tex = t);
 
-        yield return new WaitUntil(() => RealSenseDevice.Instance.Streaming);
+        yield return new WaitUntil(() => RsDevice.Instance.Streaming);
         Assert.IsNotNull(depth_tex);
 
-        using (var depth_profile = RealSenseDevice.Instance.ActiveProfile.GetStream(Stream.Depth) as VideoStreamProfile)
+        using (var depth_profile = RsDevice.Instance.ActiveProfile.GetStream(Stream.Depth) as VideoStreamProfile)
         {
             Assert.AreEqual(depth_tex.width, depth_profile.Width);
             Assert.AreEqual(depth_tex.height, depth_profile.Height);
@@ -78,8 +78,8 @@ public class NewPlayModeTest
     [Category("Live")]
     public IEnumerator TestDisabledNoStart()
     {
-        var go = new GameObject("RealSenseDevice", typeof(RealSenseDevice));
-        var rs = RealSenseDevice.Instance;
+        var go = new GameObject("RealSenseDevice", typeof(RsDevice));
+        var rs = RsDevice.Instance;
 
         rs.OnStop += Assert.Fail;
         rs.OnStart += delegate
@@ -92,15 +92,15 @@ public class NewPlayModeTest
         GameObject.Destroy(go);
         yield return null;
         Assert.That(go == null);
-        Assert.IsNull(RealSenseDevice.Instance);
+        Assert.IsNull(RsDevice.Instance);
     }
 
     [UnityTest]
     [Category("Live")]
     public IEnumerator TestDisableStop()
     {
-        var go = new GameObject("RealSenseDevice", typeof(RealSenseDevice));
-        var rs = RealSenseDevice.Instance;
+        var go = new GameObject("RealSenseDevice", typeof(RsDevice));
+        var rs = RsDevice.Instance;
 
         bool started = false;
         rs.OnStart += delegate
@@ -129,8 +129,8 @@ public class NewPlayModeTest
     [Category("Live")]
     public void TestExtrinsics()
     {
-        var go = new GameObject("RealSenseDevice", typeof(RealSenseDevice));
-        var rs = RealSenseDevice.Instance;
+        var go = new GameObject("RealSenseDevice", typeof(RsDevice));
+        var rs = RsDevice.Instance;
 
         var depth = rs.ActiveProfile.GetStream(Stream.Depth);
         Assert.IsNotNull(depth);
@@ -149,13 +149,13 @@ public class NewPlayModeTest
     [Category("Live"), Category("Record")]
     public IEnumerator TestRecord()
     {
-        var go = new GameObject("RealSenseDevice", typeof(RealSenseDevice));
-        var rs = RealSenseDevice.Instance;
+        var go = new GameObject("RealSenseDevice", typeof(RsDevice));
+        var rs = RsDevice.Instance;
 
         go.SetActive(false);
 
-        rs.processMode = RealSenseDevice.ProcessMode.UnityThread;
-        rs.DeviceConfiguration.mode = RealSenseConfiguration.Mode.Record;
+        rs.processMode = RsDevice.ProcessMode.UnityThread;
+        rs.DeviceConfiguration.mode = RsConfiguration.Mode.Record;
         var path = "D:/test.bag";
         rs.DeviceConfiguration.RecordPath = path;
 
@@ -186,7 +186,7 @@ public class NewPlayModeTest
         var go = new GameObject("RealSenseDevice");
         go.SetActive(false);
 
-        var rs = go.AddComponent<RealSenseDevice>();
+        var rs = go.AddComponent<RsDevice>();
 
         Debug.Log(JsonUtility.ToJson(rs.DeviceConfiguration, true));
 
@@ -194,7 +194,7 @@ public class NewPlayModeTest
         var fi = new System.IO.FileInfo(path);
         Assert.True(fi.Exists);
         rs.DeviceConfiguration.PlaybackFile = path;
-        rs.DeviceConfiguration.mode = RealSenseConfiguration.Mode.Playback;
+        rs.DeviceConfiguration.mode = RsConfiguration.Mode.Playback;
         rs.DeviceConfiguration.Profiles = null;
 
         Debug.Log(JsonUtility.ToJson(rs.DeviceConfiguration, true));
