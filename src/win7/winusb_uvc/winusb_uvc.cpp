@@ -927,10 +927,11 @@ void stream_thread(winusb_uvc_stream_context *strctx)
             buffer,
             strctx->maxPayloadTransferSize,
             &transferred,
-            NULL)) {
-            printf("error : %d\n" + GetLastError());
-            return;
-        }
+            NULL)) 
+            {
+                printf("WinUsb_ReadPipe Error: %d\n" + GetLastError());
+                break;
+            }
 
         LOG_DEBUG("Packet received with size " << transferred);
         winusb_uvc_process_payload(strctx->stream, buffer, transferred, &archive, &queue);
