@@ -992,6 +992,8 @@ namespace librealsense
         int size = 0;
 
     public:
+        static const int CAPACITY = C;
+
         small_heap()
         {
             for (auto i = 0; i < C; i++)
