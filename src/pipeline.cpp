@@ -212,7 +212,7 @@ namespace librealsense
         }
 
         //Look for satisfy device in case the user did not specify one.
-        auto devs = pipe->get_context()->query_devices();
+        auto devs = pipe->get_context()->query_devices(RS2_PRODUCT_LINE_ANY);
         for (auto dev_info : devs)
         {
             try
@@ -262,7 +262,7 @@ namespace librealsense
     std::shared_ptr<device_interface> pipeline_config::get_or_add_playback_device(std::shared_ptr<pipeline> pipe, const std::string& file)
     {
         //Check if the file is already loaded to context, and if so return that device
-        for (auto&& d : pipe->get_context()->query_devices())
+        for (auto&& d : pipe->get_context()->query_devices(RS2_PRODUCT_LINE_ANY))
         {
             auto playback_devs = d->get_device_data().playback_devices;
             for (auto&& p : playback_devs)

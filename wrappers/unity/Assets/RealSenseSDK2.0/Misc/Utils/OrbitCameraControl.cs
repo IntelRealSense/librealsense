@@ -41,7 +41,7 @@ public class OrbitCameraControl : MonoBehaviour
         if (!Application.isFocused)
             return;
 
-        if (EventSystem.current.IsPointerOverGameObject())
+        if (EventSystem.current && EventSystem.current.IsPointerOverGameObject())
             return;
 
         var currMousePosition = Input.mousePosition;

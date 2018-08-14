@@ -890,7 +890,7 @@ describe('filter tests', function() {
     let frameset = pipeline.waitForFrames();
     let depthFrame = frameset.depthFrame;
     let out = decimationFilter.process(depthFrame);
-    assert.equal(out instanceof rs2.DepthFrame, true);
+    assert.equal(out instanceof rs2.VideoFrame, true);
     assert.equal(typeof out.width, 'number');
   }).timeout(10000); // change the threshold to be 10 seconds to avoid timeout.
 });

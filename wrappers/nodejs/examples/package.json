@@ -8,7 +8,6 @@
     "fsm-as-promised": "^0.15.1",
     "input": "^1.0.1",
     "node-glfw-3": "^0.3.4",
-    "performance-now": "^2.1.0",
-    "pkg": "^4.2.4"
+    "performance-now": "^2.1.0"
   }
 }
