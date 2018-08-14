@@ -882,6 +882,7 @@ void winusb_uvc_process_payload(winusb_uvc_stream_handle_t *strmh,
                 
                 memcpy(fp->pixels.data(), payload, data_len + header_len);
 
+                LOG_INFO("Passing packet to user CB with size " << data_len + header_len);
                 librealsense::platform::frame_object fo{ data_len, header_len, 
                     fp->pixels.data() + header_len , fp->pixels.data() };
                 fp->fo = fo;
@@ -893,13 +894,8 @@ void winusb_uvc_process_payload(winusb_uvc_stream_handle_t *strmh,
                 //std::cout << "Frame from WinUSB backend was dropped (Frontend busy)\n";
             }
             //printf("EndPoint 0x%X: Received Frame %d (%zd bytes): header info = %08X\n", strmh->stream_if->bEndpointAddress, strmh->seq, payload_len, payload[1]);
-            LOG_INFO("Passing packet to user CB with size " << data_len + header_len);
-            librealsense::platform::frame_object fo{ data_len, header_len, strmh->holdbuf + header_len , strmh->holdbuf };
-            strmh->user_cb(&fo, strmh->user_ptr);
         }
     }
-
-
 }
 
 void stream_thread(winusb_uvc_stream_context *strctx)
@@ -952,7 +948,7 @@ void stream_thread(winusb_uvc_stream_context *strctx)
 
         //printf("success : %d\n", transferred);
         LOG_INFO("Packet received with size " << transferred);
-        winusb_uvc_process_payload(strctx->stream, buffer, lengthTransfered, &archive, &queue);
+        winusb_uvc_process_payload(strctx->stream, buffer, transferred, &archive, &queue);
     } while (strctx->stream->running);
 
     // reseting pipe after use
