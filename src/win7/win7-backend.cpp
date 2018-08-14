@@ -113,16 +113,16 @@ namespace librealsense
             return std::make_shared<os_time_service>();
         }
 
-        class win_event_device_watcher : public device_watcher
+        class win7_event_device_watcher : public device_watcher
         {
         public:
-            win_event_device_watcher(const backend * backend)
+            win7_event_device_watcher(const backend * backend)
             {
                 _data._backend = backend;
                 _data._stopped = false;
                 _data._last = backend_device_group(backend->query_uvc_devices(), backend->query_usb_devices(), backend->query_hid_devices());
             }
-            ~win_event_device_watcher() { stop(); }
+            ~win7_event_device_watcher() { stop(); }
 
             void start(device_changed_callback callback) override
             {
@@ -261,61 +261,35 @@ namespace librealsense
             {
                 auto data = reinterpret_cast<extra_data*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
-                //===========================register HWmonitor events==============================
-                const GUID classGuid = { 0x175695cd, 0x30d9, 0x4f87, 0x8b, 0xe3, 0x5a, 0x82, 0x70, 0xf4, 0x9a, 0x31 };
-                DEV_BROADCAST_DEVICEINTERFACE devBroadcastDeviceInterface;
-                devBroadcastDeviceInterface.dbcc_size = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
-                devBroadcastDeviceInterface.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
-                devBroadcastDeviceInterface.dbcc_classguid = classGuid;
-                devBroadcastDeviceInterface.dbcc_reserved = 0;
-
-                data->hdevnotifyHW = RegisterDeviceNotification(hWnd,
-                    &devBroadcastDeviceInterface,
-                    DEVICE_NOTIFY_WINDOW_HANDLE);
-                if (data->hdevnotifyHW == NULL)
+                for (auto guidStr : device_guids)
                 {
-                    LOG_WARNING("Register HW events Failed!\n");
-                    return FALSE;
+                    GUID guid;
+                    std::wstring guidWStr(guidStr.begin(), guidStr.end());
+                    CHECK_HR(CLSIDFromString(guidWStr.c_str(), static_cast<LPCLSID>(&guid)));
+
+                    DEV_BROADCAST_DEVICEINTERFACE devBroadcastDeviceInterface;
+                    devBroadcastDeviceInterface.dbcc_size = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
+                    devBroadcastDeviceInterface.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+                    devBroadcastDeviceInterface.dbcc_classguid = guid;
+                    devBroadcastDeviceInterface.dbcc_reserved = 0;
+
+                    data->hdevnotifyHW = RegisterDeviceNotification(hWnd,
+                        &devBroadcastDeviceInterface,
+                        DEVICE_NOTIFY_WINDOW_HANDLE);
+                    if (data->hdevnotifyHW == NULL)
+                    {
+                        LOG_WARNING("Register HW events Failed!\n");
+                        return FALSE;
+                    }
                 }
 
-                ////===========================register UVC events==============================
-                DEV_BROADCAST_DEVICEINTERFACE di = { 0 };
-                di.dbcc_size = sizeof(di);
-                di.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
-                di.dbcc_classguid = KSCATEGORY_CAPTURE;
-
-                data->hdevnotifyUVC = RegisterDeviceNotification(hWnd,
-                    &di,
-                    DEVICE_NOTIFY_WINDOW_HANDLE);
-                if (data->hdevnotifyUVC == nullptr)
-                {
-                    UnregisterDeviceNotification(data->hdevnotifyHW);
-                    LOG_WARNING("Register UVC events Failed!\n");
-                    return FALSE;
-                }
-
-                ////===========================register UVC sensor camera events==============================
-                DEV_BROADCAST_DEVICEINTERFACE di_sensor = { 0 };
-                di_sensor.dbcc_size = sizeof(di_sensor);
-                di_sensor.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
-                di_sensor.dbcc_classguid = KSCATEGORY_SENSOR_CAMERA;
-
-                data->hdevnotify_sensor = RegisterDeviceNotification(hWnd,
-                    &di_sensor,
-                    DEVICE_NOTIFY_WINDOW_HANDLE);
-                if (data->hdevnotify_sensor == nullptr)
-                {
-                    UnregisterDeviceNotification(data->hdevnotify_sensor);
-                    LOG_WARNING("Register UVC events Failed!\n");
-                    return FALSE;
-                }
                 return TRUE;
             }
         };
 
         std::shared_ptr<device_watcher> win7_backend::create_device_watcher() const
         {
-            return std::make_shared<polling_device_watcher>(this);
+            return std::make_shared<win7_event_device_watcher>(this);
         }
     }
 }
