@@ -44,8 +44,27 @@ classdef stream_profile < handle
             out = realsense.librealsense_mex('rs2::stream_profile', 'clone', this.objectHandle, int64(type), int64(index), int64(fmt));
             realsense.stream_profile(out{:});
         end
-        % TODO: is [stream_profile, video_stream_profile, motion_stream_profile]
-        % TODO: as [stream_profile, video_stream_profile, motion_stream_profile]
+        function value = is(this, type)
+            narginchk(2, 2);
+            % C++ function validates contents of type
+            validateattributes(type, {'char', 'string'}, {'scalartext'}, '', 'type', 2);
+            out = realsense.librealsense_mex('rs2::stream_profile', 'is', this.objectHandle, type);
+            value = logical(out);
+        end
+        function profile = as(this, type)
+            narginchk(2, 2);
+            % C++ function validates contents of type
+            validateattributes(type, {'char', 'string'}, {'scalartext'}, '', 'type', 2);
+            out = realsense.librealsense_mex('rs2::stream_profile', 'as', this.objectHandle, type);
+            switch type
+                case 'stream_profile'
+                    profile = realsense.stream_profile(out);
+                case 'video_stream_profile'
+                    profile = realsense.video_stream_profile(out);
+                case 'motion_stream_profile'
+                    profile = realsense.motion_stream_profile(out);
+            end
+        end
         function name = stream_name(this)
             id = realsense.librealsense_mex('rs2::stream_profile', 'stream_name', this.objectHandle);
         end

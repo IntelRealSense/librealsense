@@ -12,8 +12,6 @@ Factory *factory;
 void make_factory(){
     factory = new Factory();
 
-    // TODO: missing destructors
-
     // rs_frame.hpp
     {
         ClassFactory stream_profile_factory("rs2::stream_profile");
@@ -64,8 +62,38 @@ void make_factory(){
             auto lhs = MatlabParamParser::parse<rs2::stream_profile>(inv[1]);
             MatlabParamParser::wrap(rhs == lhs);
         });
-        // rs2::stream_profile::is                                      [TODO] [T = {stream_profile, video_stream_profile, motion_stream_profile}]
-        // rs2::stream_profile::as                                      [TODO] [T = {stream_profile, video_stream_profile, motion_stream_profile}]
+        stream_profile_factory.record("is", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            // TODO: something more maintainable?
+            auto thiz = MatlabParamParser::parse<rs2::stream_profile>(inv[0]);
+            auto type = MatlabParamParser::parse<std::string>(inv[1]);
+            if (type == "stream_profile")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::stream_profile>());
+            else if (type == "video_stream_profile")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::video_stream_profile>());
+            else if (type == "motion_stream_profile")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::motion_stream_profile>());
+            else {
+                mexWarnMsgTxt("rs2::stream_profile::is: invalid type parameter");
+                outv[0] = MatlabParamParser::wrap(false);
+            }
+        });
+        stream_profile_factory.record("as", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            // TODO: something more maintainable?
+            auto thiz = MatlabParamParser::parse<rs2::stream_profile>(inv[0]);
+            auto type = MatlabParamParser::parse<std::string>(inv[1]);
+            if (type == "stream_profile")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::stream_profile>());
+            else if (type == "video_stream_profile")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::video_stream_profile>());
+            else if (type == "motion_stream_profile")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::motion_stream_profile>());
+            else {
+                mexWarnMsgTxt("rs2::stream_profile::as: invalid type parameter");
+                outv[0] = MatlabParamParser::wrap(uint64_t(0));
+            }
+        });
         stream_profile_factory.record("stream_name", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::stream_profile>(inv[0]);
@@ -162,12 +190,11 @@ void make_factory(){
         });
         frame_factory.record("get_data", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
-            // TODO - What's going on here? / support more formats
             auto thiz = MatlabParamParser::parse<rs2::frame>(inv[0]);
             size_t n_bytes = 0;
             if (auto vf = thiz.as<rs2::video_frame>()) {
                 n_bytes = vf.get_height() * vf.get_stride_in_bytes();
-            }
+            } // TODO: support more frame types?
 
             switch (thiz.get_profile().format()) {
             case RS2_FORMAT_RAW10:
@@ -219,8 +246,58 @@ void make_factory(){
             auto thiz = MatlabParamParser::parse<rs2::frame>(inv[0]);
             outv[0] = MatlabParamParser::wrap(thiz.get_profile());
         });
-        // rs2::frame::is                                               [TODO] [T = {frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset}]
-        // rs2::frame::as                                               [TODO] [T = {frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset}]
+        frame_factory.record("is", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            // TODO: something more maintainable?
+            auto thiz = MatlabParamParser::parse<rs2::frame>(inv[0]);
+            auto type = MatlabParamParser::parse<std::string>(inv[1]);
+            if (type == "frame")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::frame>());
+            else if (type == "video_frame")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::video_frame>());
+            else if (type == "points")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::points>());
+            else if (type == "depth_frame")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::depth_frame>());
+            else if (type == "disparity_frame")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::disparity_frame>());
+            else if (type == "motion_frame")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::motion_frame>());
+            else if (type == "pose_frame")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::pose_frame>());
+            else if (type == "frameset")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::frameset>());
+            else {
+                mexWarnMsgTxt("rs2::frame::is: invalid type parameter");
+                outv[0] = MatlabParamParser::wrap(false);
+            }
+        });
+        frame_factory.record("as", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            // TODO: something more maintainable?
+            auto thiz = MatlabParamParser::parse<rs2::frame>(inv[0]);
+            auto type = MatlabParamParser::parse<std::string>(inv[1]);
+            if (type == "frame")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::frame>());
+            else if (type == "video_frame")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::video_frame>());
+            else if (type == "points")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::points>());
+            else if (type == "depth_frame")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::depth_frame>());
+            else if (type == "disparity_frame")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::disparity_frame>());
+            else if (type == "motion_frame")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::motion_frame>());
+            else if (type == "pose_frame")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::pose_frame>());
+            else if (type == "frameset")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::frameset>());
+            else {
+                mexWarnMsgTxt("rs2::frame::as: invalid type parameter");
+                outv[0] = MatlabParamParser::wrap(uint64_t(0));
+            }
+        });
         factory->record(frame_factory);
     }
     {
@@ -474,8 +551,13 @@ void make_factory(){
             auto thiz = MatlabParamParser::parse<rs2::sensor>(inv[0]);
             thiz.close();
         });
-        // rs2::sensor::start(callback)                                 [?/Callbacks]
-        // rs2::sensor::start(frame_queue)                              [TODO/Others?]
+        // rs2::sensor::start(*)                                 [?/Which/Callbacks]
+        sensor_factory.record("start#frame_queue", 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::sensor>(inv[0]);
+            auto queue = MatlabParamParser::parse<rs2::frame_queue>(inv[1]);
+            thiz.start(queue);
+        });
         sensor_factory.record("stop", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::sensor>(inv[0]);
@@ -484,12 +566,46 @@ void make_factory(){
         sensor_factory.record("get_stream_profiles", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::sensor>(inv[0]);
-            MatlabParamParser::wrap(thiz.get_stream_profiles()); // TODO - convert to wrap_array
+            MatlabParamParser::wrap(thiz.get_stream_profiles());
         });
         // rs2::sensor::operator=                                       [?]
         // rs2::sensor::operator bool                                   [?]
-        // rs2::sensor::is                                              [TODO] [T = {sensor, roi_sensor, depth_sensor, depth_stereo_sensor}]
-        // rs2::sensor::as                                              [TODO] [T = {sensor, roi_sensor, depth_sensor, depth_stereo_sensor}]
+        sensor_factory.record("is", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            // TODO: something more maintainable?
+            auto thiz = MatlabParamParser::parse<rs2::sensor>(inv[0]);
+            auto type = MatlabParamParser::parse<std::string>(inv[1]);
+            if (type == "sensor")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::sensor>());
+            else if (type == "roi_sensor")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::roi_sensor>());
+            else if (type == "depth_sensor")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::depth_sensor>());
+            else if (type == "depth_stereo_sensor")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::depth_stereo_sensor>());
+            else {
+                mexWarnMsgTxt("rs2::sensor::is: invalid type parameter");
+                outv[0] = MatlabParamParser::wrap(false);
+            }
+        });
+        sensor_factory.record("as", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            // TODO: something more maintainable?
+            auto thiz = MatlabParamParser::parse<rs2::sensor>(inv[0]);
+            auto type = MatlabParamParser::parse<std::string>(inv[1]);
+            if (type == "sensor")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::sensor>());
+            else if (type == "roi_sensor")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::roi_sensor>());
+            else if (type == "depth_sensor")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::depth_sensor>());
+            else if (type == "depth_stereo_sensor")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::depth_stereo_sensor>());
+            else {
+                mexWarnMsgTxt("rs2::sensor::as: invalid type parameter");
+                outv[0] = MatlabParamParser::wrap(uint64_t(0));
+            }
+        });
         sensor_factory.record("operator==", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto rhs = MatlabParamParser::parse<rs2::sensor>(inv[0]);
@@ -545,8 +661,8 @@ void make_factory(){
         device_factory.record("init", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto list = MatlabParamParser::parse<rs2::device_list>(inv[0]);
-            auto idx = MatlabParamParser::parse<uint64_t>(inv[1]);
-            outv[0] = MatlabParamParser::wrap(list[static_cast<uint32_t>(idx)]);
+            auto idx = MatlabParamParser::parse<uint32_t>(inv[1]);
+            outv[0] = MatlabParamParser::wrap(list[idx]);
             MatlabParamParser::destroy<rs2::device_list>(inv[0]);
         });
         // destructor in case device was never initialized
@@ -612,7 +728,7 @@ void make_factory(){
                 outv[0] = MatlabParamParser::wrap(thiz.is<rs2::device>());
             else if (type == "debug_protocol") {
                 mexWarnMsgTxt("rs2::device::is: Debug Protocol not supported in MATLAB");
-                outv[0] = MatlabParamParser::wrap(thiz.is<rs2::debug_protocol>());
+                outv[0] = MatlabParamParser::wrap(false);
             }
             else if (type == "advanced_mode") {
                 mexWarnMsgTxt("rs2::device::is: Advanced Mode not supported in MATLAB");
@@ -623,7 +739,6 @@ void make_factory(){
             else if (type == "playback")
                 outv[0] = MatlabParamParser::wrap(thiz.is<rs2::playback>());
             else {
-                // TODO: need warn/error message? which? if so, fill in
                 mexWarnMsgTxt("rs2::device::is: invalid type parameter");
                 outv[0] = MatlabParamParser::wrap(false);
             }
@@ -648,7 +763,6 @@ void make_factory(){
             else if (type == "playback")
                 outv[0] = MatlabParamParser::wrap(thiz.as<rs2::playback>());
             else {
-                // TODO: need warn/error message? which? if so, fill in
                 mexWarnMsgTxt("rs2::device::as: invalid type parameter");
                 outv[0] = MatlabParamParser::wrap(false);
             }
@@ -1020,7 +1134,7 @@ void make_factory(){
         pipeline_profile_factory.record("get_device", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::pipeline_profile>(inv[0]);
-            outv[0] = MatlabParamParser::wrap(thiz.get_device()); // TODO: switch to make_array
+            outv[0] = MatlabParamParser::wrap(thiz.get_device());
         });
         // rs2::pipeline_profile::bool()                                [?]
         factory->record(pipeline_profile_factory);

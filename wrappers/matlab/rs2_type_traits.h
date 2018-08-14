@@ -104,10 +104,10 @@ template<> struct MatlabParamParser::type_traits<rs2::pipeline_profile> { using 
 // This needs to go at the bottom so that all the relevant type_traits specializations will have already occured.
 MatlabParamParser::type_traits<rs2::options>::carrier::~carrier() {
     switch (type) {
-    case types::rs2_sensor: delete reinterpret_cast<type_traits<rs2::sensor>::carrier_t*>(ptr);
-    case types::rs2_process_interface: delete reinterpret_cast<type_traits<rs2::process_interface>::carrier_t*>(ptr);
-    case types::rs2_colorizer: delete reinterpret_cast<type_traits<rs2::colorizer>::carrier_t*>(ptr);
-    case types::rs2_pointcloud: delete reinterpret_cast<type_traits<rs2::pointcloud>::carrier_t*>(ptr);
+    case types::rs2_sensor: delete reinterpret_cast<type_traits<rs2::sensor>::carrier_t*>(ptr); break;
+    case types::rs2_process_interface: delete reinterpret_cast<type_traits<rs2::process_interface>::carrier_t*>(ptr); break;
+    case types::rs2_colorizer: delete reinterpret_cast<type_traits<rs2::colorizer>::carrier_t*>(ptr); break;
+    case types::rs2_pointcloud: delete reinterpret_cast<type_traits<rs2::pointcloud>::carrier_t*>(ptr); break;
     }
 }
 

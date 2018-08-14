@@ -5,7 +5,7 @@ classdef config < handle
     end
     methods
         % Constructor
-        function this = pipeline_profile()
+        function this = config()
             this.objectHandle = realsense.librealsense_mex('rs2::config', 'new');
         end
         % Destructor
@@ -97,14 +97,14 @@ classdef config < handle
         function enable_device_from_file(this, file_name, repeat_playback)
             narginchk(2, 3);
             validateattributes(file_name, {'char', 'string'}, {'scalartext'}, '', 'file_name', 2);
-            if nargin==2:
+            if nargin==2
                 realsense.librealsense_mex('rs2::config', 'enable_device_from_file', this.objectHandle, file_name);
             else
                 validateattributes(repeat_playback, {'logical', 'numeric'}, {'scalar', 'real'}, '', 'repeat_playback', 3);
                 realsense.librealsense_mex('rs2::config', 'enable_device_from_file', this.objectHandle, file_name, logical(repeat_playback));
             end
         end
-        function enable_record_to_file(this, serialv)
+        function enable_record_to_file(this, file_name)
             narginchk(2, 2);
             validateattributes(file_name, {'char', 'string'}, {'scalartext'}, '', 'file_name', 2);
             realsense.librealsense_mex('rs2::config', 'enable_record_to_file', this.objectHandle, file_name);

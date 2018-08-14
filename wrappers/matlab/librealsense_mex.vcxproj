@@ -136,6 +136,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>MATLAB_MEX_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>C:\Users\lramati\Documents\Code\librealsense\include;C:\MATLAB\R2017a\extern\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -175,7 +176,7 @@
     <None Include="device_hub.m" />
     <None Include="disparity_frame.m" />
     <None Include="disparity_transform.m" />
-    <None Include="example1.m" />
+    <None Include="depth_example.m" />
     <None Include="format.m" />
     <None Include="frame.m" />
     <None Include="frameset.m" />
@@ -196,6 +197,7 @@
     <None Include="process_interface.m" />
     <None Include="recorder.m" />
     <None Include="roi_sensor.m" />
+    <None Include="rosbag_example.m" />
     <None Include="sensor.m" />
     <None Include="spatial_filter.m" />
     <None Include="stream.m" />

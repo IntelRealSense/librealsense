@@ -91,9 +91,6 @@
     <None Include="depth_frame.m">
       <Filter>Matlab Files\Classes</Filter>
     </None>
-    <None Include="example1.m">
-      <Filter>Matlab Files\Examples</Filter>
-    </None>
     <None Include="format.m">
       <Filter>Matlab Files\Enums</Filter>
     </None>
@@ -177,6 +174,12 @@
     </None>
     <None Include="config.m">
       <Filter>Matlab Files\Classes</Filter>
+    </None>
+    <None Include="depth_example.m">
+      <Filter>Matlab Files\Examples</Filter>
+    </None>
+    <None Include="rosbag_example.m">
+      <Filter>Matlab Files\Examples</Filter>
     </None>
   </ItemGroup>
 </Project>

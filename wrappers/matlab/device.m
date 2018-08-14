@@ -7,7 +7,7 @@ classdef device < handle
     methods (Access = protected)
         function do_init(this)
             if (this.id >= 0)
-                this.objectHandle = realsense.librealsense_mex('rs2::device', 'init', this.objectHandle, this.id);
+                this.objectHandle = realsense.librealsense_mex('rs2::device', 'init', this.objectHandle, uint64(this.id));
                 this.id = -1;
             end
         end

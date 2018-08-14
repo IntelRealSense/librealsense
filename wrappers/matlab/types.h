@@ -122,7 +122,7 @@ template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2::device_list>::
     size_t len = var.size();
 
     mxArray* vec = mxCreateCellMatrix(1, len);
-    for (unsigned int i = 0; i < len; ++i)
+    for (uint32_t i = 0; i < len; ++i)
     {
         using dl_wrap_t = mx_wrapper<rs2::device_list>;
         using idx_wrap_t = mx_wrapper<decltype(i)>;

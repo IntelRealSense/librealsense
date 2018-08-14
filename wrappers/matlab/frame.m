@@ -45,7 +45,36 @@ classdef frame < handle
             ret = realsense.librealsense_mex('rs2::frame', 'get_profile', this.objectHandle);
             profile = realsense.stream_profile(ret{:});
         end
-        % TODO: is [frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset]
-        % TODO: as [frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset]
+        function value = is(this, type)
+            narginchk(2, 2);
+            % C++ function validates contents of type
+            validateattributes(type, {'char', 'string'}, {'scalartext'}, '', 'type', 2);
+            out = realsense.librealsense_mex('rs2::frame', 'is', this.objectHandle, type);
+            value = logical(out);
+        end
+        function frame = as(this, type)
+            narginchk(2, 2);
+            % C++ function validates contents of type
+            validateattributes(type, {'char', 'string'}, {'scalartext'}, '', 'type', 2);
+            out = realsense.librealsense_mex('rs2::frame', 'as', this.objectHandle, type);
+            switch type
+                case 'frame'
+                    frame = realsense.frame(out);
+                case 'video_frame'
+                    frame = realsense.video_frame(out);
+                case 'points'
+                    frame = realsense.points(out);
+                case 'depth_frame'
+                    frame = realsense.depth_frame(out);
+                case 'disparity_frame'
+                    frame = realsense.disparity_frame(out);
+                case 'motion_frame'
+                    frame = realsense.motion_frame(out);
+                case 'pose_frame'
+                    frame = realsense.pose_frame(out);
+                case 'frameset'
+                    frame = realsense.frameset(out);
+            end
+        end
     end
 end

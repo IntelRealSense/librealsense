@@ -176,9 +176,14 @@ public:
 // for basic types (aka arithmetic, pointer, and enum types)
 template <typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::enable_if<is_basic_type<T>::value && !extra_checks<T>::value && !is_array_type<T>::value>::type>
 {
+    // Use full width types when converting integers.
+    // Always using full width makes some things easier, and doing it this way
+    // still allows us to use the mx_wrapper<T> class to send more exact types
+    // for frame data arrays
+    using type = typename std::conditional<std::is_integral<T>::value, typename std::conditional<std::is_signed<T>::value, int64_t, uint64_t>::type, T>::type;
+    using wrapper = mx_wrapper<type>;
     static T parse(const mxArray* cell)
     {
-        using wrapper = mx_wrapper<T>;
         // obtain pointer to data, cast to proper matlab type
         auto *p = static_cast<typename wrapper::type*>(mxGetData(cell));
         // dereference pointer and cast to correct C++ type
@@ -186,9 +191,6 @@ template <typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::
     }
     static mxArray* wrap(T&& var)
     {
-        // get helper info
-        using wrapper = mx_wrapper<T>;
-
         // request 1x1 matlab matrix of correct type
         mxArray* cell = mxCreateNumericMatrix(1, 1, wrapper::value::value, mxREAL);
         // access matrix's data as pointer to correct C++ type

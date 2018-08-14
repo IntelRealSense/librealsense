@@ -31,7 +31,12 @@ classdef sensor < realsense.options
         function close(this)
             realsense.librealsense_mex('rs2::sensor', 'close', this.objectHandle);
         end
-        % TODO: start [frame_queue, etc?]
+        % TODO: start [etc?]
+        function start(this, queue)
+            narginchk(2, 2);
+            validateattributes(queue, {'realsense.frame_queue'}, {'scalar'}, '', 'queue', 2);
+            realsense.librealsense_mex('rs2::sensor', 'start', this.objectHandle, queue.objectHandle);
+        end
         function stop(this)
             realsense.librealsense_mex('rs2::sensor', 'stop', this.objectHandle);
         end
@@ -40,8 +45,29 @@ classdef sensor < realsense.options
             % TODO: Might be cell array
             profiles = arrayfun(@(x) realsense.stream_profile(x{:}{:}), arr, 'UniformOutput', false);
         end
-        % TODO: is [sensor, roi_sensor, depth_sensor, depth_stereo_sensor]
-        % TODO: as [sensor, roi_sensor, depth_sensor, depth_stereo_sensor]
+        function value = is(this, type)
+            narginchk(2, 2);
+            % C++ function validates contents of type
+            validateattributes(type, {'char', 'string'}, {'scalartext'}, '', 'type', 2);
+            out = realsense.librealsense_mex('rs2::sensor', 'is', this.objectHandle, type);
+            value = logical(out);
+        end
+        function sensor = as(this, type)
+            narginchk(2, 2);
+            % C++ function validates contents of type
+            validateattributes(type, {'char', 'string'}, {'scalartext'}, '', 'type', 2);
+            out = realsense.librealsense_mex('rs2::sensor', 'as', this.objectHandle, type);
+            switch type
+                case 'sensor'
+                    sensor = realsense.sensor(out);
+                case 'roi_sensor'
+                    sensor = realsense.roi_sensor(out);
+                case 'depth_sensor'
+                    sensor = realsense.depth_sensor(out);
+                case 'depth_stereo_sensor'
+                    sensor = realsense.depth_stereo_sensor(out);;
+            end
+        end
 
         % Operators
         % TODO: operator==
