@@ -7,8 +7,10 @@
 #include "h/rs_types.h"
 #include "h/rs_sensor.h"
 #include "h/rs_frame.h"
+#include "rs.h"
 #include "assert.h"
-
+#include <stdlib.h>
+#include <stdbool.h>
 #include <math.h>
 
 
@@ -81,22 +83,22 @@ static void rs2_fov(const struct rs2_intrinsics * intrin, float to_fov[2])
     to_fov[1] = (atan2f(intrin->ppy + 0.5f, intrin->fy) + atan2f(intrin->height - (intrin->ppy + 0.5f), intrin->fy)) * 57.2957795f;
 }
 
-static void next_pixel_in_line(float start[2], float end[2], float curr[2])
+static void next_pixel_in_line(float curr[2], const float start[2], const float end[2])
 {
     float line_slope = (end[1] - start[1]) / (end[0] - start[0]);
     if (abs(end[0] - curr[0]) > abs(end[1] - curr[1]))
     {
-        end[0] > curr[0] ? curr[0] += 1 : curr[0] -= 1;
+        curr[0] = end[0] > curr[0] ? curr[0] + 1 : curr[0] - 1;
         curr[1] = end[1] - line_slope * (end[0] - curr[0]);
     }
     else
     {
-        end[1] > curr[1] ? curr[1] += 1 : curr[1] -= 1;
+        curr[1] = end[1] > curr[1] ? curr[1] + 1 : curr[1] - 1;
         curr[0] = end[0] - ((end[1] + curr[1]) / line_slope);
     }
 }
 
-static bool is_pixel_in_line(float start[2], float end[2], float curr[2])
+static bool is_pixel_in_line(const float curr[2], const float start[2], const float end[2])
 {
     return ((end[0] > start[0] && end[0] >= curr[0] && curr[0] >= start[0]) || (end[0] < start[0] && end[0] <= curr[0] && curr[0] <= start[0])) &&
            ((end[1] > start[1] && end[1] >= curr[1] && curr[1] >= start[1]) || (end[1] < start[1] && end[1] <= curr[1] && curr[1] <= start[1]));
@@ -112,7 +114,7 @@ static void rs2_project_pixel_to_depth_pixel(float to_pixel[2],
     const struct rs2_extrinsics* depth_to_other, 
     const float from_pixel[2])
 {
-    const int MINIMUM_DISTANCE_THRESHOLD = 1;
+    const float MINIMUM_DISTANCE_THRESHOLD = 1;
 
     float start_pixel[2] = { 0 }, end_pixel[2] = { 0 }, point[3] = { 0 }, other_point[3] = { 0 }, projected_pixel[2] = { 0 };
 
@@ -130,7 +132,7 @@ static void rs2_project_pixel_to_depth_pixel(float to_pixel[2],
 
     //search along line for the depth pixel that it's projected pixel is the closest to the input pixel
     float min_dist = -1;
-    for (float p[2] = { start_pixel[0], start_pixel[1] }; is_pixel_in_line(start_pixel, end_pixel, p); next_pixel_in_line(start_pixel, end_pixel, p))
+    for (float p[2] = { start_pixel[0], start_pixel[1] }; is_pixel_in_line(p, start_pixel, end_pixel); next_pixel_in_line(p, start_pixel, end_pixel))
     {
         float depth = rs2_depth_frame_get_distance(depth_frame, p[0], p[1], 0);
         if (depth == 0) 
