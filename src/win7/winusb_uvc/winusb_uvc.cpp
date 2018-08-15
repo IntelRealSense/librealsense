@@ -82,16 +82,19 @@ void winusb_uvc_free_device_info(winusb_uvc_device_info_t *info) {
         free(stream_if);
     }
 
-    for (int i = 0; i < MAX_USB_INTERFACES; i++)
+    if (info->interfaces)
     {
-        if (info->interfaces->iface[i].extra != NULL) 
+        for (int i = 0; i < MAX_USB_INTERFACES; i++)
         {
-            free(info->interfaces->iface[i].extra);
-            info->interfaces->iface[i].extra = NULL;
+            if (info->interfaces->iface[i].extra != NULL)
+            {
+                free(info->interfaces->iface[i].extra);
+                info->interfaces->iface[i].extra = NULL;
+            }
         }
-    }
 
-    free(info->interfaces);
+        free(info->interfaces);
+    }
 }
 
 
@@ -2124,6 +2127,11 @@ uvc_error_t winusb_open(winusb_uvc_device *device)
     device->associateHandle = NULL;
     device->streams = NULL;
 
+    // Start by clearing deviceData, otherwise
+    // winusb_uvc_free_device_info(&device->deviceData);
+    // will do something not good
+    memset(&device->deviceData, 0, sizeof(winusb_uvc_device_info_t));
+
     // Create a handle for I/O operations to the IVCAM device
     device->deviceHandle = CreateFile(device->devPath,
         GENERIC_READ | GENERIC_WRITE,
@@ -2165,7 +2173,6 @@ uvc_error_t winusb_open(winusb_uvc_device *device)
         ret = UVC_ERROR_INVALID_PARAM;
         goto fail;
     }
-    memset(&device->deviceData, 0, sizeof(winusb_uvc_device_info_t));
     device->deviceData.config = cfgDesc;
 
     // Iterate over all descriptors and parse all Interface and Endpoint descriptors
