@@ -65,7 +65,7 @@ namespace librealsense
         return true;
     }
 
-    rs2::frame disparity_transform::process_frame(const rs2::frame_source& source, rs2::frame f)
+    rs2::frame disparity_transform::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
         std::lock_guard<std::mutex> lock(_mutex);
 

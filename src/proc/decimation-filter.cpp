@@ -238,7 +238,7 @@ namespace librealsense
         register_option(RS2_OPTION_FILTER_MAGNITUDE, decimation_control);
     }
 
-    rs2::frame decimation_filter::process_frame(const rs2::frame_source& source, rs2::frame f)
+    rs2::frame decimation_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
         std::lock_guard<std::mutex> lock(_mutex);
         update_output_profile(f);

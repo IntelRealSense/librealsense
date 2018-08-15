@@ -537,7 +537,7 @@ namespace librealsense
         return true;
     }
 
-    rs2::frame pointcloud::process_frame(const rs2::frame_source& source, rs2::frame f)
+    rs2::frame pointcloud::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
         rs2::frame rv;
         if (auto composite = f.as<rs2::frameset>())

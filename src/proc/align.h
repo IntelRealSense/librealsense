@@ -84,7 +84,7 @@ namespace librealsense
 
     protected:
         bool should_process(const rs2::frame& frame) override;
-        rs2::frame process_frame(const rs2::frame_source& source, rs2::frame frame) override;
+        rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
     private:
         std::shared_ptr<rs2::video_stream_profile> create_aligned_profile(

@@ -24,7 +24,7 @@ namespace librealsense
         void    update_configuration(const rs2::frame& f);
 
         rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source);
-        rs2::frame process_frame(const rs2::frame_source& source, rs2::frame frame) override;
+        rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
         template <typename T>
         void dxf_smooth(void *frame_data, float alpha, float delta, int iterations)

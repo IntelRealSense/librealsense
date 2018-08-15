@@ -99,7 +99,7 @@ namespace librealsense {
         colorizer();
 
     protected:
-        rs2::frame process_frame(const rs2::frame_source& source, rs2::frame frame) override;
+        rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
     private:
         float _min, _max;

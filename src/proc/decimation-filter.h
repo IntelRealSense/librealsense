@@ -22,7 +22,7 @@ namespace librealsense
 
         void decimate_others(rs2_format format, const void * frame_data_in, void * frame_data_out,
             size_t width_in, size_t height_in, size_t scale);
-        rs2::frame process_frame(const rs2::frame_source& source, rs2::frame frame) override;
+        rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
     private:
         void    update_output_profile(const rs2::frame& f);

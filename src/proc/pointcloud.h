@@ -12,7 +12,7 @@ namespace librealsense
         pointcloud();
     protected:
         bool should_process(const rs2::frame& frame) override;
-        rs2::frame process_frame(const rs2::frame_source& source, rs2::frame frame) override;
+        rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
     private:
         optional_value<rs2_intrinsics>         _depth_intrinsics;
         optional_value<rs2_intrinsics>         _other_intrinsics;

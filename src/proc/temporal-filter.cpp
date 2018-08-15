@@ -106,7 +106,7 @@ namespace librealsense
         on_set_alpha(_alpha_param);
     }
 
-    rs2::frame temporal_filter::process_frame(const rs2::frame_source& source, rs2::frame f)
+    rs2::frame temporal_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
         std::lock_guard<std::mutex> lock(_mutex);
 

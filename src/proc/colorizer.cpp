@@ -194,7 +194,7 @@ namespace librealsense
         register_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, hist_opt);
     }
 
-    rs2::frame colorizer::process_frame(const rs2::frame_source& source, rs2::frame f)
+    rs2::frame colorizer::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
         {
             std::lock_guard<std::mutex> lock(_mutex);

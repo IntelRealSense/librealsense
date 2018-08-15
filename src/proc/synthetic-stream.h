@@ -68,7 +68,7 @@ namespace librealsense
         rs2::frame prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results);
 
         virtual bool should_process(const rs2::frame& frame) = 0;
-        virtual rs2::frame process_frame(const rs2::frame_source& source, rs2::frame frame) = 0;
+        virtual rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) = 0;
     };
 
     class stream_filter_processing_block : public generic_processing_block
