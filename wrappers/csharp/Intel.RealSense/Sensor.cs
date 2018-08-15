@@ -95,6 +95,11 @@ namespace Intel.RealSense
     public class Sensor : IDisposable
     {
         protected readonly IntPtr m_instance;
+        
+        public IntPtr Instance 
+        {
+            get { return m_instance; }
+        }
 
         internal Sensor(IntPtr sensor)
         {
