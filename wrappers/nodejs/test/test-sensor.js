@@ -253,13 +253,36 @@ describe('Sensor test', function() {
   }).timeout(5000);
 
   it('Testing method open, profileArray', () => {
-    sensors.forEach((sensor) => {
-      const profiles = sensor.getStreamProfiles();
-        assert.doesNotThrow(() => { // jshint ignore:line
-          sensor.open(profiles);
-          sensor.close();
-        });
+    let dict = {};
+    let sensor = sensors[0];
+    let profiles;
+    assert.doesNotThrow(() => {
+      profiles = sensor.getStreamProfiles();
     });
+    /* eslint-disable guard-for-in */
+    for (let i in profiles) {
+      let strings = '' + profiles[i].widthValue + profiles[i].heightValue +
+        profiles[i].fps + profiles[i].formatValue;
+      if (dict.hasOwnProperty(strings)) {
+        let strs = dict[strings];
+        strs.push(i);
+        dict[strings] = strs;
+      } else {
+        dict[strings] = [i];
+      }
+    }
+    /* eslint-disable guard-for-in */
+    for (let m in Object.values(dict)) {
+      let arr = [];
+      if (Object.values(dict)[m].length <= 1) continue;
+      /* eslint-disable guard-for-in */
+      for (let j in Object.values(dict)[m]) {
+        arr.push(profiles[Object.values(dict)[m][j]]);
+      }
+      sensor.open(arr);
+      sensor.close();
+      break;
+    }
   });
 
   it('Testing method open, w/ two args', () => {
