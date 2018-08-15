@@ -9,7 +9,7 @@ Linux/MacOS | Windows |
 -----------------
 
 ## Overview
-**Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras (D400 series and the SR300). 
+**Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras (D400 series and the SR300).
 
 > :pushpin: For other Intel® RealSense™ devices (F200, R200, LR200 and ZR300), please refer to the [latest legacy release](https://github.com/IntelRealSense/librealsense/tree/v1.12.1).
 
@@ -37,7 +37,7 @@ Information about the Intel® RealSense™ technology at [realsense.intel.com](h
 | **[Depth Quality Tool](./tools/depth-quality)** | This application allows you to test the camera’s depth quality, including: standard deviation from plane fit, normalized RMS – the subpixel accuracy, distance accuracy and fill rate. You should be able to easily get and interpret several of the depth quality metrics and record and save the data for offline analysis. |[**Depth.Quality.Tool.exe**](https://github.com/IntelRealSense/librealsense/releases) |
 | **[Debug Tools](./tools/)** | Device enumeration, FW logger, etc as can be seen at the tools directory | Included in [**Intel.RealSense.SDK.exe**](https://github.com/IntelRealSense/librealsense/releases)|
 | **[Code Samples](./examples)** |These simple examples demonstrate how to easily use the SDK to include code snippets that access the camera into your applications. Check some of the [**C++ examples**](./examples) including capture, pointcloud and more and basic [**C examples**](./examples/C) | Included in [**Intel.RealSense.SDK.exe**](https://github.com/IntelRealSense/librealsense/releases) |
-| **[Wrappers](https://github.com/IntelRealSense/librealsense/tree/development/wrappers)** | [Python](./wrappers/python), [C#/.NET](./wrappers/csharp), [Node.js](./wrappers/nodejs) API, as well as integration with the following 3rd-party technologies: [ROS](https://github.com/intel-ros/realsense/releases), [LabVIEW](./wrappers/labview), [OpenCV](./wrappers/opencv), [PCL](./wrappers/pcl), [Unity](./wrappers/unity), and more to come, including Matlab and OpenNI. | |
+| **[Wrappers](https://github.com/IntelRealSense/librealsense/tree/development/wrappers)** | [Python](./wrappers/python), [C#/.NET](./wrappers/csharp), [Node.js](./wrappers/nodejs) API, as well as integration with the following 3rd-party technologies: [ROS](https://github.com/intel-ros/realsense/releases), [LabVIEW](./wrappers/labview), [OpenCV](./wrappers/opencv), [PCL](./wrappers/pcl), [Unity](./wrappers/unity), [Matlab](./wrappers/matlab) and more to come, including OpenNI. | |
 
 
 ## Ready to Hack!
@@ -55,19 +55,19 @@ p.start();
 while (true)
 {
     // Block program until frames arrive
-    rs2::frameset frames = p.wait_for_frames(); 
-    
+    rs2::frameset frames = p.wait_for_frames();
+
     // Try to get a frame of a depth image
-    rs2::depth_frame depth = frames.get_depth_frame(); 
+    rs2::depth_frame depth = frames.get_depth_frame();
 
     // Get the depth frame's dimensions
     float width = depth.get_width();
     float height = depth.get_height();
-    
+
     // Query the distance from the camera to the object in the center of the image
     float dist_to_center = depth.get_distance(width / 2, height / 2);
-    
-    // Print the distance 
+
+    // Print the distance
     std::cout << "The camera is facing an object " << dist_to_center << " meters away \r";
 }
 ```
@@ -77,5 +77,5 @@ For more information on the library, please follow our [examples](./examples), a
 In order to contribute to Intel RealSense SDK, please follow our [contribution guidelines](CONTRIBUTING.md).
 
 ## License
-This project is licensed under the [Apache License, Version 2.0](LICENSE). 
+This project is licensed under the [Apache License, Version 2.0](LICENSE).
 Copyright 2017 Intel Corporation

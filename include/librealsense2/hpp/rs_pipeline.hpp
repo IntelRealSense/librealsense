@@ -102,12 +102,11 @@ namespace rs2
             return _pipeline_profile != nullptr;
         }
 
-    private:
+        explicit operator std::shared_ptr<rs2_pipeline_profile>() { return _pipeline_profile; }
         pipeline_profile(std::shared_ptr<rs2_pipeline_profile> profile) :
-            _pipeline_profile(profile)
-        {
-
-        }
+            _pipeline_profile(profile){}
+    private:
+        
         std::shared_ptr<rs2_pipeline_profile> _pipeline_profile;
         friend class config;
         friend class pipeline;
@@ -316,12 +315,14 @@ namespace rs2
         {
             return _config;
         }
-    private:
-        config(std::shared_ptr<rs2_config> config) : _config(config)
+        explicit operator std::shared_ptr<rs2_config>() const
         {
+            return _config;
         }
-        std::shared_ptr<rs2_config> _config;
 
+        config(std::shared_ptr<rs2_config> config) : _config(config) {}
+    private:
+        std::shared_ptr<rs2_config> _config;
     };
 
     /**
@@ -343,7 +344,6 @@ namespace rs2
         * \param[in] ctx   The context allocated by the application. Using the platform context by default.
         */
         pipeline(context ctx = context())
-            : _ctx(ctx)
         {
             rs2_error* e = nullptr;
             _pipeline = std::shared_ptr<rs2_pipeline>(
@@ -509,9 +509,9 @@ namespace rs2
         {
             return _pipeline;
         }
+        explicit pipeline(std::shared_ptr<rs2_pipeline> ptr) : _pipeline(ptr) {}
 
     private:
-        context _ctx;
         std::shared_ptr<rs2_pipeline> _pipeline;
         friend class config;
     };

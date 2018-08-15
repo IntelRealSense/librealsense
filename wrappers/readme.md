@@ -8,4 +8,4 @@
 * [PCL](./pcl) - Basic integration with the Point-Cloud Library
 * [.NET](./csharp) - Support for .NET languages with examples in C#
 * [Unity](./unity) - Unity assets for using RealSense SDK 2.0
-* Matlab - TBD
+* [Matlab](./matlab) - Supports 64bit Windows installations
