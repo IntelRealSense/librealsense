@@ -201,6 +201,23 @@ set(REALSENSE_CPP
     
 ## Check for Windows Version ##
 if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
+    if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
+        set(DRIVERS inteld415_win7.cat
+                    IntelD415_win7.inf
+                    WdfCoinstaller01011.dll
+                    winusbcoinstaller2.dll
+                    )
+    
+        foreach(item IN LISTS DRIVERS)
+            add_custom_command(
+                OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${item}"
+                COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/src/win7/d415_driver/${item}" "${CMAKE_CURRENT_BINARY_DIR}/${item}"
+                DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${item}"
+            )
+        endforeach()
+    endif()
+    add_custom_target(realsense-driver ALL DEPENDS ${DRIVERS})
+    
     list(APPEND REALSENSE_CPP
         src/win7/win7-helpers.cpp
         src/win7/win7-uvc.cpp
@@ -892,6 +909,12 @@ target_include_directories(realsense2 PRIVATE
         ${BOOST_INCLUDE_PATH}
         ${LZ4_INCLUDE_PATH}
         )
+if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
+    add_dependencies(realsense2 realsense-driver)
+    set_target_properties (realsense-driver PROPERTIES
+        FOLDER Library
+    )
+endif()
 
 if (USE_SYSTEM_LIBUSB)
     target_include_directories(realsense2 PRIVATE ${LIBUSB1_INCLUDE_DIRS})
