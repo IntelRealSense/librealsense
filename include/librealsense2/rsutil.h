@@ -103,7 +103,7 @@ static bool is_pixel_in_line(float start[2], float end[2], float curr[2])
 }
 
 /* Find projected pixel with unknown depth search along line. */
-static void rs2_color_pixel_to_depth_pixel(float to_pixel[2],
+static void rs2_project_pixel_to_depth_pixel(float to_pixel[2],
     const rs2_frame* depth_frame, 
     float depth_min, float depth_max, 
     const struct rs2_intrinsics* depth_intrin,
