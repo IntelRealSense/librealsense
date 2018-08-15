@@ -13,6 +13,7 @@
 #include <chrono>
 #include <ctime>
 #include <algorithm>
+#include <librealsense2/rsutil.h>
 
 using namespace rs2;
 
@@ -4740,6 +4741,58 @@ TEST_CASE("Syncer try wait for frames", "[live][software-device]") {
                 CAPTURE(exp[j].first);
                 CAPTURE(exp[j].second);
                 REQUIRE(std::find(curr.begin(), curr.end(), exp[j]) != curr.end());
+            }
+        }
+    }
+}
+
+
+TEST_CASE("Projection from recording", "[live][using_pipeline][projection]") {
+    const int MAXIMUM_DISTANCE_THRESHOLD = 3;
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
+    {
+        const std::string filename = get_folder_path(special_folder::temp_folder) + "20180814_104159.bag";
+        //Scoping the above code to make sure no one holds the device
+        REQUIRE(file_exists(filename));
+        {
+            rs2::pipeline p(ctx);
+            rs2::config cfg;
+            REQUIRE_NOTHROW(cfg.enable_device_from_file(filename));
+            rs2::pipeline_profile profile = cfg.resolve(p);
+            REQUIRE_NOTHROW(p.start(cfg));
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            rs2::frameset frames = p.wait_for_frames(200);
+            
+            auto depth = frames.get_depth_frame();
+            auto depth_profile = depth.get_profile().as<rs2::video_stream_profile>();
+            auto color_profile = frames.get_color_frame().get_profile().as<rs2::video_stream_profile>();
+            auto depth_intrin = depth_profile.get_intrinsics();
+            auto color_intrin = color_profile.get_intrinsics();
+            auto depth_extrin_to_color = depth_profile.get_extrinsics_to(color_profile);
+            auto color_extrin_to_depth = color_profile.get_extrinsics_to(depth_profile);
+
+            for (float i = 0; i < depth_intrin.width; i++)
+            {
+                for (float j = 0; j < depth_intrin.height; j++)
+                {
+                    float depth_pixel[2] = { i, j };
+                    auto udist = depth.get_distance(depth_pixel[0], depth_pixel[1]);
+                    if (udist == 0) continue;
+
+                    float from_pixel[2] = { 0 }, to_pixel[2] = { 0 }, point[3] = { 0 }, other_point[3] = { 0 };
+                    rs2_deproject_pixel_to_point(point, &depth_intrin, depth_pixel, udist);
+                    rs2_transform_point_to_point(other_point, &depth_extrin_to_color, point);
+                    rs2_project_point_to_pixel(from_pixel, &color_intrin, other_point);
+
+                    rs2_color_pixel_to_depth_pixel(to_pixel, depth.get(), 0.1, 10,
+                        &depth_intrin, &color_intrin,
+                        &color_extrin_to_depth,  &depth_extrin_to_color, from_pixel);
+
+                    float dist = sqrt(pow((depth_pixel[1] - to_pixel[1]), 2) + pow((depth_pixel[0] - to_pixel[0]), 2));
+                    CAPTURE(dist);
+                    REQUIRE(dist < MAXIMUM_DISTANCE_THRESHOLD);
+                }
             }
         }
     }
