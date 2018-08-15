@@ -1347,6 +1347,19 @@ rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, const rs2_stre
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, source, new_stream, original, new_bpp, new_width, new_height, new_stride, frame_type)
 
+rs2_frame* rs2_allocate_points(rs2_source* source, const rs2_stream_profile* new_stream, rs2_frame* original, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(source);
+    VALIDATE_NOT_NULL(original);
+    VALIDATE_NOT_NULL(new_stream);
+
+    auto recovered_profile = std::dynamic_pointer_cast<stream_profile_interface>(new_stream->profile->shared_from_this());
+
+    return (rs2_frame*)source->source->allocate_points(recovered_profile,
+        (frame_interface*)original);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, source, new_stream, original)
+
 void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame);
@@ -1873,6 +1886,16 @@ void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_er
     pose->mapper_confidence = pf->get_mapper_confidence();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame, pose)
+
+rs2_frame* rs2_frame_apply_filter(const rs2_frame* frame, rs2_processing_block* processing_block, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame);
+    VALIDATE_NOT_NULL(processing_block);
+
+    ((frame_interface*)frame)->acquire();
+    return (rs2_frame*)((frame_interface*)frame)->apply_filter(std::shared_ptr<processing_block_interface>(processing_block->block));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame, processing_block)
 
 rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
 {

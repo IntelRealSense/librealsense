@@ -3,6 +3,7 @@
 
 #include "core/video.h"
 #include "proc/synthetic-stream.h"
+#include "option.h"
 
 namespace librealsense
 {
@@ -17,8 +18,8 @@ namespace librealsense
         _source.set_callback(callback);
     }
 
-    processing_block::processing_block()
-        : _source_wrapper(_source)
+    processing_block::processing_block() :
+        _source_wrapper(_source)
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
         _source.init(std::shared_ptr<metadata_parser_map>());
@@ -37,10 +38,193 @@ namespace librealsense
                 _callback->on_frame((rs2_frame*)ptr, _source_wrapper.get_c_wrapper());
             }
         }
-        catch(...)
+        catch (...)
         {
             LOG_ERROR("Exception was thrown during user processing callback!");
         }
+    }
+
+    generic_processing_block::generic_processing_block()
+    {
+        auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
+        {
+            std::vector<rs2::frame> frames_to_process;
+
+            frames_to_process.push_back(f);
+            if (auto composite = f.as<rs2::frameset>())
+                for (auto f : composite)
+                    frames_to_process.push_back(f);
+
+            std::vector<rs2::frame> results;
+            for (auto f : frames_to_process)
+            {
+                if (should_process(f))
+                {
+                    auto res = process_frame(source, f);
+                    if (!res) continue;
+                    if (auto composite = res.as<rs2::frameset>())
+                    {
+                        for (auto f : composite)
+                            if (f)
+                                results.push_back(f);
+                    }
+                    else
+                    {
+                        results.push_back(res);
+                    }
+                }
+            }
+
+            auto out = prepare_output(source, f, results);
+            if(out)
+                source.frame_ready(out);
+        };
+
+        auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
+        processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
+    }
+
+    rs2::frame generic_processing_block::prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results)
+    {
+        if (results.empty())
+        {
+            return input;
+        }
+        std::vector<rs2::frame> original_set;
+        if (auto composite = input.as<rs2::frameset>())
+            composite.foreach([&original_set](rs2::frame& frame) { original_set.push_back(frame); });
+        else
+        {
+            return results[0];
+        }
+            original_set.push_back(input);
+
+        for (auto s : original_set)
+        {
+            auto curr_profile = s.get_profile();
+            //if the processed frames doesn't match any of the original frames add the original frame to the results queue
+            if (find_if(results.begin(), results.end(), [&curr_profile](rs2::frame& frame) {
+                auto processed_profile = frame.get_profile();
+                return curr_profile.stream_type() == processed_profile.stream_type() &&
+                    curr_profile.format() == processed_profile.format() &&
+                    curr_profile.stream_index() == processed_profile.stream_index(); }) == results.end())
+            {
+                results.push_back(s);
+            }
+        }
+
+        return source.allocate_composite_frame(results);
+    }
+
+    stream_filter_processing_block::stream_filter_processing_block() :
+        _stream_filter(RS2_STREAM_ANY),
+        _stream_format_filter(RS2_FORMAT_ANY),
+        _stream_index_filter(-1)
+    {
+        register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
+        _source.init(std::shared_ptr<metadata_parser_map>());
+
+        auto stream_selector = std::make_shared<ptr_option<int>>(RS2_STREAM_ANY, RS2_STREAM_FISHEYE, 1, RS2_STREAM_ANY, (int*)&_stream_filter, "Stream type");
+        for (int s = RS2_STREAM_ANY; s < RS2_STREAM_COUNT; s++)
+        {
+            stream_selector->set_description(s, "Process - " + std::string (rs2_stream_to_string((rs2_stream)s)));
+        }
+        stream_selector->on_set([this, stream_selector](float val)
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+
+            if (!stream_selector->is_valid(val))
+                throw invalid_value_exception(to_string()
+                    << "Unsupported stream filter, " << val << " is out of range.");
+
+            _stream_filter = static_cast<rs2_stream>((int)val);
+        });
+
+        auto format_selector = std::make_shared<ptr_option<int>>(RS2_FORMAT_ANY, RS2_FORMAT_DISPARITY32, 1, RS2_FORMAT_ANY, (int*)&_stream_format_filter, "Stream format");
+        for (int f = RS2_FORMAT_ANY; f < RS2_FORMAT_COUNT; f++)
+        {
+            format_selector->set_description(f, "Process - " + std::string(rs2_format_to_string((rs2_format)f)));
+        }
+        format_selector->on_set([this, format_selector](float val)
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+
+            if (!format_selector->is_valid(val))
+                throw invalid_value_exception(to_string()
+                    << "Unsupported stream format filter, " << val << " is out of range.");
+
+            _stream_format_filter = static_cast<rs2_format>((int)val);
+        });
+
+        auto index_selector = std::make_shared<ptr_option<int>>(0, std::numeric_limits<int>::max(), 1, -1, &_stream_index_filter, "Stream index");
+        index_selector->on_set([this, index_selector](float val)
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+
+            if (!index_selector->is_valid(val))
+                throw invalid_value_exception(to_string()
+                    << "Unsupported stream index filter, " << val << " is out of range.");
+
+            _stream_index_filter = (int)val;
+        });
+
+        register_option(RS2_OPTION_STREAM_FILTER, stream_selector);
+        register_option(RS2_OPTION_STREAM_FORMAT_FILTER, format_selector);
+        register_option(RS2_OPTION_STREAM_INDEX_FILTER, index_selector);
+    }
+
+    bool is_z_or_disparity(rs2_format format)
+    {
+        if (format == RS2_FORMAT_Z16 || format == RS2_FORMAT_DISPARITY16 || format == RS2_FORMAT_DISPARITY32)
+            return true;
+        return false;
+    }
+
+    bool depth_processing_block::should_process(const rs2::frame& frame)
+    {
+        if (!frame || frame.is<rs2::frameset>())
+            return false;
+        auto profile = frame.get_profile();
+        rs2_stream stream = profile.stream_type();
+        rs2_format format = profile.format();
+        int index = profile.stream_index();
+
+        if (_stream_filter != RS2_STREAM_ANY && _stream_filter != stream)
+            return false;
+        if (is_z_or_disparity(_stream_format_filter))
+        {
+            if (_stream_format_filter != RS2_FORMAT_ANY && !is_z_or_disparity(format))
+                return false;
+        }
+        else
+        {
+            if (_stream_format_filter != RS2_FORMAT_ANY && _stream_format_filter != format)
+                return false;
+        }
+
+        if (_stream_index_filter != -1 && _stream_index_filter != index)
+            return false;
+        return true;
+    }
+
+    bool stream_filter_processing_block::should_process(const rs2::frame& frame)
+    {
+        if (!frame || frame.is<rs2::frameset>())
+            return false;
+        auto profile = frame.get_profile();
+        rs2_stream stream = profile.stream_type();
+        rs2_format format = profile.format();
+        int index = profile.stream_index();
+
+        if (_stream_filter != RS2_STREAM_ANY && _stream_filter != stream)
+            return false;
+
+        if (_stream_format_filter != RS2_FORMAT_ANY && _stream_format_filter != format)
+            return false;
+
+        if (_stream_index_filter != -1 && _stream_index_filter != index)
+            return false;
+        return true;
     }
 
     void synthetic_source::frame_ready(frame_holder result)
@@ -71,12 +255,12 @@ namespace librealsense
 
 
     frame_interface* synthetic_source::allocate_video_frame(std::shared_ptr<stream_profile_interface> stream,
-                                                            frame_interface* original,
-                                                            int new_bpp,
-                                                            int new_width,
-                                                            int new_height,
-                                                            int new_stride,
-                                                            rs2_extension frame_type)
+        frame_interface* original,
+        int new_bpp,
+        int new_width,
+        int new_height,
+        int new_stride,
+        rs2_extension frame_type)
     {
         video_frame* vf = nullptr;
 
@@ -118,7 +302,7 @@ namespace librealsense
         {
             height = vf->get_height();
         }
-        
+
         auto of = dynamic_cast<frame*>(original);
         frame_additional_data data = of->additional_data;
         auto res = _actual_source.alloc_frame(frame_type, stride * height, data, true);
@@ -167,7 +351,7 @@ namespace librealsense
 
     frame_interface* synthetic_source::allocate_composite_frame(std::vector<frame_holder> holders)
     {
-        frame_additional_data d {};
+        frame_additional_data d{};
 
         auto req_size = 0;
         for (auto&& f : holders)

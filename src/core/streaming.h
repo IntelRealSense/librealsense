@@ -17,6 +17,7 @@ namespace librealsense
     class sensor_interface;
     class archive_interface;
     class device_interface;
+    class processing_block_interface;
 
     class sensor_part
     {
@@ -112,6 +113,8 @@ namespace librealsense
         virtual bool is_fixed() const = 0;
 
         virtual void keep() = 0;
+
+        virtual frame_interface* apply_filter(std::shared_ptr<processing_block_interface> pbi) const = 0;
 
         virtual ~frame_interface() = default;
     };

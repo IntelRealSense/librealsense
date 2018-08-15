@@ -23,6 +23,7 @@ namespace Intel.RealSense
     {
         private Pipeline  pipeline;
         private Colorizer colorizer;
+
         private CancellationTokenSource tokenSource = new CancellationTokenSource();
 
         private void UploadImage(Image img, VideoFrame frame)
@@ -66,13 +67,12 @@ namespace Intel.RealSense
                 {
                     while (!token.IsCancellationRequested)
                     {
-                        var frames = pipeline.WaitForFrames();
+                        var frames = pipeline.WaitForFrames().ApplyFilter(colorizer);
 
-                        var depth_frame = frames.DepthFrame;
+                        var depth_frame = frames.FirstOrDefault<VideoFrame>(Stream.Depth, Format.Rgb8);
                         var color_frame = frames.ColorFrame;
-                        var colorized_depth = colorizer.Colorize(depth_frame);
 
-                        UploadImage(imgDepth, colorized_depth);
+                        UploadImage(imgDepth, depth_frame);
                         UploadImage(imgColor, color_frame);
 
                         // It is important to pre-emptively dispose of native resources
@@ -80,7 +80,6 @@ namespace Intel.RealSense
                         // (Also see FrameReleaser helper object in next tutorial)
                         frames.Dispose();
                         depth_frame.Dispose();
-                        colorized_depth.Dispose();
                         color_frame.Dispose();
                     }
                 }, token);

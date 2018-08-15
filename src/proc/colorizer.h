@@ -93,10 +93,13 @@ namespace librealsense {
         size_t _size; float3* _data;
     };
 
-    class colorizer : public processing_block
+    class colorizer : public stream_filter_processing_block
     {
     public:
         colorizer();
+
+    protected:
+        rs2::frame process_frame(const rs2::frame_source& source, rs2::frame frame) override;
 
     private:
         float _min, _max;
