@@ -477,7 +477,7 @@ namespace rs2
             bool load_json_if_streaming = false,
             json_loading_func json_loading = [](std::function<void()> load) {load(); },
             bool draw_device_outline = true);
-        void handle_harware_events(const std::string& serialized_data);
+        void handle_hardware_events(const std::string& serialized_data);
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
         bool is_streaming() const;
