@@ -257,13 +257,6 @@ namespace rs2
             return f;
         }
         /**
-        * Does the same thing as "process" function
-        */
-        rs2::frame operator()(frame f) const override
-        {
-            return process(std::move(f));
-        }
-        /**
         * constructor with already created low level processing block assigned.
         *
         * \param[in] block - low level rs2_processing_block created before.
@@ -368,15 +361,6 @@ namespace rs2
         * Real asynchronous syncer within syncer class
         */
         asynchronous_syncer() : processing_block(init(), 1) {}
-        /**
-        * Start and set the callback when the synchronization is done.
-        * \param[in] on_frame - callback function, will be invoked when synchronization is finished.
-        */
-        template<class S>
-        void start(S on_frame)
-        {
-            start(on_frame);
-        }
 
     private:
         std::shared_ptr<rs2_processing_block> init()
@@ -401,7 +385,6 @@ namespace rs2
             :_results(queue_size)
         {
             _sync.start(_results);
-
         }
 
         /**
@@ -449,7 +432,7 @@ namespace rs2
 
         void operator()(frame f) const
         {
-            _sync(std::move(f));
+            _sync.invoke(std::move(f));
         }
     private:
         asynchronous_syncer _sync;

@@ -1413,7 +1413,7 @@ namespace rs2
             {
                 if (viewer.synchronization_enable && (!viewer.is_3d_view || viewer.is_3d_depth_source(f) || viewer.is_3d_texture_source(f)))
                 {
-                    viewer.s(f);
+                    viewer.s.invoke(f);
                 }
                 else
                 {

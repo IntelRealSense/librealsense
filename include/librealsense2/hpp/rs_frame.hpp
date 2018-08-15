@@ -291,7 +291,6 @@ namespace rs2
     public:
         virtual rs2::frame process(rs2::frame frame) const = 0;
         virtual rs2_processing_block* get() const = 0;
-        virtual rs2::frame operator()(frame f) const = 0;
         virtual ~process_interface() = default;
     };
 

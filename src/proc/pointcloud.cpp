@@ -74,6 +74,7 @@ namespace librealsense
             _depth_intrinsics = optional_value<rs2_intrinsics>();
             _depth_units = optional_value<float>();
             _extrinsics = optional_value<rs2_extrinsics>();
+            _other_stream = nullptr;
         }
 
         bool found_depth_intrinsics = false;
@@ -123,7 +124,8 @@ namespace librealsense
 
         if (!_other_stream.get())
         {
-            _other_stream = std::make_shared<rs2::video_stream_profile>(other.get_profile().as<rs2::video_stream_profile>());
+            auto osp = other.get_profile().as<rs2::video_stream_profile>();
+            _other_stream = std::make_shared<rs2::video_stream_profile>(osp.clone(osp.stream_type(), osp.stream_index(), osp.format()));
             _other_intrinsics = optional_value<rs2_intrinsics>();
             _extrinsics = optional_value<rs2_extrinsics>();
         }

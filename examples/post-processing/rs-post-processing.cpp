@@ -232,7 +232,7 @@ void update_data(rs2::frame_queue& data, rs2::frame& colorized_depth, rs2::point
     if (data.poll_for_frame(&f))  // Try to take the depth and points from the queue
     {
         points = pc.calculate(f); // Generate pointcloud from the depth data
-        colorized_depth = color_map(f);     // Colorize the depth frame with a color map
+        colorized_depth = color_map.process(f);     // Colorize the depth frame with a color map
         pc.map_to(colorized_depth);         // Map the colored depth to the point cloud
         view.tex.upload(colorized_depth);   //  and upload the texture to the view (without this the view will be B&W)
     }
