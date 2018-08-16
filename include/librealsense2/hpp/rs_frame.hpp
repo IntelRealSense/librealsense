@@ -508,10 +508,7 @@ namespace rs2
 
         frame apply_filter(process_interface& processing_block)
         {
-            rs2_error* e = nullptr;
-            auto res = rs2_frame_apply_filter(frame_ref, processing_block.get(), &e);
-            error::handle(e);
-            return res;
+            return processing_block.process(*this);
         }
 
     protected:

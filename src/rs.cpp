@@ -1887,16 +1887,6 @@ void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_er
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame, pose)
 
-rs2_frame* rs2_frame_apply_filter(const rs2_frame* frame, rs2_processing_block* processing_block, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(frame);
-    VALIDATE_NOT_NULL(processing_block);
-
-    ((frame_interface*)frame)->acquire();
-    return (rs2_frame*)((frame_interface*)frame)->apply_filter(std::shared_ptr<processing_block_interface>(processing_block->block));
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame, processing_block)
-
 rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
 {
     return environment::get_instance().get_time_service()->get_time();

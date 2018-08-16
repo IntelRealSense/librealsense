@@ -114,8 +114,6 @@ namespace librealsense
 
         virtual void keep() = 0;
 
-        virtual frame_interface* apply_filter(std::shared_ptr<processing_block_interface> pbi) const = 0;
-
         virtual ~frame_interface() = default;
     };
 

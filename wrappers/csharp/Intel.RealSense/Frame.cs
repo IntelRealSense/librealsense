@@ -111,13 +111,6 @@ namespace Intel.RealSense
                 return timestampDomain;
             }
         }
-
-        public VideoFrame ApplyFilter(ProcessingBlock processingBlock)
-        {
-            object error;
-            IntPtr processedFrame = NativeMethods.rs2_frame_apply_filter(m_instance.Handle, processingBlock.m_instance.Handle, out error);
-            return new VideoFrame(processedFrame);
-        }
     }
 
     public class VideoFrame : Frame

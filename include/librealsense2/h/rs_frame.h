@@ -334,15 +334,6 @@ void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error**
 */
 void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_error** error);
 
-/**
-* Apply a processing block on the frame and return a new processed composite frame
-* \param[in] frame              Frame to process
-* \param[out] processing_block  Pointer to a user provided processing block
-* \param[out] error             If non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-rs2_frame* rs2_frame_apply_filter(const rs2_frame* frame, rs2_processing_block* processing_block, rs2_error** error);
-
-
 #ifdef __cplusplus
 }
 #endif

@@ -117,13 +117,6 @@ namespace Intel.RealSense
             }
         }
 
-        public FrameSet ApplyFilter(ProcessingBlock processingBlock)
-        {
-            object error;
-            IntPtr processedFrame = NativeMethods.rs2_frame_apply_filter(m_instance.Handle, processingBlock.m_instance.Handle, out error);
-            return new FrameSet(processedFrame);
-        }
-
         internal FrameSet(IntPtr ptr)
         {
             m_instance = new HandleRef(this, ptr);

@@ -156,8 +156,6 @@ namespace librealsense
         void mark_fixed() override { _fixed = true; }
         bool is_fixed() const override { return _fixed; }
 
-        frame_interface* apply_filter(std::shared_ptr<processing_block_interface> pbi) const override;
-
     private:
         // TODO: check boost::intrusive_ptr or an alternative
         std::atomic<int> ref_count; // the reference count is on how many times this placeholder has been observed (not lifetime, not content)

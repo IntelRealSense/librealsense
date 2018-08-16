@@ -478,21 +478,4 @@ namespace librealsense
                 << "ms, FPS: " << get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
         }
     }
-
-    frame_interface* frame::apply_filter(std::shared_ptr<processing_block_interface> pbi) const
-    {
-        frame_interface* rv;
-
-        auto output_callback = [&](frame_holder processed_frame)
-        {            
-            processed_frame.frame->acquire();    
-            rv = processed_frame.frame;
-        };
-
-        pbi->set_output_callback(std::shared_ptr<rs2_frame_callback>(
-            new internal_frame_callback<decltype(output_callback)>(output_callback)));
-        pbi->invoke((frame_interface*)this);
-
-        return rv;
-    }
 }

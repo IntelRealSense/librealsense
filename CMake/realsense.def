@@ -68,7 +68,6 @@ EXPORTS
     rs2_keep_frame
     rs2_frame_add_ref
     rs2_pose_frame_get_pose_data
-    rs2_frame_apply_filter
 
     rs2_get_option
     rs2_set_option
