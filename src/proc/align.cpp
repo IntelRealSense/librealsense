@@ -587,7 +587,9 @@ namespace librealsense
         auto curr_depth = depth_frame.get_profile().as<rs2::video_stream_profile>();
         if (_prev_depth_res.first != curr_depth.width() || _prev_depth_res.second != curr_depth.height())
         {
+#ifdef __SSSE3__
             _stream_transform = nullptr;
+#endif
             _prev_depth_res.first = curr_depth.width();
             _prev_depth_res.second = curr_depth.height();
         }
@@ -689,13 +691,13 @@ namespace librealsense
                     depth_to_other_extrinsics);
 #else
                 align_other_to_z(other_aligned_to_depth,
-                    reinterpret_cast<const uint16_t*>(depth_frame->get_frame_data()),
+                    reinterpret_cast<const uint16_t*>(depth_frame.get_data()),
                     depth_scale,
                     depth_intrinsics,
                     depth_to_other_extrinsics,
                     other_intrinsics,
-                    other_frame->get_frame_data(),
-                    other_profile->get_format());
+                    reinterpret_cast<const byte*>(other_frame.get_data()),
+                    other_profile.format());
 #endif
             }
             else
@@ -732,9 +734,9 @@ namespace librealsense
                 _stream_transform->align_depth_to_other(reinterpret_cast<const uint16_t*>(depth_frame.get_data()),
                     reinterpret_cast<uint16_t*>(z_aligned_to_other), depth_frame.get_bytes_per_pixel(),
                     depth_intrinsics, other_intrinsics, depth_to_other_extrinsics);
-#else
+//#else
                     align_z_to_other(z_aligned_to_other,
-                        reinterpret_cast<const uint16_t*>(depth_frame->get_frame_data()),
+                        reinterpret_cast<const uint16_t*>(depth_frame.get_data()),
                         depth_scale,
                         depth_intrinsics,
                         depth_to_other_extrinsics,
