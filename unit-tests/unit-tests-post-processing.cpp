@@ -361,7 +361,7 @@ bool is_equel(rs2::frameset org, rs2::frameset processed)
     {
         auto curr_profile = o.get_profile();
         bool found = false;
-        processed.foreach([&curr_profile, &found](rs2::frame& f)
+        processed.foreach([&curr_profile, &found](const rs2::frame& f)
         {
             auto processed_profile = f.get_profile();
             if (curr_profile.unique_id() == processed_profile.unique_id())
