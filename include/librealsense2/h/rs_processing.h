@@ -93,6 +93,15 @@ void rs2_start_processing_queue(rs2_processing_block* block, rs2_frame_queue* qu
 */
 void rs2_process_frame(rs2_processing_block* block, rs2_frame* frame, rs2_error** error);
 
+
+/**
+* This method is used to get the indexes in the frame mapped
+* \param[in] block          Processing block
+* \param[in] frame          Frame to process, ownership is moved to the block object
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_get_mapped_frame(rs2_processing_block* block, rs2_frame* frame, rs2_error** error);
+
 /**
 * Deletes the processing block
 * \param[in] block          Processing block
@@ -154,6 +163,12 @@ void rs2_enqueue_frame(rs2_frame* frame, void* queue);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error);
+
+/**
+* Creates Align processing block.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_align_index(rs2_stream align_to, rs2_error** error);
 
 /**
 * Creates Depth post-processing filter block. This block accepts depth frames, applies decimation filter and plots modified prames
