@@ -5,8 +5,8 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Intel(R) RealSense(TM) SDK C# Wrapper Tutorial-1 Example")]
-[assembly: AssemblyDescription("Intel(R) RealSense(TM) C# Wrapper Examples")]
+[assembly: AssemblyTitle("Intel(R) RealSense(TM) SDK C# Wrapper Tutorial-1")]
+[assembly: AssemblyDescription("Intel(R) RealSense(TM) SDK C# Wrapper Examples")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Intel(R) Corporation")]
 [assembly: AssemblyProduct("Intel(R) RealSense(TM) SDK C# Wrapper")]
