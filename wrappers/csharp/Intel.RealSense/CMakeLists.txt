@@ -17,11 +17,12 @@ add_library(${PROJECT_NAME}
 	Types.cs
 	SoftwareDevice.cs
 	.nuget/Intel.RealSense.targets
+	
+	Properties/AssemblyInfo.cs
 )
 
 csharp_set_designer_cs_properties(
 	.nuget/Intel.RealSense.targets
-	Properties/AssemblyInfo.cs
 )
 
 if(BUILD_UNITY_BINDINGS)
