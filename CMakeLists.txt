@@ -202,8 +202,7 @@ set(REALSENSE_CPP
 ## Check for Windows Version ##
 if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
     if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
-        set(DRIVERS inteld415_win7.cat
-                    IntelD415_win7.inf
+        set(DRIVERS IntelD415_win7.inf
                     WdfCoinstaller01011.dll
                     winusbcoinstaller2.dll
                     )
@@ -965,6 +964,7 @@ option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
 option(BUILD_CSHARP_BINDINGS "Build C# bindings" OFF)
+#option(BUILD_MATLAB_BINDINGS "Build Matlab bindings" OFF)
 option(BUILD_UNITY_BINDINGS "Copy the unity project to the build folder with the required dependencies" OFF)
 option(BUILD_CV_EXAMPLES "Build OpenCV examples" OFF)
 option(BUILD_PCL_EXAMPLES "Build PCL examples" OFF)
@@ -993,6 +993,10 @@ endif()
 
 if (BUILD_WITH_CUDA)
     add_definitions(-DRS2_USE_CUDA)
+endif()
+
+if (BUILD_MATLAB_BINDINGS)
+  add_subdirectory(wrappers/matlab)
 endif()
 
 
