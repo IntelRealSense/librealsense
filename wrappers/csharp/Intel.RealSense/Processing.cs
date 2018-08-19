@@ -123,11 +123,19 @@ namespace Intel.RealSense
 
     public class Align : ProcessingBlock
     {
-        public Align(Stream align_to)
+        public Align(Stream align_to, bool indexMode = false)
         {
             object error;
-            m_instance = new HandleRef(this, NativeMethods.rs2_create_align(align_to, out error));
-            NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
+            if (indexMode)
+            {
+                m_instance = new HandleRef(this, NativeMethods.rs2_create_align_index(align_to, out error));
+                NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
+
+            } else
+            {
+                m_instance = new HandleRef(this, NativeMethods.rs2_create_align(align_to, out error));
+                NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
+            }
         }
 
         public FrameSet Process(FrameSet original, FramesReleaser releaser = null)

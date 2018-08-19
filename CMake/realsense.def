@@ -221,6 +221,7 @@ EXPORTS
     rs2_playback_device_stop
 
     rs2_create_align
+    rs2_create_align_index
 
     rs2_create_pipeline
     rs2_pipeline_stop

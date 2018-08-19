@@ -26,10 +26,22 @@ namespace librealsense
             const rs2_intrinsics& to,
             const rs2_extrinsics& from_to_other);
 
+
+		inline void align_depth_index_to_other(const uint16_t* z_pixels,
+			int32_t* dest, int bpp,
+			const rs2_intrinsics& depth,
+			const rs2_intrinsics& to,
+			const rs2_extrinsics& from_to_other);
+
         inline void align_other_to_depth(const uint16_t* z_pixels,
             const byte* source,
             byte* dest, int bpp, const rs2_intrinsics& to,
             const rs2_extrinsics& from_to_other);
+
+		inline void align_other_to_depth_index(const uint16_t* z_pixels,
+			const byte* source,
+			byte* dest, int bpp, const rs2_intrinsics& to,
+			const rs2_extrinsics& from_to_other);
 
         void pre_compute_x_y_map_corners();
 
@@ -51,10 +63,16 @@ namespace librealsense
             float offset = 0);
 
         template<rs2_distortion dist = RS2_DISTORTION_NONE>
-        inline void align_depth_to_other_sse(const uint16_t* z_pixels,
-            uint16_t* dest, const rs2_intrinsics& depth,
-            const rs2_intrinsics& to,
-            const rs2_extrinsics& from_to_other);
+		inline void align_depth_to_other_sse(const uint16_t* z_pixels,
+			uint16_t* dest, const rs2_intrinsics& depth,
+			const rs2_intrinsics& to,
+			const rs2_extrinsics& from_to_other);
+
+		template<rs2_distortion dist = RS2_DISTORTION_NONE>
+		inline void align_depth_index_to_other_sse(const uint16_t* z_pixels,
+			int32_t* dest, const rs2_intrinsics& depth,
+			const rs2_intrinsics& to,
+			const rs2_extrinsics& from_to_other);
 
         template<rs2_distortion dist = RS2_DISTORTION_NONE>
         inline void align_other_to_depth_sse(const uint16_t* z_pixels,
@@ -62,17 +80,35 @@ namespace librealsense
             byte* dest, int bpp, const rs2_intrinsics& to,
             const rs2_extrinsics& from_to_other);
 
-        inline void move_depth_to_other(const uint16_t* z_pixels,
-            uint16_t* dest, const rs2_intrinsics& to,
-            const std::vector<int2>& pixel_top_left_int,
-            const std::vector<int2>& pixel_bottom_right_int);
+		template<rs2_distortion dist = RS2_DISTORTION_NONE>
+		inline void align_other_to_depth_index_sse(const uint16_t* z_pixels,
+			const byte* source,
+			byte* dest, int bpp, const rs2_intrinsics& to,
+			const rs2_extrinsics& from_to_other);
 
-        template<class T >
-        inline void move_other_to_depth(const uint16_t* z_pixels,
-            const T* source,
-            T* dest, const rs2_intrinsics& to,
-            const std::vector<int2>& pixel_top_left_int,
-            const std::vector<int2>& pixel_bottom_right_int);
+		inline void move_depth_to_other(const uint16_t* z_pixels,
+			uint16_t* dest, const rs2_intrinsics& to,
+			const std::vector<int2>& pixel_top_left_int,
+			const std::vector<int2>& pixel_bottom_right_int);
+
+		inline void move_depth_index_to_other(const uint16_t* z_pixels,
+			int32_t* dest, const rs2_intrinsics& to,
+			const std::vector<int2>& pixel_top_left_int,
+			const std::vector<int2>& pixel_bottom_right_int);
+
+		template<class T >
+		inline void move_other_to_depth(const uint16_t* z_pixels,
+			const T* source,
+			T* dest, const rs2_intrinsics& to,
+			const std::vector<int2>& pixel_top_left_int,
+			const std::vector<int2>& pixel_bottom_right_int);
+
+		template<class T >
+		inline void move_other_to_depth_index(const uint16_t* z_pixels,
+			const T* source,
+			int32_t* dest, const rs2_intrinsics& to,
+			const std::vector<int2>& pixel_top_left_int,
+			const std::vector<int2>& pixel_bottom_right_int);
 
     };
 #endif
@@ -81,9 +117,11 @@ namespace librealsense
     {
     public:
         align(rs2_stream align_to);
+		align(rs2_stream align_to, bool indexMode);
 
     private:
-        void on_frame(frame_holder frameset, librealsense::synthetic_source_interface* source);
+		void on_frame(frame_holder frameset, librealsense::synthetic_source_interface* source);
+		void on_frame_index(frame_holder frameset, librealsense::synthetic_source_interface* source);
         std::shared_ptr<stream_profile_interface> create_aligned_profile(
             const std::shared_ptr<stream_profile_interface>& original_profile,
             const std::shared_ptr<stream_profile_interface>& to_profile);

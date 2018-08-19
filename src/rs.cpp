@@ -1752,6 +1752,15 @@ rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error) B
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, align_to)
 
+rs2_processing_block* rs2_create_align_index(rs2_stream align_to, rs2_error** error) BEGIN_API_CALL
+{
+	VALIDATE_ENUM(align_to);
+
+	auto block = std::make_shared<librealsense::align>(align_to, true);
+	return new rs2_processing_block{ block };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, align_to)
+
 rs2_processing_block* rs2_create_colorizer(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::colorizer>();
