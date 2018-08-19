@@ -4813,14 +4813,12 @@ TEST_CASE("Syncer try wait for frames", "[live][software-device]") {
     }
 }
 
-
-TEST_CASE("Projection from recording", "[live][using_pipeline][projection]") {
-    const float MAXIMUM_DISTANCE_THRESHOLD = 3;
+TEST_CASE("Projection from recording", "[software-device][using_pipeline][projection]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
-        const std::string filename = get_folder_path(special_folder::temp_folder) + "20180814_104159.bag";
-        //Scoping the above code to make sure no one holds the device
+        std::string folder_name = get_folder_path(special_folder::temp_folder);
+        const std::string filename = folder_name + "single_depth_color_640x480.bag";
         REQUIRE(file_exists(filename));
         {
             rs2::pipeline p(ctx);
@@ -4830,7 +4828,7 @@ TEST_CASE("Projection from recording", "[live][using_pipeline][projection]") {
             REQUIRE_NOTHROW(p.start(cfg));
             std::this_thread::sleep_for(std::chrono::seconds(1));
             rs2::frameset frames = p.wait_for_frames(200);
-            
+
             auto depth = frames.get_depth_frame();
             auto depth_profile = depth.get_profile().as<rs2::video_stream_profile>();
             auto color_profile = frames.get_color_frame().get_profile().as<rs2::video_stream_profile>();
@@ -4850,6 +4848,7 @@ TEST_CASE("Projection from recording", "[live][using_pipeline][projection]") {
                 }
             }
 
+            int count = 0;
             for (float i = 0; i < depth_intrin.width; i++)
             {
                 for (float j = 0; j < depth_intrin.height; j++)
@@ -4865,13 +4864,16 @@ TEST_CASE("Projection from recording", "[live][using_pipeline][projection]") {
 
                     rs2_project_color_pixel_to_depth_pixel(to_pixel, reinterpret_cast<const uint16_t*>(depth.get_data()), depth_scale, 0.1, 10,
                         &depth_intrin, &color_intrin,
-                        &color_extrin_to_depth,  &depth_extrin_to_color, from_pixel);
+                        &color_extrin_to_depth, &depth_extrin_to_color, from_pixel);
 
                     float dist = sqrt(pow((depth_pixel[1] - to_pixel[1]), 2) + pow((depth_pixel[0] - to_pixel[0]), 2));
-                    CAPTURE(dist);
-                    REQUIRE(dist < MAXIMUM_DISTANCE_THRESHOLD);
+                    if (dist > 1)
+                        count++;
                 }
             }
+            const double MAX_ERROR_PERCENTAGE = 0.1;
+            REQUIRE(count * 100 / (depth_intrin.width * depth_intrin.height) < MAX_ERROR_PERCENTAGE);
+            CAPTURE(count);
         }
-    }  
+    }
 }

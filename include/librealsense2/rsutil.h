@@ -101,8 +101,8 @@ static void next_pixel_in_line(float curr[2], const float start[2], const float 
 
 static bool is_pixel_in_line(const float curr[2], const float start[2], const float end[2])
 {
-    return ((end[0] > start[0] && end[0] >= curr[0] && curr[0] >= start[0]) || (end[0] < start[0] && end[0] <= curr[0] && curr[0] <= start[0])) &&
-           ((end[1] > start[1] && end[1] >= curr[1] && curr[1] >= start[1]) || (end[1] < start[1] && end[1] <= curr[1] && curr[1] <= start[1]));
+    return ((end[0] >= start[0] && end[0] >= curr[0] && curr[0] >= start[0]) || (end[0] <= start[0] && end[0] <= curr[0] && curr[0] <= start[0])) &&
+           ((end[1] >= start[1] && end[1] >= curr[1] && curr[1] >= start[1]) || (end[1] <= start[1] && end[1] <= curr[1] && curr[1] <= start[1]));
 }
 
 /* Find projected pixel with unknown depth search along line. */
@@ -115,21 +115,19 @@ static void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
     const struct rs2_extrinsics* depth_to_color,
     const float from_pixel[2])
 {
-    const float MINIMUM_DISTANCE_THRESHOLD = 1;
-
-    float start_pixel[2] = { 0 }, end_pixel[2] = { 0 }, point[3] = { 0 }, other_point[3] = { 0 }, projected_pixel[2] = { 0 };
-
     //Find line start pixel
-    rs2_deproject_pixel_to_point(point, color_intrin, from_pixel, depth_min);
-    rs2_transform_point_to_point(other_point, color_to_depth, point);
-    rs2_project_point_to_pixel(start_pixel, depth_intrin, other_point);
+    float start_pixel[2] = { 0 }, min_point[3] = { 0 }, min_transformed_point[3] = { 0 };
+    rs2_deproject_pixel_to_point(min_point, color_intrin, from_pixel, depth_min);
+    rs2_transform_point_to_point(min_transformed_point, color_to_depth, min_point);
+    rs2_project_point_to_pixel(start_pixel, depth_intrin, min_transformed_point);
     if (start_pixel[0] < 0) start_pixel[0] = 0;
     if (start_pixel[1] < 0) start_pixel[1] = 0;
 
     //Find line end depth pixel
-    rs2_deproject_pixel_to_point(point, color_intrin, from_pixel, depth_max);
-    rs2_transform_point_to_point(other_point, color_to_depth, point);
-    rs2_project_point_to_pixel(end_pixel, depth_intrin, other_point);
+    float end_pixel[2] = { 0 }, max_point[3] = { 0 }, max_transformed_point[3] = { 0 };
+    rs2_deproject_pixel_to_point(max_point, color_intrin, from_pixel, depth_max);
+    rs2_transform_point_to_point(max_transformed_point, color_to_depth, max_point);
+    rs2_project_point_to_pixel(end_pixel, depth_intrin, max_transformed_point);
 
     //search along line for the depth pixel that it's projected pixel is the closest to the input pixel
     float min_dist = -1;
@@ -139,9 +137,10 @@ static void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
         if (depth == 0) 
             continue;
 
+        float projected_pixel[2] = { 0 }, point[3] = { 0 }, transformed_point[3] = { 0 };
         rs2_deproject_pixel_to_point(point, depth_intrin, p, depth);
-        rs2_transform_point_to_point(other_point, depth_to_color, point);
-        rs2_project_point_to_pixel(projected_pixel, color_intrin, other_point);
+        rs2_transform_point_to_point(transformed_point, depth_to_color, point);
+        rs2_project_point_to_pixel(projected_pixel, color_intrin, transformed_point);
 
         float new_dist = pow((projected_pixel[1] - from_pixel[1]), 2) + pow((projected_pixel[0] - from_pixel[0]), 2);
         if (new_dist < min_dist || min_dist < 0)
@@ -149,8 +148,6 @@ static void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
             min_dist = new_dist;
             to_pixel[0] = p[0];
             to_pixel[1] = p[1];
-            if (min_dist < MINIMUM_DISTANCE_THRESHOLD) 
-                break;
         }
     }
 }
