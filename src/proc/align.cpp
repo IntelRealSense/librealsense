@@ -734,7 +734,7 @@ namespace librealsense
                 _stream_transform->align_depth_to_other(reinterpret_cast<const uint16_t*>(depth_frame.get_data()),
                     reinterpret_cast<uint16_t*>(z_aligned_to_other), depth_frame.get_bytes_per_pixel(),
                     depth_intrinsics, other_intrinsics, depth_to_other_extrinsics);
-//#else
+#else
                     align_z_to_other(z_aligned_to_other,
                         reinterpret_cast<const uint16_t*>(depth_frame.get_data()),
                         depth_scale,
