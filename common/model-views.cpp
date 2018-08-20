@@ -5657,7 +5657,7 @@ namespace rs2
                 ImGui::SetCursorPos({ rc.x, rc.y + line_h });
             }
 
-            ImGui::SetCursorPos({ rc.x + 225, rc.y - 127 });
+            ImGui::SetCursorPos({ rc.x + 225, rc.y - 107 });
 
             if (fw_version_less_than(fw_version, min_fw_version))
             {
