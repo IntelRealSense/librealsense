@@ -10,17 +10,23 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 **Important:** Running RealSense Depth Cameras on Linux requires patching and inserting modified kernel drivers. Some OEM/Vendors choose to lock the kernel for modifications. Unlocking this capability may requires to modify BIOS settings
 
   **Make Ubuntu Up-to-date:**  
-  1. Update Ubuntu distribution, including getting the latest stable kernel
+  * Update Ubuntu distribution, including getting the latest stable kernel:
     * `sudo apt-get update && sudo apt-get upgrade && sudo apt-get dist-upgrade`  <br />  
-  **Note:** On stock Ubuntu 14 LTS systems and Kernel prior to 4.4.0-04 the standard *apt-get upgrade* command is not sufficient to bring the distribution to the latest recommended baseline.  
-  On those systems the following should be used:   
-  `sudo apt-get install --install-recommends linux-generic-lts-xenial xserver-xorg-core-lts-xenial xserver-xorg-lts-xenial xserver-xorg-video-all-lts-xenial xserver-xorg-input-all-lts-xenial libwayland-egl1-mesa-lts-xenial `<br />    
 
+**Note:** On stock Ubuntu 14 LTS systems and Kernel prior to 4.4.0-04 the standard `apt-get upgrade` command is not sufficient to bring the distribution to the latest recommended baseline.  
+  It is recommended to upgrade the distribution with:   
+  * `sudo apt-get install --install-recommends linux-generic-lts-xenial xserver-xorg-core-lts-xenial xserver-xorg-lts-xenial xserver-xorg-video-all-lts-xenial xserver-xorg-input-all-lts-xenial libwayland-egl1-mesa-lts-xenial `<br />    
 
   * Update OS Boot and reboot to enforce the correct kernel selection with <br />`sudo update-grub && sudo reboot`<br />
 
   * Interrupt the boot process at Grub2 Boot Menu -> "Advanced Options for Ubuntu" and select the kernel version installed in the previous step. Press and hold SHIFT if the Boot menu is not presented.
-  * Complete the boot, login and verify that a supported kernel version (4.4.0-.., 4.8.0-.., 4.10.0-.. , 4.13.0-..or 4.15.0-.. as of May 2018) is in place with `uname -r`  
+  * Complete the boot, login and verify that a supported kernel version (4.**[4,8,10,13,15,16]**]) is in place with `uname -r`  
+
+
+  **Download/Clone librealsense github repository:**  
+    1. Navigate to *librealsense* root directory to run the following scripts.<br />
+       Unplug any connected Intel RealSense camera.<br />  
+
 
 
 **Prepare Linux Backend and the Dev. Environment:**  
@@ -40,9 +46,8 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
      * Ubuntu 18:<br />
       `sudo apt-get install libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev`  <br /><br />
 
-    Cmake: *librealsense* requires version 3.8+ which is currently not made available via apt manager for Ubuntu LTS.   
+    Cmake: certain *librealsense* CMAKE flags (e.g. CUDA) require version 3.8+ which is currently not made available via apt manager for Ubuntu LTS.   
     Go to the [official CMake site](https://cmake.org/download/) to download and install the application  
-
 
      **Note** on graphic sub-system utilization:<br />
      *glfw3*, *mesa* and *gtk* packages are required if you plan to build the SDK's OpenGl-enabled examples. The *librealsense* core library and a range of demos/tools are designed for headless environment deployment.
@@ -53,12 +58,15 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
     <br />
 
   4. Build and apply patched kernel modules for: <br />
-    * **Ubuntu 14/16/18 LTS**
+    * **Ubuntu 14/16/18 with LTS kernel**
       script will download, patch and build realsense-affected kernel modules (drivers).<br />
       Then it will attempt to insert the patched module instead of the active one. If failed
       the original uvc modules will be restored.  
 
       `./scripts/patch-realsense-ubuntu-lts.sh`<br />
+    * **Ubuntu with Kernel 4.16**
+
+      `./scripts/patch-ubuntu-kernel-4.16.sh`<br />  
     * **Intel® Joule™ with Ubuntu**
       Based on the custom kernel provided by Canonical Ltd.  
 
