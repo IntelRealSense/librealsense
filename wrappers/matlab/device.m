@@ -66,6 +66,9 @@ classdef device < handle
             this.do_init();
             realsense.librealsense_mex('rs2::device', 'hardware_reset', this.objectHandle);
         end
+        function l = logical(this)
+            l = realsense.librealsense_mex('rs2::device', 'operator bool', this.objectHandle);
+        end
         function value = is(this, type)
             narginchk(2, 2);
             % C++ function validates contents of type

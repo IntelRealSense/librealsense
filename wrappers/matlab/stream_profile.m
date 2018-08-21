@@ -71,6 +71,9 @@ classdef stream_profile < handle
         function value = is_default(this)
             value = realsense.librealsense_mex('rs2::stream_profile', 'is_default', this.objectHandle);
         end
+        function l = logical(this)
+            l = realsense.librealsense_mex('rs2::stream_profile', 'operator bool', this.objectHandle);
+        end
         function extrinsics = get_extrinsics_to(this, to)
             narginchk(2, 2);
             validateattributes(to, {'realsense.stream_profile'}, {'scalar'}, '', 'to', 2);

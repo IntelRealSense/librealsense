@@ -104,7 +104,11 @@ void make_factory(){
             auto thiz = MatlabParamParser::parse<rs2::stream_profile>(inv[0]);
             outv[0] = MatlabParamParser::wrap(thiz.is_default());
         });
-        // rs2::stream_profile::operator bool                           [?]
+        stream_profile_factory.record("operator bool", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::stream_profile>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(bool(thiz));
+        });
         stream_profile_factory.record("get_extrinsics_to", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::stream_profile>(inv[0]);
@@ -160,7 +164,11 @@ void make_factory(){
         // rs2::frame::copy constructor                                 [?/HOW]
         // rs2::frame::swap                                             [?/HOW]
         // rs2::frame::keep                                             [TODO/HOW]
-        // rs2::frame::operator bool                                    [?]
+        frame_factory.record("operator bool", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::frame>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(bool(thiz));
+        });
         frame_factory.record("get_timestamp", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::frame>(inv[0]);
@@ -569,7 +577,11 @@ void make_factory(){
             MatlabParamParser::wrap(thiz.get_stream_profiles());
         });
         // rs2::sensor::operator=                                       [?]
-        // rs2::sensor::operator bool                                   [?]
+        sensor_factory.record("operator bool", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::sensor>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(bool(thiz));
+        });
         sensor_factory.record("is", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             // TODO: something more maintainable?
@@ -718,7 +730,11 @@ void make_factory(){
             thiz.hardware_reset();
         });
         // rs2::device::operator=                                       [?]
-        // rs2::device::operator bool                                   [?]
+        device_factory.record("operator bool", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::device>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(bool(thiz));
+        });
         device_factory.record("is", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             // TODO: something more maintainable?

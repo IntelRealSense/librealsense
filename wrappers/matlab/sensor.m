@@ -45,6 +45,9 @@ classdef sensor < realsense.options
             % TODO: Might be cell array
             profiles = arrayfun(@(x) realsense.stream_profile(x{:}{:}), arr, 'UniformOutput', false);
         end
+        function l = logical(this)
+            l = realsense.librealsense_mex('rs2::sensor', 'operator bool', this.objectHandle);
+        end
         function value = is(this, type)
             narginchk(2, 2);
             % C++ function validates contents of type
