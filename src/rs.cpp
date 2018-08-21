@@ -218,14 +218,13 @@ void rs2_delete_device_hub(const rs2_device_hub* hub) BEGIN_API_CALL
 }
 NOEXCEPT_RETURN(, hub)
 
-rs2_device* rs2_device_hub_wait_for_device(rs2_context* ctx, const rs2_device_hub* hub, rs2_error** error) BEGIN_API_CALL
+rs2_device* rs2_device_hub_wait_for_device(const rs2_device_hub* hub, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(hub);
-    VALIDATE_NOT_NULL(ctx);
     auto dev = hub->hub->wait_for_device();
-    return new rs2_device{ ctx->ctx, std::make_shared<readonly_device_info>(dev), dev };
+    return new rs2_device{ hub->hub->get_context(), std::make_shared<readonly_device_info>(dev), dev };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, hub, ctx)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, hub)
 
 int rs2_device_hub_is_device_connected(const rs2_device_hub* hub, const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {

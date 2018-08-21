@@ -360,6 +360,9 @@ namespace librealsense
         case 3:
             move_other_to_depth(z_pixels, reinterpret_cast<const bytes<3>*>(source), reinterpret_cast<bytes<3>*>(dest), to,
                 _pixel_top_left_int, bottom_right);
+        case 4:
+            move_other_to_depth(z_pixels, reinterpret_cast<const bytes<4>*>(source), reinterpret_cast<bytes<4>*>(dest), to,
+                _pixel_top_left_int, bottom_right);
             break;
         default:
             break;

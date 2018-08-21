@@ -3514,7 +3514,7 @@ class RSDeviceHub : public Nan::ObjectWrap {
     if (!me) return;
 
     auto dev = GetNativeResult<rs2_device*>(rs2_device_hub_wait_for_device,
-        &me->error_, me->ctx_, me->hub_, &me->error_);
+        &me->error_, me->hub_, &me->error_);
     if (!dev) return;
 
     info.GetReturnValue().Set(RSDevice::NewInstance(dev));

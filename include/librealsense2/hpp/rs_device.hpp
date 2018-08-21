@@ -134,6 +134,9 @@ namespace rs2
         virtual ~device()
         {
         }
+
+        explicit operator std::shared_ptr<rs2_device>() { return _dev; };
+        explicit device(std::shared_ptr<rs2_device> dev) : _dev(dev) {}
     protected:
         friend class rs2::context;
         friend class rs2::device_list;
@@ -141,9 +144,7 @@ namespace rs2
         friend class rs2::device_hub;
 
         std::shared_ptr<rs2_device> _dev;
-        explicit device(std::shared_ptr<rs2_device> dev) : _dev(dev)
-        {
-        }
+        
     };
 
     class debug_protocol : public device
@@ -282,6 +283,8 @@ namespace rs2
         {
             return _list.get();
         }
+
+        operator std::shared_ptr<rs2_device_list>() { return _list; };
 
     private:
         std::shared_ptr<rs2_device_list> _list;

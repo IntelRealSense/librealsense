@@ -12,8 +12,8 @@ endmacro()
 option(BUILD_WITH_CUDA "Enable CUDA" OFF)
 
 if(BUILD_WITH_CUDA)
-	info("Building with CUDA requires CMake v3.8+")
-	cmake_minimum_required(VERSION 3.8.0)
+    info("Building with CUDA requires CMake v3.8+")
+    cmake_minimum_required(VERSION 3.8.0)
     project(librealsense2 LANGUAGES CXX C CUDA)
 else()
     project(librealsense2 LANGUAGES CXX C)
@@ -180,11 +180,6 @@ set(REALSENSE_CPP
     src/ds5/ds5-color.cpp
     src/ds5/ds5-active.cpp
     src/ds5/ds5-factory.cpp
-    src/win/win-helpers.cpp
-    src/win/win-uvc.cpp
-    src/win/win-usb.cpp
-    src/win/win-hid.cpp
-    src/win/win-backend.cpp
 
     src/l500/l500.cpp
     src/l500/l500-private.cpp
@@ -204,6 +199,41 @@ set(REALSENSE_CPP
     src/media/playback/playback_sensor.cpp
     )
     
+## Check for Windows Version ##
+if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
+    if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
+        set(DRIVERS IntelD415_win7.inf
+                    WdfCoinstaller01011.dll
+                    winusbcoinstaller2.dll
+                    )
+    
+        foreach(item IN LISTS DRIVERS)
+            add_custom_command(
+                OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${item}"
+                COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/src/win7/d415_driver/${item}" "${CMAKE_CURRENT_BINARY_DIR}/${item}"
+                DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${item}"
+            )
+        endforeach()
+    endif()
+    add_custom_target(realsense-driver ALL DEPENDS ${DRIVERS})
+    
+    list(APPEND REALSENSE_CPP
+        src/win7/win7-helpers.cpp
+        src/win7/win7-uvc.cpp
+        src/win7/win7-usb.cpp
+        src/win7/win7-hid.cpp
+        src/win7/win7-backend.cpp
+        )
+else() # Some other windows version
+    list(APPEND REALSENSE_CPP
+        src/win/win-helpers.cpp
+        src/win/win-uvc.cpp
+        src/win/win-usb.cpp
+        src/win/win-hid.cpp
+        src/win/win-backend.cpp
+        )
+endif()
+
 if (BUILD_WITH_CUDA)
     set(REALSENSE_CU
         src/cuda/cuda-conversion.cu
@@ -307,11 +337,6 @@ set(REALSENSE_HPP
     src/ds5/ds5-color.h
     src/linux/backend-v4l2.h
     src/linux/backend-hid.h
-    src/win/win-helpers.h
-    src/win/win-uvc.h
-    src/win/win-usb.h
-    src/win/win-hid.h
-    src/win/win-backend.h
     src/api.h
     src/core/serialization.h
 
@@ -335,6 +360,25 @@ set(REALSENSE_HPP
     src/media/ros/ros_file_format.h
 )
 
+## Check for Windows Version ##
+if( ${CMAKE_SYSTEM_VERSION} EQUAL 6.1 ) # Windows 7
+    list(APPEND REALSENSE_HPP
+        src/win7/win7-helpers.h
+        src/win7/win7-uvc.h
+        src/win7/win7-usb.h
+        src/win7/win7-hid.h
+        src/win7/win7-backend.h
+        )
+else() # Some other windows version
+    list(APPEND REALSENSE_HPP
+        src/win/win-helpers.h
+        src/win/win-uvc.h
+        src/win/win-usb.h
+        src/win/win-hid.h
+        src/win/win-backend.h
+        )
+endif()
+
 if(BUILD_EASYLOGGINGPP)
     list(APPEND REALSENSE_CPP third-party/easyloggingpp/src/easylogging++.cc)
     list(APPEND REALSENSE_HPP third-party/easyloggingpp/src/easylogging++.h)
@@ -343,16 +387,56 @@ endif()
 option(BUILD_WITH_STATIC_CRT "Build with static link CRT" ON)
 
 if(WIN32)
-    source_group("Source Files\\Backend" FILES
-        src/win/win-helpers.cpp
-        src/win/win-uvc.cpp
-        src/win/win-usb.cpp
-        src/win/win-hid.cpp
-        src/win/win-backend.cpp
-        src/linux/backend-v4l2.cpp
-        src/linux/backend-hid.cpp
-        src/backend.cpp
-        )
+    ## Check for Windows Version ##
+    if( ${CMAKE_SYSTEM_VERSION} EQUAL 6.1 ) # Windows 7
+        source_group("Source Files\\Backend" FILES
+            src/win7/win7-helpers.cpp
+            src/win7/win7-uvc.cpp
+            src/win7/win7-usb.cpp
+            src/win7/win7-hid.cpp
+            src/win7/win7-backend.cpp
+            src/linux/backend-v4l2.cpp
+            src/linux/backend-hid.cpp
+            src/backend.cpp
+            )
+
+        source_group("Header Files\\Backend" FILES
+            src/win7/win7-helpers.h
+            src/win7/win7-uvc.h
+            src/win7/win7-usb.h
+            src/win7/win7-hid.h
+            src/win7/win7-backend.h
+            src/linux/backend-v4l2.h
+            src/linux/backend-hid.h
+            src/backend.h)
+
+    else() # Some other windows version
+        source_group("Source Files\\Backend" FILES
+            src/win/win-helpers.cpp
+            src/win/win-uvc.cpp
+            src/win/win-usb.cpp
+            src/win/win-hid.cpp
+            src/win/win-backend.cpp
+            src/linux/backend-v4l2.cpp
+            src/linux/backend-hid.cpp
+            src/backend.cpp
+            src/win7/win7-helpers.cpp
+            src/win7/win7-uvc.cpp
+            src/win7/win7-usb.cpp
+            src/win7/win7-hid.cpp
+            src/win7/win7-backend.cpp
+            )
+
+        source_group("Header Files\\Backend" FILES
+            src/win/win-helpers.h
+            src/win/win-uvc.h
+            src/win/win-usb.h
+            src/win/win-hid.h
+            src/win/win-backend.h
+            src/linux/backend-v4l2.h
+            src/linux/backend-hid.h
+            src/backend.h)
+    endif()
 
     source_group("Source Files\\Logging" FILES
         third-party/easyloggingpp/src/easylogging++.cc
@@ -365,16 +449,6 @@ if(WIN32)
         src/media/playback/playback_device.cpp
         src/media/playback/playback_sensor.cpp
         )
-
-    source_group("Header Files\\Backend" FILES
-        src/win/win-helpers.h
-        src/win/win-uvc.h
-        src/win/win-usb.h
-        src/win/win-hid.h
-        src/win/win-backend.h
-        src/linux/backend-v4l2.h
-        src/linux/backend-hid.h
-        src/backend.h)
 
     source_group("Header Files\\API" FILES
         include/librealsense2/rs.hpp
@@ -550,9 +624,16 @@ else()
 endif()
 
 option(FORCE_LIBUVC "Explicitly turn-on libuvc backend" OFF)
+option(FORCE_WINUSB_UVC "Explicitly turn-on winusb_uvc (for win7) backend" OFF)
 
 if(WIN32)
-    set(BACKEND RS2_USE_WMF_BACKEND)
+    ## Check for Windows Version ##
+    if( ${CMAKE_SYSTEM_VERSION} EQUAL 6.1 ) # Windows 7
+        set(FORCE_WINUSB_UVC ON)
+    else() # Some other windows version
+        set(BACKEND RS2_USE_WMF_BACKEND)
+    endif()
+
     set(REALSENSE_DEF CMake/realsense.def)
     # Makes VS15 find the DLL when trying to run examples/tests
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -561,13 +642,38 @@ if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
     add_definitions(-D__SSSE3__ -D_CRT_SECURE_NO_WARNINGS)
-
     set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 elseif(APPLE)
     set(FORCE_LIBUVC ON)
 else()
     set(BACKEND RS2_USE_V4L2_BACKEND)
 endif()
+
+
+if(FORCE_WINUSB_UVC)
+    set(BACKEND RS2_USE_WINUSB_UVC_BACKEND)
+#
+    list(APPEND REALSENSE_CPP
+		src/win7/winusb_uvc/winusb_uvc.cpp
+    )
+#
+    list(APPEND REALSENSE_HPP
+		src/libuvc/utlist.h
+		src/win7/winusb_uvc/winusb_uvc.h
+    )
+#
+	source_group("Source Files\\WinUsbUvc" FILES
+		src/win7/winusb_uvc/winusb_uvc.cpp
+    )
+#
+    source_group("Header Files\\WinUsbUvc" FILES
+		src/libuvc/utlist.h
+		src/win7/winusb_uvc/winusb_uvc.h
+    )
+#
+#    message( WARNING "Using winusb_uvc!" )
+endif()
+
 
 if(FORCE_LIBUVC)
     set(BACKEND RS2_USE_LIBUVC_BACKEND)
@@ -802,6 +908,12 @@ target_include_directories(realsense2 PRIVATE
         ${BOOST_INCLUDE_PATH}
         ${LZ4_INCLUDE_PATH}
         )
+if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
+    add_dependencies(realsense2 realsense-driver)
+    set_target_properties (realsense-driver PROPERTIES
+        FOLDER Library
+    )
+endif()
 
 if (USE_SYSTEM_LIBUSB)
     target_include_directories(realsense2 PRIVATE ${LIBUSB1_INCLUDE_DIRS})
@@ -852,6 +964,7 @@ option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
 option(BUILD_CSHARP_BINDINGS "Build C# bindings" OFF)
+#option(BUILD_MATLAB_BINDINGS "Build Matlab bindings" OFF)
 option(BUILD_UNITY_BINDINGS "Copy the unity project to the build folder with the required dependencies" OFF)
 option(BUILD_CV_EXAMPLES "Build OpenCV examples" OFF)
 option(BUILD_PCL_EXAMPLES "Build PCL examples" OFF)
@@ -880,6 +993,10 @@ endif()
 
 if (BUILD_WITH_CUDA)
     add_definitions(-DRS2_USE_CUDA)
+endif()
+
+if (BUILD_MATLAB_BINDINGS)
+  add_subdirectory(wrappers/matlab)
 endif()
 
 
