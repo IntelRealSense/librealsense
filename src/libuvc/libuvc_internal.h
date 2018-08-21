@@ -261,6 +261,7 @@ struct uvc_stream_handle {
     uint8_t *outbuf, *holdbuf;
     std::mutex cb_mutex;
     std::condition_variable cb_cond;
+    std::condition_variable cb_cancel;
     std::thread cb_thread;
     uint32_t last_polled_seq;
     uvc_frame_callback_t *user_cb;
