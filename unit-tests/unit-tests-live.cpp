@@ -4815,65 +4815,91 @@ TEST_CASE("Syncer try wait for frames", "[live][software-device]") {
 
 TEST_CASE("Projection from recording", "[software-device][using_pipeline][projection]") {
     rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
+        return;
+    std::string folder_name = get_folder_path(special_folder::temp_folder);
+    const std::string filename = folder_name + "single_depth_color_640x480.bag";
+    REQUIRE(file_exists(filename));
+    auto dev = ctx.load_device(filename);
+
+    syncer sync;
+    std::vector<sensor> sensors = dev.query_sensors();
+    REQUIRE(sensors.size() == 2);
+    for (auto s : sensors)
     {
-        std::string folder_name = get_folder_path(special_folder::temp_folder);
-        const std::string filename = folder_name + "single_depth_color_640x480.bag";
-        REQUIRE(file_exists(filename));
+        REQUIRE_NOTHROW(s.open(s.get_stream_profiles().front()));
+        REQUIRE_NOTHROW(s.start(sync));
+    }
+
+    rs2::frame depth;
+    rs2::stream_profile depth_profile;
+    rs2::stream_profile color_profile;
+
+    while (!depth_profile || !color_profile)
+    {
+        frameset frames = sync.wait_for_frames(200);
+        REQUIRE(frames.size() > 0);
+        if (frames.size() == 1)
         {
-            rs2::pipeline p(ctx);
-            rs2::config cfg;
-            REQUIRE_NOTHROW(cfg.enable_device_from_file(filename));
-            rs2::pipeline_profile profile = cfg.resolve(p);
-            REQUIRE_NOTHROW(p.start(cfg));
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            rs2::frameset frames = p.wait_for_frames(200);
-
-            auto depth = frames.get_depth_frame();
-            auto depth_profile = depth.get_profile().as<rs2::video_stream_profile>();
-            auto color_profile = frames.get_color_frame().get_profile().as<rs2::video_stream_profile>();
-            auto depth_intrin = depth_profile.get_intrinsics();
-            auto color_intrin = color_profile.get_intrinsics();
-            auto depth_extrin_to_color = depth_profile.get_extrinsics_to(color_profile);
-            auto color_extrin_to_depth = color_profile.get_extrinsics_to(depth_profile);
-
-            auto sensors = profile.get_device().query_sensors();
-            float depth_scale = 0;
-            for (auto s : sensors)
+            if (frames.get_profile().stream_type() == RS2_STREAM_DEPTH)
             {
-                auto depth_sensor = s.is<rs2::depth_sensor>();
-                if (s.is<rs2::depth_sensor>())
-                {
-                    REQUIRE_NOTHROW(depth_scale = s.as<rs2::depth_sensor>().get_depth_scale());
-                }
+                depth = frames.get_depth_frame();
+                depth_profile = depth.get_profile();
             }
-
-            int count = 0;
-            for (float i = 0; i < depth_intrin.width; i++)
+            else
             {
-                for (float j = 0; j < depth_intrin.height; j++)
-                {
-                    float depth_pixel[2] = { i, j };
-                    auto udist = depth.get_distance(depth_pixel[0], depth_pixel[1]);
-                    if (udist == 0) continue;
-
-                    float from_pixel[2] = { 0 }, to_pixel[2] = { 0 }, point[3] = { 0 }, other_point[3] = { 0 };
-                    rs2_deproject_pixel_to_point(point, &depth_intrin, depth_pixel, udist);
-                    rs2_transform_point_to_point(other_point, &depth_extrin_to_color, point);
-                    rs2_project_point_to_pixel(from_pixel, &color_intrin, other_point);
-
-                    rs2_project_color_pixel_to_depth_pixel(to_pixel, reinterpret_cast<const uint16_t*>(depth.get_data()), depth_scale, 0.1, 10,
-                        &depth_intrin, &color_intrin,
-                        &color_extrin_to_depth, &depth_extrin_to_color, from_pixel);
-
-                    float dist = sqrt(pow((depth_pixel[1] - to_pixel[1]), 2) + pow((depth_pixel[0] - to_pixel[0]), 2));
-                    if (dist > 1)
-                        count++;
-                }
+                color_profile = frames.get_color_frame().get_profile();
             }
-            const double MAX_ERROR_PERCENTAGE = 0.1;
-            REQUIRE(count * 100 / (depth_intrin.width * depth_intrin.height) < MAX_ERROR_PERCENTAGE);
-            CAPTURE(count);
+        }
+        else
+        {
+            depth = frames.get_depth_frame();
+            depth_profile = depth.get_profile();
+            color_profile = frames.get_color_frame().get_profile();
         }
     }
+
+    auto depth_intrin = depth_profile.as<rs2::video_stream_profile>().get_intrinsics();
+    auto color_intrin = color_profile.as<rs2::video_stream_profile>().get_intrinsics();
+    auto depth_extrin_to_color = depth_profile.as<rs2::video_stream_profile>().get_extrinsics_to(color_profile);
+    auto color_extrin_to_depth = color_profile.as<rs2::video_stream_profile>().get_extrinsics_to(depth_profile);
+
+    float depth_scale = 0;
+    for (auto s : sensors)
+    {
+        auto depth_sensor = s.is<rs2::depth_sensor>();
+        if (s.is<rs2::depth_sensor>())
+        {
+            REQUIRE_NOTHROW(depth_scale = s.as<rs2::depth_sensor>().get_depth_scale());
+        }
+    }
+
+    int count = 0;
+    for (float i = 0; i < depth_intrin.width; i++)
+    {
+        for (float j = 0; j < depth_intrin.height; j++)
+        {
+            float depth_pixel[2] = { i, j };
+            auto udist = depth.as<rs2::depth_frame>().get_distance(depth_pixel[0], depth_pixel[1]);
+            if (udist == 0) continue;
+
+            float from_pixel[2] = { 0 }, to_pixel[2] = { 0 }, point[3] = { 0 }, other_point[3] = { 0 };
+            rs2_deproject_pixel_to_point(point, &depth_intrin, depth_pixel, udist);
+            rs2_transform_point_to_point(other_point, &depth_extrin_to_color, point);
+            rs2_project_point_to_pixel(from_pixel, &color_intrin, other_point);
+
+            rs2_project_color_pixel_to_depth_pixel(to_pixel, reinterpret_cast<const uint16_t*>(depth.get_data()), depth_scale, 0.1, 10,
+                &depth_intrin, &color_intrin,
+                &color_extrin_to_depth, &depth_extrin_to_color, from_pixel);
+
+            float dist = sqrt(pow((depth_pixel[1] - to_pixel[1]), 2) + pow((depth_pixel[0] - to_pixel[0]), 2));
+            if (dist > 1)
+                count++;
+            if (dist > 2)
+                printf("%f\n", dist);
+        }
+    }
+    const double MAX_ERROR_PERCENTAGE = 0.1;
+    REQUIRE(count * 100 / (depth_intrin.width * depth_intrin.height) < MAX_ERROR_PERCENTAGE);
+    CAPTURE(count);
 }
