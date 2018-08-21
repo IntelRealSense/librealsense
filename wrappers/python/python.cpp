@@ -114,8 +114,14 @@ PYBIND11_MODULE(NAME, m) {
     public:
         BufData(void *ptr, size_t itemsize, const std::string& format, size_t ndim, const std::vector<size_t> &shape, const std::vector<size_t> &strides)
             : _ptr(ptr), _itemsize(itemsize), _format(format), _ndim(ndim), _shape(shape), _strides(strides) {}
-        BufData(void *ptr, size_t itemsize, const std::string &format, size_t size)
+        BufData(void *ptr, size_t itemsize, const std::string& format, size_t size)
             : BufData(ptr, itemsize, format, 1, std::vector<size_t> { size }, std::vector<size_t> { itemsize }) { }
+        BufData(void *ptr, // Raw data pointer
+                size_t itemsize, // Size of the type in bytes
+                const std::string& format, // Data type's format descriptor (e.g. "@f" for float xyz)
+                size_t dim, // number of data elements per group (e.g. 3 for float xyz)
+                size_t count) // Number of groups
+            : BufData( ptr, itemsize, format, 2, std::vector<size_t> { count, dim }, std::vector<size_t> { itemsize*dim, itemsize })  { }
     };
 
     py::class_<BufData> BufData_py(m, "BufData", py::buffer_protocol());
@@ -397,16 +403,26 @@ PYBIND11_MODULE(NAME, m) {
     py::class_<rs2::points, rs2::frame> points(m, "points");
     points.def(py::init<>())
         .def(py::init<rs2::frame>())
-        .def("get_vertices", [](rs2::points& self) -> BufData
-    {
-        return BufData(const_cast<rs2::vertex*>(self.get_vertices()),
-            sizeof(rs2::vertex), std::string("@fff"), self.size());
-    }, py::keep_alive<0, 1>())
-        .def("get_texture_coordinates", [](rs2::points& self) -> BufData
-    {
-        return BufData(const_cast<rs2::texture_coordinate*>(self.get_texture_coordinates()),
-            sizeof(rs2::texture_coordinate), std::string("@ff"), self.size());
-    }, py::keep_alive<0, 1>())
+        .def("get_vertices", [](rs2::points& self, int dims) -> BufData
+        {
+            auto verts = const_cast<rs2::vertex*>(self.get_vertices());
+            switch (dims) {
+            case 1:
+                return BufData(verts, sizeof(rs2::vertex), "@fff", self.size());
+            case 2:
+                return BufData(verts, sizeof(float), "@f", 3, self.size());
+            }
+        }, py::keep_alive<0, 1>(), "dims"_a=1)
+        .def("get_texture_coordinates", [](rs2::points& self, int dims) -> BufData
+        {
+            auto tex = const_cast<rs2::texture_coordinate*>(self.get_texture_coordinates());
+            switch (dims) {
+            case 1:
+                return BufData(tex, sizeof(rs2::texture_coordinate), "@ff", self.size());
+            case 2:
+                return BufData(tex, sizeof(float), "@f", 2, self.size());
+            }
+        }, py::keep_alive<0, 1>(), "dims"_a=1)
         .def("export_to_ply", &rs2::points::export_to_ply)
         .def("size", &rs2::points::size);
 
