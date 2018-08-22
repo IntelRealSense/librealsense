@@ -394,8 +394,18 @@ TEST_CASE("Post-Processing expected output", "[post-processing-filters]")
     rs2::config cfg;
     cfg.enable_all_streams();
 
-    rs2::pipeline pipe;
-    pipe.start(cfg);
+    rs2::pipeline pipe(ctx);
+    auto profile = pipe.start(cfg);
+
+    bool supports_disparity = false;
+    for (auto s : profile.get_device().query_sensors())
+    {
+        if (s.supports(RS2_OPTION_STEREO_BASELINE))
+        {
+            supports_disparity = true;
+            break;
+        }
+    }
 
     rs2::frameset original = pipe.wait_for_frames();
 
@@ -426,7 +436,8 @@ TEST_CASE("Post-Processing expected output", "[post-processing-filters]")
 
     rs2::frameset to_disp_processed_set = original.apply_filter(to_disp);
     REQUIRE(is_subset(original, to_disp_processed_set));
-    REQUIRE_THROWS(is_subset(to_disp_processed_set, original));
+    if(supports_disparity)
+        REQUIRE_THROWS(is_subset(to_disp_processed_set, original));
 
     rs2::frameset from_disp_processed_set = original.apply_filter(from_disp);//should bypass
     REQUIRE(is_equal(original, from_disp_processed_set));
@@ -482,8 +493,11 @@ TEST_CASE("Post-Processing expected output", "[post-processing-filters]")
     REQUIRE(to_disp_processed_frame.get_profile().stream_type() == RS2_STREAM_DEPTH);
     bool is_disp = to_disp_processed_frame.get_profile().format() == RS2_FORMAT_DISPARITY16 || 
         to_disp_processed_frame.get_profile().format() == RS2_FORMAT_DISPARITY32;
-    REQUIRE(is_disp);
-    REQUIRE(org_depth.get_width() == to_disp_processed_frame.get_width());
+    if (supports_disparity)
+    {
+        REQUIRE(is_disp);
+        REQUIRE(org_depth.get_width() == to_disp_processed_frame.get_width());
+    }
 
     rs2::video_frame from_disp_processed_frame = org_depth.apply_filter(from_disp);//should bypass
     REQUIRE_FALSE(from_disp_processed_frame.is<rs2::frameset>());
