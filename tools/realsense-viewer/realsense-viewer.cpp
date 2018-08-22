@@ -178,7 +178,7 @@ void refresh_devices(std::mutex& m,
                                 if (dev_model_itr == end(*device_models))
                                     return;
 
-                                dev_model_itr->handle_harware_events(data);
+                                dev_model_itr->handle_hardware_events(data);
                             }
                         }
                         viewer_model.not_model.add_notification({ n.get_description(), n.get_timestamp(), n.get_severity(), n.get_category() });
