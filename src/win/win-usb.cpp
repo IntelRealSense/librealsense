@@ -54,7 +54,6 @@ namespace librealsense
             }
 
             open(_lp_device_path);
-            _usb_interface = std::make_unique<usb_interface>(_device_handle);
         }
 
         void winusb_device::release()
