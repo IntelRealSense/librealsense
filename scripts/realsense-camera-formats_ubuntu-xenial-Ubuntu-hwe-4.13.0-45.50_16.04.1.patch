@@ -104,7 +104,7 @@ index cab63bb..85935a9 100644
 +	/* Librealsense formats*/
 +	case V4L2_PIX_FMT_RW16:		descr = "16-bit Raw data"; break;
 +	case V4L2_PIX_FMT_W10:		descr = "10-bit packed 8888[2222]"; break;
-+	case V4L2_PIX_FMT_CONFIDENCE_MAP:		descr = "8-bit two pixels interleaved"; break;
++	case V4L2_PIX_FMT_CONFIDENCE_MAP:		descr = "4-bit per pixel packed into 8 bit"; break;
 
  	default:
  		/* Compressed formats */
