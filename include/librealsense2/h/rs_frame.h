@@ -277,7 +277,7 @@ rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, const rs2_stre
     int new_bpp, int new_width, int new_height, int new_stride, rs2_extension frame_type, rs2_error** error);
 
 /**
-* Allocate new points frame using a frame-source provided form a processing block
+* Allocate new points frame using a frame-source provided from a processing block
 * \param[in] source      Frame pool to allocate the frame from
 * \param[in] new_stream  New stream profile to assign to newly created frame
 * \param[in] original    A reference frame that can be used to fill in auxilary information like format, width, height, bpp, stride (if applicable)

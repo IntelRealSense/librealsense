@@ -352,7 +352,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("get_profile", &rs2::frame::get_profile)
         .def("keep", &rs2::frame::keep)
         .def_property_readonly("profile", &rs2::frame::get_profile)
-        .def("apply_filter", &rs2::frame::apply_filter, "processing_block"_a)
+        //.def("apply_filter", &rs2::frame::apply_filter, "processing_block"_a)
         .def(BIND_DOWNCAST(frame, frame))
         .def(BIND_DOWNCAST(frame, points))
         .def(BIND_DOWNCAST(frame, frameset))

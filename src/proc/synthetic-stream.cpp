@@ -48,6 +48,8 @@ namespace librealsense
     {
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
+
             std::vector<rs2::frame> frames_to_process;
 
             frames_to_process.push_back(f);

@@ -62,8 +62,6 @@ namespace librealsense
 
     void pointcloud::inspect_depth_frame(const rs2::frame& depth)
     {
-        std::lock_guard<std::mutex> lock(_mutex);
-
         if (!_output_stream.get() || _depth_stream->unique_id() != depth.get_profile().unique_id() ||
             stream_changed(*_depth_stream, depth.get_profile()))
         {
@@ -117,8 +115,6 @@ namespace librealsense
 
     void pointcloud::inspect_other_frame(const rs2::frame& other)
     {
-        std::lock_guard<std::mutex> lock(_mutex);
-
         if (_other_stream != nullptr && other.get_profile().as<rs2::video_stream_profile>() == *_other_stream.get())
             return;
 
@@ -439,7 +435,6 @@ namespace librealsense
         rs2_extrinsics extr;
         bool map_texture = false;
         {
-            std::lock_guard<std::mutex> lock(_mutex);
             if (_extrinsics && _other_intrinsics)
             {
                 mapped_intr = *_other_intrinsics;

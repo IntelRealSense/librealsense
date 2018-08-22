@@ -148,8 +148,6 @@ namespace librealsense
 
     rs2::frame spatial_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
-        std::lock_guard<std::mutex> lock(_mutex);
-
         rs2::frame tgt;
 
         update_configuration(f);

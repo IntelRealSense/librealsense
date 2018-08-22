@@ -240,7 +240,6 @@ namespace librealsense
 
     rs2::frame decimation_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
-        std::lock_guard<std::mutex> lock(_mutex);
         update_output_profile(f);
 
         auto src = f.as<rs2::video_frame>();

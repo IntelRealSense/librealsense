@@ -171,11 +171,15 @@ private:
 
     rect calc_grid(float2 window, int streams)
     {
+        if (window.x <= 0 || window.y <= 0 || streams <= 0)
+            throw std::runtime_error("invalid window configuration request, failed to calculate window grid");
         float ratio = window.x / window.y;
         auto x = sqrt(ratio * (float)streams);
         auto y = (float)streams / x;
         auto w = round(x);
         auto h = round(y);
+        if (w == 0 || h == 0)
+            throw std::runtime_error("invalid window configuration request, failed to calculate window grid");
         while (w*h > streams)
             h > w ? h-- : w--;
         while (w*h < streams)

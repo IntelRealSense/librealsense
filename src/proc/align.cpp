@@ -588,6 +588,7 @@ namespace librealsense
         auto depth_frame = frames.first_or_default(RS2_STREAM_DEPTH, RS2_FORMAT_Z16).as<rs2::video_frame>();
 
         auto curr_depth = depth_frame.get_profile().as<rs2::video_stream_profile>();
+        // TODO: use sensor/profile id, to enable handle a case that two different depth streams with similar resolution being proceesed by the same "align" object
         if (_prev_depth_res.first != curr_depth.width() || _prev_depth_res.second != curr_depth.height())
         {
 #ifdef __SSSE3__

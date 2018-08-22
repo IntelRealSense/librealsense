@@ -459,7 +459,7 @@ namespace rs2
         /**
         * Run the alignment process on the given frames to get an aligned set of frames
         *
-        * \param[in] frame      A pair of images, where at least one of which is a depth frame
+        * \param[in] frames      A set of frames, where at least one of which is a depth frame
         * \return Input frames aligned to one another
         */
         frameset process(frameset frames)

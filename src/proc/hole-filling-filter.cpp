@@ -56,8 +56,6 @@ namespace librealsense
 
     rs2::frame hole_filling_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
-        std::lock_guard<std::mutex> lock(_mutex);
-
         update_configuration(f);
         auto tgt = prepare_target_frame(f, source);
 

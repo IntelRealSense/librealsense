@@ -343,6 +343,8 @@ bool is_subset(rs2::frameset full, rs2::frameset sub)
 {
     if (!sub.is<rs2::frameset>())
         return false;
+    if (full.size() == 0 && sub.size() == 0)
+        return false;
     for (auto f : full)
     {
         if (!sub.first(f.get_profile().stream_type(), f.get_profile().format()))
@@ -351,11 +353,11 @@ bool is_subset(rs2::frameset full, rs2::frameset sub)
     return true;
 }
 
-bool is_equel(rs2::frameset org, rs2::frameset processed)
+bool is_equal(rs2::frameset org, rs2::frameset processed)
 {
     if (!org.is<rs2::frameset>() || !processed.is<rs2::frameset>())
         return false;
-    if (org.size() != processed.size())
+    if (org.size() != processed.size() || org.size() == 0)
         return false;
     for (auto o : org)
     {
@@ -427,7 +429,7 @@ TEST_CASE("Post-Processing expected output", "[post-processing-filters]")
     REQUIRE_THROWS(is_subset(to_disp_processed_set, original));
 
     rs2::frameset from_disp_processed_set = original.apply_filter(from_disp);//should bypass
-    REQUIRE(is_equel(original, from_disp_processed_set));
+    REQUIRE(is_equal(original, from_disp_processed_set));
 
     rs2::frameset full_pipe = original.
         apply_filter(decimation).
