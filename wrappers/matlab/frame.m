@@ -18,6 +18,9 @@ classdef frame < handle
         
         % Functions
         % TODO: keep
+        function l = logical(this)
+            l = realsense.librealsense_mex('rs2::frame', 'operator bool', this.objectHandle);
+        end
         function timestamp = get_timestamp(this)
             timestamp = realsense.librealsense_mex('rs2::frame', 'get_timestamp', this.objectHandle);
         end
