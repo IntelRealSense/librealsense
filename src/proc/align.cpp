@@ -548,7 +548,7 @@ namespace librealsense
                 if (auto aligned_video_profile = As<video_stream_profile_interface>(aligned_profile))
                 {
                     aligned_video_profile->set_dims(to_video_profile->get_width(), to_video_profile->get_height());
-                    auto aligned_intrinsics = original_video_profile->get_intrinsics();
+                    auto aligned_intrinsics = to_video_profile->get_intrinsics();
                     aligned_intrinsics.width = to_video_profile->get_width();
                     aligned_intrinsics.height = to_video_profile->get_height();
                     aligned_video_profile->set_intrinsics([aligned_intrinsics]() { return aligned_intrinsics; });
