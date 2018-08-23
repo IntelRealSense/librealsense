@@ -2580,7 +2580,7 @@ namespace rs2
             float val{};
             if (texture->try_pick(x, y, &val))
             {
-                ss << ", *p: 0x" << std::hex << val;
+                ss << ", *p: 0x" << std::hex << static_cast<int>(round(val));
             }
 
             if (texture->get_last_frame().is<depth_frame>())
