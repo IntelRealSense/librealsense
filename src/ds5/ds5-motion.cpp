@@ -174,7 +174,8 @@ namespace librealsense
     {
         if (all_hid_infos.empty())
         {
-            throw std::runtime_error("HID device is missing!");
+            LOG_WARNING("HID device is missing!");
+            return nullptr;
         }
 
         static const char* custom_sensor_fw_ver = "5.6.0.0";
@@ -393,25 +394,27 @@ namespace librealsense
             register_stream_to_extrinsic_group(*_gpio_streams[i], 0);
         }
 
-        // Add hid endpoint
+        // Try to add hid endpoint
         auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
-        _motion_module_device_idx = add_sensor(hid_ep);
-
-        try
+        if (hid_ep)
         {
-            hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION,
-                                    std::make_shared<enable_motion_correction>(hid_ep.get(),
-                                                                               *_accel_intrinsics,
-                                                                               *_gyro_intrinsics,
-                                                                               option_range{0, 1, 1, 1}));
-        }
-        catch (const std::exception& ex)
-        {
-            LOG_ERROR("Motion Device is not calibrated! Motion Data Correction will not be available! Error: " << ex.what());
-        }
+            _motion_module_device_idx = add_sensor(hid_ep);
 
-        if (!motion_module_fw_version.empty())
-            register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, motion_module_fw_version);
+            try
+            {
+                hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION,
+                    std::make_shared<enable_motion_correction>(hid_ep.get(),
+                        *_accel_intrinsics,
+                        *_gyro_intrinsics,
+                        option_range{ 0, 1, 1, 1 }));
+            }
+            catch (const std::exception& ex)
+            {
+                LOG_ERROR("Motion Device is not calibrated! Motion Data Correction will not be available! Error: " << ex.what());
+            }
 
+            if (!motion_module_fw_version.empty())
+                register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, motion_module_fw_version);
+        }
     }
 }
