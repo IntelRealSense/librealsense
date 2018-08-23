@@ -81,7 +81,7 @@ namespace helper
                     {
                         try
                         {
-                            renderer.render(colorize(decimate.process(frame)), { 0, 0, view_width, view_height });
+                            renderer.render(colorize.process(decimate.process(frame)), { 0, 0, view_width, view_height });
                         }
                         catch (const std::exception& e)
                         {

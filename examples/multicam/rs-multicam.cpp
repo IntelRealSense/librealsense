@@ -108,7 +108,7 @@ public:
                 {
                     rs2::frame new_frame = frameset[i];
                     int stream_id = new_frame.get_profile().unique_id();
-                    view.second.frames_per_stream[stream_id] = view.second.colorize_frame(new_frame); //update view port with the new stream
+                    view.second.frames_per_stream[stream_id] = view.second.colorize_frame.process(new_frame); //update view port with the new stream
                 }
             }
         }

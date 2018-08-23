@@ -93,10 +93,13 @@ namespace librealsense {
         size_t _size; float3* _data;
     };
 
-    class colorizer : public processing_block
+    class colorizer : public stream_filter_processing_block
     {
     public:
         colorizer();
+
+    protected:
+        rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
     private:
         float _min, _max;
@@ -104,7 +107,6 @@ namespace librealsense {
         std::vector<color_map*> _maps;
         int _map_index = 0;
         int _preset = 0;
-        std::mutex _mutex;
         std::shared_ptr<rs2::stream_profile> _stream;
     };
 }

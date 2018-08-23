@@ -77,21 +77,25 @@ namespace librealsense
     };
 #endif
 
-    class align : public processing_block
+    class align : public generic_processing_block
     {
     public:
-        align(rs2_stream align_to);
+        align(rs2_stream to_stream) : _to_stream_type(to_stream){}
+
+    protected:
+        bool should_process(const rs2::frame& frame) override;
+        rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
     private:
-        void on_frame(frame_holder frameset, librealsense::synthetic_source_interface* source);
-        std::shared_ptr<stream_profile_interface> create_aligned_profile(
-            const std::shared_ptr<stream_profile_interface>& original_profile,
-            const std::shared_ptr<stream_profile_interface>& to_profile);
-        int get_unique_id(const std::shared_ptr<stream_profile_interface>& original_profile,
-            const std::shared_ptr<stream_profile_interface>& to_profile,
-            const std::shared_ptr<stream_profile_interface>& aligned_profile);
+        std::shared_ptr<rs2::video_stream_profile> create_aligned_profile(
+            rs2::video_stream_profile& original_profile,
+            rs2::video_stream_profile& to_profile);
+        int get_unique_id(rs2::video_stream_profile& original_profile,
+            rs2::video_stream_profile& to_profile,
+            rs2::video_stream_profile& aligned_profile);
         rs2_stream _to_stream_type;
-        std::map<std::pair<int, int>, int> align_stream_unique_ids;
+        std::map<std::pair<int, int>, int> _align_stream_unique_ids;
+        std::pair<int, int> _prev_depth_res;
 
 #ifdef __SSSE3__
         std::shared_ptr<image_transform> _stream_transform;

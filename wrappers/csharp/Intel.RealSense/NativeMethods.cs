@@ -243,9 +243,11 @@ namespace Intel.RealSense
         internal static extern void rs2_keep_frame(IntPtr frame);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_frame_apply_filter(IntPtr frame, IntPtr block, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_get_frame_vertices(IntPtr frame, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
-
-
+        
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_get_frame_texture_coordinates(IntPtr frame, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
 

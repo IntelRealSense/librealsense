@@ -1346,6 +1346,19 @@ rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, const rs2_stre
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, source, new_stream, original, new_bpp, new_width, new_height, new_stride, frame_type)
 
+rs2_frame* rs2_allocate_points(rs2_source* source, const rs2_stream_profile* new_stream, rs2_frame* original, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(source);
+    VALIDATE_NOT_NULL(original);
+    VALIDATE_NOT_NULL(new_stream);
+
+    auto recovered_profile = std::dynamic_pointer_cast<stream_profile_interface>(new_stream->profile->shared_from_this());
+
+    return (rs2_frame*)source->source->allocate_points(recovered_profile,
+        (frame_interface*)original);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, source, new_stream, original)
+
 void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame);

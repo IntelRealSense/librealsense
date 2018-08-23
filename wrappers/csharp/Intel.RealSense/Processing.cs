@@ -264,7 +264,9 @@ namespace Intel.RealSense
         public void MapTexture(VideoFrame texture)
         {
             object error;
-            Options[Option.TextureSource].Value = Convert.ToSingle(texture.Profile.UniqueID);
+            Options[Option.StreamFilter].Value = Convert.ToSingle(texture.Profile.Stream);
+            Options[Option.StreamFormatFilter].Value = Convert.ToSingle(texture.Profile.Format);
+            Options[Option.StreamIndexFilter].Value = Convert.ToSingle(texture.Profile.Index);
             NativeMethods.rs2_frame_add_ref(texture.m_instance.Handle, out error);
             NativeMethods.rs2_process_frame(m_instance.Handle, texture.m_instance.Handle, out error);
         }

@@ -12,15 +12,15 @@
 
 namespace librealsense
 {
-    static color_map jet {{
-            { 0, 0, 255 },
-            { 0, 255, 255 },
-            { 255, 255, 0 },
-            { 255, 0, 0 },
-            { 50, 0, 0 },
-        }};
+    static color_map jet{ {
+        { 0, 0, 255 },
+        { 0, 255, 255 },
+        { 255, 255, 0 },
+        { 255, 0, 0 },
+        { 50, 0, 0 },
+        } };
 
-    static color_map classic { {
+    static color_map classic{ {
         { 30, 77, 203 },
         { 25, 60, 192 },
         { 45, 117, 220 },
@@ -39,16 +39,16 @@ namespace librealsense
         { 255, 255, 255 },
         } };
 
-    static color_map biomes { {
+    static color_map biomes{ {
         { 0, 0, 204 },
         { 204, 230, 255 },
         { 255, 255, 153 },
         { 170, 255, 128 },
         { 0, 153, 0 },
         { 230, 242, 255 },
-    } };
+        } };
 
-    static color_map cold { {
+    static color_map cold{ {
         { 230, 247, 255 },
         { 0, 92, 230 },
         { 0, 179, 179 },
@@ -56,21 +56,21 @@ namespace librealsense
         { 0, 5, 15 }
         } };
 
-    static color_map warm { {
+    static color_map warm{ {
         { 255, 255, 230 },
         { 255, 204, 0 },
         { 255, 136, 77 },
         { 255, 51, 0 },
         { 128, 0, 0 },
-        { 10, 0, 0}
+        { 10, 0, 0 }
         } };
 
-    static color_map quantized { {
+    static color_map quantized{ {
         { 255, 255, 255 },
         { 0, 0, 0 },
         }, 6 };
 
-    static color_map pattern { {
+    static color_map pattern{ {
         { 255, 255, 255 },
         { 0, 0, 0 },
         { 255, 255, 255 },
@@ -126,6 +126,9 @@ namespace librealsense
     colorizer::colorizer()
         : _min(0.f), _max(6.f), _equalize(true), _stream()
     {
+        _stream_filter = RS2_STREAM_DEPTH;
+        _stream_format_filter = RS2_FORMAT_Z16;
+
         _maps = { &jet, &classic, &grayscale, &inv_grayscale, &biomes, &cold, &warm, &quantized, &pattern };
 
         auto min_opt = std::make_shared<ptr_option<float>>(0.f, 16.f, 0.1f, 0.f, &_min, "Min range in meters");
@@ -189,106 +192,93 @@ namespace librealsense
 
         auto hist_opt = std::make_shared<ptr_option<bool>>(false, true, true, true, &_equalize, "Perform histogram equalization");
         register_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, hist_opt);
+    }
 
-        auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
+    rs2::frame colorizer::process_frame(const rs2::frame_source& source, const rs2::frame& f)
+    {
+        if (!_stream || (f.get_profile().get() != _stream->get()))
         {
-            auto process_frame = [this, &source](const rs2::frame f)
+            _stream = std::make_shared<rs2::stream_profile>(f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_RGB8));
+            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_stream->get()->profile, *f.get_profile().get()->profile);
+        }
+        auto make_equalized_histogram = [this](const rs2::video_frame& depth, rs2::video_frame rgb)
+        {
+            const auto max_depth = 0x10000;
+            static uint32_t histogram[max_depth];
+            memset(histogram, 0, sizeof(histogram));
+
+            const auto w = depth.get_width(), h = depth.get_height();
+            const auto depth_data = reinterpret_cast<const uint16_t*>(depth.get_data());
+            auto rgb_data = reinterpret_cast<uint8_t*>(const_cast<void *>(rgb.get_data()));
+
+            for (auto i = 0; i < w*h; ++i) ++histogram[depth_data[i]];
+            for (auto i = 2; i < max_depth; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+            auto cm = _maps[_map_index];
+            for (auto i = 0; i < w*h; ++i)
             {
+                auto d = depth_data[i];
+
+                if (d)
                 {
-                    std::lock_guard<std::mutex> lock(_mutex);
-                    if (!_stream || (f.get_profile().get() != _stream->get()))
-                    {
-                        _stream = std::make_shared<rs2::stream_profile>(f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_RGB8));
-                        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_stream->get()->profile, *f.get_profile().get()->profile);
-                    }
+                    auto f = histogram[d] / (float)histogram[0xFFFF]; // 0-255 based on histogram location
+
+                    auto c = cm->get(f);
+                    rgb_data[i * 3 + 0] = (uint8_t)c.x;
+                    rgb_data[i * 3 + 1] = (uint8_t)c.y;
+                    rgb_data[i * 3 + 2] = (uint8_t)c.z;
                 }
-
-                auto make_equalized_histogram = [this](const rs2::video_frame& depth, rs2::video_frame rgb)
+                else
                 {
-                    const auto max_depth = 0x10000;
-                    static uint32_t histogram[max_depth];
-                    memset(histogram, 0, sizeof(histogram));
-
-                    const auto w = depth.get_width(), h = depth.get_height();
-                    const auto depth_data = reinterpret_cast<const uint16_t*>(depth.get_data());
-                    auto rgb_data = reinterpret_cast<uint8_t*>(const_cast<void *>(rgb.get_data()));
-
-                    for (auto i = 0; i < w*h; ++i) ++histogram[depth_data[i]];
-                    for (auto i = 2; i < max_depth; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
-                    auto cm = _maps[_map_index];
-                    for (auto i = 0; i < w*h; ++i)
-                    {
-                        auto d = depth_data[i];
-
-                        if (d)
-                        {
-                            auto f = histogram[d] / (float)histogram[0xFFFF]; // 0-255 based on histogram location
-
-                            auto c = cm->get(f);
-                            rgb_data[i * 3 + 0] = (uint8_t)c.x;
-                            rgb_data[i * 3 + 1] = (uint8_t)c.y;
-                            rgb_data[i * 3 + 2] = (uint8_t)c.z;
-                        }
-                        else
-                        {
-                            rgb_data[i * 3 + 0] = 0;
-                            rgb_data[i * 3 + 1] = 0;
-                            rgb_data[i * 3 + 2] = 0;
-                        }
-                    }
-                };
-                auto make_value_cropped_frame = [this](const rs2::video_frame& depth, rs2::video_frame rgb)
-                {
-                    const auto max_depth = 0x10000;
-                    const auto w = depth.get_width(), h = depth.get_height();
-                    const auto depth_data = reinterpret_cast<const uint16_t*>(depth.get_data());
-                    auto rgb_data = reinterpret_cast<uint8_t*>(const_cast<void *>(rgb.get_data()));
-
-                    auto fi = (frame_interface*)depth.get();
-                    auto df = dynamic_cast<librealsense::depth_frame*>(fi);
-                    auto depth_units = df->get_units();
-
-                    for (auto i = 0; i < w*h; ++i)
-                    {
-                        auto d = depth_data[i];
-
-                        if (d)
-                        {
-                            auto f = (d * depth_units - _min) / (_max - _min);
-
-                            auto c = _maps[_map_index]->get(f);
-                            rgb_data[i * 3 + 0] = (uint8_t)c.x;
-                            rgb_data[i * 3 + 1] = (uint8_t)c.y;
-                            rgb_data[i * 3 + 2] = (uint8_t)c.z;
-                        }
-                        else
-                        {
-                            rgb_data[i * 3 + 0] = 0;
-                            rgb_data[i * 3 + 1] = 0;
-                            rgb_data[i * 3 + 2] = 0;
-                        }
-                    }
-                };
-                rs2::frame ret = f;
-
-                if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
-                {
-                    auto vf = f.as<rs2::video_frame>();
-                    rs2_extension ext = f.is<rs2::disparity_frame>() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
-                    ret = source.allocate_video_frame(*_stream, f, 3, vf.get_width(), vf.get_height(), vf.get_width() * 3, ext);
-
-                    if (_equalize) make_equalized_histogram(f, ret);
-                    else make_value_cropped_frame(f, ret);
+                    rgb_data[i * 3 + 0] = 0;
+                    rgb_data[i * 3 + 1] = 0;
+                    rgb_data[i * 3 + 2] = 0;
                 }
-
-                source.frame_ready(ret);
-            };
-
-            if (auto composite = f.as<rs2::frameset>()) composite.foreach(process_frame);
-            else process_frame(f);
+            }
         };
 
-        auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
-        processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
+        auto make_value_cropped_frame = [this](const rs2::video_frame& depth, rs2::video_frame rgb)
+        {
+            const auto max_depth = 0x10000;
+            const auto w = depth.get_width(), h = depth.get_height();
+            const auto depth_data = reinterpret_cast<const uint16_t*>(depth.get_data());
+            auto rgb_data = reinterpret_cast<uint8_t*>(const_cast<void *>(rgb.get_data()));
+
+            auto fi = (frame_interface*)depth.get();
+            auto df = dynamic_cast<librealsense::depth_frame*>(fi);
+            auto depth_units = df->get_units();
+
+            for (auto i = 0; i < w*h; ++i)
+            {
+                auto d = depth_data[i];
+
+                if (d)
+                {
+                    auto f = (d * depth_units - _min) / (_max - _min);
+
+                    auto c = _maps[_map_index]->get(f);
+                    rgb_data[i * 3 + 0] = (uint8_t)c.x;
+                    rgb_data[i * 3 + 1] = (uint8_t)c.y;
+                    rgb_data[i * 3 + 2] = (uint8_t)c.z;
+                }
+                else
+                {
+                    rgb_data[i * 3 + 0] = 0;
+                    rgb_data[i * 3 + 1] = 0;
+                    rgb_data[i * 3 + 2] = 0;
+                }
+            }
+        };
+        rs2::frame ret;
+
+        auto vf = f.as<rs2::video_frame>();
+        //rs2_extension ext = f.is<rs2::disparity_frame>() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
+        ret = source.allocate_video_frame(*_stream, f, 3, vf.get_width(), vf.get_height(), vf.get_width() * 3, RS2_EXTENSION_VIDEO_FRAME);
+
+        if (_equalize)
+            make_equalized_histogram(f, ret);
+        else 
+            make_value_cropped_frame(f, ret);
+
+        return ret;
     }
 }

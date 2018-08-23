@@ -1,6 +1,7 @@
 #include "metadata-parser.h"
 #include "archive.h"
 #include <fstream>
+#include "core/processing.h"
 
 #define MIN_DISTANCE 1e-6
 
@@ -477,5 +478,4 @@ namespace librealsense
                 << "ms, FPS: " << get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
         }
     }
-
 }

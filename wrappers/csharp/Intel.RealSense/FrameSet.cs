@@ -42,11 +42,11 @@ namespace Intel.RealSense
                 return new Frame(ptr);
         }
 
-        public T FirstOrDefault<T>(Stream stream) where T : Frame
+        public T FirstOrDefault<T>(Stream stream, Format format = Format.Any) where T : Frame
         {
             foreach (Frame frame in this)
             {
-                if (frame.Profile.Stream == stream)
+                if (frame.Profile.Stream == stream && (Format.Any == format || frame.Profile.Format == format))
                     return frame as T;
                 frame.Dispose();
             }

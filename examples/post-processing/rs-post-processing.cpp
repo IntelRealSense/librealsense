@@ -34,10 +34,10 @@ Class to encapsulate a filter alongside its options
 class filter_options
 {
 public:
-    filter_options(const std::string name, rs2::process_interface& filter);
+    filter_options(const std::string name, rs2::processing_block& filter);
     filter_options(filter_options&& other);
     std::string filter_name;                                   //Friendly name of the filter
-    rs2::process_interface& filter;                            //The filter in use
+    rs2::processing_block& filter;                            //The filter in use
     std::map<rs2_option, filter_slider_ui> supported_options;  //maps from an option supported by the filter, to the corresponding slider
     std::atomic_bool is_enabled;                               //A boolean controlled by the user that determines whether to apply the filter or not
 };
@@ -232,7 +232,7 @@ void update_data(rs2::frame_queue& data, rs2::frame& colorized_depth, rs2::point
     if (data.poll_for_frame(&f))  // Try to take the depth and points from the queue
     {
         points = pc.calculate(f); // Generate pointcloud from the depth data
-        colorized_depth = color_map(f);     // Colorize the depth frame with a color map
+        colorized_depth = color_map.process(f);     // Colorize the depth frame with a color map
         pc.map_to(colorized_depth);         // Map the colored depth to the point cloud
         view.tex.upload(colorized_depth);   //  and upload the texture to the view (without this the view will be B&W)
     }
@@ -348,7 +348,7 @@ bool filter_slider_ui::is_all_integers(const rs2::option_range& range)
 /**
 Constructor for filter_options, takes a name and a filter.
 */
-filter_options::filter_options(const std::string name, rs2::process_interface& filter) :
+filter_options::filter_options(const std::string name, rs2::processing_block& filter) :
     filter_name(name),
     filter(filter),
     is_enabled(true)
