@@ -50,6 +50,7 @@ namespace librealsense
         const sensor_interface& get_sensor(size_t subdevice) const override;
 
         void hardware_reset() override;
+        void sensor_reset() override;
 
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 

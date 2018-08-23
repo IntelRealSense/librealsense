@@ -394,7 +394,7 @@ namespace librealsense
                 switch (stream)
                 {
                 case rs2_stream::RS2_STREAM_COLOR: return format == RS2_FORMAT_RGB8;
-                case rs2_stream::RS2_STREAM_DEPTH: return format == RS2_FORMAT_Z16;
+                case rs2_stream::RS2_STREAM_DEPTH: return format == RS2_FORMAT_Z16 || format == RS2_FORMAT_Z16H;
                 case rs2_stream::RS2_STREAM_INFRARED: return format == RS2_FORMAT_Y8;
                 }
                 return false;

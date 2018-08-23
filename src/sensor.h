@@ -37,6 +37,9 @@ namespace librealsense
 
         virtual stream_profiles init_stream_profiles() = 0;
 
+        virtual void set_uncompress(bool uncompress) { _uncompress = uncompress; }
+        virtual bool get_uncompress() { return _uncompress; }
+
         stream_profiles get_stream_profiles(int tag = profile_tag::PROFILE_TAG_ANY) const override;
 
         virtual stream_profiles get_active_streams() const override;
@@ -105,6 +108,7 @@ namespace librealsense
         stream_profiles _active_profiles;
         std::vector<native_pixel_format> _pixel_formats;
         signal<sensor_base, bool> on_before_streaming_changes;
+        bool _uncompress = false;
     };
 
     struct frame_timestamp_reader
@@ -249,5 +253,6 @@ namespace librealsense
         std::vector<platform::extension_unit> _xus;
         std::unique_ptr<power> _power;
         std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
+        int _reset = 0;
     };
 }

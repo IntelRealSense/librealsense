@@ -261,6 +261,7 @@ namespace librealsense
             CASE(HOLES_FILL)
             CASE(AUTO_EXPOSURE_CONVERGE_STEP)
             CASE(INTER_CAM_SYNC_MODE)
+            CASE(UNCOMPRESS_DEPTH)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -273,6 +274,7 @@ namespace librealsense
         {
             CASE(ANY)
             CASE(Z16)
+            CASE(Z16H)
             CASE(DISPARITY16)
             CASE(DISPARITY32)
             CASE(XYZ32F)

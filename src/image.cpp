@@ -59,6 +59,7 @@ namespace librealsense
         switch (format)
         {
         case RS2_FORMAT_Z16: return  16;
+        case RS2_FORMAT_Z16H: return  16;
         case RS2_FORMAT_DISPARITY16: return 16;
         case RS2_FORMAT_DISPARITY32: return 32;
         case RS2_FORMAT_XYZ32F: return 12 * 8;
@@ -992,6 +993,9 @@ namespace librealsense
     const native_pixel_format pf_z16                      = { 'Z16 ', 1, 2, {  { requires_processing, &copy_pixels<2>,                               { { RS2_STREAM_DEPTH,          RS2_FORMAT_Z16 } } },
         // The Disparity_Z is not applicable for D4XX. TODO - merge with INVZ when confirmed
         /*{ false, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH,    RS2_FORMAT_DISPARITY16 } } }*/ } };
+
+    const native_pixel_format pf_z16h                     = { 'Z16H', 1, 2, { { true,                 &copy_pixels<1>,                               { { RS2_STREAM_DEPTH,          RS2_FORMAT_Z16H } } } } };
+
     const native_pixel_format pf_invz                     = { 'Z16 ', 1, 2, {  { true,               &copy_pixels<2>,                               { { RS2_STREAM_DEPTH,          RS2_FORMAT_Z16 } } } } };
     const native_pixel_format pf_f200_invi                = { 'INVI', 1, 1, {  { true,               &copy_pixels<1>,                             { { { RS2_STREAM_INFRARED, 1 },  RS2_FORMAT_Y8  } } },
                                                                                { true,                &unpack_y16_from_y8,                         { { { RS2_STREAM_INFRARED, 1 },  RS2_FORMAT_Y16 } } } } };

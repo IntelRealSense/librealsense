@@ -182,9 +182,15 @@ const librealsense::sensor_interface& librealsense::record_device::get_sensor(si
 {
     return *m_sensors.at(i);
 }
+
 void librealsense::record_device::hardware_reset()
 {
     m_device->hardware_reset();
+}
+
+void librealsense::record_device::sensor_reset()
+{
+    m_device->sensor_reset();
 }
 
 template <typename T, typename Ext>

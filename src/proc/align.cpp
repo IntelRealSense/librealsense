@@ -486,6 +486,7 @@ namespace librealsense
             break;
         case RS2_FORMAT_Y16:
         case RS2_FORMAT_Z16:
+		case RS2_FORMAT_Z16H:
             align_other_to_depth_bytes<2>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
             break;
         case RS2_FORMAT_RGB8:

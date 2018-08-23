@@ -155,6 +155,8 @@ namespace librealsense
 
         virtual void hardware_reset() = 0;
 
+        virtual void sensor_reset() = 0;
+
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const = 0;
 
         virtual std::shared_ptr<context> get_context() const = 0;

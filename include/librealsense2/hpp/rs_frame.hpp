@@ -604,6 +604,12 @@ namespace rs2
         * \return            number of bytes per one pixel
         */
         int get_bytes_per_pixel() const { return get_bits_per_pixel() / 8; }
+
+		int get_compressed_size() const
+		{
+			rs2_error* e = nullptr;
+			return rs2_get_frame_compressed_size(get(), &e);
+		}
     };
 
     struct vertex {
