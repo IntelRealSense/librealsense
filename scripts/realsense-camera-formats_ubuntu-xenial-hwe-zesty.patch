@@ -1,26 +1,20 @@
-From 6fa3dfdaff8443b4882411ac4def091c3c5eb64e Mon Sep 17 00:00:00 2001
-From: icarpis <itay.carpis@intel.com>
-Date: Mon, 30 Oct 2017 13:30:01 +0200
-Subject: [PATCH] Added W10 format
+From ceb29b08b480a2a6a5e9dccf396a284378268037 Mon Sep 17 00:00:00 2001
+From: aangerma <Avishag.Angerman@intel.com>
+Date: Wed, 22 Aug 2018 13:08:03 +0300
+Subject: [PATCH] C
 
-From edf79915b7af157ddb4f9c77ca8abd8e5c2ede18 Mon Sep 17 00:00:00 2001
-From: Evgeni Raikhel <evgeni.raikhel@intel.com>
-Date: Mon, 10 Jul 2017 10:44:13 +0300
-Subject: [PATCH] [PATCH] RS$xx and SR300 pixel formats
-
-Signed-off-by: Evgeni Raikhel <evgeni.raikhel@intel.com>
 ---
- drivers/media/usb/uvc/uvc_driver.c   | 50 ++++++++++++++++++++++++++++++++++++
- drivers/media/usb/uvc/uvcvideo.h     | 31 ++++++++++++++++++++++
- drivers/media/v4l2-core/v4l2-ioctl.c |  3 +++
- include/uapi/linux/videodev2.h       |  4 +++
- 4 files changed, 88 insertions(+)
+ drivers/media/usb/uvc/uvc_driver.c   | 55 ++++++++++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvcvideo.h     | 33 ++++++++++++++++++++++
+ drivers/media/v4l2-core/v4l2-ioctl.c |  5 +++-
+ include/uapi/linux/videodev2.h       |  6 +++-
+ 4 files changed, 97 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 04bf350..fa2eb1c 100644
+index 04bf350..5df98e5 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -188,6 +188,56 @@ static struct uvc_format_desc uvc_fmts[] = {
+@@ -188,6 +188,61 @@ static struct uvc_format_desc uvc_fmts[] = {
  		.guid		= UVC_GUID_FORMAT_GR16,
  		.fcc		= V4L2_PIX_FMT_SGRBG16,
  	},
@@ -74,14 +68,19 @@ index 04bf350..fa2eb1c 100644
 +		.guid		= UVC_GUID_FORMAT_W10,
 +		.fcc		= V4L2_PIX_FMT_W10,
 +	},
++	{
++		.name		= "Confidence data (C   )",
++		.guid		= UVC_GUID_FORMAT_CONFIDENCE_MAP,
++		.fcc		= V4L2_PIX_FMT_CONFIDENCE_MAP,
++	},
  };
  
  /* ------------------------------------------------------------------------
 diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
-index 3d6cc62..6ab5034 100644
+index 3d6cc62..575c1ea 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -143,6 +143,37 @@
+@@ -143,6 +143,39 @@
  #define UVC_GUID_FORMAT_RW10 \
  	{ 'R',  'W',  '1',  '0', 0x00, 0x00, 0x10, 0x00, \
  	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
@@ -115,39 +114,45 @@ index 3d6cc62..6ab5034 100644
 +#define UVC_GUID_FORMAT_W10 \
 +    { 'W',  '1',  '0',  ' ', 0x00, 0x00, 0x10, 0x00, \
 +	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
-+
++#define UVC_GUID_FORMAT_CONFIDENCE_MAP \
++	{ 'C',  ' ',  ' ',  ' ', 0x00, 0x00, 0x10, 0x00, \
++	0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
  
  /* ------------------------------------------------------------------------
   * Driver specific constants.
 diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2-ioctl.c
-index 0c3f238..221494d 100644
+index 0c3f238..09fbc6d 100644
 --- a/drivers/media/v4l2-core/v4l2-ioctl.c
 +++ b/drivers/media/v4l2-core/v4l2-ioctl.c
-@@ -1217,6 +1217,9 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+@@ -1217,7 +1217,10 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
  	case V4L2_TCH_FMT_DELTA_TD08:	descr = "8-bit signed deltas"; break;
  	case V4L2_TCH_FMT_TU16:		descr = "16-bit unsigned touch data"; break;
  	case V4L2_TCH_FMT_TU08:		descr = "8-bit unsigned touch data"; break;
+-
 +	case V4L2_PIX_FMT_RW16:		descr = "16-bit Raw data"; break;
 +	case V4L2_PIX_FMT_INZI:		descr = "32-bit IR:Depth 10:16"; break;
 +	case V4L2_PIX_FMT_W10:		descr = "10-bit packed 8888[2222]"; break;
- 
++	case V4L2_PIX_FMT_CONFIDENCE_MAP:		descr = "4-bit per pixel packed into 8 bit"; break;
  	default:
  		/* Compressed formats */
+ 		flags = V4L2_FMT_FLAG_COMPRESSED;
 diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
-index 45184a2..3f247ca 100644
+index 45184a2..48c3592 100644
 --- a/include/uapi/linux/videodev2.h
 +++ b/include/uapi/linux/videodev2.h
-@@ -661,6 +661,10 @@ struct v4l2_pix_format {
+@@ -661,7 +661,11 @@ struct v4l2_pix_format {
  #define V4L2_PIX_FMT_Y12I     v4l2_fourcc('Y', '1', '2', 'I') /* Greyscale 12-bit L/R interleaved */
  #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
  #define V4L2_PIX_FMT_MT21C    v4l2_fourcc('M', 'T', '2', '1') /* Mediatek compressed block mode  */
+-
 +#define V4L2_PIX_FMT_Y16	v4l2_fourcc('Y', '1', '6', ' ') /* Greyscale 16-bit */
 +#define V4L2_PIX_FMT_RW16	v4l2_fourcc('R', 'W', '1', '6') /* Raw data 16-bit */
 +#define V4L2_PIX_FMT_INZI	v4l2_fourcc('I', 'N', 'Z', 'I') /* 24 Depth/IR 16:8 */
 +#define V4L2_PIX_FMT_W10      v4l2_fourcc('W', '1', '0', ' ') /* Packed raw data 10-bit */
- 
++#define V4L2_PIX_FMT_CONFIDENCE_MAP  v4l2_fourcc('C', ' ', ' ', ' ') /* Two pixels in one byte */
  /* SDR formats - used only for Software Defined Radio devices */
  #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */
+ #define V4L2_SDR_FMT_CU16LE       v4l2_fourcc('C', 'U', '1', '6') /* IQ u16le */
 -- 
 2.7.4
 
