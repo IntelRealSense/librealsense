@@ -325,7 +325,10 @@ namespace librealsense
         void hid_custom_sensor::stop_capture()
         {
             if (!_is_capturing)
+            {
+                enable(false);
                 return;
+            }
 
             _is_capturing = false;
             signal_stop();
