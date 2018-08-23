@@ -186,9 +186,9 @@ namespace librealsense
 
             std::string fourcc_to_string(uint32_t id) const;
 
-            virtual void signal_stop();
+            void signal_stop();
 
-            virtual void poll();
+            void poll();
 
             void set_power_state(power_state state) override;
             power_state get_power_state() const override { return _state; }
@@ -250,9 +250,6 @@ namespace librealsense
             bool _use_memory_map;
             int _max_fd = 0;                    // specifies the maximal pipe number the polling process will monitor
             std::vector<int>  _fds;             // list the file descriptors to be monitored during frames polling
-            std::vector<int>  _stream_pipe_fds;    // file descriptors explicit
-            std::vector<int>  _ctl_pipe_fds;    // file descriptors explicit
-
 
         private:
             int _fd = 0;          // prevent unintentional abuse in derived class
@@ -286,7 +283,6 @@ namespace librealsense
                                           std::vector<std::pair< std::shared_ptr<platform::buffer>,int>> &datasets);
 
             int _md_fd = -1;
-            int _md_stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
             std::string _md_name = "";
 
             std::vector<std::shared_ptr<buffer>> _md_buffers;

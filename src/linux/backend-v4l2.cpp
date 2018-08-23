@@ -338,10 +338,6 @@ namespace librealsense
                     throw linux_backend_exception(to_string() <<__FUNCTION__ << " xioctl(VIDIOC_QUERYCAP) failed");
             }
 
-            // retrieve the capabilities descriptor
-            if(!(cap.capabilities & V4L2_CAP_STREAMING))
-                    throw linux_backend_exception(to_string() << __FUNCTION__ << dev_name + " does not support streaming I/O");
-
             return cap.device_caps;
         }
 
@@ -370,8 +366,6 @@ namespace librealsense
                     throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
             }
         }
-
-        //void map_check_desc_capabilities(int &fd, int[] fd_ctl_pipe, const std::string& dev_name,)
 
         v4l_usb_device::v4l_usb_device(const usb_device_info& info)
         {
@@ -620,10 +614,8 @@ namespace librealsense
         v4l_uvc_device::~v4l_uvc_device()
         {
             _is_capturing = false;
-            _fds.clear();
-            _stream_pipe_fds.clear();
-            _ctl_pipe_fds.clear();
             if (_thread) _thread->join();
+            _fds.clear();
         }
 
         void v4l_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
@@ -679,19 +671,7 @@ namespace librealsense
                     ++pixel_format.index;
                 }
 
-
                 set_format(profile);
-//                v4l2_format fmt = {};
-//                fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-//                fmt.fmt.pix.width       = profile.width;
-//                fmt.fmt.pix.height      = profile.height;
-//                fmt.fmt.pix.pixelformat = (const big_endian<int> &)profile.format;
-//                fmt.fmt.pix.field       = V4L2_FIELD_NONE;
-//                if(xioctl(_fd, VIDIOC_S_FMT, &fmt) < 0)
-//                {
-//                    throw linux_backend_exception("xioctl(VIDIOC_S_FMT) failed");
-//                }
-//                LOG_INFO("Trying to configure fourcc " << fourcc_to_string(fmt.fmt.pix.pixelformat));
 
                 v4l2_streamparm parm = {};
                 parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -724,6 +704,7 @@ namespace librealsense
 
                 // Start capturing
                 prepare_capture_buffers();
+
                 // Synchronise stream requests for meta and video data.
                 streamon();
 
@@ -735,22 +716,20 @@ namespace librealsense
         void v4l_uvc_device::prepare_capture_buffers()
         {
             for (auto&& buf : _buffers) buf->prepare_for_streaming(_fd);
-
-//            v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-//            if(xioctl(_fd, VIDIOC_STREAMON, &type) < 0)
-//                throw linux_backend_exception("xioctl(VIDIOC_STREAMON) failed");
         }
 
         void v4l_uvc_device::stop_data_capture()
         {
             _is_capturing = false;
             _is_started = false;
+
+            // Stop nn-demand frames polling
             signal_stop();
 
             _thread->join();
             _thread.reset();
 
-            // Stop streamining
+            // Notify kernel
             streamoff();
         }
 
@@ -794,8 +773,7 @@ namespace librealsense
 
         void v4l_uvc_device::signal_stop()
         {
-            char buff[1];
-            buff[0] = 0;
+            char buff[1]={};
             if (write(_stop_pipe_fd[1], buff, 1) < 0)
             {
                  throw linux_backend_exception("Could not signal video capture thread to stop. Error write to pipe.");
@@ -843,8 +821,7 @@ namespace librealsense
                     //TODO RAII buffers
                     std::vector<std::pair< std::shared_ptr<platform::buffer>,int>> urb_sets;
 
-                    if(_ctl_pipe_fds.end() != std::find_if(_ctl_pipe_fds.begin(),_ctl_pipe_fds.end(),
-                                     [&fds](int& val){ return FD_ISSET(val,&fds); }))
+                    if(FD_ISSET(_stop_pipe_fd[0], &fds) || FD_ISSET(_stop_pipe_fd[1], &fds))
                     {
                         if(!_is_capturing)
                         {
@@ -853,7 +830,7 @@ namespace librealsense
                         }
                         else
                         {
-                            LOG_INFO("Control pipe fd was signalled ");
+                            LOG_ERROR("Stop pipe was signalled during streaming");
                         }
                     }
                     else // Check and acquire data buffers from kernel
@@ -1355,9 +1332,6 @@ namespace librealsense
             if (_fds.size())
                 throw linux_backend_exception(to_string() <<__FUNCTION__ << " Device descriptor is already allocated");
 
-            _stream_pipe_fds.push_back(_fd);
-            _ctl_pipe_fds.push_back(_stop_pipe_fd[0]);
-            _ctl_pipe_fds.push_back(_stop_pipe_fd[1]);
             _fds.insert(_fds.end(),{_fd,_stop_pipe_fd[0],_stop_pipe_fd[1]});
             _max_fd = *std::max_element(_fds.begin(),_fds.end());
 
@@ -1407,8 +1381,6 @@ namespace librealsense
             _fd = 0;
             _stop_pipe_fd[0] = _stop_pipe_fd[1] = 0;
             _fds.clear();
-            _stream_pipe_fds.clear();
-            _ctl_pipe_fds.clear();
         }
 
         void v4l_uvc_device::set_format(stream_profile profile)
@@ -1430,7 +1402,6 @@ namespace librealsense
         v4l_uvc_meta_device::v4l_uvc_meta_device(const uvc_device_info& info, bool use_memory_map):
             v4l_uvc_device(info,use_memory_map),
             _md_fd(0),
-            _md_stop_pipe_fd{},
             _md_name(info.metadata_node_id)
         {
             LOG_INFO(__FUNCTION__);
@@ -1440,13 +1411,6 @@ namespace librealsense
         {
             LOG_INFO(__FUNCTION__);
         }
-
-//        void v4l_uvc_meta_device::close(stream_profile)
-//        {
-//            // Closing the video streaming node
-//            v4l_uvc_device::close();
-//            // Closing the metadata node
-//        }
 
         void v4l_uvc_meta_device::streamon() const
         {
@@ -1506,13 +1470,7 @@ namespace librealsense
             if(_md_fd < 0)
                 throw linux_backend_exception(to_string() << "Cannot open '" << _md_name);
 
-            if (pipe(_md_stop_pipe_fd) < 0)
-                throw linux_backend_exception("v4l_uvc_meta_device: Cannot create pipe!");
-
-            _stream_pipe_fds.push_back(_md_fd);
-            _ctl_pipe_fds.push_back(_md_stop_pipe_fd[0]);
-            _ctl_pipe_fds.push_back(_md_stop_pipe_fd[1]);
-            _fds.insert(_fds.end(),{_md_fd,_md_stop_pipe_fd[0],_md_stop_pipe_fd[1]});
+            _fds.push_back(_md_fd);
             _max_fd = *std::max_element(_fds.begin(),_fds.end());
 
             v4l2_capability cap = {};
@@ -1539,13 +1497,7 @@ namespace librealsense
             if(::close(_md_fd) < 0)
                 throw linux_backend_exception("v4l_uvc_meta_device: close(_md_fd) failed");
 
-            if(::close(_md_stop_pipe_fd[0]) < 0)
-               throw linux_backend_exception("v4l_uvc_meta_device: close(_md_stop_pipe_fd[0]) failed");
-            if(::close(_md_stop_pipe_fd[1]) < 0)
-               throw linux_backend_exception("v4l_uvc_meta_device: close(_md_stop_pipe_fd[1]) failed");
-
             _md_fd = 0;
-            _md_stop_pipe_fd[0] = _md_stop_pipe_fd[1] = 0;
         }
 
         void v4l_uvc_meta_device::set_format(stream_profile profile)
@@ -1564,12 +1516,10 @@ namespace librealsense
                 throw linux_backend_exception("ioctl(VIDIOC_G_FMT): " + _md_name + " node is not metadata capture");
 
             bool success = false;
-            for (auto& request : { V4L2_META_FMT_D4XX, V4L2_META_FMT_UVC})
+            for (const uint32_t& request : { V4L2_META_FMT_D4XX, V4L2_META_FMT_UVC})
             {
                 // Configure metadata format - try d4xx, then fallback to currently retrieve UVC default header of 12 bytes
-                //uint32_t dataformat = request;
                 memcpy(fmt.fmt.raw_data,&request,sizeof(request));
-                //fmt.fmt.meta.dataformat = request;
 
                 if(xioctl(_md_fd, VIDIOC_S_FMT, &fmt) >= 0)
                 {
