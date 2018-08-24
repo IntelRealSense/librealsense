@@ -177,7 +177,7 @@ namespace librealsense
 
     bool is_z_or_disparity(rs2_format format)
     {
-        if (format == RS2_FORMAT_Z16 || format == RS2_FORMAT_DISPARITY16 || format == RS2_FORMAT_DISPARITY32)
+        if (format == RS2_FORMAT_Z16 || format == RS2_FORMAT_Z16H || format == RS2_FORMAT_DISPARITY16 || format == RS2_FORMAT_DISPARITY32)
             return true;
         return false;
     }
@@ -221,7 +221,7 @@ namespace librealsense
         if (_stream_filter != RS2_STREAM_ANY && _stream_filter != stream)
             return false;
 
-        if (_stream_format_filter != RS2_FORMAT_ANY && _stream_format_filter != format)
+        if (_stream_format_filter != RS2_FORMAT_ANY && _stream_format_filter != format && RS2_FORMAT_Z16H != format)
             return false;
 
         if (_stream_index_filter != -1 && _stream_index_filter != index)

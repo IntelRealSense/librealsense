@@ -40,6 +40,7 @@ namespace librealsense
     extern const native_pixel_format pf_y16;        // 16 bit (left) IR image
     extern const native_pixel_format pf_y12i;       // 12 bits left IR + 12 bits right IR per pixel
     extern const native_pixel_format pf_z16;        // 16 bit Z + Disparity image
+	extern const native_pixel_format pf_z16h;       // 16 bit encoded Z + Disparity image
     extern const native_pixel_format pf_invz;       // 16 bit Z image
     extern const native_pixel_format pf_f200_invi;  // 8-bit IR image
     extern const native_pixel_format pf_f200_inzi;  // 16-bit Z + 8 bit IR per pixel

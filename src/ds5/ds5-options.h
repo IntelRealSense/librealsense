@@ -229,4 +229,24 @@ namespace librealsense
         lazy<option_range> _range;
         hw_monitor& _hwm;
     };
+
+    class uncompress_option : public option_base
+    {
+    public:
+        uncompress_option(sensor_base & sensor);
+
+        void set(float value) override;
+
+        float query() const override;
+
+        bool is_enabled() const override { return true; }
+
+        const char* get_description() const override
+        {
+            return "Enable uncompress option : 0 : enable, 1 : disable";
+        }
+
+    private:
+        sensor_base& _sensor;
+    };
 }

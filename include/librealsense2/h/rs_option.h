@@ -67,6 +67,7 @@ extern "C" {
         RS2_OPTION_STREAM_FILTER, /**< Select a stream to process */
         RS2_OPTION_STREAM_FORMAT_FILTER, /**< Select a stream format to process */
         RS2_OPTION_STREAM_INDEX_FILTER, /**< Select a stream index to process */
+        RS2_OPTION_UNCOMPRESS_DEPTH, /**< Uncompress depth map in RS2_FORMAT_Z16H format of the frame*/
         RS2_OPTION_COUNT                                        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
     const char* rs2_option_to_string(rs2_option option);

@@ -15,6 +15,7 @@
 #include <librealsense2/rsutil.h>
 
 #include "model-views.h"
+#include "huffman.h"
 #include <imgui_internal.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -25,6 +26,8 @@
 
 #define ARCBALL_CAMERA_IMPLEMENTATION
 #include <arcball_camera.h>
+
+#define _RESET_FREQUENCY_ 4
 
 constexpr const char* recommended_fw_url = "https://downloadcenter.intel.com/download/27522/Latest-Firmware-for-Intel-RealSense-D400-Product-Family?v=t";
 
@@ -3140,6 +3143,38 @@ namespace rs2
         return res;
     }
 
+	void post_processing_filters::decode(frame & f)
+	{
+		if (f.get_profile().format() == RS2_FORMAT_Z16H)
+		{
+			video_frame vf = f.as<video_frame>();
+			if (vf.get_compressed_size() != -1)
+			{
+                size_t frame_size = vf.get_width() * vf.get_height() * 2;
+                if (!last_frame.size() < frame_size)
+                    last_frame.resize(frame_size);
+
+                int size = vf.get_compressed_size();
+				memmove(buf.data(), f.get_data(), size);
+				int lengthOfCompressedImageInU32s = size >> 2;
+                if (!unhuffimage4(reinterpret_cast<uint32_t *>(buf.data()), lengthOfCompressedImageInU32s, vf.get_width() << 1, vf.get_height(), (unsigned char*)vf.get_data()))
+                {
+                    memmove((unsigned char *)vf.get_data(), last_frame.data(), frame_size);
+
+                    if (reset_counter == 0 || reset_counter % _RESET_FREQUENCY_ == 0)
+                        dev->sensor_reset();
+
+                    ++reset_counter;
+                }
+                else
+                {
+                    memmove(last_frame.data(), vf.get_data(), frame_size);
+                    reset_counter = 0;
+                }
+            }
+		}
+	}
+
     void post_processing_filters::process(rs2::frame f, const rs2::frame_source& source)
     {
         points p;
@@ -3150,12 +3185,14 @@ namespace rs2
         {
             for (auto&& f : composite)
             {
+				decode(f);
                 auto res = handle_frame(f);
                 results.insert(results.end(), res.begin(), res.end());
             }
         }
         else
         {
+			decode(f);
              auto res = handle_frame(f);
              results.insert(results.end(), res.begin(), res.end());
         }
@@ -3370,7 +3407,7 @@ namespace rs2
 
                         auto texture = upload_frame(std::move(frame));
 
-                        if ((selected_tex_source_uid == -1 && frame.get_profile().format() == RS2_FORMAT_Z16) || frame.get_profile().format() != RS2_FORMAT_ANY && is_3d_texture_source(frame))
+                        if ((selected_tex_source_uid == -1 && (frame.get_profile().format() == RS2_FORMAT_Z16 || frame.get_profile().format() == RS2_FORMAT_Z16H)) || frame.get_profile().format()!= RS2_FORMAT_ANY && is_3d_texture_source(frame))
                         {
                             texture_frame = texture;
                         }
@@ -3689,7 +3726,7 @@ namespace rs2
             auto textured_frame = streams[stream].texture->get_last_frame(true).as<video_frame>();
             if (streams[stream].show_map_ruler && frame && textured_frame &&
                 RS2_STREAM_DEPTH == stream_mv.profile.stream_type() &&
-                RS2_FORMAT_Z16 == stream_mv.profile.format())
+                (RS2_FORMAT_Z16 == stream_mv.profile.format() || RS2_FORMAT_Z16H == stream_mv.profile.format()))
             {
                 assert(RS2_FORMAT_RGB8 == textured_frame.get_profile().format());
                 static const std::string depth_units = "m";
@@ -4087,7 +4124,7 @@ namespace rs2
     void viewer_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p)
     {
         // Starting post processing filter rendering thread
-        ppf.start();
+        ppf.start(&(d->dev));
         streams[p.unique_id()].begin_stream(d, p);
         ppf.frames_queue.emplace(p.unique_id(), rs2::frame_queue(5));
     }

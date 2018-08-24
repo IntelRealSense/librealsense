@@ -95,6 +95,17 @@ namespace rs2
             error::handle(e);
         }
 
+        /**
+        * send sensor reset request to the device
+        */
+        void sensor_reset()
+        {
+            rs2_error* e = nullptr;
+
+            rs2_sensor_reset(_dev.get(), &e);
+            error::handle(e);
+        }
+
         device& operator=(const std::shared_ptr<rs2_device> dev)
         {
             _dev.reset();

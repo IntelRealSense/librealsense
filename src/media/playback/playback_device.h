@@ -28,6 +28,7 @@ namespace librealsense
         size_t get_sensors_count() const override;
         const sensor_interface& get_sensor(size_t i) const override;
         void hardware_reset() override;
+        void sensor_reset() override;
         bool extend_to(rs2_extension extension_type, void** ext) override;
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 

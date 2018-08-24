@@ -254,24 +254,28 @@ namespace librealsense
     {
     public:
         video_frame()
-            : frame(), _width(0), _height(0), _bpp(0), _stride(0)
+            : frame(), _width(0), _height(0), _bpp(0), _stride(0), _compressed_size(-1)
         {}
 
         int get_width() const { return _width; }
         int get_height() const { return _height; }
         int get_stride() const { return _stride; }
         int get_bpp() const { return _bpp; }
+        int get_compressed_size() const { return _compressed_size; }
+        void set_compressed_size(int size) { _compressed_size = -1; }
 
-        void assign(int width, int height, int stride, int bpp)
+        void assign(int width, int height, int stride, int bpp, int compressed_size = -1)
         {
             _width = width;
             _height = height;
             _stride = stride;
             _bpp = bpp;
+			_compressed_size = compressed_size;
         }
 
     private:
         int _width, _height, _bpp, _stride;
+		int _compressed_size;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_VIDEO_FRAME, librealsense::video_frame);
@@ -299,7 +303,7 @@ namespace librealsense
         {
             // If this frame does not itself contain Z16 depth data,
             // fall back to the original frame it was created from
-            if (_original && get_stream()->get_format() != RS2_FORMAT_Z16)
+            if (_original && (get_stream()->get_format() != RS2_FORMAT_Z16 || get_stream()->get_format() != RS2_FORMAT_Z16H))
                 return((depth_frame*)_original.frame)->get_distance(x, y);
 
             uint64_t pixel = 0;

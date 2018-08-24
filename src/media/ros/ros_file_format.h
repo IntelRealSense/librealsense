@@ -35,6 +35,7 @@ namespace librealsense
         switch (source)
         {
         case RS2_FORMAT_Z16: target = sensor_msgs::image_encodings::MONO16;     return;
+		case RS2_FORMAT_Z16H: target = sensor_msgs::image_encodings::MONO16;     return;
         case RS2_FORMAT_RGB8: target = sensor_msgs::image_encodings::RGB8;       return;
         case RS2_FORMAT_BGR8: target = sensor_msgs::image_encodings::BGR8;       return;
         case RS2_FORMAT_RGBA8: target = sensor_msgs::image_encodings::RGBA8;      return;

@@ -11,6 +11,9 @@
 #include "device.h"
 #include "stream.h"
 #include "sensor.h"
+#include "../common/huffman.h"
+
+#define _RESET_FREQUENCY_ 4
 
 namespace librealsense
 {
@@ -481,7 +484,7 @@ namespace librealsense
                         if (frame.frame)
                         {
                             auto video = (video_frame*)frame.frame;
-                            video->assign(width, height, width * bpp / 8, bpp);
+                            video->assign(width, height, width * bpp / 8, bpp, p.format == 0x5a313648 && !get_uncompress() ? (int) f.frame_size : -1);
                             video->set_timestamp_domain(timestamp_domain);
                             dest.push_back(const_cast<byte*>(video->get_frame_data()));
                             frame->set_stream(request);
@@ -500,26 +503,47 @@ namespace librealsense
                     // Unpack the frame
                     if (requires_processing && (dest.size() > 0))
                     {
-                        unpacker.unpack(dest.data(), reinterpret_cast<const byte *>(f.pixels), mode.profile.width, mode.profile.height);
+                        if (p.format == 0x5a313648)
+                        {
+                            if (get_uncompress())
+                            {
+                                if (!unhuffimage4(reinterpret_cast<uint32_t *>(const_cast<void *>(f.pixels)), static_cast<int>(f.frame_size >> 2), mode.profile.width << 1, mode.profile.height, dest.data()[0]))
+                                {
+                                    if (!_reset || _reset % _RESET_FREQUENCY_ == 0)
+                                        _owner->sensor_reset();
+
+                                    ++_reset;
+                                }
+                                else
+                                    _reset = 0;
+                            }
+                            else
+                                unpacker.unpack(dest.data(), reinterpret_cast<const byte *>(f.pixels), (int) f.frame_size, 1);
+                        }
+                        else
+                            unpacker.unpack(dest.data(), reinterpret_cast<const byte *>(f.pixels), mode.profile.width, mode.profile.height);
                     }
 
                     // If any frame callbacks were specified, dispatch them now
-                    for (auto&& pref : refs)
+                    if (!_reset)
                     {
-                        if (!requires_processing)
+                        for (auto&& pref : refs)
                         {
-                            pref->attach_continuation(std::move(release_and_enqueue));
-                        }
+                            if (!requires_processing)
+                            {
+                                pref->attach_continuation(std::move(release_and_enqueue));
+                            }
 
-                        if (_on_before_frame_callback)
-                        {
-                            auto callback = _source.begin_callback();
-                            auto stream_type = pref->get_stream()->get_stream_type();
-                            _on_before_frame_callback(stream_type, pref, std::move(callback));
-                        }
+                            if (_on_before_frame_callback)
+                            {
+                                auto callback = _source.begin_callback();
+                                auto stream_type = pref->get_stream()->get_stream_type();
+                                _on_before_frame_callback(stream_type, pref, std::move(callback));
+                            }
 
-                        if (pref->get_stream().get())
-                            _source.invoke_callback(std::move(pref));
+                            if (pref->get_stream().get())
+                                _source.invoke_callback(std::move(pref));
+                        }
                     }
                 });
             }

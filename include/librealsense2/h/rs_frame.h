@@ -186,6 +186,14 @@ int rs2_get_frame_stride_in_bytes(const rs2_frame* frame, rs2_error** error);
 int rs2_get_frame_bits_per_pixel(const rs2_frame* frame, rs2_error** error);
 
 /**
+* retrieve frame compressed size
+* \param[in] frame      handle returned from a callback
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               compressed size if compressed, and -1 otherwise
+*/
+int rs2_get_frame_compressed_size(const rs2_frame* frame, rs2_error** error);
+
+/**
 * create additional reference to a frame without duplicating frame data
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored

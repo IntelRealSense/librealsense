@@ -631,6 +631,7 @@ namespace rs2
             render_thread_active(false),
             pc(new pointcloud())
         {
+            buf.resize(1280 * 720 * 2);
             std::string s;
             pc_gen = std::make_shared<processing_block_model>(nullptr, "Pointcloud Engine", pc, [=](rs2::frame f) { return pc->calculate(f); }, s);
             processing_block.start(resulting_queue);
@@ -638,11 +639,14 @@ namespace rs2
 
         ~post_processing_filters() { stop(); }
 
+		void decode(frame & f);
+
         void update_texture(frame f) { pc->map_to(f); }
 
         /* Start the rendering thread in case its disabled */
-        void start()
+        void start(device * dev_)
         {
+            dev = dev_;
             if (render_thread_active.exchange(true) == false)
             {
                 render_thread = std::thread(&post_processing_filters::render_loop, this);
@@ -693,6 +697,7 @@ namespace rs2
 
     private:
         viewer_model& viewer;
+        device * dev = nullptr;
         void process(rs2::frame f, const rs2::frame_source& source);
         std::vector<rs2::frame> handle_frame(rs2::frame f);
 
@@ -711,6 +716,10 @@ namespace rs2
         int last_frame_number = 0;
         double last_timestamp = 0;
         int last_stream_id = 0;
+
+		std::vector<byte> buf;
+        std::vector<byte> last_frame;
+        int reset_counter = 0;
     };
 
     class press_button_model

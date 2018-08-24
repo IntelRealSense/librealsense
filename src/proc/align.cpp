@@ -486,6 +486,7 @@ namespace librealsense
             break;
         case RS2_FORMAT_Y16:
         case RS2_FORMAT_Z16:
+		case RS2_FORMAT_Z16H:
             align_other_to_depth_bytes<2>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
             break;
         case RS2_FORMAT_RGB8:
@@ -574,7 +575,7 @@ namespace librealsense
         bool has_tex = false, has_depth = false;
         set.foreach([this, &has_tex](const rs2::frame& frame) { if (frame.get_profile().stream_type() == _to_stream_type) has_tex = true; });
         set.foreach([&has_depth](const rs2::frame& frame) 
-            { if (frame.get_profile().stream_type() == RS2_STREAM_DEPTH && frame.get_profile().format() == RS2_FORMAT_Z16) has_depth = true; });
+            { if (frame.get_profile().stream_type() == RS2_STREAM_DEPTH && (frame.get_profile().format() == RS2_FORMAT_Z16 || frame.get_profile().format() == RS2_FORMAT_Z16H)) has_depth = true; });
         if (!has_tex || !has_depth)
             return false;
 
@@ -586,7 +587,8 @@ namespace librealsense
         rs2::frame rv;
         auto frames = f.as<rs2::frameset>();
         auto depth_frame = frames.first_or_default(RS2_STREAM_DEPTH, RS2_FORMAT_Z16).as<rs2::video_frame>();
-
+        if (!depth_frame)
+            depth_frame = frames.first_or_default(RS2_STREAM_DEPTH, RS2_FORMAT_Z16H).as<rs2::video_frame>();
         auto curr_depth = depth_frame.get_profile().as<rs2::video_stream_profile>();
         // TODO: use sensor/profile id, to enable handle a case that two different depth streams with similar resolution being proceesed by the same "align" object
         if (_prev_depth_res.first != curr_depth.width() || _prev_depth_res.second != curr_depth.height())

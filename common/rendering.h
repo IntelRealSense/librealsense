@@ -1054,6 +1054,7 @@ namespace rs2
             case RS2_FORMAT_ANY:
                 throw std::runtime_error("not a valid format");
             case RS2_FORMAT_Z16:
+			case RS2_FORMAT_Z16H:
             case RS2_FORMAT_DISPARITY16:
                 if (frame.is<depth_frame>())
                 {
@@ -1436,6 +1437,7 @@ namespace rs2
             switch (format)
             {
             case RS2_FORMAT_Z16:
+			case RS2_FORMAT_Z16H:
             case RS2_FORMAT_Y16:
             case RS2_FORMAT_DISPARITY16:
             {

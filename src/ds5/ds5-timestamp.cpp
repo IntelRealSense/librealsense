@@ -44,7 +44,7 @@ namespace librealsense
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         auto pin_index = 0;
-        if (mode.pf->fourcc == 0x5a313620) // Z16
+        if (mode.pf->fourcc == 0x5a313620 || mode.pf->fourcc == 0x5a313648) // Z16 or Z16H
             pin_index = 1;
 
         if(!_has_metadata[pin_index])
@@ -72,7 +72,7 @@ namespace librealsense
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         auto pin_index = 0;
-        if (mode.pf->fourcc == 0x5a313620) // Z16
+        if (mode.pf->fourcc == 0x5a313620 || mode.pf->fourcc == 0x5a313648) // Z16 or Z16H
             pin_index = 1;
 
         if(_has_metadata[pin_index] && fo.metadata_size > platform::uvc_header_size)
@@ -99,7 +99,7 @@ namespace librealsense
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         auto pin_index = 0;
-        if (mode.pf->fourcc == 0x5a313620) // Z16
+        if (mode.pf->fourcc == 0x5a313620 || mode.pf->fourcc == 0x5a313648) // Z16 or Z16H
             pin_index = 1;
 
         return _has_metadata[pin_index] ? RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK :
@@ -131,7 +131,7 @@ namespace librealsense
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         auto pin_index = 0;
-        if (mode.pf->fourcc == 0x5a313620) // Z16
+        if (mode.pf->fourcc == 0x5a313620 || mode.pf->fourcc == 0x5a313648) // Z16 or Z16H
             pin_index = 1;
 
         return ++counter[pin_index];

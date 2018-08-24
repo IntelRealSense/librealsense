@@ -833,6 +833,14 @@ int rs2_get_frame_bits_per_pixel(const rs2_frame* frame_ref, rs2_error** error) 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 
+int rs2_get_frame_compressed_size(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
+{
+	VALIDATE_NOT_NULL(frame_ref);
+	auto vf = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::video_frame);
+	return vf->get_compressed_size();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
+
 unsigned long long rs2_get_frame_number(const rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame);
@@ -987,6 +995,13 @@ void rs2_hardware_reset(const rs2_device* device, rs2_error** error) BEGIN_API_C
 {
     VALIDATE_NOT_NULL(device);
     device->device->hardware_reset();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs2_sensor_reset(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    device->device->sensor_reset();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 

@@ -41,6 +41,7 @@ EXPORTS
     rs2_start_cpp
     rs2_stop
     rs2_hardware_reset
+    rs2_sensor_reset
 
     rs2_set_notifications_callback
     rs2_set_notifications_callback_cpp
@@ -60,6 +61,7 @@ EXPORTS
     rs2_get_frame_height
     rs2_get_frame_stride_in_bytes
     rs2_get_frame_bits_per_pixel
+    rs2_get_frame_compressed_size
     rs2_get_frame_stream_profile
     rs2_get_frame_vertices
     rs2_get_frame_texture_coordinates

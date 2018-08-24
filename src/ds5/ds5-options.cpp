@@ -435,4 +435,19 @@ namespace librealsense
     {
         return *_range;
     }
+
+    uncompress_option::uncompress_option(sensor_base & sensor)
+        : option_base(option_range{ 0.0f, 1.0f, 1.0f, 0.0f }), _sensor(sensor)
+    {
+    }
+
+    void uncompress_option::set(float value)
+    {
+        _sensor.set_uncompress(abs(value) > 0.0001f);
+    }
+
+    float uncompress_option::query() const
+    {
+        return static_cast<float>(_sensor.get_uncompress());
+    }
 }

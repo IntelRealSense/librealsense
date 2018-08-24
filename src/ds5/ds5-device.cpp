@@ -75,6 +75,17 @@ namespace librealsense
         _hw_monitor->send(cmd);
     }
 
+    void ds5_device::sensor_reset()
+    {
+        static std::vector<uint8_t> reset{ 0x14, 0x00, 0xab, 0xcd,
+                                           0x69, 0x00, 0x00, 0x00,
+                                           0x00, 0x04, 0x00, 0x00,
+                                           0x00, 0x00, 0x00, 0x00,
+                                           0x00, 0x00, 0x00, 0x00,
+                                           0x00, 0x00, 0x00, 0x00 };
+        _hw_monitor->send(reset);
+    }
+
     class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
     {
     public:
@@ -296,6 +307,7 @@ namespace librealsense
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized every time we power the camera
 
         depth_ep->register_pixel_format(pf_z16); // Depth
+        depth_ep->register_pixel_format(pf_z16h); // Depth
         depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
         depth_ep->register_pixel_format(pf_yuyv); // Left Only
 
@@ -420,6 +432,9 @@ namespace librealsense
                     exposure_option,
                     enable_auto_exposure));
         }
+
+        if ((_fw_version >= firmware_version("5.9.14.0")))
+            depth_ep.register_option(RS2_OPTION_UNCOMPRESS_DEPTH, std::make_shared<uncompress_option>(depth_ep));
 
         if (_fw_version >= firmware_version("5.5.8.0"))
         {
@@ -595,6 +610,7 @@ namespace librealsense
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized every time we power the camera
 
         depth_ep->register_pixel_format(pf_z16); // Depth
+        depth_ep->register_pixel_format(pf_z16h); // Depth
 
         // Support DS5U-specific pixel format
         depth_ep->register_pixel_format(pf_w10);

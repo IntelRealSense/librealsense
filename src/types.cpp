@@ -264,6 +264,7 @@ namespace librealsense
             CASE(STREAM_FILTER)
             CASE(STREAM_FORMAT_FILTER)
             CASE(STREAM_INDEX_FILTER)
+            CASE(UNCOMPRESS_DEPTH)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -276,6 +277,7 @@ namespace librealsense
         {
             CASE(ANY)
             CASE(Z16)
+            CASE(Z16H)
             CASE(DISPARITY16)
             CASE(DISPARITY32)
             CASE(XYZ32F)

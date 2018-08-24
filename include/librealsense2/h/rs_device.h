@@ -81,6 +81,13 @@ int rs2_supports_device_info(const rs2_device* device, rs2_camera_info info, rs2
 void rs2_hardware_reset(const rs2_device * device, rs2_error ** error);
 
 /**
+* Send sensor reset request to the device. The actual reset is asynchronous.
+* \param[in]  device   The RealSense device for the sensor to reset
+* \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_sensor_reset(const rs2_device * device, rs2_error ** error);
+
+/**
 * Send raw data to device
 * \param[in]  device                    RealSense device to send data to
 * \param[in]  raw_data_to_send          Raw data to be sent to device
