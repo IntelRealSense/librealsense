@@ -2,7 +2,7 @@
 ;*                                                                            **
 ;*                     I N T E L   P R O P R I E T A R Y                      **
 ;*                                                                            **
-;*   COPYRIGHT (c) 2003-2014 BY INTEL CORPORATION. ALL RIGHTS RESERVED.  NO   **
+;*   COPYRIGHT (c) 2003-2018 BY INTEL CORPORATION. ALL RIGHTS RESERVED.  NO   **
 ;*   PART  OF  THIS  PROGRAM OR PUBLICATION MAY BE REPRODUCED, TRANSMITTED,   **
 ;*   TRANSCRIBED, STORED IN A RETRIEVAL  SYSTEM,  OR  TRANSLATED  INTO  ANY   **
 ;*   LANGUAGE OR COMPUTER LANGUAGE IN ANY FORM OR BY ANY MEANS, ELECTRONIC,   **
@@ -29,9 +29,14 @@ DriverVer=12/29/2014,23.56.40.396
 ; ========== Manufacturer/Models sections ===========
 
 [Manufacturer]
-%ManufacturerName% = Standard,NTx86
+%ManufacturerName% = Standard,NTx86,NTamd64
 
 [Standard.NTx86]
+%DeviceNameDepth% =USB_Install, USB\VID_8086&PID_0AD3&MI_00
+%DeviceNameColor% =USB_Install, USB\VID_8086&PID_0AD3&MI_03
+%DeviceNameHM% =USB_Install, USB\VID_8086&PID_0AD3&MI_05
+
+[Standard.NTamd64]
 %DeviceNameDepth% =USB_Install, USB\VID_8086&PID_0AD3&MI_00
 %DeviceNameColor% =USB_Install, USB\VID_8086&PID_0AD3&MI_03
 %DeviceNameHM% =USB_Install, USB\VID_8086&PID_0AD3&MI_05
