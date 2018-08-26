@@ -1104,7 +1104,7 @@ namespace librealsense
                         LOG_WARNING("Failed to read busnum/devnum. Device Path: " << elem);
                     }
 #else
-                    LOG_WARNING("Failed to read busnum/devnum. Device Path: " << elem);
+                    LOG_INFO("Failed to read busnum/devnum. Device Path: " << elem);
 #endif
                     continue;
                 }
