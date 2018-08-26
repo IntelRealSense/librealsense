@@ -211,7 +211,7 @@ void refresh_devices(std::mutex& m,
 
 int main(int argv, const char** argc) try
 {
-    rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
+    rs2::log_to_console(RS2_LOG_SEVERITY_DEBUG);
 
     ux_window window("Intel RealSense Viewer");
 

@@ -129,6 +129,8 @@ namespace librealsense
 
             uint8_t* get_frame_start() const { return _start; }
 
+            bool use_memory_map() const { return _use_memory_map; }
+
         private:
             v4l2_buf_type _type;
             uint8_t* _start;
@@ -139,6 +141,56 @@ namespace librealsense
             v4l2_buffer _buf;
             std::mutex _mutex;
             bool _must_enqueue = false;
+        };
+
+        enum supported_kernel_buf_types : uint8_t
+        {
+            e_video_buf,
+            e_metadata_buf,
+            e_max_kernel_buf_type
+        };
+
+        struct kernel_buf_guard
+        {
+            int                                 _file_desc=-1;
+            bool                                _managed=false;
+            std::shared_ptr<platform::buffer>   _data_buf=nullptr;
+            v4l2_buffer                         _dq_buf{};
+
+            ~kernel_buf_guard()
+            {
+                if (_data_buf && (!_managed))
+                {
+                    LOG_DEBUG("Enqueue buf " << _dq_buf.index << " for fd " << _file_desc);
+                    if (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0)
+                    {
+                        LOG_ERROR("xioctl(VIDIOC_QBUF) guard failed");
+                    }
+                }
+            }
+        };
+
+        // RAII handling of kernel buffers interchanges
+        struct buffers_mgr
+        {
+            buffers_mgr(bool memory_mapped_buf) :
+                _md_start(nullptr),
+                _md_size(0),
+                _mmap_bufs(memory_mapped_buf)
+                {};
+
+            ~buffers_mgr();
+
+            void    request_next_frame();
+            void    handle_buffer(supported_kernel_buf_types buf_type, int file_desc,
+                                   v4l2_buffer buf= v4l2_buffer(),
+                                   std::shared_ptr<platform::buffer> data_buf=nullptr);
+
+            void*                               _md_start;
+            uint8_t                             _md_size;
+            bool                                _mmap_bufs;
+
+            std::array<kernel_buf_guard, e_max_kernel_buf_type> buffers;
         };
 
         class v4l_usb_device : public usb_device
@@ -163,7 +215,26 @@ namespace librealsense
             int _mi;
         };
 
-        class v4l_uvc_device : public uvc_device
+        class v4l_uvc_interface
+        {
+            virtual void capture_loop() = 0;
+
+            virtual bool has_metadata() const = 0;
+
+            virtual void streamon() const = 0;
+            virtual void streamoff() const = 0;
+            virtual void negotiate_kernel_buffers(size_t num) const = 0;
+
+            virtual void allocate_io_buffers(size_t num) = 0;
+            virtual void map_device_descriptor() = 0;
+            virtual void unmap_device_descriptor() = 0;
+            virtual void set_format(stream_profile profile) = 0;
+            virtual void prepare_capture_buffers() = 0;
+            virtual void stop_data_capture() = 0;
+            virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds) = 0;
+        };
+
+        class v4l_uvc_device : public uvc_device, public v4l_uvc_interface
         {
         public:
             static void foreach_uvc_device(
@@ -221,7 +292,7 @@ namespace librealsense
 
             virtual void streamon() const;
             virtual void streamoff() const;
-            virtual void request_io_buffers(size_t num) const;
+            virtual void negotiate_kernel_buffers(size_t num) const;
 
             virtual void allocate_io_buffers(size_t num);
             virtual void map_device_descriptor();
@@ -229,9 +300,7 @@ namespace librealsense
             virtual void set_format(stream_profile profile);
             virtual void prepare_capture_buffers();
             virtual void stop_data_capture();
-            virtual void acquire_metadata(void *&md_start,uint8_t& md_size, fd_set &fds,
-                                          std::vector<std::pair< std::shared_ptr<platform::buffer>,int>> &datasets);
-
+            virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds);
 
             power_state _state = D3;
             std::string _name = "";
@@ -261,10 +330,6 @@ namespace librealsense
         class v4l_uvc_meta_device : public v4l_uvc_device
         {
         public:
-            static void foreach_uvc_device(
-                    std::function<void(const uvc_device_info&,
-                                       const std::string&)> action);
-
             v4l_uvc_meta_device(const uvc_device_info& info, bool use_memory_map = false);
 
             ~v4l_uvc_meta_device();
@@ -273,14 +338,13 @@ namespace librealsense
 
             void streamon() const;
             void streamoff() const;
-            void request_io_buffers(size_t num) const;
+            void negotiate_kernel_buffers(size_t num) const;
             void allocate_io_buffers(size_t num);
             void map_device_descriptor();
             void unmap_device_descriptor();
             void set_format(stream_profile profile);
             void prepare_capture_buffers();
-            virtual void acquire_metadata(void *&md_start,uint8_t& md_size, fd_set &fds,
-                                          std::vector<std::pair< std::shared_ptr<platform::buffer>,int>> &datasets);
+            virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds);
 
             int _md_fd = -1;
             std::string _md_name = "";
