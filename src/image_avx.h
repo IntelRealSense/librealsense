@@ -10,7 +10,7 @@
 namespace librealsense
 {
 #ifndef ANDROID
-    #ifdef __SSSE3__
+    #if defined(__SSSE3__) && defined(__AVX2__)
     void unpack_yuy2_avx_y8(byte * const d[], const byte * s, int n);
     void unpack_yuy2_avx_y16(byte * const d[], const byte * s, int n);
     void unpack_yuy2_avx_rgb8(byte * const d[], const byte * s, int n);
