@@ -238,6 +238,7 @@ namespace librealsense
 
         void wmf_hid_device::foreach_hid_device(std::function<void(hid_device_info, CComPtr<ISensor>)> action)
         {
+            return; // HID devices aren't supported on Windows OS
             try
             {
                 CComPtr<ISensorManager> pSensorManager = nullptr;

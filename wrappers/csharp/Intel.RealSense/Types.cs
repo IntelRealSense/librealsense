@@ -210,6 +210,9 @@ namespace Intel.RealSense
         StereoBaseline = 40,
         AutoExposureConvergeStep = 41,
         InterCamSyncMode = 42,
+        StreamFilter = 43,
+        StreamFormatFilter = 44,
+        StreamIndexFilter = 45
     }
 
     public enum Sr300VisualPreset

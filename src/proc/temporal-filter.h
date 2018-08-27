@@ -8,13 +8,14 @@ namespace librealsense
 {
     const size_t PRESISTENCY_LUT_SIZE = 256;
 
-    class temporal_filter : public processing_block
+    class temporal_filter : public depth_processing_block
     {
     public:
         temporal_filter();
 
     protected:
         void    update_configuration(const rs2::frame& f);
+        rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
         rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source);
 

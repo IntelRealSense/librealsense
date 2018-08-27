@@ -97,13 +97,14 @@ diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2
 index cab63bb..85935a9 100644
 --- a/drivers/media/v4l2-core/v4l2-ioctl.c
 +++ b/drivers/media/v4l2-core/v4l2-ioctl.c
-@@ -1239,6 +1239,9 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+@@ -1239,6 +1239,10 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
  	case V4L2_TCH_FMT_TU08:		descr = "8-bit unsigned touch data"; break;
  	case V4L2_META_FMT_VSP1_HGO:	descr = "R-Car VSP1 1-D Histogram"; break;
  	case V4L2_META_FMT_VSP1_HGT:	descr = "R-Car VSP1 2-D Histogram"; break;
 +	/* Librealsense formats*/
 +	case V4L2_PIX_FMT_RW16:		descr = "16-bit Raw data"; break;
 +	case V4L2_PIX_FMT_W10:		descr = "10-bit packed 8888[2222]"; break;
++	case V4L2_PIX_FMT_CONFIDENCE_MAP:		descr = "4-bit per pixel packed into 8 bit"; break;
 
  	default:
  		/* Compressed formats */

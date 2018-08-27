@@ -41,42 +41,47 @@ namespace librealsense
 
         unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
 
-        auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
-        {
-            std::lock_guard<std::mutex> lock(_mutex);
-
-            rs2::frame out = f;
-            rs2::frame tgt, depth_data;
-
-            bool composite = f.is<rs2::frameset>();
-
-            tgt = depth_data = (composite) ? f.as<rs2::frameset>().first_or_default(RS2_STREAM_DEPTH) : f;
-
-            // Verify that the input depth format is aligned with the block's configuration
-            if (depth_data &&  (f.is<rs2::disparity_frame>() != _transform_to_disparity))
-            {
-                update_transformation_profile(depth_data);
-
-                if (_stereoscopic_depth && (tgt = prepare_target_frame(depth_data, source)))
-                {
-                    auto src = depth_data.as<rs2::video_frame>();
-
-                    if (_transform_to_disparity)
-                        convert<uint16_t, float>(src.get_data(), const_cast<void*>(tgt.get_data()));
-                    else
-                        convert<float, uint16_t>(src.get_data(), const_cast<void*>(tgt.get_data()));
-                }
-            }
-
-            out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
-
-            source.frame_ready(out);
-        };
-
-        auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
-        processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
-
         on_set_mode(_transform_to_disparity);
+    }
+
+    bool disparity_transform::should_process(const rs2::frame& frame)
+    {
+        if (!frame)
+            return false;
+
+        if (frame.is<rs2::frameset>())
+            return false;
+    
+        if (_transform_to_disparity && (frame.get_profile().stream_type() != RS2_STREAM_DEPTH || frame.get_profile().format() != RS2_FORMAT_Z16))
+            return false;
+
+        if (!_transform_to_disparity && (frame.get_profile().stream_type() != RS2_STREAM_DEPTH ||
+            (frame.get_profile().format() != RS2_FORMAT_DISPARITY16 && frame.get_profile().format() != RS2_FORMAT_DISPARITY32)))
+            return false;
+
+        if (frame.is<rs2::disparity_frame>() == _transform_to_disparity)
+            return false;
+
+        return true;
+    }
+
+    rs2::frame disparity_transform::process_frame(const rs2::frame_source& source, const rs2::frame& f)
+    {
+        rs2::frame tgt;
+
+        update_transformation_profile(f);
+
+        if (_stereoscopic_depth && (tgt = prepare_target_frame(f, source)))
+        {
+            auto src = f.as<rs2::video_frame>();
+
+            if (_transform_to_disparity)
+                convert<uint16_t, float>(src.get_data(), const_cast<void*>(tgt.get_data()));
+            else
+                convert<float, uint16_t>(src.get_data(), const_cast<void*>(tgt.get_data()));
+        }
+
+        return tgt;
     }
 
     void disparity_transform::on_set_mode(bool to_disparity)

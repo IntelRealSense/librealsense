@@ -356,6 +356,7 @@ namespace librealsense
                     _is_capturing = false;
                     _is_started = false;
                 }
+                uvc_stop_streaming(_device_handle);
             }
 
             void power_D0() {

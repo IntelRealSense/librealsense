@@ -899,8 +899,9 @@ namespace rs2
                     {
                         auto profile = f.get_profile();
                         auto stream_type = profile.stream_type();
+                        auto stream_format = profile.format();
 
-                        if (RS2_STREAM_DEPTH == stream_type)
+                        if ((RS2_STREAM_DEPTH == stream_type) && (RS2_FORMAT_Z16 == stream_format))
                         {
                             float su = 0, baseline = -1.f;
                             rs2_intrinsics intrin{};

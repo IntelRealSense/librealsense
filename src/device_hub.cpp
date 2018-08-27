@@ -128,5 +128,10 @@ namespace librealsense
         std::unique_lock<std::mutex> lock(_mutex);
         return dev.is_valid();
     }
+
+    std::shared_ptr<librealsense::context> device_hub::get_context()
+    {
+        return _ctx;
+    }
 }
 

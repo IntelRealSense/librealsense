@@ -9,6 +9,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 //////////////////////////////
 // Basic Data Types         //
@@ -58,6 +59,31 @@ inline void draw_text(int x, int y, const char * text)
 class texture
 {
 public:
+    void render(const rs2::frameset& frames, int window_width, int window_height)
+    {
+        std::vector<rs2::video_frame> supported_frames;
+        for (auto f : frames)
+        {
+            if (can_render(f))
+                supported_frames.push_back(f);
+        }
+        if (supported_frames.empty())
+            return;
+
+        std::sort(supported_frames.begin(), supported_frames.end(), [](rs2::frame first, rs2::frame second)
+            { return first.get_profile().stream_type() < second.get_profile().stream_type();  });
+
+        auto image_grid = calc_grid(float2{ (float)window_width, (float)window_height }, supported_frames);
+
+        int image_index = 0;
+        for (auto f : supported_frames)
+        {
+            upload(f);
+            show(image_grid.at(image_index));
+            image_index++;
+        }
+    }
+
     void render(const rs2::video_frame& frame, const rect& r)
     {
         upload(frame);
@@ -122,20 +148,80 @@ public:
 
         draw_text((int)r.x + 15, (int)r.y + 20, rs2_stream_to_string(stream));
     }
+
 private:
     GLuint gl_handle = 0;
     int width = 0;
     int height = 0;
     rs2_stream stream = RS2_STREAM_ANY;
+
+    bool can_render(const rs2::frame& f) const
+    {
+        auto format = f.get_profile().format();
+        switch (format)
+        {
+        case RS2_FORMAT_RGB8:
+        case RS2_FORMAT_RGBA8:
+        case RS2_FORMAT_Y8:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    rect calc_grid(float2 window, int streams)
+    {
+        if (window.x <= 0 || window.y <= 0 || streams <= 0)
+            throw std::runtime_error("invalid window configuration request, failed to calculate window grid");
+        float ratio = window.x / window.y;
+        auto x = sqrt(ratio * (float)streams);
+        auto y = (float)streams / x;
+        auto w = round(x);
+        auto h = round(y);
+        if (w == 0 || h == 0)
+            throw std::runtime_error("invalid window configuration request, failed to calculate window grid");
+        while (w*h > streams)
+            h > w ? h-- : w--;
+        while (w*h < streams)
+            h > w ? w++ : h++;
+        auto new_w = round(window.x / w);
+        auto new_h = round(window.y / h);
+        return rect{ w, h, new_w, new_h}; //column count, line count, cell width cell height
+    }
+
+    std::vector<rect> calc_grid(float2 window, std::vector<rs2::video_frame>& frames)
+    {
+        auto grid = calc_grid(window, frames.size());
+
+        int index = 0;
+        std::vector<rect> rv;
+        int curr_line = -1;
+        for (auto f  : frames)
+        {
+            auto mod = index % (int)grid.x;
+            auto fw = (float)frames[index].get_width();
+            auto fh = (float)frames[index].get_height();
+
+            float cell_x_postion = (float)(mod * grid.w);
+            if (mod == 0) curr_line++;
+            float cell_y_position = curr_line * grid.h;
+
+            auto r = rect{ cell_x_postion, cell_y_position, grid.w, grid.h };
+            rv.push_back(r.adjust_ratio(float2{ fw, fh }));
+            index++;
+        }
+
+        return rv;
+    }
 };
 
 class window
 {
 public:
-    std::function<void(bool)>           on_left_mouse   = [](bool) {};
+    std::function<void(bool)>           on_left_mouse = [](bool) {};
     std::function<void(double, double)> on_mouse_scroll = [](double, double) {};
-    std::function<void(double, double)> on_mouse_move   = [](double, double) {};
-    std::function<void(int)>            on_key_release  = [](int) {};
+    std::function<void(double, double)> on_mouse_move = [](double, double) {};
+    std::function<void(int)>            on_key_release = [](int) {};
 
     window(int width, int height, const char* title)
         : _width(width), _height(height)
@@ -209,7 +295,7 @@ public:
     operator GLFWwindow*() { return win; }
 
 private:
-    GLFWwindow* win;
+    GLFWwindow * win;
     int _width, _height;
 };
 

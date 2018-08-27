@@ -8,7 +8,6 @@
 #include "librealsense/include/librealsense2/hpp/rs_pipeline.hpp"
 #include "librealsense/include/librealsense2/hpp/rs_internal.hpp"
 
-
 static rs2::context ctx;
 static std::atomic<bool> streaming(false);
 static std::thread frame_thread;
@@ -21,23 +20,26 @@ Java_com_example_realsense_1app_MainActivity_startStreaming(JNIEnv *env, jobject
             return;
 
         const char* nativeClassName = env->GetStringUTFChars(className, 0);
-        jclass handlerClass = env->FindClass(nativeClassName);
-        env->ReleaseStringUTFChars(className, nativeClassName);
-        if (handlerClass == NULL) {
+        jclass localClass = env->FindClass(nativeClassName);
+        if (localClass == NULL) {
             throw std::runtime_error("FindClass(...) failed!");
         }
+
+        jclass handlerClass = reinterpret_cast<jclass>(env->NewGlobalRef(localClass));
+        env->ReleaseStringUTFChars(className, nativeClassName);
 
         jmethodID onFrame = env->GetStaticMethodID(handlerClass, "onFrame",
                                                    "(Ljava/lang/Object;II)V");
         if (onFrame == NULL) {
+            env->DeleteGlobalRef(handlerClass);
             throw std::runtime_error("GetStaticMethodID(...) failed!");
         }
 
         auto list = ctx.query_devices();
         if (0 == list.size()) {
+            env->DeleteGlobalRef(handlerClass);
             throw std::runtime_error("No RealSense devices where found!");
         }
-
 
         JavaVM* vm;
         env->GetJavaVM(&vm);
@@ -76,6 +78,7 @@ Java_com_example_realsense_1app_MainActivity_startStreaming(JNIEnv *env, jobject
             {}
 
             env->DeleteLocalRef(arr);
+            env->DeleteGlobalRef(handlerClass);
             vm->DetachCurrentThread();
         });
     }
@@ -93,9 +96,9 @@ Java_com_example_realsense_1app_MainActivity_stopStreaming(JNIEnv *env, jobject 
         if (!streaming)
             return;
 
-            streaming = false;
-            if (frame_thread.joinable())
-                frame_thread.join();
+        streaming = false;
+        if (frame_thread.joinable())
+            frame_thread.join();
 
     }
     catch (const std::exception& ex)

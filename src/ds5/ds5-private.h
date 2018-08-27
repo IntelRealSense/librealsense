@@ -57,6 +57,16 @@ namespace librealsense
             ds::RS_USB2_PID
         };
 
+        static const std::set<std::uint16_t> multi_sensors_pid = {
+            ds::RS400_MM_PID,
+            ds::RS410_MM_PID,
+            ds::RS415_PID,
+            ds::RS420_MM_PID,
+            ds::RS430_MM_PID,
+            ds::RS430_MM_RGB_PID,
+            ds::RS435_RGB_PID
+        };
+
         static const std::map<std::uint16_t, std::string> rs400_sku_names = {
             { RS400_PID,        "Intel RealSense D400"},
             { RS400_MM_PID,     "Intel RealSense D400 with Tracking Module"},
@@ -77,6 +87,7 @@ namespace librealsense
         // DS5 fisheye XU identifiers
         const uint8_t FISHEYE_EXPOSURE = 1;
 
+                                                // subdevice[h] unit[fw], node[h] guid[fw]
         const platform::extension_unit depth_xu = { 0, 3, 2,
         { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
 

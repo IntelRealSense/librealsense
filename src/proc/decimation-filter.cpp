@@ -192,10 +192,10 @@ namespace librealsense
         return PIX_MIN(p[4], p[2]);
     }
 
-    const uint8_t decimation_min_val        = 1;
-    const uint8_t decimation_max_val        = 8;    // Decimation levels according to the reference design
-    const uint8_t decimation_default_val    = 2;
-    const uint8_t decimation_step           = 1;    // Linear decimation
+    const uint8_t decimation_min_val = 1;
+    const uint8_t decimation_max_val = 8;    // Decimation levels according to the reference design
+    const uint8_t decimation_default_val = 2;
+    const uint8_t decimation_step = 1;    // Linear decimation
 
     decimation_filter::decimation_filter() :
         _decimation_factor(decimation_default_val),
@@ -209,6 +209,9 @@ namespace librealsense
         _recalc_profile(false),
         _options_changed(false)
     {
+        _stream_filter = RS2_STREAM_DEPTH;
+        _stream_format_filter = RS2_FORMAT_Z16;
+
         auto decimation_control = std::make_shared<ptr_option<uint8_t>>(
             decimation_min_val,
             decimation_max_val,
@@ -227,119 +230,45 @@ namespace librealsense
             if (_control_val != _decimation_factor)
             {
                 _patch_size = _decimation_factor = _control_val;
-                _kernel_size = _patch_size*_patch_size;
+                _kernel_size = _patch_size * _patch_size;
                 _options_changed = true;
             }
         });
 
         register_option(RS2_OPTION_FILTER_MAGNITUDE, decimation_control);
+    }
 
-        auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
+    rs2::frame decimation_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
+    {
+        update_output_profile(f);
+
+        auto src = f.as<rs2::video_frame>();
+        rs2::stream_profile profile = f.get_profile();
+        rs2_format format = profile.format();
+        rs2_stream type = profile.stream_type();
+
+        rs2_extension tgt_type;
+        if (type == RS2_STREAM_COLOR || type == RS2_STREAM_INFRARED)
+            tgt_type = RS2_EXTENSION_VIDEO_FRAME;
+        else
+            tgt_type = f.is<rs2::disparity_frame>() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
+
+        if (auto tgt = prepare_target_frame(f, source, tgt_type))
         {
-            std::lock_guard<std::mutex> lock(_mutex);
-
-            rs2::frame out = f, tgt;
-            bool composite = f.is<rs2::frameset>();
-
-            if (composite)
+            if (format == RS2_FORMAT_Z16)
             {
-                rs2::frame depth = f.as<rs2::frameset>().first_or_default(RS2_STREAM_DEPTH);
-                if (depth)
-                {
-                    update_output_profile(depth);
-                    rs2_extension tgt_type = depth.is<rs2::disparity_frame>() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
-                    if (tgt = prepare_target_frame(depth, source, tgt_type))
-                    {
-                        auto src = depth.as<rs2::video_frame>();
-                        decimate_depth(static_cast<const uint16_t*>(src.get_data()),
-                            static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
-                            src.get_width(), src.get_height(), this->_patch_size);
-                    }
-                }
-
-                rs2::frame color = f.as<rs2::frameset>().first_or_default(RS2_STREAM_COLOR);
-                if (color)
-                {
-                    update_output_profile(color);
-                    if (tgt = prepare_target_frame(color, source, RS2_EXTENSION_VIDEO_FRAME))
-                    {
-                        auto src = color.as<rs2::video_frame>();
-                        decimate_others(color.get_profile().format(), src.get_data(),
-                            const_cast<void*>(tgt.get_data()),
-                            src.get_width(), src.get_height(), this->_patch_size);
-                    }
-                }
-
-                rs2::frame infared_0 = f.as<rs2::frameset>().get_infrared_frame(0);
-                if (infared_0)
-                {
-                    update_output_profile(infared_0);
-                    if (tgt = prepare_target_frame(infared_0, source, RS2_EXTENSION_VIDEO_FRAME))
-                    {
-                        auto src = infared_0.as<rs2::video_frame>();
-                        decimate_others(infared_0.get_profile().format(), src.get_data(),
-                            const_cast<void*>(tgt.get_data()),
-                            src.get_width(), src.get_height(), this->_patch_size);
-                    }
-                }
-
-                rs2::frame infared_1 = f.as<rs2::frameset>().get_infrared_frame(1);
-                if (infared_1)
-                {
-                    update_output_profile(infared_1);
-                    if (tgt = prepare_target_frame(infared_1, source, RS2_EXTENSION_VIDEO_FRAME))
-                    {
-                        auto src = infared_1.as<rs2::video_frame>();
-                        decimate_others(infared_1.get_profile().format(), src.get_data(),
-                            const_cast<void*>(tgt.get_data()),
-                            src.get_width(), src.get_height(), this->_patch_size);
-                    }
-                }
-
-                out = source.allocate_composite_frame({ tgt });
+                decimate_depth(static_cast<const uint16_t*>(src.get_data()),
+                    static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
+                    src.get_width(), src.get_height(), this->_patch_size);
             }
             else
             {
-                if (f)
-                {
-                    update_output_profile(f);
-
-                    auto src = f.as<rs2::video_frame>();
-                    rs2::stream_profile profile = f.get_profile();
-                    rs2_format format = profile.format();
-                    rs2_stream type = profile.stream_type();
-
-                    rs2_extension tgt_type;
-                    if (type == RS2_STREAM_COLOR || type == RS2_STREAM_INFRARED)
-                        tgt_type = RS2_EXTENSION_VIDEO_FRAME;
-                    else
-                        tgt_type = f.is<rs2::disparity_frame>() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
-
-                    if (tgt = prepare_target_frame(f, source, tgt_type))
-                    {
-                        if (format == RS2_FORMAT_Z16)
-                        {
-                            decimate_depth(static_cast<const uint16_t*>(src.get_data()),
-                                static_cast<uint16_t*>(const_cast<void*>(tgt.get_data())),
-                                src.get_width(), src.get_height(), this->_patch_size);
-                        }
-                        else
-                        {
-                            decimate_others(format, src.get_data(),
-                                const_cast<void*>(tgt.get_data()),
-                                src.get_width(), src.get_height(), this->_patch_size);
-                        }
-                    }
-                }
-
-                out = tgt;
+                decimate_others(format, src.get_data(),
+                    const_cast<void*>(tgt.get_data()),
+                    src.get_width(), src.get_height(), this->_patch_size);
             }
-
-            source.frame_ready(out);
-        };
-
-        auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
-        processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
+            return tgt;
+        }
     }
 
     void  decimation_filter::update_output_profile(const rs2::frame& f)
@@ -377,11 +306,11 @@ namespace librealsense
             environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*(stream_interface*)(_source_stream_profile.get()->profile), *(stream_interface*)(tmp_profile.get()->profile));
             auto src_vspi = dynamic_cast<video_stream_profile_interface*>(_source_stream_profile.get()->profile);
             auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(tmp_profile.get()->profile);
-            rs2_intrinsics src_intrin   = src_vspi->get_intrinsics();
-            rs2_intrinsics tgt_intrin   = tgt_vspi->get_intrinsics();
+            rs2_intrinsics src_intrin = src_vspi->get_intrinsics();
+            rs2_intrinsics tgt_intrin = tgt_vspi->get_intrinsics();
 
             // recalculate real/padded output frame size based on new input porperties
-            _real_width  = src_vspi->get_width()  / _patch_size;
+            _real_width = src_vspi->get_width() / _patch_size;
             _real_height = src_vspi->get_height() / _patch_size;
 
             // The resulted frame dimension will be dividible by 4;
@@ -393,17 +322,17 @@ namespace librealsense
             _padded_height /= 4;
             _padded_height *= 4;
 
-            tgt_intrin.width            = _padded_width;
-            tgt_intrin.height           = _padded_height;
-            tgt_intrin.fx               = src_intrin.fx/_patch_size;
-            tgt_intrin.fy               = src_intrin.fy/_patch_size;
-            tgt_intrin.ppx              = src_intrin.ppx/_patch_size;
-            tgt_intrin.ppy              = src_intrin.ppy/_patch_size;
+            tgt_intrin.width = _padded_width;
+            tgt_intrin.height = _padded_height;
+            tgt_intrin.fx = src_intrin.fx / _patch_size;
+            tgt_intrin.fy = src_intrin.fy / _patch_size;
+            tgt_intrin.ppx = src_intrin.ppx / _patch_size;
+            tgt_intrin.ppy = src_intrin.ppy / _patch_size;
 
             tgt_vspi->set_intrinsics([tgt_intrin]() { return tgt_intrin; });
             tgt_vspi->set_dims(tgt_intrin.width, tgt_intrin.height);
 
-            _registered_profiles[std::make_tuple(_source_stream_profile.get(),_decimation_factor)]= _target_stream_profile = tmp_profile;
+            _registered_profiles[std::make_tuple(_source_stream_profile.get(), _decimation_factor)] = _target_stream_profile = tmp_profile;
 
             _recalc_profile = false;
         }
@@ -501,7 +430,7 @@ namespace librealsense
                     *frame_data_out++ = 0;
 
                 // Skip N lines to the beginnig of the next processing segment
-                block_start += width_in*scale;
+                block_start += width_in * scale;
             }
         }
         else
@@ -541,7 +470,7 @@ namespace librealsense
                     *frame_data_out++ = 0;
 
                 // Skip N lines to the beginnig of the next processing segment
-                block_start += width_in*scale;
+                block_start += width_in * scale;
             }
         }
 

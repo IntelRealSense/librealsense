@@ -11,10 +11,12 @@
 namespace librealsense
 {
 
-    class disparity_transform : public processing_block
+    class disparity_transform : public generic_processing_block
     {
     public:
         disparity_transform(bool transform_to_disparity);
+        bool should_process(const rs2::frame& frame) override;
+        rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
     protected:
         rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source);

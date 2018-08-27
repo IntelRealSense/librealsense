@@ -15,7 +15,7 @@
 
 namespace librealsense
 {
-    class spatial_filter : public processing_block
+    class spatial_filter : public depth_processing_block
     {
     public:
         spatial_filter();
@@ -24,6 +24,7 @@ namespace librealsense
         void    update_configuration(const rs2::frame& f);
 
         rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source);
+        rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
         template <typename T>
         void dxf_smooth(void *frame_data, float alpha, float delta, int iterations)
@@ -78,7 +79,7 @@ namespace librealsense
                 T val0 = im[0];
                 cur_fill = 0;
 
-                for (u = 1; u < _width-1; u++)
+                for (u = 1; u < _width - 1; u++)
                 {
                     T val1 = im[1];
 
@@ -204,7 +205,7 @@ namespace librealsense
                     if ((fabs(im0) >= valid_threshold) && (fabs(imw) >= valid_threshold))
                     {
                         T diff = static_cast<T>(fabs(im0 - imw));
-                        if ( diff < delta_z)
+                        if (diff < delta_z)
                         {
                             float filtered = im0 * alpha + imw * (1.f - alpha);
                             im[0] = static_cast<T>(filtered + round);

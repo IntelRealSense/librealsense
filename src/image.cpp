@@ -312,6 +312,7 @@ namespace librealsense
 #ifndef ANDROID
     #ifdef __SSSE3__
             static bool do_avx = has_avx();
+    #ifdef __AVX2__
 
             if (do_avx)
             {
@@ -323,6 +324,7 @@ namespace librealsense
                 if (FORMAT == RS2_FORMAT_BGRA8) unpack_yuy2_avx_bgra8(d, s, n);
             }
             else
+    #endif
             {
                 auto src = reinterpret_cast<const __m128i *>(s);
                 auto dst = reinterpret_cast<__m128i *>(d[0]);

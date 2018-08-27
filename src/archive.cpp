@@ -1,6 +1,7 @@
 #include "metadata-parser.h"
 #include "archive.h"
 #include <fstream>
+#include "core/processing.h"
 
 #define MIN_DISTANCE 1e-6
 
@@ -264,7 +265,7 @@ namespace librealsense
     public:
         explicit frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size,
             std::shared_ptr<platform::time_service> ts,
-			std::shared_ptr<metadata_parser_map> parsers)
+            std::shared_ptr<metadata_parser_map> parsers)
             : max_frame_queue_size(in_max_frame_queue_size),
             mutex(), recycle_frames(true), _time_service(ts),
             _metadata_parsers(parsers)
@@ -477,5 +478,4 @@ namespace librealsense
                 << "ms, FPS: " << get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
         }
     }
-
 }
