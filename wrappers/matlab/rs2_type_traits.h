@@ -114,7 +114,8 @@ MatlabParamParser::type_traits<rs2::options>::carrier::~carrier() {
 rs2::options MatlabParamParser::type_traits<rs2::options>::from_internal(rs2_internal_t * ptr) {
     switch (ptr->type) {
     case carrier::types::rs2_sensor: return traits_trampoline::from_internal<rs2::sensor>(ptr).as<rs2::options>();
-    case carrier::types::rs2_process_interface: return *std::shared_ptr<rs2::options>(*static_cast<type_traits<rs2::process_interface>::carrier_t*>(ptr->ptr));
+    // TODO: Fix
+    //case carrier::types::rs2_process_interface: return *std::shared_ptr<rs2::options>(*static_cast<type_traits<rs2::process_interface>::carrier_t*>(ptr->ptr));
     case carrier::types::rs2_colorizer: return *std::shared_ptr<rs2::options>(*static_cast<type_traits<rs2::colorizer>::carrier_t*>(ptr->ptr));
     case carrier::types::rs2_pointcloud: return *std::shared_ptr<rs2::options>(*static_cast<type_traits<rs2::pointcloud>::carrier_t*>(ptr->ptr));
     default: mexErrMsgTxt("Error parsing argument of type rs2::options: unrecognized carrier type");
