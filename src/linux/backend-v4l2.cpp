@@ -267,15 +267,12 @@ namespace librealsense
 
                 LOG_DEBUG("Enqueue buf " << _buf.index << " for fd " << fd);
                 if (xioctl(fd, VIDIOC_QBUF, &_buf) < 0)
+                {
                     LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << fd << " error: " << strerror(errno));
+                }
 
                 _must_enqueue = false;
             }
-        }
-
-
-        buffers_mgr::~buffers_mgr()
-        {
         }
 
         void buffers_mgr::handle_buffer(supported_kernel_buf_types  buf_type,
@@ -617,7 +614,7 @@ namespace librealsense
                     info.conn_spec = usb_specification;
                     info.uvc_capabilities = get_dev_capabilities(dev_name);
 
-                    uvc_nodes.emplace_back(std::make_pair(info, dev_name));
+                    uvc_nodes.emplace_back(info, dev_name);
                 }
                 catch(const std::exception & e)
                 {
@@ -634,37 +631,55 @@ namespace librealsense
             // Assume for each metadata node with index N there is a origin streaming node with index (N-1)
             for (auto&& cur_node : uvc_nodes)
             {
-                if (!(cur_node.first.uvc_capabilities & V4L2_CAP_META_CAPTURE))
-                    uvc_devices.emplace_back(cur_node);
-                else
+                try
                 {
-                    if (uvc_devices.empty())
-                        throw linux_backend_exception(to_string()
-                                                      << "uvc meta-node with no video streaming node encountered: "
-                                                      << std::string(cur_node.first));
+                    if (!(cur_node.first.uvc_capabilities & V4L2_CAP_META_CAPTURE))
+                        uvc_devices.emplace_back(cur_node);
+                    else
+                    {
+                        if (uvc_devices.empty())
+                        {
+                            LOG_ERROR("uvc meta-node with no video streaming node encountered: " << std::string(cur_node.first));
+                            continue;
+                        }
 
-                    // Update the preceding uvc item with metadata node info
-                    auto uvc_node = uvc_devices.back();
+                        // Update the preceding uvc item with metadata node info
+                        auto uvc_node = uvc_devices.back();
 
-                    if (uvc_node.first.uvc_capabilities & V4L2_CAP_META_CAPTURE)
-                        throw linux_backend_exception(to_string()
-                                                      << "Consequtive uvc meta-nodes encountered: "
-                                                      << std::string(uvc_node.first) << " and " << std::string(cur_node.first) );
-                    if (uvc_node.first.has_metadata_node)
-                        throw linux_backend_exception(to_string()
-                                                      << "Metadata node for uvc device: " << std::string(uvc_node.first)
-                                                      << " has already been assigned ");
+                        if (uvc_node.first.uvc_capabilities & V4L2_CAP_META_CAPTURE)
+                        {
+                            LOG_ERROR("Consequtive uvc meta-nodes encountered: " << std::string(uvc_node.first) << " and " << std::string(cur_node.first) );
+                            continue;
+                        }
 
-                    // modify the last element with metadata node info
-                    uvc_node.first.has_metadata_node = true;
-                    uvc_node.first.metadata_node_id = cur_node.first.id;
-                    uvc_devices.back() = uvc_node;
+                        if (uvc_node.first.has_metadata_node)
+                        {
+                            LOG_ERROR( "Metadata node for uvc device: " << std::string(uvc_node.first) << " was already been assigned ");
+                            continue;
+                        }
+
+                        // modify the last element with metadata node info
+                        uvc_node.first.has_metadata_node = true;
+                        uvc_node.first.metadata_node_id = cur_node.first.id;
+                        uvc_devices.back() = uvc_node;
+                    }
+                }
+                catch(const std::exception & e)
+                {
+                    LOG_ERROR("Failed to map meta-node "  << std::string(cur_node.first) <<", error encountered: " << e.what());
                 }
             }
 
-            // Dispatch registration for enumerated uvc devices
-            for (auto&& dev : uvc_devices)
-                action(dev.first, dev.second);
+            try
+            {
+                // Dispatch registration for enumerated uvc devices
+                for (auto&& dev : uvc_devices)
+                    action(dev.first, dev.second);
+            }
+            catch(const std::exception & e)
+            {
+                LOG_ERROR("Registration of UVC device failed: " << e.what());
+            }
         }
 
         v4l_uvc_device::v4l_uvc_device(const uvc_device_info& info, bool use_memory_map)
@@ -963,12 +978,12 @@ namespace librealsense
                                         acquire_metadata(buf_mgr,fds);
 
                                         if (val > 1)
-                                            LOG_INFO("Frame buf ready, md size: " << std::dec << (int)buf_mgr._md_size << " seq. id: " << buf.sequence);
-                                        frame_object fo{ buffer->get_length_frame_only(), buf_mgr._md_size,
-                                            buffer->get_frame_start(), buf_mgr._md_start, timestamp };
+                                            LOG_INFO("Frame buf ready, md size: " << std::dec << (int)buf_mgr.metadata_size() << " seq. id: " << buf.sequence);
+                                        frame_object fo{ buffer->get_length_frame_only(), buf_mgr.metadata_size(),
+                                            buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
 
                                          buffer->attach_buffer(buf);
-                                         buf_mgr.handle_buffer(e_video_buf,-1);
+                                         buf_mgr.handle_buffer(e_video_buf,-1); // transfer new buffer request to the frame callback
 
                                          //Invoke user callback and enqueue next frame
                                          _callback(_profile, fo,
@@ -1006,20 +1021,9 @@ namespace librealsense
         void v4l_uvc_device::acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds)
         {
             if (has_metadata())
-            {
-                auto vid_guard_buf = buf_mgr.buffers.at(e_video_buf);
-                if (vid_guard_buf._file_desc >=0)
-                {
-                    auto buffer = vid_guard_buf._data_buf;
-                    buf_mgr._md_start = buffer->get_frame_start() + buffer->get_length_frame_only();
-                    buf_mgr._md_size = (*(uint8_t*)buf_mgr._md_start);
-                }
-            }
+                buf_mgr.set_md_from_video_node();
             else
-            {
-                buf_mgr._md_start = nullptr;
-                buf_mgr._md_size = 0;
-            }
+                buf_mgr.set_md_attributes(0, nullptr);
         }
 
         void v4l_uvc_device::set_power_state(power_state state)
@@ -1609,7 +1613,7 @@ namespace librealsense
         void v4l_uvc_meta_device::acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds)
         {
             // Metadata is calculated once per frame
-            if (buf_mgr._md_size)
+            if (buf_mgr.metadata_size())
                 return;
 
             if(FD_ISSET(_md_fd, &fds))
@@ -1638,9 +1642,9 @@ namespace librealsense
 
                     if(buf.bytesused > uvc_md_start_offset )
                     {
-                        buf_mgr._md_start = buffer->get_frame_start() + uvc_md_start_offset;
                         // The first uvc_md_start_offset bytes of metadata buffer are generated by host driver
-                        buf_mgr._md_size = buf.bytesused - uvc_md_start_offset;
+                        buf_mgr.set_md_attributes(buf.bytesused - uvc_md_start_offset,
+                                                    buffer->get_frame_start() + uvc_md_start_offset);
 
                         buffer->attach_buffer(buf);
                         buf_mgr.handle_buffer(e_metadata_buf,-1); // transfer new buffer request to the frame callback

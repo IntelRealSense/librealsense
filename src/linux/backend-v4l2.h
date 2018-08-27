@@ -150,45 +150,69 @@ namespace librealsense
             e_max_kernel_buf_type
         };
 
-        struct kernel_buf_guard
-        {
-            int                                 _file_desc=-1;
-            bool                                _managed=false;
-            std::shared_ptr<platform::buffer>   _data_buf=nullptr;
-            v4l2_buffer                         _dq_buf{};
-
-            ~kernel_buf_guard()
-            {
-                if (_data_buf && (!_managed))
-                {
-                    LOG_DEBUG("Enqueue buf " << _dq_buf.index << " for fd " << _file_desc);
-                    if (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0)
-                    {
-                        LOG_ERROR("xioctl(VIDIOC_QBUF) guard failed");
-                    }
-                }
-            }
-        };
 
         // RAII handling of kernel buffers interchanges
-        struct buffers_mgr
+        class buffers_mgr
         {
+        public:
             buffers_mgr(bool memory_mapped_buf) :
                 _md_start(nullptr),
                 _md_size(0),
                 _mmap_bufs(memory_mapped_buf)
                 {};
 
-            ~buffers_mgr();
+            ~buffers_mgr(){};
 
             void    request_next_frame();
             void    handle_buffer(supported_kernel_buf_types buf_type, int file_desc,
                                    v4l2_buffer buf= v4l2_buffer(),
                                    std::shared_ptr<platform::buffer> data_buf=nullptr);
 
-            void*                               _md_start;
-            uint8_t                             _md_size;
+            uint8_t metadata_size() const { return _md_size; };
+            void*   metadata_start() const { return _md_start; };
+
+            void    set_md_attributes(uint8_t md_size, void* md_start)
+                    { _md_start = md_start; _md_size = md_size; }
+
+            void    set_md_from_video_node()
+                    {
+                        void* start = nullptr;
+                        auto size = 0;
+
+                        if (buffers.at(e_video_buf)._file_desc >=0)
+                        {
+                            auto buffer = buffers.at(e_video_buf)._data_buf;
+                            start = buffer->get_frame_start() + buffer->get_length_frame_only();
+                            size = (*(uint8_t*)start);
+                        }
+                        set_md_attributes(size,start);
+                    }
+
+        private:
+            void*                               _md_start;  // marks the address of metadata blob
+            uint8_t                             _md_size;   // metadata size is bounded by 255 bytes by design
             bool                                _mmap_bufs;
+
+            // RAII for buffer exchange with kernel
+            struct kernel_buf_guard
+            {
+                ~kernel_buf_guard()
+                {
+                    if (_data_buf && (!_managed))
+                    {
+                        LOG_DEBUG("Enqueue buf " << _dq_buf.index << " for fd " << _file_desc);
+                        if (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0)
+                        {
+                            LOG_ERROR("xioctl(VIDIOC_QBUF) guard failed");
+                        }
+                    }
+                }
+
+                int                                 _file_desc=-1;
+                bool                                _managed=false;
+                std::shared_ptr<platform::buffer>   _data_buf=nullptr;
+                v4l2_buffer                         _dq_buf{};
+            };
 
             std::array<kernel_buf_guard, e_max_kernel_buf_type> buffers;
         };
