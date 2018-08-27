@@ -43,6 +43,43 @@
 #include "../third-party/libusb/libusb/libusb.h"
 #pragma GCC diagnostic pop
 
+// Metadata streaming nodes are available with kernels 4.16+
+#ifdef V4L2_META_FMT_UVC
+constexpr bool metadata_node = true;
+#else
+#pragma message ( "\nLibrealsense notification: V4L2_META_FMT_UVC was not defined, adding metadata constructs")
+
+constexpr bool metadata_node = false;
+
+// Providing missing parts from videodev2.h
+// V4L2_META_FMT_UVC >> V4L2_CAP_META_CAPTURE is also defined, but the opposite does not hold
+#define V4L2_META_FMT_UVC    v4l2_fourcc('U', 'V', 'C', 'H') /* UVC Payload Header */
+
+#ifndef V4L2_CAP_META_CAPTURE
+#define V4L2_CAP_META_CAPTURE    0x00800000  /* Specified in kernel header v4.16 */
+#endif // V4L2_CAP_META_CAPTURE
+
+#endif // V4L2_META_FMT_UVC
+
+#ifndef V4L2_META_FMT_D4XX
+#define V4L2_META_FMT_D4XX      v4l2_fourcc('D', '4', 'X', 'X') /* D400 Payload Header metadata */
+#endif
+
+// Use local definition of buf type to resolve for kernel versions
+constexpr auto LOCAL_V4L2_BUF_TYPE_META_CAPTURE = (v4l2_buf_type)(13);
+
+#pragma pack(push, 1)
+// The struct definition is identical to uvc_meta_buf defined uvcvideo.h/ kernel 4.16 headers, and is provided to allow for cross-kernel compilation
+struct uvc_meta_buffer {
+    __u64 ns;               // system timestamp of the payload in nanoseconds
+    __u16 sof;              // USB Frame Number
+    __u8 length;            // length of the payload metadata header
+    __u8 flags;             // payload header flags
+    __u8* buf;              //device-specific metadata payload data
+};
+#pragma pack(pop)
+
+
 namespace librealsense
 {
     namespace platform
@@ -75,7 +112,7 @@ namespace librealsense
         class buffer
         {
         public:
-            buffer(int fd, bool use_memory_map, int index);
+            buffer(int fd, v4l2_buf_type type, bool use_memory_map, int index);
 
             void prepare_for_streaming(int fd);
 
@@ -93,6 +130,7 @@ namespace librealsense
             uint8_t* get_frame_start() const { return _start; }
 
         private:
+            v4l2_buf_type _type;
             uint8_t* _start;
             size_t _length;
             size_t _original_length;
@@ -148,9 +186,9 @@ namespace librealsense
 
             std::string fourcc_to_string(uint32_t id) const;
 
-            void signal_stop();
+            virtual void signal_stop();
 
-            void poll();
+            virtual void poll();
 
             void set_power_state(power_state state) override;
             power_state get_power_state() const override { return _state; }
@@ -174,20 +212,33 @@ namespace librealsense
             std::string get_device_location() const override { return _device_path; }
             usb_spec get_usb_specification() const override { return _device_usb_spec; }
 
-        private:
+        protected:
             static uint32_t get_cid(rs2_option option);
 
-            void capture_loop();
+            virtual void capture_loop();
 
-            bool has_metadata();
+            virtual bool has_metadata() const;
+
+            virtual void streamon() const;
+            virtual void streamoff() const;
+            virtual void request_io_buffers(size_t num) const;
+
+            virtual void allocate_io_buffers(size_t num);
+            virtual void map_device_descriptor();
+            virtual void unmap_device_descriptor();
+            virtual void set_format(stream_profile profile);
+            virtual void prepare_capture_buffers();
+            virtual void stop_data_capture();
+            //virtual void capture_frame(fd_set &cur_fds);       // retrieve frame from kernel and dispatch user-callback
+            virtual void acquire_metadata(void *&md_start,uint8_t& md_size, fd_set &fds,
+                                          std::vector<std::pair< std::shared_ptr<platform::buffer>,int>> &datasets);
+
 
             power_state _state = D3;
             std::string _name = "";
             std::string _device_path = "";
             usb_spec _device_usb_spec = usb_undefined;
             uvc_device_info _info;
-            int _fd = 0;
-            int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
 
             std::vector<std::shared_ptr<buffer>> _buffers;
             stream_profile _profile;
@@ -198,6 +249,93 @@ namespace librealsense
             std::unique_ptr<std::thread> _thread;
             std::unique_ptr<named_mutex> _named_mtx;
             bool _use_memory_map;
+            int _max_fd = 0;                    // specifies the maximal pipe number the polling process will monitor
+            std::vector<int>  _fds;             // list the file descriptors to be monitored during frames polling
+            std::vector<int>  _stream_pipe_fds;    // file descriptors explicit
+            std::vector<int>  _ctl_pipe_fds;    // file descriptors explicit
+
+
+        private:
+            int _fd = 0;          // prevent unintentional abuse in derived class
+            int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
+
+        };
+
+        // Abstraction layer for uvc/metadata split nodes introduced with kernel 4.16
+
+        class v4l_uvc_meta_device : public v4l_uvc_device
+        {
+        public:
+            static void foreach_uvc_device(
+                    std::function<void(const uvc_device_info&,
+                                       const std::string&)> action);
+
+            v4l_uvc_meta_device(const uvc_device_info& info, bool use_memory_map = false);
+
+            ~v4l_uvc_meta_device();
+
+//            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override { throw std::runtime_error("Not implemented"); };
+
+//            void stream_on(std::function<void(const notification& n)> error_handler) override { throw std::runtime_error("Not implemented"); };
+
+//            void start_callbacks() override { throw std::runtime_error("Not implemented"); };
+
+//            void stop_callbacks() override { throw std::runtime_error("Not implemented"); };
+
+//            //void close(stream_profile) override;
+
+//            void signal_stop() override  { throw std::runtime_error("Not implemented"); };
+
+//            void poll() override  { throw std::runtime_error("Not implemented"); };
+
+//            void set_power_state(power_state state) override;
+//            power_state get_power_state() const override;
+
+            //void init_xu(const extension_unit& xu) override {}
+            //bool set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size) override;
+            //bool get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const override;
+            //control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override;
+
+            //bool get_pu(rs2_option opt, int32_t& value) const override;
+            //bool set_pu(rs2_option opt, int32_t value) override;
+            //control_range get_pu_range(rs2_option option) const override;
+            //std::vector<stream_profile> get_profiles() const override;
+
+            //void lock() const override;
+            //void unlock() const override;
+
+            //std::string get_device_location() const override { return _device_path; }
+
+        protected:
+
+            //void capture_loop() override  { throw std::runtime_error("Not implemented"); };
+
+            //bool has_metadata() const override { throw std::runtime_error("Not implemented"); };
+
+            void streamon() const;
+            void streamoff() const;
+            void request_io_buffers(size_t num) const;
+            void allocate_io_buffers(size_t num);
+            void map_device_descriptor();
+            void unmap_device_descriptor();
+            void set_format(stream_profile profile);
+            void prepare_capture_buffers();
+            virtual void acquire_metadata(void *&md_start,uint8_t& md_size, fd_set &fds,
+                                          std::vector<std::pair< std::shared_ptr<platform::buffer>,int>> &datasets);
+
+            int _md_fd = -1;
+            int _md_stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
+            std::string _md_name = "";
+
+            std::vector<std::shared_ptr<buffer>> _md_buffers;
+            stream_profile _md_profile;
+            //frame_callback _callback;
+            //std::atomic<bool> _is_capturing;
+            //std::atomic<bool> _is_alive;
+            //std::atomic<bool> _is_started;
+            //std::unique_ptr<std::thread> _thread;
+            //std::unique_ptr<named_mutex> _named_mtx;
+            //bool _use_memory_map;
         };
 
         class v4l_backend : public backend
