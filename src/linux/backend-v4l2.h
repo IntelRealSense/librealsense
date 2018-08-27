@@ -43,6 +43,43 @@
 #include "../third-party/libusb/libusb/libusb.h"
 #pragma GCC diagnostic pop
 
+// Metadata streaming nodes are available with kernels 4.16+
+#ifdef V4L2_META_FMT_UVC
+constexpr bool metadata_node = true;
+#else
+#pragma message ( "\nLibrealsense notification: V4L2_META_FMT_UVC was not defined, adding metadata constructs")
+
+constexpr bool metadata_node = false;
+
+// Providing missing parts from videodev2.h
+// V4L2_META_FMT_UVC >> V4L2_CAP_META_CAPTURE is also defined, but the opposite does not hold
+#define V4L2_META_FMT_UVC    v4l2_fourcc('U', 'V', 'C', 'H') /* UVC Payload Header */
+
+#ifndef V4L2_CAP_META_CAPTURE
+#define V4L2_CAP_META_CAPTURE    0x00800000  /* Specified in kernel header v4.16 */
+#endif // V4L2_CAP_META_CAPTURE
+
+#endif // V4L2_META_FMT_UVC
+
+#ifndef V4L2_META_FMT_D4XX
+#define V4L2_META_FMT_D4XX      v4l2_fourcc('D', '4', 'X', 'X') /* D400 Payload Header metadata */
+#endif
+
+// Use local definition of buf type to resolve for kernel versions
+constexpr auto LOCAL_V4L2_BUF_TYPE_META_CAPTURE = (v4l2_buf_type)(13);
+
+#pragma pack(push, 1)
+// The struct definition is identical to uvc_meta_buf defined uvcvideo.h/ kernel 4.16 headers, and is provided to allow for cross-kernel compilation
+struct uvc_meta_buffer {
+    __u64 ns;               // system timestamp of the payload in nanoseconds
+    __u16 sof;              // USB Frame Number
+    __u8 length;            // length of the payload metadata header
+    __u8 flags;             // payload header flags
+    __u8* buf;              //device-specific metadata payload data
+};
+#pragma pack(pop)
+
+
 namespace librealsense
 {
     namespace platform
@@ -75,7 +112,7 @@ namespace librealsense
         class buffer
         {
         public:
-            buffer(int fd, bool use_memory_map, int index);
+            buffer(int fd, v4l2_buf_type type, bool use_memory_map, int index);
 
             void prepare_for_streaming(int fd);
 
@@ -92,7 +129,10 @@ namespace librealsense
 
             uint8_t* get_frame_start() const { return _start; }
 
+            bool use_memory_map() const { return _use_memory_map; }
+
         private:
+            v4l2_buf_type _type;
             uint8_t* _start;
             size_t _length;
             size_t _original_length;
@@ -101,6 +141,80 @@ namespace librealsense
             v4l2_buffer _buf;
             std::mutex _mutex;
             bool _must_enqueue = false;
+        };
+
+        enum supported_kernel_buf_types : uint8_t
+        {
+            e_video_buf,
+            e_metadata_buf,
+            e_max_kernel_buf_type
+        };
+
+
+        // RAII handling of kernel buffers interchanges
+        class buffers_mgr
+        {
+        public:
+            buffers_mgr(bool memory_mapped_buf) :
+                _md_start(nullptr),
+                _md_size(0),
+                _mmap_bufs(memory_mapped_buf)
+                {};
+
+            ~buffers_mgr(){};
+
+            void    request_next_frame();
+            void    handle_buffer(supported_kernel_buf_types buf_type, int file_desc,
+                                   v4l2_buffer buf= v4l2_buffer(),
+                                   std::shared_ptr<platform::buffer> data_buf=nullptr);
+
+            uint8_t metadata_size() const { return _md_size; };
+            void*   metadata_start() const { return _md_start; };
+
+            void    set_md_attributes(uint8_t md_size, void* md_start)
+                    { _md_start = md_start; _md_size = md_size; }
+
+            void    set_md_from_video_node()
+                    {
+                        void* start = nullptr;
+                        auto size = 0;
+
+                        if (buffers.at(e_video_buf)._file_desc >=0)
+                        {
+                            auto buffer = buffers.at(e_video_buf)._data_buf;
+                            start = buffer->get_frame_start() + buffer->get_length_frame_only();
+                            size = (*(uint8_t*)start);
+                        }
+                        set_md_attributes(size,start);
+                    }
+
+        private:
+            void*                               _md_start;  // marks the address of metadata blob
+            uint8_t                             _md_size;   // metadata size is bounded by 255 bytes by design
+            bool                                _mmap_bufs;
+
+            // RAII for buffer exchange with kernel
+            struct kernel_buf_guard
+            {
+                ~kernel_buf_guard()
+                {
+                    if (_data_buf && (!_managed))
+                    {
+                        LOG_DEBUG("Enqueue buf " << _dq_buf.index << " for fd " << _file_desc);
+                        if (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0)
+                        {
+                            LOG_ERROR("xioctl(VIDIOC_QBUF) guard failed");
+                        }
+                    }
+                }
+
+                int                                 _file_desc=-1;
+                bool                                _managed=false;
+                std::shared_ptr<platform::buffer>   _data_buf=nullptr;
+                v4l2_buffer                         _dq_buf{};
+            };
+
+            std::array<kernel_buf_guard, e_max_kernel_buf_type> buffers;
         };
 
         class v4l_usb_device : public usb_device
@@ -125,7 +239,26 @@ namespace librealsense
             int _mi;
         };
 
-        class v4l_uvc_device : public uvc_device
+        class v4l_uvc_interface
+        {
+            virtual void capture_loop() = 0;
+
+            virtual bool has_metadata() const = 0;
+
+            virtual void streamon() const = 0;
+            virtual void streamoff() const = 0;
+            virtual void negotiate_kernel_buffers(size_t num) const = 0;
+
+            virtual void allocate_io_buffers(size_t num) = 0;
+            virtual void map_device_descriptor() = 0;
+            virtual void unmap_device_descriptor() = 0;
+            virtual void set_format(stream_profile profile) = 0;
+            virtual void prepare_capture_buffers() = 0;
+            virtual void stop_data_capture() = 0;
+            virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds) = 0;
+        };
+
+        class v4l_uvc_device : public uvc_device, public v4l_uvc_interface
         {
         public:
             static void foreach_uvc_device(
@@ -174,20 +307,30 @@ namespace librealsense
             std::string get_device_location() const override { return _device_path; }
             usb_spec get_usb_specification() const override { return _device_usb_spec; }
 
-        private:
+        protected:
             static uint32_t get_cid(rs2_option option);
 
-            void capture_loop();
+            virtual void capture_loop();
 
-            bool has_metadata();
+            virtual bool has_metadata() const;
+
+            virtual void streamon() const;
+            virtual void streamoff() const;
+            virtual void negotiate_kernel_buffers(size_t num) const;
+
+            virtual void allocate_io_buffers(size_t num);
+            virtual void map_device_descriptor();
+            virtual void unmap_device_descriptor();
+            virtual void set_format(stream_profile profile);
+            virtual void prepare_capture_buffers();
+            virtual void stop_data_capture();
+            virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds);
 
             power_state _state = D3;
             std::string _name = "";
             std::string _device_path = "";
             usb_spec _device_usb_spec = usb_undefined;
             uvc_device_info _info;
-            int _fd = 0;
-            int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
 
             std::vector<std::shared_ptr<buffer>> _buffers;
             stream_profile _profile;
@@ -198,6 +341,40 @@ namespace librealsense
             std::unique_ptr<std::thread> _thread;
             std::unique_ptr<named_mutex> _named_mtx;
             bool _use_memory_map;
+            int _max_fd = 0;                    // specifies the maximal pipe number the polling process will monitor
+            std::vector<int>  _fds;             // list the file descriptors to be monitored during frames polling
+
+        private:
+            int _fd = 0;          // prevent unintentional abuse in derived class
+            int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
+
+        };
+
+        // Composition layer for uvc/metadata split nodes introduced with kernel 4.16
+        class v4l_uvc_meta_device : public v4l_uvc_device
+        {
+        public:
+            v4l_uvc_meta_device(const uvc_device_info& info, bool use_memory_map = false);
+
+            ~v4l_uvc_meta_device();
+
+        protected:
+
+            void streamon() const;
+            void streamoff() const;
+            void negotiate_kernel_buffers(size_t num) const;
+            void allocate_io_buffers(size_t num);
+            void map_device_descriptor();
+            void unmap_device_descriptor();
+            void set_format(stream_profile profile);
+            void prepare_capture_buffers();
+            virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds);
+
+            int _md_fd = -1;
+            std::string _md_name = "";
+
+            std::vector<std::shared_ptr<buffer>> _md_buffers;
+            stream_profile _md_profile;
         };
 
         class v4l_backend : public backend

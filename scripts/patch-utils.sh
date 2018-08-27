@@ -13,7 +13,7 @@ function require_package {
 	if [ $installed -eq 0 ];
 	then
 		echo -e "\e[31m - not found, installing now...\e[0m"
-		sudo apt-get install ${package_name}
+		sudo apt-get install ${package_name} -y
 		echo -e "\e[32mMissing package installed\e[0m"
 	else
 		echo -e "\e[32m - found\e[0m"
