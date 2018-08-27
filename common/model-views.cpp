@@ -2566,10 +2566,6 @@ namespace rs2
 
     void stream_model::show_stream_footer(ImFont* font, const rect &stream_rect, const  mouse_info& mouse)
     {
-        // Evgeni Debugging metadata
-        if (show_stream_details)
-            show_metadata(mouse);
-
         if (stream_rect.contains(mouse.cursor))
         {
             std::stringstream ss;

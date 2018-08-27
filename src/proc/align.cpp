@@ -72,7 +72,6 @@ namespace librealsense
         const __m128i mask1 = _mm_set_epi8((char)0xff, (char)0xff, (char)15, (char)14, (char)0xff, (char)0xff, (char)13, (char)12,
             (char)0xff, (char)0xff, (char)11, (char)10, (char)0xff, (char)0xff, (char)9, (char)8);
 
-        auto zerro = _mm_set_ps1(0);
         auto scale = _mm_set_ps1(depth_scale);
 
         auto mapx = pre_compute_x;

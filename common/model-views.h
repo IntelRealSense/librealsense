@@ -444,7 +444,7 @@ namespace rs2
         float2 _middle_pos{0, 0};
         rect _normalized_zoom{0, 0, 1, 1};
         int color_map_idx = 1;
-        bool show_stream_details = true; // Evgeni debugging
+        bool show_stream_details = false;
         rect curr_info_rect{};
         temporal_event _stream_not_alive;
         bool show_map_ruler = true;
