@@ -27,6 +27,7 @@
 #include <arcball_camera.h>
 
 constexpr const char* recommended_fw_url = "https://downloadcenter.intel.com/download/27522/Latest-Firmware-for-Intel-RealSense-D400-Product-Family?v=t";
+constexpr const char* store_url = "https://click.intel.com/";
 
 using namespace rs400;
 using namespace nlohmann;
@@ -3233,19 +3234,36 @@ namespace rs2
             ImGuiWindowFlags_NoCollapse |
             ImGuiWindowFlags_NoTitleBar;
 
-        ImGui::PushFont(font_18);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
         ImGui::SetNextWindowPos({ float(x), float(y) });
-        ImGui::SetNextWindowSize({ 250.f, 50.f });
+        ImGui::SetNextWindowSize({ 250.f, 70.f });
         ImGui::Begin("nostreaming_popup", nullptr, flags);
 
+        ImGui::PushFont(font_18);
         ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0x70, 0x8f, 0xa8, 0xff));
         ImGui::Text("Connect a RealSense Camera\nor Add Source");
         ImGui::PopStyleColor();
+        ImGui::PopFont();
 
+        ImGui::PushStyleColor(ImGuiCol_Button, button_color);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, button_color + 0.1f);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, button_color + 0.01f);
+        ImGui::PushStyleColor(ImGuiCol_Text, button_color + 0.3f);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, button_color + 0.35f);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12);
+        ImGui::Spacing();
+        if (ImGui::Button("Shop Now", { 80, 18 }))
+        {
+            open_url(store_url);
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Go to Intel store (internet\nconnection required)");
+        }
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor(4);
         ImGui::End();
         ImGui::PopStyleColor();
-        ImGui::PopFont();
     }
 
     // Generate streams layout, creates a grid-like layout with factor amount of columns
