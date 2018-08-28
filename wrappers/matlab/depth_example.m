@@ -28,10 +28,7 @@ function depth_example()
     % Get actual data and convert into a format imshow can use
     % (Color data arrives as [R, G, B, R, G, B, ...] vector)
     data = color.get_data();
-    channels = vec2mat(data, 3);
-    img(:,:,1) = vec2mat(channels(:,1), color.get_width());
-    img(:,:,2) = vec2mat(channels(:,2), color.get_width());
-    img(:,:,3) = vec2mat(channels(:,3), color.get_width());
+    img = permute(reshape(data',[3,color.get_width(),color.get_height()]),[3 2 1]);
 
     % Display image
     imshow(img);
