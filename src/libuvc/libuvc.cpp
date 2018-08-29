@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <regex>
 #include <list>
+#include <unordered_map>
 
 #include <signal.h>
 
@@ -53,6 +54,13 @@ namespace librealsense
 {
     namespace platform
     {
+        // the table provides the substitution 4CC used when firmware-published formats
+        // differ from the recognized scheme
+        const std::unordered_map<uint32_t, uint32_t> fourcc_map = {
+            { 0x32000000, 0x47524559 },    /* 'GREY' from 'L8  ' */
+            { 0x52415738, 0x47524559 },    /* 'GREY' from 'RAW8' */
+        };
+
         static void internal_uvc_callback(uvc_frame_t *frame, void *ptr);
 
         static std::tuple<std::string,uint16_t>  get_usb_descriptors(libusb_device* usb_device)
@@ -297,6 +305,10 @@ namespace librealsense
                 uvc_error_t res;
                 uvc_stream_ctrl_t ctrl;
 
+                // Assume that the base and the substituted codes do not co-exist
+                if (_substitute_4cc.count(profile.format))
+                    profile.format = _substitute_4cc.at(profile.format);
+
                 // request all formats for all pins in the device.
                 res = uvc_get_stream_ctrl_format_size_all(
                         _device_handle, &ctrl,
@@ -402,8 +414,7 @@ namespace librealsense
             }
 
             void power_D3() {
-
-              uvc_unref_device(_device);
+                uvc_unref_device(_device);
                 //uvc_stop_streaming(_device_handle);
                 _profiles.clear();
                 uvc_close(_device_handle);
@@ -411,7 +422,7 @@ namespace librealsense
                 _device_handle = NULL;
                 _real_state = D3;
             }
-            
+
             void set_power_state(power_state state) override {
                 std::lock_guard<std::mutex> lock(_power_mutex);
 
@@ -633,8 +644,16 @@ namespace librealsense
                 uvc_format_t *cur_format = formats;
               // build a list of all stream profiles and return to the caller.
                 while ( cur_format != NULL) {
+                    // Substitude HW profiles with 4CC codes recognized by the core
+                    uint32_t device_fourcc = cur_format->fourcc;
+                    if (fourcc_map.count(device_fourcc))
+                    {
+                        _substitute_4cc[fourcc_map.at(device_fourcc)] = device_fourcc;
+                        device_fourcc = fourcc_map.at(device_fourcc);
+                    }
+
                     stream_profile p{};
-                    p.format = cur_format->fourcc;
+                    p.format = device_fourcc;
                     p.fps = cur_format->fps;
                     p.width = cur_format->width;
                     p.height = cur_format->height;
@@ -710,6 +729,7 @@ namespace librealsense
             std::vector<stream_profile> _profiles;
             std::vector<frame_callback> _callbacks;
             std::vector<uvc_stream_ctrl_t> _stream_ctrls;
+            mutable std::unordered_map<uint32_t, uint32_t> _substitute_4cc;
             std::atomic<bool> _is_capturing;
             std::atomic<bool> _is_alive;
             std::atomic<bool> _is_started;
