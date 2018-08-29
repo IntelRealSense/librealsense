@@ -2,7 +2,7 @@
 
 <p align="center"><img src="http://realsense-hw-public.s3.amazonaws.com/rs-tests/unity_screenshot.PNG" height="400" /></p>
 
-> [Download **realsense.unitypackage**](http://realsense-hw-public.s3.amazonaws.com/rs-tests/realsense.unitypackage) and go to `Assets > Scenes > Start Here` to see the home screen above
+> [Download **realsense.unitypackage**](https://github.com/IntelRealSense/librealsense/releases/download/v2.16.0/Intel.RealSense.unitypackage) and go to `Assets > Scenes > Start Here` to see the home screen above
 
 ## Overview
 
