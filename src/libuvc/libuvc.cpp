@@ -346,6 +346,9 @@ namespace librealsense
             void stop_callbacks() override
             {
                 _is_started = false;
+                _stream_ctrls.clear();
+                _profiles.clear();
+                _callbacks.clear();
             }
 
             void close(stream_profile) override
