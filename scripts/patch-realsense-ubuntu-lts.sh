@@ -40,6 +40,7 @@ then
 fi
 kernel_branch=$(choose_kernel_branch ${LINUX_BRANCH} ${ubuntu_codename})
 kernel_name="ubuntu-${ubuntu_codename}-$kernel_branch"
+echo -e "\e[32mCreate patches workspace in \e[93m${kernel_name} \e[32mfolder\n\e[0m"
 
 #Distribution-specific packages
 if [ ${ubuntu_codename} == "bionic" ];
@@ -92,6 +93,10 @@ else
 	patch -p1 < ../scripts/realsense-hid-ubuntu-${ubuntu_codename}-${kernel_branch}.patch
 	echo -e "\e[32mApplying realsense-powerlinefrequency-fix patch\e[0m"
 	patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch
+	# Applying 3rd-party patch that affects USB2 behavior
+	# See reference https://patchwork.kernel.org/patch/9907707/
+	echo -e "\e[32mRetrofit uvc bug fix enabled with 4.18+\e[0m"
+	patch -p1 < ../scripts/v1-media-uvcvideo-mark-buffer-error-where-overflow.patch
 fi
 
 # Copy configuration
