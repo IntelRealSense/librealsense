@@ -356,7 +356,8 @@ namespace librealsense
 
         for (auto&& item : playback_devices)
         {
-            list.push_back(item.second.lock());
+            if (auto dev = item.second.lock())
+                list.push_back(dev);
         }
 
         return list;
