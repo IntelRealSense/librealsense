@@ -56,7 +56,7 @@ typedef enum rs2_format
 {
     RS2_FORMAT_ANY             , /**< When passed to enable stream, librealsense will try to provide best suited format */
     RS2_FORMAT_Z16             , /**< 16-bit linear depth values. The depth is meters is equal to depth scale * pixel value. */
-    RS2_FORMAT_DISPARITY16     , /**< 16-bit linear disparity values. The depth in meters is equal to depth scale / pixel value. */
+    RS2_FORMAT_DISPARITY16     , /**< 16-bit float-point disparity values. Depth->Disparity conversion : Disparity = Baseline*FocalLength/Depth. */
     RS2_FORMAT_XYZ32F          , /**< 32-bit floating point 3D coordinates. */
     RS2_FORMAT_YUYV            , /**< 32-bit y0, u, y1, v data for every two pixels. Similar to YUV422 but packed in a different order - https://en.wikipedia.org/wiki/YUV */
     RS2_FORMAT_RGB8            , /**< 8-bit red, green and blue channels */

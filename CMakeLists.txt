@@ -89,7 +89,7 @@ if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -g -D_BSD_SOURCE")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -g -Wno-missing-field-initializers")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar")
-
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fPIE -pie")
     message(STATUS "Prepare RealSense SDK for Android OS (${ANDROID_NDK_ABI_NAME})")
 endif()
 
@@ -201,6 +201,22 @@ set(REALSENSE_CPP
     
 ## Check for Windows Version ##
 if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
+    if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
+        set(DRIVERS IntelD415_win7.inf
+                    WdfCoinstaller01011.dll
+                    winusbcoinstaller2.dll
+                    )
+    
+        foreach(item IN LISTS DRIVERS)
+            add_custom_command(
+                OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${item}"
+                COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/src/win7/d415_driver/${item}" "${CMAKE_CURRENT_BINARY_DIR}/${item}"
+                DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${item}"
+            )
+        endforeach()
+    endif()
+    add_custom_target(realsense-driver ALL DEPENDS ${DRIVERS})
+    
     list(APPEND REALSENSE_CPP
         src/win7/win7-helpers.cpp
         src/win7/win7-uvc.cpp
@@ -892,6 +908,12 @@ target_include_directories(realsense2 PRIVATE
         ${BOOST_INCLUDE_PATH}
         ${LZ4_INCLUDE_PATH}
         )
+if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
+    add_dependencies(realsense2 realsense-driver)
+    set_target_properties (realsense-driver PROPERTIES
+        FOLDER Library
+    )
+endif()
 
 if (USE_SYSTEM_LIBUSB)
     target_include_directories(realsense2 PRIVATE ${LIBUSB1_INCLUDE_DIRS})
@@ -942,6 +964,7 @@ option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
 option(BUILD_CSHARP_BINDINGS "Build C# bindings" OFF)
+#option(BUILD_MATLAB_BINDINGS "Build Matlab bindings" OFF)
 option(BUILD_UNITY_BINDINGS "Copy the unity project to the build folder with the required dependencies" OFF)
 option(BUILD_CV_EXAMPLES "Build OpenCV examples" OFF)
 option(BUILD_PCL_EXAMPLES "Build PCL examples" OFF)
@@ -970,6 +993,10 @@ endif()
 
 if (BUILD_WITH_CUDA)
     add_definitions(-DRS2_USE_CUDA)
+endif()
+
+if (BUILD_MATLAB_BINDINGS)
+  add_subdirectory(wrappers/matlab)
 endif()
 
 

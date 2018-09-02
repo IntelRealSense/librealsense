@@ -6,8 +6,12 @@
 
 #include "h/rs_types.h"
 #include "h/rs_sensor.h"
+#include "h/rs_frame.h"
+#include "rs.h"
 #include "assert.h"
-
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <math.h>
 
 
@@ -78,6 +82,82 @@ static void rs2_fov(const struct rs2_intrinsics * intrin, float to_fov[2])
 {
     to_fov[0] = (atan2f(intrin->ppx + 0.5f, intrin->fx) + atan2f(intrin->width - (intrin->ppx + 0.5f), intrin->fx)) * 57.2957795f;
     to_fov[1] = (atan2f(intrin->ppy + 0.5f, intrin->fy) + atan2f(intrin->height - (intrin->ppy + 0.5f), intrin->fy)) * 57.2957795f;
+}
+
+static void next_pixel_in_line(float curr[2], const float start[2], const float end[2])
+{
+    float line_slope = (end[1] - start[1]) / (end[0] - start[0]);
+    if (abs(end[0] - curr[0]) > abs(end[1] - curr[1]))
+    {
+        curr[0] = end[0] > curr[0] ? curr[0] + 1 : curr[0] - 1;
+        curr[1] = end[1] - line_slope * (end[0] - curr[0]);
+    }
+    else
+    {
+        curr[1] = end[1] > curr[1] ? curr[1] + 1 : curr[1] - 1;
+        curr[0] = end[0] - ((end[1] + curr[1]) / line_slope);
+    }
+}
+
+static bool is_pixel_in_line(const float curr[2], const float start[2], const float end[2])
+{
+    return ((end[0] >= start[0] && end[0] >= curr[0] && curr[0] >= start[0]) || (end[0] <= start[0] && end[0] <= curr[0] && curr[0] <= start[0])) &&
+           ((end[1] >= start[1] && end[1] >= curr[1] && curr[1] >= start[1]) || (end[1] <= start[1] && end[1] <= curr[1] && curr[1] <= start[1]));
+}
+
+static void adjust_2D_point_to_boundary(float p[2], int width, int height)
+{
+    if (p[0] < 0) p[0] = 0;
+    if (p[0] > width) p[0] = width;
+    if (p[1] < 0) p[1] = 0;
+    if (p[1] > height) p[1] = height;
+}
+
+/* Find projected pixel with unknown depth search along line. */
+static void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
+    const uint16_t* data, float depth_scale,
+    float depth_min, float depth_max, 
+    const struct rs2_intrinsics* depth_intrin,
+    const struct rs2_intrinsics* color_intrin,
+    const struct rs2_extrinsics* color_to_depth,
+    const struct rs2_extrinsics* depth_to_color,
+    const float from_pixel[2])
+{
+    //Find line start pixel
+    float start_pixel[2] = { 0 }, min_point[3] = { 0 }, min_transformed_point[3] = { 0 };
+    rs2_deproject_pixel_to_point(min_point, color_intrin, from_pixel, depth_min);
+    rs2_transform_point_to_point(min_transformed_point, color_to_depth, min_point);
+    rs2_project_point_to_pixel(start_pixel, depth_intrin, min_transformed_point);
+    adjust_2D_point_to_boundary(start_pixel, depth_intrin->width, depth_intrin->height);
+
+    //Find line end depth pixel
+    float end_pixel[2] = { 0 }, max_point[3] = { 0 }, max_transformed_point[3] = { 0 };
+    rs2_deproject_pixel_to_point(max_point, color_intrin, from_pixel, depth_max);
+    rs2_transform_point_to_point(max_transformed_point, color_to_depth, max_point);
+    rs2_project_point_to_pixel(end_pixel, depth_intrin, max_transformed_point);
+    adjust_2D_point_to_boundary(end_pixel, depth_intrin->width, depth_intrin->height);
+
+    //search along line for the depth pixel that it's projected pixel is the closest to the input pixel
+    float min_dist = -1;
+    for (float p[2] = { start_pixel[0], start_pixel[1] }; is_pixel_in_line(p, start_pixel, end_pixel); next_pixel_in_line(p, start_pixel, end_pixel))
+    {
+        float depth = depth_scale * data[(int)p[1] * depth_intrin->width + (int)p[0]];
+        if (depth == 0) 
+            continue;
+
+        float projected_pixel[2] = { 0 }, point[3] = { 0 }, transformed_point[3] = { 0 };
+        rs2_deproject_pixel_to_point(point, depth_intrin, p, depth);
+        rs2_transform_point_to_point(transformed_point, depth_to_color, point);
+        rs2_project_point_to_pixel(projected_pixel, color_intrin, transformed_point);
+
+        float new_dist = pow((projected_pixel[1] - from_pixel[1]), 2) + pow((projected_pixel[0] - from_pixel[0]), 2);
+        if (new_dist < min_dist || min_dist < 0)
+        {
+            min_dist = new_dist;
+            to_pixel[0] = p[0];
+            to_pixel[1] = p[1];
+        }
+    }
 }
 
 #endif

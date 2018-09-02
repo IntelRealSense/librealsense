@@ -2,7 +2,7 @@
 
 <p align="center"><img src="http://realsense-hw-public.s3.amazonaws.com/rs-tests/unity_screenshot.PNG" height="400" /></p>
 
-> [Download **realsense.unitypackage**](http://realsense-hw-public.s3.amazonaws.com/rs-tests/realsense.unitypackage) and go to `Assets > Scenes > Start Here` to see the home screen above
+> [Download **realsense.unitypackage**](https://github.com/IntelRealSense/librealsense/releases/download/v2.16.0/Intel.RealSense.unitypackage) and go to `Assets > Scenes > Start Here` to see the home screen above
 
 ## Overview
 
@@ -28,7 +28,7 @@ At the end of this step, the Unity project will be available in the CMake output
 - Generate the VS solution using cmake (run from librealsense root dir):
   - `mkdir build`
   - `cd build`
-  - `cmake .. -DBUILD_CSHARP_BINDINGS=ON -DBUILD_UNITY_BINDINGS=ON -DBUILD_SHARED_LIBS=ON -DDOTNET_VERSION_LIBRARY=3.5`
+  - `cmake .. -DBUILD_CSHARP_BINDINGS=ON -DBUILD_UNITY_BINDINGS=ON -DBUILD_SHARED_LIBS=ON -DDOTNET_VERSION_LIBRARY=3.5 -DCMAKE_GENERATOR_PLATFORM=x64`
 - The file 'realsense2.sln' should be created in 'build' folder, open the file with Visual Studio, C# examples and library will be available in the solution under 'Wrappers/csharp'.
 - Build Intel.RealSense project, this step will build both the native library and the .NET wrapper and will copy both DLLs to the Unity project Plugins folder.
 - In case Unity is installed and activated, a Unity package should be created at build/\<configuration\>/realsense.unitypackage. This file can be imported by the Unity editor.

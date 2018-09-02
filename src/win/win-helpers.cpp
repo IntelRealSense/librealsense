@@ -167,6 +167,13 @@ namespace librealsense
             if (tokens.size() < 1 || tokens[0] != R"(usb)") return false; // Not a USB device
 
             auto ids = tokenize(tokens[1], '&');
+
+            if (ids.size() < 3)
+            {
+                LOG_ERROR("incomplete device id");
+                return false;
+            }
+
             if (ids[0].size() != 8 || ids[0].substr(0, 4) != "vid_" || !(std::istringstream(ids[0].substr(4, 4)) >> std::hex >> vid))
             {
                 LOG_ERROR("malformed vid string: " << tokens[1]);

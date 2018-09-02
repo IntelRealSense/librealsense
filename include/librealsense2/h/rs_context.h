@@ -108,7 +108,7 @@ void rs2_delete_device_hub(const rs2_device_hub* hub);
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            device object
 */
-rs2_device* rs2_device_hub_wait_for_device(rs2_context* ctx, const rs2_device_hub* hub, rs2_error** error);
+rs2_device* rs2_device_hub_wait_for_device(const rs2_device_hub* hub, rs2_error** error);
 
 /**
 * Checks if device is still connected

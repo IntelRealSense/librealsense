@@ -77,10 +77,11 @@ class Realsense {
     }
     let options = {
       tag: ResponseTag.options,
-      data: [],
+      data: {},
     };
     this.sensors.forEach((s) => {
-      options.data.push(this._getSensorOptions(s));
+      let sensorName = s.getCameraInfo(this.wrapper.camera_info.camera_info_name);
+      options.data[sensorName] = this._getSensorOptions(s);
     });
     return options;
   }
@@ -108,6 +109,11 @@ class Realsense {
         console.log('start command');
         console.log(cmd);
         this._handleStart(cmd);
+        break;
+      case CommandTag.setOption:
+        console.log('Set option command');
+        console.log(cmd);
+        this._handleSetOption(cmd);
         break;
       default:
         console.log(`Unrecognized command ${cmd}`);
@@ -309,6 +315,11 @@ class Realsense {
         });
       });
     }
+  }
+  // process set option command
+  _handleSetOption(cmd) {
+    let sensor = this._findSensorByName(cmd.data.sensor);
+    sensor.setOption(cmd.data.option, Number(cmd.data.value));
   }
 }
 

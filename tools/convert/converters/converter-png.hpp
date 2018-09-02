@@ -46,7 +46,7 @@ namespace rs2 {
                                     }
 
                                     if (frame.get_profile().stream_type() == rs2_stream::RS2_STREAM_DEPTH) {
-                                        frame = _colorizer(frame);
+                                        frame = _colorizer.process(frame);
                                     }
 
                                     std::stringstream filename;

@@ -171,7 +171,6 @@ namespace librealsense
             const void *    pixels;
             const void *    metadata;
             rs2_time_t      backend_time;
-
         };
 
         typedef std::function<void(stream_profile, frame_object, std::function<void()>)> frame_callback;
@@ -208,6 +207,9 @@ namespace librealsense
             std::string unique_id = "";
             std::string device_path = "";
             usb_spec conn_spec = usb_undefined;
+            uint32_t uvc_capabilities = 0;
+            bool has_metadata_node = false;
+            std::string metadata_node_id = "";
 
             operator std::string()
             {
@@ -218,7 +220,8 @@ namespace librealsense
                     "\nmi- " << mi <<
                     "\nunique_id- " << unique_id <<
                     "\npath- " << device_path <<
-                    "\nsusb specification- " << std::hex << (uint16_t)conn_spec << std::dec;
+                    "\nsusb specification- " << std::hex << (uint16_t)conn_spec << std::dec <<
+                    (has_metadata_node ? ( "\nmetadata node-" + metadata_node_id) : "");
 
                 return s.str();
             }
@@ -227,6 +230,7 @@ namespace librealsense
             {
                 return (std::make_tuple(id, vid, pid, mi, unique_id, device_path) < std::make_tuple(obj.id, obj.vid, obj.pid, obj.mi, obj.unique_id, obj.device_path));
             }
+
         };
 
         inline bool operator==(const uvc_device_info& a,

@@ -114,8 +114,14 @@ PYBIND11_MODULE(NAME, m) {
     public:
         BufData(void *ptr, size_t itemsize, const std::string& format, size_t ndim, const std::vector<size_t> &shape, const std::vector<size_t> &strides)
             : _ptr(ptr), _itemsize(itemsize), _format(format), _ndim(ndim), _shape(shape), _strides(strides) {}
-        BufData(void *ptr, size_t itemsize, const std::string &format, size_t size)
+        BufData(void *ptr, size_t itemsize, const std::string& format, size_t size)
             : BufData(ptr, itemsize, format, 1, std::vector<size_t> { size }, std::vector<size_t> { itemsize }) { }
+        BufData(void *ptr, // Raw data pointer
+                size_t itemsize, // Size of the type in bytes
+                const std::string& format, // Data type's format descriptor (e.g. "@f" for float xyz)
+                size_t dim, // number of data elements per group (e.g. 3 for float xyz)
+                size_t count) // Number of groups
+            : BufData( ptr, itemsize, format, 2, std::vector<size_t> { count, dim }, std::vector<size_t> { itemsize*dim, itemsize })  { }
     };
 
     py::class_<BufData> BufData_py(m, "BufData", py::buffer_protocol());
@@ -130,30 +136,30 @@ PYBIND11_MODULE(NAME, m) {
     );
 
     /**
-        Binding of rs2_ enums
+    Binding of rs2_ enums
     */
     BIND_ENUM(m, rs2_camera_info, RS2_CAMERA_INFO_COUNT)
-    BIND_ENUM(m, rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT)
-    BIND_ENUM(m, rs2_stream, RS2_STREAM_COUNT)
-    BIND_ENUM(m, rs2_extension, RS2_EXTENSION_COUNT)
-    BIND_ENUM(m, rs2_format, RS2_FORMAT_COUNT)
-    BIND_ENUM(m, rs2_notification_category, RS2_NOTIFICATION_CATEGORY_COUNT)
-    BIND_ENUM(m, rs2_log_severity, RS2_LOG_SEVERITY_COUNT)
-    BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT)
-    BIND_ENUM(m, rs2_timestamp_domain, RS2_TIMESTAMP_DOMAIN_COUNT)
-    BIND_ENUM(m, rs2_distortion, RS2_DISTORTION_COUNT)
-    BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT)
+        BIND_ENUM(m, rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT)
+        BIND_ENUM(m, rs2_stream, RS2_STREAM_COUNT)
+        BIND_ENUM(m, rs2_extension, RS2_EXTENSION_COUNT)
+        BIND_ENUM(m, rs2_format, RS2_FORMAT_COUNT)
+        BIND_ENUM(m, rs2_notification_category, RS2_NOTIFICATION_CATEGORY_COUNT)
+        BIND_ENUM(m, rs2_log_severity, RS2_LOG_SEVERITY_COUNT)
+        BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT)
+        BIND_ENUM(m, rs2_timestamp_domain, RS2_TIMESTAMP_DOMAIN_COUNT)
+        BIND_ENUM(m, rs2_distortion, RS2_DISTORTION_COUNT)
+        BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT)
 
-    py::class_<rs2_extrinsics> extrinsics(m, "extrinsics");
+        py::class_<rs2_extrinsics> extrinsics(m, "extrinsics");
     extrinsics.def(py::init<>())
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_extrinsics, rotation, float, 9))
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_extrinsics, translation, float, 3))
         .def("__repr__", [](const rs2_extrinsics &e) {
-            std::stringstream ss;
-            ss << "rotation: " << array_to_string(e.rotation);
-            ss << "\ntranslation: " << array_to_string(e.translation);
-            return ss.str();
-        });
+        std::stringstream ss;
+        ss << "rotation: " << array_to_string(e.rotation);
+        ss << "\ntranslation: " << array_to_string(e.translation);
+        return ss.str();
+    });
 
     py::class_<rs2_intrinsics> intrinsics(m, "intrinsics");
     intrinsics.def(py::init<>())
@@ -210,7 +216,7 @@ PYBIND11_MODULE(NAME, m) {
     context.def(py::init<>())
         .def("query_devices", (rs2::device_list(rs2::context::*)() const) &rs2::context::query_devices, "Create a static"
             " snapshot of all connected devices a the time of the call.")
-        .def_property_readonly("devices", (rs2::device_list (rs2::context::*)() const) &rs2::context::query_devices,
+        .def_property_readonly("devices", (rs2::device_list(rs2::context::*)() const) &rs2::context::query_devices,
             "Create a static snapshot of all connected devices a the time of the call.")
         .def("query_all_sensors", &rs2::context::query_all_sensors, "Generate a flat list of "
             "all available sensors from all RealSense devices.")
@@ -290,13 +296,13 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::event_information> event_information(m, "event_information");
     event_information.def("was_removed", &rs2::event_information::was_removed, "Check if "
-			  "specific device was disconnected.", "dev"_a)
-      .def("was_added", &rs2::event_information::was_added, "Check if "
-	   "specific device was added.", "dev"_a)
-      .def("get_new_devices", &rs2::event_information::get_new_devices, "Returns a "
-	   "list of all newly connected devices")
-      .def("get_removed_devices", &rs2::event_information::get_removed_devices, "Returns a "
-	   "list of all newly removed devices");
+        "specific device was disconnected.", "dev"_a)
+        .def("was_added", &rs2::event_information::was_added, "Check if "
+            "specific device was added.", "dev"_a)
+        .def("get_new_devices", &rs2::event_information::get_new_devices, "Returns a "
+            "list of all newly connected devices")
+        .def("get_removed_devices", &rs2::event_information::get_removed_devices, "Returns a "
+            "list of all newly removed devices");
 
     py::class_<rs2::tm2, rs2::device> tm2(m, "tm2");
     tm2.def(py::init<rs2::device>(), "device"_a)
@@ -316,18 +322,18 @@ PYBIND11_MODULE(NAME, m) {
             switch (vf.get_profile().format()) {
             case RS2_FORMAT_RGB8: case RS2_FORMAT_BGR8:
                 return BufData(const_cast<void*>(vf.get_data()), 1, bytes_per_pixel_to_format[1], 3,
-                { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()), 3 },
-                { static_cast<size_t>(vf.get_stride_in_bytes()), static_cast<size_t>(vf.get_bytes_per_pixel()), 1 });
+                    { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()), 3 },
+                    { static_cast<size_t>(vf.get_stride_in_bytes()), static_cast<size_t>(vf.get_bytes_per_pixel()), 1 });
                 break;
             case RS2_FORMAT_RGBA8: case RS2_FORMAT_BGRA8:
                 return BufData(const_cast<void*>(vf.get_data()), 1, bytes_per_pixel_to_format[1], 3,
-                { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()), 4 },
-                { static_cast<size_t>(vf.get_stride_in_bytes()), static_cast<size_t>(vf.get_bytes_per_pixel()), 1 });
+                    { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()), 4 },
+                    { static_cast<size_t>(vf.get_stride_in_bytes()), static_cast<size_t>(vf.get_bytes_per_pixel()), 1 });
                 break;
             default:
                 return BufData(const_cast<void*>(vf.get_data()), static_cast<size_t>(vf.get_bytes_per_pixel()), bytes_per_pixel_to_format[vf.get_bytes_per_pixel()], 2,
-                { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()) },
-                { static_cast<size_t>(vf.get_stride_in_bytes()), static_cast<size_t>(vf.get_bytes_per_pixel()) });
+                    { static_cast<size_t>(vf.get_height()), static_cast<size_t>(vf.get_width()) },
+                    { static_cast<size_t>(vf.get_stride_in_bytes()), static_cast<size_t>(vf.get_bytes_per_pixel()) });
             }
         }
         else
@@ -335,29 +341,29 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::frame> frame(m, "frame");
     frame.def(py::init<>())
-//         .def(py::self = py::self) // can't overload assignment in python
-         .def(py::init<rs2::frame>())
-         .def("swap", &rs2::frame::swap, "other"_a)
-         .def("__nonzero__", &rs2::frame::operator bool)
-         .def("get_timestamp", &rs2::frame::get_timestamp, "Retrieve the time at which the frame was captured")
-         .def_property_readonly("timestamp", &rs2::frame::get_timestamp, "Retrieve the time at which the frame was captured")
-         .def("get_frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain, "Retrieve the timestamp domain.")
-         .def_property_readonly("frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain, "Retrieve the timestamp domain.")
-         .def("get_frame_metadata", &rs2::frame::get_frame_metadata, "Retrieve the current value of a single frame_metadata.", "frame_metadata"_a)
-         .def("supports_frame_metadata", &rs2::frame::supports_frame_metadata, "Determine if the device allows a specific metadata to be queried.", "frame_metadata"_a)
-         .def("get_frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
-         .def_property_readonly("frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
-         .def("get_data", get_frame_data,"retrieve data from the frame handle.", py::keep_alive<0, 1>())
-         .def_property_readonly("data", get_frame_data, "retrieve data from the frame handle.", py::keep_alive<0, 1>())
-         .def("get_profile", &rs2::frame::get_profile)
-         .def("keep", &rs2::frame::keep)
-         .def_property_readonly("profile", &rs2::frame::get_profile)
-         .def(BIND_DOWNCAST(frame, frame))
-         .def(BIND_DOWNCAST(frame, points))
-         .def(BIND_DOWNCAST(frame, frameset))
-         .def(BIND_DOWNCAST(frame, video_frame))
-         .def(BIND_DOWNCAST(frame, depth_frame));
-
+        //         .def(py::self = py::self) // can't overload assignment in python
+        .def(py::init<rs2::frame>())
+        .def("swap", &rs2::frame::swap, "other"_a)
+        .def("__nonzero__", &rs2::frame::operator bool)
+        .def("get_timestamp", &rs2::frame::get_timestamp, "Retrieve the time at which the frame was captured")
+        .def_property_readonly("timestamp", &rs2::frame::get_timestamp, "Retrieve the time at which the frame was captured")
+        .def("get_frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain, "Retrieve the timestamp domain.")
+        .def_property_readonly("frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain, "Retrieve the timestamp domain.")
+        .def("get_frame_metadata", &rs2::frame::get_frame_metadata, "Retrieve the current value of a single frame_metadata.", "frame_metadata"_a)
+        .def("supports_frame_metadata", &rs2::frame::supports_frame_metadata, "Determine if the device allows a specific metadata to be queried.", "frame_metadata"_a)
+        .def("get_frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
+        .def_property_readonly("frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
+        .def("get_data", get_frame_data, "retrieve data from the frame handle.", py::keep_alive<0, 1>())
+        .def_property_readonly("data", get_frame_data, "retrieve data from the frame handle.", py::keep_alive<0, 1>())
+        .def("get_profile", &rs2::frame::get_profile)
+        .def("keep", &rs2::frame::keep)
+        .def_property_readonly("profile", &rs2::frame::get_profile)
+        //.def("apply_filter", &rs2::frame::apply_filter, "processing_block"_a)
+        .def(BIND_DOWNCAST(frame, frame))
+        .def(BIND_DOWNCAST(frame, points))
+        .def(BIND_DOWNCAST(frame, frameset))
+        .def(BIND_DOWNCAST(frame, video_frame))
+        .def(BIND_DOWNCAST(frame, depth_frame));
 
     py::class_<rs2::video_frame, rs2::frame> video_frame(m, "video_frame");
     video_frame.def(py::init<rs2::frame>())
@@ -394,26 +400,39 @@ PYBIND11_MODULE(NAME, m) {
         oss << t.u << ", " << t.v;
         return oss.str();
     });
+
     py::class_<rs2::points, rs2::frame> points(m, "points");
     points.def(py::init<>())
         .def(py::init<rs2::frame>())
-        .def("get_vertices", [](rs2::points& self) -> BufData
-    {
-        return BufData(const_cast<rs2::vertex*>(self.get_vertices()),
-            sizeof(rs2::vertex), std::string("@fff"), self.size());
-    }, py::keep_alive<0, 1>())
-        .def("get_texture_coordinates", [](rs2::points& self) -> BufData
-    {
-        return BufData(const_cast<rs2::texture_coordinate*>(self.get_texture_coordinates()),
-            sizeof(rs2::texture_coordinate), std::string("@ff"), self.size());
-    }, py::keep_alive<0, 1>())
+        .def("get_vertices", [](rs2::points& self, int dims) -> BufData
+        {
+            auto verts = const_cast<rs2::vertex*>(self.get_vertices());
+            switch (dims) {
+            case 1:
+                return BufData(verts, sizeof(rs2::vertex), "@fff", self.size());
+            case 2:
+                return BufData(verts, sizeof(float), "@f", 3, self.size());
+            }
+        }, py::keep_alive<0, 1>(), "dims"_a=1)
+        .def("get_texture_coordinates", [](rs2::points& self, int dims) -> BufData
+        {
+            auto tex = const_cast<rs2::texture_coordinate*>(self.get_texture_coordinates());
+            switch (dims) {
+            case 1:
+                return BufData(tex, sizeof(rs2::texture_coordinate), "@ff", self.size());
+            case 2:
+                return BufData(tex, sizeof(float), "@f", 2, self.size());
+            }
+        }, py::keep_alive<0, 1>(), "dims"_a=1)
         .def("export_to_ply", &rs2::points::export_to_ply)
         .def("size", &rs2::points::size);
 
     py::class_<rs2::frameset, rs2::frame> frameset(m, "composite_frame");
     frameset.def(py::init<rs2::frame>())
-        .def("first_or_default", &rs2::frameset::first_or_default, "s"_a)
-        .def("first", &rs2::frameset::first, "s"_a)
+        .def("first_or_default", &rs2::frameset::first_or_default, "s"_a, "f"_a)
+        .def("first_or_default", &rs2::frameset::first_or_default, "s"_a, "f"_a = RS2_FORMAT_ANY)
+        .def("first", &rs2::frameset::first, "s"_a, "f"_a)
+        .def("first", &rs2::frameset::first, "s"_a, "f"_a = RS2_FORMAT_ANY)
         .def("size", &rs2::frameset::size)
         .def("foreach", [](const rs2::frameset& self, std::function<void(rs2::frame)> callable)
     {
@@ -442,10 +461,10 @@ PYBIND11_MODULE(NAME, m) {
     depth_frame.def(py::init<rs2::frame>())
         .def("get_distance", &rs2::depth_frame::get_distance, "x"_a, "y"_a);
 
-
-
-
     /* rs2_processing.hpp */
+    py::class_<rs2::process_interface> process_interface(m, "process_interface");
+    process_interface.def("process", &rs2::process_interface::process, "frame"_a);
+
     // Base class for options interface. Should be used via sensor
     py::class_<rs2::options> options(m, "options");
     options.def("is_option_read_only", &rs2::options::is_option_read_only, "Check if particular option "
@@ -461,7 +480,7 @@ PYBIND11_MODULE(NAME, m) {
             "(In case a specific option value holds special meaning)", "option"_a, "value"_a);
 
     // Not binding frame_processor_callback, templated
-    py::class_<rs2::processing_block, rs2::options> processing_block(m, "processing_block");
+    py::class_<rs2::processing_block, rs2::process_interface, rs2::options> processing_block(m, "processing_block");
     processing_block.def("start", [](rs2::processing_block& self, std::function<void(rs2::frame)> f)
     {
         self.start(f);
@@ -486,7 +505,7 @@ PYBIND11_MODULE(NAME, m) {
     }, "Poll if a new frame is available and dequeue it if it is")
         .def("__call__", &rs2::frame_queue::operator());
 
-    py::class_<rs2::pointcloud, rs2::options> pointcloud(m, "pointcloud");
+    py::class_<rs2::pointcloud, rs2::processing_block> pointcloud(m, "pointcloud");
     pointcloud.def(py::init<>())
         .def("calculate", &rs2::pointcloud::calculate, "depth"_a)
         .def("map_to", &rs2::pointcloud::map_to, "mapped"_a);
@@ -503,32 +522,28 @@ PYBIND11_MODULE(NAME, m) {
     }, "Check if a coherent set of frames is available");
     /*.def("__call__", &rs2::syncer::operator(), "frame"_a)*/;
 
-    py::class_<rs2::colorizer, rs2::options> colorizer(m, "colorizer");
+    py::class_<rs2::colorizer, rs2::processing_block> colorizer(m, "colorizer");
     colorizer.def(py::init<>())
         .def("colorize", &rs2::colorizer::colorize, "depth"_a)
         /*.def("__call__", &rs2::colorizer::operator())*/;
 
-    py::class_<rs2::align> align(m, "align");
+    py::class_<rs2::align, rs2::processing_block> align(m, "align");
     align.def(py::init<rs2_stream>(), "align_to"_a)
-        .def("process", &rs2::align::process, "depth"_a);
+        .def("process", &rs2::align::process, "frames"_a);
 
-    // Do we need this?
-    py::class_<rs2::process_interface, rs2::options> process_interface(m, "process_interface");
-    process_interface.def("process", &rs2::process_interface::process, "frame"_a);
-
-    py::class_<rs2::decimation_filter, rs2::process_interface> decimation_filter(m, "decimation_filter");
+    py::class_<rs2::decimation_filter, rs2::processing_block> decimation_filter(m, "decimation_filter");
     decimation_filter.def(py::init<>());
 
-    py::class_<rs2::temporal_filter, rs2::process_interface> temporal_filter(m, "temporal_filter");
+    py::class_<rs2::temporal_filter, rs2::processing_block> temporal_filter(m, "temporal_filter");
     temporal_filter.def(py::init<>());
 
-    py::class_<rs2::spatial_filter, rs2::process_interface> spatial_filter(m, "spatial_filter");
+    py::class_<rs2::spatial_filter, rs2::processing_block> spatial_filter(m, "spatial_filter");
     spatial_filter.def(py::init<>());
 
-    py::class_<rs2::hole_filling_filter, rs2::process_interface> hole_filling_filter(m, "hole_filling_filter");
+    py::class_<rs2::hole_filling_filter, rs2::processing_block> hole_filling_filter(m, "hole_filling_filter");
     hole_filling_filter.def(py::init<>());
 
-    py::class_<rs2::disparity_transform, rs2::process_interface> disparity_transform(m, "disparity_transform");
+    py::class_<rs2::disparity_transform, rs2::processing_block> disparity_transform(m, "disparity_transform");
     disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a=true);
 
     /* rs2_record_playback.hpp */

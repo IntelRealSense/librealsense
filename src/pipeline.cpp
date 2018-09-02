@@ -602,6 +602,7 @@ namespace librealsense
             }
             catch (const std::exception& e)
             {
+                LOG_INFO(e.what());
                 return false;
             }
         }

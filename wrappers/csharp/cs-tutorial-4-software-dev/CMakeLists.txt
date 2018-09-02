@@ -6,6 +6,8 @@ add_executable(${PROJECT_NAME}
 	Program.cs
 	Window.xaml
 	Window.xaml.cs
+	
+	Properties/AssemblyInfo.cs
 )
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION "v${DOTNET_VERSION_EXAMPLES}")
