@@ -71,8 +71,7 @@ try:
     pipeline.start()
 
     while True:
-        # This call waits until a new coherent set of frames is available on a device
-        # Calls to get_frame_data(...) and get_frame_timestamp(...) on a device will return stable values until wait_for_frames(...) is called
+        # Create a pipeline object. This object configures the streaming camera and owns it's handle
         frames = pipeline.wait_for_frames()
         depth = frames.get_depth_frame()
         if not depth: continue

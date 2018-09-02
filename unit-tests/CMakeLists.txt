@@ -38,7 +38,7 @@ install(
     TARGETS
 
     live-test
-
+	
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin
 )
@@ -51,6 +51,12 @@ else() # Data shall be preserved between reboots. For Linux distributions/ ANDRO
     #set(Deployment_Location /var/tmp/) The standard confoiguration currently fails on CI
     set(Deployment_Location /tmp/)
 endif()
+
+add_custom_command(TARGET live-test POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources
+    ${Deployment_Location}
+)
 
 #Post-Processing data set for unit-tests
 #message(STATUS "Post processing deployment directory=${Deployment_Location}")

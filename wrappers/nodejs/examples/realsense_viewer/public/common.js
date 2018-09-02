@@ -109,6 +109,7 @@ const CommandTag = {
   {
     tag: 'set-option',
     data: {
+      sensor: sensor name,
       option: option name,
       value: value
     }
@@ -123,7 +124,7 @@ const CommandTag = {
   }
   structure of startDataType:
   {
-    sensor: 'color' or 'stereo'
+    sensor: sensor name
     streams: array of streamConfigType:
   }
   structure of streamConfigType:

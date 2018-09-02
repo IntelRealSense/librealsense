@@ -40,6 +40,9 @@ namespace librealsense
         _extension_type(RS2_EXTENSION_DEPTH_FRAME),
         _current_frm_size_pixels(0)
     {
+        _stream_filter = RS2_STREAM_DEPTH;
+        _stream_format_filter = RS2_FORMAT_Z16;
+
         auto temporal_persistence_control = std::make_shared<ptr_option<uint8_t>>(
             persistence_min,
             persistence_max,
@@ -98,38 +101,25 @@ namespace librealsense
         register_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, temporal_filter_alpha);
         register_option(RS2_OPTION_FILTER_SMOOTH_DELTA, temporal_filter_delta);
 
-        auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
-        {
-            std::lock_guard<std::mutex> lock(_mutex);
-            rs2::frame res = f, tgt, depth;
-
-            bool composite = f.is<rs2::frameset>();
-
-            depth = (composite) ? f.as<rs2::frameset>().first_or_default(RS2_STREAM_DEPTH) : f;
-            if (depth) // Processing required
-            {
-                update_configuration(f);
-                tgt = prepare_target_frame(depth, source);
-
-                // Temporal filter execution
-                if (_extension_type == RS2_EXTENSION_DISPARITY_FRAME)
-                    temp_jw_smooth<float>(const_cast<void*>(tgt.get_data()), _last_frame.data(), _history.data());
-                else
-                    temp_jw_smooth<uint16_t>(const_cast<void*>(tgt.get_data()), _last_frame.data(), _history.data());
-            }
-
-            res = composite ? source.allocate_composite_frame({ tgt }) : tgt;
-
-            source.frame_ready(res);
-        };
-
-        auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
-        processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
-
         on_set_persistence_control(_persistence_param);
         on_set_delta(_delta_param);
         on_set_alpha(_alpha_param);
     }
+
+    rs2::frame temporal_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
+    {
+        update_configuration(f);
+        auto tgt = prepare_target_frame(f, source);
+
+        // Temporal filter execution
+        if (_extension_type == RS2_EXTENSION_DISPARITY_FRAME)
+            temp_jw_smooth<float>(const_cast<void*>(tgt.get_data()), _last_frame.data(), _history.data());
+        else
+            temp_jw_smooth<uint16_t>(const_cast<void*>(tgt.get_data()), _last_frame.data(), _history.data());
+
+        return tgt;
+    }
+
 
     void temporal_filter::on_set_persistence_control(uint8_t val)
     {

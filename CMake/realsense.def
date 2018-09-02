@@ -68,7 +68,7 @@ EXPORTS
     rs2_keep_frame
     rs2_frame_add_ref
     rs2_pose_frame_get_pose_data
-    
+
     rs2_get_option
     rs2_set_option
     rs2_supports_option
@@ -147,6 +147,7 @@ EXPORTS
     rs2_clone_stream_profile
 
     rs2_allocate_synthetic_video_frame
+    rs2_allocate_points
     rs2_allocate_composite_frame
     rs2_synthetic_frame_ready
     rs2_create_processing_block

@@ -25,6 +25,5 @@ namespace librealsense
         }
     private:
         std::unique_ptr<timestamp_composite_matcher> _matcher;
-        std::mutex _mutex;
     };
 }

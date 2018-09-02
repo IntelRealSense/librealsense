@@ -5,13 +5,13 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Intel.RealSense")]
-[assembly: AssemblyDescription(".NET Wrapper for Intel RealSense SDK 2.0")]
+[assembly: AssemblyTitle("Intel(R) RealSense(TM) SDK C# Wrapper")]
+[assembly: AssemblyDescription("Intel(R) RealSense(TM) SDK C# Wrapper")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Intel")]
-[assembly: AssemblyProduct("Intel.RealSense")]
-[assembly: AssemblyCopyright("Copyright ©  2017")]
-[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCompany("Intel(R) Corporation")]
+[assembly: AssemblyProduct("Intel(R) RealSense(TM) SDK C# Wrapper")]
+[assembly: AssemblyCopyright("Copyright © 2017, Intel Corporation. All rights reserved")]
+[assembly: AssemblyTrademark("Intel(R) RealSense(TM)")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("e488694f-f2fa-45ad-b1b8-8d4fabe34e86")]
+[assembly: Guid("71c85ee0-c7c2-4e2e-8020-6af818537a14")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -29,8 +29,5 @@ using System.Runtime.InteropServices;
 //      Build Number
 //      Revision
 //
-// You can specify all the values or you can default the Build and Revision Numbers 
-// by using the '*' as shown below:
-// [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]

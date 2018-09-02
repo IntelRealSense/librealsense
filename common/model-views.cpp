@@ -1413,7 +1413,7 @@ namespace rs2
             {
                 if (viewer.synchronization_enable && (!viewer.is_3d_view || viewer.is_3d_depth_source(f) || viewer.is_3d_texture_source(f)))
                 {
-                    viewer.s(f);
+                    viewer.s.invoke(f);
                 }
                 else
                 {
@@ -2580,7 +2580,7 @@ namespace rs2
             float val{};
             if (texture->try_pick(x, y, &val))
             {
-                ss << ", *p: 0x" << std::hex << val;
+                ss << ", *p: 0x" << std::hex << static_cast<int>(round(val));
             }
 
             if (texture->get_last_frame().is<depth_frame>())
@@ -5657,7 +5657,7 @@ namespace rs2
                 ImGui::SetCursorPos({ rc.x, rc.y + line_h });
             }
 
-            ImGui::SetCursorPos({ rc.x + 225, rc.y - 127 });
+            ImGui::SetCursorPos({ rc.x + 225, rc.y - 107 });
 
             if (fw_version_less_than(fw_version, min_fw_version))
             {
@@ -6111,7 +6111,7 @@ namespace rs2
         }
     }
 
-    void device_model::handle_harware_events(const std::string& serialized_data)
+    void device_model::handle_hardware_events(const std::string& serialized_data)
     {
         //TODO: Move under hour glass
         std::string event_type = get_event_type(serialized_data);

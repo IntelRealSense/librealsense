@@ -179,19 +179,21 @@ namespace librealsense
             return r;
         }
 
-
-        buffer::buffer(int fd, bool use_memory_map, int index)
-            : _use_memory_map(use_memory_map), _index(index)
+        buffer::buffer(int fd, v4l2_buf_type type, bool use_memory_map, int index)
+            : _type(type), _use_memory_map(use_memory_map), _index(index)
         {
             v4l2_buffer buf = {};
-            buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+            buf.type = _type;
             buf.memory = use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
             buf.index = index;
             if(xioctl(fd, VIDIOC_QUERYBUF, &buf) < 0)
                 throw linux_backend_exception("xioctl(VIDIOC_QUERYBUF) failed");
 
+            // Prior to kernel 4.16 metadata payload was attached to the end of the video payload
+            auto md_extra = (V4L2_BUF_TYPE_VIDEO_CAPTURE==type) ? MAX_META_DATA_SIZE : 0;
             _original_length = buf.length;
-            _length = buf.length;
+            _length = _original_length + md_extra;
+
             if (use_memory_map)
             {
                 _start = static_cast<uint8_t*>(mmap(NULL, buf.length,
@@ -202,8 +204,8 @@ namespace librealsense
             }
             else
             {
-                _length += MAX_META_DATA_SIZE;
-                _start = static_cast<uint8_t*>(malloc( buf.length + MAX_META_DATA_SIZE));
+                //_length += (V4L2_BUF_TYPE_VIDEO_CAPTURE==type) ? MAX_META_DATA_SIZE : 0;
+                _start = static_cast<uint8_t*>(malloc( _length));
                 if (!_start) throw linux_backend_exception("User_p allocation failed!");
                 memset(_start, 0, _length);
             }
@@ -212,7 +214,7 @@ namespace librealsense
         void buffer::prepare_for_streaming(int fd)
         {
             v4l2_buffer buf = {};
-            buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+            buf.type = _type;
             buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
             buf.index = _index;
             buf.length = _length;
@@ -257,18 +259,54 @@ namespace librealsense
 
             if (_must_enqueue)
             {
-                if (V4L2_MEMORY_USERPTR == _use_memory_map)
+                if (!_use_memory_map)
                 {
                     auto metadata_offset = get_full_length() - MAX_META_DATA_SIZE;
                     memset((byte*)(get_frame_start()) + metadata_offset, 0, MAX_META_DATA_SIZE);
                 }
 
+                LOG_DEBUG("Enqueue buf " << _buf.index << " for fd " << fd);
                 if (xioctl(fd, VIDIOC_QBUF, &_buf) < 0)
-                    LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! Last-error: " << strerror(errno));
+                {
+                    LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << fd << " error: " << strerror(errno));
+                }
 
                 _must_enqueue = false;
             }
         }
+
+        void buffers_mgr::handle_buffer(supported_kernel_buf_types  buf_type,
+                                           int                      file_desc,
+                                           v4l2_buffer              v4l_buf,
+                                           std::shared_ptr<platform::buffer> data_buf
+                                           )
+        {
+            if (e_max_kernel_buf_type <=buf_type)
+                throw linux_backend_exception("invalid kernel buffer type request");
+
+            if (file_desc < 1)
+            {
+                // QBUF to be performed by a 3rd party
+                this->buffers.at(buf_type)._managed  = true;
+            }
+            else
+            {
+                buffers.at(buf_type)._file_desc = file_desc;
+                buffers.at(buf_type)._managed = false;
+                buffers.at(buf_type)._data_buf = data_buf;
+                buffers.at(buf_type)._dq_buf = v4l_buf;
+            }
+        }
+
+        void buffers_mgr::request_next_frame()
+        {
+            for (auto& buf : buffers)
+            {
+                if (buf._data_buf && (buf._file_desc >= 0))
+                    buf._data_buf->request_next_frame(buf._file_desc);
+            };
+        }
+
 
         static std::tuple<std::string,uint16_t>  get_usb_descriptors(libusb_device* usb_device)
         {
@@ -315,12 +353,60 @@ namespace librealsense
             return res;
         }
 
+        // Retrieve device video capabilities to discriminate video capturing and metadata nodes
+        static uint32_t get_dev_capabilities(const std::string dev_name)
+        {
+            // RAII to handle exceptions
+            std::unique_ptr<int, std::function<void(int*)> > fd(
+                        new int (open(dev_name.c_str(), O_RDWR | O_NONBLOCK, 0)),
+                        [](int* d){ if (d && (*d)) ::close(*d);});
+
+            if(*fd < 0)
+                throw linux_backend_exception(to_string() << __FUNCTION__ << ": Cannot open '" << dev_name);
+
+            v4l2_capability cap = {};
+            if(xioctl(*fd, VIDIOC_QUERYCAP, &cap) < 0)
+            {
+                if(errno == EINVAL)
+                    throw linux_backend_exception(to_string() << __FUNCTION__ << " " << dev_name << " is no V4L2 device");
+                else
+                    throw linux_backend_exception(to_string() <<__FUNCTION__ << " xioctl(VIDIOC_QUERYCAP) failed");
+            }
+
+            return cap.device_caps;
+        }
+
+        void stream_ctl_on(int fd, v4l2_buf_type type=V4L2_BUF_TYPE_VIDEO_CAPTURE)
+        {
+            if(xioctl(fd, VIDIOC_STREAMON, &type) < 0)
+                throw linux_backend_exception(to_string() << "xioctl(VIDIOC_STREAMON) failed for buf_type=" << type);
+        }
+
+        void stream_off(int fd, v4l2_buf_type type=V4L2_BUF_TYPE_VIDEO_CAPTURE)
+        {
+            if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0)
+                throw linux_backend_exception(to_string() << "xioctl(VIDIOC_STREAMOFF) failed for buf_type=" << type);
+        }
+
+        void req_io_buff(int fd, uint32_t count, std::string dev_name,
+                        v4l2_memory mem_type, v4l2_buf_type type)
+        {
+            struct v4l2_requestbuffers req = { count, type, mem_type};
+
+            if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
+            {
+                if(errno == EINVAL)
+                    LOG_ERROR(dev_name + " does not support memory mapping");
+                else
+                    throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
+            }
+        }
+
         v4l_usb_device::v4l_usb_device(const usb_device_info& info)
         {
             int status = libusb_init(&_usb_context);
             if(status < 0)
                 throw linux_backend_exception(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
-
 
             std::vector<usb_device_info> results;
             v4l_usb_device::foreach_usb_device(_usb_context,
@@ -432,6 +518,11 @@ namespace librealsense
                 LOG_ERROR("Cannot access /sys/class/video4linux");
                 return;
             }
+
+            // Collect UVC nodes info to bundle metadata and video
+            typedef std::pair<uvc_device_info,std::string> node_info;
+            std::vector<node_info> uvc_nodes,uvc_devices;
+
             while (dirent * entry = readdir(dir))
             {
                 std::string name = entry->d_name;
@@ -451,7 +542,6 @@ namespace librealsense
                 try
                 {
                     int vid, pid, mi;
-                    usb_spec usb_specification{usb_undefined};
                     std::string busnum, devnum, devpath;
 
                     auto dev_name = "/dev/" + name;
@@ -488,7 +578,7 @@ namespace librealsense
 #ifndef RS2_USE_CUDA
                        /* On the Jetson TX, the camera module is CSI & I2C and does not report as this code expects
                        Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
-                        LOG_WARNING("Failed to read busnum/devnum. Device Path: " << path);
+                        LOG_INFO("Failed to read busnum/devnum. Device Path: " << path);
 #endif
                         continue;
                     }
@@ -512,7 +602,7 @@ namespace librealsense
                     // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/3-6:1.0/video4linux/video0
                     // to
                     // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/version
-                    usb_specification = get_usb_connection_type(real_path + "/../../../");
+                    usb_spec usb_specification = get_usb_connection_type(real_path + "/../../../");
 
                     uvc_device_info info{};
                     info.pid = pid;
@@ -522,7 +612,9 @@ namespace librealsense
                     info.device_path = std::string(buff);
                     info.unique_id = busnum + "-" + devpath + "-" + devnum;
                     info.conn_spec = usb_specification;
-                    action(info, dev_name);
+                    info.uvc_capabilities = get_dev_capabilities(dev_name);
+
+                    uvc_nodes.emplace_back(info, dev_name);
                 }
                 catch(const std::exception & e)
                 {
@@ -530,15 +622,75 @@ namespace librealsense
                 }
             }
             closedir(dir);
+
+            // Differenciate and merge video and metadata nodes
+            // UVC nodes shall be traversed in ascending order for metadata nodes assignment ("dev/video1, Video2..
+            std::sort(begin(uvc_nodes),end(uvc_nodes),
+                      [](const node_info& lhs, const node_info& rhs){ return lhs.first.id < rhs.first.id; });
+
+            // Assume for each metadata node with index N there is a origin streaming node with index (N-1)
+            for (auto&& cur_node : uvc_nodes)
+            {
+                try
+                {
+                    if (!(cur_node.first.uvc_capabilities & V4L2_CAP_META_CAPTURE))
+                        uvc_devices.emplace_back(cur_node);
+                    else
+                    {
+                        if (uvc_devices.empty())
+                        {
+                            LOG_ERROR("uvc meta-node with no video streaming node encountered: " << std::string(cur_node.first));
+                            continue;
+                        }
+
+                        // Update the preceding uvc item with metadata node info
+                        auto uvc_node = uvc_devices.back();
+
+                        if (uvc_node.first.uvc_capabilities & V4L2_CAP_META_CAPTURE)
+                        {
+                            LOG_ERROR("Consequtive uvc meta-nodes encountered: " << std::string(uvc_node.first) << " and " << std::string(cur_node.first) );
+                            continue;
+                        }
+
+                        if (uvc_node.first.has_metadata_node)
+                        {
+                            LOG_ERROR( "Metadata node for uvc device: " << std::string(uvc_node.first) << " was already been assigned ");
+                            continue;
+                        }
+
+                        // modify the last element with metadata node info
+                        uvc_node.first.has_metadata_node = true;
+                        uvc_node.first.metadata_node_id = cur_node.first.id;
+                        uvc_devices.back() = uvc_node;
+                    }
+                }
+                catch(const std::exception & e)
+                {
+                    LOG_ERROR("Failed to map meta-node "  << std::string(cur_node.first) <<", error encountered: " << e.what());
+                }
+            }
+
+            try
+            {
+                // Dispatch registration for enumerated uvc devices
+                for (auto&& dev : uvc_devices)
+                    action(dev.first, dev.second);
+            }
+            catch(const std::exception & e)
+            {
+                LOG_ERROR("Registration of UVC device failed: " << e.what());
+            }
         }
 
         v4l_uvc_device::v4l_uvc_device(const uvc_device_info& info, bool use_memory_map)
             : _name(""), _info(),
               _is_capturing(false),
               _is_alive(true),
-              _thread(nullptr),
-              _use_memory_map(use_memory_map),
               _is_started(false),
+              _thread(nullptr),
+              _named_mtx(nullptr),
+              _use_memory_map(use_memory_map),
+              _fd(-1),
               _stop_pipe_fd{}
         {
             foreach_uvc_device([&info, this](const uvc_device_info& i, const std::string& name)
@@ -561,6 +713,7 @@ namespace librealsense
         {
             _is_capturing = false;
             if (_thread) _thread->join();
+            _fds.clear();
         }
 
         void v4l_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
@@ -569,6 +722,7 @@ namespace librealsense
             {
                 v4l2_fmtdesc pixel_format = {};
                 pixel_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
                 while (ioctl(_fd, VIDIOC_ENUM_FMT, &pixel_format) == 0)
                 {
                     v4l2_frmsizeenum frame_size = {};
@@ -615,19 +769,7 @@ namespace librealsense
                     ++pixel_format.index;
                 }
 
-
-                v4l2_format fmt = {};
-                fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                fmt.fmt.pix.width       = profile.width;
-                fmt.fmt.pix.height      = profile.height;
-                fmt.fmt.pix.pixelformat = (const big_endian<int> &)profile.format;
-                fmt.fmt.pix.field       = V4L2_FIELD_NONE;
-                if(xioctl(_fd, VIDIOC_S_FMT, &fmt) < 0)
-                {
-                    throw linux_backend_exception("xioctl(VIDIOC_S_FMT) failed");
-                }
-
-                LOG_INFO("Trying to configure fourcc " << fourcc_to_string(fmt.fmt.pix.pixelformat));
+                set_format(profile);
 
                 v4l2_streamparm parm = {};
                 parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -640,22 +782,8 @@ namespace librealsense
                     throw linux_backend_exception("xioctl(VIDIOC_S_PARM) failed");
 
                 // Init memory mapped IO
-                v4l2_requestbuffers req = {};
-                req.count = buffers;
-                req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                req.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
-                if(xioctl(_fd, VIDIOC_REQBUFS, &req) < 0)
-                {
-                    if(errno == EINVAL)
-                        throw linux_backend_exception(_name + " does not support memory mapping");
-                    else
-                        throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
-                }
-
-                for(size_t i = 0; i < buffers; ++i)
-                {
-                    _buffers.push_back(std::make_shared<buffer>(_fd, _use_memory_map, i));
-                }
+                negotiate_kernel_buffers(buffers);
+                allocate_io_buffers(buffers);
 
                 _profile =  profile;
                 _callback = callback;
@@ -673,15 +801,34 @@ namespace librealsense
                 _error_handler = error_handler;
 
                 // Start capturing
-                for (auto&& buf : _buffers) buf->prepare_for_streaming(_fd);
+                prepare_capture_buffers();
 
-                v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                if(xioctl(_fd, VIDIOC_STREAMON, &type) < 0)
-                    throw linux_backend_exception("xioctl(VIDIOC_STREAMON) failed");
+                // Synchronise stream requests for meta and video data.
+                streamon();
 
                 _is_capturing = true;
                 _thread = std::unique_ptr<std::thread>(new std::thread([this](){ capture_loop(); }));
             }
+        }
+
+        void v4l_uvc_device::prepare_capture_buffers()
+        {
+            for (auto&& buf : _buffers) buf->prepare_for_streaming(_fd);
+        }
+
+        void v4l_uvc_device::stop_data_capture()
+        {
+            _is_capturing = false;
+            _is_started = false;
+
+            // Stop nn-demand frames polling
+            signal_stop();
+
+            _thread->join();
+            _thread.reset();
+
+            // Notify kernel
+            streamoff();
         }
 
         void v4l_uvc_device::start_callbacks()
@@ -698,40 +845,16 @@ namespace librealsense
         {
             if(_is_capturing)
             {
-                _is_capturing = false;
-                _is_started = false;
-                signal_stop();
-
-                _thread->join();
-                _thread.reset();
-
-
-                // Stop streamining
-                v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                if(xioctl(_fd, VIDIOC_STREAMOFF, &type) < 0)
-                    throw linux_backend_exception("xioctl(VIDIOC_STREAMOFF) failed");
+                stop_data_capture();
             }
 
             if (_callback)
             {
-                for(size_t i = 0; i < _buffers.size(); i++)
-                {
-                    _buffers[i]->detach_buffer();
-                }
-                _buffers.resize(0);
+                // Release allocated buffers
+                allocate_io_buffers(0);
 
-                // Close memory mapped IO
-                struct v4l2_requestbuffers req = {};
-                req.count = 0;
-                req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                req.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
-                if(xioctl(_fd, VIDIOC_REQBUFS, &req) < 0)
-                {
-                    if(errno == EINVAL)
-                        LOG_ERROR(_name + " does not support memory mapping");
-                    else
-                        throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
-                }
+                // Release IO
+                negotiate_kernel_buffers(0);
 
                 _callback = nullptr;
             }
@@ -748,40 +871,37 @@ namespace librealsense
 
         void v4l_uvc_device::signal_stop()
         {
-            char buff[1];
-            buff[0] = 0;
+            char buff[1]={};
             if (write(_stop_pipe_fd[1], buff, 1) < 0)
             {
                  throw linux_backend_exception("Could not signal video capture thread to stop. Error write to pipe.");
             }
         }
 
-
         void v4l_uvc_device::poll()
         {
-            fd_set fds{};
-            FD_ZERO(&fds);
-            FD_SET(_fd, &fds);
-            FD_SET(_stop_pipe_fd[0], &fds);
-            FD_SET(_stop_pipe_fd[1], &fds);
-
-            int max_fd = std::max(std::max(_stop_pipe_fd[0], _stop_pipe_fd[1]), _fd);
+             fd_set fds{};
+             FD_ZERO(&fds);
+             for (auto fd : _fds)
+             {
+                 FD_SET(fd, &fds);
+             }
 
             struct timespec mono_time;
-            int r = clock_gettime(CLOCK_MONOTONIC, &mono_time);
-            if (r) throw linux_backend_exception("could not query time!");
+            int ret = clock_gettime(CLOCK_MONOTONIC, &mono_time);
+            if (ret) throw linux_backend_exception("could not query time!");
 
             struct timeval expiration_time = { mono_time.tv_sec + 5, mono_time.tv_nsec / 1000 };
             int val = 0;
             do {
                 struct timeval remaining;
-                r = clock_gettime(CLOCK_MONOTONIC, &mono_time);
-                if (r) throw linux_backend_exception("could not query time!");
+                ret = clock_gettime(CLOCK_MONOTONIC, &mono_time);
+                if (ret) throw linux_backend_exception("could not query time!");
 
                 struct timeval current_time = { mono_time.tv_sec, mono_time.tv_nsec / 1000 };
                 timersub(&expiration_time, &current_time, &remaining);
                 if (timercmp(&current_time, &expiration_time, <)) {
-                    val = select(max_fd + 1, &fds, NULL, NULL, &remaining);
+                    val = select(_max_fd + 1, &fds, NULL, NULL, &remaining);
                 }
                 else {
                     val = 0;
@@ -790,166 +910,132 @@ namespace librealsense
 
             if(val < 0)
             {
-                _is_capturing = false;
-                _is_started = false;
-                signal_stop();
-
-                _thread->join();
-                _thread.reset();
-
-                // Stop streamining
-                v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                if(xioctl(_fd, VIDIOC_STREAMOFF, &type) < 0)
-                    throw linux_backend_exception("xioctl(VIDIOC_STREAMOFF) failed");
-            }
-            else if(val > 0)
-            {
-                if(FD_ISSET(_stop_pipe_fd[0], &fds) || FD_ISSET(_stop_pipe_fd[1], &fds))
-                {
-                    if(!_is_capturing)
-                    {
-                        LOG_INFO("Stream finished");
-                        return;
-                    }
-                }
-                else if(FD_ISSET(_fd, &fds))
-                {
-                    FD_ZERO(&fds);
-                    FD_SET(_fd, &fds);
-                    v4l2_buffer buf = {};
-                    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                    buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
-                    if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
-                    {
-                        if(errno == EAGAIN)
-                            return;
-
-                        throw linux_backend_exception("xioctl(VIDIOC_DQBUF) failed");
-                    }
-
-                    bool moved_qbuff = false;
-                    auto buffer = _buffers[buf.index];
-
-                    if (_is_started)
-                    {
-                        if((buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE) &&
-                                buf.bytesused > 0)
-                        {
-                            auto percentage = (100 * buf.bytesused) / buffer->get_full_length();
-                            std::stringstream s;
-                            s << "Incomplete frame detected!\nSize " << buf.bytesused
-                              << " out of " << buffer->get_full_length() << " bytes (" << percentage << "%)";
-                            librealsense::notification n = { RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_WARN, s.str()};
-
-                            _error_handler(n);
-                        }
-                        else if (buf.bytesused > 0)
-                        {
-                            void* md_start = nullptr;
-                            uint8_t md_size = 0;
-                            if (has_metadata())
-                            {
-                                md_start = buffer->get_frame_start() + buffer->get_length_frame_only();
-                                md_size = (*(uint8_t*)md_start);
-                            }
-
-                            auto timestamp = (double)buf.timestamp.tv_sec*1000.f + (double)buf.timestamp.tv_usec/1000.f;
-                            timestamp = monotonic_to_realtime(timestamp);
-
-                            frame_object fo{ buffer->get_length_frame_only(), md_size,
-                                buffer->get_frame_start(), md_start, timestamp };
-
-                             buffer->attach_buffer(buf);
-                             moved_qbuff = true;
-                             auto fd = _fd;
-                             _callback(_profile, fo,
-                                       [fd, buffer]() mutable {
-                                 buffer->request_next_frame(fd);
-                             });
-                        }
-                        else
-                        {
-                            LOG_WARNING("Empty frame has arrived.");
-                        }
-                    }
-
-                    if (!moved_qbuff)
-                    {
-                        if (xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
-                            throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
-                    }
-                }
-                else
-                {
-                    throw linux_backend_exception("FD_ISSET returned false");
-                }
+                stop_data_capture();
             }
             else
             {
-                LOG_WARNING("Frames didn't arrived within 5 seconds");
-                librealsense::notification n = {RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT, 0, RS2_LOG_SEVERITY_WARN,  "Frames didn't arrived within 5 seconds"};
+                if(val > 0)
+                {
+                    if(FD_ISSET(_stop_pipe_fd[0], &fds) || FD_ISSET(_stop_pipe_fd[1], &fds))
+                    {
+                        if(!_is_capturing)
+                        {
+                            LOG_INFO("Stream finished");
+                            return;
+                        }
+                        else
+                        {
+                            LOG_ERROR("Stop pipe was signalled during streaming");
+                            return;
+                        }
+                    }
+                    else // Check and acquire data buffers from kernel
+                    {
+                        buffers_mgr buf_mgr(_use_memory_map);
+                        // Read metadata from a node
+                        acquire_metadata(buf_mgr,fds);
 
-                _error_handler(n);
+                        if(FD_ISSET(_fd, &fds))
+                        {
+                            FD_CLR(_fd,&fds);
+                            v4l2_buffer buf = {};
+                            buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                            buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
+                            if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
+                            {
+                                LOG_DEBUG("Dequeued empty buf for fd " << _fd);
+                                if(errno == EAGAIN)
+                                    return;
+
+                                throw linux_backend_exception(to_string() << "xioctl(VIDIOC_DQBUF) failed for fd: " << _fd);
+                            }
+                            LOG_DEBUG("Dequeued buf " << buf.index << " for fd " << _fd);
+
+                            auto buffer = _buffers[buf.index];
+                            buf_mgr.handle_buffer(e_video_buf,_fd, buf,buffer);
+
+                            if (_is_started)
+                            {
+                                if((buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE) &&
+                                        buf.bytesused > 0)
+                                {
+                                    auto percentage = (100 * buf.bytesused) / buffer->get_full_length();
+                                    std::stringstream s;
+                                    s << "Incomplete video frame detected!\nSize " << buf.bytesused
+                                      << " out of " << buffer->get_full_length() << " bytes (" << percentage << "%)";
+                                    librealsense::notification n = { RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_WARN, s.str()};
+
+                                    _error_handler(n);
+                                }
+                                else
+                                {
+                                    if (buf.bytesused > 0)
+                                    {
+                                        auto timestamp = (double)buf.timestamp.tv_sec*1000.f + (double)buf.timestamp.tv_usec/1000.f;
+                                        timestamp = monotonic_to_realtime(timestamp);
+
+                                        // read metadata from the frame appendix
+                                        acquire_metadata(buf_mgr,fds);
+
+                                        if (val > 1)
+                                            LOG_INFO("Frame buf ready, md size: " << std::dec << (int)buf_mgr.metadata_size() << " seq. id: " << buf.sequence);
+                                        frame_object fo{ buffer->get_length_frame_only(), buf_mgr.metadata_size(),
+                                            buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
+
+                                         buffer->attach_buffer(buf);
+                                         buf_mgr.handle_buffer(e_video_buf,-1); // transfer new buffer request to the frame callback
+
+                                         //Invoke user callback and enqueue next frame
+                                         _callback(_profile, fo,
+                                                   [buf_mgr]() mutable {
+                                             buf_mgr.request_next_frame();
+                                         });
+                                    }
+                                    else
+                                    {
+                                        LOG_INFO("Empty video frame arrived");
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                LOG_ERROR("Video frame arrived in idle mode."); // TODO - verification
+                            }
+                        }
+                        else
+                        {
+                            LOG_WARNING("FD_ISSET returned false - video node is not signalled (md only)");
+                        }
+                    }
+                }
+                else // (val==0)
+                {
+                    LOG_WARNING("Frames didn't arrived within 5 seconds");
+                        librealsense::notification n = {RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT, 0, RS2_LOG_SEVERITY_WARN,  "Frames didn't arrived within 5 seconds"};
+
+                        _error_handler(n);
+                }
             }
+        }
+
+        void v4l_uvc_device::acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds)
+        {
+            if (has_metadata())
+                buf_mgr.set_md_from_video_node();
+            else
+                buf_mgr.set_md_attributes(0, nullptr);
         }
 
         void v4l_uvc_device::set_power_state(power_state state)
         {
             if (state == D0 && _state == D3)
             {
-                _fd = open(_name.c_str(), O_RDWR | O_NONBLOCK, 0);
-                if(_fd < 0)
-                    throw linux_backend_exception(to_string() << "Cannot open '" << _name);
-
-
-                if (pipe(_stop_pipe_fd) < 0)
-                    throw linux_backend_exception("v4l_uvc_device: Cannot create pipe!");
-
-                v4l2_capability cap = {};
-                if(xioctl(_fd, VIDIOC_QUERYCAP, &cap) < 0)
-                {
-                    if(errno == EINVAL)
-                        throw linux_backend_exception(_name + " is no V4L2 device");
-                    else
-                        throw linux_backend_exception("xioctl(VIDIOC_QUERYCAP) failed");
-                }
-                if(!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
-                    throw linux_backend_exception(_name + " is no video capture device");
-
-                if(!(cap.capabilities & V4L2_CAP_STREAMING))
-                    throw linux_backend_exception(_name + " does not support streaming I/O");
-
-                // Select video input, video standard and tune here.
-                v4l2_cropcap cropcap = {};
-                cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                if(xioctl(_fd, VIDIOC_CROPCAP, &cropcap) == 0)
-                {
-                    v4l2_crop crop = {};
-                    crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                    crop.c = cropcap.defrect; // reset to default
-                    if(xioctl(_fd, VIDIOC_S_CROP, &crop) < 0)
-                    {
-                        switch (errno)
-                        {
-                        case EINVAL: break; // Cropping not supported
-                        default: break; // Errors ignored
-                        }
-                    }
-                } else {} // Errors ignored
+                map_device_descriptor();
             }
             if (state == D3 && _state == D0)
             {
                 close(_profile);
-                if(::close(_fd) < 0)
-                    throw linux_backend_exception("v4l_uvc_device: close(_fd) failed");
-
-                if(::close(_stop_pipe_fd[0]) < 0)
-                   throw linux_backend_exception("v4l_uvc_device: close(_stop_pipe_fd[0]) failed");
-                if(::close(_stop_pipe_fd[1]) < 0)
-                   throw linux_backend_exception("v4l_uvc_device: close(_stop_pipe_fd[1]) failed");
-
-                _fd = 0;
-                _stop_pipe_fd[0] = _stop_pipe_fd[1] = 0;
+                unmap_device_descriptor();
             }
             _state = state;
         }
@@ -1254,25 +1340,352 @@ namespace librealsense
             }
         }
 
-        bool v4l_uvc_device::has_metadata()
+        bool v4l_uvc_device::has_metadata() const
         {
             return !_use_memory_map;
         }
 
+        void v4l_uvc_device::streamon() const
+        {
+            stream_ctl_on(_fd);
+        }
+
+        void v4l_uvc_device::streamoff() const
+        {
+            stream_off(_fd);
+        }
+
+        void v4l_uvc_device::negotiate_kernel_buffers(size_t num) const
+        {
+            req_io_buff(_fd, num, _name,
+                        _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR,
+                        V4L2_BUF_TYPE_VIDEO_CAPTURE);
+        }
+
+        void v4l_uvc_device::allocate_io_buffers(size_t buffers)
+        {
+            if (buffers)
+            {
+                for(size_t i = 0; i < buffers; ++i)
+                {
+                    _buffers.push_back(std::make_shared<buffer>(_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE, _use_memory_map, i));
+                }
+            }
+            else
+            {
+                for(size_t i = 0; i < _buffers.size(); i++)
+                {
+                    _buffers[i]->detach_buffer();
+                }
+                _buffers.resize(0);
+            }
+        }
+
+        void v4l_uvc_device::map_device_descriptor()
+        {
+            _fd = open(_name.c_str(), O_RDWR | O_NONBLOCK, 0);
+            if(_fd < 0)
+                throw linux_backend_exception(to_string() <<__FUNCTION__ << " Cannot open '" << _name);
+
+            if (pipe(_stop_pipe_fd) < 0)
+                throw linux_backend_exception(to_string() <<__FUNCTION__ << " Cannot create pipe!");
+
+            if (_fds.size())
+                throw linux_backend_exception(to_string() <<__FUNCTION__ << " Device descriptor is already allocated");
+
+            _fds.insert(_fds.end(),{_fd,_stop_pipe_fd[0],_stop_pipe_fd[1]});
+            _max_fd = *std::max_element(_fds.begin(),_fds.end());
+
+            v4l2_capability cap = {};
+            if(xioctl(_fd, VIDIOC_QUERYCAP, &cap) < 0)
+            {
+                if(errno == EINVAL)
+                    throw linux_backend_exception(_name + " is not V4L2 device");
+                else
+                    throw linux_backend_exception("xioctl(VIDIOC_QUERYCAP) failed");
+            }
+            if(!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
+                throw linux_backend_exception(_name + " is no video capture device");
+
+            if(!(cap.capabilities & V4L2_CAP_STREAMING))
+                throw linux_backend_exception(_name + " does not support streaming I/O");
+
+            // Select video input, video standard and tune here.
+            v4l2_cropcap cropcap = {};
+            cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+            if(xioctl(_fd, VIDIOC_CROPCAP, &cropcap) == 0)
+            {
+                v4l2_crop crop = {};
+                crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                crop.c = cropcap.defrect; // reset to default
+                if(xioctl(_fd, VIDIOC_S_CROP, &crop) < 0)
+                {
+                    switch (errno)
+                    {
+                    case EINVAL: break; // Cropping not supported
+                    default: break; // Errors ignored
+                    }
+                }
+            } else {} // Errors ignored
+        }
+
+        void v4l_uvc_device::unmap_device_descriptor()
+        {
+            if(::close(_fd) < 0)
+                throw linux_backend_exception("v4l_uvc_device: close(_fd) failed");
+
+            if(::close(_stop_pipe_fd[0]) < 0)
+               throw linux_backend_exception("v4l_uvc_device: close(_stop_pipe_fd[0]) failed");
+            if(::close(_stop_pipe_fd[1]) < 0)
+               throw linux_backend_exception("v4l_uvc_device: close(_stop_pipe_fd[1]) failed");
+
+            _fd = 0;
+            _stop_pipe_fd[0] = _stop_pipe_fd[1] = 0;
+            _fds.clear();
+        }
+
+        void v4l_uvc_device::set_format(stream_profile profile)
+        {
+            v4l2_format fmt = {};
+            fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+            fmt.fmt.pix.width       = profile.width;
+            fmt.fmt.pix.height      = profile.height;
+            fmt.fmt.pix.pixelformat = (const big_endian<int> &)profile.format;
+            fmt.fmt.pix.field       = V4L2_FIELD_NONE;
+            if(xioctl(_fd, VIDIOC_S_FMT, &fmt) < 0)
+            {
+                throw linux_backend_exception("xioctl(VIDIOC_S_FMT) failed");
+            }
+
+            LOG_INFO("Trying to configure fourcc " << fourcc_to_string(fmt.fmt.pix.pixelformat));
+        }
+
+        v4l_uvc_meta_device::v4l_uvc_meta_device(const uvc_device_info& info, bool use_memory_map):
+            v4l_uvc_device(info,use_memory_map),
+            _md_fd(0),
+            _md_name(info.metadata_node_id)
+        {
+            LOG_INFO(__FUNCTION__);
+        }
+
+        v4l_uvc_meta_device::~v4l_uvc_meta_device()
+        {
+            LOG_INFO(__FUNCTION__);
+        }
+
+        void v4l_uvc_meta_device::streamon() const
+        {
+            // Metadata stream shall be configured first to allow sync with video node
+            stream_ctl_on(_md_fd,LOCAL_V4L2_BUF_TYPE_META_CAPTURE);
+
+            // Invoke UVC streaming request
+            v4l_uvc_device::streamon();
+
+        }
+
+        void v4l_uvc_meta_device::streamoff() const
+        {
+            v4l_uvc_device::streamoff();
+
+            stream_off(_md_fd,LOCAL_V4L2_BUF_TYPE_META_CAPTURE);
+        }
+
+        void v4l_uvc_meta_device::negotiate_kernel_buffers(size_t num) const
+        {
+            v4l_uvc_device::negotiate_kernel_buffers(num);
+
+            req_io_buff(_md_fd, num, _name,
+                        _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR,
+                        LOCAL_V4L2_BUF_TYPE_META_CAPTURE);
+        }
+
+        void v4l_uvc_meta_device::allocate_io_buffers(size_t buffers)
+        {
+            v4l_uvc_device::allocate_io_buffers(buffers);
+
+            if (buffers)
+            {
+                for(size_t i = 0; i < buffers; ++i)
+                {
+                    _md_buffers.push_back(std::make_shared<buffer>(_md_fd, LOCAL_V4L2_BUF_TYPE_META_CAPTURE, _use_memory_map, i));
+                }
+            }
+            else
+            {
+                for(size_t i = 0; i < _buffers.size(); i++)
+                {
+                    _md_buffers[i]->detach_buffer();
+                }
+                _md_buffers.resize(0);
+            }
+        }
+
+        void v4l_uvc_meta_device::map_device_descriptor()
+        {
+            v4l_uvc_device::map_device_descriptor();
+
+            if (_md_fd>0)
+                throw linux_backend_exception(to_string() << _md_name << " descriptor is already opened");
+
+            _md_fd = open(_md_name.c_str(), O_RDWR | O_NONBLOCK, 0);
+            if(_md_fd < 0)
+                throw linux_backend_exception(to_string() << "Cannot open '" << _md_name);
+
+            _fds.push_back(_md_fd);
+            _max_fd = *std::max_element(_fds.begin(),_fds.end());
+
+            v4l2_capability cap = {};
+            if(xioctl(_md_fd, VIDIOC_QUERYCAP, &cap) < 0)
+            {
+                if(errno == EINVAL)
+                    throw linux_backend_exception(_md_name + " is no V4L2 device");
+                else
+                    throw linux_backend_exception(_md_name +  " xioctl(VIDIOC_QUERYCAP) for metadata failed");
+            }
+
+            if(!(cap.capabilities & V4L2_CAP_META_CAPTURE))
+                throw linux_backend_exception(_md_name + " is not metadata capture device");
+
+            if(!(cap.capabilities & V4L2_CAP_STREAMING))
+                throw linux_backend_exception(_md_name + " does not support metadata streaming I/O");
+        }
+
+
+        void v4l_uvc_meta_device::unmap_device_descriptor()
+        {
+            v4l_uvc_device::unmap_device_descriptor();
+
+            if(::close(_md_fd) < 0)
+                throw linux_backend_exception("v4l_uvc_meta_device: close(_md_fd) failed");
+
+            _md_fd = 0;
+        }
+
+        void v4l_uvc_meta_device::set_format(stream_profile profile)
+        {
+            // Select video node streaming format
+            v4l_uvc_device::set_format(profile);
+
+            // Configure metadata node stream format
+            v4l2_format fmt{ };
+            fmt.type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
+
+            if (xioctl(_md_fd, VIDIOC_G_FMT, &fmt))
+                throw linux_backend_exception(_md_name + " ioctl(VIDIOC_G_FMT) for metadata node failed");
+
+            if (fmt.type != LOCAL_V4L2_BUF_TYPE_META_CAPTURE)
+                throw linux_backend_exception("ioctl(VIDIOC_G_FMT): " + _md_name + " node is not metadata capture");
+
+            bool success = false;
+            for (const uint32_t& request : { V4L2_META_FMT_D4XX, V4L2_META_FMT_UVC})
+            {
+                // Configure metadata format - try d4xx, then fallback to currently retrieve UVC default header of 12 bytes
+                memcpy(fmt.fmt.raw_data,&request,sizeof(request));
+
+                if(xioctl(_md_fd, VIDIOC_S_FMT, &fmt) >= 0)
+                {
+                    LOG_DEBUG("Metadata node was successfully configured to " << fourcc_to_string(request) << " format");
+                    success  =true;
+                    break;
+                }
+                else
+                {
+                    LOG_INFO("Metadata configuration failed for " << fourcc_to_string(request));
+                }
+            }
+
+            if (!success)
+                throw linux_backend_exception(_md_name + " ioctl(VIDIOC_S_FMT) for metadata node failed");
+
+        }
+
+        void v4l_uvc_meta_device::prepare_capture_buffers()
+        {
+            // Meta node to be initialized first to enforce initial sync
+            for (auto&& buf : _md_buffers) buf->prepare_for_streaming(_md_fd);
+
+            // Request streaming for video node
+            v4l_uvc_device::prepare_capture_buffers();
+
+        }
+
+        // retrieve metadata from a dedicated UVC node
+        void v4l_uvc_meta_device::acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds)
+        {
+            // Metadata is calculated once per frame
+            if (buf_mgr.metadata_size())
+                return;
+
+            if(FD_ISSET(_md_fd, &fds))
+            {
+                FD_CLR(_md_fd,&fds);
+                //FD_ZERO(&fds);
+                v4l2_buffer buf{};
+                buf.type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
+                buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
+
+                if(xioctl(_md_fd, VIDIOC_DQBUF, &buf) < 0)
+                {
+                    if(errno == EAGAIN)
+                        return;
+
+                    throw linux_backend_exception(to_string() << "xioctl(VIDIOC_DQBUF) failed for metadata fd: " << _md_fd);
+                }
+                LOG_DEBUG("Dequeued buf " << buf.index << " for fd " << _md_fd);
+
+                auto buffer = _md_buffers[buf.index];
+                buf_mgr.handle_buffer(e_metadata_buf,_md_fd, buf,buffer);
+
+                if (_is_started)
+                {
+                    static const size_t uvc_md_start_offset = sizeof(uvc_meta_buffer::ns) + sizeof(uvc_meta_buffer::sof);
+
+                    if(buf.bytesused > uvc_md_start_offset )
+                    {
+                        // The first uvc_md_start_offset bytes of metadata buffer are generated by host driver
+                        buf_mgr.set_md_attributes(buf.bytesused - uvc_md_start_offset,
+                                                    buffer->get_frame_start() + uvc_md_start_offset);
+
+                        buffer->attach_buffer(buf);
+                        buf_mgr.handle_buffer(e_metadata_buf,-1); // transfer new buffer request to the frame callback
+                    }
+                    else
+                    {
+                        // Zero-size buffers generate empty md. Non-zero partial bufs handled as errors
+                        if(buf.bytesused > 0)
+                        {
+                            std::stringstream s;
+                            s << "Invalid metadata payload, size " << buf.bytesused;
+                            LOG_INFO(s.str());
+                            _error_handler({ RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_WARN, s.str()});
+                        }
+                    }
+                }
+                else
+                {
+                    LOG_WARNING("Metadata frame arrived in idle mode.");
+                }
+            }
+        }
+
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const
         {
-            return std::make_shared<platform::retry_controls_work_around>(
-                    std::make_shared<v4l_uvc_device>(info));
+            auto v4l_uvc_dev = (!info.has_metadata_node) ? std::make_shared<v4l_uvc_device>(info) :
+                                                           std::make_shared<v4l_uvc_meta_device>(info);
+
+            return std::make_shared<platform::retry_controls_work_around>(v4l_uvc_dev);
         }
+
         std::vector<uvc_device_info> v4l_backend::query_uvc_devices() const
         {
-            std::vector<uvc_device_info> results;
+            std::vector<uvc_device_info> uvc_nodes;
             v4l_uvc_device::foreach_uvc_device(
-            [&results](const uvc_device_info& i, const std::string&)
+            [&uvc_nodes](const uvc_device_info& i, const std::string&)
             {
-                results.push_back(i);
+                uvc_nodes.push_back(i);
             });
-            return results;
+
+            return uvc_nodes;
         }
 
         std::shared_ptr<usb_device> v4l_backend::create_usb_device(usb_device_info info) const

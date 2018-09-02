@@ -89,6 +89,18 @@ class RealsenseProxy {
     console.log('send start cmd:');
     this._sendCmd(JSON.stringify(cmd));
   }
+  setOption(sensor, option, value) {
+    let cmd = {
+      tag: CommandTag.setOption,
+      data: {
+        sensor: sensor,
+        option: option,
+        value: value,
+      },
+    };
+    console.log('send set option cmd:');
+    this._sendCmd(JSON.stringify(cmd));
+  }
   _setupConnectionCallback(streamVal) {
     let inst = this;
     this.dataSockets[streamVal] = new WebSocket(this.url);
@@ -141,7 +153,6 @@ const vue = new Vue({
     sensorInfo: [],
     sensorInfoStr: '',
     presets: [],
-    options: '',
     selection: {
       selectedPreset: '',
       selectedResolutions: {},
@@ -170,6 +181,10 @@ const vue = new Vue({
         'infrared1': false,
         'infrared2': false,
       },
+    },
+    controls: {
+      enabled: {},
+      options: {},
     },
   },
   mounted: function() {
@@ -215,6 +230,9 @@ const vue = new Vue({
       console.log('selected Formats:', vue.selection.selectedFormats);
       console.log('selected Preset:', vue.selection.selectedPreset);
     },
+    onOptionChanged: function(sensorName, optionName, value) {
+      proxy.setOption(sensorName, optionName, value);
+    },
   },
 });
 
@@ -225,7 +243,7 @@ function cmdResponseCallback(response) {
       vue.presets = response.data;
       break;
     case ResponseTag.options:
-      vue.options = JSON.stringify(response);
+      vue.controls.options =response.data;
       break;
     case ResponseTag.sensorInfo:
       vue.sensorInfo = response.data;

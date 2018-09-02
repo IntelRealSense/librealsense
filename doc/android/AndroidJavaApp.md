@@ -47,6 +47,7 @@ Click on `Run` and choose `Run 'app'`. Choose your Android device and click on t
 16. Open the Terminal Emulator application and type below lines in order to move to Super User mode and change the USB permissions.
 ```shell
 su
+setenforce 0
 lsusb
 chmod 0777 /dev/bus/usb/<Bus number>/<Dev Number>
 ```

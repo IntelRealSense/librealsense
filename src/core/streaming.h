@@ -17,6 +17,7 @@ namespace librealsense
     class sensor_interface;
     class archive_interface;
     class device_interface;
+    class processing_block_interface;
 
     class sensor_part
     {

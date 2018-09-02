@@ -8,7 +8,7 @@
 //#include "../include/librealsense2/rsutil.h" // For projection/deprojection logic
 
 #ifndef ANDROID
-    #ifdef __SSSE3__
+    #if defined(__SSSE3__) && defined(__AVX2__)
     #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
     #include <immintrin.h>
 

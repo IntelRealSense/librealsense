@@ -25,16 +25,16 @@ namespace librealsense
     };
 
     // The weight of the current pixel for smoothing is bounded within [25..100]%
-    const float alpha_min_val       = 0.25f;
-    const float alpha_max_val       = 1.f;
-    const float alpha_default_val   = 0.5f;
-    const float alpha_step          = 0.01f;
+    const float alpha_min_val = 0.25f;
+    const float alpha_max_val = 1.f;
+    const float alpha_default_val = 0.5f;
+    const float alpha_step = 0.01f;
 
     // The depth gradient below which the smoothing will occur as number of depth levels
-    const uint8_t delta_min_val       = 1;
-    const uint8_t delta_max_val       = 50;
-    const uint8_t delta_default_val   = 20;
-    const uint8_t delta_step          = 1;
+    const uint8_t delta_min_val = 1;
+    const uint8_t delta_max_val = 50;
+    const uint8_t delta_default_val = 20;
+    const uint8_t delta_step = 1;
 
     // the number of passes used in the iterative smoothing approach
     const uint8_t filter_iter_min = 1;
@@ -44,7 +44,7 @@ namespace librealsense
 
     // The holes filling mode
     const uint8_t holes_fill_min = sp_hf_disabled;
-    const uint8_t holes_fill_max = sp_hf_max_value-1;
+    const uint8_t holes_fill_max = sp_hf_max_value - 1;
     const uint8_t holes_fill_step = 1;
     const uint8_t holes_fill_def = sp_hf_disabled;
 
@@ -61,6 +61,9 @@ namespace librealsense
         _holes_filling_mode(holes_fill_def),
         _holes_filling_radius(0)
     {
+        _stream_filter = RS2_STREAM_DEPTH;
+        _stream_format_filter = RS2_FORMAT_Z16;
+
         auto spatial_filter_alpha = std::make_shared<ptr_option<float>>(
             alpha_min_val,
             alpha_max_val,
@@ -100,12 +103,12 @@ namespace librealsense
             holes_fill_def,
             &_holes_filling_mode, "Holes filling mode");
 
-        holes_filling_mode->set_description(sp_hf_disabled,            "Disabled");
-        holes_filling_mode->set_description(sp_hf_2_pixel_radius,      "2-pixel radius");
-        holes_filling_mode->set_description(sp_hf_4_pixel_radius,      "4-pixel radius");
-        holes_filling_mode->set_description(sp_hf_8_pixel_radius,      "8-pixel radius");
-        holes_filling_mode->set_description(sp_hf_16_pixel_radius,     "16-pixel radius");
-        holes_filling_mode->set_description(sp_hf_unlimited_radius,    "Unlimited");
+        holes_filling_mode->set_description(sp_hf_disabled, "Disabled");
+        holes_filling_mode->set_description(sp_hf_2_pixel_radius, "2-pixel radius");
+        holes_filling_mode->set_description(sp_hf_4_pixel_radius, "4-pixel radius");
+        holes_filling_mode->set_description(sp_hf_8_pixel_radius, "8-pixel radius");
+        holes_filling_mode->set_description(sp_hf_16_pixel_radius, "16-pixel radius");
+        holes_filling_mode->set_description(sp_hf_unlimited_radius, "Unlimited");
 
         holes_filling_mode->on_set([this, holes_filling_mode](float val)
         {
@@ -141,36 +144,22 @@ namespace librealsense
         register_option(RS2_OPTION_FILTER_SMOOTH_DELTA, spatial_filter_delta);
         register_option(RS2_OPTION_FILTER_MAGNITUDE, spatial_filter_iterations);
         register_option(RS2_OPTION_HOLES_FILL, holes_filling_mode);
+    }
 
-        auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
-        {
-            std::lock_guard<std::mutex> lock(_mutex);
+    rs2::frame spatial_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
+    {
+        rs2::frame tgt;
 
-            rs2::frame out = f;
-            rs2::frame tgt, depth;
+        update_configuration(f);
+        tgt = prepare_target_frame(f, source);
 
-            bool composite = f.is<rs2::frameset>();
+        // Spatial domain transform edge-preserving filter
+        if (_extension_type == RS2_EXTENSION_DISPARITY_FRAME)
+            dxf_smooth<float>(const_cast<void*>(tgt.get_data()), _spatial_alpha_param, _spatial_edge_threshold, _spatial_iterations);
+        else
+            dxf_smooth<uint16_t>(const_cast<void*>(tgt.get_data()), _spatial_alpha_param, _spatial_edge_threshold, _spatial_iterations);
 
-            depth = (composite) ? f.as<rs2::frameset>().first_or_default(RS2_STREAM_DEPTH) : f;
-            if (depth) // Processing required
-            {
-                update_configuration(f);
-                tgt = prepare_target_frame(depth, source);
-
-                // Spatial domain transform edge-preserving filter
-                if (_extension_type == RS2_EXTENSION_DISPARITY_FRAME)
-                    dxf_smooth<float>(const_cast<void*>(tgt.get_data()), _spatial_alpha_param, _spatial_edge_threshold, _spatial_iterations);
-                else
-                    dxf_smooth<uint16_t>(const_cast<void*>(tgt.get_data()), _spatial_alpha_param, _spatial_edge_threshold, _spatial_iterations);
-            }
-
-            out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
-
-            source.frame_ready(out);
-        };
-
-        auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
-        processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
+        return tgt;
     }
 
     void  spatial_filter::update_configuration(const rs2::frame& f)
@@ -185,13 +174,13 @@ namespace librealsense
                 *(stream_interface*)(_target_stream_profile.get()->profile));
 
             _extension_type = f.is<rs2::disparity_frame>() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
-            _bpp        = (_extension_type == RS2_EXTENSION_DISPARITY_FRAME) ? sizeof(float) : sizeof(uint16_t);
+            _bpp = (_extension_type == RS2_EXTENSION_DISPARITY_FRAME) ? sizeof(float) : sizeof(uint16_t);
             auto vp = _target_stream_profile.as<rs2::video_stream_profile>();
-            _focal_lenght_mm            = vp.get_intrinsics().fx;
-            _width                      = vp.width();
-            _height                     = vp.height();
-            _stride                     = _width*_bpp;
-            _current_frm_size_pixels    = _width * _height;
+            _focal_lenght_mm = vp.get_intrinsics().fx;
+            _width = vp.width();
+            _height = vp.height();
+            _stride = _width * _bpp;
+            _current_frm_size_pixels = _width * _height;
 
             // Check if the new frame originated from stereo-based depth sensor
             // retrieve the stereo baseline parameter
@@ -227,7 +216,7 @@ namespace librealsense
             }
 
             _spatial_edge_threshold = _spatial_delta_param;// (_extension_type == RS2_EXTENSION_DISPARITY_FRAME) ?
-                                   // (_focal_lenght_mm * _stereo_baseline_mm) / float(_spatial_delta_param) : _spatial_delta_param;
+                                                           // (_focal_lenght_mm * _stereo_baseline_mm) / float(_spatial_delta_param) : _spatial_delta_param;
         }
     }
 

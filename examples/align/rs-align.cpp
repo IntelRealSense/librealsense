@@ -103,7 +103,7 @@ int main(int argc, char * argv[]) try
         pip_stream.y = altered_other_frame_rect.y + altered_other_frame_rect.h - pip_stream.h - (std::max(w, h) / 25);
 
         // Render depth (as picture in pipcture)
-        renderer.upload(c(aligned_depth_frame));
+        renderer.upload(c.process(aligned_depth_frame));
         renderer.show(pip_stream);
 
         // Using ImGui library to provide a slide controller to select the depth clipping distance

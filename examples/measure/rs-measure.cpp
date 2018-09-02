@@ -193,32 +193,33 @@ int main(int argc, char * argv[]) try
                 rs2::frame_source& source) // Frame pool that can allocate new frames
         {
             // First make the frames spatially aligned
-            data = align_to.process(data);
+            data = data.apply_filter(align_to);
 
-            // Next, apply depth post-processing
-            rs2::frame depth = data.get_depth_frame();
             // Decimation will reduce the resultion of the depth image,
             // closing small holes and speeding-up the algorithm
-            depth = dec.process(depth);
+            data = data.apply_filter(dec);
+
             // To make sure far-away objects are filtered proportionally
             // we try to switch to disparity domain
-            depth = depth2disparity.process(depth);
-            // Apply spatial filtering
-            depth = spat.process(depth);
-            // Apply temporal filtering
-            depth = temp.process(depth);
-            // If we are in disparity domain, switch back to depth
-            depth = disparity2depth.process(depth);
-            // Send the post-processed depth for path-finding
-            pathfinding_queue.enqueue(depth);
+            data = data.apply_filter(depth2disparity);
 
-            // Apply color map for visualization of depth
-            auto colorized = color_map(depth);
-            auto color = data.get_color_frame();
-            // Group the two frames together (to make sure they are rendered in sync)
-            rs2::frameset combined = source.allocate_composite_frame({ colorized, color });
+            // Apply spatial filtering
+            data = data.apply_filter(spat);
+
+            // Apply temporal filtering
+            data = data.apply_filter(temp);
+
+            // If we are in disparity domain, switch back to depth
+            data = data.apply_filter(disparity2depth);
+
+            // Send the post-processed depth for path-finding
+            pathfinding_queue.enqueue(data.get_depth_frame());
+
+            //Apply color map for visualization of depth
+            data = data.apply_filter(color_map);
+
             // Send the composite frame for rendering
-            source.frame_ready(combined);
+            source.frame_ready(data);
         });
         // Indicate that we want the results of frame_processor
         // to be pushed into postprocessed_frames queue
@@ -329,13 +330,14 @@ int main(int argc, char * argv[]) try
         {
             auto depth = current_frameset.get_depth_frame();
             auto color = current_frameset.get_color_frame();
+            auto colorized_depth = current_frameset.first(RS2_STREAM_DEPTH, RS2_FORMAT_RGB8);
 
             glEnable(GL_BLEND);
             // Use the Alpha channel for blending
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             // First render the colorized depth image
-            depth_image.render(depth, { 0, 0, app.width(), app.height() });
+            depth_image.render(colorized_depth, { 0, 0, app.width(), app.height() });
             // Next, set global alpha for the color image to 90%
             // (to make it slightly translucent)
             //glColor4f(1.f, 1.f, 1.f, 0.9f);

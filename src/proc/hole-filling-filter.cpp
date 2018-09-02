@@ -15,7 +15,7 @@ namespace librealsense
 {
     // The holes filling mode
     const uint8_t hole_fill_min = hf_fill_from_left;
-    const uint8_t hole_fill_max = hf_max_value-1;
+    const uint8_t hole_fill_max = hf_max_value - 1;
     const uint8_t hole_fill_step = 1;
     const uint8_t hole_fill_def = hf_farest_from_around;
 
@@ -25,6 +25,9 @@ namespace librealsense
         _current_frm_size_pixels(0),
         _hole_filling_mode(hole_fill_def)
     {
+        _stream_filter = RS2_STREAM_DEPTH;
+        _stream_format_filter = RS2_FORMAT_Z16;
+
         auto hole_filling_mode = std::make_shared<ptr_option<uint8_t>>(
             hole_fill_min,
             hole_fill_max,
@@ -32,8 +35,8 @@ namespace librealsense
             hole_fill_def,
             &_hole_filling_mode, "Hole Filling mode");
 
-        hole_filling_mode->set_description(hf_fill_from_left,      "Fill from Left");
-        hole_filling_mode->set_description(hf_farest_from_around,  "Farest from around");
+        hole_filling_mode->set_description(hf_fill_from_left, "Fill from Left");
+        hole_filling_mode->set_description(hf_farest_from_around, "Farest from around");
         hole_filling_mode->set_description(hf_nearest_from_around, "Nearest from around");
 
         hole_filling_mode->on_set([this, hole_filling_mode](float val)
@@ -49,35 +52,20 @@ namespace librealsense
 
         register_option(RS2_OPTION_HOLES_FILL, hole_filling_mode);
 
-        auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
-        {
-            std::lock_guard<std::mutex> lock(_mutex);
+    }
 
-            rs2::frame out = f;
-            rs2::frame tgt, depth;
+    rs2::frame hole_filling_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
+    {
+        update_configuration(f);
+        auto tgt = prepare_target_frame(f, source);
 
-            bool composite = f.is<rs2::frameset>();
+        // Hole filling pass
+        if (_extension_type == RS2_EXTENSION_DISPARITY_FRAME)
+            apply_hole_filling<float>(const_cast<void*>(tgt.get_data()));
+        else
+            apply_hole_filling<uint16_t>(const_cast<void*>(tgt.get_data()));
 
-            depth = (composite) ? f.as<rs2::frameset>().first_or_default(RS2_STREAM_DEPTH) : f;
-            if (depth) // Processing required
-            {
-                update_configuration(f);
-                tgt = prepare_target_frame(depth, source);
-
-                // Hole filling pass
-                if (_extension_type == RS2_EXTENSION_DISPARITY_FRAME)
-                    apply_hole_filling<float>(const_cast<void*>(tgt.get_data()));
-                else
-                    apply_hole_filling<uint16_t>(const_cast<void*>(tgt.get_data()));
-            }
-
-            out = composite ? source.allocate_composite_frame({ tgt }) : tgt;
-
-            source.frame_ready(out);
-        };
-
-        auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
-        processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
+        return tgt;
     }
 
     void  hole_filling_filter::update_configuration(const rs2::frame& f)
@@ -92,12 +80,12 @@ namespace librealsense
                 *(stream_interface*)(_target_stream_profile.get()->profile));
 
             _extension_type = f.is<rs2::disparity_frame>() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
-            _bpp        = (_extension_type == RS2_EXTENSION_DISPARITY_FRAME) ? sizeof(float) : sizeof(uint16_t);
+            _bpp = (_extension_type == RS2_EXTENSION_DISPARITY_FRAME) ? sizeof(float) : sizeof(uint16_t);
             auto vp = _target_stream_profile.as<rs2::video_stream_profile>();
-            _width                      = vp.width();
-            _height                     = vp.height();
-            _stride                     = _width*_bpp;
-            _current_frm_size_pixels    = _width * _height;
+            _width = vp.width();
+            _height = vp.height();
+            _stride = _width * _bpp;
+            _current_frm_size_pixels = _width * _height;
 
         }
     }

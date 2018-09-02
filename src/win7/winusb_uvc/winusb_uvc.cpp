@@ -1,5 +1,8 @@
 // winusb_uvc.cpp : Defines the entry point for the console application.
 //
+
+#ifdef RS2_USE_WINUSB_UVC_BACKEND
+
 #define NOMINMAX
 #include "windows.h"
 #include "SETUPAPI.H"
@@ -863,7 +866,7 @@ void winusb_uvc_process_payload(winusb_uvc_stream_handle_t *strmh,
 
     if ((data_len > 0) && (strmh->cur_ctrl.dwMaxVideoFrameSize == (data_len)))
     {
-        if (header_info & (1 << 1)) {
+        //if (header_info & (1 << 1)) { // Temp patch to allow old firmware
             /* The EOF bit is set, so publish the complete frame */
             winusb_uvc_swap_buffers(strmh);
 
@@ -885,7 +888,7 @@ void winusb_uvc_process_payload(winusb_uvc_stream_handle_t *strmh,
             {
                 LOG_INFO("WinUSB backend is dropping a frame because librealsense wasn't fast enough");
             }
-        }
+        //}
     }
 }
 
@@ -2295,3 +2298,5 @@ bool read_all_uvc_descriptors(winusb_uvc_device *device, PUCHAR buffer, ULONG bu
 
     return 0;
 }
+
+#endif
