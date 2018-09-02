@@ -799,7 +799,8 @@ namespace rs2
     {
         std::stringstream ss;
         ss << "##" << ((owner) ? owner->dev.get_info(RS2_CAMERA_INFO_NAME) : _name)
-            << "/" << ((owner) ? (*owner->s).get_info(RS2_CAMERA_INFO_NAME) : "_");
+            << "/" << ((owner) ? (*owner->s).get_info(RS2_CAMERA_INFO_NAME) : "_")
+            << "/" << (long long)this;
 
         subdevice_model::populate_options(options_metadata,
             ss.str().c_str(),owner , block, owner ? &owner->options_invalidated : nullptr, error_message);
@@ -918,7 +919,8 @@ namespace rs2
 
         std::stringstream ss;
         ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
-            << "/" << s->get_info(RS2_CAMERA_INFO_NAME);
+            << "/" << s->get_info(RS2_CAMERA_INFO_NAME)
+            << "/" << (long long)this;
         populate_options(options_metadata, ss.str().c_str(), this, s, &options_invalidated, error_message);
 
         try
@@ -5263,7 +5265,7 @@ namespace rs2
                 {
                     bool is_clicked = false;
                     assert(opt_model.opt == RS2_OPTION_VISUAL_PRESET);
-                    ImGui::Text("Presets: ");
+                    ImGui::Text("Preset: ");
                     if (ImGui::IsItemHovered())
                     {
                         ImGui::SetTooltip("Select a preset configuration (or use the load button)");
