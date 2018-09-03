@@ -5324,12 +5324,16 @@ namespace rs2
                                     if (selected < static_cast<int>(labels.size() - files_labels.size()))
                                     {
                                         //Known preset was chosen
-                                        opt_model.value = opt_model.range.min + opt_model.range.step * selected;
+                                        auto new_val = opt_model.range.min + opt_model.range.step * selected;
                                         model.add_log(to_string() << "Setting " << opt_model.opt << " to "
                                             << opt_model.value << " (" << labels[selected] << ")");
-                                        opt_model.endpoint->set_option(opt_model.opt, opt_model.value);
-                                        is_clicked = true;
+
+                                        opt_model.endpoint->set_option(opt_model.opt, new_val);
+                                        
+                                        // Only apply preset to GUI if set_option was succesful
                                         selected_file_preset = "";
+                                        opt_model.value = new_val;
+                                        is_clicked = true;
                                     }
                                     else
                                     {
