@@ -799,7 +799,8 @@ namespace rs2
     {
         std::stringstream ss;
         ss << "##" << ((owner) ? owner->dev.get_info(RS2_CAMERA_INFO_NAME) : _name)
-            << "/" << ((owner) ? (*owner->s).get_info(RS2_CAMERA_INFO_NAME) : "_");
+            << "/" << ((owner) ? (*owner->s).get_info(RS2_CAMERA_INFO_NAME) : "_")
+            << "/" << (long long)this;
 
         subdevice_model::populate_options(options_metadata,
             ss.str().c_str(),owner , block, owner ? &owner->options_invalidated : nullptr, error_message);
@@ -918,7 +919,8 @@ namespace rs2
 
         std::stringstream ss;
         ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
-            << "/" << s->get_info(RS2_CAMERA_INFO_NAME);
+            << "/" << s->get_info(RS2_CAMERA_INFO_NAME)
+            << "/" << (long long)this;
         populate_options(options_metadata, ss.str().c_str(), this, s, &options_invalidated, error_message);
 
         try
@@ -5263,7 +5265,7 @@ namespace rs2
                 {
                     bool is_clicked = false;
                     assert(opt_model.opt == RS2_OPTION_VISUAL_PRESET);
-                    ImGui::Text("Presets: ");
+                    ImGui::Text("Preset: ");
                     if (ImGui::IsItemHovered())
                     {
                         ImGui::SetTooltip("Select a preset configuration (or use the load button)");
@@ -5322,12 +5324,16 @@ namespace rs2
                                     if (selected < static_cast<int>(labels.size() - files_labels.size()))
                                     {
                                         //Known preset was chosen
-                                        opt_model.value = opt_model.range.min + opt_model.range.step * selected;
+                                        auto new_val = opt_model.range.min + opt_model.range.step * selected;
                                         model.add_log(to_string() << "Setting " << opt_model.opt << " to "
                                             << opt_model.value << " (" << labels[selected] << ")");
-                                        opt_model.endpoint->set_option(opt_model.opt, opt_model.value);
-                                        is_clicked = true;
+
+                                        opt_model.endpoint->set_option(opt_model.opt, new_val);
+                                        
+                                        // Only apply preset to GUI if set_option was succesful
                                         selected_file_preset = "";
+                                        opt_model.value = new_val;
+                                        is_clicked = true;
                                     }
                                     else
                                     {
