@@ -1158,7 +1158,6 @@ uvc_error_t winusb_uvc_query_stream_ctrl(winusb_uvc_device *devh, uvc_stream_ctr
         }
     }
 
-    WINUSB_INTERFACE_HANDLE iface;
     auto str_if = winusb_uvc_get_stream_if(devh, ctrl->bInterfaceNumber);
     /* do the transfer */
     err = winusb_SendControl(
@@ -1326,8 +1325,6 @@ fail:
 uvc_error_t winusb_uvc_probe_stream_ctrl(winusb_uvc_device *devh, uvc_stream_ctrl_t *ctrl)
 {
     uvc_error_t ret = UVC_SUCCESS;
-
-    uint8_t interfaceNumber = ctrl->bInterfaceNumber;
 
     // Sending probe SET request - UVC_SET_CUR request in a probe/commit structure containing desired values for VS Format index, VS Frame index, and VS Frame Interval
     // UVC device will check the VS Format index, VS Frame index, and Frame interval properties to verify if possible and update the probe/commit structure if feasible
