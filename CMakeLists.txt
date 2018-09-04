@@ -202,11 +202,7 @@ set(REALSENSE_CPP
 ## Check for Windows Version ##
 if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
     if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
-        set(DRIVERS IntelD410_win7.inf
-                    IntelD415_win7.inf
-                    IntelD430_win7.inf
-                    IntelD435_win7.inf
-                    IntelDS5U_win7.inf
+        set(DRIVERS IntelRealSense_D400_series_win7.inf
                     WdfCoinstaller01011.dll
                     winusbcoinstaller2.dll
                     )
