@@ -202,7 +202,11 @@ set(REALSENSE_CPP
 ## Check for Windows Version ##
 if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
     if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
-        set(DRIVERS IntelD415_win7.inf
+        set(DRIVERS IntelD410_win7.inf
+                    IntelD415_win7.inf
+                    IntelD430_win7.inf
+                    IntelD435_win7.inf
+                    IntelDS5U_win7.inf
                     WdfCoinstaller01011.dll
                     winusbcoinstaller2.dll
                     )
@@ -210,8 +214,8 @@ if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
         foreach(item IN LISTS DRIVERS)
             add_custom_command(
                 OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${item}"
-                COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/src/win7/d415_driver/${item}" "${CMAKE_CURRENT_BINARY_DIR}/${item}"
-                DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${item}"
+                COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/src/win7/drivers/${item}" "${CMAKE_CURRENT_BINARY_DIR}/drivers/${item}"
+                DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/win7/drivers/${item}"
             )
         endforeach()
     endif()
