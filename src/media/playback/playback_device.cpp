@@ -530,6 +530,7 @@ void playback_device::try_looping()
         }
         if (auto frame = data->as<serialized_frame>())
         {
+            frame->frame.frame->set_realtime(m_real_time);
             if (frame->stream_id.device_index != get_device_index() || frame->stream_id.sensor_index >= m_sensors.size())
             {
                 std::string error_msg = to_string() << "Unexpected sensor index while playing file (Read index = " << frame->stream_id.sensor_index << ")";

@@ -92,7 +92,7 @@ namespace librealsense
         explicit frame() : ref_count(0), _kept(false), owner(nullptr), on_release() {}
         frame(const frame& r) = delete;
         frame(frame&& r)
-            : ref_count(r.ref_count.exchange(0)), _kept(r._kept.exchange(false)),
+            : ref_count(r.ref_count.exchange(0)), _kept(r._kept.exchange(false)), _realtime_play_mode(true),
             owner(r.owner), on_release()
         {
             *this = std::move(r);

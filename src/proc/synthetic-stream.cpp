@@ -364,6 +364,13 @@ namespace librealsense
 
         auto cf = static_cast<composite_frame*>(res);
 
+        res->set_realtime(true);
+        for (auto&& f : holders)
+        {
+            if (f.is_blocking())
+                res->set_realtime(false);
+        }
+
         auto frames = cf->get_frames();
         for (auto&& f : holders)
             copy_frames(std::move(f), frames);
