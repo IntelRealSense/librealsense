@@ -238,7 +238,8 @@ void playback_device::seek_to_time(std::chrono::nanoseconds time)
                         std::string error_msg = to_string() << "Unexpected sensor index while playing file (Read index = " << frame->stream_id.sensor_index << ")";
                         LOG_ERROR(error_msg);
                     }
-                    m_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time);
+                    m_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time,
+                        []() { return device_serializer::nanoseconds(0); });
                 }
             }
         }
@@ -253,8 +254,8 @@ void playback_device::seek_to_time(std::chrono::nanoseconds time)
 rs2_playback_status playback_device::get_current_status() const
 {
     return m_is_started ?
-           m_is_paused ? RS2_PLAYBACK_STATUS_PAUSED : RS2_PLAYBACK_STATUS_PLAYING
-                        : RS2_PLAYBACK_STATUS_STOPPED;
+        m_is_paused ? RS2_PLAYBACK_STATUS_PAUSED : RS2_PLAYBACK_STATUS_PLAYING
+        : RS2_PLAYBACK_STATUS_STOPPED;
 }
 
 uint64_t playback_device::get_duration() const
@@ -275,21 +276,21 @@ void playback_device::pause()
     {
         LOG_DEBUG("Playback pause invoked");
 
-       if (m_is_paused)
-           return;
+        if (m_is_paused)
+            return;
 
-       m_is_paused = true;
+        m_is_paused = true;
 
-       if(m_is_started)
-       {
-           //Wait for any remaining sensor callbacks to return
-           for (auto sensor : m_sensors)
-           {
-               sensor.second->flush_pending_frames();
-           }
-       }
-       LOG_DEBUG("Notifying RS2_PLAYBACK_STATUS_PAUSED");
-       playback_status_changed(RS2_PLAYBACK_STATUS_PAUSED);
+        if(m_is_started)
+        {
+            //Wait for any remaining sensor callbacks to return
+            for (auto sensor : m_sensors)
+            {
+                sensor.second->flush_pending_frames();
+            }
+        }
+        LOG_DEBUG("Notifying RS2_PLAYBACK_STATUS_PAUSED");
+        playback_status_changed(RS2_PLAYBACK_STATUS_PAUSED);
     });
     if ((*m_read_thread)->flush() == false)
     {
@@ -306,8 +307,7 @@ void playback_device::resume()
     {
         LOG_DEBUG("Playback resume invoked");
         if (m_is_paused == false)
-           return;
-
+            return;
         m_is_paused = false;
         catch_up();
 
@@ -356,6 +356,8 @@ void playback_device::update_time_base(device_serializer::nanoseconds base_times
 
 device_serializer::nanoseconds playback_device::calc_sleep_time(device_serializer::nanoseconds timestamp) const
 {
+    if (!m_real_time)
+        return device_serializer::nanoseconds(0);
     //The time to sleep returned here equals to the difference between the file recording time
     // and the playback time.
     auto now = std::chrono::high_resolution_clock::now();
@@ -367,9 +369,9 @@ device_serializer::nanoseconds playback_device::calc_sleep_time(device_serialize
     auto time_diff = timestamp - m_base_timestamp;
     auto recorded_time = std::chrono::duration_cast<device_serializer::nanoseconds>(time_diff / m_sample_rate.load());
 
-    LOG_DEBUG("Time Now  : " << now.time_since_epoch().count() << " ,    Time When Started: " << m_base_sys_time.time_since_epoch().count() << " , Diff: " << play_time.count() << " == " << (play_time.count()/1000)/1000 << "ms");
-    LOG_DEBUG("Original Recording Delta: " << time_diff.count() << " == " << (time_diff.count() / 1000) / 1000 << "ms");
-    LOG_DEBUG("Frame Time: " << timestamp.count() << "  , First Frame: " << m_base_timestamp.count() << " ,  Diff: " << recorded_time.count() << " == " << (recorded_time.count() / 1000) / 1000 << "ms");
+    LOG_DEBUG("Time Now  : " << now.time_since_epoch().count() << " ,    Time When Started: " << m_base_sys_time.time_since_epoch().count() << " , Diff: " << play_time.count() << " == " << (play_time.count() * 1e-6) << "ms");
+    LOG_DEBUG("Original Recording Delta: " << time_diff.count() << " == " << (time_diff.count() * 1e-6) << "ms");
+    LOG_DEBUG("Frame Time: " << timestamp.count() << "  , First Frame: " << m_base_timestamp.count() << " ,  Diff: " << recorded_time.count() << " == " << (recorded_time.count() * 1e-6) << "ms");
 
     if(recorded_time < play_time)
     {
@@ -377,7 +379,7 @@ device_serializer::nanoseconds playback_device::calc_sleep_time(device_serialize
         return device_serializer::nanoseconds(0);
     }
     auto sleep_time = (recorded_time - play_time);
-    LOG_DEBUG("Sleep Time: " << sleep_time.count() << " == " << (sleep_time.count() / 1000) / 1000 << " ms");
+    LOG_DEBUG("Sleep Time: " << sleep_time.count() << " == " << (sleep_time.count() * 1e-6) << " ms");
     return sleep_time;
 }
 
@@ -393,7 +395,7 @@ void playback_device::start()
     LOG_DEBUG("playback start called");
 
     if (m_is_started)
-        return ; //nothing to do
+        return; //nothing to do
 
     m_is_started = true;
     catch_up();
@@ -457,6 +459,9 @@ void playback_device::do_loop(T action)
         //On failure, exit thread
         if(action_succeeded == false)
         {
+            for (auto s : m_active_sensors)
+                s.second->flush_pending_frames();
+
             //Go over the sensors and stop them
             size_t active_sensors_count = m_active_sensors.size();
             for (size_t i = 0; i<active_sensors_count; i++)
@@ -477,6 +482,16 @@ void playback_device::do_loop(T action)
             do_loop(action);
         }
     });
+}
+
+bool playback_device::prefetch_done()
+{
+    for (auto s : m_active_sensors)
+    {
+        if (!s.second->streams_contains_one_frame_or_more())
+            return false;
+    }
+    return true;
 }
 
 void playback_device::try_looping()
@@ -519,15 +534,19 @@ void playback_device::try_looping()
         }
 
         //Calculate the duration for the reader to sleep (i.e wait for next frame)
-        auto sleep_time = calc_sleep_time(timestamp);
-        if (sleep_time.count() > 0)
+        if (m_real_time && prefetch_done())
         {
-            if (m_sample_rate > 0)
+            auto sleep_time = calc_sleep_time(timestamp);
+            if (sleep_time.count() > 0)
             {
-                LOG_DEBUG("Sleeping for: " << (sleep_time.count() / 1000) / 1000);
-                std::this_thread::sleep_for(sleep_time);
+                if (m_sample_rate > 0)
+                {
+                    LOG_DEBUG("Sleeping for: " << (sleep_time.count() * 1e-6));
+                    std::this_thread::sleep_for(sleep_time);
+                }
             }
         }
+
         if (auto frame = data->as<serialized_frame>())
         {
             frame->frame.frame->set_realtime(m_real_time);
@@ -542,10 +561,11 @@ void playback_device::try_looping()
             if (data->is<serialized_invalid_frame>())
             {
                 LOG_WARNING("Bad frame from reader, ignoring");
-                 return true;
+                return true;
             }
             //Dispatch frame to the relevant sensor
-            m_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time);
+            m_active_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time,
+                [this, timestamp]() { return calc_sleep_time(timestamp); });
             return true;
         }
 
