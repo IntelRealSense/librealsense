@@ -156,6 +156,10 @@ namespace librealsense
         void mark_fixed() override { _fixed = true; }
         bool is_fixed() const override { return _fixed; }
 
+        bool is_realtime() const override { return _realtime_play_mode; }
+        void set_realtime(bool state) override { _realtime_play_mode = state; }
+        bool is_blocking() const override { return !_realtime_play_mode; }
+
     private:
         // TODO: check boost::intrusive_ptr or an alternative
         std::atomic<int> ref_count; // the reference count is on how many times this placeholder has been observed (not lifetime, not content)
@@ -165,6 +169,7 @@ namespace librealsense
         bool _fixed = false;
         std::atomic_bool _kept;
         std::shared_ptr<stream_profile_interface> stream;
+        bool _realtime_play_mode;
     };
 
     class points : public frame
@@ -303,7 +308,7 @@ namespace librealsense
                 return((depth_frame*)_original.frame)->get_distance(x, y);
 
             uint64_t pixel = 0;
-            switch (get_bpp()/8) // bits per pixel
+            switch (get_bpp() / 8) // bits per pixel
             {
             case 1: pixel = get_frame_data()[y*get_width() + x];                                    break;
             case 2: pixel = reinterpret_cast<const uint16_t*>(get_frame_data())[y*get_width() + x]; break;
@@ -353,7 +358,7 @@ namespace librealsense
                 try
                 {
                     auto depth_sensor = As<librealsense::depth_sensor>(sensor);
-                    if(depth_sensor != nullptr)
+                    if (depth_sensor != nullptr)
                     {
                         return depth_sensor->get_depth_scale();
                     }
