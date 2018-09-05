@@ -18,6 +18,7 @@ playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<d
     m_sample_rate(1),
     m_real_time(true),
     m_prev_timestamp(0),
+    m_last_published_timestamp(0),
     m_read_thread([]() {return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max()); })
 {
     if (serializer == nullptr)
@@ -239,7 +240,9 @@ void playback_device::seek_to_time(std::chrono::nanoseconds time)
                         LOG_ERROR(error_msg);
                     }
                     m_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time,
-                        []() { return device_serializer::nanoseconds(0); });
+                        []() { return device_serializer::nanoseconds(0); },
+                        []() {},
+                        []() {});
                 }
             }
         }
@@ -308,6 +311,14 @@ void playback_device::resume()
         LOG_DEBUG("Playback resume invoked");
         if (m_is_paused == false)
             return;
+
+        auto total_duration = m_reader->query_duration();
+        if (m_last_published_timestamp >= total_duration)
+            m_last_published_timestamp = device_serializer::nanoseconds(0);
+        m_reader->reset();
+        m_reader->seek_to_time(m_last_published_timestamp);
+        while (m_last_published_timestamp != device_serializer::nanoseconds(0) && !m_reader->read_next_data()->is<serialized_frame>());
+
         m_is_paused = false;
         catch_up();
 
@@ -472,6 +483,9 @@ void playback_device::do_loop(T action)
                 //NOTE: calling stop will remove the sensor from m_active_sensors
                 m_active_sensors.begin()->second->stop(false);
             }
+
+            m_last_published_timestamp = device_serializer::nanoseconds(0);
+
             //After all sensors were stopped, stop_internal() is called and flags m_is_started as false
             assert(m_is_started == false);
         }
@@ -565,7 +579,13 @@ void playback_device::try_looping()
             }
             //Dispatch frame to the relevant sensor
             m_active_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time,
-                [this, timestamp]() { return calc_sleep_time(timestamp); });
+                [this, timestamp]() { return calc_sleep_time(timestamp); },
+                [this]() { return m_is_paused == true; },
+                [this, timestamp]()
+                {
+                    std::lock_guard<std::mutex> locker(m_last_published_timestamp_mutex);
+                    m_last_published_timestamp = timestamp;
+                });
             return true;
         }
 

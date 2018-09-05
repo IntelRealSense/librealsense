@@ -87,6 +87,8 @@ namespace librealsense
         std::shared_ptr<context> m_context;
         std::vector<std::shared_ptr<lazy<rs2_extrinsics>>> m_extrinsics_fetchers;
         std::map<int, std::pair<uint32_t, rs2_extrinsics>> m_extrinsics_map;
+        device_serializer::nanoseconds m_last_published_timestamp;
+        std::mutex m_last_published_timestamp_mutex;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_PLAYBACK, playback_device);
