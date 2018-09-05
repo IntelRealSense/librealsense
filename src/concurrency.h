@@ -249,11 +249,14 @@ public:
     }
 
     template<class T>
-    void invoke(T item)
+    void invoke(T item, bool is_blocking = false)
     {
         if (!_was_stopped)
         {
-            _queue.enqueue(std::move(item));
+            if(is_blocking)
+                _queue.blocking_enqueue(std::move(item));
+            else
+                _queue.enqueue(std::move(item));
         }
     }
 
@@ -316,6 +319,12 @@ public:
         *wait_sucess = cv.wait_for(locker, std::chrono::seconds(10), [&]() { return invoked || _was_stopped; });
         return *wait_sucess;
     }
+
+    bool empty()
+    {
+        return _queue.size() == 0;
+    }
+
 private:
     friend cancellable_timer;
     single_consumer_queue<std::function<void(cancellable_timer)>> _queue;
