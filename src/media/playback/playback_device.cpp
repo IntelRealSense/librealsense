@@ -241,8 +241,12 @@ void playback_device::seek_to_time(std::chrono::nanoseconds time)
                     }
                     m_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time,
                         []() { return device_serializer::nanoseconds(0); },
-                        []() {},
-                        []() {});
+                        []() { return false; },
+                        [this, time]()
+                        {
+                            std::lock_guard<std::mutex> locker(m_last_published_timestamp_mutex);
+                            m_last_published_timestamp = time;
+                        });
                 }
             }
         }
