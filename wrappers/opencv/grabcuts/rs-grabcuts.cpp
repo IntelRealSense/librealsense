@@ -57,7 +57,7 @@ int main(int argc, char * argv[]) try
         // Colorize depth image with white being near and black being far
         // This will take advantage of histogram equalization done by the colorizer
         colorize.set_option(RS2_OPTION_COLOR_SCHEME, 2);
-        frame bw_depth = colorize(depth);
+        frame bw_depth = depth.apply_filter(colorize);
 
         // Generate "near" mask image:
         auto near = frame_to_mat(bw_depth);
