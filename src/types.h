@@ -632,6 +632,8 @@ namespace librealsense
         return (a.profile == b.profile) && (a.pf == b.pf) && (a.unpacker == b.unpacker);
     }
 
+    class frame_interface;
+
     class firmware_version
     {
         int                 m_major, m_minor, m_patch, m_build;
