@@ -250,6 +250,7 @@ namespace librealsense
             if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
             res->set_sensor(original->get_sensor());
             res->set_stream(stream);
+            res->set_blocking(original->is_blocking());
             return res;
         }
         return nullptr;
@@ -314,6 +315,8 @@ namespace librealsense
         vf->assign(width, height, stride, bpp);
         vf->set_sensor(original->get_sensor());
         res->set_stream(stream);
+        res->set_blocking(original->is_blocking());
+
         if (frame_type == RS2_EXTENSION_DEPTH_FRAME)
         {
             original->acquire();
