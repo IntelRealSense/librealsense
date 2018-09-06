@@ -245,12 +245,12 @@ namespace librealsense
             data.timestamp_domain = original->get_frame_timestamp_domain();
             data.metadata_size = 0;
             data.system_time = _actual_source.get_time();
+            data.is_blocking = original->is_blocking();
 
             auto res = _actual_source.alloc_frame(RS2_EXTENSION_POINTS, vid_stream->get_width() * vid_stream->get_height() * sizeof(float) * 5, data, true);
             if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
             res->set_sensor(original->get_sensor());
             res->set_stream(stream);
-            res->set_blocking(original->is_blocking());
             return res;
         }
         return nullptr;
@@ -315,7 +315,6 @@ namespace librealsense
         vf->assign(width, height, stride, bpp);
         vf->set_sensor(original->get_sensor());
         res->set_stream(stream);
-        res->set_blocking(original->is_blocking());
 
         if (frame_type == RS2_EXTENSION_DEPTH_FRAME)
         {
@@ -367,7 +366,6 @@ namespace librealsense
 
         auto cf = static_cast<composite_frame*>(res);
 
-        res->set_blocking(false);
         for (auto&& f : holders)
         {
             if (f.is_blocking())

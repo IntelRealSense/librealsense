@@ -34,6 +34,7 @@ namespace librealsense
         rs2_time_t      backend_timestamp = 0;
         rs2_time_t last_timestamp = 0;
         unsigned long long last_frame_number = 0;
+        bool is_blocking = false;
 
         frame_additional_data() {};
 
@@ -44,14 +45,16 @@ namespace librealsense
             const uint8_t* md_buf,
             double backend_time,
             rs2_time_t last_timestamp,
-            unsigned long long last_frame_number)
+            unsigned long long last_frame_number,
+            bool in_is_blocking)
             : timestamp(in_timestamp),
             frame_number(in_frame_number),
             system_time(in_system_time),
             metadata_size(md_size),
             backend_timestamp(backend_time),
             last_timestamp(last_timestamp),
-            last_frame_number(last_frame_number)
+            last_frame_number(last_frame_number),
+            is_blocking(in_is_blocking)
         {
             // Copy up to 255 bytes to preserve metadata as raw data
             if (metadata_size)
@@ -92,7 +95,7 @@ namespace librealsense
         explicit frame() : ref_count(0), _kept(false), owner(nullptr), on_release() {}
         frame(const frame& r) = delete;
         frame(frame&& r)
-            : ref_count(r.ref_count.exchange(0)), _kept(r._kept.exchange(false)), _is_blocking(false),
+            : ref_count(r.ref_count.exchange(0)), _kept(r._kept.exchange(false)),
             owner(r.owner), on_release()
         {
             *this = std::move(r);
@@ -156,8 +159,8 @@ namespace librealsense
         void mark_fixed() override { _fixed = true; }
         bool is_fixed() const override { return _fixed; }
 
-        void set_blocking(bool state) override { _is_blocking = state; }
-        bool is_blocking() const override { return _is_blocking; }
+        void set_blocking(bool state) override { additional_data.is_blocking = state; }
+        bool is_blocking() const override { return additional_data.is_blocking; }
 
     private:
         // TODO: check boost::intrusive_ptr or an alternative
@@ -168,7 +171,6 @@ namespace librealsense
         bool _fixed = false;
         std::atomic_bool _kept;
         std::shared_ptr<stream_profile_interface> stream;
-        bool _is_blocking;
     };
 
     class points : public frame
