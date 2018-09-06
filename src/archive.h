@@ -92,7 +92,7 @@ namespace librealsense
         explicit frame() : ref_count(0), _kept(false), owner(nullptr), on_release() {}
         frame(const frame& r) = delete;
         frame(frame&& r)
-            : ref_count(r.ref_count.exchange(0)), _kept(r._kept.exchange(false)), _realtime_play_mode(true),
+            : ref_count(r.ref_count.exchange(0)), _kept(r._kept.exchange(false)), _is_blocking(false),
             owner(r.owner), on_release()
         {
             *this = std::move(r);
@@ -156,9 +156,8 @@ namespace librealsense
         void mark_fixed() override { _fixed = true; }
         bool is_fixed() const override { return _fixed; }
 
-        bool is_realtime() const override { return _realtime_play_mode; }
-        void set_realtime(bool state) override { _realtime_play_mode = state; }
-        bool is_blocking() const override { return !_realtime_play_mode; }
+        void set_blocking(bool state) override { _is_blocking = state; }
+        bool is_blocking() const override { return _is_blocking; }
 
     private:
         // TODO: check boost::intrusive_ptr or an alternative
@@ -169,7 +168,7 @@ namespace librealsense
         bool _fixed = false;
         std::atomic_bool _kept;
         std::shared_ptr<stream_profile_interface> stream;
-        bool _realtime_play_mode;
+        bool _is_blocking;
     };
 
     class points : public frame

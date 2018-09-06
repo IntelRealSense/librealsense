@@ -111,8 +111,7 @@ namespace librealsense
 
         virtual void mark_fixed() = 0;
         virtual bool is_fixed() const = 0;
-        virtual bool is_realtime() const = 0;
-        virtual void set_realtime(bool state) = 0;
+        virtual void set_blocking(bool state) = 0;
         virtual bool is_blocking() const = 0;
 
         virtual void keep() = 0;

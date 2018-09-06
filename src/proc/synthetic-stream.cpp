@@ -364,11 +364,11 @@ namespace librealsense
 
         auto cf = static_cast<composite_frame*>(res);
 
-        res->set_realtime(true);
+        res->set_blocking(false);
         for (auto&& f : holders)
         {
             if (f.is_blocking())
-                res->set_realtime(false);
+                res->set_blocking(true);
         }
 
         auto frames = cf->get_frames();
