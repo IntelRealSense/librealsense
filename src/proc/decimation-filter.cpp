@@ -209,8 +209,8 @@ namespace librealsense
         _recalc_profile(false),
         _options_changed(false)
     {
-        _stream_filter = RS2_STREAM_DEPTH;
-        _stream_format_filter = RS2_FORMAT_Z16;
+        _stream_filter.stream = RS2_STREAM_DEPTH;
+        _stream_filter.format = RS2_FORMAT_Z16;
 
         auto decimation_control = std::make_shared<ptr_option<uint8_t>>(
             decimation_min_val,
