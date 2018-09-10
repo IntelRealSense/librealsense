@@ -9,6 +9,7 @@ macro(infoValue variableName)
     info("${variableName}=\${${variableName}}")
 endmacro()
 
+option(BUILD_ANDROID "build for Android port" OFF)
 option(BUILD_WITH_CUDA "Enable CUDA" OFF)
 
 if(BUILD_WITH_CUDA)
