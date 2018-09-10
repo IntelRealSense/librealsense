@@ -75,6 +75,21 @@ static struct StringToLevelItem stringToLevelMap[] = {
   { "trace", Level::Trace }
 };
 
+#ifdef ANDROID
+extern "C" int __android_log_print(int prio, const char *tag,  const char *fmt, ...);
+typedef enum android_LogPriority {
+    ANDROID_LOG_UNKNOWN = 0,
+    ANDROID_LOG_DEFAULT,
+    ANDROID_LOG_VERBOSE,
+    ANDROID_LOG_DEBUG,
+    ANDROID_LOG_INFO,
+    ANDROID_LOG_WARN,
+    ANDROID_LOG_ERROR,
+    ANDROID_LOG_FATAL,
+    ANDROID_LOG_SILENT,
+} android_LogPriority;
+#endif
+
 Level LevelHelper::convertFromString(const char* levelStr) {
   for (auto& item : stringToLevelMap) {
     if (base::utils::Str::cStringCaseEq(levelStr, item.levelString)) {
@@ -171,10 +186,12 @@ Configuration::Configuration(Level level, ConfigurationType configurationType, c
   m_value(value) {
 }
 
+
 void Configuration::log(el::base::type::ostream_t& os) const {
   os << LevelHelper::convertToString(m_level)
      << ELPP_LITERAL(" ") << ConfigurationTypeHelper::convertToString(m_configurationType)
      << ELPP_LITERAL(" = ") << m_value.c_str();
+
 }
 
 /// @brief Used to find configuration from configuration (pointers) repository. Avoid using it.
@@ -2094,6 +2111,10 @@ void DefaultLogDispatchCallback::handle(const LogDispatchData* data) {
 }
 
 void DefaultLogDispatchCallback::dispatch(base::type::string_t&& logLine) {
+#ifdef ANDROID
+  __android_log_print(ANDROID_LOG_VERBOSE, "librealsense", "\033[31m %s \033[0m", logLine.c_str());
+#endif
+
   if (m_data->dispatchAction() == base::DispatchAction::NormalLog) {
     if (m_data->logMessage()->logger()->m_typedConfigurations->toFile(m_data->logMessage()->level())) {
       base::type::fstream_t* fs = m_data->logMessage()->logger()->m_typedConfigurations->fileStream(
@@ -2123,6 +2144,7 @@ void DefaultLogDispatchCallback::dispatch(base::type::string_t&& logLine) {
       ELPP_COUT << ELPP_COUT_LINE(logLine);
     }
   }
+
 #if defined(ELPP_SYSLOG)
   else if (m_data->dispatchAction() == base::DispatchAction::SysLog) {
     // Determine syslog priority
