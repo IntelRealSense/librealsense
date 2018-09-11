@@ -9,7 +9,6 @@ macro(infoValue variableName)
     info("${variableName}=\${${variableName}}")
 endmacro()
 
-option(BUILD_ANDROID "build for Android port" OFF)
 option(BUILD_WITH_CUDA "Enable CUDA" OFF)
 
 if(BUILD_WITH_CUDA)
@@ -84,7 +83,7 @@ if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
     unset(APPLE)
     set(USE_SYSTEM_LIBUSB OFF)
     set(BUILD_WITH_OPENMP OFF)
-    set(FORCE_LIBUVC ON)
+    set(FORCE_LIBUVC OFF)
     set(BUILD_GRAPHICAL_EXAMPLES OFF)
     set(ANDROID_STL "c++_static")
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -g -D_BSD_SOURCE")
@@ -874,7 +873,13 @@ if(BUILD_WITH_TM2)
 endif()
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
-target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
+
+if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
+    find_library(log-lib log)
+    target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS} log)
+else()
+    target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
+endif()
 
 if (NOT USE_SYSTEM_LIBUSB)
     if(NOT WIN32)
@@ -915,6 +920,7 @@ if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
         FOLDER Library
     )
 endif()
+
 
 if (USE_SYSTEM_LIBUSB)
     target_include_directories(realsense2 PRIVATE ${LIBUSB1_INCLUDE_DIRS})
