@@ -921,7 +921,6 @@ if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
     )
 endif()
 
-
 if (USE_SYSTEM_LIBUSB)
     target_include_directories(realsense2 PRIVATE ${LIBUSB1_INCLUDE_DIRS})
 endif()
