@@ -15,6 +15,9 @@
 //
 
 #include "easylogging++.h"
+#ifdef ANDROID
+#include <android/log.h>
+#endif
 
 #if defined(AUTO_INITIALIZE_EASYLOGGINGPP)
 INITIALIZE_EASYLOGGINGPP
@@ -74,21 +77,6 @@ static struct StringToLevelItem stringToLevelMap[] = {
   { "verbose", Level::Verbose },
   { "trace", Level::Trace }
 };
-
-#ifdef ANDROID
-extern "C" int __android_log_print(int prio, const char *tag,  const char *fmt, ...);
-typedef enum android_LogPriority {
-    ANDROID_LOG_UNKNOWN = 0,
-    ANDROID_LOG_DEFAULT,
-    ANDROID_LOG_VERBOSE,
-    ANDROID_LOG_DEBUG,
-    ANDROID_LOG_INFO,
-    ANDROID_LOG_WARN,
-    ANDROID_LOG_ERROR,
-    ANDROID_LOG_FATAL,
-    ANDROID_LOG_SILENT,
-} android_LogPriority;
-#endif
 
 Level LevelHelper::convertFromString(const char* levelStr) {
   for (auto& item : stringToLevelMap) {
@@ -186,12 +174,10 @@ Configuration::Configuration(Level level, ConfigurationType configurationType, c
   m_value(value) {
 }
 
-
 void Configuration::log(el::base::type::ostream_t& os) const {
   os << LevelHelper::convertToString(m_level)
      << ELPP_LITERAL(" ") << ConfigurationTypeHelper::convertToString(m_configurationType)
      << ELPP_LITERAL(" = ") << m_value.c_str();
-
 }
 
 /// @brief Used to find configuration from configuration (pointers) repository. Avoid using it.
@@ -2144,7 +2130,6 @@ void DefaultLogDispatchCallback::dispatch(base::type::string_t&& logLine) {
       ELPP_COUT << ELPP_COUT_LINE(logLine);
     }
   }
-
 #if defined(ELPP_SYSLOG)
   else if (m_data->dispatchAction() == base::DispatchAction::SysLog) {
     // Determine syslog priority
