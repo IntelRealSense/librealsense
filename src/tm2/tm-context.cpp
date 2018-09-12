@@ -19,7 +19,7 @@ namespace librealsense
     tm2_context::tm2_context(context* ctx)
         : _is_disposed(false), _t(&tm2_context::thread_proc, this), _ctx(ctx)
     {
-        _manager = std::shared_ptr<TrackingManager>(perc::TrackingManager::CreateInstance(this), 
+        _manager = std::shared_ptr<TrackingManager>(perc::TrackingManager::CreateInstance(this),
             [](perc::TrackingManager* ptr) { perc::TrackingManager::ReleaseInstance(ptr); });
         if (_manager == nullptr)
         {
@@ -48,7 +48,7 @@ namespace librealsense
         
     }
 
-    void tm2_context::onStateChanged(TrackingManager::EventType state, TrackingDevice* dev)
+    void tm2_context::onStateChanged(TrackingManager::EventType state, TrackingDevice* dev, TrackingData::DeviceInfo devInfo)
     {
         std::shared_ptr<tm2_info> added;
         std::shared_ptr<tm2_info> removed;
@@ -73,9 +73,9 @@ namespace librealsense
         on_device_changed(removed, added);
     }
 
-    void tm2_context::onError(TrackingManager::Error error, TrackingDevice* dev)
+    void tm2_context::onError(Status error, TrackingDevice* dev)
     {
-        LOG_ERROR("Error occured while connecting device:" << dev << " Error: 0x" << std::hex << error);
+        LOG_ERROR("Error occured while connecting device:" << dev << " Error: 0x" << std::hex << static_cast<int>(error));
     }
 
     void tm2_context::thread_proc()

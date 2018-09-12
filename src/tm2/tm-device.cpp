@@ -164,7 +164,7 @@ namespace librealsense
             profile->set_unique_id(environment::get_instance().generate_stream_id());
             if (tm_profile.sensorIndex == 0)
             {
-                profile->make_default();
+                profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
             }
             stream_profile sp = { stream, profile->get_stream_index(), p.width, p.height, p.fps, profile->get_format() };
             auto intrinsics = get_intrinsics(sp);
@@ -192,7 +192,7 @@ namespace librealsense
             profile->set_unique_id(environment::get_instance().generate_stream_id());
             if (tm_profile.sensorIndex == 0)
             {
-                profile->make_default();
+                profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
             }
             auto intrinsics = get_motion_intrinsics(*profile);
             profile->set_intrinsics([intrinsics]() { return intrinsics; });
@@ -212,7 +212,7 @@ namespace librealsense
             profile->set_unique_id(environment::get_instance().generate_stream_id());
             if (tm_profile.sensorIndex == 0)
             {
-                profile->make_default();
+                profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
             }
             auto intrinsics = get_motion_intrinsics(*profile);
             profile->set_intrinsics([intrinsics]() { return intrinsics; });
@@ -239,7 +239,7 @@ namespace librealsense
             profile->set_unique_id(environment::get_instance().generate_stream_id());
             if (tm_profile.profileType == SixDofProfile0)
             {
-                profile->make_default();
+                profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
             }
             results.push_back(profile);
 
@@ -630,7 +630,7 @@ namespace librealsense
         video_md.arrival_ts = tm_frame.arrivalTimeStamp;
         video_md.exposure_time = tm_frame.exposuretime;
 
-        frame_additional_data additional_data(ts_ms.count(), tm_frame.frameId, system_ts_ms.count(), sizeof(video_md), (uint8_t*)&video_md, tm_frame.arrivalTimeStamp);
+        frame_additional_data additional_data(ts_ms.count(), tm_frame.frameId, system_ts_ms.count(), sizeof(video_md), (uint8_t*)&video_md, tm_frame.arrivalTimeStamp, 0 ,0);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -714,7 +714,7 @@ namespace librealsense
         pose_frame_metadata frame_md = { 0 };
         frame_md.arrival_ts = tm_frame.arrivalTimeStamp;
 
-        frame_additional_data additional_data(ts_ms.count(), frame_num++, system_ts_ms.count(), sizeof(frame_md), (uint8_t*)&frame_md, tm_frame.arrivalTimeStamp);
+        frame_additional_data additional_data(ts_ms.count(), frame_num++, system_ts_ms.count(), sizeof(frame_md), (uint8_t*)&frame_md, tm_frame.arrivalTimeStamp, 0, 0);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -822,7 +822,7 @@ namespace librealsense
         motion_md.arrival_ts = tm_frame_ts.arrivalTimeStamp;
         motion_md.temperature = temperature;
 
-        frame_additional_data additional_data(ts_ms.count(), frame_number, system_ts_ms.count(), sizeof(motion_md), (uint8_t*)&motion_md, tm_frame_ts.arrivalTimeStamp);
+        frame_additional_data additional_data(ts_ms.count(), frame_number, system_ts_ms.count(), sizeof(motion_md), (uint8_t*)&motion_md, tm_frame_ts.arrivalTimeStamp, 0, 0);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -931,7 +931,7 @@ namespace librealsense
         }
         register_info(RS2_CAMERA_INFO_NAME, tm2_device_name());
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, to_string() << info.serialNumber);
-        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, to_string() << info.fw.major << "." << info.fw.minor << "." << info.fw.patch << "." << info.fw.build);
+        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, to_string() << info.version.fw.major << "." << info.version.fw.minor << "." << info.version.fw.patch << "." << info.version.fw.build);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, to_string() << info.usbDescriptor.idProduct);
         std::string device_path =
             std::string("vid_") + std::to_string(info.usbDescriptor.idVendor) +
@@ -947,7 +947,7 @@ namespace librealsense
 
     tm2_device::~tm2_device()
     {
-        for (auto&& d : get_context()->query_devices())
+        for (auto&& d : get_context()->query_devices(RS2_PRODUCT_LINE_ANY_INTEL))
         {
             for (auto&& tmd : d->get_device_data().tm2_devices)
             {

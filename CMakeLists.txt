@@ -835,7 +835,8 @@ if (BUILD_WITH_TM2)
     )
 
     include_directories(${LIBTM_INCLUDE_DIR})
-    set(TRACKING_DEVICE_LIBS libtm)
+	link_directories(${LIBTM_LIBRARY} ${INFRA_LIBRARY} ${LIBUSB_LIBRARY})
+    set(TRACKING_DEVICE_LIBS tm infra libusb-1.0)
 
     install(TARGETS libtm
         EXPORT realsense2Targets
