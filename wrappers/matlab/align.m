@@ -26,7 +26,7 @@ classdef align < handle
                 error('Expected input number 2, frame, to be a frameset');
             end
             out = realsense.librealsense_mex('rs2::align', 'process', this.objectHandle, frame.objectHandle);
-            frames = realsense.frame(out);
+            frames = realsense.frameset(out);
         end
     end
 end

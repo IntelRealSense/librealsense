@@ -342,6 +342,7 @@ typedef struct winusb_uvc_streaming_interface {
     /** USB endpoint to use when communicating with this interface */
     uint8_t bEndpointAddress;
     uint8_t bTerminalLink;
+    WINUSB_INTERFACE_HANDLE associateHandle;
 } winusb_uvc_streaming_interface_t;
 
 typedef struct winusb_uvc_device_info {
@@ -503,7 +504,6 @@ typedef struct uvc_format {
 struct winusb_uvc_device
 {
     WINUSB_INTERFACE_HANDLE winusbHandle;
-    WINUSB_INTERFACE_HANDLE associateHandle;
     winusb_uvc_device_info_t deviceData;
     HANDLE deviceHandle;
     PWCHAR devPath;
@@ -653,6 +653,8 @@ uvc_error_t winusb_get_stream_ctrl_format_size_all(winusb_uvc_device *devh, uvc_
 
 // Start video streaming
 uvc_error_t winusb_start_streaming(winusb_uvc_device *devh, uvc_stream_ctrl_t *ctrl, winusb_uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags);
+
+uvc_error_t update_stream_if_handle(winusb_uvc_device *devh, int interface_idx);
 
 // Stop video streaming
 void winusb_stop_streaming(winusb_uvc_device *devh);
