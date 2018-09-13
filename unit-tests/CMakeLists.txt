@@ -43,13 +43,17 @@ install(
     ${CMAKE_INSTALL_PREFIX}/bin
 )
 
-#Windows OS will host the files under %TEMP% location
-#Unix-like machines will host the tests files under /temp/ directory
-if (WIN32)
-    set(Deployment_Location "$ENV{TEMP}\\")
-else() # Data shall be preserved between reboots. For Linux distributions/ ANDROID_NDK_TOOLCHAIN_INCLUDED/APPLE
-    #set(Deployment_Location /var/tmp/) The standard confoiguration currently fails on CI
-    set(Deployment_Location /tmp/)
+if(TESTDATA_LOCATION)
+    set(Deployment_Location ${TESTDATA_LOCATION})
+else()
+    #Windows OS will host the files under %TEMP% location
+    #Unix-like machines will host the tests files under /tmp/ directory
+    if (WIN32)
+        set(Deployment_Location "$ENV{TEMP}\\")
+    else() # Data shall be preserved between reboots. For Linux distributions/ ANDROID_NDK_TOOLCHAIN_INCLUDED/APPLE
+        #set(Deployment_Location /var/tmp/) The standard configuration currently fails on CI
+        set(Deployment_Location /tmp/)
+    endif()
 endif()
 
 add_custom_command(TARGET live-test POST_BUILD
