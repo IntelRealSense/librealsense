@@ -831,41 +831,44 @@ void _uvc_process_payload(uvc_stream_handle_t *strmh, uint8_t *payload, size_t p
  */
 void LIBUSB_CALL _uvc_stream_callback(struct libusb_transfer *transfer) {
   uvc_stream_handle_t *strmh = (uvc_stream_handle_t *)transfer->user_data;
-
-  int resubmit = 1;
-
+  
+    int resubmit = 1;
+    
   switch (transfer->status) {
-  case LIBUSB_TRANSFER_COMPLETED:
-    if (transfer->num_iso_packets == 0) {
-      std::unique_lock<std::mutex> lock(strmh->cb_mutex);
-      /* This is a bulk mode transfer, so it just has one payload transfer */
-      _uvc_process_payload(strmh, transfer->buffer, transfer->actual_length);
-
-
-    }
-    else
-    {
-      /* This is an isochronous mode transfer, so each packet has a payload transfer */
-      int packet_id;
-
-      for (packet_id = 0; packet_id < transfer->num_iso_packets; ++packet_id) {
-        uint8_t *pktbuf;
-        struct libusb_iso_packet_descriptor *pkt;
-
-        pkt = transfer->iso_packet_desc + packet_id;
-
-        if (pkt->status != 0) {
-          UVC_DEBUG("bad packet (isochronous transfer); status: %d", pkt->status);
-          continue;
-        }
-
-        pktbuf = libusb_get_iso_packet_buffer_simple(transfer, packet_id);
-
-        _uvc_process_payload(strmh, pktbuf, pkt->actual_length);
-
+      case LIBUSB_TRANSFER_COMPLETED:
+      {
+          std::unique_lock<std::mutex> lock(strmh->cb_mutex);
+          if (strmh && !strmh->running)
+              break;
+          if (transfer->num_iso_packets == 0) {
+              /* This is a bulk mode transfer, so it just has one payload transfer */
+              _uvc_process_payload(strmh, transfer->buffer, transfer->actual_length);
+          }
+          else
+          {
+              /* This is an isochronous mode transfer, so each packet has a payload transfer */
+              int packet_id;
+              
+              for (packet_id = 0; packet_id < transfer->num_iso_packets; ++packet_id) {
+                  uint8_t *pktbuf;
+                  struct libusb_iso_packet_descriptor *pkt;
+                  
+                  pkt = transfer->iso_packet_desc + packet_id;
+                  
+                  if (pkt->status != 0) {
+                      UVC_DEBUG("bad packet (isochronous transfer); status: %d", pkt->status);
+                      continue;
+                  }
+                  
+                  pktbuf = libusb_get_iso_packet_buffer_simple(transfer, packet_id);
+                  
+                  _uvc_process_payload(strmh, pktbuf, pkt->actual_length);
+                  
+              }
+          }
+          break;
       }
-    }
-    break;
+        
   case LIBUSB_TRANSFER_CANCELLED:
   case LIBUSB_TRANSFER_NO_DEVICE: {
     int i;
@@ -889,9 +892,7 @@ void LIBUSB_CALL _uvc_stream_callback(struct libusb_transfer *transfer) {
         }
 
         resubmit = 0;
-        strmh->cb_cancel.notify_all();
     }
-
 
     break;
   }
@@ -902,10 +903,14 @@ void LIBUSB_CALL _uvc_stream_callback(struct libusb_transfer *transfer) {
     UVC_DEBUG("retrying transfer, status = %d", transfer->status);
     break;
   }
-
+  
   if (strmh && strmh->running && resubmit )
   {
     auto res = libusb_submit_transfer(transfer);
+  }
+  else if (strmh && !strmh->running)
+  {
+     strmh->cb_cancel.notify_all();
   }
 }
 
@@ -1395,10 +1400,12 @@ uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh) {
                   libusb_free_transfer(strmh->transfers[i]);
                   strmh->transfers[i] = NULL;
               }
-              else
-                strmh->cb_cancel.wait(lock);
-          }
+              else if(res != LIBUSB_ERROR_NOT_FOUND)
+              {
+                  strmh->cb_cancel.wait(lock);
+              }
       }
+  }
   }
   // Kick the user thread awake
   strmh->cb_cond.notify_all();
@@ -1410,7 +1417,7 @@ uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh) {
      * LIBUSB_TRANSFER_CANCELLED transfer) */
       strmh->cb_thread.join();
   }
-   auto res = libusb_clear_halt(strmh->devh->usb_devh,strmh->stream_if->bEndpointAddress);
+  auto res = libusb_clear_halt(strmh->devh->usb_devh,strmh->stream_if->bEndpointAddress);
 
   return UVC_SUCCESS;
 }

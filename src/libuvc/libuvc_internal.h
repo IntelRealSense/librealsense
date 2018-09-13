@@ -245,7 +245,7 @@ struct uvc_stream_handle {
     struct uvc_streaming_interface *stream_if;
 
     /** if true, stream is running (streaming video to host) */
-    uint8_t running;
+    std::atomic<uint8_t> running;
     /** Current control block */
     struct uvc_stream_ctrl cur_ctrl;
 
