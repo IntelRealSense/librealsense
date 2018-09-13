@@ -788,7 +788,9 @@ add_subdirectory(third-party/realsense-file)
 
 if (BUILD_WITH_TM2)
     message(STATUS "Building with TM2")
-
+	
+	add_subdirectory(third-party/libtm)
+		
     if(WIN32)
         source_group("Source Files\\Devices\\Tracking" FILES
             src/tm2/tm-context.cpp
@@ -806,19 +808,6 @@ if (BUILD_WITH_TM2)
     endif()
 
     list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
-    find_package(libtm REQUIRED)
-
-    if(BUILD_WITH_STATIC_CRT)
-        foreach(flag_var
-                CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-                CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
-                CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-            if(${flag_var} MATCHES "/MD")
-                string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-            endif(${flag_var} MATCHES "/MD")
-        endforeach(flag_var)
-    endif()
 
     list(APPEND REALSENSE_HPP
     src/tm2/tm-context.h
@@ -832,17 +821,6 @@ if (BUILD_WITH_TM2)
     src/tm2/tm-context.cpp
     src/tm2/tm-device.cpp
     src/tm2/tm-info.cpp
-    )
-
-    include_directories(${LIBTM_INCLUDE_DIR})
-	link_directories(${LIBTM_LIBRARY} ${INFRA_LIBRARY} ${LIBUSB_LIBRARY})
-    set(TRACKING_DEVICE_LIBS tm infra libusb-1.0)
-
-    install(TARGETS libtm
-        EXPORT realsense2Targets
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
 endif()
 
@@ -871,9 +849,12 @@ endif()
 
 if(BUILD_WITH_TM2)
     target_compile_definitions(realsense2 PRIVATE WITH_TRACKING=1 BUILD_STATIC=1)
+	target_link_libraries(realsense2 PRIVATE tm ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
+	target_include_directories(realsense2 PRIVATE third-party/libtm/libtm/include)
 endif()
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
+
 target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
 
 if (NOT USE_SYSTEM_LIBUSB)
