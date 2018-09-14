@@ -2,23 +2,72 @@ cmake_minimum_required( VERSION 3.8.0 )
 
 project(Intel.RealSense)
 
-add_library(${PROJECT_NAME} 
+add_library(${PROJECT_NAME} 	
+	Config.cs
 	Context.cs
-	Device.cs
-	Frame.cs
 	FrameQueue.cs
 	FrameSet.cs
+	FrameSetMarshaler.cs
+	FramesReleaser.cs
 	Helpers.cs
+	Log.cs
 	NativeMethods.cs
 	Pipeline.cs
-	Processing.cs
+	PipelineProfile.cs
 	Sensor.cs
-	StreamProfile.cs
-	Types.cs
+	SensorList.cs
 	SoftwareDevice.cs
+	SoftwareSensor.cs
+	Devices\AdvancedDevice.cs
+	Devices\Device.cs
+	Devices\DeviceList.cs
+	Devices\PlaybackDevice.cs
+	Devices\RecordDevice.cs
+	Frames\DepthFrame.cs
+	Frames\Frame.cs
+	Frames\FrameMarshaler.cs
+	Frames\Points.cs
+	Frames\VideoFrame.cs
+	Processing\Align.cs
+	Processing\Colorizer.cs
+	Processing\CustomProcessingBlock.cs
+	Processing\DecimationFilter.cs
+	Processing\DisparityTransform.cs
+	Processing\FrameSource.cs
+	Processing\HoleFillingFilter.cs
+	Processing\PointCloud.cs
+	Processing\ProcessingBlock.cs
+	Processing\SpatialFilter.cs
+	Processing\Syncer.cs
+	Processing\TemporalFilter.cs
+	Profiles\StreamProfile.cs
+	Profiles\StreamProfileList.cs
+	Profiles\VideoStreamProfile.cs
+	Types\CameraInfo.cs
+	Types\Delegates.cs
+	Types\Distortion.cs
+	Types\ExceptionType.cs
+	Types\Extension.cs
+	Types\Extrinsics.cs
+	Types\Format.cs
+	Types\FrameMetadataValue.cs
+	Types\Intrinsics.cs
+	Types\LogSeverity.cs
+	Types\Matchers.cs
+	Types\NotificationCategory.cs
+	Types\Option.cs
+	Types\PlaybackStatus.cs
+	Types\RecordingMode.cs
+	Types\Rs400VisualPreset.cs
+	Types\SoftwareVideoFrame.cs
+	Types\SoftwareVideoStream.cs
+	Types\Sr300VisualPreset.cs
+	Types\Stream.cs
+	Types\TimestampDomain.cs
+	Types\VideoStream.cs
+
+
 	.nuget/Intel.RealSense.targets
-	
-	Properties/AssemblyInfo.cs
 )
 
 csharp_set_designer_cs_properties(
