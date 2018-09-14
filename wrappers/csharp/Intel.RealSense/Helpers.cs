@@ -1,52 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
-    public class FramesReleaser : IDisposable
-    {
-        public FramesReleaser() { }
-
-        public void AddFrameToRelease<T>(T f) where T : IDisposable
-        {
-            if (!m_objects.Contains(f))
-                m_objects.Add(f);
-        }
-
-        // Add an object to a releaser (if one is provided) and return the object
-        public static T ScopedReturn<T>(FramesReleaser releaser, T obj) where T : IDisposable
-        {
-            if (releaser != null) releaser.AddFrameToRelease(obj);
-            return obj;
-        }
-
-        private HashSet<IDisposable> m_objects = new HashSet<IDisposable>();
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                foreach (var o in m_objects)
-                    o.Dispose();
-                disposedValue = true;
-            }
-        }
-
-        ~FramesReleaser()
-        {
-            Dispose(false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-    }
-
     public static class Helpers
     {
         /// <summary>
@@ -54,19 +11,23 @@ namespace Intel.RealSense
         /// </summary>
         public class ErrorMarshaler : ICustomMarshaler
         {
-
-            //private static ErrorMarshaler Instance = new ErrorMarshaler();
-            private static ErrorMarshaler Instance;
-
-            public static ICustomMarshaler GetInstance(string s)
+            public static ICustomMarshaler Instance
             {
-                if (Instance == null)
+                get
                 {
-                    Instance = new ErrorMarshaler();
+                    if (instance == null)
+                    {
+                        instance = new ErrorMarshaler();
+                    }
+                    return instance;
                 }
-                return Instance;
             }
+            //private static ErrorMarshaler Instance = new ErrorMarshaler();
+            private static ErrorMarshaler instance;
 
+            //is needed vor marshalling in .NET
+            public static ICustomMarshaler GetInstance(string v)
+                => Instance;
 
             public void CleanUpManagedData(object ManagedObj)
             {
@@ -79,14 +40,10 @@ namespace Intel.RealSense
             }
 
             public int GetNativeDataSize()
-            {
-                return IntPtr.Size;
-            }
+                => IntPtr.Size;
 
             public IntPtr MarshalManagedToNative(object ManagedObj)
-            {
-                return IntPtr.Zero;
-            }
+                => IntPtr.Zero;
 
             //[DebuggerHidden]
             //[DebuggerStepThrough]
@@ -105,7 +62,7 @@ namespace Intel.RealSense
 
                 //NativeMethods.rs_free_error(pNativeData);
 
-                var f = String.Format("{0}({1})", function, args);
+                var f = string.Format("{0}({1})", function, args);
                 //StackTrace stackTrace = new StackTrace(1, true);                
                 //Debug.Log(stackTrace.GetFrame(0).GetFileName());
 
@@ -122,25 +79,10 @@ namespace Intel.RealSense
             [DebuggerStepThrough]
             [DebuggerNonUserCode]
             [Conditional("DEBUG")]
-            void ThrowIfDebug(Exception e)
+            private void ThrowIfDebug(Exception e)
             {
                 throw e;
             }
-        }
-    }
-
-    public class Log
-    {
-        public static void ToConsole(LogSeverity severity)
-        {
-            object err;
-            NativeMethods.rs2_log_to_console(severity, out err);
-        }
-
-        public static void ToFile(LogSeverity severity, string filename)
-        {
-            object err;
-            NativeMethods.rs2_log_to_file(severity, filename, out err);
         }
     }
 }

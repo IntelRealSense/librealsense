@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Intel.RealSense.Frames;
+using Intel.RealSense.Types;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -7,39 +9,16 @@ namespace Intel.RealSense
 {
     public class FrameSet : IDisposable, IEnumerable<Frame>
     {
-        internal HandleRef m_instance;
-        readonly int m_count;
+        public DepthFrame DepthFrame => FirstOrDefault<DepthFrame>(Stream.Depth);
+        public VideoFrame ColorFrame => FirstOrDefault<VideoFrame>(Stream.Color);
+
+        internal HandleRef Instance;
+        private readonly int count;
 
         public Frame AsFrame()
         {
-            object error;
-            NativeMethods.rs2_frame_add_ref(m_instance.Handle, out error);
-            return CreateFrame(m_instance.Handle);
-        }
-
-        public static FrameSet FromFrame(Frame composite, FramesReleaser releaser = null)
-        {
-            object error;
-            if (NativeMethods.rs2_is_frame_extendable_to(composite.m_instance.Handle, 
-                Extension.CompositeFrame, out error) > 0)
-            {
-                NativeMethods.rs2_frame_add_ref(composite.m_instance.Handle, out error);
-                return FramesReleaser.ScopedReturn(releaser, new FrameSet(composite.m_instance.Handle));
-            }
-            throw new Exception("The frame is a not composite frame");
-        }
-
-        internal static Frame CreateFrame(IntPtr ptr)
-        {
-            object error;
-            if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.Points, out error) > 0)
-                return new Points(ptr);
-            else if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.DepthFrame, out error) > 0)
-                return new DepthFrame(ptr);
-            else if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.VideoFrame, out error) > 0)
-                return new VideoFrame(ptr);
-            else
-                return new Frame(ptr);
+            NativeMethods.rs2_frame_add_ref(Instance.Handle, out var error);
+            return CreateFrame(Instance.Handle);
         }
 
         public T FirstOrDefault<T>(Stream stream, Format format = Format.Any) where T : Frame
@@ -53,51 +32,25 @@ namespace Intel.RealSense
             return null;
         }
 
-        public DepthFrame DepthFrame
-        {
-            get
-            {
-                return FirstOrDefault<DepthFrame>(Stream.Depth);
-            }
-        }
-
-        public VideoFrame ColorFrame
-        {
-            get
-            {
-                return FirstOrDefault<VideoFrame>(Stream.Color);
-            }
-        }
-
         public IEnumerator<Frame> GetEnumerator()
         {
-            object error;
-            for (int i = 0; i < m_count; i++)
+            for (int i = 0; i < Count; i++)
             {
-                var ptr = NativeMethods.rs2_extract_frame(m_instance.Handle, i, out error);
+                var ptr = NativeMethods.rs2_extract_frame(Instance.Handle, i, out var error);
                 yield return CreateFrame(ptr);
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() 
+            => GetEnumerator();
 
-        public int Count
-        {
-            get
-            {
-                return m_count;
-            }
-        }
-
+        public int Count => count;
+        
         public Frame this[int index]
         {
             get
             {
-                object error;
-                var ptr = NativeMethods.rs2_extract_frame(m_instance.Handle, index, out error);
+                var ptr = NativeMethods.rs2_extract_frame(Instance.Handle, index, out var error);
                 return CreateFrame(ptr);
             }
         }
@@ -119,9 +72,8 @@ namespace Intel.RealSense
 
         internal FrameSet(IntPtr ptr)
         {
-            m_instance = new HandleRef(this, ptr);
-            object error;
-            m_count = NativeMethods.rs2_embedded_frames_count(m_instance.Handle, out error);
+            Instance = new HandleRef(this, ptr);
+            count = NativeMethods.rs2_embedded_frames_count(Instance.Handle, out var error);
         }
 
         #region IDisposable Support
@@ -162,46 +114,32 @@ namespace Intel.RealSense
 
         public void Release()
         {
-            if (m_instance.Handle != IntPtr.Zero)
-                NativeMethods.rs2_release_frame(m_instance.Handle);
-            m_instance = new HandleRef(this, IntPtr.Zero);
+            if (Instance.Handle != IntPtr.Zero)
+                NativeMethods.rs2_release_frame(Instance.Handle);
+            Instance = new HandleRef(this, IntPtr.Zero);
         }
-    }
 
-    class FrameSetMarshaler : ICustomMarshaler
-    {
-        private static FrameSetMarshaler Instance;
-
-        public static ICustomMarshaler GetInstance(string s)
+        public static FrameSet FromFrame(Frame composite, FramesReleaser releaser = null)
         {
-            if (Instance == null)
+            if (NativeMethods.rs2_is_frame_extendable_to(composite.Instance.Handle,
+                Extension.CompositeFrame, out var error) > 0)
             {
-                Instance = new FrameSetMarshaler();
+                NativeMethods.rs2_frame_add_ref(composite.Instance.Handle, out error);
+                return FramesReleaser.ScopedReturn(releaser, new FrameSet(composite.Instance.Handle));
             }
-            return Instance;
+            throw new Exception("The frame is a not composite frame");
         }
 
-        public void CleanUpManagedData(object ManagedObj)
+        internal static Frame CreateFrame(IntPtr ptr)
         {
-        }
-
-        public void CleanUpNativeData(IntPtr pNativeData)
-        {
-        }
-
-        public int GetNativeDataSize()
-        {
-            return -1;
-        }
-
-        public IntPtr MarshalManagedToNative(object ManagedObj)
-        {
-            throw new NotImplementedException();
-        }
-
-        public object MarshalNativeToManaged(IntPtr pNativeData)
-        {
-            return new FrameSet(pNativeData);
+            if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.Points, out var error) > 0)
+                return new Points(ptr);
+            else if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.DepthFrame, out error) > 0)
+                return new DepthFrame(ptr);
+            else if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.VideoFrame, out error) > 0)
+                return new VideoFrame(ptr);
+            else
+                return new Frame(ptr);
         }
     }
 }
