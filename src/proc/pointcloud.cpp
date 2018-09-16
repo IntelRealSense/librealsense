@@ -115,21 +115,18 @@ namespace librealsense
     void pointcloud::inspect_other_frame(const rs2::frame& other)
     {
         if (_stream_filter != _prev_stream_filter)
+        {
             _other_stream = nullptr;
-        _prev_stream_filter = _stream_filter;
+            _prev_stream_filter = _stream_filter;
+        }
 
-        if (_extrinsics.has_value() && _other_stream != nullptr && other.get_profile().as<rs2::video_stream_profile>() == *_other_stream.get())
+        if (_extrinsics.has_value() && (_other_stream && other.get_profile().as<rs2::video_stream_profile>() == *_other_stream.get()))
             return;
 
-        _other_stream = nullptr;
-
-        if (!_other_stream.get())
-        {
-            auto osp = other.get_profile().get();
-            _other_stream = std::make_shared<rs2::video_stream_profile>(rs2::stream_profile(osp).as<rs2::video_stream_profile>());
-            _other_intrinsics = optional_value<rs2_intrinsics>();
-            _extrinsics = optional_value<rs2_extrinsics>();
-        }
+        auto osp = other.get_profile().get();
+        _other_stream = std::make_shared<rs2::video_stream_profile>(rs2::stream_profile(osp).as<rs2::video_stream_profile>());
+        _other_intrinsics = optional_value<rs2_intrinsics>();
+        _extrinsics = optional_value<rs2_extrinsics>();
 
         if (!_other_intrinsics)
         {

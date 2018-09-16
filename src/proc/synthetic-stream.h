@@ -97,20 +97,20 @@ namespace librealsense
             return true;
         }
 
-        bool operator!=(const stream_filter& other)
-        {
-            if (stream != other.stream)
-                return true;
-            if (format != other.format)
-                return true;
-            if (index != other.index)
-                return true;
-            return false;
-        }
-
         bool operator==(const stream_filter& other)
         {
-            return !(*this != other);
+            if (stream != other.stream)
+                return false;
+            if (format != other.format)
+                return false;
+            if (index != other.index)
+                return false;
+            return true;
+        }
+
+        bool operator!=(const stream_filter& other)
+        {
+            return !(*this == other);
         }
 
         void operator=(const stream_filter& other)

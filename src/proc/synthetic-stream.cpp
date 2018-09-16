@@ -211,9 +211,6 @@ namespace librealsense
         if (!frame || frame.is<rs2::frameset>())
             return false;
         auto profile = frame.get_profile();
-        rs2_stream stream = profile.stream_type();
-        rs2_format format = profile.format();
-        int index = profile.stream_index();
         return _stream_filter.match(frame);
     }
 
