@@ -597,6 +597,11 @@ namespace librealsense
                 throw std::runtime_error("Failed to find supported format!");
             }
 
+            if (update_stream_if_handle(_device.get(), curFormat->interfaceNumber)!= UVC_SUCCESS)
+            {
+                throw std::runtime_error("Failed to find associated interface!");
+            }
+
             uvc_stream_ctrl_t ctrl;
             winusb_get_stream_ctrl_format_size(_device.get(), &ctrl, curFormat->fourcc, curFormat->width, curFormat->height, curFormat->fps, curFormat->interfaceNumber);
 

@@ -9,7 +9,7 @@ classdef points < realsense.frame
         % Destructor (uses base class destructor)
         
         % Functions
-        function vertcies = get_vertices(this)
+        function vertices = get_vertices(this)
             vertices = realsense.librealsense_mex('rs2::points', 'get_vertices', this.objectHandle);
         end
         function export_to_ply(this, fname, texture)
