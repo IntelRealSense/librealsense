@@ -4098,7 +4098,8 @@ namespace rs2
     {
         auto index = f.get_profile().unique_id();
         auto mapped_index = streams_origin[index];
-
+        if (f.get_profile().stream_type()== RS2_STREAM_POSE) 
+            return false;
         if (index == selected_tex_source_uid || mapped_index == selected_tex_source_uid || selected_tex_source_uid == -1)
             return true;
         return false;
