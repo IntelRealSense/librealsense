@@ -72,7 +72,6 @@ namespace librealsense
             _depth_intrinsics = optional_value<rs2_intrinsics>();
             _depth_units = optional_value<float>();
             _extrinsics = optional_value<rs2_extrinsics>();
-            _other_stream = nullptr;
         }
 
         bool found_depth_intrinsics = false;
@@ -115,16 +114,19 @@ namespace librealsense
 
     void pointcloud::inspect_other_frame(const rs2::frame& other)
     {
-        if (_other_stream != nullptr && other.get_profile().as<rs2::video_stream_profile>() == *_other_stream.get())
+        if (_stream_filter != _prev_stream_filter)
+        {
+            _other_stream = nullptr;
+            _prev_stream_filter = _stream_filter;
+        }
+
+        if (_extrinsics.has_value() && (_other_stream && other.get_profile().as<rs2::video_stream_profile>() == *_other_stream.get()))
             return;
 
-        if (!_other_stream.get())
-        {
-            auto osp = other.get_profile().as<rs2::video_stream_profile>();
-            _other_stream = std::make_shared<rs2::video_stream_profile>(osp.clone(osp.stream_type(), osp.stream_index(), osp.format()));
-            _other_intrinsics = optional_value<rs2_intrinsics>();
-            _extrinsics = optional_value<rs2_extrinsics>();
-        }
+        auto osp = other.get_profile().get();
+        _other_stream = std::make_shared<rs2::video_stream_profile>(rs2::stream_profile(osp).as<rs2::video_stream_profile>());
+        _other_intrinsics = optional_value<rs2_intrinsics>();
+        _extrinsics = optional_value<rs2_extrinsics>();
 
         if (!_other_intrinsics)
         {
@@ -464,8 +466,6 @@ namespace librealsense
     pointcloud::pointcloud() :
         _other_stream(nullptr)
     {
-        _stream_filter = RS2_STREAM_ANY;
-
         _occlusion_filter = std::make_shared<occlusion_filter>();
 
         auto occlusion_invalidation = std::make_shared<ptr_option<uint8_t>>(
@@ -500,10 +500,10 @@ namespace librealsense
         if (set)
         {
             //process composite frame only if it contains both a depth frame and the requested texture frame
-            if (_stream_filter == RS2_STREAM_ANY)
+            if (_stream_filter.stream == RS2_STREAM_ANY)
                 return false;
 
-            auto tex = set.first_or_default(_stream_filter, _stream_format_filter);
+            auto tex = set.first_or_default(_stream_filter.stream, _stream_filter.format);
             if (!tex)
                 return false;
             auto depth = set.first_or_default(RS2_STREAM_DEPTH, RS2_FORMAT_Z16);
@@ -516,7 +516,7 @@ namespace librealsense
                 return true;
 
             auto p = frame.get_profile();
-            if (p.stream_type() == _stream_filter && p.format() == _stream_format_filter && p.stream_index() == _stream_index_filter)
+            if (p.stream_type() == _stream_filter.stream && p.format() == _stream_filter.format && p.stream_index() == _stream_filter.index)
                 return true;
             return false;
 
@@ -540,7 +540,7 @@ namespace librealsense
             inspect_depth_frame(depth);
             rv = process_depth_frame(source, depth);
 
-            auto texture = composite.first(_stream_filter);
+            auto texture = composite.first(_stream_filter.stream);
             inspect_other_frame(texture);
         }
         else
@@ -551,7 +551,7 @@ namespace librealsense
                 inspect_depth_frame(f);
                 rv = process_depth_frame(source, f);
             }
-            if (f.get_profile().stream_type() == _stream_filter && f.get_profile().format() == _stream_format_filter)
+            if (f.get_profile().stream_type() == _stream_filter.stream && f.get_profile().format() == _stream_filter.format)
             {
                 inspect_other_frame(f);
             }
