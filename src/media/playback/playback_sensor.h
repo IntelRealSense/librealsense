@@ -70,6 +70,12 @@ namespace librealsense
         const unsigned int _default_queue_size;
 
     public:
+        //handle frame use 3 lambda functions that determines if and when a frame should be published.
+        //calc_sleep - calculates the duration that the sensor should wait before publishing the frame,
+        // the start point for this calculation is the last playback resume.
+        //is_paused - check if the playback was paused while waiting for the frame publish time.
+        //update_last_pushed_frame - lets the playback device know that a specific frame was published,
+        // the playback device will use this info to determine which frames should be played next in a pause/resume scenario.
         template <class T, class K, class P>
         void handle_frame(frame_holder frame, bool is_real_time, T calc_sleep, K is_paused, P update_last_pushed_frame)
         {

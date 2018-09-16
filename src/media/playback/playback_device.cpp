@@ -239,6 +239,7 @@ void playback_device::seek_to_time(std::chrono::nanoseconds time)
                         std::string error_msg = to_string() << "Unexpected sensor index while playing file (Read index = " << frame->stream_id.sensor_index << ")";
                         LOG_ERROR(error_msg);
                     }
+                    //push frame to the sensor (see handle_frame definition for more details)
                     m_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time,
                         []() { return device_serializer::nanoseconds(0); },
                         []() { return false; },
@@ -581,7 +582,7 @@ void playback_device::try_looping()
                 LOG_WARNING("Bad frame from reader, ignoring");
                 return true;
             }
-            //Dispatch frame to the relevant sensor
+            //Dispatch frame to the relevant sensor (see handle_frame definition for more details)
             m_active_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time,
                 [this, timestamp]() { return calc_sleep_time(timestamp); },
                 [this]() { return m_is_paused == true; },
