@@ -832,12 +832,12 @@ void _uvc_process_payload(uvc_stream_handle_t *strmh, uint8_t *payload, size_t p
 void LIBUSB_CALL _uvc_stream_callback(struct libusb_transfer *transfer) {
   uvc_stream_handle_t *strmh = (uvc_stream_handle_t *)transfer->user_data;
   
-    int resubmit = 1;
     
+  int resubmit = 1;
+  std::unique_lock<std::mutex> lock(strmh->cb_mutex);
   switch (transfer->status) {
       case LIBUSB_TRANSFER_COMPLETED:
       {
-          std::unique_lock<std::mutex> lock(strmh->cb_mutex);
           if (strmh && !strmh->running)
               break;
           if (transfer->num_iso_packets == 0) {
@@ -856,6 +856,7 @@ void LIBUSB_CALL _uvc_stream_callback(struct libusb_transfer *transfer) {
                   pkt = transfer->iso_packet_desc + packet_id;
                   
                   if (pkt->status != 0) {
+
                       UVC_DEBUG("bad packet (isochronous transfer); status: %d", pkt->status);
                       continue;
                   }
@@ -872,11 +873,8 @@ void LIBUSB_CALL _uvc_stream_callback(struct libusb_transfer *transfer) {
   case LIBUSB_TRANSFER_CANCELLED:
   case LIBUSB_TRANSFER_NO_DEVICE: {
     int i;
-    UVC_DEBUG("not retrying transfer, status = %d", transfer->status);
-    
+    UVC_DEBUG("not retrying transfer, status = %d", transfer->status);    
     {
-        std::unique_lock<std::mutex> lock(strmh->cb_mutex);
-
         /* Mark transfer as deleted. */
         for (i = 0; i < LIBUVC_NUM_TRANSFER_BUFS; i++) {
             if (strmh->transfers[i] == transfer) {
@@ -884,13 +882,13 @@ void LIBUSB_CALL _uvc_stream_callback(struct libusb_transfer *transfer) {
                 free(transfer->buffer);
                 libusb_free_transfer(transfer);
                 strmh->transfers[i] = NULL;
+                strmh->transfer_cancel[i].notify_all();
                 break;
             }
         }
         if (i == LIBUVC_NUM_TRANSFER_BUFS) {
             UVC_DEBUG("transfer %p not found; not freeing!", transfer);
         }
-
         resubmit = 0;
     }
 
@@ -904,14 +902,31 @@ void LIBUSB_CALL _uvc_stream_callback(struct libusb_transfer *transfer) {
     break;
   }
   
-  if (strmh && strmh->running && resubmit )
-  {
-    auto res = libusb_submit_transfer(transfer);
-  }
-  else if (strmh && !strmh->running)
-  {
-     strmh->cb_cancel.notify_all();
-  }
+    if ( resubmit )
+    {
+        if ( strmh->running )
+        {
+            libusb_submit_transfer(transfer);
+        }
+        else
+        {
+            int i;
+            /* Mark transfer as deleted. */
+            for(i=0; i < LIBUVC_NUM_TRANSFER_BUFS; i++) {
+                if(strmh->transfers[i] == transfer) {
+                    UVC_DEBUG("Freeing orphan transfer %d (%p)", i, transfer);
+                    free(transfer->buffer);
+                    libusb_free_transfer(transfer);
+                    strmh->transfers[i] = NULL;
+                    strmh->transfer_cancel[i].notify_all();
+
+                }
+            }
+            if(i == LIBUVC_NUM_TRANSFER_BUFS ) {
+                UVC_DEBUG("orphan transfer %p not found; not freeing!", transfer);
+            }
+        }
+    }
 }
 
 /** Begin streaming video from the camera into the callback function.
@@ -1388,35 +1403,42 @@ uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh) {
 
   if (!strmh->running)
     return UVC_ERROR_INVALID_PARAM;
-
+    
   {
-        std::unique_lock<std::mutex> lock(strmh->cb_mutex);
-        strmh->running = 0;
-        for (i = 0; i < LIBUVC_NUM_TRANSFER_BUFS; i++) {
-          if (strmh->transfers[i] != NULL) {
-              int res = libusb_cancel_transfer(strmh->transfers[i]);
-              if (res < 0) {
-                  free(strmh->transfers[i]->buffer);
-                  libusb_free_transfer(strmh->transfers[i]);
-                  strmh->transfers[i] = NULL;
-              }
-              else if(res != LIBUSB_ERROR_NOT_FOUND)
-              {
-                  strmh->cb_cancel.wait(lock);
-              }
-      }
+    std::unique_lock<std::mutex> lock(strmh->cb_mutex);
+    strmh->running = 0;
+    for (i = 0; i < LIBUVC_NUM_TRANSFER_BUFS; i++)
+    {
+        if (strmh->transfers[i] != NULL)
+        {
+            int res = libusb_cancel_transfer(strmh->transfers[i]);
+            if (res < 0)
+            {
+                free(strmh->transfers[i]->buffer);
+                libusb_free_transfer(strmh->transfers[i]);
+                strmh->transfers[i] = NULL;
+            }
+        }
+    }
+      
+    for (i = 0; i < LIBUVC_NUM_TRANSFER_BUFS; i++)
+    {
+        if (strmh->transfers[i] != NULL)
+            strmh->transfer_cancel[i].wait(lock);
+    }
+  
+    
+   // Kick the user thread awake
+   strmh->cb_cond.notify_all();
   }
-  }
-  // Kick the user thread awake
-  strmh->cb_cond.notify_all();
-
   /** @todo stop the actual stream, camera side? */
 
   if (strmh->user_cb) {
     /* wait for the thread to stop (triggered by
      * LIBUSB_TRANSFER_CANCELLED transfer) */
       strmh->cb_thread.join();
-  }
+    }
+  
   auto res = libusb_clear_halt(strmh->devh->usb_devh,strmh->stream_if->bEndpointAddress);
 
   return UVC_SUCCESS;
