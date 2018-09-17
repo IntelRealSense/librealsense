@@ -634,43 +634,6 @@ namespace librealsense
 
     class frame_interface;
 
-    struct frame_holder
-    {
-        frame_interface* frame;
-
-        frame_interface* operator->()
-        {
-            return frame;
-        }
-
-        operator bool() const { return frame != nullptr; }
-
-        operator frame_interface*() const { return frame; }
-
-        frame_holder(frame_interface* f)
-        {
-            frame = f;
-        }
-
-        ~frame_holder();
-
-        frame_holder(frame_holder&& other)
-            : frame(other.frame)
-        {
-            other.frame = nullptr;
-        }
-
-        frame_holder() : frame(nullptr) {}
-
-
-        frame_holder& operator=(frame_holder&& other);
-
-        frame_holder clone() const;
-    private:
-        frame_holder& operator=(const frame_holder& other) = delete;
-        frame_holder(const frame_holder& other);
-    };
-
     class firmware_version
     {
         int                 m_major, m_minor, m_patch, m_build;

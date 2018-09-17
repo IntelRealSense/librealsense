@@ -15,8 +15,8 @@
 namespace librealsense
 {
     class playback_device : public device_interface,
-                            public extendable_interface,
-                            public info_container
+        public extendable_interface,
+        public info_container
     {
     public:
         playback_device(std::shared_ptr<context> context, std::shared_ptr<device_serializer::reader> serializer);
@@ -49,7 +49,7 @@ namespace librealsense
         bool is_valid() const override;
 
         std::vector<tagged_profile> get_profiles_tags() const override { return std::vector<tagged_profile>(); };//no hard-coded default streams for playback
-        void tag_profiles(stream_profiles profiles) const override 
+        void tag_profiles(stream_profiles profiles) const override
         {
             for(auto profile : profiles)
                 profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
@@ -69,6 +69,7 @@ namespace librealsense
         void register_device_info(const device_serializer::device_snapshot& device_description);
         void register_extrinsics(const device_serializer::device_snapshot& device_description);
         void update_extensions(const device_serializer::device_snapshot& device_description);
+        bool prefetch_done();
 
     private:
         lazy<std::shared_ptr<dispatcher>> m_read_thread;
@@ -86,7 +87,8 @@ namespace librealsense
         std::shared_ptr<context> m_context;
         std::vector<std::shared_ptr<lazy<rs2_extrinsics>>> m_extrinsics_fetchers;
         std::map<int, std::pair<uint32_t, rs2_extrinsics>> m_extrinsics_map;
-
+        device_serializer::nanoseconds m_last_published_timestamp;
+        std::mutex m_last_published_timestamp_mutex;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_PLAYBACK, playback_device);

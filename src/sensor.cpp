@@ -468,7 +468,8 @@ namespace librealsense
                             (const uint8_t*)f.metadata,
                             f.backend_time,
                             last_timestamp,
-                            last_frame_number);
+                            last_frame_number,
+                            false);
 
                         last_frame_number = frame_counter;
                         last_timestamp = timestamp;
