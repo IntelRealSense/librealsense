@@ -104,7 +104,7 @@ struct rs2_frame_queue
     {
     }
 
-    single_consumer_queue<librealsense::frame_holder> queue;
+    single_consumer_frame_queue<librealsense::frame_holder> queue;
 };
 
 struct rs2_processing_block : public rs2_options

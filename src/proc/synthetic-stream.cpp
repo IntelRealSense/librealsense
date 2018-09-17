@@ -118,15 +118,12 @@ namespace librealsense
         return source.allocate_composite_frame(results);
     }
 
-    stream_filter_processing_block::stream_filter_processing_block() :
-        _stream_filter(RS2_STREAM_ANY),
-        _stream_format_filter(RS2_FORMAT_ANY),
-        _stream_index_filter(-1)
+    stream_filter_processing_block::stream_filter_processing_block()
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
         _source.init(std::shared_ptr<metadata_parser_map>());
 
-        auto stream_selector = std::make_shared<ptr_option<int>>(RS2_STREAM_ANY, RS2_STREAM_FISHEYE, 1, RS2_STREAM_ANY, (int*)&_stream_filter, "Stream type");
+        auto stream_selector = std::make_shared<ptr_option<int>>(RS2_STREAM_ANY, RS2_STREAM_FISHEYE, 1, RS2_STREAM_ANY, (int*)&_stream_filter.stream, "Stream type");
         for (int s = RS2_STREAM_ANY; s < RS2_STREAM_COUNT; s++)
         {
             stream_selector->set_description(s, "Process - " + std::string (rs2_stream_to_string((rs2_stream)s)));
@@ -139,10 +136,10 @@ namespace librealsense
                 throw invalid_value_exception(to_string()
                     << "Unsupported stream filter, " << val << " is out of range.");
 
-            _stream_filter = static_cast<rs2_stream>((int)val);
+            _stream_filter.stream = static_cast<rs2_stream>((int)val);
         });
 
-        auto format_selector = std::make_shared<ptr_option<int>>(RS2_FORMAT_ANY, RS2_FORMAT_DISPARITY32, 1, RS2_FORMAT_ANY, (int*)&_stream_format_filter, "Stream format");
+        auto format_selector = std::make_shared<ptr_option<int>>(RS2_FORMAT_ANY, RS2_FORMAT_DISPARITY32, 1, RS2_FORMAT_ANY, (int*)&_stream_filter.format, "Stream format");
         for (int f = RS2_FORMAT_ANY; f < RS2_FORMAT_COUNT; f++)
         {
             format_selector->set_description(f, "Process - " + std::string(rs2_format_to_string((rs2_format)f)));
@@ -155,10 +152,10 @@ namespace librealsense
                 throw invalid_value_exception(to_string()
                     << "Unsupported stream format filter, " << val << " is out of range.");
 
-            _stream_format_filter = static_cast<rs2_format>((int)val);
+            _stream_filter.format = static_cast<rs2_format>((int)val);
         });
 
-        auto index_selector = std::make_shared<ptr_option<int>>(0, std::numeric_limits<int>::max(), 1, -1, &_stream_index_filter, "Stream index");
+        auto index_selector = std::make_shared<ptr_option<int>>(0, std::numeric_limits<int>::max(), 1, -1, &_stream_filter.index, "Stream index");
         index_selector->on_set([this, index_selector](float val)
         {
             std::lock_guard<std::mutex> lock(_mutex);
@@ -167,7 +164,7 @@ namespace librealsense
                 throw invalid_value_exception(to_string()
                     << "Unsupported stream index filter, " << val << " is out of range.");
 
-            _stream_index_filter = (int)val;
+            _stream_filter.index = (int)val;
         });
 
         register_option(RS2_OPTION_STREAM_FILTER, stream_selector);
@@ -191,20 +188,20 @@ namespace librealsense
         rs2_format format = profile.format();
         int index = profile.stream_index();
 
-        if (_stream_filter != RS2_STREAM_ANY && _stream_filter != stream)
+        if (_stream_filter.stream != RS2_STREAM_ANY && _stream_filter.stream != stream)
             return false;
-        if (is_z_or_disparity(_stream_format_filter))
+        if (is_z_or_disparity(_stream_filter.format))
         {
-            if (_stream_format_filter != RS2_FORMAT_ANY && !is_z_or_disparity(format))
+            if (_stream_filter.format != RS2_FORMAT_ANY && !is_z_or_disparity(format))
                 return false;
         }
         else
         {
-            if (_stream_format_filter != RS2_FORMAT_ANY && _stream_format_filter != format)
+            if (_stream_filter.format != RS2_FORMAT_ANY && _stream_filter.format != format)
                 return false;
         }
 
-        if (_stream_index_filter != -1 && _stream_index_filter != index)
+        if (_stream_filter.index != -1 && _stream_filter.index != index)
             return false;
         return true;
     }
@@ -214,19 +211,7 @@ namespace librealsense
         if (!frame || frame.is<rs2::frameset>())
             return false;
         auto profile = frame.get_profile();
-        rs2_stream stream = profile.stream_type();
-        rs2_format format = profile.format();
-        int index = profile.stream_index();
-
-        if (_stream_filter != RS2_STREAM_ANY && _stream_filter != stream)
-            return false;
-
-        if (_stream_format_filter != RS2_FORMAT_ANY && _stream_format_filter != format)
-            return false;
-
-        if (_stream_index_filter != -1 && _stream_index_filter != index)
-            return false;
-        return true;
+        return _stream_filter.match(frame);
     }
 
     void synthetic_source::frame_ready(frame_holder result)
@@ -245,6 +230,7 @@ namespace librealsense
             data.timestamp_domain = original->get_frame_timestamp_domain();
             data.metadata_size = 0;
             data.system_time = _actual_source.get_time();
+            data.is_blocking = original->is_blocking();
 
             auto res = _actual_source.alloc_frame(RS2_EXTENSION_POINTS, vid_stream->get_width() * vid_stream->get_height() * sizeof(float) * 5, data, true);
             if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
@@ -314,6 +300,7 @@ namespace librealsense
         vf->assign(width, height, stride, bpp);
         vf->set_sensor(original->get_sensor());
         res->set_stream(stream);
+
         if (frame_type == RS2_EXTENSION_DEPTH_FRAME)
         {
             original->acquire();
@@ -363,6 +350,12 @@ namespace librealsense
         if (!res) return nullptr;
 
         auto cf = static_cast<composite_frame*>(res);
+
+        for (auto&& f : holders)
+        {
+            if (f.is_blocking())
+                res->set_blocking(true);
+        }
 
         auto frames = cf->get_frames();
         for (auto&& f : holders)
