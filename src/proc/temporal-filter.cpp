@@ -40,8 +40,8 @@ namespace librealsense
         _extension_type(RS2_EXTENSION_DEPTH_FRAME),
         _current_frm_size_pixels(0)
     {
-        _stream_filter = RS2_STREAM_DEPTH;
-        _stream_format_filter = RS2_FORMAT_Z16;
+        _stream_filter.stream = RS2_STREAM_DEPTH;
+        _stream_filter.format = RS2_FORMAT_Z16;
 
         auto temporal_persistence_control = std::make_shared<ptr_option<uint8_t>>(
             persistence_min,
