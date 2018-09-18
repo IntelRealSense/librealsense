@@ -202,17 +202,12 @@ set(REALSENSE_CPP
 ## Check for Windows Version ##
 if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
     if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
-        set(DRIVERS IntelRealSense_D400_series_win7.inf
-                    WdfCoinstaller01011.dll
-                    winusbcoinstaller2.dll
-                    )
-
+        message("Preparing Windows 7 drivers" )
+        make_directory(${CMAKE_CURRENT_BINARY_DIR}/drivers/)
+        file(GLOB DRIVERS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/src/win7/drivers/" "${CMAKE_CURRENT_SOURCE_DIR}/src/win7/drivers/*")
         foreach(item IN LISTS DRIVERS)
-            add_custom_command(
-                OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${item}"
-                COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/src/win7/drivers/${item}" "${CMAKE_CURRENT_BINARY_DIR}/drivers/${item}"
-                DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/win7/drivers/${item}"
-            )
+            message("Copying ${CMAKE_CURRENT_SOURCE_DIR}/src/win7/drivers/${item} to ${CMAKE_CURRENT_BINARY_DIR}/drivers/" )
+            configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/win7/drivers/${item}" "${CMAKE_CURRENT_BINARY_DIR}/drivers/${item}" COPYONLY) 
         endforeach()
     endif()
     add_custom_target(realsense-driver ALL DEPENDS ${DRIVERS})
