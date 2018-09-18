@@ -1,4 +1,4 @@
-<p align="center"><a href="https://click.intel.com/realsense.html?utm_source=realsense_github&utm_medium=banner&utm_campaign=labor_day_2018&utm_content=hero" target=_blank><img src="https://user-images.githubusercontent.com/6958867/45433892-03b45400-b662-11e8-8445-d86a4efa47e1.png" /></a></p>
+<p align="center"><img src="doc/img/realsense.png" width="70%" /><br><br></p>
 
 -----------------
 
