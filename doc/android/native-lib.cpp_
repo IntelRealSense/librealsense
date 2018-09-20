@@ -64,7 +64,7 @@ Java_com_example_realsense_1app_MainActivity_startStreaming(JNIEnv *env, jobject
                 streaming = true;
                 while (streaming) {
                     rs2::frameset data = pipe.wait_for_frames();
-                    auto rgb_vid_frame = colorizer.colorize(data);
+                    auto rgb_vid_frame = colorizer.colorize(data.get_depth_frame());
 
                     env->SetByteArrayRegion(arr, 0, rgb_frame_size,
                                             reinterpret_cast<const jbyte *>(rgb_vid_frame.get_data()));
@@ -75,7 +75,9 @@ Java_com_example_realsense_1app_MainActivity_startStreaming(JNIEnv *env, jobject
                 pipe.stop();
             }
             catch (const std::exception& ex)
-            {}
+            {
+                throw;
+            }
 
             env->DeleteLocalRef(arr);
             env->DeleteGlobalRef(handlerClass);
