@@ -3244,7 +3244,7 @@ namespace rs2
         ImGui::Text("Connect a RealSense Camera\nor Add Source");
         ImGui::PopStyleColor();
         ImGui::PopFont();
-        ImGui::SetCursorPos({ 0, 40 });
+        ImGui::SetCursorPos({ 0, 43 });
         ImGui::PushStyleColor(ImGuiCol_Button, dark_window_background);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, dark_window_background);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, dark_window_background);
