@@ -114,6 +114,7 @@ namespace rs2
         static const textual_icon fix_up                   { u8"\uf062" };
         static const textual_icon minus                    { u8"\uf068" };
         static const textual_icon exclamation_triangle     { u8"\uf071" };
+        static const textual_icon shopping_cart            { u8"\uf07a" };
         static const textual_icon bar_chart                { u8"\uf080" };
         static const textual_icon upload                   { u8"\uf093" };
         static const textual_icon square_o                 { u8"\uf096" };
