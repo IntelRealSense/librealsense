@@ -186,7 +186,8 @@ private:
             h > w ? w++ : h++;
         auto new_w = round(window.x / w);
         auto new_h = round(window.y / h);
-        return rect{ w, h, new_w, new_h}; //column count, line count, cell width cell height
+        // column count, line count, cell width cell height
+        return rect{ static_cast<float>(w), static_cast<float>(h), static_cast<float>(new_w), static_cast<float>(new_h) };
     }
 
     std::vector<rect> calc_grid(float2 window, std::vector<rs2::video_frame>& frames)
