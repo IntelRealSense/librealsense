@@ -15,9 +15,6 @@
 //
 
 #include "easylogging++.h"
-#ifdef ANDROID
-#include <android/log.h>
-#endif
 
 #if defined(AUTO_INITIALIZE_EASYLOGGINGPP)
 INITIALIZE_EASYLOGGINGPP
@@ -2097,11 +2094,6 @@ void DefaultLogDispatchCallback::handle(const LogDispatchData* data) {
 }
 
 void DefaultLogDispatchCallback::dispatch(base::type::string_t&& logLine) {
-#ifdef ANDROID
-  __android_log_print(ANDROID_LOG_VERBOSE, "librealsense", "\033[31m %s \033[0m", logLine.c_str());
-  return;
-#endif
-
   if (m_data->dispatchAction() == base::DispatchAction::NormalLog) {
     if (m_data->logMessage()->logger()->m_typedConfigurations->toFile(m_data->logMessage()->level())) {
       base::type::fstream_t* fs = m_data->logMessage()->logger()->m_typedConfigurations->fileStream(
