@@ -4,10 +4,12 @@ cmake_policy(SET CMP0015 NEW)
 project(tm)
 
 include(cmake/os.cmake)
-
-include(versions.cmake)
 include(libtm/config.cmake)
 include(infra/config.cmake)
+include(versions.cmake)
+
+set(LIBTM_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")	
+set(LIBTM_RESOURCES_DIR "${LIBTM_ROOT}/resources")
 
 # Build resources (FW, Central, Controller binaries)
 add_subdirectory(resources)
