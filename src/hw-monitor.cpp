@@ -36,8 +36,8 @@ namespace librealsense
         }
 
         length = cur_index;
-        uint16_t header_size = length - header_size;
-        memcpy(bufferToSend, &header_size, sizeof(uint16_t)); // Length doesn't include header
+        uint16_t tmp_size = length - header_size;
+        memcpy(bufferToSend, &tmp_size, sizeof(uint16_t)); // Length doesn't include header
     }
 
 
