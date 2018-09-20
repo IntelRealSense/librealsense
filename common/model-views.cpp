@@ -3260,7 +3260,7 @@ namespace rs2
         {
             ImGui::SetTooltip("Go to click.intel.com");
         }
-        ImGui::PopStyleColor(4);
+        ImGui::PopStyleColor(5);
         ImGui::End();
         ImGui::PopStyleColor();
     }
