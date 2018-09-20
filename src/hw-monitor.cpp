@@ -5,8 +5,41 @@
 #include <iomanip>
 
 namespace librealsense
-{
+{    
+    void hw_monitor::fill_usb_buffer(int opCodeNumber, int p1, int p2, int p3, int p4,
+        uint8_t* data, int dataLength, uint8_t* bufferToSend, int& length)
+    {
+        auto preHeaderData = IVCAM_MONITOR_MAGIC_NUMBER;
 
+        uint8_t* writePtr = bufferToSend;
+        auto header_size = 4;
+
+        auto cur_index = 2;
+        memcpy(writePtr + cur_index, &preHeaderData, sizeof(uint16_t));
+        cur_index += sizeof(uint16_t);
+        memcpy(writePtr + cur_index, &opCodeNumber, sizeof(uint32_t));
+        cur_index += sizeof(uint32_t);
+        memcpy(writePtr + cur_index, &p1, sizeof(uint32_t));
+        cur_index += sizeof(uint32_t);
+        memcpy(writePtr + cur_index, &p2, sizeof(uint32_t));
+        cur_index += sizeof(uint32_t);
+        memcpy(writePtr + cur_index, &p3, sizeof(uint32_t));
+        cur_index += sizeof(uint32_t);
+        memcpy(writePtr + cur_index, &p4, sizeof(uint32_t));
+        cur_index += sizeof(uint32_t);
+
+        if (dataLength)
+        {
+            librealsense::copy(writePtr + cur_index, data, dataLength);
+            cur_index += dataLength;
+        }
+
+        length = cur_index;
+        uint16_t header_size = length - header_size;
+        memcpy(bufferToSend, &header_size, sizeof(uint16_t)); // Length doesn't include header
+    }
+
+    
     void hw_monitor::fill_usb_buffer(int opCodeNumber, int p1, int p2, int p3, int p4,
         uint8_t* data, int dataLength, uint8_t* bufferToSend, int& length)
     {
