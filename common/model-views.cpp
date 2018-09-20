@@ -3244,23 +3244,22 @@ namespace rs2
         ImGui::Text("Connect a RealSense Camera\nor Add Source");
         ImGui::PopStyleColor();
         ImGui::PopFont();
-
-        ImGui::PushStyleColor(ImGuiCol_Button, button_color);
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, button_color + 0.1f);
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, button_color + 0.01f);
-        ImGui::PushStyleColor(ImGuiCol_Text, button_color + 0.3f);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, button_color + 0.35f);
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12);
+        ImGui::SetCursorPos({ 0, 40 });
+        ImGui::PushStyleColor(ImGuiCol_Button, dark_window_background);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, dark_window_background);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, dark_window_background);
+        ImGui::PushStyleColor(ImGuiCol_Text, button_color + 0.25f);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, button_color + 0.55f);
         ImGui::Spacing();
-        if (ImGui::Button("Shop Now", { 80, 18 }))
+        std::string message = to_string() << textual_icons::shopping_cart << "  Buy Now";
+        if (ImGui::Button(message.c_str(), { 75, 20 }))
         {
             open_url(store_url);
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Go to Intel store (internet\nconnection required)");
+            ImGui::SetTooltip("Go to click.intel.com");
         }
-        ImGui::PopStyleVar();
         ImGui::PopStyleColor(4);
         ImGui::End();
         ImGui::PopStyleColor();
