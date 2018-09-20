@@ -2099,6 +2099,7 @@ void DefaultLogDispatchCallback::handle(const LogDispatchData* data) {
 void DefaultLogDispatchCallback::dispatch(base::type::string_t&& logLine) {
 #ifdef ANDROID
   __android_log_print(ANDROID_LOG_VERBOSE, "librealsense", "\033[31m %s \033[0m", logLine.c_str());
+  return;
 #endif
 
   if (m_data->dispatchAction() == base::DispatchAction::NormalLog) {
