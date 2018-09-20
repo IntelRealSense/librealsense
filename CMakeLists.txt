@@ -54,7 +54,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)   
+if(COMPILER_SUPPORTS_CXX11)
     set(CMAKE_CXX_STANDARD 11)
     set(CMAKE_CUDA_STANDARD 11)
 elseif(COMPILER_SUPPORTS_CXX0X)
@@ -198,25 +198,20 @@ set(REALSENSE_CPP
     src/media/playback/playback_device.cpp
     src/media/playback/playback_sensor.cpp
     )
-    
+
 ## Check for Windows Version ##
 if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
     if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
-        set(DRIVERS IntelRealSense_D400_series_win7.inf
-                    WdfCoinstaller01011.dll
-                    winusbcoinstaller2.dll
-                    )
-    
+        message("Preparing Windows 7 drivers" )
+        make_directory(${CMAKE_CURRENT_BINARY_DIR}/drivers/)
+        file(GLOB DRIVERS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/src/win7/drivers/" "${CMAKE_CURRENT_SOURCE_DIR}/src/win7/drivers/*")
         foreach(item IN LISTS DRIVERS)
-            add_custom_command(
-                OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${item}"
-                COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/src/win7/drivers/${item}" "${CMAKE_CURRENT_BINARY_DIR}/drivers/${item}"
-                DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/win7/drivers/${item}"
-            )
+            message("Copying ${CMAKE_CURRENT_SOURCE_DIR}/src/win7/drivers/${item} to ${CMAKE_CURRENT_BINARY_DIR}/drivers/" )
+            configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/win7/drivers/${item}" "${CMAKE_CURRENT_BINARY_DIR}/drivers/${item}" COPYONLY) 
         endforeach()
     endif()
     add_custom_target(realsense-driver ALL DEPENDS ${DRIVERS})
-    
+
     list(APPEND REALSENSE_CPP
         src/win7/win7-helpers.cpp
         src/win7/win7-uvc.cpp
@@ -360,23 +355,25 @@ set(REALSENSE_HPP
     src/media/ros/ros_file_format.h
 )
 
-## Check for Windows Version ##
-if( ${CMAKE_SYSTEM_VERSION} EQUAL 6.1 ) # Windows 7
-    list(APPEND REALSENSE_HPP
-        src/win7/win7-helpers.h
-        src/win7/win7-uvc.h
-        src/win7/win7-usb.h
-        src/win7/win7-hid.h
-        src/win7/win7-backend.h
-        )
-else() # Some other windows version
-    list(APPEND REALSENSE_HPP
-        src/win/win-helpers.h
-        src/win/win-uvc.h
-        src/win/win-usb.h
-        src/win/win-hid.h
-        src/win/win-backend.h
-        )
+if(WIN32)
+    ## Check for Windows Version ##
+    if( ${CMAKE_SYSTEM_VERSION} EQUAL 6.1 ) # Windows 7
+        list(APPEND REALSENSE_HPP
+            src/win7/win7-helpers.h
+            src/win7/win7-uvc.h
+            src/win7/win7-usb.h
+            src/win7/win7-hid.h
+            src/win7/win7-backend.h
+            )
+    else() # Some other windows version
+        list(APPEND REALSENSE_HPP
+            src/win/win-helpers.h
+            src/win/win-uvc.h
+            src/win/win-usb.h
+            src/win/win-hid.h
+            src/win/win-backend.h
+            )
+    endif()
 endif()
 
 if(BUILD_EASYLOGGINGPP)
@@ -855,7 +852,7 @@ if(BUILD_SHARED_LIBS)
         add_library(realsense2 SHARED
             ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF} ${REALSENSE_CU} ${REALSENSE_CUH}
             src/res/resource.h
-            src/res/librealsense.rc) 
+            src/res/librealsense.rc)
         source_group("Resources" FILES
         src/res/resource.h
         src/res/librealsense.rc

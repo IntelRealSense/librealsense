@@ -358,9 +358,6 @@ namespace librealsense
             void stop_callbacks() override
             {
                 _is_started = false;
-                _stream_ctrls.clear();
-                _profiles.clear();
-                _callbacks.clear();
             }
 
             void close(stream_profile) override
@@ -372,6 +369,10 @@ namespace librealsense
                     _is_started = false;
                 }
                 uvc_stop_streaming(_device_handle);
+                _stream_ctrls.clear();
+                _profiles.clear();
+                _callbacks.clear();
+                
             }
 
             void power_D0() {
@@ -416,7 +417,7 @@ namespace librealsense
             void power_D3() {
                 uvc_unref_device(_device);
                 //uvc_stop_streaming(_device_handle);
-                _profiles.clear();
+                //_profiles.clear();
                 uvc_close(_device_handle);
                 _device = NULL;
                 _device_handle = NULL;
@@ -439,7 +440,6 @@ namespace librealsense
                 else {
                     // we have been asked to close the device. queue the request for several seconds
                     // just in case a quick turn on come right over.
-
                     _state_change_time = std::clock();
                 }
 
