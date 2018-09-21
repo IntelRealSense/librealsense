@@ -12,21 +12,21 @@ namespace librealsense
     {
         auto preHeaderData = IVCAM_MONITOR_MAGIC_NUMBER;
 
-        uint8_t* writePtr = bufferToSend;
+        auto writePtr = bufferToSend;
         auto header_size = 4;
 
         auto cur_index = 2;
-        memcpy(writePtr + cur_index, &preHeaderData, sizeof(uint16_t));
+        *(reinterpret_cast<uint16_t *>(writePtr + cur_index)) = preHeaderData;
         cur_index += sizeof(uint16_t);
-        memcpy(writePtr + cur_index, &opCodeNumber, sizeof(uint32_t));
+        *(reinterpret_cast<uint32_t *>(writePtr + cur_index)) = opCodeNumber;
         cur_index += sizeof(uint32_t);
-        memcpy(writePtr + cur_index, &p1, sizeof(uint32_t));
+        *(reinterpret_cast<uint32_t *>(writePtr + cur_index)) = p1;
         cur_index += sizeof(uint32_t);
-        memcpy(writePtr + cur_index, &p2, sizeof(uint32_t));
+        *(reinterpret_cast<uint32_t *>(writePtr + cur_index)) = p2;
         cur_index += sizeof(uint32_t);
-        memcpy(writePtr + cur_index, &p3, sizeof(uint32_t));
+        *(reinterpret_cast<uint32_t *>(writePtr + cur_index)) = p3;
         cur_index += sizeof(uint32_t);
-        memcpy(writePtr + cur_index, &p4, sizeof(uint32_t));
+        *(reinterpret_cast<uint32_t *>(writePtr + cur_index)) = p4;
         cur_index += sizeof(uint32_t);
 
         if (dataLength)
@@ -36,8 +36,7 @@ namespace librealsense
         }
 
         length = cur_index;
-        uint16_t tmp_size = length - header_size;
-        memcpy(bufferToSend, &tmp_size, sizeof(uint16_t)); // Length doesn't include header
+        *(reinterpret_cast<uint16_t *>(bufferToSend)) = static_cast<uint16_t>(length - header_size); // Length doesn't include header
     }
 
 
