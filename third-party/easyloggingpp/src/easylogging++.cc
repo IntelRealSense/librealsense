@@ -2111,7 +2111,7 @@ void DefaultLogDispatchCallback::dispatch(base::type::string_t&& logLine) {
     else if (m_data->logMessage()->level() == Level::Debug)
       androidLogPriority = ANDROID_LOG_DEBUG;
     else
-      androidLogPriority = ANDROID_LOG_VERBOSE;
+      androidLogPriority = ANDROID_LOG_DEBUG;
 
     __android_log_print(androidLogPriority, "librealsense", "%s", logLine.c_str());
   }
