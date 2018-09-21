@@ -2099,7 +2099,7 @@ void DefaultLogDispatchCallback::handle(const LogDispatchData* data) {
 void DefaultLogDispatchCallback::dispatch(base::type::string_t&& logLine) {
 #ifdef ANDROID
   if (m_data->logMessage()->logger()->m_typedConfigurations->toStandardOutput(m_data->logMessage()->level())) {
-    int androidLogPriority = ANDROID_LOG_DEBUG;
+    int androidLogPriority = ANDROID_LOG_FATAL;
     if (m_data->logMessage()->level() == Level::Fatal)
       androidLogPriority = ANDROID_LOG_FATAL;
     else if (m_data->logMessage()->level() == Level::Error)
@@ -2111,7 +2111,7 @@ void DefaultLogDispatchCallback::dispatch(base::type::string_t&& logLine) {
     else if (m_data->logMessage()->level() == Level::Debug)
       androidLogPriority = ANDROID_LOG_DEBUG;
     else
-      androidLogPriority = ANDROID_LOG_DEBUG;
+      androidLogPriority = ANDROID_LOG_FATAL;
 
     __android_log_print(androidLogPriority, "librealsense", "%s", logLine.c_str());
   }
