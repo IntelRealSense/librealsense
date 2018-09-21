@@ -34,13 +34,14 @@ retpoline_retrofit=0
 
 LINUX_BRANCH=$(uname -r)
 PLATFORM=$(uname -n)
-if [ "$PLATFORM" = "odroid" ]; then
-	#kernel_branch="hwe"
-	#kernel_branch=$LINUX_BRANCH
-	kernel_branch="master"
-else
-	kernel_branch=$(choose_kernel_branch $LINUX_BRANCH)	
-fi
+#if [ "$PLATFORM" = "odroid" ]; then
+#	#kernel_branch="hwe"
+#	#kernel_branch=$LINUX_BRANCH
+#	kernel_branch="master"
+#else
+#	kernel_branch=$(choose_kernel_branch $LINUX_BRANCH)	
+#fi
+kernel_branch="master"
 echo "Kernel branch: " $kernel_branch
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
 #ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
@@ -112,8 +113,8 @@ else
 fi
 
 # Copy configuration
-sudo cp /usr/src/linux-$(uname -r)/.config .
-sudo cp /usr/src/linux-$(uname -r)/Module.symvers .
+sudo cp /lib/modules/$(uname -r)/build/.config .
+sudo cp /lib/modules/$(uname -r)/build/Module.symvers .
 
 # Basic build for kernel modules
 echo -e "\e[32mPrepare kernel modules configuration\e[0m"
