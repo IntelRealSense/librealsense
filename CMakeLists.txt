@@ -873,7 +873,17 @@ if(BUILD_WITH_TM2)
 endif()
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
-target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
+
+if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
+    if(BUILD_SHARED_LIBS)
+        find_library(log-lib log)
+        target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS} log)
+    else()
+        target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
+    endif()
+else()
+    target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
+endif()
 
 if (NOT USE_SYSTEM_LIBUSB)
     if(NOT WIN32)

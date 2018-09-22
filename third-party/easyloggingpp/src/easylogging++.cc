@@ -15,6 +15,9 @@
 //
 
 #include "easylogging++.h"
+#ifdef ANDROID
+#include <android/log.h>
+#endif
 
 #if defined(AUTO_INITIALIZE_EASYLOGGINGPP)
 INITIALIZE_EASYLOGGINGPP
@@ -2094,6 +2097,26 @@ void DefaultLogDispatchCallback::handle(const LogDispatchData* data) {
 }
 
 void DefaultLogDispatchCallback::dispatch(base::type::string_t&& logLine) {
+#ifdef ANDROID
+  if (m_data->logMessage()->logger()->m_typedConfigurations->toStandardOutput(m_data->logMessage()->level())) {
+    int androidLogPriority = ANDROID_LOG_FATAL;
+    if (m_data->logMessage()->level() == Level::Fatal)
+      androidLogPriority = ANDROID_LOG_FATAL;
+    else if (m_data->logMessage()->level() == Level::Error)
+      androidLogPriority = ANDROID_LOG_ERROR;
+    else if (m_data->logMessage()->level() == Level::Warning)
+      androidLogPriority = ANDROID_LOG_WARN;
+    else if (m_data->logMessage()->level() == Level::Info)
+      androidLogPriority = ANDROID_LOG_INFO;
+    else if (m_data->logMessage()->level() == Level::Debug)
+      androidLogPriority = ANDROID_LOG_DEBUG;
+    else
+      androidLogPriority = ANDROID_LOG_FATAL;
+
+    __android_log_print(androidLogPriority, "librealsense", "%s", logLine.c_str());
+  }
+#endif
+
   if (m_data->dispatchAction() == base::DispatchAction::NormalLog) {
     if (m_data->logMessage()->logger()->m_typedConfigurations->toFile(m_data->logMessage()->level())) {
       base::type::fstream_t* fs = m_data->logMessage()->logger()->m_typedConfigurations->fileStream(
