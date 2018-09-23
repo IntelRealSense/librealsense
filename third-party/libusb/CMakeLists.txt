@@ -48,8 +48,9 @@ set(LIBUSB_H
 )
 
 include_directories(
-  libusb/libusb
-  libusb/libusb/os
+  libusb
+  libusb/os
+  android
 )
 
 add_library(usb STATIC ${LIBUSB_C} ${LIBUSB_H})
@@ -69,6 +70,8 @@ endif()
 if((NOT APPLE) AND (NOT ANDROID) AND (NOT WIN32))
   TARGET_LINK_LIBRARIES(usb udev)
 endif()
+
+#set_target_properties(usb PROPERTIES PREFIX "")
 
 install(TARGETS ${PROJECT_NAME}
     EXPORT realsense2Targets
