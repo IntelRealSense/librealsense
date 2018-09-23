@@ -14,7 +14,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <signal.h>
-#include "../third-party/libusb/libusb/libusb.h"
+#include "libusb/libusb.h"
 #include "utlist.h"
 
 /** Converts an unaligned four-byte little-endian integer into an int32 */

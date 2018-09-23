@@ -38,7 +38,7 @@
 #include "libuvc_internal.h"
 
 #pragma GCC diagnostic ignored "-Wpedantic"
-#include "../third-party/libusb/libusb/libusb.h"
+#include "libusb/libusb.h"
 #pragma GCC diagnostic pop
 
 #pragma GCC diagnostic ignored "-Woverflow"
