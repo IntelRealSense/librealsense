@@ -6,6 +6,7 @@
 #define LIBUVC_INTERNAL_H
 
 #include <assert.h>
+#include <atomic>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

@@ -781,14 +781,10 @@ if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
 endif()
 
-include(ExternalProject)
 
 if (NOT USE_SYSTEM_LIBUSB)
-    if(NOT WIN32)
-       # add_subdirectory(third-party/libusb/)
-
-       file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/third-party/libusb/CMakeLists.txt
-                    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb)
+    if(NOT WIN32 OR FORCE_LIBUVC)
+       include(ExternalProject)
 
        ExternalProject_Add(
          libusb
@@ -796,7 +792,9 @@ if (NOT USE_SYSTEM_LIBUSB)
          GIT_REPOSITORY "https://github.com/libusb/libusb.git"
          GIT_TAG "master"
 
-         UPDATE_COMMAND ""
+         UPDATE_COMMAND   ${CMAKE_COMMAND} -E copy
+                          ${CMAKE_CURRENT_SOURCE_DIR}/third-party/libusb/CMakeLists.txt
+                          ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb/CMakeLists.txt
          PATCH_COMMAND ""
 
          SOURCE_DIR "third-party/libusb/"
@@ -805,23 +803,11 @@ if (NOT USE_SYSTEM_LIBUSB)
          TEST_COMMAND ""
        )
 
-       #configure_file(third-party/libusb/config.h.in third-party/libusb/libusb/config.h)
-
-       #add_custom_command(
-       #       TARGET libusb PRE_BUILD
-       #       COMMAND ${CMAKE_COMMAND} -E copy
-       #               ${CMAKE_CURRENT_SOURCE_DIR}/third-party/libusb/CMakeLists.txt
-       #               ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb/CMakeLists.txt)
-
        set(LIBUSB_LOCAL_INCLUDE_PATH ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb)
 
        set(LIBUSB1_LIBRARY_DIRS ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib)
        link_directories(${LIBUSB1_LIBRARY_DIRS})
-       #link_directories(${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib)
-       set(LIBUSB1_LIBRARIES usb)
-
-    elseif(FORCE_LIBUVC)
-        add_subdirectory(third-party/libusb/)
+       set(LIBUSB1_LIBRARIES usb log)
     endif()
 endif()
 
@@ -918,8 +904,10 @@ set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
 target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
 
 if (NOT USE_SYSTEM_LIBUSB)
+    add_dependencies(realsense2 libusb)
     target_link_libraries(realsense2 PRIVATE ${LIBUSB1_LIBRARIES})
 else()
+    target_include_directories(realsense2 PRIVATE ${LIBUSB1_INCLUDE_DIRS})
     target_link_libraries(realsense2 PRIVATE ${LIBUSB1_LIBRARIES})
 endif()
 
@@ -952,10 +940,6 @@ if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
     set_target_properties (realsense-driver PROPERTIES
         FOLDER Library
     )
-endif()
-
-if (USE_SYSTEM_LIBUSB)
-    target_include_directories(realsense2 PRIVATE ${LIBUSB1_INCLUDE_DIRS})
 endif()
 
 target_include_directories(realsense2 PUBLIC
