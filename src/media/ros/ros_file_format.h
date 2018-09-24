@@ -595,20 +595,20 @@ namespace librealsense
         {
             switch (type)
             {
-            case actual_exposure: res = RS2_FRAME_METADATA_ACTUAL_EXPOSURE;
+            case actual_exposure: res = RS2_FRAME_METADATA_ACTUAL_EXPOSURE; break;
                 //Not supported case actual_fps: ;
-            case frame_counter: res = RS2_FRAME_METADATA_FRAME_COUNTER;
-            case frame_timestamp: res = RS2_FRAME_METADATA_FRAME_TIMESTAMP;
-            case sensor_timestamp: res = RS2_FRAME_METADATA_SENSOR_TIMESTAMP;
-            case gain_level: res = RS2_FRAME_METADATA_GAIN_LEVEL;
-            case auto_exposure: res = RS2_FRAME_METADATA_AUTO_EXPOSURE;
-            case white_balance: res = RS2_FRAME_METADATA_WHITE_BALANCE;
-            case time_of_arrival: res = RS2_FRAME_METADATA_TIME_OF_ARRIVAL;
-                //Not supported here case SYSTEM_TIMESTAMP: 
+            case frame_counter: res = RS2_FRAME_METADATA_FRAME_COUNTER; break;
+            case frame_timestamp: res = RS2_FRAME_METADATA_FRAME_TIMESTAMP; break;
+            case sensor_timestamp: res = RS2_FRAME_METADATA_SENSOR_TIMESTAMP; break;
+            case gain_level: res = RS2_FRAME_METADATA_GAIN_LEVEL; break;
+            case auto_exposure: res = RS2_FRAME_METADATA_AUTO_EXPOSURE; break;
+            case white_balance: res = RS2_FRAME_METADATA_WHITE_BALANCE; break;
+            case time_of_arrival: res = RS2_FRAME_METADATA_TIME_OF_ARRIVAL; break;
+                //Not supported here case SYSTEM_TIMESTAMP:
                 //Not supported case TEMPRATURE: res =  RS2_FRAME_METADATA_;
-            case EXPOSURE_TIME: res = RS2_FRAME_METADATA_SENSOR_TIMESTAMP;
+            case EXPOSURE_TIME: res = RS2_FRAME_METADATA_SENSOR_TIMESTAMP; break;
                 //Not supported case FRAME_LENGTH: res =  RS2_FRAME_METADATA_;
-            case ARRIVAL_TIMESTAMP: res = RS2_FRAME_METADATA_TIME_OF_ARRIVAL;
+            case ARRIVAL_TIMESTAMP: res = RS2_FRAME_METADATA_TIME_OF_ARRIVAL; break;
                 //Not supported case CONFIDENCE: res =  RS2_FRAME_METADATA_;
             default:
                 return false;

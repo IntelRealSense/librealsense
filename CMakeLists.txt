@@ -102,6 +102,10 @@ if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
     message(STATUS "Prepare RealSense SDK for Android OS (${ANDROID_NDK_ABI_NAME})")
 endif()
 
+if(USE_SYSTEM_LIBUSB)
+    add_definitions(-DUSE_SYSTEM_LIBUSB)
+endif()
+
 if(BUILD_WITH_OPENMP)
     find_package(OpenMP)
     if(NOT OPENMP_FOUND)
@@ -782,10 +786,32 @@ if(HWM_OVER_XU)
 endif()
 
 if (NOT USE_SYSTEM_LIBUSB)
-    if(NOT WIN32)
-        add_subdirectory(third-party/libusb/)
-    elseif(FORCE_LIBUVC)
-        add_subdirectory(third-party/libusb/)
+    if(NOT WIN32 OR FORCE_LIBUVC)
+       include(ExternalProject)
+
+       ExternalProject_Add(
+         libusb
+
+         GIT_REPOSITORY "https://github.com/libusb/libusb.git"
+         GIT_TAG "master"
+
+         UPDATE_COMMAND   ${CMAKE_COMMAND} -E copy
+                          ${CMAKE_CURRENT_SOURCE_DIR}/third-party/libusb/CMakeLists.txt
+                          ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb/CMakeLists.txt
+         PATCH_COMMAND ""
+
+         SOURCE_DIR "third-party/libusb/"
+         CMAKE_ARGS -DCMAKE_CXX_STANDARD_LIBRARIES=${CMAKE_CXX_STANDARD_LIBRARIES} -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/libusb_install
+
+         TEST_COMMAND ""
+       )
+
+       set(LIBUSB_LOCAL_INCLUDE_PATH ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb)
+
+       set(LIBUSB1_LIBRARY_DIRS ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib)
+       link_directories(${LIBUSB1_LIBRARY_DIRS})
+
+       set(LIBUSB1_LIBRARIES usb log)
     endif()
 endif()
 
@@ -879,15 +905,25 @@ if(BUILD_WITH_TM2)
 endif()
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
-target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
 
-if (NOT USE_SYSTEM_LIBUSB)
-    if(NOT WIN32)
-        target_link_libraries(realsense2 PRIVATE usb)
-    elseif(FORCE_LIBUVC)
-        target_link_libraries(realsense2 PRIVATE usb)
+if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
+    if(BUILD_SHARED_LIBS)
+        find_library(log-lib log)
+        target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS} log)
+    else()
+        target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
     endif()
 else()
+    target_link_libraries(realsense2 PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
+endif()
+
+if (NOT USE_SYSTEM_LIBUSB)
+    if (NOT WIN32)
+        add_dependencies(realsense2 libusb)
+        target_link_libraries(realsense2 PRIVATE ${LIBUSB1_LIBRARIES})
+    endif()
+else()
+    target_include_directories(realsense2 PRIVATE ${LIBUSB1_INCLUDE_DIRS})
     target_link_libraries(realsense2 PRIVATE ${LIBUSB1_LIBRARIES})
 endif()
 
@@ -913,16 +949,13 @@ target_include_directories(realsense2 PRIVATE
         ${ROSBAG_HEADER_DIRS}
         ${BOOST_INCLUDE_PATH}
         ${LZ4_INCLUDE_PATH}
+        ${LIBUSB_LOCAL_INCLUDE_PATH}
         )
 if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
     add_dependencies(realsense2 realsense-driver)
     set_target_properties (realsense-driver PROPERTIES
         FOLDER Library
     )
-endif()
-
-if (USE_SYSTEM_LIBUSB)
-    target_include_directories(realsense2 PRIVATE ${LIBUSB1_INCLUDE_DIRS})
 endif()
 
 target_include_directories(realsense2 PUBLIC
