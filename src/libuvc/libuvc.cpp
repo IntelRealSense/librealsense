@@ -37,10 +37,6 @@
 #include "libuvc.h"
 #include "libuvc_internal.h"
 
-#pragma GCC diagnostic ignored "-Wpedantic"
-#include "libusb/libusb.h"
-#pragma GCC diagnostic pop
-
 #pragma GCC diagnostic ignored "-Woverflow"
 
 struct uvc_device_internal {

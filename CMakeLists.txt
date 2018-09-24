@@ -102,6 +102,10 @@ if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
     message(STATUS "Prepare RealSense SDK for Android OS (${ANDROID_NDK_ABI_NAME})")
 endif()
 
+if(USE_SYSTEM_LIBUSB)
+    add_definitions(-DUSE_SYSTEM_LIBUSB)
+endif()
+
 if(BUILD_WITH_OPENMP)
     find_package(OpenMP)
     if(NOT OPENMP_FOUND)

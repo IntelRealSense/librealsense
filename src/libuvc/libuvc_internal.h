@@ -15,8 +15,15 @@
 #include <mutex>
 #include <condition_variable>
 #include <signal.h>
-#include "libusb/libusb.h"
 #include "utlist.h"
+
+#pragma GCC diagnostic ignored "-Wpedantic"
+#ifdef USE_SYSTEM_LIBUSB
+    #include <libusb.h>
+#else
+    #include "libusb/libusb.h"
+#endif
+#pragma GCC diagnostic pop
 
 /** Converts an unaligned four-byte little-endian integer into an int32 */
 #define DW_TO_INT(p) ((p)[0] | ((p)[1] << 8) | ((p)[2] << 16) | ((p)[3] << 24))
