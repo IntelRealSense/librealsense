@@ -7,7 +7,7 @@
 <package format="2">
   <name>librealsense2</name>
   <!-- The version tag needs to be updated with each new release of librealsense -->
-  <version>2.16.0</version>
+  <version>2.16.1</version>
   <description>
   Library for capturing data from the Intel(R) RealSense(TM) SR300 and D400 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense(TM); devices are implemented in this project, including multi-camera capture.
   </description>
