@@ -46,7 +46,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
      * Ubuntu 18:<br />
       `sudo apt-get install libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev`  <br /><br />
 
-    Cmake: certain *librealsense* CMAKE flags (e.g. CUDA) require version 3.8+ which is currently not made available via apt manager for Ubuntu LTS.   
+> **Cmake Note**: certain librealsense CMAKE flags (e.g. CUDA) require version 3.8+ which is currently not made available via apt manager for Ubuntu LTS.   
     Go to the [official CMake site](https://cmake.org/download/) to download and install the application  
 
      **Note** on graphic sub-system utilization:<br />
@@ -82,7 +82,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
       `./scripts/patch-realsense-ubuntu-odroid.sh`<br />
       Some additional details on the Odroid installation can also be found in [installation_odroid.md](installation_odroid.md)
 
-    * Check the patched modules installation by examining the generated log as well as inspecting the latest entries in kernel log:<br />
+> Check the patched modules installation by examining the generated log as well as inspecting the latest entries in kernel log:<br />
       `sudo dmesg | tail -n 50`<br />
     The log should indicate that a new uvcvideo driver has been registered.  
        Refer to [Troubleshooting](#Troubleshooting) in case of errors/warning reports.
