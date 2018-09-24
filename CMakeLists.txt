@@ -781,7 +781,6 @@ if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
 endif()
 
-
 if (NOT USE_SYSTEM_LIBUSB)
     if(NOT WIN32 OR FORCE_LIBUVC)
        include(ExternalProject)
@@ -807,6 +806,7 @@ if (NOT USE_SYSTEM_LIBUSB)
 
        set(LIBUSB1_LIBRARY_DIRS ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib)
        link_directories(${LIBUSB1_LIBRARY_DIRS})
+
        set(LIBUSB1_LIBRARIES usb log)
     endif()
 endif()
