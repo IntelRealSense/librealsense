@@ -61,8 +61,8 @@ namespace librealsense
         _holes_filling_mode(holes_fill_def),
         _holes_filling_radius(0)
     {
-        _stream_filter = RS2_STREAM_DEPTH;
-        _stream_format_filter = RS2_FORMAT_Z16;
+        _stream_filter.stream = RS2_STREAM_DEPTH;
+        _stream_filter.format = RS2_FORMAT_Z16;
 
         auto spatial_filter_alpha = std::make_shared<ptr_option<float>>(
             alpha_min_val,

@@ -58,7 +58,7 @@ namespace librealsense
     {
         synthetic_source_interface* source;
         //sync_lock& lock_ref;
-        single_consumer_queue<frame_holder>& matches;
+        single_consumer_frame_queue<frame_holder>& matches;
     };
 
     typedef int stream_id;
@@ -129,7 +129,7 @@ namespace librealsense
     protected:
         virtual void update_next_expected(const frame_holder& f) = 0;
 
-        std::map<matcher*, single_consumer_queue<frame_holder>> _frames_queue;
+        std::map<matcher*, single_consumer_frame_queue<frame_holder>> _frames_queue;
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;
         std::map<matcher*, double> _next_expected;
         std::map<matcher*, rs2_timestamp_domain> _next_expected_domain;

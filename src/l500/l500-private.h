@@ -32,7 +32,7 @@ namespace librealsense
         enum gvd_fields
         {
             fw_version_offset = 12,
-            module_serial_offset = 64
+            module_serial_offset = 56
         };
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,

@@ -1,22 +1,22 @@
-From e80ed73e9489d7833dbdd3e24d11c0e01d9c4ffd Mon Sep 17 00:00:00 2001
+From 40c5c21a9613165904cca37f5d15632b442987bc Mon Sep 17 00:00:00 2001
 From: Evgeni Raikhel <evgeni.raikhel@intel.com>
 From: icarpis <itay.carpis@intel.com>
-Date: Sun, 18 Mar 2018 11:04:42 +0200
+Date: Thu, 30 Aug 2018 16:07:01 +0300
 Subject: [PATCH] realsense formats patch for kernel 4.13
 
 Signed-off-by: Evgeni Raikhel <evgeni.raikhel@intel.com>
 ---
- drivers/media/usb/uvc/uvc_driver.c   | 37 ++++++++++++++++++++++++++++++++++++
- drivers/media/usb/uvc/uvcvideo.h     | 22 +++++++++++++++++++++
- drivers/media/v4l2-core/v4l2-ioctl.c |  3 +++
- include/uapi/linux/videodev2.h       |  3 +++
- 4 files changed, 65 insertions(+)
+ drivers/media/usb/uvc/uvc_driver.c   | 52 ++++++++++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvcvideo.h     | 34 +++++++++++++++++++++++
+ drivers/media/v4l2-core/v4l2-ioctl.c |  8 +++++-
+ include/uapi/linux/videodev2.h       |  8 ++++++
+ 4 files changed, 101 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 70842c5..0f43de2 100644
+index 70842c5..2c92aa0 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -203,6 +203,43 @@ static struct uvc_format_desc uvc_fmts[] = {
+@@ -203,6 +203,58 @@ static struct uvc_format_desc uvc_fmts[] = {
  		.guid		= UVC_GUID_FORMAT_INZI,
  		.fcc		= V4L2_PIX_FMT_INZI,
  	},
@@ -46,7 +46,7 @@ index 70842c5..0f43de2 100644
 +		.guid		= UVC_GUID_FORMAT_RAW8,
 +		.fcc		= V4L2_PIX_FMT_GREY,
 +	},
-+	/* Legacy formats for backward-compatibility*/
++	/* Legacy/Development formats for backward-compatibility*/
 +	{
 +		.name		= "Raw data 16-bit (RW16)",
 +		.guid		= UVC_GUID_FORMAT_RW16,
@@ -57,14 +57,29 @@ index 70842c5..0f43de2 100644
 +		.guid		= UVC_GUID_FORMAT_BAYER16,
 +		.fcc		= V4L2_PIX_FMT_SBGGR16,
 +	},
++	{
++		.name		= "Frame Grabber (FG  )",
++		.guid		= UVC_GUID_FORMAT_FG,
++		.fcc		= V4L2_PIX_FMT_FG,
++	},
++	{
++		.name		= "SR300 Depth/Confidence (INZC)",
++		.guid		= UVC_GUID_FORMAT_INZC,
++		.fcc		= V4L2_PIX_FMT_INZC,
++	},
++	{
++		.name		= "Relative IR (PAIR)",
++		.guid		= UVC_GUID_FORMAT_PAIR,
++		.fcc		= V4L2_PIX_FMT_PAIR,
++	},
  };
 
  /* ------------------------------------------------------------------------
 diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
-index 15e415e..d7b62a2 100644
+index 15e415e..1ade6ee 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -152,6 +152,28 @@
+@@ -152,6 +152,40 @@
  #define UVC_GUID_FORMAT_INVI \
  	{ 'I',  'N',  'V',  'I', 0xdb, 0x57, 0x49, 0x5e, \
  	 0x8e, 0x3f, 0xf4, 0x79, 0x53, 0x2b, 0x94, 0x6f}
@@ -83,45 +98,66 @@ index 15e415e..d7b62a2 100644
 +#define UVC_GUID_FORMAT_CONFIDENCE_MAP \
 +	{ 'C',  ' ',  ' ',  ' ', 0x00, 0x00, 0x10, 0x00, \
 +	0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
-+/* Legacy formats */
++/* Legacy/Development formats */
 +#define UVC_GUID_FORMAT_RW16 \
 +	{ 'R',  'W',  '1',  '6', 0x00, 0x00, 0x10, 0x00, \
 +	0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
 +#define UVC_GUID_FORMAT_BAYER16 \
 +	{ 'R',  'W',  '1',  '6', 0x66, 0x1a, 0x42, 0xa2, \
 +	0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
-
++#define UVC_GUID_FORMAT_BAYER16 \
++	{ 'R',  'W',  '1',  '6', 0x66, 0x1a, 0x42, 0xa2, \
++	0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
++#define UVC_GUID_FORMAT_FG \
++	{ 'F',  'G',  ' ',  ' ', 0x00, 0x00, 0x10, 0x00, \
++	0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_INZC \
++	{ 'I',  'N',  'Z',  'C', 0x02, 0xb6, 0x0f, 0x48, \
++	0x97, 0x8c, 0xe4, 0xe8, 0x8a, 0xe8, 0x9b, 0x89}
++#define UVC_GUID_FORMAT_PAIR \
++	{ 'P',  'A',  'I',  'R', 0x36, 0x85, 0x41, 0x48, \
++	0xb6, 0xbf, 0x8f, 0xc6, 0xff, 0xb0, 0x83, 0xa8}
+ 
  /* ------------------------------------------------------------------------
   * Driver specific constants.
 diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2-ioctl.c
-index cab63bb..85935a9 100644
+index cab63bb..f9fcf13 100644
 --- a/drivers/media/v4l2-core/v4l2-ioctl.c
 +++ b/drivers/media/v4l2-core/v4l2-ioctl.c
-@@ -1239,6 +1239,10 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+@@ -1239,7 +1239,13 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
  	case V4L2_TCH_FMT_TU08:		descr = "8-bit unsigned touch data"; break;
  	case V4L2_META_FMT_VSP1_HGO:	descr = "R-Car VSP1 1-D Histogram"; break;
  	case V4L2_META_FMT_VSP1_HGT:	descr = "R-Car VSP1 2-D Histogram"; break;
-+	/* Librealsense formats*/
+-
++	/* Librealsense Legacy/Development formats*/
 +	case V4L2_PIX_FMT_RW16:		descr = "16-bit Raw data"; break;
 +	case V4L2_PIX_FMT_W10:		descr = "10-bit packed 8888[2222]"; break;
-+	case V4L2_PIX_FMT_CONFIDENCE_MAP:		descr = "4-bit per pixel packed into 8 bit"; break;
-
++	case V4L2_PIX_FMT_CONFIDENCE_MAP:	descr = "4-bit per pixel packed"; break;
++	case V4L2_PIX_FMT_FG:		descr = "Frame Grabber (FG  )"; break;
++	case V4L2_PIX_FMT_INZC:		descr = "Planar Depth/Confidence (INZC)"; break;
++	case V4L2_PIX_FMT_PAIR:		descr = "Relative IR (PAIR)"; break;
  	default:
  		/* Compressed formats */
+ 		flags = V4L2_FMT_FLAG_COMPRESSED;
 diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
-index 45cf735..0bcd206 100644
+index 45cf735..6944a02 100644
 --- a/include/uapi/linux/videodev2.h
 +++ b/include/uapi/linux/videodev2.h
-@@ -662,6 +662,9 @@ struct v4l2_pix_format {
+@@ -662,6 +662,14 @@ struct v4l2_pix_format {
  #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
  #define V4L2_PIX_FMT_MT21C    v4l2_fourcc('M', 'T', '2', '1') /* Mediatek compressed block mode  */
  #define V4L2_PIX_FMT_INZI     v4l2_fourcc('I', 'N', 'Z', 'I') /* Intel Planar Greyscale 10-bit and Depth 16-bit */
 +#define V4L2_PIX_FMT_RW16	v4l2_fourcc('R', 'W', '1', '6') /* Raw data 16-bit */
 +#define V4L2_PIX_FMT_W10	v4l2_fourcc('W', '1', '0', ' ') /* Packed raw data 10-bit */
 +#define V4L2_PIX_FMT_CONFIDENCE_MAP  v4l2_fourcc('C', ' ', ' ', ' ') /* Two pixels in one byte */
-
++
++/*  Librealsense development*/
++#define V4L2_PIX_FMT_FG	v4l2_fourcc('F', 'G', ' ', ' ') /* Frame Grabber */
++#define V4L2_PIX_FMT_INZC	v4l2_fourcc('I', 'N', 'Z', 'C') /* Planar Depth/Confidence */
++#define V4L2_PIX_FMT_PAIR	v4l2_fourcc('P', 'A', 'I', 'R') /* Relative IR */
+ 
  /* SDR formats - used only for Software Defined Radio devices */
  #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */
---
+-- 
 2.7.4
 

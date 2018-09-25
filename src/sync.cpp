@@ -532,6 +532,8 @@ namespace librealsense
 
     void timestamp_composite_matcher::clean_inactive_streams(frame_holder& f)
     {
+        if (f.is_blocking())
+            return;
         std::vector<stream_id> dead_matchers;
         auto now = environment::get_instance().get_time_service()->get_time();
         for(auto m: _matchers)

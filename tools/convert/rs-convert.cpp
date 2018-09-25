@@ -100,9 +100,7 @@ int main(int argc, char** argv) try
     auto frameNumber = 0ULL;
 
     while (true) {
-        playback.resume();
         auto frameset = pipe->wait_for_frames();
-        playback.pause();
 
         int posP = static_cast<int>(playback.get_position() * 100. / duration.count());
 

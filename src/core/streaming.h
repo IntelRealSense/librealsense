@@ -111,10 +111,52 @@ namespace librealsense
 
         virtual void mark_fixed() = 0;
         virtual bool is_fixed() const = 0;
+        virtual void set_blocking(bool state) = 0;
+        virtual bool is_blocking() const = 0;
 
         virtual void keep() = 0;
 
         virtual ~frame_interface() = default;
+    };
+
+    struct frame_holder
+    {
+        frame_interface* frame;
+
+        frame_interface* operator->()
+        {
+            return frame;
+        }
+
+        operator bool() const { return frame != nullptr; }
+
+        operator frame_interface*() const { return frame; }
+
+        frame_holder(frame_interface* f)
+        {
+            frame = f;
+        }
+
+        ~frame_holder();
+
+        frame_holder(frame_holder&& other)
+            : frame(other.frame)
+        {
+            other.frame = nullptr;
+        }
+
+        frame_holder() : frame(nullptr) {}
+
+
+        frame_holder& operator=(frame_holder&& other);
+
+        frame_holder clone() const;
+
+        bool is_blocking() const { return frame->is_blocking(); };
+
+    private:
+        frame_holder& operator=(const frame_holder& other) = delete;
+        frame_holder(const frame_holder& other);
     };
 
     using on_frame = std::function<void(frame_interface*)>;
@@ -221,7 +263,7 @@ namespace librealsense
 
     MAP_EXTENSION(RS2_EXTENSION_DEPTH_STEREO_SENSOR, librealsense::depth_stereo_sensor);
 
-    class depth_stereo_sensor_snapshot : public depth_stereo_sensor,  public depth_sensor_snapshot
+    class depth_stereo_sensor_snapshot : public depth_stereo_sensor, public depth_sensor_snapshot
     {
     public:
         depth_stereo_sensor_snapshot(float depth_units, float stereo_bl_mm) :

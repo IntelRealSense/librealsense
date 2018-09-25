@@ -82,6 +82,7 @@ void winusb_uvc_free_device_info(winusb_uvc_device_info_t *info) {
         }
 
         DL_DELETE(info->stream_ifs, stream_if);
+        WinUsb_Free(stream_if->associateHandle);
         free(stream_if);
     }
 
@@ -614,7 +615,25 @@ uvc_error_t winusb_uvc_parse_vs(
 
     return ret;
 }
+uvc_error_t update_stream_if_handle(winusb_uvc_device *devh, int interface_idx) {
+    winusb_uvc_streaming_interface_t *stream_if;
 
+    DL_FOREACH(devh->deviceData.stream_ifs, stream_if) {
+        if (stream_if->bInterfaceNumber == interface_idx)
+            if (!stream_if->associateHandle && interface_idx < MAX_USB_INTERFACES)
+            {
+                // WinUsb_GetAssociatedInterface returns the associated interface (Video stream interface which is associated to Video control interface)
+                // A value of 0 indicates the first associated interface (Video Stream 1), a value of 1 indicates the second associated interface (video stream 2)
+                // WinUsbInterfaceNumber is the actual interface number taken from the USB config descriptor
+                // A value of 0 indicates the first interface (Video Control Interface), A value of 1 indicates the first associated interface (Video Stream 1)
+                // For this reason, when calling to WinUsb_GetAssociatedInterface, we must decrease 1 to receive the associated interface
+                uint8_t winusbInterfaceNumber = devh->deviceData.interfaces->iface[interface_idx].winusbInterfaceNumber;
+                if (!WinUsb_GetAssociatedInterface(devh->winusbHandle, winusbInterfaceNumber - 1, &stream_if->associateHandle))
+                    return UVC_ERROR_INVALID_PARAM;
+            }
+    }
+    return UVC_SUCCESS;
+}
 
 /* Return only Video stream interfaces */
 static winusb_uvc_streaming_interface_t *winusb_uvc_get_stream_if(winusb_uvc_device *devh, int interface_idx) {
@@ -928,7 +947,7 @@ void stream_thread(winusb_uvc_stream_context *strctx)
 
     do {
         DWORD transferred;
-        if (!WinUsb_ReadPipe(strctx->stream->devh->associateHandle,
+        if (!WinUsb_ReadPipe(strctx->stream->stream_if->associateHandle,
             strctx->endpoint,
             buffer,
             strctx->maxPayloadTransferSize,
@@ -944,7 +963,7 @@ void stream_thread(winusb_uvc_stream_context *strctx)
     } while (strctx->stream->running);
 
     // reseting pipe after use
-    auto ret = WinUsb_ResetPipe(strctx->stream->devh->associateHandle, strctx->endpoint);
+    auto ret = WinUsb_ResetPipe(strctx->stream->stream_if->associateHandle, strctx->endpoint);
 
     free(buffer);
     free(strctx);
@@ -1139,34 +1158,10 @@ uvc_error_t winusb_uvc_query_stream_ctrl(winusb_uvc_device *devh, uvc_stream_ctr
         }
     }
 
-    WINUSB_INTERFACE_HANDLE iface;
-    if (devh->associateHandle != NULL)
-    {
-        iface = devh->associateHandle;
-    }
-    else
-    {
-        uint8_t interfaceNumber = ctrl->bInterfaceNumber;
-        if (interfaceNumber < MAX_USB_INTERFACES)
-        {
-            // WinUsb_GetAssociatedInterface returns the associated interface (Video stream interface which is associated to Video control interface)
-            // A value of 0 indicates the first associated interface (Video Stream 1), a value of 1 indicates the second associated interface (video stream 2)
-            // WinUsbInterfaceNumber is the actual interface number taken from the USB config descriptor
-            // A value of 0 indicates the first interface (Video Control Interface), A value of 1 indicates the first associated interface (Video Stream 1)
-            // For this reason, when calling to WinUsb_GetAssociatedInterface, we must decrease 1 to receive the associated interface
-            uint8_t winusbInterfaceNumber = devh->deviceData.interfaces->iface[interfaceNumber].winusbInterfaceNumber;
-            WinUsb_GetAssociatedInterface(devh->winusbHandle, winusbInterfaceNumber - 1, &iface);
-        }
-        else
-        {
-            return UVC_ERROR_INVALID_PARAM;
-        }
-
-    }
-
+    auto str_if = winusb_uvc_get_stream_if(devh, ctrl->bInterfaceNumber);
     /* do the transfer */
     err = winusb_SendControl(
-        iface,
+        str_if->associateHandle,
         req == UVC_SET_CUR ? UVC_REQ_TYPE_INTERFACE_SET : UVC_REQ_TYPE_INTERFACE_GET,
         req,
         probe ? (UVC_VS_PROBE_CONTROL << 8) : (UVC_VS_COMMIT_CONTROL << 8),
@@ -1175,7 +1170,6 @@ uvc_error_t winusb_uvc_query_stream_ctrl(winusb_uvc_device *devh, uvc_stream_ctr
 
     if (err <= 0)
     {
-        WinUsb_Free(iface);
         return (uvc_error_t)err;
     }
 
@@ -1222,8 +1216,6 @@ uvc_error_t winusb_uvc_query_stream_ctrl(winusb_uvc_device *devh, uvc_stream_ctr
             }
         }
     }
-    if (devh->associateHandle == NULL)
-        WinUsb_Free(iface);
     return UVC_SUCCESS;
 }
 
@@ -1333,22 +1325,6 @@ fail:
 uvc_error_t winusb_uvc_probe_stream_ctrl(winusb_uvc_device *devh, uvc_stream_ctrl_t *ctrl)
 {
     uvc_error_t ret = UVC_SUCCESS;
-
-    uint8_t interfaceNumber = ctrl->bInterfaceNumber;
-    if (interfaceNumber < MAX_USB_INTERFACES)
-    {
-        // WinUsb_GetAssociatedInterface returns the associated interface (Video stream interface which is associated to Video control interface)
-        // A value of 0 indicates the first associated interface (Video Stream 1), a value of 1 indicates the second associated interface (video stream 2)
-        // WinUsbInterfaceNumber is the actual interface number taken from the USB config descriptor
-        // A value of 0 indicates the first interface (Video Control Interface), A value of 1 indicates the first associated interface (Video Stream 1)
-        // For this reason, when calling to WinUsb_GetAssociatedInterface, we must decrease 1 to receive the associated interface
-        uint8_t winusbInterfaceNumber = devh->deviceData.interfaces->iface[interfaceNumber].winusbInterfaceNumber;
-        WinUsb_GetAssociatedInterface(devh->winusbHandle, winusbInterfaceNumber - 1, &devh->associateHandle);
-    }
-    else
-    {
-        return UVC_ERROR_INVALID_PARAM;
-    }
 
     // Sending probe SET request - UVC_SET_CUR request in a probe/commit structure containing desired values for VS Format index, VS Frame index, and VS Frame Interval
     // UVC device will check the VS Format index, VS Frame index, and Frame interval properties to verify if possible and update the probe/commit structure if feasible
@@ -2127,7 +2103,6 @@ uvc_error_t winusb_open(winusb_uvc_device *device)
     uvc_error_t ret = UVC_SUCCESS;
     ULONG returnLength = 0;
 
-    device->associateHandle = NULL;
     device->streams = NULL;
 
     // Start by clearing deviceData, otherwise
@@ -2239,12 +2214,6 @@ uvc_error_t winusb_close(winusb_uvc_device *device)
         {
             WinUsb_Free(device->winusbHandle);
             device->winusbHandle = NULL;
-        }
-
-        if (device->associateHandle != NULL)
-        {
-            WinUsb_Free(device->associateHandle);
-            device->associateHandle = NULL;
         }
 
         if (device->deviceHandle != NULL)

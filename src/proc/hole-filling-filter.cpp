@@ -25,8 +25,8 @@ namespace librealsense
         _current_frm_size_pixels(0),
         _hole_filling_mode(hole_fill_def)
     {
-        _stream_filter = RS2_STREAM_DEPTH;
-        _stream_format_filter = RS2_FORMAT_Z16;
+        _stream_filter.stream = RS2_STREAM_DEPTH;
+        _stream_filter.format = RS2_FORMAT_Z16;
 
         auto hole_filling_mode = std::make_shared<ptr_option<uint8_t>>(
             hole_fill_min,
