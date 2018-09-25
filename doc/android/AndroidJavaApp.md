@@ -39,7 +39,8 @@ Click on `configure` and choose `SDK Manager`.
 <p align="center"><img width=90% src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/android/AndroidStudio7.png" /></p>
 
 13. In the `Gradle Scripts` section, go to the module-level `build.gradle` file. In the `defaultConfig` block, add an `ndk` block and configure the `abiFilters` option with `armeabi-v7a`:
-```android {
+```
+android {
     ...
     defaultConfig {
       ...
@@ -47,7 +48,8 @@ Click on `configure` and choose `SDK Manager`.
             abiFilters 'armeabi-v7a'
       }
   }
-}```
+}
+```
 
 14. Connect the Android device to the host machine.
 Click on `Run` and choose `Run 'app'`. Choose your Android device and click on the `OK` button. At the end of this process a new application supposed to appear at the Android device.
