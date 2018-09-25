@@ -162,14 +162,14 @@ namespace librealsense
             profile->set_format(convertTm2PixelFormat(tm_profile.profile.pixelFormat));
             profile->set_framerate(p.fps);
             profile->set_unique_id(environment::get_instance().generate_stream_id());
-            if (tm_profile.sensorIndex == 0)
+            if (tm_profile.sensorIndex == 0 || tm_profile.sensorIndex == 1)
             {
                 profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
             }
             stream_profile sp = { stream, profile->get_stream_index(), p.width, p.height, p.fps, profile->get_format() };
             auto intrinsics = get_intrinsics(sp);
             profile->set_intrinsics([intrinsics]() { return intrinsics; });
-            results.push_back(profile);
+            if (tm_profile.sensorIndex <= 1) results.push_back(profile);
 
             //TODO - need to register to have resolve_requests work
             //native_pixel_format pf;
@@ -190,13 +190,13 @@ namespace librealsense
             profile->set_format(format);
             profile->set_framerate(tm_profile.fps);
             profile->set_unique_id(environment::get_instance().generate_stream_id());
+            auto intrinsics = get_motion_intrinsics(*profile);
+            profile->set_intrinsics([intrinsics]() { return intrinsics; });
             if (tm_profile.sensorIndex == 0)
             {
                 profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
+                results.push_back(profile);
             }
-            auto intrinsics = get_motion_intrinsics(*profile);
-            profile->set_intrinsics([intrinsics]() { return intrinsics; });
-            results.push_back(profile);
         }
 
         //extract accelerometer profiles
@@ -210,13 +210,13 @@ namespace librealsense
             profile->set_format(format);
             profile->set_framerate(tm_profile.fps);
             profile->set_unique_id(environment::get_instance().generate_stream_id());
+            auto intrinsics = get_motion_intrinsics(*profile);
+            profile->set_intrinsics([intrinsics]() { return intrinsics; });
             if (tm_profile.sensorIndex == 0)
             {
                 profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
+                results.push_back(profile);
             }
-            auto intrinsics = get_motion_intrinsics(*profile);
-            profile->set_intrinsics([intrinsics]() { return intrinsics; });
-            results.push_back(profile);
         }
 
         //extract 6Dof profiles - TODO
@@ -240,10 +240,8 @@ namespace librealsense
             if (tm_profile.profileType == SixDofProfile0)
             {
                 profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
+                results.push_back(profile);
             }
-            results.push_back(profile);
-
-
             //TODO - do I need to define native_pixel_format for RS2_STREAM_POSE? and how to draw it?
         }
 
