@@ -6,13 +6,14 @@
 
 ## Getting Started
 
-1. Download [Intel RealSense SDK Installer for Windows 7]()
-2. Connect the camera (the device must connected to install the driver)
+1. Download [Intel RealSense SDK Installer for Windows 7](https://github.com/IntelRealSense/librealsense/releases/download/v2.16.1/Intel.RealSense.SDK.Win7.exe)
+2. Connect the camera (the device must be connected to install the driver)
 3. Check the device manager:<br />![dev_man](img/win7/device_manager.png)<br />
 > Out of the box Windows 7 will not recognize the D4xx cameras using the inbox driver. 
 4. Run the installer and make sure to check **Win7 Drivers**:<br/>
 ![install](img/win7/installer.png)
 5. The installer will prompt to install the driver. This is a one-time step:<br/>
+![after](img/win7/driver_setup.png)
 ![after](img/win7/device_manager_after.png)
 
 ## Supported Devices:
