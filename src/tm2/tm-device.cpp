@@ -186,7 +186,7 @@ namespace librealsense
             rs2_format format = RS2_FORMAT_MOTION_XYZ32F;
             auto profile = std::make_shared<motion_stream_profile>(platform::stream_profile{ 0, 0, tm_profile.fps, static_cast<uint32_t>(format) });
             profile->set_stream_type(RS2_STREAM_GYRO);
-            profile->set_stream_index(tm_profile.sensorIndex + 1); // for nice presentation by the viewer - add 1 to stream index
+            profile->set_stream_index(tm_profile.sensorIndex); // for nice presentation by the viewer - add 1 to stream index
             profile->set_format(format);
             profile->set_framerate(tm_profile.fps);
             profile->set_unique_id(environment::get_instance().generate_stream_id());
@@ -206,7 +206,7 @@ namespace librealsense
             rs2_format format = RS2_FORMAT_MOTION_XYZ32F;
             auto profile = std::make_shared<motion_stream_profile>(platform::stream_profile{ 0, 0, tm_profile.fps, static_cast<uint32_t>(format) });
             profile->set_stream_type(RS2_STREAM_ACCEL);
-            profile->set_stream_index(tm_profile.sensorIndex + 1); // for nice presentation by the viewer - add 1 to stream index
+            profile->set_stream_index(tm_profile.sensorIndex); // for nice presentation by the viewer - add 1 to stream index
             profile->set_format(format);
             profile->set_framerate(tm_profile.fps);
             profile->set_unique_id(environment::get_instance().generate_stream_id());
@@ -233,7 +233,7 @@ namespace librealsense
             auto profile = std::make_shared<pose_stream_profile>(platform::stream_profile{ 0, 0, fps, static_cast<uint32_t>(format) });
             profile->set_stream_type(RS2_STREAM_POSE);
             // TM2_API - 6dof profile type enum behaves the same as stream index
-            profile->set_stream_index(static_cast<uint32_t>(tm_profile.profileType) + 1);
+            profile->set_stream_index(static_cast<uint32_t>(tm_profile.profileType));
             profile->set_format(format);
             profile->set_framerate(fps);
             profile->set_unique_id(environment::get_instance().generate_stream_id());
@@ -325,14 +325,14 @@ namespace librealsense
         for (auto&& r : requests)
         {
             auto sp = to_profile(r.get());
-            int stream_index = sp.index - 1;
+            int stream_index = sp.index;
             
             switch (r->get_stream_type())
             {
             case RS2_STREAM_FISHEYE:
             {
+                stream_index -= 1; // for multiple streams, the index starts from 1
                 //TODO: check bound for _tm_supported_profiles.___[]
-
                 auto tm_profile = _tm_supported_profiles.video[stream_index];
                 if (tm_profile.fps == sp.fps &&
                     tm_profile.profile.height == sp.height &&
@@ -682,7 +682,7 @@ namespace librealsense
         }
 
         float3 data = { tm_frame.acceleration.x, tm_frame.acceleration.y, tm_frame.acceleration.z };
-        handle_imu_frame(tm_frame, tm_frame.frameId, RS2_STREAM_ACCEL, tm_frame.sensorIndex + 1, data, tm_frame.temperature);
+        handle_imu_frame(tm_frame, tm_frame.frameId, RS2_STREAM_ACCEL, tm_frame.sensorIndex, data, tm_frame.temperature);
     }
 
     void tm2_sensor::onGyroFrame(perc::TrackingData::GyroFrame& tm_frame)
@@ -693,7 +693,7 @@ namespace librealsense
             return;
         }
         float3 data = { tm_frame.angularVelocity.x, tm_frame.angularVelocity.y, tm_frame.angularVelocity.z };
-        handle_imu_frame(tm_frame, tm_frame.frameId, RS2_STREAM_GYRO, tm_frame.sensorIndex + 1, data, tm_frame.temperature);
+        handle_imu_frame(tm_frame, tm_frame.frameId, RS2_STREAM_GYRO, tm_frame.sensorIndex, data, tm_frame.temperature);
     }
 
     void tm2_sensor::onPoseFrame(perc::TrackingData::PoseFrame& tm_frame)
@@ -721,7 +721,7 @@ namespace librealsense
         {
             //TODO - assuming single profile per motion stream
             if (p->get_stream_type() == RS2_STREAM_POSE &&
-                p->get_stream_index() == tm_frame.sourceIndex + 1)
+                p->get_stream_index() == tm_frame.sourceIndex)
             {
                 profile = p;
                 break;
