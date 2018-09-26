@@ -2,6 +2,7 @@
 #include "archive.h"
 #include <fstream>
 #include "core/processing.h"
+#include "core/video.h"
 
 #define MIN_DISTANCE 1e-6
 
@@ -39,12 +40,22 @@ namespace librealsense
         return std::make_tuple(texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
     }
 
+    struct int4
+    {
+        int x, y, z, w;
+    };
+
     void points::export_to_ply(const std::string& fname, const frame_holder& texture)
     {
+        auto s = get_stream().get();
+        auto vs = dynamic_cast<video_stream_profile_interface*>(s);
+
         const auto vertices = get_vertices();
         const auto texcoords = get_texture_coordinates();
         std::vector<float3> new_vertices;
         std::vector<std::tuple<uint8_t, uint8_t, uint8_t>> new_tex;
+        std::map<int, int> map;
+
         new_vertices.reserve(get_vertex_count());
         new_tex.reserve(get_vertex_count());
         assert(get_vertex_count());
@@ -52,6 +63,7 @@ namespace librealsense
             if (fabs(vertices[i].x) >= MIN_DISTANCE || fabs(vertices[i].y) >= MIN_DISTANCE ||
                 fabs(vertices[i].z) >= MIN_DISTANCE)
             {
+                map[i] = new_vertices.size();
                 new_vertices.push_back(vertices[i]);
                 if (texture)
                 {
@@ -59,6 +71,26 @@ namespace librealsense
                     new_tex.push_back(color);
                 }
             }
+
+        const auto threshold = 0.05f;
+        auto width = vs->get_width();
+        std::vector<int4> faces;
+        for (int x = 0; x < width - 1; ++x) {
+            for (int y = 0; y < vs->get_height() - 1; ++y) {
+                auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
+                if (vertices[a].z && vertices[b].z && vertices[c].z && vertices[d].z
+                    && abs(vertices[a].z - vertices[b].z) < threshold && abs(vertices[a].z - vertices[c].z) < threshold
+                    && abs(vertices[b].z - vertices[d].z) < threshold && abs(vertices[c].z - vertices[d].z) < threshold)
+                {
+                    if (map.count(a) == 0 || map.count(b) == 0 || map.count(c) == 0 || map.count(d) == 0)
+                        continue;
+                    int4 face1 = { map[a], map[b], map[c], 0 };
+                    faces.push_back(face1);
+                    int4 face2 = { map[b], map[c], map[d], 0 };
+                    faces.push_back(face1);
+                }
+            }
+        }
 
         std::ofstream out(fname);
         out << "ply\n";
@@ -74,6 +106,8 @@ namespace librealsense
             out << "property uchar green\n";
             out << "property uchar blue\n";
         }
+        out << "element face " << faces.size() << "\n";
+        out << "property list uchar int vertex_indices\n";
         out << "end_header\n";
         out.close();
 
@@ -93,6 +127,15 @@ namespace librealsense
                 out.write(reinterpret_cast<const char*>(&y), sizeof(uint8_t));
                 out.write(reinterpret_cast<const char*>(&z), sizeof(uint8_t));
             }
+        }
+        auto size = faces.size();
+        for (int i = 0; i < size; ++i) {
+            int four = 3;
+            out.write(reinterpret_cast<const char*>(&four), sizeof(uint8_t));
+            out.write(reinterpret_cast<const char*>(&(faces[i].x)), sizeof(int));
+            out.write(reinterpret_cast<const char*>(&(faces[i].y)), sizeof(int));
+            out.write(reinterpret_cast<const char*>(&(faces[i].z)), sizeof(int));
+            //out.write(reinterpret_cast<const char*>(&(faces[i].w)), sizeof(int));
         }
     }
 
@@ -332,7 +375,7 @@ namespace librealsense
     std::shared_ptr<archive_interface> make_archive(rs2_extension type,
         std::atomic<uint32_t>* in_max_frame_queue_size,
         std::shared_ptr<platform::time_service> ts,
-		std::shared_ptr<metadata_parser_map> parsers)
+        std::shared_ptr<metadata_parser_map> parsers)
     {
         switch (type)
         {
