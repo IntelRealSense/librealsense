@@ -33,6 +33,52 @@ namespace librealsense
         int64_t arrival_ts;
     };
 
+    enum temperature_type { TEMPERATURE_TYPE_ASIC, TEMPERATURE_TYPE_MOTION};
+
+    class temperature_option : public readonly_option
+    {
+    public:
+        float query() const override
+        {
+            if (!is_enabled())
+                throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
+            return _ep.get_temperature().sensor[_type].temperature;
+        }
+
+        option_range get_range() const override { return _range; }
+
+        bool is_enabled() const override { return true; }
+
+        explicit temperature_option(tm2_sensor& ep, temperature_type type) : _ep(ep), _type(type),
+            _range(option_range{ 0, ep.get_temperature().sensor[type].threshold, 0, 0 }) { }
+
+    private:
+        tm2_sensor & _ep;
+        option_range _range;
+        temperature_type _type;
+    };
+
+    class asic_temperature_option : public temperature_option
+    {
+    public:
+        const char* get_description() const override
+        {
+            return "Current TM2 Asic Temperature (degree celsius)";
+        }
+        explicit asic_temperature_option(tm2_sensor& ep) :temperature_option(ep, temperature_type::TEMPERATURE_TYPE_ASIC) { }
+    };
+
+    class motion_temperature_option : public temperature_option
+    {
+    public:
+
+        const char* get_description() const override
+        {
+            return "Current TM2 Motion Module Temperature (degree celsius)";
+        }
+        explicit motion_temperature_option(tm2_sensor& ep) :temperature_option(ep, temperature_type::TEMPERATURE_TYPE_MOTION) { }
+    };
+
     class md_tm2_parser : public md_attribute_parser_base
     {
     public:
@@ -380,6 +426,13 @@ namespace librealsense
                 throw invalid_value_exception("Invalid stream type");
             }
         }
+
+        if (_tm_active_profiles.video[0].enabled == _tm_active_profiles.video[1].enabled &&
+            _tm_active_profiles.video[0].outputEnabled != _tm_active_profiles.video[1].outputEnabled)
+        {
+            throw invalid_value_exception("Invalid profile configuration - setting a single FE stream is not supported");
+        }
+
         _is_opened = true;
         set_active_streams(requests);
     }
@@ -909,6 +962,19 @@ namespace librealsense
         }
     }
 
+    TrackingData::Temperature tm2_sensor::get_temperature()
+    {
+        if (!_tm_dev)
+            throw wrong_api_call_sequence_exception("TM2 device is not available");
+        TrackingData::Temperature temperature;
+        auto status = _tm_dev->GetTemperature(temperature);
+        if (status != Status::SUCCESS)
+        {
+            throw io_exception("Failed to query TM2 temperature option");
+        }
+        return temperature;
+    }
+
     ///////////////
     // Device
 
@@ -940,6 +1006,10 @@ namespace librealsense
 
         _sensor = std::make_shared<tm2_sensor>(this, dev);
         add_sensor(_sensor);
+
+        _sensor->register_option(rs2_option::RS2_OPTION_ASIC_TEMPERATURE, std::make_shared<asic_temperature_option>(*_sensor));
+        _sensor->register_option(rs2_option::RS2_OPTION_MOTION_MODULE_TEMPERATURE, std::make_shared<motion_temperature_option>(*_sensor));
+
         //For manual testing: enable_loopback("C:\\dev\\recording\\tm2.bag");
     }
 

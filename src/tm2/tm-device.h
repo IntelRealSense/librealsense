@@ -74,6 +74,8 @@ namespace librealsense
         void attach_controller(const std::array<uint8_t, 6>& mac_addr);
         void detach_controller(int id);
         void dispose();
+        perc::TrackingData::Temperature get_temperature();
+
     private:
         void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
         void pass_frames_to_fw(frame_holder fref);
