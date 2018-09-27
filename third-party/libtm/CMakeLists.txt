@@ -53,10 +53,16 @@ ${HEADER_FILES_LIBTM}
 ${SOURCE_FILES_LIBTM}
 )
 
+IF(WIN32)
+    set(LIBUSB_LIB "${CMAKE_SOURCE_DIR}/third-party/win/libusb/bin/x64/libusb-1.0.lib")
+ELSE()
+    set(LIBUSB_LIB "usb-1.0")
+ENDIF(WIN32)
+
 #LINK_LIBRARIES
 target_link_libraries(${PROJECT_NAME}
-${OS_SPECIFIC_LIBS}
-${CMAKE_SOURCE_DIR}/third-party/win/libusb/bin/x64/libusb-1.0.lib
+    ${OS_SPECIFIC_LIBS}
+    ${LIBUSB_LIB}
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION "${LIBVERSION}" SOVERSION "${LIBTM_VERSION_MAJOR}")
