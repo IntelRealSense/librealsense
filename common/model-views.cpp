@@ -4076,10 +4076,13 @@ namespace rs2
 
     bool viewer_model::is_3d_texture_source(frame f)
     {
-        auto index = f.get_profile().unique_id();
+        auto profile = f.get_profile().as<video_stream_profile>();
+        auto index = profile.unique_id();
         auto mapped_index = streams_origin[index];
-        if (f.get_profile().stream_type()== RS2_STREAM_POSE) 
+
+        if (!is_rasterizeable(profile.format()))
             return false;
+
         if (index == selected_tex_source_uid || mapped_index == selected_tex_source_uid || selected_tex_source_uid == -1)
             return true;
         return false;
