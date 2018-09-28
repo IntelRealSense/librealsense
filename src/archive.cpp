@@ -40,9 +40,9 @@ namespace librealsense
         return std::make_tuple(texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
     }
 
-    struct int4
+    struct int3
     {
-        int x, y, z, w;
+        int x, y, z;
     };
 
     void points::export_to_ply(const std::string& fname, const frame_holder& texture)
@@ -74,7 +74,7 @@ namespace librealsense
 
         const auto threshold = 0.05f;
         auto width = vs->get_width();
-        std::vector<int4> faces;
+        std::vector<int3> faces;
         for (int x = 0; x < width - 1; ++x) {
             for (int y = 0; y < vs->get_height() - 1; ++y) {
                 auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
@@ -84,8 +84,10 @@ namespace librealsense
                 {
                     if (map.count(a) == 0 || map.count(b) == 0 || map.count(c) == 0 || map.count(d) == 0)
                         continue;
-                    int4 face1 = { map[a], map[b], map[d], map[c] };
+                    int3 face1 = { map[a], map[b], map[d] };
                     faces.push_back(face1);
+                    int3 face2 = { map[d], map[c], map[a] };
+                    faces.push_back(face2);
                 }
             }
         }
@@ -128,12 +130,11 @@ namespace librealsense
         }
         auto size = faces.size();
         for (int i = 0; i < size; ++i) {
-            int four = 4;
-            out.write(reinterpret_cast<const char*>(&four), sizeof(uint8_t));
+            int three = 3;
+            out.write(reinterpret_cast<const char*>(&three), sizeof(uint8_t));
             out.write(reinterpret_cast<const char*>(&(faces[i].x)), sizeof(int));
             out.write(reinterpret_cast<const char*>(&(faces[i].y)), sizeof(int));
             out.write(reinterpret_cast<const char*>(&(faces[i].z)), sizeof(int));
-            out.write(reinterpret_cast<const char*>(&(faces[i].w)), sizeof(int));
         }
     }
 
