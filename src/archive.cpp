@@ -84,9 +84,7 @@ namespace librealsense
                 {
                     if (map.count(a) == 0 || map.count(b) == 0 || map.count(c) == 0 || map.count(d) == 0)
                         continue;
-                    int4 face1 = { map[a], map[b], map[c], 0 };
-                    faces.push_back(face1);
-                    int4 face2 = { map[b], map[c], map[d], 0 };
+                    int4 face1 = { map[a], map[b], map[d], map[c] };
                     faces.push_back(face1);
                 }
             }
@@ -130,12 +128,12 @@ namespace librealsense
         }
         auto size = faces.size();
         for (int i = 0; i < size; ++i) {
-            int four = 3;
+            int four = 4;
             out.write(reinterpret_cast<const char*>(&four), sizeof(uint8_t));
             out.write(reinterpret_cast<const char*>(&(faces[i].x)), sizeof(int));
             out.write(reinterpret_cast<const char*>(&(faces[i].y)), sizeof(int));
             out.write(reinterpret_cast<const char*>(&(faces[i].z)), sizeof(int));
-            //out.write(reinterpret_cast<const char*>(&(faces[i].w)), sizeof(int));
+            out.write(reinterpret_cast<const char*>(&(faces[i].w)), sizeof(int));
         }
     }
 
