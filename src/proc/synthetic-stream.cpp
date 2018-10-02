@@ -120,7 +120,7 @@ namespace librealsense
 
         std::vector<rs2::frame> original_set;
         if (auto composite = input.as<rs2::frameset>())
-            composite.foreach([&](const rs2::frame& frame)
+            composite.foreachRS([&](const rs2::frame& frame)
             {
                 auto format = frame.get_profile().format();
                 if (depth_result_frame && (format == RS2_FORMAT_DISPARITY32 || format == RS2_FORMAT_DISPARITY16))
