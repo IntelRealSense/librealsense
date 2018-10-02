@@ -94,7 +94,7 @@ namespace librealsense
         }
         std::vector<rs2::frame> original_set;
         if (auto composite = input.as<rs2::frameset>())
-            composite.foreach([&original_set](const rs2::frame& frame) { original_set.push_back(frame); });
+            composite.foreachRS([&original_set](const rs2::frame& frame) { original_set.push_back(frame); });
         else
         {
             return results[0];

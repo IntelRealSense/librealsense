@@ -571,8 +571,8 @@ namespace librealsense
 
         //process composite frame only if it contains both a depth frame and the requested texture frame
         bool has_tex = false, has_depth = false;
-        set.foreach([this, &has_tex](const rs2::frame& frame) { if (frame.get_profile().stream_type() == _to_stream_type) has_tex = true; });
-        set.foreach([&has_depth](const rs2::frame& frame) 
+        set.foreachRS([this, &has_tex](const rs2::frame& frame) { if (frame.get_profile().stream_type() == _to_stream_type) has_tex = true; });
+        set.foreachRS([&has_depth](const rs2::frame& frame) 
             { if (frame.get_profile().stream_type() == RS2_STREAM_DEPTH && frame.get_profile().format() == RS2_FORMAT_Z16) has_depth = true; });
         if (!has_tex || !has_depth)
             return false;
@@ -603,9 +603,9 @@ namespace librealsense
         //In case of alignment from depth to other, we only want the other frame with the stream type that was requested to align to
 
         if(_to_stream_type == RS2_STREAM_DEPTH)
-            frames.foreach([&other_frames](const rs2::frame& f) {if (f.get_profile().stream_type() != RS2_STREAM_DEPTH) other_frames.push_back(f); });
+            frames.foreachRS([&other_frames](const rs2::frame& f) {if (f.get_profile().stream_type() != RS2_STREAM_DEPTH) other_frames.push_back(f); });
         else
-            frames.foreach([this, &other_frames](const rs2::frame& f) {if (f.get_profile().stream_type() == _to_stream_type) other_frames.push_back(f); });
+            frames.foreachRS([this, &other_frames](const rs2::frame& f) {if (f.get_profile().stream_type() == _to_stream_type) other_frames.push_back(f); });
 
         auto depth_profile = depth_frame.get_profile().as<rs2::video_stream_profile>();
         if (!depth_profile)

@@ -868,7 +868,7 @@ namespace rs2
         frame first_or_default(rs2_stream s, rs2_format f = RS2_FORMAT_ANY) const
         {
             frame result;
-            foreach([&result, s, f](frame frame) {
+            foreachRS([&result, s, f](frame frame) {
                 if (!result && frame.get_profile().stream_type() == s && (f == RS2_FORMAT_ANY || f == frame.get_profile().format()))
                 {
                     result = std::move(frame);
@@ -928,7 +928,7 @@ namespace rs2
             }
             else
             {
-                foreach([&f, index](const frame& frame) {
+                foreachRS([&f, index](const frame& frame) {
                     if (frame.get_profile().stream_type() == RS2_STREAM_INFRARED && frame.get_profile().stream_index() == index)
                         f = frame;
                 });
@@ -949,7 +949,7 @@ namespace rs2
         * \param[in] action - instance with () operator implemented will be invoke after frame extraction.
         */
         template<class T>
-        void foreach(T action) const
+        void foreachRS(T action) const
         {
             rs2_error* e = nullptr;
             auto count = size();
