@@ -239,7 +239,7 @@ namespace perc {
         bulk_message_request_get_time req = {0};
         bulk_message_response_get_time res = {0};
         nsecs_t start;
-        nsecs_t finish;
+        nsecs_t finish = systemTime();
         uint32_t syncTry = 1;
 
         req.header.wMessageID = DEV_GET_TIME;
