@@ -3,9 +3,9 @@ project(resources)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-set(FW_ARTIFACTORY_DIR "http://artifactoryperc01.iil.intel.com:8081/artifactory/libs-release-local/com/intel/realsense/target")
-set(CENTRAL_APP_ARTIFACTORY_DIR "http://artifactoryperc01.iil.intel.com:8081/artifactory/libs-release-local/com/intel/realsense/central_app")
-set(CENTRAL_BL_ARTIFACTORY_DIR "http://artifactoryperc01.iil.intel.com:8081/artifactory/libs-release-local/com/intel/realsense/central_bl")
+set(FW_ARTIFACTORY_DIR "http://realsense-hw-public.s3.amazonaws.com/Releases/TM2/FW/target")
+set(CENTRAL_APP_ARTIFACTORY_DIR "http://realsense-hw-public.s3.amazonaws.com/Releases/TM2/FW/app")
+set(CENTRAL_BL_ARTIFACTORY_DIR "http://realsense-hw-public.s3.amazonaws.com/Releases/TM2/FW/bl")
 
 set(FW_OUTPUT_FILE "${LIBTM_SRC_DIR}/fw.h")
 set(CENTRAL_APP_OUTPUT_FILE "${LIBTM_SRC_DIR}/CentralAppFw.h")
