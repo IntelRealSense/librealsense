@@ -66,7 +66,6 @@ char gFileHeaderName[80];
 using namespace std;
 shared_ptr<perc::TrackingManager> gManagerInstance;
 
-#ifdef _WIN32
 using namespace perc;
 
 
@@ -150,7 +149,7 @@ public:
 
     void setTime(TrackingData::TimestampedData timeStampData)
     {
-        hostCurrentSystemTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+        hostCurrentSystemTime = systemTime();
         if (loadTime.host == 0)
         {
             loadTime.host = hostCurrentSystemTime;
@@ -866,7 +865,7 @@ public:
             else
             {
                 /* Check if received min frames of runtime - 500 msec */
-                if (pose[i].frames < ((pose[i].enabled * pose[i].outputMode * (min(100, pose[i].frameRate)) * poseRunTimeMsecMin) / 1000))
+                if (pose[i].frames < ((pose[i].enabled * pose[i].outputMode * ((std::min)((uint16_t)100, pose[i].frameRate)) * poseRunTimeMsecMin) / 1000))
                 {
                     LOGE("Error: Got too few pose[%d] frames [Expected %d] [Actual %d]", i, ((pose[i].enabled * pose[i].outputMode * pose[i].frameRate * poseRunTimeMsec) / 1000), pose[i].frames);
                     checkerFailed = true;
@@ -875,7 +874,7 @@ public:
                 if (pose[i].frames > 0)
                 {
                     /* Check if received max frames of runtime + 500 msec */
-                    if (pose[i].frames > ((pose[i].enabled * pose[i].outputMode * (max(100, pose[i].frameRate)) * poseRunTimeMsecMax) / 1000))
+                    if (pose[i].frames > ((pose[i].enabled * pose[i].outputMode * ((std::max)((uint16_t)100, pose[i].frameRate)) * poseRunTimeMsecMax) / 1000))
                     {
                         LOGE("Error: Got too many pose[%d] frames [Expected %d] [Actual %d]", i, ((pose[i].enabled * pose[i].outputMode * pose[i].frameRate * poseRunTimeMsec) / 1000), pose[i].frames);
                         checkerFailed = true;
@@ -1019,7 +1018,7 @@ public:
     void inc(TrackingData::GyroFrame& gyroFrame)
     {
         gyro[gyroFrame.sensorIndex].frames++;
-        gyro[gyroFrame.sensorIndex].totalLatency += ns2ms(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() - gyroFrame.systemTimestamp);
+        gyro[gyroFrame.sensorIndex].totalLatency += ns2ms(systemTime() - gyroFrame.systemTimestamp);
 
         int64_t offset = (int64_t)gyroFrame.frameId - (int64_t)gyro[gyroFrame.sensorIndex].prevFrameId;
         if (gyro[gyroFrame.sensorIndex].prevFrameTimeStamp != 0)
@@ -1052,7 +1051,7 @@ public:
     void inc(TrackingData::VelocimeterFrame& velocimeterFrame)
     {
         velocimeter[velocimeterFrame.sensorIndex].frames++;
-        velocimeter[velocimeterFrame.sensorIndex].totalLatency += ns2ms(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() - velocimeterFrame.systemTimestamp);
+        velocimeter[velocimeterFrame.sensorIndex].totalLatency += ns2ms(systemTime() - velocimeterFrame.systemTimestamp);
 
         int64_t offset = (int64_t)velocimeterFrame.frameId - (int64_t)velocimeter[velocimeterFrame.sensorIndex].prevFrameId;
         if (velocimeter[velocimeterFrame.sensorIndex].prevFrameTimeStamp != 0)
@@ -1085,7 +1084,7 @@ public:
     void inc(TrackingData::AccelerometerFrame& accelerometerFrame)
     {
         accelerometer[accelerometerFrame.sensorIndex].frames++;
-        accelerometer[accelerometerFrame.sensorIndex].totalLatency += ns2ms(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() - accelerometerFrame.systemTimestamp);
+        accelerometer[accelerometerFrame.sensorIndex].totalLatency += ns2ms(systemTime() - accelerometerFrame.systemTimestamp);
 
         int64_t offset = (int64_t)accelerometerFrame.frameId - (int64_t)accelerometer[accelerometerFrame.sensorIndex].prevFrameId;
         if (accelerometer[accelerometerFrame.sensorIndex].prevFrameTimeStamp != 0)
@@ -1119,7 +1118,7 @@ public:
     void inc(TrackingData::PoseFrame& poseFrame)
     {
         pose[poseFrame.sourceIndex].frames++;
-        pose[poseFrame.sourceIndex].totalLatency += ns2ms(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() - poseFrame.systemTimestamp);
+        pose[poseFrame.sourceIndex].totalLatency += ns2ms(systemTime() - poseFrame.systemTimestamp);
 
         if ((gConfiguration.errorCheck == true) && isnan(poseFrame.translation.x) && (poseFrame.trackerConfidence != 0))
         {
@@ -1163,7 +1162,7 @@ public:
     void inc(TrackingData::VideoFrame& videoFrame)
     {
         video[videoFrame.sensorIndex].frames++;
-        video[videoFrame.sensorIndex].totalLatency += ns2ms(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() - videoFrame.systemTimestamp);
+        video[videoFrame.sensorIndex].totalLatency += ns2ms(systemTime() - videoFrame.systemTimestamp);
 
         int64_t offset = (int64_t)videoFrame.frameId - (int64_t)video[videoFrame.sensorIndex].prevFrameId;
         if (video[videoFrame.sensorIndex].prevFrameTimeStamp != 0)
@@ -1196,7 +1195,7 @@ public:
     void inc(TrackingData::ControllerFrame& controllerFrame)
     {
         controller[controllerFrame.sensorIndex].frames++;
-        controller[controllerFrame.sensorIndex].totalLatency += ns2ms(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() - controllerFrame.systemTimestamp);
+        controller[controllerFrame.sensorIndex].totalLatency += ns2ms(systemTime() - controllerFrame.systemTimestamp);
     }
 
     /* Add new controller discovery event statistics and increase controller discovery event frame count */
@@ -1221,7 +1220,7 @@ public:
     void inc(TrackingData::RssiFrame& rssiFrame)
     {
         rssi[rssiFrame.sensorIndex].frames++;
-        rssi[rssiFrame.sensorIndex].totalLatency += ns2ms(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() - rssiFrame.systemTimestamp);
+        rssi[rssiFrame.sensorIndex].totalLatency += ns2ms(systemTime() - rssiFrame.systemTimestamp);
     }
 
     /* Increase Localization Get/Set frame count */
@@ -1313,9 +1312,7 @@ public:
     std::list<TrackingData::VideoFrame*> videoList;
 };
 
-
-HANDLE readyEvent;
-HANDLE stopEvent;
+std::atomic_bool gIsDisposed(false);
 TrackingDevice* gDevice;
 Statistics gStatistics;
 CalibrationInfo calibrationInfo;
@@ -1850,24 +1847,16 @@ public:
 
 void handleThreadFunction()
 {
-    HANDLE objects[2];
-
-    objects[0] = readyEvent;
-    objects[1] = stopEvent;
-
-    while (true)
+    while (!gIsDisposed)
     {
-        auto res = WaitForMultipleObjects(2, objects, FALSE, INFINITE);
-
-        if (res == WAIT_OBJECT_0) // Object 0 = we have some event ready to be handled
+        if (!gManagerInstance)
         {
-            gManagerInstance->handleEvents();
+            std::this_thread::yield();
+            continue;
         }
-        else // Stop event - exit thread
-        {
-            return;
-        }
-    } // end of while
+        gManagerInstance->handleEvents();
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
+    }
 }
 
 
@@ -1891,16 +1880,17 @@ void saveImage(TrackingData::VideoFrame* frame)
 
 void imageThreadFunction()
 {
-    HANDLE objects[1];
     uint32_t frameCount = 0;
-
-    objects[0] = stopEvent;
 
     LOGD("Starting Image thread");
 
     while (true)
     {
-        auto res = WaitForMultipleObjects(1, objects, FALSE, MAX_WAIT_FOR_IMAGE_MSEC);
+        if (!gManagerInstance)
+        {
+            std::this_thread::yield();
+            continue;
+        }
 
         while (gStatistics.videoList.size())
         {
@@ -1914,7 +1904,7 @@ void imageThreadFunction()
             free((void*)frame->data);
         }
 
-        if (res == WAIT_OBJECT_0) // Object 0 = Stop event
+        if(gIsDisposed)
         {
             while (gStatistics.videoList.size())
             {
@@ -1938,11 +1928,8 @@ void imageThreadFunction()
 void hostLogThreadFunction()
 {
     TrackingData::Log log;
-    HANDLE objects[1];
     FILE *logThreadStream = stdout;
     uint32_t waitForLogMsec = MAX_WAIT_FOR_LOG_MSEC;
-
-    objects[0] = stopEvent;
 
     std::string fileHeaderName(gFileHeaderName);
     std::string fileName = "Host_Log_" + fileHeaderName + "_Libtm_" + std::to_string(LIBTM_VERSION_MAJOR) + "_" + std::to_string(LIBTM_VERSION_MINOR) + "_" + std::to_string(LIBTM_VERSION_PATCH) + "_FW_" + FW_VERSION + ".log";
@@ -1959,7 +1946,11 @@ void hostLogThreadFunction()
 
     while (true)
     {
-        auto res = WaitForMultipleObjects(1, objects, FALSE, waitForLogMsec);
+        if (!gManagerInstance)
+        {
+            std::this_thread::yield();
+            continue;
+        }
 
         gManagerInstance.get()->getHostLog(&log);
 
@@ -2001,7 +1992,7 @@ void hostLogThreadFunction()
             waitForLogMsec = waitForLogMsec * WAIT_FOR_LOG_MULTIPLIER_STEP;
         }
 
-        if (res == WAIT_OBJECT_0) // Object 0 = Stop event
+        if (gIsDisposed) // Object 0 = Stop event
         {
             if (logThreadStream != NULL)
             {
@@ -2018,14 +2009,10 @@ void hostLogThreadFunction()
 void fwLogThreadFunction()
 {
     TrackingData::Log log;
-    HANDLE objects[1];
     FILE *logThreadStream = stdout;
     uint32_t waitForLogMsec = MAX_WAIT_FOR_LOG_MSEC;
     Status status = Status::SUCCESS;
-    char deviceBuf[30] = { 0 };
-    SYSTEMTIME lt;
-
-    objects[0] = stopEvent;
+    char deviceBuf[30] = { 0 };\
 
     std::string fileHeaderName(gFileHeaderName);
     std::string fileName = "FW_Log_" + fileHeaderName + "_Libtm_" + std::to_string(LIBTM_VERSION_MAJOR) + "_" + std::to_string(LIBTM_VERSION_MINOR) + "_" + std::to_string(LIBTM_VERSION_PATCH) + "_FW_" + FW_VERSION + ".log";
@@ -2048,8 +2035,11 @@ void fwLogThreadFunction()
 
     while (true)
     {
-        auto res = WaitForMultipleObjects(1, objects, FALSE, waitForLogMsec);
-        GetLocalTime(&lt);
+        if (!gManagerInstance)
+        {
+            std::this_thread::yield();
+            continue;
+        }
 
         if (gDevice == NULL)
         {
@@ -2063,10 +2053,9 @@ void fwLogThreadFunction()
         {
             if (logThreadStream != stdout)
             {
-                fprintf(logThreadStream, "%02d:%02d:%02d:%03d Device-%04hX: Received %d FW log entries from last %d msec (max entries %d)\n", lt.wHour, lt.wMinute, lt.wSecond, lt.wMilliseconds, device, log.entries, waitForLogMsec, log.maxEntries);
                 if (log.entries > 0)
                 {
-                    fprintf(logThreadStream, "%02d:%02d:%02d:%03d <DeviceID>:  <TimeStamp> [Verbosity] [Thread] [Function] [Module](Line): <Payload>\n", lt.wHour, lt.wMinute, lt.wSecond, lt.wMilliseconds);
+                    fprintf(logThreadStream, "Received %d FW log entries from last %d msec (max entries %d)\n", log.entries, waitForLogMsec, log.maxEntries);
                 }
 
                 for (uint32_t i = 0; i < log.entries; i++)
@@ -2102,11 +2091,11 @@ void fwLogThreadFunction()
         }
         else
         {
-            fprintf(logThreadStream, "%02d:%02d:%02d:%03d Device-%04hX: Failed to receive FW log entries from last %d (msec)\n", lt.wHour, lt.wMinute, lt.wSecond, lt.wMilliseconds, device, waitForLogMsec);
+            fprintf(logThreadStream, "Device-%04hX: Failed to receive FW log entries from last %d (msec)\n", device, waitForLogMsec);
             log.entries = 0;
         }
 
-        if (res == WAIT_OBJECT_0) // Object 0 = Stop event
+        if (gIsDisposed) // Object 0 = Stop event
         {
             if ((logThreadStream != NULL) && (gConfiguration.logConfiguration[LogSourceFW].logOutputMode == LogOutputModeBuffer))
             {
@@ -2169,11 +2158,10 @@ int parseArguments(int argc, char *argv[])
 {
     uint8_t sensorEnabled = 0;
     int input = 0;
-    time_t now = time(0);
-    struct tm timeinfo;
-    localtime_s(&timeinfo, &now);
+    time_t now = time(NULL);
+    std::tm* lt = std::localtime(&now);
 
-    snprintf(gFileHeaderName, sizeof(gFileHeaderName), "%02d%02d%04d_%02d%02d%02d", timeinfo.tm_mday, timeinfo.tm_mon + 1, 1900 + timeinfo.tm_year, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+    snprintf(gFileHeaderName, sizeof(gFileHeaderName), "%02d%02d%04d_%02d%02d%02d", lt->tm_mday, lt->tm_mon + 1, 1900 + lt->tm_year, lt->tm_hour, lt->tm_min, lt->tm_sec);
 
     for (int i = 1; i < argc; ++i)
     {
@@ -2497,7 +2485,7 @@ int parseArguments(int argc, char *argv[])
                 uint8_t index = atoi(argv[++i]);
                 if ((index > HMD) && (index < ProfileTypeMax))
                 {
-                    uint64_t macAddress = _strtoui64(argv[++i], NULL, 16);
+                    uint64_t macAddress = strtoull(argv[++i], NULL, 16);
                     gConfiguration.controllers[index].macAddress[0] = (macAddress >> 40) & 0xFF;
                     gConfiguration.controllers[index].macAddress[1] = (macAddress >> 32) & 0xFF;
                     gConfiguration.controllers[index].macAddress[2] = (macAddress >> 24) & 0xFF;
@@ -3673,7 +3661,7 @@ int main(int argc, char *argv[])
         gStatistics.print();
         saveOutput();
 
-        SetEvent(stopEvent);
+        gIsDisposed = true;
         if (gConfiguration.videoFile == true)
         {
             imageThread.join();
@@ -3687,13 +3675,6 @@ int main(int argc, char *argv[])
     {
         LOGE("Failed to create TrackingManager");
         return -1;
-    }
-
-    readyEvent = gManagerInstance->getHandle();
-    stopEvent = CreateEvent(NULL, TRUE, FALSE, TEXT("StopEvent "));
-    if (stopEvent == NULL)
-    {
-        return 0;
     }
 
     auto handleThread = std::thread(&handleThreadFunction);
@@ -4438,7 +4419,7 @@ int main(int argc, char *argv[])
 
 cleanup:
 
-    SetEvent(stopEvent);
+    gIsDisposed = true;
     handleThread.join();
 
     if (gConfiguration.videoFile == true)
@@ -4455,8 +4436,5 @@ cleanup:
     {
         hostLogThread.join();
     }
-
-    CloseHandle(stopEvent);
 }
 
-#endif

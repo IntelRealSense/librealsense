@@ -16,8 +16,7 @@ include_directories(${LIBTM_INCLUDE_DIR})
 include_directories(${LIBTM_SRC_DIR})
 include_directories(${INFRA_INCLUDE_DIR})
 
-IF(WIN32)
-	set(SOURCE_FILE libtm_util.cpp)
+set(SOURCE_FILE libtm_util.cpp)
 
 # Add source Files
 set(SOURCE_FILES
@@ -42,4 +41,4 @@ install(
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin
 )
-ENDIF(WIN32)
+

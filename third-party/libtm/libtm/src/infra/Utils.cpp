@@ -27,8 +27,8 @@ nsecs_t systemTime()
     auto start = std::chrono::high_resolution_clock::now();
     std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds> time_point_ns(start);
     return time_point_ns.time_since_epoch().count();*/
-    LARGE_INTEGER StartingTime;
-    LARGE_INTEGER Frequency;
+    LARGE_INTEGER StartingTime = { 0 };
+    LARGE_INTEGER Frequency = { 0 };
 
     QueryPerformanceFrequency(&Frequency);
     QueryPerformanceCounter(&StartingTime);
