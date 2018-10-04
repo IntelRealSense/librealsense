@@ -45,7 +45,7 @@ DriverVer=12/29/2014,23.56.40.396
 %DeviceNameHMD435% =USB_Install, USB\VID_8086&PID_0B07&MI_05
 %DeviceNameDepthDS5U% =USB_Install, USB\VID_8086&PID_0B03&MI_00
 %DeviceNameHMDS5U% =USB_Install, USB\VID_8086&PID_0B03&MI_03
-%DeviceNameDFU% =USB_Install, USB\VID_8086&PID_0ADB&MI_00
+%DeviceNameDFU% =USB_Install, USB\VID_8086&PID_0ADB
 
 
 [Standard.NTamd64]
@@ -61,7 +61,7 @@ DriverVer=12/29/2014,23.56.40.396
 %DeviceNameHMD435% =USB_Install, USB\VID_8086&PID_0B07&MI_05
 %DeviceNameDepthDS5U% =USB_Install, USB\VID_8086&PID_0B03&MI_00
 %DeviceNameHMDS5U% =USB_Install, USB\VID_8086&PID_0B03&MI_03
-%DeviceNameDFU% =USB_Install, USB\VID_8086&PID_0ADB&MI_00
+%DeviceNameDFU% =USB_Install, USB\VID_8086&PID_0ADB
 
 ; ========== Class definition ===========
 
