@@ -47,6 +47,9 @@ DriverVer=12/29/2014,23.56.40.396
 %DeviceNameHMDS5U% =USB_Install, USB\VID_8086&PID_0B03&MI_03
 %DeviceNameDFU% =USB_Install, USB\VID_8086&PID_0ADB
 
+%DeviceNameDepthSR300% =USB_Install, USB\VID_8086&PID_0AA5&MI_02
+%DeviceNameColorSR300% =USB_Install, USB\VID_8086&PID_0AA5&MI_00
+%DeviceNameHMSR300% =USB_Install, USB\VID_8086&PID_0AA5&MI_04
 
 [Standard.NTamd64]
 %DeviceNameDepthD410% =USB_Install, USB\VID_8086&PID_0AD2&MI_00
@@ -62,6 +65,10 @@ DriverVer=12/29/2014,23.56.40.396
 %DeviceNameDepthDS5U% =USB_Install, USB\VID_8086&PID_0B03&MI_00
 %DeviceNameHMDS5U% =USB_Install, USB\VID_8086&PID_0B03&MI_03
 %DeviceNameDFU% =USB_Install, USB\VID_8086&PID_0ADB
+
+%DeviceNameDepthSR300% =USB_Install, USB\VID_8086&PID_0AA5&MI_02
+%DeviceNameColorSR300% =USB_Install, USB\VID_8086&PID_0AA5&MI_00
+%DeviceNameHMSR300% =USB_Install, USB\VID_8086&PID_0AA5&MI_04
 
 ; ========== Class definition ===========
 
@@ -147,6 +154,9 @@ DeviceNameDepthD435="Intel(R) RealSense(TM) Camera D435 Depth"
 DeviceNameHMD435="Intel(R) RealSense(TM) Camera D435 HW Monitor"
 DeviceNameDepthDS5U="Intel(R) RealSense(TM) Camera DS5U Depth"
 DeviceNameHMDS5U="Intel(R) RealSense(TM) Camera DS5U HW Monitor"
+DeviceNameColorSR300="Intel(R) RealSense(TM) Camera SR300 Color"
+DeviceNameDepthSR300="Intel(R) RealSense(TM) Camera SR300 Depth"
+DeviceNameHMSR300="Intel(R) RealSense(TM) Camera SR300 HW Monitor"
 DeviceNameDFU = "Intel(R) RealSense(TM) DFU"
 REG_MULTI_SZ = 0x00010000
 

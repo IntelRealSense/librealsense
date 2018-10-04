@@ -491,7 +491,8 @@ namespace librealsense
             double d = val * 0.0001;
             double l = (d != 0) ? std::log2(d) : 1;
             long v = static_cast<long>(std::roundl(l));
-            assert(v <= 0 && v >= -8);
+            // Exposure values use logarithmic scale and can reach -13 with D400
+            assert(v <= 0 && v >= -15);
             return v;
         }
 
