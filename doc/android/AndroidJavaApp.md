@@ -38,13 +38,26 @@ Click on `configure` and choose `SDK Manager`.
 12. Replace the content of `MainActivity`, `native-lib.cpp`, `activity_main.xml` and `CMakeLists.txt` with [MainActivity](MainActivity.java_), [native-lib.cpp](./native-lib.cpp_), [activity_main.xml](./activity_main.xml_) and [CMakeLists.txt](./CMakeLists.txt_) respectively.
 <p align="center"><img width=90% src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/android/AndroidStudio7.png" /></p>
 
-13. Connect the Android device to the host machine.
+13. In the `Gradle Scripts` section, go to the module-level `build.gradle` file. In the `defaultConfig` block, add an `ndk` block and configure the `abiFilters` option with `armeabi-v7a`:
+```
+android {
+    ...
+    defaultConfig {
+      ...
+      ndk {
+            abiFilters 'armeabi-v7a'
+      }
+  }
+}
+```
+
+14. Connect the Android device to the host machine.
 Click on `Run` and choose `Run 'app'`. Choose your Android device and click on the `OK` button. At the end of this process a new application supposed to appear at the Android device.
 <p align="center"><img width=50% src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/android/cellphoneScreen.png" /></p>
 
-14. Install [Terminal Emulator](https://en.wikipedia.org/wiki/Terminal_emulator) on your Android device from Google Play Store.
-15. Use the USB OTG cable to connect the RealSense camera to your Android device.
-16. Open the Terminal Emulator application and type below lines in order to move to Super User mode and change the USB permissions.
+15. Install [Terminal Emulator](https://en.wikipedia.org/wiki/Terminal_emulator) on your Android device from Google Play Store.
+16. Use the USB OTG cable to connect the RealSense camera to your Android device.
+17. Open the Terminal Emulator application and type below lines in order to move to Super User mode and change the USB permissions.
 ```shell
 su
 setenforce 0
@@ -53,7 +66,7 @@ chmod 0777 /dev/bus/usb/<Bus number>/<Dev Number>
 ```
 <p align="center"><img width=50% src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/android/TerminalEmulator.png" /></p>
 
-17. Open the `realsense_app` application.
+18. Open the `realsense_app` application.
 
 ## Expected Output
 * Streaming Depth data using rooted Samsung Galaxy S4 device.
