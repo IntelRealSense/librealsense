@@ -28,8 +28,12 @@ csharp_set_designer_cs_properties(
 if(BUILD_UNITY_BINDINGS)
 	add_custom_command(TARGET ${PROJECT_NAME}
 			   POST_BUILD
-			   COMMAND XCOPY /y /s "$(OutDir)*.dll" "${CMAKE_BINARY_WIN_DIR}\\wrappers\\unity\\Assets\\RealSenseSDK2.0\\Plugins\\"
-			   COMMENT "Copy DLLs to Unity plugins folder")
+			   COMMAND XCOPY /y /s "$(OutDir)Intel.RealSense.dll" "${CMAKE_BINARY_WIN_DIR}\\wrappers\\unity\\Assets\\RealSenseSDK2.0\\Plugins\\"
+			   COMMENT "Copy Intel.RealSense.dll to Unity plugins folder")
+	add_custom_command(TARGET ${PROJECT_NAME}
+			   POST_BUILD
+			   COMMAND XCOPY /y /s "$(OutDir)realsense2.dll" "${CMAKE_BINARY_WIN_DIR}\\wrappers\\unity\\Assets\\RealSenseSDK2.0\\Plugins\\"
+			   COMMENT "Copy realsense2.dll to Unity plugins folder")
 			   
 	find_program (UNITY_PATH Unity\\Editor\\Unity.exe)
 	if(EXISTS ${UNITY_PATH})
