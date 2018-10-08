@@ -20,6 +20,9 @@ extern "C" {
 
 struct libusb_context;
 struct libusb_device_handle;
+    
+#define UVC_AE_MODE_D0_MANUAL ( 1 << 0 )
+#define UVC_AE_MODE_D3_AP ( 1 << 3 )
 
 /** UVC error types, based on libusb errors
  * @ingroup diag
