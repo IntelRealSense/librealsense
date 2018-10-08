@@ -429,9 +429,7 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::frameset, rs2::frame> frameset(m, "composite_frame");
     frameset.def(py::init<rs2::frame>())
-        .def("first_or_default", &rs2::frameset::first_or_default, "s"_a, "f"_a)
         .def("first_or_default", &rs2::frameset::first_or_default, "s"_a, "f"_a = RS2_FORMAT_ANY)
-        .def("first", &rs2::frameset::first, "s"_a, "f"_a)
         .def("first", &rs2::frameset::first, "s"_a, "f"_a = RS2_FORMAT_ANY)
         .def("size", &rs2::frameset::size)
         .def("foreach", [](const rs2::frameset& self, std::function<void(rs2::frame)> callable)
