@@ -1,5 +1,5 @@
 % Wraps librealsense2 roi_sensor class
-classdef roi_sensor < sensor
+classdef roi_sensor < realsense.sensor
     methods
         % Constructor
         function this = roi_sensor(handle)
@@ -34,5 +34,5 @@ classdef roi_sensor < sensor
         function roi = get_region_of_interest(this)
             roi = realsense.librealsense_mex('rs2::roi_sensor', 'get_region_of_interest', this.objectHandle);
         end
-    emd
+    end
 end
