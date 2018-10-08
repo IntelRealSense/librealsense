@@ -1,7 +1,5 @@
 #include "Rs2Driver.h"
 #include "PS1080.h"
-#include "D2S.h"
-#include "S2D.h"
 
 static const unsigned long long GAIN_VAL = 42;
 static const unsigned long long CONST_SHIFT_VAL = 200;
@@ -327,28 +325,6 @@ OniStatus Rs2Stream::getProperty(int propertyId, void* data, int* dataSize)
 			if (data && dataSize && *dataSize == sizeof(double) && m_oniType == ONI_SENSOR_DEPTH)
 			{
 				*((double*)data) = EMITTER_DCMOS_DISTANCE_VAL;
-				return ONI_STATUS_OK;
-			}
-			break;
-		}
-
-        case XN_STREAM_PROPERTY_S2D_TABLE:
-		{
-			if (data && dataSize && *dataSize >= sizeof(S2D) && m_oniType == ONI_SENSOR_DEPTH)
-			{
-				memcpy(data, S2D, sizeof(S2D));
-				*dataSize = sizeof(S2D);
-				return ONI_STATUS_OK;
-			}
-			break;
-		}
-
-        case XN_STREAM_PROPERTY_D2S_TABLE:
-		{
-			if (data && dataSize && *dataSize >= sizeof(D2S) && m_oniType == ONI_SENSOR_DEPTH)
-			{
-				memcpy(data, D2S, sizeof(D2S));
-				*dataSize = sizeof(D2S);
 				return ONI_STATUS_OK;
 			}
 			break;
