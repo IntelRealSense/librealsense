@@ -496,11 +496,17 @@ PYBIND11_MODULE(NAME, m) {
         .def("wait_for_frame", [](const rs2::frame_queue& self, unsigned int timeout_ms) { py::gil_scoped_release(); self.wait_for_frame(timeout_ms); }, "Wait until a new frame "
             "becomes available in the queue and dequeue it.", "timeout_ms"_a = 5000)
         .def("poll_for_frame", [](const rs2::frame_queue &self)
-    {
-        rs2::frame frame;
-        self.poll_for_frame(&frame);
-        return frame;
-    }, "Poll if a new frame is available and dequeue it if it is")
+        {
+            rs2::frame frame;
+            self.poll_for_frame(&frame);
+            return frame;
+        }, "Poll if a new frame is available and dequeue it if it is")
+        .def("try_wait_for_frame", [](const rs2::frame_queue &self, unsigned int timeout_ms)
+        {
+            rs2::frame frame;
+            auto success = self.try_wait_for_frame(&frame, timeout_ms);
+            return std::make_tuple(success, frame);
+        }, "timeout_ms"_a=5000)
         .def("__call__", &rs2::frame_queue::operator());
 
     py::class_<rs2::pointcloud, rs2::processing_block> pointcloud(m, "pointcloud");
@@ -513,12 +519,18 @@ PYBIND11_MODULE(NAME, m) {
         .def("wait_for_frames", &rs2::syncer::wait_for_frames, "Wait until a coherent set "
             "of frames becomes available", "timeout_ms"_a = 5000)
         .def("poll_for_frames", [](const rs2::syncer &self)
-    {
-        rs2::frameset frames;
-        self.poll_for_frames(&frames);
-        return frames;
-    }, "Check if a coherent set of frames is available");
-    /*.def("__call__", &rs2::syncer::operator(), "frame"_a)*/;
+        {
+            rs2::frameset frames;
+            self.poll_for_frames(&frames);
+            return frames;
+        }, "Check if a coherent set of frames is available")
+        .def("try_wait_for_frames", [](const rs2::syncer &self, unsigned int timeout_ms)
+        {
+            rs2::frameset fs;
+            auto success = self.try_wait_for_frames(&fs, timeout_ms);
+            return std::make_tuple(success, fs);
+        }, "timeout_ms"_a = 5000);
+        /*.def("__call__", &rs2::syncer::operator(), "frame"_a)*/
 
     py::class_<rs2::colorizer, rs2::processing_block> colorizer(m, "colorizer");
     colorizer.def(py::init<>())
@@ -693,7 +705,18 @@ PYBIND11_MODULE(NAME, m) {
         .def("start", (rs2::pipeline_profile(rs2::pipeline::*)()) &rs2::pipeline::start)
         .def("stop", &rs2::pipeline::stop)
         .def("wait_for_frames", &rs2::pipeline::wait_for_frames, "timeout_ms"_a = 5000)
-        .def("poll_for_frames", &rs2::pipeline::poll_for_frames, "frameset*"_a)
+        .def("poll_for_frames", [](const rs2::pipeline &self)
+        {
+            rs2::frameset frames;
+            self.poll_for_frames(&frames);
+            return frames;
+        })
+        .def("try_wait_for_frames", [](const rs2::pipeline &self, unsigned int timeout_ms)
+        {
+            rs2::frameset fs;
+            auto success = self.try_wait_for_frames(&fs, timeout_ms);
+            return std::make_tuple(success, fs);
+        }, "timeout_ms"_a = 5000)
         .def("get_active_profile", &rs2::pipeline::get_active_profile);
 
     struct pipeline_wrapper //Workaround to allow python implicit conversion of pipeline to std::shared_ptr<rs2_pipeline>
