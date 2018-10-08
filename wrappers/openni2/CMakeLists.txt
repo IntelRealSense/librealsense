@@ -30,8 +30,6 @@ set (INCLUDE_FILES
 	src/Rs2Driver.h
 	src/Profiler.h
 	src/Profiler.inl
-	src/D2S.h
-	src/S2D.h
 )
 set (SRC_FILES
 	src/Rs2Base.cpp

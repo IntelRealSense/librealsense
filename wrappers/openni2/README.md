@@ -40,9 +40,6 @@ _Picture:_ _Configuring_ _streams_
 ![alt text](doc/img/oni_capture.jpg)
 _Picture:_ _Configuring_ _capture_
 
-![alt text](doc/img/oni_user.jpg)
-_Picture:_ _An_ _example_ _of_ _NiTE2_ _user_ _tracking_
-
 ## License
 
 This project is licensed under the [Apache](https://github.com/IntelRealSense/librealsense/blob/master/LICENSE) License, Version 2.0.
