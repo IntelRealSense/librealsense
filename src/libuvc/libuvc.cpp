@@ -685,6 +685,7 @@ namespace librealsense
                 int unit;
                 int control = rs2_option_to_ctrl_selector(opt, unit);
 
+                value = rs2_value_translate(UVC_SET_CUR, opt, value);
                 set_data_usb( UVC_SET_CUR, control, unit, value);
                 return true;
             }
