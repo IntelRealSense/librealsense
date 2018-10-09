@@ -269,31 +269,183 @@ namespace librealsense
         for (auto i = 0; i < 4; i++)
             _gpio_streams[i] = std::make_shared<stream>(RS2_STREAM_GPIO, i+1);
 
-        auto&& backend = ctx->get_backend();
-
         _tm1_eeprom_raw = [this]() { return get_tm1_eeprom_raw(); };
         _tm1_eeprom = [this]() { return get_tm1_eeprom(); };
+
+        _accel_intrinsics = [this]() { return (*_tm1_eeprom).calibration_table.imu_calib_table.accel_intrinsics; };
+        _gyro_intrinsics = [this](){ return (*_tm1_eeprom).calibration_table.imu_calib_table.gyro_intrinsics; };
+
+        initialize_fisheye_sensor(ctx,group);
+
+//        _fisheye_calibration_table_raw = [this]()
+//        {
+//            uint8_t* fe_calib_ptr = reinterpret_cast<uint8_t*>(&(*_tm1_eeprom).calibration_table.calib_model.fe_calibration);
+//            return std::vector<uint8_t>(fe_calib_ptr, fe_calib_ptr+ fisheye_calibration_table_size);
+//        };
+
+//        auto fisheye_infos = filter_by_mi(group.uvc_devices, 3);
+//        if (fisheye_infos.size() != 1)
+//            throw invalid_value_exception("RS450 model is expected to include a single fish-eye device!");
+
+//        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(environment::get_instance().get_time_service()));
+
+//        auto fisheye_ep = std::make_shared<ds5_fisheye_sensor>(this, backend.create_uvc_device(fisheye_infos.front()),
+//                                                    std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
+
+//        fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
+//        fisheye_ep->register_pixel_format(pf_raw8);
+//        fisheye_ep->register_pixel_format(pf_fe_raw8_unpatched_kernel); // W/O for unpatched kernel
+
+//        if (_fw_version >= firmware_version("5.6.3.0")) // Create Auto Exposure controls from FW version 5.6.3.0
+//        {
+//            auto fisheye_auto_exposure = register_auto_exposure_options(fisheye_ep.get(), &fisheye_xu);
+//            fisheye_ep->set_roi_method(std::make_shared<fisheye_auto_exposure_roi_method>(fisheye_auto_exposure));
+//        }
+//        else
+//        {
+//            fisheye_ep->register_option(RS2_OPTION_GAIN,
+//                                        std::make_shared<uvc_pu_option>(*fisheye_ep.get(),
+//                                                                        RS2_OPTION_GAIN));
+//            fisheye_ep->register_option(RS2_OPTION_EXPOSURE,
+//                                        std::make_shared<uvc_xu_option<uint16_t>>(*fisheye_ep.get(),
+//                                                                                  fisheye_xu,
+//                                                                                  librealsense::ds::FISHEYE_EXPOSURE,
+//                                                                                  "Exposure time of Fisheye camera"));
+//        }
+
+//        // Metadata registration
+//        fisheye_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP,   make_uvc_header_parser(&platform::uvc_header::timestamp));
+//        fisheye_ep->register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE,     make_additional_data_parser(&frame_additional_data::fisheye_ae_mode));
+
+//        // attributes of md_capture_timing
+//        auto md_prop_offset = offsetof(metadata_raw, mode) +
+//                   offsetof(md_fisheye_mode, fisheye_mode) +
+//                   offsetof(md_fisheye_normal_mode, intel_capture_timing);
+
+//        fisheye_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,     make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute,md_prop_offset));
+//        fisheye_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs400_sensor_ts_parser(make_uvc_header_parser(&platform::uvc_header::timestamp),
+//                make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
+
+//        // attributes of md_capture_stats
+//        md_prop_offset = offsetof(metadata_raw, mode) +
+//                offsetof(md_fisheye_mode, fisheye_mode) +
+//                offsetof(md_fisheye_normal_mode, intel_capture_stats);
+
+//        // attributes of md_capture_stats
+//        md_prop_offset = offsetof(metadata_raw, mode) +
+//                offsetof(md_fisheye_mode, fisheye_mode) +
+//                offsetof(md_fisheye_normal_mode, intel_configuration);
+
+//        fisheye_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HW_TYPE,   make_attribute_parser(&md_configuration::hw_type,    md_configuration_attributes::hw_type_attribute, md_prop_offset));
+//        fisheye_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_SKU_ID,    make_attribute_parser(&md_configuration::sku_id,     md_configuration_attributes::sku_id_attribute, md_prop_offset));
+//        fisheye_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_FORMAT,    make_attribute_parser(&md_configuration::format,     md_configuration_attributes::format_attribute, md_prop_offset));
+//        fisheye_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_WIDTH,     make_attribute_parser(&md_configuration::width,      md_configuration_attributes::width_attribute, md_prop_offset));
+//        fisheye_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HEIGHT,    make_attribute_parser(&md_configuration::height,     md_configuration_attributes::height_attribute, md_prop_offset));
+
+//        // attributes of md_fisheye_control
+//        md_prop_offset = offsetof(metadata_raw, mode) +
+//                offsetof(md_fisheye_mode, fisheye_mode) +
+//                offsetof(md_fisheye_normal_mode, intel_fisheye_control);
+
+//        fisheye_ep->register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL,        make_attribute_parser(&md_fisheye_control::manual_gain, md_depth_control_attributes::gain_attribute, md_prop_offset));
+//        fisheye_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE,   make_attribute_parser(&md_fisheye_control::manual_exposure, md_depth_control_attributes::exposure_attribute, md_prop_offset));
+
+//        // Add fisheye endpoint
+//        _fisheye_device_idx = add_sensor(fisheye_ep);
+
+//        // Not applicable for TM1
+//        //_depth_to_fisheye = std::make_shared<lazy<rs2_extrinsics>>([this]()
+//        //{
+//        //    auto extr = get_fisheye_extrinsics_data(*_fisheye_extrinsics_raw);
+//        //    return from_pose(inverse(extr));
+//        //});
+
+//        _fisheye_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]()
+//        {
+//            auto fe_calib = (*_tm1_eeprom).calibration_table.calib_model.fe_calibration;
+
+//            auto rot = fe_calib.fisheye_to_imu.rotation;
+//            auto trans = fe_calib.fisheye_to_imu.translation;
+
+//            pose ex = { { rot(0,0), rot(1,0),rot(2,0),rot(0,1), rot(1,1),rot(2,1),rot(0,2), rot(1,2),rot(2,2) },
+//            { trans[0], trans[1], trans[2] } };
+
+//            return from_pose(ex);
+//        });
+
+//        // Depth->Fisheye is not available
+//        //environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_fisheye_stream, _depth_to_fisheye);
+//        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_fisheye_stream, *_accel_stream, _fisheye_to_imu);
+
+//        register_stream_to_extrinsic_group(*_fisheye_stream, 0);
+
+        // Make sure all MM streams are positioned with the same extrinsics
+        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
+        register_stream_to_extrinsic_group(*_gyro_stream, 0);
+        register_stream_to_extrinsic_group(*_accel_stream, 0);
+
+        for (auto i = 0; i < 4; i++)
+        {
+            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gpio_streams[i]);
+            register_stream_to_extrinsic_group(*_gpio_streams[i], 0);
+        }
+
+        // Try to add hid endpoint
+        auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
+        if (hid_ep)
+        {
+            _motion_module_device_idx = add_sensor(hid_ep);
+
+            try
+            {
+                hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION,
+                    std::make_shared<enable_motion_correction>(hid_ep.get(),
+                        *_accel_intrinsics,
+                        *_gyro_intrinsics,
+                        option_range{ 0, 1, 1, 1 }));
+            }
+            catch (const std::exception& ex)
+            {
+                LOG_ERROR("Motion Device is not calibrated! Motion Data Correction will not be available! Error: " << ex.what());
+            }
+
+            if (_fw_version >= firmware_version("5.5.8.0"))
+            {
+                auto motion_module_fw_version = _hw_monitor->get_firmware_version_string(GVD, motion_module_fw_version_offset);
+                register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, motion_module_fw_version);
+            }
+        }
+    }
+
+    void ds5_motion::initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
+    {
+        using namespace ds;
+
+        auto fisheye_infos = filter_by_mi(group.uvc_devices, 3);
+
+        bool fe_dev_present = (fisheye_infos.size() == 1);
+        bool fe_capability = !!(static_cast<uint32_t>(_device_capabilities&capabilities_vector::CAP_FISHEYE_SENSOR));
+
+        // Motion module w/o FishEye sensor
+        if (!(fe_dev_present | fe_capability)) return;
+
+        return ;// Evgeni - remove before PR. Incomplete FW
+
+        // Inconsistent FW
+        if (fe_dev_present ^ fe_capability)
+            throw invalid_value_exception(to_string()
+            << "Improper HW/FW setup, FW FishEye capability = " << fe_capability
+            << ", FishEye devices " <<  std::dec << fisheye_infos.size()
+            << " while expecting " << fe_capability);
 
         _fisheye_calibration_table_raw = [this]()
         {
             uint8_t* fe_calib_ptr = reinterpret_cast<uint8_t*>(&(*_tm1_eeprom).calibration_table.calib_model.fe_calibration);
             return std::vector<uint8_t>(fe_calib_ptr, fe_calib_ptr+ fisheye_calibration_table_size);
         };
-        _accel_intrinsics = [this]() { return (*_tm1_eeprom).calibration_table.imu_calib_table.accel_intrinsics; };
-        _gyro_intrinsics = [this](){ return (*_tm1_eeprom).calibration_table.imu_calib_table.gyro_intrinsics; };
-
-        std::string motion_module_fw_version = "";
-        if (_fw_version >= firmware_version("5.5.8.0"))
-        {
-            motion_module_fw_version = _hw_monitor->get_firmware_version_string(GVD, motion_module_fw_version_offset);
-        }
-
-        auto fisheye_infos = filter_by_mi(group.uvc_devices, 3);
-        if (fisheye_infos.size() != 1)
-            throw invalid_value_exception("RS450 model is expected to include a single fish-eye device!");
 
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(environment::get_instance().get_time_service()));
-
+        auto&& backend = ctx->get_backend();
         auto fisheye_ep = std::make_shared<ds5_fisheye_sensor>(this, backend.create_uvc_device(fisheye_infos.front()),
                                                     std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
 
@@ -377,44 +529,5 @@ namespace librealsense
 
             return from_pose(ex);
         });
-
-        // Depth->Fisheye is not available
-        //environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_fisheye_stream, _depth_to_fisheye);
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_fisheye_stream, *_accel_stream, _fisheye_to_imu);
-
-        register_stream_to_extrinsic_group(*_fisheye_stream, 0);
-        register_stream_to_extrinsic_group(*_accel_stream, 0);
-
-        // Make sure all MM streams are positioned with the same extrinsics
-        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
-        register_stream_to_extrinsic_group(*_gyro_stream, 0);
-        for (auto i = 0; i < 4; i++)
-        {
-            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gpio_streams[i]);
-            register_stream_to_extrinsic_group(*_gpio_streams[i], 0);
-        }
-
-        // Try to add hid endpoint
-        auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
-        if (hid_ep)
-        {
-            _motion_module_device_idx = add_sensor(hid_ep);
-
-            try
-            {
-                hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION,
-                    std::make_shared<enable_motion_correction>(hid_ep.get(),
-                        *_accel_intrinsics,
-                        *_gyro_intrinsics,
-                        option_range{ 0, 1, 1, 1 }));
-            }
-            catch (const std::exception& ex)
-            {
-                LOG_ERROR("Motion Device is not calibrated! Motion Data Correction will not be available! Error: " << ex.what());
-            }
-
-            if (!motion_module_fw_version.empty())
-                register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, motion_module_fw_version);
-        }
     }
 }

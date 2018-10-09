@@ -274,6 +274,25 @@ namespace librealsense
         return _hw_monitor->send(cmd);
     }
 
+    ds::capabilities_vector ds5_device::parse_device_capabilities() const
+    {
+        using namespace ds;
+        std::array<unsigned char,HW_MONITOR_BUFFER_SIZE> gvd_buf;
+        _hw_monitor->get_gvd(gvd_buf.size(), gvd_buf.data(), GVD);
+
+        capabilities_vector val{capabilities_vector::CAP_UNDEFINED};
+        if (gvd_buf[170])                          // DepthActiveMode
+            val |= capabilities_vector::CAP_ACTIVE_PROJECTOR;
+        if (gvd_buf[174])                           // WithRGB
+            val |= capabilities_vector::CAP_RGB_SENSOR;
+        if (gvd_buf[178])
+            val |= capabilities_vector::CAP_IMU_SENSOR;
+        if (0xFF != (gvd_buf[112] & gvd_buf[113]))
+            val |= capabilities_vector::CAP_FISHEYE_SENSOR;
+
+        return val;
+    }
+
     std::shared_ptr<uvc_sensor> ds5_device::create_depth_device(std::shared_ptr<context> ctx,
                                                                 const std::vector<platform::uvc_device_info>& all_device_infos)
     {
@@ -351,7 +370,8 @@ namespace librealsense
 
         std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(group.uvc_devices.front().pid)) ? rs400_sku_names.at(group.uvc_devices.front().pid) : "RS4xx";
         _fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
-        recommended_fw_version = firmware_version("5.10.3.0");
+        _recommended_fw_version = firmware_version("5.10.3.0");
+        _device_capabilities = parse_device_capabilities();
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
         auto& depth_ep = get_depth_sensor();
@@ -509,15 +529,15 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
-        register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
+        register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, _recommended_fw_version);
 
         if (usb_modality)
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
 
         std::string curr_version= _fw_version;
-        std::string minimal_version = recommended_fw_version;
+        std::string minimal_version = _recommended_fw_version;
 
-        if (_fw_version < recommended_fw_version)
+        if (_fw_version < _recommended_fw_version)
         {
             std::weak_ptr<notifications_processor> weak = depth_ep.get_notifications_processor();
             std::thread notification_thread = std::thread([weak, curr_version, minimal_version]()

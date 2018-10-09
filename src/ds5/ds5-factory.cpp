@@ -383,6 +383,42 @@ namespace librealsense
         };
     };
 
+
+    class rs440_device  :       public ds5_active,
+                                public ds5_motion,
+                                public ds5_advanced_mode_base
+    {
+    public:
+        rs440_device(std::shared_ptr<context> ctx,
+                    const platform::backend_device_group group,
+                    bool register_device_notifications)
+            : device(ctx, group, register_device_notifications),
+              ds5_device(ctx, group),
+              ds5_active(ctx, group),
+              ds5_motion(ctx, group),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const;
+
+        std::vector<tagged_profile> get_profiles_tags() const override
+        {
+            std::vector<tagged_profile> tags;
+            auto usb_spec = get_usb_spec();
+            if (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined)
+            {
+                tags.push_back({ RS2_STREAM_DEPTH, -1, 1280, 720, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                tags.push_back({ RS2_STREAM_INFRARED, -1, 1280, 720, RS2_FORMAT_Y8, 30, profile_tag::PROFILE_TAG_SUPERSET });
+                // TODO - Check if IMU shall be activated by default. Evgeni
+            }
+            else
+            {
+                tags.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                tags.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 15, profile_tag::PROFILE_TAG_SUPERSET });
+            }
+            return tags;
+        };
+    };
+
     std::shared_ptr<device_interface> ds5_info::create(std::shared_ptr<context> ctx,
                                                        bool register_device_notifications) const
     {
@@ -415,6 +451,8 @@ namespace librealsense
             return std::make_shared<rs430_rgb_mm_device>(ctx, group, register_device_notifications);
         case RS435_RGB_PID:
             return std::make_shared<rs435_device>(ctx, group, register_device_notifications);
+        case RS440_PID:
+            return std::make_shared<rs440_device>(ctx, group, register_device_notifications);
         case RS_USB2_PID:
             return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
         default:
@@ -622,4 +660,20 @@ namespace librealsense
         streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
+
+    std::shared_ptr<matcher> rs440_device::create_matcher(const frame_holder& frame) const
+    {
+        //TODO: add matcher to mm
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get() };
+        std::vector<stream_interface*> mm_streams = { _accel_stream.get(), _gyro_stream.get()};
+
+        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return create_composite_matcher({ matcher_factory::create(RS2_MATCHER_DLR_C, streams),
+                matcher_factory::create(RS2_MATCHER_DEFAULT, mm_streams) });
+        }
+        streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
+    }
+
 }

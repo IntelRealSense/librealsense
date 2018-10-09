@@ -18,7 +18,7 @@ namespace librealsense
         const uint16_t RS410_PID        = 0x0ad2; // ASR
         const uint16_t RS415_PID        = 0x0ad3; // ASRC
         const uint16_t RS430_PID        = 0x0ad4; // AWG
-        const uint16_t RS430_MM_PID     = 0x0ad5; // AWGT
+        const uint16_t RS430_MM_PID     = 0x0ddd;// 0x0ad5; // AWGT Ev - Patch to bypass FW. Do not submit to PR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         const uint16_t RS_USB2_PID      = 0x0ad6; // USB2
         const uint16_t RS420_PID        = 0x0af6; // PWG
         const uint16_t RS420_MM_PID     = 0x0afe; // PWGT
@@ -28,6 +28,7 @@ namespace librealsense
         const uint16_t RS460_PID        = 0x0b03; // DS5U
         const uint16_t RS435_RGB_PID    = 0x0b07; // AWGC
         const uint16_t RS405_PID        = 0x0b0c; // DS5U
+        const uint16_t RS440_PID        = 0x0ad5;//0x0b18; // D430Li
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -54,6 +55,7 @@ namespace librealsense
             ds::RS435_RGB_PID,
             ds::RS460_PID,
             ds::RS405_PID,
+            ds::RS440_PID,
             ds::RS_USB2_PID
         };
 
@@ -81,6 +83,7 @@ namespace librealsense
             { RS435_RGB_PID,    "Intel RealSense D435"},
             { RS460_PID,        "Intel RealSense D460" },
             { RS405_PID,        "Intel RealSense D405" },
+            { RS440_PID,        "Intel RealSense D440" },
             { RS_USB2_PID,      "Intel RealSense USB2" }
         };
 
@@ -131,6 +134,30 @@ namespace librealsense
             INTERCAM_SYNC_SLAVE,
             INTERCAM_SYNC_MAX
         };
+
+        enum class capabilities_vector : uint32_t
+        {
+            CAP_UNDEFINED               = 0,
+            CAP_ACTIVE_PROJECTOR        = (1u << 0),    //
+            CAP_RGB_SENSOR              = (1u << 1),    // Dedicated RGB sensor
+            CAP_FISHEYE_SENSOR          = (1u << 2),    // TM1
+            CAP_IMU_SENSOR              = (1u << 3)
+        };
+
+        inline capabilities_vector operator &(const capabilities_vector lhs, const capabilities_vector rhs)
+        {
+            return static_cast<capabilities_vector>(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
+        }
+
+        inline capabilities_vector operator |(const capabilities_vector lhs, const capabilities_vector rhs)
+        {
+            return static_cast<capabilities_vector>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
+        }
+
+        inline capabilities_vector& operator |=(capabilities_vector& lhs, capabilities_vector rhs)
+        {
+            return lhs = lhs | rhs;
+        }
 
         const std::string DEPTH_STEREO = "Stereo Module";
 
@@ -350,22 +377,23 @@ namespace librealsense
 
         enum gvd_fields
         {
+            // Keep sorted
             camera_fw_version_offset        = 12,
+            is_camera_locked_offset         = 25,
             module_serial_offset            = 48,
             motion_module_fw_version_offset = 212,
-            is_camera_locked_offset         = 25
         };
 
         enum calibration_table_id
         {
-            coefficients_table_id = 25,
-            depth_calibration_id = 31,
-            rgb_calibration_id = 32,
-            fisheye_calibration_id = 33,
-            imu_calibration_id = 34,
-            lens_shading_id = 35,
-            projector_id = 36,
-            max_id = -1
+            coefficients_table_id   = 25,
+            depth_calibration_id    = 31,
+            rgb_calibration_id      = 32,
+            fisheye_calibration_id  = 33,
+            imu_calibration_id      = 34,
+            lens_shading_id         = 35,
+            projector_id            = 36,
+            max_id                  = -1
         };
 
         struct ds5_calibration
