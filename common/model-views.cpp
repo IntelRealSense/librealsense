@@ -1397,7 +1397,7 @@ namespace rs2
         _pause = false;
     }
 
-    void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer)
+    void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer> syncer)
     {
         std::stringstream ss;
         ss << "Starting streaming of ";
@@ -1412,11 +1412,11 @@ namespace rs2
         s->open(profiles);
 
         try {
-            s->start([&](frame f)
+            s->start([&, syncer](frame f)
             {
                 if (viewer.synchronization_enable && (!viewer.is_3d_view || viewer.is_3d_depth_source(f) || viewer.is_3d_texture_source(f)))
                 {
-                    viewer.s.invoke(f);
+                    syncer->invoke(f);
                 }
                 else
                 {
@@ -2799,8 +2799,10 @@ namespace rs2
 
     void device_model::reset()
     {
+        syncer->remove_syncer(dev_syncer);
         subdevices.resize(0);
         _recorder.reset();
+
     }
 
     std::pair<std::string, std::string> get_device_name(const device& dev)
@@ -2825,7 +2827,8 @@ namespace rs2
     }
 
     device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer)
-        : dev(dev)
+        : dev(dev),
+          syncer(viewer.syncer)
     {
         for (auto&& sub : dev.query_sensors())
         {
@@ -2871,6 +2874,8 @@ namespace rs2
     }
     void device_model::play_defaults(viewer_model& viewer)
     {
+        if(!dev_syncer)
+            dev_syncer = viewer.syncer->create_syncer();
         for (auto&& sub : subdevices)
         {
             if (!sub->streaming)
@@ -2888,7 +2893,7 @@ namespace rs2
                 if (profiles.empty())
                     continue;
 
-                sub->play(profiles, viewer);
+                sub->play(profiles, viewer, dev_syncer);
 
                 for (auto&& profile : profiles)
                 {
@@ -3231,7 +3236,23 @@ namespace rs2
             source.frame_ready(std::move(res));
     }
 
+    void post_processing_filters::start()
+    {
+        if (render_thread_active.exchange(true) == false)
+        {
+            viewer.syncer->start();
+            render_thread = std::thread([&](){post_processing_filters::render_loop();});
+        }
+    }
 
+    void post_processing_filters::stop()
+    {
+        if (render_thread_active.exchange(false) == true)
+        {
+            viewer.syncer->stop();
+            render_thread.join();
+        }
+    }
     void post_processing_filters::render_loop()
     {
         while (render_thread_active)
@@ -3241,11 +3262,9 @@ namespace rs2
                 frame frm;
                 if(viewer.synchronization_enable)
                 {
-                    auto index = 0;
-                    while (syncer_queue.try_wait_for_frame(&frm, 30) && ++index <= syncer_queue.capacity())
-                    {
+                    frm = viewer.syncer->wait_for_frames();
+                    if(frm)
                         processing_block.invoke(frm);
-                    }
                 }
                 else
                 {
@@ -5821,7 +5840,10 @@ namespace rs2
                                 auto profiles = sub->get_selected_profiles();
                                 try
                                 {
-                                    sub->play(profiles, viewer);
+                                    if(!dev_syncer)
+                                        dev_syncer = viewer.syncer->create_syncer();
+
+                                    sub->play(profiles, viewer, dev_syncer);
                                 }
                                 catch (const error& e)
                                 {
