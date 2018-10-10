@@ -22,7 +22,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #pragma warning (push)
 #pragma warning (disable : 4200)
 #endif
-#include "libusb.h"
+#include "libusb/libusb.h"
 #ifdef _WIN32
 #pragma warning (pop)
 #endif

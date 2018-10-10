@@ -3,8 +3,10 @@ cmake_policy(SET CMP0015 NEW)
 
 project(tm)
 
-include_directories(${LIBTM_INCLUDE_DIR})
-include_directories(${INFRA_INCLUDE_DIR})
+include_directories(${LIBTM_INCLUDE_DIR}
+    ${INFRA_INCLUDE_DIR}
+    ${LIBUSB_LOCAL_INCLUDE_PATH}
+)
 
 #Source Files
 set(SOURCE_FILES
@@ -19,23 +21,23 @@ set(SOURCE_FILES
     Device.h
     Device.cpp
     Message.h
-	UsbPlugListener.h
-	UsbPlugListener.cpp
-	CompleteTask.h
-	Common.h
-	Common.cpp
-
-	RcSerializer/Recorder.h
-	RcSerializer/Recorder.cpp
-	RcSerializer/Packet.h
-	RcSerializer/Packet.cpp
-	RcSerializer/latency_queue.h
-	RcSerializer/rc_packet.h
-	RcSerializer/concurrency.h
-	RcSerializer/Player.h
-	RcSerializer/Player.cpp
-	
-	infra/Log.h
+    UsbPlugListener.h
+    UsbPlugListener.cpp
+    CompleteTask.h
+    Common.h
+    Common.cpp
+    
+    RcSerializer/Recorder.h
+    RcSerializer/Recorder.cpp
+    RcSerializer/Packet.h
+    RcSerializer/Packet.cpp
+    RcSerializer/latency_queue.h
+    RcSerializer/rc_packet.h
+    RcSerializer/concurrency.h
+    RcSerializer/Player.h
+    RcSerializer/Player.cpp
+    
+    infra/Log.h
     infra/Log.cpp
     infra/Event.h
     infra/Fence.h
@@ -68,7 +70,7 @@ add_library(${PROJECT_NAME} ${SDK_LIB_TYPE} ${SOURCE_FILES})
 #LINK_LIBRARIES
 target_link_libraries(${PROJECT_NAME}
 ${OS_SPECIFIC_LIBS}
-${LIBUSB_LIB}
+${LIBUSB1_LIBRARIES}
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION "${LIBVERSION}" SOVERSION "${LIBTM_VERSION_MAJOR}")
