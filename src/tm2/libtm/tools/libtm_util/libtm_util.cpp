@@ -3692,6 +3692,14 @@ int main(int argc, char *argv[])
 
         gManagerInstance.get()->setHostLogControl(logControl);
     }
+    else //default logger settings
+    {
+        TrackingData::LogControl logControl(LogVerbosityLevel::Debug,
+            LogOutputMode::LogOutputModeScreen,
+            true);
+
+        gManagerInstance.get()->setHostLogControl(logControl);
+    }
 
     string lookDeviceString("Looking for device...");
     uint32_t deviceWaitSec = WAIT_FOR_DEVICE_SEC * 3;

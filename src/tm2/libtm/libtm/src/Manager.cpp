@@ -66,6 +66,13 @@ Manager::Manager(Listener* lis, void* param) : mDispatcher(new Dispatcher()), mL
     {
         throw std::runtime_error("Failed to init manager");
     }
+
+
+    TrackingData::LogControl logControl(LogVerbosityLevel::None,
+        LogOutputMode::LogOutputModeBuffer,
+        true);
+
+    setHostLogControl(logControl);
 }
 
 
