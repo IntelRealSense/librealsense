@@ -22,6 +22,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #include "TrackingData.h"
 #include "CentralAppFw.h"
 #include "CentralBlFw.h"
+//#include "types.h"
 
 #define CHUNK_SIZE 512
 #define BUFFER_SIZE 1024

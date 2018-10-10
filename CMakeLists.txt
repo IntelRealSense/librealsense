@@ -827,7 +827,7 @@ add_subdirectory(third-party/realsense-file)
 if (BUILD_WITH_TM2)
     message(STATUS "Building with TM2")
 	
-	add_subdirectory(third-party/libtm)
+	add_subdirectory(src/tm2/libtm)
 		
     if(WIN32)
         source_group("Source Files\\Devices\\Tracking" FILES
@@ -860,6 +860,8 @@ if (BUILD_WITH_TM2)
     src/tm2/tm-device.cpp
     src/tm2/tm-info.cpp
     )
+	
+	add_dependencies(tm libusb)
 endif()
 
 if(LRS_TRY_USE_AVX)
@@ -888,7 +890,7 @@ endif()
 if(BUILD_WITH_TM2)
     target_compile_definitions(realsense2 PRIVATE WITH_TRACKING=1 BUILD_STATIC=1)
 	target_link_libraries(realsense2 PRIVATE tm ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
-	target_include_directories(realsense2 PRIVATE third-party/libtm/libtm/include)
+	target_include_directories(realsense2 PRIVATE src/tm2/libtm/libtm/include)
 endif()
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
