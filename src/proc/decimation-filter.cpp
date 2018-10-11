@@ -6,11 +6,13 @@
 
 #include <numeric>
 #include <cmath>
+#include "environment.h"
 #include "option.h"
 #include "context.h"
+#include "core/video.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"
-#include "environment.h"
+
 
 #define PIX_SORT(a,b) { if ((a)>(b)) PIX_SWAP((a),(b)); }
 #define PIX_SWAP(a,b) { pixelvalue temp=(a);(a)=(b);(b)=temp; }

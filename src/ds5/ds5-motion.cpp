@@ -429,7 +429,7 @@ namespace librealsense
         // Motion module w/o FishEye sensor
         if (!(fe_dev_present | fe_capability)) return;
 
-        return ;// Evgeni - remove before PR. Incomplete FW
+        return ;// Evgeni - remove before PR. Incomplete FW this block FE with TM1
 
         // Inconsistent FW
         if (fe_dev_present ^ fe_capability)

@@ -18,7 +18,7 @@ namespace librealsense
         const uint16_t RS410_PID        = 0x0ad2; // ASR
         const uint16_t RS415_PID        = 0x0ad3; // ASRC
         const uint16_t RS430_PID        = 0x0ad4; // AWG
-        const uint16_t RS430_MM_PID     = 0x0ddd;// 0x0ad5; // AWGT Ev - Patch to bypass FW. Do not submit to PR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        const uint16_t RS430_MM_PID     = 0x0ad5; // AWGT
         const uint16_t RS_USB2_PID      = 0x0ad6; // USB2
         const uint16_t RS420_PID        = 0x0af6; // PWG
         const uint16_t RS420_MM_PID     = 0x0afe; // PWGT
@@ -28,7 +28,7 @@ namespace librealsense
         const uint16_t RS460_PID        = 0x0b03; // DS5U
         const uint16_t RS435_RGB_PID    = 0x0b07; // AWGC
         const uint16_t RS405_PID        = 0x0b0c; // DS5U
-        const uint16_t RS440_PID        = 0x0ad5;//0x0b18; // D430Li
+        const uint16_t RS440_PID        = 0x0b18; // D430Li
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;

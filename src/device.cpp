@@ -2,6 +2,8 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "environment.h"
+#include "core/video.h"
+#include "core/motion.h"
 #include "device.h"
 
 using namespace librealsense;
@@ -269,8 +271,7 @@ void librealsense::device::tag_profiles(stream_profiles profiles) const
     {
         for (auto tag : *_profiles_tags)
         {
-            auto vp = dynamic_cast<video_stream_profile_interface*>(profile.get());
-            if (vp)
+            if (auto vp = dynamic_cast<video_stream_profile_interface*>(profile.get()))
             {
                 if ((tag.stream == RS2_STREAM_ANY || vp->get_stream_type() == tag.stream) &&
                     (tag.format == RS2_FORMAT_ANY || vp->get_format() == tag.format) &&
@@ -278,6 +279,15 @@ void librealsense::device::tag_profiles(stream_profiles profiles) const
                     (tag.height == -1 || vp->get_height() == tag.height) &&
                     (tag.fps == -1 || vp->get_framerate() == tag.fps) &&
                     (tag.stream_index == -1 || vp->get_stream_index() == tag.stream_index))
+                    profile->tag_profile(tag.tag);
+            }
+            else
+            if (auto mp = dynamic_cast<motion_stream_profile_interface*>(profile.get()))
+            {
+                if ((tag.stream == RS2_STREAM_ANY || mp->get_stream_type() == tag.stream) &&
+                    (tag.format == RS2_FORMAT_ANY || mp->get_format() == tag.format) &&
+                    (tag.fps == -1 || mp->get_framerate() == tag.fps) &&
+                    (tag.stream_index == -1 || mp->get_stream_index() == tag.stream_index))
                     profile->tag_profile(tag.tag);
             }
         }
