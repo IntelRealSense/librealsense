@@ -9,3 +9,5 @@
 * [.NET](./csharp) - Support for .NET languages with examples in C#
 * [Unity](./unity) - Unity assets for using RealSense SDK 2.0
 * [Matlab](./matlab) - Supports 64bit Windows installations
+* [OpenNI2](./openni2) - OpenNI2 integration
+* [Unreal Engine 4](./unrealengine4) - Unreal Engine 4 integration
