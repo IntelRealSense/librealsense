@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <array>
 
 #include <algorithm>
 #include <functional>
