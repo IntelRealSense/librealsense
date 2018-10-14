@@ -493,3 +493,70 @@ TEST_CASE("Post-Processing expected output", "[post-processing-filters]")
 
     pipe.stop();
 }
+
+TEST_CASE("Post-Processing processing pipe", "[post-processing-filters]")
+{
+    rs2::context ctx;
+
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+        return;
+
+    rs2::temporal_filter temporal;
+    rs2::hole_filling_filter hole_filling;
+    rs2::spatial_filter spatial;
+    rs2::decimation_filter decimation(4);
+    rs2::align aligner(RS2_STREAM_COLOR);
+    rs2::colorizer depth_colorizer;
+    rs2::disparity_transform to_disp;
+    rs2::disparity_transform from_disp(false);
+    rs2::pointcloud pc(RS2_STREAM_DEPTH);
+
+    rs2::config cfg;
+    cfg.enable_all_streams();
+
+    rs2::pipeline pipe(ctx);
+    auto profile = pipe.start(cfg);
+
+    bool supports_disparity = false;
+    for (auto s : profile.get_device().query_sensors())
+    {
+        if (s.supports(RS2_OPTION_STEREO_BASELINE))
+        {
+            supports_disparity = true;
+            break;
+        }
+    }
+
+    rs2::frameset original = pipe.wait_for_frames();
+
+    rs2::frameset full_pipe;
+    int run_for = 10;
+    std::set<int> uids;
+    int uid_count = 0;
+    while (run_for--)
+    {
+        full_pipe = pipe.wait_for_frames();
+        full_pipe = full_pipe.apply_filter(decimation);
+        full_pipe = full_pipe.apply_filter(to_disp);
+        full_pipe = full_pipe.apply_filter(spatial);
+        full_pipe = full_pipe.apply_filter(temporal);
+        full_pipe = full_pipe.apply_filter(from_disp);
+        full_pipe = full_pipe.apply_filter(aligner);
+        full_pipe = full_pipe.apply_filter(hole_filling);
+        full_pipe = full_pipe.apply_filter(depth_colorizer);
+        full_pipe = full_pipe.apply_filter(pc);
+
+        //printf("test frame:\n");
+        full_pipe.foreach([&](const rs2::frame& f) {
+            uids.insert(f.get_profile().unique_id());
+            //printf("stream: %s, format: %d, uid: %d\n", f.get_profile().stream_name().c_str(), f.get_profile().format(), f.get_profile().unique_id());
+        });
+        if (uid_count == 0)
+            uid_count = uids.size();
+        REQUIRE(uid_count == uids.size());
+    }
+
+    REQUIRE(is_subset(original, full_pipe));
+    REQUIRE_THROWS(is_subset(full_pipe, original));
+    pipe.stop();
+}
