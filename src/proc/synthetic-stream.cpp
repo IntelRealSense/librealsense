@@ -74,6 +74,9 @@ namespace librealsense
                     {
                         results.push_back(res);
                     }
+                    //if frame was processed as frameset, don't process single frames
+                    if (f.is<rs2::frameset>())
+                        break;
                 }
             }
 
@@ -92,14 +95,36 @@ namespace librealsense
         {
             return input;
         }
+
+        bool disparity_result_frame = false;
+        bool depth_result_frame = false;
+
+        for (auto f : results)
+        {
+            auto format = f.get_profile().format();
+            if (format == RS2_FORMAT_DISPARITY32 || format == RS2_FORMAT_DISPARITY16)
+                disparity_result_frame = true;
+            if (format == RS2_FORMAT_Z16)
+                depth_result_frame = true;
+        }
+
         std::vector<rs2::frame> original_set;
         if (auto composite = input.as<rs2::frameset>())
-            composite.foreach([&original_set](const rs2::frame& frame) { original_set.push_back(frame); });
+            composite.foreach([&](const rs2::frame& frame)
+            {
+                //switch disparity frames by z16 and vice versa
+                auto format = frame.get_profile().format();
+                if (depth_result_frame && (format == RS2_FORMAT_DISPARITY32 || format == RS2_FORMAT_DISPARITY16))
+                    return;
+                if (disparity_result_frame && format == RS2_FORMAT_Z16)
+                    return;
+                original_set.push_back(frame);
+            });
         else
         {
             return results[0];
         }
-            original_set.push_back(input);
+        //original_set.push_back(input);
 
         for (auto s : original_set)
         {

@@ -435,25 +435,11 @@ TEST_CASE("Post-Processing expected output", "[post-processing-filters]")
     REQUIRE_THROWS(is_subset(colorizer_processed_set, original));
 
     rs2::frameset to_disp_processed_set = original.apply_filter(to_disp);
-    REQUIRE(is_subset(original, to_disp_processed_set));
     if(supports_disparity)
         REQUIRE_THROWS(is_subset(to_disp_processed_set, original));
 
     rs2::frameset from_disp_processed_set = original.apply_filter(from_disp);//should bypass
     REQUIRE(is_equal(original, from_disp_processed_set));
-
-    rs2::frameset full_pipe = original.
-        apply_filter(decimation).
-        apply_filter(to_disp).
-        apply_filter(spatial).
-        apply_filter(temporal).
-        apply_filter(from_disp).
-        apply_filter(aligner).
-        apply_filter(hole_filling).
-        apply_filter(depth_colorizer);
-
-    REQUIRE(is_subset(original, full_pipe));
-    REQUIRE_THROWS(is_subset(full_pipe, original));
 
     //single to single
     rs2::video_frame org_depth = original.get_depth_frame();
@@ -491,7 +477,7 @@ TEST_CASE("Post-Processing expected output", "[post-processing-filters]")
     rs2::video_frame to_disp_processed_frame = org_depth.apply_filter(to_disp);
     REQUIRE_FALSE(to_disp_processed_frame.is<rs2::frameset>());
     REQUIRE(to_disp_processed_frame.get_profile().stream_type() == RS2_STREAM_DEPTH);
-    bool is_disp = to_disp_processed_frame.get_profile().format() == RS2_FORMAT_DISPARITY16 || 
+    bool is_disp = to_disp_processed_frame.get_profile().format() == RS2_FORMAT_DISPARITY16 ||
         to_disp_processed_frame.get_profile().format() == RS2_FORMAT_DISPARITY32;
     if (supports_disparity)
     {
