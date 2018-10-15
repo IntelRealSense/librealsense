@@ -1,6 +1,34 @@
 {
     "items": [
-        {
+		{
+            "title": "<b>Multi-camera</b> in ROS",
+            "link": "https://github.com/intel-ros/realsense/wiki/showcase-of-using-3-cameras-in-2-machines",
+            "link_title": "Learn more...",
+            "static_thumbnail": "img/ros-multicam.png",
+            "active_thumbnail": "https://raw.githubusercontent.com/wiki/intel-ros/realsense/videos/multi_cams_3d.gif",
+            "body": ""
+        },   
+		
+	
+		{
+            "title": "<b>Windows 7</b> Support",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/doc/installation_win7.md",
+            "link_title": "Learn more...",
+            "static_thumbnail": "https://raw.githubusercontent.com/dorodnic/librealsense/development/doc/img/win7/driver_setup.png",
+            "active_thumbnail": "https://raw.githubusercontent.com/dorodnic/librealsense/development/doc/img/win7/driver_setup.png",
+            "body": "<a href=\"https://github.com/IntelRealSense/librealsense/releases/tag/2.16.1\" class=\"nounderline\">librealsense 2.16.1</a> brings custom driver for D400 cameras enabling RealSense technology on Windows 7 devices.<br><a href=\"https://github.com/IntelRealSense/librealsense/releases/download/v2.16.1/Intel.RealSense.SDK.Win7.exe\" class=\"nounderline\"><i class=\"fas fa-cloud-download-alt fa-lg\"></i> Get Win7 Installer</a>"
+        },   
+		
+		{
+            "title": "<b>Matlab</b> Wrapper",
+            "link": "https://github.com/IntelRealSense/librealsense/blob/master/wrappers/matlab/readme.md",
+            "link_title": "Learn more...",
+            "static_thumbnail": "https://user-images.githubusercontent.com/17897861/45630567-9d846280-baa1-11e8-8f40-d291d527eacb.png",
+            "active_thumbnail": "https://user-images.githubusercontent.com/17897861/45630567-9d846280-baa1-11e8-8f40-d291d527eacb.png",
+            "body": "<a href=\"https://github.com/IntelRealSense/librealsense/releases/tag/2.16.0\" class=\"nounderline\">librealsense 2.16.0</a> adds Matlab integration to the Windows installer package"
+        },   
+		
+		{
             "title": "New <b>Python Example</b>",
             "link": "https://github.com/IntelRealSense/librealsense/tree/master/wrappers/python/examples/box_dimensioner_multicam",
             "link_title": "Go to box measurement example",
