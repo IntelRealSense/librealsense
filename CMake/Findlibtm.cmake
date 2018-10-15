@@ -55,7 +55,10 @@ find_library(INFRA_LIBRARY_DEBUG
 	HINTS
 	"${LIBTM_DIR}/bin/Debug"
 	)
-
+find_library(LIBUSB_LIBRARY
+	NAMES		
+	libusb-1.0.lib
+	)
 
 # handle the LIBTM and REQUIRED arguments and set LIBTM_FOUND to TRUE if
 # all listed variables are TRUE

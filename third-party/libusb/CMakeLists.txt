@@ -5,14 +5,14 @@ cmake_minimum_required(VERSION 2.8.3)
 
 project(usb)
 
-  set(LIBUSB_C
+set(LIBUSB_C
   libusb/core.c
   libusb/descriptor.c
   libusb/hotplug.c
   libusb/io.c
   libusb/strerror.c
   libusb/sync.c
-  )
+)
 
 if(WIN32)
   LIST(APPEND LIBUSB_C
@@ -20,6 +20,7 @@ if(WIN32)
   libusb/os/poll_windows.c
   libusb/os/windows_winusb.c
   libusb/os/windows_nt_common.c
+  libusb/os/windows_usbdk.c
   )
 elseif (APPLE)
   LIST(APPEND LIBUSB_C
@@ -50,8 +51,8 @@ set(LIBUSB_H
 include_directories(
   libusb
   libusb/os
-  android
 )
+
 
 add_library(usb STATIC ${LIBUSB_C} ${LIBUSB_H})
 
@@ -59,6 +60,20 @@ if(WIN32)
     set_target_properties (usb PROPERTIES
         FOLDER "3rd Party"
     )
+    include_directories(msvc)
+    foreach(flag_var
+        CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
+        CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+        CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+        if(${flag_var} MATCHES "/MD")
+            string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+        endif(${flag_var} MATCHES "/MD")
+    endforeach(flag_var)
+endif()
+
+if(ANDROID)
+	include_directories(android)
 endif()
 
 if(APPLE)
@@ -78,4 +93,4 @@ install(TARGETS ${PROJECT_NAME}
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
-    )
+)

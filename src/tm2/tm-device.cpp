@@ -33,6 +33,52 @@ namespace librealsense
         int64_t arrival_ts;
     };
 
+    enum temperature_type { TEMPERATURE_TYPE_ASIC, TEMPERATURE_TYPE_MOTION};
+
+    class temperature_option : public readonly_option
+    {
+    public:
+        float query() const override
+        {
+            if (!is_enabled())
+                throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
+            return _ep.get_temperature().sensor[_type].temperature;
+        }
+
+        option_range get_range() const override { return _range; }
+
+        bool is_enabled() const override { return true; }
+
+        explicit temperature_option(tm2_sensor& ep, temperature_type type) : _ep(ep), _type(type),
+            _range(option_range{ 0, ep.get_temperature().sensor[type].threshold, 0, 0 }) { }
+
+    private:
+        tm2_sensor & _ep;
+        option_range _range;
+        temperature_type _type;
+    };
+
+    class asic_temperature_option : public temperature_option
+    {
+    public:
+        const char* get_description() const override
+        {
+            return "Current TM2 Asic Temperature (degree celsius)";
+        }
+        explicit asic_temperature_option(tm2_sensor& ep) :temperature_option(ep, temperature_type::TEMPERATURE_TYPE_ASIC) { }
+    };
+
+    class motion_temperature_option : public temperature_option
+    {
+    public:
+
+        const char* get_description() const override
+        {
+            return "Current TM2 Motion Module Temperature (degree celsius)";
+        }
+        explicit motion_temperature_option(tm2_sensor& ep) :temperature_option(ep, temperature_type::TEMPERATURE_TYPE_MOTION) { }
+    };
+
     class md_tm2_parser : public md_attribute_parser_base
     {
     public:
@@ -162,14 +208,14 @@ namespace librealsense
             profile->set_format(convertTm2PixelFormat(tm_profile.profile.pixelFormat));
             profile->set_framerate(p.fps);
             profile->set_unique_id(environment::get_instance().generate_stream_id());
-            if (tm_profile.sensorIndex == 0)
+            if (tm_profile.sensorIndex == 0 || tm_profile.sensorIndex == 1)
             {
-                profile->make_default();
+                profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
             }
             stream_profile sp = { stream, profile->get_stream_index(), p.width, p.height, p.fps, profile->get_format() };
             auto intrinsics = get_intrinsics(sp);
             profile->set_intrinsics([intrinsics]() { return intrinsics; });
-            results.push_back(profile);
+            if (tm_profile.sensorIndex <= 1) results.push_back(profile);
 
             //TODO - need to register to have resolve_requests work
             //native_pixel_format pf;
@@ -186,17 +232,17 @@ namespace librealsense
             rs2_format format = RS2_FORMAT_MOTION_XYZ32F;
             auto profile = std::make_shared<motion_stream_profile>(platform::stream_profile{ 0, 0, tm_profile.fps, static_cast<uint32_t>(format) });
             profile->set_stream_type(RS2_STREAM_GYRO);
-            profile->set_stream_index(tm_profile.sensorIndex + 1); // for nice presentation by the viewer - add 1 to stream index
+            profile->set_stream_index(tm_profile.sensorIndex); // for nice presentation by the viewer - add 1 to stream index
             profile->set_format(format);
             profile->set_framerate(tm_profile.fps);
             profile->set_unique_id(environment::get_instance().generate_stream_id());
-            if (tm_profile.sensorIndex == 0)
-            {
-                profile->make_default();
-            }
             auto intrinsics = get_motion_intrinsics(*profile);
             profile->set_intrinsics([intrinsics]() { return intrinsics; });
-            results.push_back(profile);
+            if (tm_profile.sensorIndex == 0)
+            {
+                profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
+                results.push_back(profile);
+            }
         }
 
         //extract accelerometer profiles
@@ -206,17 +252,17 @@ namespace librealsense
             rs2_format format = RS2_FORMAT_MOTION_XYZ32F;
             auto profile = std::make_shared<motion_stream_profile>(platform::stream_profile{ 0, 0, tm_profile.fps, static_cast<uint32_t>(format) });
             profile->set_stream_type(RS2_STREAM_ACCEL);
-            profile->set_stream_index(tm_profile.sensorIndex + 1); // for nice presentation by the viewer - add 1 to stream index
+            profile->set_stream_index(tm_profile.sensorIndex); // for nice presentation by the viewer - add 1 to stream index
             profile->set_format(format);
             profile->set_framerate(tm_profile.fps);
             profile->set_unique_id(environment::get_instance().generate_stream_id());
-            if (tm_profile.sensorIndex == 0)
-            {
-                profile->make_default();
-            }
             auto intrinsics = get_motion_intrinsics(*profile);
             profile->set_intrinsics([intrinsics]() { return intrinsics; });
-            results.push_back(profile);
+            if (tm_profile.sensorIndex == 0)
+            {
+                profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
+                results.push_back(profile);
+            }
         }
 
         //extract 6Dof profiles - TODO
@@ -233,17 +279,15 @@ namespace librealsense
             auto profile = std::make_shared<pose_stream_profile>(platform::stream_profile{ 0, 0, fps, static_cast<uint32_t>(format) });
             profile->set_stream_type(RS2_STREAM_POSE);
             // TM2_API - 6dof profile type enum behaves the same as stream index
-            profile->set_stream_index(static_cast<uint32_t>(tm_profile.profileType) + 1);
+            profile->set_stream_index(static_cast<uint32_t>(tm_profile.profileType));
             profile->set_format(format);
             profile->set_framerate(fps);
             profile->set_unique_id(environment::get_instance().generate_stream_id());
             if (tm_profile.profileType == SixDofProfile0)
             {
-                profile->make_default();
+                profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
+                results.push_back(profile);
             }
-            results.push_back(profile);
-
-
             //TODO - do I need to define native_pixel_format for RS2_STREAM_POSE? and how to draw it?
         }
 
@@ -327,14 +371,14 @@ namespace librealsense
         for (auto&& r : requests)
         {
             auto sp = to_profile(r.get());
-            int stream_index = sp.index - 1;
+            int stream_index = sp.index;
             
             switch (r->get_stream_type())
             {
             case RS2_STREAM_FISHEYE:
             {
+                stream_index -= 1; // for multiple streams, the index starts from 1
                 //TODO: check bound for _tm_supported_profiles.___[]
-
                 auto tm_profile = _tm_supported_profiles.video[stream_index];
                 if (tm_profile.fps == sp.fps &&
                     tm_profile.profile.height == sp.height &&
@@ -382,6 +426,13 @@ namespace librealsense
                 throw invalid_value_exception("Invalid stream type");
             }
         }
+
+        if (_tm_active_profiles.video[0].enabled == _tm_active_profiles.video[1].enabled &&
+            _tm_active_profiles.video[0].outputEnabled != _tm_active_profiles.video[1].outputEnabled)
+        {
+            throw invalid_value_exception("Invalid profile configuration - setting a single FE stream is not supported");
+        }
+
         _is_opened = true;
         set_active_streams(requests);
     }
@@ -630,7 +681,7 @@ namespace librealsense
         video_md.arrival_ts = tm_frame.arrivalTimeStamp;
         video_md.exposure_time = tm_frame.exposuretime;
 
-        frame_additional_data additional_data(ts_ms.count(), tm_frame.frameId, system_ts_ms.count(), sizeof(video_md), (uint8_t*)&video_md, tm_frame.arrivalTimeStamp);
+        frame_additional_data additional_data(ts_ms.count(), tm_frame.frameId, system_ts_ms.count(), sizeof(video_md), (uint8_t*)&video_md, tm_frame.arrivalTimeStamp, 0 ,0, false);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -684,7 +735,7 @@ namespace librealsense
         }
 
         float3 data = { tm_frame.acceleration.x, tm_frame.acceleration.y, tm_frame.acceleration.z };
-        handle_imu_frame(tm_frame, tm_frame.frameId, RS2_STREAM_ACCEL, tm_frame.sensorIndex + 1, data, tm_frame.temperature);
+        handle_imu_frame(tm_frame, tm_frame.frameId, RS2_STREAM_ACCEL, tm_frame.sensorIndex, data, tm_frame.temperature);
     }
 
     void tm2_sensor::onGyroFrame(perc::TrackingData::GyroFrame& tm_frame)
@@ -695,7 +746,7 @@ namespace librealsense
             return;
         }
         float3 data = { tm_frame.angularVelocity.x, tm_frame.angularVelocity.y, tm_frame.angularVelocity.z };
-        handle_imu_frame(tm_frame, tm_frame.frameId, RS2_STREAM_GYRO, tm_frame.sensorIndex + 1, data, tm_frame.temperature);
+        handle_imu_frame(tm_frame, tm_frame.frameId, RS2_STREAM_GYRO, tm_frame.sensorIndex, data, tm_frame.temperature);
     }
 
     void tm2_sensor::onPoseFrame(perc::TrackingData::PoseFrame& tm_frame)
@@ -714,7 +765,7 @@ namespace librealsense
         pose_frame_metadata frame_md = { 0 };
         frame_md.arrival_ts = tm_frame.arrivalTimeStamp;
 
-        frame_additional_data additional_data(ts_ms.count(), frame_num++, system_ts_ms.count(), sizeof(frame_md), (uint8_t*)&frame_md, tm_frame.arrivalTimeStamp);
+        frame_additional_data additional_data(ts_ms.count(), frame_num++, system_ts_ms.count(), sizeof(frame_md), (uint8_t*)&frame_md, tm_frame.arrivalTimeStamp, 0, 0, false);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -723,7 +774,7 @@ namespace librealsense
         {
             //TODO - assuming single profile per motion stream
             if (p->get_stream_type() == RS2_STREAM_POSE &&
-                p->get_stream_index() == tm_frame.sourceIndex + 1)
+                p->get_stream_index() == tm_frame.sourceIndex)
             {
                 profile = p;
                 break;
@@ -789,7 +840,7 @@ namespace librealsense
         }
         else
         {
-            raise_error_notification(to_string() << "Connection to controller " << (int)frame.controllerId << " failed. (Statue: " << get_string(frame.status) << ")");
+            raise_error_notification(to_string() << "Connection to controller " << (int)frame.controllerId << " failed.");
         }
     }
 
@@ -822,7 +873,7 @@ namespace librealsense
         motion_md.arrival_ts = tm_frame_ts.arrivalTimeStamp;
         motion_md.temperature = temperature;
 
-        frame_additional_data additional_data(ts_ms.count(), frame_number, system_ts_ms.count(), sizeof(motion_md), (uint8_t*)&motion_md, tm_frame_ts.arrivalTimeStamp);
+        frame_additional_data additional_data(ts_ms.count(), frame_number, system_ts_ms.count(), sizeof(motion_md), (uint8_t*)&motion_md, tm_frame_ts.arrivalTimeStamp, 0, 0, false);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -886,7 +937,7 @@ namespace librealsense
             auto status = _tm_dev->ControllerConnect(c, controller_id);
             if (status != Status::SUCCESS)
             {
-                raise_error_notification(to_string() << "Failed to send connect to controller " << c.macAddress << "(Status: " << get_string(status) << ")");
+                raise_error_notification(to_string() << "Failed to send connect to controller " << c.macAddress);
             }
             else
             {
@@ -900,7 +951,7 @@ namespace librealsense
         perc::Status status = _tm_dev->ControllerDisconnect(id);
         if (status != Status::SUCCESS)
         {
-            raise_error_notification(to_string() << "Failed to disconnect to controller " << id << "(Status: " <<  get_string(status) << ")");
+            raise_error_notification(to_string() << "Failed to disconnect to controller " << id);
         }
         else
         {
@@ -909,6 +960,19 @@ namespace librealsense
             f.controllerId = id;
             raise_controller_event(msg, controller_event_serializer::serialized_data(f), std::chrono::high_resolution_clock::now().time_since_epoch().count());
         }
+    }
+
+    TrackingData::Temperature tm2_sensor::get_temperature()
+    {
+        if (!_tm_dev)
+            throw wrong_api_call_sequence_exception("TM2 device is not available");
+        TrackingData::Temperature temperature;
+        auto status = _tm_dev->GetTemperature(temperature);
+        if (status != Status::SUCCESS)
+        {
+            throw io_exception("Failed to query TM2 temperature option");
+        }
+        return temperature;
     }
 
     ///////////////
@@ -931,7 +995,7 @@ namespace librealsense
         }
         register_info(RS2_CAMERA_INFO_NAME, tm2_device_name());
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, to_string() << info.serialNumber);
-        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, to_string() << info.fw.major << "." << info.fw.minor << "." << info.fw.patch << "." << info.fw.build);
+        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, to_string() << info.version.fw.major << "." << info.version.fw.minor << "." << info.version.fw.patch << "." << info.version.fw.build);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, to_string() << info.usbDescriptor.idProduct);
         std::string device_path =
             std::string("vid_") + std::to_string(info.usbDescriptor.idVendor) +
@@ -942,12 +1006,16 @@ namespace librealsense
 
         _sensor = std::make_shared<tm2_sensor>(this, dev);
         add_sensor(_sensor);
+
+        _sensor->register_option(rs2_option::RS2_OPTION_ASIC_TEMPERATURE, std::make_shared<asic_temperature_option>(*_sensor));
+        _sensor->register_option(rs2_option::RS2_OPTION_MOTION_MODULE_TEMPERATURE, std::make_shared<motion_temperature_option>(*_sensor));
+
         //For manual testing: enable_loopback("C:\\dev\\recording\\tm2.bag");
     }
 
     tm2_device::~tm2_device()
     {
-        for (auto&& d : get_context()->query_devices())
+        for (auto&& d : get_context()->query_devices(RS2_PRODUCT_LINE_ANY_INTEL))
         {
             for (auto&& tmd : d->get_device_data().tm2_devices)
             {
