@@ -841,6 +841,7 @@ if (BUILD_WITH_TM2)
             src/tm2/tm-conversions.h
             src/tm2/controller_event_serializer.h
             )
+		add_dependencies(tm libusb)
     endif()
 
     list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
@@ -859,7 +860,6 @@ if (BUILD_WITH_TM2)
     src/tm2/tm-info.cpp
     )
 	
-	add_dependencies(tm libusb)
 endif()
 
 if(LRS_TRY_USE_AVX)
