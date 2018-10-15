@@ -3,8 +3,6 @@ project(libtm)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-include(cmake/os.cmake)
-
 set(LIBTM_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 set(LIBTM_INCLUDE_DIR "${LIBTM_ROOT}/libtm/include")
 set(INFRA_INCLUDE_DIR "${LIBTM_ROOT}/libtm/src/infra")

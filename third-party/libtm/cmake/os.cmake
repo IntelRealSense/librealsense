@@ -1,5 +1,0 @@
-IF(WIN32)
-    include(cmake/windows.cmake)
-ELSE()
-    include(cmake/linux.cmake)
-ENDIF(WIN32)

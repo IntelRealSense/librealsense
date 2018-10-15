@@ -785,8 +785,7 @@ if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
 endif()
 
-if (NOT USE_SYSTEM_LIBUSB OR BUILD_WITH_TM2)
-    if(BUILD_WITH_TM2 OR FORCE_LIBUVC)
+if ((NOT USE_SYSTEM_LIBUSB AND FORCE_LIBUVC) OR (BUILD_WITH_TM2 AND WIN32))
         include(ExternalProject)
 
         ExternalProject_Add(
@@ -818,7 +817,6 @@ if (NOT USE_SYSTEM_LIBUSB OR BUILD_WITH_TM2)
             set(LIBUSB1_LIBRARIES ${LIBUSB1_LIBRARIES} log)
         endif()
         
-    endif()
 endif()
 
 add_subdirectory(third-party/realsense-file)
