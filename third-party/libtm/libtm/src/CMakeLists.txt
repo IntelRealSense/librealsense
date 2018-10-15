@@ -3,7 +3,10 @@ cmake_policy(SET CMP0015 NEW)
 
 project(tm)
 
-include_directories(${LIBUSB_LOCAL_INCLUDE_PATH})
+include_directories(${LIBUSB_LOCAL_INCLUDE_PATH}
+    ${LIBTM_INCLUDE_DIR}
+    ${INFRA_INCLUDE_DIR}
+)
 
 IF(WIN32)
     set(OS "win")
