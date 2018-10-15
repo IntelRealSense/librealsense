@@ -2494,7 +2494,7 @@ namespace perc {
     {
         if (!mHasBluetooth)
         {
-			DEVICELOGE("cannot CentralLoadFW, there is no bluetooth in the device");
+            DEVICELOGE("cannot CentralLoadFW, there is no bluetooth in the device");
             return Status::NO_BLUETOOTH;
         }
         uint32_t addressSize = offsetof(message_fw_update_request, bNumFiles);
@@ -2528,7 +2528,7 @@ namespace perc {
     {
         if(!mHasBluetooth)
         {
-			DEVICELOGE("cannot CentralFWUpdate, there is no bluetooth in the device");
+            DEVICELOGE("cannot CentralFWUpdate, there is no bluetooth in the device");
             return Status::NO_BLUETOOTH;
         }
 
@@ -2571,7 +2571,7 @@ namespace perc {
     {
         if (!mHasBluetooth)
         {
-			DEVICELOGE("cannot ControllerFWUpdate, there is no bluetooth in the device");
+            DEVICELOGE("cannot ControllerFWUpdate, there is no bluetooth in the device");
             return Status::NO_BLUETOOTH;
         }
         if (fw.imageSize == 0)

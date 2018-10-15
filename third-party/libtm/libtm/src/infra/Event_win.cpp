@@ -12,7 +12,7 @@ perc::Event::Event()
         NULL,               // default security attributes
         TRUE,               // manual-reset event
         FALSE,              // initial state is nonsignaled
-        NULL				// Unnamed event
+        NULL                // Unnamed event
     );
 
     ASSERT(mEvent != ILLEGAL_HANDLE);

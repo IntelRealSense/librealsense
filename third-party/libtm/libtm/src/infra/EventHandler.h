@@ -44,7 +44,7 @@ public:
 class EventHandler
 {
 public:
-    virtual ~EventHandler()	{}
+    virtual ~EventHandler() {}
 
     // = Completion callbacks
     virtual void onMessage(const Message &) {}

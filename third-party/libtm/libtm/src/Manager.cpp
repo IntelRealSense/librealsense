@@ -201,14 +201,14 @@ Status Manager::getHostLog(OUT TrackingData::Log* log)
 // -[impl]---------------------------------------------------------------------
 Status Manager::processMessage(const Message &msg, int prio)
 {
-	msg.Result = toUnderlying(Status::COMMON_ERROR);
+    msg.Result = toUnderlying(Status::COMMON_ERROR);
 
-	int ret = mDispatcher->sendMessage(&mFsm, msg, prio);
-	if (ret < 0) {
-		LOGE("mDispatcher->sendMessage ret %d", ret);
-		return Status::COMMON_ERROR;
-	}
-	return (Status)msg.Result;
+    int ret = mDispatcher->sendMessage(&mFsm, msg, prio);
+    if (ret < 0) {
+        LOGE("mDispatcher->sendMessage ret %d", ret);
+        return Status::COMMON_ERROR;
+    }
+    return (Status)msg.Result;
 }
 
 
@@ -306,7 +306,7 @@ Status Manager::loadBufferToDevice(libusb_device * device, unsigned char * buffe
 
     //W\A for pipe error bug
     rc = libusb_bulk_transfer(devHandle, EP_OUT, buffer, 0, &bytesWritten, TIMEOUT_MS);
-	// status check ignored according to Movidius sample code
+    // status check ignored according to Movidius sample code
     //if (rc != 0 || 0 != bytesWritten)
     //{
     //    LOGE("Error while loading image - libusb_bulk_transfer failed. LIBUSB_ERROR_CODE: %d (%s)", rc, libusb_error_name(rc));

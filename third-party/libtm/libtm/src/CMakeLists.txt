@@ -6,7 +6,10 @@ project(tm)
 include_directories(${LIBUSB_LOCAL_INCLUDE_PATH})
 
 IF(WIN32)
+    set(OS "win")
     include_directories(${LIBUSB_LOCAL_INCLUDE_PATH}/libtm)
+ELSE()
+    set(OS "lin")
 ENDIF(WIN32)
 
 #Source Files
@@ -58,7 +61,7 @@ set(SOURCE_FILES
 
 #Add versioning to DLL
 IF(WIN32)
-SET(SOURCE_FILES "${SOURCE_FILES};version.rc")
+    set(SOURCE_FILES "${SOURCE_FILES};version.rc")
 ENDIF(WIN32)
 
 #Building Library
@@ -70,8 +73,8 @@ add_library(${PROJECT_NAME} ${SDK_LIB_TYPE} ${SOURCE_FILES})
 
 #LINK_LIBRARIES
 target_link_libraries(${PROJECT_NAME}
-${OS_SPECIFIC_LIBS}
-${LIBUSB1_LIBRARIES}
+    ${OS_SPECIFIC_LIBS}
+    ${LIBUSB1_LIBRARIES}
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION "${LIBVERSION}" SOVERSION "${LIBTM_VERSION_MAJOR}")

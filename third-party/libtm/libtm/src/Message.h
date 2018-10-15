@@ -1460,7 +1460,7 @@ namespace perc
     * Start of all Interrupt messages.
     */
     typedef struct {
-        uint32_t dwLength;	  /**< Message length in bytes */
+        uint32_t dwLength;   /**< Message length in bytes */
         uint16_t wMessageID;  /**< ID of message           */
     } interrupt_message_header;
 

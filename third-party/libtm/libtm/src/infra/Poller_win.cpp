@@ -37,7 +37,7 @@ namespace perc
             NULL,               // default security attributes
             TRUE,               // manual-reset event
             FALSE,              // initial state is nonsignaled
-            NULL				// Unnamed event
+            NULL                // Unnamed event
         );
         ASSERT(mData->mAddRemoveDoneEvent != ILLEGAL_HANDLE);
 
@@ -132,7 +132,7 @@ namespace perc
                     evt = mData->mEvents[mData->mHandles[eventIndex]];
                     return 1;
                 }
-            } 		// here we release the events guard, so Add/remove function may continue
+            }         // here we release the events guard, so Add/remove function may continue
 
             // WAIT_OBJECT_0 means add/remove function called, lets wait for it completion by just waiting for the lock
             {
