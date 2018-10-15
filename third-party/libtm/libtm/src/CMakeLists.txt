@@ -10,7 +10,7 @@ include_directories(${LIBUSB_LOCAL_INCLUDE_PATH}
 
 IF(WIN32)
     set(OS "win")
-    include_directories(${LIBUSB_LOCAL_INCLUDE_PATH}/libtm)
+    include_directories(${LIBUSB_LOCAL_INCLUDE_PATH}/libusb)
 ELSE()
     set(OS "lin")
 ENDIF(WIN32)
