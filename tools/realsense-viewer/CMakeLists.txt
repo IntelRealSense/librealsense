@@ -45,13 +45,15 @@ endif()
             ../../common/model-views.cpp
             ../../common/ux-window.h
             ../../common/ux-window.cpp
+			../../common/ux-alignment.cpp
+			../../common/ux-alignment.h
         )
 
     # config-ui
     if(WIN32)
         add_executable(realsense-viewer WIN32
                 ${RS_VIEWER_CPP} ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
-                ${RS_VIEWER_CPP} ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
+                ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
                 ../../common/windows-app-bootstrap.cpp)
 
         source_group("3rd Party" FILES
@@ -67,8 +69,7 @@ endif()
 
         include_directories(realsense-viewer ../../third-party/imgui ../../common ../../third-party ${CMAKE_CURRENT_SOURCE_DIR}/res/)
     else()
-        add_executable(realsense-viewer
-                ${RS_VIEWER_CPP})
+        add_executable(realsense-viewer ${RS_VIEWER_CPP})
         include_directories(realsense-viewer ../../third-party/imgui ../../common ../../third-party)
     endif()
 

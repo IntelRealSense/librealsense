@@ -62,6 +62,8 @@ namespace rs2
 
         void add_on_load_message(const std::string& msg);
 
+		bool is_ui_aligned() { return _is_ui_aligned; }
+
     private:
         void open_window();
 
@@ -92,5 +94,7 @@ namespace rs2
         bool                     _fullscreen_pressed = false;
         bool                     _fullscreen = false;
         std::string              _title;
+
+		bool                     _is_ui_aligned = false;
     };
 }

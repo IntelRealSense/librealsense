@@ -855,6 +855,8 @@ namespace rs2
 
         void popup_if_error(ImFont* font, std::string& error_message);
 
+		void popup_if_ui_not_aligned(ImFont* font);
+
         void show_event_log(ImFont* font_14, float x, float y, float w, float h);
 
         void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message);
@@ -904,6 +906,8 @@ namespace rs2
         float dim_level = 1.f;
 
         rs2::asynchronous_syncer s;
+
+		bool continue_with_ui_not_aligned = false;
     private:
         struct rgb {
             uint32_t r, g, b;
