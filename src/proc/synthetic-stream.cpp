@@ -91,6 +91,14 @@ namespace librealsense
 
     rs2::frame generic_processing_block::prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results)
     {
+        // this function prepares the processing block output frame(s) by the following heuristic:
+        // in case the input is a single frame, return the processed frame.
+        // in case the input frame is a frameset, create an output frameset from the input frameset and the processed frame by the following heuristic:
+        // if one of the input frames has the same stream type and format as the processed frame,
+        //     remove the input frame from the output frameset (i.e. temporal filter), otherwise kepp the input frame (i.e. colorizer).
+        // the only exception is in case one of the input frames is z16 or disparity and the result frame is disparity or z16 respectively, 
+        // in this case the the input frmae will be removed.
+
         if (results.empty())
         {
             return input;
@@ -112,7 +120,6 @@ namespace librealsense
         if (auto composite = input.as<rs2::frameset>())
             composite.foreach([&](const rs2::frame& frame)
             {
-                //switch disparity frames by z16 and vice versa
                 auto format = frame.get_profile().format();
                 if (depth_result_frame && (format == RS2_FORMAT_DISPARITY32 || format == RS2_FORMAT_DISPARITY16))
                     return;
@@ -124,7 +131,6 @@ namespace librealsense
         {
             return results[0];
         }
-        //original_set.push_back(input);
 
         for (auto s : original_set)
         {
