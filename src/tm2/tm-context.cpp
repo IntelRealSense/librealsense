@@ -19,12 +19,22 @@ namespace librealsense
     tm2_context::tm2_context(context* ctx)
         : _is_disposed(false), _t(&tm2_context::thread_proc, this), _ctx(ctx)
     {
-        _manager = std::shared_ptr<TrackingManager>(perc::TrackingManager::CreateInstance(this),
-            [](perc::TrackingManager* ptr) { perc::TrackingManager::ReleaseInstance(ptr); });
-        if (_manager == nullptr)
+    }
+
+    void tm2_context::create_manager()
+    {
         {
-            LOG_ERROR("Failed to create TrackingManager");
-            throw std::runtime_error("Failed to create TrackingManager");
+            std::lock_guard<std::mutex> lock(_manager_mutex);
+            if (_manager == nullptr)
+            {
+                _manager = std::shared_ptr<TrackingManager>(perc::TrackingManager::CreateInstance(this),
+                    [](perc::TrackingManager* ptr) { perc::TrackingManager::ReleaseInstance(ptr); });
+                if (_manager == nullptr)
+                {
+                    LOG_ERROR("Failed to create TrackingManager");
+                    throw std::runtime_error("Failed to create TrackingManager");
+                }
+            }
         }
         auto version = _manager->version();
         LOG_INFO("LibTm version 0x" << std::hex << version);

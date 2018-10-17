@@ -17,6 +17,7 @@ namespace librealsense
     public:
         tm2_context(context* ctx);
         ~tm2_context();
+        void create_manager();
         std::shared_ptr<perc::TrackingManager> get_manager() const;
         std::vector<perc::TrackingDevice*> query_devices() const;
         signal<tm2_context, std::shared_ptr<tm2_info>, std::shared_ptr<tm2_info>> on_device_changed;
@@ -28,6 +29,7 @@ namespace librealsense
         friend class connect_disconnect_listener;
         std::shared_ptr<perc::TrackingManager::Listener> _listener;
         std::shared_ptr<perc::TrackingManager> _manager;
+        std::mutex _manager_mutex;
         std::vector<perc::TrackingDevice*> _devices;
         context* _ctx;
 
