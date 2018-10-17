@@ -251,9 +251,9 @@ namespace perc
         uint8_t bCentralBootloaderVersionMajor; /**< Major part of the Central firmware version                                         */
         uint8_t bCentralBootloaderVersionMinor; /**< Minor part of the Minor Central firmware version                                   */
         uint8_t bCentralBootloaderVersionPatch; /**< Patch part of the Patch Central firmware version                                   */
-        uint8_t bEepromLocked;                  /**< 0x0 – The EEPROM is fully writeable                                                */
-                                                /**< 0x1 – The upper quarter of the EEPROM memory is write-protected                    */
-                                                /**< 0x3 – The upper quarter of the EEPROM memory is permanently write-protected        */
+        uint8_t bEepromLocked;                  /**< 0x0 - The EEPROM is fully writeable                                                */
+                                                /**< 0x1 - The upper quarter of the EEPROM memory is write-protected                    */
+                                                /**< 0x3 - The upper quarter of the EEPROM memory is permanently write-protected        */
         uint32_t dwCentralAppVersionBuild;      /**< Build part of the Build Central firmware version                                   */
 
     } device_info_libtm_message;
@@ -672,7 +672,7 @@ namespace perc
         float_t flAAZ;                /**< Z value of angular acceleration, in RAD/sec^2                                                 */
         uint64_t llNanoseconds;       /**< Timestamp of pose, measured in nanoseconds since device system initialization                 */
         uint32_t dwTrackerConfidence; /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                        */
-        uint32_t dwMapperConfidence;  /**< Bits 0-1: 0x0 – Failed, 0x1 – Low, 0x2 – Medium, 0x3 - High, Bits 2-31: Reserved              */
+        uint32_t dwMapperConfidence;  /**< Bits 0-1: 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High, Bits 2-31: Reserved              */
     } pose_data;
 
     typedef struct {
@@ -843,7 +843,7 @@ namespace perc
         bulk_message_request_header header; /**< Message request header: dwLength = 12 bytes, wMessageID = DEV_LOCK_CONFIGURATION or DEV_LOCK_EEPROM                          */
         uint16_t wReserved;                 /**< Reserved = 0                                                                                                                 */
         uint32_t dwLock;                    /**< 0x0 - Unlock, 0x1 - Lock                                                                                                     */
-                                            /**< 0xDEAD10CC – the configuration data shall be permanently locked. *** WARNING *** this might be an irreversible action.       */
+                                            /**< 0xDEAD10CC - the configuration data shall be permanently locked. *** WARNING *** this might be an irreversible action.       */
                                             /**< After calling this the write protection the settings cannot be modified and therefore the memory write protection is frozen. */
     } bulk_message_request_lock_configuration;
 
@@ -1240,7 +1240,7 @@ namespace perc
     /**
     * @brief Bulk raw rssi stream message
     *
-    * Specific frame metadata and data for sensor IDs – BLE Signal Strength (sent during a BLE RSSI test)
+    * Specific frame metadata and data for sensor IDs - BLE Signal Strength (sent during a BLE RSSI test)
     */
     typedef struct
     {
@@ -1675,9 +1675,9 @@ namespace perc
 
     typedef struct {
         interrupt_message_header header; /**< Interrupt message header: dwLength = 17 bytes, wMessageID = CONTROLLER_DEVICE_CONNECTED_EVENT                  */
-        uint16_t wStatus;                /**< Connection status: SUCCESS – connection succeeded                                                              */
-                                         /**< Connection status: TIMEOUT – connection timed out                                                              */
-                                         /**< Connection status: INCOMPATIBLE – connection succeeded but controller version is incompatible with TM2 version */
+        uint16_t wStatus;                /**< Connection status: SUCCESS - connection succeeded                                                              */
+                                         /**< Connection status: TIMEOUT - connection timed out                                                              */
+                                         /**< Connection status: INCOMPATIBLE - connection succeeded but controller version is incompatible with TM2 version */
         uint8_t bControllerID;           /**< Connected controller identifier (1 or 2)                                                                       */
         controller_connected_info info;  /**< Connected controller versions                                                                                  */
     } interrupt_message_controller_connected;
@@ -1712,11 +1712,11 @@ namespace perc
     */
     typedef struct {
         interrupt_message_header header; /**< Interrupt message header: dwLength = 9 bytes, wMessageID = CONTROLLER_CALIBRATION_STATUS_EVENT */
-        uint16_t wStatus;                /**< Calibration status: 0x0 – calibration succeeded                                                */
-                                         /**< Calibration status: 0x1 – validation failed                                                    */
-                                         /**< Calibration status: 0x2 – flash access failure                                                 */
-                                         /**< Calibration status: 0x3 – IMU failure                                                          */
-                                         /**< Calibration status: 0x4 – internal error                                                       */
+        uint16_t wStatus;                /**< Calibration status: 0x0 - calibration succeeded                                                */
+                                         /**< Calibration status: 0x1 - validation failed                                                    */
+                                         /**< Calibration status: 0x2 - flash access failure                                                 */
+                                         /**< Calibration status: 0x3 - IMU failure                                                          */
+                                         /**< Calibration status: 0x4 - internal error                                                       */
         uint8_t bControllerID;           /**< Calibrated controller identifier (1 or 2)                                                      */
     } interrupt_message_controller_calibration_status;
 

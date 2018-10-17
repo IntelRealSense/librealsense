@@ -268,9 +268,9 @@ namespace perc
         class ControllerConnectedEventFrame : public TimestampedData {
         public:
             ControllerConnectedEventFrame() : status(Status::SUCCESS), controllerId(0), manufacturerId(0), protocol(), app(), softDevice(), bootLoader() {};
-            Status status;           /**< Connection status: SUCCESS – connection succeeded                                                              */
-                                     /**<                    TIMEOUT – connection timed out                                                              */
-                                     /**<                    INCOMPATIBLE – connection succeeded but controller version is incompatible with TM2 version */
+            Status status;           /**< Connection status: SUCCESS - connection succeeded                                                              */
+                                     /**<                    TIMEOUT - connection timed out                                                              */
+                                     /**<                    INCOMPATIBLE - connection succeeded but controller version is incompatible with TM2 version */
             uint8_t controllerId;    /**< Disconnected controller identifier (1 or 2)                                                                    */
             uint16_t manufacturerId; /**< Identifier of the controller manufacturer                                                                      */
             Version protocol;        /**< Controller BLE protocol version  - only major part is active                                                   */
