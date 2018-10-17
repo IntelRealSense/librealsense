@@ -5739,6 +5739,11 @@ namespace rs2
                                 auto profiles = sub->get_selected_profiles();
                                 try
                                 {
+                                    std::string friendly_name = sub->s->get_info(RS2_CAMERA_INFO_NAME);
+                                    if (friendly_name.find("Tracking") != std::string::npos)
+                                    {
+                                        viewer.synchronization_enable = false;
+                                    }
                                     sub->play(profiles, viewer);
                                 }
                                 catch (const error& e)

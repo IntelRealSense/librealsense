@@ -821,8 +821,9 @@ namespace rs2
 
         viewer_model()
             : ppf(*this),
-              synchronization_enable(false)
+              synchronization_enable(true)
         {
+
             s.start(ppf.syncer_queue);
             reset_camera();
             rs2_error* e = nullptr;
