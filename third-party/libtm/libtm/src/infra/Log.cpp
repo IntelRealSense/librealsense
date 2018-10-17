@@ -1,7 +1,5 @@
-/*******************************************************************************
-INTEL CORPORATION PROPRIETARY INFORMATION
-Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-*******************************************************************************/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "Log.h"
 #include "Utils.h"
@@ -9,13 +7,13 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #include <stdint.h>
 #include <mutex>
 #include <atomic>
+#include <math.h>
 #include "../include/TrackingData.h"
 
 #ifdef _WIN32
 #include <Windows.h>
 #include <stdio.h>
 #include <time.h>
-#include <math.h>
 #endif
 
 #ifdef __linux__

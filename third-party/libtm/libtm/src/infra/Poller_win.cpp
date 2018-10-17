@@ -1,7 +1,5 @@
-/*******************************************************************************
-INTEL CORPORATION PROPRIETARY INFORMATION
-Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-*******************************************************************************/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #define LOG_TAG "Poller"
 #define LOG_NDEBUG 1    // controls LOGV only

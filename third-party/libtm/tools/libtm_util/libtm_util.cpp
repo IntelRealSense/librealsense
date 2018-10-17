@@ -1,7 +1,6 @@
 #define LOG_TAG "libtmutil"
 #include "Log.h"
 #include "TrackingManager.h"
-#include "TrackingSerializer.h"
 #include <algorithm>
 #include <array>
 #include <map>
@@ -1816,35 +1815,6 @@ public:
     }
 };
 
-class ReplayListener : public TrackingDevice::Listener
-{
-public:
-    virtual void onVideoFrame(TrackingData::VideoFrame& frame)
-    {
-        Status status = gDevice->SendFrame(frame);
-        if (status != Status::SUCCESS)
-        {
-            LOGE("Failed to send video frame with status (0x%X)", status);
-        }
-    } 
-    virtual void onAccelerometerFrame(TrackingData::AccelerometerFrame& message)
-    {
-        Status status = gDevice->SendFrame(message);
-        if (status != Status::SUCCESS)
-        {
-            LOGE("Failed to send accelerometer frame with status (0x%X)", status);
-        }
-    }
-    virtual void onGyroFrame(TrackingData::GyroFrame& message)
-    {
-        Status status = gDevice->SendFrame(message);
-        if (status != Status::SUCCESS)
-        {
-            LOGE("Failed to send gyro frame with status (0x%X)", status);
-        }
-    }
-};
-
 void handleThreadFunction()
 {
     while (!gIsDisposed)
@@ -2118,7 +2088,7 @@ void showArguments()
     printf("       [-rssi <controller [1-2]> <Time (Sec)>] [-exposure <SensorIndex[0-3]> <integration time (uSec)> <gain>] [-fw <filename>] [-statistics] [-image] [-tum <type [1-2]>]\n");
     printf("       [-log <Source [fw/host]> <Verbosity [0-6]> <Mode [0-1]> <OutputMode [0-1]>] [-map <reset/set/get> <filename>] [-jtag]\n");
     printf("       [-temperature <get/set> <sensor [VPU, IMU, BLE] (Optional)> <threshold (optional)>] [-geo <latitude> <longitude> <altitude>] [-gpio <controlBitMask>] [-velocimeter <filename>]\n");
-    printf("       [-controller_data <filename>] [-node <filename>] [-burn <type [bl/app]> <filename> <force (optional)>] [-record <filename>] [-play <filename>] [-replay <filename> <enabled sensors (Optional)>]\n\n");
+    printf("       [-controller_data <filename>] [-node <filename>] [-burn <type [bl/app]> <filename> <force (optional)>] \n\n");
 
     printf("Options:\n");
     printf("    -h,-help..........Show this help message\n");
@@ -2149,9 +2119,6 @@ void showArguments()
     printf("    -controller_data .Sends Controller data to connected controllers [-controller_data -h for more info]\n");
     printf("    -node ............Sends static node data [-node -h for more info]\n");
     printf("    -burn ............Burns controller fw to connected controllers [-burn -h for more info]\n");
-    printf("    -record ..........Record the raw streams in rc format [-record -h for more info]\n");
-    printf("    -play ............Play the raw streams from rc file [-play -h for more info]\n");
-    printf("    -replay ..........Replay the raw streams from rc file back to the TM2 device [-replay -h for more info]\n");
 }
 
 int parseArguments(int argc, char *argv[])
@@ -2979,68 +2946,6 @@ int parseArguments(int argc, char *argv[])
                 return -1;
             }
         }
-        else if ((arg == "-record"))
-        {
-            bool parseError = true;
-            if ((i + 1 < argc) && (strstr(argv[i + 1], "-") != argv[i + 1]))
-            {
-                gConfiguration.recordFilename = argv[++i];
-                gConfiguration.mode = "record";
-                parseError = false;
-
-                if ((i + 1 < argc) && (strstr(argv[i + 1], "-") != argv[i + 1]))
-                {
-                    std::string parameter = argv[++i];
-                    if(parameter == "stereo")
-                    {
-                        gConfiguration.stereoMode = true;
-                        parseError = false;
-                    }
-                }
-            }
-            if (parseError)
-            {
-                printf("-record : Records raw streams data to rc file\n");
-                printf("          Parameters: <RC file path> <stereo (optional mode for recording left/right images in a single packet)>\n");
-                printf("          Example: \"libtm_util.exe -gyro 0 1 -record file.rc\" : Record all gyro 1 frames to file.rc\n");
-                printf("          Example: \"libtm_util.exe -video 0 1 -video 1 1 -record file.rc stereo\" : Record all video 1+2 frames to file.rc in stereo mode\n");
-                return -1;
-            }
-        }
-        else if ((arg == "-play"))
-        {
-            bool parseError = true;
-            if ((i + 1 < argc) && (strstr(argv[i + 1], "-") != argv[i + 1]))
-            {
-                gConfiguration.recordFilename = argv[++i];
-                gConfiguration.mode = "play";
-                parseError = false;
-            }
-            if (parseError)
-            {
-                printf("-play : Plays raw streams data from rc file\n");
-                printf("        Parameters: <RC file path>\n");
-                printf("        Example: \"libtm_util.exe -play file.rc\" : Play file.rc\n");
-                return -1;
-            }
-        }
-        else if ((arg == "-replay"))
-        {
-            bool parseError = true;
-            if ((i + 1 < argc) && (strstr(argv[i + 1], "-") != argv[i + 1]))
-            {
-                gConfiguration.recordFilename = argv[++i];
-                gConfiguration.mode = "replay";
-                parseError = false;
-            }
-            if (parseError)
-            {
-                printf("-replay : Replays raw streams data from RC file back to TM2 device (Connected device is needed)\n");
-                printf("          Parameters: <RC file path> <Enable sensors to receive them back from the device (Optional)>\n");
-                printf("          Example: \"libtm_util.exe -replay file.rc -gyro 0 1\" : Replay raw stream file file.rc and receive all gyro frames from the device\n");
-                return -1;
-            }
-        }
         else
         {
             printf("Error: unknown parameter %s\n\n", arg.c_str());
@@ -3625,10 +3530,7 @@ int main(int argc, char *argv[])
 {
     TrackingData::Temperature temperature;
     CommonListener listener;
-    ReplayListener replayListener;
 
-    std::shared_ptr<TrackingRecorder> mRecorder;
-    std::shared_ptr<TrackingPlayer> mPlayer;
     Status status = Status::SUCCESS;
     uint32_t loop = 0;
     std::thread hostLogThread;
@@ -3646,28 +3548,6 @@ int main(int argc, char *argv[])
     if (gConfiguration.videoFile == true)
     {
         imageThread = std::thread(&imageThreadFunction);
-    }
-
-    if (gConfiguration.mode == "play")
-    {
-        LOGI("Starting play mode");
-        mPlayer = std::shared_ptr<TrackingPlayer>(TrackingPlayer::CreateInstance(&listener, gConfiguration.recordFilename.c_str()));
-        mPlayer->start();
-        while (mPlayer->isStreaming())
-        {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-        mPlayer->stop();
-        gStatistics.print();
-        saveOutput();
-
-        gIsDisposed = true;
-        if (gConfiguration.videoFile == true)
-        {
-            imageThread.join();
-        }
-
-        return 0;
     }
 
     gManagerInstance = std::shared_ptr<TrackingManager>(TrackingManager::CreateInstance(&listener, (void*)gConfiguration.inputFilename.c_str()));
@@ -3932,22 +3812,6 @@ int main(int argc, char *argv[])
             LOGI("Starting live mode");
             status = gDevice->Start(&listener, &profile);
         }
-        else if (gConfiguration.mode == "record")
-        {
-            LOGI("Starting record mode");
-            mRecorder = std::shared_ptr<TrackingRecorder>(TrackingRecorder::CreateInstance(gDevice, &listener, gConfiguration.recordFilename.c_str(), gConfiguration.stereoMode));
-            status = gDevice->Start(mRecorder.get(), &profile);
-        }
-        else if (gConfiguration.mode == "replay")
-        {
-            LOGI("Starting replay mode");
-            mPlayer = std::shared_ptr<TrackingPlayer>(TrackingPlayer::CreateInstance(&replayListener, gConfiguration.recordFilename.c_str()));
-            if (!mPlayer->device_configure(gDevice, &listener, &profile))
-            {
-                goto cleanup;
-            }
-            mPlayer->start(true);
-        }
         if (status != Status::SUCCESS)
         {
             LOGE("Error: Start device failed, status = %s (0x%X)", statusToString(status).c_str(), status);
@@ -3992,10 +3856,6 @@ int main(int argc, char *argv[])
             {
                 LOGE("Failed to connect to all controllers");
                 LOGD("Stopping Stream");
-                if (gConfiguration.mode == "replay")
-                {
-                    mPlayer->stop();
-                }
                 status = gDevice->Stop();
                 if (status != Status::SUCCESS)
                 {
@@ -4306,10 +4166,6 @@ int main(int argc, char *argv[])
         }
 
         LOGD("Stopping Stream");
-        if (gConfiguration.mode == "replay")
-        {
-            mPlayer->stop();
-        }
         status = gDevice->Stop();
         if (status != Status::SUCCESS)
         {

@@ -21,7 +21,6 @@ set(SOURCE_FILES
     ${LIBTM_INCLUDE_DIR}/TrackingDevice.h
     ${LIBTM_INCLUDE_DIR}/TrackingCommon.h
     ${LIBTM_INCLUDE_DIR}/TrackingData.h
-    ${LIBTM_INCLUDE_DIR}/TrackingSerializer.h
 
     Manager.h
     Manager.cpp
@@ -33,16 +32,6 @@ set(SOURCE_FILES
     CompleteTask.h
     Common.h
     Common.cpp
-    
-    RcSerializer/Recorder.h
-    RcSerializer/Recorder.cpp
-    RcSerializer/Packet.h
-    RcSerializer/Packet.cpp
-    RcSerializer/latency_queue.h
-    RcSerializer/rc_packet.h
-    RcSerializer/concurrency.h
-    RcSerializer/Player.h
-    RcSerializer/Player.cpp
     
     infra/Log.h
     infra/Log.cpp
