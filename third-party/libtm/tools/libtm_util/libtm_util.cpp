@@ -626,25 +626,25 @@ public:
 
         for (uint8_t i = 0; i < VideoProfileMax; i++)
         {
-            LOGD(" Video[%01d]                 | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10"PRId64" | %-8d | %-8d | %d", i, (i > VideoProfile1) ? "Low Exposure " : "High Exposure",
+            LOGD(" Video[%01d]                 | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10" PRId64" | %-8d | %-8d | %d", i, (i > VideoProfile1) ? "Low Exposure " : "High Exposure",
                 video[i].frameRate, video[i].enabled, video[i].outputMode, (video[i].frames > 0) ? (video[i].totalLatency / video[i].frames) : 0, runTime[HMD].diffMsec, (video[i].frameRate * video[i].enabled * video[i].outputMode *  runTime[HMD].diffMsec) / 1000, video[i].frames);
         }
 
         for (uint8_t i = 0; i < GyroProfileMax; i++)
         {
-            LOGD(" Gyro[%01d]                  | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10"PRId64" | %-8d | %-8d | %d", i, (i > GyroProfile0) ? ((i > GyroProfile1) ? "Controller 2" : "Controller 1") : "HMD",
+            LOGD(" Gyro[%01d]                  | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10" PRId64" | %-8d | %-8d | %d", i, (i > GyroProfile0) ? ((i > GyroProfile1) ? "Controller 2" : "Controller 1") : "HMD",
                 gyro[i].frameRate, gyro[i].enabled, gyro[i].outputMode, (gyro[i].frames > 0) ? (gyro[i].totalLatency / gyro[i].frames) : 0, runTime[i].diffMsec, (gyro[i].frameRate * gyro[i].enabled * gyro[i].outputMode * runTime[i].diffMsec) / 1000, gyro[i].frames);
         }
 
         for (uint8_t i = 0; i < AccelerometerProfileMax; i++)
         {
-            LOGD(" Accelerometer[%01d]         | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10"PRId64" | %-8d | %-8d | %d", i, (i > AccelerometerProfile0) ? ((i > AccelerometerProfile1) ? "Controller 2" : "Controller 1") : "HMD",
+            LOGD(" Accelerometer[%01d]         | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10" PRId64" | %-8d | %-8d | %d", i, (i > AccelerometerProfile0) ? ((i > AccelerometerProfile1) ? "Controller 2" : "Controller 1") : "HMD",
                 accelerometer[i].frameRate, accelerometer[i].enabled, accelerometer[i].outputMode, (accelerometer[i].frames > 0) ? (accelerometer[i].totalLatency / accelerometer[i].frames) : 0, runTime[i].diffMsec, (accelerometer[i].frameRate * accelerometer[i].enabled * accelerometer[i].outputMode * runTime[i].diffMsec) / 1000, accelerometer[i].frames);
         }
 
         for (uint8_t i = 0; i < VelocimeterProfileMax; i++)
         {
-            LOGD(" Velocimeter[%01d]           | External Sensor   |        | 0x%01X     | 0x%01X    | %-10"PRId64" | %-8d |          | %d", i, 
+            LOGD(" Velocimeter[%01d]           | External Sensor   |        | 0x%01X     | 0x%01X    | %-10" PRId64" | %-8d |          | %d", i,
                 velocimeter[i].enabled, velocimeter[i].outputMode, (velocimeter[i].frames > 0) ? (velocimeter[i].totalLatency / velocimeter[i].frames) : 0, runTime[HMD].diffMsec, velocimeter[i].frames);
         }
 
@@ -657,7 +657,7 @@ public:
                 poseRunTimeMsec = (runTime[i].diffMsec - MAX_FIRST_POSE_DELAY_MSEC);
             }
 
-            LOGD(" Pose[%01d]                  | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10"PRId64" | %-8d | %-8d | %d", i, (i > SixDofProfile0) ? ((i > SixDofProfile1) ? "Controller 2" : "Controller 1") : "HMD",
+            LOGD(" Pose[%01d]                  | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10" PRId64" | %-8d | %-8d | %d", i, (i > SixDofProfile0) ? ((i > SixDofProfile1) ? "Controller 2" : "Controller 1") : "HMD",
                 pose[i].frameRate, pose[i].enabled, pose[i].outputMode, (pose[i].frames > 0) ? (pose[i].totalLatency / pose[i].frames) : 0, runTime[i].diffMsec, (pose[i].frameRate * pose[i].enabled * pose[i].outputMode * poseRunTimeMsec) / 1000, pose[i].frames);
         }
 
@@ -1938,7 +1938,7 @@ void hostLogThreadFunction()
                 snprintf(deviceId, sizeof(deviceId), "-%04hX", device);
             }
 
-            fprintf(logThreadStream, "%02d:%02d:%02d:%03d [%06lu] [%s] %s%s(%d): %s\n",
+            fprintf(logThreadStream, "%02d:%02d:%02d:%03d [%06x] [%s] %s%s(%d): %s\n",
                 log.entry[i].localTimeStamp.hour, log.entry[i].localTimeStamp.minute, log.entry[i].localTimeStamp.second, log.entry[i].localTimeStamp.milliseconds,
                 log.entry[i].threadID,
                 fwLogVerbosityLevel(log.entry[i].verbosity),
@@ -2032,7 +2032,7 @@ void fwLogThreadFunction()
                 {
                     short device = ((uintptr_t)log.entry[i].deviceID & 0xFFFF);
 
-                    fprintf(logThreadStream, "%02d:%02d:%02d:%03d Device-%04hX: %012llu [%s] [%02d] [0x%X] [%s](%d): %s\n",
+                    fprintf(logThreadStream, "%02d:%02d:%02d:%03d Device-%04hX: %" PRId64 " [%s] [%02d] [0x%X] [%s](%d): %s\n",
                             log.entry[i].localTimeStamp.hour, log.entry[i].localTimeStamp.minute, log.entry[i].localTimeStamp.second, log.entry[i].localTimeStamp.milliseconds,
                             device,
                             log.entry[i].timeStamp,

@@ -20,6 +20,8 @@
 #ifdef _WIN32
 #pragma warning (push)
 #pragma warning (disable : 4200)
+#else
+#pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 
 #define MAX_FW_LOG_BUFFER_ENTRIES (512)
