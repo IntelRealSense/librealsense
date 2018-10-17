@@ -28,7 +28,7 @@ namespace librealsense
         const uint16_t RS460_PID        = 0x0b03; // DS5U
         const uint16_t RS435_RGB_PID    = 0x0b07; // AWGC
         const uint16_t RS405_PID        = 0x0b0c; // DS5U
-        const uint16_t RS440_PID        = 0x0b18; // D430Li
+        const uint16_t RS435I_PID       = 0x0b3a; // D435i
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -55,7 +55,7 @@ namespace librealsense
             ds::RS435_RGB_PID,
             ds::RS460_PID,
             ds::RS405_PID,
-            ds::RS440_PID,
+            ds::RS435I_PID,
             ds::RS_USB2_PID
         };
 
@@ -83,7 +83,7 @@ namespace librealsense
             { RS435_RGB_PID,    "Intel RealSense D435"},
             { RS460_PID,        "Intel RealSense D460" },
             { RS405_PID,        "Intel RealSense D405" },
-            { RS440_PID,        "Intel RealSense D440" },
+            { RS435I_PID,       "Intel RealSense D435I" },
             { RS_USB2_PID,      "Intel RealSense USB2" }
         };
 

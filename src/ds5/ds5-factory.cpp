@@ -393,17 +393,19 @@ namespace librealsense
     };
 
 
-    class rs440_device  :       public ds5_active,
+    class rs435i_device  :      public ds5_active,
+                                public ds5_color,
                                 public ds5_motion,
                                 public ds5_advanced_mode_base
     {
     public:
-        rs440_device(std::shared_ptr<context> ctx,
+        rs435i_device(std::shared_ptr<context> ctx,
                     const platform::backend_device_group group,
                     bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
               ds5_active(ctx, group),
+              ds5_color(ctx,  group),
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
 
@@ -419,6 +421,7 @@ namespace librealsense
             uint32_t height = usb3mode ?   720 : 480;
             uint32_t fps    = usb3mode ?    30 :  15;
 
+            tags.push_back({ RS2_STREAM_COLOR, -1, width, height, RS2_FORMAT_RGB8, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_DEPTH, -1, width, height, RS2_FORMAT_Z16, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_INFRARED, -1, width, height, RS2_FORMAT_Y8, fps, profile_tag::PROFILE_TAG_SUPERSET });
 
@@ -462,8 +465,8 @@ namespace librealsense
             return std::make_shared<rs430_rgb_mm_device>(ctx, group, register_device_notifications);
         case RS435_RGB_PID:
             return std::make_shared<rs435_device>(ctx, group, register_device_notifications);
-        case RS440_PID:
-            return std::make_shared<rs440_device>(ctx, group, register_device_notifications);
+        case RS435I_PID:
+            return std::make_shared<rs435i_device>(ctx, group, register_device_notifications);
         case RS_USB2_PID:
             return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
         default:
@@ -672,10 +675,10 @@ namespace librealsense
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
-    std::shared_ptr<matcher> rs440_device::create_matcher(const frame_holder& frame) const
+    std::shared_ptr<matcher> rs435i_device::create_matcher(const frame_holder& frame) const
     {
-        //TODO: add matcher to mm
-        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get() };
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
+        // TODO Evgeni - A proper matcher for High-FPS sensor
         std::vector<stream_interface*> mm_streams = { _accel_stream.get(), _gyro_stream.get()};
 
         if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
