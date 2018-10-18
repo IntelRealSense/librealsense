@@ -98,6 +98,10 @@ namespace Intel.RealSense
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_create_processing_block_fptr([MarshalAs(UnmanagedType.FunctionPtr)] frame_processor_callback on_frame, IntPtr user, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
 
+        internal static void rs2_get_video_stream_resolution(IntPtr ptr, out object width, out object height, out object error)
+        {
+            throw new NotImplementedException();
+        }
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rs2_start_processing_fptr(IntPtr block, [MarshalAs(UnmanagedType.FunctionPtr)] frame_callback on_frame, IntPtr user, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
@@ -129,8 +133,7 @@ namespace Intel.RealSense
 
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern int rs2_poll_for_frame(IntPtr queue,
-            [Out, MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(FrameMarshaler))] out Frame output_frame,
+        internal static extern int rs2_poll_for_frame(IntPtr queue, out IntPtr frame,
             [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
 
 
@@ -270,6 +273,9 @@ namespace Intel.RealSense
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_allocate_composite_frame(IntPtr source, [In]IntPtr[] frames, int count, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_allocate_composite_frame(IntPtr source, [In]IntPtr frames, int count, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
 
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
@@ -692,26 +698,8 @@ namespace Intel.RealSense
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_software_device_add_sensor(IntPtr dev, [MarshalAs(UnmanagedType.LPStr)] string sensor_name, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
 
-        /// <summary>
-        /// Video stream intrinsics
-        /// </summary>
-        [System.Serializable]
-        [StructLayout(LayoutKind.Sequential)]
-        public struct SoftwareVideoFrame
-        {
-            public IntPtr pixels;
-            [MarshalAs(UnmanagedType.FunctionPtr)]
-            public frame_deleter deleter;
-            public int stride;
-            public int bpp;
-            public double timestamp;
-            public TimestampDomain domain;
-            public int frame_number;
-            public IntPtr profile;
-        }
-
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void rs2_software_sensor_on_video_frame(IntPtr sensor, SoftwareVideoFrame frame, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
+        internal static extern void rs2_software_sensor_on_video_frame(IntPtr sensor, SoftwareVideoFrame frame, IntPtr user_data, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rs2_software_sensor_set_metadata(IntPtr sensor, long value, FrameMetadataValue type, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
@@ -744,7 +732,8 @@ namespace Intel.RealSense
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern int rs2_pipeline_poll_for_frames(IntPtr pipe,
-            [Out, MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(FrameSetMarshaler))] out FrameSet output_frame,
+            //[Out, MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(FrameSetMarshaler))] out FrameSet output_frame,
+            out IntPtr output_frame,
             [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Helpers.ErrorMarshaler))] out object error);
 
 

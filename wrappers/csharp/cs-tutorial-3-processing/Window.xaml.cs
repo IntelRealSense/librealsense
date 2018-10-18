@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 // This demo showcases some of the more advanced API concepts:
 // a. Post-processing and stream alignment
@@ -35,43 +36,43 @@ namespace Intel.RealSense
         private CustomProcessingBlock block;
         private CancellationTokenSource tokenSource = new CancellationTokenSource();
 
-        private void UploadImage(Image img, VideoFrame frame)
+        static Action<VideoFrame> UpdateImage(Image img)
         {
-            Dispatcher.Invoke(new Action(() =>
+            var wbmp = img.Source as WriteableBitmap;
+            return new Action<VideoFrame>(frame =>
             {
-                if (frame.Width == 0) return;
-
-                var bytes = new byte[frame.Stride * frame.Height];
-                frame.CopyTo(bytes);
-
-                var bs = BitmapSource.Create(frame.Width, frame.Height,
-                                  300, 300,
-                                  PixelFormats.Rgb24,
-                                  null,
-                                  bytes,
-                                  frame.Stride);
-
-                var imgSrc = bs as ImageSource;
-
-                img.Source = imgSrc;
-            }));
+                using (frame)
+                {
+                    var rect = new Int32Rect(0, 0, frame.Width, frame.Height);
+                    wbmp.WritePixels(rect, frame.Data, frame.Stride * frame.Height, frame.Stride);
+                }
+            });
         }
 
         public ProcessingWindow()
         {
+            InitializeComponent();
+
             try
             {
                 var cfg = new Config();
                 cfg.EnableStream(Stream.Depth, 640, 480);
                 cfg.EnableStream(Stream.Color, Format.Rgb8);
-                pipeline.Start(cfg);
+                var pp = pipeline.Start(cfg);
+
+                using (var p = pp.GetStream(Stream.Depth) as VideoStreamProfile)
+                    imgDepth.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
+                var updateDepth = UpdateImage(imgDepth);
+
+                using (var p = pp.GetStream(Stream.Color) as VideoStreamProfile)
+                    imgColor.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
+                var updateColor = UpdateImage(imgColor);
 
                 // Create custom processing block
                 // For demonstration purposes it will:
                 // a. Get a frameset
-                // b. Break it down to frames
-                // c. Run post-processing on the depth frame
-                // d. Combine the result back into a frameset
+                // b. Run post-processing on the depth frame
+                // c. Combine the result back into a frameset
                 // Processing blocks are inherently thread-safe and play well with
                 // other API primitives such as frame-queues, 
                 // and can be used to encapsulate advanced operations.
@@ -84,18 +85,19 @@ namespace Intel.RealSense
                     // at the end of scope. 
                     using (var releaser = new FramesReleaser())
                     {
-                        var frames = FrameSet.FromFrame(f, releaser);
+                        var frames = FrameSet.FromFrame(f).DisposeWith(releaser);
 
-                        VideoFrame depth = FramesReleaser.ScopedReturn(releaser, frames.DepthFrame);
-                        VideoFrame color = FramesReleaser.ScopedReturn(releaser, frames.ColorFrame);
+                        var processedFrames = frames.ApplyFilter(decimate).DisposeWith(releaser)
+                                                .ApplyFilter(spatial).DisposeWith(releaser)
+                                                .ApplyFilter(temp).DisposeWith(releaser)
+                                                .ApplyFilter(align).DisposeWith(releaser)
+                                                .ApplyFilter(colorizer).DisposeWith(releaser);
 
-                        // Apply depth post-processing
-                        depth = decimate.ApplyFilter(depth, releaser);
-                        depth = spatial.ApplyFilter(depth, releaser);
-                        depth = temp.ApplyFilter(depth, releaser);
+                        var colorFrame = processedFrames.ColorFrame.DisposeWith(releaser);
+                        var colorizedDepth = processedFrames[Stream.Depth, Format.Rgb8].DisposeWith(releaser);
 
                         // Combine the frames into a single result
-                        var res = src.AllocateCompositeFrame(releaser, depth, color);
+                        var res = src.AllocateCompositeFrame(colorizedDepth, colorFrame).DisposeWith(releaser);
                         // Send it to the next processing stage
                         src.FramesReady(res);
                     }
@@ -104,19 +106,13 @@ namespace Intel.RealSense
                 // Register to results of processing via a callback:
                 block.Start(f =>
                 {
-                    using (var releaser = new FramesReleaser())
+                    using (var frames = FrameSet.FromFrame(f))
                     {
-                        // Align, colorize and upload frames for rendering
-                        var frames = FrameSet.FromFrame(f, releaser);
+                        var colorFrame = frames.ColorFrame.DisposeWith(frames);
+                        var colorizedDepth = frames[Stream.Depth, Format.Rgb8].DisposeWith(frames);
 
-                        // Align both frames to the viewport of color camera
-                        frames = align.Process(frames, releaser);
-
-                        var depth_frame = FramesReleaser.ScopedReturn(releaser, frames.DepthFrame);
-                        var color_frame = FramesReleaser.ScopedReturn(releaser, frames.ColorFrame);
-
-                        UploadImage(imgDepth, colorizer.Colorize(depth_frame, releaser));
-                        UploadImage(imgColor, color_frame);
+                        Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
+                        Dispatcher.Invoke(DispatcherPriority.Render, updateColor, colorFrame);
                     }
                 });
 

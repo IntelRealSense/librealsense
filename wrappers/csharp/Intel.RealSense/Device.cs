@@ -110,7 +110,7 @@ namespace Intel.RealSense
 
         public class CameraInfos
         {
-            IntPtr m_device;
+            readonly IntPtr m_device;
             public CameraInfos(IntPtr device) { m_device = device; }
 
             public string this[CameraInfo info]
@@ -258,6 +258,12 @@ namespace Intel.RealSense
 
         }
 
+
+        protected override void Dispose(bool disposing)
+        {
+            // Intentionally empty, does not own the native device, only wraps it.
+        }
+
         public static PlaybackDevice FromDevice(Device dev)
         {
             object error;
@@ -346,7 +352,7 @@ namespace Intel.RealSense
 
     public class RecordDevice : Device
     {
-        IntPtr m_dev;
+        readonly IntPtr m_dev;
 
         public RecordDevice(Device dev, string file) : base(IntPtr.Zero)
         {

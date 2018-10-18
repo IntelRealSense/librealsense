@@ -6,6 +6,16 @@ using System.Linq;
 
 namespace Intel.RealSense
 {
+    public interface IOptionsContainer : IEnumerable<IOption>
+    {
+        IOption this[Option option] { get; }
+        string OptionValueDescription(Option option, float value);
+    }
+
+    public interface IOptions {
+        IOptionsContainer Options { get;  }
+    }
+
     public class SensorList : IDisposable, IEnumerable<Sensor>
     {
         IntPtr m_instance;
@@ -92,7 +102,7 @@ namespace Intel.RealSense
         #endregion
     }
 
-    public class Sensor : IDisposable
+    public class Sensor : IOptions, IDisposable
     {
         protected readonly IntPtr m_instance;
         
@@ -138,7 +148,7 @@ namespace Intel.RealSense
         }
 
 
-        public class CameraOption
+        internal class CameraOption : IOption
         {
             readonly IntPtr m_sensor;
             readonly Option option;
@@ -147,7 +157,7 @@ namespace Intel.RealSense
             private readonly float max;
             private readonly float step;
             private readonly float @default;
-            private readonly string description;
+            private string description;
 
             public CameraOption(IntPtr sensor, Option option)
             {
@@ -158,9 +168,6 @@ namespace Intel.RealSense
                 {
                     object error;
                     NativeMethods.rs2_get_option_range(m_sensor, option, out min, out max, out step, out @default, out error);
-
-                    var str = NativeMethods.rs2_get_option_description(m_sensor, option, out error);
-                    description = Marshal.PtrToStringAnsi(str);
                 }
             }
 
@@ -192,6 +199,12 @@ namespace Intel.RealSense
             {
                 get
                 {
+                    if(description == null)
+                    {
+                        object error;
+                        var str = NativeMethods.rs2_get_option_description(m_sensor, option, out error);
+                        description = Marshal.PtrToStringAnsi(str);
+                    }
                     return description;
                 }
             }
@@ -266,22 +279,23 @@ namespace Intel.RealSense
                 }
             }
         }
-
-        public class SensorOptions : IEnumerable<CameraOption>
+        
+        public class SensorOptions : IOptionsContainer
         {
             readonly IntPtr m_sensor;
-            public SensorOptions(IntPtr sensor)
+            internal SensorOptions(IntPtr sensor)
             {
                 m_sensor = sensor;
             }
 
-            public CameraOption this[Option option]
+            public IOption this[Option option]
             {
                 get
                 {
                     return new CameraOption(m_sensor, option);
                 }
             }
+
             public string OptionValueDescription(Option option, float value)
             {
                 object error;
@@ -295,7 +309,7 @@ namespace Intel.RealSense
 
             static readonly Option[] OptionValues = Enum.GetValues(typeof(Option)) as Option[];
 
-            public IEnumerator<CameraOption> GetEnumerator()
+            public IEnumerator<IOption> GetEnumerator()
             {
 
                 foreach (var v in OptionValues)
@@ -310,8 +324,9 @@ namespace Intel.RealSense
                 return GetEnumerator();
             }
         }
+
         SensorOptions m_options;
-        public SensorOptions Options
+        public IOptionsContainer Options
         {
             get
             {

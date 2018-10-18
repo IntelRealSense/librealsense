@@ -38,25 +38,43 @@ namespace Intel.RealSense
         {
         }
 
-        public void AddVideoFrame(byte[] pixels, int stride, int bpp, double timestamp, TimestampDomain domain, int frameNumber, VideoStreamProfile profile)
+        public void AddVideoFrame(SoftwareVideoFrame f, IntPtr user_data)
         {
             object error;
-            IntPtr hglobal = Marshal.AllocHGlobal(profile.Height * stride);
-            var del = new frame_deleter(p => { Marshal.FreeHGlobal(p); });
-            Marshal.Copy(pixels, 0, hglobal, profile.Height * stride);
+            NativeMethods.rs2_software_sensor_on_video_frame(m_instance, f, user_data, out error);
+        }
 
-            var s = new NativeMethods.SoftwareVideoFrame
+        public void AddVideoFrame<T>(T[] pixels, int stride, int bpp, double timestamp, TimestampDomain domain, int frameNumber, VideoStreamProfile profile)
+        {
+            GCHandle h = GCHandle.Alloc(pixels, GCHandleType.Pinned);
+            
+            AddVideoFrame(new SoftwareVideoFrame
             {
-                pixels = hglobal,
-                deleter = del,
+                pixels = h.AddrOfPinnedObject(),
+                deleter = (f, p) => { GCHandle.FromIntPtr(p).Free(); },
+                //deleter = p => { h.Free(); },
                 stride = stride,
                 bpp = bpp,
                 timestamp = timestamp,
                 domain = domain,
-                frame_number = frameNumber, 
+                frame_number = frameNumber,
                 profile = profile.m_instance.Handle
-            };
-            NativeMethods.rs2_software_sensor_on_video_frame(m_instance, s, out error);
+            }, GCHandle.ToIntPtr(h));
+        }
+
+        public void AddVideoFrame(IntPtr pixels, int stride, int bpp, double timestamp, TimestampDomain domain, int frameNumber, VideoStreamProfile profile)
+        {
+            AddVideoFrame(new SoftwareVideoFrame
+            {
+                pixels = pixels,
+                deleter = delegate { },
+                stride = stride,
+                bpp = bpp,
+                timestamp = timestamp,
+                domain = domain,
+                frame_number = frameNumber,
+                profile = profile.m_instance.Handle
+            }, IntPtr.Zero);
         }
 
         public VideoStreamProfile AddVideoStream(VideoStream profile)
