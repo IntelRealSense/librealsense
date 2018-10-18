@@ -7,11 +7,13 @@ using System.Linq;
 
 public class RsDeviceInspector : MonoBehaviour
 {
+    RsDevice rsdevice;
+
     public bool streaming;
     public Device device;
     public StreamProfileList streams;
     public readonly Dictionary<string, Sensor> sensors = new Dictionary<string, Sensor>();
-    public readonly Dictionary<string, List<Sensor.CameraOption>> sensorOptions = new Dictionary<string, List<Sensor.CameraOption>>();
+    public readonly Dictionary<string, List<IOption>> sensorOptions = new Dictionary<string, List<IOption>>();
 
     void Awake()
     {
@@ -20,12 +22,12 @@ public class RsDeviceInspector : MonoBehaviour
 
     private IEnumerator WaitForDevice()
     {
-        yield return new WaitUntil(() => RsDevice.Instance != null);
-        RsDevice.Instance.OnStart += onStartStreaming;
-        RsDevice.Instance.OnStop += onStopStreaming;
+        yield return new WaitUntil(() => (rsdevice = GetComponent<RsDevice>()) != null);
+        // rsdevice.OnStart += onStartStreaming;
+        rsdevice.OnStop += onStopStreaming;
 
-        if(RsDevice.Instance.Streaming)
-            onStartStreaming(RsDevice.Instance.ActiveProfile);
+        if(rsdevice.Streaming)
+            onStartStreaming(rsdevice.ActiveProfile);
     }
 
     private void onStopStreaming()

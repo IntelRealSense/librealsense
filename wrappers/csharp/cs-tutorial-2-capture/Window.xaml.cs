@@ -24,7 +24,6 @@ namespace Intel.RealSense
     {
         private Pipeline  pipeline;
         private Colorizer colorizer;
-
         private CancellationTokenSource tokenSource = new CancellationTokenSource();
 
         static Action<VideoFrame> UpdateImage(Image img)
@@ -56,9 +55,7 @@ namespace Intel.RealSense
                 pipeline = new Pipeline();
 
                 var cfg = new Config();
-                //cfg.EnableDeviceFromFile("D:/synth.bag");
                 cfg.EnableStream(Stream.Depth, 640, 480);
-                //cfg.EnableStream(Stream.Color, Format.Rgba8);
                 cfg.EnableStream(Stream.Color, Format.Rgb8);
 
                 var pp = pipeline.Start(cfg);

@@ -289,13 +289,12 @@ namespace Intel.RealSense
 
         public void MapTexture(VideoFrame texture)
         {
-            using (var p = texture.Profile)
-            {
+            using (var p = texture.Profile) {
                 streamFilter.Value = (float)p.Stream;
                 formatFilter.Value = (float)p.Format;
                 indexFilter.Value = (float)p.Index;
             }
-            using (var f = Process(texture)) ;
+            using (var f = Process(texture));
         }
     }
 
@@ -308,7 +307,7 @@ namespace Intel.RealSense
             m_instance = instance;
         }
 
-        public T AllocateVideoFrame<T>(StreamProfile profile, Frame original,
+        public T AllocateVideoFrame<T>(StreamProfile profile, Frame original, 
             int bpp, int width, int height, int stride, Extension extension = Extension.VideoFrame) where T : Frame
         {
             object error;
@@ -335,8 +334,7 @@ namespace Intel.RealSense
 
             IntPtr frame_refs = IntPtr.Zero;
 
-            try
-            {
+            try {
                 object error;
                 int fl = frames.Count;
                 frame_refs = Marshal.AllocHGlobal(fl * IntPtr.Size);

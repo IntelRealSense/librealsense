@@ -1,68 +1,69 @@
-﻿using Intel.RealSense;
-using System;
 using System.Collections.Generic;
+using System.Linq;
+using Intel.RealSense;
+using UnityEngine;
 
+[ProcessingBlockDataAttribute(typeof(PointCloud))]
 public class RsPointCloud : RsProcessingBlock
 {
-    public Stream _textureStream = Stream.Color;
-
-    private PointCloud _pb;
-    private List<Stream> _requirments = new List<Stream>() { Stream.Depth };
-
-    private object _lock = new object();
-
-    private Dictionary<Stream, RsVideoStreamRequest> _videoStreamFilter = new Dictionary<Stream, RsVideoStreamRequest>();
-    private Dictionary<Stream, RsVideoStreamRequest> _currVideoStreamFilter = new Dictionary<Stream, RsVideoStreamRequest>();
-
-    public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Multi; } }
-
-    public void Awake()
+    public enum OcclusionRemoval
     {
-        ResetProcessingBlock();
-        foreach(Stream stream in Enum.GetValues(typeof(Stream)))
-        {
-            _videoStreamFilter[stream] = new RsVideoStreamRequest();
-        }
+        Off = 0,
+        Heuristic = 1,
+        Exhaustive = 2
     }
 
-    private void ResetProcessingBlock()
-    {
-        if (_pb != null)
-            _pb.Dispose();
-        _pb = new PointCloud();
-    }
+    public Stream TextureStream = Stream.Color;
+    public Format TextureFormat = Format.Any;
 
-    public override Frame Process(Frame frame, FrameSource frameSource, FramesReleaser releaser)
+    PointCloud _pb;
+    private IOption filterMag;
+    public OcclusionRemoval _occlusionRemoval = OcclusionRemoval.Off;
+    private readonly object _lock = new object();
+
+    public void Init()
     {
         lock (_lock)
         {
-            using (var frameset = FrameSet.FromFrame(frame))
+            _pb = new PointCloud();
+            filterMag = _pb.Options[Option.FilterMagnitude];
+            _pb.Options[Option.StreamFilter].Value = (float)TextureStream;
+            _pb.Options[Option.StreamFormatFilter].Value = (float)TextureFormat;
+        }
+    }
+
+    void OnDisable()
+    {
+        lock (_lock)
+        {
+            if (_pb != null)
             {
-                using (var depth = frameset.DepthFrame)
-                {
-                    using (var texture = frameset.FirstOrDefault<VideoFrame>(_textureStream))
-                    {
-                        _videoStreamFilter[depth.Profile.Stream].CopyProfile(depth);
-                        _videoStreamFilter[texture.Profile.Stream].CopyProfile(texture);
-                        if (_currVideoStreamFilter.Count == 0 ||
-                            !_currVideoStreamFilter[depth.Profile.Stream].Equals(_videoStreamFilter[depth.Profile.Stream]) ||
-                            !_currVideoStreamFilter[texture.Profile.Stream].Equals(_videoStreamFilter[texture.Profile.Stream]))
-                        {
-                            ResetProcessingBlock();
-                            _currVideoStreamFilter[depth.Profile.Stream] = new RsVideoStreamRequest(depth);
-                            _currVideoStreamFilter[texture.Profile.Stream] = new RsVideoStreamRequest(texture);
-                        }
-                        var points = _pb.Calculate(depth, releaser);
-                        _pb.MapTexture(texture);
-                        return frameSource.AllocateCompositeFrame(releaser, depth, points).AsFrame();
-                    }
-                }
+                _pb.Dispose();
+                _pb = null;
             }
         }
     }
 
-    public override List<Stream> Requirments()
+    public override Frame Process(Frame frame, FrameSource frameSource)
     {
-        return _requirments;
+        lock (_lock)
+        {
+            if (_pb == null)
+            {
+                Init();
+            }
+        }
+
+        filterMag.Value = (float)_occlusionRemoval;
+
+        if (frame.IsComposite)
+        {
+            _pb.Options[Option.StreamFilter].Value = (float)TextureStream;
+            _pb.Options[Option.StreamFormatFilter].Value = (float)TextureFormat;
+            // _pb.Options[Option.StreamIndexFilter].Value = (float)0;
+        }
+
+        return _pb.Process(frame);
     }
+
 }

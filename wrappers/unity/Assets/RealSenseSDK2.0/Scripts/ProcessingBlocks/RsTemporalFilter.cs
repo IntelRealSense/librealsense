@@ -1,9 +1,13 @@
 ﻿using Intel.RealSense;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
+[ProcessingBlockDataAttribute(typeof(TemporalFilter))]
+[HelpURL("https://github.com/IntelRealSense/librealsense/blob/master/doc/post-processing-filters.md#temporal-filter")]
 public class RsTemporalFilter : RsProcessingBlock
 {
+
     /// <summary>
     /// The Alpha factor in an exponential moving average with Alpha=1 - no filter . Alpha = 0 - infinite filter
     /// </summary>
@@ -31,40 +35,57 @@ public class RsTemporalFilter : RsProcessingBlock
     [Range(0, 8)]
     public int _temporalPersistence = 3;
 
-    private List<Stream> _requirments = new List<Stream>() { Stream.Depth };
-    private TemporalFilter _pb = new TemporalFilter();
 
-    public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Single; } }
 
-    public override Frame Process(Frame frame, FrameSource frameSource, FramesReleaser releaser)
+    private TemporalFilter _pb;
+    private IOption filterAlphaOpt;
+    private IOption filterDeltaOpt;
+    private IOption holesFillOpt;
+
+    public override Frame Process(Frame frame, FrameSource frameSource)
     {
-        return _enabled ? _pb.ApplyFilter(frame as VideoFrame) : frame;
+        if (_pb == null)
+        {
+            Init();
+        }
+
+        filterAlphaOpt.Value = _filterSmoothAlpha;
+        filterDeltaOpt.Value = _filterSmoothDelta;
+        holesFillOpt.Value = _temporalPersistence;
+
+        return _pb.Process(frame);
     }
 
-    public override List<Stream> Requirments()
+    public void Init()
     {
-        return _requirments;
+        _pb = new TemporalFilter();
+
+        filterAlphaOpt = _pb.Options[Option.FilterSmoothAlpha];
+        filterDeltaOpt = _pb.Options[Option.FilterSmoothDelta];
+        holesFillOpt = _pb.Options[Option.HolesFill];
     }
 
-    public void Update()
+    void OnDisable()
     {
-        _pb.Options[Option.FilterSmoothAlpha].Value = _filterSmoothAlpha;
-        _pb.Options[Option.FilterSmoothDelta].Value = _filterSmoothDelta;
-        _pb.Options[Option.HolesFill].Value = _temporalPersistence;
+        if (_pb != null)
+        {
+            _pb.Dispose();
+            _pb = null;
+        }
     }
 
     public void SetSmoothAlpha(float val)
-    {
-        _filterSmoothAlpha = val;
+    {	
+        _filterSmoothAlpha = val;	
     }
 
-    public void SetSmoothDelta(float val)
+    public void SetSmoothDelta(float val) 
     {
-        _filterSmoothDelta = (int)val;
+        _filterSmoothDelta = (int)val; _pb = new TemporalFilter();
+        filterAlphaOpt = _pb.Options[Option.FilterSmoothAlpha];
+        filterDeltaOpt = _pb.Options[Option.FilterSmoothDelta];
+        holesFillOpt = _pb.Options[Option.HolesFill];
     }
 
-    public void SetTemporalPersistence(float val)
-    {
-        _temporalPersistence = (int)val;
-    }
 }
+
