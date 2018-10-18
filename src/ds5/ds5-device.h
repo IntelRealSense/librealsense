@@ -55,7 +55,7 @@ namespace librealsense
 
         float get_stereo_baseline_mm() const;
 
-        ds::capabilities_vector  parse_device_capabilities() const;
+        ds::d400_caps  parse_device_capabilities() const;
 
         void init(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
@@ -65,7 +65,7 @@ namespace librealsense
         std::shared_ptr<hw_monitor> _hw_monitor;
         firmware_version            _fw_version;
         firmware_version            _recommended_fw_version;
-        ds::capabilities_vector     _device_capabilities;
+        ds::d400_caps               _device_capabilities;
 
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _left_ir_stream;

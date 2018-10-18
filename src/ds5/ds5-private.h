@@ -8,6 +8,7 @@
 
 #include <map>
 #include <iomanip>
+#include <string>
 
 
 namespace librealsense
@@ -22,7 +23,7 @@ namespace librealsense
         const uint16_t RS_USB2_PID      = 0x0ad6; // USB2
         const uint16_t RS420_PID        = 0x0af6; // PWG
         const uint16_t RS420_MM_PID     = 0x0afe; // PWGT
-        const uint16_t RS410_MM_PID     = 0x0aff; // ASR
+        const uint16_t RS410_MM_PID     = 0x0aff; // ASRT
         const uint16_t RS400_MM_PID     = 0x0b00; // PSR
         const uint16_t RS430_MM_RGB_PID = 0x0b01; // AWGCT
         const uint16_t RS460_PID        = 0x0b03; // DS5U
@@ -67,6 +68,14 @@ namespace librealsense
             ds::RS430_MM_PID,
             ds::RS430_MM_RGB_PID,
             ds::RS435_RGB_PID
+        };
+
+        static const std::set<std::uint16_t> fisheye_pid = {
+            ds::RS400_MM_PID,
+            ds::RS410_MM_PID,
+            ds::RS420_MM_PID,
+            ds::RS430_MM_PID,
+            ds::RS430_MM_RGB_PID,
         };
 
         static const std::map<std::uint16_t, std::string> rs400_sku_names = {
@@ -135,28 +144,48 @@ namespace librealsense
             INTERCAM_SYNC_MAX
         };
 
-        enum class capabilities_vector : uint32_t
+        enum class d400_caps : uint16_t
         {
             CAP_UNDEFINED               = 0,
             CAP_ACTIVE_PROJECTOR        = (1u << 0),    //
             CAP_RGB_SENSOR              = (1u << 1),    // Dedicated RGB sensor
             CAP_FISHEYE_SENSOR          = (1u << 2),    // TM1
-            CAP_IMU_SENSOR              = (1u << 3)
+            CAP_IMU_SENSOR              = (1u << 3),
+            CAP_MAX
         };
 
-        inline capabilities_vector operator &(const capabilities_vector lhs, const capabilities_vector rhs)
+        static const std::map<d400_caps, std::string> d400_capabilities_names = {
+            { d400_caps::CAP_UNDEFINED,        "Undefined"         },
+            { d400_caps::CAP_ACTIVE_PROJECTOR, "Active Projector"  },
+            { d400_caps::CAP_RGB_SENSOR,       "RGB Sensor"        },
+            { d400_caps::CAP_FISHEYE_SENSOR,   "Fisheye Sensor"    },
+            { d400_caps::CAP_IMU_SENSOR,       "IMU Sensor"        }
+        };
+
+        inline d400_caps operator &(const d400_caps lhs, const d400_caps rhs)
         {
-            return static_cast<capabilities_vector>(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
+            return static_cast<d400_caps>(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
         }
 
-        inline capabilities_vector operator |(const capabilities_vector lhs, const capabilities_vector rhs)
+        inline d400_caps operator |(const d400_caps lhs, const d400_caps rhs)
         {
-            return static_cast<capabilities_vector>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
+            return static_cast<d400_caps>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
         }
 
-        inline capabilities_vector& operator |=(capabilities_vector& lhs, capabilities_vector rhs)
+        inline d400_caps& operator |=(d400_caps& lhs, d400_caps rhs)
         {
             return lhs = lhs | rhs;
+        }
+
+        inline std::ostream& operator <<(std::ostream& stream, const d400_caps& cap)
+        {
+            for (auto i : { d400_caps::CAP_ACTIVE_PROJECTOR,d400_caps::CAP_RGB_SENSOR,
+                            d400_caps::CAP_FISHEYE_SENSOR,  d400_caps::CAP_IMU_SENSOR})
+            {
+                if (i==(i&cap))
+                    stream << d400_capabilities_names.at(i) << " ";
+            }
+            return stream;
         }
 
         const std::string DEPTH_STEREO = "Stereo Module";
@@ -512,6 +541,8 @@ namespace librealsense
             { stream_not_start_cam,         "Camera stream start failure" },
             { rec_error,                    "REC error" },
         };
+
+        std::vector<platform::uvc_device_info> filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices, d400_caps caps);
 
     } // librealsense::ds
 } // namespace librealsense

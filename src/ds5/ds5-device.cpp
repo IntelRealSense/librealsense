@@ -274,21 +274,22 @@ namespace librealsense
         return _hw_monitor->send(cmd);
     }
 
-    ds::capabilities_vector ds5_device::parse_device_capabilities() const
+    ds::d400_caps ds5_device::parse_device_capabilities() const
     {
         using namespace ds;
         std::array<unsigned char,HW_MONITOR_BUFFER_SIZE> gvd_buf;
         _hw_monitor->get_gvd(gvd_buf.size(), gvd_buf.data(), GVD);
 
-        capabilities_vector val{capabilities_vector::CAP_UNDEFINED};
+        // Opaque retrieval
+        d400_caps val{d400_caps::CAP_UNDEFINED};
         if (gvd_buf[170])                          // DepthActiveMode
-            val |= capabilities_vector::CAP_ACTIVE_PROJECTOR;
+            val |= d400_caps::CAP_ACTIVE_PROJECTOR;
         if (gvd_buf[174])                           // WithRGB
-            val |= capabilities_vector::CAP_RGB_SENSOR;
+            val |= d400_caps::CAP_RGB_SENSOR;
         if (gvd_buf[178])
-            val |= capabilities_vector::CAP_IMU_SENSOR;
+            val |= d400_caps::CAP_IMU_SENSOR;
         if (0xFF != (gvd_buf[112] & gvd_buf[113]))
-            val |= capabilities_vector::CAP_FISHEYE_SENSOR;
+            val |= d400_caps::CAP_FISHEYE_SENSOR;
 
         return val;
     }
@@ -322,6 +323,7 @@ namespace librealsense
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
           _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
+          _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
           _depth_device_idx(add_sensor(create_depth_device(ctx, group.uvc_devices)))
     {
         init(ctx, group);
@@ -371,7 +373,8 @@ namespace librealsense
         std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(group.uvc_devices.front().pid)) ? rs400_sku_names.at(group.uvc_devices.front().pid) : "RS4xx";
         _fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
         _recommended_fw_version = firmware_version("5.10.3.0");
-        _device_capabilities = parse_device_capabilities();
+        if (_fw_version >= firmware_version("5.10.4.0"))
+            _device_capabilities = parse_device_capabilities();
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
         auto& depth_ep = get_depth_sensor();
