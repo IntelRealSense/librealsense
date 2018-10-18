@@ -855,7 +855,7 @@ namespace rs2
 
         void popup_if_error(ImFont* font, std::string& error_message);
 
-		void popup_if_ui_not_aligned(ImFont* font);
+        void popup_if_ui_not_aligned(ImFont* font);
 
         void show_event_log(ImFont* font_14, float x, float y, float w, float h);
 
@@ -907,7 +907,7 @@ namespace rs2
 
         rs2::asynchronous_syncer s;
 
-		bool continue_with_ui_not_aligned = false;
+        bool continue_with_ui_not_aligned = false;
     private:
         struct rgb {
             uint32_t r, g, b;

@@ -22,7 +22,7 @@ bool is_gui_aligned(GLFWwindow *win)
     {
         auto hwn = glfwGetWin32Window(win);
         if (hwn == nullptr)
-            return false;
+            return true;
 
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
@@ -35,7 +35,7 @@ bool is_gui_aligned(GLFWwindow *win)
 
         auto DrawList = ImGui::GetWindowDrawList();
         if (DrawList == nullptr)
-            return false;
+            return true;
 
         DrawList->AddRectFilled({ 0,0 }, { 1,1 }, ImColor(MAGIC / 255.f, 0.f, 0.f, 1.f));
 
@@ -55,28 +55,28 @@ bool is_gui_aligned(GLFWwindow *win)
 
         HDC hdc = GetDC(hwn);
         if (hdc == nullptr)
-            return false;
+            return true;
 
         std::shared_ptr<HDC> shared_hdc(&hdc, [&](HDC* hdc) {ReleaseDC(hwn, *hdc); DeleteDC(*hdc);});
 
         HDC hCaptureDC = CreateCompatibleDC(hdc);
         if (hCaptureDC == nullptr)
-            return false;
+            return true;
 
         std::shared_ptr<HDC> shared_capture_hdc(&hCaptureDC, [&](HDC* hdc) {ReleaseDC(hwn, *hdc); DeleteDC(*hdc);});
 
         HBITMAP hCaptureBitmap = CreateCompatibleBitmap(hdc, width, height);
         if (hCaptureBitmap == nullptr)
-            return false;
+            return true;
 
         std::shared_ptr<HBITMAP> shared_bmp(&hCaptureBitmap, [&](HBITMAP* bmp) {DeleteObject(bmp);});
 
         auto original = SelectObject(hCaptureDC, hCaptureBitmap);
         if (original == nullptr)
-            return false;
+            return true;
 
         if (!BitBlt(hCaptureDC, 0, 0, width, height, hdc, 0, 0, SRCCOPY | CAPTUREBLT))
-            return false;
+            return true;
 
         BITMAPINFO bmi = { 0 };
         bmi.bmiHeader.biSize = sizeof(bmi.bmiHeader);
@@ -99,14 +99,14 @@ bool is_gui_aligned(GLFWwindow *win)
         );
 
         if (res <= 0 || res == ERROR_INVALID_PARAMETER)
-            return false;
+            return true;
 
         auto ret = pPixels[0].rgbRed == MAGIC;
         return ret;
     }
     catch (...)
     {
-        return false;
+        return true;
     }
 #else
     return true;

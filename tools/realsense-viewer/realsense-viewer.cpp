@@ -273,7 +273,7 @@ int main(int argv, const char** argc) try
     // Closing the window
     while (window)
     {
-		if (!window.is_ui_aligned())
+        if (!window.is_ui_aligned())
 		{
 			viewer_model.popup_if_ui_not_aligned(window.get_font());
 		}

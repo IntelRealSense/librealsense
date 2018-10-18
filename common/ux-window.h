@@ -95,6 +95,6 @@ namespace rs2
         bool                     _fullscreen = false;
         std::string              _title;
 
-		bool                     _is_ui_aligned = false;
+        bool                     _is_ui_aligned = false;
     };
 }

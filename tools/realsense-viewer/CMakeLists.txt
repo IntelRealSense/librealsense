@@ -45,8 +45,8 @@ endif()
             ../../common/model-views.cpp
             ../../common/ux-window.h
             ../../common/ux-window.cpp
-			../../common/ux-alignment.cpp
-			../../common/ux-alignment.h
+            ../../common/ux-alignment.cpp
+            ../../common/ux-alignment.h
         )
 
     # config-ui

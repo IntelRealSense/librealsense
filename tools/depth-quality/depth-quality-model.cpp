@@ -434,10 +434,10 @@ namespace rs2
 
         void tool_model::render(ux_window& win)
         {
-			if (!win.is_ui_aligned())
-			{
-				_viewer_model.popup_if_ui_not_aligned(win.get_font());
-			}
+            if (!win.is_ui_aligned())
+            {
+                _viewer_model.popup_if_ui_not_aligned(win.get_font());
+            }
             rect viewer_rect = { _viewer_model.panel_width,
                 _viewer_model.panel_y, win.width() -
                 _viewer_model.panel_width,
