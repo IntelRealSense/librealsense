@@ -3262,10 +3262,10 @@ namespace rs2
                 if(viewer.synchronization_enable)
                 {
                     auto frames = viewer.syncer->try_wait_for_frames();
-                        std::for_each(frames.begin(), frames.end(),[this](rs2::frameset f)
+                        for(auto f:frames)
                         {
                             processing_block.invoke(f);
-                        });
+                        }
                 }
                 else
                 {
