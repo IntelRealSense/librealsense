@@ -316,18 +316,20 @@ namespace rs2
             start();
         }
 
-        rs2::frameset wait_for_frames()
+        std::vector<rs2::frameset> try_wait_for_frames()
         {
-            rs2::frameset result;
-            while(_active)
+            std::lock_guard<std::mutex> lock(_mutex);
+
+            std::vector<rs2::frameset> result;
+            for(auto&& s = _syncers.begin(); s!=_syncers.end() && _active; s++)
             {
-                std::lock_guard<std::mutex> lock(_mutex);
-                for(auto&& s: _syncers)
+                rs2::frameset f;
+                if(s->second.try_wait_for_frame(&f,1))
                 {
-                    if(s.second.try_wait_for_frame(&result,30))
-                        return result;
+                    result.push_back(f);
                 }
             }
+
             return result;
         }
 
