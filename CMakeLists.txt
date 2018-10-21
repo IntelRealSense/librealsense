@@ -121,7 +121,7 @@ elseif(UNIX)
 endif()
 
 
-option(BUILD_WITH_TM2 "Build with support for Intel TM2 tracking device" OFF)
+option(BUILD_WITH_TM2 "Build with support for Intel TM2 tracking device" ON)
 if(APPLE OR ANDROID_NDK_TOOLCHAIN_INCLUDED)
     set(BUILD_WITH_TM2 OFF)
 endif()
