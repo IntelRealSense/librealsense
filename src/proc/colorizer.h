@@ -107,6 +107,7 @@ namespace librealsense {
         std::vector<color_map*> _maps;
         int _map_index = 0;
         int _preset = 0;
-        std::shared_ptr<rs2::stream_profile> _stream;
+        rs2::stream_profile _target_stream_profile;
+        rs2::stream_profile _source_stream_profile;
     };
 }

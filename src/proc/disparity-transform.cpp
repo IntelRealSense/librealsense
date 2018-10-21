@@ -93,7 +93,7 @@ namespace librealsense
 
     void  disparity_transform::update_transformation_profile(const rs2::frame& f)
     {
-        if (f.get_profile().get() != _source_stream_profile.get())
+        if(!_source_stream_profile || f.get_profile().unique_id() != _source_stream_profile.unique_id())
         {
             _source_stream_profile = f.get_profile();
 
@@ -151,7 +151,6 @@ namespace librealsense
         {
             auto tgt_format = _transform_to_disparity ? RS2_FORMAT_DISPARITY32 : RS2_FORMAT_Z16;
             _target_stream_profile = _source_stream_profile.clone(RS2_STREAM_DEPTH, 0, tgt_format);
-            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*(stream_interface*)(_source_stream_profile.get()->profile), *(stream_interface*)(_target_stream_profile.get()->profile));
             auto src_vspi = dynamic_cast<video_stream_profile_interface*>(_source_stream_profile.get()->profile);
             auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(_target_stream_profile.get()->profile);
             rs2_intrinsics src_intrin   = src_vspi->get_intrinsics();
