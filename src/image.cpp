@@ -117,7 +117,7 @@ namespace librealsense
     template<size_t SIZE> void unpack_accel_axes(byte * const dest[], const byte * source, int width, int height)
     {
         static constexpr float gravity = 9.80665f;          // Standard Gravitation Acceleration
-        static constexpr short accel_measurement_range = 2; // Default config  ± 2 g
+        static constexpr short accel_measurement_range = 4; // Config  ± 4 g / 435i
         // Accel A/D converter 12bit -> 4096 samples
         static constexpr double accelerator_transform_factor = accel_measurement_range*gravity/4096.f;
 
