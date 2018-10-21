@@ -94,26 +94,18 @@ test_script:
         $test_failed +=  $element
     }
 
-#    foreach ($element in $records) 
-#    {
-#
-#        $url_cur = $url_records_path + $element
-#
-#        & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from $element -d yes -i
-#
-#        if ($LASTEXITCODE -ne 0)
-#        {
-#            $test_failed +=  $element
-#        }
-#    }
-    
-    $url_cur = $url_records_path + single_cam/d405_lrs_2.15.0_5.10.3_post_processing_expected_output.rec
-    & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from single_cam/d405_lrs_2.15.0_5.10.3_post_processing_expected_output.rec -d yes -i
-
-    if ($LASTEXITCODE -ne 0)
+    foreach ($element in $records) 
     {
-        $test_failed +=  single_cam/d405_lrs_2.15.0_5.10.3_post_processing_expected_output.rec
-    }    
+
+        $url_cur = $url_records_path + $element
+
+        & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from $element -d yes -i
+
+        if ($LASTEXITCODE -ne 0)
+        {
+            $test_failed +=  $element
+        }
+    }
 
     if ($test_failed.length -ne 0)
     {
