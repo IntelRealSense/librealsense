@@ -1498,7 +1498,7 @@ namespace rs2
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
         {
             auto opt = static_cast<rs2_option>(i);
-            if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
+            if (skip_option(opt)) continue;
             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
             {
                 draw_option(opt, update_read_only_options, error_message, notifications);
@@ -1511,7 +1511,7 @@ namespace rs2
         return (uint64_t)std::count_if(
             std::begin(options_metadata),
             std::end(options_metadata),
-            [](const std::pair<int, option_model>& p) {return p.second.supported && p.second.opt != RS2_OPTION_FRAMES_QUEUE_SIZE; });
+            [](const std::pair<int, option_model>& p) {return p.second.supported && !skip_option(p.second.opt); });
     }
 
     bool option_model::draw_option(bool update_read_only_options,
@@ -5948,7 +5948,7 @@ namespace rs2
                         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                         {
                             auto opt = static_cast<rs2_option>(i);
-                            if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
+                            if (skip_option(opt)) continue;
                             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
                                 if (dev.is<advanced_mode>() && opt == RS2_OPTION_VISUAL_PRESET)
@@ -5984,7 +5984,7 @@ namespace rs2
                         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                         {
                             auto opt = static_cast<rs2_option>(i);
-                            if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
+                            if (skip_option(opt)) continue;
                             pb->get_option(opt).draw_option(
                                 dev.is<playback>() || update_read_only_options,
                                 false, error_message, viewer.not_model);
@@ -6153,7 +6153,7 @@ namespace rs2
                                 for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                                 {
                                     auto opt = static_cast<rs2_option>(i);
-                                    if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
+                                    if (skip_option(opt)) continue;
                                     pb->get_option(opt).draw_option(
                                         dev.is<playback>() || update_read_only_options,
                                         false, error_message, viewer.not_model);

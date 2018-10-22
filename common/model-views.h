@@ -150,6 +150,17 @@ namespace rs2
     // that most of the application is presented on
     int pick_scale_factor(GLFWwindow* window);
 
+    // avoid display the following options
+    bool static skip_option(rs2_option opt)
+    {
+        if (opt == RS2_OPTION_STREAM_FILTER ||
+            opt == RS2_OPTION_STREAM_FORMAT_FILTER ||
+            opt == RS2_OPTION_STREAM_INDEX_FILTER ||
+            opt == RS2_OPTION_FRAMES_QUEUE_SIZE)
+            return true;
+        return false;
+    }
+
     template<class T>
     void sort_together(std::vector<T>& vec, std::vector<std::string>& names)
     {
