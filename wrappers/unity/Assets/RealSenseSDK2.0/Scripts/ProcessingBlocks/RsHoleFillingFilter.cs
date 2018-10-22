@@ -1,7 +1,4 @@
 ﻿using Intel.RealSense;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 [ProcessingBlockDataAttribute(typeof(HoleFillingFilter))]
@@ -31,7 +28,6 @@ public class RsHoleFillingFilter : RsProcessingBlock
     {
         _pb = new HoleFillingFilter();
         holeFillOption = _pb.Options[Option.HolesFill];
-        holeFillOption.Value = (float)_holesFill;
     }
 
     void OnDisable()
@@ -47,7 +43,7 @@ public class RsHoleFillingFilter : RsProcessingBlock
             Init();
         }
 
-        holeFillOption.Value = (float)_holesFill;
+        UpdateOptions();
 
         return _pb.Process(frame);
     }
@@ -55,5 +51,10 @@ public class RsHoleFillingFilter : RsProcessingBlock
     public void SetHoleFill(float val)
     {
         _holesFill = (HoleFillingMode)val;
+    }
+
+    private void UpdateOptions()
+    {
+        holeFillOption.Value = (float)_holesFill;
     }
 }

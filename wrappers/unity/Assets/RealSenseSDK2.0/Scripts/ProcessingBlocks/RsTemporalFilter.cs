@@ -35,8 +35,6 @@ public class RsTemporalFilter : RsProcessingBlock
     [Range(0, 8)]
     public int _temporalPersistence = 3;
 
-
-
     private TemporalFilter _pb;
     private IOption filterAlphaOpt;
     private IOption filterDeltaOpt;
@@ -49,9 +47,7 @@ public class RsTemporalFilter : RsProcessingBlock
             Init();
         }
 
-        filterAlphaOpt.Value = _filterSmoothAlpha;
-        filterDeltaOpt.Value = _filterSmoothDelta;
-        holesFillOpt.Value = _temporalPersistence;
+        UpdateOptions();
 
         return _pb.Process(frame);
     }
@@ -75,17 +71,25 @@ public class RsTemporalFilter : RsProcessingBlock
     }
 
     public void SetSmoothAlpha(float val)
-    {	
-        _filterSmoothAlpha = val;	
-    }
-
-    public void SetSmoothDelta(float val) 
     {
-        _filterSmoothDelta = (int)val; _pb = new TemporalFilter();
-        filterAlphaOpt = _pb.Options[Option.FilterSmoothAlpha];
-        filterDeltaOpt = _pb.Options[Option.FilterSmoothDelta];
-        holesFillOpt = _pb.Options[Option.HolesFill];
+        _filterSmoothAlpha = val;
     }
 
+    public void SetSmoothDelta(float val)
+    {
+        _filterSmoothDelta = (int)val;
+    }
+
+    public void SetTemporalPersistence(float val)
+    {
+        _temporalPersistence = (int)val;
+    }
+
+    private void UpdateOptions()
+    {
+        filterAlphaOpt.Value = _filterSmoothAlpha;
+        filterDeltaOpt.Value = _filterSmoothDelta;
+        holesFillOpt.Value = _temporalPersistence;
+    }
 }
 

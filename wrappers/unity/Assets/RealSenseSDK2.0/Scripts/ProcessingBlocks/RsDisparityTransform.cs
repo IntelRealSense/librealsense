@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using Intel.RealSense;
+﻿using Intel.RealSense;
 using UnityEngine;
 
 [ProcessingBlockDataAttribute(typeof(DisparityTransform))]

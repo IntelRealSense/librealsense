@@ -1,6 +1,5 @@
-using UnityEngine;
 using Intel.RealSense;
-using System.Linq;
+using UnityEngine;
 
 [ProcessingBlockDataAttribute(typeof(Colorizer))]
 public class RsColorizer : RsProcessingBlock
@@ -54,11 +53,30 @@ public class RsColorizer : RsProcessingBlock
         histEqOption = _pb.Options[Option.HistogramEqualizationEnabled];
         minDistOption = _pb.Options[Option.MinDistance];
         maxDistOption = _pb.Options[Option.MaxDistance];
-
-        Update();
     }
 
-    void Update()
+    void OnDisable()
+    {
+        if (_pb != null)
+        {
+            _pb.Dispose();
+        }
+    }
+
+
+    public override Frame Process(Frame frame, FrameSource frameSource)
+    {
+        if (_pb == null)
+        {
+            Init();
+        }
+
+        UpdateOptions();
+
+        return _pb.Process(frame);
+    }
+
+    private void UpdateOptions()
     {
         if (presetOption.Value != (float)visualPreset)
         {
@@ -83,26 +101,5 @@ public class RsColorizer : RsProcessingBlock
             if (maxDistOption.Value != maxDist)
                 maxDistOption.Value = maxDist;
         }
-    }
-
-    void OnDisable()
-    {
-        if (_pb != null)
-        {
-            _pb.Dispose();
-        }
-    }
-
-
-    public override Frame Process(Frame frame, FrameSource frameSource)
-    {
-        if (_pb == null)
-        {
-            Init();
-        }
-
-        Update();
-
-        return _pb.Process(frame);
     }
 }

@@ -1,6 +1,4 @@
 using Intel.RealSense;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 [ProcessingBlockDataAttribute(typeof(SpatialFilter))]
@@ -58,10 +56,7 @@ public class RsSpatialFilter : RsProcessingBlock
             Init();
         }
 
-        filterMag.Value = _filterMagnitude;
-        filterAlpha.Value = _filterSmoothAlpha;
-        filterDelta.Value = _filterSmoothDelta;
-        holeFill.Value = (float)_holeFillingMode;
+        UpdateOptions();
 
         return _pb.Process(frame);
     }
@@ -84,19 +79,33 @@ public class RsSpatialFilter : RsProcessingBlock
             _pb = null;
         }
     }
+
     public void SetMagnitude(float val)
     {
-        _pb = new SpatialFilter();
+        _filterMagnitude = (int)val;
+    }
 
-        filterMag = _pb.Options[Option.FilterMagnitude];
-        filterAlpha = _pb.Options[Option.FilterSmoothAlpha];
-        filterDelta = _pb.Options[Option.FilterSmoothDelta];
-        holeFill = _pb.Options[Option.HolesFill];
+    public void SetSmoothAlpha(float val)
+    {
+        _filterSmoothAlpha = val;
+    }
+
+    public void SetSmoothDelta(float val)
+    {
+        _filterSmoothDelta = (int)val;
     }
 
     public void SetHolesFill(float val)
     {
         _holeFillingMode = (HoleFillingMode)val;
+    }
+
+    private void UpdateOptions()
+    {
+        filterMag.Value = _filterMagnitude;
+        filterAlpha.Value = _filterSmoothAlpha;
+        filterDelta.Value = _filterSmoothDelta;
+        holeFill.Value = (float)_holeFillingMode;
     }
 }
 

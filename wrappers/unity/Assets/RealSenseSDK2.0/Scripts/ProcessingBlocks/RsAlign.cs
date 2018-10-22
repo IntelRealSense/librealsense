@@ -1,8 +1,4 @@
 ﻿using Intel.RealSense;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using UnityEngine;
 
 [ProcessingBlockDataAttribute(typeof(Align))]
 public class RsAlign : RsProcessingBlock

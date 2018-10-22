@@ -1,14 +1,12 @@
 ﻿using Intel.RealSense;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 [ProcessingBlockDataAttribute(typeof(DecimationFilter))]
 [HelpURL("https://github.com/IntelRealSense/librealsense/blob/master/doc/post-processing-filters.md#decimation-filter")]
 public class RsDecimationFilter : RsProcessingBlock
 {
-    public Stream StreamFilter;
-    public Format FormatFilter;
+    public Stream _streamFilter = Stream.Depth;
+    public Format _formatFilter = Format.Z16;
 
     /// <summary>
     /// Number of filter iterations
@@ -30,9 +28,7 @@ public class RsDecimationFilter : RsProcessingBlock
             Init();
         }
 
-        filterMag.Value = _filterMagnitude;
-        streamFilter.Value = (float)StreamFilter;
-        formatFilter.Value = (float)FormatFilter;
+        UpdateOptions();
 
         return _pb.Process(frame);
     }
@@ -41,13 +37,8 @@ public class RsDecimationFilter : RsProcessingBlock
     {
         _pb = new DecimationFilter();
         filterMag = _pb.Options[Option.FilterMagnitude];
-        filterMag.Value = _filterMagnitude;
-
         streamFilter = _pb.Options[Option.StreamFilter];
-        streamFilter.Value = (float)StreamFilter;
-
         formatFilter = _pb.Options[Option.StreamFormatFilter];
-        formatFilter.Value = (float)FormatFilter;
     }
 
     void OnDisable()
@@ -62,6 +53,13 @@ public class RsDecimationFilter : RsProcessingBlock
     public void SetMagnitude(float val)
     {
         _filterMagnitude = (int)val;
+    }
+    
+    private void UpdateOptions()
+    {
+        filterMag.Value = _filterMagnitude;
+        streamFilter.Value = (float)_streamFilter;
+        formatFilter.Value = (float)_formatFilter;
     }
 }
 

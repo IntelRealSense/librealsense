@@ -1,7 +1,4 @@
-using System.Collections.Generic;
-using System.Linq;
 using Intel.RealSense;
-using UnityEngine;
 
 [ProcessingBlockDataAttribute(typeof(PointCloud))]
 public class RsPointCloud : RsProcessingBlock
@@ -15,10 +12,13 @@ public class RsPointCloud : RsProcessingBlock
 
     public Stream TextureStream = Stream.Color;
     public Format TextureFormat = Format.Any;
+    public OcclusionRemoval _occlusionRemoval = OcclusionRemoval.Off;
 
     PointCloud _pb;
     private IOption filterMag;
-    public OcclusionRemoval _occlusionRemoval = OcclusionRemoval.Off;
+    private IOption streamFilter;
+    private IOption formatFilter;
+
     private readonly object _lock = new object();
 
     public void Init()
@@ -27,8 +27,8 @@ public class RsPointCloud : RsProcessingBlock
         {
             _pb = new PointCloud();
             filterMag = _pb.Options[Option.FilterMagnitude];
-            _pb.Options[Option.StreamFilter].Value = (float)TextureStream;
-            _pb.Options[Option.StreamFormatFilter].Value = (float)TextureFormat;
+            streamFilter = _pb.Options[Option.StreamFilter];
+            formatFilter = _pb.Options[Option.StreamFormatFilter];
         }
     }
 
@@ -54,16 +54,18 @@ public class RsPointCloud : RsProcessingBlock
             }
         }
 
-        filterMag.Value = (float)_occlusionRemoval;
-
-        if (frame.IsComposite)
-        {
-            _pb.Options[Option.StreamFilter].Value = (float)TextureStream;
-            _pb.Options[Option.StreamFormatFilter].Value = (float)TextureFormat;
-            // _pb.Options[Option.StreamIndexFilter].Value = (float)0;
-        }
+        UpdateOptions(frame.IsComposite);
 
         return _pb.Process(frame);
     }
 
+    private void UpdateOptions(bool isComposite)
+    {
+        filterMag.Value = (float)_occlusionRemoval;
+        if (isComposite)
+        {
+            streamFilter.Value = (float)TextureStream;
+            formatFilter.Value = (float)TextureFormat;
+        }
+    }
 }
