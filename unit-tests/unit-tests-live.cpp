@@ -301,7 +301,7 @@ TEST_CASE("Sync sanity", "[live][check]") {
     }
 }
 
-TEST_CASE("Sync different fps", "[live][!mayfail]") {
+TEST_CASE("Sync different fps", "[live][!mayfail][check]") {
 
     rs2::context ctx;
 
@@ -441,7 +441,7 @@ bool get_mode(rs2::device& dev, stream_profile* profile, int mode_index = 0)
     return false;
 }
 
-TEST_CASE("Sync start stop", "[live]") {
+TEST_CASE("Sync start stop", "[live][check]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
