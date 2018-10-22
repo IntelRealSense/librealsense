@@ -217,7 +217,7 @@ std::pair<std::vector<sensor>, std::vector<profile>> configure_all_supported_str
     return{ sensors, profiles };
 }
 
-TEST_CASE("Sync sanity", "[live]") {
+TEST_CASE("Sync sanity", "[live][check]") {
 
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
