@@ -92,6 +92,32 @@ namespace Intel.RealSense
         #endregion
     }
 
+    public struct ROI
+    {
+        public int minX, minY, maxX, maxY;
+    }
+
+    public class AutoExposureROI
+    {
+        internal IntPtr m_instance;
+
+        public ROI GetRegionOfInterest()
+        {
+            var result = new ROI();
+            object error;
+            NativeMethods.rs2_get_region_of_interest(m_instance, out result.minX,
+                out result.minY, out result.maxX, out result.maxY, out error);
+            return result;
+        }
+
+        public void SetRegionOfInterest(ROI value)
+        {
+            object error;
+            NativeMethods.rs2_set_region_of_interest(m_instance,
+                value.minX, value.minY, value.maxX, value.maxY, out error);
+        }
+    }
+
     public class Sensor : IDisposable
     {
         protected readonly IntPtr m_instance;
@@ -106,6 +132,19 @@ namespace Intel.RealSense
             //if (sensor == IntPtr.Zero)
             //    throw new ArgumentNullException();
             m_instance = sensor;
+        }
+
+        public AutoExposureROI AutoExposureSettings
+        {
+            get
+            {
+                object error;
+                if (NativeMethods.rs2_is_sensor_extendable_to(m_instance, Extension.Roi, out error) > 0)
+                {
+                    return new AutoExposureROI { m_instance = m_instance };
+                }
+                return null;
+            }
         }
 
         public class CameraInfos
