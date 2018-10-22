@@ -21,6 +21,7 @@ namespace librealsense
         const uint16_t RS430_PID        = 0x0ad4; // AWG
         const uint16_t RS430_MM_PID     = 0x0ad5; // AWGT
         const uint16_t RS_USB2_PID      = 0x0ad6; // USB2
+        const uint16_t RS400_IMU_PID    = 0x0af2; // IMU
         const uint16_t RS420_PID        = 0x0af6; // PWG
         const uint16_t RS420_MM_PID     = 0x0afe; // PWGT
         const uint16_t RS410_MM_PID     = 0x0aff; // ASRT
@@ -42,22 +43,24 @@ namespace librealsense
         const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE       = 0xA;
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE            = 0xB;
 
+        // Devices supported by the current version
         static const std::set<std::uint16_t> rs400_sku_pid = {
             ds::RS400_PID,
-            ds::RS400_MM_PID,
             ds::RS410_PID,
-            ds::RS410_MM_PID,
             ds::RS415_PID,
-            ds::RS420_PID,
-            ds::RS420_MM_PID,
             ds::RS430_PID,
             ds::RS430_MM_PID,
+            ds::RS_USB2_PID,
+            ds::RS400_IMU_PID,
+            ds::RS420_PID,
+            ds::RS420_MM_PID,
+            ds::RS410_MM_PID,
+            ds::RS400_MM_PID,
             ds::RS430_MM_RGB_PID,
-            ds::RS435_RGB_PID,
             ds::RS460_PID,
+            ds::RS435_RGB_PID,
             ds::RS405_PID,
             ds::RS435I_PID,
-            ds::RS_USB2_PID
         };
 
         static const std::set<std::uint16_t> multi_sensors_pid = {
@@ -88,12 +91,14 @@ namespace librealsense
             { RS420_MM_PID,     "Intel RealSense D420 with Tracking Module"},
             { RS430_PID,        "Intel RealSense D430"},
             { RS430_MM_PID,     "Intel RealSense D430 with Tracking Module"},
-            { RS430_MM_PID,     "Intel RealSense D430 with Tracking Module and RGB Module"},
+            { RS430_MM_RGB_PID, "Intel RealSense D430 with Tracking and RGB Modules"},
             { RS435_RGB_PID,    "Intel RealSense D435"},
             { RS460_PID,        "Intel RealSense D460" },
             { RS405_PID,        "Intel RealSense D405" },
             { RS435I_PID,       "Intel RealSense D435I" },
-            { RS_USB2_PID,      "Intel RealSense USB2" }
+            { RS_USB2_PID,      "Intel RealSense USB2" },
+            { RS400_IMU_PID,    "Intel RealSense IMU" }
+
         };
 
         // DS5 fisheye XU identifiers

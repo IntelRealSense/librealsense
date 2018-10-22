@@ -419,6 +419,7 @@ namespace librealsense
                         get_depth_sensor()));
             }
 #endif
+
             depth_ep.register_pu(RS2_OPTION_GAIN);
             auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(depth_ep,
                 depth_xu,
@@ -451,7 +452,6 @@ namespace librealsense
                 new polling_error_handler(1000,
                     std::move(error_control),
                     depth_ep.get_notifications_processor(),
-
                     std::unique_ptr<notification_decoder>(new ds5_notification_decoder())));
 
             depth_ep.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler.get()));

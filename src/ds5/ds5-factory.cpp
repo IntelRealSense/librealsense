@@ -439,6 +439,31 @@ namespace librealsense
         };
     };
 
+
+    class rs400_imu_device  :      public ds5_motion,
+                                public ds5_advanced_mode_base
+    {
+    public:
+        rs400_imu_device(std::shared_ptr<context> ctx,
+                    const platform::backend_device_group group,
+                    bool register_device_notifications)
+            : device(ctx, group, register_device_notifications),
+              ds5_device(ctx, group),
+              ds5_motion(ctx, group),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const;
+
+        std::vector<tagged_profile> get_profiles_tags() const override
+        {
+            std::vector<tagged_profile> tags;
+            tags.push_back({RS2_STREAM_GYRO, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, 200, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            tags.push_back({RS2_STREAM_ACCEL, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, 125, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+
+            return tags;
+        };
+    };
+
     std::shared_ptr<device_interface> ds5_info::create(std::shared_ptr<context> ctx,
                                                        bool register_device_notifications) const
     {
@@ -475,6 +500,8 @@ namespace librealsense
             return std::make_shared<rs435i_device>(ctx, group, register_device_notifications);
         case RS_USB2_PID:
             return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
+        case RS400_IMU_PID:
+            return std::make_shared<rs400_imu_device>(ctx, group, register_device_notifications);
         default:
             throw std::runtime_error(to_string() << "Unsupported RS400 model! 0x"
                 << std::hex << std::setw(4) << std::setfill('0') <<(int)pid);
@@ -694,6 +721,13 @@ namespace librealsense
         }
         streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
+    }
+
+    std::shared_ptr<matcher> rs400_imu_device::create_matcher(const frame_holder& frame) const
+    {
+        // TODO Evgeni - A proper matcher for High-FPS sensor is required
+        std::vector<stream_interface*> mm_streams = { _accel_stream.get(), _gyro_stream.get()};
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, mm_streams);
     }
 
 }
