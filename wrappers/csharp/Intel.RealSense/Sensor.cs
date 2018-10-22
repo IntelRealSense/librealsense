@@ -118,6 +118,19 @@ namespace Intel.RealSense
             m_instance = sensor;
         }
 
+        public AutoExposureROI AutoExposureSettings
+        {
+            get
+            {
+                object error;
+                if (NativeMethods.rs2_is_sensor_extendable_to(m_instance, Extension.Roi, out error) > 0)
+                {
+                    return new AutoExposureROI { m_instance = m_instance };
+                }
+                return null;
+            }
+        }
+
         public class CameraInfos
         {
             readonly IntPtr m_sensor;
