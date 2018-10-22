@@ -1610,6 +1610,23 @@ namespace rs2
         return false;
     }
 
+    inline bool is_rasterizeable(rs2_format format)
+    {
+        // Check whether the produced
+        switch (format)
+        {
+            case RS2_FORMAT_ANY:
+            case RS2_FORMAT_XYZ32F:
+            case RS2_FORMAT_MOTION_RAW:
+            case RS2_FORMAT_MOTION_XYZ32F:
+            case RS2_FORMAT_GPIO_RAW:
+            case RS2_FORMAT_6DOF:
+                return false;
+            default:
+                return true;
+        }
+    }
+
     // RS4xx with RealTec RGB sensor may additionally require sensor orientation control to make runtime adjustments
     inline void rotate_rgb_image(device& dev,uint32_t res_width)
     {

@@ -87,7 +87,9 @@ void *_uvc_handle_events(void *arg) {
   uvc_context_t *ctx = (uvc_context_t *) arg;
 
   while (!ctx->kill_handler_thread)
+  {
     libusb_handle_events_completed(ctx->usb_ctx, &ctx->kill_handler_thread);
+  }
   return NULL;
 }
 

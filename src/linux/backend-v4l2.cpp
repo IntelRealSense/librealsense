@@ -999,7 +999,7 @@ namespace librealsense
                             }
                             else
                             {
-                                LOG_ERROR("Video frame arrived in idle mode."); // TODO - verification
+                                LOG_INFO("Video frame arrived in idle mode."); // TODO - verification
                             }
                         }
                         else

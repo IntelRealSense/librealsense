@@ -6,6 +6,7 @@
 #define LIBUVC_INTERNAL_H
 
 #include <assert.h>
+#include <atomic>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -14,8 +15,15 @@
 #include <mutex>
 #include <condition_variable>
 #include <signal.h>
-#include "../third-party/libusb/libusb/libusb.h"
 #include "utlist.h"
+
+#pragma GCC diagnostic ignored "-Wpedantic"
+#ifdef USE_SYSTEM_LIBUSB
+    #include <libusb.h>
+#else
+    #include "libusb/libusb.h"
+#endif
+#pragma GCC diagnostic pop
 
 /** Converts an unaligned four-byte little-endian integer into an int32 */
 #define DW_TO_INT(p) ((p)[0] | ((p)[1] << 8) | ((p)[2] << 16) | ((p)[3] << 24))
@@ -245,7 +253,7 @@ struct uvc_stream_handle {
     struct uvc_streaming_interface *stream_if;
 
     /** if true, stream is running (streaming video to host) */
-    uint8_t running;
+    std::atomic<uint8_t> running;
     /** Current control block */
     struct uvc_stream_ctrl cur_ctrl;
 
@@ -261,13 +269,13 @@ struct uvc_stream_handle {
     uint8_t *outbuf, *holdbuf;
     std::mutex cb_mutex;
     std::condition_variable cb_cond;
-    std::condition_variable cb_cancel;
     std::thread cb_thread;
     uint32_t last_polled_seq;
     uvc_frame_callback_t *user_cb;
     void *user_ptr;
     struct libusb_transfer *transfers[LIBUVC_NUM_TRANSFER_BUFS];
     uint8_t *transfer_bufs[LIBUVC_NUM_TRANSFER_BUFS];
+    std::condition_variable transfer_cancel[LIBUVC_NUM_TRANSFER_BUFS];
     struct uvc_frame frame;
     enum uvc_frame_format frame_format;
 };

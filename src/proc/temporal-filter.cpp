@@ -40,8 +40,8 @@ namespace librealsense
         _extension_type(RS2_EXTENSION_DEPTH_FRAME),
         _current_frm_size_pixels(0)
     {
-        _stream_filter = RS2_STREAM_DEPTH;
-        _stream_format_filter = RS2_FORMAT_Z16;
+        _stream_filter.stream = RS2_STREAM_DEPTH;
+        _stream_filter.format = RS2_FORMAT_Z16;
 
         auto temporal_persistence_control = std::make_shared<ptr_option<uint8_t>>(
             persistence_min,
@@ -151,14 +151,10 @@ namespace librealsense
 
     void  temporal_filter::update_configuration(const rs2::frame& f)
     {
-        if (f.get_profile().get() != _source_stream_profile.get())
+        if (!_source_stream_profile || f.get_profile().unique_id() != _source_stream_profile.unique_id())
         {
             _source_stream_profile = f.get_profile();
             _target_stream_profile = _source_stream_profile.clone(RS2_STREAM_DEPTH, 0, _source_stream_profile.format());
-
-            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(
-                *(stream_interface*)(f.get_profile().get()->profile),
-                *(stream_interface*)(_target_stream_profile.get()->profile));
 
             //TODO - reject any frame other than depth/disparity
             _extension_type = f.is<rs2::disparity_frame>() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;

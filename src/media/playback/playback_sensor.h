@@ -39,7 +39,6 @@ namespace librealsense
         bool is_streaming() const override;
         bool extend_to(rs2_extension extension_type, void** ext) override;
         const device_interface& get_device() override;
-        void handle_frame(frame_holder frame, bool is_real_time);
         void update_option(rs2_option id, std::shared_ptr<option> option);
         void stop(bool invoke_required);
         void flush_pending_frames();
@@ -50,6 +49,7 @@ namespace librealsense
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
         void unregister_before_start_callback(int token) override;
         void raise_notification(const notification& n);
+        bool streams_contains_one_frame_or_more();
     private:
         void register_sensor_streams(const stream_profiles& vector);
         void register_sensor_infos(const device_serializer::sensor_snapshot& sensor_snapshot);
@@ -67,5 +67,48 @@ namespace librealsense
         const device_interface& m_parent_device;
         stream_profiles m_available_profiles;
         stream_profiles m_active_streams;
+        const unsigned int _default_queue_size;
+
+    public:
+        //handle frame use 3 lambda functions that determines if and when a frame should be published.
+        //calc_sleep - calculates the duration that the sensor should wait before publishing the frame,
+        // the start point for this calculation is the last playback resume.
+        //is_paused - check if the playback was paused while waiting for the frame publish time.
+        //update_last_pushed_frame - lets the playback device know that a specific frame was published,
+        // the playback device will use this info to determine which frames should be played next in a pause/resume scenario.
+        template <class T, class K, class P>
+        void handle_frame(frame_holder frame, bool is_real_time, T calc_sleep, K is_paused, P update_last_pushed_frame)
+        {
+            if (frame == nullptr)
+            {
+                throw invalid_value_exception("null frame passed to handle_frame");
+            }
+            if (m_is_started)
+            {
+                frame->get_owner()->set_sensor(shared_from_this());
+                auto type = frame->get_stream()->get_stream_type();
+                auto index = static_cast<uint32_t>(frame->get_stream()->get_stream_index());
+                frame->set_stream(m_streams[std::make_pair(type, index)]);
+                frame->set_sensor(shared_from_this());
+                auto stream_id = frame.frame->get_stream()->get_unique_id();
+                //TODO: Ziv, remove usage of shared_ptr when frame_holder is cpoyable
+                auto pf = std::make_shared<frame_holder>(std::move(frame));
+
+                auto callback = [this, is_real_time, stream_id, pf, calc_sleep, is_paused, update_last_pushed_frame](dispatcher::cancellable_timer t)
+                {
+                    device_serializer::nanoseconds sleep_for = calc_sleep();
+                    if (sleep_for.count() > 0)
+                        t.try_sleep(sleep_for.count() * 1e-6);
+                    if(is_paused())
+                        return;
+
+                    frame_interface* pframe = nullptr;
+                    std::swap((*pf).frame, pframe);
+                    m_user_callback->on_frame((rs2_frame*)pframe);
+                    update_last_pushed_frame();
+                };
+                m_dispatchers.at(stream_id)->invoke(callback, !is_real_time);
+            }
+        }
     };
 }

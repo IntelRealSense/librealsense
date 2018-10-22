@@ -71,6 +71,56 @@ namespace librealsense
         virtual rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) = 0;
     };
 
+    struct stream_filter
+    {
+        rs2_stream stream;
+        rs2_format format;
+        int index;
+
+        stream_filter() : stream(RS2_STREAM_ANY), format(RS2_FORMAT_ANY), index(-1) {}
+        stream_filter(rs2_stream s, rs2_format f, int i) : stream(s), format(f), index(i) {}
+
+        bool match(const rs2::frame& frame)
+        {
+            stream_filter filter(frame.get_profile().stream_type(), frame.get_profile().format(), frame.get_profile().stream_index());
+            return match(filter);
+        }
+
+        bool match(const stream_filter& other)
+        {
+            if (stream != RS2_STREAM_ANY && stream != other.stream)
+                return false;
+            if (format != RS2_FORMAT_ANY && format != other.format)
+                return false;
+            if (index != -1 && index != other.index)
+                return false;
+            return true;
+        }
+
+        bool operator==(const stream_filter& other)
+        {
+            if (stream != other.stream)
+                return false;
+            if (format != other.format)
+                return false;
+            if (index != other.index)
+                return false;
+            return true;
+        }
+
+        bool operator!=(const stream_filter& other)
+        {
+            return !(*this == other);
+        }
+
+        void operator=(const stream_filter& other)
+        {
+            stream = other.stream;
+            format = other.format;
+            index = other.index;
+        }
+    };
+
     class stream_filter_processing_block : public generic_processing_block
     {
     public:
@@ -78,9 +128,7 @@ namespace librealsense
         virtual ~stream_filter_processing_block() { _source.flush(); }
 
     protected:
-        rs2_stream _stream_filter;
-        rs2_format _stream_format_filter;
-        int _stream_index_filter;
+        stream_filter _stream_filter;
 
         bool should_process(const rs2::frame& frame) override;
     };

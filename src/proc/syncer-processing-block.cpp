@@ -31,7 +31,7 @@ namespace librealsense
 
         auto f = [&](frame_holder frame, synthetic_source_interface* source)
         {
-            single_consumer_queue<frame_holder> matches;
+            single_consumer_frame_queue<frame_holder> matches;
 
             {
                 std::lock_guard<std::mutex> lock(_mutex);

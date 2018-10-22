@@ -596,68 +596,69 @@ TEST_CASE("Start-Stop stream sequence", "[live][using_pipeline]")
 ////////////////////////////////////////////
 ////// Test basic streaming functionality //
 ////////////////////////////////////////////
-TEST_CASE("Frame drops", "[live][using_pipeline]")
-{
-    // Require at least one device to be plugged in
-    rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
-    {
-        std::vector<sensor> list;
-        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
-        REQUIRE(list.size() > 0);
+// This test is postponed for later review and refactoring
+//TEST_CASE("Frame drops", "[live][using_pipeline]")
+//{
+//    // Require at least one device to be plugged in
+//    rs2::context ctx;
+//    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
+//    {
+//        std::vector<sensor> list;
+//        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
+//        REQUIRE(list.size() > 0);
 
-        pipeline pipe(ctx);
-        device dev;
-        // Configure all supported streams to run at 30 frames per second
+//        pipeline pipe(ctx);
+//        device dev;
+//        // Configure all supported streams to run at 30 frames per second
 
-        //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+//        //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 
-        for (auto i = 0; i < 5; i++)
-        {
-            rs2::config cfg;
-            rs2::pipeline_profile profile;
-            REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
-            REQUIRE(profile);
-            REQUIRE_NOTHROW(dev = profile.get_device());
-            REQUIRE(dev);
-            disable_sensitive_options_for(dev);
+//        for (auto i = 0; i < 5; i++)
+//        {
+//            rs2::config cfg;
+//            rs2::pipeline_profile profile;
+//            REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+//            REQUIRE(profile);
+//            REQUIRE_NOTHROW(dev = profile.get_device());
+//            REQUIRE(dev);
+//            disable_sensitive_options_for(dev);
 
-            // Test sequence
-            REQUIRE_NOTHROW(pipe.start(cfg));
+//            // Test sequence
+//            REQUIRE_NOTHROW(pipe.start(cfg));
 
-            unsigned long long current_depth_frame_number = 0;
-            unsigned long long prev_depth_frame_number = 0;
-            unsigned long long current_color_frame_number = 0;
-            unsigned long long prev_color_frame_number = 0;
+//            unsigned long long current_depth_frame_number = 0;
+//            unsigned long long prev_depth_frame_number = 0;
+//            unsigned long long current_color_frame_number = 0;
+//            unsigned long long prev_color_frame_number = 0;
 
-            // Capture 30 frames to give autoexposure, etc. a chance to settle
-            for (auto i = 0; i < 30; ++i)
-            {
-                auto frame = pipe.wait_for_frames();
-                prev_depth_frame_number = frame.get_depth_frame().get_frame_number();
-                prev_color_frame_number = frame.get_color_frame().get_frame_number();
-            }
+//            // Capture 30 frames to give autoexposure, etc. a chance to settle
+//            for (auto i = 0; i < 30; ++i)
+//            {
+//                auto frame = pipe.wait_for_frames();
+//                prev_depth_frame_number = frame.get_depth_frame().get_frame_number();
+//                prev_color_frame_number = frame.get_color_frame().get_frame_number();
+//            }
 
-            // Checking for frame drops on depth+color
-            for (auto i = 0; i < 1000; ++i)
-            {
-                auto frame = pipe.wait_for_frames();
-                current_depth_frame_number = frame.get_depth_frame().get_frame_number();
-                current_color_frame_number = frame.get_color_frame().get_frame_number();
+//            // Checking for frame drops on depth+color
+//            for (auto i = 0; i < 1000; ++i)
+//            {
+//                auto frame = pipe.wait_for_frames();
+//                current_depth_frame_number = frame.get_depth_frame().get_frame_number();
+//                current_color_frame_number = frame.get_color_frame().get_frame_number();
 
-                printf("User got %zd frames: depth %d, color %d\n", frame.size(), current_depth_frame_number, current_color_frame_number);
+//                printf("User got %zd frames: depth %d, color %d\n", frame.size(), current_depth_frame_number, current_color_frame_number);
 
-                REQUIRE(current_depth_frame_number == (prev_depth_frame_number+1));
-                REQUIRE(current_color_frame_number == (prev_color_frame_number + 1));
+//                REQUIRE(current_depth_frame_number == (prev_depth_frame_number+1));
+//                REQUIRE(current_color_frame_number == (prev_color_frame_number + 1));
 
-                prev_depth_frame_number = current_depth_frame_number;
-                prev_color_frame_number = current_color_frame_number;
-            }
+//                prev_depth_frame_number = current_depth_frame_number;
+//                prev_color_frame_number = current_color_frame_number;
+//            }
 
-            REQUIRE_NOTHROW(pipe.stop());
-        }
-    }
-}
+//            REQUIRE_NOTHROW(pipe.stop());
+//        }
+//    }
+//}
 
 /////////////////////////////////////////
 //////// Calibration information tests //
@@ -4888,6 +4889,7 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
             rs2_transform_point_to_point(other_point, &depth_extrin_to_color, point);
             rs2_project_point_to_pixel(from_pixel, &color_intrin, other_point);
 
+            // Search along a projected beam from 0.1m to 10 meter
             rs2_project_color_pixel_to_depth_pixel(to_pixel, reinterpret_cast<const uint16_t*>(depth.get_data()), depth_scale, 0.1, 10,
                 &depth_intrin, &color_intrin,
                 &color_extrin_to_depth, &depth_extrin_to_color, from_pixel);
@@ -4896,10 +4898,14 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
             if (dist > 1)
                 count++;
             if (dist > 2)
-                printf("%f\n", dist);
+            {
+                WARN("Projecting color->depth, distance > 2 pixels. Origin: ["
+                            << depth_pixel[0] << "," << depth_pixel[1] <<"], Projected << "
+                            << to_pixel[0] << "," << to_pixel[1] << "]");
+            }
         }
     }
     const double MAX_ERROR_PERCENTAGE = 0.1;
-    REQUIRE(count * 100 / (depth_intrin.width * depth_intrin.height) < MAX_ERROR_PERCENTAGE);
     CAPTURE(count);
+    REQUIRE(count * 100 / (depth_intrin.width * depth_intrin.height) < MAX_ERROR_PERCENTAGE);
 }

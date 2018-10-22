@@ -29,7 +29,8 @@ playback_sensor::playback_sensor(const device_interface& parent_device, const de
     m_is_started(false),
     m_sensor_description(sensor_description),
     m_sensor_id(sensor_description.get_sensor_index()),
-    m_parent_device(parent_device)
+    m_parent_device(parent_device),
+    _default_queue_size(1)
 {
     register_sensor_streams(m_sensor_description.get_stream_profiles());
     register_sensor_infos(m_sensor_description);
@@ -38,6 +39,16 @@ playback_sensor::playback_sensor(const device_interface& parent_device, const de
 }
 playback_sensor::~playback_sensor()
 {
+}
+
+bool playback_sensor::streams_contains_one_frame_or_more()
+{
+    for (auto d : m_dispatchers)
+    {
+        if (d.second->empty())
+            return false;
+    }
+    return true;
 }
 
 stream_profiles playback_sensor::get_stream_profiles(int tag) const
@@ -74,7 +85,7 @@ void playback_sensor::open(const stream_profiles& requests)
     //For each stream, create a dedicated dispatching thread
     for (auto&& profile : requests)
     {
-        m_dispatchers.emplace(std::make_pair(profile->get_unique_id(), std::make_shared<dispatcher>(10))); //TODO: what size the queue should be?
+        m_dispatchers.emplace(std::make_pair(profile->get_unique_id(), std::make_shared<dispatcher>(_default_queue_size)));
         m_dispatchers[profile->get_unique_id()]->start();
         device_serializer::stream_identifier f{ get_device_index(), m_sensor_id, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) };
         opened_streams.push_back(f);
@@ -114,7 +125,6 @@ notifications_callback_ptr playback_sensor::get_notifications_callback() const
     return _notifications_processor.get_callback();
 }
 
-
 void playback_sensor::start(frame_callback_ptr callback)
 {
     LOG_DEBUG("Start sensor " << m_sensor_id);
@@ -125,10 +135,10 @@ void playback_sensor::start(frame_callback_ptr callback)
         m_user_callback = callback;
     }
 }
+
 void playback_sensor::stop(bool invoke_required)
 {
     LOG_DEBUG("Stop sensor " << m_sensor_id);
-
     if (m_is_started == true)
     {
         stopped(m_sensor_id, invoke_required);
@@ -160,38 +170,11 @@ const device_interface& playback_sensor::get_device()
     return m_parent_device;
 }
 
-void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
-{
-    if(frame == nullptr)
-    {
-        throw invalid_value_exception("null frame passed to handle_frame");
-    }
-    if(m_is_started)
-    {
-        frame->get_owner()->set_sensor(shared_from_this());
-        auto type = frame->get_stream()->get_stream_type();
-        auto index = static_cast<uint32_t>(frame->get_stream()->get_stream_index());
-        frame->set_stream(m_streams[std::make_pair(type, index)]);
-        frame->set_sensor(shared_from_this());
-        auto stream_id = frame.frame->get_stream()->get_unique_id();
-        //TODO: Ziv, remove usage of shared_ptr when frame_holder is cpoyable
-        auto pf = std::make_shared<frame_holder>(std::move(frame));
-        m_dispatchers.at(stream_id)->invoke([this, pf](dispatcher::cancellable_timer t)
-        {
-            frame_interface* pframe = nullptr;
-            std::swap((*pf).frame, pframe);
-            m_user_callback->on_frame((rs2_frame*)pframe);
-        });
-        if(is_real_time)
-        {
-            m_dispatchers.at(stream_id)->flush();
-        }
-    }
-}
 void playback_sensor::update_option(rs2_option id, std::shared_ptr<option> option)
 {
     register_option(id, option);
 }
+
 void playback_sensor::flush_pending_frames()
 {
     for (auto&& dispatcher : m_dispatchers)

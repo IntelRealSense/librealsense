@@ -273,6 +273,10 @@ int main(int argv, const char** argc) try
     // Closing the window
     while (window)
     {
+        if (!window.is_ui_aligned())
+		{
+			viewer_model.popup_if_ui_not_aligned(window.get_font());
+		}
         refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, device_models, viewer_model, error_message);
 
         bool update_read_only_options = update_readonly_options_timer;
@@ -287,7 +291,7 @@ int main(int argv, const char** argc) try
         // Flags for pop-up window - no window resize, move or collaps
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
-            ImGuiWindowFlags_NoSavedSettings;
+            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
         ImGui::SetNextWindowPos({ 0, 0 });
         ImGui::SetNextWindowSize({ viewer_model.panel_width, viewer_model.panel_y });

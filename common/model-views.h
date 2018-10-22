@@ -114,6 +114,7 @@ namespace rs2
         static const textual_icon fix_up                   { u8"\uf062" };
         static const textual_icon minus                    { u8"\uf068" };
         static const textual_icon exclamation_triangle     { u8"\uf071" };
+        static const textual_icon shopping_cart            { u8"\uf07a" };
         static const textual_icon bar_chart                { u8"\uf080" };
         static const textual_icon upload                   { u8"\uf093" };
         static const textual_icon square_o                 { u8"\uf096" };
@@ -148,6 +149,17 @@ namespace rs2
     // Select appropriate scale factor based on the display
     // that most of the application is presented on
     int pick_scale_factor(GLFWwindow* window);
+
+    // avoid display the following options
+    bool static skip_option(rs2_option opt)
+    {
+        if (opt == RS2_OPTION_STREAM_FILTER ||
+            opt == RS2_OPTION_STREAM_FORMAT_FILTER ||
+            opt == RS2_OPTION_STREAM_INDEX_FILTER ||
+            opt == RS2_OPTION_FRAMES_QUEUE_SIZE)
+            return true;
+        return false;
+    }
 
     template<class T>
     void sort_together(std::vector<T>& vec, std::vector<std::string>& names)
@@ -854,6 +866,8 @@ namespace rs2
 
         void popup_if_error(ImFont* font, std::string& error_message);
 
+        void popup_if_ui_not_aligned(ImFont* font);
+
         void show_event_log(ImFont* font_14, float x, float y, float w, float h);
 
         void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message);
@@ -903,6 +917,8 @@ namespace rs2
         float dim_level = 1.f;
 
         rs2::asynchronous_syncer s;
+
+        bool continue_with_ui_not_aligned = false;
     private:
         struct rgb {
             uint32_t r, g, b;

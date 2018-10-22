@@ -209,8 +209,8 @@ namespace librealsense
         _recalc_profile(false),
         _options_changed(false)
     {
-        _stream_filter = RS2_STREAM_DEPTH;
-        _stream_format_filter = RS2_FORMAT_Z16;
+        _stream_filter.stream = RS2_STREAM_DEPTH;
+        _stream_filter.format = RS2_FORMAT_Z16;
 
         auto decimation_control = std::make_shared<ptr_option<uint8_t>>(
             decimation_min_val,
@@ -273,7 +273,7 @@ namespace librealsense
 
     void  decimation_filter::update_output_profile(const rs2::frame& f)
     {
-        if (_options_changed || (f.get_profile().get() != _source_stream_profile.get()))
+        if (_options_changed || !_source_stream_profile || f.get_profile().unique_id() != _source_stream_profile.unique_id())
         {
             _options_changed = false;
             _source_stream_profile = f.get_profile();
@@ -303,7 +303,6 @@ namespace librealsense
             auto vp = _source_stream_profile.as<rs2::video_stream_profile>();
 
             auto tmp_profile = _source_stream_profile.clone(_source_stream_profile.stream_type(), _source_stream_profile.stream_index(), _source_stream_profile.format());
-            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*(stream_interface*)(_source_stream_profile.get()->profile), *(stream_interface*)(tmp_profile.get()->profile));
             auto src_vspi = dynamic_cast<video_stream_profile_interface*>(_source_stream_profile.get()->profile);
             auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(tmp_profile.get()->profile);
             rs2_intrinsics src_intrin = src_vspi->get_intrinsics();

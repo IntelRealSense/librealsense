@@ -2,6 +2,7 @@
 #include "archive.h"
 #include <fstream>
 #include "core/processing.h"
+#include "core/video.h"
 
 #define MIN_DISTANCE 1e-6
 
@@ -39,12 +40,19 @@ namespace librealsense
         return std::make_tuple(texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
     }
 
+
     void points::export_to_ply(const std::string& fname, const frame_holder& texture)
     {
+        auto stream_profile = get_stream().get();
+        auto video_stream_profile = dynamic_cast<video_stream_profile_interface*>(stream_profile);
+        if (!video_stream_profile)
+            throw librealsense::invalid_value_exception("stream must be video stream");
         const auto vertices = get_vertices();
         const auto texcoords = get_texture_coordinates();
         std::vector<float3> new_vertices;
         std::vector<std::tuple<uint8_t, uint8_t, uint8_t>> new_tex;
+        std::map<int, int> index2reducedIndex;
+
         new_vertices.reserve(get_vertex_count());
         new_tex.reserve(get_vertex_count());
         assert(get_vertex_count());
@@ -52,6 +60,7 @@ namespace librealsense
             if (fabs(vertices[i].x) >= MIN_DISTANCE || fabs(vertices[i].y) >= MIN_DISTANCE ||
                 fabs(vertices[i].z) >= MIN_DISTANCE)
             {
+                index2reducedIndex[i] = new_vertices.size();
                 new_vertices.push_back(vertices[i]);
                 if (texture)
                 {
@@ -59,6 +68,25 @@ namespace librealsense
                     new_tex.push_back(color);
                 }
             }
+
+        const auto threshold = 0.05f;
+        auto width = video_stream_profile->get_width();
+        std::vector<std::tuple<int, int, int>> faces;
+        for (int x = 0; x < width - 1; ++x) {
+            for (int y = 0; y < video_stream_profile->get_height() - 1; ++y) {
+                auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
+                if (vertices[a].z && vertices[b].z && vertices[c].z && vertices[d].z
+                    && abs(vertices[a].z - vertices[b].z) < threshold && abs(vertices[a].z - vertices[c].z) < threshold
+                    && abs(vertices[b].z - vertices[d].z) < threshold && abs(vertices[c].z - vertices[d].z) < threshold)
+                {
+                    if (index2reducedIndex.count(a) == 0 || index2reducedIndex.count(b) == 0 || index2reducedIndex.count(c) == 0 || 
+                        index2reducedIndex.count(d) == 0)
+                        continue;
+                    faces.emplace_back(index2reducedIndex[a], index2reducedIndex[b], index2reducedIndex[d]);
+                    faces.emplace_back(index2reducedIndex[d], index2reducedIndex[c], index2reducedIndex[a]);
+                }
+            }
+        }
 
         std::ofstream out(fname);
         out << "ply\n";
@@ -74,6 +102,8 @@ namespace librealsense
             out << "property uchar green\n";
             out << "property uchar blue\n";
         }
+        out << "element face " << faces.size() << "\n";
+        out << "property list uchar int vertex_indices\n";
         out << "end_header\n";
         out.close();
 
@@ -93,6 +123,14 @@ namespace librealsense
                 out.write(reinterpret_cast<const char*>(&y), sizeof(uint8_t));
                 out.write(reinterpret_cast<const char*>(&z), sizeof(uint8_t));
             }
+        }
+        auto size = faces.size();
+        for (int i = 0; i < size; ++i) {
+            int three = 3;
+            out.write(reinterpret_cast<const char*>(&three), sizeof(uint8_t));
+            out.write(reinterpret_cast<const char*>(&(std::get<0>(faces[i]))), sizeof(int));
+            out.write(reinterpret_cast<const char*>(&(std::get<1>(faces[i]))), sizeof(int));
+            out.write(reinterpret_cast<const char*>(&(std::get<2>(faces[i]))), sizeof(int));
         }
     }
 
@@ -332,7 +370,7 @@ namespace librealsense
     std::shared_ptr<archive_interface> make_archive(rs2_extension type,
         std::atomic<uint32_t>* in_max_frame_queue_size,
         std::shared_ptr<platform::time_service> ts,
-		std::shared_ptr<metadata_parser_map> parsers)
+        std::shared_ptr<metadata_parser_map> parsers)
     {
         switch (type)
         {

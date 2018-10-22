@@ -74,6 +74,9 @@ namespace librealsense
                     {
                         results.push_back(res);
                     }
+                    //if frame was processed as frameset, don't process single frames
+                    if (f.is<rs2::frameset>())
+                        break;
                 }
             }
 
@@ -88,18 +91,46 @@ namespace librealsense
 
     rs2::frame generic_processing_block::prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results)
     {
+        // this function prepares the processing block output frame(s) by the following heuristic:
+        // in case the input is a single frame, return the processed frame.
+        // in case the input frame is a frameset, create an output frameset from the input frameset and the processed frame by the following heuristic:
+        // if one of the input frames has the same stream type and format as the processed frame,
+        //     remove the input frame from the output frameset (i.e. temporal filter), otherwise kepp the input frame (i.e. colorizer).
+        // the only exception is in case one of the input frames is z16 or disparity and the result frame is disparity or z16 respectively, 
+        // in this case the the input frmae will be removed.
+
         if (results.empty())
         {
             return input;
         }
+
+        bool disparity_result_frame = false;
+        bool depth_result_frame = false;
+
+        for (auto f : results)
+        {
+            auto format = f.get_profile().format();
+            if (format == RS2_FORMAT_DISPARITY32 || format == RS2_FORMAT_DISPARITY16)
+                disparity_result_frame = true;
+            if (format == RS2_FORMAT_Z16)
+                depth_result_frame = true;
+        }
+
         std::vector<rs2::frame> original_set;
         if (auto composite = input.as<rs2::frameset>())
-            composite.foreach([&original_set](const rs2::frame& frame) { original_set.push_back(frame); });
+            composite.foreach([&](const rs2::frame& frame)
+            {
+                auto format = frame.get_profile().format();
+                if (depth_result_frame && (format == RS2_FORMAT_DISPARITY32 || format == RS2_FORMAT_DISPARITY16))
+                    return;
+                if (disparity_result_frame && format == RS2_FORMAT_Z16)
+                    return;
+                original_set.push_back(frame);
+            });
         else
         {
             return results[0];
         }
-            original_set.push_back(input);
 
         for (auto s : original_set)
         {
@@ -118,15 +149,12 @@ namespace librealsense
         return source.allocate_composite_frame(results);
     }
 
-    stream_filter_processing_block::stream_filter_processing_block() :
-        _stream_filter(RS2_STREAM_ANY),
-        _stream_format_filter(RS2_FORMAT_ANY),
-        _stream_index_filter(-1)
+    stream_filter_processing_block::stream_filter_processing_block()
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
         _source.init(std::shared_ptr<metadata_parser_map>());
 
-        auto stream_selector = std::make_shared<ptr_option<int>>(RS2_STREAM_ANY, RS2_STREAM_FISHEYE, 1, RS2_STREAM_ANY, (int*)&_stream_filter, "Stream type");
+        auto stream_selector = std::make_shared<ptr_option<int>>(RS2_STREAM_ANY, RS2_STREAM_FISHEYE, 1, RS2_STREAM_ANY, (int*)&_stream_filter.stream, "Stream type");
         for (int s = RS2_STREAM_ANY; s < RS2_STREAM_COUNT; s++)
         {
             stream_selector->set_description(s, "Process - " + std::string (rs2_stream_to_string((rs2_stream)s)));
@@ -139,10 +167,10 @@ namespace librealsense
                 throw invalid_value_exception(to_string()
                     << "Unsupported stream filter, " << val << " is out of range.");
 
-            _stream_filter = static_cast<rs2_stream>((int)val);
+            _stream_filter.stream = static_cast<rs2_stream>((int)val);
         });
 
-        auto format_selector = std::make_shared<ptr_option<int>>(RS2_FORMAT_ANY, RS2_FORMAT_DISPARITY32, 1, RS2_FORMAT_ANY, (int*)&_stream_format_filter, "Stream format");
+        auto format_selector = std::make_shared<ptr_option<int>>(RS2_FORMAT_ANY, RS2_FORMAT_DISPARITY32, 1, RS2_FORMAT_ANY, (int*)&_stream_filter.format, "Stream format");
         for (int f = RS2_FORMAT_ANY; f < RS2_FORMAT_COUNT; f++)
         {
             format_selector->set_description(f, "Process - " + std::string(rs2_format_to_string((rs2_format)f)));
@@ -155,10 +183,10 @@ namespace librealsense
                 throw invalid_value_exception(to_string()
                     << "Unsupported stream format filter, " << val << " is out of range.");
 
-            _stream_format_filter = static_cast<rs2_format>((int)val);
+            _stream_filter.format = static_cast<rs2_format>((int)val);
         });
 
-        auto index_selector = std::make_shared<ptr_option<int>>(0, std::numeric_limits<int>::max(), 1, -1, &_stream_index_filter, "Stream index");
+        auto index_selector = std::make_shared<ptr_option<int>>(0, std::numeric_limits<int>::max(), 1, -1, &_stream_filter.index, "Stream index");
         index_selector->on_set([this, index_selector](float val)
         {
             std::lock_guard<std::mutex> lock(_mutex);
@@ -167,7 +195,7 @@ namespace librealsense
                 throw invalid_value_exception(to_string()
                     << "Unsupported stream index filter, " << val << " is out of range.");
 
-            _stream_index_filter = (int)val;
+            _stream_filter.index = (int)val;
         });
 
         register_option(RS2_OPTION_STREAM_FILTER, stream_selector);
@@ -191,20 +219,20 @@ namespace librealsense
         rs2_format format = profile.format();
         int index = profile.stream_index();
 
-        if (_stream_filter != RS2_STREAM_ANY && _stream_filter != stream)
+        if (_stream_filter.stream != RS2_STREAM_ANY && _stream_filter.stream != stream)
             return false;
-        if (is_z_or_disparity(_stream_format_filter))
+        if (is_z_or_disparity(_stream_filter.format))
         {
-            if (_stream_format_filter != RS2_FORMAT_ANY && !is_z_or_disparity(format))
+            if (_stream_filter.format != RS2_FORMAT_ANY && !is_z_or_disparity(format))
                 return false;
         }
         else
         {
-            if (_stream_format_filter != RS2_FORMAT_ANY && _stream_format_filter != format)
+            if (_stream_filter.format != RS2_FORMAT_ANY && _stream_filter.format != format)
                 return false;
         }
 
-        if (_stream_index_filter != -1 && _stream_index_filter != index)
+        if (_stream_filter.index != -1 && _stream_filter.index != index)
             return false;
         return true;
     }
@@ -214,19 +242,7 @@ namespace librealsense
         if (!frame || frame.is<rs2::frameset>())
             return false;
         auto profile = frame.get_profile();
-        rs2_stream stream = profile.stream_type();
-        rs2_format format = profile.format();
-        int index = profile.stream_index();
-
-        if (_stream_filter != RS2_STREAM_ANY && _stream_filter != stream)
-            return false;
-
-        if (_stream_format_filter != RS2_FORMAT_ANY && _stream_format_filter != format)
-            return false;
-
-        if (_stream_index_filter != -1 && _stream_index_filter != index)
-            return false;
-        return true;
+        return _stream_filter.match(frame);
     }
 
     void synthetic_source::frame_ready(frame_holder result)
@@ -245,6 +261,7 @@ namespace librealsense
             data.timestamp_domain = original->get_frame_timestamp_domain();
             data.metadata_size = 0;
             data.system_time = _actual_source.get_time();
+            data.is_blocking = original->is_blocking();
 
             auto res = _actual_source.alloc_frame(RS2_EXTENSION_POINTS, vid_stream->get_width() * vid_stream->get_height() * sizeof(float) * 5, data, true);
             if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
@@ -314,6 +331,7 @@ namespace librealsense
         vf->assign(width, height, stride, bpp);
         vf->set_sensor(original->get_sensor());
         res->set_stream(stream);
+
         if (frame_type == RS2_EXTENSION_DEPTH_FRAME)
         {
             original->acquire();
@@ -363,6 +381,12 @@ namespace librealsense
         if (!res) return nullptr;
 
         auto cf = static_cast<composite_frame*>(res);
+
+        for (auto&& f : holders)
+        {
+            if (f.is_blocking())
+                res->set_blocking(true);
+        }
 
         auto frames = cf->get_frames();
         for (auto&& f : holders)

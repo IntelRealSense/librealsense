@@ -359,6 +359,7 @@ namespace librealsense
         case 3:
             move_other_to_depth(z_pixels, reinterpret_cast<const bytes<3>*>(source), reinterpret_cast<bytes<3>*>(dest), to,
                 _pixel_top_left_int, bottom_right);
+            break;
         case 4:
             move_other_to_depth(z_pixels, reinterpret_cast<const bytes<4>*>(source), reinterpret_cast<bytes<4>*>(dest), to,
                 _pixel_top_left_int, bottom_right);
@@ -536,7 +537,6 @@ namespace librealsense
         auto aligned_profile = std::make_shared<rs2::video_stream_profile>(original_profile.clone(original_profile.stream_type(), original_profile.stream_index(), original_profile.format()));
         int aligned_unique_id = get_unique_id(original_profile, to_profile, *aligned_profile);
         aligned_profile->get()->profile->set_unique_id(aligned_unique_id);
-        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*aligned_profile.get()->get()->profile, *original_profile.get()->profile);
         aligned_profile->get()->profile->set_framerate(original_profile.fps());
         if (auto original_video_profile = As<video_stream_profile_interface>(original_profile.get()->profile))
         {

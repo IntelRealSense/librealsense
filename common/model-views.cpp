@@ -27,6 +27,7 @@
 #include <arcball_camera.h>
 
 constexpr const char* recommended_fw_url = "https://downloadcenter.intel.com/download/27522/Latest-Firmware-for-Intel-RealSense-D400-Product-Family?v=t";
+constexpr const char* store_url = "https://click.intel.com/";
 
 using namespace rs400;
 using namespace nlohmann;
@@ -1497,7 +1498,7 @@ namespace rs2
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
         {
             auto opt = static_cast<rs2_option>(i);
-            if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
+            if (skip_option(opt)) continue;
             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
             {
                 draw_option(opt, update_read_only_options, error_message, notifications);
@@ -1510,7 +1511,7 @@ namespace rs2
         return (uint64_t)std::count_if(
             std::begin(options_metadata),
             std::end(options_metadata),
-            [](const std::pair<int, option_model>& p) {return p.second.supported && p.second.opt != RS2_OPTION_FRAMES_QUEUE_SIZE; });
+            [](const std::pair<int, option_model>& p) {return p.second.supported && !skip_option(p.second.opt); });
     }
 
     bool option_model::draw_option(bool update_read_only_options,
@@ -2980,28 +2981,90 @@ namespace rs2
             {
                 ImGui::OpenPopup(name.c_str());
             }
+
+            if (ImGui::BeginPopupModal(name.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                ImGui::Text("RealSense error calling:");
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
+                ImGui::InputTextMultiline("error", const_cast<char*>(error_message.c_str()),
+                    error_message.size() + 1, { 500,100 }, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+                ImGui::PopStyleColor();
+
+                if (ImGui::Button("OK", ImVec2(120, 0)))
+                {
+                    if (dont_show_this_error)
+                    {
+                        errors_not_to_show.insert(simplify_error_message(error_message));
+                    }
+                    error_message = "";
+                    ImGui::CloseCurrentPopup();
+                    dont_show_this_error = false;
+                }
+
+                ImGui::SameLine();
+                ImGui::Checkbox("Don't show this error again", &dont_show_this_error);
+
+                ImGui::EndPopup();
+            }
         }
+
+        ImGui::PopStyleColor(3);
+        ImGui::PopStyleVar(2);
+    }
+
+    void rs2::viewer_model::popup_if_ui_not_aligned(ImFont* font_14)
+    {
+        constexpr const char* graphics_updated_driver = "https://downloadcenter.intel.com/download/27266/Graphics-Intel-Graphics-Driver-for-Windows-15-60-?product=80939";
+
+        if (continue_with_ui_not_aligned)
+            return;
+
+        std::string error_message = to_string() <<
+            "The application has detected possible UI alignment issue,            \n" <<
+            "sometimes caused by outdated graphics card drivers.\n" <<
+            "For Intel Integrated Graphics driver \n";
+
+        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar;
+
+        ImGui_ScopePushFont(font_14);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
+
+        std::string name = to_string() << "  " << textual_icons::exclamation_triangle << " UI Offset Detected";
+
+
+        ImGui::OpenPopup(name.c_str());
+
         if (ImGui::BeginPopupModal(name.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            ImGui::Text("RealSense error calling:");
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-            ImGui::InputTextMultiline("error", const_cast<char*>(error_message.c_str()),
-                error_message.size() + 1, { 500,100 }, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+            ImGui::Text(const_cast<char*>(error_message.c_str()));
             ImGui::PopStyleColor();
 
-            if (ImGui::Button("OK", ImVec2(120, 0)))
+            ImGui::PushStyleColor(ImGuiCol_Button, transparent);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, transparent);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, transparent);
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+            ImGui::SetCursorPos({ 190, 42 });
+            if (ImGui::Button("click here", { 150, 60 }))
             {
-                if (dont_show_this_error)
-                {
-                    errors_not_to_show.insert(simplify_error_message(error_message));
-                }
-                error_message = "";
-                ImGui::CloseCurrentPopup();
-                dont_show_this_error = false;
+                open_url(graphics_updated_driver);
             }
 
-            ImGui::SameLine();
-            ImGui::Checkbox("Don't show this error again", &dont_show_this_error);
+            ImGui::PopStyleColor(5);
+
+            if (ImGui::Button(" Ignore & Continue ", ImVec2(150, 0)))
+            {
+                continue_with_ui_not_aligned = true;
+                ImGui::CloseCurrentPopup();
+            }
 
             ImGui::EndPopup();
         }
@@ -3235,19 +3298,35 @@ namespace rs2
             ImGuiWindowFlags_NoCollapse |
             ImGuiWindowFlags_NoTitleBar;
 
-        ImGui::PushFont(font_18);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
         ImGui::SetNextWindowPos({ float(x), float(y) });
-        ImGui::SetNextWindowSize({ 250.f, 50.f });
+        ImGui::SetNextWindowSize({ 250.f, 70.f });
         ImGui::Begin("nostreaming_popup", nullptr, flags);
 
+        ImGui::PushFont(font_18);
         ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0x70, 0x8f, 0xa8, 0xff));
         ImGui::Text("Connect a RealSense Camera\nor Add Source");
         ImGui::PopStyleColor();
-
+        ImGui::PopFont();
+        ImGui::SetCursorPos({ 0, 43 });
+        ImGui::PushStyleColor(ImGuiCol_Button, dark_window_background);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, dark_window_background);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, dark_window_background);
+        ImGui::PushStyleColor(ImGuiCol_Text, button_color + 0.25f);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, button_color + 0.55f);
+        ImGui::Spacing();
+        std::string message = to_string() << textual_icons::shopping_cart << "  Buy Now";
+        if (ImGui::Button(message.c_str(), { 75, 20 }))
+        {
+            open_url(store_url);
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Go to click.intel.com");
+        }
+        ImGui::PopStyleColor(5);
         ImGui::End();
         ImGui::PopStyleColor();
-        ImGui::PopFont();
     }
 
     // Generate streams layout, creates a grid-like layout with factor amount of columns
@@ -4096,8 +4175,12 @@ namespace rs2
 
     bool viewer_model::is_3d_texture_source(frame f)
     {
-        auto index = f.get_profile().unique_id();
+        auto profile = f.get_profile().as<video_stream_profile>();
+        auto index = profile.unique_id();
         auto mapped_index = streams_origin[index];
+
+        if (!is_rasterizeable(profile.format()))
+            return false;
 
         if (index == selected_tex_source_uid || mapped_index == selected_tex_source_uid || selected_tex_source_uid == -1)
             return true;
@@ -4106,6 +4189,7 @@ namespace rs2
 
     bool viewer_model::is_3d_depth_source(frame f)
     {
+
         auto index = f.get_profile().unique_id();
         auto mapped_index = streams_origin[index];
 
@@ -5864,7 +5948,7 @@ namespace rs2
                         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                         {
                             auto opt = static_cast<rs2_option>(i);
-                            if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
+                            if (skip_option(opt)) continue;
                             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
                                 if (dev.is<advanced_mode>() && opt == RS2_OPTION_VISUAL_PRESET)
@@ -5900,7 +5984,7 @@ namespace rs2
                         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                         {
                             auto opt = static_cast<rs2_option>(i);
-                            if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
+                            if (skip_option(opt)) continue;
                             pb->get_option(opt).draw_option(
                                 dev.is<playback>() || update_read_only_options,
                                 false, error_message, viewer.not_model);
@@ -6069,7 +6153,7 @@ namespace rs2
                                 for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                                 {
                                     auto opt = static_cast<rs2_option>(i);
-                                    if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
+                                    if (skip_option(opt)) continue;
                                     pb->get_option(opt).draw_option(
                                         dev.is<playback>() || update_read_only_options,
                                         false, error_message, viewer.not_model);
