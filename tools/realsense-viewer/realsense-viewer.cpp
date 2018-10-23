@@ -453,7 +453,7 @@ int main(int argv, const char** argc) try
                 {
                     ctx.unload_device(p.file_name());
                 }
-                device_to_remove->syncer->remove_syncer(device_to_remove->dev_syncer);
+                viewer_model.syncer->remove_syncer(device_to_remove->dev_syncer);
                 device_models->erase(std::find_if(begin(*device_models), end(*device_models),
                     [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(device_to_remove->dev); }));
                 device_to_remove = nullptr;
