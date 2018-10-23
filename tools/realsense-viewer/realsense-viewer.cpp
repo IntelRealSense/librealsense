@@ -52,14 +52,18 @@ void add_playback_device(context& ctx, std::shared_ptr<std::vector<device_model>
                         if (it->_playback_repeat)
                         {
                             //Calling from different since playback callback is from reading thread
-                            std::thread{ [subs, &viewer_model]()
+                            std::thread{ [subs, &viewer_model, it]()
                             {
+                                if(!it->dev_syncer)
+                                    it->dev_syncer = viewer_model.syncer->create_syncer();
+
                                 for (auto&& sub : subs)
                                 {
                                     if (sub->streaming)
                                     {
                                         auto profiles = sub->get_selected_profiles();
-                                        sub->play(profiles, viewer_model);
+
+                                        sub->play(profiles, viewer_model, it->dev_syncer);
                                     }
                                 }
                             } }.detach();
@@ -126,11 +130,6 @@ void refresh_devices(std::mutex& m,
                     viewer_model.not_model.add_notification({ get_device_name(dev).first + " Disconnected\n",
                         0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
-                    viewer_model.ppf.depth_stream_active = false;
-
-                    // Stopping post processing filter rendering thread in case of disconnection
-                    viewer_model.ppf.stop();
-
                     //Remove from devices
                     auto dev_model_itr = std::find_if(begin(*device_models), end(*device_models),
                         [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(dev); });
@@ -140,7 +139,16 @@ void refresh_devices(std::mutex& m,
                         for (auto&& s : dev_model_itr->subdevices)
                             s->streaming = false;
 
+                        dev_model_itr->reset();
                         device_models->erase(dev_model_itr);
+
+                        if(device_models->size() == 0)
+                        {
+                            viewer_model.ppf.depth_stream_active = false;
+
+                            // Stopping post processing filter rendering thread in case of disconnection
+                            viewer_model.ppf.stop();
+                        }
                     }
                     auto dev_name_itr = std::find(begin(device_names), end(device_names), get_device_name(dev));
                     if (dev_name_itr != end(device_names))
@@ -227,6 +235,7 @@ int main(int argv, const char** argc) try
     device_model* device_to_remove = nullptr;
 
     viewer_model viewer_model;
+
     std::vector<device> connected_devs;
     std::mutex m;
 
@@ -444,7 +453,7 @@ int main(int argv, const char** argc) try
                 {
                     ctx.unload_device(p.file_name());
                 }
-
+                viewer_model.syncer->remove_syncer(device_to_remove->dev_syncer);
                 device_models->erase(std::find_if(begin(*device_models), end(*device_models),
                     [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(device_to_remove->dev); }));
                 device_to_remove = nullptr;
@@ -495,6 +504,7 @@ int main(int argv, const char** argc) try
     }
 
     // Stopping post processing filter rendering thread
+
     viewer_model.ppf.stop();
 
     // Stop all subdevices
