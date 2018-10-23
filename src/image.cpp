@@ -98,14 +98,16 @@ namespace librealsense
 
 #pragma pack(pop)
 
-    inline void copy_hid_axes(byte * const dest[], const byte * source, double factor, int count)
+    inline void copy_hid_axes(byte * const dest[], const byte * source, double factor)
     {
         auto hid = (hid_data*)(source);
 
+        // Evgeni testing
         static hid_data max;
         if (abs(hid->x) > max.x) max.x = hid->x;
         if (abs(hid->y) > max.y) max.y = hid->y;
         if (abs(hid->z) > max.z) max.z = hid->z;
+        std::cout << "[x,y,z]= [" << hid->x << ", " << hid->y << ", " << hid->z << "]" << std::endl;
 
         float axes[3] = { static_cast<float>((hid->x) * factor),
                          static_cast<float>((hid->y) * factor),
@@ -113,25 +115,24 @@ namespace librealsense
         librealsense::copy(dest[0], axes, sizeof(axes));
     }
 
-    // The Accelerometer output units  m/s2,
+    // The Accelerometer input format: signed int 16bit. data units 1LSB=0.001g;
+    // Librealsense output format: floating point 32bit. units m/s^2,
     template<size_t SIZE> void unpack_accel_axes(byte * const dest[], const byte * source, int width, int height)
     {
         static constexpr float gravity = 9.80665f;          // Standard Gravitation Acceleration
-        static constexpr short accel_measurement_range = 4; // Config  ± 4 g / 435i
-        // Accel A/D converter 12bit -> 4096 samples
-        static constexpr double accelerator_transform_factor = accel_measurement_range*gravity/4096.f;
+        static constexpr double accelerator_transform_factor = 0.001*gravity;
 
-        copy_hid_axes(dest, source, accelerator_transform_factor, width * height);
+        copy_hid_axes(dest, source, accelerator_transform_factor);
     }
 
-    // The Accelerometer output units rad/sec,
+    // The Gyro input format: signed int 16bit. data units 1LSB=0.1deg/sec;
+    // Librealsense output format: floating point 32bit. units rad/sec,
     template<size_t SIZE> void unpack_gyro_axes(byte * const dest[], const byte * source, int width, int height)
     {
-        static constexpr double deg2rad = M_PI / 180.f;
-        static constexpr float gyro_measurement_range = 2000.f; // Default config ± 2000°/s
-        // Gyro A/D converter 16bit (signed) -> 32k samples
-        static const double gyro_transform_factor = gyro_measurement_range / 32767. * deg2rad;
-        copy_hid_axes(dest, source, gyro_transform_factor, width * height);
+        static constexpr double deg2rad = M_PI / 180.;
+        static const double gyro_transform_factor = 0.1 * deg2rad;
+
+        copy_hid_axes(dest, source, gyro_transform_factor);
     }
 
     void unpack_hid_raw_data(byte * const dest[], const byte * source, int width, int height)
