@@ -431,9 +431,9 @@ namespace librealsense
             tags.push_back({ RS2_STREAM_DEPTH, -1, width, height, RS2_FORMAT_Z16, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_INFRARED, -1, width, height, RS2_FORMAT_Y8, fps, profile_tag::PROFILE_TAG_SUPERSET });
 
-             // TODO - Check which IMU shall be activated by default. Evgeni
-            tags.push_back({RS2_STREAM_GYRO, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, 200, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({RS2_STREAM_ACCEL, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, 125, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+             // TODO - Check which IMU shall be activated by default
+            //tags.push_back({RS2_STREAM_GYRO, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, 200, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            //tags.push_back({RS2_STREAM_ACCEL, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, 125, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
 
             return tags;
         };
@@ -711,7 +711,7 @@ namespace librealsense
     std::shared_ptr<matcher> rs435i_device::create_matcher(const frame_holder& frame) const
     {
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
-        // TODO Evgeni - A proper matcher for High-FPS sensor
+        // TODO - A proper matcher for High-FPS sensor is required
         std::vector<stream_interface*> mm_streams = { _accel_stream.get(), _gyro_stream.get()};
 
         if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
@@ -725,7 +725,7 @@ namespace librealsense
 
     std::shared_ptr<matcher> rs400_imu_device::create_matcher(const frame_holder& frame) const
     {
-        // TODO Evgeni - A proper matcher for High-FPS sensor is required
+        // TODO - A proper matcher for High-FPS sensor is required
         std::vector<stream_interface*> mm_streams = { _accel_stream.get(), _gyro_stream.get()};
         return matcher_factory::create(RS2_MATCHER_DEFAULT, mm_streams);
     }

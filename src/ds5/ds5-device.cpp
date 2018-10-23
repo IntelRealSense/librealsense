@@ -370,7 +370,8 @@ namespace librealsense
 
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
 
-        std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(group.uvc_devices.front().pid)) ? rs400_sku_names.at(group.uvc_devices.front().pid) : "RS4xx";
+        auto pid = group.uvc_devices.front().pid;
+        std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(pid)) ? rs400_sku_names.at(pid) : "RS4xx";
         _fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
         _recommended_fw_version = firmware_version("5.10.3.0");
         if (_fw_version >= firmware_version("5.10.4.0"))
@@ -399,7 +400,6 @@ namespace librealsense
             depth_ep.register_pixel_format(pf_y12i); // L+R - Calibration not rectified
         }
 
-        auto pid = group.uvc_devices.front().pid;
         auto pid_hex_str = hexify(pid >> 8) + hexify(static_cast<uint8_t>(pid));
 
         std::string is_camera_locked{ "" };
@@ -409,8 +409,9 @@ namespace librealsense
             is_camera_locked = (is_locked) ? "YES" : "NO";
 
 #ifdef HWM_OVER_XU
-            //if hw_monitor was created by usb replace it xu
-            if (group.usb_devices.size() > 0)
+            //if hw_monitor was created by usb replace it with xu
+            // D400_IMU will remain using USB interface due to HW limitations
+            if ((group.usb_devices.size() > 0) && (RS400_IMU_PID != pid))
             {
                 _hw_monitor = std::make_shared<hw_monitor>(
                     std::make_shared<locked_transfer>(

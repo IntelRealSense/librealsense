@@ -102,16 +102,12 @@ namespace librealsense
     {
         auto hid = (hid_data*)(source);
 
-        // Evgeni testing
-        static hid_data max;
-        if (abs(hid->x) > max.x) max.x = hid->x;
-        if (abs(hid->y) > max.y) max.y = hid->y;
-        if (abs(hid->z) > max.z) max.z = hid->z;
-        std::cout << "[x,y,z]= [" << hid->x << ", " << hid->y << ", " << hid->z << "]" << std::endl;
-
-        float axes[3] = { static_cast<float>((hid->x) * factor),
+        // The IMU sensor orientation shall be aligned with depth sensor's coordinate system
+        // Note that the implementation follows D435i installation pose and will require refactoring for other designs
+        // Reference spec: Bosch BMI055
+        float axes[3] = { static_cast<float>((hid->x) * -factor),
                          static_cast<float>((hid->y) * factor),
-                         static_cast<float>((hid->z) * factor) };
+                         static_cast<float>((hid->z) * -factor) };
         librealsense::copy(dest[0], axes, sizeof(axes));
     }
 
