@@ -16,6 +16,7 @@ add_library(${PROJECT_NAME}
 	StreamProfile.cs
 	Types.cs
 	SoftwareDevice.cs
+	Option.cs
 	.nuget/Intel.RealSense.targets
 	
 	Properties/AssemblyInfo.cs
@@ -56,4 +57,8 @@ add_dependencies(${PROJECT_NAME} realsense2)
 
 set_target_properties (${PROJECT_NAME} PROPERTIES
 	FOLDER Wrappers/csharp
+)
+
+set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_REFERENCES
+	"System"
 )

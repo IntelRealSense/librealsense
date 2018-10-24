@@ -77,8 +77,8 @@ public class RsDeviceEditor : Editor
 
                 EditorGUILayout.Space();
                 EditorGUILayout.PropertyField(config.FindPropertyRelative("Profiles"), true);
-                EditorGUILayout.Space();
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_processingPipe"), false);
+                // EditorGUILayout.Space();
+                // EditorGUILayout.PropertyField(serializedObject.FindProperty("_processingPipe"), false);
                 EditorGUILayout.Space();
                 EditorGUI.EndDisabledGroup();
                 break;
@@ -98,8 +98,8 @@ public class RsDeviceEditor : Editor
                         }
                     }
                     EditorGUILayout.EndHorizontal();
-                    EditorGUILayout.Space();
-                    EditorGUILayout.PropertyField(serializedObject.FindProperty("_processingPipe"), false);
+                    // EditorGUILayout.Space();
+                    // EditorGUILayout.PropertyField(serializedObject.FindProperty("_processingPipe"), false);
                     EditorGUILayout.Space();
                     EditorGUI.EndDisabledGroup();
 
@@ -184,8 +184,8 @@ public class RsDeviceEditor : Editor
 
                     EditorGUILayout.Space();
                     EditorGUILayout.PropertyField(config.FindPropertyRelative("Profiles"), true);
-                    EditorGUILayout.Space();
-                    EditorGUILayout.PropertyField(serializedObject.FindProperty("_processingPipe"), false);
+                    // EditorGUILayout.Space();
+                    // EditorGUILayout.PropertyField(serializedObject.FindProperty("_processingPipe"), false);
                     EditorGUILayout.Space();
                     EditorGUI.EndDisabledGroup();
                 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
@@ -6,15 +7,30 @@ namespace Intel.RealSense
     public class Frame : IDisposable
     {
         internal HandleRef m_instance;
+        public static readonly FramePool<Frame> Pool = new FramePool<Frame>(ptr => new Frame(ptr));
+
+        public IntPtr NativePtr { get { return m_instance.Handle; } }
 
         public Frame(IntPtr ptr)
         {
             m_instance = new HandleRef(this, ptr);
-            NativeMethods.rs2_keep_frame(m_instance.Handle);
+        }
+
+        internal static Frame CreateFrame(IntPtr ptr)
+        {
+            object error;
+            if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.Points, out error) > 0)
+                return Points.Pool.Get(ptr);
+            else if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.DepthFrame, out error) > 0)
+                return DepthFrame.Pool.Get(ptr);
+            else if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.VideoFrame, out error) > 0)
+                return VideoFrame.Pool.Get(ptr);
+            else
+                return Frame.Pool.Get(ptr);
         }
 
         #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
+        internal bool disposedValue = false; // To detect redundant calls
 
         protected virtual void Dispose(bool disposing)
         {
@@ -49,18 +65,28 @@ namespace Intel.RealSense
         }
         #endregion
 
-        public void Release()
+        public virtual void Release()
         {
             if (m_instance.Handle != IntPtr.Zero)
                 NativeMethods.rs2_release_frame(m_instance.Handle);
             m_instance = new HandleRef(this, IntPtr.Zero);
+            Pool.Release(this);
         }
 
         public Frame Clone()
         {
             object error;
             NativeMethods.rs2_frame_add_ref(m_instance.Handle, out error);
-            return new Frame(m_instance.Handle);
+            return CreateFrame(m_instance.Handle);
+        }
+
+        public bool IsComposite
+        {
+            get
+            {
+                object error;
+                return NativeMethods.rs2_is_frame_extendable_to(m_instance.Handle, Extension.CompositeFrame, out error) > 0;
+            }
         }
 
         public IntPtr Data
@@ -77,7 +103,7 @@ namespace Intel.RealSense
             get
             {
                 object error;
-                return new StreamProfile(NativeMethods.rs2_get_frame_stream_profile(m_instance.Handle, out error));
+                return StreamProfile.Pool.Get(NativeMethods.rs2_get_frame_stream_profile(m_instance.Handle, out error));
             }
         }
 
@@ -115,6 +141,8 @@ namespace Intel.RealSense
 
     public class VideoFrame : Frame
     {
+        public static readonly new FramePool<VideoFrame> Pool = new FramePool<VideoFrame>(ptr => new VideoFrame(ptr));
+
         public VideoFrame(IntPtr ptr) : base(ptr)
         {
         }
@@ -164,26 +192,69 @@ namespace Intel.RealSense
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="array"></param>
-        //public void CopyTo<T>(out T[] array)
         public void CopyTo<T>(T[] array)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
             try
             {
                 //System.Diagnostics.Debug.Assert((array.Length * Marshal.SizeOf(typeof(T))) == (Stride * Height));
-                NativeMethods.memcpy(handle.AddrOfPinnedObject(), Data, Stride * Height);
+                CopyTo(handle.AddrOfPinnedObject());
             }
             finally
             {
                 handle.Free();
             }
         }
+
+        public void CopyTo(IntPtr ptr)
+        {
+            //System.Diagnostics.Debug.Assert(ptr != IntPtr.Zero);
+            NativeMethods.memcpy(ptr, Data, Stride * Height);
+        }
+
+        /// <summary>
+        /// Copy from data from managed array
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="array"></param>
+        public void CopyFrom<T>(T[] array)
+        {
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+            try
+            {
+                //System.Diagnostics.Debug.Assert((array.Length * Marshal.SizeOf(typeof(T))) == (Stride * Height));
+                CopyFrom(handle.AddrOfPinnedObject());
+            }
+            finally
+            {
+                handle.Free();
+            }
+        }
+
+        public void CopyFrom(IntPtr ptr)
+        {
+            //System.Diagnostics.Debug.Assert(ptr != IntPtr.Zero);
+            NativeMethods.memcpy(Data, ptr, Stride * Height);
+        }
+
+        public override void Release()
+        {
+            //base.Release();
+            if (m_instance.Handle != IntPtr.Zero)
+                NativeMethods.rs2_release_frame(m_instance.Handle);
+            m_instance = new HandleRef(this, IntPtr.Zero);
+            Pool.Release(this);
+        }
     }
 
     public class DepthFrame : VideoFrame
     {
+        public static readonly new FramePool<DepthFrame> Pool = new FramePool<DepthFrame>(ptr => new DepthFrame(ptr));
+
         public DepthFrame(IntPtr ptr) : base(ptr)
         {
         }
@@ -193,11 +264,22 @@ namespace Intel.RealSense
             object error;
             return NativeMethods.rs2_depth_frame_get_distance(m_instance.Handle, x, y, out error);
         }
+
+        public override void Release()
+        {
+            //base.Release();
+            if (m_instance.Handle != IntPtr.Zero)
+                NativeMethods.rs2_release_frame(m_instance.Handle);
+            m_instance = new HandleRef(this, IntPtr.Zero);
+            Pool.Release(this);
+        }
     }
 
 
     public class Points : Frame
     {
+        public static readonly new FramePool<Points> Pool = new FramePool<Points>(ptr => new Points(ptr));
+
         [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public struct Vertex
         {
@@ -210,6 +292,7 @@ namespace Intel.RealSense
             public float u;
             public float v;
         }
+
         public Points(IntPtr ptr) : base(ptr)
         {
         }
@@ -240,7 +323,7 @@ namespace Intel.RealSense
         public void CopyTo(Vertex[] array)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
             try
             {
@@ -267,7 +350,7 @@ namespace Intel.RealSense
         public void CopyTo(TextureCoordinate[] textureArray)
         {
             if (textureArray == null)
-                throw new ArgumentNullException("textureArray");
+                throw new ArgumentNullException(nameof(textureArray));
 
             var handle = GCHandle.Alloc(textureArray, GCHandleType.Pinned);
             try
@@ -280,45 +363,49 @@ namespace Intel.RealSense
                 handle.Free();
             }
         }
+
+        public override void Release()
+        {
+            //base.Release();
+            if (m_instance.Handle != IntPtr.Zero)
+                NativeMethods.rs2_release_frame(m_instance.Handle);
+            m_instance = new HandleRef(this, IntPtr.Zero);
+            Pool.Release(this);
+        }
     }
 
-
-
-    class FrameMarshaler : ICustomMarshaler
+    public class FramePool<T> where T : Frame
     {
-        private static FrameMarshaler Instance;
+        readonly Stack<T> stack = new Stack<T>();
+        readonly object locker = new object();
+        readonly Func<IntPtr, T> factory;
 
-        public static ICustomMarshaler GetInstance(string s)
+        public FramePool(Func<IntPtr, T> factory)
         {
-            if (Instance == null)
+            this.factory = factory;
+        }
+
+        public T Get(IntPtr ptr)
+        {
+            
+            lock (locker)
             {
-                Instance = new FrameMarshaler();
+                if(stack.Count == 0)
+                    return factory(ptr);
+                T f = stack.Pop();
+                f.m_instance = new HandleRef(f, ptr);
+                f.disposedValue = false;
+                //NativeMethods.rs2_keep_frame(ptr);
+                return f;
             }
-            return Instance;
         }
 
-        public void CleanUpManagedData(object ManagedObj)
+        public void Release(T t)
         {
-        }
-
-        public void CleanUpNativeData(IntPtr pNativeData)
-        {
-        }
-
-        public int GetNativeDataSize()
-        {
-            //return IntPtr.Size;
-            return -1;
-        }
-
-        public IntPtr MarshalManagedToNative(object ManagedObj)
-        {
-            throw new NotImplementedException();
-        }
-
-        public object MarshalNativeToManaged(IntPtr pNativeData)
-        {
-            return new Frame(pNativeData);
+            lock (locker)
+            {
+                stack.Push(t);
+            }
         }
     }
 }

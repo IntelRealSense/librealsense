@@ -1,15 +1,24 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Intel.RealSense
 {
-    public class ProcessingBlock : IDisposable
+    public interface IProcessingBlock : IOptions
     {
+        Frame Process(Frame original);
+        FrameSet Process(FrameSet original);
+    }
+
+    public abstract class ProcessingBlock : IProcessingBlock, IDisposable
+    {
+        public readonly FrameQueue queue = new FrameQueue(1);
+
         internal HandleRef m_instance;
 
         Sensor.SensorOptions m_options;
-        public Sensor.SensorOptions Options
+        public IOptionsContainer Options
         {
             get
             {
@@ -59,6 +68,50 @@ namespace Intel.RealSense
                 NativeMethods.rs2_delete_processing_block(m_instance.Handle);
             m_instance = new HandleRef(this, IntPtr.Zero);
         }
+
+        /// <summary>
+        /// Process frame and return the result
+        /// </summary>
+        /// <param name="original"></param>
+        /// <returns></returns>
+        public Frame Process(Frame original)
+        {
+            object error;
+            NativeMethods.rs2_frame_add_ref(original.m_instance.Handle, out error);
+            NativeMethods.rs2_process_frame(m_instance.Handle, original.m_instance.Handle, out error);
+            Frame f;
+            if (queue.PollForFrame(out f))
+            {
+                return f;
+            }
+            return original;
+        }
+
+        public FrameSet Process(FrameSet original)
+        {
+            FrameSet rv;
+            using (var singleOriginal = original.AsFrame())
+            {
+                using (var processed = Process(singleOriginal))
+                {
+                    rv = FrameSet.FromFrame(processed);
+                }
+            }
+            return rv;
+        }
+    }
+
+    public static class IProcessingBlockExtensions
+    {
+        public static Frame ApplyFilter(this Frame frame, IProcessingBlock block)
+        {
+            return block.Process(frame);
+        }
+
+        public static FrameSet ApplyFilter(this FrameSet frames, IProcessingBlock block)
+        {
+            return block.Process(frames);
+        }
     }
 
     public class Colorizer : ProcessingBlock
@@ -70,15 +123,11 @@ namespace Intel.RealSense
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
-        public VideoFrame Colorize(VideoFrame original, FramesReleaser releaser = null)
+        [Obsolete("This method is obsolete. Use Process method instead")]
+        public VideoFrame Colorize(Frame original, FramesReleaser releaser = null)
         {
-            object error;
-            NativeMethods.rs2_frame_add_ref(original.m_instance.Handle, out error);
-            NativeMethods.rs2_process_frame(m_instance.Handle, original.m_instance.Handle, out error);
-            return FramesReleaser.ScopedReturn(releaser, queue.WaitForFrame() as VideoFrame);
+            return Process(original).DisposeWith(releaser) as VideoFrame;
         }
-
-        readonly FrameQueue queue = new FrameQueue(1);
     }
 
     public class Syncer : ProcessingBlock
@@ -90,35 +139,32 @@ namespace Intel.RealSense
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
-        public void SubmitFrame(Frame f, FramesReleaser releaser = null)
+        public void SubmitFrame(Frame f)
         {
             object error;
             NativeMethods.rs2_frame_add_ref(f.m_instance.Handle, out error);
             NativeMethods.rs2_process_frame(m_instance.Handle, f.m_instance.Handle, out error);
         }
 
-        public FrameSet WaitForFrames(uint timeout_ms = 5000, FramesReleaser releaser = null)
+        public FrameSet WaitForFrames(uint timeout_ms = 5000)
         {
             object error;
             var ptr = NativeMethods.rs2_wait_for_frame(queue.m_instance.Handle, timeout_ms, out error);
-            return FramesReleaser.ScopedReturn(releaser, new FrameSet(ptr));
+            return FrameSet.Pool.Get(ptr);
         }
 
-        public bool PollForFrames(out FrameSet result, FramesReleaser releaser = null)
+        public bool PollForFrames(out FrameSet result)
         {
             object error;
-            Frame f;
-            if (NativeMethods.rs2_poll_for_frame(queue.m_instance.Handle, out f, out error) > 0)
+            IntPtr ptr;
+            if (NativeMethods.rs2_poll_for_frame(queue.m_instance.Handle, out ptr, out error) > 0)
             {
-                result = FramesReleaser.ScopedReturn(releaser, new FrameSet(f.m_instance.Handle));
-                f.Dispose();
+                result = FrameSet.Pool.Get(ptr);
                 return true;
             }
             result = null;
             return false;
         }
-
-        readonly FrameQueue queue = new FrameQueue(1);
     }
 
     public class Align : ProcessingBlock
@@ -130,15 +176,11 @@ namespace Intel.RealSense
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
-        public FrameSet Process(FrameSet original, FramesReleaser releaser = null)
+        [Obsolete("This method is obsolete. Use Process with DisposeWith method instead")]
+        public FrameSet Process(FrameSet original, FramesReleaser releaser)
         {
-            object error;
-            NativeMethods.rs2_frame_add_ref(original.m_instance.Handle, out error);
-            NativeMethods.rs2_process_frame(m_instance.Handle, original.m_instance.Handle, out error);
-            return FramesReleaser.ScopedReturn(releaser, queue.WaitForFrames() as FrameSet);
+            return Process(original).DisposeWith(releaser);
         }
-
-        readonly FrameQueue queue = new FrameQueue(1);
     }
 
     public class DisparityTransform : ProcessingBlock
@@ -151,15 +193,11 @@ namespace Intel.RealSense
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
-        public VideoFrame ApplyFilter(VideoFrame original, FramesReleaser releaser = null)
+        [Obsolete("This method is obsolete. Use Process method instead")]
+        public VideoFrame ApplyFilter(Frame original, FramesReleaser releaser = null)
         {
-            object error;
-            NativeMethods.rs2_frame_add_ref(original.m_instance.Handle, out error);
-            NativeMethods.rs2_process_frame(m_instance.Handle, original.m_instance.Handle, out error);
-            return FramesReleaser.ScopedReturn(releaser, queue.WaitForFrame() as VideoFrame);
+            return Process(original).DisposeWith(releaser) as VideoFrame;
         }
-
-        readonly FrameQueue queue = new FrameQueue(1);
     }
 
     public class DecimationFilter : ProcessingBlock
@@ -171,15 +209,11 @@ namespace Intel.RealSense
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
-        public VideoFrame ApplyFilter(VideoFrame original, FramesReleaser releaser = null)
+        [Obsolete("This method is obsolete. Use Process method instead")]
+        public VideoFrame ApplyFilter(Frame original, FramesReleaser releaser)
         {
-            object error;
-            NativeMethods.rs2_frame_add_ref(original.m_instance.Handle, out error);
-            NativeMethods.rs2_process_frame(m_instance.Handle, original.m_instance.Handle, out error);
-            return FramesReleaser.ScopedReturn(releaser, queue.WaitForFrame() as VideoFrame);
+            return Process(original).DisposeWith(releaser) as VideoFrame;
         }
-
-        readonly FrameQueue queue = new FrameQueue(1);
     }
 
     public class SpatialFilter : ProcessingBlock
@@ -191,15 +225,11 @@ namespace Intel.RealSense
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
-        public VideoFrame ApplyFilter(VideoFrame original, FramesReleaser releaser = null)
+        [Obsolete("This method is obsolete. Use Process method instead")]
+        public VideoFrame ApplyFilter(Frame original, FramesReleaser releaser = null)
         {
-            object error;
-            NativeMethods.rs2_frame_add_ref(original.m_instance.Handle, out error);
-            NativeMethods.rs2_process_frame(m_instance.Handle, original.m_instance.Handle, out error);
-            return FramesReleaser.ScopedReturn(releaser, queue.WaitForFrame() as VideoFrame);
+            return Process(original).DisposeWith(releaser) as VideoFrame;
         }
-
-        readonly FrameQueue queue = new FrameQueue(1);
     }
 
     public class TemporalFilter : ProcessingBlock
@@ -211,15 +241,11 @@ namespace Intel.RealSense
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
-        public VideoFrame ApplyFilter(VideoFrame original, FramesReleaser releaser = null)
+        [Obsolete("This method is obsolete. Use Process method instead")]
+        public VideoFrame ApplyFilter(Frame original, FramesReleaser releaser = null)
         {
-            object error;
-            NativeMethods.rs2_frame_add_ref(original.m_instance.Handle, out error);
-            NativeMethods.rs2_process_frame(m_instance.Handle, original.m_instance.Handle, out error);
-            return FramesReleaser.ScopedReturn(releaser, queue.WaitForFrame() as VideoFrame);
+            return Process(original).DisposeWith(releaser) as VideoFrame;
         }
-
-        readonly FrameQueue queue = new FrameQueue(1);
     }
 
     public class HoleFillingFilter : ProcessingBlock
@@ -231,88 +257,120 @@ namespace Intel.RealSense
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
-        public VideoFrame ApplyFilter(VideoFrame original)
+        [Obsolete("This method is obsolete. Use Process method instead")]
+        public VideoFrame ApplyFilter(Frame original, FramesReleaser releaser = null)
         {
-            object error;
-            NativeMethods.rs2_frame_add_ref(original.m_instance.Handle, out error);
-            NativeMethods.rs2_process_frame(m_instance.Handle, original.m_instance.Handle, out error);
-            return queue.WaitForFrame() as VideoFrame;
+            return Process(original).DisposeWith(releaser) as VideoFrame;
         }
-
-        readonly FrameQueue queue = new FrameQueue(1);
     }
 
     public class PointCloud : ProcessingBlock
     {
-        readonly FrameQueue queue = new FrameQueue(1);
+        private readonly IOption formatFilter;
+        private readonly IOption indexFilter;
+        private readonly IOption streamFilter;
 
         public PointCloud()
         {
             object error;
             m_instance = new HandleRef(this, NativeMethods.rs2_create_pointcloud(out error));
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
+
+            streamFilter = Options[Option.StreamFilter];
+            formatFilter = Options[Option.StreamFormatFilter];
+            indexFilter = Options[Option.StreamIndexFilter];
         }
 
+        [Obsolete("This method is obsolete. Use Process method instead")]
         public Points Calculate(Frame original, FramesReleaser releaser = null)
         {
-            object error;
-            NativeMethods.rs2_frame_add_ref(original.m_instance.Handle, out error);
-            NativeMethods.rs2_process_frame(m_instance.Handle, original.m_instance.Handle, out error);
-            return FramesReleaser.ScopedReturn(releaser, queue.WaitForFrame() as Points);
+            return Process(original).DisposeWith(releaser) as Points;
         }
 
         public void MapTexture(VideoFrame texture)
         {
-            object error;
-            Options[Option.StreamFilter].Value = Convert.ToSingle(texture.Profile.Stream);
-            Options[Option.StreamFormatFilter].Value = Convert.ToSingle(texture.Profile.Format);
-            Options[Option.StreamIndexFilter].Value = Convert.ToSingle(texture.Profile.Index);
-            NativeMethods.rs2_frame_add_ref(texture.m_instance.Handle, out error);
-            NativeMethods.rs2_process_frame(m_instance.Handle, texture.m_instance.Handle, out error);
+            using (var p = texture.Profile) {
+                streamFilter.Value = (float)p.Stream;
+                formatFilter.Value = (float)p.Format;
+                indexFilter.Value = (float)p.Index;
+            }
+            using (var f = Process(texture));
         }
     }
 
-    public class FrameSource
+    public struct FrameSource
     {
-        internal HandleRef m_instance;
+        internal readonly HandleRef m_instance;
 
         internal FrameSource(HandleRef instance)
         {
             m_instance = instance;
         }
 
-        public VideoFrame AllocateVideoFrame(StreamProfile profile, Frame original, int bpp, int width, int height, int stride, Extension extension = Extension.VideoFrame )
+        public T AllocateVideoFrame<T>(StreamProfile profile, Frame original, 
+            int bpp, int width, int height, int stride, Extension extension = Extension.VideoFrame) where T : Frame
         {
             object error;
             var fref = NativeMethods.rs2_allocate_synthetic_video_frame(m_instance.Handle, profile.m_instance.Handle, original.m_instance.Handle, bpp, width, height, stride, extension, out error);
-            return new VideoFrame(fref);
+            return Frame.CreateFrame(fref) as T;
         }
 
+        [Obsolete("This method is obsolete. Use AllocateCompositeFrame with DisposeWith method instead")]
         public FrameSet AllocateCompositeFrame(FramesReleaser releaser, params Frame[] frames)
         {
-            object error;
-            var frame_refs = frames.Select(x => x.m_instance.Handle).ToArray();
-            foreach (var fref in frame_refs) NativeMethods.rs2_frame_add_ref(fref, out error);
-            var frame_ref = NativeMethods.rs2_allocate_composite_frame(m_instance.Handle, frame_refs, frames.Count(), out error);
-            return FramesReleaser.ScopedReturn(releaser, new FrameSet(frame_ref));
+            return AllocateCompositeFrame((IList<Frame>)frames).DisposeWith(releaser);
         }
 
         public FrameSet AllocateCompositeFrame(params Frame[] frames)
         {
-            return AllocateCompositeFrame(null, frames);
+            return AllocateCompositeFrame((IList<Frame>)frames);
+        }
+
+
+        public FrameSet AllocateCompositeFrame(IList<Frame> frames)
+        {
+            if (frames == null)
+                throw new ArgumentNullException(nameof(frames));
+
+            IntPtr frame_refs = IntPtr.Zero;
+
+            try {
+                object error;
+                int fl = frames.Count;
+                frame_refs = Marshal.AllocHGlobal(fl * IntPtr.Size);
+                for (int i = 0; i < fl; i++)
+                {
+                    var fr = frames[i].m_instance.Handle;
+                    Marshal.WriteIntPtr(frame_refs, i * IntPtr.Size, fr);
+                    NativeMethods.rs2_frame_add_ref(fr, out error);
+                }
+
+                var frame_ref = NativeMethods.rs2_allocate_composite_frame(m_instance.Handle, frame_refs, fl, out error);
+                return FrameSet.Pool.Get(frame_ref);
+            }
+            finally
+            {
+                if (frame_refs != IntPtr.Zero)
+                    Marshal.FreeHGlobal(frame_refs);
+            }
+        }
+
+        private void FrameReady(IntPtr ptr)
+        {
+            object error;
+            NativeMethods.rs2_frame_add_ref(ptr, out error);
+            NativeMethods.rs2_synthetic_frame_ready(m_instance.Handle, ptr, out error);
         }
 
         public void FrameReady(Frame f)
         {
-            object error;
-            NativeMethods.rs2_frame_add_ref(f.m_instance.Handle, out error);
-            NativeMethods.rs2_synthetic_frame_ready(m_instance.Handle, f.m_instance.Handle, out error);
+            FrameReady(f.m_instance.Handle);
         }
 
         public void FramesReady(FrameSet fs)
         {
-            using (var f = fs.AsFrame())
-                FrameReady(f);
+            using (fs)
+                FrameReady(fs.m_instance.Handle);
         }
     }
 
@@ -322,14 +380,21 @@ namespace Intel.RealSense
 
         public CustomProcessingBlock(FrameProcessorCallback cb)
         {
+            frameProcessorCallbackHandle = GCHandle.Alloc(cb, GCHandleType.Normal);
+            IntPtr cbPtr = GCHandle.ToIntPtr(frameProcessorCallbackHandle);
+
             object error;
-            frame_processor_callback cb2 = (IntPtr f, IntPtr src, IntPtr u) =>
-            {
-                using (var frame = new Frame(f))
-                    cb(frame, new FrameSource(new HandleRef(this, src)));
-            };
-            m_proc_callback = cb2;
-            m_instance = new HandleRef(this, NativeMethods.rs2_create_processing_block_fptr(cb2, IntPtr.Zero, out error));
+            var pb = NativeMethods.rs2_create_processing_block_fptr(fpc, cbPtr, out error);
+            m_instance = new HandleRef(this, pb);
+        }
+
+        readonly frame_processor_callback fpc = new frame_processor_callback(ProcessingBlockCallback);
+
+        static void ProcessingBlockCallback(IntPtr f, IntPtr src, IntPtr u)
+        {
+            var callback = GCHandle.FromIntPtr(u).Target as FrameProcessorCallback;
+            using (var frame = Frame.CreateFrame(f))
+                callback(frame, new FrameSource(new HandleRef(frame, src)));
         }
 
         public void ProcessFrame(Frame f)
@@ -345,33 +410,66 @@ namespace Intel.RealSense
                 ProcessFrame(f);
         }
 
+        /// <summary>
+        /// Start the processing block, delivering frames to external queue
+        /// </summary>
+        /// <param name="queue"></param>
         public void Start(FrameQueue queue)
         {
             object error;
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
-
-            m_callback = null;
-            m_queue = queue;
         }
 
-        //public delegate void FrameCallback<Frame, T>(Frame frame, T user_data);
-        public delegate void FrameCallback(Frame frame);
-
-        public void Start(FrameCallback cb)
+        /// <summary>
+        /// Start the processing block
+        /// </summary>
+        public void Start()
         {
             object error;
-            frame_callback cb2 = (IntPtr f, IntPtr u) =>
-            {
-                using (var frame = new Frame(f))
-                    cb(frame);
-            };
-            NativeMethods.rs2_start_processing_fptr(m_instance.Handle, cb2, IntPtr.Zero, out error);
-            m_callback = cb2;
-            m_queue = null;
+            NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
-        private frame_callback m_callback = null;
-        private frame_processor_callback m_proc_callback = null;
-        private FrameQueue m_queue = null;
+        public delegate void FrameCallback(Frame frame);
+
+        /// <summary>
+        /// Start the processing block, delivering frames to a callback
+        /// </summary>
+        /// <param name="cb"></param>
+        public void Start(FrameCallback cb)
+        {
+            frameCallbackHandle = GCHandle.Alloc(cb, GCHandleType.Normal);
+            IntPtr cbPtr = GCHandle.ToIntPtr(frameCallbackHandle);
+
+            object error;
+            NativeMethods.rs2_start_processing_fptr(m_instance.Handle, m_frameCallback, cbPtr, out error);
+        }
+
+        readonly frame_callback m_frameCallback = new frame_callback(ProcessingBlockFrameCallback);
+        static void ProcessingBlockFrameCallback(IntPtr f, IntPtr u)
+        {
+            var callback = GCHandle.FromIntPtr(u).Target as FrameCallback;
+            using (var frame = Frame.CreateFrame(f))
+                callback(frame);
+        }
+
+        private GCHandle frameCallbackHandle;
+        private readonly GCHandle frameProcessorCallbackHandle;
+
+        protected override void Dispose(bool disposing)
+        {
+            //if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    if (frameCallbackHandle.IsAllocated)
+                        frameCallbackHandle.Free();
+
+                    if (frameProcessorCallbackHandle.IsAllocated)
+                        frameProcessorCallbackHandle.Free();
+                }
+            }
+
+            base.Dispose(disposing);
+        }
     }
 }

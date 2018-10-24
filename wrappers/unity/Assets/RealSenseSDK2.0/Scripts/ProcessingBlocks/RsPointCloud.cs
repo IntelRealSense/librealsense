@@ -1,68 +1,71 @@
-﻿using Intel.RealSense;
-using System;
-using System.Collections.Generic;
+using Intel.RealSense;
 
+[ProcessingBlockDataAttribute(typeof(PointCloud))]
 public class RsPointCloud : RsProcessingBlock
 {
-    public Stream _textureStream = Stream.Color;
-
-    private PointCloud _pb;
-    private List<Stream> _requirments = new List<Stream>() { Stream.Depth };
-
-    private object _lock = new object();
-
-    private Dictionary<Stream, RsVideoStreamRequest> _videoStreamFilter = new Dictionary<Stream, RsVideoStreamRequest>();
-    private Dictionary<Stream, RsVideoStreamRequest> _currVideoStreamFilter = new Dictionary<Stream, RsVideoStreamRequest>();
-
-    public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Multi; } }
-
-    public void Awake()
+    public enum OcclusionRemoval
     {
-        ResetProcessingBlock();
-        foreach(Stream stream in Enum.GetValues(typeof(Stream)))
-        {
-            _videoStreamFilter[stream] = new RsVideoStreamRequest();
-        }
+        Off = 0,
+        Heuristic = 1,
+        Exhaustive = 2
     }
 
-    private void ResetProcessingBlock()
-    {
-        if (_pb != null)
-            _pb.Dispose();
-        _pb = new PointCloud();
-    }
+    public Stream TextureStream = Stream.Color;
+    public Format TextureFormat = Format.Any;
+    public OcclusionRemoval _occlusionRemoval = OcclusionRemoval.Off;
 
-    public override Frame Process(Frame frame, FrameSource frameSource, FramesReleaser releaser)
+    PointCloud _pb;
+    private IOption filterMag;
+    private IOption streamFilter;
+    private IOption formatFilter;
+
+    private readonly object _lock = new object();
+
+    public void Init()
     {
         lock (_lock)
         {
-            using (var frameset = FrameSet.FromFrame(frame))
+            _pb = new PointCloud();
+            filterMag = _pb.Options[Option.FilterMagnitude];
+            streamFilter = _pb.Options[Option.StreamFilter];
+            formatFilter = _pb.Options[Option.StreamFormatFilter];
+        }
+    }
+
+    void OnDisable()
+    {
+        lock (_lock)
+        {
+            if (_pb != null)
             {
-                using (var depth = frameset.DepthFrame)
-                {
-                    using (var texture = frameset.FirstOrDefault<VideoFrame>(_textureStream))
-                    {
-                        _videoStreamFilter[depth.Profile.Stream].CopyProfile(depth);
-                        _videoStreamFilter[texture.Profile.Stream].CopyProfile(texture);
-                        if (_currVideoStreamFilter.Count == 0 ||
-                            !_currVideoStreamFilter[depth.Profile.Stream].Equals(_videoStreamFilter[depth.Profile.Stream]) ||
-                            !_currVideoStreamFilter[texture.Profile.Stream].Equals(_videoStreamFilter[texture.Profile.Stream]))
-                        {
-                            ResetProcessingBlock();
-                            _currVideoStreamFilter[depth.Profile.Stream] = new RsVideoStreamRequest(depth);
-                            _currVideoStreamFilter[texture.Profile.Stream] = new RsVideoStreamRequest(texture);
-                        }
-                        var points = _pb.Calculate(depth, releaser);
-                        _pb.MapTexture(texture);
-                        return frameSource.AllocateCompositeFrame(releaser, depth, points).AsFrame();
-                    }
-                }
+                _pb.Dispose();
+                _pb = null;
             }
         }
     }
 
-    public override List<Stream> Requirments()
+    public override Frame Process(Frame frame, FrameSource frameSource)
     {
-        return _requirments;
+        lock (_lock)
+        {
+            if (_pb == null)
+            {
+                Init();
+            }
+        }
+
+        UpdateOptions(frame.IsComposite);
+
+        return _pb.Process(frame);
+    }
+
+    private void UpdateOptions(bool isComposite)
+    {
+        filterMag.Value = (float)_occlusionRemoval;
+        if (isComposite)
+        {
+            streamFilter.Value = (float)TextureStream;
+            formatFilter.Value = (float)TextureFormat;
+        }
     }
 }

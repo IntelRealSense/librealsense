@@ -25,9 +25,9 @@ namespace Intel.RealSense
                 var ptr = NativeMethods.rs2_get_stream_profile(m_instance, i, out error);
 
                 if (NativeMethods.rs2_stream_profile_is(ptr, Extension.VideoProfile, out error) > 0)
-                    yield return new VideoStreamProfile(ptr);
+                    yield return VideoStreamProfile.Pool.Get(ptr);
                 else 
-                    yield return new StreamProfile(ptr);
+                    yield return StreamProfile.Pool.Get(ptr);
             }
         }
 
@@ -55,7 +55,7 @@ namespace Intel.RealSense
                 if (NativeMethods.rs2_stream_profile_is(ptr, Extension.VideoProfile, out error) > 0)
                     return new VideoStreamProfile(ptr);
                 else
-                    return new StreamProfile(ptr);
+                    return StreamProfile.Pool.Get(ptr);
             }
         }
 
@@ -102,22 +102,27 @@ namespace Intel.RealSense
     {
         internal HandleRef m_instance;
 
+        internal static readonly ProfilePool<StreamProfile> Pool = new ProfilePool<StreamProfile>();
+
         public StreamProfile(IntPtr ptr)
         {
             m_instance = new HandleRef(this, ptr);
 
             object e;
-            NativeMethods.rs2_get_stream_profile_data(m_instance.Handle, out Stream, out Format, out Index, out UniqueID, out Framerate, out e);
+            NativeMethods.rs2_get_stream_profile_data(m_instance.Handle, out _stream, out _format, out _index, out _uniqueId, out _framerate, out e);
         }
 
-        public readonly Stream Stream;
-        public readonly Format Format;
+        internal Stream _stream;
+        internal Format _format;
+        internal int _framerate;
+        internal int _index;
+        internal int _uniqueId;
 
-        public readonly int Framerate;
-
-        public readonly int Index;
-
-        public readonly int UniqueID;
+        public Stream Stream { get { return _stream; } }
+        public Format Format { get { return _format; } }
+        public int Framerate { get { return _framerate; } }
+        public int Index { get { return _index; } }
+        public int UniqueID { get { return _uniqueId; } }
 
         public IntPtr Ptr
         {
@@ -133,7 +138,7 @@ namespace Intel.RealSense
         }
 
         #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
+        internal bool disposedValue = false; // To detect redundant calls
 
         protected virtual void Dispose(bool disposing)
         {
@@ -170,9 +175,8 @@ namespace Intel.RealSense
 
         public void Release()
         {
-            //if(m_instance.Handle != IntPtr.Zero)
-                //NativeMethods.rs2_delete_str(m_instance.Handle);
             m_instance = new HandleRef(this, IntPtr.Zero);
+            Pool.Release(this);
         }
     }
 
@@ -181,7 +185,7 @@ namespace Intel.RealSense
         public VideoStreamProfile(IntPtr ptr) : base(ptr)
         {
             object error;
-            NativeMethods.rs2_get_video_stream_resolution(ptr, out Width, out Height, out error);
+            NativeMethods.rs2_get_video_stream_resolution(ptr, out width, out height, out error);
         }
 
         public Intrinsics GetIntrinsics()
@@ -192,9 +196,56 @@ namespace Intel.RealSense
             return intrinsics;
         }
 
-        public readonly int Width;
+        public int Width { get { return width; } }
 
-        public readonly int Height;
+        public int Height { get { return height; } }
 
+        internal int width;
+        internal int height;
+    }
+
+
+    public class ProfilePool<T> where T : StreamProfile
+    {
+        readonly Stack<T> stack = new Stack<T>();
+        readonly object locker = new object();
+
+        public T Get(IntPtr ptr)
+        {
+
+            object error;
+            bool isVideo = NativeMethods.rs2_stream_profile_is(ptr, Extension.VideoProfile, out error) > 0;
+
+            T p;
+            lock (locker)
+            {
+                if (stack.Count != 0)
+                    p = stack.Pop();
+                else
+                    p = (isVideo  ? new VideoStreamProfile(ptr) : new StreamProfile(ptr)) as T;
+            }
+
+            p.m_instance = new HandleRef(p, ptr);
+            p.disposedValue = false;
+
+            NativeMethods.rs2_get_stream_profile_data(ptr, out p._stream, out p._format, out p._index, out p._uniqueId, out p._framerate, out error);
+
+            if(isVideo)
+            {
+                var v = p as VideoStreamProfile;
+                NativeMethods.rs2_get_video_stream_resolution(ptr, out v.width, out v.height, out error);
+                return v as T;
+            }
+
+            return p;
+        }
+
+        public void Release(T t)
+        {
+            lock (locker)
+            {
+                stack.Push(t);
+            }
+        }
     }
 }

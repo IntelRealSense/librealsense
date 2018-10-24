@@ -1,11 +1,10 @@
-﻿using Intel.RealSense;
-using System;
-using System.Collections.Generic;
+using Intel.RealSense;
+using UnityEngine;
 
+[ProcessingBlockDataAttribute(typeof(Colorizer))]
 public class RsColorizer : RsProcessingBlock
 {
-    [Serializable]
-    public enum ColorScheme //TOOD: remove and make more robust using option.ValueDescription
+    public enum ColorScheme
     {
         Jet,
         Classic,
@@ -18,29 +17,89 @@ public class RsColorizer : RsProcessingBlock
         Pattern
     }
 
-    public ColorScheme colorMap;
-    private List<Stream> _requirments = new List<Stream>() { Stream.Depth };
-    private Colorizer _pb = new Colorizer();
-
-    public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Single; } }
-
-    public void Awake()
+    public enum VisualPreset
     {
-        _pb.Options[Option.ColorScheme].Value = (float)colorMap;
+        Dynamic = 0,
+        Fixed = 1,
+        Near = 2,
+        Far = 3,
     }
 
-    public override List<Stream> Requirments()
+    private Colorizer _pb;
+
+    public VisualPreset visualPreset = VisualPreset.Dynamic;
+    public ColorScheme colorScheme = ColorScheme.Jet;
+
+    public bool histogramEqualization = true;
+
+    [Range(0, 16)]
+    public float minDist = 0f;
+
+    [Range(0, 16)]
+    public float maxDist = 6f;
+
+    private IOption presetOption;
+    private IOption schemeOption;
+    private IOption histEqOption;
+    private IOption minDistOption;
+    private IOption maxDistOption;
+
+
+    public void Init()
     {
-        return _requirments;
+        _pb = new Colorizer();
+        presetOption = _pb.Options[Option.VisualPreset];
+        schemeOption = _pb.Options[Option.ColorScheme];
+        histEqOption = _pb.Options[Option.HistogramEqualizationEnabled];
+        minDistOption = _pb.Options[Option.MinDistance];
+        maxDistOption = _pb.Options[Option.MaxDistance];
     }
 
-    public void Update()
+    void OnDisable()
     {
-        _pb.Options[Option.ColorScheme].Value = (float)colorMap;
+        if (_pb != null)
+        {
+            _pb.Dispose();
+        }
     }
 
-    public override Frame Process(Frame frame, FrameSource frameSource, FramesReleaser releaser)
+
+    public override Frame Process(Frame frame, FrameSource frameSource)
     {
-        return _enabled ? _pb.Colorize(frame as VideoFrame) : frame;
+        if (_pb == null)
+        {
+            Init();
+        }
+
+        UpdateOptions();
+
+        return _pb.Process(frame);
+    }
+
+    private void UpdateOptions()
+    {
+        if (presetOption.Value != (float)visualPreset)
+        {
+            presetOption.Value = (float)visualPreset;
+
+            colorScheme = (ColorScheme)schemeOption.Value;
+            histogramEqualization = histEqOption.Value != 0f;
+            minDist = minDistOption.Value;
+            maxDist = maxDistOption.Value;
+        }
+        else
+        {
+            if (schemeOption.Value != (float)colorScheme)
+                schemeOption.Value = (float)colorScheme;
+
+            if (histEqOption.Value != (float)(histogramEqualization ? 1 : 0))
+                histEqOption.Value = (float)(histogramEqualization ? 1 : 0);
+
+            if (minDistOption.Value != minDist)
+                minDistOption.Value = minDist;
+
+            if (maxDistOption.Value != maxDist)
+                maxDistOption.Value = maxDist;
+        }
     }
 }

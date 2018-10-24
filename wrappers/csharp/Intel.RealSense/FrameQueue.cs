@@ -11,35 +11,37 @@ namespace Intel.RealSense
     {
         internal HandleRef m_instance;
 
-        public FrameQueue(int capacity = 10)
+        public FrameQueue(int capacity = 1)
         {
             object error;
             m_instance = new HandleRef(this, NativeMethods.rs2_create_frame_queue(capacity, out error));
         }
 
-        public bool PollForFrame(out Frame frame, FramesReleaser releaser = null)
+        public bool PollForFrame(out Frame frame)
         {
             object error;
-            if (NativeMethods.rs2_poll_for_frame(m_instance.Handle, out frame, out error) > 0)
+            IntPtr ptr;
+            if (NativeMethods.rs2_poll_for_frame(m_instance.Handle, out ptr, out error) > 0)
             {
-                frame = FramesReleaser.ScopedReturn(releaser, FrameSet.CreateFrame(frame.m_instance.Handle));
+                frame = Frame.CreateFrame(ptr);
                 return true;
             }
+            frame = null;
             return false;
         }
 
-        public Frame WaitForFrame(FramesReleaser releaser = null)
+        public Frame WaitForFrame(uint timeout_ms = 5000)
         {
             object error;
-            var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, 5000, out error);
-            return FramesReleaser.ScopedReturn(releaser, FrameSet.CreateFrame(ptr));
+            var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, timeout_ms, out error);
+            return Frame.CreateFrame(ptr);
         }
 
-        public FrameSet WaitForFrames(FramesReleaser releaser = null)
+        public FrameSet WaitForFrames(uint timeout_ms = 5000)
         {
             object error;
-            var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, 5000, out error);
-            return FramesReleaser.ScopedReturn(releaser, new FrameSet(ptr));
+            var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, timeout_ms, out error);
+            return FrameSet.Pool.Get(ptr);
         }
 
         public void Enqueue(Frame f)
